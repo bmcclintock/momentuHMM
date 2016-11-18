@@ -1,0 +1,2 @@
+# to link to lapack and blas routines (e.g. arma::solve)
+PKG_LIBS= `$(R_HOME)/bin/Rscript -e "Rcpp:::LdFlags()"` $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
