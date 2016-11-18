@@ -1,0 +1,28 @@
+Package: momentuHMM
+Type: Package
+Title: Animal Movement Modelling using Hidden Markov Models
+Version: 0.0
+Date: 2016-11-18
+Author: Brett McClintock, Theo Michelot, Roland Langrock, Toby Patterson, Eric
+    Rexstad
+Maintainer: Brett McClintock <brett.mcclintock@noaa.gov>
+Description: Provides tools for animal movement modelling using hidden Markov
+    models. These include processing of tracking data, fitting HMMs to movement
+    data, visualization of data and fitted model, decoding of the state
+    process...
+License: GPL-3
+LazyData: TRUE
+Depends:
+    CircStats,
+    boot,
+    MASS,
+    sp
+Imports:
+    Rcpp
+LinkingTo: Rcpp, RcppArmadillo
+Suggests:
+    testthat,
+    knitr
+VignetteBuilder: knitr
+RoxygenNote: 5.0.1
+NeedsCompilation: yes
