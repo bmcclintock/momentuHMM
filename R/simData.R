@@ -377,7 +377,7 @@ simData <- function(nbAnimals=1,nbStates=6,stepDist=c("gamma","weibull"),angleDi
   #wpar <- n2w(par0,stepDist,bounds,beta,delta,nbStates,FALSE,stepDM,angleDM,omegaDM,dryDM,diveDM,iceDM,landDM,cons,logitcons)
   #par <- w2n(wpar,stepDist,p$bounds,p$parSize,nbStates,nbCovs,estAngleMean=(angleDist!="none"),stationary=FALSE)
   par0 <- c(stepPar,anglePar,omegaPar,dryPar,divePar,icePar,landPar,beta,log(delta[-1]/delta[1])) 
-  par <- w2n(par0,stepDist,bounds,parSize,nbStates,nbCovs,FALSE,stationary=FALSE,cons,stepDM,angleDM,omegaDM,dryDM,diveDM,iceDM,landDM,p$boundInd,logitcons)
+  par <- w2n(par0,bounds,parSize,nbStates,nbCovs,FALSE,stationary=FALSE,cons,DM,p$boundInd,logitcons)
 
   if(zeroInflation) {
     zeroMass <- par$stepPar[nrow(par$stepPar),]

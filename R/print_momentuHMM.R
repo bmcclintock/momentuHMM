@@ -16,58 +16,36 @@
 print.momentuHMM <- function(x,...)
 {
   m <- x
-  nbStates <- ncol(m$mle$stepPar)
-  p <- parDef(m$conditions$stepDist,m$conditions$angleDist,m$conditions$omegaDist,m$conditions$dryDist,m$conditions$diveDist,m$conditions$iceDist,m$conditions$landDist,
+  nbStates <- ncol(m$mle$step)
+  p <- parDef(m$conditions$dist,
               nbStates,TRUE,
-              m$conditions$zeroInflation,NULL,m$conditions$stepDM,m$conditions$angleDM,m$conditions$omegaDM,m$conditions$dryDM,m$conditions$diveDM,m$conditions$iceDM,m$conditions$landDM)
+              m$conditions$zeroInflation,NULL,m$conditions$DM)
 
   if(length(m$mod)>1)
     cat("Value of the maximum log-likelihood:",-m$mod$minimum,"\n\n")
 
-  cat("Step length parameters:\n")
-  cat("----------------------\n")
-  print(m$mle$stepPar)
-
   cat("\n")
-  if(m$conditions$angleDist!="none") {
+  if(m$conditions$dist$step!="none") {
+    cat("Step length parameters:\n")
+    cat("----------------------\n")
+    print(m$mle$step)
+  } 
+  
+  cat("\n")
+  if(m$conditions$dist$angle!="none") {
     cat("Turning angle parameters:\n")
     cat("------------------------\n")
-    print(m$mle$anglePar)
+    print(m$mle$angle)
   }
-
-  if(m$conditions$omegaDist!="none") {
+  
+  distnames <- names(m$conditions$dist)
+  otherDist <- distnames[-which(distnames %in% c("step","angle"))]
+  
+  for(i in otherDist){
     cat("\n")
-    cat("Dive proportion parameters:\n")
+    cat(i,"parameters:\n")
     cat("----------------------\n")
-    print(m$mle$omegaPar)
-  }
-  
-  if(m$conditions$dryDist!="none") {
-    cat("\n")  
-    cat("Dry proportion parameters:\n")
-    cat("----------------------\n")
-    print(m$mle$dryPar)
-  }
-  
-  if(m$conditions$diveDist!="none") {
-    cat("\n")    
-    cat("Foraging dive parameters:\n")
-    cat("----------------------\n")
-    print(m$mle$divePar)
-  }
-  
-  if(m$conditions$iceDist!="none") {
-    cat("\n")    
-    cat("Ice proportion parameters:\n")
-    cat("----------------------\n")
-    print(m$mle$icePar)
-  }
-  
-  if(m$conditions$landDist!="none") {
-    cat("\n")    
-    cat("Land proportion parameters:\n")
-    cat("----------------------\n")
-    print(m$mle$landPar)
+    print(m$mle[[i]])
   }
   
   if(!is.null(m$mle$beta)) {

@@ -21,10 +21,9 @@
 //'
 //' @return Negative log-likelihood
 // [[Rcpp::export]]
-double nLogLike_rcpp(int nbStates, arma::mat beta, arma::mat covs, DataFrame data, std::string stepDist,
-                     std::string angleDist, std::string omegaDist, std::string dryDist, std::string diveDist, std::string iceDist, std::string landDist,
-                     arma::mat stepPar, arma::mat anglePar, arma::mat omegaPar, arma::mat dryPar, arma::mat divePar, arma::mat icePar, arma::mat landPar,
-                     arma::rowvec delta, IntegerVector aInd, bool zeroInflation=false,
+double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist,
+                     List Par,
+                     IntegerVector aInd, bool zeroInflation=false,
                      bool stationary=false)
 {
   int nbObs = data.nrows();
@@ -39,7 +38,22 @@ double nLogLike_rcpp(int nbStates, arma::mat beta, arma::mat covs, DataFrame dat
   rowSums.zeros();
 
   arma::mat g(nbObs,nbStates*(nbStates-1));
-
+  
+  arma::mat beta = Par["beta"];
+  arma::rowvec delta = Par["delta"];
+  arma::mat stepPar = Par["step"];
+  arma::mat anglePar = Par["angle"];
+  arma::mat genPar;
+  //arma::mat omegaPar = Par["omega"];
+  //arma::mat divePar = Par["dive"];
+  
+  std::string stepDist = dist["step"];
+  std::string angleDist = dist["angle"];
+  std::string genDist;
+  std::string genname;
+  //std::string omegaDist = dist["omega"];
+  //std::string diveDist = dist["dive"];
+  
   if(nbStates>1) {
     g = covs*beta;
 
@@ -115,50 +129,13 @@ double nLogLike_rcpp(int nbStates, arma::mat beta, arma::mat covs, DataFrame dat
   arma::colvec angleProb(nbObs);
   NumericVector angleArgs(2); // angle parameters
   NumericVector angle(nbObs);
-  
   if(angleDist!="none") {
     angle = data["angle"];
   }
   
-  arma::colvec omegaProb(nbObs);
-  NumericVector omegaArgs(2); // omega parameters
-  NumericVector omega(nbObs);
-  
-  if(omegaDist!="none") {
-    omega = data["omega"];
-  }
-  
-  arma::colvec dryProb(nbObs);
-  NumericVector dryArgs(2); // dry parameters
-  NumericVector dry(nbObs);
-  
-  if(dryDist!="none") {
-    dry = data["dry"];
-  }
-  
-  arma::colvec diveProb(nbObs);
-  NumericVector diveArgs(2); // dive parameters
-  NumericVector dive(nbObs);
-  
-  if(diveDist!="none") {
-    dive = data["dive"];
-  }
-  
-  arma::colvec iceProb(nbObs);
-  NumericVector iceArgs(2); // ice parameters
-  NumericVector ice(nbObs);
-  
-  if(iceDist!="none") {
-    ice = data["ice"];
-  }
-  
-  arma::colvec landProb(nbObs);
-  NumericVector landArgs(2); // land parameters
-  NumericVector land(nbObs);
-  
-  if(landDist!="none") {
-    land = data["land"];
-  }
+  arma::colvec genProb(nbObs);
+  NumericVector genArgs(2); 
+  NumericVector gendata(nbObs);
   
   arma::rowvec zeromass(nbStates);
 
@@ -172,39 +149,41 @@ double nLogLike_rcpp(int nbStates, arma::mat beta, arma::mat covs, DataFrame dat
   for(int state=0;state<nbStates;state++)
   {
     // compute probabilities of steps
-
-    for(unsigned int i=0;i<stepPar.n_rows;i++)
-      stepArgs(i) = stepPar(i,state);
-
-    // if zeroInflation, the probability of zero and non-zero steps must be computed separately
-    if(zeroInflation) {
-      // remove the NAs from step (impossible to subset a vector with NAs)
-      for(int i=0;i<nbObs;i++) {
-        if(!arma::is_finite(step(i))) {
-          step(i) = -1;
-          stepProb(i) = 1;
+    if(stepDist!="none"){
+      for(unsigned int i=0;i<stepPar.n_rows;i++)
+        stepArgs(i) = stepPar(i,state);
+  
+      // if zeroInflation, the probability of zero and non-zero steps must be computed separately
+      if(zeroInflation) {
+        // remove the NAs from step (impossible to subset a vector with NAs)
+        for(int i=0;i<nbObs;i++) {
+          if(!arma::is_finite(step(i))) {
+            step(i) = -1;
+            stepProb(i) = 1;
+          }
+        }
+  
+        // compute probability of non-zero observations
+        stepProb.elem(arma::find(as<arma::vec>(step)>0)) = (1-zeromass(state))*funMap[stepDist](step[step>0],stepArgs(0),stepArgs(1));
+  
+        // compute probability of zero observations
+        int nbZeros = as<NumericVector>(step[step==0]).size();
+        arma::vec zm(nbZeros);
+        for(int i=0;i<nbZeros;i++)
+          zm(i) = zeromass(state);
+        stepProb.elem(arma::find(as<arma::vec>(step)==0)) = zm;
+  
+        // put the NAs back
+        for(int i=0;i<nbObs;i++) {
+          if(step(i)<0)
+            step(i) = NA_REAL;
         }
       }
-
-      // compute probability of non-zero observations
-      stepProb.elem(arma::find(as<arma::vec>(step)>0)) = (1-zeromass(state))*funMap[stepDist](step[step>0],stepArgs(0),stepArgs(1));
-
-      // compute probability of zero observations
-      int nbZeros = as<NumericVector>(step[step==0]).size();
-      arma::vec zm(nbZeros);
-      for(int i=0;i<nbZeros;i++)
-        zm(i) = zeromass(state);
-      stepProb.elem(arma::find(as<arma::vec>(step)==0)) = zm;
-
-      // put the NAs back
-      for(int i=0;i<nbObs;i++) {
-        if(step(i)<0)
-          step(i) = NA_REAL;
+      else {
+        stepProb = funMap[stepDist](step,stepArgs(0),stepArgs(1));
       }
+      allProbs.col(state) = stepProb;
     }
-    else
-      stepProb = funMap[stepDist](step,stepArgs(0),stepArgs(1));
-
     if(angleDist!="none") {
       // compute probabilites of angles
       for(unsigned int i=0;i<anglePar.n_rows;i++)
@@ -213,53 +192,19 @@ double nLogLike_rcpp(int nbStates, arma::mat beta, arma::mat covs, DataFrame dat
       angleProb = funMap[angleDist](angle,angleArgs(0),angleArgs(1));
 
       // compute joint probabilities of steps and angles
-      allProbs.col(state) = stepProb%angleProb;
-    }
-    else allProbs.col(state) = stepProb;
-    
-    // compute probabilites of omegas
-    if(omegaDist!="none") {
-      for(unsigned int i=0;i<omegaPar.n_rows;i++)
-        omegaArgs(i) = omegaPar(i,state);
-  
-      omegaProb = funMap[omegaDist](omega,omegaArgs(0),omegaArgs(1));
-      allProbs.col(state) = allProbs.col(state)%omegaProb;
+      allProbs.col(state) = allProbs.col(state)%angleProb;
     }
     
-    // compute probabilites of dry
-    if(dryDist!="none") {
-      for(unsigned int i=0;i<dryPar.n_rows;i++)
-        dryArgs(i) = dryPar(i,state);
-  
-      dryProb = funMap[dryDist](dry,dryArgs(0),dryArgs(1));
-      allProbs.col(state) = allProbs.col(state)%dryProb;
-    }
-    
-    // compute probabilites of dive
-    if(diveDist!="none") {
-      for(unsigned int i=0;i<divePar.n_rows;i++)
-        diveArgs(i) = divePar(i,state);
-  
-      diveProb = funMap[diveDist](dive,diveArgs(0),diveArgs(1));
-      allProbs.col(state) = allProbs.col(state)%diveProb;
-    }
-    
-    // compute probabilites of ice
-    if(iceDist!="none") {
-      for(unsigned int i=0;i<icePar.n_rows;i++)
-        iceArgs(i) = icePar(i,state);
-  
-      iceProb = funMap[iceDist](ice,iceArgs(0),iceArgs(1));
-      allProbs.col(state) = allProbs.col(state)%iceProb;
-    }
-    
-    // compute probabilites of land
-    if(landDist!="none") {
-      for(unsigned int i=0;i<landPar.n_rows;i++)
-        landArgs(i) = landPar(i,state);
-  
-      landProb = funMap[landDist](land,landArgs(0),landArgs(1));
-      allProbs.col(state) = allProbs.col(state)%landProb;    
+    for(unsigned int i=2;i<dataNames.size();i++){
+      genProb.ones();
+      genname = as<std::string>(dataNames[i]);
+      genDist = as<std::string>(dist[genname]);
+      genPar = as<arma::mat>(Par[genname]);
+      for(unsigned int j=0;j<genPar.n_rows;j++)
+        genArgs(j) = genPar(j,state);
+      
+      genProb = funMap[genDist](data[genname],genArgs(0),genArgs(1));
+      allProbs.col(state) = allProbs.col(state)%genProb;
     }
   }
 
