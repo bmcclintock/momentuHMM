@@ -23,7 +23,7 @@
 // [[Rcpp::export]]
 double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist,
                      List Par,
-                     IntegerVector aInd, bool zeroInflation=false,
+                     IntegerVector aInd, List zeroInflation,
                      bool stationary=false)
 {
   int nbObs = data.nrows();
@@ -41,18 +41,10 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   
   arma::mat beta = Par["beta"];
   arma::rowvec delta = Par["delta"];
-  arma::mat stepPar = Par["step"];
-  arma::mat anglePar = Par["angle"];
+  NumericVector genData(nbObs);
   arma::mat genPar;
-  //arma::mat omegaPar = Par["omega"];
-  //arma::mat divePar = Par["dive"];
-  
-  std::string stepDist = dist["step"];
-  std::string angleDist = dist["angle"];
   std::string genDist;
   std::string genname;
-  //std::string omegaDist = dist["omega"];
-  //std::string diveDist = dist["dive"];
   
   if(nbStates>1) {
     g = covs*beta;
@@ -122,88 +114,60 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   arma::mat allProbs(nbObs,nbStates);
   allProbs.ones();
 
-  arma::colvec stepProb(nbObs);
-  NumericVector stepArgs(2); // step parameters
-  NumericVector step = data["step"];
-
-  arma::colvec angleProb(nbObs);
-  NumericVector angleArgs(2); // angle parameters
-  NumericVector angle(nbObs);
-  if(angleDist!="none") {
-    angle = data["angle"];
-  }
-  
   arma::colvec genProb(nbObs);
   NumericVector genArgs(2); 
   NumericVector gendata(nbObs);
-  
+  bool genzeroInflation;
   arma::rowvec zeromass(nbStates);
 
   // extract zero-mass parameters from step parameters if necessary
-  if(zeroInflation) {
-    zeromass = stepPar.row(stepPar.n_rows-1);
-    arma::mat stepPar2 = stepPar.submat(0,0,stepPar.n_rows-2,stepPar.n_cols-1);
-    stepPar = stepPar2;
-  }
+
 
   for(int state=0;state<nbStates;state++)
   {
-    // compute probabilities of steps
-    if(stepDist!="none"){
-      for(unsigned int i=0;i<stepPar.n_rows;i++)
-        stepArgs(i) = stepPar(i,state);
-  
-      // if zeroInflation, the probability of zero and non-zero steps must be computed separately
-      if(zeroInflation) {
-        // remove the NAs from step (impossible to subset a vector with NAs)
-        for(int i=0;i<nbObs;i++) {
-          if(!arma::is_finite(step(i))) {
-            step(i) = -1;
-            stepProb(i) = 1;
-          }
-        }
-  
-        // compute probability of non-zero observations
-        stepProb.elem(arma::find(as<arma::vec>(step)>0)) = (1-zeromass(state))*funMap[stepDist](step[step>0],stepArgs(0),stepArgs(1));
-  
-        // compute probability of zero observations
-        int nbZeros = as<NumericVector>(step[step==0]).size();
-        arma::vec zm(nbZeros);
-        for(int i=0;i<nbZeros;i++)
-          zm(i) = zeromass(state);
-        stepProb.elem(arma::find(as<arma::vec>(step)==0)) = zm;
-  
-        // put the NAs back
-        for(int i=0;i<nbObs;i++) {
-          if(step(i)<0)
-            step(i) = NA_REAL;
-        }
-      }
-      else {
-        stepProb = funMap[stepDist](step,stepArgs(0),stepArgs(1));
-      }
-      allProbs.col(state) = stepProb;
-    }
-    if(angleDist!="none") {
-      // compute probabilites of angles
-      for(unsigned int i=0;i<anglePar.n_rows;i++)
-        angleArgs(i) = anglePar(i,state);
-
-      angleProb = funMap[angleDist](angle,angleArgs(0),angleArgs(1));
-
-      // compute joint probabilities of steps and angles
-      allProbs.col(state) = allProbs.col(state)%angleProb;
-    }
-    
-    for(unsigned int i=2;i<dataNames.size();i++){
+    for(unsigned int i=0;i<dist.size();i++){
       genProb.ones();
       genname = as<std::string>(dataNames[i]);
+      genData = as<NumericVector>(data[genname]);
       genDist = as<std::string>(dist[genname]);
       genPar = as<arma::mat>(Par[genname]);
+      genzeroInflation = as<bool>(zeroInflation[genname]);
+      
+      if(genzeroInflation) {
+        zeromass = genPar.row(genPar.n_rows-1);
+        genPar = genPar.submat(0,0,genPar.n_rows-2,genPar.n_cols-1);
+      }
+      
       for(unsigned int j=0;j<genPar.n_rows;j++)
         genArgs(j) = genPar(j,state);
       
-      genProb = funMap[genDist](data[genname],genArgs(0),genArgs(1));
+      if(genzeroInflation) {
+        // remove the NAs from step (impossible to subset a vector with NAs)
+        for(int i=0;i<nbObs;i++) {
+          if(!arma::is_finite(genData(i))) {
+            genData(i) = -1;
+            genProb(i) = 1;
+          }
+        }
+        
+        // compute probability of non-zero observations
+        genProb.elem(arma::find(as<arma::vec>(genData)>0)) = (1-zeromass(state))*funMap[genDist](genData[genData>0],genArgs(0),genArgs(1));
+        
+        // compute probability of zero observations
+        int nbZeros = as<NumericVector>(genData[genData==0]).size();
+        arma::vec zm(nbZeros);
+        for(int i=0;i<nbZeros;i++)
+          zm(i) = zeromass(state);
+        genProb.elem(arma::find(as<arma::vec>(genData)==0)) = zm;
+        
+        // put the NAs back
+        for(int i=0;i<nbObs;i++) {
+          if(genData(i)<0)
+            genData(i) = NA_REAL;
+        }
+      } else {
+        genProb = funMap[genDist](data[genname],genArgs(0),genArgs(1));
+      }
       allProbs.col(state) = allProbs.col(state)%genProb;
     }
   }

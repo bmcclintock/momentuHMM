@@ -16,32 +16,12 @@
 print.momentuHMM <- function(x,...)
 {
   m <- x
-  nbStates <- ncol(m$mle$step)
-  p <- parDef(m$conditions$dist,
-              nbStates,TRUE,
-              m$conditions$zeroInflation,NULL,m$conditions$DM)
+  distnames <- names(m$conditions$dist)
 
   if(length(m$mod)>1)
     cat("Value of the maximum log-likelihood:",-m$mod$minimum,"\n\n")
-
-  cat("\n")
-  if(m$conditions$dist$step!="none") {
-    cat("Step length parameters:\n")
-    cat("----------------------\n")
-    print(m$mle$step)
-  } 
   
-  cat("\n")
-  if(m$conditions$dist$angle!="none") {
-    cat("Turning angle parameters:\n")
-    cat("------------------------\n")
-    print(m$mle$angle)
-  }
-  
-  distnames <- names(m$conditions$dist)
-  otherDist <- distnames[-which(distnames %in% c("step","angle"))]
-  
-  for(i in otherDist){
+  for(i in distnames){
     cat("\n")
     cat(i,"parameters:\n")
     cat("----------------------\n")

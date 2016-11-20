@@ -124,7 +124,7 @@ dpois_rcpp <- function(x, rate, foo = 0) {
 #' equal to the stationary distribution. Default: \code{false}.
 #'
 #' @return Negative log-likelihood
-nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation = FALSE, stationary = FALSE) {
+nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, stationary = FALSE) {
     .Call('momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, stationary)
 }
 

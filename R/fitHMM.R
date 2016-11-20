@@ -132,10 +132,11 @@
 #'
 #' @useDynLib momentuHMM
 
-fitHMM <- function(data,nbStates,dist=list(step=c("gamma","weibull","none"),angle=c("wrpcauchy","vm","none")),
-                   Par=list(step,angle),beta0=NULL,delta0=NULL,
-                   formula=~1,stationary=FALSE,verbose=0,nlmPar=NULL,fit=TRUE,userBounds=NULL,
-                   DM=list(step=NULL,angle=NULL),cons=list(step=NULL,angle=NULL),stateNames=NULL,logitcons=NULL)
+fitHMM <- function(data,nbStates,dist,
+                   Par,beta0=NULL,delta0=NULL,
+                   formula=~1,
+                   stationary=FALSE,verbose=0,nlmPar=NULL,fit=TRUE,
+                   zeroInflation=NULL,DM=NULL,cons=NULL,userBounds=NULL,logitcons=NULL,stateNames=NULL)
 {
   # check that the data is a moveData object
   if(!is.moveData(data))
@@ -155,11 +156,8 @@ fitHMM <- function(data,nbStates,dist=list(step=c("gamma","weibull","none"),angl
   if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
   if(!is.list(Par) | is.null(names(Par))) stop("'Par' must be a named list")
   distnames<-names(dist)
+  if(any(is.na(match(distnames,names(data))))) stop(paste0(distnames[is.na(match(distnames,names(data)))],collapse=", ")," not found in data")
   if(length(setdiff(distnames,names(Par))) | (length(dist)!=length(Par))) stop("Length and names of 'dist' and 'Par' must match")
-  if(!all(unlist(lapply(DM,is.null))))
-    if(length(setdiff(distnames,names(DM))) | (length(dist)!=length(DM))) stop("Length and names of 'dist' and 'DM' must match")
-  if(!all(unlist(lapply(cons,is.null))))
-    if(length(setdiff(distnames,names(cons))) | (length(dist)!=length(cons))) stop("Length and names of 'dist' and 'cons' must match")
   
   # build design matrix
   covsCol <- seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data))]
@@ -177,21 +175,28 @@ fitHMM <- function(data,nbStates,dist=list(step=c("gamma","weibull","none"),angl
   nbCovs <- ncol(covs)-1 # substract intercept column
 
   # determine whether zero-inflation should be included
-  if(length(which(data$step==0))>0)
-    zeroInflation <- TRUE
-  else
-    zeroInflation <- FALSE
-
-  # check that zero-mass is in the open interval (0,1)
-  if(zeroInflation) {
-    zm0 <- Par$step[(length(Par$step)-nbStates+1):length(Par$step)]
-    zm0[which(zm0==0)] <- 1e-8
-    zm0[which(zm0==1)] <- 1-1e-8
-    Par$step[(length(Par$step)-nbStates+1):length(Par$step)] <- zm0
+  if(is.null(zeroInflation)){
+    zeroInflation <- vector('list',length(distnames))
+    names(zeroInflation) <- distnames
+    for(i in distnames){
+      if(dist[[i]]!="wrpcauchy" & dist[[i]]!="vm" & dist[[i]]!="pois"){
+        if(length(which(data[[i]]==0))>0) {
+          zeroInflation[[i]]<-TRUE
+          # check that zero-mass is in the open interval (0,1)
+          zm0 <- Par[[i]][(length(Par[[i]])-nbStates+1):length(Par[[i]])]
+          zm0[which(zm0==0)] <- 1e-8
+          zm0[which(zm0==1)] <- 1-1e-8
+          Par[[i]][(length(Par[[i]])-nbStates+1):length(Par[[i]])] <- zm0
+        }
+        else 
+          zeroInflation[[i]]<-FALSE
+      }
+      else zeroInflation[[i]]<-FALSE
+    }
   }
-  
-  ndists<-length(dist)
-  eval(parse(text=paste0(distnames,"Dist='",dist,"'")))
+
+
+  #eval(parse(text=paste0(distnames,"Dist='",dist,"'")))
   Par<-Par[distnames]
   #eval(parse(text=paste0(distnames,"Par=",Par)))
   #eval(parse(text=paste0(distnames,"DM=",DM)))
@@ -199,42 +204,42 @@ fitHMM <- function(data,nbStates,dist=list(step=c("gamma","weibull","none"),angl
   #####################
   ## Check arguments ##
   #####################
-  stepDist <- match.arg(stepDist,c("gamma","weibull","none"))
-  angleDist <- match.arg(angleDist,c("wrpcauchy","vm","none"))
-  otherDist <- distnames[-which(distnames %in% c("step","angle"))]
-  if(length(otherDist)){
-    eval(parse(text=paste0(otherDist,"=match.arg(",otherDist,"Dist,c('gamma','weibull','beta','pois'))")))
-  }
+  eval(parse(text=paste0("dist$",distnames,"=match.arg(dist$",distnames,",c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))")))
   
   if(nbStates<0)
     stop("nbStates should be at least 1.")
   if(length(data)<1)
     stop("The data input is empty.")
-  if(is.null(data$step))
-    stop("Missing field in data: step.")
   
-  angleMean <- rep(0,nbStates)
-  
-  if(is.null(DM$step)) DM$step <- diag((2+zeroInflation)*nbStates)
-  if(is.null(DM$angle)) DM$angle <- diag((1+is.null(angleMean))*nbStates)
-  if(length(otherDist)){
-    eval(parse(text=paste0("if(is.null(",DM[otherDist],")) DM$",otherDist," <- diag(",ifelse(dist[otherDist]=="pois",1,2),"*nbStates)")))
+  if(is.null(DM)){
+    DM <- vector('list',length(distnames))
+    names(DM) <- distnames
   }
-  
+  eval(parse(text=paste0("if(is.null(",DM[distnames],")) DM$",distnames," <- diag(",ifelse(dist=="exp" | dist=="pois" | dist=="wrpcauchy",1,2),"*nbStates)")))
   DM<-DM[distnames]
-  if(all(unlist(lapply(cons,is.null)))) cons <- lapply(DM,function(x) rep(1,ncol(x)))
+  if(any(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol))))
+    stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol)))),collapse=", "))
+  
+  if(is.null(cons)){
+    cons <- vector('list',length(distnames))
+    names(cons) <- distnames
+  }
+  eval(parse(text=paste0("if(is.null(",cons[distnames],")) cons$",distnames," <- rep(1,ncol(DM$",distnames,"))")))
   cons<-cons[distnames]
+  if(any(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))) 
+    stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
   
-  eval(parse(text=paste0("lcons<-list(",paste0(distnames,"=",paste0("rep(0,",unlist(lapply(Par,length)),")"),collapse=","),")")))
-  if(!is.null(logitcons)){
-    if(length(logitcons)!=ncol(DM$angle)) stop("'logitcons' must be a vector of length ",ncol(DM$angle))
-    else lcons[["angle"]]<-logitcons
+  if(is.null(logitcons)){
+    logitcons <- vector('list',length(distnames))
+    names(logitcons) <- distnames
   }
-  
-  if(length(otherDist)){
-    if(any(unlist(lapply(Par[otherDist],length))!=unlist(lapply(DM[otherDist],ncol))))
-      stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par[otherDist],length))!=unlist(lapply(DM[otherDist],ncol)))),collapse=", "))
+  eval(parse(text=paste0("if(is.null(",logitcons[distnames],")) logitcons$",distnames," <- rep(0,ncol(DM$",distnames,"))")))
+  for(i in which(is.na(match(dist,"wrpcauchy")))){
+    logitcons[[distnames[i]]]<-rep(0,ncol(DM[[distnames[i]]]))
   }
+  logitcons<-logitcons[distnames]
+  if(any(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))) 
+    stop("Length mismatch between Par and logitcons for: ",paste(names(which(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))),collapse=", "))
   
   if(!is.null(stateNames) & length(stateNames)!=nbStates)
     stop("stateNames must have length ",nbStates)
@@ -244,7 +249,7 @@ fitHMM <- function(data,nbStates,dist=list(step=c("gamma","weibull","none"),angl
   #  evalBounds<-matrix(sapply(bounds,function(x) eval(parse(text=x))),ncol=2)
   #}
   #p <- parDef(stepDist,angleDist,omegaDist,dryDist,diveDist,iceDist,landDist,nbStates,is.null(angleMean),zeroInflation,evalBounds,stepDM,angleDM,omegaDM,dryDM,diveDM,iceDM,landDM)
-  p <- parDef(dist,nbStates,is.null(angleMean),zeroInflation,userBounds,DM)
+  p <- parDef(dist,nbStates,FALSE,zeroInflation,userBounds,DM)
   bounds <- p$bounds
   for(i in distnames){
     if(!is.numeric(bounds[[i]])){
@@ -252,19 +257,13 @@ fitHMM <- function(data,nbStates,dist=list(step=c("gamma","weibull","none"),angl
     }
   }
   parSize <- p$parSize
-  if(length(Par$step%*%DM$step)!=(parSize[1]*nbStates))
-    stop("zero inflation parameters must be included in 'Par$step'")
+  for(i in 1:length(distnames)){
+    if(length(Par[[distnames[i]]]%*%DM[[distnames[i]]])!=(parSize[i]*nbStates))
+      stop("zero inflation parameters must be included in 'Par$",distnames[i],"'")
+  }
+
   if(sum((parSize>0)*unlist(lapply(DM,ncol)))!=length(par0)) {
     error <- "Wrong number of initial parameters"
-    if(ncol(DM$step)!=length(Par$step)) {
-      error <- paste(error,"-- there should be",(parSize[1]-2)*nbStates+ncol(DM$step),"initial step parameters")
-      if(zeroInflation)
-        error <- paste(error,"-- zero-mass parameters should be included")
-    }
-    if(angleDist!="none" & ncol(DM$angle)!=length(Par$angle))
-      error <- paste(error,"-- there should be",(parSize[2]-1)*nbStates+ncol(DM$angle),"initial angle parameters.")
-    if(angleDist=="none" & length(Par$angle)>0)
-      error <- paste(error,"-- 'Par$angle' should be NULL.")
     stop(error)
   }
   if(!is.null(beta0)) {
@@ -279,39 +278,9 @@ fitHMM <- function(data,nbStates,dist=list(step=c("gamma","weibull","none"),angl
     if(length(delta0)!=nbStates)
       stop(paste("delta0 has the wrong length: it should have",nbStates,"elements."))
 
-  if(stepDist!="none"){
-    stepBounds <- bounds[["step"]]
-    if(length(which(Par$step<=stepBounds[,1] | Par$step>=stepBounds[,2]))>0)
-      stop(paste("Check the step parameters bounds (the initial parameters should be",
-                 "strictly between the bounds of their parameter space)."))
-  }
-  
-  if(angleDist!="none") {
-    # We can't really write distribution-agnostic code here, because the bounds
-    # defined in parDef are not the actual bounds of the parameter space.
-    if(is.null(angleMean)) {
-      m <- Par$angle[1:nbStates] # angle mean
-      k <- Par$angle[(nbStates+1):length(Par$angle)] # angle concentration
-      if(length(which(m<=(-pi) | m>pi))>0)
-        stop("Check the angle parameters bounds. The angle mean should be in (-pi,pi].")
-    } else {
-      k <- Par$angle # angle concentration
-      if(length(which(angleMean<=-pi | angleMean>pi))>0)
-        stop("The 'angleMean' should be in (-pi,pi].")
-      if(length(angleMean)!=nbStates)
-        stop("The argument 'angleMean' should be of length nbStates.")
-    }
-    if(angleDist!="wrpcauchy" & length(which(k<=0))>0)
-      stop("Check the angle parameters bounds. The concentration should be strictly positive.")
-    if(angleDist=="wrpcauchy" & ((length(which(k>=1))>0) | length(which(k<= -1))>0))
-      stop("Check the angle parameters bounds. The concentration should be in (-1,1).")
-  }
-  else if(!is.null(angleMean))
-    stop("'angleMean' shouldn't be specified if 'angleDist' is \"none\"")
-
   for(i in distnames){
     if(length(which(Par[[i]]<bounds[[i]][,1] | Par[[i]]>bounds[[i]][,2]))>0)
-      stop(paste("Check the parameter bounds (the initial parameters should be",
+      stop(paste0("Check the parameter bounds for '",i,"' (the initial parameters should be ",
                  "strictly between the bounds of their parameter space)."))
   }
   
@@ -320,10 +289,18 @@ fitHMM <- function(data,nbStates,dist=list(step=c("gamma","weibull","none"),angl
     stop("verbose must be in {0,1,2}")
 
   # check that observations are within expected bounds
-  if(length(which(data$step<0))>0)
-    stop("The step lengths should be positive.")
-  if(length(which(data$angle < -pi | data$angle > pi))>0)
-    stop("The turning angles should be between -pi and pi.")
+  for(i in which(unlist(lapply(dist,function(x) x %in% c("weibull","gamma","exp","pois"))))){
+    if(length(which(data[[distnames[[i]]]]<0))>0)
+      stop(distnames[[i]]," data should be non-negative")
+  }
+  for(i in which(unlist(lapply(dist,function(x) x %in% c("wrpcauchy","vm"))))){
+    if(length(which(data[[distnames[[i]]]] < -pi | data[[distnames[[i]]]] > pi))>0)
+      stop(distnames[[i]]," angles should be between -pi and pi")
+  }
+  for(i in which(unlist(lapply(dist,function(x) x %in% "beta")))){
+    if(length(which(data[[distnames[[i]]]]<0 | data[[distnames[[i]]]]>=1))>0)
+      stop(distnames[[i]]," data should be between 0 and 1")
+  }
 
   # check that stationary==FALSE if there are covariates
   if(nbCovs>0 & stationary==TRUE)
@@ -348,7 +325,8 @@ fitHMM <- function(data,nbStates,dist=list(step=c("gamma","weibull","none"),angl
   if(stationary)
     delta0 <- NULL
 
-  estAngleMean <- (is.null(angleMean) & angleDist!="none")
+  angleMean <- rep(0,nbStates)
+  estAngleMean <- is.null(angleMean)
 
   if(!all(unlist(lapply(p$bounds,is.numeric)))){
     bounds <- p$bounds
@@ -360,7 +338,7 @@ fitHMM <- function(data,nbStates,dist=list(step=c("gamma","weibull","none"),angl
   }
   
   # build the vector of initial working parameters
-  wpar <- n2w(Par,bounds,beta0,delta0,nbStates,estAngleMean,DM,cons,lcons)
+  wpar <- n2w(Par,bounds,beta0,delta0,nbStates,estAngleMean,DM,cons,logitcons)
       
   ##################
   ## Optimization ##
@@ -382,18 +360,18 @@ fitHMM <- function(data,nbStates,dist=list(step=c("gamma","weibull","none"),angl
 
     # call to optimizer nlm
     withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,bounds,parSize,data,dist,
-                                   angleMean,zeroInflation,stationary,cons,DM,p$boundInd,lcons,
+                                   angleMean,zeroInflation,stationary,cons,DM,p$boundInd,logitcons,
                                    print.level=verbose,gradtol=gradtol,
                                    stepmax=stepmax,steptol=steptol,
                                    iterlim=iterlim,hessian=TRUE),
                         warning=h) # filter warnings using function h
 
     # convert the parameters back to their natural scale
-    mle <- w2n(mod$estimate,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,DM,p$boundInd,lcons)
+    mle <- w2n(mod$estimate,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,DM,p$boundInd,logitcons)
   }
   else {
     mod <- NA
-    mle <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,DM,p$boundInd,lcons)
+    mle <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,DM,p$boundInd,logitcons)
   }
 
   ####################
@@ -405,19 +383,9 @@ fitHMM <- function(data,nbStates,dist=list(step=c("gamma","weibull","none"),angl
   }
   
   # name columns and rows of MLEs
-  if(stepDist!="none"){
-    rownames(mle$step) <- p$parNames$step
-    colnames(mle$step) <- stateNames
-  }
-  
-  if(angleDist!="none") {
-    # include angle mean if it wasn't estimated
-    if(!is.null(angleMean)) mle$angle <- rbind(angleMean,mle$angle)
-    rownames(mle$angle) <- p$parNames$angle
-    colnames(mle$angle) <- stateNames
-  }
-  
-  for(i in otherDist){
+  for(i in distnames){
+    if(dist[[i]] %in% c("wrpcauchy","vm"))
+      mle[[i]] <- rbind(angleMean,mle[[i]])
     rownames(mle[[i]]) <- p$parNames[[i]]
     colnames(mle[[i]]) <- stateNames
   }

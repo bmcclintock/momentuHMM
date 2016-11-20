@@ -52,17 +52,12 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,
 {
   # check arguments
   distnames<-names(dist)
-  eval(parse(text=paste0(distnames,"Dist='",dist,"'")))
   
   #####################
   ## Check arguments ##
   #####################
-  stepDist <- match.arg(stepDist,c("gamma","weibull","none"))
-  angleDist <- match.arg(angleDist,c("wrpcauchy","vm","none"))
-  otherDist <- distnames[-which(distnames %in% c("step","angle"))]
-  if(length(otherDist)){
-    eval(parse(text=paste0(otherDist,"=match.arg(",otherDist,"Dist,c('gamma','weibull','beta','pois'))")))
-  }
+  eval(parse(text=paste0("dist$",distnames,"=match.arg(dist$",distnames,",c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))")))
+  
   if(nbStates<1)
     stop("nbStates must be at least 1.")
 
@@ -78,16 +73,16 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,
   if(length(data)<1)
     stop("The data input is empty.")
 
-  if(is.null(data$step))
-    stop("Missing field(s) in data.")
+  if(any(is.na(match(distnames,names(data))))) stop(paste0(distnames[is.na(match(distnames,names(data)))],collapse=", ")," not found in data")
 
-  estAngleMean <- (is.null(angleMean) & angleDist!="none")
+  estAngleMean <- is.null(angleMean)
 
   # convert the parameters back to their natural scale
   par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,DM,boundInd,logitcons)
   
-  if(!is.null(angleMean) & angleDist!="none") # if the turning angles' mean is not estimated
-    par$angle <- rbind(angleMean,par$angle)
+  for(i in distnames[which(dist %in% c("wrpcauchy","vm"))]){
+    par[[i]] <- rbind(angleMean,par[[i]],deparse.level=0)
+  }
 
   nbObs <- length(data$step)
 
