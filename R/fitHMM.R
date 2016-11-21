@@ -193,6 +193,13 @@ fitHMM <- function(data,nbStates,dist,
       }
       else zeroInflation[[i]]<-FALSE
     }
+  } else {
+    if(!all(unlist(lapply(zeroInflation,is.logical)))) stop("zeroInflation must be a list of logical objects")
+    for(i in distnames){
+      if(dist[[i]]=="wrpcauchy" | dist[[i]]=="vm" | dist[[i]]=="pois"){
+        zeroInflation[[i]]<-FALSE
+      }
+    }
   }
 
 
