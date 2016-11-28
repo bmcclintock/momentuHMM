@@ -4,8 +4,8 @@
 \alias{n2w}
 \title{Scaling function: natural to working parameters.}
 \usage{
-n2w(par, stepDist, bounds, beta, delta = NULL, nbStates, estAngleMean, stepDM,
-  angleDM, omegaDM, dryDM, diveDM, iceDM, landDM, cons, logitcons)
+n2w(par, bounds, beta, delta = NULL, nbStates, estAngleMean, DM, cons,
+  logitcons)
 }
 \arguments{
 \item{par}{Vector of state-dependent distributions parameters.}

@@ -84,15 +84,15 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons
 
   par <- NULL
   nbounds<-NULL
-  Par<-NULL
+  #Par<-NULL
   parlist<-NULL
   
   for(i in distnames){
-    Par[[i]]<-w2nDM(wpar[parindex[[i]]+1:ncol(DM[[i]])],bounds[[i]],DM[[i]],cons[[i]],boundInd[[i]],logitcons[[i]])
+    Par<-w2nDM(wpar[parindex[[i]]+1:ncol(DM[[i]])],bounds[[i]],DM[[i]],cons[[i]],boundInd[[i]],logitcons[[i]])
     nbounds <- rbind(nbounds, matrix(sapply(bounds[[i]],function(x) eval(parse(text=x))),ncol=2)[boundInd[[i]],])
-    par <- c(par,Par[[i]])
-    Par[[i]]<-matrix(Par[[i]],ncol=nbStates,byrow=TRUE)
-    parlist[[i]]<-Par[[i]]
+    par <- c(par,Par)
+    Par<-matrix(Par,ncol=nbStates,byrow=TRUE)
+    parlist[[i]]<-Par
   }
     
   if(length(which(par<nbounds[,1] | par>nbounds[,2]))>0)

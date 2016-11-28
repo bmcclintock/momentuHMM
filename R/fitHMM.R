@@ -136,7 +136,7 @@ fitHMM <- function(data,nbStates,dist,
                    Par,beta0=NULL,delta0=NULL,
                    formula=~1,
                    stationary=FALSE,verbose=0,nlmPar=NULL,fit=TRUE,
-                   zeroInflation=NULL,DM=NULL,cons=NULL,userBounds=NULL,logitcons=NULL,stateNames=NULL)
+                   DM=NULL,cons=NULL,userBounds=NULL,logitcons=NULL,stateNames=NULL)
 {
   # check that the data is a moveData object
   if(!is.moveData(data))
@@ -175,31 +175,22 @@ fitHMM <- function(data,nbStates,dist,
   nbCovs <- ncol(covs)-1 # substract intercept column
 
   # determine whether zero-inflation should be included
-  if(is.null(zeroInflation)){
-    zeroInflation <- vector('list',length(distnames))
-    names(zeroInflation) <- distnames
-    for(i in distnames){
-      if(dist[[i]]!="wrpcauchy" & dist[[i]]!="vm" & dist[[i]]!="pois"){
-        if(length(which(data[[i]]==0))>0) {
-          zeroInflation[[i]]<-TRUE
-          # check that zero-mass is in the open interval (0,1)
-          zm0 <- Par[[i]][(length(Par[[i]])-nbStates+1):length(Par[[i]])]
-          zm0[which(zm0==0)] <- 1e-8
-          zm0[which(zm0==1)] <- 1-1e-8
-          Par[[i]][(length(Par[[i]])-nbStates+1):length(Par[[i]])] <- zm0
-        }
-        else 
-          zeroInflation[[i]]<-FALSE
+  zeroInflation <- vector('list',length(distnames))
+  names(zeroInflation) <- distnames
+  for(i in distnames){
+    if(dist[[i]]!="wrpcauchy" & dist[[i]]!="vm" & dist[[i]]!="pois"){
+      if(length(which(data[[i]]==0))>0) {
+        zeroInflation[[i]]<-TRUE
+        # check that zero-mass is in the open interval (0,1)
+        zm0 <- Par[[i]][(length(Par[[i]])-nbStates+1):length(Par[[i]])]
+        zm0[which(zm0==0)] <- 1e-8
+        zm0[which(zm0==1)] <- 1-1e-8
+        Par[[i]][(length(Par[[i]])-nbStates+1):length(Par[[i]])] <- zm0
       }
-      else zeroInflation[[i]]<-FALSE
-    }
-  } else {
-    if(!all(unlist(lapply(zeroInflation,is.logical)))) stop("zeroInflation must be a list of logical objects")
-    for(i in distnames){
-      if(dist[[i]]=="wrpcauchy" | dist[[i]]=="vm" | dist[[i]]=="pois"){
+      else 
         zeroInflation[[i]]<-FALSE
-      }
     }
+    else zeroInflation[[i]]<-FALSE
   }
 
 
@@ -222,7 +213,7 @@ fitHMM <- function(data,nbStates,dist,
     DM <- vector('list',length(distnames))
     names(DM) <- distnames
   }
-  eval(parse(text=paste0("if(is.null(",DM[distnames],")) DM$",distnames," <- diag(",ifelse(dist=="exp" | dist=="pois" | dist=="wrpcauchy",1,2),"*nbStates)")))
+  eval(parse(text=paste0("if(is.null(",DM[distnames],")) DM$",distnames," <- diag((",ifelse(dist=="exp" | dist=="pois" | dist=="wrpcauchy",1,2),"+zeroInflation$",distnames,")*nbStates)")))
   DM<-DM[distnames]
   if(any(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol))))
     stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol)))),collapse=", "))
@@ -265,7 +256,7 @@ fitHMM <- function(data,nbStates,dist,
   }
   parSize <- p$parSize
   for(i in 1:length(distnames)){
-    if(length(Par[[distnames[i]]]%*%DM[[distnames[i]]])!=(parSize[i]*nbStates))
+    if(length(DM[[distnames[i]]]%*%Par[[distnames[i]]])!=(parSize[i]*nbStates))
       stop("zero inflation parameters must be included in 'Par$",distnames[i],"'")
   }
 
@@ -339,7 +330,7 @@ fitHMM <- function(data,nbStates,dist,
     bounds <- p$bounds
     for(i in distnames){
       if(!is.numeric(bounds[[i]])){
-        bounds[[i]] <- gsub(i,"",bounds,fixed=TRUE)
+        bounds[[i]] <- gsub(i,"",bounds[[i]],fixed=TRUE)
       }
     }
   }

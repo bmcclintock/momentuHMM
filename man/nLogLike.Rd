@@ -4,13 +4,9 @@
 \alias{nLogLike}
 \title{Negative log-likelihood function}
 \usage{
-nLogLike(wpar, nbStates, formula, bounds, parSize, data, stepDist = c("gamma",
-  "weibull", "lnorm", "exp"), angleDist = c("wrpcauchy", "vm", "none"),
-  omegaDist = c("beta", "none"), dryDist = c("beta", "none"),
-  diveDist = c("pois", "none"), iceDist = c("beta", "none"),
-  landDist = c("beta", "none"), angleMean = NULL, zeroInflation = FALSE,
-  stationary = FALSE, cons, stepDM, angleDM, omegaDM, dryDM, diveDM, iceDM,
-  landDM, boundInd, logitcons)
+nLogLike(wpar, nbStates, formula, bounds, parSize, data, dist,
+  angleMean = NULL, zeroInflation = FALSE, stationary = FALSE, cons, DM,
+  boundInd, logitcons)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}
@@ -25,13 +21,6 @@ number of parameters of the turning angle distribution.}
 
 \item{data}{An object \code{moveData}.}
 
-\item{stepDist}{Name of the distribution of the step lengths (as a character string).
-Supported distributions are: gamma, weibull, lnorm, exp. Default: gamma.}
-
-\item{angleDist}{Name of the distribution of the turning angles (as a character string).
-Supported distributions are: vm, wrpcauchy. Set to \code{"none"} if the angle distribution should
-not be estimated. Default: vm.}
-
 \item{angleMean}{Vector of means of turning angles if not estimated (one for each state).
 Default: \code{NULL} (the angle mean is estimated).}
 
@@ -41,6 +30,13 @@ included in \code{stepPar0}.}
 
 \item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
+
+\item{stepDist}{Name of the distribution of the step lengths (as a character string).
+Supported distributions are: gamma, weibull, lnorm, exp. Default: gamma.}
+
+\item{angleDist}{Name of the distribution of the turning angles (as a character string).
+Supported distributions are: vm, wrpcauchy. Set to \code{"none"} if the angle distribution should
+not be estimated. Default: vm.}
 }
 \value{
 The negative log-likelihood of the parameters given the data.

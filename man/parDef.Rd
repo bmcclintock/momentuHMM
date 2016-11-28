@@ -4,22 +4,20 @@
 \alias{parDef}
 \title{Parameters definition}
 \usage{
-parDef(stepDist, angleDist, omegaDist, dryDist, diveDist, iceDist, landDist,
-  nbStates, estAngleMean, zeroInflation, userBounds = NULL, stepDM, angleDM,
-  omegaDM, dryDM, diveDM, iceDM, landDM)
+parDef(dist, nbStates, estAngleMean, zeroInflation, userBounds = NULL, DM)
 }
 \arguments{
-\item{stepDist}{Name of the distribution of the step lengths.}
-
-\item{angleDist}{Name of the distribution of the turning angles.
-Set to \code{"none"} if the angle distribution should not be estimated.}
-
 \item{nbStates}{Number of states of the HMM.}
 
 \item{estAngleMean}{\code{TRUE} if the mean of the turning angles distribution is estimated,
 \code{FALSE} otherwise.}
 
 \item{zeroInflation}{\code{TRUE} if the step length distribution is inflated in zero.}
+
+\item{stepDist}{Name of the distribution of the step lengths.}
+
+\item{angleDist}{Name of the distribution of the turning angles.
+Set to \code{"none"} if the angle distribution should not be estimated.}
 }
 \value{
 A list of:

@@ -4,14 +4,11 @@
 \alias{prepData}
 \title{Preprocessing of the tracking data}
 \usage{
-prepData(trackData, type = c("LL", "UTM"), coordNames = c("x", "y"))
+prepData(Data, type = c("LL", "UTM"), coordNames = NULL, covNames = NULL)
 }
 \arguments{
-\item{trackData}{A dataframe of the tracking data, including at least coordinates
-(either longitude/latitude values or cartesian coordinates), and optionnaly a field \code{ID}
-(identifiers for the observed individuals). Additionnal fields are considered as covariates.
-Note that, if the names of the coordinates are not "x" and "y", the \code{coordNames} argument
-should specified.}
+\item{Data}{A dataframe of data streams, including optionally a field \code{ID}
+(identifiers for the observed individuals), coordinates from which step length ('step') and turning angle ('angle') area calculated, and \code{covNames} that identify covariates.  If coordinates are included. If step length and turning are to be calculated from coordinates, the \code{coordNames} argument must identify the names for the longitunal and latitudinal coordinates (e.g., \code{coordNames=c("x","y")}).}
 
 \item{type}{\code{'LL'} if longitude/latitude provided (default), \code{'UTM'} if easting/northing.}
 
@@ -33,8 +30,8 @@ Preprocessing of the tracking data
 \examples{
 coord1 <- c(1,2,3,4,5,6,7,8,9,10)
 coord2 <- c(1,1,1,2,2,2,1,1,1,2)
-trackData <- data.frame(coord1=coord1,coord2=coord2)
-d <- prepData(trackData,type='UTM',coordNames=c("coord1","coord2"))
+Data <- data.frame(coord1=coord1,coord2=coord2)
+d <- prepData(Data,type='UTM',coordNames=c("coord1","coord2"))
 
 }
 

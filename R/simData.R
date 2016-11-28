@@ -162,12 +162,31 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     stop("nbAnimals should be at least 1.")
   if(nbStates<1)
     stop("nbStates should be at least 1.")
-
+  
+  if(is.null(zeroInflation)){
+    zeroInflation <- vector('list',length(distnames))
+    names(zeroInflation) <- distnames
+    for(i in distnames){
+      zeroInflation[[i]]<-FALSE
+    }
+  } else {
+    if(!is.list(zeroInflation) | is.null(names(zeroInflation))) stop("'zeroInflation' must be a named list")
+  }
+  eval(parse(text=paste0("if(is.null(",zeroInflation[distnames],")) zeroInflation$",distnames," <- FALSE")))
+  if(!all(unlist(lapply(zeroInflation,is.logical)))) stop("zeroInflation must be a list of logical objects")
+  for(i in distnames){
+    if((dist[[i]]=="wrpcauchy" | dist[[i]]=="vm" | dist[[i]]=="pois") & zeroInflation[[i]])
+      stop(dist[[i]]," distribution cannot be zero inflated")
+  }
+  
   if(is.null(DM)){
     DM <- vector('list',length(distnames))
     names(DM) <- distnames
+    zind<-which((unlist(lapply(Par,length))!=(ifelse(dist=="exp" | dist=="pois" | dist=="wrpcauchy",1,2)+unlist(zeroInflation[distnames]))*nbStates))
+    for(i in zind)
+     stop("Wrong number of parameters in Par$",distnames[[i]])
   } else if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
-  eval(parse(text=paste0("if(is.null(",DM[distnames],")) DM$",distnames," <- diag(",ifelse(dist=="exp" | dist=="pois" | dist=="wrpcauchy",1,2),"*nbStates)")))
+  eval(parse(text=paste0("if(is.null(",DM[distnames],")) DM$",distnames," <- diag((",ifelse(dist=="exp" | dist=="pois" | dist=="wrpcauchy",1,2),"+zeroInflation$",distnames,")*nbStates)")))
   DM<-DM[distnames]
   if(any(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol))))
     stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol)))),collapse=", "))
@@ -195,23 +214,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
 
   if(!is.null(stateNames) & length(stateNames)!=nbStates)
     stop("stateNames must have length ",nbStates)
-  
-  if(is.null(zeroInflation)){
-    zeroInflation <- vector('list',length(distnames))
-    names(zeroInflation) <- distnames
-    for(i in distnames){
-      zeroInflation[[i]]<-FALSE
-    }
-  } else {
-    if(!is.list(zeroInflation) | is.null(names(zeroInflation))) stop("'zeroInflation' must be a named list")
-    for(i in distnames){
-      if(dist[[i]]=="wrpcauchy" | dist[[i]]=="vm" | dist[[i]]=="pois"){
-        zeroInflation[[i]]<-FALSE
-      }
-    }
-  }
-  eval(parse(text=paste0("if(is.null(",zeroInflation[distnames],")) zeroInflation$",distnames," <- FALSE")))
-  if(!all(unlist(lapply(zeroInflation,is.logical)))) stop("zeroInflation must be a list of logical objects")
 
   p <- parDef(dist,nbStates,FALSE,zeroInflation,userBounds,DM)
   par0 <- unlist(Par) 
@@ -223,6 +225,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
   }
   parSize <- p$parSize
+  for(i in 1:length(distnames)){
+    if(length(Par[[distnames[i]]]%*%DM[[distnames[i]]])!=(parSize[i]*nbStates))
+      stop("zero inflation parameters must be included in 'Par$",distnames[i],"'")
+  }
   if(sum((parSize>0)*unlist(lapply(DM,ncol)))!=length(par0)) {
     error <- "Wrong number of initial parameters"
     stop(error)

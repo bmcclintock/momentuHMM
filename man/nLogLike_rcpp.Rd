@@ -4,19 +4,25 @@
 \alias{nLogLike_rcpp}
 \title{Negative log-likelihood}
 \usage{
-nLogLike_rcpp(nbStates, beta, covs, data, stepDist, angleDist, omegaDist,
-  dryDist, diveDist, iceDist, landDist, stepPar, anglePar, omegaPar, dryPar,
-  divePar, icePar, landPar, delta, aInd, zeroInflation = FALSE,
+nLogLike_rcpp(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation,
   stationary = FALSE)
 }
 \arguments{
 \item{nbStates}{Number of states}
 
-\item{beta}{Matrix of regression coefficients for the transition probabilities}
-
 \item{covs}{Covariates}
 
 \item{data}{A \code{\link{moveData}} object of the observations}
+
+\item{aInd}{Vector of indices of the rows at which the data switches to another animal}
+
+\item{zeroInflation}{\code{true} if zero-inflation is included in the step length distribution,
+\code{false} otherwise.}
+
+\item{stationary}{\code{false} if there are covariates. If \code{true}, the initial distribution is considered
+equal to the stationary distribution. Default: \code{false}.}
+
+\item{beta}{Matrix of regression coefficients for the transition probabilities}
 
 \item{stepDist}{The name of the step length distribution}
 
@@ -27,14 +33,6 @@ nLogLike_rcpp(nbStates, beta, covs, data, stepDist, angleDist, omegaDist,
 \item{anglePar}{State-dependent parameters of the turning angle distribution}
 
 \item{delta}{Stationary distribution}
-
-\item{aInd}{Vector of indices of the rows at which the data switches to another animal}
-
-\item{zeroInflation}{\code{true} if zero-inflation is included in the step length distribution,
-\code{false} otherwise.}
-
-\item{stationary}{\code{false} if there are covariates. If \code{true}, the initial distribution is considered
-equal to the stationary distribution. Default: \code{false}.}
 }
 \value{
 Negative log-likelihood

@@ -9,7 +9,7 @@
 
 moveData <- function(data)
 {
-  if(is.null(data$ID) | is.null(data$step) | is.null(data$x) | is.null(data$y))
+  if(is.null(data$ID) | ncol(data)<2)
     stop("Can't construct moveData object: fields are missing")
 
   obj <- data
