@@ -36,11 +36,11 @@ plot.momentuHMMMI <- function(x,animals=NULL,ask=TRUE,breaks="Sturges",hist.ylim
 {
   m <- x # the name "x" is for compatibility with the generic method
   nbAnimals <- length(unique(m$data$ID))
-  nbStates <- ncol(m$Par$stepPar$est)
+  nbStates <- length(m$stateNames)
 
-  stepFun <- paste("d",m$conditions$stepDist,sep="")
-  if(m$conditions$angleDist!="none")
-    angleFun <- paste("d",m$conditions$angleDist,sep="")
+  distnames <- names(m$conditions$dist)
+  
+  Fun <- lapply(m$conditions$dist,function(x) paste("d",x,sep=""))
 
   if(!is.null(hist.ylim) & length(hist.ylim)!=2)
     stop("hist.ylim needs to be a vector of two values (ymin,ymax)")
@@ -80,33 +80,7 @@ plot.momentuHMMMI <- function(x,animals=NULL,ask=TRUE,breaks="Sturges",hist.ylim
 
   nbAnimals <- length(animalsInd)
   ID <- unique(m$data$ID)[animalsInd]
-
-  # split data by animals if necessary
-  if(sepAnimals) {
-    stepData <- list()
-    angleData <- list()
-    for(zoo in 1:nbAnimals) {
-      ind <- which(m$data$ID==ID[zoo])
-      stepData[[zoo]] <- m$data$step[ind]
-      angleData[[zoo]] <- m$data$angle[ind]
-    }
-  } else {
-    ind <- which(m$data$ID %in% ID)
-    stepData <- m$data$step[ind]
-    angleData <- m$data$angle[ind]
-  }
-
-  if(m$conditions$angleDist=="none")
-    angleData <- NULL
-
-  x <- list()
-  y <- list()
-  for(zoo in 1:nbAnimals) {
-    ind <- which(m$data$ID==ID[zoo])
-    x[[zoo]] <- m$data$x[ind]
-    y[[zoo]] <- m$data$y[ind]
-  }
-
+  
   ##################################
   ## States decoding with Viterbi ##
   ##################################
@@ -116,7 +90,7 @@ plot.momentuHMMMI <- function(x,animals=NULL,ask=TRUE,breaks="Sturges",hist.ylim
     #cat("DONE\n")
   } else
     states <- rep(1,nrow(m$data))
-
+  
   if(sepStates | nbStates==1)
     w <- rep(1,nbStates)
   else {
@@ -126,51 +100,18 @@ plot.momentuHMMMI <- function(x,animals=NULL,ask=TRUE,breaks="Sturges",hist.ylim
       w[state] <- length(which(states==state))/length(states)
   }
 
-  if(m$conditions$zeroInflation) {
-    zeromass <- m$Par$stepPar$est[nrow(m$Par$stepPar$est),]
-    m$Par$stepPar <- m$Par$stepPar$est[-nrow(m$Par$stepPar$est),]
-  }
-
-  ###########################################
-  ## Compute estimated densities on a grid ##
-  ###########################################
-  stepDensities <- list()
-  grid <- seq(0,max(m$data$step,na.rm=TRUE),length=10000)
-
-  for(state in 1:nbStates) {
-    stepArgs <- list(grid)
-
-    for(j in 1:nrow(m$Par$stepPar$est))
-      stepArgs[[j+1]] <- m$Par$stepPar$est[j,state]
-
-    # conversion between mean/sd and shape/scale if necessary
-    if(m$conditions$stepDist=="gamma") {
-      shape <- stepArgs[[2]]^2/stepArgs[[3]]^2
-      scale <- stepArgs[[3]]^2/stepArgs[[2]]
-      stepArgs[[2]] <- shape
-      stepArgs[[3]] <- 1/scale # dgamma expects rate=1/scale
-    }
-    # (weighted by the proportion of each state in the Viterbi states sequence)
-    if(m$conditions$zeroInflation)
-      stepDensities[[state]] <- cbind(grid,(1-zeromass[state])*w[state]*do.call(stepFun,stepArgs))
-    else
-      stepDensities[[state]] <- cbind(grid,w[state]*do.call(stepFun,stepArgs))
-  }
-
-  if(m$conditions$angleDist!="none") {
-    angleDensities <- list()
-    grid <- seq(-pi,pi,length=1000)
-
-    for(state in 1:nbStates) {
-      angleArgs <- list(grid)
-
-      for(j in 1:nrow(m$Par$anglePar$est))
-        angleArgs[[j+1]] <- m$Par$anglePar$est[j,state]
-
-      # (weighted by the proportion of each state in the Viterbi states sequence)
-      angleDensities[[state]] <- cbind(grid,w[state]*do.call(angleFun,angleArgs))
+  if(all(c("x","y") %in% names(m$data))){
+    x <- list()
+    y <- list()
+    for(zoo in 1:nbAnimals) {
+      ind <- which(m$data$ID==ID[zoo])
+      x[[zoo]] <- m$data$x[ind]
+      y[[zoo]] <- m$data$y[ind]
     }
   }
+  
+  zeroMass<-vector('list',length(m$conditions$dist))
+  names(zeroMass)<-distnames
   
   # text for legends
   stateNames <- m$stateNames
@@ -180,56 +121,107 @@ plot.momentuHMMMI <- function(x,animals=NULL,ask=TRUE,breaks="Sturges",hist.ylim
       legText <- c(legText,paste("State",i))
   } else legText <- stateNames
 
-  #########################
-  ## Plot the histograms ##
-  #########################
-  # set graphical parameters
-  par(mfrow=c(1,1))
-  par(mar=c(5,4,4,2)-c(0,0,2,1)) # bottom, left, top, right
-  par(ask=ask)
-
-  if(sepAnimals) {
-
-    # loop over the animals
-    for(zoo in 1:nbAnimals) {
+  for(i in distnames){
+    
+    # split data by animals if necessary
+    if(sepAnimals) {
+      genData <- list()
+      for(zoo in 1:nbAnimals) {
+        ind <- which(m$data$ID==ID[zoo])
+        genData[[zoo]] <- m$data[[i]][ind]
+      }
+    } else {
+      ind <- which(m$data$ID %in% ID)
+      genData <- m$data[[i]][ind]
+    }
+    
+    if(m$conditions$zeroInflation[[i]]) {
+      zeroMass[[i]] <- m$Par[[i]]$est[nrow(m$Par[[i]]$est),]
+      m$Par[[i]]$est <- m$Par[[i]]$est[-nrow(m$Par[[i]]$est),]
+    } else {
+      zeroMass[[i]] <- rep(0,nbStates)
+    }
+    
+    ###########################################
+    ## Compute estimated densities on a grid ##
+    ###########################################
+    genDensities <- list()
+    genFun <- Fun[[i]]
+    if(m$conditions$dist[[i]] %in% c("wrpcauchy","vm")) {
+      grid <- seq(-pi,pi,length=1000)
+    } else if(m$conditions$dist[[i]]=="pois"){
+      grid <- seq(0,max(m$data[[i]],na.rm=TRUE))
+    } else {
+      grid <- seq(0,max(m$data[[i]],na.rm=TRUE),length=10000)
+    }
+    
+    for(state in 1:nbStates) {
+      genArgs <- list(grid)
+      
+      for(j in 1:nrow(m$Par[[i]]$est))
+        genArgs[[j+1]] <- m$Par[[i]]$est[j,state]
+      
+      # conversion between mean/sd and shape/scale if necessary
+      if(m$conditions$dist[[i]]=="gamma") {
+        shape <- genArgs[[2]]^2/genArgs[[3]]^2
+        scale <- genArgs[[3]]^2/genArgs[[2]]
+        genArgs[[2]] <- shape
+        genArgs[[3]] <- 1/scale # dgamma expects rate=1/scale
+      }
+      # (weighted by the proportion of each state in the Viterbi states sequence)
+      if(m$conditions$zeroInflation[[i]])
+        genDensities[[state]] <- cbind(grid,(1-zeroMass[[i]][state])*w[state]*do.call(genFun,genArgs))
+      else
+        genDensities[[state]] <- cbind(grid,w[state]*do.call(genFun,genArgs))
+    }
+    
+    #########################
+    ## Plot the histograms ##
+    #########################
+    # set graphical parameters
+    par(mfrow=c(1,1))
+    par(mar=c(5,4,4,2)-c(0,0,2,1)) # bottom, left, top, right
+    par(ask=ask)
+    
+    if(sepAnimals) {
+      
+      # loop over the animals
+      for(zoo in 1:nbAnimals) {
+        if(sepStates) {
+          
+          # loop over the states
+          for(state in 1:nbStates) {
+            gen <- genData[[zoo]][which(states[which(m$data$ID==ID[zoo])]==state)]
+            message <- paste("Animal ID:",ID[zoo]," - State:",state)
+            
+            # the function plotHist is defined below
+            plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,state,hist.ylim,col,legText)
+          }
+          
+        } else { # if !sepStates
+          gen <- genData[[zoo]]
+          message <- paste("Animal ID:",ID[zoo])
+          
+          plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,NULL,hist.ylim,col,legText)
+        }
+      }
+    } else { # if !sepAnimals
       if(sepStates) {
-
+        
         # loop over the states
         for(state in 1:nbStates) {
-          step <- stepData[[zoo]][which(states[which(m$data$ID==ID[zoo])]==state)]
-          angle <- angleData[[zoo]][which(states[which(m$data$ID==ID[zoo])]==state)]
-          message <- paste("Animal ID:",ID[zoo]," - State:",state)
-
-          # the function plotHist is defined below
-          plotHist(step,angle,stepDensities,angleDensities,message,sepStates,breaks,state,hist.ylim,col,legText)
+          gen <- genData[which(states==state)]
+          message <- paste("All animals - State:",state)
+          
+          plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,state,hist.ylim,col,legText)
         }
-
+        
       } else { # if !sepStates
-        step <- stepData[[zoo]]
-        angle <- angleData[[zoo]]
-        message <- paste("Animal ID:",ID[zoo])
-
-        plotHist(step,angle,stepDensities,angleDensities,message,sepStates,breaks,NULL,hist.ylim,col,legText)
+        gen <- genData
+        message <- "All animals"
+        
+        plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,NULL,hist.ylim,col,legText)
       }
-    }
-  } else { # if !sepAnimals
-    if(sepStates) {
-
-      # loop over the states
-      for(state in 1:nbStates) {
-        step <- stepData[which(states==state)]
-        angle <- angleData[which(states==state)]
-        message <- paste("All animals - State:",state)
-
-        plotHist(step,angle,stepDensities,angleDensities,message,sepStates,breaks,state,hist.ylim,col,legText)
-      }
-
-    } else { # if !sepStates
-      step <- stepData
-      angle <- angleData
-      message <- "All animals"
-
-      plotHist(step,angle,stepDensities,angleDensities,message,sepStates,breaks,NULL,hist.ylim,col,legText)
     }
   }
 
