@@ -38,7 +38,7 @@ AIC.momentuHMM <- function(object,...,k=2)
 
     for(i in 1:length(models)) {
       m <- models[[i]]
-      nbPar <- length(m$mle$stepPar)+length(m$mle$anglePar)+length(m$mle$beta)+length(m$mle$delta)-1
+      nbPar <- length(m$mod$estimate)
       maxLogLike <- -m$mod$minimum
       AIC[i] <- -2*maxLogLike+k*nbPar
     }
@@ -48,7 +48,7 @@ AIC.momentuHMM <- function(object,...,k=2)
   }
   else { # if only one model is provided
     m <- object
-    nbPar <- length(m$mle$stepPar)+length(m$mle$anglePar)+length(m$mle$beta)+length(m$mle$delta)-1
+    nbPar <- length(m$mod$estimate)
     maxLogLike <- -m$mod$minimum
     AIC <- -2*maxLogLike+k*nbPar
 

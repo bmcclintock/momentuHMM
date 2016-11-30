@@ -25,7 +25,7 @@ angleCI <- function(m,alpha,nbSims=10^6)
   upper <- matrix(NA,ncol=nbStates,nrow=2)
 
   pdef <- parDef(m$conditions$stepDist,m$conditions$angleDist,m$conditions$omegaDist,m$conditions$dryDist,m$conditions$diveDist,m$conditions$iceDist,m$conditions$landDist,nbStates,estAngleMean=TRUE,
-                 m$conditions$zeroInflation,m$bounds)
+                 m$conditions$zeroInflation,m$conditions$bounds)
   parSize <- pdef$parSize
   bounds <- pdef$bounds
 

@@ -33,115 +33,50 @@
 #'                byrow=TRUE),zeroInflation=TRUE)
 #' }
 
-allProbs <- function(data,nbStates,stepDist,angleDist,omegaDist,dryDist,diveDist,iceDist,landDist,stepPar,anglePar=NULL,omegaPar,dryPar,divePar,icePar,landPar,zeroInflation=FALSE)
+allProbs <- function(data,nbStates,dist,par,zeroInflation)
 {
-  stepFun <- paste("d",stepDist,sep="")
-  if(angleDist!="none") angleFun <- paste("d",angleDist,sep="")
-  omegaFun <- paste("d",omegaDist,sep="")
-  dryFun <- paste("d",dryDist,sep="")
-  diveFun <- paste("d",diveDist,sep="")
-  iceFun <- paste("d",iceDist,sep="")
-  landFun <- paste("d",landDist,sep="")
   
-  nbObs <- length(data$step)
+  Fun <- lapply(dist,function(x) paste("d",x,sep=""))
+  
+  nbObs <- nrow(data)
   allProbs <- matrix(1,nrow=nbObs,ncol=nbStates)
-  stepInd <- which(!is.na(data$step))
-  if(angleDist!="none") angleInd <- which(!is.na(data$angle))
-  omegaInd <- which(!is.na(data$omega))
-  dryInd <- which(!is.na(data$dry))
-  diveInd <- which(!is.na(data$dive))
-  iceInd <- which(!is.na(data$ice))
-  landInd <- which(!is.na(data$land))
   
-  sp <- stepPar
-
-  for(state in 1:nbStates) {
-    stepPar <- sp
-    stepProb <- rep(1,nbObs)
-    angleProb <- rep(1,nbObs)
-    omegaProb <- rep(1,nbObs)
-    dryProb <- rep(1,nbObs)
-    diveProb <- rep(1,nbObs)
-    iceProb <- rep(1,nbObs)
-    landProb <- rep(1,nbObs)
-    
-    # Constitute the lists of state-dependent parameters for the step and angle
-    stepArgs <- list(data$step[stepInd])
-    if(angleDist!="none") angleArgs <- list(data$angle[angleInd])
-    omegaArgs <- list(data$omega[omegaInd])
-    dryArgs <- list(data$dry[dryInd])
-    diveArgs <- list(data$dive[diveInd])
-    iceArgs <- list(data$ice[iceInd])
-    landArgs <- list(data$land[landInd])
-    if(zeroInflation) {
-      zeromass <- stepPar[nrow(stepPar),state]
-      stepPar <- stepPar[-nrow(stepPar),]
-    }
-
-    for(j in 1:nrow(stepPar))
-      stepArgs[[j+1]] <- stepPar[j,state]
-
-    # conversion between mean/sd and shape/scale if necessary
-    if(stepDist=="gamma") {
-      shape <- stepArgs[[2]]^2/stepArgs[[3]]^2
-      scale <- stepArgs[[3]]^2/stepArgs[[2]]
-      stepArgs[[2]] <- shape
-      stepArgs[[3]] <- 1/scale # dgamma expects rate=1/scale
-    }
-    if(zeroInflation) {
-      stepProb[stepInd] <- ifelse(data$step[stepInd]==0,
-                                  zeromass, # if step==0
-                                  (1-zeromass)*do.call(stepFun,stepArgs)) # if step != 0
-    }
-    else stepProb[stepInd] <- do.call(stepFun,stepArgs)
-
-    if(angleDist!="none") {
-      for(j in 1:nrow(anglePar))
-        angleArgs[[j+1]] <- anglePar[j,state]
-
-      angleProb[angleInd] <- do.call(angleFun,angleArgs)
-      allProbs[,state] <- stepProb*angleProb
-    }
-    else allProbs[,state] <- stepProb # model step length only
-
-    if(omegaDist!="none") {
-      for(j in 1:nrow(omegaPar))
-        omegaArgs[[j+1]] <- omegaPar[j,state]
+  for(i in names(dist)){
   
-      omegaProb[omegaInd] <- do.call(omegaFun,omegaArgs)
-      allProbs[,state] <- allProbs[,state]*omegaProb;
-    }
-    if(dryDist!="none") {
-      for(j in 1:nrow(dryPar))
-        dryArgs[[j+1]] <- dryPar[j,state]
+    genInd <- which(!is.na(data[[i]]))
+    sp <- par[[i]]
   
-      dryProb[dryInd] <- do.call(dryFun,dryArgs)
-      allProbs[,state] <- allProbs[,state]*dryProb;    
-    }
-    
-    if(diveDist!="none") {
-      for(j in 1:nrow(divePar))
-        diveArgs[[j+1]] <- divePar[j,state]
+    for(state in 1:nbStates) {
+      genPar <- sp
+      genProb <- rep(1,nbObs)
+      genFun <- Fun[[i]]
+      
+      # Constitute the lists of state-dependent parameters for the step and angle
+      genArgs <- list(data[[i]][genInd])
+      if(zeroInflation[[i]]) {
+        zeromass <- genPar[nrow(genPar),state]
+        genPar <- genPar[-nrow(genPar),]
+      }
   
-      diveProb[diveInd] <- do.call(diveFun,diveArgs)
-      allProbs[,state] <- allProbs[,state]*diveProb;
-    }
-    
-    if(iceDist!="none") {
-      for(j in 1:nrow(icePar))
-        iceArgs[[j+1]] <- icePar[j,state]
+      for(j in 1:nrow(genPar))
+        genArgs[[j+1]] <- genPar[j,state]
   
-      iceProb[iceInd] <- do.call(iceFun,iceArgs)
-      allProbs[,state] <- allProbs[,state]*iceProb;
-    }
-    
-    if(landDist!="none") {
-      for(j in 1:nrow(landPar))
-        landArgs[[j+1]] <- landPar[j,state]
+      # conversion between mean/sd and shape/scale if necessary
+      if(dist[[i]]=="gamma") {
+        shape <- genArgs[[2]]^2/genArgs[[3]]^2
+        scale <- genArgs[[3]]^2/genArgs[[2]]
+        genArgs[[2]] <- shape
+        genArgs[[3]] <- 1/scale # dgamma expects rate=1/scale
+      }
+      if(zeroInflation[[i]]) {
+        genProb[genInd] <- ifelse(data[[i]][genInd]==0,
+                                    zeromass, # if gen==0
+                                    (1-zeromass)*do.call(genFun,genArgs)) # if gen != 0
+      }
+      else genProb[genInd] <- do.call(genFun,genArgs)
   
-      landProb[landInd] <- do.call(landFun,landArgs)
-      allProbs[,state] <- allProbs[,state]*landProb;
-    }  
+      allProbs[,state] <- allProbs[,state]*genProb;
+    }
   }
   return(allProbs)
 }

@@ -19,7 +19,7 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
   m <- im[[1]]
   nbStates <- ncol(m$mle$stepPar)
   p <- parDef(m$conditions$stepDist,m$conditions$angleDist,m$conditions$omegaDist,m$conditions$dryDist,m$conditions$diveDist,m$conditions$iceDist,m$conditions$landDist,nbStates,m$conditions$estAngleMean,
-              m$conditions$zeroInflation,m$bounds,m$conditions$stepDM,m$conditions$angleDM,m$conditions$omegaDM,m$conditions$dryDM,m$conditions$diveDM,m$conditions$iceDM,m$conditions$landDM)
+              m$conditions$zeroInflation,m$conditions$bounds,m$conditions$stepDM,m$conditions$angleDM,m$conditions$omegaDM,m$conditions$dryDM,m$conditions$diveDM,m$conditions$iceDM,m$conditions$landDM)
   
   parms <- names(m$mle)[which(!unlist(lapply(m$mle,is.null)))]
   nparms <- length(parms)-(!is.null(m$mle$gamma))

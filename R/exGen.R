@@ -13,20 +13,19 @@ exGen <- function()
   nbCovs <- 2
   mu<-c(15,50)
   sigma<-c(10,20)
-  angleMean <- c(pi,0)
+  angleMean <- c(0,0)
   kappa <- c(0.7,1.5)
   stepPar <- c(mu,sigma)
-  anglePar <- c(angleMean,kappa)
+  anglePar <- kappa#c(angleMean,kappa)
   stepDist <- "gamma"
   angleDist <- "vm"
   zeroInflation <- FALSE
-  obsPerAnimal <- c(50,100)
+  obsPerAnimal <- c(500,1000)
 
-  simPar <- list(nbAnimals=nbAnimals,nbStates=nbStates,angleMean=angleMean,stepDist=stepDist,
-                 angleDist=angleDist,zeroInflation=zeroInflation)
+  simPar <- list(nbAnimals=nbAnimals,nbStates=nbStates,angleMean=angleMean,dist=list(step=stepDist,angle=angleDist),zeroInflation=list(step=zeroInflation,angle=FALSE))
 
-  data <- simData(nbAnimals=nbAnimals,nbStates=nbStates,stepDist=stepDist,angleDist=angleDist,
-                  stepPar=stepPar,anglePar=anglePar,nbCovs=nbCovs,zeroInflation=zeroInflation,
+  data <- simData(nbAnimals=nbAnimals,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+                  Par=list(step=stepPar,angle=anglePar),nbCovs=nbCovs,zeroInflation=list(step=zeroInflation,angle=FALSE),
                   obsPerAnimal=obsPerAnimal)
 
   # estimate model
@@ -42,12 +41,11 @@ exGen <- function()
                   nrow=nbCovs+1,byrow=TRUE)
   delta0 <- rep(1,nbStates)/nbStates
 
-  par0 <- list(stepPar0=stepPar0,anglePar0=anglePar0,formula=formula,nbCovs=nbCovs,beta0=beta0,
+  par0 <- list(Par=list(step=stepPar0,angle=anglePar0),formula=formula,nbCovs=nbCovs,beta0=beta0,
                delta0=delta0)
 
-  m <- fitHMM(data=data,nbStates=nbStates,stepPar0=stepPar0,anglePar0=anglePar0,beta0=beta0,
-                delta0=delta0,formula=formula,stepDist=stepDist,angleDist=angleDist,
-                angleMean=angleMean)
+  m <- fitHMM(data=data,nbStates=nbStates,Par=list(step=stepPar0,angle=anglePar0),beta0=beta0,
+                delta0=delta0,formula=formula,dist=list(step=stepDist,angle=angleDist))
 
   example <- list(data=data,m=m,simPar=simPar,par0=par0)
   save(example,file="data/example.RData")

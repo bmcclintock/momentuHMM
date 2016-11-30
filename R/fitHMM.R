@@ -165,11 +165,11 @@ fitHMM <- function(data,nbStates,dist,
 
   if(length(covsCol)>0) {
     rawCovs <- data[covsCol]
-    data <- cbind(data[-covsCol],covs)
+    #data <- cbind(data[-covsCol],covs)
   }
   else {
     rawCovs <- NULL
-    data <- cbind(data,covs)
+    #data <- cbind(data,covs)
   }
 
   nbCovs <- ncol(covs)-1 # substract intercept column
@@ -213,7 +213,7 @@ fitHMM <- function(data,nbStates,dist,
     DM <- vector('list',length(distnames))
     names(DM) <- distnames
   }
-  eval(parse(text=paste0("if(is.null(",DM[distnames],")) DM$",distnames," <- diag((",ifelse(dist=="exp" | dist=="pois" | dist=="wrpcauchy",1,2),"+zeroInflation$",distnames,")*nbStates)")))
+  eval(parse(text=paste0("if(is.null(",DM[distnames],")) DM$",distnames," <- diag((",ifelse(dist=="exp" | dist=="pois" | dist %in% c("wrpcauchy","vm"),1,2),"+zeroInflation$",distnames,")*nbStates)")))
   DM<-DM[distnames]
   if(any(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol))))
     stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol)))),collapse=", "))
@@ -232,7 +232,7 @@ fitHMM <- function(data,nbStates,dist,
     names(logitcons) <- distnames
   }
   eval(parse(text=paste0("if(is.null(",logitcons[distnames],")) logitcons$",distnames," <- rep(0,ncol(DM$",distnames,"))")))
-  for(i in which(is.na(match(dist,"wrpcauchy")))){
+  for(i in which(!(dist %in% "wrpcauchy"))){
     logitcons[[distnames[i]]]<-rep(0,ncol(DM[[distnames[i]]]))
   }
   logitcons<-logitcons[distnames]
@@ -429,14 +429,14 @@ fitHMM <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,
-                     estAngleMean=estAngleMean,stationary=stationary,formula=formula,cons=cons,DM=DM,logitcons=logitcons)
+                     estAngleMean=estAngleMean,stationary=stationary,formula=formula,cons=cons,bounds=p$bounds,DM=DM,logitcons=logitcons)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,bounds=p$bounds,rawCovs=rawCovs,stateNames=stateNames)
   
-  #CI_real<-CI_real(momentuHMM(mh))
-  #CI_beta<-CI_beta(momentuHMM(mh))
+  CI_real<-CI_real(momentuHMM(mh))
+  CI_beta<-CI_beta(momentuHMM(mh))
   
-  #mh <- list(data=data,mle=mle,CI_real=CI_real,CI_beta=CI_beta,mod=mod,conditions=conditions,bounds=p$bounds,rawCovs=rawCovs,stateNames=stateNames)
+  mh <- list(data=data,mle=mle,CI_real=CI_real,CI_beta=CI_beta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames)
   
   return(momentuHMM(mh))
 }

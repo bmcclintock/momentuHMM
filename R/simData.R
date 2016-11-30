@@ -175,18 +175,18 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   eval(parse(text=paste0("if(is.null(",zeroInflation[distnames],")) zeroInflation$",distnames," <- FALSE")))
   if(!all(unlist(lapply(zeroInflation,is.logical)))) stop("zeroInflation must be a list of logical objects")
   for(i in distnames){
-    if((dist[[i]]=="wrpcauchy" | dist[[i]]=="vm" | dist[[i]]=="pois") & zeroInflation[[i]])
+    if((dist[[i]] %in% c("wrpcauchy","vm") | dist[[i]]=="pois") & zeroInflation[[i]])
       stop(dist[[i]]," distribution cannot be zero inflated")
   }
   
   if(is.null(DM)){
     DM <- vector('list',length(distnames))
     names(DM) <- distnames
-    zind<-which((unlist(lapply(Par,length))!=(ifelse(dist=="exp" | dist=="pois" | dist=="wrpcauchy",1,2)+unlist(zeroInflation[distnames]))*nbStates))
+    zind<-which((unlist(lapply(Par,length))!=(ifelse(dist=="exp" | dist=="pois" | dist %in% c("wrpcauchy","vm"),1,2)+unlist(zeroInflation[distnames]))*nbStates))
     for(i in zind)
      stop("Wrong number of parameters in Par$",distnames[[i]])
   } else if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
-  eval(parse(text=paste0("if(is.null(",DM[distnames],")) DM$",distnames," <- diag((",ifelse(dist=="exp" | dist=="pois" | dist=="wrpcauchy",1,2),"+zeroInflation$",distnames,")*nbStates)")))
+  eval(parse(text=paste0("if(is.null(",DM[distnames],")) DM$",distnames," <- diag((",ifelse(dist=="exp" | dist=="pois" | dist %in% c("wrpcauchy","vm"),1,2),"+zeroInflation$",distnames,")*nbStates)")))
   DM<-DM[distnames]
   if(any(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol))))
     stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol)))),collapse=", "))
@@ -205,7 +205,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     names(logitcons) <- distnames
   } else if(!is.list(logitcons) | is.null(names(logitcons))) stop("'logitcons' must be a named list")
   eval(parse(text=paste0("if(is.null(",logitcons[distnames],")) logitcons$",distnames," <- rep(0,ncol(DM$",distnames,"))")))
-  for(i in which(is.na(match(dist,"wrpcauchy")))){
+  for(i in which(!(dist %in% "wrpcauchy"))){
     logitcons[[distnames[i]]]<-rep(0,ncol(DM[[distnames[i]]]))
   }
   logitcons<-logitcons[distnames]
