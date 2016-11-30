@@ -52,6 +52,7 @@ w2nDM<-function(wpar,bounds,DM,cons,boundInd,logitcons=rep(0,length(wpar)),k=0){
   if(!is.numeric(bounds)){
     bounds<-matrix(sapply(bounds,function(x) eval(parse(text=x))),ncol=2,dimnames=list(rownames(bounds)))
   }
+  Bndind<-which(tmpind)
   bndind<-which(tmpind[boundInd])
   a<-bounds[,1]
   for(j in which(tmpind[,1])){
@@ -90,8 +91,14 @@ w2nDM<-function(wpar,bounds,DM,cons,boundInd,logitcons=rep(0,length(wpar)),k=0){
     p[ind11]=exp(wpar[ind1]^cons[ind1]%*%t(DM[ind11,ind1]))+a_2[ind11]
     p[ind21]=(b_2[ind21]-a_2[ind21])*(inv.logit((wpar[ind2]^cons[ind2])%*%t(DM[ind21,ind2])))+a_2[ind21]
   }
+  Par[Bndind]<-Par[Bndind]+matrix(sapply(tmpbounds,function(x) eval(parse(text=x))),ncol=2)[Bndind]
+  Par[which(Par>b)]<-b[which(Par>b)]
   p[bndind]<-p[bndind]+matrix(sapply(tmpbounds,function(x) eval(parse(text=x))),ncol=2)[boundInd,][bndind]
   p[which(p>b_2)]<-b_2[which(p>b_2)]
-  if(k) p <- p[k]
-  p
+  if(k) {
+    p <- p[k]
+    return(p)
+  } else {
+    return(list(p=p,Par=Par))
+  }
 }   

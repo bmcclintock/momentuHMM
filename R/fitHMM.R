@@ -157,7 +157,8 @@ fitHMM <- function(data,nbStates,dist,
   if(!is.list(Par) | is.null(names(Par))) stop("'Par' must be a named list")
   distnames<-names(dist)
   if(any(is.na(match(distnames,names(data))))) stop(paste0(distnames[is.na(match(distnames,names(data)))],collapse=", ")," not found in data")
-  if(length(setdiff(distnames,names(Par))) | (length(dist)!=length(Par))) stop("Length and names of 'dist' and 'Par' must match")
+  if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
+  Par <- Par[distnames]
   
   # build design matrix
   covsCol <- seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data))]
@@ -195,7 +196,6 @@ fitHMM <- function(data,nbStates,dist,
 
 
   #eval(parse(text=paste0(distnames,"Dist='",dist,"'")))
-  Par<-Par[distnames]
   #eval(parse(text=paste0(distnames,"Par=",Par)))
   #eval(parse(text=paste0(distnames,"DM=",DM)))
   
