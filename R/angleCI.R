@@ -2,7 +2,7 @@
 #' Confidence intervals for angle parameters
 #'
 #' Simulation-based computation of confidence intervals for the parameters of the angle distribution.
-#' Used in \code{\link{CI}}.
+#' Used in \code{\link{CI_real}}.
 #'
 #' @param m A \code{momentuHMM} object
 #' @param alpha Range of the confidence intervals. Default: 0.95 (i.e. 95\% CIs).
@@ -14,6 +14,7 @@
 #'
 #' @importFrom MASS ginv
 #' @importFrom MASS mvrnorm
+#' @importFrom stats quantile
 
 angleCI <- function(m,alpha,nbSims=10^6)
 {

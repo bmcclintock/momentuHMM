@@ -18,7 +18,10 @@ Depends:
     MASS,
     sp
 Imports:
-    Rcpp
+    Rcpp,
+    doParallel,
+    foreach,
+    numDeriv
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,

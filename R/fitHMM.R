@@ -53,7 +53,7 @@
 #' @param stateNames Optional character vector of length nbStates indicating state names.
 #' @param logitcons Lower bound for wrpcauchy turning angle concentration parameter (on logit scale)
 #'
-#' @return A \code{moveHMM} object, i.e. a list of:
+#' @return A \code{momentuHMM} object, i.e. a list of:
 #' \item{mle}{The maximum likelihood estimates of the parameters of the model (if the numerical algorithm
 #' has indeed identified the global maximum of the likelihood function), which is a list
 #' of: \code{stepPar} (step distribution parameters), \code{anglePar} (angle distribution
@@ -65,7 +65,7 @@
 #' \item{mod}{The object returned by the numerical optimizer \code{nlm}}
 #' \item{conditions}{Conditions used to fit the model (e.g., parameter bounds, distributions, \code{zeroInflation}, \code{estAngleMean},
 #' \code{stationary}, and \code{formula})}
-#' \item{rawCovs}{Raw covariate values, as found in the data (if any). Used in \code{\link{plot.moveHMM}}.}
+#' \item{rawCovs}{Raw covariate values, as found in the data (if any). Used in \code{\link{plot.momentuHMM}}.}
 #'
 #' @details
 #' \itemize{
@@ -202,7 +202,9 @@ fitHMM <- function(data,nbStates,dist,
   #####################
   ## Check arguments ##
   #####################
-  eval(parse(text=paste0("dist$",distnames,"=match.arg(dist$",distnames,",c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))")))
+  for(i in distnames){
+    dist[[i]]<-match.arg(dist[[i]],c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))
+  }
   
   if(nbStates<0)
     stop("nbStates should be at least 1.")

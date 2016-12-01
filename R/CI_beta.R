@@ -29,6 +29,7 @@
 #'
 #' @export
 #' @importFrom MASS ginv
+#' @importFrom utils tail
 
 CI_beta <- function(m,alpha=0.95,nbSims=10^6)
 {

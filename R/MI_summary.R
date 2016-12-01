@@ -1,6 +1,7 @@
 #' @export
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
+#' @importFrom stats var qt
 MI_summary<-function(im,alpha=0.95,ncores=4){
   
   simind <- which((unlist(lapply(im,is.momentuHMM))))

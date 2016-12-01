@@ -27,6 +27,8 @@
 #'
 #' @export
 #' @importFrom MASS ginv
+#' @importFrom numDeriv grad
+#' @importFrom utils tail
 
 CI_real <- function(m,alpha=0.95,nbSims=10^6)
 {

@@ -84,7 +84,7 @@ Default: \code{NULL} (the angle mean is estimated).}
 \item{landDM}{landPar design matrix}
 }
 \value{
-A \code{moveHMM} object, i.e. a list of:
+A \code{momentuHMM} object, i.e. a list of:
 \item{mle}{The maximum likelihood estimates of the parameters of the model (if the numerical algorithm
 has indeed identified the global maximum of the likelihood function), which is a list
 of: \code{stepPar} (step distribution parameters), \code{anglePar} (angle distribution
@@ -96,7 +96,7 @@ in "Details"), and \code{delta} (initial distribution).}
 \item{mod}{The object returned by the numerical optimizer \code{nlm}}
 \item{conditions}{Conditions used to fit the model (e.g., parameter bounds, distributions, \code{zeroInflation}, \code{estAngleMean},
 \code{stationary}, and \code{formula})}
-\item{rawCovs}{Raw covariate values, as found in the data (if any). Used in \code{\link{plot.moveHMM}}.}
+\item{rawCovs}{Raw covariate values, as found in the data (if any). Used in \code{\link{plot.momentuHMM}}.}
 }
 \description{
 Fit an hidden Markov model to the data provided, using numerical optimization of the log-likelihood
