@@ -38,44 +38,38 @@ plotPR <- function(m)
   cat("Computing pseudo-residuals... ")
   pr <- pseudoRes(m)
   cat("DONE\n")
+  
+  distnames <- names(m$conditions$dist)
 
-  par(mfrow=c(3,2))
-
-  # time series
-  plot(pr$stepRes,type="l",xlab="Observation index",ylab="Steps pseudo-residuals",
-       main="Steps pseudo-residuals")
-  plot(pr$angleRes,type="l",xlab="Observation index",ylab="Angles pseudo-residuals",
-       main="Angles pseudo-residuals")
+  par(mfrow=c(length(distnames),3))
 
   # reduce top margin
   par(mar=c(5,4,4,2)-c(0,0,3,0)) # bottom, left, top, right
-
-  # steps qq-plot
-  qqStep <- qqnorm(pr$stepRes,plot=FALSE)
-  limInf <- min(min(qqStep$x,na.rm=T),min(qqStep$y,na.rm=T))
-  limSup <- max(max(qqStep$x,na.rm=T),max(qqStep$y,na.rm=T))
-  q <- qqnorm(pr$stepRes,main="",col="red",xlim=c(limInf,limSup),ylim=c(limInf,limSup))
-
-  # add segments for steps of length zero
-  if(m$conditions$zeroInflation) {
-    ind <- which(m$data$step==0)
-    x <- q$x[ind]
-    y <- q$y[ind]
-    segments(x,rep(limInf-5,length(ind)),x,y,col="red")
+  
+  for(i in distnames){
+    # time series
+    plot(pr[[paste0(i,"Res")]],type="l",xlab="Observation index",ylab=paste0(i," pseudo-residuals"),
+         main="")
+    
+    # qq-plot
+    qq <- qqnorm(pr[[paste0(i,"Res")]],plot=FALSE)
+    limInf <- min(min(qq$x,na.rm=T),min(qq$y,na.rm=T))
+    limSup <- max(max(qq$x,na.rm=T),max(qq$y,na.rm=T))
+    q <- qqnorm(pr[[paste0(i,"Res")]],main="",col="red",xlim=c(limInf,limSup),ylim=c(limInf,limSup))
+    
+    # add segments for zero inflation
+    if(m$conditions$zeroInflation[[i]]) {
+      ind <- which(m$data[[i]]==0)
+      x <- q$x[ind]
+      y <- q$y[ind]
+      segments(x,rep(limInf-5,length(ind)),x,y,col="red")
+    }
+    
+    abline(0,1,lwd=2)
+    
+    # ACF functions
+    acf(pr[[paste0(i,"Res")]],na.action=na.pass,main="")
   }
-
-  abline(0,1,lwd=2)
-
-  # angles qq-plot
-  qqAngle <- qqnorm(pr$angleRes,plot=FALSE)
-  limInf <- min(min(qqAngle$x,na.rm=T),min(qqAngle$y,na.rm=T))
-  limSup <- max(max(qqAngle$x,na.rm=T),max(qqAngle$y,na.rm=T))
-  qqnorm(pr$angleRes,main="",col="red",xlim=c(limInf,limSup),ylim=c(limInf,limSup))
-  abline(0,1,lwd=2)
-
-  # ACF functions
-  acf(pr$stepRes,na.action=na.pass,main="")
-  acf(pr$angleRes,na.action=na.pass,main="")
 
   # back to default
   par(mfrow=c(1,1))
