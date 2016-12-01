@@ -96,7 +96,7 @@
 #'                 anglePar=anglePar,covs=cov)
 #'
 #' @export
-#' @importFrom stats rnorm runif
+#' @importFrom stats rnorm runif step
 
 simData <- function(nbAnimals=1,nbStates=2,dist,
                     Par,beta=NULL,
@@ -154,7 +154,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   #####################
   ## Check arguments ##
   #####################
-  eval(parse(text=paste0("dist$",distnames,"=match.arg(dist$",distnames,",c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))")))
+  for(i in distnames){
+    dist[[i]]<-match.arg(dist[[i]],c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))
+  }
   Fun <- lapply(dist,function(x) paste("r",x,sep=""))
 
   
@@ -172,7 +174,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   } else {
     if(!is.list(zeroInflation) | is.null(names(zeroInflation))) stop("'zeroInflation' must be a named list")
   }
-  eval(parse(text=paste0("if(is.null(",zeroInflation[distnames],")) zeroInflation$",distnames," <- FALSE")))
+  for(i in distnames){
+    if(is.null(zeroInflation[[i]])) zeroInflation[[i]] <- FALSE
+  }
   if(!all(unlist(lapply(zeroInflation,is.logical)))) stop("zeroInflation must be a list of logical objects")
   for(i in distnames){
     if((dist[[i]] %in% c("wrpcauchy","vm") | dist[[i]]=="pois") & zeroInflation[[i]])
@@ -186,7 +190,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     for(i in zind)
      stop("Wrong number of parameters in Par$",distnames[[i]])
   } else if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
-  eval(parse(text=paste0("if(is.null(",DM[distnames],")) DM$",distnames," <- diag((",ifelse(dist=="exp" | dist=="pois" | dist %in% c("wrpcauchy","vm"),1,2),"+zeroInflation$",distnames,")*nbStates)")))
+  for(i in distnames){
+    if(is.null(DM[[i]])) DM[[i]] <- diag((ifelse(dist[[i]]=="exp" | dist[[i]]=="pois" | dist[[i]] %in% c("wrpcauchy","vm"),1,2)+zeroInflation[[i]])*nbStates)
+  }
   DM<-DM[distnames]
   if(any(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol))))
     stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol)))),collapse=", "))
@@ -195,7 +201,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     cons <- vector('list',length(distnames))
     names(cons) <- distnames
   } else if(!is.list(cons) | is.null(names(cons))) stop("'cons' must be a named list")
-  eval(parse(text=paste0("if(is.null(",cons[distnames],")) cons$",distnames," <- rep(1,ncol(DM$",distnames,"))")))
+  for(i in distnames){
+    if(is.null(cons[[i]])) cons[[i]] <- rep(1,ncol(DM[[i]]))
+  }
   cons<-cons[distnames]
   if(any(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))) 
     stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
@@ -204,7 +212,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     logitcons <- vector('list',length(distnames))
     names(logitcons) <- distnames
   } else if(!is.list(logitcons) | is.null(names(logitcons))) stop("'logitcons' must be a named list")
-  eval(parse(text=paste0("if(is.null(",logitcons[distnames],")) logitcons$",distnames," <- rep(0,ncol(DM$",distnames,"))")))
+  for(i in distnames){
+    if(is.null(logitcons[[i]])) logitcons[[i]] <- rep(0,ncol(DM[[i]]))
+  }
   for(i in which(!(dist %in% "wrpcauchy"))){
     logitcons[[distnames[i]]]<-rep(0,ncol(DM[[distnames[i]]]))
   }
@@ -352,10 +362,24 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   trackData <- NULL
   allCovs <- NULL
   allStates <- NULL
-
+  
+  #make sure 'step' preceeds 'angle'
+  if(all(c("step","angle") %in% distnames)){
+    distnames<-c("step","angle",distnames[!(distnames %in% c("step","angle"))])
+  }
+  
   # build the data frame to be returned
-  eval(parse(text=paste0("data <- data.frame(ID=character(),x=numeric(),y=numeric(),",paste0(distnames,"=numeric()",collapse=","),")")))
-
+  data<-data.frame(ID=character())
+  for(i in distnames){
+    data[[i]]<-numeric()
+  }
+  if("angle" %in% distnames) 
+    if(dist[["angle"]] %in% c("wrpcauchy","vm") & ("step" %in% distnames))
+      if(dist[["step"]] %in% c("gamma","weibull","exp")){
+        data$x<-numeric()
+        data$y<-numeric()
+      }
+  
   ###########################
   ## Loop over the animals ##
   ###########################
@@ -363,7 +387,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
 
     # number of observations for animal zoo
     nbObs <- allNbObs[zoo]
-
+    d <- data.frame(ID=rep(zoo,nbObs))
+    
     ###############################
     ## Simulate covariate values ##
     ###############################
@@ -420,58 +445,55 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     X[1,] <- c(0,0) # initial position of animal
 
     phi <- 0
-    eval(parse(text=paste0(distnames," <- rep(NA,nbObs)")))
-    
-    if(all(c("step","angle") %in% distnames)){
-      distnames<-c("step","angle",distnames[!(distnames %in% c("step","angle"))])
-    }
     
     ############################
     ## Simulate movement path ##
     ############################
-    for (k in 1:(nbObs-1)){
-      # prepare lists of arguments for step and angle distributions
-      for(i in distnames){
-        genDist <- dist[[i]]
-        genArgs <- list(1)  # first argument = 1 (one random draw)
+    for(i in distnames){
+      genData <- rep(NA,nbObs)
+      genDist <- dist[[i]]
+      genArgs <- list(1)  # first argument = 1 (one random draw)
+      for (k in 1:(nbObs-1)){
+
         for(j in 1:nrow(par[[i]]))
           genArgs[[j+1]] <- par[[i]][j,Z[k]]
 
-
-      if(genDist=="gamma") {
-        shape <- genArgs[[2]]^2/genArgs[[3]]^2
-        scale <- genArgs[[3]]^2/genArgs[[2]]
-        genArgs[[2]] <- shape
-        genArgs[[3]] <- 1/scale # rgamma expects rate=1/scale
-      }
-
-      if(runif(1)>zeroMass[[i]][Z[k]])
-        eval(parse(text=paste0(i,"[k] <- do.call(Fun[[i]],genArgs)")))
-      else
-        eval(parse(text=paste0(i,"[k] <- 0")))
-
-      if(i=="angle" & dist[[i]] %in% c("wrpcauchy","vm") & ("step" %in% distnames))
-        if(dist[["step"]] %in% c("gamma","weibull","exp")) {
-          if(step[k]>0){
-            eval(parse(text=paste0(i,"[k] <- do.call(Fun[[i]],genArgs)")))
-            eval(parse(text=paste0("if(",i,"[k] >  pi) ",i,"[k] <- ",i,"[k]-2*pi")))
-            eval(parse(text=paste0("if(",i,"[k] < -pi) ",i,"[k] <- ",i,"[k]+2*pi")))
-            eval(parse(text=paste0("phi <- phi + ",i,"[k]")))
-          } else if(step[k]==0) {
-            eval(parse(text=paste0(i,"[k] <- NA")))  # angle = NA if step = 0
-          }
-          m <- step[k]*c(Re(exp(1i*phi)),Im(exp(1i*phi)))
-          X[k+1,] <- X[k,] + m
+        if(genDist=="gamma") {
+          shape <- genArgs[[2]]^2/genArgs[[3]]^2
+          scale <- genArgs[[3]]^2/genArgs[[2]]
+          genArgs[[2]] <- shape
+          genArgs[[3]] <- 1/scale # rgamma expects rate=1/scale
         }
+  
+        if(runif(1)>zeroMass[[i]][Z[k]])
+          genData[k] <- do.call(Fun[[i]],genArgs)
+        else
+          genData[k] <- 0
+  
+        if(i=="angle" & dist[[i]] %in% c("wrpcauchy","vm") & ("step" %in% distnames))
+          if(dist[["step"]] %in% c("gamma","weibull","exp")) {
+            if(step[k]>0){
+              genData[k] <- do.call(Fun[[i]],genArgs)
+              if(genData[k] >  pi) genData[k] <- genData[k]-2*pi
+              if(genData[k] < -pi) genData[k] <- genData[k]+2*pi
+              phi <- phi + genData[k]
+            } else if(step[k]==0) {
+              genData[k] <- NA # angle = NA if step = 0
+            }
+            m <- step[k]*c(Re(exp(1i*phi)),Im(exp(1i*phi)))
+            X[k+1,] <- X[k,] + m
+          }
       }
+      if(i=="step") step <- genData
+      d[[i]] <- genData
     }
 
-    eval(parse(text=paste0("d <- data.frame(ID=rep(zoo,nbObs),",paste0(distnames,"=",distnames,collapse=","),")")))
     if("angle" %in% distnames) 
       if(dist[["angle"]] %in% c("wrpcauchy","vm") & ("step" %in% distnames))
         if(dist[["step"]] %in% c("gamma","weibull","exp")){
-            angle[1] <- NA # the first angle value is arbitrary
-            eval(parse(text=paste0("d <- data.frame(ID=rep(zoo,nbObs),",paste0(distnames,"=",distnames,collapse=","),",x=X[,1],y=X[,2])")))
+            d$angle[1] <- NA # the first angle value is arbitrary
+            d$x=X[,1]
+            d$y=X[,2]
         }
     data <- rbind(data,d)
   }

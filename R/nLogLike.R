@@ -56,7 +56,9 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,
   #####################
   ## Check arguments ##
   #####################
-  eval(parse(text=paste0("dist$",distnames,"=match.arg(dist$",distnames,",c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))")))
+  for(i in distnames){
+    dist[[i]]<-match.arg(dist[[i]],c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))
+  }
   
   if(nbStates<1)
     stop("nbStates must be at least 1.")

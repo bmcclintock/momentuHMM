@@ -42,7 +42,4 @@ most probable state sequence indicates that one third of observations correspond
 state, and two thirds to the second state, the plots of the densities in the first state are
 weighted by a factor 1/3, and in the second state by a factor 2/3.
 }
-\examples{
-
-}
 

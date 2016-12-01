@@ -64,6 +64,8 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL)
 
   for(zoo in 1:nbAnimals) {
     nbObs <- length(which(ID==unique(ID)[zoo]))
+    # d = data for one individual
+    d <- data.frame(ID=rep(unique(ID)[zoo],nbObs))
     for(j in distnames){
       genData <- rep(NA,nbObs)
       i1 <- which(ID==unique(ID)[zoo])[1]
@@ -85,12 +87,8 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL)
       }
       if(j=="step" & !is.null(coordNames)) genData[i2-i1] <- spDistsN1(pts = matrix(c(x[i2-1],y[i2-1]),ncol=2),pt = c(x[i2],y[i2]),longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
       else if(j!="angle" & !is.null(coordNames)) genData[i2-i1] <- Data[[j]][i2]
-      
-      eval(parse(text=paste0(j,"=genData")))
+      d[[j]] <- genData
     }
-    # d = data for one individual
-    eval(parse(text=paste0("d <- data.frame(ID=rep(unique(ID)[zoo],nbObs),",paste0(distnames,"=",distnames,collapse=","),")")))
-    # append individual data to output
     data <- rbind(data,d)
   }
 
