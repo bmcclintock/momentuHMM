@@ -134,6 +134,7 @@
 
 fitHMM <- function(data,nbStates,dist,
                    Par,beta0=NULL,delta0=NULL,
+                   estAngleMean=NULL,
                    formula=~1,
                    stationary=FALSE,verbose=0,nlmPar=NULL,fit=TRUE,
                    DM=NULL,cons=NULL,userBounds=NULL,logitcons=NULL,stateNames=NULL)
@@ -211,11 +212,32 @@ fitHMM <- function(data,nbStates,dist,
   if(length(data)<1)
     stop("The data input is empty.")
   
+  if(is.null(estAngleMean)){
+    estAngleMean <- vector('list',length(distnames))
+    names(estAngleMean) <- distnames
+  } else {
+    if(!is.list(estAngleMean) | is.null(names(estAngleMean))) stop("'estAngleMean' must be a named list")
+  }
+  for(i in distnames){
+    if(is.null(estAngleMean[[i]])) estAngleMean[[i]] <- FALSE
+  }
+  for(i in distnames[which(!(dist %in% c("wrpcauchy","vm")))]){
+    estAngleMean[[i]] <- FALSE
+  }
+  estAngleMean<-estAngleMean[distnames]
+  
   if(is.null(DM)){
     DM <- vector('list',length(distnames))
     names(DM) <- distnames
+  } else {
+    if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
   }
-  eval(parse(text=paste0("if(is.null(",DM[distnames],")) DM$",distnames," <- diag((",ifelse(dist=="exp" | dist=="pois" | dist %in% c("wrpcauchy","vm"),1,2),"+zeroInflation$",distnames,")*nbStates)")))
+  for(i in distnames){
+    if(is.null(DM[[i]])) {
+      if(dist[[i]] %in% c("wrpcauchy","vm") & length(Par[[i]])!=(nbStates+nbStates*estAngleMean[[i]])) stop("Wrong number of parameters for ",i)
+      DM[[i]] <- diag((ifelse(dist[[i]]=="exp" | dist[[i]]=="pois" | (dist[[i]] %in% c("wrpcauchy","vm") & !estAngleMean[[i]]),1,2)+zeroInflation[[i]])*nbStates)
+    }
+  }
   DM<-DM[distnames]
   if(any(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol))))
     stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol)))),collapse=", "))
@@ -223,8 +245,12 @@ fitHMM <- function(data,nbStates,dist,
   if(is.null(cons)){
     cons <- vector('list',length(distnames))
     names(cons) <- distnames
+  } else {
+    if(!is.list(cons) | is.null(names(cons))) stop("'cons' must be a named list")
   }
-  eval(parse(text=paste0("if(is.null(",cons[distnames],")) cons$",distnames," <- rep(1,ncol(DM$",distnames,"))")))
+  for(i in distnames){
+    if(is.null(cons[[i]])) cons[[i]] <- rep(1,ncol(DM[[i]]))
+  }
   cons<-cons[distnames]
   if(any(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))) 
     stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
@@ -232,8 +258,12 @@ fitHMM <- function(data,nbStates,dist,
   if(is.null(logitcons)){
     logitcons <- vector('list',length(distnames))
     names(logitcons) <- distnames
+  } else {
+    if(!is.list(logitcons) | is.null(names(logitcons))) stop("'logitcons' must be a named list")
   }
-  eval(parse(text=paste0("if(is.null(",logitcons[distnames],")) logitcons$",distnames," <- rep(0,ncol(DM$",distnames,"))")))
+  for(i in distnames){
+    if(is.null(logitcons[[i]])) logitcons[[i]] <- rep(0,ncol(DM[[i]]))
+  }
   for(i in which(!(dist %in% "wrpcauchy"))){
     logitcons[[distnames[i]]]<-rep(0,ncol(DM[[distnames[i]]]))
   }
@@ -249,7 +279,7 @@ fitHMM <- function(data,nbStates,dist,
   #  evalBounds<-matrix(sapply(bounds,function(x) eval(parse(text=x))),ncol=2)
   #}
   #p <- parDef(stepDist,angleDist,omegaDist,dryDist,diveDist,iceDist,landDist,nbStates,is.null(angleMean),zeroInflation,evalBounds,stepDM,angleDM,omegaDM,dryDM,diveDM,iceDM,landDM)
-  p <- parDef(dist,nbStates,FALSE,zeroInflation,userBounds,DM)
+  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,userBounds,DM)
   bounds <- p$bounds
   for(i in distnames){
     if(!is.numeric(bounds[[i]])){
@@ -325,9 +355,6 @@ fitHMM <- function(data,nbStates,dist,
   if(stationary)
     delta0 <- NULL
 
-  angleMean <- rep(0,nbStates)
-  estAngleMean <- is.null(angleMean)
-
   if(!all(unlist(lapply(p$bounds,is.numeric)))){
     bounds <- p$bounds
     for(i in distnames){
@@ -360,7 +387,8 @@ fitHMM <- function(data,nbStates,dist,
 
     # call to optimizer nlm
     withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,bounds,parSize,data,dist,
-                                   angleMean,zeroInflation,stationary,cons,DM,p$boundInd,logitcons,
+                                   estAngleMean,zeroInflation,
+                                   stationary,cons,DM,p$boundInd,logitcons,
                                    print.level=verbose,gradtol=gradtol,
                                    stepmax=stepmax,steptol=steptol,
                                    iterlim=iterlim,hessian=TRUE),
@@ -385,7 +413,8 @@ fitHMM <- function(data,nbStates,dist,
   # name columns and rows of MLEs
   for(i in distnames){
     if(dist[[i]] %in% c("wrpcauchy","vm"))
-      mle[[i]] <- rbind(angleMean,mle[[i]])
+      if(!estAngleMean[[i]])
+        mle[[i]] <- rbind(rep(0,nbStates),mle[[i]])
     rownames(mle[[i]]) <- p$parNames[[i]]
     colnames(mle[[i]]) <- stateNames
   }
@@ -433,7 +462,7 @@ fitHMM <- function(data,nbStates,dist,
   conditions <- list(dist=dist,zeroInflation=zeroInflation,
                      estAngleMean=estAngleMean,stationary=stationary,formula=formula,cons=cons,bounds=p$bounds,DM=DM,logitcons=logitcons)
 
-  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,bounds=p$bounds,rawCovs=rawCovs,stateNames=stateNames)
+  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames)
   
   CI_real<-CI_real(momentuHMM(mh))
   CI_beta<-CI_beta(momentuHMM(mh))

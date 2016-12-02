@@ -67,7 +67,7 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
     
     parnames <- rownames(m$mle[[parms[parm]]])
     if(!is.null(dist[[parms[parm]]]))
-      if(dist[[parms[parm]]] %in% c("wrpcauchy","vm") & !m$conditions$estAngleMean)
+      if(dist[[parms[parm]]] %in% c("wrpcauchy","vm") & !estAngleMean[[parms[parm]]])
         parnames <- rownames(m$mle[[parms[parm]]])[-1]
 
     
@@ -186,7 +186,7 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
   Par <- list()
   for(i in distnames){
     if(dist[[i]] %in% c("wrpcauchy","vm")) {
-      if(!estAngleMean){
+      if(!estAngleMean[[i]]){
         xbar[[i]]<-matrix(c(rep(0,nbStates),xbar[[i]]),ncol=nbStates,byrow=T)
         lower[[i]]<-matrix(c(rep(NA,nbStates),lower[[i]]),ncol=nbStates,byrow=T)
         upper[[i]]<-matrix(c(rep(NA,nbStates),upper[[i]]),ncol=nbStates,byrow=T)  

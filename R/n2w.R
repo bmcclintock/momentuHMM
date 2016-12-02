@@ -47,19 +47,19 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,logitco
     wpar <- c(wpar,p)
   }
 
-  if(estAngleMean) {
-    # identify angle distribution parameters
-    foo <- length(wpar)-nbStates+1
-    angleMean <- wpar[(foo-nbStates):(foo-1)]
-    kappa <- wpar[foo:length(wpar)]
+  #if(estAngleMean) {
+  #  # identify angle distribution parameters
+  #  foo <- length(wpar)-nbStates+1
+  #  angleMean <- wpar[(foo-nbStates):(foo-1)]
+  #  kappa <- wpar[foo:length(wpar)]#
 
-    # compute the working parameters for the angle distribution
-    x <- kappa*cos(angleMean)
-    y <- kappa*sin(angleMean)
+  #  # compute the working parameters for the angle distribution
+  #  x <- kappa*cos(angleMean)
+  #  y <- kappa*sin(angleMean)
 
-    wpar[(foo-nbStates):(foo-1)] <- x
-    wpar[foo:length(wpar)] <- y
-  }
+  #  wpar[(foo-nbStates):(foo-1)] <- x
+  #  wpar[foo:length(wpar)] <- y
+  #}
 
   wbeta <- as.vector(beta) # if beta is NULL, wbeta is NULL as well
   wdelta <- log(delta[-1]/delta[1]) # if delta is NULL, wdelta is NULL as well

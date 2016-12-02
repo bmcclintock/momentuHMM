@@ -87,15 +87,8 @@ CI_beta <- function(m,alpha=0.95,nbSims=10^6)
     wlower <- est-quantSup*wse
     wupper <- est+quantSup*wse
     
-    if(!(dist[[i]] %in% c("wrpcauchy","vm"))){
-      Par[[i]]<-parm_list(matrix(wse,ncol=length(est),byrow=T),matrix(wlower,ncol=length(est),byrow=T),matrix(wupper,ncol=length(est),byrow=T),t(bounds[[i]]))
-    } else {
-      if(m$conditions$estAngleMean){
-        anglePar <- angleCI(m,alpha,nbSims)
-      } else {
-        Par[[i]]<-parm_list(matrix(wse,ncol=length(est),byrow=T),matrix(wlower,ncol=length(est),byrow=T),matrix(wupper,ncol=length(est),byrow=T),t(bounds[[i]]))
-      }
-    }
+    Par[[i]]<-parm_list(matrix(wse,ncol=length(est),byrow=T),matrix(wlower,ncol=length(est),byrow=T),matrix(wupper,ncol=length(est),byrow=T),t(bounds[[i]]))
+
   }
 
   # group CIs for t.p. coefficients

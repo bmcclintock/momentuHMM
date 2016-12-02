@@ -47,7 +47,7 @@
 #' @export
 
 nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,
-                     angleMean=NULL,zeroInflation=FALSE,
+                     estAngleMean,zeroInflation,
                      stationary=FALSE,cons,DM,boundInd,logitcons)
 {
   # check arguments
@@ -77,13 +77,14 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,
 
   if(any(is.na(match(distnames,names(data))))) stop(paste0(distnames[is.na(match(distnames,names(data)))],collapse=", ")," not found in data")
 
-  estAngleMean <- is.null(angleMean)
+  #estAngleMean <- is.null(angleMean)
 
   # convert the parameters back to their natural scale
   par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,DM,boundInd,logitcons)
   
   for(i in distnames[which(dist %in% c("wrpcauchy","vm"))]){
-    par[[i]] <- rbind(angleMean,par[[i]],deparse.level=0)
+    if(!estAngleMean[[i]])
+      par[[i]] <- rbind(rep(0,nbStates),par[[i]],deparse.level=0)
   }
 
   nbObs <- length(data$step)

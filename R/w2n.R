@@ -64,19 +64,19 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons
   }
   else beta <- NULL
 
-  if(estAngleMean) {
-    # identify working parameters for the angle distribution (x and y)
-    foo <- length(wpar)-nbStates+1
-    x <- wpar[(foo-nbStates):(foo-1)]
-    y <- wpar[foo:length(wpar)]
+  #if(estAngleMean) {
+  #  # identify working parameters for the angle distribution (x and y)
+  #  foo <- length(wpar)-nbStates+1
+  #  x <- wpar[(foo-nbStates):(foo-1)]
+  #  y <- wpar[foo:length(wpar)]
 
-    # compute natural parameters for the angle distribution
-    angleMean <- Arg(x+1i*y)
-    kappa <- sqrt(x^2+y^2)
-    # to scale them if necessary (see parDef)
-    wpar[(foo-nbStates):(foo-1)] <- angleMean
-    wpar[foo:length(wpar)] <- kappa
-  }
+  #  # compute natural parameters for the angle distribution
+  #  angleMean <- Arg(x+1i*y)
+  #  kappa <- sqrt(x^2+y^2)
+  #  # to scale them if necessary (see parDef)
+  #  wpar[(foo-nbStates):(foo-1)] <- angleMean
+  #  wpar[foo:length(wpar)] <- kappa
+  #}
   
   distnames <- names(bounds)
   parindex <- c(0,cumsum(unlist(lapply(bounds,nrow)))[-length(bounds)])
@@ -89,7 +89,11 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons
   
   for(i in distnames){
     Par<-w2nDM(wpar[parindex[[i]]+1:ncol(DM[[i]])],bounds[[i]],DM[[i]],cons[[i]],boundInd[[i]],logitcons[[i]])$p
-    nbounds <- rbind(nbounds, matrix(sapply(bounds[[i]],function(x) eval(parse(text=x))),ncol=2)[boundInd[[i]],])
+    if(!is.numeric(bounds[[i]])){
+      nbounds <- rbind(nbounds, matrix(sapply(bounds[[i]],function(x) eval(parse(text=x))),ncol=2)[boundInd[[i]],])
+    } else {
+      nbounds <- rbind(nbounds,bounds[[i]][boundInd[[i]],])
+    }
     par <- c(par,Par)
     Par<-matrix(Par,ncol=nbStates,byrow=TRUE)
     parlist[[i]]<-Par

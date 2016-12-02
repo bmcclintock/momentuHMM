@@ -5,9 +5,9 @@
 \title{Fit an HMM to the data}
 \usage{
 fitHMM(data, nbStates, dist, Par, beta0 = NULL, delta0 = NULL,
-  formula = ~1, stationary = FALSE, verbose = 0, nlmPar = NULL,
-  fit = TRUE, DM = NULL, cons = NULL, userBounds = NULL,
-  logitcons = NULL, stateNames = NULL)
+  estAngleMean = NULL, formula = ~1, stationary = FALSE, verbose = 0,
+  nlmPar = NULL, fit = TRUE, DM = NULL, cons = NULL,
+  userBounds = NULL, logitcons = NULL, stateNames = NULL)
 }
 \arguments{
 \item{data}{An object \code{moveData}.}

@@ -4,9 +4,8 @@
 \alias{nLogLike}
 \title{Negative log-likelihood function}
 \usage{
-nLogLike(wpar, nbStates, formula, bounds, parSize, data, dist,
-  angleMean = NULL, zeroInflation = FALSE, stationary = FALSE, cons, DM,
-  boundInd, logitcons)
+nLogLike(wpar, nbStates, formula, bounds, parSize, data, dist, estAngleMean,
+  zeroInflation, stationary = FALSE, cons, DM, boundInd, logitcons)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}
@@ -21,9 +20,6 @@ number of parameters of the turning angle distribution.}
 
 \item{data}{An object \code{moveData}.}
 
-\item{angleMean}{Vector of means of turning angles if not estimated (one for each state).
-Default: \code{NULL} (the angle mean is estimated).}
-
 \item{zeroInflation}{\code{TRUE} if the step length distribution is inflated in zero.
 Default: \code{FALSE}. If \code{TRUE}, initial values for the zero-mass parameters should be
 included in \code{stepPar0}.}
@@ -37,6 +33,9 @@ Supported distributions are: gamma, weibull, lnorm, exp. Default: gamma.}
 \item{angleDist}{Name of the distribution of the turning angles (as a character string).
 Supported distributions are: vm, wrpcauchy. Set to \code{"none"} if the angle distribution should
 not be estimated. Default: vm.}
+
+\item{angleMean}{Vector of means of turning angles if not estimated (one for each state).
+Default: \code{NULL} (the angle mean is estimated).}
 }
 \value{
 The negative log-likelihood of the parameters given the data.

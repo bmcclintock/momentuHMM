@@ -74,17 +74,36 @@ CI_real <- function(m,alpha=0.95,nbSims=10^6)
   
   for(i in distnames){
     if(!(dist[[i]] %in% c("wrpcauchy","vm"))) {
-      Par[[i]] <- get_CI(as.vector(t(m$mle[[i]])),m,parindex[[i]]+1:ncol(DM[[i]]),DM[[i]],bounds[[i]],m$conditions$cons[[i]],p$boundInd[[i]],Sigma,nbStates,alpha,m$mle[[i]])
+      Par[[i]] <- get_CI(as.vector(t(m$mle[[i]])),m,parindex[[i]]+1:ncol(DM[[i]]),DM[[i]],bounds[[i]],m$conditions$cons[[i]],p$boundInd[[i]],logitcons=m$conditions$logitcons[[i]],Sigma,nbStates,alpha,m$mle[[i]])
     } else {
-      if(m$conditions$estAngleMean){
-        Par[[i]] <- angleCI(m,alpha,nbSims)
-      } else {
-        wpar<-m$mod$estimate[parindex[[i]]+1:ncol(DM[[i]])]#n2wDM(angleBounds,m$conditions$angleDM,c(unique(angleDM)%*%ginv(angleDM)%*%anglePar[(1-m$conditions$estAngleMean)*nbStates+1:ncol(m$conditions$angleDM)]),m$conditions$cons$angle,logitcons=m$conditions$logitcons)
-        lower<-upper<-se<-numeric(nrow(DM[[i]]))
+      wpar<-m$mod$estimate[parindex[[i]]+1:ncol(DM[[i]])]
+      lower<-upper<-se<-numeric(nrow(DM[[i]]))
+      if(m$conditions$estAngleMean[[i]]){
         for(k in 1:nrow(DM[[i]])){
           dN<-numDeriv::grad(w2nDM,wpar,bounds=bounds[[i]],DM=DM[[i]],cons=m$conditions$cons[[i]],boundInd=p$boundInd[[i]],logitcons=m$conditions$logitcons[[i]],k=k)
           se[k]<-suppressWarnings(sqrt(dN%*%Sigma[parindex[[i]]+1:ncol(DM[[i]]),parindex[[i]]+1:ncol(DM[[i]])]%*%dN))
-          #cn<-exp(qnorm(1-(1-alpha)/2)*sqrt(log(1+(se[k]/Par[(1-m$conditions$estMean)*nbStates+k])^2)))
+          lower[k]<-t(m$mle[[i]])[k]-se[k]*qnorm(1-(1-alpha)/2)
+          upper[k]<-t(m$mle[[i]])[k]+se[k]*qnorm(1-(1-alpha)/2)
+          #if(k <= nbStates){
+          #  l <- 2*atan(tan(lower[k]/2))
+          #  u <- 2*atan(tan(upper[k]/2))
+          #  if(l>u){
+          #    lower[k]<-u
+          #    upper[k]<-l
+          #  } else {
+          #    lower[k]<-l
+          #    upper[k]<-u
+          #  }
+          #}
+        }
+        lower<-matrix(lower,ncol=nbStates,byrow=T)
+        upper<-matrix(upper,ncol=nbStates,byrow=T)  
+        se<-matrix(se,ncol=nbStates,byrow=T)
+        Par[[i]] <- parm_list(se,lower,upper,m$mle[[i]])
+      } else {
+        for(k in 1:nrow(DM[[i]])){
+          dN<-numDeriv::grad(w2nDM,wpar,bounds=bounds[[i]],DM=DM[[i]],cons=m$conditions$cons[[i]],boundInd=p$boundInd[[i]],logitcons=m$conditions$logitcons[[i]],k=k)
+          se[k]<-suppressWarnings(sqrt(dN%*%Sigma[parindex[[i]]+1:ncol(DM[[i]]),parindex[[i]]+1:ncol(DM[[i]])]%*%dN))
           lower[k]<-m$mle[[i]][-1,k]-se[k]*qnorm(1-(1-alpha)/2)
           upper[k]<-m$mle[[i]][-1,k]+se[k]*qnorm(1-(1-alpha)/2)
         }
@@ -128,25 +147,6 @@ CI_real <- function(m,alpha=0.95,nbSims=10^6)
     colnames(Par$gamma$upper) <- m$stateNames
   }
 
-  # if negative variance, replace by NA
-  #var[which(var<0)] <- NA
-
-  # define appropriate quantile
-
-
-  ## compute lower and upper for working parameters
-  #wlower <- est-quantSup*sqrt(var)
-  #wupper <- est+quantSup*sqrt(var)
-
-  ## compute lower and upper on natural scale
-  #if(m$conditions$estAngleMean) {
-  #  lower <- w2n(wlower,m$conditions$stepDist,bounds[1:i1,],c(p$parSize[1],0),nbStates,nbCovs,FALSE,TRUE,m$cons,m$omegaDM)
-  #  upper <- w2n(wupper,m$conditions$stepDist,bounds[1:i1,],c(p$parSize[1],0),nbStates,nbCovs,FALSE,TRUE,m$cons,m$omegaDM)
-  #} else {
-  #  lower <- w2n(wlower,m$conditions$stepDist,bounds[1:(i2-1),],c(p$parSize[1],1),nbStates,nbCovs,FALSE,TRUE,m$cons,m$omegaDM)
-  #  upper <- w2n(wupper,m$conditions$stepDist,bounds[1:(i2-1),],c(p$parSize[1],1),nbStates,nbCovs,FALSE,TRUE,m$cons,m$omegaDM)
-  #}
-
   return(Par)
 }
 
@@ -166,12 +166,12 @@ parm_list<-function(se,lower,upper,m){
   Par
 }
 
-get_CI<-function(Par,m,ind,DM,Bounds,cons,boundInd,Sigma,nbStates,alpha,mmlePar){
+get_CI<-function(Par,m,ind,DM,Bounds,cons,boundInd,logitcons,Sigma,nbStates,alpha,mmlePar){
 
   w<-m$mod$estimate[ind]
   lower<-upper<-se<-numeric(nrow(DM))
   for(k in 1:nrow(DM)){
-    dN<-numDeriv::grad(w2nDM,w,bounds=Bounds,DM=DM,cons=cons,boundInd=boundInd,k=k)
+    dN<-numDeriv::grad(w2nDM,w,bounds=Bounds,DM=DM,cons=cons,boundInd=boundInd,logitcons=logitcons,k=k)
     se[k]<-suppressWarnings(sqrt(dN%*%Sigma[ind,ind]%*%dN))
     cn<-exp(qnorm(1-(1-alpha)/2)*sqrt(log(1+(se[k]/Par[k])^2)))
     lower[k]<-Par[k]/cn

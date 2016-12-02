@@ -114,10 +114,12 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     distnames<-names(dist)
     userBounds <- model$bounds
     stateNames<-model$stateNames
+    estAngleMean<-model$conditions$estAngleMean
   
     Par <- model$mle[distnames]
     for(i in distnames[which(dist %in% c("wrpcauchy","vm"))]){
-      Par[[i]]<-Par[[i]][2,,drop=FALSE]
+      if(!estAngleMean[[i]])
+        Par[[i]]<-Par[[i]][2,,drop=FALSE]
     }
     beta <- model$mle$beta
     
@@ -144,8 +146,14 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
     if(!is.list(Par) | is.null(names(Par))) stop("'Par' must be a named list")
     distnames<-names(dist)
-    if(length(setdiff(distnames,names(Par))) | (length(dist)!=length(Par))) stop("Length and names of 'dist' and 'Par' must match")
-    Par<-Par[distnames]
+    if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
+    Par <- Par[distnames]
+    estAngleMean <- vector('list',length(distnames))
+    names(estAngleMean) <- distnames
+    for(i in distnames){
+      if(dist[[i]] %in% c("wrpcauchy","vm")) estAngleMean[[i]] <- TRUE
+      else estAngleMean[[i]] <- FALSE
+    }
   }
   
   if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
@@ -155,7 +163,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   ## Check arguments ##
   #####################
   for(i in distnames){
-    dist[[i]]<-match.arg(dist[[i]],c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))
+    dist[[i]] <- match.arg(dist[[i]],c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))
   }
   Fun <- lapply(dist,function(x) paste("r",x,sep=""))
 
@@ -186,12 +194,12 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   if(is.null(DM)){
     DM <- vector('list',length(distnames))
     names(DM) <- distnames
-    zind<-which((unlist(lapply(Par,length))!=(ifelse(dist=="exp" | dist=="pois" | dist %in% c("wrpcauchy","vm"),1,2)+unlist(zeroInflation[distnames]))*nbStates))
+    zind<-which((unlist(lapply(Par,length))!=(ifelse(dist=="exp" | dist=="pois",1,2)+unlist(zeroInflation[distnames]))*nbStates))
     for(i in zind)
      stop("Wrong number of parameters in Par$",distnames[[i]])
   } else if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
   for(i in distnames){
-    if(is.null(DM[[i]])) DM[[i]] <- diag((ifelse(dist[[i]]=="exp" | dist[[i]]=="pois" | dist[[i]] %in% c("wrpcauchy","vm"),1,2)+zeroInflation[[i]])*nbStates)
+    if(is.null(DM[[i]])) DM[[i]] <- diag((ifelse(dist[[i]]=="exp" | dist[[i]]=="pois" | (dist[[i]] %in% c("wrpcauchy","vm") & !estAngleMean[[i]]),1,2)+zeroInflation[[i]])*nbStates)
   }
   DM<-DM[distnames]
   if(any(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol))))
@@ -225,7 +233,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   if(!is.null(stateNames) & length(stateNames)!=nbStates)
     stop("stateNames must have length ",nbStates)
 
-  p <- parDef(dist,nbStates,FALSE,zeroInflation,userBounds,DM)
+  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,userBounds,DM)
   par0 <- unlist(Par) 
   
   bounds <- p$bounds
@@ -341,8 +349,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   }
   
   # format parameters
-  wpar <- n2w(lapply(Par,function(x) c(t(x))),bounds,beta,delta,nbStates,FALSE,DM,cons,logitcons) 
-  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,FALSE,stationary=FALSE,cons,DM,p$boundInd,logitcons)
+  wpar <- n2w(lapply(Par,function(x) c(t(x))),bounds,beta,delta,nbStates,estAngleMean,DM,cons,logitcons) 
+  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary=FALSE,cons,DM,p$boundInd,logitcons)
 
   zeroMass<-vector('list',length(dist))
   names(zeroMass)<-distnames
@@ -356,7 +364,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
   }
   for(i in distnames[which(dist %in% c("wrpcauchy","vm"))]){
-    par[[i]] <- rbind(rep(0,nbStates),par[[i]])
+    if(!estAngleMean[[i]])
+      par[[i]] <- rbind(rep(0,nbStates),par[[i]])
   }
 
   trackData <- NULL
