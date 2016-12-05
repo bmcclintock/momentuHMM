@@ -28,35 +28,21 @@ viterbi <- function(m)
     stop("'m' must be a momentuHMM object (as output by fitHMM)")
 
   data <- m$data
-  nbStates <- ncol(m$mle$stepPar)
+  nbStates <- length(m$stateNames)
   beta <- m$mle$beta
   delta <- m$mle$delta
-  stepDist <- m$conditions$stepDist
-  angleDist <- m$conditions$angleDist
-  omegaDist <- m$conditions$omegaDist
-  dryDist <- m$conditions$dryDist
-  diveDist <- m$conditions$diveDist
-  iceDist <- m$conditions$iceDist
-  landDist <- m$conditions$landDist
-  stepPar <- m$mle$stepPar
-  anglePar <- m$mle$anglePar
-  omegaPar <- m$mle$omegaPar
-  dryPar <- m$mle$dryPar
-  divePar <- m$mle$divePar
-  icePar <- m$mle$icePar
-  landPar <- m$mle$landPar
+  dist <- m$conditions$dist
+  par <- m$mle
   zeroInflation <- m$conditions$zeroInflation
-
+  
   if(nbStates==1)
     stop("No states to decode (nbStates=1)")
 
   # identify covariates
-  covsCol <- which(names(data)!="ID" & names(data)!="x" & names(data)!="y" &
-                     names(data)!="step" & names(data)!="angle" & names(data)!="omega" & names(data)!="dry" & names(data)!="dive" & names(data)!="ice" & names(data)!="land")
-  nbCovs <- length(covsCol)-1 # substract intercept column
-  covs <- data[,covsCol]
+  covs <- model.matrix(m$conditions$formula,data)
+  nbCovs <- ncol(covs)-1 # substract intercept column
 
-  allProbs <- allProbs(data,nbStates,stepDist,angleDist,omegaDist,dryDist,diveDist,iceDist,landDist,stepPar,anglePar,omegaPar,dryPar,divePar,icePar,landPar,zeroInflation)
+  allProbs <- allProbs(data,nbStates,dist,par,zeroInflation)
   trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs))
 
   nbAnimals <- length(unique(data$ID))

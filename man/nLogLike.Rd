@@ -4,13 +4,8 @@
 \alias{nLogLike}
 \title{Negative log-likelihood function}
 \usage{
-nLogLike(wpar, nbStates, formula, bounds, parSize, data, stepDist = c("gamma",
-  "weibull", "lnorm", "exp"), angleDist = c("wrpcauchy", "vm", "none"),
-  omegaDist = c("beta", "none"), dryDist = c("beta", "none"),
-  diveDist = c("pois", "none"), iceDist = c("beta", "none"),
-  landDist = c("beta", "none"), angleMean = NULL, zeroInflation = FALSE,
-  stationary = FALSE, cons, stepDM, angleDM, omegaDM, dryDM, diveDM, iceDM,
-  landDM, boundInd, logitcons)
+nLogLike(wpar, nbStates, formula, bounds, parSize, data, dist, estAngleMean,
+  zeroInflation, stationary = FALSE, cons, DM, boundInd, logitcons)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}
@@ -25,6 +20,13 @@ number of parameters of the turning angle distribution.}
 
 \item{data}{An object \code{moveData}.}
 
+\item{zeroInflation}{\code{TRUE} if the step length distribution is inflated in zero.
+Default: \code{FALSE}. If \code{TRUE}, initial values for the zero-mass parameters should be
+included in \code{stepPar0}.}
+
+\item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
+equal to the stationary distribution. Default: \code{FALSE}.}
+
 \item{stepDist}{Name of the distribution of the step lengths (as a character string).
 Supported distributions are: gamma, weibull, lnorm, exp. Default: gamma.}
 
@@ -34,13 +36,6 @@ not be estimated. Default: vm.}
 
 \item{angleMean}{Vector of means of turning angles if not estimated (one for each state).
 Default: \code{NULL} (the angle mean is estimated).}
-
-\item{zeroInflation}{\code{TRUE} if the step length distribution is inflated in zero.
-Default: \code{FALSE}. If \code{TRUE}, initial values for the zero-mass parameters should be
-included in \code{stepPar0}.}
-
-\item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
-equal to the stationary distribution. Default: \code{FALSE}.}
 }
 \value{
 The negative log-likelihood of the parameters given the data.

@@ -20,6 +20,6 @@ A list of the following objects:
 }
 \description{
 Simulation-based computation of confidence intervals for the parameters of the angle distribution.
-Used in \code{\link{CI}}.
+Used in \code{\link{CI_real}}.
 }
 

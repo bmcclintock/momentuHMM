@@ -40,7 +40,7 @@
 #'
 #' @importFrom boot inv.logit
 
-w2n <- function(wpar,stepDist,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,stepDM,angleDM,omegaDM,dryDM,diveDM,iceDM,landDM,boundInd,logitcons)
+w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,DM,boundInd,logitcons)
 {
   if(nbStates<1)
     stop("Number of states must be 1 at least.")
@@ -63,121 +63,34 @@ w2n <- function(wpar,stepDist,bounds,parSize,nbStates,nbCovs,estAngleMean,statio
     wpar <- wpar[-(foo:length(wpar))]
   }
   else beta <- NULL
-
-  if(estAngleMean) {
-    # identify working parameters for the angle distribution (x and y)
-    foo <- length(wpar)-nbStates+1
-    x <- wpar[(foo-nbStates):(foo-1)]
-    y <- wpar[foo:length(wpar)]
-
-    # compute natural parameters for the angle distribution
-    angleMean <- Arg(x+1i*y)
-    kappa <- sqrt(x^2+y^2)
-    # to scale them if necessary (see parDef)
-    wpar[(foo-nbStates):(foo-1)] <- angleMean
-    wpar[foo:length(wpar)] <- kappa
-  }
   
-  #tmpind<-matrix(sapply(bounds,function(x) eval(parse(text=x))),ncol=2)!=bounds
-  #tmpbounds<-bounds
-  
-  #if(!is.numeric(bounds)){
- #   bounds<-matrix(sapply(bounds,function(x) eval(parse(text=x))),ncol=2,dimnames=list(rownames(bounds)))
-  #}
-  
-  #for(i in 1:nbPar) {
-    #index <- (i-1)*nbStates+1
-  switch(stepDist,
-    "gamma"={wstep<-which(substr(rownames(bounds),1,6)=="gammab")},
-    "weibull"={wstep<-which(substr(rownames(bounds),1,9)=="weibullsc")}
-  )
-  wangle <-which(substr(rownames(bounds),1,2)=="co")
-  womega <-which(substr(rownames(bounds),1,2)=="om")
-  wdry  <-which(substr(rownames(bounds),1,2)=="dr") 
-  wdive <-which(substr(rownames(bounds),1,2)=="di") 
-  wice  <-which(substr(rownames(bounds),1,2)=="ic") 
-  wland <-which(substr(rownames(bounds),1,2)=="la") 
-
-#nbPar <- length(wpar)/nbStates
-  lwpar <- (parSize>0)*c(ncol(stepDM),ncol(angleDM),ncol(omegaDM),ncol(dryDM),ncol(diveDM),ncol(iceDM),ncol(landDM))
-  lwparSize <- sum(lwpar)
-  lwpar <- lwpar[which(lwpar>0)]
-  lwpar <- 1+c(0,cumsum(lwpar[-length(lwpar)]))
-
-  if(lwparSize!=length(wpar))
-    stop("Wrong number of parameters.")
+  distnames <- names(bounds)
+  parindex <- c(0,cumsum(unlist(lapply(bounds,nrow)))[-length(bounds)])
+  names(parindex) <- distnames
 
   par <- NULL
   nbounds<-NULL
+  #Par<-NULL
+  parlist<-NULL
   
-  for(index in lwpar) {
-    #a <- bounds[index,1]
-    #b <- bounds[index,2]
-    #p <- wpar[index]
-    
-    #if(is.finite(a) & is.finite(b)) { # R -> [a,b]
-    #  p <- sum((b-a)*inv.logit(p)+a)
-    #}
-    #else if(is.infinite(a) & is.finite(b)) { # R -> ]-Inf,b]
-    #  p <- sum(-(exp(-p)-b))
-    #}
-    #else if(is.finite(a) & is.infinite(b)) { # R -> [a,Inf[
-    #  p <- sum(exp(p)+a)
-    #}
-    #else if(index %in% wstep){
-    if(index %in% wstep){
-      Par<-w2nDM(wpar[wstep],bounds[wstep,],stepDM,cons$step,boundInd$step)
-      nbounds <- rbind(nbounds, matrix(sapply(bounds[wstep,],function(x) eval(parse(text=x))),ncol=2)[boundInd$step,])
-    }
-    else if(index %in% wangle){
-      Par<-w2nDM(wpar[wangle],bounds[wangle,],angleDM,cons$angle,boundInd$angle,logitcons)
-      nbounds <- rbind(nbounds, matrix(sapply(bounds[wangle,],function(x) eval(parse(text=x))),ncol=2)[boundInd$angle,])
-    }
-    else if(index %in% womega){
-      Par<-w2nDM(wpar[womega],bounds[womega,],omegaDM,cons$omega,boundInd$omega)
-      nbounds <- rbind(nbounds, matrix(sapply(bounds[womega,],function(x) eval(parse(text=x))),ncol=2)[boundInd$omega,])
-    }
-    else if(index %in% wdry){
-      Par<-w2nDM(wpar[wdry],bounds[wdry,],dryDM,cons$dry,boundInd$dry)
-      nbounds <- rbind(nbounds, matrix(sapply(bounds[wdry,],function(x) eval(parse(text=x))),ncol=2)[boundInd$dry,])
-    }
-    else if(index %in% wdive){
-      Par<-w2nDM(wpar[wdive],bounds[wdive,],diveDM,cons$dive,boundInd$dive)
-      nbounds <- rbind(nbounds, matrix(sapply(bounds[wdive,],function(x) eval(parse(text=x))),ncol=2)[boundInd$dive,])
-    }
-    else if(index %in% wice){
-      Par<-w2nDM(wpar[wice],bounds[wice,],iceDM,cons$ice,boundInd$ice)
-      nbounds <- rbind(nbounds, matrix(sapply(bounds[wice,],function(x) eval(parse(text=x))),ncol=2)[boundInd$ice,])
-    }
-    else if(index %in% wland){
-      Par<-w2nDM(wpar[wland],bounds[wland,],landDM,cons$land,boundInd$land)
-      nbounds <- rbind(nbounds, matrix(sapply(bounds[wland,],function(x) eval(parse(text=x))),ncol=2)[boundInd$land,])
+  for(i in distnames){
+    Par<-w2nDM(wpar[parindex[[i]]+1:ncol(DM[[i]])],bounds[[i]],DM[[i]],cons[[i]],boundInd[[i]],logitcons[[i]])$p
+    if(!is.numeric(bounds[[i]])){
+      nbounds <- rbind(nbounds, matrix(sapply(bounds[[i]],function(x) eval(parse(text=x))),ncol=2)[boundInd[[i]],])
+    } else {
+      nbounds <- rbind(nbounds,bounds[[i]][boundInd[[i]],])
     }
     par <- c(par,Par)
+    Par<-matrix(Par,ncol=nbStates,byrow=TRUE)
+    parlist[[i]]<-Par
   }
     
   if(length(which(par<nbounds[,1] | par>nbounds[,2]))>0)
     stop("Scaling error.",rownames(nbounds)[which(par<nbounds[,1] | par>nbounds[,2])],par[which(par<nbounds[,1] | par>nbounds[,2])],nbounds[which(par<nbounds[,1] | par>nbounds[,2]),])
+  
+  parlist[["beta"]]<-beta
+  parlist[["delta"]]<-delta
 
-  # identify parameters related to step dist
-  if(parSize[1])
-    stepPar <- matrix(par[1:ncol(stepDM)],ncol=nbStates,byrow=T)
-  
-  # identify parameters related to angle dist
-  if(parSize[2]) {
-    anglePar <- matrix(par[parSize[1]*nbStates+1:(parSize[2]*nbStates)],ncol=nbStates,byrow=T)
-    par <- par[-(parSize[1]*nbStates+1:(parSize[2]*nbStates))] # remove pars related to angle dist
-  }
-  else anglePar <- NULL
-  
-  omegaPar <- dryPar <- divePar <-  icePar <- landPar <-  NULL
-  
-  if(parSize[3]) omegaPar<- matrix(par[parSize[1]*nbStates+1:(parSize[3]*nbStates)],ncol=nbStates,byrow=T)
-  if(parSize[4]) dryPar <-  matrix(par[parSize[1]*nbStates+parSize[3]*nbStates+1:(parSize[4]*nbStates)],ncol=nbStates,byrow=T) 
-  if(parSize[5]) divePar <-  matrix(par[parSize[1]*nbStates+parSize[3]*nbStates+parSize[4]*nbStates+1:(parSize[5]*nbStates)],ncol=nbStates,byrow=T) 
-  if(parSize[6]) icePar <-  matrix(par[parSize[1]*nbStates+parSize[3]*nbStates+parSize[4]*nbStates+parSize[5]*nbStates+1:(parSize[6]*nbStates)],ncol=nbStates,byrow=T) 
-  if(parSize[7]) landPar <-  matrix(par[parSize[1]*nbStates+parSize[3]*nbStates+parSize[4]*nbStates+parSize[5]*nbStates+parSize[6]*nbStates+1:(parSize[7]*nbStates)],ncol=nbStates,byrow=T) 
-  
-  return(list(stepPar=stepPar,anglePar=anglePar,omegaPar=omegaPar,dryPar=dryPar,divePar=divePar,icePar=icePar,landPar=landPar,beta=beta,delta=delta))
+  return(parlist)
 }
 

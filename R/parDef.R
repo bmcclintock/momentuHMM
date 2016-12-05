@@ -17,141 +17,107 @@
 #' \item{parNames}{Names of parameters of step distribution (the names of the parameters of the
 #' angle distribution are always the same).}
 
-parDef <- function(stepDist,angleDist,omegaDist,dryDist,diveDist,iceDist,landDist,nbStates,estAngleMean,zeroInflation,userBounds=NULL,stepDM,angleDM,omegaDM,dryDM,diveDM,iceDM,landDM)
+parDef <- function(dist,nbStates,estAngleMean,zeroInflation,userBounds=NULL,DM)
 {
-  parSize <- rep(0,7)
+  distnames<-names(dist)
+  parSize <- rep(0,length(distnames))
+  parNames <- vector('list',length(dist))
+  names(parNames) <- distnames
+  bounds <- vector('list',length(dist))
+  names(bounds) <- distnames
 
-  switch(stepDist,
-         "gamma"={
-           parSize[1] <- 2
-           #stepBounds <- matrix(rep(c(0,Inf),2*nbStates),ncol=2,byrow=TRUE)
-           parNames <- c("mean","sd")
-           stepBounds <- matrix(rep(c(0,Inf),ncol(stepDM)),ncol=2,byrow=TRUE)
-           boundNames <-paste0("beta_",1:ncol(stepDM))
-             
-           # include zero-mass
-           if(zeroInflation) {
-            parSize[1] <- parSize[1]+1
-            stepBounds[ncol(stepDM)-nbStates:1+1,2] <- 1
-            parNames <- c(parNames,"zero-mass")
-            #boundNames <- c(boundNames,paste0("zero-mass",1:nbStates))
-           } 
-  
-  rownames(stepBounds)<-paste0(stepDist,boundNames)
-         },
-         "weibull"={
-           parSize[1] <- 2
-           stepBounds <- matrix(rep(c(0,Inf),2*nbStates),ncol=2,byrow=TRUE)
-           parNames <- c("shape","scale")
-         },
-         "lnorm"={
-           parSize[1] <- 2
-           stepBounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates)),
-                                ncol=2,byrow=TRUE)
-           parNames <- c("location","scale")
-         },
-         "exp"={
-           parSize[1] <- 1
-           stepBounds <- matrix(rep(c(0,Inf),nbStates),ncol=2,byrow=TRUE)
-           parNames <- c("rate")
-         })
-
-
-  switch(angleDist,
-         "none"={
-           parSize[2] <- 0
-           angleBounds <- NULL
-         },
-         "vm"={
-           if(estAngleMean) { # if the angle mean is estimated
-             parSize[2] <- 2
-             # bounds are chosen such that the parameters are not scaled
-             # (already in the right intervals for computing x and y)
-             angleBounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(-Inf,Inf),nbStates)),
-                                   ncol=2,byrow=TRUE)
+  for(i in 1:length(dist)){
+    Dist<-dist[[i]]
+    dataname<-names(dist[i])
+    dm<-DM[[i]]
+    switch(Dist,
+           "beta"={
+             parSize[i] <- 2
+             tmpbounds <- matrix(rep(c(0,Inf),ncol(dm)),ncol=2,byrow=TRUE)
+             parNames[[dataname]]<-c("shape1","shape2")
+           },
+           "pois"={
+             parSize[i] <- 1
+             tmpbounds <- matrix(rep(c(0,Inf),ncol(dm)),ncol=2,byrow=TRUE)
+             parNames[[dataname]]<-"lambda"
+           },
+           "weibull"={
+             parSize[i] <- 2
+             tmpbounds <- matrix(rep(c(0,Inf),ncol(dm)),ncol=2,byrow=TRUE)
+             parNames[[dataname]]<-c("shape","scale")
+           },
+           "gamma"={
+             parSize[i] <- 2
+             tmpbounds <- matrix(rep(c(0,Inf),ncol(dm)),ncol=2,byrow=TRUE)
+             parNames[[dataname]]<-c("mean","sd")
+           },
+           "lnorm"={
+             parSize[i] <- 2
+             tmpbounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates)),
+                                  ncol=2,byrow=TRUE)
+             parNames[[dataname]] <- c("location","scale")
+           },
+           "exp"={
+             parSize[i] <- 1
+             tmpbounds <- matrix(rep(c(0,Inf),ncol(dm)),ncol=2,byrow=TRUE)
+             parNames[[dataname]] <- c("rate")
+           },
+           "vm"={
+             if(estAngleMean[[i]]) { # if the angle mean is estimated
+               parSize[i] <- 2
+               # bounds are chosen such that the parameters are not scaled
+               # (already in the right intervals for computing x and y)
+               #tmpbounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(-Inf,Inf),nbStates)),
+               #                       ncol=2,byrow=TRUE)
+               meanind<-unique(unlist(apply(dm[1:nbStates,],1,function(x) which(x!=0))))
+               sdind<-unique(unlist(apply(dm[nbStates+1:nbStates,],1,function(x) which(x!=0))))
+               if(any(intersect(meanind,sdind))) stop("'DM' for ",distname," cannot have common parameters in common for mean and sd")
+               tmpbounds <- rbind(matrix(rep(c(-pi,pi),length(meanind)),ncol=2,byrow=TRUE),matrix(rep(c(0,Inf),length(sdind)),ncol=2,byrow=TRUE))
+               parNames[[dataname]] <- c("mean","sd") 
+            }
+             else {
+               parSize[i] <- 1
+               tmpbounds <- matrix(rep(c(0,Inf),ncol(dm)),ncol=2,byrow=TRUE)
+               parNames[[dataname]] <- c("mean","sd")
+             }
+           },
+           "wrpcauchy"={
+             if(estAngleMean[[i]]) {
+               parSize[i] <- 2
+               # bounds are chosen such that the mean is not scaled, but the concentration is
+               # scaled from ]0,1[ to ]0,Inf[ (for computing x and y)
+               #tmpbounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(-Inf,1),nbStates)),
+               #                       ncol=2,byrow=TRUE)
+               meanind<-unique(unlist(apply(dm[1:nbStates,],1,function(x) which(x!=0))))
+               sdind<-unique(unlist(apply(dm[nbStates+1:nbStates,],1,function(x) which(x!=0))))
+               if(any(intersect(meanind,sdind))) stop("'DM' for ",distname," cannot have common parameters in common for mean and concentration")
+               tmpbounds <- rbind(matrix(rep(c(-pi,pi),length(meanind)),ncol=2,byrow=TRUE),matrix(rep(c(0,1),length(sdind)),ncol=2,byrow=TRUE))
+               parNames[[dataname]] <- c("mean","concentration")
+             }
+             else {
+               parSize[i] <- 1
+               tmpbounds <- matrix(rep(c(0, 1), ncol(dm)), ncol = 2,byrow = TRUE)
+               parNames[[dataname]] <- c("mean","concentration")
+             }
            }
-           else {
-             parSize[2] <- 1
-             angleBounds <- matrix(rep(c(0,Inf),nbStates),ncol=2,byrow=TRUE)
-           }
-         },
-         "wrpcauchy"={
-           if(estAngleMean) {
-             parSize[2] <- 2
-             # bounds are chosen such that the mean is not scaled, but the concentration is
-             # scaled from ]0,1[ to ]0,Inf[ (for computing x and y)
-             angleBounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(-Inf,1),nbStates)),
-                                   ncol=2,byrow=TRUE)
-             rownames(angleBounds)<-c(paste0(rep("mean",each=nbStates),1:nbStates),paste0("concbeta_",1:ncol(angleDM)))
-           }
-           else {
-             parSize[2] <- 1
-             angleBounds <- matrix(rep(c(0, 1), nbStates), ncol = 2,byrow = TRUE)
-             rownames(angleBounds)<-paste0("concbeta_",1:ncol(angleDM))
-           }
-         })
+          )
+    if(zeroInflation[[dataname]]) {
+      parSize[i] <- parSize[i]+1
+      tmpbounds[ncol(dm)-nbStates:1+1,2] <- 1
+      parNames[[dataname]] <- c(parNames[[dataname]],"zero-mass")
+    } 
+    rownames(tmpbounds)<-paste0(dataname,"beta_",1:ncol(dm))
+    bounds[[dataname]] <- tmpbounds
+  }
   
-  switch(omegaDist,
-          "none"={
-           parSize[3] <- 0
-           omegaBounds <- NULL
-         },
-         "beta"={
-           parSize[3] <- 2
-           omegaBounds <- matrix(rep(c(0,Inf),ncol(omegaDM)),ncol=2,byrow=TRUE)
-           rownames(omegaBounds)<-paste0("omegabeta_",1:ncol(omegaDM))
-         })
-  
-  switch(dryDist,
-           "none"={
-           parSize[4] <- 0
-           dryBounds <- NULL
-         },
-         "beta"={
-           parSize[4] <- 2
-           dryBounds <- matrix(rep(c(0,Inf),ncol(dryDM)),ncol=2,byrow=TRUE)
-           rownames(dryBounds)<-paste0("drybeta_",1:ncol(dryDM))
-         })
-
-  switch(diveDist,
-          "none"={
-           parSize[5] <- 0
-           diveBounds <- NULL
-         },
-         "pois"={
-           parSize[5] <- 1
-           diveBounds <- matrix(rep(c(0,Inf),ncol(diveDM)),ncol=2,byrow=TRUE)
-           rownames(diveBounds)<-paste0("divebeta_",1:ncol(diveDM))
-         })
-  
-  switch(iceDist,
-          "none"={
-           parSize[6] <- 0
-           iceBounds <- NULL
-         },
-         "beta"={
-           parSize[6] <- 2
-           iceBounds <- matrix(rep(c(0,Inf),ncol(iceDM)),ncol=2,byrow=TRUE)
-           rownames(iceBounds)<-paste0("icebeta_",1:ncol(iceDM))
-         })
-  
-  switch(landDist,
-          "none"={
-           parSize[7] <- 0
-           landBounds <- NULL
-         },         
-         "beta"={
-           parSize[7] <- 2
-           landBounds <- matrix(rep(c(0,Inf),ncol(landDM)),ncol=2,byrow=TRUE)
-           rownames(landBounds)<-paste0("landbeta_",1:ncol(landDM))
-         })
-  
-  bounds <- rbind(stepBounds,angleBounds,omegaBounds,dryBounds,diveBounds,iceBounds,landBounds)
   if(!is.null(userBounds)) {
-    #print(cbind(bounds,userBounds))
-    rownames(userBounds)<-rownames(bounds)
+    for(i in names(dist)){
+      if(is.null(userBounds[[i]])) 
+        userBounds[[i]]<-bounds[[i]]
+      rownames(userBounds[[i]])<-rownames(bounds[[i]])
+    }
     bounds <- userBounds
   }
-  boundInd<-list(step=getboundInd(stepDM),angle=getboundInd(angleDM),omega=getboundInd(omegaDM),dry=getboundInd(dryDM),dive=getboundInd(diveDM),ice=getboundInd(iceDM),land=getboundInd(landDM))
-  return(list(parSize=parSize,bounds=bounds,parNames=parNames,boundInd=boundInd))
+  boundInd <- lapply(DM,getboundInd)
+  return(list(parSize=parSize,bounds=bounds[distnames],parNames=parNames,boundInd=boundInd[distnames]))
 }

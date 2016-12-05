@@ -111,34 +111,21 @@ BEGIN_RCPP
 END_RCPP
 }
 // nLogLike_rcpp
-double nLogLike_rcpp(int nbStates, arma::mat beta, arma::mat covs, DataFrame data, std::string stepDist, std::string angleDist, std::string omegaDist, std::string dryDist, std::string diveDist, std::string iceDist, std::string landDist, arma::mat stepPar, arma::mat anglePar, arma::mat omegaPar, arma::mat dryPar, arma::mat divePar, arma::mat icePar, arma::mat landPar, arma::rowvec delta, IntegerVector aInd, bool zeroInflation, bool stationary);
-RcppExport SEXP momentuHMM_nLogLike_rcpp(SEXP nbStatesSEXP, SEXP betaSEXP, SEXP covsSEXP, SEXP dataSEXP, SEXP stepDistSEXP, SEXP angleDistSEXP, SEXP omegaDistSEXP, SEXP dryDistSEXP, SEXP diveDistSEXP, SEXP iceDistSEXP, SEXP landDistSEXP, SEXP stepParSEXP, SEXP angleParSEXP, SEXP omegaParSEXP, SEXP dryParSEXP, SEXP diveParSEXP, SEXP iceParSEXP, SEXP landParSEXP, SEXP deltaSEXP, SEXP aIndSEXP, SEXP zeroInflationSEXP, SEXP stationarySEXP) {
+double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist, List Par, IntegerVector aInd, List zeroInflation, bool stationary);
+RcppExport SEXP momentuHMM_nLogLike_rcpp(SEXP nbStatesSEXP, SEXP covsSEXP, SEXP dataSEXP, SEXP dataNamesSEXP, SEXP distSEXP, SEXP ParSEXP, SEXP aIndSEXP, SEXP zeroInflationSEXP, SEXP stationarySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< int >::type nbStates(nbStatesSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type beta(betaSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type covs(covsSEXP);
     Rcpp::traits::input_parameter< DataFrame >::type data(dataSEXP);
-    Rcpp::traits::input_parameter< std::string >::type stepDist(stepDistSEXP);
-    Rcpp::traits::input_parameter< std::string >::type angleDist(angleDistSEXP);
-    Rcpp::traits::input_parameter< std::string >::type omegaDist(omegaDistSEXP);
-    Rcpp::traits::input_parameter< std::string >::type dryDist(dryDistSEXP);
-    Rcpp::traits::input_parameter< std::string >::type diveDist(diveDistSEXP);
-    Rcpp::traits::input_parameter< std::string >::type iceDist(iceDistSEXP);
-    Rcpp::traits::input_parameter< std::string >::type landDist(landDistSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type stepPar(stepParSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type anglePar(angleParSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type omegaPar(omegaParSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type dryPar(dryParSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type divePar(diveParSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type icePar(iceParSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type landPar(landParSEXP);
-    Rcpp::traits::input_parameter< arma::rowvec >::type delta(deltaSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type dataNames(dataNamesSEXP);
+    Rcpp::traits::input_parameter< List >::type dist(distSEXP);
+    Rcpp::traits::input_parameter< List >::type Par(ParSEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type aInd(aIndSEXP);
-    Rcpp::traits::input_parameter< bool >::type zeroInflation(zeroInflationSEXP);
+    Rcpp::traits::input_parameter< List >::type zeroInflation(zeroInflationSEXP);
     Rcpp::traits::input_parameter< bool >::type stationary(stationarySEXP);
-    rcpp_result_gen = Rcpp::wrap(nLogLike_rcpp(nbStates, beta, covs, data, stepDist, angleDist, omegaDist, dryDist, diveDist, iceDist, landDist, stepPar, anglePar, omegaPar, dryPar, divePar, icePar, landPar, delta, aInd, zeroInflation, stationary));
+    rcpp_result_gen = Rcpp::wrap(nLogLike_rcpp(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, stationary));
     return rcpp_result_gen;
 END_RCPP
 }

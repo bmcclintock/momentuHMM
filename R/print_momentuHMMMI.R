@@ -9,53 +9,15 @@
 
 print.momentuHMMMI <- function(x,...)
 {
-  m <- x
-  nbStates <- ncol(m$Par$stepPar$est)
+  m <- x  
+  distnames <- names(m$conditions$dist)
+  nbStates <- length(m$stateNames)
   
-  cat("Step length parameters:\n")
-  cat("----------------------\n")
-  print(m$Par$stepPar)
-  
-  cat("\n")
-  if(m$conditions$angleDist!="none") {
-    cat("Turning angle parameters:\n")
-    cat("------------------------\n")
-    print(m$Par$anglePar)
-  }
-  
-  cat("\n")
-  if(m$conditions$omegaDist!="none") {
-    cat("Dive proportion parameters:\n")
+  for(i in distnames){
+    cat("\n")
+    cat(i,"parameters:\n")
     cat("----------------------\n")
-    print(m$Par$omegaPar)
-  }
-  
-  cat("\n")  
-  if(m$conditions$dryDist!="none") {
-    cat("Dry proportion parameters:\n")
-    cat("----------------------\n")
-    print(m$Par$dryPar)
-  }
-  
-  cat("\n")    
-  if(m$conditions$diveDist!="none") {
-    cat("Foraging dive parameters:\n")
-    cat("----------------------\n")
-    print(m$Par$divePar)
-  }
-  
-  cat("\n") 
-  if(m$conditions$iceDist!="none") {
-    cat("Ice proportion parameters:\n")
-    cat("----------------------\n")
-    print(m$Par$icePar)
-  }
-  
-  cat("\n")  
-  if(m$conditions$landDist!="none") {
-    cat("Land proportion parameters:\n")
-    cat("----------------------\n")
-    print(m$Par$landPar)
+    print(m$Par[[i]])
   }
   
   if(!is.null(m$Par$beta)) {

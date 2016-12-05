@@ -124,8 +124,8 @@ dpois_rcpp <- function(x, rate, foo = 0) {
 #' equal to the stationary distribution. Default: \code{false}.
 #'
 #' @return Negative log-likelihood
-nLogLike_rcpp <- function(nbStates, beta, covs, data, stepDist, angleDist, omegaDist, dryDist, diveDist, iceDist, landDist, stepPar, anglePar, omegaPar, dryPar, divePar, icePar, landPar, delta, aInd, zeroInflation = FALSE, stationary = FALSE) {
-    .Call('momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs, data, stepDist, angleDist, omegaDist, dryDist, diveDist, iceDist, landDist, stepPar, anglePar, omegaPar, dryPar, divePar, icePar, landPar, delta, aInd, zeroInflation, stationary)
+nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, stationary = FALSE) {
+    .Call('momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, stationary)
 }
 
 #' Transition probability matrix

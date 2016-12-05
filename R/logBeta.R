@@ -18,15 +18,20 @@
 logBeta <- function(m)
 {
   data <- m$data
-  nbStates <- ncol(m$mle$stepPar)
+  nbStates <- length(m$stateNames)
   nbObs <- nrow(data)
   lbeta <- matrix(NA,nbObs,nbStates)
 
-  covsCol <- which(names(data)!="ID" & names(data)!="x" & names(data)!="y" &
-                     names(data)!="step" & names(data)!="angle" & names(data)!="omega" & names(data)!="dry" & names(data)!="dive" & names(data)!="ice" & names(data)!="land")
-  covs <- model.matrix(m$conditions$formula,data)
+  dist <- m$conditions$dist
+  distnames <- names(dist)
+  DM <- m$conditions$DM
+  par <- m$mle
+
+  # identify covariates
+  covs <- model.matrix(m$conditions$formula,m$data)
+  nbCovs <- ncol(covs)-1 # substract intercept column
   
-  allProbs <- allProbs(data,nbStates,m$conditions$stepDist,m$conditions$angleDist,m$conditions$omegaDist,m$conditions$dryDist,m$conditions$diveDist,m$conditions$iceDist,m$conditions$landDist,m$mle$stepPar,m$mle$anglePar,m$mle$omegaPar,m$mle$dryPar,m$mle$divePar,m$mle$icePar,m$mle$landPar,m$conditions$zeroInflation)
+  allProbs <- allProbs(data,nbStates,dist,par,m$conditions$zeroInflation)
   
   trMat <- trMatrix_rcpp(nbStates,m$mle$beta,as.matrix(covs))
 

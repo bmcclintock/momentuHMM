@@ -1,6 +1,7 @@
 #' @export
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
+#' @importFrom stats var qt
 MI_summary<-function(im,alpha=0.95,ncores=4){
   
   simind <- which((unlist(lapply(im,is.momentuHMM))))
@@ -17,13 +18,18 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
   if(any(ident)) stop("Model conditions and bounds for each imputation must be identical. Imputations that do not match the first: ",paste(which(ident),collapse=", "))
   
   m <- im[[1]]
-  nbStates <- ncol(m$mle$stepPar)
-  p <- parDef(m$conditions$stepDist,m$conditions$angleDist,m$conditions$omegaDist,m$conditions$dryDist,m$conditions$diveDist,m$conditions$iceDist,m$conditions$landDist,nbStates,m$conditions$estAngleMean,
-              m$conditions$zeroInflation,m$bounds,m$conditions$stepDM,m$conditions$angleDM,m$conditions$omegaDM,m$conditions$dryDM,m$conditions$diveDM,m$conditions$iceDM,m$conditions$landDM)
+  data <- m$data
+  nbStates <- length(m$stateNames)
+  dist <- m$conditions$dist
+  distnames <- names(dist)
+  estAngleMean <- m$conditions$estAngleMean
+  zeroInflation <- m$conditions$zeroInflation
+  DM <- m$conditions$DM
+  
+  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,m$conditions$bounds,DM)
   
   parms <- names(m$mle)[which(!unlist(lapply(m$mle,is.null)))]
   nparms <- length(parms)-(!is.null(m$mle$gamma))
-  nbStates <- ncol(m$mle$stepPar)
   xmat <- xbar <- xvar <- W_m <- B_m <- MI_se <- lower <- upper <- list()
   parmcols <- unlist(lapply(m$mle,function(x) ncol(x)))
   
@@ -38,14 +44,14 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
     im_stateProbs <- foreach(i = 1:nsims) %dopar% {momentuHMM::stateProbs(im[[i]])}
     stopImplicitCluster()
     cat("DONE\n")
-  } else states <- rep(1,nrow(m$data))
+  } else states <- rep(1,nrow(data))
   #get variances for each parameter on natural scale
   if(is.null(m$CI_real) | is.null(m$CI_beta)){
     registerDoParallel(cores=ncores)
     if(nsims>5) cat("Calculating standard errors on real scale; this might take a while for large models or simulations...")
     CI <- foreach(i = 1:nsims) %dopar% {
       ci<-momentuHMM::CI_real(im[[i]])
-      ci$beta$se<-momentuHMM::CI_beta(im[[i]])$betaPar$se
+      ci$beta$se<-momentuHMM::CI_beta(im[[i]])$beta$se
       ci
     }
     if(nsims>5) cat("DONE\n")
@@ -53,15 +59,17 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
   } else {
     CI <- lapply(im,function(x) x$CI_real)
     for(i in 1:nsims){
-      CI[[i]]$beta$se <- im[[i]]$CI_beta$betaPar$se
+      CI[[i]]$beta$se <- im[[i]]$CI_beta$beta$se
     }
   }
   
   for(parm in 1:nparms){
     
-    if(parms[parm]=="anglePar"){
-      if(!m$conditions$estAngleMean) parnames <- rownames(m$mle[[parms[parm]]])[-1]
-    } else parnames <- rownames(m$mle[[parms[parm]]])
+    parnames <- rownames(m$mle[[parms[parm]]])
+    if(!is.null(dist[[parms[parm]]]))
+      if(dist[[parms[parm]]] %in% c("wrpcauchy","vm") & !estAngleMean[[parms[parm]]])
+        parnames <- rownames(m$mle[[parms[parm]]])[-1]
+
     
     if(!is.null(parnames)){
       xbar[[parms[parm]]] <- matrix(NA,nrow=length(parnames),ncol=parmcols[parm])
@@ -69,45 +77,49 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
       MI_se[[parms[parm]]] <- lower[[parms[parm]]] <- upper[[parms[parm]]] <- xbar[[parms[parm]]]
     }
     
-    for(i in parnames){
+    for(j in parnames){
       if(is.character(parnames)){
-        xmat[[parms[parm]]][[i]] <- matrix(unlist(lapply(im,function(x) x$mle[[parms[parm]]][i,])) , ncol=parmcols[parm], nrow=nsims, byrow=TRUE)
-        xvar[[parms[parm]]][[i]] <- matrix(unlist(lapply(CI,function(x) x[[parms[parm]]]$se[i,]^2)) , ncol=parmcols[parm], nrow=nsims, byrow=TRUE)
-        n <- apply(!(is.na(xmat[[parms[parm]]][[i]])+is.na(xvar[[parms[parm]]][[i]])),2,sum)
+        xmat[[parms[parm]]][[j]] <- matrix(unlist(lapply(im,function(x) x$mle[[parms[parm]]][j,])) , ncol=parmcols[parm], nrow=nsims, byrow=TRUE)
+        xvar[[parms[parm]]][[j]] <- matrix(unlist(lapply(CI,function(x) x[[parms[parm]]]$se[j,]^2)) , ncol=parmcols[parm], nrow=nsims, byrow=TRUE)
+        n <- apply(!(is.na(xmat[[parms[parm]]][[j]])+is.na(xvar[[parms[parm]]][[j]])),2,sum)
         
-        if(any(n<2)) stop("need at least 2 simulations with valid estimates for ",parms[parm]," ",i)
+        if(any(n<2)) stop("need at least 2 simulations with valid estimates for ",parms[parm]," ",j)
         
-        xbar[[parms[parm]]][i,] <- apply(xmat[[parms[parm]]][[i]],2,mean,na.rm=TRUE)
-        B_m[[parms[parm]]][[i]] <- apply(xmat[[parms[parm]]][[i]],2,var,na.rm=TRUE)
+        xbar[[parms[parm]]][j,] <- apply(xmat[[parms[parm]]][[j]],2,mean,na.rm=TRUE)
+        B_m[[parms[parm]]][[j]] <- apply(xmat[[parms[parm]]][[j]],2,var,na.rm=TRUE)
         
-        W_m[[parms[parm]]][[i]] <- apply(xvar[[parms[parm]]][[i]],2,mean,na.rm=TRUE)
-        MI_se[[parms[parm]]][i,] <- sqrt(W_m[[parms[parm]]][[i]] + (n+1)/n * B_m[[parms[parm]]][[i]])
+        W_m[[parms[parm]]][[j]] <- apply(xvar[[parms[parm]]][[j]],2,mean,na.rm=TRUE)
+        MI_se[[parms[parm]]][j,] <- sqrt(W_m[[parms[parm]]][[j]] + (n+1)/n * B_m[[parms[parm]]][[j]])
         
-        dfs<-(n-1)*(1+1/(n+1)*W_m[[parms[parm]]][[i]]/B_m[[parms[parm]]][[i]])^2
+        dfs<-(n-1)*(1+1/(n+1)*W_m[[parms[parm]]][[j]]/B_m[[parms[parm]]][[j]])^2
         quantSup<-qt(1-(1-alpha)/2,df=dfs)
-        lower[[parms[parm]]][i,] <- xbar[[parms[parm]]][i,]-quantSup*MI_se[[parms[parm]]][i,]
-        upper[[parms[parm]]][i,] <- xbar[[parms[parm]]][i,]+quantSup*MI_se[[parms[parm]]][i,]   
+        lower[[parms[parm]]][j,] <- xbar[[parms[parm]]][j,]-quantSup*MI_se[[parms[parm]]][j,]
+        upper[[parms[parm]]][j,] <- xbar[[parms[parm]]][j,]+quantSup*MI_se[[parms[parm]]][j,]   
         
-      } #else { #delta parameter not currently handled by CI_real
-      #xmat[[parms[parm]]] <- matrix(unlist(lapply(im,function(x) x$mle[[parms[parm]]][i])) , ncol=nbStates, nrow=nsims, byrow=TRUE) 
-      #xvar[[parms[parm]]] <- matrix(unlist(lapply(CI,function(x) x[[parms[parm]]]$se[i]^2)) , ncol=parmcols[parm], nrow=nsims, byrow=TRUE)
-      #n <- apply(!(is.na(xmat[[parms[parm]]])+is.na(xvar[[parms[parm]]])),2,sum)
-      
-      #if(any(n<2)) stop("need at least 2 simulations with valid estimates for ",parms[parm])
-      
-      #xbar[[parms[parm]]] <- apply(xmat[[parms[parm]]],2,mean,na.rm=TRUE)
-      #B_m[[parms[parm]]] <- apply(xmat[[parms[parm]]],2,var,na.rm=TRUE)
-      
-      #W_m[[parms[parm]]] <- apply(xvar[[parms[parm]]],2,mean,na.rm=TRUE)
-      #MI_se[[parms[parm]]] <- sqrt(W_m[[parms[parm]]] + (n+1)/n * B_m[[parms[parm]]])
-      
-      #dfs<-(n-1)*(1+1/(n+1)*W_m[[parms[parm]]]/B_m[[parms[parm]]])^2
-      #quantSup<-qt(1-(1-alpha)/2,df=dfs)
-      #lower[[parms[parm]]]<- xbar[[parms[parm]]]-quantSup*MI_se[[parms[parm]]]
-      #upper[[parms[parm]]] <- xbar[[parms[parm]]]+quantSup*MI_se[[parms[parm]]]
-      #}
+      }
     }
   }
+  
+  xbar[["delta"]] <- matrix(NA,nrow=1,ncol=nbStates)
+  MI_se[["delta"]] <- lower[["delta"]] <- upper[["delta"]] <- xbar[["delta"]]
+
+  xmat[["delta"]] <- matrix(unlist(lapply(im,function(x) x$mle[["delta"]])) , ncol=nbStates, nrow=nsims, byrow=TRUE)
+  xvar[["delta"]] <- matrix(unlist(lapply(CI,function(x) x[["delta"]]$se^2)) , ncol=nbStates, nrow=nsims, byrow=TRUE)
+  n <- apply(!(is.na(xmat[["delta"]])+is.na(xvar[["delta"]])),2,sum)
+  
+  if(any(n<2)) stop("need at least 2 simulations with valid estimates for delta")
+  
+  xbar[["delta"]] <- apply(xmat[["delta"]],2,mean,na.rm=TRUE)
+  B_m[["delta"]] <- apply(xmat[["delta"]],2,var,na.rm=TRUE)
+  
+  W_m[["delta"]] <- apply(xvar[["delta"]],2,mean,na.rm=TRUE)
+  MI_se[["delta"]] <- sqrt(W_m[["delta"]] + (n+1)/n * B_m[["delta"]])
+  
+  dfs<-(n-1)*(1+1/(n+1)*W_m[["delta"]]/B_m[["delta"]])^2
+  quantSup<-qt(1-(1-alpha)/2,df=dfs)
+  lower[["delta"]] <- xbar[["delta"]]-quantSup*MI_se[["delta"]]
+  upper[["delta"]] <- xbar[["delta"]]+quantSup*MI_se[["delta"]]   
+    
   if(!is.null(m$mle$gamma)){
     xmat[["gamma"]] <- array(unlist(lapply(im,function(x) x$mle[["gamma"]])),c(nbStates,nbStates,nsims))
     xvar[["gamma"]] <- array(unlist(lapply(CI,function(x) x[["gamma"]]$se^2)),c(nbStates,nbStates,nsims))
@@ -134,8 +146,8 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
     upper[["gamma"]] <- xbar[["gamma"]]+quantSup*MI_se[["gamma"]]   
   }
   if(nbStates>1){
-    xmat[["stateProbs"]] <- array(unlist(im_stateProbs),c(nrow(m$data),nbStates,nsims))
-    xvar[["stateProbs"]] <- array(0,c(nrow(m$data),nbStates,nsims)) # don't have se's; might be a way to get these but probably quite complicated
+    xmat[["stateProbs"]] <- array(unlist(im_stateProbs),c(nrow(data),nbStates,nsims))
+    xvar[["stateProbs"]] <- array(0,c(nrow(data),nbStates,nsims)) # don't have se's; might be a way to get these but probably quite complicated
     n <- apply(!(is.na(xmat[["stateProbs"]])+is.na(xvar[["stateProbs"]])),1:2,sum)
     
     if(any(n<2)) stop("need at least 2 simulations with valid estimates for stateProbs")
@@ -175,49 +187,49 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
     lower[["timeInStates"]] <- xbar[["timeInStates"]]-quantSup*MI_se[["timeInStates"]]
     upper[["timeInStates"]] <- xbar[["timeInStates"]]+quantSup*MI_se[["timeInStates"]]   
   }
-  stepPar <- mi_parm_list(xbar$stepPar,MI_se$stepPar,lower$stepPar,upper$stepPar,m$mle$stepPar)
-  anglePar <- omegaPar <- dryPar <- divePar <- icePar <- landPar <- beta <- stateProbs <- timeInStates <- NULL
-  if(m$conditions$angleDist!="none") {
-    if(!m$conditions$estAngleMean){
-      xbar$anglePar<-matrix(c(rep(0,nbStates),xbar$anglePar),ncol=nbStates,byrow=T)
-      lower$anglePar<-matrix(c(rep(NA,nbStates),lower$anglePar),ncol=nbStates,byrow=T)
-      upper$anglePar<-matrix(c(rep(NA,nbStates),upper$anglePar),ncol=nbStates,byrow=T)  
-      MI_se$anglePar<-matrix(c(rep(NA,nbStates),MI_se$anglePar),ncol=nbStates,byrow=T)
+  Par <- list()
+  for(i in distnames){
+    if(dist[[i]] %in% c("wrpcauchy","vm")) {
+      if(!estAngleMean[[i]]){
+        xbar[[i]]<-matrix(c(rep(0,nbStates),xbar[[i]]),ncol=nbStates,byrow=T)
+        lower[[i]]<-matrix(c(rep(NA,nbStates),lower[[i]]),ncol=nbStates,byrow=T)
+        upper[[i]]<-matrix(c(rep(NA,nbStates),upper[[i]]),ncol=nbStates,byrow=T)  
+        MI_se[[i]]<-matrix(c(rep(NA,nbStates),MI_se[[i]]),ncol=nbStates,byrow=T)
+      }
     }
-    anglePar <- mi_parm_list(xbar$anglePar,MI_se$anglePar,lower$anglePar,upper$anglePar,m$mle$anglePar)
+    Par[[i]] <- mi_parm_list(xbar[[i]],MI_se[[i]],lower[[i]],upper[[i]],m$mle[[i]])
   }
-  if(m$conditions$omegaDist!="none") omegaPar <- mi_parm_list(xbar$omegaPar,MI_se$omegaPar,lower$omegaPar,upper$omegaPar,m$mle$omegaPar)
-  if(m$conditions$dryDist!="none") dryPar <- mi_parm_list(xbar$dryPar,MI_se$dryPar,lower$dryPar,upper$dryPar,m$mle$dryPar)  
-  if(m$conditions$diveDist!="none") divePar <- mi_parm_list(xbar$divePar,MI_se$divePar,lower$divePar,upper$divePar,m$mle$divePar)  
-  if(m$conditions$iceDist!="none") icePar <- mi_parm_list(xbar$icePar,MI_se$icePar,lower$icePar,upper$icePar,m$mle$icePar)
-  if(m$conditions$landDist!="none") landPar <- mi_parm_list(xbar$landPar,MI_se$landPar,lower$landPar,upper$landPar,m$mle$landPar)
   
+  Par$delta <- list(est=xbar$delta,se=MI_se$delta,lower=lower$delta,upper=upper$delta)
+
   if(nbStates>1) {
-    beta <- list(est=xbar$beta,se=MI_se$beta,lower=lower$beta,upper=upper$beta)
-    rownames(beta$est) <- rownames(m$mle$beta)
-    rownames(beta$se) <- rownames(m$mle$beta)
-    rownames(beta$lower) <- rownames(m$mle$beta)
-    rownames(beta$upper) <- rownames(m$mle$beta)
-    colnames(beta$est) <- colnames(m$mle$beta)
-    colnames(beta$se) <- colnames(m$mle$beta)
-    colnames(beta$lower) <- colnames(m$mle$beta)
-    colnames(beta$upper) <- colnames(m$mle$beta)
+    Par$beta <- list(est=xbar$beta,se=MI_se$beta,lower=lower$beta,upper=upper$beta)
+    rownames(Par$beta$est) <- rownames(m$mle$beta)
+    rownames(Par$beta$se) <- rownames(m$mle$beta)
+    rownames(Par$beta$lower) <- rownames(m$mle$beta)
+    rownames(Par$beta$upper) <- rownames(m$mle$beta)
+    colnames(Par$beta$est) <- colnames(m$mle$beta)
+    colnames(Par$beta$se) <- colnames(m$mle$beta)
+    colnames(Par$beta$lower) <- colnames(m$mle$beta)
+    colnames(Par$beta$upper) <- colnames(m$mle$beta)
     
-    timeInStates <- list(est=xbar$timeInStates,se=MI_se$timeInStates,lower=lower$timeInStates,upper=upper$timeInStates)
-    names(timeInStates$est) <- m$stateNames
-    names(timeInStates$se) <- m$stateNames
-    names(timeInStates$lower) <- m$stateNames
-    names(timeInStates$upper) <- m$stateNames
+    Par$timeInStates <- list(est=xbar$timeInStates,se=MI_se$timeInStates,lower=lower$timeInStates,upper=upper$timeInStates)
+    names(Par$timeInStates$est) <- m$stateNames
+    names(Par$timeInStates$se) <- m$stateNames
+    names(Par$timeInStates$lower) <- m$stateNames
+    names(Par$timeInStates$upper) <- m$stateNames
     
-    stateProbs <- list(est=xbar$stateProbs,se=MI_se$stateProbs,lower=lower$stateProbs,upper=upper$stateProbs)
-    rownames(stateProbs$est) <- m$data$ID
-    rownames(stateProbs$se) <- m$data$ID
-    rownames(stateProbs$lower) <- m$data$ID
-    rownames(stateProbs$upper) <- m$data$ID
-    colnames(stateProbs$est) <- m$stateNames
-    colnames(stateProbs$se) <- m$stateNames
-    colnames(stateProbs$lower) <- m$stateNames
-    colnames(stateProbs$upper) <- m$stateNames
+    Par$states <- states
+    
+    Par$stateProbs <- list(est=xbar$stateProbs,se=MI_se$stateProbs,lower=lower$stateProbs,upper=upper$stateProbs)
+    rownames(Par$stateProbs$est) <- data$ID
+    rownames(Par$stateProbs$se) <- data$ID
+    rownames(Par$stateProbs$lower) <- data$ID
+    rownames(Par$stateProbs$upper) <- data$ID
+    colnames(Par$stateProbs$est) <- m$stateNames
+    colnames(Par$stateProbs$se) <- m$stateNames
+    colnames(Par$stateProbs$lower) <- m$stateNames
+    colnames(Par$stateProbs$upper) <- m$stateNames
   }
   
   mh <- im[[1]]
@@ -226,25 +238,30 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
   mh$mod <- NULL
   mh$CI_real <- NULL
   mh$CI_beta <- NULL
-  mh$data$step<-apply(matrix(unlist(lapply(im,function(x) x$data$step)),ncol=length(mh$data$step),byrow=TRUE),2,mean)
-  mh$data$angle<-apply(matrix(unlist(lapply(im,function(x) x$data$angle)),ncol=length(mh$data$angle),byrow=TRUE),2,CircStats::circ.mean)
-  mh$data$x<-apply(matrix(unlist(lapply(im,function(x) x$data$x)),ncol=length(mh$data$x),byrow=TRUE),2,mean)
-  mh$data$y<-apply(matrix(unlist(lapply(im,function(x) x$data$y)),ncol=length(mh$data$y),byrow=TRUE),2,mean)
-  mh$data$ice<-apply(matrix(unlist(lapply(im,function(x) x$data$ice)),ncol=length(mh$data$ice),byrow=TRUE),2,mean)
+  for(i in distnames){
+    if(dist[[i]] %in% c("wrpcauchy","vm")) {
+      mh$data[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(mh$data[[i]]),byrow=TRUE),2,CircStats::circ.mean)
+    } else {
+      mh$data[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(mh$data[[i]]),byrow=TRUE),2,mean)
+    }
+  }
+  if(all(c("x","y") %in% names(mh$data))){
+    mh$data$x<-apply(matrix(unlist(lapply(im,function(x) x$data$x)),ncol=length(mh$data$x),byrow=TRUE),2,mean)
+    mh$data$y<-apply(matrix(unlist(lapply(im,function(x) x$data$y)),ncol=length(mh$data$y),byrow=TRUE),2,mean)
+  }
   
   if(!is.null(m$mle$gamma)){
-    gammaPar <- list(est=xbar$gamma,se=MI_se$gamma,lower=lower$gamma,upper=upper$gamma)
-    rownames(gammaPar$est) <- m$stateNames
-    rownames(gammaPar$se) <- m$stateNames
-    rownames(gammaPar$lower) <- m$stateNames
-    rownames(gammaPar$upper) <- m$stateNames
-    colnames(gammaPar$est) <- m$stateNames
-    colnames(gammaPar$se) <- m$stateNames
-    colnames(gammaPar$lower) <- m$stateNames
-    colnames(gammaPar$upper) <- m$stateNames
-    mh$Par<-list(stepPar=stepPar,anglePar=anglePar,omegaPar=omegaPar,dryPar=dryPar,divePar=divePar,icePar=icePar,landPar=landPar,beta=beta,gamma=gammaPar,timeInStates=timeInStates,states=states,stateProbs=stateProbs)
-  } else mh$Par<-list(stepPar=stepPar,anglePar=anglePar,omegaPar=omegaPar,dryPar=dryPar,divePar=divePar,icePar=icePar,landPar=landPar,beta=beta,timeInStates=timeInStates,states=states,stateProbs=stateProbs)
-  
+    Par$gamma <- list(est=xbar$gamma,se=MI_se$gamma,lower=lower$gamma,upper=upper$gamma)
+    rownames(Par$gamma$est) <- m$stateNames
+    rownames(Par$gamma$se) <- m$stateNames
+    rownames(Par$gamma$lower) <- m$stateNames
+    rownames(Par$gamma$upper) <- m$stateNames
+    colnames(Par$gamma$est) <- m$stateNames
+    colnames(Par$gamma$se) <- m$stateNames
+    colnames(Par$gamma$lower) <- m$stateNames
+    colnames(Par$gamma$upper) <- m$stateNames
+  }
+  mh$Par <- Par
   return(momentuHMMMI(mh))
   
 }

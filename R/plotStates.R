@@ -22,7 +22,7 @@ plotStates <- function(m,animals=NULL,ask=TRUE)
     stop("'m' must be a momentuHMM or momentuHMMMI object (as output by fitHMM or MI_summary)")
 
   nbAnimals <- length(unique(m$data$ID))
-  nbStates <- ifelse(is.momentuHMM(m),ncol(m$mle$stepPar),ncol(m$Par$stepPar$est))
+  nbStates <- length(m$stateNames)#ifelse(is.momentuHMM(m),ncol(m$mle$stepPar),ncol(m$Par$stepPar$est))
 
   if(nbStates==1)
     stop("Only one state.")

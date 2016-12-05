@@ -4,9 +4,8 @@
 \alias{w2n}
 \title{Scaling function: working to natural parameters}
 \usage{
-w2n(wpar, stepDist, bounds, parSize, nbStates, nbCovs, estAngleMean, stationary,
-  cons, stepDM, angleDM, omegaDM, dryDM, diveDM, iceDM, landDM, boundInd,
-  logitcons)
+w2n(wpar, bounds, parSize, nbStates, nbCovs, estAngleMean, stationary, cons, DM,
+  boundInd, logitcons)
 }
 \arguments{
 \item{wpar}{Vector of state-dependent distributions unconstrained parameters.}

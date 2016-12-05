@@ -4,34 +4,15 @@
 \alias{fitHMM}
 \title{Fit an HMM to the data}
 \usage{
-fitHMM(data, nbStates, stepPar, anglePar, omegaPar = NULL, dryPar = NULL,
-  divePar = NULL, icePar = NULL, landPar = NULL, beta0 = NULL,
-  delta0 = NULL, formula = ~1, stepDist = c("gamma", "weibull"),
-  angleDist = c("wrpcauchy", "none"), omegaDist = c("none", "beta"),
-  dryDist = c("none", "beta"), diveDist = c("none", "pois"),
-  iceDist = c("none", "beta"), landDist = c("none", "beta"),
-  angleMean = NULL, stationary = FALSE, verbose = 0, nlmPar = NULL,
-  fit = TRUE, userBounds = NULL, stepDM = NULL, angleDM = NULL,
-  omegaDM = NULL, dryDM = NULL, diveDM = NULL, iceDM = NULL,
-  landDM = NULL, cons = NULL, stateNames = NULL, logitcons = 0)
+fitHMM(data, nbStates, dist, Par, beta0 = NULL, delta0 = NULL,
+  estAngleMean = NULL, formula = ~1, stationary = FALSE, verbose = 0,
+  nlmPar = NULL, fit = TRUE, DM = NULL, cons = NULL,
+  userBounds = NULL, logitcons = NULL, stateNames = NULL)
 }
 \arguments{
 \item{data}{An object \code{moveData}.}
 
 \item{nbStates}{Number of states of the HMM.}
-
-\item{stepPar}{Vector of initial state-dependent step length distribution parameters.
-The parameters should be in the order expected by the pdf of \code{stepDist}, and the zero-mass
-parameter should be the last. Note that zero-mass parameters are mandatory if there are steps of
-length zero in the data.
-For example, for a 2-state model using the gamma distribution and
-including zero-inflation, the vector of initial parameters would be something like:
-\code{c(mu1,mu2,sigma1,sigma2,zeromass1,zeromass2)}.}
-
-\item{anglePar}{Vector of initial state-dependent turning angle distribution parameters.
-The parameters should be in the order expected by the pdf of \code{angleDist}. For example, for a 2-state
-model using the Von Mises (vm) distribution, the vector of initial parameters would be something like:
-\code{c(mu1,mu2,kappa1,kappa2)}.}
 
 \item{beta0}{Initial matrix of regression coefficients for the transition probabilities (more
 information in "Details").
@@ -41,16 +22,6 @@ of the transition probability matrix are dominant.}
 \item{delta0}{Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}.}
 
 \item{formula}{Regression formula for the covariates. Default: \code{~1} (no covariate effect).}
-
-\item{stepDist}{Name of the distribution of the step lengths (as a character string).
-Supported distributions are: gamma, weibull, lnorm, exp. Default: gamma.}
-
-\item{angleDist}{Name of the distribution of the turning angles (as a character string).
-Supported distributions are: vm, wrpcauchy. Set to \code{"none"} if the angle distribution should
-not be estimated. Default: vm.}
-
-\item{angleMean}{Vector of means of turning angles if not estimated (one for each state).
-Default: \code{NULL} (the angle mean is estimated).}
 
 \item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
@@ -67,7 +38,36 @@ for more detail)}
 If fit=\code{FALSE}, a model is returned with the MLE replaced by the initial parameters given in
 input. This option can be used to assess the initial parameters. Default: \code{TRUE}.}
 
+\item{cons}{Optional list specifying power to raise parameters corresponding to each column of the design matrix for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive by setting cons=2.  Default=NULL, which simply raises all parameters to the power of 1.}
+
 \item{userBounds}{User specified bounds for all parameters in order '\code{rbind(stepBounds,angleBounds,omegaBounds,dryBounds,diveBounds,iceBounds,landBounds)}'}
+
+\item{logitcons}{Lower bound for wrpcauchy turning angle concentration parameter (on logit scale)}
+
+\item{stateNames}{Optional character vector of length nbStates indicating state names.}
+
+\item{stepPar}{Vector of initial state-dependent step length distribution parameters.
+The parameters should be in the order expected by the pdf of \code{stepDist}, and the zero-mass
+parameter should be the last. Note that zero-mass parameters are mandatory if there are steps of
+length zero in the data.
+For example, for a 2-state model using the gamma distribution and
+including zero-inflation, the vector of initial parameters would be something like:
+\code{c(mu1,mu2,sigma1,sigma2,zeromass1,zeromass2)}.}
+
+\item{anglePar}{Vector of initial state-dependent turning angle distribution parameters.
+The parameters should be in the order expected by the pdf of \code{angleDist}. For example, for a 2-state
+model using the Von Mises (vm) distribution, the vector of initial parameters would be something like:
+\code{c(mu1,mu2,kappa1,kappa2)}.}
+
+\item{stepDist}{Name of the distribution of the step lengths (as a character string).
+Supported distributions are: gamma, weibull, lnorm, exp. Default: gamma.}
+
+\item{angleDist}{Name of the distribution of the turning angles (as a character string).
+Supported distributions are: vm, wrpcauchy. Set to \code{"none"} if the angle distribution should
+not be estimated. Default: vm.}
+
+\item{angleMean}{Vector of means of turning angles if not estimated (one for each state).
+Default: \code{NULL} (the angle mean is estimated).}
 
 \item{stepDM}{stepPar design matrix}
 
@@ -82,15 +82,9 @@ input. This option can be used to assess the initial parameters. Default: \code{
 \item{iceDM}{icePar design matrix}
 
 \item{landDM}{landPar design matrix}
-
-\item{cons}{Optional list specifying power to raise parameters corresponding to each column of the design matrix for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive by setting cons=2.  Default=NULL, which simply raises all parameters to the power of 1.}
-
-\item{stateNames}{Optional character vector of length nbStates indicating state names.}
-
-\item{logitcons}{Lower bound for wrpcauchy turning angle concentration parameter (on logit scale)}
 }
 \value{
-A \code{moveHMM} object, i.e. a list of:
+A \code{momentuHMM} object, i.e. a list of:
 \item{mle}{The maximum likelihood estimates of the parameters of the model (if the numerical algorithm
 has indeed identified the global maximum of the likelihood function), which is a list
 of: \code{stepPar} (step distribution parameters), \code{anglePar} (angle distribution
@@ -102,7 +96,7 @@ in "Details"), and \code{delta} (initial distribution).}
 \item{mod}{The object returned by the numerical optimizer \code{nlm}}
 \item{conditions}{Conditions used to fit the model (e.g., parameter bounds, distributions, \code{zeroInflation}, \code{estAngleMean},
 \code{stationary}, and \code{formula})}
-\item{rawCovs}{Raw covariate values, as found in the data (if any). Used in \code{\link{plot.moveHMM}}.}
+\item{rawCovs}{Raw covariate values, as found in the data (if any). Used in \code{\link{plot.momentuHMM}}.}
 }
 \description{
 Fit an hidden Markov model to the data provided, using numerical optimization of the log-likelihood

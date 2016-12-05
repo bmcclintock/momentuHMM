@@ -46,26 +46,27 @@
 #'
 #' @export
 
-nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,stepDist=c("gamma","weibull","lnorm","exp"),
-                     angleDist=c("wrpcauchy","vm","none"),omegaDist=c("beta","none"),dryDist=c("beta","none"),diveDist=c("pois","none"),iceDist=c("beta","none"),landDist=c("beta","none"),
-                     angleMean=NULL,zeroInflation=FALSE,
-                     stationary=FALSE,cons,stepDM,angleDM,omegaDM,dryDM,diveDM,iceDM,landDM,boundInd,logitcons)
+nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,
+                     estAngleMean,zeroInflation,
+                     stationary=FALSE,cons,DM,boundInd,logitcons)
 {
   # check arguments
-  stepDist <- match.arg(stepDist)
-  angleDist <- match.arg(angleDist)
-  omegaDist <- match.arg(omegaDist)
-  dryDist <- match.arg(dryDist)
-  diveDist <- match.arg(diveDist)
-  iceDist <- match.arg(iceDist)
-  landDist <- match.arg(landDist)
+  distnames<-names(dist)
+  
+  #####################
+  ## Check arguments ##
+  #####################
+  for(i in distnames){
+    dist[[i]]<-match.arg(dist[[i]],c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))
+  }
+  
   if(nbStates<1)
     stop("nbStates must be at least 1.")
 
   covs <- model.matrix(formula,data)
   nbCovs <- ncol(covs)-1 # substract intercept column
 
-  initParms<-sum((parSize>0)*c(ncol(stepDM),ncol(angleDM),ncol(omegaDM),ncol(dryDM),ncol(diveDM),ncol(iceDM),ncol(landDM)))
+  initParms<-sum((parSize>0)*unlist(lapply(DM,ncol)))
   
   if(!stationary & (length(wpar)!=initParms+nbStates*(nbStates-1)*(nbCovs+1)+nbStates-1))
     stop("Wrong number of parameters in wpar.")
@@ -74,16 +75,17 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,stepDist=c("gamma
   if(length(data)<1)
     stop("The data input is empty.")
 
-  if(is.null(data$step))
-    stop("Missing field(s) in data.")
+  if(any(is.na(match(distnames,names(data))))) stop(paste0(distnames[is.na(match(distnames,names(data)))],collapse=", ")," not found in data")
 
-  estAngleMean <- (is.null(angleMean) & angleDist!="none")
+  #estAngleMean <- is.null(angleMean)
 
   # convert the parameters back to their natural scale
-  par <- w2n(wpar,stepDist,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,stepDM,angleDM,omegaDM,dryDM,diveDM,iceDM,landDM,boundInd,logitcons)
+  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,DM,boundInd,logitcons)
   
-  if(!is.null(angleMean) & angleDist!="none") # if the turning angles' mean is not estimated
-    par$anglePar <- rbind(angleMean,par$anglePar)
+  for(i in distnames[which(dist %in% c("wrpcauchy","vm"))]){
+    if(!estAngleMean[[i]])
+      par[[i]] <- rbind(rep(0,nbStates),par[[i]],deparse.level=0)
+  }
 
   nbObs <- length(data$step)
 
@@ -95,35 +97,21 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,stepDist=c("gamma
     aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
 
   # NULL arguments don't suit C++
-  if(angleDist=="none")
-    par$anglePar <- matrix(NA)
-  if(omegaDist=="none")
-    par$omegaPar <- matrix(NA)
-  if(dryDist=="none")
-    par$dryPar <- matrix(NA)
-  if(diveDist=="none")
-    par$divePar <- matrix(NA)
-  if(iceDist=="none")
-    par$icePar <- matrix(NA)
-  if(landDist=="none")
-    par$landPar <- matrix(NA)
+  if(any(unlist(lapply(dist,is.null)))){
+    par[which(unlist(lapply(dist,is.null)))]<-matrix(NA)
+  }
+
   if(stationary)
     par$delta <- c(NA)
   if(nbStates==1) {
     par$beta <- matrix(NA)
     par$delta <- c(NA)
-    par$stepPar <- as.matrix(par$stepPar)
-    par$anglePar <- as.matrix(par$anglePar)
-    par$omegaPar <- as.matrix(par$omegaPar)
-    par$dryPar <- as.matrix(par$dryPar)
-    par$divePar <- as.matrix(par$divePar)
-    par$icePar <- as.matrix(par$icePar)
-    par$landPar <- as.matrix(par$landPar)
+    par[paste0(distnames,"Par")] <- lapply(par[paste0(distnames,"Par")],as.matrix)
   }
 
-  nllk <- nLogLike_rcpp(nbStates,par$beta,as.matrix(covs),data,stepDist,angleDist,omegaDist,dryDist,diveDist,iceDist,landDist,
-                        par$stepPar,par$anglePar,par$omegaPar,par$dryPar,par$divePar,par$icePar,par$landPar,
-                        par$delta,aInd,zeroInflation,stationary)
+  nllk <- nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,
+                        par,
+                        aInd,zeroInflation,stationary)
 
   return(nllk)
 }

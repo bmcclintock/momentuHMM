@@ -28,7 +28,7 @@ stateProbs <- function(m)
     stop("'m' must be a momentuHMM object (as output by fitHMM)")
 
   data <- m$data
-  nbStates <- ncol(m$mle$stepPar)
+  nbStates <- length(m$stateNames)
 
   if(nbStates==1)
     stop("No states to decode (nbStates=1)")

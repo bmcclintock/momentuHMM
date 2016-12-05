@@ -53,7 +53,7 @@
 #' @param stateNames Optional character vector of length nbStates indicating state names.
 #' @param logitcons Lower bound for wrpcauchy turning angle concentration parameter (on logit scale)
 #'
-#' @return A \code{moveHMM} object, i.e. a list of:
+#' @return A \code{momentuHMM} object, i.e. a list of:
 #' \item{mle}{The maximum likelihood estimates of the parameters of the model (if the numerical algorithm
 #' has indeed identified the global maximum of the likelihood function), which is a list
 #' of: \code{stepPar} (step distribution parameters), \code{anglePar} (angle distribution
@@ -65,7 +65,7 @@
 #' \item{mod}{The object returned by the numerical optimizer \code{nlm}}
 #' \item{conditions}{Conditions used to fit the model (e.g., parameter bounds, distributions, \code{zeroInflation}, \code{estAngleMean},
 #' \code{stationary}, and \code{formula})}
-#' \item{rawCovs}{Raw covariate values, as found in the data (if any). Used in \code{\link{plot.moveHMM}}.}
+#' \item{rawCovs}{Raw covariate values, as found in the data (if any). Used in \code{\link{plot.momentuHMM}}.}
 #'
 #' @details
 #' \itemize{
@@ -132,11 +132,12 @@
 #'
 #' @useDynLib momentuHMM
 
-fitHMM <- function(data,nbStates,stepPar,anglePar,omegaPar=NULL,dryPar=NULL,divePar=NULL,icePar=NULL,landPar=NULL,beta0=NULL,delta0=NULL,formula=~1,
-                   stepDist=c("gamma","weibull"),angleDist=c("wrpcauchy","none"),
-                   omegaDist=c("none","beta"),dryDist=c("none","beta"),diveDist=c("none","pois"),iceDist=c("none","beta"),landDist=c("none","beta"),
-                   angleMean=NULL,stationary=FALSE,verbose=0,nlmPar=NULL,fit=TRUE,userBounds=NULL,
-                   stepDM=NULL,angleDM=NULL,omegaDM=NULL,dryDM=NULL,diveDM=NULL,iceDM=NULL,landDM=NULL,cons=NULL,stateNames=NULL,logitcons=0)
+fitHMM <- function(data,nbStates,dist,
+                   Par,beta0=NULL,delta0=NULL,
+                   estAngleMean=NULL,
+                   formula=~1,
+                   stationary=FALSE,verbose=0,nlmPar=NULL,fit=TRUE,
+                   DM=NULL,cons=NULL,userBounds=NULL,logitcons=NULL,stateNames=NULL)
 {
   # check that the data is a moveData object
   if(!is.moveData(data))
@@ -152,115 +153,147 @@ fitHMM <- function(data,nbStates,stepPar,anglePar,omegaPar=NULL,dryPar=NULL,dive
   # check that there is no response varibale in the formula
   if(attr(terms(formula),"response")!=0)
     stop("The response variable should not be specified in the formula.")
-
+  
+  if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
+  if(!is.list(Par) | is.null(names(Par))) stop("'Par' must be a named list")
+  distnames<-names(dist)
+  if(any(is.na(match(distnames,names(data))))) stop(paste0(distnames[is.na(match(distnames,names(data)))],collapse=", ")," not found in data")
+  if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
+  Par <- Par[distnames]
+  
   # build design matrix
-  covsCol <- which(names(data)!="ID" & names(data)!="x" & names(data)!="y" &
-                     names(data)!="step" & names(data)!="angle" & names(data)!="omega" & names(data)!="dry" & names(data)!="dive" & names(data)!="ice" & names(data)!="land")
+  covsCol <- seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data))]
   covs <- model.matrix(formula,data)
 
   if(length(covsCol)>0) {
     rawCovs <- data[covsCol]
-    data <- cbind(data[-covsCol],covs)
+    #data <- cbind(data[-covsCol],covs)
   }
   else {
     rawCovs <- NULL
-    data <- cbind(data,covs)
+    #data <- cbind(data,covs)
   }
 
   nbCovs <- ncol(covs)-1 # substract intercept column
 
   # determine whether zero-inflation should be included
-  if(length(which(data$step==0))>0)
-    zeroInflation <- TRUE
-  else
-    zeroInflation <- FALSE
-
-  # check that zero-mass is in the open interval (0,1)
-  if(zeroInflation) {
-    zm0 <- stepPar[(length(stepPar)-nbStates+1):length(stepPar)]
-    zm0[which(zm0==0)] <- 1e-8
-    zm0[which(zm0==1)] <- 1-1e-8
-    stepPar[(length(stepPar)-nbStates+1):length(stepPar)] <- zm0
+  zeroInflation <- vector('list',length(distnames))
+  names(zeroInflation) <- distnames
+  for(i in distnames){
+    if(dist[[i]]!="wrpcauchy" & dist[[i]]!="vm" & dist[[i]]!="pois"){
+      if(length(which(data[[i]]==0))>0) {
+        zeroInflation[[i]]<-TRUE
+        # check that zero-mass is in the open interval (0,1)
+        zm0 <- Par[[i]][(length(Par[[i]])-nbStates+1):length(Par[[i]])]
+        zm0[which(zm0==0)] <- 1e-8
+        zm0[which(zm0==1)] <- 1-1e-8
+        Par[[i]][(length(Par[[i]])-nbStates+1):length(Par[[i]])] <- zm0
+      }
+      else 
+        zeroInflation[[i]]<-FALSE
+    }
+    else zeroInflation[[i]]<-FALSE
   }
 
+
+  #eval(parse(text=paste0(distnames,"Dist='",dist,"'")))
+  #eval(parse(text=paste0(distnames,"Par=",Par)))
+  #eval(parse(text=paste0(distnames,"DM=",DM)))
+  
   #####################
   ## Check arguments ##
   #####################
-  stepDist <- match.arg(stepDist)
-  angleDist <- match.arg(angleDist)
-  omegaDist <- match.arg(omegaDist)
-  dryDist <- match.arg(dryDist)
-  diveDist <- match.arg(diveDist)
-  iceDist <- match.arg(iceDist)
-  landDist <- match.arg(landDist)
+  for(i in distnames){
+    dist[[i]]<-match.arg(dist[[i]],c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))
+  }
   
   if(nbStates<0)
     stop("nbStates should be at least 1.")
   if(length(data)<1)
     stop("The data input is empty.")
-  if(is.null(data$step))
-    stop("Missing field in data: step.")
   
-  if(is.null(stepDM)) stepDM <- diag((2+zeroInflation)*nbStates)
-  if(is.null(angleDM)) angleDM <- diag((1+is.null(angleMean))*nbStates)
-  if(is.null(omegaDM)) omegaDM <- diag(2*nbStates)
-  if(is.null(dryDM)) dryDM <- diag(2*nbStates)
-  if(is.null(diveDM)) diveDM <- diag(nbStates)
-  if(is.null(iceDM)) iceDM <- diag(2*nbStates)
-  if(is.null(landDM)) landDM <- diag(2*nbStates)
-  if(is.null(cons)) cons <- list(step=rep(1,ncol(stepDM)),angle=rep(1,ncol(angleDM)),omega=rep(1,ncol(omegaDM)),dry=rep(1,ncol(dryDM)),dive=rep(1,ncol(diveDM)),ice=rep(1,ncol(iceDM)),land=rep(1,ncol(landDM)))
+  if(is.null(estAngleMean)){
+    estAngleMean <- vector('list',length(distnames))
+    names(estAngleMean) <- distnames
+  } else {
+    if(!is.list(estAngleMean) | is.null(names(estAngleMean))) stop("'estAngleMean' must be a named list")
+  }
+  for(i in distnames){
+    if(is.null(estAngleMean[[i]])) estAngleMean[[i]] <- FALSE
+  }
+  for(i in distnames[which(!(dist %in% c("wrpcauchy","vm")))]){
+    estAngleMean[[i]] <- FALSE
+  }
+  estAngleMean<-estAngleMean[distnames]
   
-  #if(length(stepPar[1:(length(stepPar)-nbStates*zeroInflation)])!=ncol(stepDM))
-  #  stop("Dimension mismatch between stepPar and stepDM")
-  #if(length(anglePar[1:(length(anglePar)-nbStates*(is.null(angleMean)))])!=ncol(angleDM))
-  #  stop("Dimension mismatch between anglePar and angleDM")
-  if(omegaDist!="none" & length(omegaPar)!=ncol(omegaDM))
-    stop("Dimension mismatch between omegaPar and omegaDM")
-  else if (omegaDist!="none" & length(cons$omega)!=ncol(omegaDM))
-    stop("Dimension mismatch between omega constraints (cons$omega) and omegaDM")
-  if(dryDist!="none" & length(dryPar)!=ncol(dryDM))
-    stop("Dimension mismatch between dryPar and dryDM")
-  else if (dryDist!="none" & length(cons$dry)!=ncol(dryDM))
-    stop("Dimension mismatch between dry constraints (cons$dry) and dryDM")
-  if(diveDist!="none" & length(divePar)!=ncol(diveDM))
-    stop("Dimension mismatch between divePar and diveDM")
-  else if (diveDist!="none" & length(cons$dive)!=ncol(diveDM))
-    stop("Dimension mismatch between dive constraints (cons$dive) and diveDM")
-  if(iceDist!="none" & length(icePar)!=ncol(iceDM))
-    stop("Dimension mismatch between icePar and iceDM")
-  else if (iceDist!="none" & length(cons$ice)!=ncol(iceDM))
-    stop("Dimension mismatch between ice constraints (cons$ice) and iceDM")
-  if(landDist!="none" & length(landPar)!=ncol(landDM))
-    stop("Dimension mismatch between landPar and landDM")
-  else if (landDist!="none" & length(cons$land)!=ncol(landDM))
-    stop("Dimension mismatch between land constraints (cons$land) and landDM")
+  if(is.null(DM)){
+    DM <- vector('list',length(distnames))
+    names(DM) <- distnames
+  } else {
+    if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
+  }
+  for(i in distnames){
+    if(is.null(DM[[i]])) {
+      if(dist[[i]] %in% c("wrpcauchy","vm") & length(Par[[i]])!=(nbStates+nbStates*estAngleMean[[i]])) stop("Wrong number of parameters for ",i)
+      DM[[i]] <- diag((ifelse(dist[[i]]=="exp" | dist[[i]]=="pois" | (dist[[i]] %in% c("wrpcauchy","vm") & !estAngleMean[[i]]),1,2)+zeroInflation[[i]])*nbStates)
+    }
+  }
+  DM<-DM[distnames]
+  if(any(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol))))
+    stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol)))),collapse=", "))
+  
+  if(is.null(cons)){
+    cons <- vector('list',length(distnames))
+    names(cons) <- distnames
+  } else {
+    if(!is.list(cons) | is.null(names(cons))) stop("'cons' must be a named list")
+  }
+  for(i in distnames){
+    if(is.null(cons[[i]])) cons[[i]] <- rep(1,ncol(DM[[i]]))
+  }
+  cons<-cons[distnames]
+  if(any(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))) 
+    stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
+  
+  if(is.null(logitcons)){
+    logitcons <- vector('list',length(distnames))
+    names(logitcons) <- distnames
+  } else {
+    if(!is.list(logitcons) | is.null(names(logitcons))) stop("'logitcons' must be a named list")
+  }
+  for(i in distnames){
+    if(is.null(logitcons[[i]])) logitcons[[i]] <- rep(0,ncol(DM[[i]]))
+  }
+  for(i in which(!(dist %in% "wrpcauchy"))){
+    logitcons[[distnames[i]]]<-rep(0,ncol(DM[[distnames[i]]]))
+  }
+  logitcons<-logitcons[distnames]
+  if(any(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))) 
+    stop("Length mismatch between Par and logitcons for: ",paste(names(which(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))),collapse=", "))
+  
   if(!is.null(stateNames) & length(stateNames)!=nbStates)
     stop("stateNames must have length ",nbStates)
 
-  par0 <- c(stepPar,anglePar,omegaPar,dryPar,divePar,icePar,landPar)  
+  par0 <- unlist(Par)#c(stepPar,anglePar,omegaPar,dryPar,divePar,icePar,landPar)  
   #if(!is.null(userBounds) & !is.numeric(userBounds)){
   #  evalBounds<-matrix(sapply(bounds,function(x) eval(parse(text=x))),ncol=2)
   #}
   #p <- parDef(stepDist,angleDist,omegaDist,dryDist,diveDist,iceDist,landDist,nbStates,is.null(angleMean),zeroInflation,evalBounds,stepDM,angleDM,omegaDM,dryDM,diveDM,iceDM,landDM)
-  p <- parDef(stepDist,angleDist,omegaDist,dryDist,diveDist,iceDist,landDist,nbStates,is.null(angleMean),zeroInflation,userBounds,stepDM,angleDM,omegaDM,dryDM,diveDM,iceDM,landDM)
+  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,userBounds,DM)
   bounds <- p$bounds
-  if(!is.numeric(bounds)){
-    bounds<-matrix(sapply(bounds,function(x) eval(parse(text=x))),ncol=2,dimnames=list(rownames(p$bounds)))
+  for(i in distnames){
+    if(!is.numeric(bounds[[i]])){
+      bounds[[i]]<-matrix(sapply(bounds[[i]],function(x) eval(parse(text=x))),ncol=2,dimnames=list(rownames(p$bounds[[i]])))
+    }
   }
   parSize <- p$parSize
-  if(length(stepPar%*%stepDM)!=(parSize[1]*nbStates))
-    stop("zero inflation parameters must be included in 'stepPar'")
-  if(sum((parSize>0)*c(ncol(stepDM),ncol(angleDM),ncol(omegaDM),ncol(dryDM),ncol(diveDM),ncol(iceDM),ncol(landDM)))!=length(par0)) {
+  for(i in 1:length(distnames)){
+    if(length(DM[[distnames[i]]]%*%Par[[distnames[i]]])!=(parSize[i]*nbStates))
+      stop("zero inflation parameters must be included in 'Par$",distnames[i],"'")
+  }
+
+  if(sum((parSize>0)*unlist(lapply(DM,ncol)))!=length(par0)) {
     error <- "Wrong number of initial parameters"
-    if(ncol(stepDM)!=length(stepPar)) {
-      error <- paste(error,"-- there should be",(parSize[1]-2)*nbStates+ncol(stepDM),"initial step parameters")
-      if(zeroInflation)
-        error <- paste(error,"-- zero-mass parameters should be included")
-    }
-    if(angleDist!="none" & ncol(angleDM)!=length(anglePar))
-      error <- paste(error,"-- there should be",(parSize[2]-1)*nbStates+ncol(angleDM),"initial angle parameters.")
-    if(angleDist=="none" & length(anglePar)>0)
-      error <- paste(error,"-- 'anglePar' should be NULL.")
     stop(error)
   }
   if(!is.null(beta0)) {
@@ -275,47 +308,29 @@ fitHMM <- function(data,nbStates,stepPar,anglePar,omegaPar=NULL,dryPar=NULL,dive
     if(length(delta0)!=nbStates)
       stop(paste("delta0 has the wrong length: it should have",nbStates,"elements."))
 
-  stepBounds <- bounds[1:ncol(stepDM),]
-  if(length(which(stepPar<=stepBounds[,1] | stepPar>=stepBounds[,2]))>0)
-    stop(paste("Check the step parameters bounds (the initial parameters should be",
-               "strictly between the bounds of their parameter space)."))
-
-  if(angleDist!="none") {
-    # We can't really write distribution-agnostic code here, because the bounds
-    # defined in parDef are not the actual bounds of the parameter space.
-    if(is.null(angleMean)) {
-      m <- anglePar[1:nbStates] # angle mean
-      k <- anglePar[(nbStates+1):length(anglePar)] # angle concentration
-      if(length(which(m<=(-pi) | m>pi))>0)
-        stop("Check the angle parameters bounds. The angle mean should be in (-pi,pi].")
-    } else {
-      k <- anglePar # angle concentration
-      if(length(which(angleMean<=-pi | angleMean>pi))>0)
-        stop("The 'angleMean' should be in (-pi,pi].")
-      if(length(angleMean)!=nbStates)
-        stop("The argument 'angleMean' should be of length nbStates.")
-    }
-    if(angleDist!="wrpcauchy" & length(which(k<=0))>0)
-      stop("Check the angle parameters bounds. The concentration should be strictly positive.")
-    if(angleDist=="wrpcauchy" & ((length(which(k>=1))>0) | length(which(k<= -1))>0))
-      stop("Check the angle parameters bounds. The concentration should be in (-1,1).")
+  for(i in distnames){
+    if(length(which(Par[[i]]<bounds[[i]][,1] | Par[[i]]>bounds[[i]][,2]))>0)
+      stop(paste0("Check the parameter bounds for '",i,"' (the initial parameters should be ",
+                 "strictly between the bounds of their parameter space)."))
   }
-  else if(!is.null(angleMean))
-    stop("'angleMean' shouldn't be specified if 'angleDist' is \"none\"")
-
-  if(length(which(par0<bounds[,1] | par0>bounds[,2]))>0)
-    stop(paste("Check the parameter bounds (the initial parameters should be",
-               "strictly between the bounds of their parameter space)."))
-
+  
   # check that verbose is in {0,1,2}
   if(!(verbose %in% c(0,1,2)))
     stop("verbose must be in {0,1,2}")
 
   # check that observations are within expected bounds
-  if(length(which(data$step<0))>0)
-    stop("The step lengths should be positive.")
-  if(length(which(data$angle < -pi | data$angle > pi))>0)
-    stop("The turning angles should be between -pi and pi.")
+  for(i in which(unlist(lapply(dist,function(x) x %in% c("weibull","gamma","exp","pois"))))){
+    if(length(which(data[[distnames[[i]]]]<0))>0)
+      stop(distnames[[i]]," data should be non-negative")
+  }
+  for(i in which(unlist(lapply(dist,function(x) x %in% c("wrpcauchy","vm"))))){
+    if(length(which(data[[distnames[[i]]]] < -pi | data[[distnames[[i]]]] > pi))>0)
+      stop(distnames[[i]]," angles should be between -pi and pi")
+  }
+  for(i in which(unlist(lapply(dist,function(x) x %in% "beta")))){
+    if(length(which(data[[distnames[[i]]]]<0 | data[[distnames[[i]]]]>=1))>0)
+      stop(distnames[[i]]," data should be between 0 and 1")
+  }
 
   # check that stationary==FALSE if there are covariates
   if(nbCovs>0 & stationary==TRUE)
@@ -340,20 +355,17 @@ fitHMM <- function(data,nbStates,stepPar,anglePar,omegaPar=NULL,dryPar=NULL,dive
   if(stationary)
     delta0 <- NULL
 
-  estAngleMean <- (is.null(angleMean) & angleDist!="none")
-
-  if(!is.numeric(p$bounds)){
-    bounds <- gsub("step","",p$bounds,fixed=TRUE)
-    bounds <- gsub("angle","",bounds,fixed=TRUE)
-    bounds <- gsub("omega","",bounds,fixed=TRUE)
-    bounds <- gsub("dry","",bounds,fixed=TRUE) 
-    bounds <- gsub("dive","",bounds,fixed=TRUE)    
-    bounds <- gsub("ice","",bounds,fixed=TRUE)
-    bounds <- gsub("land","",bounds,fixed=TRUE)
+  if(!all(unlist(lapply(p$bounds,is.numeric)))){
+    bounds <- p$bounds
+    for(i in distnames){
+      if(!is.numeric(bounds[[i]])){
+        bounds[[i]] <- gsub(i,"",bounds[[i]],fixed=TRUE)
+      }
+    }
   }
   
   # build the vector of initial working parameters
-  wpar <- n2w(par0,stepDist,bounds,beta0,delta0,nbStates,estAngleMean,stepDM,angleDM,omegaDM,dryDM,diveDM,iceDM,landDM,cons,logitcons)
+  wpar <- n2w(Par,bounds,beta0,delta0,nbStates,estAngleMean,DM,cons,logitcons)
       
   ##################
   ## Optimization ##
@@ -374,67 +386,38 @@ fitHMM <- function(data,nbStates,stepPar,anglePar,omegaPar=NULL,dryPar=NULL,dive
     iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
 
     # call to optimizer nlm
-    withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,bounds,parSize,data,stepDist,
-                                   angleDist,omegaDist,dryDist,diveDist,iceDist,landDist,
-                                   angleMean,zeroInflation,stationary,cons,stepDM,angleDM,omegaDM,dryDM,diveDM,iceDM,landDM,p$boundInd,logitcons,
+    withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,bounds,parSize,data,dist,
+                                   estAngleMean,zeroInflation,
+                                   stationary,cons,DM,p$boundInd,logitcons,
                                    print.level=verbose,gradtol=gradtol,
                                    stepmax=stepmax,steptol=steptol,
                                    iterlim=iterlim,hessian=TRUE),
                         warning=h) # filter warnings using function h
 
     # convert the parameters back to their natural scale
-    mle <- w2n(mod$estimate,stepDist,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,stepDM,angleDM,omegaDM,dryDM,diveDM,iceDM,landDM,p$boundInd,logitcons)
+    mle <- w2n(mod$estimate,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,DM,p$boundInd,logitcons)
   }
   else {
     mod <- NA
-    mle <- w2n(wpar,stepDist,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,stepDM,angleDM,omegaDM,dryDM,diveDM,iceDM,landDM,p$boundInd,logitcons)
+    mle <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,DM,p$boundInd,logitcons)
   }
 
   ####################
   ## Prepare output ##
   ####################
-  # include angle mean if it wasn't estimated
-  if(!is.null(angleMean) & angleDist!="none")
-    mle$anglePar <- rbind(angleMean,mle$anglePar)
-
-  # name columns and rows of MLEs
-  rownames(mle$stepPar) <- p$parNames[1:nrow(mle$stepPar)]
-
   if(is.null(stateNames)){
     for(i in 1:nbStates)
       stateNames[i] <- paste("state",i)
   }
-  colnames(mle$stepPar) <- stateNames
-
-  if(angleDist!="none") {
-    rownames(mle$anglePar) <- c("mean","concentration")
-    colnames(mle$anglePar) <- stateNames
+  
+  # name columns and rows of MLEs
+  for(i in distnames){
+    if(dist[[i]] %in% c("wrpcauchy","vm"))
+      if(!estAngleMean[[i]])
+        mle[[i]] <- rbind(rep(0,nbStates),mle[[i]])
+    rownames(mle[[i]]) <- p$parNames[[i]]
+    colnames(mle[[i]]) <- stateNames
   }
-  
-  if(omegaDist!="none") {
-    rownames(mle$omegaPar) <- c("shape1","shape2")
-    colnames(mle$omegaPar) <- stateNames
-  }
-  
-  if(dryDist!="none") {
-    rownames(mle$dryPar) <- c("shape1","shape2")
-    colnames(mle$dryPar) <- stateNames
-  }    
-
-  if(diveDist!="none") {  
-    rownames(mle$divePar) <- "lambda"
-    colnames(mle$divePar) <- stateNames
-  }
-  
-  if(iceDist!="none") {
-    rownames(mle$icePar) <- c("shape1","shape2")
-    colnames(mle$icePar) <- stateNames
-  }    
-  
-  if(landDist!="none") {
-    rownames(mle$landPar) <- c("shape1","shape2")
-    colnames(mle$landPar) <- stateNames
-  }    
 
   if(!is.null(mle$beta)) {
     rownames(mle$beta) <- c("intercept",attr(terms(formula),"term.labels"))
@@ -476,15 +459,15 @@ fitHMM <- function(data,nbStates,stepPar,anglePar,omegaPar=NULL,dryPar=NULL,dive
   }
 
   # conditions of the fit
-  conditions <- list(stepDist=stepDist,angleDist=angleDist,omegaDist=omegaDist,dryDist=dryDist,diveDist=diveDist,iceDist=iceDist,landDist=landDist,zeroInflation=zeroInflation,
-                     estAngleMean=estAngleMean,stationary=stationary,formula=formula,cons=cons,stepDM=stepDM,angleDM=angleDM,omegaDM=omegaDM,dryDM=dryDM,diveDM=diveDM,iceDM=iceDM,landDM=landDM,cons=cons,logitcons=logitcons)
+  conditions <- list(dist=dist,zeroInflation=zeroInflation,
+                     estAngleMean=estAngleMean,stationary=stationary,formula=formula,cons=cons,bounds=p$bounds,DM=DM,logitcons=logitcons)
 
-  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,bounds=p$bounds,rawCovs=rawCovs,stateNames=stateNames)
+  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames)
   
   CI_real<-CI_real(momentuHMM(mh))
   CI_beta<-CI_beta(momentuHMM(mh))
   
-  mh <- list(data=data,mle=mle,CI_real=CI_real,CI_beta=CI_beta,mod=mod,conditions=conditions,bounds=p$bounds,rawCovs=rawCovs,stateNames=stateNames)
+  mh <- list(data=data,mle=mle,CI_real=CI_real,CI_beta=CI_beta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames)
   
   return(momentuHMM(mh))
 }

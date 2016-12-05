@@ -31,114 +31,103 @@
 
 pseudoRes <- function(m)
 {
-  if(!is.momentuHMM(m))
-    stop("'m' must be a momentuHMM object (as output by fitHMM)")
-
-  stepFun <- paste("p",m$conditions$stepDist,sep="")
-
-  angleDist <- m$conditions$angleDist
-  if(angleDist!="none") {
-    angleFun <- paste("d",angleDist,sep="") # integrated below
-
-    if(length(which(m$data$angle==pi))>0)
-      message("Note: Some angles are equal to pi, and the corresponding pseudo-residuals are not included")
-  }
+  if(!is.momentuHMM(m) & !is.momentuHMMMI(m))
+    stop("'m' must be a momentuHMM or momentuHMMMI object (as output by fitHMM or MI_summary)")
 
   data <- m$data
   nbObs <- nrow(data)
-  nbStates <- ncol(m$mle$stepPar)
+  nbStates <- length(m$stateNames)
+  dist <- m$conditions$dist
+  distnames <- names(dist)
+  
+  if(is.momentuHMMMI(m)){
+    m$mle<-lapply(m$Par[distnames],function(x) x$est)
+    m$mle$beta<-m$Par$beta$est
+    m$mle$delta<-m$Par$delta$est
+  }
+  
+  Fun <- lapply(dist,function(x) paste("p",x,sep=""))
+  for(j in which(dist %in% c("wrpcauchy","vm"))){
+    Fun[[j]] <- paste0("d",dist[[j]])
+    if(length(which(data[[distnames[j]]]==pi))>0)
+      message("Note: Some ",distnames[j],"s are equal to pi, and the corresponding pseudo-residuals are not included")
+  }
 
   # forward log-probabilities
   la <- logAlpha(m)
-
-  stepRes <- rep(NA,nbObs)
-  pStepMat <- matrix(NA,nbObs,nbStates)
-
-  if(angleDist!="none") {
-    angleRes <- rep(NA,nbObs)
-    pAngleMat <- matrix(NA,nbObs,nbStates)
-  }
-  else {
-    angleRes <- NULL
-    pAngleMat <- NULL
-  }
-
-  for(state in 1:nbStates) {
-    # define lists of parameters
-    stepArgs <- list(data$step[1])
-    if(!m$conditions$zeroInflation) {
-        for(k in 1:nrow(m$mle$stepPar))
-            stepArgs[[k+1]] <- m$mle$stepPar[k,state]
-
-        zeromass <- 0
-    }
-    else {
-        for(k in 1:(nrow(m$mle$stepPar)-1))
-            stepArgs[[k+1]] <- m$mle$stepPar[k,state]
-
-        zeromass <- m$mle$stepPar[nrow(m$mle$stepPar),state]
-    }
-
-    if(m$conditions$stepDist=="gamma") {
-      shape <- stepArgs[[2]]^2/stepArgs[[3]]^2
-      scale <- stepArgs[[3]]^2/stepArgs[[2]]
-      stepArgs[[2]] <- shape
-      stepArgs[[3]] <- 1/scale # dgamma expects rate=1/scale
-    }
-
-    if(angleDist!="none") {
-      angleArgs <- list(angleFun,-pi,data$angle[1]) # to pass to function "integrate" below
-      for(k in 1:nrow(m$mle$anglePar))
-        angleArgs[[k+3]] <- m$mle$anglePar[k,state]
-
-      for(i in 1:nbObs) {
-        if(!is.na(data$step[i])) {
-          stepArgs[[1]] <- data$step[i]
-          pStepMat[i,state] <- zeromass+(1-zeromass)*do.call(stepFun,stepArgs)
-        }
-
-        if(!is.na(data$angle[i])) {
-          # angle==pi => residual=Inf
-          if(data$angle[i]!=pi) {
-            angleArgs[[3]] <- data$angle[i]
-            pAngleMat[i,state] <- do.call(integrate,angleArgs)$value
-          }
-        }
-      }
-    }
-  }
-
-  if(!is.na(data$step[1]))
-    stepRes[1] <- qnorm(t(m$mle$delta)%*%pStepMat[1,])
-
-  if(angleDist!="none") {
-    if(!is.na(data$angle[1]))
-      angleRes[1] <- qnorm(t(m$mle$delta)%*%pAngleMat[1,])
-  }
-
-  # define covariates
-  covsCol <- which(names(data)!="ID" & names(data)!="x" & names(data)!="y" &
-                     names(data)!="step" & names(data)!="angle")
-  covs <- data[,covsCol]
+  
+  # identify covariates
+  covs <- model.matrix(m$conditions$formula,data)
+  nbCovs <- ncol(covs)-1 # substract intercept column
 
   if(nbStates>1)
     trMat <- trMatrix_rcpp(nbStates,m$mle$beta,as.matrix(covs))
   else
     trMat <- array(1,dim=c(1,1,nbObs))
 
-  for(i in 2:nbObs) {
-    gamma <- trMat[,,i]
-    c <- max(la[i-1,]) # cancels below ; prevents numerical errors
-    a <- exp(la[i-1,]-c)
+  genRes <- list()
+  for(j in distnames){
+    genRes[[paste0(j,"Res")]] <- rep(NA,nbObs)
+    pgenMat <- matrix(NA,nbObs,nbStates)
+  
+    for(state in 1:nbStates) {
+      # define lists of parameters
+      genArgs <- list(data[[j]])
+      if(!m$conditions$zeroInflation[[j]]) {
+          for(k in 1:nrow(m$mle[[j]]))
+              genArgs[[k+1]] <- m$mle[[j]][k,state]
+  
+          zeromass <- 0
+      }
+      else {
+          for(k in 1:(nrow(m$mle[[j]])-1))
+              genArgs[[k+1]] <- m$mle[[j]][k,state]
+  
+          zeromass <- m$mle[[j]][nrow(m$mle[[j]]),state]
+      }
+      if(!(dist[[j]] %in% c("wrpcauchy","vm"))){
+        if(dist[[j]]=="gamma") {
+          shape <- genArgs[[2]]^2/genArgs[[3]]^2
+          scale <- genArgs[[3]]^2/genArgs[[2]]
+          genArgs[[2]] <- shape
+          genArgs[[3]] <- 1/scale # dgamma expects rate=1/scale
+        }
+        
+        for(i in 1:nbObs) {
+          if(!is.na(data[[j]][i])) {
+            genArgs[[1]] <- data[[j]][i]
+            pgenMat[i,state] <- zeromass+(1-zeromass)*do.call(Fun[[j]],genArgs)
+          }
+        }
+      } else {
+        genArgs <- list(Fun[[j]],-pi,data[[j]][1]) # to pass to function "integrate" below
+        for(k in 1:nrow(m$mle[[j]]))
+          genArgs[[k+3]] <- m$mle[[j]][k,state]
+  
+        for(i in 1:nbObs) {
+          if(!is.na(data[[j]][i])) {
+            # angle==pi => residual=Inf
+            if(data[[j]][i]!=pi) {
+              genArgs[[3]] <- data[[j]][i]
+              pgenMat[i,state] <- do.call(integrate,genArgs)$value
+            }
+          }
+        }
+      }
+    }
+  
+    if(!is.na(data[[j]][1]))
+      genRes[[paste0(j,"Res")]][1] <- qnorm(t(m$mle$delta)%*%pgenMat[1,])
 
-    if(!is.na(data$step[i]))
-      stepRes[i] <-qnorm(t(a)%*%(gamma/sum(a))%*%pStepMat[i,])
-
-    if(angleDist!="none") {
-      if(!is.na(data$angle[i]))
-        angleRes[i] <- qnorm(t(a)%*%(gamma/sum(a))%*%pAngleMat[i,])
+    for(i in 2:nbObs) {
+      gamma <- trMat[,,i]
+      c <- max(la[i-1,]) # cancels below ; prevents numerical errors
+      a <- exp(la[i-1,]-c)
+  
+      if(!is.na(data[[j]][i]))
+        genRes[[paste0(j,"Res")]][i] <-qnorm(t(a)%*%(gamma/sum(a))%*%pgenMat[i,])
     }
   }
 
-  return(list(stepRes=stepRes,angleRes=angleRes))
+  return(genRes)
 }

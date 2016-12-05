@@ -4,33 +4,15 @@
 \alias{simData}
 \title{Simulation tool}
 \usage{
-simData(nbAnimals = 1, nbStates = 6, stepDist = c("gamma", "weibull"),
-  angleDist = c("wrpcauchy", "none"), omegaDist = c("none", "beta"),
-  dryDist = c("none", "beta"), diveDist = c("none", "pois"),
-  iceDist = c("none", "beta"), landDist = c("none", "beta"),
-  stepPar = NULL, anglePar = NULL, omegaPar = NULL, dryPar = NULL,
-  divePar = NULL, icePar = NULL, landPar = NULL, beta = NULL,
-  covs = NULL, nbCovs = 0, zeroInflation = FALSE, obsPerAnimal = c(500,
-  1500), userBounds = NULL, stepDM = NULL, angleDM = NULL,
-  omegaDM = NULL, dryDM = NULL, diveDM = NULL, iceDM = NULL,
-  landDM = NULL, cons = NULL, stateNames = NULL, logitcons = 0,
-  model = NULL, states = FALSE)
+simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
+  covs = NULL, nbCovs = 0, zeroInflation = NULL, obsPerAnimal = c(500,
+  1500), DM = NULL, cons = NULL, userBounds = NULL, logitcons = NULL,
+  stateNames = NULL, model = NULL, states = FALSE)
 }
 \arguments{
 \item{nbAnimals}{Number of observed individuals to simulate.}
 
 \item{nbStates}{Number of behavioural states to simulate.}
-
-\item{stepDist}{Name of the distribution of the step lengths (as a character string).
-Supported distributions are: gamma, weibull, lnorm, exp. Default: gamma.}
-
-\item{angleDist}{Name of the distribution of the turning angles (as a character string).
-Supported distributions are: vm, wrpcauchy. Set to \code{"none"} if the angle distribution should
-not be estimated. Default: vm.}
-
-\item{stepPar}{Parameters of the step length distribution.}
-
-\item{anglePar}{Parameters of the turning angle distribution.}
 
 \item{beta}{Matrix of regression parameters for the transition probabilities (more information
 in "Details").}
@@ -57,6 +39,17 @@ obsPerAnimal, covs (if covariate values different from those in the data should 
 and states.}
 
 \item{states}{\code{TRUE} if the simulated states should be returned, \code{FALSE} otherwise (default).}
+
+\item{stepDist}{Name of the distribution of the step lengths (as a character string).
+Supported distributions are: gamma, weibull, lnorm, exp. Default: gamma.}
+
+\item{angleDist}{Name of the distribution of the turning angles (as a character string).
+Supported distributions are: vm, wrpcauchy. Set to \code{"none"} if the angle distribution should
+not be estimated. Default: vm.}
+
+\item{stepPar}{Parameters of the step length distribution.}
+
+\item{anglePar}{Parameters of the turning angle distribution.}
 }
 \value{
 An object moveData, i.e. a dataframe of:
