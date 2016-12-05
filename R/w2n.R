@@ -63,20 +63,6 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons
     wpar <- wpar[-(foo:length(wpar))]
   }
   else beta <- NULL
-
-  #if(estAngleMean) {
-  #  # identify working parameters for the angle distribution (x and y)
-  #  foo <- length(wpar)-nbStates+1
-  #  x <- wpar[(foo-nbStates):(foo-1)]
-  #  y <- wpar[foo:length(wpar)]
-
-  #  # compute natural parameters for the angle distribution
-  #  angleMean <- Arg(x+1i*y)
-  #  kappa <- sqrt(x^2+y^2)
-  #  # to scale them if necessary (see parDef)
-  #  wpar[(foo-nbStates):(foo-1)] <- angleMean
-  #  wpar[foo:length(wpar)] <- kappa
-  #}
   
   distnames <- names(bounds)
   parindex <- c(0,cumsum(unlist(lapply(bounds,nrow)))[-length(bounds)])
