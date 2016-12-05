@@ -31,14 +31,20 @@
 
 pseudoRes <- function(m)
 {
-  if(!is.momentuHMM(m))
-    stop("'m' must be a momentuHMM object (as output by fitHMM)")
+  if(!is.momentuHMM(m) & !is.momentuHMMMI(m))
+    stop("'m' must be a momentuHMM or momentuHMMMI object (as output by fitHMM or MI_summary)")
 
   data <- m$data
   nbObs <- nrow(data)
   nbStates <- length(m$stateNames)
   dist <- m$conditions$dist
   distnames <- names(dist)
+  
+  if(is.momentuHMMMI(m)){
+    m$mle<-lapply(m$Par[distnames],function(x) x$est)
+    m$mle$beta<-m$Par$beta$est
+    m$mle$delta<-m$Par$delta$est
+  }
   
   Fun <- lapply(dist,function(x) paste("p",x,sep=""))
   for(j in which(dist %in% c("wrpcauchy","vm"))){

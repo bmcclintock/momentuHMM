@@ -96,26 +96,30 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
         lower[[parms[parm]]][j,] <- xbar[[parms[parm]]][j,]-quantSup*MI_se[[parms[parm]]][j,]
         upper[[parms[parm]]][j,] <- xbar[[parms[parm]]][j,]+quantSup*MI_se[[parms[parm]]][j,]   
         
-      } #else { #delta parameter not currently handled by CI_real
-      #xmat[[parms[parm]]] <- matrix(unlist(lapply(im,function(x) x$mle[[parms[parm]]][j])) , ncol=nbStates, nrow=nsims, byrow=TRUE) 
-      #xvar[[parms[parm]]] <- matrix(unlist(lapply(CI,function(x) x[[parms[parm]]]$se[j]^2)) , ncol=parmcols[parm], nrow=nsims, byrow=TRUE)
-      #n <- apply(!(is.na(xmat[[parms[parm]]])+is.na(xvar[[parms[parm]]])),2,sum)
-      
-      #if(any(n<2)) stop("need at least 2 simulations with valid estimates for ",parms[parm])
-      
-      #xbar[[parms[parm]]] <- apply(xmat[[parms[parm]]],2,mean,na.rm=TRUE)
-      #B_m[[parms[parm]]] <- apply(xmat[[parms[parm]]],2,var,na.rm=TRUE)
-      
-      #W_m[[parms[parm]]] <- apply(xvar[[parms[parm]]],2,mean,na.rm=TRUE)
-      #MI_se[[parms[parm]]] <- sqrt(W_m[[parms[parm]]] + (n+1)/n * B_m[[parms[parm]]])
-      
-      #dfs<-(n-1)*(1+1/(n+1)*W_m[[parms[parm]]]/B_m[[parms[parm]]])^2
-      #quantSup<-qt(1-(1-alpha)/2,df=dfs)
-      #lower[[parms[parm]]]<- xbar[[parms[parm]]]-quantSup*MI_se[[parms[parm]]]
-      #upper[[parms[parm]]] <- xbar[[parms[parm]]]+quantSup*MI_se[[parms[parm]]]
-      #}
+      }
     }
   }
+  
+  xbar[["delta"]] <- matrix(NA,nrow=1,ncol=nbStates)
+  MI_se[["delta"]] <- lower[["delta"]] <- upper[["delta"]] <- xbar[["delta"]]
+
+  xmat[["delta"]] <- matrix(unlist(lapply(im,function(x) x$mle[["delta"]])) , ncol=nbStates, nrow=nsims, byrow=TRUE)
+  xvar[["delta"]] <- matrix(unlist(lapply(CI,function(x) x[["delta"]]$se^2)) , ncol=nbStates, nrow=nsims, byrow=TRUE)
+  n <- apply(!(is.na(xmat[["delta"]])+is.na(xvar[["delta"]])),2,sum)
+  
+  if(any(n<2)) stop("need at least 2 simulations with valid estimates for delta")
+  
+  xbar[["delta"]] <- apply(xmat[["delta"]],2,mean,na.rm=TRUE)
+  B_m[["delta"]] <- apply(xmat[["delta"]],2,var,na.rm=TRUE)
+  
+  W_m[["delta"]] <- apply(xvar[["delta"]],2,mean,na.rm=TRUE)
+  MI_se[["delta"]] <- sqrt(W_m[["delta"]] + (n+1)/n * B_m[["delta"]])
+  
+  dfs<-(n-1)*(1+1/(n+1)*W_m[["delta"]]/B_m[["delta"]])^2
+  quantSup<-qt(1-(1-alpha)/2,df=dfs)
+  lower[["delta"]] <- xbar[["delta"]]-quantSup*MI_se[["delta"]]
+  upper[["delta"]] <- xbar[["delta"]]+quantSup*MI_se[["delta"]]   
+    
   if(!is.null(m$mle$gamma)){
     xmat[["gamma"]] <- array(unlist(lapply(im,function(x) x$mle[["gamma"]])),c(nbStates,nbStates,nsims))
     xvar[["gamma"]] <- array(unlist(lapply(CI,function(x) x[["gamma"]]$se^2)),c(nbStates,nbStates,nsims))
@@ -195,6 +199,8 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
     }
     Par[[i]] <- mi_parm_list(xbar[[i]],MI_se[[i]],lower[[i]],upper[[i]],m$mle[[i]])
   }
+  
+  Par$delta <- list(est=xbar$delta,se=MI_se$delta,lower=lower$delta,upper=upper$delta)
 
   if(nbStates>1) {
     Par$beta <- list(est=xbar$beta,se=MI_se$beta,lower=lower$beta,upper=upper$beta)

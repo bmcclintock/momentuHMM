@@ -146,6 +146,21 @@ CI_real <- function(m,alpha=0.95,nbSims=10^6)
     colnames(Par$gamma$lower) <- m$stateNames
     colnames(Par$gamma$upper) <- m$stateNames
   }
+  
+  wpar<-m$mod$estimate
+  foo <- length(wpar)-nbStates+2
+  quantSup <- qnorm(1-(1-alpha)/2)
+  lower<-upper<-se<-rep(NA,nbStates)
+  for(i in 1:nbStates){
+    dN<-numDeriv::grad(get_delta,wpar[foo:length(wpar)],i=i)
+    se[i]<-suppressWarnings(sqrt(dN%*%Sigma[foo:length(wpar),foo:length(wpar)]%*%dN))
+    lower[i]<-m$mle$delta[i]-quantSup*se[i]
+    upper[i]<-m$mle$delta[i]+quantSup*se[i]
+  }
+  lower<-matrix(lower,nrow=1,ncol=nbStates,byrow=T)
+  upper<-matrix(upper,nrow=1,ncol=nbStates,byrow=T)  
+  se<-matrix(se,nrow=1,ncol=nbStates,byrow=T)
+  Par$delta <- list(se=se,lower=lower,upper=upper)    
 
   return(Par)
 }
@@ -153,6 +168,12 @@ CI_real <- function(m,alpha=0.95,nbSims=10^6)
 get_gamma <- function(beta,covs,nbStates,i,j){
   gamma <- trMatrix_rcpp(nbStates,beta,covs)[,,1]
   gamma[i,j]
+}
+
+get_delta <- function(delta,i){
+  delta <- exp(c(0,delta))
+  delta <- delta/sum(delta)
+  delta[i]
 }
 
 parm_list<-function(se,lower,upper,m){

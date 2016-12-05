@@ -32,14 +32,20 @@
 
 plotPR <- function(m)
 {
-  if(!is.momentuHMM(m))
-    stop("'m' must be a momentuHMM object (as output by fitHMM)")
+  if(!is.momentuHMM(m) & !is.momentuHMMMI(m))
+    stop("'m' must be a momentuHMM or momentuHMMMI object (as output by fitHMM or MI_summary)")
+  
+  distnames <- names(m$conditions$dist)
+  
+  if(is.momentuHMMMI(m)){
+    m$mle<-lapply(m$Par[distnames],function(x) x$est)
+    m$mle$beta<-m$Par$beta$est
+    m$mle$delta<-m$Par$delta$est
+  }
 
   cat("Computing pseudo-residuals... ")
   pr <- pseudoRes(m)
   cat("DONE\n")
-  
-  distnames <- names(m$conditions$dist)
 
   par(mfrow=c(length(distnames),3))
 
