@@ -283,6 +283,7 @@ fitHMM <- function(data,nbStates,dist,
   bounds <- p$bounds
   for(i in distnames){
     if(!is.numeric(bounds[[i]])){
+      bounds[[i]] <- gsub(paste0(i,"Par"),paste0("Par$",i),bounds[[i]],fixed=TRUE)
       bounds[[i]]<-matrix(sapply(bounds[[i]],function(x) eval(parse(text=x))),ncol=2,dimnames=list(rownames(p$bounds[[i]])))
     }
   }
