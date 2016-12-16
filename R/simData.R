@@ -97,10 +97,13 @@
 #'
 #' @export
 #' @importFrom stats rnorm runif step
+#' @importFrom raster cellFromXY
 
 simData <- function(nbAnimals=1,nbStates=2,dist,
                     Par,beta=NULL,
-                    covs=NULL,nbCovs=0,zeroInflation=NULL,obsPerAnimal=c(500,1500),
+                    covs=NULL,nbCovs=0,
+                    spatialCovs=NULL,
+                    zeroInflation=NULL,obsPerAnimal=c(500,1500),
                     DM=NULL,cons=NULL,userBounds=NULL,logitcons=NULL,stateNames=NULL,
                     model=NULL,states=FALSE)
 {
@@ -251,9 +254,15 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     error <- "Wrong number of initial parameters"
     stop(error)
   }
+  if(!is.null(spatialCovs)){
+    nbSpatialCovs<-length(names(spatialCovs))
+    for(j in 1:nbSpatialCovs)
+      if(class(spatialCovs[[j]])!="RasterLayer") stop("spatialCovs must be of class 'RasterLayer'")
+    spatialcovnames<-names(spatialCovs)
+  }
   if(!is.null(beta)) {
-    if(ncol(beta)!=nbStates*(nbStates-1) | nrow(beta)!=nbCovs+1) {
-      error <- paste("beta has wrong dimensions: it should have",nbCovs+1,"rows and",
+    if(ncol(beta)!=nbStates*(nbStates-1) | nrow(beta)!=nbCovs+nbSpatialCovs+1) {
+      error <- paste("beta has wrong dimensions: it should have",nbCovs+nbSpatialCovs+1,"rows and",
                      nbStates*(nbStates-1),"columns.")
       stop(error)
     }
@@ -280,6 +289,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
 
   if(!is.null(covs)) {
     nbCovs <- ncol(covs)
+    
+  if(nbCovs>0 & nbSpatialCovs>0) stop("covariates must be either spatial or non-spatial")
 
     # account for missing values of the covariates
     if(length(which(is.na(covs)))>0)
@@ -328,10 +339,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
 
   # generate regression parameters for transition probabilities
   if(is.null(beta))
-    beta <- matrix(rnorm(nbStates*(nbStates-1)*(nbCovs+1)),nrow=nbCovs+1)
-  else if(nrow(beta)!=nbCovs+1 | ncol(beta)!=nbStates*(nbStates-1)) {
+    beta <- matrix(rnorm(nbStates*(nbStates-1)*(nbCovs+nbSpatialCovs+1)),nrow=nbCovs+nbSpatialCovs+1)
+  else if(nrow(beta)!=nbCovs+nbSpatialCovs+1 | ncol(beta)!=nbStates*(nbStates-1)) {
     if(nbStates>1)
-      stop(paste("beta should have ",nbCovs+1," rows and ",nbStates*(nbStates-1)," columns.",sep=""))
+      stop(paste("beta should have ",nbCovs+nbSpatialCovs+1," rows and ",nbStates*(nbStates-1)," columns.",sep=""))
     else
       stop("beta should be NULL")
   }
@@ -371,6 +382,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   trackData <- NULL
   allCovs <- NULL
   allStates <- NULL
+  allSpatialcovs<-NULL
   
   #make sure 'step' preceeds 'angle'
   if(all(c("step","angle") %in% distnames)){
@@ -424,79 +436,118 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       }
       allCovs <- rbind(allCovs,subCovs)
     }
+    
+    if(nbSpatialCovs>0) subSpatialcovs<-matrix(NA,nrow=nbObs,ncol=nbSpatialCovs)
 
     ###############################
     ## Simulate state sequence Z ##
     ###############################
-    if(nbStates>1) {
-      Z <- rep(NA,nbObs)
-      Z[1] <- sample(1:nbStates,size=1,prob=delta)
-      for (k in 2:nbObs) {
-        gamma <- diag(nbStates)
+    #if(nbStates>1) {
+    #  Z <- rep(NA,nbObs)
+    #  Z[1] <- sample(1:nbStates,size=1,prob=delta)
+    #  for (k in 2:nbObs) {
+    #    gamma <- diag(nbStates)
 
-        g <- beta[1,]
-        if(nbCovs==1) g <- g + beta[2,]*subCovs[k,1]
-        if(nbCovs>1) {
-          for(j in 1:nbCovs)
-            g <- g + beta[j+1,]*subCovs[k,j]
-        }
+    #    g <- beta[1,]
+    #    if(nbCovs==1) g <- g + beta[2,]*subCovs[k,1]
+    #    if(nbCovs>1) {
+    #      for(j in 1:nbCovs)
+    #        g <- g + beta[j+1,]*subCovs[k,j]
+    #    }
 
-        gamma[!gamma] <- exp(g)
-        gamma <- t(gamma)
-        gamma <- gamma/apply(gamma,1,sum)
-        Z[k] <- sample(1:nbStates,size=1,prob=gamma[Z[k-1],])
-      }
-      allStates <- c(allStates,Z)
-    } else
-      Z <- rep(1,nbObs)
+    #    gamma[!gamma] <- exp(g)
+    #    gamma <- t(gamma)
+    #    gamma <- gamma/apply(gamma,1,sum)
+    #    Z[k] <- sample(1:nbStates,size=1,prob=gamma[Z[k-1],])
+    #  }
+    #  allStates <- c(allStates,Z)
+    #} else
+    #  Z <- rep(1,nbObs)
 
     X <- matrix(0,nrow=nbObs,ncol=2)
     X[1,] <- c(0,0) # initial position of animal
 
     phi <- 0
     
+    if(nbStates>1) {
+      Z <- rep(NA,nbObs)
+      Z[1] <- sample(1:nbStates,size=1,prob=delta)
+    } else
+      Z <- rep(1,nbObs)
+    
     ############################
     ## Simulate movement path ##
     ############################
+ 
+    genData <- vector('list',length(distnames))
+    genDist <- vector('list',length(distnames))
+    genArgs <- vector('list',length(distnames))
+    
     for(i in distnames){
-      genData <- rep(NA,nbObs)
-      genDist <- dist[[i]]
-      genArgs <- list(1)  # first argument = 1 (one random draw)
-      for (k in 1:(nbObs-1)){
+      genData[[i]] <- rep(NA,nbObs)
+      genArgs[[i]] <- list(1)  # first argument = 1 (one random draw)
+    }
+    
+    for (k in 1:(nbObs-1)){
+      
+      gamma <- diag(nbStates)
+      g <- beta[1,]
+      if(!nbSpatialCovs){
+        if(nbCovs==1) g <- g + beta[2,]*subCovs[k+1,1]
+        if(nbCovs>1) {
+          for(j in 1:nbCovs)
+            g <- g + beta[j+1,]*subCovs[k+1,j]
+        }
+      } else {
+        for(j in 1:nbSpatialCovs){
+            subSpatialcovs[k,j]<-spatialCovs[[j]][raster::cellFromXY(spatialCovs[[j]],c(X[k,1],X[k,2]))]
+            g <- g + beta[j+1,]*subSpatialcovs[k,j]
+        }
+      }
+      gamma[!gamma] <- exp(g)
+      gamma <- t(gamma)
+      gamma <- gamma/apply(gamma,1,sum)
+      Z[k+1] <- sample(1:nbStates,size=1,prob=gamma[Z[k],])  
+          
+      for(i in distnames){
 
         for(j in 1:nrow(par[[i]]))
-          genArgs[[j+1]] <- par[[i]][j,Z[k]]
+          genArgs[[i]][[j+1]] <- par[[i]][j,Z[k]]
 
-        if(genDist=="gamma") {
-          shape <- genArgs[[2]]^2/genArgs[[3]]^2
-          scale <- genArgs[[3]]^2/genArgs[[2]]
-          genArgs[[2]] <- shape
-          genArgs[[3]] <- 1/scale # rgamma expects rate=1/scale
+        if(dist[[i]]=="gamma") {
+          shape <- genArgs[[i]][[2]]^2/genArgs[[i]][[3]]^2
+          scale <- genArgs[[i]][[3]]^2/genArgs[[i]][[2]]
+          genArgs[[i]][[2]] <- shape
+          genArgs[[i]][[3]] <- 1/scale # rgamma expects rate=1/scale
         }
   
         if(runif(1)>zeroMass[[i]][Z[k]])
-          genData[k] <- do.call(Fun[[i]],genArgs)
+          genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
         else
-          genData[k] <- 0
+          genData[[i]][k] <- 0
   
         if(i=="angle" & dist[[i]] %in% c("wrpcauchy","vm") & ("step" %in% distnames))
           if(dist[["step"]] %in% c("gamma","weibull","exp")) {
             if(step[k]>0){
-              genData[k] <- do.call(Fun[[i]],genArgs)
-              if(genData[k] >  pi) genData[k] <- genData[k]-2*pi
-              if(genData[k] < -pi) genData[k] <- genData[k]+2*pi
-              phi <- phi + genData[k]
+              genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
+              if(genData[[i]][k] >  pi) genData[[i]][k] <- genData[[i]][k]-2*pi
+              if(genData[[i]][k] < -pi) genData[[i]][k] <- genData[[i]][k]+2*pi
+              phi <- phi + genData[[i]][k]
             } else if(step[k]==0) {
-              genData[k] <- NA # angle = NA if step = 0
+              genData[[i]][k] <- NA # angle = NA if step = 0
             }
             m <- step[k]*c(Re(exp(1i*phi)),Im(exp(1i*phi)))
             X[k+1,] <- X[k,] + m
           }
+        if(i=="step") step <- genData[[i]]
+        d[[i]] <- genData[[i]]
       }
-      if(i=="step") step <- genData
-      d[[i]] <- genData
     }
-
+    allStates <- c(allStates,Z)
+    if(nbSpatialCovs>0) {
+      allSpatialcovs <- rbind(allSpatialcovs,subSpatialcovs)
+    }
+    
     if("angle" %in% distnames) 
       if(dist[["angle"]] %in% c("wrpcauchy","vm") & ("step" %in% distnames))
         if(dist[["step"]] %in% c("gamma","weibull","exp")){
@@ -506,6 +557,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         }
     data <- rbind(data,d)
   }
+  
+  colnames(allSpatialcovs)<-spatialcovnames
 
   # if covs provided as argument
   if(!is.null(covs) & is.null(allCovs))
@@ -513,7 +566,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
 
   if(nbCovs>0)
     data <- cbind(data,allCovs)
-
+  
+  if(nbSpatialCovs>0)
+    data <- cbind(data,allSpatialcovs)
+  
   # include states sequence in the data
   if(states)
     data <- cbind(data,states=allStates)
