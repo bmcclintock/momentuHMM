@@ -53,7 +53,6 @@ viterbi <- function(m)
   allStates <- NULL
   for(zoo in 1:nbAnimals) {
     nbObs <- length(which(data$ID==unique(data$ID)[zoo])) # nb of observations for animal zoo
-    obsInd <- which(!is.na(data$step) & !is.na(data$angle))
 
     if(zoo!=nbAnimals) {
       p <- allProbs[aInd[zoo]:(aInd[zoo+1]-1),]

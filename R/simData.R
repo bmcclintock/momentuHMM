@@ -260,7 +260,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     for(j in 1:nbSpatialCovs)
       if(class(spatialCovs[[j]])!="RasterLayer") stop("spatialCovs must be of class 'RasterLayer'")
     spatialcovnames<-names(spatialCovs)
-  }
+  } else nbSpatialCovs <- 0
   if(!is.null(beta)) {
     if(ncol(beta)!=nbStates*(nbStates-1) | nrow(beta)!=nbCovs+nbSpatialCovs+1) {
       error <- paste("beta has wrong dimensions: it should have",nbCovs+nbSpatialCovs+1,"rows and",
@@ -559,7 +559,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     data <- rbind(data,d)
   }
   
-  colnames(allSpatialcovs)<-spatialcovnames
+  if(nbSpatialCovs>0) colnames(allSpatialcovs)<-spatialcovnames
 
   # if covs provided as argument
   if(!is.null(covs) & is.null(allCovs))
