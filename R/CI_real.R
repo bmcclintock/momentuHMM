@@ -131,13 +131,10 @@ CI_real <- function(m,alpha=0.95,nbSims=10^6)
       for(j in 1:nbStates){
         dN<-numDeriv::grad(get_gamma,wpar,covs=covs,nbStates=nbStates,i=i,j=j)
         se[i,j]<-suppressWarnings(sqrt(dN%*%Sigma[i2:i3,i2:i3]%*%dN))
-        lower[i,j]<-m$mle$gamma[i,j]-quantSup*se[i,j]
-        upper[i,j]<-m$mle$gamma[i,j]+quantSup*se[i,j]
+        lower[i,j]<-1/(1+exp(-(log(m$mle$gamma[i,j]/(1-m$mle$gamma[i,j]))-quantSup*(1/(m$mle$gamma[i,j]-m$mle$gamma[i,j]^2))*se[i,j])))#m$mle$gamma[i,j]-quantSup*se[i,j]
+        upper[i,j]<-1/(1+exp(-(log(m$mle$gamma[i,j]/(1-m$mle$gamma[i,j]))+quantSup*(1/(m$mle$gamma[i,j]-m$mle$gamma[i,j]^2))*se[i,j])))#m$mle$gamma[i,j]+quantSup*se[i,j]
       }
     }
-    lower<-matrix(lower,nrow=nbStates,ncol=nbStates,byrow=T)
-    upper<-matrix(upper,nrow=nbStates,ncol=nbStates,byrow=T)  
-    se<-matrix(se,nrow=nbStates,ncol=nbStates,byrow=T)
     Par$gamma <- list(se=se,lower=lower,upper=upper)
     rownames(Par$gamma$se) <- m$stateNames
     rownames(Par$gamma$lower) <- m$stateNames

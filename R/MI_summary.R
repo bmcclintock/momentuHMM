@@ -117,8 +117,10 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
   
   dfs<-(n-1)*(1+1/(n+1)*W_m[["delta"]]/B_m[["delta"]])^2
   quantSup<-qt(1-(1-alpha)/2,df=dfs)
-  lower[["delta"]] <- xbar[["delta"]]-quantSup*MI_se[["delta"]]
-  upper[["delta"]] <- xbar[["delta"]]+quantSup*MI_se[["delta"]]   
+  #lower[["delta"]] <- xbar[["delta"]]-quantSup*MI_se[["delta"]]
+  #upper[["delta"]] <- xbar[["delta"]]+quantSup*MI_se[["delta"]] 
+  lower[["delta"]] <- probCI(xbar[["delta"]],MI_se[["delta"]],quantSup,"lower")
+  upper[["delta"]] <- probCI(xbar[["delta"]],MI_se[["delta"]],quantSup,"upper")
     
   if(!is.null(m$mle$gamma)){
     xmat[["gamma"]] <- array(unlist(lapply(im,function(x) x$mle[["gamma"]])),c(nbStates,nbStates,nsims))
@@ -134,16 +136,15 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
     W_m[["gamma"]] <- apply( xvar[["gamma"]] , 1:2 , mean,na.rm=TRUE)
     MI_se[["gamma"]] <- sqrt(W_m[["gamma"]] + (n+1)/n * B_m[["gamma"]])
     
-    #MI_se_beta <- (1/xbar[["gamma"]]+1/(1-xbar[["gamma"]]))*MI_se[["gamma"]]  #get se on logit scale
-    
     dfs<-(n-1)*(1+1/(n+1)*W_m[["gamma"]]/B_m[["gamma"]])^2
     quantSup<-qt(1-(1-alpha)/2,df=dfs)
+ 
+    #lower[["gamma"]] <- xbar[["gamma"]]-quantSup*MI_se[["gamma"]]
+    #upper[["gamma"]] <- xbar[["gamma"]]+quantSup*MI_se[["gamma"]]    
+    lower[["gamma"]] <- probCI(xbar[["gamma"]],MI_se[["gamma"]],quantSup,"lower")
+    upper[["gamma"]] <- probCI(xbar[["gamma"]],MI_se[["gamma"]],quantSup,"upper")
     
-    #lower[["gamma"]] <- inv.logit(logit(xbar[["gamma"]])-quantSup*MI_se_beta)
-    #upper[["gamma"]] <- inv.logit(logit(xbar[["gamma"]])+quantSup*MI_se_beta) 
-    
-    lower[["gamma"]] <- xbar[["gamma"]]-quantSup*MI_se[["gamma"]]
-    upper[["gamma"]] <- xbar[["gamma"]]+quantSup*MI_se[["gamma"]]   
+  
   }
   if(nbStates>1){
     xmat[["stateProbs"]] <- array(unlist(im_stateProbs),c(nrow(data),nbStates,nsims))
@@ -158,16 +159,13 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
     W_m[["stateProbs"]] <- apply( xvar[["stateProbs"]] , 1:2 , mean,na.rm=TRUE)
     MI_se[["stateProbs"]] <- sqrt(W_m[["stateProbs"]] + (n+1)/n * B_m[["stateProbs"]])
     
-    #MI_se_beta <- (1/xbar[["stateProbs"]]+1/(1-xbar[["stateProbs"]]))*MI_se[["stateProbs"]]  #get se on logit scale
-    
     dfs<-(n-1)*(1+1/(n+1)*W_m[["stateProbs"]]/B_m[["stateProbs"]])^2
     quantSup<-qt(1-(1-alpha)/2,df=dfs)
     
-    #lower[["stateProbs"]] <- inv.logit(logit(xbar[["stateProbs"]])-quantSup*MI_se_beta)
-    #upper[["stateProbs"]] <- inv.logit(logit(xbar[["stateProbs"]])+quantSup*MI_se_beta) 
-    
-    lower[["stateProbs"]] <- xbar[["stateProbs"]]-quantSup*MI_se[["stateProbs"]]
-    upper[["stateProbs"]] <- xbar[["stateProbs"]]+quantSup*MI_se[["stateProbs"]]   
+    #lower[["stateProbs"]] <- xbar[["stateProbs"]]-quantSup*MI_se[["stateProbs"]]
+    #upper[["stateProbs"]] <- xbar[["stateProbs"]]+quantSup*MI_se[["stateProbs"]]  
+    lower[["stateProbs"]] <- probCI(xbar[["stateProbs"]],MI_se[["stateProbs"]],quantSup,"lower")
+    upper[["stateProbs"]] <- probCI(xbar[["stateProbs"]],MI_se[["stateProbs"]],quantSup,"upper")
     
     xmat[["timeInStates"]] <- t(apply(im_states,1,function(x) {counts<-hist(x,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts;counts/sum(counts)}))
     xvar[["timeInStates"]] <- matrix(0 , ncol=nbStates, nrow=nsims, byrow=TRUE) # don't have se's; might be a way to get these but probably quite complicated
@@ -184,8 +182,10 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
     dfs<-(n-1)*(1+1/(n+1)*W_m[["timeInStates"]]/B_m[["timeInStates"]])^2
     quantSup<-qt(1-(1-alpha)/2,df=dfs)
     
-    lower[["timeInStates"]] <- xbar[["timeInStates"]]-quantSup*MI_se[["timeInStates"]]
-    upper[["timeInStates"]] <- xbar[["timeInStates"]]+quantSup*MI_se[["timeInStates"]]   
+    #lower[["timeInStates"]] <- xbar[["timeInStates"]]-quantSup*MI_se[["timeInStates"]]
+    #upper[["timeInStates"]] <- xbar[["timeInStates"]]+quantSup*MI_se[["timeInStates"]]  
+    lower[["timeInStates"]] <- probCI(xbar[["timeInStates"]],MI_se[["timeInStates"]],quantSup,"lower")
+    upper[["timeInStates"]] <- probCI(xbar[["timeInStates"]],MI_se[["timeInStates"]],quantSup,"upper")
   }
   Par <- list()
   for(i in distnames){
@@ -277,4 +277,12 @@ mi_parm_list<-function(est,se,lower,upper,m){
   colnames(Par$lower) <- colnames(m)
   colnames(Par$upper) <- colnames(m)
   Par
+}
+
+probCI<-function(x,se,z,bound="lower"){
+  if(bound=="lower")
+    ci<-inv.logit(logit(x)-z*(1/(x-x^2))*se) 
+  else if(bound=="upper")
+    ci<-inv.logit(logit(x)+z*(1/(x-x^2))*se) 
+  ci
 }
