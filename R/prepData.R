@@ -29,8 +29,11 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL)
   if(!is.data.frame(Data)) stop("Data must be a data frame")
   distnames<-names(Data)
   if(any(c("step","angle") %in% distnames) & !is.null(coordNames)) stop("Data objects cannot be named 'step' or 'angle';\n  these names are reserved for step lengths and turning angles calculated from coordinates")
-  if(!is.null(covNames)) distnames<-distnames[-match(distnames,covNames)]
-
+  if(!is.null(covNames)){
+    covsCol <- which(distnames %in% covNames)
+    if(!length(covsCol)) stop("covNames not found in Data")
+    else distnames<-distnames[-covsCol]
+  }
   if(!is.null(Data$ID)){
     ID <- as.character(Data$ID) # homogenization of numeric and string IDs
     distnames <- distnames[-which(distnames %in% "ID")]
@@ -94,7 +97,6 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL)
 
   # identify covariate columns
   if(!is.null(covNames)){
-    covsCol <- which(names(Data) %in% covNames)
     if(length(covsCol)>0) {
       covs <- Data[,covsCol,drop=FALSE]
       colnames(covs) <- names(Data)[covsCol]
