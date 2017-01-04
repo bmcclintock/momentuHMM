@@ -546,6 +546,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
     allStates <- c(allStates,Z)
     if(nbSpatialCovs>0) {
+      for(j in 1:nbSpatialCovs){
+        subSpatialcovs[nbObs,j]<-spatialCovs[[j]][raster::cellFromXY(spatialCovs[[j]],c(X[nbObs,1],X[nbObs,2]))]
+      }
       allSpatialcovs <- rbind(allSpatialcovs,subSpatialcovs)
     }
     
