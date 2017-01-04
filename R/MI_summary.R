@@ -2,6 +2,7 @@
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom stats var qt
+#' @importFrom boot logit inv.logit
 MI_summary<-function(im,alpha=0.95,ncores=4){
   
   simind <- which((unlist(lapply(im,is.momentuHMM))))
@@ -164,8 +165,8 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
     
     #lower[["stateProbs"]] <- xbar[["stateProbs"]]-quantSup*MI_se[["stateProbs"]]
     #upper[["stateProbs"]] <- xbar[["stateProbs"]]+quantSup*MI_se[["stateProbs"]]  
-    lower[["stateProbs"]] <- probCI(xbar[["stateProbs"]],MI_se[["stateProbs"]],quantSup,"lower")
-    upper[["stateProbs"]] <- probCI(xbar[["stateProbs"]],MI_se[["stateProbs"]],quantSup,"upper")
+    lower[["stateProbs"]] <- suppressWarnings(probCI(xbar[["stateProbs"]],MI_se[["stateProbs"]],quantSup,"lower"))
+    upper[["stateProbs"]] <- suppressWarnings(probCI(xbar[["stateProbs"]],MI_se[["stateProbs"]],quantSup,"upper"))
     
     xmat[["timeInStates"]] <- t(apply(im_states,1,function(x) {counts<-hist(x,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts;counts/sum(counts)}))
     xvar[["timeInStates"]] <- matrix(0 , ncol=nbStates, nrow=nsims, byrow=TRUE) # don't have se's; might be a way to get these but probably quite complicated
@@ -281,8 +282,8 @@ mi_parm_list<-function(est,se,lower,upper,m){
 
 probCI<-function(x,se,z,bound="lower"){
   if(bound=="lower")
-    ci<-inv.logit(logit(x)-z*(1/(x-x^2))*se) 
+    ci<-boot::inv.logit(boot::logit(x)-z*(1/(x-x^2))*se) 
   else if(bound=="upper")
-    ci<-inv.logit(logit(x)+z*(1/(x-x^2))*se) 
+    ci<-boot::inv.logit(boot::logit(x)+z*(1/(x-x^2))*se) 
   ci
 }
