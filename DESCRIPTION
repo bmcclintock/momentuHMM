@@ -1,14 +1,12 @@
 Package: momentuHMM
 Type: Package
-Title: Animal Movement Behavior Modelling using Hidden Markov Models
+Title: Animal Movement Behavior Modelling of Biotelemetry Data using Hidden Markov Models
 Version: 0.0
-Date: 2016-11-18
+Date: 2016-12-31
 Author: Brett McClintock, Theo Michelot, Roland Langrock, Toby Patterson, Eric
     Rexstad
 Maintainer: Brett McClintock <brett.mcclintock@noaa.gov>
-Description: Provides tools for analyzing animal movement behavior using hidden Markov
-    models. These include processing of tracking data, fitting HMMs to movement
-    data, visualization of data and fitted model, decoding of the state
+Description: Extended tools for analyzing telemetry data using hidden Markov models. These include processing of tracking data, fitting HMMs to location and auxiliary biotelemetry data, multiple imputation for incorporating location measurement error and missing data,visualization of data and fitted model, decoding of the state process...
     process...
 License: GPL-3
 LazyData: TRUE
