@@ -2,30 +2,35 @@
 % Please edit documentation in R/prepData.R
 \name{prepData}
 \alias{prepData}
-\title{Preprocessing of the tracking data}
+\title{Preprocessing of the data streams, including calculation of step length, turning angle, and covariates from location data}
 \usage{
-prepData(Data, type = c("LL", "UTM"), coordNames = NULL, covNames = NULL)
+prepData(Data, type = c("LL", "UTM"), coordNames = NULL, covNames = NULL,
+  spatialCovs = NULL)
 }
 \arguments{
 \item{Data}{A dataframe of data streams, including optionally a field \code{ID}
-(identifiers for the observed individuals), coordinates from which step length ('step') and turning angle ('angle') area calculated, and \code{covNames} that identify covariates.  If coordinates are included. If step length and turning are to be calculated from coordinates, the \code{coordNames} argument must identify the names for the longitunal and latitudinal coordinates (e.g., \code{coordNames=c("x","y")}).}
+(identifiers for the observed individuals), coordinates from which step length ('step') 
+and turning angle ('angle') area calculated, and any covariates (with names matching \code{covNames}). 
+If step length and turning angle are to be calculated from coordinates, the \code{coordNames} argument 
+must identify the names for the longitunal and latitudinal coordinates (e.g., \code{coordNames=c("x","y")}).
+With the exception of \code{ID} and coordinates, all variables in Data are treated as data streams unless identified
+as covariates in \code{covNames}.}
 
 \item{type}{\code{'LL'} if longitude/latitude provided (default), \code{'UTM'} if easting/northing.}
 
-\item{coordNames}{Names of the columns of coordinates in the data frame. Default: \code{c("x","y")}.}
+\item{coordNames}{Names of the columns of coordinates in the \code{Data} data frame. Default: \code{c("x","y")}.}
+
+\item{covNames}{Names of any covariates in \code{Data} dataframe.
+are treated as data streams.}
+
+\item{spatialCovs}{List of raster layer(s) for any spatial covariates not included in \code{Data}. Covariates specified by 'spatialCovs' are
+extracted based on location data for each time step.}
 }
 \value{
-An object \code{moveData}, i.e. a dataframe of:
-\item{ID}{The ID(s) of the observed animal(s)}
-\item{step}{The step lengths - in kilometers if longitude/latitude provided, and in the metrics of
-the data otherwise}
-\item{angle}{The turning angles (if any) - in radians}
-\item{x}{Either easting or longitude}
-\item{y}{Either norting or latitude}
-\item{...}{Covariates (if any)}
+An object \code{moveData}
 }
 \description{
-Preprocessing of the tracking data
+Preprocessing of the data streams, including calculation of step length, turning angle, and covariates from location data
 }
 \examples{
 coord1 <- c(1,2,3,4,5,6,7,8,9,10)

@@ -291,7 +291,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   if(!is.null(covs)) {
     nbCovs <- ncol(covs)
     
-  if(nbCovs>0 & nbSpatialCovs>0) stop("covariates must be either spatial or non-spatial")
+  if(nbCovs>0 & nbSpatialCovs>0) stop("nbCovs cannot be >0 if spatialCovs are specified")
 
     # account for missing values of the covariates
     if(length(which(is.na(covs)))>0)
