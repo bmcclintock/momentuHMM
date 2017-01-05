@@ -1,5 +1,5 @@
 # momentuHMM
-An R package for animal movement modelling using hidden Markov models.
+An R package for Models Of animal MoveENT behavior Using multivariate Hidden Markov Models 
 
 Get started with the vignette: [Guide to using momentuHMM](https://cran.r-project.org/web/packages/momentuHMM/vignettes/momentuHMM-guide.pdf)
 
@@ -20,5 +20,5 @@ To install the latest (**unstable**) version of the package from Github:
 ``` R
 install.packages(c("Rcpp","RcppArmadillo","sp","CircStats","devtools"))
 library(devtools)
-install_github("TheoMichelot/momentuHMM", build_vignettes=TRUE)
+install_github("bmcclintock/momentuHMM", ref="develop", build_vignettes=TRUE)
 ```
