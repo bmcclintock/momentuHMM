@@ -239,8 +239,11 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
   DM<-DM[distnames]
-  if(any(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol))))
-    stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol)))),collapse=", "))
+  
+  fullDM<-getDM(data,DM,dist,nbStates,estAngleMean)
+  
+  if(any(unlist(lapply(Par,length))!=unlist(lapply(fullDM,ncol))))
+    stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(fullDM,ncol)))),collapse=", "))
   
   if(is.null(cons)){
     cons <- vector('list',length(distnames))
@@ -249,7 +252,7 @@ fitHMM <- function(data,nbStates,dist,
     if(!is.list(cons) | is.null(names(cons))) stop("'cons' must be a named list")
   }
   for(i in distnames){
-    if(is.null(cons[[i]])) cons[[i]] <- rep(1,ncol(DM[[i]]))
+    if(is.null(cons[[i]])) cons[[i]] <- rep(1,ncol(fullDM[[i]]))
   }
   cons<-cons[distnames]
   if(any(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))) 
@@ -262,10 +265,10 @@ fitHMM <- function(data,nbStates,dist,
     if(!is.list(logitcons) | is.null(names(logitcons))) stop("'logitcons' must be a named list")
   }
   for(i in distnames){
-    if(is.null(logitcons[[i]])) logitcons[[i]] <- rep(0,ncol(DM[[i]]))
+    if(is.null(logitcons[[i]])) logitcons[[i]] <- rep(0,ncol(fullDM[[i]]))
   }
   for(i in which(!(dist %in% "wrpcauchy"))){
-    logitcons[[distnames[i]]]<-rep(0,ncol(DM[[distnames[i]]]))
+    logitcons[[distnames[i]]]<-rep(0,ncol(fullDM[[distnames[i]]]))
   }
   logitcons<-logitcons[distnames]
   if(any(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))) 
@@ -279,7 +282,7 @@ fitHMM <- function(data,nbStates,dist,
   #  evalBounds<-matrix(sapply(bounds,function(x) eval(parse(text=x))),ncol=2)
   #}
   #p <- parDef(stepDist,angleDist,omegaDist,dryDist,diveDist,iceDist,landDist,nbStates,is.null(angleMean),zeroInflation,evalBounds,stepDM,angleDM,omegaDM,dryDM,diveDM,iceDM,landDM)
-  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,userBounds,DM)
+  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,userBounds,fullDM)
   bounds <- p$bounds
   for(i in distnames){
     if(!is.numeric(bounds[[i]])){
@@ -288,12 +291,12 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
   parSize <- p$parSize
-  for(i in 1:length(distnames)){
-    if(length(DM[[distnames[i]]]%*%Par[[distnames[i]]])!=(parSize[i]*nbStates))
-      stop("zero inflation parameters must be included in 'Par$",distnames[i],"'")
-  }
+  #for(i in 1:length(distnames)){
+  #  if(length(DM[[distnames[i]]]%*%Par[[distnames[i]]])!=(parSize[i]*nbStates))
+  #    stop("zero inflation parameters must be included in 'Par$",distnames[i],"'")
+  #}
 
-  if(sum((parSize>0)*unlist(lapply(DM,ncol)))!=length(par0)) {
+  if(sum((parSize>0)*unlist(lapply(fullDM,ncol)))!=length(par0)) {
     error <- "Wrong number of initial parameters"
     stop(error)
   }
@@ -366,7 +369,7 @@ fitHMM <- function(data,nbStates,dist,
   }
   
   # build the vector of initial working parameters
-  wpar <- n2w(Par,bounds,beta0,delta0,nbStates,estAngleMean,DM,cons,logitcons)
+  wpar <- n2w(Par,bounds,beta0,delta0,nbStates,estAngleMean,fullDM,cons,logitcons)
       
   ##################
   ## Optimization ##
@@ -389,18 +392,18 @@ fitHMM <- function(data,nbStates,dist,
     # call to optimizer nlm
     withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,bounds,parSize,data,dist,
                                    estAngleMean,zeroInflation,
-                                   stationary,cons,DM,p$boundInd,logitcons,
+                                   stationary,cons,fullDM,p$boundInd,logitcons,
                                    print.level=verbose,gradtol=gradtol,
                                    stepmax=stepmax,steptol=steptol,
                                    iterlim=iterlim,hessian=TRUE),
                         warning=h) # filter warnings using function h
 
     # convert the parameters back to their natural scale
-    mle <- w2n(mod$estimate,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,DM,p$boundInd,logitcons)
+    mle <- w2n(mod$estimate,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,fullDM,p$boundInd,logitcons)
   }
   else {
     mod <- NA
-    mle <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,DM,p$boundInd,logitcons)
+    mle <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,fullDM,p$boundInd,logitcons)
   }
 
   ####################
