@@ -44,50 +44,19 @@
 #'              zeroInflation=simPar$zeroInflation)
 #' }
 #'
-#' @export
 
 nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,
                      estAngleMean,zeroInflation,
-                     stationary=FALSE,cons,DM,boundInd,logitcons)
+                     stationary=FALSE,cons,fullDM,DMind,logitcons)
 {
   # check arguments
   distnames<-names(dist)
-  
-  #####################
-  ## Check arguments ##
-  #####################
-  for(i in distnames){
-    dist[[i]]<-match.arg(dist[[i]],c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))
-  }
-  
-  if(nbStates<1)
-    stop("nbStates must be at least 1.")
 
   covs <- model.matrix(formula,data)
   nbCovs <- ncol(covs)-1 # substract intercept column
 
-  initParms<-sum((parSize>0)*unlist(lapply(DM,ncol)))
-  
-  if(!stationary & (length(wpar)!=initParms+nbStates*(nbStates-1)*(nbCovs+1)+nbStates-1))
-    stop("Wrong number of parameters in wpar.")
-  if(stationary & (length(wpar)!=initParms+nbStates*(nbStates-1)*(nbCovs+1)))
-    stop("Wrong number of parameters in wpar.")
-  if(length(data)<1)
-    stop("The data input is empty.")
-
-  if(any(is.na(match(distnames,names(data))))) stop(paste0(distnames[is.na(match(distnames,names(data)))],collapse=", ")," not found in data")
-
-  #estAngleMean <- is.null(angleMean)
-
   # convert the parameters back to their natural scale
-  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,DM,boundInd,logitcons)
-  
-  for(i in distnames[which(dist %in% c("wrpcauchy","vm"))]){
-    if(!estAngleMean[[i]])
-      par[[i]] <- rbind(rep(0,nbStates),par[[i]],deparse.level=0)
-  }
-
-  nbObs <- length(data$step)
+  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,fullDM,DMind,logitcons,nrow(data),dist)
 
   nbAnimals <- length(unique(data$ID))
 

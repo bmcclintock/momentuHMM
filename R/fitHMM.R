@@ -194,11 +194,6 @@ fitHMM <- function(data,nbStates,dist,
     }
     else zeroInflation[[i]]<-FALSE
   }
-
-
-  #eval(parse(text=paste0(distnames,"Dist='",dist,"'")))
-  #eval(parse(text=paste0(distnames,"Par=",Par)))
-  #eval(parse(text=paste0(distnames,"DM=",DM)))
   
   #####################
   ## Check arguments ##
@@ -226,63 +221,12 @@ fitHMM <- function(data,nbStates,dist,
   }
   estAngleMean<-estAngleMean[distnames]
   
-  if(is.null(DM)){
-    DM <- vector('list',length(distnames))
-    names(DM) <- distnames
-  } else {
-    if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
-  }
-  for(i in distnames){
-    if(is.null(DM[[i]])) {
-      if(dist[[i]] %in% c("wrpcauchy","vm") & length(Par[[i]])!=(nbStates+nbStates*estAngleMean[[i]])) stop("Wrong number of parameters for ",i)
-      DM[[i]] <- diag((ifelse(dist[[i]]=="exp" | dist[[i]]=="pois" | (dist[[i]] %in% c("wrpcauchy","vm") & !estAngleMean[[i]]),1,2)+zeroInflation[[i]])*nbStates)
-    }
-  }
-  DM<-DM[distnames]
-  
-  fullDM<-getDM(data,DM,dist,nbStates,estAngleMean)
-  
-  if(any(unlist(lapply(Par,length))!=unlist(lapply(fullDM,ncol))))
-    stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(fullDM,ncol)))),collapse=", "))
-  
-  if(is.null(cons)){
-    cons <- vector('list',length(distnames))
-    names(cons) <- distnames
-  } else {
-    if(!is.list(cons) | is.null(names(cons))) stop("'cons' must be a named list")
-  }
-  for(i in distnames){
-    if(is.null(cons[[i]])) cons[[i]] <- rep(1,ncol(fullDM[[i]]))
-  }
-  cons<-cons[distnames]
-  if(any(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))) 
-    stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
-  
-  if(is.null(logitcons)){
-    logitcons <- vector('list',length(distnames))
-    names(logitcons) <- distnames
-  } else {
-    if(!is.list(logitcons) | is.null(names(logitcons))) stop("'logitcons' must be a named list")
-  }
-  for(i in distnames){
-    if(is.null(logitcons[[i]])) logitcons[[i]] <- rep(0,ncol(fullDM[[i]]))
-  }
-  for(i in which(!(dist %in% "wrpcauchy"))){
-    logitcons[[distnames[i]]]<-rep(0,ncol(fullDM[[distnames[i]]]))
-  }
-  logitcons<-logitcons[distnames]
-  if(any(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))) 
-    stop("Length mismatch between Par and logitcons for: ",paste(names(which(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))),collapse=", "))
   
   if(!is.null(stateNames) & length(stateNames)!=nbStates)
     stop("stateNames must have length ",nbStates)
 
   par0 <- unlist(Par)#c(stepPar,anglePar,omegaPar,dryPar,divePar,icePar,landPar)  
-  #if(!is.null(userBounds) & !is.numeric(userBounds)){
-  #  evalBounds<-matrix(sapply(bounds,function(x) eval(parse(text=x))),ncol=2)
-  #}
-  #p <- parDef(stepDist,angleDist,omegaDist,dryDist,diveDist,iceDist,landDist,nbStates,is.null(angleMean),zeroInflation,evalBounds,stepDM,angleDM,omegaDM,dryDM,diveDM,iceDM,landDM)
-  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,userBounds,fullDM)
+  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,userBounds)
   bounds <- p$bounds
   for(i in distnames){
     if(!is.numeric(bounds[[i]])){
@@ -291,15 +235,7 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
   parSize <- p$parSize
-  #for(i in 1:length(distnames)){
-  #  if(length(DM[[distnames[i]]]%*%Par[[distnames[i]]])!=(parSize[i]*nbStates))
-  #    stop("zero inflation parameters must be included in 'Par$",distnames[i],"'")
-  #}
 
-  if(sum((parSize>0)*unlist(lapply(fullDM,ncol)))!=length(par0)) {
-    error <- "Wrong number of initial parameters"
-    stop(error)
-  }
   if(!is.null(beta0)) {
     if(ncol(beta0)!=nbStates*(nbStates-1) | nrow(beta0)!=nbCovs+1) {
       error <- paste("beta0 has wrong dimensions: it should have",nbCovs+1,"rows and",
@@ -311,12 +247,6 @@ fitHMM <- function(data,nbStates,dist,
   if(!is.null(delta0))
     if(length(delta0)!=nbStates)
       stop(paste("delta0 has the wrong length: it should have",nbStates,"elements."))
-
-  for(i in distnames){
-    if(length(which(Par[[i]]<bounds[[i]][,1] | Par[[i]]>bounds[[i]][,2]))>0)
-      stop(paste0("Check the parameter bounds for '",i,"' (the initial parameters should be ",
-                 "strictly between the bounds of their parameter space)."))
-  }
   
   # check that verbose is in {0,1,2}
   if(!(verbose %in% c(0,1,2)))
@@ -368,9 +298,80 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
   
+  if(is.null(DM)){
+    DM <- vector('list',length(distnames))
+    names(DM) <- distnames
+  } else {
+    if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
+  }
+  for(i in distnames){
+    if(is.null(DM[[i]])) {
+      if(dist[[i]] %in% c("wrpcauchy","vm") & length(Par[[i]])!=(nbStates+nbStates*estAngleMean[[i]])) stop("Wrong number of parameters for ",i)
+      DM[[i]] <- diag((ifelse(dist[[i]]=="exp" | dist[[i]]=="pois" | (dist[[i]] %in% c("wrpcauchy","vm") & !estAngleMean[[i]]),1,2)+zeroInflation[[i]])*nbStates)
+      colnames(DM[[i]])<-paste0(rep(p$parNames[[i]],each=nbStates),1:nbStates,":(Intercept)")
+    }
+  }
+  DM<-DM[distnames]
+  
+  fullDM<-getDM(data,DM,dist,nbStates,p$parNames,bounds)
+  DMind <- lapply(fullDM,function(x) all(unlist(apply(x,1,function(y) lapply(y,length)))==1))
+  
+  for(i in distnames){
+    if(identical(DM[[i]],diag(ncol(DM[[i]]))))
+      if(length(which(Par[[i]]<bounds[[i]][,1] | Par[[i]]>bounds[[i]][,2]))>0)
+        stop(paste0("Check the parameter bounds for '",i,"' (the initial parameters should be ",
+                    "strictly between the bounds of their parameter space)."))
+  }
+  
+  if(any(unlist(lapply(Par,length))!=unlist(lapply(fullDM,ncol))))
+    stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol)))),collapse=", "))
+  
+  for(i in distnames){
+    if(nrow(fullDM[[i]])!=(parSize[[i]]*nbStates)){
+      error<- paste0("DM for ",i," must have ",(parSize[[i]]*nbStates)," rows")
+      if(zeroInflation[[i]])
+        stop(paste0(error,". Should zero inflation parameters be included?"))
+      else stop(error)
+    }
+  }
+  
+  if(sum((unlist(parSize)>0)*unlist(lapply(fullDM,ncol)))!=length(par0)) {
+    error <- "Wrong number of initial parameters"
+    stop(error)
+  }
+  
+  if(is.null(cons)){
+    cons <- vector('list',length(distnames))
+    names(cons) <- distnames
+  } else {
+    if(!is.list(cons) | is.null(names(cons))) stop("'cons' must be a named list")
+  }
+  for(i in distnames){
+    if(is.null(cons[[i]])) cons[[i]] <- rep(1,ncol(fullDM[[i]]))
+  }
+  cons<-cons[distnames]
+  if(any(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))) 
+    stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
+  
+  if(is.null(logitcons)){
+    logitcons <- vector('list',length(distnames))
+    names(logitcons) <- distnames
+  } else {
+    if(!is.list(logitcons) | is.null(names(logitcons))) stop("'logitcons' must be a named list")
+  }
+  for(i in distnames){
+    if(is.null(logitcons[[i]])) logitcons[[i]] <- rep(0,ncol(fullDM[[i]]))
+  }
+  for(i in which(!(dist %in% "wrpcauchy"))){
+    logitcons[[distnames[i]]]<-rep(0,ncol(fullDM[[distnames[i]]]))
+  }
+  logitcons<-logitcons[distnames]
+  if(any(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))) 
+    stop("Length mismatch between Par and logitcons for: ",paste(names(which(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))),collapse=", "))
+  
   # build the vector of initial working parameters
-  wpar <- n2w(Par,bounds,beta0,delta0,nbStates,estAngleMean,fullDM,cons,logitcons)
-      
+  wpar <- n2w(Par,bounds,beta0,delta0,nbStates,estAngleMean,DM,cons,logitcons)
+  
   ##################
   ## Optimization ##
   ##################
@@ -392,18 +393,18 @@ fitHMM <- function(data,nbStates,dist,
     # call to optimizer nlm
     withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,bounds,parSize,data,dist,
                                    estAngleMean,zeroInflation,
-                                   stationary,cons,fullDM,p$boundInd,logitcons,
+                                   stationary,cons,fullDM,DMind,logitcons,
                                    print.level=verbose,gradtol=gradtol,
                                    stepmax=stepmax,steptol=steptol,
                                    iterlim=iterlim,hessian=TRUE),
                         warning=h) # filter warnings using function h
 
     # convert the parameters back to their natural scale
-    mle <- w2n(mod$estimate,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,fullDM,p$boundInd,logitcons)
+    mle <- w2n(mod$estimate,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,fullDM,DMind,logitcons,nrow(data),dist)
   }
   else {
     mod <- NA
-    mle <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,fullDM,p$boundInd,logitcons)
+    mle <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,fullDM,DMind,logitcons,nrow(data),dist)
   }
 
   ####################
@@ -415,16 +416,25 @@ fitHMM <- function(data,nbStates,dist,
   }
   
   # name columns and rows of MLEs
+  parindex <- c(0,cumsum(unlist(lapply(fullDM,ncol)))[-length(fullDM)])
+  names(parindex) <- distnames
   for(i in distnames){
     if(dist[[i]] %in% c("wrpcauchy","vm"))
-      if(!estAngleMean[[i]])
-        mle[[i]] <- rbind(rep(0,nbStates),mle[[i]])
-    rownames(mle[[i]]) <- p$parNames[[i]]
-    colnames(mle[[i]]) <- stateNames
+      if(!estAngleMean[[i]]){
+        p$parNames[[i]] <- c("mean",p$parNames[[i]])
+      }
+    if(DMind[[i]]){
+      mle[[i]]<-matrix(mle[[i]][,,1],nrow=length(p$parNames[[i]]),ncol=nbStates)
+      rownames(mle[[i]]) <- p$parNames[[i]]
+      colnames(mle[[i]]) <- stateNames
+    } else {
+      mle[[i]]<-mod$estimate[parindex[[i]]+1:ncol(fullDM[[i]])]
+      names(mle[[i]])<-colnames(fullDM[[i]])
+    }
   }
 
   if(!is.null(mle$beta)) {
-    rownames(mle$beta) <- c("intercept",attr(terms(formula),"term.labels"))
+    rownames(mle$beta) <- c("(Intercept)",attr(terms(formula),"term.labels"))
     columns <- NULL
     for(i in 1:nbStates)
       for(j in 1:nbStates) {
@@ -464,14 +474,15 @@ fitHMM <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,
-                     estAngleMean=estAngleMean,stationary=stationary,formula=formula,cons=cons,bounds=p$bounds,DM=DM,logitcons=logitcons)
+                     estAngleMean=estAngleMean,stationary=stationary,formula=formula,cons=cons,bounds=p$bounds,DM=fullDM,logitcons=logitcons)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames)
   
-  CI_real<-CI_real(momentuHMM(mh))
-  CI_beta<-CI_beta(momentuHMM(mh))
+  #CI_real<-CI_real(momentuHMM(mh))
+  #CI_beta<-CI_beta(momentuHMM(mh))
   
-  mh <- list(data=data,mle=mle,CI_real=CI_real,CI_beta=CI_beta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames)
+  #mh <- list(data=data,mle=mle,CI_real=CI_real,CI_beta=CI_beta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames)
+  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames)
   
   return(momentuHMM(mh))
 }

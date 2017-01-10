@@ -38,12 +38,13 @@
 
 n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,logitcons)
 {
-  #nbPar <- length(par)/nbStates
   wpar <- NULL
-  #for(i in 1:nbPar) {
-  #index <- (i-1)*nbStates+1
   for(i in names(par)){
-    p<-n2wDM(bounds[[i]],DM[[i]],par[[i]],cons[[i]],logitcons[[i]])
+    tmp<-diag(length(par[[i]]))
+    colnames(tmp)<-colnames(DM[[i]])
+    if(identical(DM[[i]],tmp))
+      p<-n2wDM(bounds[[i]],DM[[i]],par[[i]],cons[[i]],logitcons[[i]])
+    else p <- par[[i]]
     wpar <- c(wpar,p)
   }
 

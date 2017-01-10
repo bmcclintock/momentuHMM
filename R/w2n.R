@@ -40,10 +40,8 @@
 #'
 #' @importFrom boot inv.logit
 
-w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,DM,boundInd,logitcons)
+w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,fullDM,DMind,logitcons,nbObs,dist)
 {
-  if(nbStates<1)
-    stop("Number of states must be 1 at least.")
 
   # identify initial distribution parameters
   if(!stationary & nbStates>1) {
@@ -64,29 +62,37 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons
   }
   else beta <- NULL
   
-  distnames <- names(bounds)
-  parindex <- c(0,cumsum(unlist(lapply(bounds,nrow)))[-length(bounds)])
+  distnames <- names(fullDM)
+  parindex <- c(0,cumsum(unlist(lapply(fullDM,ncol)))[-length(fullDM)])
   names(parindex) <- distnames
 
-  par <- NULL
+  #par <- NULL
   nbounds<-NULL
   #Par<-NULL
   parlist<-NULL
   
   for(i in distnames){
-    Par<-w2nDM(wpar[parindex[[i]]+1:ncol(DM[[i]])],bounds[[i]],DM[[i]],cons[[i]],boundInd[[i]],logitcons[[i]])$p
-    if(!is.numeric(bounds[[i]])){
-      nbounds <- rbind(nbounds, matrix(sapply(bounds[[i]],function(x) eval(parse(text=x))),ncol=2)[boundInd[[i]],])
-    } else {
-      nbounds <- rbind(nbounds,bounds[[i]][boundInd[[i]],])
+    Par<-w2nDM(wpar[parindex[[i]]+1:ncol(fullDM[[i]])],bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],logitcons[[i]],nbObs)$p
+    #if(!is.numeric(fullbounds[[i]])){
+    #  nbounds <- rbind(nbounds, matrix(sapply(fullbounds[[i]],function(x) eval(parse(text=x))),ncol=2))
+    #} else {
+    #  nbounds <- rbind(nbounds,fullbounds[[i]])
+    #}
+    #par <- c(par,Par)
+    if((dist[[i]] %in% c("wrpcauchy","vm")) & !estAngleMean[[i]]){
+      tmp<-matrix(0,nrow=(parSize[[i]]+1)*nbStates,ncol=nbObs)
+      tmp[-seq(1,(parSize[[i]]+1)*nbStates,parSize[[i]]+1),] <- Par
+      parlist[[i]] <- array(tmp,dim=c(parSize[[i]]+1,nbStates,nbObs))
     }
-    par <- c(par,Par)
-    Par<-matrix(Par,ncol=nbStates,byrow=TRUE)
-    parlist[[i]]<-Par
+    else {
+      tmp<-Par[order(rep(1:nbStates,parSize[[i]])),]
+      parlist[[i]] <- array(tmp,dim=c(parSize[[i]],nbStates,nbObs))
+      #parlist[[i]] <- aperm(Par,c(2,1,3))
+    }
   }
     
-  if(length(which(par<nbounds[,1] | par>nbounds[,2]))>0)
-    stop("Scaling error.",rownames(nbounds)[which(par<nbounds[,1] | par>nbounds[,2])],par[which(par<nbounds[,1] | par>nbounds[,2])],nbounds[which(par<nbounds[,1] | par>nbounds[,2]),])
+  #if(length(which(par<nbounds[,1] | par>nbounds[,2]))>0)
+  #  stop("Scaling error.",rownames(nbounds)[which(par<nbounds[,1] | par>nbounds[,2])],par[which(par<nbounds[,1] | par>nbounds[,2])],nbounds[which(par<nbounds[,1] | par>nbounds[,2]),])
   
   parlist[["beta"]]<-beta
   parlist[["delta"]]<-delta

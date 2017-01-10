@@ -17,7 +17,7 @@
 #' @param covs Covariate values to include in the model, as a dataframe. Default: \code{NULL}.
 #' Covariates can also be simulated according to a standard normal distribution, by setting
 #' \code{covs} to \code{NULL}, and specifying \code{nbCovs>0}.
-#' @param nbCovs Number of covariates to simulate (0 by default). Does not need to be specified of
+#' @param nbCovs Number of covariates to simulate (0 by default). Does not need to be specified if
 #' \code{covs} is specified.
 #' @param zeroInflation \code{TRUE} if the step length distribution is inflated in zero.
 #' Default: \code{FALSE}. If \code{TRUE}, values for the zero-mass parameters should be
@@ -236,7 +236,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   if(!is.null(stateNames) & length(stateNames)!=nbStates)
     stop("stateNames must have length ",nbStates)
 
-  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,userBounds,DM)
+  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,userBounds)
   par0 <- unlist(Par) 
   
   bounds <- p$bounds
@@ -247,11 +247,11 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
   }
   parSize <- p$parSize
-  for(i in 1:length(distnames)){
-    if(length(Par[[distnames[i]]]%*%DM[[distnames[i]]])!=(parSize[i]*nbStates))
-      stop("zero inflation parameters must be included in 'Par$",distnames[i],"'")
+  for(i in distnames){
+    if(length(Par[[i]]%*%DM[[i]])!=(parSize[[i]]*nbStates))
+      stop("zero inflation parameters must be included in 'Par$",i,"'")
   }
-  if(sum((parSize>0)*unlist(lapply(DM,ncol)))!=length(par0)) {
+  if(sum((unlist(parSize)>0)*unlist(lapply(DM,ncol)))!=length(par0)) {
     error <- "Wrong number of initial parameters"
     stop(error)
   }
@@ -391,7 +391,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   }
   
   # build the data frame to be returned
-  data<-data.frame(ID=character())
+  data<-data.frame(ID=factor())
   for(i in distnames){
     data[[i]]<-numeric()
   }
@@ -409,7 +409,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
 
     # number of observations for animal zoo
     nbObs <- allNbObs[zoo]
-    d <- data.frame(ID=rep(zoo,nbObs))
+    d <- data.frame(ID=factor(rep(zoo,nbObs)))
     
     ###############################
     ## Simulate covariate values ##

@@ -1,87 +1,59 @@
-getDM<-function(data,DM,dist,nbStates,estAngleMean){
+getDM<-function(data,DM,dist,nbStates,parNames,bounds){
   
   distnames<-names(dist)
   fullDM <- vector('list',length(dist))
   names(fullDM) <- distnames
+  fullbounds <- vector('list',length(dist))
+  names(fullbounds) <- distnames
   nbObs<-nrow(data)
+  parSize<-lapply(parNames,length)
+  
+  is.formula <- function(x)
+    tryCatch(inherits(x,"formula"),error= function(e) {FALSE})
   
   for(i in distnames){
-    switch(dist[[i]],
-           "beta"={
-             parNames<-c("shape1","shape2")
-           },
-           "pois"={
-             parNames<-"lambda"
-           },
-           "weibull"={
-             parNames<-c("shape","scale")
-           },
-           "gamma"={
-             parNames<-c("mean","sd")
-           },
-           "lnorm"={
-             parNames <- c("location","scale")
-           },
-           "exp"={
-             parNames <- c("rate")
-           },
-           "vm"={
-             if(estAngleMean[[i]]) { # if the angle mean is estimated
-               parNames <- c("mean","sd") 
-             }
-             else {
-               parNames <- c("sd")
-             }
-           },
-           "wrpcauchy"={
-             if(estAngleMean[[i]]) {
-               parNames <- c("mean","concentration")
-             }
-             else {
-               parNames <- c("concentration")
-             }
-           }
-    )
     if(is.list(DM[[i]])){
-      if(!all(names(DM[[i]]) %in% parNames)) stop('DM for ',i,' must include formula for ',paste(parNames,collapse=" and "))
-      parSize<-unlist(lapply(DM[[i]],function(x) length(attr(terms.formula(x),"term.labels"))))+1
-      tmpDM<-matrix(0,length(parNames)*nbStates*nbObs,sum(parSize)*nbStates)
+      if(!all(names(DM[[i]]) %in% parNames[[i]]) | !all(unlist(lapply(DM[[i]],is.formula)))) stop('DM for ',i,' must include formula for ',paste(parNames[[i]],collapse=" and "))
+      parSizeDM<-unlist(lapply(DM[[i]],function(x) length(attr(terms.formula(x),"term.labels"))))+1
+      tmpDM<-array(0,dim=c(parSize[[i]]*nbStates,sum(parSizeDM)*nbStates,nbObs))
+      DMnames<-character(sum(parSizeDM)*nbStates)
+      #tmpbounds<-matrix(0,2,length(parNames[[i]])*nbStates*nbObs)
       parInd<-0
-      for(j in 1:length(parNames)){
+      for(j in 1:length(parNames[[i]])){
+        tmpCov<-model.matrix(DM[[i]][[parNames[[i]][j]]],data)
         for(state in 1:nbStates){
-          tmpDM[(state-1)*nbObs+(j-1)*nbStates*nbObs+1:nbObs,parInd*nbStates+state]<-1
-          if(parSize[j]>1){
-            for(jj in 2:parSize[j]){
-              tmpDM[(state-1)*nbObs+(j-1)*nbStates*nbObs+1:nbObs,parInd*nbStates+(jj-1)*nbStates+state]<-model.matrix(DM[[i]][[parNames[j]]],data)[,jj]
-              print(c(j,state,jj,range((state-1)*nbObs+(j-1)*nbStates*nbObs+1:nbObs),parInd*nbStates+(jj-1)*nbStates+state))
-            }
-          }
+          tmpDM[(j-1)*nbStates+state,(state-1)*parSizeDM[j]+parInd*nbStates+1:parSizeDM[j],]<-t(tmpCov)
+          DMnames[(state-1)*parSizeDM[j]+parInd*nbStates+1:parSizeDM[j]]<-paste0(parNames[[i]][j],state,":",colnames(tmpCov))
         }
-        parInd<-parSize[j]
+        parInd<-parSizeDM[j]
       }
+      #tmpbounds[,(j-1)*nbObs+(state-1)*length(parNames[[i]])*nbObs+1:nbObs]<-bounds[[i]][(j-1)*nbStates+state,]
+      #tmpbounds <- t(tmpbounds)
     } else {
-      tmpDM<-matrix(0,ncol(DM[[i]]),length(parNames)*nbStates*nbObs)
+      if(is.null(dim(DM[[i]]))) stop("DM for ",i," is not specified correctly")
+      tmpDM<-array(DM[[i]],dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs))
+      DMnames<-colnames(DM[[i]])
+      if(is.null(DMnames)) warning("No names for the regression coeffs were provided in DM for ",i)
+      #tmpbounds<-array(bounds[[i]],dim=c(parSize[[i]]*nbStates,2,nbObs))
       DMterms<-unique(DM[[i]][suppressWarnings(which(is.na(as.numeric(DM[[i]]))))])
-      for(j in 1:length(parNames)){
-        for(state in 1:nbStates){
-          tmpDM[,(state-1)*nbObs+(j-1)*nbStates*nbObs+1:nbObs]<-DM[[i]][(j-1)*nbStates+state,]
-        }
-      }
-      tmpDM<-t(tmpDM)
       for(cov in DMterms){
         covs<-model.matrix(formula(paste("~",cov)),data)[,2]
-        for(j in 1:length(parNames)){
-          for(state in 1:nbStates){
-            for(k in 1:nbObs){
-              ind<-which(tmpDM[(state-1)*nbObs+(j-1)*nbStates*nbObs+k,]==cov)
-              tmpDM[(state-1)*nbObs+(j-1)*nbStates*nbObs+k,][ind]<-covs[k]
-            }
-          }
+        for(k in 1:nbObs){
+          ind<-which(tmpDM[,,k]==cov)
+          tmpDM[,,k][ind]<-covs[k]
         }
       }
-      tmpDM<-matrix(as.numeric(tmpDM),nrow(tmpDM),ncol(tmpDM))
+      tmpDM<-array(as.numeric(tmpDM),dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs))
     }
+    colnames(tmpDM)<-DMnames
     fullDM[[i]]<-tmpDM
+    #fullbounds[[i]]<-tmpbounds
   }
-  fullDM[distnames]
+  tmp<-simpDM<-lapply(fullDM,function(x) apply(x,1:2,unique))
+  for(i in distnames){
+    for(j in which(mapply(length,tmp[[i]])>1 & mapply(length,tmp[[i]])<nbObs)){
+      simpDM[[i]][[j]]<-fullDM[[i]][ceiling(j/ncol(tmp[[i]])),ceiling(j/nrow(tmp[[i]])),]
+    }
+  }
+  simpDM[distnames]
 }

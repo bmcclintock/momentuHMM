@@ -17,13 +17,15 @@ print.momentuHMM <- function(x,...)
 {
   m <- x
   distnames <- names(m$conditions$dist)
+  DMind <- lapply(m$conditions$DM,function(x) all(unlist(apply(x,1,function(y) lapply(y,length)))==1))
 
   if(length(m$mod)>1)
     cat("Value of the maximum log-likelihood:",-m$mod$minimum,"\n\n")
   
   for(i in distnames){
     cat("\n")
-    cat(i,"parameters:\n")
+    if(DMind[[i]]) cat(i,"parameters:\n")
+    else cat("Regression coeffs for",i,"parameters:\n")
     cat("----------------------\n")
     print(m$mle[[i]])
   }

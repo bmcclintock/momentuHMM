@@ -11,27 +11,28 @@ using namespace std;
 //'
 //' Probability density function of the gamma distribution (written in C++)
 //'
-//' @param x Vector of quantiles
+//' @param x quantile
 //' @param mu Mean
 //' @param sigma Standard deviation
 //'
-//' @return Vector of densities
+//' @return density
 // [[Rcpp::export]]
-arma::colvec dgamma_rcpp(NumericVector x, double mu, double sigma)
+double dgamma_rcpp(double x, double mu, double sigma)
 {
-  arma::colvec res(x.size());
-
+  //arma::colvec res(x.size());
+  double res;
+  
   // convert mean and sd to shape and scale
   double shape = pow(mu,2)/pow(sigma,2);
   double scale = pow(sigma,2)/mu;
-
-  for(int i=0;i<x.size();i++) {
-    if(!arma::is_finite(x(i)))
-      res(i) = 1; // if missing observation
-    else
-      res(i) = R::dgamma(x(i),shape,scale,0);
-  }
-
+  
+  //for(int i=0;i<x.size();i++) {
+  if(!arma::is_finite(x))
+    res = 1; // if missing observation
+  else
+    res = R::dgamma(x,shape,scale,0);
+  //}
+  
   return res;
 }
 
@@ -39,23 +40,24 @@ arma::colvec dgamma_rcpp(NumericVector x, double mu, double sigma)
 //'
 //' Probability density function of the Weibull distribution (written in C++)
 //'
-//' @param x Vector of quantiles
+//' @param x quantile
 //' @param shape Shape
 //' @param scale Scale
 //'
-//' @return Vector of densities
+//' @return density
 // [[Rcpp::export]]
-arma::colvec dweibull_rcpp(NumericVector x, double shape, double scale)
+double dweibull_rcpp(double x, double scale, double shape)
 {
-  arma::colvec res(x.size());
-
-  for(int i=0;i<x.size();i++) {
-    if(!arma::is_finite(x(i)))
-      res(i) = 1; // if missing observation
-    else
-      res(i) = R::dweibull(x(i),shape,scale,0);
-  }
-
+  //arma::colvec res(x.size());
+  double res;
+  
+  //for(int i=0;i<x.size();i++) {
+  if(!arma::is_finite(x))
+    res = 1; // if missing observation
+  else
+    res = R::dweibull(x,shape,scale,0);
+  //}
+  
   return res;
 }
 
@@ -63,23 +65,24 @@ arma::colvec dweibull_rcpp(NumericVector x, double shape, double scale)
 //'
 //' Probability density function of the log-normal distribution (written in C++)
 //'
-//' @param x Vector of quantiles
+//' @param x quantile
 //' @param meanlog Mean of the distribution on the log-scale
 //' @param sdlog Standard deviation of the distribution on the log-scale
 //'
-//' @return Vector of densities
+//' @return density
 // [[Rcpp::export]]
-arma::colvec dlnorm_rcpp(NumericVector x, double meanlog, double sdlog)
+double dlnorm_rcpp(double x, double meanlog, double sdlog)
 {
-  arma::colvec res(x.size());
-
-  for(int i=0;i<x.size();i++) {
-    if(!arma::is_finite(x(i)))
-      res(i) = 1; // if missing observation
-    else
-      res(i) = R::dlnorm(x(i),meanlog,sdlog,0);
-  }
-
+  //arma::colvec res(x.size());
+  double res;
+  
+  //for(int i=0;i<x.size();i++) {
+  if(!arma::is_finite(x))
+    res = 1; // if missing observation
+  else
+    res = R::dlnorm(x,meanlog,sdlog,0);
+  //}
+  
   return res;
 }
 
@@ -87,23 +90,24 @@ arma::colvec dlnorm_rcpp(NumericVector x, double meanlog, double sdlog)
 //'
 //' Probability density function of the exponential distribution (written in C++)
 //'
-//' @param x Vector of quantiles
+//' @param x quantile
 //' @param rate Rate
 //' @param foo Unused (for compatibility with template)
 //'
-//' @return Vector of densities
+//' @return density
 // [[Rcpp::export]]
-arma::colvec dexp_rcpp(NumericVector x, double rate, double foo=0)
+double dexp_rcpp(double x, double rate, double foo=0)
 {
-  arma::colvec res(x.size());
-
-  for(int i=0;i<x.size();i++) {
-    if(!arma::is_finite(x(i)))
-      res(i) = 1; // if missing observation
-    else
-      res(i) = R::dexp(x(i),1/rate,0); // R::dexp expects scale=1/rate
-  }
-
+  //arma::colvec res(x.size());
+  double res;
+  
+  //for(int i=0;i<x.size();i++) {
+  if(!arma::is_finite(x))
+    res = 1; // if missing observation
+  else
+    res = R::dexp(x,1/rate,0); // R::dexp expects scale=1/rate
+  //}
+  
   return res;
 }
 
@@ -112,24 +116,25 @@ arma::colvec dexp_rcpp(NumericVector x, double rate, double foo=0)
 //' Probability density function of the Von Mises distribution, defined as a function
 //' of the modified Bessel function of order 0 (written in C++)
 //'
-//' @param x Vector of quantiles
+//' @param x quantile
 //' @param mu Mean
 //' @param kappa Concentration
 //'
-//' @return Vector of densities
+//' @return density
 // [[Rcpp::export]]
-arma::colvec dvm_rcpp(NumericVector x, double mu, double kappa)
+double dvm_rcpp(double x, double mu, double kappa)
 {
-  arma::colvec res(x.size());
+  //arma::colvec res(x.size());
+  double res;
   double b = R::bessel_i(kappa,0,2);
-
-  for(int i=0;i<x.size();i++) {
-    if(!arma::is_finite(x(i)))
-      res(i) = 1; // is missing observation
-    else
-      res(i) = 1/(2*M_PI*b)*pow((exp(cos(x(i)-mu)-1)),kappa);
-  }
-
+  
+  //for(int i=0;i<x.size();i++) {
+  if(!arma::is_finite(x))
+    res = 1; // is missing observation
+  else
+    res = 1/(2*M_PI*b)*pow((exp(cos(x-mu)-1)),kappa);
+  //}
+  
   return res;
 }
 
@@ -137,48 +142,50 @@ arma::colvec dvm_rcpp(NumericVector x, double mu, double kappa)
 //'
 //' Probability density function of the wrapped Cauchy distribution (written in C++)
 //'
-//' @param x Vector of quantiles
+//' @param x quantile
 //' @param mu Mean
 //' @param rho Concentration
 //'
-//' @return Vector of densities
+//' @return density
 // [[Rcpp::export]]
-arma::colvec dwrpcauchy_rcpp(NumericVector x, double mu, double rho)
+double dwrpcauchy_rcpp(double x, double mu, double rho)
 {
-  arma::colvec res(x.size());
+  //arma::colvec res(x.size());
+  double res;
   double num = 1-rho*rho;
   double den;
-
-  for(int i=0;i<x.size();i++) {
-    if(!arma::is_finite(x(i)))
-      res(i) = 1; // if missing observation
-    else {
-      den = (2*M_PI)*(1+rho*rho-2*rho*cos(x(i)-mu));
-      res(i) = num/den;
-    }
+  
+  //for(int i=0;i<x.size();i++) {
+  if(!arma::is_finite(x))
+    res = 1; // if missing observation
+  else {
+    den = (2*M_PI)*(1+rho*rho-2*rho*cos(x-mu));
+    res = num/den;
   }
-
+  //}
+  
   return res;
 }
 
 //' Probability density function of the beta distribution (written in C++)
 //'
-//' @param x Vector of quantiles
+//' @param x quantile
 //' @param shape1 Shape1
 //' @param shape2 Shape2
 //'
-//' @return Vector of densities
+//' @return density
 // [[Rcpp::export]]
-arma::colvec dbeta_rcpp(NumericVector x, double shape1, double shape2)
+double dbeta_rcpp(double x, double shape1, double shape2)
 {
-  arma::colvec res(x.size());
+  //arma::colvec res(x.size());
+  double res;
 
-  for(int i=0;i<x.size();i++) {
-    if(!arma::is_finite(x(i)))
-      res(i) = 1; // if missing observation
+  //for(int i=0;i<x.size();i++) {
+    if(!arma::is_finite(x))
+      res = 1; // if missing observation
     else
-      res(i) = R::dbeta(x(i),shape1,shape2,0);
-  }
+      res = R::dbeta(x,shape1,shape2,0);
+  //}
 
   return res;
 }
@@ -187,27 +194,29 @@ arma::colvec dbeta_rcpp(NumericVector x, double shape1, double shape2)
 //'
 //' Probability density function of the Poisson distribution (written in C++)
 //'
-//' @param x Vector of quantiles
+//' @param x quantile
 //' @param rate Rate
 //' @param foo Unused (for compatibility with template)
 //'
-//' @return Vector of densities
+//' @return density
 // [[Rcpp::export]]
-arma::colvec dpois_rcpp(NumericVector x, double rate, double foo=0)
+double dpois_rcpp(double x, double rate, double foo=0)
 {
-  arma::colvec res(x.size());
+  //arma::colvec res(x.size());
+  double res;
 
-  for(int i=0;i<x.size();i++) {
-    if(!arma::is_finite(x(i)))
-      res(i) = 1; // if missing observation
+  //for(int i=0;i<x.size();i++) {
+    if(!arma::is_finite(x))
+      res = 1; // if missing observation
     else
-      res(i) = R::dpois(x(i),rate,0);
-  }
+      res = R::dpois(x,rate,0);
+  //}
 
   return res;
 }
 
 // used in nLogLike_rcpp to map the functions' names to the functions
-typedef arma::colvec (*FunPtr)(NumericVector,double,double);
+typedef double (*FunPtr)(double,double,double);
+//typedef arma::colvec (*FunPtr2)(NumericVector,double,double);
 
 #endif
