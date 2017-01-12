@@ -56,9 +56,13 @@ n2wDM<-function(bounds,DM,par,cons,logitcons){
   p
 }     
 
-w2nDM<-function(wpar,bounds,DM,DMind,cons,logitcons,nbObs,k=0){
+w2nDM<-function(wpar,bounds,DM,DMind,cons,logitcons,nbObs,parSize,k=0){
   Par<-numeric(length(wpar))
   #tmpind<-matrix(sapply(bounds,function(x) eval(parse(text=x))),ncol=2)!=bounds
+  
+  ord<-order(rep(1:(nrow(DM)/parSize),parSize))
+  bounds<-bounds[ord,]
+  
   tmpbounds<-bounds
   if(!is.numeric(bounds)){
     tmpind<-matrix(sapply(bounds,function(x) eval(parse(text=x))),ncol=2)!=bounds
@@ -91,8 +95,8 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,logitcons,nbObs,k=0){
   ind11<-which(abs(a_2- -pi)<1.e-6 & abs(b_2 - pi)<1.e-6)
   ind21<-which(!abs(a_2- -pi)<1.e-6 & !abs(b_2 - pi)<1.e-6)
   
-  if(DMind) XB <- matrix((wpar^cons+logitcons)%*%t(DM),nrow(DM),1)
-  else XB <- getXB(DM,nbObs,wpar,cons,logitcons)
+  if(DMind) XB <- matrix(((wpar^cons+logitcons)%*%t(DM))[ord],nrow(DM),1)
+  else XB <- getXB(DM,nbObs,wpar,cons,logitcons,ord)
   
   p<-matrix(0,length(ind11)+length(ind21),nbObs)
   #p[ind11] <- 2*atan((wpar[ind1]^cons[ind1]+logitcons[ind1])%*%t(DM[ind1,ind1]))
@@ -133,13 +137,13 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,logitcons,nbObs,k=0){
   if(any(p>b_2)) p[which(p>b_2)]<-b_2[which(p>b_2)%%length(b_2)]
   
   if(any(p<a_2 | p>b_2))
-    stop("Scaling error.")
+    stop("Scaling error. Check initial values and bounds.")
   
   if(k) {
     p <- p[k]
     return(p)
   } else {
-    if(DMind) p<-matrix(p,nrow(p),nbObs)
+    #if(DMind) p<-matrix(p,nrow(p),nbObs)
     return(list(p=p,Par=Par))
   }
 }   

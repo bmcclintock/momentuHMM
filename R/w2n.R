@@ -72,7 +72,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons
   parlist<-NULL
   
   for(i in distnames){
-    Par<-w2nDM(wpar[parindex[[i]]+1:ncol(fullDM[[i]])],bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],logitcons[[i]],nbObs)$p
+    Par<-w2nDM(wpar[parindex[[i]]+1:ncol(fullDM[[i]])],bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],logitcons[[i]],nbObs,parSize[[i]])$p
     #if(!is.numeric(fullbounds[[i]])){
     #  nbounds <- rbind(nbounds, matrix(sapply(fullbounds[[i]],function(x) eval(parse(text=x))),ncol=2))
     #} else {
@@ -85,8 +85,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons
       parlist[[i]] <- array(tmp,dim=c(parSize[[i]]+1,nbStates,nbObs))
     }
     else {
-      tmp<-Par[order(rep(1:nbStates,parSize[[i]])),]
-      parlist[[i]] <- array(tmp,dim=c(parSize[[i]],nbStates,nbObs))
+      parlist[[i]] <- array(Par,dim=c(parSize[[i]],nbStates,nbObs))
       #parlist[[i]] <- aperm(Par,c(2,1,3))
     }
   }
