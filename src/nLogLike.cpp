@@ -42,8 +42,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   arma::mat beta = Par["beta"];
   arma::rowvec delta = Par["delta"];
   NumericVector genData(nbObs);
-  arma::cube genParAll;
-  arma::mat genPar;
+  arma::cube genPar;
   std::string genDist;
   std::string genname;
   
@@ -116,46 +115,67 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   allProbs.ones();
 
   arma::colvec genProb(nbObs);
-  NumericVector genArgs(2); 
+  arma::rowvec zerom(nbObs);
   bool genzeroInflation;
-  double zeromass;
+  arma::mat genArgs1;
+  arma::mat genArgs2;
+  arma::mat zeromass(nbStates,nbObs);
+  arma::uvec noZeros;
+  arma::uvec nbZeros;
+  
+  double NAvalue = -99999999; // value designating NAs in data
 
-  // extract zero-mass parameters from step parameters if necessary
-
-
-  for(int state=0;state<nbStates;state++)
-  {
-    for(unsigned int k=0;k<dist.size();k++){
-      genProb.ones();
-      genname = as<std::string>(dataNames[k]);
-      genData = as<NumericVector>(data[genname]);
-      genDist = as<std::string>(dist[genname]);
-      genParAll = as<arma::cube>(Par[genname]);
-      genzeroInflation = as<bool>(zeroInflation[genname]);
-      
-      for(int i=0;i<nbObs;i++) {
-      
-        genPar = genParAll.slice(i);
-        
-        if(genzeroInflation) {
-          zeromass = genPar(genPar.n_rows-1,state);
-          genPar = genPar.submat(0,0,genPar.n_rows-2,genPar.n_cols-1);
-        }
-        
-        for(unsigned int j=0;j<genPar.n_rows;j++)
-          genArgs(j) = genPar(j,state);
-        
-        if(genzeroInflation) {
-          if(genData(i)>0){
-            genProb(i) = (1-zeromass)*funMap[genDist](genData(i),genArgs(0),genArgs(1));
-          } else if(genData(i)==0){
-            genProb(i) = zeromass;
-          }
-        } else {
-         genProb(i) = funMap[genDist](genData(i),genArgs(0),genArgs(1));
-        }
+  for(unsigned int k=0;k<dist.size();k++){
+    genname = as<std::string>(dataNames[k]);
+    genData = as<NumericVector>(data[genname]);
+    genDist = as<std::string>(dist[genname]);
+    genPar = as<arma::cube>(Par[genname]);
+    genzeroInflation = as<bool>(zeroInflation[genname]);
+    
+    // remove the NAs from step (impossible to subset a vector with NAs)
+    for(int i=0;i<nbObs;i++) {
+      if(!arma::is_finite(genData(i))) {
+        genData(i) = NAvalue;
       }
-      allProbs.col(state) = allProbs.col(state)%genProb;
+    }
+    
+
+    // extract zero-mass parameters from step parameters if necessary
+    if(genzeroInflation) {
+      zeromass = genPar(arma::span(genPar.n_rows-1),arma::span(),arma::span());
+      genPar = genPar.tube(0, 0, genPar.n_rows-2, genPar.n_cols-1);
+      noZeros = arma::find(as<arma::vec>(genData)>0);
+      nbZeros = arma::find(as<arma::vec>(genData)==0);
+    }
+    arma::uvec noNAs = arma::find(as<arma::vec>(genData)!=NAvalue);
+
+    for(int state=0;state<nbStates;state++){
+      
+      genProb.ones();
+      
+      genArgs1 = genPar(arma::span(0),arma::span(state),arma::span());
+      genArgs2 = genPar(arma::span(genPar.n_rows-1),arma::span(state),arma::span());
+    
+
+      if(genzeroInflation) {
+        
+        zerom = zeromass.row(state);
+
+        // compute probability of non-zero observations
+        genProb.elem(noZeros) = (1-zerom.elem(noZeros)) % funMap[genDist](genData[genData>0],genArgs1.elem(noZeros),genArgs2.elem(noZeros));
+
+        // compute probability of zero observations
+        genProb.elem(nbZeros) = zerom.elem(nbZeros);
+        
+      } else {
+        genProb.elem(noNAs) = funMap[genDist](genData[genData!=NAvalue],genArgs1.elem(noNAs),genArgs2.elem(noNAs));
+      }
+      allProbs.col(state) = allProbs.col(state) % genProb;
+    }
+    // put the NAs back
+    for(int i=0;i<nbObs;i++) {
+      if(genData(i)<0)
+        genData(i) = NA_REAL;
     }
   }
 

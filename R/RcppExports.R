@@ -5,11 +5,11 @@
 #'
 #' Probability density function of the gamma distribution (written in C++)
 #'
-#' @param x quantile
+#' @param x Vector of quantiles
 #' @param mu Mean
 #' @param sigma Standard deviation
 #'
-#' @return density
+#' @return Vector of densities
 dgamma_rcpp <- function(x, mu, sigma) {
     .Call('momentuHMM_dgamma_rcpp', PACKAGE = 'momentuHMM', x, mu, sigma)
 }
@@ -18,24 +18,24 @@ dgamma_rcpp <- function(x, mu, sigma) {
 #'
 #' Probability density function of the Weibull distribution (written in C++)
 #'
-#' @param x quantile
+#' @param x Vector of quantiles
 #' @param shape Shape
 #' @param scale Scale
 #'
-#' @return density
-dweibull_rcpp <- function(x, scale, shape) {
-    .Call('momentuHMM_dweibull_rcpp', PACKAGE = 'momentuHMM', x, scale, shape)
+#' @return Vector of densities
+dweibull_rcpp <- function(x, shape, scale) {
+    .Call('momentuHMM_dweibull_rcpp', PACKAGE = 'momentuHMM', x, shape, scale)
 }
 
 #' Log-normal density function
 #'
 #' Probability density function of the log-normal distribution (written in C++)
 #'
-#' @param x quantile
+#' @param x Vector of quantiles
 #' @param meanlog Mean of the distribution on the log-scale
 #' @param sdlog Standard deviation of the distribution on the log-scale
 #'
-#' @return density
+#' @return Vector of densities
 dlnorm_rcpp <- function(x, meanlog, sdlog) {
     .Call('momentuHMM_dlnorm_rcpp', PACKAGE = 'momentuHMM', x, meanlog, sdlog)
 }
@@ -44,12 +44,12 @@ dlnorm_rcpp <- function(x, meanlog, sdlog) {
 #'
 #' Probability density function of the exponential distribution (written in C++)
 #'
-#' @param x quantile
+#' @param x Vector of quantiles
 #' @param rate Rate
 #' @param foo Unused (for compatibility with template)
 #'
-#' @return density
-dexp_rcpp <- function(x, rate, foo = 0) {
+#' @return Vector of densities
+dexp_rcpp <- function(x, rate, foo) {
     .Call('momentuHMM_dexp_rcpp', PACKAGE = 'momentuHMM', x, rate, foo)
 }
 
@@ -58,11 +58,11 @@ dexp_rcpp <- function(x, rate, foo = 0) {
 #' Probability density function of the Von Mises distribution, defined as a function
 #' of the modified Bessel function of order 0 (written in C++)
 #'
-#' @param x quantile
+#' @param x Vector of quantiles
 #' @param mu Mean
 #' @param kappa Concentration
 #'
-#' @return density
+#' @return Vector of densities
 dvm_rcpp <- function(x, mu, kappa) {
     .Call('momentuHMM_dvm_rcpp', PACKAGE = 'momentuHMM', x, mu, kappa)
 }
@@ -71,22 +71,22 @@ dvm_rcpp <- function(x, mu, kappa) {
 #'
 #' Probability density function of the wrapped Cauchy distribution (written in C++)
 #'
-#' @param x quantile
+#' @param x Vector of quantiles
 #' @param mu Mean
 #' @param rho Concentration
 #'
-#' @return density
+#' @return Vector of densities
 dwrpcauchy_rcpp <- function(x, mu, rho) {
     .Call('momentuHMM_dwrpcauchy_rcpp', PACKAGE = 'momentuHMM', x, mu, rho)
 }
 
 #' Probability density function of the beta distribution (written in C++)
 #'
-#' @param x quantile
+#' @param x Vector of quantiles
 #' @param shape1 Shape1
 #' @param shape2 Shape2
 #'
-#' @return density
+#' @return Vector of densities
 dbeta_rcpp <- function(x, shape1, shape2) {
     .Call('momentuHMM_dbeta_rcpp', PACKAGE = 'momentuHMM', x, shape1, shape2)
 }
@@ -95,12 +95,12 @@ dbeta_rcpp <- function(x, shape1, shape2) {
 #'
 #' Probability density function of the Poisson distribution (written in C++)
 #'
-#' @param x quantile
+#' @param x Vector of quantiles
 #' @param rate Rate
 #' @param foo Unused (for compatibility with template)
 #'
-#' @return density
-dpois_rcpp <- function(x, rate, foo = 0) {
+#' @return Vector of densities
+dpois_rcpp <- function(x, rate, foo) {
     .Call('momentuHMM_dpois_rcpp', PACKAGE = 'momentuHMM', x, rate, foo)
 }
 

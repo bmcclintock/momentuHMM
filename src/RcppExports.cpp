@@ -7,105 +7,105 @@
 using namespace Rcpp;
 
 // dgamma_rcpp
-double dgamma_rcpp(double x, double mu, double sigma);
+arma::colvec dgamma_rcpp(NumericVector x, arma::mat mu, arma::mat sigma);
 RcppExport SEXP momentuHMM_dgamma_rcpp(SEXP xSEXP, SEXP muSEXP, SEXP sigmaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type x(xSEXP);
-    Rcpp::traits::input_parameter< double >::type mu(muSEXP);
-    Rcpp::traits::input_parameter< double >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type sigma(sigmaSEXP);
     rcpp_result_gen = Rcpp::wrap(dgamma_rcpp(x, mu, sigma));
     return rcpp_result_gen;
 END_RCPP
 }
 // dweibull_rcpp
-double dweibull_rcpp(double x, double scale, double shape);
-RcppExport SEXP momentuHMM_dweibull_rcpp(SEXP xSEXP, SEXP scaleSEXP, SEXP shapeSEXP) {
+arma::colvec dweibull_rcpp(NumericVector x, arma::mat shape, arma::mat scale);
+RcppExport SEXP momentuHMM_dweibull_rcpp(SEXP xSEXP, SEXP shapeSEXP, SEXP scaleSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type x(xSEXP);
-    Rcpp::traits::input_parameter< double >::type scale(scaleSEXP);
-    Rcpp::traits::input_parameter< double >::type shape(shapeSEXP);
-    rcpp_result_gen = Rcpp::wrap(dweibull_rcpp(x, scale, shape));
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type shape(shapeSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type scale(scaleSEXP);
+    rcpp_result_gen = Rcpp::wrap(dweibull_rcpp(x, shape, scale));
     return rcpp_result_gen;
 END_RCPP
 }
 // dlnorm_rcpp
-double dlnorm_rcpp(double x, double meanlog, double sdlog);
+arma::colvec dlnorm_rcpp(NumericVector x, arma::mat meanlog, arma::mat sdlog);
 RcppExport SEXP momentuHMM_dlnorm_rcpp(SEXP xSEXP, SEXP meanlogSEXP, SEXP sdlogSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type x(xSEXP);
-    Rcpp::traits::input_parameter< double >::type meanlog(meanlogSEXP);
-    Rcpp::traits::input_parameter< double >::type sdlog(sdlogSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type meanlog(meanlogSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type sdlog(sdlogSEXP);
     rcpp_result_gen = Rcpp::wrap(dlnorm_rcpp(x, meanlog, sdlog));
     return rcpp_result_gen;
 END_RCPP
 }
 // dexp_rcpp
-double dexp_rcpp(double x, double rate, double foo);
+arma::colvec dexp_rcpp(NumericVector x, arma::mat rate, arma::mat foo);
 RcppExport SEXP momentuHMM_dexp_rcpp(SEXP xSEXP, SEXP rateSEXP, SEXP fooSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type x(xSEXP);
-    Rcpp::traits::input_parameter< double >::type rate(rateSEXP);
-    Rcpp::traits::input_parameter< double >::type foo(fooSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type rate(rateSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type foo(fooSEXP);
     rcpp_result_gen = Rcpp::wrap(dexp_rcpp(x, rate, foo));
     return rcpp_result_gen;
 END_RCPP
 }
 // dvm_rcpp
-double dvm_rcpp(double x, double mu, double kappa);
+arma::colvec dvm_rcpp(NumericVector x, arma::mat mu, arma::mat kappa);
 RcppExport SEXP momentuHMM_dvm_rcpp(SEXP xSEXP, SEXP muSEXP, SEXP kappaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type x(xSEXP);
-    Rcpp::traits::input_parameter< double >::type mu(muSEXP);
-    Rcpp::traits::input_parameter< double >::type kappa(kappaSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type kappa(kappaSEXP);
     rcpp_result_gen = Rcpp::wrap(dvm_rcpp(x, mu, kappa));
     return rcpp_result_gen;
 END_RCPP
 }
 // dwrpcauchy_rcpp
-double dwrpcauchy_rcpp(double x, double mu, double rho);
+arma::colvec dwrpcauchy_rcpp(NumericVector x, arma::mat mu, arma::mat rho);
 RcppExport SEXP momentuHMM_dwrpcauchy_rcpp(SEXP xSEXP, SEXP muSEXP, SEXP rhoSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type x(xSEXP);
-    Rcpp::traits::input_parameter< double >::type mu(muSEXP);
-    Rcpp::traits::input_parameter< double >::type rho(rhoSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type rho(rhoSEXP);
     rcpp_result_gen = Rcpp::wrap(dwrpcauchy_rcpp(x, mu, rho));
     return rcpp_result_gen;
 END_RCPP
 }
 // dbeta_rcpp
-double dbeta_rcpp(double x, double shape1, double shape2);
+arma::colvec dbeta_rcpp(NumericVector x, arma::mat shape1, arma::mat shape2);
 RcppExport SEXP momentuHMM_dbeta_rcpp(SEXP xSEXP, SEXP shape1SEXP, SEXP shape2SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type x(xSEXP);
-    Rcpp::traits::input_parameter< double >::type shape1(shape1SEXP);
-    Rcpp::traits::input_parameter< double >::type shape2(shape2SEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type shape1(shape1SEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type shape2(shape2SEXP);
     rcpp_result_gen = Rcpp::wrap(dbeta_rcpp(x, shape1, shape2));
     return rcpp_result_gen;
 END_RCPP
 }
 // dpois_rcpp
-double dpois_rcpp(double x, double rate, double foo);
+arma::colvec dpois_rcpp(NumericVector x, arma::mat rate, arma::mat foo);
 RcppExport SEXP momentuHMM_dpois_rcpp(SEXP xSEXP, SEXP rateSEXP, SEXP fooSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type x(xSEXP);
-    Rcpp::traits::input_parameter< double >::type rate(rateSEXP);
-    Rcpp::traits::input_parameter< double >::type foo(fooSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type rate(rateSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type foo(fooSEXP);
     rcpp_result_gen = Rcpp::wrap(dpois_rcpp(x, rate, foo));
     return rcpp_result_gen;
 END_RCPP
