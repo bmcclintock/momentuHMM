@@ -97,7 +97,7 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,userBounds=NULL)
           )
     if(zeroInflation[[i]]) {
       tmpbounds[(parSize[[i]] * nbStates)-nbStates:1+1,2] <- 1
-      parNames[[i]] <- c(parNames[[i]],"zero-mass")
+      parNames[[i]] <- c(parNames[[i]],"zeromass")
     } 
     rownames(tmpbounds) <- paste0(rep(parNames[[i]],each=nbStates),"_",1:nbStates)
     bounds[[i]] <- tmpbounds

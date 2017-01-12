@@ -162,8 +162,9 @@ fitHMM <- function(data,nbStates,dist,
   Par <- Par[distnames]
   
   # build design matrix
-  covsCol <- seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data))]
+  covsCol <- seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
   covs <- model.matrix(formula,data)
+  if(nrow(covs)!=nrow(data)) stop("covariates cannot contain missing values")
 
   if(length(covsCol)>0) {
     rawCovs <- data[covsCol]
@@ -227,13 +228,13 @@ fitHMM <- function(data,nbStates,dist,
 
   par0 <- unlist(Par)#c(stepPar,anglePar,omegaPar,dryPar,divePar,icePar,landPar)  
   p <- parDef(dist,nbStates,estAngleMean,zeroInflation,userBounds)
-  bounds <- p$bounds
-  for(i in distnames){
-    if(!is.numeric(bounds[[i]])){
-      bounds[[i]] <- gsub(paste0(i,"Par"),paste0("Par$",i),bounds[[i]],fixed=TRUE)
-      bounds[[i]]<-matrix(sapply(bounds[[i]],function(x) eval(parse(text=x))),ncol=2,dimnames=list(rownames(p$bounds[[i]])))
-    }
-  }
+  #bounds <- p$bounds
+  #for(i in distnames){
+  #  if(!is.numeric(bounds[[i]])){
+  #    bounds[[i]] <- gsub(paste0(i,"Par"),paste0("Par$",i),bounds[[i]],fixed=TRUE)
+  #    bounds[[i]]<-matrix(sapply(bounds[[i]],function(x) eval(parse(text=x))),ncol=2,dimnames=list(rownames(p$bounds[[i]])))
+  #  }
+  #}
   parSize <- p$parSize
 
   if(!is.null(beta0)) {
@@ -289,8 +290,8 @@ fitHMM <- function(data,nbStates,dist,
   if(stationary)
     delta0 <- NULL
 
+  bounds <- p$bounds
   if(!all(unlist(lapply(p$bounds,is.numeric)))){
-    bounds <- p$bounds
     for(i in distnames){
       if(!is.numeric(bounds[[i]])){
         bounds[[i]] <- gsub(i,"",bounds[[i]],fixed=TRUE)
@@ -303,25 +304,19 @@ fitHMM <- function(data,nbStates,dist,
     names(DM) <- distnames
   } else {
     if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
+    if(!any(names(DM) %in% distnames)) stop("DM names must include at least one of: ",paste0(distnames,collapse=", "))
   }
   for(i in distnames){
     if(is.null(DM[[i]])) {
       if(dist[[i]] %in% c("wrpcauchy","vm") & length(Par[[i]])!=(nbStates+nbStates*estAngleMean[[i]])) stop("Wrong number of parameters for ",i)
       DM[[i]] <- diag((ifelse(dist[[i]]=="exp" | dist[[i]]=="pois" | (dist[[i]] %in% c("wrpcauchy","vm") & !estAngleMean[[i]]),1,2)+zeroInflation[[i]])*nbStates)
-      colnames(DM[[i]])<-paste0(rep(p$parNames[[i]],each=nbStates),1:nbStates,":(Intercept)")
+      colnames(DM[[i]])<-paste0(rep(p$parNames[[i]],each=nbStates),"_",1:nbStates,":(Intercept)")
     }
   }
   DM<-DM[distnames]
   
-  fullDM<-getDM(data,DM,dist,nbStates,p$parNames,bounds)
+  fullDM<-getDM(data,DM,dist,nbStates,p$parNames,bounds,Par)
   DMind <- lapply(fullDM,function(x) all(unlist(apply(x,1,function(y) lapply(y,length)))==1))
-  
-  for(i in distnames){
-    if(identical(DM[[i]],diag(ncol(DM[[i]]))))
-      if(length(which(Par[[i]]<bounds[[i]][,1] | Par[[i]]>bounds[[i]][,2]))>0)
-        stop(paste0("Check the parameter bounds for '",i,"' (the initial parameters should be ",
-                    "strictly between the bounds of their parameter space)."))
-  }
   
   if(any(unlist(lapply(Par,length))!=unlist(lapply(fullDM,ncol))))
     stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol)))),collapse=", "))
@@ -338,6 +333,15 @@ fitHMM <- function(data,nbStates,dist,
   if(sum((unlist(parSize)>0)*unlist(lapply(fullDM,ncol)))!=length(par0)) {
     error <- "Wrong number of initial parameters"
     stop(error)
+  }
+  
+  for(i in distnames){
+    tmp<-diag(length(Par[[i]]))
+    colnames(tmp)<-colnames(fullDM[[i]])
+    if(identical(fullDM[[i]],tmp))
+      if(length(which(Par[[i]]<=bounds[[i]][,1] | Par[[i]]>=bounds[[i]][,2]))>0)
+        stop(paste0("Check the parameter bounds for ",i," (the initial parameters should be ",
+                    "strictly between the bounds of their parameter space)."))
   }
   
   if(is.null(cons)){
@@ -371,6 +375,8 @@ fitHMM <- function(data,nbStates,dist,
   
   # build the vector of initial working parameters
   wpar <- n2w(Par,bounds,beta0,delta0,nbStates,estAngleMean,DM,cons,logitcons)
+  
+  if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
   
   ##################
   ## Optimization ##
@@ -430,6 +436,7 @@ fitHMM <- function(data,nbStates,dist,
     } else {
       mle[[i]]<-mod$estimate[parindex[[i]]+1:ncol(fullDM[[i]])]
       names(mle[[i]])<-colnames(fullDM[[i]])
+      if(is.null(names(mle[[i]]))) warning("No names for the regression coeffs were provided in DM$",i)
     }
   }
 

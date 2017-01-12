@@ -1,4 +1,4 @@
-getDM<-function(data,DM,dist,nbStates,parNames,bounds){
+getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par){
   
   distnames<-names(dist)
   fullDM <- vector('list',length(dist))
@@ -13,7 +13,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds){
   
   for(i in distnames){
     if(is.list(DM[[i]])){
-      if(!all(names(DM[[i]]) %in% parNames[[i]]) | !all(unlist(lapply(DM[[i]],is.formula)))) stop('DM for ',i,' must include formula for ',paste(parNames[[i]],collapse=" and "))
+      if(!all(parNames[[i]] %in% names(DM[[i]])) | !all(unlist(lapply(DM[[i]],is.formula)))) stop('DM for ',i,' must include formula for ',paste(parNames[[i]],collapse=" and "))
       parSizeDM<-unlist(lapply(DM[[i]],function(x) length(attr(terms.formula(x),"term.labels"))))+1
       tmpDM<-array(0,dim=c(parSize[[i]]*nbStates,sum(parSizeDM)*nbStates,nbObs))
       DMnames<-character(sum(parSizeDM)*nbStates)
@@ -21,23 +21,25 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds){
       parInd<-0
       for(j in 1:length(parNames[[i]])){
         tmpCov<-model.matrix(DM[[i]][[parNames[[i]][j]]],data)
+        if(nrow(tmpCov)!=nrow(data)) stop("covariates cannot contain missing values")
         for(state in 1:nbStates){
           tmpDM[(j-1)*nbStates+state,(state-1)*parSizeDM[j]+parInd*nbStates+1:parSizeDM[j],]<-t(tmpCov)
-          DMnames[(state-1)*parSizeDM[j]+parInd*nbStates+1:parSizeDM[j]]<-paste0(parNames[[i]][j],state,":",colnames(tmpCov))
+          DMnames[(state-1)*parSizeDM[j]+parInd*nbStates+1:parSizeDM[j]]<-paste0(parNames[[i]][j],"_",state,":",colnames(tmpCov))
         }
-        parInd<-parSizeDM[j]
+        parInd<-sum(parSizeDM[1:j])
       }
+      if(ncol(tmpDM)!=length(Par[[i]])) stop("Based on DM$",i,", Par$",i," must be of length ",ncol(tmpDM))
       #tmpbounds[,(j-1)*nbObs+(state-1)*length(parNames[[i]])*nbObs+1:nbObs]<-bounds[[i]][(j-1)*nbStates+state,]
       #tmpbounds <- t(tmpbounds)
     } else {
       if(is.null(dim(DM[[i]]))) stop("DM for ",i," is not specified correctly")
       tmpDM<-array(DM[[i]],dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs))
       DMnames<-colnames(DM[[i]])
-      if(is.null(DMnames)) warning("No names for the regression coeffs were provided in DM for ",i)
       #tmpbounds<-array(bounds[[i]],dim=c(parSize[[i]]*nbStates,2,nbObs))
       DMterms<-unique(DM[[i]][suppressWarnings(which(is.na(as.numeric(DM[[i]]))))])
       for(cov in DMterms){
         covs<-model.matrix(formula(paste("~",cov)),data)[,2]
+        if(length(covs)!=nrow(data)) stop("covariates cannot contain missing values")
         for(k in 1:nbObs){
           ind<-which(tmpDM[,,k]==cov)
           tmpDM[,,k][ind]<-covs[k]
