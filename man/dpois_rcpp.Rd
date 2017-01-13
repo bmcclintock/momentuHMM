@@ -4,7 +4,7 @@
 \alias{dpois_rcpp}
 \title{Poisson density function}
 \usage{
-dpois_rcpp(x, rate, foo = 0)
+dpois_rcpp(x, rate, foo)
 }
 \arguments{
 \item{x}{Vector of quantiles}

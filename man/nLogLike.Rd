@@ -5,7 +5,7 @@
 \title{Negative log-likelihood function}
 \usage{
 nLogLike(wpar, nbStates, formula, bounds, parSize, data, dist, estAngleMean,
-  zeroInflation, stationary = FALSE, cons, DM, boundInd, logitcons)
+  zeroInflation, stationary = FALSE, cons, fullDM, DMind, logitcons)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}

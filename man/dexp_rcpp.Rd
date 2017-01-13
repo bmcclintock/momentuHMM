@@ -4,7 +4,7 @@
 \alias{dexp_rcpp}
 \title{Exponential density function}
 \usage{
-dexp_rcpp(x, rate, foo = 0)
+dexp_rcpp(x, rate, foo)
 }
 \arguments{
 \item{x}{Vector of quantiles}

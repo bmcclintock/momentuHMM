@@ -22,7 +22,7 @@ in "Details").}
 Covariates can also be simulated according to a standard normal distribution, by setting
 \code{covs} to \code{NULL}, and specifying \code{nbCovs>0}.}
 
-\item{nbCovs}{Number of covariates to simulate (0 by default). Does not need to be specified of
+\item{nbCovs}{Number of covariates to simulate (0 by default). Does not need to be specified if
 \code{covs} is specified.}
 
 \item{zeroInflation}{\code{TRUE} if the step length distribution is inflated in zero.
