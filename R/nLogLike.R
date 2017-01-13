@@ -45,14 +45,14 @@
 #' }
 #'
 
-nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,
+nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,zeroInflation,
                      stationary=FALSE,cons,fullDM,DMind,logitcons)
 {
   # check arguments
   distnames<-names(dist)
 
-  covs <- model.matrix(formula,data)
+  #covs <- model.matrix(formula,data)
   nbCovs <- ncol(covs)-1 # substract intercept column
 
   # convert the parameters back to their natural scale
@@ -75,7 +75,7 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,
   if(nbStates==1) {
     par$beta <- matrix(NA)
     par$delta <- c(NA)
-    par[paste0(distnames,"Par")] <- lapply(par[paste0(distnames,"Par")],as.matrix)
+    par[distnames] <- lapply(par[distnames],as.matrix)
   }
 
   nllk <- nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,

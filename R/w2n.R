@@ -70,16 +70,14 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons
   parlist<-NULL
   
   for(i in distnames){
-    Par<-w2nDM(wpar[parindex[[i]]+1:ncol(fullDM[[i]])],bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],logitcons[[i]],nbObs,parSize[[i]])$p
+    parlist[[i]]<-w2nDM(wpar[parindex[[i]]+1:ncol(fullDM[[i]])],bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],logitcons[[i]],nbObs,parSize[[i]])$p
 
     if((dist[[i]] %in% c("wrpcauchy","vm")) & !estAngleMean[[i]]){
       tmp<-matrix(0,nrow=(parSize[[i]]+1)*nbStates,ncol=nbObs)
-      tmp[-seq(1,(parSize[[i]]+1)*nbStates,parSize[[i]]+1),] <- Par
-      parlist[[i]] <- array(tmp,dim=c(parSize[[i]]+1,nbStates,nbObs))
+      tmp[nbStates+1:nbStates,]<-parlist[[i]]
+      parlist[[i]] <- tmp
     }
-    else {
-      parlist[[i]] <- array(Par,dim=c(parSize[[i]],nbStates,nbObs))
-    }
+    
   }
 
   parlist[["beta"]]<-beta

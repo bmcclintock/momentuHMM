@@ -42,7 +42,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   arma::mat beta = Par["beta"];
   arma::rowvec delta = Par["delta"];
   NumericVector genData(nbObs);
-  arma::cube genPar;
+  arma::mat genPar;
   std::string genDist;
   std::string genname;
   
@@ -129,7 +129,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
     genname = as<std::string>(dataNames[k]);
     genData = as<NumericVector>(data[genname]);
     genDist = as<std::string>(dist[genname]);
-    genPar = as<arma::cube>(Par[genname]);
+    genPar = as<arma::mat>(Par[genname]);
     genzeroInflation = as<bool>(zeroInflation[genname]);
     
     // remove the NAs from step (impossible to subset a vector with NAs)
@@ -142,18 +142,30 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
     
     // extract zero-mass parameters if necessary
     if(genzeroInflation) {
-      zeromass = genPar(arma::span(genPar.n_rows-1),arma::span(),arma::span());
-      genPar = genPar.tube(0, 0, genPar.n_rows-2, genPar.n_cols-1);
+      zeromass = genPar.rows(genPar.n_rows-nbStates,genPar.n_rows-1);   //genPar(arma::span(genPar.n_rows-1),arma::span(),arma::span());
+      genPar = genPar.rows(0,genPar.n_rows-nbStates-1); //genPar.tube(0, 0, genPar.n_rows-2, genPar.n_cols-1);
       noZeros = arma::find(as<arma::vec>(genData)>0);
       nbZeros = arma::find(as<arma::vec>(genData)==0);
+      //for(int j=0; j<zeromass.n_rows; j++){
+      //  for(int jj=0; jj<zeromass.n_cols; jj++){
+      //    Rprintf("zeromass %f ",zeromass(j,jj));
+      //  }
+      //}
+      //for(int j=0; j<genPar.n_rows; j++){
+      //  for(int jj=0; jj<genPar.n_cols; jj++){
+      //    Rprintf("genPar %f ",genPar(j,jj));
+      //  }
+      //}
+      //Rprintf("zeromass %f %f \n",zeromass(0,0),zeromass(1,0));
+      //Rprintf("genPar %f %f %f %f \n",genPar(0,0),genPar(1,0),genPar(2,0),genPar(3,0));
     }
 
     for(int state=0;state<nbStates;state++){
       
       genProb.ones();
       
-      genArgs1 = genPar(arma::span(0),arma::span(state),arma::span());
-      genArgs2 = genPar(arma::span(genPar.n_rows-1),arma::span(state),arma::span());
+      genArgs1 = genPar.row(state); //genPar(arma::span(0),arma::span(state),arma::span());
+      genArgs2 = genPar.row(genPar.n_rows - nbStates + state); //genPar(arma::span(genPar.n_rows-1),arma::span(state),arma::span());
     
       if(genzeroInflation) {
         

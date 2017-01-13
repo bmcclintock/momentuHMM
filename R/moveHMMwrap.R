@@ -13,7 +13,7 @@ moveHMMwrap<-function(data,nbStates,dist,Par,beta0,delta0,estAngleMean,formula,s
     cons<-list(step=rep(1,length(Par$step)),angle=rep(1,length(Par$angle)))
     logitcons<-list(step=rep(0,length(Par$step)),angle=rep(0,length(Par$angle)))
     mle<-out$mle
-    mle$angle<-array(mle$anglePar,dim=c(dim(mle$anglePar),1))
+    mle$angle<-matrix(c(t(mle$anglePar)),length(mle$anglePar),1)
   } else {
     out<-moveHMM::fitHMM(data,nbStates,Par$step,Par$angle,beta0,delta0,formula,dist$step,"none",NULL,stationary,knownStates=NULL,verbose,nlmPar,fit)
     estAngleMean<-list(step=FALSE)
@@ -23,6 +23,6 @@ moveHMMwrap<-function(data,nbStates,dist,Par,beta0,delta0,estAngleMean,formula,s
     mle<-out$mle
   }
   mod<-out$mod
-  mle$step<-array(mle$stepPar,c(nrow(mle$stepPar),nbStates,1))
+  mle$step<-matrix(c(t(mle$stepPar)),length(mle$stepPar),1)
   return(list(mod=mod,mle=mle))
 }

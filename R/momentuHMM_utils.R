@@ -42,8 +42,8 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,logitcons,nbObs,parSize,k=0){
   
   Par<-numeric(length(wpar))
   
-  ord<-order(rep(1:(nrow(DM)/parSize),parSize))
-  bounds<-bounds[ord,]
+  #ord<-order(rep(1:(nrow(DM)/parSize),parSize))
+  #bounds<-bounds[ord,]
 
   a<-bounds[,1]
   b<-bounds[,2]
@@ -52,22 +52,25 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,logitcons,nbObs,parSize,k=0){
   ind1<-which(piInd)
   ind2<-which(!piInd)
   
-  XB <- getXB(DM,nbObs,wpar,cons,logitcons,ord,DMind)
+  XB <- p <- getXB(DM,nbObs,wpar,cons,logitcons,DMind)
   
-  p <- matrix(0,length(ind1)+length(ind2),nbObs)
+  #p <- matrix(0,length(ind1)+length(ind2),nbObs)
  
   if(length(ind1))
     p[ind1,] <- (2*atan(XB[ind1,]))
   
+  a<-a[ind2]
+  b<-b[ind2]
+  
   if(all(is.finite(a[ind2])) & all(is.infinite(b[ind2]))){
-    p[ind2,]<-(exp(XB[ind2,,drop=FALSE])+a)
+    p[ind2,]<-(exp(XB[ind2,,drop=FALSE])+a[ind2])
   } else if(all(is.finite(a[ind2])) & all(is.finite(b[ind2]))){
-    p[ind2,] <- ((b-a)*boot::inv.logit(XB[ind2,,drop=FALSE])+a)
+    p[ind2,] <- ((b[ind2]-a[ind2])*boot::inv.logit(XB[ind2,,drop=FALSE])+a[ind2])
   } else {
     ind21<-which(is.infinite(b[ind2]))
     ind22<-which(is.finite(b[ind2]))
-    p[ind2[ind21],]<-(exp(XB[ind2[ind21],,drop=FALSE])+a)
-    p[ind2[ind22],]<-((b-a)*boot::inv.logit(XB[ind2[ind22],,drop=FALSE])+a)
+    p[ind2[ind21],]<-(exp(XB[ind2[ind21],,drop=FALSE])+a[ind2[ind21]])
+    p[ind2[ind22],]<-((b[ind2[ind22]]-a[ind2[ind22]])*boot::inv.logit(XB[ind2[ind22],,drop=FALSE])+a[ind2[ind22]])
   }
   
   if(any(p<a | p>b))
@@ -77,6 +80,7 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,logitcons,nbObs,parSize,k=0){
     p <- p[k]
     return(p)
   } else {
+    if(DMind) p <- matrix(p,length(ind1)+length(ind2),nbObs)
     return(list(p=p,Par=Par))
   }
 }   

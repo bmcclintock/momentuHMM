@@ -408,7 +408,7 @@ fitHMM <- function(data,nbStates,dist,
     iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
 
     # call to optimizer nlm
-    withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,bounds,parSize,data,dist,
+    withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,bounds,parSize,data,dist,covs,
                                    estAngleMean,zeroInflation,
                                    stationary,cons,fullDM,DMind,logitcons,
                                    print.level=verbose,gradtol=gradtol,
@@ -441,7 +441,7 @@ fitHMM <- function(data,nbStates,dist,
         p$parNames[[i]] <- c("mean",p$parNames[[i]])
       }
     if(DMind[[i]]){
-      mle[[i]]<-matrix(mle[[i]][,,1],nrow=length(p$parNames[[i]]),ncol=nbStates)
+      mle[[i]]<-matrix(mle[[i]][,1],nrow=length(p$parNames[[i]]),ncol=nbStates,byrow=TRUE)
       rownames(mle[[i]]) <- p$parNames[[i]]
       colnames(mle[[i]]) <- stateNames
     } else {
