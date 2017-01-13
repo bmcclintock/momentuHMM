@@ -58,7 +58,6 @@ n2wDM<-function(bounds,DM,par,cons,logitcons){
 
 w2nDM<-function(wpar,bounds,DM,DMind,cons,logitcons,nbObs,parSize,k=0){
   Par<-numeric(length(wpar))
-  #tmpind<-matrix(sapply(bounds,function(x) eval(parse(text=x))),ncol=2)!=bounds
   
   ord<-order(rep(1:(nrow(DM)/parSize),parSize))
   bounds<-bounds[ord,]
@@ -71,7 +70,6 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,logitcons,nbObs,parSize,k=0){
     tmpind<-matrix(FALSE,nrow(bounds),ncol(bounds))
   }
   Bndind<-which(tmpind)
-  #bndind<-which(tmpind[boundInd])
   a<-bounds[,1]
   for(j in which(tmpind[,1])){
     for(i in which(!tmpind[,1])){

@@ -138,16 +138,15 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         genData(i) = NAvalue;
       }
     }
+    arma::uvec noNAs = arma::find(as<arma::vec>(genData)!=NAvalue);
     
-
-    // extract zero-mass parameters from step parameters if necessary
+    // extract zero-mass parameters if necessary
     if(genzeroInflation) {
       zeromass = genPar(arma::span(genPar.n_rows-1),arma::span(),arma::span());
       genPar = genPar.tube(0, 0, genPar.n_rows-2, genPar.n_cols-1);
       noZeros = arma::find(as<arma::vec>(genData)>0);
       nbZeros = arma::find(as<arma::vec>(genData)==0);
     }
-    arma::uvec noNAs = arma::find(as<arma::vec>(genData)!=NAvalue);
 
     for(int state=0;state<nbStates;state++){
       
@@ -156,7 +155,6 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       genArgs1 = genPar(arma::span(0),arma::span(state),arma::span());
       genArgs2 = genPar(arma::span(genPar.n_rows-1),arma::span(state),arma::span());
     
-
       if(genzeroInflation) {
         
         zerom = zeromass.row(state);
@@ -168,15 +166,16 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         genProb.elem(nbZeros) = zerom.elem(nbZeros);
         
       } else {
+        
         genProb.elem(noNAs) = funMap[genDist](genData[genData!=NAvalue],genArgs1.elem(noNAs),genArgs2.elem(noNAs));
+        
       }
+      
       allProbs.col(state) = allProbs.col(state) % genProb;
     }
+    
     // put the NAs back
-    for(int i=0;i<nbObs;i++) {
-      if(genData(i)<0)
-        genData(i) = NA_REAL;
-    }
+    genData[genData==NAvalue] = NA_REAL;
   }
 
   //======================//

@@ -176,6 +176,8 @@ fitHMM <- function(data,nbStates,dist,
   }
 
   nbCovs <- ncol(covs)-1 # substract intercept column
+  
+  mHind <- (is.null(DM) & is.null(userBounds)) # indicator for moveHMMwrap below
 
   # determine whether zero-inflation should be included
   zeroInflation <- vector('list',length(distnames))
@@ -300,8 +302,8 @@ fitHMM <- function(data,nbStates,dist,
   }
   
   if(is.null(DM)){
-    DM <- vector('list',length(distnames))
-    names(DM) <- distnames
+    DM <- cons <- logitcons <- vector('list',length(distnames))
+    names(DM) <- names(cons) <- names(logitcons) <- distnames
   } else {
     if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
     if(!any(names(DM) %in% distnames)) stop("DM names must include at least one of: ",paste0(distnames,collapse=", "))
@@ -387,7 +389,13 @@ fitHMM <- function(data,nbStates,dist,
       invokeRestart("muffleWarning")
   }
 
-  if(fit) {
+  # just use moveHMM if simpler models are specified
+  if(all(distnames %in% c("step","angle")) & mHind){
+    out<-moveHMMwrap(data,nbStates,dist,Par,beta0,delta0,estAngleMean,formula,stationary,verbose,nlmPar,fit)
+    mod<-out$mod
+    mle<-out$mle
+  } 
+  else if(fit) {
     # check additional parameters for nlm
     gradtol <- ifelse(is.null(nlmPar$gradtol),1e-6,nlmPar$gradtol)
     typsize = rep(1, length(wpar))
