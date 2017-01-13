@@ -178,6 +178,14 @@ fitHMM <- function(data,nbStates,dist,
   nbCovs <- ncol(covs)-1 # substract intercept column
   
   mHind <- (is.null(DM) & is.null(userBounds)) # indicator for moveHMMwrap below
+  
+  
+  #####################
+  ## Check arguments ##
+  #####################
+  for(i in distnames){
+    dist[[i]]<-match.arg(dist[[i]],c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))
+  }
 
   # determine whether zero-inflation should be included
   zeroInflation <- vector('list',length(distnames))
@@ -196,13 +204,6 @@ fitHMM <- function(data,nbStates,dist,
         zeroInflation[[i]]<-FALSE
     }
     else zeroInflation[[i]]<-FALSE
-  }
-  
-  #####################
-  ## Check arguments ##
-  #####################
-  for(i in distnames){
-    dist[[i]]<-match.arg(dist[[i]],c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))
   }
   
   if(nbStates<0)
@@ -293,13 +294,14 @@ fitHMM <- function(data,nbStates,dist,
     delta0 <- NULL
 
   bounds <- p$bounds
-  if(!all(unlist(lapply(p$bounds,is.numeric)))){
-    for(i in distnames){
-      if(!is.numeric(bounds[[i]])){
-        bounds[[i]] <- gsub(i,"",bounds[[i]],fixed=TRUE)
-      }
-    }
-  }
+  #if(!all(unlist(lapply(p$bounds,is.numeric)))){
+  #  for(i in distnames){
+  #    if(!is.numeric(bounds[[i]])){
+  #      bounds[[i]] <- gsub(paste0(i,"Par"),paste0("Par$",i),bounds[[i]],fixed=TRUE)
+  #      bounds[[i]] <- matrix(sapply(bounds[[i]],function(x) eval(parse(text=x))),ncol=2,dimnames=list(rownames(p$bounds[[i]])))
+  #    }
+  #  }
+  #}
   
   if(is.null(DM)){
     DM <- cons <- logitcons <- vector('list',length(distnames))
@@ -308,16 +310,16 @@ fitHMM <- function(data,nbStates,dist,
     if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
     if(!any(names(DM) %in% distnames)) stop("DM names must include at least one of: ",paste0(distnames,collapse=", "))
   }
-  for(i in distnames){
-    if(is.null(DM[[i]])) {
-      if(dist[[i]] %in% c("wrpcauchy","vm") & length(Par[[i]])!=(nbStates+nbStates*estAngleMean[[i]])) stop("Wrong number of parameters for ",i)
-      DM[[i]] <- diag((ifelse(dist[[i]]=="exp" | dist[[i]]=="pois" | (dist[[i]] %in% c("wrpcauchy","vm") & !estAngleMean[[i]]),1,2)+zeroInflation[[i]])*nbStates)
-      colnames(DM[[i]])<-paste0(rep(p$parNames[[i]],each=nbStates),"_",1:nbStates,":(Intercept)")
-    }
-  }
-  DM<-DM[distnames]
+  #for(i in distnames){
+  #  if(is.null(DM[[i]])) {
+  #    if(dist[[i]] %in% c("wrpcauchy","vm") & length(Par[[i]])!=(nbStates+nbStates*estAngleMean[[i]])) stop("Wrong number of parameters for ",i)
+  #    DM[[i]] <- diag((ifelse(dist[[i]]=="exp" | dist[[i]]=="pois" | (dist[[i]] %in% c("wrpcauchy","vm") & !estAngleMean[[i]]),1,2)+zeroInflation[[i]])*nbStates)
+  #    colnames(DM[[i]])<-paste0(rep(p$parNames[[i]],each=nbStates),"_",1:nbStates,":(Intercept)")
+  #  }
+  #}
+  #DM<-DM[distnames]
   
-  fullDM<-getDM(data,DM,dist,nbStates,p$parNames,bounds,Par)
+  fullDM<-getDM(data,DM,dist,nbStates,p$parNames,bounds,Par,estAngleMean,zeroInflation)
   DMind <- lapply(fullDM,function(x) all(unlist(apply(x,1,function(y) lapply(y,length)))==1))
   
   if(any(unlist(lapply(Par,length))!=unlist(lapply(fullDM,ncol))))
@@ -335,15 +337,6 @@ fitHMM <- function(data,nbStates,dist,
   if(sum((unlist(parSize)>0)*unlist(lapply(fullDM,ncol)))!=length(par0)) {
     error <- "Wrong number of initial parameters"
     stop(error)
-  }
-  
-  for(i in distnames){
-    tmp<-diag(length(Par[[i]]))
-    colnames(tmp)<-colnames(fullDM[[i]])
-    if(identical(fullDM[[i]],tmp))
-      if(length(which(Par[[i]]<=bounds[[i]][,1] | Par[[i]]>=bounds[[i]][,2]))>0)
-        stop(paste0("Check the parameter bounds for ",i," (the initial parameters should be ",
-                    "strictly between the bounds of their parameter space)."))
   }
   
   if(is.null(cons)){
@@ -374,6 +367,16 @@ fitHMM <- function(data,nbStates,dist,
   logitcons<-logitcons[distnames]
   if(any(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))) 
     stop("Length mismatch between Par and logitcons for: ",paste(names(which(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))),collapse=", "))
+  
+  #bounds <- p$bounds
+  #if(!all(unlist(lapply(p$bounds,is.numeric)))){
+  #  bounds <- p$bounds
+  #  for(i in distnames){
+  #    if(!is.numeric(bounds[[i]])){
+  #      bounds[[i]] <- gsub(i,"",bounds[[i]],fixed=TRUE)
+  #    }
+  #  }
+  #}
   
   # build the vector of initial working parameters
   wpar <- n2w(Par,bounds,beta0,delta0,nbStates,estAngleMean,DM,cons,logitcons)

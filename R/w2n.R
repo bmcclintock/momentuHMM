@@ -66,19 +66,12 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons
   parindex <- c(0,cumsum(unlist(lapply(fullDM,ncol)))[-length(fullDM)])
   names(parindex) <- distnames
 
-  #par <- NULL
   nbounds<-NULL
-  #Par<-NULL
   parlist<-NULL
   
   for(i in distnames){
     Par<-w2nDM(wpar[parindex[[i]]+1:ncol(fullDM[[i]])],bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],logitcons[[i]],nbObs,parSize[[i]])$p
-    #if(!is.numeric(fullbounds[[i]])){
-    #  nbounds <- rbind(nbounds, matrix(sapply(fullbounds[[i]],function(x) eval(parse(text=x))),ncol=2))
-    #} else {
-    #  nbounds <- rbind(nbounds,fullbounds[[i]])
-    #}
-    #par <- c(par,Par)
+
     if((dist[[i]] %in% c("wrpcauchy","vm")) & !estAngleMean[[i]]){
       tmp<-matrix(0,nrow=(parSize[[i]]+1)*nbStates,ncol=nbObs)
       tmp[-seq(1,(parSize[[i]]+1)*nbStates,parSize[[i]]+1),] <- Par
@@ -86,13 +79,9 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons
     }
     else {
       parlist[[i]] <- array(Par,dim=c(parSize[[i]],nbStates,nbObs))
-      #parlist[[i]] <- aperm(Par,c(2,1,3))
     }
   }
-    
-  #if(length(which(par<nbounds[,1] | par>nbounds[,2]))>0)
-  #  stop("Scaling error.",rownames(nbounds)[which(par<nbounds[,1] | par>nbounds[,2])],par[which(par<nbounds[,1] | par>nbounds[,2])],nbounds[which(par<nbounds[,1] | par>nbounds[,2]),])
-  
+
   parlist[["beta"]]<-beta
   parlist[["delta"]]<-delta
 

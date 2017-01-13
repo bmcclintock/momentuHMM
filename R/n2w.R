@@ -40,11 +40,12 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,logitco
 {
   wpar <- NULL
   for(i in names(par)){
-    tmp<-diag(length(par[[i]]))
-    colnames(tmp)<-colnames(DM[[i]])
-    if(identical(DM[[i]],tmp))
-      p<-n2wDM(bounds[[i]],DM[[i]],par[[i]],cons[[i]],logitcons[[i]])
-    else p <- par[[i]]
+    if(is.null(DM[[i]])){
+      if(length(which(par[[i]]<=bounds[[i]][,1] | par[[i]]>=bounds[[i]][,2]))>0)
+        stop(paste0("Check the parameter bounds for ",i," (the initial parameters should be ",
+                      "strictly between the bounds of their parameter space)."))
+      p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],cons[[i]],logitcons[[i]])
+    } else p <- par[[i]]
     wpar <- c(wpar,p)
   }
 
