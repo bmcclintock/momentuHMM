@@ -1,4 +1,4 @@
-getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,estAngleMean,zeroInflation){
+getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par){
   
   distnames<-names(dist)
   fullDM <- vector('list',length(dist))
@@ -13,12 +13,12 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,estAngleMean,zeroInfla
   
   for(i in distnames){
     if(is.null(DM[[i]])){
-      if(dist[[i]] %in% angledists & length(Par[[i]])!=(nbStates+nbStates*estAngleMean[[i]])) stop("Wrong number of parameters for ",i)
-      tmpDM <- diag((ifelse((dist[[i]] %in% singleParmdists) | (dist[[i]] %in% angledists & !estAngleMean[[i]]),1,2)+zeroInflation[[i]])*nbStates)
+      tmpDM <- diag(length(Par[[i]]))
       tmpDM <- array(tmpDM,dim=c(nrow(tmpDM),ncol(tmpDM),nbObs))
       DMnames <- paste0(rep(parNames[[i]],each=nbStates),"_",1:nbStates,":(Intercept)")
     } else if(is.list(DM[[i]])){
       if(!all(parNames[[i]] %in% names(DM[[i]])) | !all(unlist(lapply(DM[[i]],is.formula)))) stop('DM for ',i,' must include formula for ',paste(parNames[[i]],collapse=" and "))
+      DM[[i]]<-DM[[i]][parNames[[i]]]
       parSizeDM<-unlist(lapply(DM[[i]],function(x) length(attr(terms.formula(x),"term.labels"))))+1
       tmpDM<-array(0,dim=c(parSize[[i]]*nbStates,sum(parSizeDM)*nbStates,nbObs))
       DMnames<-character(sum(parSizeDM)*nbStates)

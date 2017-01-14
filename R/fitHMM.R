@@ -303,11 +303,16 @@ fitHMM <- function(data,nbStates,dist,
     if(!any(names(DM) %in% distnames)) stop("DM names must include at least one of: ",paste0(distnames,collapse=", "))
   }
   
-  fullDM<-getDM(data,DM,dist,nbStates,p$parNames,bounds,Par,estAngleMean,zeroInflation)
-  DMind <- lapply(fullDM,function(x) all(unlist(apply(x,1,function(y) lapply(y,length)))==1))
+  for(i in distnames){
+    if(is.null(DM[[i]]) & length(Par[[i]])!=(parSize[[i]]*nbStates)){
+      error<-paste0("Wrong number of initial parameters -- there should be ",parSize[[i]]*nbStates," initial ",i," parameters")
+      if(zeroInflation[[i]]) error<-paste0(error," -- zero-mass parameters should be included")
+      stop(error)
+    }
+  }
   
-  if(any(unlist(lapply(Par,length))!=unlist(lapply(fullDM,ncol))))
-    stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol)))),collapse=", "))
+  fullDM<-getDM(data,DM,dist,nbStates,p$parNames,bounds,Par)
+  DMind <- lapply(fullDM,function(x) all(unlist(apply(x,1,function(y) lapply(y,length)))==1))
   
   for(i in distnames){
     if(nrow(fullDM[[i]])!=(parSize[[i]]*nbStates)){
@@ -317,6 +322,9 @@ fitHMM <- function(data,nbStates,dist,
       else stop(error)
     }
   }
+  
+  if(any(unlist(lapply(Par,length))!=unlist(lapply(fullDM,ncol))))
+    stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(fullDM,ncol)))),collapse=", "))
   
   if(sum((unlist(parSize)>0)*unlist(lapply(fullDM,ncol)))!=length(par0)) {
     error <- "Wrong number of initial parameters"
