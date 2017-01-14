@@ -47,7 +47,7 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,userBounds=NULL)
            },
            "lnorm"={
              parSize[[i]] <- 2 + zeroInflation[[i]]
-             tmpbounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates)),
+             tmpbounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates*(1+zeroInflation[[i]]))),
                                   ncol=2,byrow=TRUE)
              parNames[[i]] <- c("location","scale")
            },

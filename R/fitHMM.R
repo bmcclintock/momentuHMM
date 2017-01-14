@@ -184,7 +184,7 @@ fitHMM <- function(data,nbStates,dist,
   ## Check arguments ##
   #####################
   for(i in distnames){
-    dist[[i]]<-match.arg(dist[[i]],c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))
+    dist[[i]]<-match.arg(dist[[i]],c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm'))
   }
 
   # determine whether zero-inflation should be included
