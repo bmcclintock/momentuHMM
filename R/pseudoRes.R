@@ -47,7 +47,7 @@ pseudoRes <- function(m)
   }
   
   Fun <- lapply(dist,function(x) paste("p",x,sep=""))
-  for(j in which(dist %in% c("wrpcauchy","vm"))){
+  for(j in which(dist %in% angledists)){
     Fun[[j]] <- paste0("d",dist[[j]])
     if(length(which(data[[distnames[j]]]==pi))>0)
       message("Note: Some ",distnames[j],"s are equal to pi, and the corresponding pseudo-residuals are not included")
@@ -85,7 +85,7 @@ pseudoRes <- function(m)
   
           zeromass <- m$mle[[j]][nrow(m$mle[[j]]),state]
       }
-      if(!(dist[[j]] %in% c("wrpcauchy","vm"))){
+      if(!(dist[[j]] %in% angledists)){
         if(dist[[j]]=="gamma") {
           shape <- genArgs[[2]]^2/genArgs[[3]]^2
           scale <- genArgs[[3]]^2/genArgs[[2]]

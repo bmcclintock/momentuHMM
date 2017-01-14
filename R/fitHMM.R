@@ -184,14 +184,14 @@ fitHMM <- function(data,nbStates,dist,
   ## Check arguments ##
   #####################
   for(i in distnames){
-    dist[[i]]<-match.arg(dist[[i]],c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm'))
+    dist[[i]]<-match.arg(dist[[i]],momentuHMMdists)
   }
 
   # determine whether zero-inflation should be included
   zeroInflation <- vector('list',length(distnames))
   names(zeroInflation) <- distnames
   for(i in distnames){
-    if(dist[[i]]!="wrpcauchy" & dist[[i]]!="vm" & dist[[i]]!="pois"){
+    if(dist[[i]] %in% zeroInflationdists){
       if(length(which(data[[i]]==0))>0) {
         zeroInflation[[i]]<-TRUE
         # check that zero-mass is in the open interval (0,1)
@@ -220,7 +220,7 @@ fitHMM <- function(data,nbStates,dist,
   for(i in distnames){
     if(is.null(estAngleMean[[i]])) estAngleMean[[i]] <- FALSE
   }
-  for(i in distnames[which(!(dist %in% c("wrpcauchy","vm")))]){
+  for(i in distnames[which(!(dist %in% angledists))]){
     estAngleMean[[i]] <- FALSE
   }
   estAngleMean<-estAngleMean[distnames]
@@ -257,11 +257,11 @@ fitHMM <- function(data,nbStates,dist,
     stop("verbose must be in {0,1,2}")
 
   # check that observations are within expected bounds
-  for(i in which(unlist(lapply(dist,function(x) x %in% c("weibull","gamma","exp","pois"))))){
+  for(i in which(unlist(lapply(dist,function(x) x %in% nonnegativedists)))){
     if(length(which(data[[distnames[[i]]]]<0))>0)
       stop(distnames[[i]]," data should be non-negative")
   }
-  for(i in which(unlist(lapply(dist,function(x) x %in% c("wrpcauchy","vm"))))){
+  for(i in which(unlist(lapply(dist,function(x) x %in% angledists)))){
     if(length(which(data[[distnames[[i]]]] < -pi | data[[distnames[[i]]]] > pi))>0)
       stop(distnames[[i]]," angles should be between -pi and pi")
   }
@@ -294,15 +294,7 @@ fitHMM <- function(data,nbStates,dist,
     delta0 <- NULL
 
   bounds <- p$bounds
-  #if(!all(unlist(lapply(p$bounds,is.numeric)))){
-  #  for(i in distnames){
-  #    if(!is.numeric(bounds[[i]])){
-  #      bounds[[i]] <- gsub(paste0(i,"Par"),paste0("Par$",i),bounds[[i]],fixed=TRUE)
-  #      bounds[[i]] <- matrix(sapply(bounds[[i]],function(x) eval(parse(text=x))),ncol=2,dimnames=list(rownames(p$bounds[[i]])))
-  #    }
-  #  }
-  #}
-  
+
   if(is.null(DM)){
     DM <- cons <- logitcons <- vector('list',length(distnames))
     names(DM) <- names(cons) <- names(logitcons) <- distnames
@@ -310,14 +302,6 @@ fitHMM <- function(data,nbStates,dist,
     if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
     if(!any(names(DM) %in% distnames)) stop("DM names must include at least one of: ",paste0(distnames,collapse=", "))
   }
-  #for(i in distnames){
-  #  if(is.null(DM[[i]])) {
-  #    if(dist[[i]] %in% c("wrpcauchy","vm") & length(Par[[i]])!=(nbStates+nbStates*estAngleMean[[i]])) stop("Wrong number of parameters for ",i)
-  #    DM[[i]] <- diag((ifelse(dist[[i]]=="exp" | dist[[i]]=="pois" | (dist[[i]] %in% c("wrpcauchy","vm") & !estAngleMean[[i]]),1,2)+zeroInflation[[i]])*nbStates)
-  #    colnames(DM[[i]])<-paste0(rep(p$parNames[[i]],each=nbStates),"_",1:nbStates,":(Intercept)")
-  #  }
-  #}
-  #DM<-DM[distnames]
   
   fullDM<-getDM(data,DM,dist,nbStates,p$parNames,bounds,Par,estAngleMean,zeroInflation)
   DMind <- lapply(fullDM,function(x) all(unlist(apply(x,1,function(y) lapply(y,length)))==1))
@@ -436,7 +420,7 @@ fitHMM <- function(data,nbStates,dist,
   parindex <- c(0,cumsum(unlist(lapply(fullDM,ncol)))[-length(fullDM)])
   names(parindex) <- distnames
   for(i in distnames){
-    if(dist[[i]] %in% c("wrpcauchy","vm"))
+    if(dist[[i]] %in% angledists)
       if(!estAngleMean[[i]]){
         p$parNames[[i]] <- c("mean",p$parNames[[i]])
       }

@@ -73,7 +73,7 @@ CI_real <- function(m,alpha=0.95,nbSims=10^6)
   se<-list()
   
   for(i in distnames){
-    if(!(dist[[i]] %in% c("wrpcauchy","vm"))) {
+    if(!(dist[[i]] %in% angledists)) {
       Par[[i]] <- get_CI(as.vector(t(m$mle[[i]])),m,parindex[[i]]+1:ncol(DM[[i]]),DM[[i]],bounds[[i]],m$conditions$cons[[i]],p$boundInd[[i]],logitcons=m$conditions$logitcons[[i]],Sigma,nbStates,alpha,m$mle[[i]])
     } else {
       wpar<-m$mod$estimate[parindex[[i]]+1:ncol(DM[[i]])]

@@ -145,7 +145,7 @@ plot.momentuHMMMI <- function(x,animals=NULL,ask=TRUE,breaks="Sturges",hist.ylim
     ###########################################
     genDensities <- list()
     genFun <- Fun[[i]]
-    if(m$conditions$dist[[i]] %in% c("wrpcauchy","vm")) {
+    if(m$conditions$dist[[i]] %in% angledists) {
       grid <- seq(-pi,pi,length=1000)
     } else if(m$conditions$dist[[i]]=="pois"){
       grid <- seq(0,max(m$data[[i]],na.rm=TRUE))

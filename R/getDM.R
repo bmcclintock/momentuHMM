@@ -13,8 +13,8 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,estAngleMean,zeroInfla
   
   for(i in distnames){
     if(is.null(DM[[i]])){
-      if(dist[[i]] %in% c("wrpcauchy","vm") & length(Par[[i]])!=(nbStates+nbStates*estAngleMean[[i]])) stop("Wrong number of parameters for ",i)
-      tmpDM <- diag((ifelse(dist[[i]]=="exp" | dist[[i]]=="pois" | (dist[[i]] %in% c("wrpcauchy","vm") & !estAngleMean[[i]]),1,2)+zeroInflation[[i]])*nbStates)
+      if(dist[[i]] %in% angledists & length(Par[[i]])!=(nbStates+nbStates*estAngleMean[[i]])) stop("Wrong number of parameters for ",i)
+      tmpDM <- diag((ifelse((dist[[i]] %in% singleParmdists) | (dist[[i]] %in% angledists & !estAngleMean[[i]]),1,2)+zeroInflation[[i]])*nbStates)
       tmpDM <- array(tmpDM,dim=c(nrow(tmpDM),ncol(tmpDM),nbObs))
       DMnames <- paste0(rep(parNames[[i]],each=nbStates),"_",1:nbStates,":(Intercept)")
     } else if(is.list(DM[[i]])){

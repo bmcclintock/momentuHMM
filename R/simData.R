@@ -120,7 +120,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     estAngleMean<-model$conditions$estAngleMean
   
     Par <- model$mle[distnames]
-    for(i in distnames[which(dist %in% c("wrpcauchy","vm"))]){
+    for(i in distnames[which(dist %in% angledists)]){
       if(!estAngleMean[[i]])
         Par[[i]]<-Par[[i]][2,,drop=FALSE]
     }
@@ -154,7 +154,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     estAngleMean <- vector('list',length(distnames))
     names(estAngleMean) <- distnames
     for(i in distnames){
-      if(dist[[i]] %in% c("wrpcauchy","vm")) estAngleMean[[i]] <- TRUE
+      if(dist[[i]] %in% angledists) estAngleMean[[i]] <- TRUE
       else estAngleMean[[i]] <- FALSE
     }
   }
@@ -190,7 +190,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   }
   if(!all(unlist(lapply(zeroInflation,is.logical)))) stop("zeroInflation must be a list of logical objects")
   for(i in distnames){
-    if((dist[[i]] %in% c("wrpcauchy","vm") | dist[[i]]=="pois") & zeroInflation[[i]])
+    if((dist[[i]] %in% angledists | dist[[i]]=="pois") & zeroInflation[[i]])
       stop(dist[[i]]," distribution cannot be zero inflated")
   }
   
@@ -202,7 +202,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
      stop("Wrong number of parameters in Par$",distnames[[i]])
   } else if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
   for(i in distnames){
-    if(is.null(DM[[i]])) DM[[i]] <- diag((ifelse(dist[[i]]=="exp" | dist[[i]]=="pois" | (dist[[i]] %in% c("wrpcauchy","vm") & !estAngleMean[[i]]),1,2)+zeroInflation[[i]])*nbStates)
+    if(is.null(DM[[i]])) DM[[i]] <- diag((ifelse(dist[[i]]=="exp" | dist[[i]]=="pois" | (dist[[i]] %in% angledists & !estAngleMean[[i]]),1,2)+zeroInflation[[i]])*nbStates)
   }
   DM<-DM[distnames]
   if(any(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol))))
@@ -375,7 +375,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       zeroMass[[i]] <- rep(0,nbStates)
     }
   }
-  for(i in distnames[which(dist %in% c("wrpcauchy","vm"))]){
+  for(i in distnames[which(dist %in% angledists)]){
     if(!estAngleMean[[i]])
       par[[i]] <- rbind(rep(0,nbStates),par[[i]])
   }
@@ -396,7 +396,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     data[[i]]<-numeric()
   }
   if("angle" %in% distnames) 
-    if(dist[["angle"]] %in% c("wrpcauchy","vm") & ("step" %in% distnames))
+    if(dist[["angle"]] %in% angledists & ("step" %in% distnames))
       if(dist[["step"]] %in% c("gamma","weibull","exp")){
         data$x<-numeric()
         data$y<-numeric()
@@ -527,7 +527,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         else
           genData[[i]][k] <- 0
   
-        if(i=="angle" & dist[[i]] %in% c("wrpcauchy","vm") & ("step" %in% distnames))
+        if(i=="angle" & dist[[i]] %in% angledists & ("step" %in% distnames))
           if(dist[["step"]] %in% c("gamma","weibull","exp")) {
             if(step[k]>0){
               genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
@@ -553,7 +553,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
     
     if("angle" %in% distnames) 
-      if(dist[["angle"]] %in% c("wrpcauchy","vm") & ("step" %in% distnames))
+      if(dist[["angle"]] %in% angledists & ("step" %in% distnames))
         if(dist[["step"]] %in% c("gamma","weibull","exp")){
             d$angle[1] <- NA # the first angle value is arbitrary
             d$x=X[,1]

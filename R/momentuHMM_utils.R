@@ -1,3 +1,9 @@
+momentuHMMdists<-c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm')
+angledists<-c('wrpcauchy','vm')
+singleParmdists<-c('exp','pois')
+nonnegativedists<-c('gamma','weibull','exp','lnorm','pois')
+zeroInflationdists<-c('gamma','weibull','exp','lnorm','beta')
+
 getboundInd<-function(DM=NULL){
   if(is.null(DM)){
     Ind<-NULL

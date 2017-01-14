@@ -72,7 +72,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons
   for(i in distnames){
     parlist[[i]]<-w2nDM(wpar[parindex[[i]]+1:ncol(fullDM[[i]])],bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],logitcons[[i]],nbObs,parSize[[i]])$p
 
-    if((dist[[i]] %in% c("wrpcauchy","vm")) & !estAngleMean[[i]]){
+    if((dist[[i]] %in% angledists) & !estAngleMean[[i]]){
       tmp<-matrix(0,nrow=(parSize[[i]]+1)*nbStates,ncol=nbObs)
       tmp[nbStates+1:nbStates,]<-parlist[[i]]
       parlist[[i]] <- tmp

@@ -152,7 +152,7 @@ plot.momentuHMM <- function(x,animals=NULL,ask=TRUE,breaks="Sturges",hist.ylim=N
     ###########################################
     genDensities <- list()
     genFun <- Fun[[i]]
-    if(m$conditions$dist[[i]] %in% c("wrpcauchy","vm")) {
+    if(m$conditions$dist[[i]] %in% angledists) {
       grid <- seq(-pi,pi,length=1000)
     } else if(m$conditions$dist[[i]]=="pois"){
       grid <- seq(0,max(m$data[[i]],na.rm=TRUE))
@@ -369,7 +369,7 @@ plotHist <- function (gen,genDensities,dist,message,
 
   distname <- names(dist)
   
-  if(dist %in% c("wrpcauchy","vm")){
+  if(dist %in% angledists){
     h <- hist(gen,plot=F,breaks=breaks) # to determine 'breaks'
     breaks <- seq(-pi,pi,length=length(h$breaks))
 
