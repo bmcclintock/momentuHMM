@@ -19,6 +19,8 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par){
     } else if(is.list(DM[[i]])){
       if(!all(parNames[[i]] %in% names(DM[[i]])) | !all(unlist(lapply(DM[[i]],is.formula)))) stop('DM for ',i,' must include formula for ',paste(parNames[[i]],collapse=" and "))
       DM[[i]]<-DM[[i]][parNames[[i]]]
+      if(any(unlist(lapply(DM[[i]],function(x) attr(terms(x),"response")!=0))))
+        stop("The response variable should not be specified in the DM formula for ",i)
       parSizeDM<-unlist(lapply(DM[[i]],function(x) length(attr(terms.formula(x),"term.labels"))))+1
       tmpDM<-array(0,dim=c(parSize[[i]]*nbStates,sum(parSizeDM)*nbStates,nbObs))
       DMnames<-character(sum(parSizeDM)*nbStates)

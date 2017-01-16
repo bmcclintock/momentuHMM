@@ -161,21 +161,22 @@ fitHMM <- function(data,nbStates,dist,
   if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
   Par <- Par[distnames]
   
-  # build design matrix
+  # build design matrix for t.p.m.
   covsCol <- seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
   covs <- model.matrix(formula,data)
   if(nrow(covs)!=nrow(data)) stop("covariates cannot contain missing values")
+  nbCovs <- ncol(covs)-1 # substract intercept column
+  
+  # check that stationary==FALSE if there are covariates
+  if(nbCovs>0 & stationary==TRUE)
+    stop("stationary can't be set to TRUE if there are covariates.")
 
   if(length(covsCol)>0) {
     rawCovs <- data[covsCol]
-    #data <- cbind(data[-covsCol],covs)
   }
   else {
     rawCovs <- NULL
-    #data <- cbind(data,covs)
   }
-
-  nbCovs <- ncol(covs)-1 # substract intercept column
   
   mHind <- (is.null(DM) & is.null(userBounds)) # indicator for moveHMMwrap below
   
@@ -208,7 +209,7 @@ fitHMM <- function(data,nbStates,dist,
   
   if(nbStates<0)
     stop("nbStates should be at least 1.")
-  if(length(data)<1)
+  if(length(data)<1 | any(dim(data)<1))
     stop("The data input is empty.")
   
   if(is.null(estAngleMean)){
@@ -229,15 +230,8 @@ fitHMM <- function(data,nbStates,dist,
   if(!is.null(stateNames) & length(stateNames)!=nbStates)
     stop("stateNames must have length ",nbStates)
 
-  par0 <- unlist(Par)#c(stepPar,anglePar,omegaPar,dryPar,divePar,icePar,landPar)  
+  par0 <- unlist(Par)
   p <- parDef(dist,nbStates,estAngleMean,zeroInflation,userBounds)
-  #bounds <- p$bounds
-  #for(i in distnames){
-  #  if(!is.numeric(bounds[[i]])){
-  #    bounds[[i]] <- gsub(paste0(i,"Par"),paste0("Par$",i),bounds[[i]],fixed=TRUE)
-  #    bounds[[i]]<-matrix(sapply(bounds[[i]],function(x) eval(parse(text=x))),ncol=2,dimnames=list(rownames(p$bounds[[i]])))
-  #  }
-  #}
   parSize <- p$parSize
 
   if(!is.null(beta0)) {
@@ -257,22 +251,21 @@ fitHMM <- function(data,nbStates,dist,
     stop("verbose must be in {0,1,2}")
 
   # check that observations are within expected bounds
-  for(i in which(unlist(lapply(dist,function(x) x %in% nonnegativedists)))){
+  for(i in which(unlist(lapply(dist,function(x) x %in% nonnegativedists))))
     if(length(which(data[[distnames[[i]]]]<0))>0)
       stop(distnames[[i]]," data should be non-negative")
-  }
-  for(i in which(unlist(lapply(dist,function(x) x %in% angledists)))){
+  
+  for(i in which(unlist(lapply(dist,function(x) x %in% angledists))))
     if(length(which(data[[distnames[[i]]]] < -pi | data[[distnames[[i]]]] > pi))>0)
-      stop(distnames[[i]]," angles should be between -pi and pi")
-  }
-  for(i in which(unlist(lapply(dist,function(x) x %in% "beta")))){
+      stop(distnames[[i]]," data should be between -pi and pi")
+  
+  for(i in which(unlist(lapply(dist,function(x) x %in% "beta"))))
     if(length(which(data[[distnames[[i]]]]<0 | data[[distnames[[i]]]]>=1))>0)
       stop(distnames[[i]]," data should be between 0 and 1")
-  }
 
-  # check that stationary==FALSE if there are covariates
-  if(nbCovs>0 & stationary==TRUE)
-    stop("stationary can't be set to TRUE if there are covariates.")
+  for(i in which(unlist(lapply(dist,function(x) x %in% "pois"))))
+    if(!isTRUE(all.equal(data[[distnames[[i]]]],as.integer(data[[distnames[[i]]]]))))
+      stop(distnames[[i]]," data should be non-negative integers")
 
   # check elements of nlmPar
   lsPars <- c("gradtol","stepmax","steptol","iterlim")
@@ -359,17 +352,7 @@ fitHMM <- function(data,nbStates,dist,
   logitcons<-logitcons[distnames]
   if(any(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))) 
     stop("Length mismatch between Par and logitcons for: ",paste(names(which(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))),collapse=", "))
-  
-  #bounds <- p$bounds
-  #if(!all(unlist(lapply(p$bounds,is.numeric)))){
-  #  bounds <- p$bounds
-  #  for(i in distnames){
-  #    if(!is.numeric(bounds[[i]])){
-  #      bounds[[i]] <- gsub(i,"",bounds[[i]],fixed=TRUE)
-  #    }
-  #  }
-  #}
-  
+
   # build the vector of initial working parameters
   wpar <- n2w(Par,bounds,beta0,delta0,nbStates,estAngleMean,DM,cons,logitcons)
   
