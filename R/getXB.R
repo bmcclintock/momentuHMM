@@ -1,5 +1,5 @@
-getXB<-function(DM,nbObs,wpar,cons,logitcons,DMind){
-  Xvec<-wpar^cons+logitcons
+getXB<-function(DM,nbObs,wpar,cons,workcons,DMind){
+  Xvec<-wpar^cons+workcons
   if(DMind){
     XB <- matrix(Xvec%*%t(DM),nrow(DM),1)
   } else {

@@ -36,7 +36,7 @@
 #'
 #' @importFrom boot logit
 
-n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,logitcons)
+n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcons)
 {
   wpar <- NULL
   for(i in names(par)){
@@ -44,7 +44,7 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,logitco
       if(length(which(par[[i]]<=bounds[[i]][,1] | par[[i]]>=bounds[[i]][,2]))>0)
         stop(paste0("Check the parameter bounds for ",i," (the initial parameters should be ",
                       "strictly between the bounds of their parameter space)."))
-      p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],cons[[i]],logitcons[[i]])
+      p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],cons[[i]],workcons[[i]])
     } else p <- par[[i]]
     wpar <- c(wpar,p)
   }

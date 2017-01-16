@@ -17,7 +17,7 @@ getPar<-function(m){
   distnames <- names(dist)
   DM <- m$conditions$DM
   cons <- m$conditions$cons
-  logitcons <- m$conditions$logitcons
+  workcons <- m$conditions$workcons
   bounds <- m$conditions$bounds
   
   parindex <- c(0,cumsum(unlist(lapply(DM,ncol)))[-length(DM)])
@@ -31,7 +31,7 @@ getPar<-function(m){
     if(!is.numeric(bounds[[i]])){
       bounds[[i]] <- gsub(i,"",bounds[[i]],fixed=TRUE)
     }
-    Par[[i]] <- c(w2nDM(wpar[parindex[[i]]+1:ncol(DM[[i]])],bounds[[i]],DM[[i]],cons[[i]],p$boundInd[[i]],logitcons[[i]])$Par)
+    Par[[i]] <- c(w2nDM(wpar[parindex[[i]]+1:ncol(DM[[i]])],bounds[[i]],DM[[i]],cons[[i]],p$boundInd[[i]],workcons[[i]])$Par)
   }
   Par
 }

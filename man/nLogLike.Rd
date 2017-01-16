@@ -4,8 +4,9 @@
 \alias{nLogLike}
 \title{Negative log-likelihood function}
 \usage{
-nLogLike(wpar, nbStates, formula, bounds, parSize, data, dist, estAngleMean,
-  zeroInflation, stationary = FALSE, cons, fullDM, DMind, logitcons)
+nLogLike(wpar, nbStates, formula, bounds, parSize, data, dist, covs,
+  estAngleMean, zeroInflation, stationary = FALSE, cons, fullDM, DMind,
+  workcons)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}

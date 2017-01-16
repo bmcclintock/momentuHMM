@@ -11,7 +11,7 @@ moveHMMwrap<-function(data,nbStates,dist,Par,beta0,delta0,estAngleMean,formula,s
     estAngleMean<-list(step=FALSE,angle=out$conditions$estAngleMean)
     zeroInflation<-list(step=out$conditions$zeroInflation,angle=FALSE)
     cons<-list(step=rep(1,length(Par$step)),angle=rep(1,length(Par$angle)))
-    logitcons<-list(step=rep(0,length(Par$step)),angle=rep(0,length(Par$angle)))
+    workcons<-list(step=rep(0,length(Par$step)),angle=rep(0,length(Par$angle)))
     mle<-out$mle
     mle$angle<-matrix(c(t(mle$anglePar)),length(mle$anglePar),1)
   } else {
@@ -19,7 +19,7 @@ moveHMMwrap<-function(data,nbStates,dist,Par,beta0,delta0,estAngleMean,formula,s
     estAngleMean<-list(step=FALSE)
     zeroInflation<-list(step=out$conditions$zeroInflation)
     cons<-list(step=rep(1,length(Par$step)))
-    logitcons<-list(step=rep(0,length(Par$step)))
+    workcons<-list(step=rep(0,length(Par$step)))
     mle<-out$mle
   }
   mod<-out$mod

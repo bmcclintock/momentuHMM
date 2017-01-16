@@ -51,7 +51,7 @@
 #' @param landDM landPar design matrix
 #' @param cons Optional list specifying power to raise parameters corresponding to each column of the design matrix for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive by setting cons=2.  Default=NULL, which simply raises all parameters to the power of 1.
 #' @param stateNames Optional character vector of length nbStates indicating state names.
-#' @param logitcons Lower bound for wrpcauchy turning angle concentration parameter (on logit scale)
+#' @param workcons Lower bound for wrpcauchy turning angle concentration parameter (on logit scale)
 #'
 #' @return A \code{momentuHMM} object, i.e. a list of:
 #' \item{mle}{The maximum likelihood estimates of the parameters of the model (if the numerical algorithm
@@ -137,7 +137,7 @@ fitHMM <- function(data,nbStates,dist,
                    estAngleMean=NULL,
                    formula=~1,
                    stationary=FALSE,verbose=0,nlmPar=NULL,fit=TRUE,
-                   DM=NULL,cons=NULL,userBounds=NULL,logitcons=NULL,stateNames=NULL)
+                   DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,stateNames=NULL)
 {
   # check that the data is a moveData object
   if(!is.moveData(data))
@@ -289,8 +289,8 @@ fitHMM <- function(data,nbStates,dist,
   bounds <- p$bounds
 
   if(is.null(DM)){
-    DM <- cons <- logitcons <- vector('list',length(distnames))
-    names(DM) <- names(cons) <- names(logitcons) <- distnames
+    DM <- cons <- workcons <- vector('list',length(distnames))
+    names(DM) <- names(cons) <- names(workcons) <- distnames
   } else {
     if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
     if(!any(names(DM) %in% distnames)) stop("DM names must include at least one of: ",paste0(distnames,collapse=", "))
@@ -337,24 +337,24 @@ fitHMM <- function(data,nbStates,dist,
   if(any(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))) 
     stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
   
-  if(is.null(logitcons)){
-    logitcons <- vector('list',length(distnames))
-    names(logitcons) <- distnames
+  if(is.null(workcons)){
+    workcons <- vector('list',length(distnames))
+    names(workcons) <- distnames
   } else {
-    if(!is.list(logitcons) | is.null(names(logitcons))) stop("'logitcons' must be a named list")
+    if(!is.list(workcons) | is.null(names(workcons))) stop("'workcons' must be a named list")
   }
   for(i in distnames){
-    if(is.null(logitcons[[i]])) logitcons[[i]] <- rep(0,ncol(fullDM[[i]]))
+    if(is.null(workcons[[i]])) workcons[[i]] <- rep(0,ncol(fullDM[[i]]))
   }
   for(i in which(!(dist %in% "wrpcauchy"))){
-    logitcons[[distnames[i]]]<-rep(0,ncol(fullDM[[distnames[i]]]))
+    workcons[[distnames[i]]]<-rep(0,ncol(fullDM[[distnames[i]]]))
   }
-  logitcons<-logitcons[distnames]
-  if(any(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))) 
-    stop("Length mismatch between Par and logitcons for: ",paste(names(which(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))),collapse=", "))
+  workcons<-workcons[distnames]
+  if(any(unlist(lapply(workcons,length))!=unlist(lapply(Par,length)))) 
+    stop("Length mismatch between Par and workcons for: ",paste(names(which(unlist(lapply(workcons,length))!=unlist(lapply(Par,length)))),collapse=", "))
 
   # build the vector of initial working parameters
-  wpar <- n2w(Par,bounds,beta0,delta0,nbStates,estAngleMean,DM,cons,logitcons)
+  wpar <- n2w(Par,bounds,beta0,delta0,nbStates,estAngleMean,DM,cons,workcons)
   
   if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
   
@@ -385,18 +385,18 @@ fitHMM <- function(data,nbStates,dist,
     # call to optimizer nlm
     withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,bounds,parSize,data,dist,covs,
                                    estAngleMean,zeroInflation,
-                                   stationary,cons,fullDM,DMind,logitcons,
+                                   stationary,cons,fullDM,DMind,workcons,
                                    print.level=verbose,gradtol=gradtol,
                                    stepmax=stepmax,steptol=steptol,
                                    iterlim=iterlim,hessian=TRUE),
                         warning=h) # filter warnings using function h
 
     # convert the parameters back to their natural scale
-    mle <- w2n(mod$estimate,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,fullDM,DMind,logitcons,nrow(data),dist)
+    mle <- w2n(mod$estimate,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,fullDM,DMind,workcons,nrow(data),dist)
   }
   else {
     mod <- NA
-    mle <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,fullDM,DMind,logitcons,nrow(data),dist)
+    mle <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,fullDM,DMind,workcons,nrow(data),dist)
   }
 
   ####################
@@ -467,7 +467,7 @@ fitHMM <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,
-                     estAngleMean=estAngleMean,stationary=stationary,formula=formula,cons=cons,bounds=p$bounds,DM=fullDM,logitcons=logitcons)
+                     estAngleMean=estAngleMean,stationary=stationary,formula=formula,cons=cons,bounds=p$bounds,DM=fullDM,workcons=workcons)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames)
   

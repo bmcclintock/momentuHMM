@@ -7,7 +7,7 @@
 simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
   covs = NULL, nbCovs = 0, spatialCovs = NULL, zeroInflation = NULL,
   obsPerAnimal = c(500, 1500), DM = NULL, cons = NULL,
-  userBounds = NULL, logitcons = NULL, stateNames = NULL, model = NULL,
+  userBounds = NULL, workcons = NULL, stateNames = NULL, model = NULL,
   states = FALSE)
 }
 \arguments{

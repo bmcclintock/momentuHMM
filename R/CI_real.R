@@ -74,13 +74,13 @@ CI_real <- function(m,alpha=0.95,nbSims=10^6)
   
   for(i in distnames){
     if(!(dist[[i]] %in% angledists)) {
-      Par[[i]] <- get_CI(as.vector(t(m$mle[[i]])),m,parindex[[i]]+1:ncol(DM[[i]]),DM[[i]],bounds[[i]],m$conditions$cons[[i]],p$boundInd[[i]],logitcons=m$conditions$logitcons[[i]],Sigma,nbStates,alpha,m$mle[[i]])
+      Par[[i]] <- get_CI(as.vector(t(m$mle[[i]])),m,parindex[[i]]+1:ncol(DM[[i]]),DM[[i]],bounds[[i]],m$conditions$cons[[i]],p$boundInd[[i]],workcons=m$conditions$workcons[[i]],Sigma,nbStates,alpha,m$mle[[i]])
     } else {
       wpar<-m$mod$estimate[parindex[[i]]+1:ncol(DM[[i]])]
       lower<-upper<-se<-numeric(nrow(DM[[i]]))
       if(m$conditions$estAngleMean[[i]]){
         for(k in 1:nrow(DM[[i]])){
-          dN<-numDeriv::grad(w2nDM,wpar,bounds=bounds[[i]],DM=DM[[i]],cons=m$conditions$cons[[i]],boundInd=p$boundInd[[i]],logitcons=m$conditions$logitcons[[i]],k=k)
+          dN<-numDeriv::grad(w2nDM,wpar,bounds=bounds[[i]],DM=DM[[i]],cons=m$conditions$cons[[i]],boundInd=p$boundInd[[i]],workcons=m$conditions$workcons[[i]],k=k)
           se[k]<-suppressWarnings(sqrt(dN%*%Sigma[parindex[[i]]+1:ncol(DM[[i]]),parindex[[i]]+1:ncol(DM[[i]])]%*%dN))
           lower[k]<-t(m$mle[[i]])[k]-se[k]*qnorm(1-(1-alpha)/2)
           upper[k]<-t(m$mle[[i]])[k]+se[k]*qnorm(1-(1-alpha)/2)
@@ -102,7 +102,7 @@ CI_real <- function(m,alpha=0.95,nbSims=10^6)
         Par[[i]] <- parm_list(se,lower,upper,m$mle[[i]])
       } else {
         for(k in 1:nrow(DM[[i]])){
-          dN<-numDeriv::grad(w2nDM,wpar,bounds=bounds[[i]],DM=DM[[i]],cons=m$conditions$cons[[i]],boundInd=p$boundInd[[i]],logitcons=m$conditions$logitcons[[i]],k=k)
+          dN<-numDeriv::grad(w2nDM,wpar,bounds=bounds[[i]],DM=DM[[i]],cons=m$conditions$cons[[i]],boundInd=p$boundInd[[i]],workcons=m$conditions$workcons[[i]],k=k)
           se[k]<-suppressWarnings(sqrt(dN%*%Sigma[parindex[[i]]+1:ncol(DM[[i]]),parindex[[i]]+1:ncol(DM[[i]])]%*%dN))
           lower[k]<-m$mle[[i]][-1,k]-se[k]*qnorm(1-(1-alpha)/2)
           upper[k]<-m$mle[[i]][-1,k]+se[k]*qnorm(1-(1-alpha)/2)
@@ -184,12 +184,12 @@ parm_list<-function(se,lower,upper,m){
   Par
 }
 
-get_CI<-function(Par,m,ind,DM,Bounds,cons,boundInd,logitcons,Sigma,nbStates,alpha,mmlePar){
+get_CI<-function(Par,m,ind,DM,Bounds,cons,boundInd,workcons,Sigma,nbStates,alpha,mmlePar){
 
   w<-m$mod$estimate[ind]
   lower<-upper<-se<-numeric(nrow(DM))
   for(k in 1:nrow(DM)){
-    dN<-numDeriv::grad(w2nDM,w,bounds=Bounds,DM=DM,cons=cons,boundInd=boundInd,logitcons=logitcons,k=k)
+    dN<-numDeriv::grad(w2nDM,w,bounds=Bounds,DM=DM,cons=cons,boundInd=boundInd,workcons=workcons,k=k)
     se[k]<-suppressWarnings(sqrt(dN%*%Sigma[ind,ind]%*%dN))
     cn<-exp(qnorm(1-(1-alpha)/2)*sqrt(log(1+(se[k]/Par[k])^2)))
     lower[k]<-Par[k]/cn

@@ -104,7 +104,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     covs=NULL,nbCovs=0,
                     spatialCovs=NULL,
                     zeroInflation=NULL,obsPerAnimal=c(500,1500),
-                    DM=NULL,cons=NULL,userBounds=NULL,logitcons=NULL,stateNames=NULL,
+                    DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,stateNames=NULL,
                     model=NULL,states=FALSE)
 {
   ##############################
@@ -128,7 +128,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     
     DM <- model$conditions$DM
     cons <- model$conditions$cons
-    logitcons <- model$conditions$logitcons
+    workcons <- model$conditions$workcons
     zeroInflation <- model$conditions$zeroInflation
 
     if(is.null(covs)) {
@@ -219,19 +219,19 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   if(any(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))) 
     stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
   
-  if(is.null(logitcons)){
-    logitcons <- vector('list',length(distnames))
-    names(logitcons) <- distnames
-  } else if(!is.list(logitcons) | is.null(names(logitcons))) stop("'logitcons' must be a named list")
+  if(is.null(workcons)){
+    workcons <- vector('list',length(distnames))
+    names(workcons) <- distnames
+  } else if(!is.list(workcons) | is.null(names(workcons))) stop("'workcons' must be a named list")
   for(i in distnames){
-    if(is.null(logitcons[[i]])) logitcons[[i]] <- rep(0,ncol(DM[[i]]))
+    if(is.null(workcons[[i]])) workcons[[i]] <- rep(0,ncol(DM[[i]]))
   }
   for(i in which(!(dist %in% "wrpcauchy"))){
-    logitcons[[distnames[i]]]<-rep(0,ncol(DM[[distnames[i]]]))
+    workcons[[distnames[i]]]<-rep(0,ncol(DM[[distnames[i]]]))
   }
-  logitcons<-logitcons[distnames]
-  if(any(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))) 
-    stop("Length mismatch between Par and logitcons for: ",paste(names(which(unlist(lapply(logitcons,length))!=unlist(lapply(Par,length)))),collapse=", "))
+  workcons<-workcons[distnames]
+  if(any(unlist(lapply(workcons,length))!=unlist(lapply(Par,length)))) 
+    stop("Length mismatch between Par and workcons for: ",paste(names(which(unlist(lapply(workcons,length))!=unlist(lapply(Par,length)))),collapse=", "))
 
   if(!is.null(stateNames) & length(stateNames)!=nbStates)
     stop("stateNames must have length ",nbStates)
@@ -361,8 +361,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   }
   
   # format parameters
-  wpar <- n2w(lapply(Par,function(x) c(t(x))),bounds,beta,delta,nbStates,estAngleMean,DM,cons,logitcons) 
-  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary=FALSE,cons,DM,p$boundInd,logitcons)
+  wpar <- n2w(lapply(Par,function(x) c(t(x))),bounds,beta,delta,nbStates,estAngleMean,DM,cons,workcons) 
+  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary=FALSE,cons,DM,p$boundInd,workcons)
 
   zeroMass<-vector('list',length(dist))
   names(zeroMass)<-distnames

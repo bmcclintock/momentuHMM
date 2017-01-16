@@ -5,7 +5,7 @@
 \title{Scaling function: natural to working parameters.}
 \usage{
 n2w(par, bounds, beta, delta = NULL, nbStates, estAngleMean, DM, cons,
-  logitcons)
+  workcons)
 }
 \arguments{
 \item{par}{Vector of state-dependent distributions parameters.}

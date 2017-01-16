@@ -7,7 +7,7 @@
 fitHMM(data, nbStates, dist, Par, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, formula = ~1, stationary = FALSE, verbose = 0,
   nlmPar = NULL, fit = TRUE, DM = NULL, cons = NULL,
-  userBounds = NULL, logitcons = NULL, stateNames = NULL)
+  userBounds = NULL, workcons = NULL, stateNames = NULL)
 }
 \arguments{
 \item{data}{An object \code{moveData}.}
@@ -42,7 +42,7 @@ input. This option can be used to assess the initial parameters. Default: \code{
 
 \item{userBounds}{User specified bounds for all parameters in order '\code{rbind(stepBounds,angleBounds,omegaBounds,dryBounds,diveBounds,iceBounds,landBounds)}'}
 
-\item{logitcons}{Lower bound for wrpcauchy turning angle concentration parameter (on logit scale)}
+\item{workcons}{Lower bound for wrpcauchy turning angle concentration parameter (on logit scale)}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
