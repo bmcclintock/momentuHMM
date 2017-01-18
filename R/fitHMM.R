@@ -376,7 +376,7 @@ fitHMM <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,
-                     estAngleMean=inputs$estAngleMean,stationary=stationary,formula=formula,cons=inputs$cons,bounds=p$bounds,DM=DM,fullDM=fullDM,workcons=inputs$workcons)
+                     estAngleMean=inputs$estAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,bounds=p$bounds,DM=DM,fullDM=fullDM,workcons=DMinputs$workcons)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames)
   

@@ -97,10 +97,12 @@
 #'
 #' @export
 #' @importFrom stats rnorm runif step
-#' @importFrom raster cellFromXY
+#' @importFrom raster cellFromXY getValues
+#' @importFrom moveHMM simData
 
 simData <- function(nbAnimals=1,nbStates=2,dist,
                     Par,beta=NULL,
+                    formula=NULL,
                     covs=NULL,nbCovs=0,
                     spatialCovs=NULL,
                     zeroInflation=NULL,obsPerAnimal=c(500,1500),
@@ -115,33 +117,47 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     nbStates <- length(model$stateNames)
     dist<-model$conditions$dist
     distnames<-names(dist)
-    userBounds <- model$bounds
+    userBounds <- model$conditions$bounds
     stateNames<-model$stateNames
     estAngleMean<-model$conditions$estAngleMean
-  
-    Par <- model$mle[distnames]
-    for(i in distnames[which(dist %in% angledists)]){
-      if(!estAngleMean[[i]])
-        Par[[i]]<-Par[[i]][2,,drop=FALSE]
-    }
-    beta <- model$mle$beta
-    
     DM <- model$conditions$DM
     cons <- model$conditions$cons
     workcons <- model$conditions$workcons
     zeroInflation <- model$conditions$zeroInflation
+    formula <- model$conditions$formula
+  
+    Par <- model$mle[distnames]
+    for(i in distnames[which(dist %in% angledists)]){
+      if(!estAngleMean[[i]]){
+        if(!is.null(DM[[i]])) Par[[i]]<-c(rep(0,nbStates),Par[[i]])
+        estAngleMean[[i]]<-TRUE
+        userBounds[[i]]<-rbind(matrix(rep(c(-pi,pi),nbStates),nbStates,2,byrow=TRUE),userBounds[[i]])
+        cons[[i]] <- c(rep(1,nbStates),cons[[i]])
+        workcons[[i]] <- c(rep(0,nbStates),workcons[[i]])
+      }
+    }
+    beta <- model$mle$beta
+    delta <- model$mle$delta
+    Par<-lapply(Par,function(x) c(t(x)))
+    
+    #inputs <- checkInputs(nbStates,dist,Par,estAngleMean,zeroInflation,DM,NULL,stateNames)
+    #userBounds <- inputs$p$bounds
+    
+    #wpar <- n2w(Par,userBounds,beta,delta,nbStates,estAngleMean,DM,cons,workcons)
 
     if(is.null(covs)) {
-      covsCol <- seq(1,ncol(model$data))[-match(c("ID","x","y",distnames),names(model$data))]
-      covs <- model.matrix(model$conditions$formula,model$data)
+      if(!is.null(spatialCovs)) spatialcovnames <- names(spatialCovs)
+      else spatialcovnames <- NULL
+      covsCol <- seq(1,ncol(model$data))[-match(c("ID","x","y",distnames,spatialcovnames),names(model$data),nomatch=0)]
+      #covs <- model.matrix(model$conditions$formula,model$data)
 
-      if(length(covsCol)>1) {
+      if(length(covsCol)) {
+        covs <- model$data[,covsCol,drop=FALSE]#model.matrix(model$conditions$formula,model$data)
         # remove intercept column, which is not expected in 'covs'
-        names <- colnames(covs)
-        covs <- data.frame(covs[,-1,drop=FALSE])
-        colnames(covs) <- names[-1]
-      } else
-        covs <- NULL
+        #names <- colnames(covs)
+        #covs <- data.frame(covs[,-1,drop=FALSE])
+        #colnames(covs) <- names[-1]
+      }
     }
     # else, allow user to enter new values for covariates
 
@@ -151,6 +167,14 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     distnames<-names(dist)
     if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
     Par <- Par[distnames]
+    delta <- NULL
+    
+    mHind <- (is.null(DM) & is.null(userBounds) & is.null(formula) & is.null(spatialCovs) & is.null(covs) & nbCovs==0) # indicator for moveHMM::simData
+    if(all(names(dist) %in% c("step","angle")) & mHind){
+      zi <- FALSE
+      if(!is.null(zeroInflation$step)) zi <- zeroInflation$step
+      return(moveHMM::simData(nbAnimals, nbStates, dist$step, dist$angle, Par$step, Par$angle, beta, covs, nbCovs, zi, obsPerAnimal, model, states))
+    }
   }
   
   Fun <- lapply(dist,function(x) paste("r",x,sep=""))
@@ -191,22 +215,15 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   parSize <- p$parSize
   bounds <- p$bounds
 
+  spatialcovnames<-NULL
   if(!is.null(spatialCovs)){
     nbSpatialCovs<-length(names(spatialCovs))
     for(j in 1:nbSpatialCovs){
       if(class(spatialCovs[[j]])!="RasterLayer") stop("spatialCovs must be of class 'RasterLayer'")
-      if(any(is.na(spatialCovs[[j]]))) stop("missing values are not permitted in spatialCovs")
+      if(any(is.na(raster::getValues(spatialCovs[[j]])))) stop("missing values are not permitted in spatialCovs")
     }
     spatialcovnames<-names(spatialCovs)
   } else nbSpatialCovs <- 0
-  
-  if(!is.null(beta)) {
-    if(ncol(beta)!=nbStates*(nbStates-1) | nrow(beta)!=nbCovs+nbSpatialCovs+1) {
-      error <- paste("beta has wrong dimensions: it should have",nbCovs+nbSpatialCovs+1,"rows and",
-                     nbStates*(nbStates-1),"columns.")
-      stop(error)
-    }
-  }
 
   if(length(which(obsPerAnimal<1))>0)
     stop("obsPerAnimal should have positive values.")
@@ -223,8 +240,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
 
   if(!is.null(covs)) {
     nbCovs <- ncol(covs)
-    
-  #if(nbCovs>0 & nbSpatialCovs>0) stop("nbCovs cannot be >0 if spatialCovs are specified")
 
     # account for missing values of the covariates
     if(length(which(is.na(covs)))>0)
@@ -271,38 +286,48 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     covs <- data.frame(covs[1:sum(allNbObs),])
     colnames(covs) <- covnames
   }
-
-  # generate regression parameters for transition probabilities
+  
+  ###############################
+  ## Simulate covariate values ##
+  ###############################
+  allCovs <- NULL
+  if(nbCovs>0) {
+    if(is.null(covs)) {
+      allCovs <- data.frame(cov1=rnorm(sum(allNbObs)))
+      if(nbCovs>1) {
+        for(j in 2:nbCovs) {
+          c <- data.frame(rnorm(sum(allNbObs)))
+          colnames(c) <- paste("cov",j,sep="")
+          allCovs <- cbind(allCovs,c)
+        }
+      }
+    } else {
+      allCovs <- covs
+    }
+  }
+  
+  allNbCovs <- nbCovs+nbSpatialCovs
+  if(is.null(formula)) {
+    if(allNbCovs) formula <- formula(paste0("~",paste0(c(colnames(allCovs),spatialcovnames),collapse="+")))
+    else formula <- formula(~1)
+  }
   if(is.null(beta))
-    beta <- matrix(rnorm(nbStates*(nbStates-1)*(nbCovs+nbSpatialCovs+1)),nrow=nbCovs+nbSpatialCovs+1)
-  else if(nrow(beta)!=nbCovs+nbSpatialCovs+1 | ncol(beta)!=nbStates*(nbStates-1)) {
-    if(nbStates>1)
-      stop(paste("beta should have ",nbCovs+nbSpatialCovs+1," rows and ",nbStates*(nbStates-1)," columns.",sep=""))
-    else
-      stop("beta should be NULL")
+    beta <- matrix(rnorm(nbStates*(nbStates-1)*(length(attr(terms.formula(formula),"term.labels"))+1)),nrow=length(attr(terms.formula(formula),"term.labels"))+1)
+  else {
+    if(ncol(beta)!=nbStates*(nbStates-1) | nrow(beta)!=length(attr(terms.formula(formula),"term.labels"))+1) {
+      error <- paste("beta has wrong dimensions: it should have",length(attr(terms.formula(formula),"term.labels"))+1,"rows and",
+                     nbStates*(nbStates-1),"columns.")
+      stop(error)
+    }
   }
 
   # initial state distribution
-  delta <- rep(1,nbStates)/nbStates
+  if(is.null(delta)) delta <- rep(1,nbStates)/nbStates
 
   zeroMass<-vector('list',length(dist))
   names(zeroMass)<-distnames
-  #for(i in distnames){
-  #  if(zeroInflation[[i]]) {
-  #    zeroMass[[i]] <- par[[i]][parSize[[i]]*nbStates-(nbStates-1):0,]
-  #    par[[i]] <- par[[i]][-(parSize[[i]]*nbStates-(nbStates-1):0),]
-  #  }
-  #  else {
-  #    zeroMass[[i]] <- matrix(0,nbStates,sum(allNbObs))
-  #  }
-  #}
-  #for(i in distnames[which(dist %in% angledists)]){
-  #  if(!estAngleMean[[i]])
-  #    par[[i]] <- rbind(rep(0,nbStates),par[[i]])
-  #}
 
   trackData <- NULL
-  allCovs <- NULL
   allStates <- NULL
   allSpatialcovs<-NULL
   
@@ -336,32 +361,21 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     ###############################
     ## Simulate covariate values ##
     ###############################
-    subCovs<-matrix(NA,nrow=nbObs,ncol=nbCovs)
+    subCovs<-as.data.frame(matrix(NA,nrow=nbObs,ncol=nbCovs))
     if(nbCovs>0) {
-      if(is.null(covs)) {
-        subCovs <- data.frame(cov1=rnorm(nbObs))
-        if(nbCovs>1) {
-          for(j in 2:nbCovs) {
-            c <- data.frame(rnorm(nbObs))
-            colnames(c) <- paste("cov",j,sep="")
-            subCovs <- cbind(subCovs,c)
-          }
-        }
-      } else {
-        # select covariate values which concern the current animal
-        if(zoo<2)
-          ind1 <- 1
-        else
-          ind1 <- sum(allNbObs[1:(zoo-1)])+1
+      # select covariate values which concern the current animal
+      if(zoo<2)
+        ind1 <- 1
+      else
+        ind1 <- sum(allNbObs[1:(zoo-1)])+1
         ind2 <- sum(allNbObs[1:zoo])
-        subCovs <- data.frame(covs[ind1:ind2,])
+        subCovs <- data.frame(allCovs[ind1:ind2,,drop=FALSE])
         if(!is.null(covs))
           colnames(subCovs) <- colnames(covs) # keep covariates names from input
-      }
-      allCovs <- rbind(allCovs,subCovs)
     }
     
-    subSpatialcovs<-matrix(NA,nrow=nbObs,ncol=nbSpatialCovs)
+    subSpatialcovs<-as.data.frame(matrix(NA,nrow=nbObs,ncol=nbSpatialCovs))
+    colnames(subSpatialcovs)<-spatialcovnames
 
     X <- matrix(0,nrow=nbObs,ncol=2)
     X[1,] <- c(0,0) # initial position of animal
@@ -386,22 +400,27 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       genArgs[[i]] <- list(1)  # first argument = 1 (one random draw)
     }
     
+    if(!nbSpatialCovs) DMcov <- model.matrix(formula,subCovs)
+    
     for (k in 1:(nbObs-1)){
       
       # get next state
       gamma <- diag(nbStates)
-      g <- beta[1,]
-      if(nbCovs){
-        for(j in 1:nbCovs)
-          g <- g + beta[j+1,]*subCovs[k,j]
-      }
+      #g <- beta[1,]
+      #if(nbCovs){
+      #  for(j in 1:nbCovs)
+      #    g <- g + beta[j+1,]*subCovs[k,j]
+      #}
       if(nbSpatialCovs){
         for(j in 1:nbSpatialCovs){
-            getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[k,1],X[k,2]))
-            if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
-            subSpatialcovs[k,j]<-spatialCovs[[j]][getCell]
-            g <- g + beta[j+1+nbCovs,]*subSpatialcovs[k,j]
+          getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[k,1],X[k,2]))
+          if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+          subSpatialcovs[k,j]<-spatialCovs[[j]][getCell]
+          #g <- g + beta[j+1+nbCovs,]*subSpatialcovs[k,j]
         }
+        g <- model.matrix(formula,cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])) %*% beta
+      } else {
+        g <- DMcov[k,,drop=FALSE] %*% beta
       }
       gamma[!gamma] <- exp(g)
       gamma <- t(gamma)
@@ -478,10 +497,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   }
   
   if(nbSpatialCovs>0) colnames(allSpatialcovs)<-spatialcovnames
-
-  # if covs provided as argument
-  if(!is.null(covs) & is.null(allCovs))
-    allCovs <- covs
 
   if(nbCovs>0)
     data <- cbind(data,allCovs)
