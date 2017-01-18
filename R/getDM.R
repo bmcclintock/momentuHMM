@@ -1,4 +1,4 @@
-getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par){
+getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons){
   
   distnames<-names(dist)
   fullDM <- vector('list',length(dist))
@@ -7,9 +7,6 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par){
   names(fullbounds) <- distnames
   nbObs<-nrow(data)
   parSize<-lapply(parNames,length)
-  
-  is.formula <- function(x)
-    tryCatch(inherits(x,"formula"),error= function(e) {FALSE})
   
   for(i in distnames){
     if(is.null(DM[[i]])){
@@ -27,7 +24,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par){
       parInd<-0
       for(j in 1:length(parNames[[i]])){
         tmpCov<-model.matrix(DM[[i]][[parNames[[i]][j]]],data)
-        if(nrow(tmpCov)!=nrow(data)) stop("covariates cannot contain missing values")
+        if(nrow(tmpCov)!=nbObs) stop("covariates cannot contain missing values")
         for(state in 1:nbStates){
           tmpDM[(j-1)*nbStates+state,(state-1)*parSizeDM[j]+parInd*nbStates+1:parSizeDM[j],]<-t(tmpCov)
           DMnames[(state-1)*parSizeDM[j]+parInd*nbStates+1:parSizeDM[j]]<-paste0(parNames[[i]][j],"_",state,":",colnames(tmpCov))
@@ -42,7 +39,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par){
       DMterms<-unique(DM[[i]][suppressWarnings(which(is.na(as.numeric(DM[[i]]))))])
       for(cov in DMterms){
         covs<-model.matrix(formula(paste("~",cov)),data)[,2]
-        if(length(covs)!=nrow(data)) stop("covariates cannot contain missing values")
+        if(length(covs)!=nbObs) stop("covariates cannot contain missing values")
         for(k in 1:nbObs){
           ind<-which(tmpDM[,,k]==cov)
           tmpDM[,,k][ind]<-covs[k]
@@ -59,5 +56,55 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par){
       simpDM[[i]][[j]]<-fullDM[[i]][ceiling(j/ncol(tmp[[i]])),ceiling(j/nrow(tmp[[i]])),]
     }
   }
-  simpDM[distnames]
+  simpDM<-simpDM[distnames]
+  
+  for(i in distnames){
+    if(nrow(simpDM[[i]])!=(parSize[[i]]*nbStates)){
+      error<- paste0("DM for ",i," must have ",(parSize[[i]]*nbStates)," rows")
+      if(zeroInflation[[i]])
+        stop(paste0(error,". Should zero inflation parameters be included?"))
+      else stop(error)
+    }
+  }
+  
+  if(any(unlist(lapply(Par,length))!=unlist(lapply(simpDM,ncol))))
+    stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(simpDM,ncol)))),collapse=", "))
+  
+  if(sum((unlist(parSize)>0)*unlist(lapply(simpDM,ncol)))!=length(unlist(Par))) {
+    error <- "Wrong number of initial parameters"
+    stop(error)
+  }
+  
+  if(is.null(cons)){
+    cons <- vector('list',length(distnames))
+    names(cons) <- distnames
+  } else {
+    if(!is.list(cons) | is.null(names(cons))) stop("'cons' must be a named list")
+  }
+  for(i in distnames){
+    if(is.null(cons[[i]])) cons[[i]] <- rep(1,ncol(simpDM[[i]]))
+  }
+  cons<-cons[distnames]
+  if(any(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))) 
+    stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
+  
+  if(is.null(workcons)){
+    workcons <- vector('list',length(distnames))
+    names(workcons) <- distnames
+  } else {
+    if(!is.list(workcons) | is.null(names(workcons))) stop("'workcons' must be a named list")
+  }
+  for(i in distnames){
+    if(is.null(workcons[[i]])) workcons[[i]] <- rep(0,ncol(simpDM[[i]]))
+  }
+  for(i in which(!(dist %in% "wrpcauchy"))){
+    workcons[[distnames[i]]]<-rep(0,ncol(simpDM[[distnames[i]]]))
+  }
+  workcons<-workcons[distnames]
+  if(any(unlist(lapply(workcons,length))!=unlist(lapply(Par,length)))) 
+    stop("Length mismatch between Par and workcons for: ",paste(names(which(unlist(lapply(workcons,length))!=unlist(lapply(Par,length)))),collapse=", "))
+  
+  DMind <- lapply(simpDM,function(x) all(unlist(apply(x,1,function(y) lapply(y,length)))==1))
+  
+  return(list(fullDM=simpDM,DMind=DMind,cons=cons,workcons=workcons))
 }

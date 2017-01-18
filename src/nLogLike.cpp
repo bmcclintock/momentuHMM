@@ -207,7 +207,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
     }
 
     if(nbStates>1)
-      Gamma = trMat.slice(i);
+      Gamma = trMat.slice(i-1);
     else
       Gamma = 1; // no transition if only one state
 

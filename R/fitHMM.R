@@ -139,13 +139,17 @@ fitHMM <- function(data,nbStates,dist,
                    stationary=FALSE,verbose=0,nlmPar=NULL,fit=TRUE,
                    DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,stateNames=NULL)
 {
+  
+  #####################
+  ## Check arguments ##
+  #####################
+  
   # check that the data is a moveData object
   if(!is.moveData(data))
     stop("'data' must be a moveData object (as output by prepData or simData)")
-
-  # check that the formula is a formula
-  is.formula <- function(x)
-    tryCatch(inherits(x,"formula"),error= function(e) {FALSE})
+  
+  if(length(data)<1 | any(dim(data)<1))
+    stop("The data input is empty.")
 
   if(!is.formula(formula))
     stop("Check the argument 'formula'.")
@@ -178,16 +182,23 @@ fitHMM <- function(data,nbStates,dist,
     rawCovs <- NULL
   }
   
-  mHind <- (is.null(DM) & is.null(userBounds)) # indicator for moveHMMwrap below
+  # check that observations are within expected bounds
+  for(i in which(unlist(lapply(dist,function(x) x %in% nonnegativedists))))
+    if(length(which(data[[distnames[[i]]]]<0))>0)
+      stop(distnames[[i]]," data should be non-negative")
   
+  for(i in which(unlist(lapply(dist,function(x) x %in% angledists))))
+    if(length(which(data[[distnames[[i]]]] < -pi | data[[distnames[[i]]]] > pi))>0)
+      stop(distnames[[i]]," data should be between -pi and pi")
   
-  #####################
-  ## Check arguments ##
-  #####################
-  for(i in distnames){
-    dist[[i]]<-match.arg(dist[[i]],momentuHMMdists)
-  }
+  for(i in which(unlist(lapply(dist,function(x) x %in% "beta"))))
+    if(length(which(data[[distnames[[i]]]]<0 | data[[distnames[[i]]]]>=1))>0)
+      stop(distnames[[i]]," data should be between 0 and 1")
 
+  for(i in which(unlist(lapply(dist,function(x) x %in% "pois"))))
+    if(!isTRUE(all.equal(data[[distnames[[i]]]],as.integer(data[[distnames[[i]]]]))))
+      stop(distnames[[i]]," data should be non-negative integers")
+  
   # determine whether zero-inflation should be included
   zeroInflation <- vector('list',length(distnames))
   names(zeroInflation) <- distnames
@@ -206,34 +217,16 @@ fitHMM <- function(data,nbStates,dist,
     }
     else zeroInflation[[i]]<-FALSE
   }
-  
-  if(nbStates<0)
-    stop("nbStates should be at least 1.")
-  if(length(data)<1 | any(dim(data)<1))
-    stop("The data input is empty.")
-  
-  if(is.null(estAngleMean)){
-    estAngleMean <- vector('list',length(distnames))
-    names(estAngleMean) <- distnames
-  } else {
-    if(!is.list(estAngleMean) | is.null(names(estAngleMean))) stop("'estAngleMean' must be a named list")
-  }
-  for(i in distnames){
-    if(is.null(estAngleMean[[i]])) estAngleMean[[i]] <- FALSE
-  }
-  for(i in distnames[which(!(dist %in% angledists))]){
-    estAngleMean[[i]] <- FALSE
-  }
-  estAngleMean<-estAngleMean[distnames]
-  
-  
-  if(!is.null(stateNames) & length(stateNames)!=nbStates)
-    stop("stateNames must have length ",nbStates)
 
-  par0 <- unlist(Par)
-  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,userBounds)
-  parSize <- p$parSize
-
+  mHind <- (is.null(DM) & is.null(userBounds) & terms.formula(formula)==~1) # indicator for moveHMMwrap below
+  
+  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,zeroInflation,DM,userBounds,stateNames)
+  p <- inputs$p
+  
+  DMinputs<-getDM(data,inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons)
+  fullDM <- DMinputs$fullDM
+  DMind <- DMinputs$DMind
+  
   if(!is.null(beta0)) {
     if(ncol(beta0)!=nbStates*(nbStates-1) | nrow(beta0)!=nbCovs+1) {
       error <- paste("beta0 has wrong dimensions: it should have",nbCovs+1,"rows and",
@@ -249,23 +242,6 @@ fitHMM <- function(data,nbStates,dist,
   # check that verbose is in {0,1,2}
   if(!(verbose %in% c(0,1,2)))
     stop("verbose must be in {0,1,2}")
-
-  # check that observations are within expected bounds
-  for(i in which(unlist(lapply(dist,function(x) x %in% nonnegativedists))))
-    if(length(which(data[[distnames[[i]]]]<0))>0)
-      stop(distnames[[i]]," data should be non-negative")
-  
-  for(i in which(unlist(lapply(dist,function(x) x %in% angledists))))
-    if(length(which(data[[distnames[[i]]]] < -pi | data[[distnames[[i]]]] > pi))>0)
-      stop(distnames[[i]]," data should be between -pi and pi")
-  
-  for(i in which(unlist(lapply(dist,function(x) x %in% "beta"))))
-    if(length(which(data[[distnames[[i]]]]<0 | data[[distnames[[i]]]]>=1))>0)
-      stop(distnames[[i]]," data should be between 0 and 1")
-
-  for(i in which(unlist(lapply(dist,function(x) x %in% "pois"))))
-    if(!isTRUE(all.equal(data[[distnames[[i]]]],as.integer(data[[distnames[[i]]]]))))
-      stop(distnames[[i]]," data should be non-negative integers")
 
   # check elements of nlmPar
   lsPars <- c("gradtol","stepmax","steptol","iterlim")
@@ -286,75 +262,8 @@ fitHMM <- function(data,nbStates,dist,
   if(stationary)
     delta0 <- NULL
 
-  bounds <- p$bounds
-
-  if(is.null(DM)){
-    DM <- cons <- workcons <- vector('list',length(distnames))
-    names(DM) <- names(cons) <- names(workcons) <- distnames
-  } else {
-    if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
-    if(!any(names(DM) %in% distnames)) stop("DM names must include at least one of: ",paste0(distnames,collapse=", "))
-  }
-  
-  for(i in distnames){
-    if(is.null(DM[[i]]) & length(Par[[i]])!=(parSize[[i]]*nbStates)){
-      error<-paste0("Wrong number of initial parameters -- there should be ",parSize[[i]]*nbStates," initial ",i," parameters")
-      if(zeroInflation[[i]]) error<-paste0(error," -- zero-mass parameters should be included")
-      stop(error)
-    }
-  }
-  
-  fullDM<-getDM(data,DM,dist,nbStates,p$parNames,bounds,Par)
-  DMind <- lapply(fullDM,function(x) all(unlist(apply(x,1,function(y) lapply(y,length)))==1))
-  
-  for(i in distnames){
-    if(nrow(fullDM[[i]])!=(parSize[[i]]*nbStates)){
-      error<- paste0("DM for ",i," must have ",(parSize[[i]]*nbStates)," rows")
-      if(zeroInflation[[i]])
-        stop(paste0(error,". Should zero inflation parameters be included?"))
-      else stop(error)
-    }
-  }
-  
-  if(any(unlist(lapply(Par,length))!=unlist(lapply(fullDM,ncol))))
-    stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(fullDM,ncol)))),collapse=", "))
-  
-  if(sum((unlist(parSize)>0)*unlist(lapply(fullDM,ncol)))!=length(par0)) {
-    error <- "Wrong number of initial parameters"
-    stop(error)
-  }
-  
-  if(is.null(cons)){
-    cons <- vector('list',length(distnames))
-    names(cons) <- distnames
-  } else {
-    if(!is.list(cons) | is.null(names(cons))) stop("'cons' must be a named list")
-  }
-  for(i in distnames){
-    if(is.null(cons[[i]])) cons[[i]] <- rep(1,ncol(fullDM[[i]]))
-  }
-  cons<-cons[distnames]
-  if(any(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))) 
-    stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
-  
-  if(is.null(workcons)){
-    workcons <- vector('list',length(distnames))
-    names(workcons) <- distnames
-  } else {
-    if(!is.list(workcons) | is.null(names(workcons))) stop("'workcons' must be a named list")
-  }
-  for(i in distnames){
-    if(is.null(workcons[[i]])) workcons[[i]] <- rep(0,ncol(fullDM[[i]]))
-  }
-  for(i in which(!(dist %in% "wrpcauchy"))){
-    workcons[[distnames[i]]]<-rep(0,ncol(fullDM[[distnames[i]]]))
-  }
-  workcons<-workcons[distnames]
-  if(any(unlist(lapply(workcons,length))!=unlist(lapply(Par,length)))) 
-    stop("Length mismatch between Par and workcons for: ",paste(names(which(unlist(lapply(workcons,length))!=unlist(lapply(Par,length)))),collapse=", "))
-
   # build the vector of initial working parameters
-  wpar <- n2w(Par,bounds,beta0,delta0,nbStates,estAngleMean,DM,cons,workcons)
+  wpar <- n2w(Par,p$bounds,beta0,delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons)
   
   if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
   
@@ -369,7 +278,7 @@ fitHMM <- function(data,nbStates,dist,
 
   # just use moveHMM if simpler models are specified
   if(all(distnames %in% c("step","angle")) & mHind){
-    out<-moveHMMwrap(data,nbStates,dist,Par,beta0,delta0,estAngleMean,formula,stationary,verbose,nlmPar,fit)
+    out<-moveHMMwrap(data,nbStates,dist,Par,beta0,delta0,inputs$estAngleMean,formula,stationary,verbose,nlmPar,fit)
     mod<-out$mod
     mle<-out$mle
   } 
@@ -383,20 +292,20 @@ fitHMM <- function(data,nbStates,dist,
     iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
 
     # call to optimizer nlm
-    withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,bounds,parSize,data,dist,covs,
-                                   estAngleMean,zeroInflation,
-                                   stationary,cons,fullDM,DMind,workcons,
+    withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,p$bounds,p$parSize,data,dist,covs,
+                                   inputs$estAngleMean,zeroInflation,
+                                   stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,
                                    print.level=verbose,gradtol=gradtol,
                                    stepmax=stepmax,steptol=steptol,
                                    iterlim=iterlim,hessian=TRUE),
                         warning=h) # filter warnings using function h
 
     # convert the parameters back to their natural scale
-    mle <- w2n(mod$estimate,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,fullDM,DMind,workcons,nrow(data),dist)
+    mle <- w2n(mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist)
   }
   else {
     mod <- NA
-    mle <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,fullDM,DMind,workcons,nrow(data),dist)
+    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist)
   }
 
   ####################
@@ -467,7 +376,7 @@ fitHMM <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,
-                     estAngleMean=estAngleMean,stationary=stationary,formula=formula,cons=cons,bounds=p$bounds,DM=fullDM,workcons=workcons)
+                     estAngleMean=inputs$estAngleMean,stationary=stationary,formula=formula,cons=inputs$cons,bounds=p$bounds,DM=DM,fullDM=fullDM,workcons=inputs$workcons)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames)
   

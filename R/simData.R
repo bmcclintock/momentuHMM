@@ -138,7 +138,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(length(covsCol)>1) {
         # remove intercept column, which is not expected in 'covs'
         names <- colnames(covs)
-        covs <- data.frame(covs[,-1]) # data.frame structure is lost when only one column
+        covs <- data.frame(covs[,-1,drop=FALSE])
         colnames(covs) <- names[-1]
       } else
         covs <- NULL
@@ -151,26 +151,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     distnames<-names(dist)
     if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
     Par <- Par[distnames]
-    estAngleMean <- vector('list',length(distnames))
-    names(estAngleMean) <- distnames
-    for(i in distnames){
-      if(dist[[i]] %in% angledists) estAngleMean[[i]] <- TRUE
-      else estAngleMean[[i]] <- FALSE
-    }
   }
   
-  if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
-  if(!is.list(Par) | is.null(names(Par))) stop("'Par' must be a named list")
-  
-  #####################
-  ## Check arguments ##
-  #####################
-  for(i in distnames){
-    dist[[i]] <- match.arg(dist[[i]],c('gamma','weibull','exp','beta','pois','wrpcauchy','vm'))
-  }
   Fun <- lapply(dist,function(x) paste("r",x,sep=""))
 
-  
   if(nbAnimals<1)
     stop("nbAnimals should be at least 1.")
   if(nbStates<1)
@@ -184,95 +168,44 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
   } else {
     if(!is.list(zeroInflation) | is.null(names(zeroInflation))) stop("'zeroInflation' must be a named list")
+    for(i in distnames){
+      if(is.null(zeroInflation[[i]])) zeroInflation[[i]] <- FALSE
+    }
   }
-  for(i in distnames){
-    if(is.null(zeroInflation[[i]])) zeroInflation[[i]] <- FALSE
-  }
+
   if(!all(unlist(lapply(zeroInflation,is.logical)))) stop("zeroInflation must be a list of logical objects")
   for(i in distnames){
     if((dist[[i]] %in% angledists | dist[[i]]=="pois") & zeroInflation[[i]])
       stop(dist[[i]]," distribution cannot be zero inflated")
   }
   
-  if(is.null(DM)){
-    DM <- vector('list',length(distnames))
-    names(DM) <- distnames
-    zind<-which((unlist(lapply(Par,length))!=(ifelse(dist=="exp" | dist=="pois",1,2)+unlist(zeroInflation[distnames]))*nbStates))
-    for(i in zind)
-     stop("Wrong number of parameters in Par$",distnames[[i]])
-  } else if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
+  estAngleMean <- vector('list',length(distnames))
+  names(estAngleMean) <- distnames
   for(i in distnames){
-    if(is.null(DM[[i]])) DM[[i]] <- diag((ifelse(dist[[i]]=="exp" | dist[[i]]=="pois" | (dist[[i]] %in% angledists & !estAngleMean[[i]]),1,2)+zeroInflation[[i]])*nbStates)
+    if(dist[[i]] %in% angledists) estAngleMean[[i]]<-TRUE
+    else estAngleMean[[i]]<-FALSE
   }
-  DM<-DM[distnames]
-  if(any(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol))))
-    stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(DM,ncol)))),collapse=", "))
   
-  if(is.null(cons)){
-    cons <- vector('list',length(distnames))
-    names(cons) <- distnames
-  } else if(!is.list(cons) | is.null(names(cons))) stop("'cons' must be a named list")
-  for(i in distnames){
-    if(is.null(cons[[i]])) cons[[i]] <- rep(1,ncol(DM[[i]]))
-  }
-  cons<-cons[distnames]
-  if(any(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))) 
-    stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
-  
-  if(is.null(workcons)){
-    workcons <- vector('list',length(distnames))
-    names(workcons) <- distnames
-  } else if(!is.list(workcons) | is.null(names(workcons))) stop("'workcons' must be a named list")
-  for(i in distnames){
-    if(is.null(workcons[[i]])) workcons[[i]] <- rep(0,ncol(DM[[i]]))
-  }
-  for(i in which(!(dist %in% "wrpcauchy"))){
-    workcons[[distnames[i]]]<-rep(0,ncol(DM[[distnames[i]]]))
-  }
-  workcons<-workcons[distnames]
-  if(any(unlist(lapply(workcons,length))!=unlist(lapply(Par,length)))) 
-    stop("Length mismatch between Par and workcons for: ",paste(names(which(unlist(lapply(workcons,length))!=unlist(lapply(Par,length)))),collapse=", "))
-
-  if(!is.null(stateNames) & length(stateNames)!=nbStates)
-    stop("stateNames must have length ",nbStates)
-
-  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,userBounds)
-  par0 <- unlist(Par) 
-  
-  bounds <- p$bounds
-  for(i in distnames){
-    if(!is.numeric(bounds[[i]])){
-      bounds[[i]] <- gsub(paste0(i,"Par"),paste0("Par$",i),bounds[[i]],fixed=TRUE)
-      bounds[[i]]<-matrix(sapply(bounds[[i]],function(x) eval(parse(text=x))),ncol=2,dimnames=list(rownames(p$bounds[[i]])))
-    }
-  }
+  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,zeroInflation,DM,userBounds,stateNames)
+  p <- inputs$p
   parSize <- p$parSize
-  for(i in distnames){
-    if(length(Par[[i]]%*%DM[[i]])!=(parSize[[i]]*nbStates))
-      stop("zero inflation parameters must be included in 'Par$",i,"'")
-  }
-  if(sum((unlist(parSize)>0)*unlist(lapply(DM,ncol)))!=length(par0)) {
-    error <- "Wrong number of initial parameters"
-    stop(error)
-  }
+  bounds <- p$bounds
+
   if(!is.null(spatialCovs)){
     nbSpatialCovs<-length(names(spatialCovs))
-    for(j in 1:nbSpatialCovs)
+    for(j in 1:nbSpatialCovs){
       if(class(spatialCovs[[j]])!="RasterLayer") stop("spatialCovs must be of class 'RasterLayer'")
+      if(any(is.na(spatialCovs[[j]]))) stop("missing values are not permitted in spatialCovs")
+    }
     spatialcovnames<-names(spatialCovs)
   } else nbSpatialCovs <- 0
+  
   if(!is.null(beta)) {
     if(ncol(beta)!=nbStates*(nbStates-1) | nrow(beta)!=nbCovs+nbSpatialCovs+1) {
       error <- paste("beta has wrong dimensions: it should have",nbCovs+nbSpatialCovs+1,"rows and",
                      nbStates*(nbStates-1),"columns.")
       stop(error)
     }
-  }
-  
-  for(i in distnames){
-    if(length(which(Par[[i]]<bounds[[i]][,1] | Par[[i]]>bounds[[i]][,2]))>0)
-      stop(paste0("Check the parameter bounds for '",i,"' (the initial parameters should be ",
-                  "strictly between the bounds of their parameter space)."))
   }
 
   if(length(which(obsPerAnimal<1))>0)
@@ -291,7 +224,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   if(!is.null(covs)) {
     nbCovs <- ncol(covs)
     
-  if(nbCovs>0 & nbSpatialCovs>0) stop("nbCovs cannot be >0 if spatialCovs are specified")
+  #if(nbCovs>0 & nbSpatialCovs>0) stop("nbCovs cannot be >0 if spatialCovs are specified")
 
     # account for missing values of the covariates
     if(length(which(is.na(covs)))>0)
@@ -327,6 +260,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     else
       allNbObs[zoo] <- obsPerAnimal[1]
   }
+  cumNbObs <- c(0,cumsum(allNbObs))
 
   # extend covs if not enough covariate values
   if(!is.null(covs)) {
@@ -350,35 +284,22 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
 
   # initial state distribution
   delta <- rep(1,nbStates)/nbStates
-  
-  if(!all(unlist(lapply(p$bounds,is.numeric)))){
-    bounds <- p$bounds
-    for(i in distnames){
-      if(!is.numeric(bounds[[i]])){
-        bounds[[i]] <- gsub(i,"",bounds,fixed=TRUE)
-      }
-    }
-  }
-  
-  # format parameters
-  wpar <- n2w(lapply(Par,function(x) c(t(x))),bounds,beta,delta,nbStates,estAngleMean,DM,cons,workcons) 
-  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary=FALSE,cons,DM,p$boundInd,workcons)
 
   zeroMass<-vector('list',length(dist))
   names(zeroMass)<-distnames
-  for(i in distnames){
-    if(zeroInflation[[i]]) {
-      zeroMass[[i]] <- par[[i]][nrow(par[[i]]),]
-      par[[i]] <- par[[i]][-(nrow(par[[i]])),]
-    }
-    else {
-      zeroMass[[i]] <- rep(0,nbStates)
-    }
-  }
-  for(i in distnames[which(dist %in% angledists)]){
-    if(!estAngleMean[[i]])
-      par[[i]] <- rbind(rep(0,nbStates),par[[i]])
-  }
+  #for(i in distnames){
+  #  if(zeroInflation[[i]]) {
+  #    zeroMass[[i]] <- par[[i]][parSize[[i]]*nbStates-(nbStates-1):0,]
+  #    par[[i]] <- par[[i]][-(parSize[[i]]*nbStates-(nbStates-1):0),]
+  #  }
+  #  else {
+  #    zeroMass[[i]] <- matrix(0,nbStates,sum(allNbObs))
+  #  }
+  #}
+  #for(i in distnames[which(dist %in% angledists)]){
+  #  if(!estAngleMean[[i]])
+  #    par[[i]] <- rbind(rep(0,nbStates),par[[i]])
+  #}
 
   trackData <- NULL
   allCovs <- NULL
@@ -397,7 +318,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   }
   if("angle" %in% distnames) 
     if(dist[["angle"]] %in% angledists & ("step" %in% distnames))
-      if(dist[["step"]] %in% c("gamma","weibull","exp")){
+      if(dist[["step"]] %in% stepdists){
         data$x<-numeric()
         data$y<-numeric()
       }
@@ -410,10 +331,12 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     # number of observations for animal zoo
     nbObs <- allNbObs[zoo]
     d <- data.frame(ID=factor(rep(zoo,nbObs)))
+    #subPar <- lapply(par[distnames],function(x) x[,cumNbObs[zoo]+1:nbObs])
     
     ###############################
     ## Simulate covariate values ##
     ###############################
+    subCovs<-matrix(NA,nrow=nbObs,ncol=nbCovs)
     if(nbCovs>0) {
       if(is.null(covs)) {
         subCovs <- data.frame(cov1=rnorm(nbObs))
@@ -438,32 +361,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       allCovs <- rbind(allCovs,subCovs)
     }
     
-    if(nbSpatialCovs>0) subSpatialcovs<-matrix(NA,nrow=nbObs,ncol=nbSpatialCovs)
-
-    ###############################
-    ## Simulate state sequence Z ##
-    ###############################
-    #if(nbStates>1) {
-    #  Z <- rep(NA,nbObs)
-    #  Z[1] <- sample(1:nbStates,size=1,prob=delta)
-    #  for (k in 2:nbObs) {
-    #    gamma <- diag(nbStates)
-
-    #    g <- beta[1,]
-    #    if(nbCovs==1) g <- g + beta[2,]*subCovs[k,1]
-    #    if(nbCovs>1) {
-    #      for(j in 1:nbCovs)
-    #        g <- g + beta[j+1,]*subCovs[k,j]
-    #    }
-
-    #    gamma[!gamma] <- exp(g)
-    #    gamma <- t(gamma)
-    #    gamma <- gamma/apply(gamma,1,sum)
-    #    Z[k] <- sample(1:nbStates,size=1,prob=gamma[Z[k-1],])
-    #  }
-    #  allStates <- c(allStates,Z)
-    #} else
-    #  Z <- rep(1,nbObs)
+    subSpatialcovs<-matrix(NA,nrow=nbObs,ncol=nbSpatialCovs)
 
     X <- matrix(0,nrow=nbObs,ncol=2)
     X[1,] <- c(0,0) # initial position of animal
@@ -480,9 +378,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     ## Simulate movement path ##
     ############################
  
-    genData <- vector('list',length(distnames))
-    genDist <- vector('list',length(distnames))
-    genArgs <- vector('list',length(distnames))
+    genData <- genArgs <- vector('list',length(distnames))
+    names(genData) <- names(genArgs) <- distnames
     
     for(i in distnames){
       genData[[i]] <- rep(NA,nbObs)
@@ -491,29 +388,45 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     
     for (k in 1:(nbObs-1)){
       
+      # get next state
       gamma <- diag(nbStates)
       g <- beta[1,]
-      if(!nbSpatialCovs){
-        if(nbCovs==1) g <- g + beta[2,]*subCovs[k+1,1]
-        if(nbCovs>1) {
-          for(j in 1:nbCovs)
-            g <- g + beta[j+1,]*subCovs[k+1,j]
-        }
-      } else {
+      if(nbCovs){
+        for(j in 1:nbCovs)
+          g <- g + beta[j+1,]*subCovs[k,j]
+      }
+      if(nbSpatialCovs){
         for(j in 1:nbSpatialCovs){
-            subSpatialcovs[k,j]<-spatialCovs[[j]][raster::cellFromXY(spatialCovs[[j]],c(X[k,1],X[k,2]))]
-            g <- g + beta[j+1,]*subSpatialcovs[k,j]
+            getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[k,1],X[k,2]))
+            if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+            subSpatialcovs[k,j]<-spatialCovs[[j]][getCell]
+            g <- g + beta[j+1+nbCovs,]*subSpatialcovs[k,j]
         }
       }
       gamma[!gamma] <- exp(g)
       gamma <- t(gamma)
       gamma <- gamma/apply(gamma,1,sum)
       Z[k+1] <- sample(1:nbStates,size=1,prob=gamma[Z[k],])  
+      
+      # format parameters
+      DMinputs<-getDM(cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE]),inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons)
+      fullDM <- DMinputs$fullDM
+      DMind <- DMinputs$DMind
+      wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons)
+      subPar <- w2n(wpar,bounds,parSize,nbStates,nbCovs,inputs$estAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist)
           
       for(i in distnames){
+        
+        if(zeroInflation[[i]]) {
+          zeroMass[[i]] <- subPar[[i]][parSize[[i]]*nbStates-(nbStates-1):0]
+          subPar[[i]] <- subPar[[i]][-(parSize[[i]]*nbStates-(nbStates-1):0)]
+        }
+        else {
+          zeroMass[[i]] <- rep(0,nbStates)
+        }
 
-        for(j in 1:nrow(par[[i]]))
-          genArgs[[i]][[j+1]] <- par[[i]][j,Z[k]]
+        for(j in 1:(parSize[[i]]-zeroInflation[[i]]))
+          genArgs[[i]][[j+1]] <- subPar[[i]][(j-1)*nbStates+Z[k]]
 
         if(dist[[i]]=="gamma") {
           shape <- genArgs[[i]][[2]]^2/genArgs[[i]][[3]]^2
@@ -528,33 +441,35 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           genData[[i]][k] <- 0
   
         if(i=="angle" & dist[[i]] %in% angledists & ("step" %in% distnames))
-          if(dist[["step"]] %in% c("gamma","weibull","exp")) {
-            if(step[k]>0){
+          if(dist[["step"]] %in% stepdists) {
+            if(genData$step[k]>0){
               genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
               if(genData[[i]][k] >  pi) genData[[i]][k] <- genData[[i]][k]-2*pi
               if(genData[[i]][k] < -pi) genData[[i]][k] <- genData[[i]][k]+2*pi
               phi <- phi + genData[[i]][k]
-            } else if(step[k]==0) {
+            } else if(genData$step[k]==0) {
               genData[[i]][k] <- NA # angle = NA if step = 0
             }
-            m <- step[k]*c(Re(exp(1i*phi)),Im(exp(1i*phi)))
+            m <- genData$step[k]*c(Re(exp(1i*phi)),Im(exp(1i*phi)))
             X[k+1,] <- X[k,] + m
           }
-        if(i=="step") step <- genData[[i]]
+        #if(i=="step") step <- genData[[i]]
         d[[i]] <- genData[[i]]
       }
     }
     allStates <- c(allStates,Z)
     if(nbSpatialCovs>0) {
       for(j in 1:nbSpatialCovs){
-        subSpatialcovs[nbObs,j]<-spatialCovs[[j]][raster::cellFromXY(spatialCovs[[j]],c(X[nbObs,1],X[nbObs,2]))]
+        getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[nbObs,1],X[nbObs,2]))
+        if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+        subSpatialcovs[nbObs,j]<-spatialCovs[[j]][getCell]
       }
       allSpatialcovs <- rbind(allSpatialcovs,subSpatialcovs)
     }
     
     if("angle" %in% distnames) 
       if(dist[["angle"]] %in% angledists & ("step" %in% distnames))
-        if(dist[["step"]] %in% c("gamma","weibull","exp")){
+        if(dist[["step"]] %in% stepdists){
             d$angle[1] <- NA # the first angle value is arbitrary
             d$x=X[,1]
             d$y=X[,2]

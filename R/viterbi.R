@@ -67,14 +67,14 @@ viterbi <- function(m)
     foo <- delta*p[1,]
     xi[1,] <- foo/sum(foo)
     for(i in 2:nbObs) {
-      foo <- apply(xi[i-1,]*tm[,,i],2,max)*p[i,]
+      foo <- apply(xi[i-1,]*tm[,,i-1],2,max)*p[i,]
       xi[i,] <- foo/sum(foo)
     }
 
     stSeq <- rep(NA,nbObs)
     stSeq[nbObs] <- which.max(xi[nbObs,])
     for(i in (nbObs-1):1)
-      stSeq[i] <- which.max(tm[,stSeq[i+1],i+1]*xi[i,])
+      stSeq[i] <- which.max(tm[,stSeq[i+1],i]*xi[i,])
 
     allStates <- c(allStates,stSeq)
   }

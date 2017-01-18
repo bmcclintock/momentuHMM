@@ -43,7 +43,7 @@ logAlpha <- function(m)
   lalpha[1,] <- log(foo)+lscale
 
   for(i in 2:nbObs) {
-    gamma <- trMat[,,i]
+    gamma <- trMat[,,i-1]
     foo <- foo%*%gamma*allProbs[i,]
     lscale <- lscale+log(sum(foo))
     foo <- foo/sum(foo)
