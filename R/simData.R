@@ -400,39 +400,47 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       genArgs[[i]] <- list(1)  # first argument = 1 (one random draw)
     }
     
-    if(!nbSpatialCovs) DMcov <- model.matrix(formula,subCovs)
+    if(!nbSpatialCovs) {
+      DMcov <- model.matrix(formula,subCovs)
+      gFull <-  DMcov %*% beta
+      
+      # format parameters
+      DMinputs<-getDM(subCovs,inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons)
+      fullDM <- DMinputs$fullDM
+      DMind <- DMinputs$DMind
+      wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons)
+      fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbCovs,inputs$estAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,dist)
+    }
     
     for (k in 1:(nbObs-1)){
       
       # get next state
       gamma <- diag(nbStates)
-      #g <- beta[1,]
-      #if(nbCovs){
-      #  for(j in 1:nbCovs)
-      #    g <- g + beta[j+1,]*subCovs[k,j]
-      #}
       if(nbSpatialCovs){
         for(j in 1:nbSpatialCovs){
           getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[k,1],X[k,2]))
           if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
           subSpatialcovs[k,j]<-spatialCovs[[j]][getCell]
-          #g <- g + beta[j+1+nbCovs,]*subSpatialcovs[k,j]
         }
         g <- model.matrix(formula,cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])) %*% beta
+        
+        # format parameters
+        DMinputs<-getDM(cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE]),inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons)
+        fullDM <- DMinputs$fullDM
+        DMind <- DMinputs$DMind
+        wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons)
+        subPar <- w2n(wpar,bounds,parSize,nbStates,nbCovs,inputs$estAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist)
+        
       } else {
-        g <- DMcov[k,,drop=FALSE] %*% beta
+        g <- gFull[k,,drop=FALSE]
+        subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
       }
       gamma[!gamma] <- exp(g)
       gamma <- t(gamma)
       gamma <- gamma/apply(gamma,1,sum)
       Z[k+1] <- sample(1:nbStates,size=1,prob=gamma[Z[k],])  
       
-      # format parameters
-      DMinputs<-getDM(cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE]),inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons)
-      fullDM <- DMinputs$fullDM
-      DMind <- DMinputs$DMind
-      wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons)
-      subPar <- w2n(wpar,bounds,parSize,nbStates,nbCovs,inputs$estAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist)
+      #subPar <- w2n(wpar,bounds,parSize,nbStates,nbCovs,inputs$estAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist)
           
       for(i in distnames){
         
