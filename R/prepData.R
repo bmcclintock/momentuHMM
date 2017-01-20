@@ -15,7 +15,7 @@
 #' @param spatialCovs List of raster layer(s) for any spatial covariates not included in \code{Data}. Covariates specified by 'spatialCovs' are
 #' extracted based on location data for each time step.
 
-#' @return An object \code{moveData}
+#' @return An object \code{momentuHMMData}
 #'
 #' @examples
 #' coord1 <- c(1,2,3,4,5,6,7,8,9,10)
@@ -142,5 +142,5 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spat
     }
   }
   if(!is.null(covs)) data <- cbind(data,covs)
-  return(moveData(data))
+  return(momentuHMMData(data))
 }

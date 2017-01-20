@@ -7,7 +7,7 @@
 allProbs(data, nbStates, dist, par, zeroInflation)
 }
 \arguments{
-\item{data}{Object \code{moveData}.}
+\item{data}{Object \code{momentuHMMData}.}
 
 \item{nbStates}{Number of states of the HMM.}
 

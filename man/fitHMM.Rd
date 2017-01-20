@@ -10,7 +10,7 @@ fitHMM(data, nbStates, dist, Par, beta0 = NULL, delta0 = NULL,
   userBounds = NULL, workcons = NULL, stateNames = NULL)
 }
 \arguments{
-\item{data}{An object \code{moveData}.}
+\item{data}{An object \code{momentuHMMData}.}
 
 \item{nbStates}{Number of states of the HMM.}
 

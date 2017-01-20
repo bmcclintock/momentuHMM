@@ -2,8 +2,8 @@
 
 S3method(AIC,momentuHMM)
 S3method(plot,momentuHMM)
+S3method(plot,momentuHMMData)
 S3method(plot,momentuHMMMI)
-S3method(plot,moveData)
 S3method(print,momentuHMM)
 S3method(print,momentuHMMMI)
 export(CI_beta)

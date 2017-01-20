@@ -1,8 +1,9 @@
 
-#' Plot \code{moveData}
-#' @method plot moveData
+#' Plot \code{momentuHMMData}
+#' @method plot momentuHMMData
 #'
-#' @param x An object \code{moveData}
+#' @param x An object \code{momentuHMMData}
+#' @param dataNames Names of the variables to plot. Default is \code{dataNames=c("step","angle")}.
 #' @param animals Vector of indices or IDs of animals for which information will be plotted.
 #' Default: \code{NULL} ; all animals are plotted.
 #' @param compact \code{TRUE} for a compact plot (all individuals at once), \code{FALSE} otherwise
@@ -12,7 +13,7 @@
 #' @param ... Currently unused. For compatibility with generic method.
 #'
 #' @examples
-#' # data is a moveData object (as returned by prepData), automatically loaded with the package
+#' # data is a momentuHMMData object (as returned by prepData), automatically loaded with the package
 #' data <- example$data
 #'
 #' plot(data,compact=TRUE,breaks=20,ask=FALSE)
@@ -21,12 +22,14 @@
 #' @importFrom grDevices rainbow
 #' @importFrom graphics abline axis hist mtext par plot points
 
-plot.moveData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,breaks="Sturges",...)
+plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compact=FALSE,ask=TRUE,breaks="Sturges",...)
 {
   data <- x
   # check arguments
-  if(length(data)<1) stop("The data input is empty.")
-  if(is.null(data$ID) | is.null(data$x) | is.null(data$step))
+  if(length(data)<1 | any(dim(data)<1))
+    stop("The data input is empty.")
+  
+  if(is.null(data$ID) |  ncol(data)<1)
     stop("Missing field(s) in data.")
 
   nbAnimals <- length(unique(data$ID))
@@ -58,26 +61,10 @@ plot.moveData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,breaks="Sturges"
   # graphical parameters
   par(mar=c(5,4,4,2)-c(0,0,2,1)) # bottom, left, top, right
   par(ask=ask)
-
-  if(is.null(data$angle) | length(which(!is.na(data$angle)))==0) # only step length is provided
-  {
-    ##########################################
-    ## Plot steps time series and histogram ##
-    ##########################################
-    par(mfrow=c(1,2))
-    for(zoo in animalsInd) {
-      ID <- unique(data$ID)[zoo]
-      step <- data$step[which(data$ID==ID)]
-      # step length time series
-      plot(step,type="l",xlab="t",ylab="step length",
-           ylim=c(0,max(step,na.rm=T)))
-      # step length histogram
-      hist(step,xlab="step length",main="",col="grey",border="white",breaks=breaks)
-      mtext(paste("Animal ID:",ID),side=3,outer=TRUE,padj=2)
-    }
-  }
-  else # step length and turning angle are provided
-  {
+  
+  if(!all(dataNames %in% names(data))) stop('dataNames not found in data')
+  
+  if(all(c("step","angle") %in% dataNames)){
     if(compact) {
       ################################
       ## Map of all animals' tracks ##
@@ -121,7 +108,7 @@ plot.moveData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,breaks="Sturges"
         points(x,y,type="o",pch=20,lwd=1.3,col=colors[zoo],cex=0.5)
       }
     }
-
+  
     for(zoo in animalsInd) {
       ID <- unique(data$ID)[zoo]
       x <- data$x[which(data$ID==ID)]
@@ -179,6 +166,25 @@ plot.moveData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,breaks="Sturges"
       axis(1, at = c(-pi, -pi/2, 0, pi/2, pi),
            labels = expression(-pi, -pi/2, 0, pi/2, pi))
 
+      mtext(paste("Animal ID:",ID),side=3,outer=TRUE,padj=2)
+    }
+    dataNames<-dataNames[-which(dataNames %in% c("step","angle"))]
+  }
+  
+  for(i in dataNames){
+    
+    ##########################################
+    ## Plot time series and histogram ##
+    ##########################################
+    par(mfrow=c(1,2))
+    for(zoo in animalsInd) {
+      ID <- unique(data$ID)[zoo]
+      genData <- data[[i]][which(data$ID==ID)]
+      # step length time series
+      plot(genData,type="l",xlab="t",ylab=i,
+           ylim=c(0,max(genData,na.rm=T)))
+      # step length histogram
+      hist(genData,xlab=i,main="",col="grey",border="white",breaks=breaks)
       mtext(paste("Animal ID:",ID),side=3,outer=TRUE,padj=2)
     }
   }

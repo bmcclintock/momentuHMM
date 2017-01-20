@@ -19,7 +19,7 @@ contains the lower and upper bound for the correponding parameter.}
 \item{parSize}{Vector of two values: number of parameters of the step length distribution,
 number of parameters of the turning angle distribution.}
 
-\item{data}{An object \code{moveData}.}
+\item{data}{An object \code{momentuHMMData}.}
 
 \item{zeroInflation}{\code{TRUE} if the step length distribution is inflated in zero.
 Default: \code{FALSE}. If \code{TRUE}, initial values for the zero-mass parameters should be
@@ -46,7 +46,7 @@ Negative log-likelihood function
 }
 \examples{
 \dontrun{
-# data is a moveData object (as returned by prepData), automatically loaded with the package
+# data is a momentuHMMData object (as returned by prepData), automatically loaded with the package
 data <- example$data
 simPar <- example$simPar
 par0 <- example$par0

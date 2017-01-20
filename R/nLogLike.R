@@ -7,7 +7,7 @@
 #' contains the lower and upper bound for the correponding parameter.
 #' @param parSize Vector of two values: number of parameters of the step length distribution,
 #' number of parameters of the turning angle distribution.
-#' @param data An object \code{moveData}.
+#' @param data An object \code{momentuHMMData}.
 #' @param stepDist Name of the distribution of the step lengths (as a character string).
 #' Supported distributions are: gamma, weibull, lnorm, exp. Default: gamma.
 #' @param angleDist Name of the distribution of the turning angles (as a character string).
@@ -25,7 +25,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' # data is a moveData object (as returned by prepData), automatically loaded with the package
+#' # data is a momentuHMMData object (as returned by prepData), automatically loaded with the package
 #' data <- example$data
 #' simPar <- example$simPar
 #' par0 <- example$par0

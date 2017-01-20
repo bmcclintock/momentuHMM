@@ -3,7 +3,7 @@
 #'
 #' Used in functions \code{\link{viterbi}}, \code{\link{logAlpha}}, \code{\link{logBeta}}.
 #'
-#' @param data Object \code{moveData}.
+#' @param data Object \code{momentuHMMData}.
 #' @param nbStates Number of states of the HMM.
 #' @param stepDist Name of the distribution of the step lengths.
 #' @param angleDist Name of the distribution of the turning angles.

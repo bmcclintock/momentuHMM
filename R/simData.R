@@ -32,7 +32,7 @@
 #' and states.
 #' @param states \code{TRUE} if the simulated states should be returned, \code{FALSE} otherwise (default).
 #'
-#' @return An object moveData, i.e. a dataframe of:
+#' @return An object momentuHMMData, i.e. a dataframe of:
 #' \item{ID}{The ID(s) of the observed animal(s)}
 #' \item{step}{The step lengths}
 #' \item{angle}{The turning angles (if any)}
@@ -217,6 +217,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
 
   spatialcovnames<-NULL
   if(!is.null(spatialCovs)){
+    if(!all(c("step","angle") %in% distnames)) stop("spatialCovs can only be included when 'step' and 'angle' distributions are specified") 
+    else if(!(dist[["angle"]] %in% angledists) | !(dist[["step"]] %in% stepdists)) stop("spatialCovs can only be included when valid 'step' and 'angle' distributions are specified") 
     nbSpatialCovs<-length(names(spatialCovs))
     for(j in 1:nbSpatialCovs){
       if(class(spatialCovs[[j]])!="RasterLayer") stop("spatialCovs must be of class 'RasterLayer'")
@@ -454,33 +456,38 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
 
         for(j in 1:(parSize[[i]]-zeroInflation[[i]]))
           genArgs[[i]][[j+1]] <- subPar[[i]][(j-1)*nbStates+Z[k]]
-
-        if(dist[[i]]=="gamma") {
-          shape <- genArgs[[i]][[2]]^2/genArgs[[i]][[3]]^2
-          scale <- genArgs[[i]][[3]]^2/genArgs[[i]][[2]]
-          genArgs[[i]][[2]] <- shape
-          genArgs[[i]][[3]] <- 1/scale # rgamma expects rate=1/scale
-        }
-  
-        if(runif(1)>zeroMass[[i]][Z[k]])
+        
+        if(dist[[i]] %in% angledists){
+          
           genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
-        else
-          genData[[i]][k] <- 0
-  
-        if(i=="angle" & dist[[i]] %in% angledists & ("step" %in% distnames))
-          if(dist[["step"]] %in% stepdists) {
-            if(genData$step[k]>0){
-              genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
-              if(genData[[i]][k] >  pi) genData[[i]][k] <- genData[[i]][k]-2*pi
-              if(genData[[i]][k] < -pi) genData[[i]][k] <- genData[[i]][k]+2*pi
-              phi <- phi + genData[[i]][k]
-            } else if(genData$step[k]==0) {
-              genData[[i]][k] <- NA # angle = NA if step = 0
+          if(genData[[i]][k] >  pi) genData[[i]][k] <- genData[[i]][k]-2*pi
+          if(genData[[i]][k] < -pi) genData[[i]][k] <- genData[[i]][k]+2*pi
+
+          if(i=="angle" & ("step" %in% distnames)){
+            if(dist[["step"]] %in% stepdists) {
+              if(genData$step[k]>0){
+                phi <- phi + genData[[i]][k]
+              } else if(genData$step[k]==0) {
+                genData[[i]][k] <- NA # angle = NA if step = 0
+              }
+              m <- genData$step[k]*c(Re(exp(1i*phi)),Im(exp(1i*phi)))
+              X[k+1,] <- X[k,] + m
             }
-            m <- genData$step[k]*c(Re(exp(1i*phi)),Im(exp(1i*phi)))
-            X[k+1,] <- X[k,] + m
           }
-        #if(i=="step") step <- genData[[i]]
+        } else {
+          
+          if(dist[[i]]=="gamma") {
+            shape <- genArgs[[i]][[2]]^2/genArgs[[i]][[3]]^2
+            scale <- genArgs[[i]][[3]]^2/genArgs[[i]][[2]]
+            genArgs[[i]][[2]] <- shape
+            genArgs[[i]][[3]] <- 1/scale # rgamma expects rate=1/scale
+          }
+    
+          if(runif(1)>zeroMass[[i]][Z[k]])
+            genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
+          else
+            genData[[i]][k] <- 0
+        }
         d[[i]] <- genData[[i]]
       }
     }
@@ -515,5 +522,5 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   # include states sequence in the data
   if(states)
     data <- cbind(data,states=allStates)
-  return(moveData(data))
+  return(momentuHMMData(data))
 }

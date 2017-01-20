@@ -27,7 +27,7 @@ are treated as data streams.}
 extracted based on location data for each time step.}
 }
 \value{
-An object \code{moveData}
+An object \code{momentuHMMData}
 }
 \description{
 Preprocessing of the data streams, including calculation of step length, turning angle, and covariates from location data

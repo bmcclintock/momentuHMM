@@ -53,7 +53,7 @@ not be estimated. Default: vm.}
 \item{anglePar}{Parameters of the turning angle distribution.}
 }
 \value{
-An object moveData, i.e. a dataframe of:
+An object momentuHMMData, i.e. a dataframe of:
 \item{ID}{The ID(s) of the observed animal(s)}
 \item{step}{The step lengths}
 \item{angle}{The turning angles (if any)}

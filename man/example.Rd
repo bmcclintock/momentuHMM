@@ -14,7 +14,7 @@ other functions to keep them as short as possible.
 \details{
 It is a list of the following objects:
 \itemize{
-\item \code{data} A \code{\link{moveData}} object
+\item \code{data} A \code{\link{momentuHMMData}} object
 \item \code{m} A \code{\link{momentuHMM}} object
 \item \code{simPar} The parameters used to simulate \code{data}
 \item \code{par0} The initial parameters in the optimization to fit \code{m}

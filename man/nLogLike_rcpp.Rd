@@ -12,7 +12,7 @@ nLogLike_rcpp(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation,
 
 \item{covs}{Covariates}
 
-\item{data}{A \code{\link{moveData}} object of the observations}
+\item{data}{A \code{\link{momentuHMMData}} object of the observations}
 
 \item{aInd}{Vector of indices of the rows at which the data switches to another animal}
 

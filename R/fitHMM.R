@@ -4,7 +4,7 @@
 #' Fit an hidden Markov model to the data provided, using numerical optimization of the log-likelihood
 #' function.
 #'
-#' @param data An object \code{moveData}.
+#' @param data An object \code{momentuHMMData}.
 #' @param nbStates Number of states of the HMM.
 #' @param stepPar Vector of initial state-dependent step length distribution parameters.
 #' The parameters should be in the order expected by the pdf of \code{stepDist}, and the zero-mass
@@ -144,9 +144,9 @@ fitHMM <- function(data,nbStates,dist,
   ## Check arguments ##
   #####################
   
-  # check that the data is a moveData object
-  if(!is.moveData(data))
-    stop("'data' must be a moveData object (as output by prepData or simData)")
+  # check that the data is a momentuHMMData object
+  if(!is.momentuHMMData(data))
+    stop("'data' must be a momentuHMMData object (as output by prepData or simData)")
   
   if(length(data)<1 | any(dim(data)<1))
     stop("The data input is empty.")
@@ -321,7 +321,7 @@ fitHMM <- function(data,nbStates,dist,
   names(parindex) <- distnames
   for(i in distnames){
     if(dist[[i]] %in% angledists)
-      if(!estAngleMean[[i]]){
+      if(!inputs$estAngleMean[[i]]){
         p$parNames[[i]] <- c("mean",p$parNames[[i]])
       }
     if(DMind[[i]]){

@@ -7,7 +7,7 @@
 //' @param nbStates Number of states
 //' @param beta Matrix of regression coefficients for the transition probabilities
 //' @param covs Covariates
-//' @param data A \code{\link{moveData}} object of the observations
+//' @param data A \code{\link{momentuHMMData}} object of the observations
 //' @param stepDist The name of the step length distribution
 //' @param angleDist The name of the turning angle distribution
 //' @param stepPar State-dependent parameters of the step length distribution
