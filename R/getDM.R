@@ -1,4 +1,4 @@
-getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons){
+getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInflation){
   
   distnames<-names(dist)
   fullDM <- vector('list',length(dist))
@@ -60,7 +60,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons){
   
   for(i in distnames){
     if(nrow(simpDM[[i]])!=(parSize[[i]]*nbStates)){
-      error<- paste0("DM for ",i," must have ",(parSize[[i]]*nbStates)," rows")
+      error<- paste0("DM for ",i," should have ",(parSize[[i]]*nbStates)," rows")
       if(zeroInflation[[i]])
         stop(paste0(error,". Should zero inflation parameters be included?"))
       else stop(error)

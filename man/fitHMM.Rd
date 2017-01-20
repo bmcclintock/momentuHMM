@@ -7,7 +7,8 @@
 fitHMM(data, nbStates, dist, Par, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, formula = ~1, stationary = FALSE, verbose = 0,
   nlmPar = NULL, fit = TRUE, DM = NULL, cons = NULL,
-  userBounds = NULL, workcons = NULL, stateNames = NULL)
+  userBounds = NULL, workcons = NULL, stateNames = NULL,
+  knownStates = NULL)
 }
 \arguments{
 \item{data}{An object \code{momentuHMMData}.}
@@ -42,9 +43,14 @@ input. This option can be used to assess the initial parameters. Default: \code{
 
 \item{userBounds}{User specified bounds for all parameters in order '\code{rbind(stepBounds,angleBounds,omegaBounds,dryBounds,diveBounds,iceBounds,landBounds)}'}
 
-\item{workcons}{Lower bound for wrpcauchy turning angle concentration parameter (on logit scale)}
+\item{workcons}{Lower (if positive) or upper (if negative) bound for working parameters}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
+
+\item{knownStates}{Vector of values of the state process which are known prior to fitting the
+model (if any). Default: NULL (states are not known). This should be a vector with length the number
+of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
+the state is not known.}
 
 \item{stepPar}{Vector of initial state-dependent step length distribution parameters.
 The parameters should be in the order expected by the pdf of \code{stepDist}, and the zero-mass

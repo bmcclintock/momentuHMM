@@ -51,7 +51,11 @@
 #' @param landDM landPar design matrix
 #' @param cons Optional list specifying power to raise parameters corresponding to each column of the design matrix for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive by setting cons=2.  Default=NULL, which simply raises all parameters to the power of 1.
 #' @param stateNames Optional character vector of length nbStates indicating state names.
-#' @param workcons Lower bound for wrpcauchy turning angle concentration parameter (on logit scale)
+#' @param workcons Lower (if positive) or upper (if negative) bound for working parameters
+#' @param knownStates Vector of values of the state process which are known prior to fitting the
+#' model (if any). Default: NULL (states are not known). This should be a vector with length the number
+#' of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
+#' the state is not known.
 #'
 #' @return A \code{momentuHMM} object, i.e. a list of:
 #' \item{mle}{The maximum likelihood estimates of the parameters of the model (if the numerical algorithm
@@ -137,7 +141,7 @@ fitHMM <- function(data,nbStates,dist,
                    estAngleMean=NULL,
                    formula=~1,
                    stationary=FALSE,verbose=0,nlmPar=NULL,fit=TRUE,
-                   DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,stateNames=NULL)
+                   DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,stateNames=NULL,knownStates=NULL)
 {
   
   #####################
@@ -174,6 +178,15 @@ fitHMM <- function(data,nbStates,dist,
   # check that stationary==FALSE if there are covariates
   if(nbCovs>0 & stationary==TRUE)
     stop("stationary can't be set to TRUE if there are covariates.")
+  
+  if(length(knownStates) > 0){
+    if(length(knownStates) != nrow(data)) 
+      stop("'knownStates' should be of same length as the data, i.e. ",nrow(data))
+    if(!all(is.na(knownStates))) {
+      if(max(knownStates, na.rm = TRUE) > nbStates | min(knownStates, na.rm = TRUE) < 1 | !isTRUE(all.equal(knownStates,as.integer(knownStates)))) 
+        stop("'knownStates' should only contain integers between 1 and ", nbStates, " (or NAs)")
+    }
+  }
 
   if(length(covsCol)>0) {
     rawCovs <- data[covsCol]
@@ -218,12 +231,12 @@ fitHMM <- function(data,nbStates,dist,
     else zeroInflation[[i]]<-FALSE
   }
 
-  mHind <- (is.null(DM) & is.null(userBounds) & terms.formula(formula)==~1) # indicator for moveHMMwrap below
+  mHind <- (is.null(DM) & is.null(userBounds) & length(attr(terms.formula(formula),"term.labels"))==0) # indicator for moveHMMwrap below
   
   inputs <- checkInputs(nbStates,dist,Par,estAngleMean,zeroInflation,DM,userBounds,stateNames)
   p <- inputs$p
   
-  DMinputs<-getDM(data,inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons)
+  DMinputs<-getDM(data,inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation)
   fullDM <- DMinputs$fullDM
   DMind <- DMinputs$DMind
   
@@ -294,7 +307,7 @@ fitHMM <- function(data,nbStates,dist,
     # call to optimizer nlm
     withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,p$bounds,p$parSize,data,dist,covs,
                                    inputs$estAngleMean,zeroInflation,
-                                   stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,
+                                   stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,knownStates,
                                    print.level=verbose,gradtol=gradtol,
                                    stepmax=stepmax,steptol=steptol,
                                    iterlim=iterlim,hessian=TRUE),
@@ -378,13 +391,13 @@ fitHMM <- function(data,nbStates,dist,
   conditions <- list(dist=dist,zeroInflation=zeroInflation,
                      estAngleMean=inputs$estAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,bounds=p$bounds,DM=DM,fullDM=fullDM,workcons=DMinputs$workcons)
 
-  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames)
+  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   
   #CI_real<-CI_real(momentuHMM(mh))
   #CI_beta<-CI_beta(momentuHMM(mh))
   
   #mh <- list(data=data,mle=mle,CI_real=CI_real,CI_beta=CI_beta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames)
-  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames)
+  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   
   return(momentuHMM(mh))
 }

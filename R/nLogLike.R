@@ -47,7 +47,7 @@
 
 nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,zeroInflation,
-                     stationary=FALSE,cons,fullDM,DMind,workcons)
+                     stationary=FALSE,cons,fullDM,DMind,workcons,knownStates)
 {
   # check arguments
   distnames<-names(dist)
@@ -64,6 +64,9 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
   aInd <- NULL
   for(i in 1:nbAnimals)
     aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
+  
+  if(is.null(knownStates)) knownStates <- -1
+  else knownStates[which(is.na(knownStates))] <- 0
 
   # NULL arguments don't suit C++
   if(any(unlist(lapply(dist,is.null)))){
@@ -80,7 +83,7 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
 
   nllk <- nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,
                         par,
-                        aInd,zeroInflation,stationary)
+                        aInd,zeroInflation,stationary,knownStates)
 
   return(nllk)
 }

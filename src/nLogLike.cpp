@@ -18,13 +18,17 @@
 //' \code{false} otherwise.
 //' @param stationary \code{false} if there are covariates. If \code{true}, the initial distribution is considered
 //' equal to the stationary distribution. Default: \code{false}.
-//'
+//' @param knownStates Vector of values of the state process which are known prior to fitting the
+//' model (if any). Default: NULL (states are not known). This should be a vector with length the number
+//' of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
+//' the state is not known.
+//' 
 //' @return Negative log-likelihood
 // [[Rcpp::export]]
 double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist,
                      List Par,
                      IntegerVector aInd, List zeroInflation,
-                     bool stationary=false)
+                     bool stationary, IntegerVector knownStates)
 {
   int nbObs = data.nrows();
 
@@ -188,6 +192,19 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
     
     // put the NAs back
     genData[genData==NAvalue] = NA_REAL;
+  }
+  
+  // deal with states known a priori
+  double prob = 0;
+  if(knownStates(0) != -1) {
+    // loop over rows
+    for(int i=0 ; i<allProbs.n_rows ; i++) {
+      if(knownStates(i)>0) {
+        prob = allProbs(i,knownStates(i)-1); // save non-zero probability
+        allProbs.row(i).zeros(); // set other probabilities to zero
+        allProbs(i,knownStates(i)-1) = prob;
+      }
+    }
   }
 
   //======================//

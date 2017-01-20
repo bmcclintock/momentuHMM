@@ -122,10 +122,14 @@ dpois_rcpp <- function(x, rate, foo) {
 #' \code{false} otherwise.
 #' @param stationary \code{false} if there are covariates. If \code{true}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{false}.
-#'
+#' @param knownStates Vector of values of the state process which are known prior to fitting the
+#' model (if any). Default: NULL (states are not known). This should be a vector with length the number
+#' of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
+#' the state is not known.
+#' 
 #' @return Negative log-likelihood
-nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, stationary = FALSE) {
-    .Call('momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, stationary)
+nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, stationary, knownStates) {
+    .Call('momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, stationary, knownStates)
 }
 
 #' Transition probability matrix
