@@ -10,8 +10,7 @@
 #' as covariates in \code{covNames}.
 #' @param type \code{'LL'} if longitude/latitude provided (default), \code{'UTM'} if easting/northing.
 #' @param coordNames Names of the columns of coordinates in the \code{Data} data frame. Default: \code{c("x","y")}.
-#' @param covNames Names of any covariates in \code{Data} dataframe.
-#' are treated as data streams.
+#' @param covNames Names of any covariates in \code{Data} dataframe. Any variables in \code{Data} (other than \code{ID}) that are not identified in \code{covNames} are treated as data streams.
 #' @param spatialCovs List of raster layer(s) for any spatial covariates not included in \code{Data}. Covariates specified by 'spatialCovs' are
 #' extracted based on location data for each time step.
 
@@ -25,6 +24,7 @@
 #'
 #' @export
 #' @importFrom sp spDistsN1
+#' @importFrom raster cellFromXY getValues
 
 prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spatialCovs=NULL)
 {
@@ -48,9 +48,12 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spat
   
   if(!is.null(spatialCovs)){
     nbSpatialCovs<-length(names(spatialCovs))
-    for(j in 1:nbSpatialCovs)
+    for(j in 1:nbSpatialCovs){
       if(class(spatialCovs[[j]])!="RasterLayer") stop("spatialCovs must be of class 'RasterLayer'")
+      if(any(is.na(raster::getValues(spatialCovs[[j]])))) stop("missing values are not permitted in spatialCovs")
+    }
     spatialcovnames<-names(spatialCovs)
+    if(any(spatialcovnames %in% names(Data))) stop("spatialCovs cannot have same names as data")
   } else nbSpatialCovs <- 0
   
   # check arguments
@@ -82,8 +85,10 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spat
       genData <- rep(NA,nbObs)
       i1 <- which(ID==unique(ID)[zoo])[1]
       i2 <- i1+nbObs-1
-      for(i in (i1+1):(i2-1)) {
-        if(!is.null(coordNames)){
+      if(!(j %in% c("step","angle"))){
+        genData <- Data[[j]][i1:i2]
+      } else if(!is.null(coordNames)){
+        for(i in (i1+1):(i2-1)) {
           if(j=="step" & !is.na(x[i-1]) & !is.na(x[i]) & !is.na(y[i-1]) & !is.na(y[i])) {
             # step length
             genData[i-i1] <- spDistsN1(pts = matrix(c(x[i-1],y[i-1]),ncol=2),
@@ -94,11 +99,12 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spat
             genData[i-i1+1] <- turnAngle(c(x[i-1],y[i-1]),
                                          c(x[i],y[i]),
                                          c(x[i+1],y[i+1]))
-          } else genData[i-i1] <- Data[[j]][i]
-        } else genData[i-i1] <- Data[[j]][i]
-      }
-      if(j=="step" & !is.null(coordNames)) genData[i2-i1] <- spDistsN1(pts = matrix(c(x[i2-1],y[i2-1]),ncol=2),pt = c(x[i2],y[i2]),longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
-      else if(j!="angle" & !is.null(coordNames)) genData[i2-i1] <- Data[[j]][i2]
+          } else genData[i-i1] <- Data[[j]][i-1]
+        }
+        if(j=="step" & !is.null(coordNames)) {
+          genData[i2-i1] <- spDistsN1(pts = matrix(c(x[i2-1],y[i2-1]),ncol=2),pt = c(x[i2],y[i2]),longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
+        } 
+      } 
       d[[j]] <- genData
     }
     data <- rbind(data,d)
@@ -135,8 +141,12 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spat
       spCovs<-numeric()
       xy<-data
       sp::coordinates(xy)<-c("x","y")
-      for(j in 1:nbSpatialCovs)
-        spCovs<-cbind(spCovs,spatialCovs[[j]][raster::cellFromXY(spatialCovs[[j]],xy)])
+      for(j in 1:nbSpatialCovs){
+        #spCovs<-cbind(spCovs,spatialCovs[[j]][raster::cellFromXY(spatialCovs[[j]],xy)])
+        getCells<-raster::cellFromXY(spatialCovs[[j]],xy)
+        if(any(is.na(getCells))) stop("Location data are beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+        spCovs<-cbind(spCovs,spatialCovs[[j]][getCells])
+      }
       colnames(spCovs)<-spatialcovnames
       data<-cbind(data,spCovs)
     }

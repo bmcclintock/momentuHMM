@@ -20,8 +20,7 @@ as covariates in \code{covNames}.}
 
 \item{coordNames}{Names of the columns of coordinates in the \code{Data} data frame. Default: \code{c("x","y")}.}
 
-\item{covNames}{Names of any covariates in \code{Data} dataframe.
-are treated as data streams.}
+\item{covNames}{Names of any covariates in \code{Data} dataframe. Any variables in \code{Data} (other than \code{ID}) that are not identified in \code{covNames} are treated as data streams.}
 
 \item{spatialCovs}{List of raster layer(s) for any spatial covariates not included in \code{Data}. Covariates specified by 'spatialCovs' are
 extracted based on location data for each time step.}
