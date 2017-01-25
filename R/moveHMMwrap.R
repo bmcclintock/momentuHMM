@@ -1,5 +1,6 @@
 #' @importFrom moveHMM fitHMM
 moveHMMwrap<-function(data,nbStates,dist,Par,beta0,delta0,estAngleMean,formula,stationary,verbose,nlmPar,fit){
+  data <- momentuHMM:::moveData(data)
   distnames<-names(dist)
   if(any(distnames %in% "angle")){
     

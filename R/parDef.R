@@ -109,6 +109,7 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,userBounds=NULL)
         userBounds[[i]]<-bounds[[i]]
       else {
         if(all(dim(bounds[[i]])!=dim(userBounds[[i]]))) stop("userBounds for ",i," must be of dimension ",dim(bounds[[i]])[1],"x",dim(bounds[[i]])[2])
+        if(dist[[i]]=="wrpcauchy") bounds[[i]][nrow(bounds[[i]])-(nbStates-1):0,1] <- -1
         if(any(userBounds[[i]][,1]<bounds[[i]][,1]) | any(userBounds[[i]][,2]>bounds[[i]][,2])) stop("userBounds for ",i," must be within the parameter space")
         if(any(userBounds[[i]][,1]>userBounds[[i]][,2])) stop("check userBounds for ",i)
       }

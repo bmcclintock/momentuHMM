@@ -99,6 +99,7 @@
 #' @importFrom stats rnorm runif step
 #' @importFrom raster cellFromXY getValues
 #' @importFrom moveHMM simData
+#' @importFrom CircStats rvm
 
 simData <- function(nbAnimals=1,nbStates=2,dist,
                     Par,beta=NULL,
@@ -140,10 +141,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     delta <- model$mle$delta
     Par<-lapply(Par,function(x) c(t(x)))
     
-    #inputs <- checkInputs(nbStates,dist,Par,estAngleMean,zeroInflation,DM,NULL,stateNames)
-    #userBounds <- inputs$p$bounds
-    
-    #wpar <- n2w(Par,userBounds,beta,delta,nbStates,estAngleMean,DM,cons,workcons)
+    if(states) model$data$states <- NULL
 
     if(is.null(covs)) {
       if(!is.null(spatialCovs)) spatialcovnames <- names(spatialCovs)
@@ -152,11 +150,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       #covs <- model.matrix(model$conditions$formula,model$data)
 
       if(length(covsCol)) {
-        covs <- model$data[,covsCol,drop=FALSE]#model.matrix(model$conditions$formula,model$data)
-        # remove intercept column, which is not expected in 'covs'
-        #names <- colnames(covs)
-        #covs <- data.frame(covs[,-1,drop=FALSE])
-        #colnames(covs) <- names[-1]
+        covs <- model$data[,covsCol,drop=FALSE]
       }
     }
     # else, allow user to enter new values for covariates
@@ -173,7 +167,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(all(names(dist) %in% c("step","angle")) & mHind){
       zi <- FALSE
       if(!is.null(zeroInflation$step)) zi <- zeroInflation$step
-      return(moveHMM::simData(nbAnimals, nbStates, dist$step, dist$angle, Par$step, Par$angle, beta, covs, nbCovs, zi, obsPerAnimal, model, states))
+      data <- moveHMM::simData(nbAnimals, nbStates, dist$step, dist$angle, Par$step, Par$angle, beta, covs, nbCovs, zi, obsPerAnimal, model, states)
+      attr(data,"class") <- "data.frame"
+      return(momentuHMMData(data))
     }
   }
   
@@ -308,6 +304,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
   }
   
+  if(anyDuplicated(colnames(allCovs))) stop("covariates must have unique names")
+  if(anyDuplicated(spatialcovnames)) stop("spatialCovs must have unique names")
+  if(any(colnames(allCovs) %in% spatialcovnames)) stop("spatialCovs name(s) cannot match other covariate name(s)")
+  
   allNbCovs <- nbCovs+nbSpatialCovs
   if(is.null(formula)) {
     if(allNbCovs) formula <- formula(paste0("~",paste0(c(colnames(allCovs),spatialcovnames),collapse="+")))
@@ -411,7 +411,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       fullDM <- DMinputs$fullDM
       DMind <- DMinputs$DMind
       wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons)
-      fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbCovs,inputs$estAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,dist)
+      fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(formula),"term.labels")),inputs$estAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,dist)
     }
     
     for (k in 1:(nbObs-1)){
@@ -431,7 +431,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
         wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons)
-        subPar <- w2n(wpar,bounds,parSize,nbStates,nbCovs,inputs$estAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist)
+        subPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(formula),"term.labels")),inputs$estAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist)
         
       } else {
         g <- gFull[k,,drop=FALSE]

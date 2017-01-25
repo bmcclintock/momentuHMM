@@ -10,7 +10,6 @@ Description: Extended tools for analyzing telemetry data using hidden Markov mod
 License: GPL-3
 LazyData: TRUE
 Depends:
-    CircStats,
     boot,
     MASS,
     sp
