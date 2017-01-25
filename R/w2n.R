@@ -40,7 +40,7 @@
 #'
 #' @importFrom boot inv.logit
 
-w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,fullDM,DMind,workcons,nbObs,dist)
+w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind)
 {
 
   # identify initial distribution parameters
@@ -70,7 +70,20 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons
   parlist<-NULL
   
   for(i in distnames){
-    parlist[[i]]<-w2nDM(wpar[parindex[[i]]+1:ncol(fullDM[[i]])],bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],workcons[[i]],nbObs,parSize[[i]])$p
+    tmpwpar<-wpar[parindex[[i]]+1:ncol(fullDM[[i]])]
+    if(estAngleMean[[i]] & Bndind[[i]]){ 
+      bounds[[i]][,1] <- -Inf
+      bounds[[i]][which(bounds[[i]][,2]!=1),2] <- Inf
+
+      foo <- length(tmpwpar) - nbStates + 1
+      x <- tmpwpar[(foo - nbStates):(foo - 1)]
+      y <- tmpwpar[foo:length(tmpwpar)]
+      angleMean <- Arg(x + (0+1i) * y)
+      kappa <- sqrt(x^2 + y^2)
+      tmpwpar[(foo - nbStates):(foo - 1)] <- angleMean
+      tmpwpar[foo:length(tmpwpar)] <- kappa
+    }
+    parlist[[i]]<-w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],workcons[[i]],nbObs,parSize[[i]])$p
 
     if((dist[[i]] %in% angledists) & !estAngleMean[[i]]){
       tmp<-matrix(0,nrow=(parSize[[i]]+1)*nbStates,ncol=nbObs)

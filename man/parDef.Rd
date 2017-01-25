@@ -4,7 +4,7 @@
 \alias{parDef}
 \title{Parameters definition}
 \usage{
-parDef(dist, nbStates, estAngleMean, zeroInflation, userBounds = NULL)
+parDef(dist, nbStates, estAngleMean, zeroInflation, DM, userBounds = NULL)
 }
 \arguments{
 \item{nbStates}{Number of states of the HMM.}

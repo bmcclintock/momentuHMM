@@ -36,16 +36,31 @@
 #'
 #' @importFrom boot logit
 
-n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcons)
+n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcons,Bndind)
 {
   wpar <- NULL
   for(i in names(par)){
+    p <- par[[i]]
     if(is.null(DM[[i]])){
       if(length(which(par[[i]]<=bounds[[i]][,1] | par[[i]]>=bounds[[i]][,2]))>0)
         stop(paste0("Check the parameter bounds for ",i," (the initial parameters should be ",
                       "strictly between the bounds of their parameter space)."))
-      p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],cons[[i]],workcons[[i]])
-    } else p <- par[[i]]
+      if(estAngleMean[[i]] & Bndind[[i]]){ 
+        bounds[[i]][,1] <- -Inf
+        bounds[[i]][which(bounds[[i]][,2]!=1),2] <- Inf
+        
+        p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],cons[[i]],workcons[[i]])
+        
+        foo <- length(p) - nbStates + 1
+        angleMean <- p[(foo - nbStates):(foo - 1)]
+        kappa <- p[foo:length(p)]
+        x <- kappa * cos(angleMean)
+        y <- kappa * sin(angleMean)
+        p[(foo - nbStates):(foo - 1)] <- x
+        p[foo:length(p)] <- y
+      }
+      else p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],cons[[i]],workcons[[i]])
+    }
     wpar <- c(wpar,p)
   }
 

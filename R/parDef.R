@@ -17,7 +17,7 @@
 #' \item{parNames}{Names of parameters of step distribution (the names of the parameters of the
 #' angle distribution are always the same).}
 
-parDef <- function(dist,nbStates,estAngleMean,zeroInflation,userBounds=NULL)
+parDef <- function(dist,nbStates,estAngleMean,zeroInflation,DM,userBounds=NULL)
 {
   distnames<-names(dist)
   parSize <- parNames <- bounds <- vector('list',length(dist))
@@ -103,20 +103,29 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,userBounds=NULL)
     bounds[[i]] <- tmpbounds
   }
   
+  Bndind <- vector('list',length(distnames))
+  names(Bndind) <- distnames
+  for(i in distnames){
+    Bndind[[i]] <- ifelse(is.null(DM[[i]]),TRUE,FALSE)
+  }
+  
   if(!is.null(userBounds)) {
-    for(i in names(dist)){
+    if(!is.list(userBounds) | is.null(names(userBounds))) stop("'userBounds' must be a named list")
+    if(!any(names(userBounds) %in% distnames)) stop("userBounds names must include at least one of: ",paste0(distnames,collapse=", "))
+    for(i in distnames){
       if(is.null(userBounds[[i]])) 
         userBounds[[i]]<-bounds[[i]]
       else {
         if(all(dim(bounds[[i]])!=dim(userBounds[[i]]))) stop("userBounds for ",i," must be of dimension ",dim(bounds[[i]])[1],"x",dim(bounds[[i]])[2])
+        rownames(userBounds[[i]])<-rownames(bounds[[i]])
+        Bndind[[i]] <- (isTRUE(all.equal(userBounds[[i]],bounds[[i]])) & Bndind[[i]])
         if(dist[[i]]=="wrpcauchy") bounds[[i]][nrow(bounds[[i]])-(nbStates-1):0,1] <- -1
         if(any(userBounds[[i]][,1]<bounds[[i]][,1]) | any(userBounds[[i]][,2]>bounds[[i]][,2])) stop("userBounds for ",i," must be within the parameter space")
         if(any(userBounds[[i]][,1]>userBounds[[i]][,2])) stop("check userBounds for ",i)
       }
-      rownames(userBounds[[i]])<-rownames(bounds[[i]])
     }
     bounds <- userBounds
   }
   #boundInd <- lapply(DM,getboundInd)
-  return(list(parSize=parSize[distnames],bounds=bounds[distnames],parNames=parNames[distnames]))#,boundInd=boundInd[distnames]))
+  return(list(parSize=parSize[distnames],bounds=bounds[distnames],parNames=parNames[distnames],Bndind=Bndind[distnames]))
 }

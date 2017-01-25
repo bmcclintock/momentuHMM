@@ -276,7 +276,7 @@ fitHMM <- function(data,nbStates,dist,
     delta0 <- NULL
 
   # build the vector of initial working parameters
-  wpar <- n2w(Par,p$bounds,beta0,delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons)
+  wpar <- n2w(Par,p$bounds,beta0,delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
   
   if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
   
@@ -307,18 +307,18 @@ fitHMM <- function(data,nbStates,dist,
     # call to optimizer nlm
     withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,p$bounds,p$parSize,data,dist,covs,
                                    inputs$estAngleMean,zeroInflation,
-                                   stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,knownStates,
+                                   stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,
                                    print.level=verbose,gradtol=gradtol,
                                    stepmax=stepmax,steptol=steptol,
                                    iterlim=iterlim,hessian=TRUE),
                         warning=h) # filter warnings using function h
 
     # convert the parameters back to their natural scale
-    mle <- w2n(mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist)
+    mle <- w2n(mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind)
   }
   else {
     mod <- NA
-    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist)
+    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind)
   }
 
   ####################
@@ -389,7 +389,7 @@ fitHMM <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,
-                     estAngleMean=inputs$estAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,bounds=p$bounds,DM=DM,fullDM=fullDM,workcons=DMinputs$workcons)
+                     estAngleMean=inputs$estAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,bounds=p$bounds,DM=DM,fullDM=fullDM,workcons=DMinputs$workcons)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   
