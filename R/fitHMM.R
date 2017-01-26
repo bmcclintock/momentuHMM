@@ -344,7 +344,7 @@ fitHMM <- function(data,nbStates,dist,
     } else {
       mle[[i]]<-mod$estimate[parindex[[i]]+1:ncol(fullDM[[i]])]
       names(mle[[i]])<-colnames(fullDM[[i]])
-      if(is.null(names(mle[[i]]))) warning("No names for the regression coeffs were provided in DM$",i)
+      #if(is.null(names(mle[[i]]))) warning("No names for the regression coeffs were provided in DM$",i)
     }
   }
 
@@ -394,10 +394,10 @@ fitHMM <- function(data,nbStates,dist,
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   
   #CI_real<-CI_real(momentuHMM(mh))
-  #CI_beta<-CI_beta(momentuHMM(mh))
+  CI_beta<-CI_beta(momentuHMM(mh))
   
   #mh <- list(data=data,mle=mle,CI_real=CI_real,CI_beta=CI_beta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames)
-  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
+  mh <- list(data=data,mle=mle,CI_beta=CI_beta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   
   return(momentuHMM(mh))
 }

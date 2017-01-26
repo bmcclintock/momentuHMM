@@ -4,15 +4,12 @@
 \alias{CI_beta}
 \title{Confidence intervals}
 \usage{
-CI_beta(m, alpha = 0.95, nbSims = 10^6)
+CI_beta(m, alpha = 0.95)
 }
 \arguments{
 \item{m}{A \code{momentuHMM} object}
 
 \item{alpha}{Range of the confidence intervals. Default: 0.95 (i.e. 95\% CIs).}
-
-\item{nbSims}{Number of simulations in the computation of the CIs for the angle parameters.
-Default: 10^6.}
 }
 \value{
 A list of the following objects:
@@ -27,8 +24,18 @@ A list of the following objects:
 }
 \description{
 Computes the standard errors and confidence intervals on the beta (i.e., working) scale of the step length and turning angle parameters,
-as well as for the transition probabilities regression parameters. Working scale depends on the real (i.e., natural) scale of the parameters:
+as well as for the transition probabilities regression parameters. Working scale depends on the real (i.e., natural) scale of the parameters. For 
+non-circular distributions or for circular distributions with \code{estAngleMean}=FALSE:
+}
+\details{
 1) if both lower and upper bounds are finite then logit is the working scale;
+2) if lower bound is finite and upper bound is infinite then log is the working scale.
+
+For circular distributions with \code{estAngleMean}=TRUE and no constraints imposed by a design matrix (DM) or bounds (userBounds), then the working parameters 
+are complex functions of both the angle mean and concentrations/sd natural parameters (in this case, it's probably best just to focus on the real parameter
+estimates).  However, if constraints are imposed by DM or userBounds on circular distribution parameters with \code{estAngleMean}=TRUE:
+
+1) if the natural bounds are (-pi,pi] then tangent is the working scale, otherwise if both lower and upper bounds are finite then logit is the working scale;
 2) if lower bound is finite and upper bound is infinite then log is the working scale.
 }
 \examples{

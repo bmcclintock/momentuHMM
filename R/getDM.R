@@ -36,6 +36,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       if(is.null(dim(DM[[i]]))) stop("DM for ",i," is not specified correctly")
       tmpDM<-array(DM[[i]],dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs))
       DMnames<-colnames(DM[[i]])
+      if(is.null(DMnames)) DMnames<-paste0(i,"Beta",1:ncol(DM[[i]]))
       DMterms<-unique(DM[[i]][suppressWarnings(which(is.na(as.numeric(DM[[i]]))))])
       for(cov in DMterms){
         covs<-model.matrix(formula(paste("~",cov)),data)[,2]

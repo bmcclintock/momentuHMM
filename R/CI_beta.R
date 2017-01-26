@@ -2,14 +2,21 @@
 #' Confidence intervals
 #'
 #' Computes the standard errors and confidence intervals on the beta (i.e., working) scale of the step length and turning angle parameters,
-#' as well as for the transition probabilities regression parameters. Working scale depends on the real (i.e., natural) scale of the parameters:
+#' as well as for the transition probabilities regression parameters. Working scale depends on the real (i.e., natural) scale of the parameters. For 
+#' non-circular distributions or for circular distributions with \code{estAngleMean}=FALSE:
+#' 
 #' 1) if both lower and upper bounds are finite then logit is the working scale;
 #' 2) if lower bound is finite and upper bound is infinite then log is the working scale.
 #'
+#' For circular distributions with \code{estAngleMean}=TRUE and no constraints imposed by a design matrix (DM) or bounds (userBounds), then the working parameters 
+#' are complex functions of both the angle mean and concentrations/sd natural parameters (in this case, it's probably best just to focus on the real parameter
+#' estimates!).  However, if constraints are imposed by DM or userBounds on circular distribution parameters with \code{estAngleMean}=TRUE:
+#' 
+#' 1) if the natural bounds are (-pi,pi] then tangent is the working scale, otherwise if both lower and upper bounds are finite then logit is the working scale;
+#' 2) if lower bound is finite and upper bound is infinite then log is the working scale.
+#' 
 #' @param m A \code{momentuHMM} object
 #' @param alpha Range of the confidence intervals. Default: 0.95 (i.e. 95\% CIs).
-#' @param nbSims Number of simulations in the computation of the CIs for the angle parameters.
-#' Default: 10^6.
 #'
 #' @return A list of the following objects:
 #' \item{stepPar}{Standard errors and confidence intervals for the working parameters of the step lengths distribution ('gammabeta' or 'weibullbeta' depending on stepDist)}
@@ -31,7 +38,7 @@
 #' @importFrom MASS ginv
 #' @importFrom utils tail
 
-CI_beta <- function(m,alpha=0.95,nbSims=10^6)
+CI_beta <- function(m,alpha=0.95)
 {
   if(!is.momentuHMM(m))
     stop("'m' must be a momentuHMM object (as output by fitHMM)")
@@ -46,7 +53,7 @@ CI_beta <- function(m,alpha=0.95,nbSims=10^6)
   
   dist <- m$conditions$dist
   distnames <- names(dist)
-  DM <- m$conditions$DM
+  fullDM <- m$conditions$fullDM
 
   # identify covariates
   covs <- model.matrix(m$conditions$formula,m$data)
@@ -56,7 +63,7 @@ CI_beta <- function(m,alpha=0.95,nbSims=10^6)
   # inverse of Hessian
   Sigma <- ginv(m$mod$hessian)
 
-  p <- parDef(dist,nbStates,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$bounds,DM)
+  p <- parDef(dist,nbStates,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$DM,m$conditions$userBounds)
   bounds <- p$bounds
   #if(!all(unlist(lapply(p$bounds,is.numeric)))){
   #  for(i in distnames){
@@ -66,7 +73,7 @@ CI_beta <- function(m,alpha=0.95,nbSims=10^6)
   #  }
   #}
   
-  parindex <- c(0,cumsum(unlist(lapply(DM,ncol)))[-length(DM)])
+  parindex <- c(0,cumsum(unlist(lapply(fullDM,ncol)))[-length(fullDM)])
   names(parindex) <- distnames
   
   # define appropriate quantile
@@ -76,8 +83,8 @@ CI_beta <- function(m,alpha=0.95,nbSims=10^6)
   
   Par <- list()
   for(i in distnames){
-    est <- wpar[parindex[[i]]+1:ncol(DM[[i]])]^m$conditions$cons[[i]]
-    var <- diag(Sigma)[parindex[[i]]+1:ncol(DM[[i]])]
+    est <- wpar[parindex[[i]]+1:ncol(fullDM[[i]])]^m$conditions$cons[[i]]+m$conditions$workcons[[i]]
+    var <- diag(Sigma)[parindex[[i]]+1:ncol(fullDM[[i]])]
     
     # if negative variance, replace by NA
     var[which(var<0)] <- NA
@@ -87,28 +94,43 @@ CI_beta <- function(m,alpha=0.95,nbSims=10^6)
     wlower <- est-quantSup*wse
     wupper <- est+quantSup*wse
     
-    Par[[i]]<-parm_list(matrix(wse,ncol=length(est),byrow=T),matrix(wlower,ncol=length(est),byrow=T),matrix(wupper,ncol=length(est),byrow=T),t(bounds[[i]]))
+    Par[[i]]<-beta_parm_list(matrix(est,ncol=length(est),byrow=T),matrix(wse,ncol=length(est),byrow=T),matrix(wlower,ncol=length(est),byrow=T),matrix(wupper,ncol=length(est),byrow=T),m$conditions$fullDM[[i]])
 
   }
 
   # group CIs for t.p. coefficients
   if(nbStates>1){
-    est <- wpar[tail(cumsum(unlist(lapply(DM,ncol))),1)+1:((nbCovs+1)*nbStates*(nbStates-1))]
-    var <- diag(Sigma)[tail(cumsum(unlist(lapply(DM,ncol))),1)+1:((nbCovs+1)*nbStates*(nbStates-1))]
+    est <- wpar[tail(cumsum(unlist(lapply(fullDM,ncol))),1)+1:((nbCovs+1)*nbStates*(nbStates-1))]
+    var <- diag(Sigma)[tail(cumsum(unlist(lapply(fullDM,ncol))),1)+1:((nbCovs+1)*nbStates*(nbStates-1))]
     wse <- sqrt(var)
     wlower <- est-quantSup*wse
     wupper <- est+quantSup*wse
-    Par$beta <- list(se=matrix(wse,nrow=1+nbCovs),lower=matrix(wlower,nrow=1+nbCovs),upper=matrix(wupper,nrow=1+nbCovs))
+    Par$beta <- list(est=matrix(est,nrow=1+nbCovs),se=matrix(wse,nrow=1+nbCovs),lower=matrix(wlower,nrow=1+nbCovs),upper=matrix(wupper,nrow=1+nbCovs))
   }
 
   if(!is.null(m$mle$beta)) {
+    rownames(Par$beta$est) <- rownames(m$mle$beta)
     rownames(Par$beta$se) <- rownames(m$mle$beta)
     rownames(Par$beta$lower) <- rownames(m$mle$beta)
     rownames(Par$beta$upper) <- rownames(m$mle$beta)
+    colnames(Par$beta$est) <- colnames(m$mle$beta)
     colnames(Par$beta$se) <- colnames(m$mle$beta)
     colnames(Par$beta$lower) <- colnames(m$mle$beta)
     colnames(Par$beta$upper) <- colnames(m$mle$beta)
   }
 
   return(Par)
+}
+
+beta_parm_list<-function(est,se,lower,upper,m){
+  Par <- list(est=est,se=se,lower=lower,upper=upper)
+  rownames(Par$est) <- rownames(m)
+  rownames(Par$se) <- rownames(m)
+  rownames(Par$lower) <- rownames(m)
+  rownames(Par$upper) <- rownames(m)
+  colnames(Par$est) <- colnames(m)
+  colnames(Par$se) <- colnames(m)
+  colnames(Par$lower) <- colnames(m)
+  colnames(Par$upper) <- colnames(m)
+  Par
 }
