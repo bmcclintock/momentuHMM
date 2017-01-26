@@ -52,8 +52,11 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
   }
   tmp<-simpDM<-lapply(fullDM,function(x) apply(x,1:2,unique))
   for(i in distnames){
-    for(j in which(mapply(length,tmp[[i]])>1 & mapply(length,tmp[[i]])<nbObs)){
-      simpDM[[i]][[j]]<-fullDM[[i]][ceiling(j/ncol(tmp[[i]])),ceiling(j/nrow(tmp[[i]])),]
+    k <- which(matrix(mapply(length,tmp[[i]])>1 & mapply(length,tmp[[i]])<nbObs,nrow(tmp[[i]]),ncol(tmp[[i]])),arr.ind=TRUE)
+    if(length(k)){
+      for(j in 1:nrow(k)){
+        simpDM[[i]][[k[j,1],k[j,2]]]<-fullDM[[i]][k[j,1],k[j,2],]
+      }
     }
   }
   simpDM<-simpDM[distnames]
