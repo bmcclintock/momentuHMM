@@ -59,7 +59,9 @@ pseudoRes <- function(m)
   # identify covariates
   covs <- model.matrix(m$conditions$formula,data)
   nbCovs <- ncol(covs)-1 # substract intercept column
-
+  
+  par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind)
+  
   if(nbStates>1)
     trMat <- trMatrix_rcpp(nbStates,m$mle$beta,as.matrix(covs))
   else
@@ -69,23 +71,27 @@ pseudoRes <- function(m)
   for(j in distnames){
     genRes[[paste0(j,"Res")]] <- rep(NA,nbObs)
     pgenMat <- matrix(NA,nbObs,nbStates)
+    sp <- par[[j]]
+    genInd <- which(!is.na(data[[j]]))
   
     for(state in 1:nbStates) {
-      # define lists of parameters
-      genArgs <- list(data[[j]])
-      if(!m$conditions$zeroInflation[[j]]) {
-          for(k in 1:nrow(m$mle[[j]]))
-              genArgs[[k+1]] <- m$mle[[j]][k,state]
-  
-          zeromass <- 0
-      }
-      else {
-          for(k in 1:(nrow(m$mle[[j]])-1))
-              genArgs[[k+1]] <- m$mle[[j]][k,state]
-  
-          zeromass <- m$mle[[j]][nrow(m$mle[[j]]),state]
-      }
+      
+      genPar <- sp
+      
       if(!(dist[[j]] %in% angledists)){
+        
+        genArgs <- list(data[[j]][genInd])
+        
+        if(!m$conditions$zeroInflation[[j]]) {
+          zeromass <- 0
+        }
+        else {
+          zeromass <- genPar[nrow(genPar)-nbStates+state,genInd]
+          genPar <- genPar[-(nrow(genPar)-(nbStates-1):0),]
+        }
+        for(k in 1:(nrow(genPar)/nbStates))
+          genArgs[[k+1]] <- genPar[(k-1)*nbStates+state,genInd]
+        
         if(dist[[j]]=="gamma") {
           shape <- genArgs[[2]]^2/genArgs[[3]]^2
           scale <- genArgs[[3]]^2/genArgs[[2]]
@@ -93,26 +99,35 @@ pseudoRes <- function(m)
           genArgs[[3]] <- 1/scale # dgamma expects rate=1/scale
         }
         
-        for(i in 1:nbObs) {
-          if(!is.na(data[[j]][i])) {
-            genArgs[[1]] <- data[[j]][i]
-            pgenMat[i,state] <- zeromass+(1-zeromass)*do.call(Fun[[j]],genArgs)
-          }
-        }
+        pgenMat[genInd,state] <- zeromass+(1-zeromass)*do.call(Fun[[j]],genArgs)
+        #for(i in 1:nbObs) {
+        #  if(!is.na(data[[j]][i])) {
+        #    genArgs[[1]] <- data[[j]][i]
+        #    pgenMat[i,state] <- zeromass+(1-zeromass)*do.call(Fun[[j]],genArgs)
+        #  }
+        #}
       } else {
+        
+        genpiInd <- which(data[[j]]!=pi & !is.na(data[[j]]))
+        
         genArgs <- list(Fun[[j]],-pi,data[[j]][1]) # to pass to function "integrate" below
-        for(k in 1:nrow(m$mle[[j]]))
-          genArgs[[k+3]] <- m$mle[[j]][k,state]
   
-        for(i in 1:nbObs) {
-          if(!is.na(data[[j]][i])) {
-            # angle==pi => residual=Inf
-            if(data[[j]][i]!=pi) {
-              genArgs[[3]] <- data[[j]][i]
-              pgenMat[i,state] <- do.call(integrate,genArgs)$value
-            }
-          }
+        for(i in genpiInd){
+          genArgs[[3]]<-data[[j]][i]
+          for(k in 1:(nrow(genPar)/nbStates))
+            genArgs[[k+3]] <- genPar[(k-1)*nbStates+state,i]
+          
+          pgenMat[i,state] <- do.call(integrate,genArgs)$value
         }
+        #for(i in 1:nbObs) {
+        #  if(!is.na(data[[j]][i])) {
+        #    # angle==pi => residual=Inf
+        #    if(data[[j]][i]!=pi) {
+        #      genArgs[[3]] <- data[[j]][i]
+        #      pgenMat[i,state] <- do.call(integrate,genArgs)$value
+        #    }
+        #  }
+        #}
       }
     }
   

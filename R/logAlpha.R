@@ -17,21 +17,15 @@
 
 logAlpha <- function(m)
 {
-  data <- m$data
   nbStates <- length(m$stateNames)
-  nbObs <- nrow(data)
+  nbObs <- nrow(m$data)
   lalpha <- matrix(NA,nbObs,nbStates)
-
-  dist <- m$conditions$dist
-  distnames <- names(dist)
-  DM <- m$conditions$DM
-  par <- m$mle
 
   # identify covariates
   covs <- model.matrix(m$conditions$formula,m$data)
   nbCovs <- ncol(covs)-1 # substract intercept column
 
-  allProbs <- allProbs(data,nbStates,dist,par,m$conditions$zeroInflation)
+  allProbs <- allProbs(m,nbStates)
   
   if(nbStates>1)
     trMat <- trMatrix_rcpp(nbStates,m$mle$beta,as.matrix(covs))
