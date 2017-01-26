@@ -40,7 +40,7 @@ n2wDM<-function(bounds,DM,par,cons,workcons){
   p
 }     
 
-w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,parSize,k=0){
+w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,k=0){
   
   Par<-numeric(length(wpar))
 
