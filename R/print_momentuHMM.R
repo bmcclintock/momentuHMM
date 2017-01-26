@@ -26,8 +26,14 @@ print.momentuHMM <- function(x,...)
     cat("\n")
     if(DMind[[i]]) cat(i,"parameters:\n")
     else cat("Regression coeffs for",i,"parameters:\n")
-    cat("----------------------\n")
+    cat("---------------------------------------------\n")
     print(m$mle[[i]])
+    if(!DMind[[i]]){
+      cat("\n")
+      cat(i,"parameters (based on mean covariate values):\n")
+      cat("---------------------------------------------\n")
+      print(x$CI_real[[i]]$est)
+    }
   }
   
   if(!is.null(m$mle$beta)) {
