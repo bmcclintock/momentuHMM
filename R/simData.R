@@ -169,6 +169,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(!is.null(zeroInflation$step)) zi <- zeroInflation$step
       data <- moveHMM::simData(nbAnimals, nbStates, dist$step, dist$angle, Par$step, Par$angle, beta, covs, nbCovs, zi, obsPerAnimal, model, states)
       attr(data,"class") <- "data.frame"
+      data$ID <- as.factor(data$ID)
       return(momentuHMMData(data))
     }
   }
