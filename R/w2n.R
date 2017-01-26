@@ -62,7 +62,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons
   }
   else beta <- NULL
   
-  distnames <- names(fullDM)
+  distnames <- names(dist)
   parindex <- c(0,cumsum(unlist(lapply(fullDM,ncol)))[-length(fullDM)])
   names(parindex) <- distnames
 

@@ -45,7 +45,8 @@ CI_real <- function(m,alpha=0.95,nbSims=10^6)
 
   dist <- m$conditions$dist
   distnames <- names(dist)
-  DM <- m$conditions$DM
+  fullDM <- m$conditions$fullDM
+  DMind <- m$conditions$DMind
 
   # identify covariates
   covs <- model.matrix(m$conditions$formula,m$data)
@@ -54,17 +55,17 @@ CI_real <- function(m,alpha=0.95,nbSims=10^6)
   # inverse of Hessian
   Sigma <- ginv(m$mod$hessian)
 
-  p <- parDef(dist,nbStates,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$bounds,DM)
+  p <- parDef(dist,nbStates,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$DM,m$conditions$userBounds)
   bounds <- p$bounds
-  if(!all(unlist(lapply(p$bounds,is.numeric)))){
-    for(i in distnames){
-      if(!is.numeric(bounds[[i]])){
-        bounds[[i]] <- gsub(i,"",bounds[[i]],fixed=TRUE)
-      }
-    }
-  }
+  #if(!all(unlist(lapply(p$bounds,is.numeric)))){
+  #  for(i in distnames){
+  #    if(!is.numeric(bounds[[i]])){
+  #      bounds[[i]] <- gsub(i,"",bounds[[i]],fixed=TRUE)
+  #    }
+  #  }
+  #}
   
-  parindex <- c(0,cumsum(unlist(lapply(DM,ncol)))[-length(DM)])
+  parindex <- c(0,cumsum(unlist(lapply(fullDM,ncol)))[-length(fullDM)])
   names(parindex) <- distnames
   
   Par <- list()
@@ -73,56 +74,36 @@ CI_real <- function(m,alpha=0.95,nbSims=10^6)
   se<-list()
   
   for(i in distnames){
-    if(!(dist[[i]] %in% angledists)) {
-      Par[[i]] <- get_CI(as.vector(t(m$mle[[i]])),m,parindex[[i]]+1:ncol(DM[[i]]),DM[[i]],bounds[[i]],m$conditions$cons[[i]],p$boundInd[[i]],workcons=m$conditions$workcons[[i]],Sigma,nbStates,alpha,m$mle[[i]])
+    if(!m$conditions$DMind[[i]]){
+      tmpDM<-fullDM[[i]]
+      k <- which(matrix(mapply(length,fullDM[[i]])>1,nrow(fullDM[[i]]),ncol(fullDM[[i]])),arr.ind=TRUE)
+      if(length(k)){
+        for(j in 1:nrow(k)){
+          tmpDM[[k[j,1],k[j,2]]]<-mean(fullDM[[i]][[k[j,1],k[j,2]]],na.rm=TRUE)
+        }
+      }
+      fullDM[[i]]<-matrix(as.numeric(tmpDM),nrow(tmpDM),ncol(tmpDM))
+      DMind[[i]]<-TRUE
+      par <- c(w2n(m$mod$estimate,bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$stationary,m$conditions$cons,fullDM,DMind,m$conditions$workcons,1,dist[i],m$conditions$Bndind)[[i]])
     } else {
-      wpar<-m$mod$estimate[parindex[[i]]+1:ncol(DM[[i]])]
-      lower<-upper<-se<-numeric(nrow(DM[[i]]))
-      if(m$conditions$estAngleMean[[i]]){
-        for(k in 1:nrow(DM[[i]])){
-          dN<-numDeriv::grad(w2nDM,wpar,bounds=bounds[[i]],DM=DM[[i]],cons=m$conditions$cons[[i]],boundInd=p$boundInd[[i]],workcons=m$conditions$workcons[[i]],k=k)
-          se[k]<-suppressWarnings(sqrt(dN%*%Sigma[parindex[[i]]+1:ncol(DM[[i]]),parindex[[i]]+1:ncol(DM[[i]])]%*%dN))
-          lower[k]<-t(m$mle[[i]])[k]-se[k]*qnorm(1-(1-alpha)/2)
-          upper[k]<-t(m$mle[[i]])[k]+se[k]*qnorm(1-(1-alpha)/2)
-          #if(k <= nbStates){
-          #  l <- 2*atan(tan(lower[k]/2))
-          #  u <- 2*atan(tan(upper[k]/2))
-          #  if(l>u){
-          #    lower[k]<-u
-          #    upper[k]<-l
-          #  } else {
-          #    lower[k]<-l
-          #    upper[k]<-u
-          #  }
-          #}
+      par <- as.vector(t(m$mle[[i]]))
+    }
+    if(!(dist[[i]] %in% angledists) | (dist[[i]] %in% angledists & m$conditions$estAngleMean[[i]] & !m$conditions$Bndind[[i]])) {
+      Par[[i]] <- get_CI(m$mod$estimate,par,m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],p$parSize[[i]],Sigma,nbStates,alpha,p$parNames[[i]],m$stateNames)
+    } else {
+      if(!m$conditions$estAngleMean[[i]])
+        Par[[i]] <- get_CI(m$mod$estimate,par[-c(1:nbStates)],m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],p$parSize[[i]],Sigma,nbStates,alpha,p$parNames[[i]],m$stateNames)
+      else {
+        if(m$conditions$Bndind[[i]]){
+          Par[[i]] <- CI_angle(m$mod$estimate,par,m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],p$parSize[[i]],Sigma,nbStates,alpha,p$parNames[[i]],m$stateNames)
         }
-        lower<-matrix(lower,ncol=nbStates,byrow=T)
-        upper<-matrix(upper,ncol=nbStates,byrow=T)  
-        se<-matrix(se,ncol=nbStates,byrow=T)
-        Par[[i]] <- parm_list(se,lower,upper,m$mle[[i]])
-      } else {
-        for(k in 1:nrow(DM[[i]])){
-          dN<-numDeriv::grad(w2nDM,wpar,bounds=bounds[[i]],DM=DM[[i]],cons=m$conditions$cons[[i]],boundInd=p$boundInd[[i]],workcons=m$conditions$workcons[[i]],k=k)
-          se[k]<-suppressWarnings(sqrt(dN%*%Sigma[parindex[[i]]+1:ncol(DM[[i]]),parindex[[i]]+1:ncol(DM[[i]])]%*%dN))
-          lower[k]<-m$mle[[i]][-1,k]-se[k]*qnorm(1-(1-alpha)/2)
-          upper[k]<-m$mle[[i]][-1,k]+se[k]*qnorm(1-(1-alpha)/2)
-        }
-        lower<-matrix(c(rep(NA,nbStates),lower),ncol=nbStates,byrow=T)
-        upper<-matrix(c(rep(NA,nbStates),upper),ncol=nbStates,byrow=T)  
-        se<-matrix(c(rep(NA,nbStates),se),ncol=nbStates,byrow=T)
-        Par[[i]] <- parm_list(se,lower,upper,m$mle[[i]])
       }
     }
-    
-    #if(check)
-    #  warning(paste("Some of the parameter estimates seem to lie close to the boundaries of",
-    #                "their parameter space.\n  The associated CIs are probably unreliable",
-    #                "(or might not be computable)."))
   }
 
   if(nbStates>1 & !is.null(m$mle$gamma)) {
     # identify parameters of interest
-    i2 <- tail(cumsum(unlist(lapply(DM,ncol))),1)+1
+    i2 <- tail(cumsum(unlist(lapply(fullDM,ncol))),1)+1
     i3 <- i2+nbStates*(nbStates-1)*(nbCovs+1)-1
     wpar <- m$mle$beta
     quantSup <- qnorm(1-(1-alpha)/2)
@@ -135,10 +116,12 @@ CI_real <- function(m,alpha=0.95,nbSims=10^6)
         upper[i,j]<-1/(1+exp(-(log(m$mle$gamma[i,j]/(1-m$mle$gamma[i,j]))+quantSup*(1/(m$mle$gamma[i,j]-m$mle$gamma[i,j]^2))*se[i,j])))#m$mle$gamma[i,j]+quantSup*se[i,j]
       }
     }
-    Par$gamma <- list(se=se,lower=lower,upper=upper)
+    Par$gamma <- list(est=m$mle$gamma,se=se,lower=lower,upper=upper)
+    rownames(Par$gamma$est) <- m$stateNames
     rownames(Par$gamma$se) <- m$stateNames
     rownames(Par$gamma$lower) <- m$stateNames
     rownames(Par$gamma$upper) <- m$stateNames
+    colnames(Par$gamma$est) <- m$stateNames
     colnames(Par$gamma$se) <- m$stateNames
     colnames(Par$gamma$lower) <- m$stateNames
     colnames(Par$gamma$upper) <- m$stateNames
@@ -151,13 +134,18 @@ CI_real <- function(m,alpha=0.95,nbSims=10^6)
   for(i in 1:nbStates){
     dN<-numDeriv::grad(get_delta,wpar[foo:length(wpar)],i=i)
     se[i]<-suppressWarnings(sqrt(dN%*%Sigma[foo:length(wpar),foo:length(wpar)]%*%dN))
-    lower[i]<-m$mle$delta[i]-quantSup*se[i]
-    upper[i]<-m$mle$delta[i]+quantSup*se[i]
+    lower[i]<-1/(1+exp(-(log(m$mle$delta[i]/(1-m$mle$delta[i]))-quantSup*(1/(m$mle$delta[i]-m$mle$delta[i]^2))*se[i])))#m$mle$delta[i]-quantSup*se[i]
+    upper[i]<-1/(1+exp(-(log(m$mle$delta[i]/(1-m$mle$delta[i]))+quantSup*(1/(m$mle$delta[i]-m$mle$delta[i]^2))*se[i])))#m$mle$delta[i]+quantSup*se[i]
   }
-  lower<-matrix(lower,nrow=1,ncol=nbStates,byrow=T)
-  upper<-matrix(upper,nrow=1,ncol=nbStates,byrow=T)  
-  se<-matrix(se,nrow=1,ncol=nbStates,byrow=T)
-  Par$delta <- list(se=se,lower=lower,upper=upper)    
+  est<-matrix(m$mle$delta,nrow=1,ncol=nbStates,byrow=TRUE)
+  lower<-matrix(lower,nrow=1,ncol=nbStates,byrow=TRUE)
+  upper<-matrix(upper,nrow=1,ncol=nbStates,byrow=TRUE)  
+  se<-matrix(se,nrow=1,ncol=nbStates,byrow=TRUE)
+  Par$delta <- list(est=est,se=se,lower=lower,upper=upper)  
+  colnames(Par$delta$est) <- m$stateNames
+  colnames(Par$delta$se) <- m$stateNames
+  colnames(Par$delta$lower) <- m$stateNames
+  colnames(Par$delta$upper) <- m$stateNames
 
   return(Par)
 }
@@ -173,31 +161,73 @@ get_delta <- function(delta,i){
   delta[i]
 }
 
-parm_list<-function(se,lower,upper,m){
-  Par <- list(se=se,lower=lower,upper=upper)
-  rownames(Par$se) <- rownames(m)
-  rownames(Par$lower) <- rownames(m)
-  rownames(Par$upper) <- rownames(m)
-  colnames(Par$se) <- colnames(m)
-  colnames(Par$lower) <- colnames(m)
-  colnames(Par$upper) <- colnames(m)
+parm_list<-function(est,se,lower,upper,rnames,cnames){
+  Par <- list(est=est,se=se,lower=lower,upper=upper)
+  rownames(Par$est) <- rnames
+  rownames(Par$se) <- rnames
+  rownames(Par$lower) <- rnames
+  rownames(Par$upper) <- rnames
+  colnames(Par$est) <- cnames
+  colnames(Par$se) <- cnames
+  colnames(Par$lower) <- cnames
+  colnames(Par$upper) <- cnames
   Par
 }
 
-get_CI<-function(Par,m,ind,DM,Bounds,cons,boundInd,workcons,Sigma,nbStates,alpha,mmlePar){
+get_CI<-function(wpar,Par,m,ind,DM,DMind,Bounds,cons,workcons,parSize,Sigma,nbStates,alpha,rnames,cnames){
 
-  w<-m$mod$estimate[ind]
+  w<-wpar[ind]
   lower<-upper<-se<-numeric(nrow(DM))
   for(k in 1:nrow(DM)){
-    dN<-numDeriv::grad(w2nDM,w,bounds=Bounds,DM=DM,cons=cons,boundInd=boundInd,workcons=workcons,k=k)
+    dN<-numDeriv::grad(w2nDM,w,bounds=Bounds,DM=DM,DMind=DMind,cons=cons,workcons=workcons,nbObs=1,parSize=parSize,k=k)
     se[k]<-suppressWarnings(sqrt(dN%*%Sigma[ind,ind]%*%dN))
-    cn<-exp(qnorm(1-(1-alpha)/2)*sqrt(log(1+(se[k]/Par[k])^2)))
-    lower[k]<-Par[k]/cn
-    upper[k]<-Par[k]*cn
+    lower[k] <- Par[k] - qnorm(1-(1-alpha)/2) * se[k]
+    upper[k] <- Par[k] + qnorm(1-(1-alpha)/2) * se[k]
+    #cn<-exp(qnorm(1-(1-alpha)/2)*sqrt(log(1+(se[k]/Par[k])^2)))
+    #lower[k]<-Par[k]/cn
+    #upper[k]<-Par[k]*cn
   }
-  l<-matrix(lower,ncol=nbStates,byrow=T)
-  u<-matrix(upper,ncol=nbStates,byrow=T)  
-  s<-matrix(se,ncol=nbStates,byrow=T)
-  out <- parm_list(s,l,u,mmlePar)
+  est<-matrix(Par,ncol=nbStates,byrow=TRUE)
+  l<-matrix(lower,ncol=nbStates,byrow=TRUE)
+  u<-matrix(upper,ncol=nbStates,byrow=TRUE)  
+  s<-matrix(se,ncol=nbStates,byrow=TRUE)
+  out <- parm_list(est,s,l,u,rnames,cnames)
   out
+}
+
+CI_angle<-function(wpar,Par,m,ind,DM,DMind,Bounds,cons,workcons,parSize,Sigma,nbStates,alpha,rnames,cnames){
+  
+  w<-wpar[ind]
+  lower<-upper<-se<-numeric(nrow(DM))
+  for(k in 1:nrow(DM)){
+    dN<-numDeriv::grad(w2nDMangle,w,bounds=Bounds,DM=DM,DMind=DMind,cons=cons,workcons=workcons,nbObs=1,parSize=parSize,nbStates=nbStates,k=k)
+    se[k]<-suppressWarnings(sqrt(dN%*%Sigma[ind,ind]%*%dN))
+    lower[k] <- Par[k] - qnorm(1-(1-alpha)/2) * se[k]
+    upper[k] <- Par[k] + qnorm(1-(1-alpha)/2) * se[k]
+    #cn<-exp(qnorm(1-(1-alpha)/2)*sqrt(log(1+(se[k]/Par[k])^2)))
+    #lower[k]<-Par[k]/cn
+    #upper[k]<-Par[k]*cn
+  }
+  est<-matrix(Par,ncol=nbStates,byrow=TRUE)
+  l<-matrix(lower,ncol=nbStates,byrow=TRUE)
+  u<-matrix(upper,ncol=nbStates,byrow=TRUE)  
+  s<-matrix(se,ncol=nbStates,byrow=TRUE)
+  out <- parm_list(est,s,l,u,rnames,cnames)
+  out
+}
+  
+w2nDMangle<-function(w,bounds,DM,DMind,cons,workcons,nbObs,parSize,nbStates,k){
+  
+  bounds[,1] <- -Inf
+  bounds[which(bounds[,2]!=1),2] <- Inf
+    
+  foo <- length(w) - nbStates + 1
+  x <- w[(foo - nbStates):(foo - 1)]
+  y <- w[foo:length(w)]
+  angleMean <- Arg(x + (0+1i) * y)
+  kappa <- sqrt(x^2 + y^2)
+  w[(foo - nbStates):(foo - 1)] <- angleMean
+  w[foo:length(w)] <- kappa
+  
+  w2nDM(w,bounds,DM,DMind,cons,workcons,nbObs,parSize,k)
 }
