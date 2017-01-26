@@ -128,6 +128,14 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     formula <- model$conditions$formula
   
     Par <- model$mle[distnames]
+    parindex <- c(0,cumsum(unlist(lapply(model$conditions$fullDM,ncol)))[-length(model$conditions$fullDM)])
+    names(parindex) <- distnames
+    for(i in distnames){
+      if(!is.null(DM[[i]]) & model$conditions$DMind[[i]]){
+        Par[[i]] <- model$mod$estimate[parindex[[i]]+1:ncol(model$conditions$fullDM[[i]])]
+        names(Par[[i]])<-colnames(model$conditions$fullDM[[i]])
+      }
+    }
     for(i in distnames[which(dist %in% angledists)]){
       if(!estAngleMean[[i]]){
         if(!is.null(DM[[i]])) Par[[i]]<-c(rep(0,nbStates),Par[[i]])
