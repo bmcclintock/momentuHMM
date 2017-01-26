@@ -31,18 +31,14 @@ viterbi <- function(m)
   nbStates <- length(m$stateNames)
   beta <- m$mle$beta
   delta <- m$mle$delta
-  dist <- m$conditions$dist
-  par <- m$mle
-  zeroInflation <- m$conditions$zeroInflation
   
   if(nbStates==1)
     stop("No states to decode (nbStates=1)")
 
   # identify covariates
   covs <- model.matrix(m$conditions$formula,data)
-  nbCovs <- ncol(covs)-1 # substract intercept column
 
-  allProbs <- allProbs(data,nbStates,dist,par,zeroInflation)
+  allProbs <- allProbs(m)
   trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs))
 
   nbAnimals <- length(unique(data$ID))

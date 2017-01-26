@@ -8,6 +8,7 @@
 #'
 #' @param x Object \code{momentuHMM}
 #' @param animals Vector of indices or IDs of animals for which information will be plotted.
+#' @param covs Data frame consisting of a single row indicating the covariate values to be used in plots. If none are specified, the means of any covariates appearing in the model are used (unless covariate is a factor, in which case the first factor is used).
 #' Default: \code{NULL} ; all animals are plotted.
 #' @param ask If \code{TRUE}, the execution pauses between each plot.
 #' @param breaks Histogram parameter. See \code{hist} documentation.
@@ -36,7 +37,7 @@
 #' @export
 #' @importFrom graphics legend lines segments
 
-plot.momentuHMM <- function(x,animals=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
+plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
                          sepStates=FALSE,col=NULL,...)
 {
   m <- x # the name "x" is for compatibility with the generic method
@@ -115,6 +116,57 @@ plot.momentuHMM <- function(x,animals=NULL,ask=TRUE,breaks="Sturges",hist.ylim=N
     }
   }
   
+  #DMind <- lapply(m$conditions$fullDM,function(x) all(unlist(apply(x,1,function(y) lapply(y,length)))==1))
+  #p <- parDef(m$conditions$dist,nbStates,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$DM,m$conditions$userBounds)
+  if(is.null(covs)){
+    covs <- m$data[which(m$data$ID %in% ID),][1,]
+    for(j in names(m$data)[which(unlist(lapply(m$data,class))!="factor")]){
+      covs[[j]]<-mean(m$data[[j]][which(m$data$ID %in% ID)],na.rm=TRUE)
+    }
+    #if(!is.null(m$rawCovs)){
+    #  tmp <- apply(m$rawCovs,2,mean,na.rm=TRUE)
+    #  covs <- matrix(tmp,nrow=1,ncol=length(tmp),dimnames=list("covs",names(tmp)))
+    #  covs <- as.data.frame(covs)
+    #} else covs <- m$data[1,]
+  } else {
+    if(!is.data.frame(covs)) stop('covs must be a data frame')
+    if(nrow(covs)>1) stop('covs must consist of a single row')
+    if(!all(names(covs) %in% names(m$data))) stop('invalid covs specified')
+    if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(m$data$ID))
+  }
+  nbCovs <- ncol(model.matrix(m$conditions$formula,m$data))-1 # substract intercept column
+  #par <- w2n(m$mod$estimate,m$conditions$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,DMind,m$conditions$workcons,nrow(m$data),m$conditions$dist,p$Bndind)
+  
+  Par <- m$mle[distnames]
+  parindex <- c(0,cumsum(unlist(lapply(m$conditions$fullDM,ncol)))[-length(m$conditions$fullDM)])
+  names(parindex) <- distnames
+  for(i in distnames){
+    if(!is.null(m$conditions$DM[[i]]) & m$conditions$DMind[[i]]){
+      Par[[i]] <- m$mod$estimate[parindex[[i]]+1:ncol(m$conditions$fullDM[[i]])]
+      names(Par[[i]])<-colnames(m$conditions$fullDM[[i]])
+    }
+  }
+  Par<-lapply(Par,function(x) c(t(x)))
+  beta <- m$mle$beta
+  delta <- m$mle$delta
+  
+  for(i in distnames[which(m$conditions$dist %in% angledists)]){
+    if(!m$conditions$estAngleMean[[i]]){
+      m$conditions$estAngleMean[[i]]<-TRUE
+      m$conditions$userBounds[[i]]<-rbind(matrix(rep(c(-pi,pi),nbStates),nbStates,2,byrow=TRUE),m$conditions$bounds[[i]])
+      m$conditions$cons[[i]] <- c(rep(1,nbStates),m$conditions$cons[[i]])
+      m$conditions$workcons[[i]] <- c(rep(0,nbStates),m$conditions$workcons[[i]])
+    }
+  }
+  
+  inputs <- checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$DM,m$conditions$userBounds,m$stateNames)
+  p <- inputs$p
+  DMinputs<-getDM(covs,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation)
+  fullDM <- DMinputs$fullDM
+  DMind <- DMinputs$DMind
+  wpar <- n2w(Par,p$bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+  par <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,m$conditions$dist,p$Bndind)
+  
   zeroMass<-vector('list',length(m$conditions$dist))
   names(zeroMass)<-distnames
   
@@ -141,11 +193,17 @@ plot.momentuHMM <- function(x,animals=NULL,ask=TRUE,breaks="Sturges",hist.ylim=N
     }
     
     if(m$conditions$zeroInflation[[i]]) {
-      zeroMass[[i]] <- m$mle[[i]][nrow(m$mle[[i]]),]
-      m$mle[[i]] <- m$mle[[i]][-nrow(m$mle[[i]]),]
+      zeroMass[[i]] <- par[[i]][nrow(par[[i]])-(nbStates-1):0,]#m$mle[[i]][nrow(m$mle[[i]]),]
+      par[[i]] <- par[[i]][-(nrow(par[[i]])-(nbStates-1):0),,drop=FALSE]#m$mle[[i]][-nrow(m$mle[[i]]),]
     } else {
       zeroMass[[i]] <- rep(0,nbStates)
     }
+    
+    infInd <- FALSE
+    if(m$conditions$dist[[i]] %in% angledists)
+      if(i=="angle" & ("step" %in% distnames))
+        if(m$conditions$dist$step %in% stepdists & m$conditions$zeroInflation$step)
+          infInd <- TRUE
   
     ###########################################
     ## Compute estimated densities on a grid ##
@@ -163,8 +221,8 @@ plot.momentuHMM <- function(x,animals=NULL,ask=TRUE,breaks="Sturges",hist.ylim=N
     for(state in 1:nbStates) {
       genArgs <- list(grid)
   
-      for(j in 1:nrow(m$mle[[i]]))
-        genArgs[[j+1]] <- m$mle[[i]][j,state]
+      for(j in 1:(nrow(par[[i]])/nbStates))
+        genArgs[[j+1]] <- par[[i]][(j-1)*nbStates+state,]
   
       # conversion between mean/sd and shape/scale if necessary
       if(m$conditions$dist[[i]]=="gamma") {
@@ -174,10 +232,13 @@ plot.momentuHMM <- function(x,animals=NULL,ask=TRUE,breaks="Sturges",hist.ylim=N
         genArgs[[3]] <- 1/scale # dgamma expects rate=1/scale
       }
       # (weighted by the proportion of each state in the Viterbi states sequence)
-      if(m$conditions$zeroInflation[[i]])
+      if(m$conditions$zeroInflation[[i]]){
         genDensities[[state]] <- cbind(grid,(1-zeroMass[[i]][state])*w[state]*do.call(genFun,genArgs))
-      else
+      } else if(infInd) {
+        genDensities[[state]] <- cbind(grid,(1-zeroMass$step[state])*w[state]*do.call(genFun,genArgs))
+      } else {
         genDensities[[state]] <- cbind(grid,w[state]*do.call(genFun,genArgs))
+      }
     }
   
     #########################

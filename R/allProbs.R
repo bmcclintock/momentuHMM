@@ -33,15 +33,25 @@
 #'                byrow=TRUE),zeroInflation=TRUE)
 #' }
 
-allProbs <- function(data,nbStates,dist,par,zeroInflation)
+allProbs <- function(m,nbStates)
 {
+  data <- m$data
+  nbStates <- length(m$stateNames)
+  dist <- m$conditions$dist
+  distnames <- names(dist)
+  zeroInflation <- m$conditions$zeroInflation
+  nbObs <- nrow(data)
+  
+  nbCovs <- ncol(model.matrix(m$conditions$formula,data))-1 # substract intercept column
+  
+  par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind)
   
   Fun <- lapply(dist,function(x) paste("d",x,sep=""))
   
-  nbObs <- nrow(data)
+
   allProbs <- matrix(1,nrow=nbObs,ncol=nbStates)
   
-  for(i in names(dist)){
+  for(i in distnames){
   
     genInd <- which(!is.na(data[[i]]))
     sp <- par[[i]]
@@ -54,12 +64,12 @@ allProbs <- function(data,nbStates,dist,par,zeroInflation)
       # Constitute the lists of state-dependent parameters for the step and angle
       genArgs <- list(data[[i]][genInd])
       if(zeroInflation[[i]]) {
-        zeromass <- genPar[nrow(genPar),state]
-        genPar <- genPar[-nrow(genPar),]
+        zeromass <- genPar[nrow(genPar)-nbStates+state,genInd]
+        genPar <- genPar[-(nrow(genPar)-(nbStates-1):0),]
       }
   
-      for(j in 1:nrow(genPar))
-        genArgs[[j+1]] <- genPar[j,state]
+      for(j in 1:(nrow(genPar)/nbStates))
+        genArgs[[j+1]] <- genPar[(j-1)*nbStates+state,genInd]
   
       # conversion between mean/sd and shape/scale if necessary
       if(dist[[i]]=="gamma") {

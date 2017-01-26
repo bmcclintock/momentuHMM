@@ -4,15 +4,12 @@
 \alias{allProbs}
 \title{Matrix of all probabilities}
 \usage{
-allProbs(data, nbStates, dist, par, zeroInflation)
+allProbs(m, nbStates)
 }
 \arguments{
-\item{data}{Object \code{momentuHMMData}.}
-
 \item{nbStates}{Number of states of the HMM.}
 
-\item{zeroInflation}{\code{TRUE} if the step length distribution is inflated in zero.
-Default: \code{FALSE}.}
+\item{data}{Object \code{momentuHMMData}.}
 
 \item{stepDist}{Name of the distribution of the step lengths.}
 
@@ -27,6 +24,9 @@ and one column for each state.}
 matrix with one row for each parameter (in the order expected by the pdf of \code{angleDist}),
 and one column for each state. Default: \code{NULL} ; if the turning angles distribution
 is not estimated.}
+
+\item{zeroInflation}{\code{TRUE} if the step length distribution is inflated in zero.
+Default: \code{FALSE}.}
 }
 \value{
 Matrix of all probabilities.
