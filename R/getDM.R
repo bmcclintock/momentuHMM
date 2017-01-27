@@ -101,9 +101,9 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
   for(i in distnames){
     if(is.null(workcons[[i]])) workcons[[i]] <- rep(0,ncol(simpDM[[i]]))
   }
-  for(i in which(!(dist %in% "wrpcauchy"))){
-    workcons[[distnames[i]]]<-rep(0,ncol(simpDM[[distnames[i]]]))
-  }
+  #for(i in which(!(dist %in% "wrpcauchy"))){
+  #  workcons[[distnames[i]]]<-rep(0,ncol(simpDM[[distnames[i]]]))
+  #}
   workcons<-workcons[distnames]
   if(any(unlist(lapply(workcons,length))!=unlist(lapply(Par,length)))) 
     stop("Length mismatch between Par and workcons for: ",paste(names(which(unlist(lapply(workcons,length))!=unlist(lapply(Par,length)))),collapse=", "))

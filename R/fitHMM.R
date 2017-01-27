@@ -157,6 +157,8 @@ fitHMM <- function(data,nbStates,dist,
 
   if(!is.formula(formula))
     stop("Check the argument 'formula'.")
+  
+  if(nbStates<1) stop('nbStates must be >0')
 
   # check that there is no response varibale in the formula
   if(attr(terms(formula),"response")!=0)
@@ -233,19 +235,20 @@ fitHMM <- function(data,nbStates,dist,
 
   mHind <- (is.null(DM) & is.null(userBounds) & length(attr(terms.formula(formula),"term.labels"))==0) # indicator for moveHMMwrap below
   
-  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,zeroInflation,DM,userBounds,stateNames)
+  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,zeroInflation,DM,userBounds,cons,workcons,stateNames)
   p <- inputs$p
   
-  DMinputs<-getDM(data,inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation)
+  DMinputs<-getDM(data,inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation)
   fullDM <- DMinputs$fullDM
   DMind <- DMinputs$DMind
   
   if(!is.null(beta0)) {
-    if(ncol(beta0)!=nbStates*(nbStates-1) | nrow(beta0)!=nbCovs+1) {
-      error <- paste("beta0 has wrong dimensions: it should have",nbCovs+1,"rows and",
-                     nbStates*(nbStates-1),"columns.")
-      stop(error)
-    }
+    if(is.null(dim(beta0)))
+      stop(paste("beta0 has wrong dimensions: it should have",nbCovs+1,"rows and",
+                     nbStates*(nbStates-1),"columns."))
+    if(ncol(beta0)!=nbStates*(nbStates-1) | nrow(beta0)!=nbCovs+1)
+      stop(paste("beta0 has wrong dimensions: it should have",nbCovs+1,"rows and",
+                     nbStates*(nbStates-1),"columns."))
   }
 
   if(!is.null(delta0))

@@ -1,4 +1,4 @@
-checkInputs<-function(nbStates,dist,Par,estAngleMean,zeroInflation,DM,userBounds,stateNames)
+checkInputs<-function(nbStates,dist,Par,estAngleMean,zeroInflation,DM,userBounds,cons,workcons,stateNames)
 {
   distnames<-names(dist)
   
@@ -49,5 +49,5 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,zeroInflation,DM,userBounds
     }
   }
 
-  return(list(p=p,estAngleMean=estAngleMean,DM=DM))
+  return(list(p=p,estAngleMean=estAngleMean,DM=DM,cons=cons,workcons=workcons))
 }
