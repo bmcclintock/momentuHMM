@@ -399,7 +399,7 @@ fitHMM <- function(data,nbStates,dist,
   CI_real<-CI_real(momentuHMM(mh))
   CI_beta<-CI_beta(momentuHMM(mh))
   
-  mh <- list(data=data,mle=mle,CI_real=CI_real,CI_beta=CI_beta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames)
+  mh <- list(data=data,mle=mle,CI_real=CI_real,CI_beta=CI_beta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   #mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   
   return(momentuHMM(mh))

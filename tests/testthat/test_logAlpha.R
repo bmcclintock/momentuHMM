@@ -13,5 +13,5 @@ test_that("Output has the right format",{
   la <- logAlpha(m)
 
   expect_equal(nrow(la),nrow(m$data))
-  expect_equal(ncol(la),ncol(m$mle$stepPar))
+  expect_equal(ncol(la),ncol(m$mle$step))
 })

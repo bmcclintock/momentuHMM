@@ -2,34 +2,29 @@
 context("allProbs")
 
 test_that("The output has the right format",{
-  step <- rgamma(100,5,0.25)
-  angle <- rvm(100,0,2)
-  data <- list(step=step,angle=angle)
-  stepPar <- matrix(c(8,20,5,10),ncol=2,byrow=T)
-  anglePar <- matrix(c(0,0,1.5,0.7),ncol=2,byrow=T)
-  nbStates <- 2
-  p <- allProbs(data,nbStates,"gamma","vm",stepPar,anglePar)
 
-  expect_equal(nrow(p),length(step))
-  expect_equal(ncol(p),nbStates)
+  p <- allProbs(example$m,length(example$m$stateNames))
+
+  expect_equal(nrow(p),length(example$m$data$step))
+  expect_equal(ncol(p),length(example$m$stateNames))
 })
 
 test_that("It works without turning angles",{
-  step <- rgamma(100,5,0.25)
-  data <- list(step=step)
-  stepPar <- matrix(c(8,20,5,10),ncol=2,byrow=T)
-  nbStates <- 2
+  m<-example$m
+  m$conditions$dist$angle<-NULL
 
-  expect_that(allProbs(data,nbStates,"gamma","none",stepPar),not(throws_error()))
+  expect_that(allProbs(m,length(example$m$stateNames)),not(throws_error()))
 })
 
 test_that("Zero-inflation works",{
-  step <- rgamma(100,5,0.25)
-  angle <- rvm(100,0,2)
-  data <- list(step=step,angle=angle)
-  stepPar <- matrix(c(8,20,5,10,0.2,0.3),ncol=2,byrow=T)
-  anglePar <- matrix(c(0,0,1.5,0.7),ncol=2,byrow=T)
-  nbStates <- 2
+  m<-example$m
+  nbStates<-length(example$m$stateNames)
+  m$conditions$zeroInflation$step<-TRUE
+  m$mod$estimate<-c(m$mod$estimate[1:(2*nbStates)],boot::logit(c(0.2,0.3)),m$mod$estimate[-(1:(2*nbStates))])
+  m$conditions$fullDM$step<-diag(3*nbStates)
+  m$conditions$cons$step<-rep(1,3*nbStates)
+  m$conditions$workcons$step<-rep(0,3*nbStates)
+  m$conditions$bounds$step<-rbind(m$conditions$bounds$step,matrix(c(0,1),nbStates,2,byrow=TRUE))
 
-  expect_that(allProbs(data,nbStates,"gamma","vm",stepPar,anglePar,TRUE),not(throws_error()))
+  expect_that(allProbs(m,nbStates),not(throws_error()))
 })

@@ -1,15 +1,17 @@
 
-context("CI")
+context("CI_real")
 
 test_that("Output has the right format",{
   m <- example$m
-  c <- CI(m)
+  c <- CI_real(m)
 
   expect_equal(length(c),3)
-  expect_equal(dim(c$stepPar$lower),dim(m$mle$stepPar))
-  expect_equal(dim(c$stepPar$upper),dim(m$mle$stepPar))
-  expect_equal(dim(c$anglePar$lower),dim(m$mle$anglePar))
-  expect_equal(dim(c$anglePar$upper),dim(m$mle$anglePar))
-  expect_equal(dim(c$beta$lower),dim(m$mle$beta))
-  expect_equal(dim(c$beta$upper),dim(m$mle$beta))
+  expect_equal(dim(c$step$est),dim(m$mle$step))
+  expect_equal(dim(c$step$se),dim(m$mle$step))
+  expect_equal(dim(c$step$lower),dim(m$mle$step))
+  expect_equal(dim(c$step$upper),dim(m$mle$step))
+  expect_equal(dim(c$angle$est),dim(m$mle$angle))
+  expect_equal(dim(c$angle$se),dim(m$mle$angle))
+  expect_equal(dim(c$angle$lower),dim(m$mle$angle))
+  expect_equal(dim(c$angle$upper),dim(m$mle$angle))
 })

@@ -3,24 +3,25 @@ context("parDef")
 
 test_that("Exceptions are thrown",{
   nbStates <- 2
-  expect_that(parDef("gamma","vm",nbStates,FALSE,FALSE),not(throws_error()))
+  
+  expect_that(parDef(list(step="gamma",angle="vm"),nbStates,list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),NULL,NULL),not(throws_error()))
 
-  expect_that(parDef("unif","vm",nbStates,FALSE,FALSE),throws_error())
-  expect_that(parDef("gamma","norm",nbStates,FALSE,FALSE),throws_error())
+  expect_that(parDef(list(step="unif",angle="vm"),nbStates,list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),NULL,NULL),throws_error())
+  expect_that(parDef(list(step="gamma",angle="norm"),nbStates,list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),NULL,NULL),throws_error())
 })
 
 test_that("The output has the right format",{
   nbStates <- 2
-  p <- parDef("gamma","vm",nbStates,FALSE,FALSE)
+  p <- parDef(list(step="gamma",angle="vm"),nbStates,list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),NULL,NULL)
   expect_equal(length(p$parSize),2)
-  expect_equal(nrow(p$bounds),sum(p$parSize)*nbStates)
-  expect_equal(ncol(p$bounds),2)
-  expect_equal(length(p$parNames),p$parSize[1])
+  expect_equal(lapply(p$bounds,nrow),lapply(p$parSize,function(x) x*nbStates))
+  expect_equal(lapply(p$bounds,ncol),list(step=2,angle=2))
+  expect_equal(lapply(p$parNames,length),p$parSize)
 
   nbStates <- 3
-  p <- parDef("exp","wrpcauchy",nbStates,FALSE,FALSE)
+  p <- parDef(list(step="exp",angle="wrpcauchy"),nbStates,list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),NULL,NULL)
   expect_equal(length(p$parSize),2)
-  expect_equal(nrow(p$bounds),sum(p$parSize)*nbStates)
-  expect_equal(ncol(p$bounds),2)
-  expect_equal(length(p$parNames),p$parSize[1])
+  expect_equal(lapply(p$bounds,nrow),lapply(p$parSize,function(x) x*nbStates))
+  expect_equal(lapply(p$bounds,ncol),list(step=2,angle=2))
+  expect_equal(lapply(p$parNames,length),p$parSize)
 })

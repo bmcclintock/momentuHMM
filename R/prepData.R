@@ -31,6 +31,9 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spat
   if(!is.data.frame(Data)) stop("Data must be a data frame")
   distnames<-names(Data)
   if(any(c("step","angle") %in% distnames) & !is.null(coordNames)) stop("Data objects cannot be named 'step' or 'angle';\n  these names are reserved for step lengths and turning angles calculated from coordinates")
+  if(!is.null(coordNames)){
+    if(length(coordNames)!=2) stop('coordNames must be of length 2')
+  }
   if(!is.null(covNames)){
     covsCol <- which(distnames %in% covNames)
     if(!length(covsCol)) stop("covNames not found in Data")
@@ -60,7 +63,8 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spat
   type <- match.arg(type)
   if(!is.null(coordNames)){
     if(length(which(coordNames %in% names(Data)))<2)
-      stop("Check the column names of your coordinates.")
+      stop("coordNames not found in Data")
+    if(any(names(Data)[which(!(names(Data) %in% coordNames))] %in% c("x","y"))) stop("non-coordinate data streams cannot be named 'x' or 'y'")
     x <- Data[,coordNames[1]]
     y <- Data[,coordNames[2]]
     distnames<-c("step","angle",distnames[-which(distnames %in% coordNames)])
