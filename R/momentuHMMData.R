@@ -9,7 +9,7 @@
 
 momentuHMMData <- function(data)
 {
-  if(is.null(data$ID) | ncol(data)<1)
+  if(is.null(data$ID) | ncol(data)<2)
     stop("Can't construct momentuHMMData object: fields are missing")
 
   obj <- data
