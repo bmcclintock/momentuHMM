@@ -12,26 +12,27 @@
 #' @export
 getPar<-function(m){
   
+  if(!is.momentuHMM(m) & !is.momentuHMMMI(m))
+    stop("'m' must be a momentuHMM or momentuHMMMI object (as output by fitHMM or MI_summary)")
+  
   nbStates <- length(m$stateNames)
   dist <- m$conditions$dist
   distnames <- names(dist)
   DM <- m$conditions$DM
-  cons <- m$conditions$cons
-  workcons <- m$conditions$workcons
-  bounds <- m$conditions$bounds
   
-  parindex <- c(0,cumsum(unlist(lapply(DM,ncol)))[-length(DM)])
-  names(parindex) <- distnames
-  
-  p <- parDef(dist,nbStates,m$conditions$estAngleMean,m$conditions$zeroInflation,bounds,DM)
-  wpar <- m$mod$estimate
+  if(is.momentuHMMMI(m)){
+    m$mle<-lapply(m$Par[distnames],function(x) x$est)
+  }
   
   Par <- list()
   for(i in distnames){
-    if(!is.numeric(bounds[[i]])){
-      bounds[[i]] <- gsub(i,"",bounds[[i]],fixed=TRUE)
-    }
-    Par[[i]] <- c(w2nDM(wpar[parindex[[i]]+1:ncol(DM[[i]])],bounds[[i]],DM[[i]],cons[[i]],p$boundInd[[i]],workcons[[i]])$Par)
+    if(is.null(DM[[i]])){
+      par <- m$mle[[i]]
+      if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]]) 
+        par <- par[-1,]
+      par <- c(t(par))
+    } else par <- m$CI_beta[[i]]$est
+    Par[[i]] <- par
   }
   Par
 }
