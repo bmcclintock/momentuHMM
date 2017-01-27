@@ -7,21 +7,21 @@ test_that("Exception is thrown",{
   z <- c(1,1,1,2,2,2,1,1,1,2)
 
   trackData <- data.frame()
-  expect_that(prepData(trackData),throws_error())
+  expect_error(prepData(trackData))
 
   trackData <- data.frame(x)
-  expect_that(prepData(trackData),not(throws_error()))
+  expect_error(prepData(trackData),NA)
   
   trackData <- data.frame(x,y)
-  expect_that(prepData(trackData),not(throws_error()))
-  expect_that(prepData(trackData,coordNames=c("x","y")),not(throws_error()))
-  expect_that(prepData(trackData,coordNames=c("x")),throws_error())
+  expect_error(prepData(trackData),NA)
+  expect_error(prepData(trackData,coordNames=c("x","y")),NA)
+  expect_error(prepData(trackData,coordNames=c("x")))
 
   trackData <- data.frame(x,y,z)
-  expect_that(prepData(trackData),not(throws_error()))
-  expect_that(prepData(trackData,coordNames=c("x","y")),not(throws_error()))
-  expect_that(prepData(trackData,coordNames=c("x","z")),throws_error())
-  expect_that(prepData(trackData,coordNames=c("x","lat")),throws_error())
+  expect_error(prepData(trackData),NA)
+  expect_error(prepData(trackData,coordNames=c("x","y")),NA)
+  expect_error(prepData(trackData,coordNames=c("x","z")))
+  expect_error(prepData(trackData,coordNames=c("x","lat")))
   
 })
 
@@ -31,11 +31,11 @@ test_that("The right slots are defined",{
   trackData <- data.frame(x,y)
   data <- prepData(trackData,coordNames=c("x","y"))
 
-  expect_that(!is.null(data$ID),is_true())
-  expect_that(!is.null(data$x),is_true())
-  expect_that(!is.null(data$y),is_true())
-  expect_that(!is.null(data$step),is_true())
-  expect_that(!is.null(data$angle),is_true())
+  expect_true(!is.null(data$ID))
+  expect_true(!is.null(data$x))
+  expect_true(!is.null(data$y))
+  expect_true(!is.null(data$step))
+  expect_true(!is.null(data$angle))
 })
 
 test_that("The returned object is of the correct class",{

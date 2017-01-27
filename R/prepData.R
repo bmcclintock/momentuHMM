@@ -29,6 +29,7 @@
 prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spatialCovs=NULL)
 {
   if(!is.data.frame(Data)) stop("Data must be a data frame")
+  if(any(dim(Data)==0)) stop("Data is empty")
   distnames<-names(Data)
   if(any(c("step","angle") %in% distnames) & !is.null(coordNames)) stop("Data objects cannot be named 'step' or 'angle';\n  these names are reserved for step lengths and turning angles calculated from coordinates")
   if(!is.null(coordNames)){
@@ -44,7 +45,7 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spat
     distnames <- distnames[-which(distnames %in% "ID")]
   } 
   else
-    ID <- rep("Animal1",length(x)) # default ID if none provided
+    ID <- rep("Animal1",nrow(Data)) # default ID if none provided
   
   if(length(which(is.na(ID)))>0)
     stop("Missing IDs")
@@ -79,6 +80,8 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spat
     ind <- which(ID==unique(ID)[i])
     if(length(ind)!=length(ind[1]:ind[length(ind)]))
       stop("Each animal's obervations must be contiguous.")
+    if(!is.null(coordNames))
+      if(length(ind)<3) stop('each individual must have at least 3 observations to calculate step lengths and turning angles')
   }
   
   for(zoo in 1:nbAnimals) {

@@ -6,10 +6,10 @@ test_that("Exceptions are thrown",{
   step <- rep(1,10)
 
   data <- data.frame(ID=ID)
-  expect_that(momentuHMMData(data),throws_error())
+  expect_error(momentuHMMData(data))
 
   data <- cbind(data,step)
-  expect_that(momentuHMMData(data),not(throws_error()))
+  expect_error(momentuHMMData(data),NA)
 })
 
 test_that("The output has the right class attribute",{

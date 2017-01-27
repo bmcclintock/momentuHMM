@@ -13,7 +13,7 @@ test_that("It works without turning angles",{
   m<-example$m
   m$conditions$dist$angle<-NULL
 
-  expect_that(allProbs(m,length(example$m$stateNames)),not(throws_error()))
+  expect_error(allProbs(m,length(example$m$stateNames)),NA)
 })
 
 test_that("Zero-inflation works",{
@@ -26,5 +26,5 @@ test_that("Zero-inflation works",{
   m$conditions$workcons$step<-rep(0,3*nbStates)
   m$conditions$bounds$step<-rbind(m$conditions$bounds$step,matrix(c(0,1),nbStates,2,byrow=TRUE))
 
-  expect_that(allProbs(m,nbStates),not(throws_error()))
+  expect_error(allProbs(m,nbStates),NA)
 })

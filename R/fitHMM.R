@@ -131,7 +131,7 @@
 #' 
 #' @export
 #' @importFrom Rcpp evalCpp
-#' @importFrom stats model.matrix nlm terms
+#' @importFrom stats model.matrix nlm terms terms.formula
 #' @importFrom CircStats dwrpcauchy dvm pvm
 #'
 #' @useDynLib momentuHMM

@@ -1,3 +1,4 @@
+#' @importFrom stats formula terms.formula
 getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInflation){
   
   distnames<-names(dist)

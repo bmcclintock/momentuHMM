@@ -3,6 +3,7 @@
 #' @importFrom crawl crwMLE crwPredict crwSimulator
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
+#' @importFrom stats formula
 
 CRAWLwrap<-function(obsData, timeStep=1, ncores, 
                     mov.model = NULL, err.model = NULL, activity = NULL, drift = NULL, 
@@ -22,7 +23,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
   ind_data<-vector('list',length(ids))
   
   for(i in 1:length(ids)){
-    ind_data[[i]] = base::subset(obsData,ID == ids[i])
+    ind_data[[i]] = obsData[which(obsData$ID==ids[i]),]#base::subset(obsData,ID == ids[i])
   }
   
   if(is.null(mov.model)){
@@ -88,7 +89,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
   if(is.null(predTime)){
     predTime<-vector('list',length(ids))
     for(i in 1:length(ids)){
-      iTime <- range(subset(obsData,ID==i)[[Time.name]])
+      iTime <- range(obsData[which(obsData$ID==ids[i]),][[Time.name]])#range(subset(obsData,ID==i)[[Time.name]])
       predTime[[i]] <- seq(ceiling(iTime[1]),floor(iTime[length(iTime)]),timeStep)
     }
   }

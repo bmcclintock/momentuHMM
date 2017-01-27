@@ -25,8 +25,8 @@ MIfitHMM<-function(n,ncores,obsData,crwFits,
       predData<-list(mu.x=locs$mu.x,mu.y=locs$mu.y,locType=locType)
       distnames<-names(dist)[which(!(names(dist) %in% c("step","angle")))]
       mh<-data.frame(x=predData$mu.x,y=predData$mu.y,obsData[,c("ID",distnames),drop=FALSE])[which(predData$locType=="p"),]
-      mh<-momentuHMM:::prepData(mh,type=type,coordNames=coordNames,covNames=covNames,spatialCovs=spatialCovs)
-      fit<-momentuHMM::fitHMM(mh,nbStates, dist, Par, beta0, delta0,
+      mh<-prepData(mh,type=type,coordNames=coordNames,covNames=covNames,spatialCovs=spatialCovs)
+      fit<-fitHMM(mh,nbStates, dist, Par, beta0, delta0,
                               estAngleMean, formula, stationary, verbose,
                               nlmPar, fit, DM, cons,
                               userBounds, workcons, stateNames)

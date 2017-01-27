@@ -7,10 +7,10 @@ test_that("Exceptions are thrown",{
   step <- rep(1,10)
   
   data <- data.frame(ID=ID,x=x,y=y)
-  expect_that(moveData(data),throws_error())
+  expect_error(moveData(data))
   
   data <- cbind(data,step)
-  expect_that(moveData(data),not(throws_error()))
+  expect_error(moveData(data),NA)
 })
 
 test_that("The output has the right class attribute",{

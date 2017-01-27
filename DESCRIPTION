@@ -17,7 +17,13 @@ Imports:
     Rcpp,
     doParallel,
     foreach,
-    numDeriv
+    numDeriv,
+    CircStats,
+    crawl,
+    ggmap,
+    ggplot2,
+    moveHMM,
+    raster
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,

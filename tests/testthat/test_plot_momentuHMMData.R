@@ -9,11 +9,11 @@ test_that("Exceptions are thrown",{
 #   angle <- rvm(100,0,1.5)-pi
 #   data <- data.frame(ID=ID,x=x,y=y,step=step,angle=angle)
 #
-#   expect_that(plot.momentuHMMData(data),not(throws_error()))
+#   expect_error(plot.momentuHMMData(data),NA)
 #
 #   data <- data.frame()
-#   expect_that(plot.momentuHMMData(data),throws_error("The data input is empty."))
+#   expect_error(plot.momentuHMMData(data),"The data input is empty.")
 #
 #   data <- data.frame(x=x,y=y)
-#   expect_that(plot.momentuHMMData(data),throws_error())
+#   expect_error(plot.momentuHMMData(data))
 })

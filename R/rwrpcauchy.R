@@ -1,3 +1,4 @@
+#' @importFrom stats rcauchy
 rwrpcauchy<-function (n, location = 0, rho = exp(-1)) 
 {
   if(rho == 0) 

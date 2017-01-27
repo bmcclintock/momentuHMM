@@ -3,9 +3,9 @@ context("logAlpha")
 
 test_that("Exceptions are thrown",{
   m <- example$m
-  expect_that(logAlpha(m),not(throws_error()))
+  expect_error(logAlpha(m),NA)
 
-  expect_that(logAlpha(1),throws_error())
+  expect_error(logAlpha(1))
 })
 
 test_that("Output has the right format",{

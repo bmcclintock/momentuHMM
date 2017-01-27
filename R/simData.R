@@ -96,7 +96,7 @@
 #'                 anglePar=anglePar,covs=cov)
 #'
 #' @export
-#' @importFrom stats rnorm runif step
+#' @importFrom stats rnorm runif step terms.formula
 #' @importFrom raster cellFromXY getValues
 #' @importFrom moveHMM simData
 #' @importFrom CircStats rvm

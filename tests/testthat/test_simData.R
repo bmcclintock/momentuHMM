@@ -5,10 +5,10 @@ test_that("Exceptions are thrown",{
   stepPar <- c(1,10,1,5,0.2,0.3)
   anglePar <- c(0,pi,0.5,2)
 
-  expect_that(simData(1,2,dist=list(step="gamma",angle="vm"),Par=list(step=stepPar,angle=anglePar),nbCovs=2,zeroInflation=list(step=TRUE)),
-              not(throws_error()))
-  expect_that(simData(1,2,dist=list(step="gamma",angle="vm"),Par=list(step=stepPar[1:4],angle=anglePar),nbCovs=2),
-              not(throws_error()))
+  expect_error(simData(1,2,dist=list(step="gamma",angle="vm"),Par=list(step=stepPar,angle=anglePar),nbCovs=2,zeroInflation=list(step=TRUE)),
+              NA)
+  expect_error(simData(1,2,dist=list(step="gamma",angle="vm"),Par=list(step=stepPar[1:4],angle=anglePar),nbCovs=2),
+              NA)
 
   expect_that(simData(0,2,dist=list(step="gamma",angle="vm"),Par=list(step=stepPar,angle=anglePar),nbCovs=2,zeroInflation=list(step=TRUE)),
               throws_error("nbAnimals should be at least 1."))
