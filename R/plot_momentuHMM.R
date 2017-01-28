@@ -8,8 +8,8 @@
 #'
 #' @param x Object \code{momentuHMM}
 #' @param animals Vector of indices or IDs of animals for which information will be plotted.
-#' @param covs Data frame consisting of a single row indicating the covariate values to be used in plots. If none are specified, the means of any covariates appearing in the model are used (unless covariate is a factor, in which case the first factor is used).
 #' Default: \code{NULL} ; all animals are plotted.
+#' @param covs Data frame consisting of a single row indicating the covariate values to be used in plots. If none are specified, the means of any covariates appearing in the model are used (unless covariate is a factor, in which case the first factor is used).
 #' @param ask If \code{TRUE}, the execution pauses between each plot.
 #' @param breaks Histogram parameter. See \code{hist} documentation.
 #' @param hist.ylim Parameter \code{ylim} for the step length histograms.
@@ -141,7 +141,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   parindex <- c(0,cumsum(unlist(lapply(m$conditions$fullDM,ncol)))[-length(m$conditions$fullDM)])
   names(parindex) <- distnames
   for(i in distnames){
-    if(!is.null(m$conditions$DM[[i]]) & m$conditions$DMind[[i]]){
+    if(!is.null(m$conditions$DM[[i]])){# & m$conditions$DMind[[i]]){
       Par[[i]] <- m$mod$estimate[parindex[[i]]+1:ncol(m$conditions$fullDM[[i]])]
       names(Par[[i]])<-colnames(m$conditions$fullDM[[i]])
     }

@@ -11,10 +11,10 @@
 \arguments{
 \item{x}{Object \code{momentuHMM}}
 
-\item{animals}{Vector of indices or IDs of animals for which information will be plotted.}
-
-\item{covs}{Data frame consisting of a single row indicating the covariate values to be used in plots. If none are specified, the means of any covariates appearing in the model are used (unless covariate is a factor, in which case the first factor is used).
+\item{animals}{Vector of indices or IDs of animals for which information will be plotted.
 Default: \code{NULL} ; all animals are plotted.}
+
+\item{covs}{Data frame consisting of a single row indicating the covariate values to be used in plots. If none are specified, the means of any covariates appearing in the model are used (unless covariate is a factor, in which case the first factor is used).}
 
 \item{ask}{If \code{TRUE}, the execution pauses between each plot.}
 

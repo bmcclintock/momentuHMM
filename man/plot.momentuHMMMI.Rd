@@ -4,7 +4,7 @@
 \alias{plot.momentuHMMMI}
 \title{Plot \code{momentuHMMMI}}
 \usage{
-\method{plot}{momentuHMMMI}(x, animals = NULL, ask = TRUE,
+\method{plot}{momentuHMMMI}(x, animals = NULL, covs = NULL, ask = TRUE,
   breaks = "Sturges", hist.ylim = NULL, sepAnimals = FALSE,
   sepStates = FALSE, col = NULL, ...)
 }
@@ -13,6 +13,8 @@
 
 \item{animals}{Vector of indices or IDs of animals for which information will be plotted.
 Default: \code{NULL} ; all animals are plotted.}
+
+\item{covs}{Data frame consisting of a single row indicating the covariate values to be used in plots. If none are specified, the means of any covariates appearing in the model are used (unless covariate is a factor, in which case the first factor is used).}
 
 \item{ask}{If \code{TRUE}, the execution pauses between each plot.}
 
@@ -41,5 +43,13 @@ probable state sequence (decoded with the function \code{\link{viterbi}}). For e
 most probable state sequence indicates that one third of observations correspond to the first
 state, and two thirds to the second state, the plots of the densities in the first state are
 weighted by a factor 1/3, and in the second state by a factor 2/3.
+}
+\examples{
+# m is a momentuHMMMI object (as returned by fitHMM), automatically loaded with the package
+m <- example$m
+
+plot(m,ask=TRUE,animals=1,breaks=20)
+
+
 }
 
