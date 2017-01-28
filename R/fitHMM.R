@@ -345,8 +345,9 @@ fitHMM <- function(data,nbStates,dist,
       rownames(mle[[i]]) <- p$parNames[[i]]
       colnames(mle[[i]]) <- stateNames
     } else {
-      mle[[i]]<-mod$estimate[parindex[[i]]+1:ncol(fullDM[[i]])]
-      names(mle[[i]])<-colnames(fullDM[[i]])
+      mle[[i]]<-matrix(mod$estimate[parindex[[i]]+1:ncol(fullDM[[i]])],1)
+      rownames(mle[[i]])<-"[1,]"
+      colnames(mle[[i]])<-colnames(fullDM[[i]])
       #if(is.null(names(mle[[i]]))) warning("No names for the regression coeffs were provided in DM$",i)
     }
   }
@@ -381,7 +382,8 @@ fitHMM <- function(data,nbStates,dist,
 
   if(nbStates==1)
     mle$delta <- 1
-
+  names(mle$delta) <- stateNames
+  
   # compute t.p.m. if no covariates
   if(nbCovs==0 & nbStates>1) {
     trMat <- trMatrix_rcpp(nbStates,mle$beta,covs)

@@ -124,10 +124,7 @@ CI_beta <- function(m,alpha=0.95)
 
 beta_parm_list<-function(est,se,lower,upper,m){
   Par <- list(est=est,se=se,lower=lower,upper=upper)
-  rownames(Par$est) <- rownames(m)
-  rownames(Par$se) <- rownames(m)
-  rownames(Par$lower) <- rownames(m)
-  rownames(Par$upper) <- rownames(m)
+  rownames(Par$est) <- rownames(Par$se) <- rownames(Par$lower) <- rownames(Par$upper) <- "[1,]"
   colnames(Par$est) <- colnames(m)
   colnames(Par$se) <- colnames(m)
   colnames(Par$lower) <- colnames(m)

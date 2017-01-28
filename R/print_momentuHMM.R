@@ -17,7 +17,7 @@ print.momentuHMM <- function(x,...)
 {
   m <- x
   distnames <- names(m$conditions$dist)
-  DMind <- lapply(m$conditions$fullDM,function(x) all(unlist(apply(x,1,function(y) lapply(y,length)))==1))
+  DMind <- m$conditions$DMind
 
   if(length(m$mod)>1)
     cat("Value of the maximum log-likelihood:",-m$mod$minimum,"\n\n")
