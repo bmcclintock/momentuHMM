@@ -4,6 +4,7 @@
 #' @importFrom stats var qt
 #' @importFrom boot logit inv.logit
 #' @importFrom CircStats circ.mean
+#' @importFrom car dataEllipse
 MI_summary<-function(im,alpha=0.95,ncores=4){
   
   simind <- which((unlist(lapply(im,is.momentuHMM))))
@@ -335,6 +336,22 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
     mh$data[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[j]])),ncol=length(mh$data[[j]]),byrow=TRUE),2,mean)
     mh$data[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[j]])),ncol=length(mh$data[[j]]),byrow=TRUE),2,mean)
   }
+  errorEllipse<-NULL
+  if(all(c("x","y") %in% names(mh$data))){
+    checkerrs <- lapply(im,function(x) x$data[match(c("x","y"),names(x$data))])
+    ident <- !unlist(lapply(checkerrs,function(x) isTRUE(all.equal(x,checkerrs[[1]]))))
+    if(any(ident)){
+      # calculate location 95% error ellipses
+      cat("Calculating location 95% error ellipses... ")
+      registerDoParallel(cores=ncores)
+      errorEllipse<-foreach(i = 1:nrow(mh$data)) %dopar% {
+        car::dataEllipse(cbind(unlist(lapply(im,function(x) x$data$x[i])),unlist(lapply(im,function(x) x$data$y[i]))),levels=.95,draw=FALSE,segments=100)
+      }
+      stopImplicitCluster()
+      cat("DONE\n")
+    }
+  }
+  mh$errorEllipse <- errorEllipse
   mh$Par <- Par
   return(momentuHMMMI(mh))
   

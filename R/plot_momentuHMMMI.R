@@ -109,10 +109,12 @@ plot.momentuHMMMI <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges"
   if(all(c("x","y") %in% names(m$data))){
     x <- list()
     y <- list()
+    errorEllipse <- list()
     for(zoo in 1:nbAnimals) {
       ind <- which(m$data$ID==ID[zoo])
       x[[zoo]] <- m$data$x[ind]
       y[[zoo]] <- m$data$y[ind]
+      errorEllipse[[zoo]] <- m$errorEllipse[ind]
     }
   }
   
@@ -376,12 +378,14 @@ plot.momentuHMMMI <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges"
         # first point
         plot(x[[zoo]][1],y[[zoo]][1],xlim=c(xmin,xmax),ylim=c(ymin,ymax),pch=18,
              xlab="x",ylab="y",col=col[subStates[1]])
+        lines(errorEllipse[[zoo]][[1]],col=adjustcolor(col[subStates[1]],alpha.f=0.25),cex=0.6)
         
         # trajectory
         for(i in 2:length(x[[zoo]])) {
           points(x[[zoo]][i],y[[zoo]][i],pch=16,col=col[subStates[i-1]],cex=0.6)
           segments(x0=x[[zoo]][i-1],y0=y[[zoo]][i-1],x1=x[[zoo]][i],y1=y[[zoo]][i],
                    col=col[subStates[i-1]],lwd=1.3)
+          lines(errorEllipse[[zoo]][[i]],col=adjustcolor(col[subStates[i-1]],alpha.f=0.25),cex=0.6)
         }
         mtext(paste("Animal ID:",ID[zoo]),side=3,outer=TRUE,padj=2)
         legend("topleft",legText,lwd=rep(2,nbStates),col=col,bty="n")
