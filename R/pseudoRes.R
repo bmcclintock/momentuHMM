@@ -135,7 +135,7 @@ pseudoRes <- function(m)
       genRes[[paste0(j,"Res")]][1] <- qnorm(t(m$mle$delta)%*%pgenMat[1,])
 
     for(i in 2:nbObs) {
-      gamma <- trMat[,,i-1]
+      gamma <- trMat[,,i]
       c <- max(la[i-1,]) # cancels below ; prevents numerical errors
       a <- exp(la[i-1,]-c)
   

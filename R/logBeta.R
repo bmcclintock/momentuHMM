@@ -33,7 +33,7 @@ logBeta <- function(m)
   lbeta[nbObs,] <- rep(0,nbStates)
 
   for(i in (nbObs-1):1) {
-    gamma <- trMat[,,i]
+    gamma <- trMat[,,(i+1)]
     foo <- gamma%*%(allProbs[i+1,]*foo)
     lbeta[i,] <- log(foo)+lscale
     sumfoo <- sum(foo)
