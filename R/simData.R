@@ -171,7 +171,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     Par <- Par[distnames]
     delta <- NULL
     
-    mHind <- (is.null(DM) & is.null(userBounds) & is.null(formula) & is.null(spatialCovs) & is.null(covs) & nbCovs==0) # indicator for moveHMM::simData
+    mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & ("step" %in% names(dist))) # indicator for moveHMM::simData
     if(all(names(dist) %in% c("step","angle")) & mHind){
       zi <- FALSE
       if(!is.null(zeroInflation$step)) zi <- zeroInflation$step
