@@ -60,7 +60,7 @@ viterbi <- function(m)
     }
 
     xi <- matrix(NA,nbObs,nbStates)
-    foo <- delta*p[1,]
+    foo <- (delta%*%tm[,,1])*p[1,]
     xi[1,] <- foo/sum(foo)
     for(i in 2:nbObs) {
       foo <- apply(xi[i-1,]*tm[,,i],2,max)*p[i,]

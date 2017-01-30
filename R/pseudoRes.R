@@ -132,7 +132,7 @@ pseudoRes <- function(m)
     }
   
     if(!is.na(data[[j]][1]))
-      genRes[[paste0(j,"Res")]][1] <- qnorm(t(m$mle$delta)%*%pgenMat[1,])
+      genRes[[paste0(j,"Res")]][1] <- qnorm(t(m$mle$delta%*%trMat[,,1])%*%pgenMat[1,])
 
     for(i in 2:nbObs) {
       gamma <- trMat[,,i]

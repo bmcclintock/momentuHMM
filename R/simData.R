@@ -393,12 +393,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
 
     phi <- 0
     
-    if(nbStates>1) {
-      Z <- rep(NA,nbObs)
-      Z[1] <- sample(1:nbStates,size=1,prob=delta)
-    } else
-      Z <- rep(1,nbObs)
-    
     ############################
     ## Simulate movement path ##
     ############################
@@ -411,6 +405,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       genArgs[[i]] <- list(1)  # first argument = 1 (one random draw)
     }
     
+    gamma <- diag(nbStates)
+    
     if(!nbSpatialCovs) {
       DMcov <- model.matrix(formula,subCovs)
       gFull <-  DMcov %*% beta
@@ -421,13 +417,24 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       DMind <- DMinputs$DMind
       wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
       fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(formula),"term.labels")),inputs$estAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,dist,p$Bndind)
+      g <- gFull[1,,drop=FALSE]
     } else {
       for(j in 1:nbSpatialCovs){
         getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[1,1],X[1,2]))
         if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
         subSpatialcovs[1,j]<-spatialCovs[[j]][getCell]
       }
+      g <- model.matrix(formula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% beta
     }
+    gamma[!gamma] <- exp(g)
+    gamma <- t(gamma)
+    gamma <- gamma/apply(gamma,1,sum)
+    
+    if(nbStates>1) {
+      Z <- rep(NA,nbObs)
+      Z[1] <- sample(1:nbStates,size=1,prob=delta%*%gamma)
+    } else
+      Z <- rep(1,nbObs)
     
     for (k in 1:(nbObs-1)){
       

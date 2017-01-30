@@ -33,7 +33,7 @@ logAlpha <- function(m)
     trMat <- array(1,dim=c(1,1,nbObs))
 
   lscale <- 0
-  foo <- m$mle$delta*allProbs[1,]
+  foo <- (m$mle$delta%*%trMat[,,1])*allProbs[1,]
   lalpha[1,] <- log(foo)+lscale
 
   for(i in 2:nbObs) {
