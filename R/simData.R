@@ -108,7 +108,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     spatialCovs=NULL,
                     zeroInflation=NULL,obsPerAnimal=c(500,1500),
                     DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,stateNames=NULL,
-                    model=NULL,states=FALSE)
+                    model=NULL,states=FALSE,
+                    lambda=NULL,
+                    errorEllipse=NULL)
 {
   ##############################
   ## Check if !is.null(model) ##
@@ -171,7 +173,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     Par <- Par[distnames]
     delta <- NULL
     
-    mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & ("step" %in% names(dist))) # indicator for moveHMM::simData
+    mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & ("step" %in% names(dist)) & is.null(lambda) & is.null(errorEllipse)) # indicator for moveHMM::simData
     if(all(names(dist) %in% c("step","angle")) & mHind){
       zi <- FALSE
       if(!is.null(zeroInflation$step)) zi <- zeroInflation$step
@@ -540,5 +542,23 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   # include states sequence in the data
   if(states)
     data <- cbind(data,states=allStates)
-  return(momentuHMMData(data))
+  
+  if(!is.null(lambda) | !is.null(errorEllipse)){
+    if(!is.null(errorEllipse)){
+      if(!is.list(errorEllipse) | any(!(c("M","m","r") %in% names(errorEllipse)))) stop("errorEllipse must be a list of scalars named 'M', 'm', and 'r'.")
+      if(any(unlist(lapply(errorEllipse[c("M","m","r")],length))>1)) stop('errorEllipse must consist of positive scalars')
+      if(any(unlist(lapply(errorEllipse[c("M","m")],function(x) x<0)))) stop("errorEllipse$M and errorEllipse$m must be >=0")
+      if(errorEllipse$r < 0 | errorEllipse$r > 180) stop('errorEllipse$r must be in [0,180]')
+    }
+    if(!is.null(lambda))
+      if(lambda<=0) stop('lambda must be >0')
+    
+    # account for location measurement error and/or temporal irregularity
+    return(simObsData(data,dist,lambda,errorEllipse))
+    
+  } else {
+    
+    return(momentuHMMData(data))
+    
+  }
 }

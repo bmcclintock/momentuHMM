@@ -2,15 +2,13 @@
 #' @importFrom crawl crwPostIS
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
-MIfitHMM<-function(n,ncores,obsData,crwFits,
+MIfitHMM<-function(nSims,ncores,obsData,crwFits,
                    nbStates, dist, Par, beta0 = NULL, delta0 = NULL,
                    estAngleMean = NULL, formula = ~1, stationary = FALSE, verbose = 0,
                    nlmPar = NULL, fit = TRUE, DM = NULL, cons = NULL,
-                   userBounds = NULL, workcons = NULL, stateNames = NULL,
+                   userBounds = NULL, workcons = NULL, stateNames = NULL, knownStates=NULL,
                    type=c("LL", "UTM"),coordNames=c("x","y"),covNames=NULL,spatialCovs=NULL,
                    fullPost = TRUE, df = Inf, scale = 1,thetaSamp = NULL){
-  
-  nbAnimals<-length(crwFits$model_fits)
   
   if(nrow(obsData)!=nrow(crwFits$predData)){
     if(!length(names(dist)[which(!(names(dist) %in% c("step","angle")))])){
@@ -26,29 +24,49 @@ MIfitHMM<-function(n,ncores,obsData,crwFits,
     }
   }
   
-  registerDoParallel(cores=ncores)
-  multipleFits <-
-    foreach(j = 1:n, .export=c("crwPostIS","prepData","fitHMM")) %dopar% {
-      predData<-tryCatch({
+  nbAnimals<-length(crwFits$model_fits)
+  distnames<-names(dist)[which(!(names(dist) %in% c("step","angle")))]
+  
+  if(nSims>1){
+    cat('Drawing',nSims,'realizations from the position process using crawl::crwPostIs...')
+    registerDoParallel(cores=ncores)
+    mh<-
+      foreach(j = 1:nSims, .export=c("crwPostIS","prepData")) %dopar% {
         locs<-data.frame()
         locType<-character()
         for(i in 1:nbAnimals){
-          tmp<-crawl::crwPostIS(crwFits$crwSim[[i]], fullPost, df = df, scale = scale, thetaSamp = thetaSamp)
+          tmp<-tryCatch({crawl::crwPostIS(crwFits$crwSim[[i]], fullPost, df = df, scale = scale, thetaSamp = thetaSamp)},error=function(e) e)
+          if(!all(class(tmp) %in% c("crwIS","list"))) stop('crawl::crwPostIS error for individual ',i,'; ',tmp,'  Check crwPostIS arguments, crwFits$model_fits, and/or consult crawl documentation.')
           locs<-rbind(locs,tmp$alpha.sim[,c("mu.x","mu.y")])
           locType<-c(locType,tmp$locType)
         }
-        list(mu.x=locs$mu.x,mu.y=locs$mu.y,locType=locType)},error=function(e) "badSim")
-      if(predData!="badSim"){
-        distnames<-names(dist)[which(!(names(dist) %in% c("step","angle")))]
-        mh<-data.frame(x=predData$mu.x,y=predData$mu.y,obsData[,c("ID",distnames),drop=FALSE])[which(predData$locType=="p"),]
-        mh<-prepData(mh,type=type,coordNames=coordNames,covNames=covNames,spatialCovs=spatialCovs)
-        fit<-fitHMM(mh,nbStates, dist, Par, beta0, delta0,
-                                estAngleMean, formula, stationary, verbose,
-                                nlmPar, fit, DM, cons,
-                                userBounds, workcons, stateNames)
-      } else fit<-predData
-      fit
+        predData<-list(mu.x=locs$mu.x,mu.y=locs$mu.y,locType=locType)
+        df<-data.frame(x=predData$mu.x,y=predData$mu.y,obsData[,c("ID",distnames),drop=FALSE])[which(predData$locType=="p"),]
+        prepData(df,type=type,coordNames=coordNames,covNames=covNames,spatialCovs=spatialCovs)
+      }
+    stopImplicitCluster()
+    cat("DONE\n")
+    cat('Fitting',nSims,'realizations of the position process using fitHMM...')
+  } else {
+    mh <- list()
+    df <- data.frame(x=crwFits$predData$mu.x,y=crwFits$predData$mu.y,obsData[,c("ID",distnames),drop=FALSE])[which(crwFits$predData$locType=="p"),]
+    mh[[1]] <- prepData(df,type=type,coordNames=coordNames,covNames=covNames,spatialCovs=spatialCovs)
+    cat('Fitting the most likely position process using fitHMM...')
+  }
+
+  registerDoParallel(cores=ncores)
+  fits <-
+    foreach(j = 1:nSims, .export=c("fitHMM")) %dopar% {
+
+      fit<-fitHMM(mh[[j]],nbStates, dist, Par, beta0, delta0,
+                              estAngleMean, formula, stationary, verbose,
+                              nlmPar, fit, DM, cons,
+                              userBounds, workcons, stateNames, knownStates)
     }  
   stopImplicitCluster()
-  multipleFits
+  cat("DONE\n")
+  
+  if(nSims==1) fits<-fits[[1]]
+  
+  fits
 }
