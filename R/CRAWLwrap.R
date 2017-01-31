@@ -14,9 +14,10 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
                     methodSim = "IS", parIS = 1000, df = Inf, grid.eps = 1, crit = 2.5, scale = 1, force.quad)
 {
   
+  if(!is.character(coord) | length(coord)!=2) stop('coord must be character vector of length 2')
   if(any(!(c("ID",Time.name,coord) %in% names(obsData)))) stop('obsData is missing ',paste(c("ID",Time.name,coord)[!(c("ID",Time.name,coord) %in% names(obsData))],collapse=","))
   
-  toProj = obsData[!is.na(obsData$y),c("ID",Time.name,coord)]
+  toProj = obsData[!is.na(obsData[[coord[1]]]) & !is.na(obsData[[coord[2]]]),c("ID",Time.name,coord)]
   sp::coordinates(toProj) = formula(paste0("~",paste0(coord,collapse="+")))
   
   ids = unique(obsData$ID)
@@ -97,7 +98,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
   registerDoParallel(cores=ncores)
   predData <- foreach(i = 1:length(ids), .combine = rbind) %dopar% {
     mf<-model_fits[[i]]
-    if(!is.null(err.model)) mf$rho[is.na(mf$rho)]<-0
+    if(!is.null(mf$rho)) mf$rho[is.na(mf$rho)]<-0
     tmp = crawl::crwPredict(mf, predTime=predTime[[i]])
   }
   stopImplicitCluster()
@@ -105,7 +106,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
   registerDoParallel(cores=ncores)
   crwSim <- foreach(i = 1:length(model_fits)) %dopar% {
     mf<-model_fits[[i]]
-    if(!is.null(err.model)) mf$rho[is.na(mf$rho)]<-0
+    if(!is.null(mf$rho)) mf$rho[is.na(mf$rho)]<-0
     tmp = crawl::crwSimulator(mf,predTime=predData[[Time.name]][which(predData$ID==i & predData$locType=="p")], method = methodSim, parIS = parIS,
                               df = df, grid.eps = grid.eps, crit = crit, scale = scale, force.quad)
   }
