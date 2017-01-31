@@ -88,5 +88,12 @@ allProbs <- function(m,nbStates)
       allProbs[,state] <- allProbs[,state]*genProb;
     }
   }
+  if(!is.null(m$knownStates)) {
+    for (i in which(!is.na(m$knownStates))) {
+      prob <- allProbs[i, m$knownStates[i]]
+      allProbs[i, ] <- 0
+      allProbs[i, m$knownStates[i]] <- prob
+    }
+  }
   return(allProbs)
 }
