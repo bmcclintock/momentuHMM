@@ -41,9 +41,26 @@ pseudoRes <- function(m)
   distnames <- names(dist)
   
   if(is.momentuHMMMI(m)){
-    m$mle<-lapply(m$Par[distnames],function(x) x$est)
-    m$mle$beta<-m$Par$beta$est
-    m$mle$delta<-m$Par$delta$est
+    warning('pseudo-residuals are based on pooled parameter estimates and mean covariate values across multiple imputations...')
+    Par <- lapply(m$Par$real,function(x) x$est)
+    for(i in distnames){
+      if(!is.null(m$conditions$DM[[i]]))
+        Par[[i]] <- m$Par$beta[[i]]$est
+      else if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]])
+        Par[[i]] <- Par[[i]][-1,]
+    }
+    Par<-lapply(Par,function(x) c(t(x)))
+    Par<-Par[distnames]
+    beta <- m$Par$beta$beta$est
+    delta <- m$Par$real$delta$est
+    inputs <- checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
+    p <- inputs$p
+    DMinputs<-getDM(data,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation)
+    m$conditions$fullDM <- DMinputs$fullDM
+    m$mod$estimate <- n2w(Par,p$bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+  } else {
+    beta <- m$mle$beta
+    delta <- m$mle$delta
   }
   
   Fun <- lapply(dist,function(x) paste("p",x,sep=""))
@@ -63,7 +80,7 @@ pseudoRes <- function(m)
   par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind)
   
   if(nbStates>1)
-    trMat <- trMatrix_rcpp(nbStates,m$mle$beta,as.matrix(covs))
+    trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs))
   else
     trMat <- array(1,dim=c(1,1,nbObs))
 
@@ -132,7 +149,7 @@ pseudoRes <- function(m)
     }
   
     if(!is.na(data[[j]][1]))
-      genRes[[paste0(j,"Res")]][1] <- qnorm(t(m$mle$delta%*%trMat[,,1])%*%pgenMat[1,])
+      genRes[[paste0(j,"Res")]][1] <- qnorm((delta%*%trMat[,,1])%*%pgenMat[1,])
 
     for(i in 2:nbObs) {
       gamma <- trMat[,,i]

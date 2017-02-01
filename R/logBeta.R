@@ -17,6 +17,15 @@
 
 logBeta <- function(m)
 {
+  if(!is.momentuHMM(m) & !is.momentuHMMMI(m))
+    stop("'m' must be a momentuHMM or momentuHMMMI object (as output by fitHMM or MI_summary)")
+  
+  if(is.momentuHMMMI(m)){
+    beta<-m$Par$beta$beta$est
+  } else {
+    beta <- m$mle$beta
+  }
+  
   nbStates <- length(m$stateNames)
   nbObs <- nrow(m$data)
   lbeta <- matrix(NA,nbObs,nbStates)
@@ -26,7 +35,7 @@ logBeta <- function(m)
   
   allProbs <- allProbs(m,nbStates)
   
-  trMat <- trMatrix_rcpp(nbStates,m$mle$beta,as.matrix(covs))
+  trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs))
 
   lscale <- log(nbStates)
   foo <- rep(1,nbStates)/nbStates
