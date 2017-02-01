@@ -159,6 +159,17 @@ plot.momentuHMMMI <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges"
       m$conditions$userBounds[[i]]<-rbind(matrix(rep(c(-pi,pi),nbStates),nbStates,2,byrow=TRUE),m$conditions$bounds[[i]])
       m$conditions$cons[[i]] <- c(rep(1,nbStates),m$conditions$cons[[i]])
       m$conditions$workcons[[i]] <- c(rep(0,nbStates),m$conditions$workcons[[i]])
+      if(!is.null(m$conditions$DM[[i]])){
+        Par$angle <- c(rep(0,nbStates),Par$angle)
+        if(is.list(m$conditions$DM[[i]])){
+          m$conditions$DM[[i]]$mean<- ~1
+        } else {
+          tmpDM <- matrix(0,nrow(m$conditions$DM[[i]])+nbStates,ncol(m$conditions$DM[[i]])+nbStates)
+          tmpDM[nbStates+1:nrow(m$conditions$DM[[i]]),nbStates+1:ncol(m$conditions$DM[[i]])] <- m$conditions$DM[[i]]
+          diag(tmpDM)[1:nbStates] <- 1
+          m$conditions$DM[[i]] <- tmpDM
+        }
+      }
     }
   }
   
