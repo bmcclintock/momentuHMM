@@ -1,6 +1,6 @@
 #' @importFrom mvtnorm rmvnorm
 #' @importFrom argosfilter radian
-#' @importFrom crawl expandPred
+#' @importFrom crawl expandPred argosDiag2Cov
 simObsData<-function(data,dist,lambda,errorEllipse){
   
   distnames<-names(data)[which(!(names(data) %in% c("ID","x","y","step","angle")))]
@@ -40,8 +40,10 @@ simObsData<-function(data,dist,lambda,errorEllipse){
     nobs<-length(mux)
     muxy<-cbind(mux,muy)
     
-    M<-runif(nobs,0,M)
-    m<-runif(nobs,0,m)
+    M<-tmpM<-runif(nobs,0,M)
+    m<-tmpm<-runif(nobs,0,m)
+    M[which(tmpM<tmpm)]<-tmpm[which(tmpM<tmpm)]
+    m[which(tmpM<tmpm)]<-tmpM[which(tmpM<tmpm)]
     r<-runif(nobs,0,r)
     rad<-argosfilter::radian(r)
       
@@ -54,7 +56,7 @@ simObsData<-function(data,dist,lambda,errorEllipse){
     xy<-t(apply(cbind(muxy,sigma2x,sigmaxy,sigma2y),1,function(x) mvtnorm::rmvnorm(1,c(x[1],x[2]),matrix(c(x[3],x[4],x[4],x[5]),2,2))))
     
     if(!is.null(errorEllipse))
-      tmpobsData<-data.frame(time=t,ID=rep(i,nobs),x=xy[,1],y=xy[,2],error_semimajor_axis=M,error_semiminor_axis=m,error_ellipse_orientation=r,mux=mux,muy=muy)
+      tmpobsData<-data.frame(time=t,ID=rep(i,nobs),x=xy[,1],y=xy[,2],error_semimajor_axis=M,error_semiminor_axis=m,error_ellipse_orientation=r,crawl::argosDiag2Cov(M,m,rad),mux=mux,muy=muy)
     else
       tmpobsData<-data.frame(time=t,ID=rep(i,nobs),x=xy[,1],y=xy[,2],mux=mux,muy=muy)
     
@@ -72,5 +74,6 @@ simObsData<-function(data,dist,lambda,errorEllipse){
     }
     obsData<-rbind(obsData,tmpobsData)
   }
-  obsData
+  dnames<-names(obsData)
+  obsData[,c("time","ID","x","y",distnames,"mux","muy",dnames[!(dnames %in% c("time","ID","x","y",distnames,"mux","muy"))])]
 }

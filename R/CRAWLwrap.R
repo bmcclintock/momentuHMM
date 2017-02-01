@@ -1,6 +1,6 @@
 #' @export
 #' @importFrom sp coordinates
-#' @importFrom crawl crwMLE crwPredict crwSimulator
+#' @importFrom crawl crwMLE crwPredict
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom stats formula
@@ -8,10 +8,9 @@
 CRAWLwrap<-function(obsData, timeStep=1, ncores, 
                     mov.model = NULL, err.model = NULL, activity = NULL, drift = NULL, 
                     coord = c("x", "y"), Time.name = "time", initial.state, theta, fixPar, 
-                    methodMLE = "L-BFGS-B", control = NULL, constr = NULL, 
+                    method = "L-BFGS-B", control = NULL, constr = NULL, 
                     prior = NULL, need.hess = TRUE, initialSANN = list(maxit = 200), attempts = 1,
-                    predTime = NULL, 
-                    methodSim = "IS", parIS = 1000, df = Inf, grid.eps = 1, crit = 2.5, scale = 1, force.quad)
+                    predTime = NULL)
 {
   
   if(!is.character(coord) | length(coord)!=2) stop('coord must be character vector of length 2')
@@ -60,6 +59,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
     prior<-vector('list',length(ids))
   }
   
+  cat('Fitting',length(ids),'tracks using crawl::crwMLE...')
   registerDoParallel(cores=ncores) 
   model_fits <- 
     foreach(i = 1:length(ids)) %dopar% {
@@ -75,7 +75,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
         initial.state = initial.state[[i]],
         theta = theta[[i]],
         fixPar = fixPar[[i]],
-        method = methodMLE,
+        method = method,
         control = control,
         constr = constr[[i]],
         prior = prior[[i]],
@@ -86,6 +86,14 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
       
     }
   stopImplicitCluster()
+  cat("DONE\n")
+  
+  for(i in which(!unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))){
+    warning('crawl::crwMLE for individual ',ids[i],' failed;\n',model_fits[[i]],"   Check crawl::crwMLE arguments and/or consult crawl documentation.")
+  }
+  
+  convFits<-which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))
+  model_fits<-model_fits[convFits]
   
   if(is.null(predTime)){
     predTime<-vector('list',length(ids))
@@ -95,22 +103,14 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
     }
   }
   
+  cat('Predicting locations (and uncertainty) for',length(ids),'tracks using crawl::crwPredict...')
   registerDoParallel(cores=ncores)
-  predData <- foreach(i = 1:length(ids), .combine = rbind) %dopar% {
-    mf<-model_fits[[i]]
-    if(!is.null(mf$rho)) mf$rho[is.na(mf$rho)]<-0
-    tmp = crawl::crwPredict(mf, predTime=predTime[[i]])
-  }
+  predData <- 
+    foreach(i = 1:length(convFits), .export="crwPredict", .combine = rbind, .errorhandling="remove") %dopar% {
+      crawl::crwPredict(model_fits[[i]], predTime=predTime[[convFits[i]]])
+    }
   stopImplicitCluster()
+  cat("DONE\n")
   
-  registerDoParallel(cores=ncores)
-  crwSim <- foreach(i = 1:length(model_fits)) %dopar% {
-    mf<-model_fits[[i]]
-    if(!is.null(mf$rho)) mf$rho[is.na(mf$rho)]<-0
-    tmp = crawl::crwSimulator(mf,predTime=predData[[Time.name]][which(predData$ID==i & predData$locType=="p")], method = methodSim, parIS = parIS,
-                              df = df, grid.eps = grid.eps, crit = crit, scale = scale, force.quad)
-  }
-  stopImplicitCluster()
-  
-  return(list(model_fits=model_fits,predData=predData,crwSim=crwSim))
+  return(crwData(list(crwFits=model_fits,crwPredict=predData)))
 }
