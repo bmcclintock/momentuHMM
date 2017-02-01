@@ -157,7 +157,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       m$conditions$cons[[i]] <- c(rep(1,nbStates),m$conditions$cons[[i]])
       m$conditions$workcons[[i]] <- c(rep(0,nbStates),m$conditions$workcons[[i]])
       if(!is.null(m$conditions$DM[[i]])){
-        Par$angle <- c(rep(0,nbStates),Par$angle)
+        Par[[i]] <- c(rep(0,nbStates),Par[[i]])
         if(is.list(m$conditions$DM[[i]])){
           m$conditions$DM[[i]]$mean<- ~1
         } else {

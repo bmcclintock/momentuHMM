@@ -140,11 +140,21 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
     for(i in distnames[which(dist %in% angledists)]){
       if(!estAngleMean[[i]]){
-        if(!is.null(DM[[i]])) Par[[i]]<-c(rep(0,nbStates),Par[[i]])
         estAngleMean[[i]]<-TRUE
         userBounds[[i]]<-rbind(matrix(rep(c(-pi,pi),nbStates),nbStates,2,byrow=TRUE),userBounds[[i]])
         cons[[i]] <- c(rep(1,nbStates),cons[[i]])
         workcons[[i]] <- c(rep(0,nbStates),workcons[[i]])
+        if(!is.null(DM[[i]])){
+          Par[[i]] <- c(rep(0,nbStates),Par[[i]])
+          if(is.list(DM[[i]])){
+            DM[[i]]$mean<- ~1
+          } else {
+            tmpDM <- matrix(0,nrow(DM[[i]])+nbStates,ncol(DM[[i]])+nbStates)
+            tmpDM[nbStates+1:nrow(DM[[i]]),nbStates+1:ncol(DM[[i]])] <- DM[[i]]
+            diag(tmpDM)[1:nbStates] <- 1
+            DM[[i]] <- tmpDM
+          }
+        }
       }
     }
     beta <- model$mle$beta
@@ -177,6 +187,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(all(names(dist) %in% c("step","angle")) & mHind){
       zi <- FALSE
       if(!is.null(zeroInflation$step)) zi <- zeroInflation$step
+      if(is.null(dist$angle)) dist$angle<-"none"
       data <- moveHMM::simData(nbAnimals, nbStates, dist$step, dist$angle, Par$step, Par$angle, beta, covs, nbCovs, zi, obsPerAnimal, model, states)
       attr(data,"class") <- "data.frame"
       data$ID <- as.factor(data$ID)

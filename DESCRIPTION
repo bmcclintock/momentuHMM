@@ -23,7 +23,10 @@ Imports:
     ggmap,
     ggplot2,
     moveHMM,
-    raster
+    raster,
+    argosfilter,
+    car,
+    mvtnorm
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,
