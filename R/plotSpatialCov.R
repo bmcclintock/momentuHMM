@@ -22,6 +22,7 @@
 #' @param return If \code{TRUE}, the function returns a ggplot object (which can be edited and
 #' plotted manually). If \code{FALSE}, the function automatically plots the map (default).
 #'
+#' @importFrom ggplot2 ggplot element_rect element_blank
 #' @importFrom ggplot2 geom_point
 #' @importFrom ggplot2 geom_segment
 #' @importFrom ggplot2 aes_string
