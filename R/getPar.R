@@ -1,8 +1,8 @@
-#' Get starting values (Par) from momentuHMM object returned by fitHMM
+#' Get starting values from momentuHMM or momentuHMMMI object returned by fitHMM or MI_summary
 #'
-#' @param m A \code{momentuHMM} object.
+#' @param m A \code{momentuHMM} or \code{momentuHMMMI} object.
 #'
-#' @return A list of parameter values that can be used as starting values (Par) in fitHMM
+#' @return A list of parameter values (Par, beta, delta) that can be used as starting values in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
 #'
 #' @examples
 #' # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
@@ -22,17 +22,22 @@ getPar<-function(m){
   
   if(is.momentuHMMMI(m)){
     m$mle<-lapply(m$Par[distnames],function(x) x$est)
+    beta <- unname(m$Par$beta$beta$est)
+    delta <- unname(m$Par$real$delta$est)
+  } else {
+    beta <- unname(m$mle$beta)
+    delta <- unname(m$mle$delta)
   }
   
   Par <- list()
   for(i in distnames){
     if(is.null(DM[[i]])){
-      par <- m$mle[[i]]
+      par <- unname(m$mle[[i]])
       if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]]) 
         par <- par[-1,]
       par <- c(t(par))
-    } else par <- m$CI_beta[[i]]$est
+    } else par <- unname(m$CI_beta[[i]]$est)
     Par[[i]] <- par
   }
-  Par
+  list(Par=Par,beta=beta,delta=delta)
 }
