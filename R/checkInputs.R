@@ -27,7 +27,6 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,zeroInflation,DM,userBounds
   if(!is.null(stateNames) & length(stateNames)!=nbStates)
     stop("stateNames must have length ",nbStates)
 
-  par0 <- unlist(Par)
   p <- parDef(dist,nbStates,estAngleMean,zeroInflation,DM,userBounds)
   parSize <- p$parSize
   
