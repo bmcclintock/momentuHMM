@@ -63,7 +63,7 @@ simObsData<-function(data,dist,lambda,errorEllipse){
     if(!is.null(lambda)) {
       tmpobsData<-crawl::expandPred(tmpobsData,Time="time",predTime=1:nbObs,time.col=TRUE)
       tmpobsData[match(2:(nbObs-1),tmpobsData$time),c("x","y")]<-NA
-      if(!is.null(errorEllipse)) tmpobsData[match(2:(nbObs-1),tmpobsData$time),c("error_semimajor_axis","error_semiminor_axis","error_ellipse_orientation")]<-NA
+      if(!is.null(errorEllipse)) tmpobsData[match(2:(nbObs-1),tmpobsData$time),c("error_semimajor_axis","error_semiminor_axis","error_ellipse_orientation","ln.sd.x","ln.sd.y","error.corr","diag.check")]<-NA
       tmpobsData[match(1:nbObs,tmpobsData$time),c("mux","muy")]<-cbind(X,Y)
     }
     if(length(distnames)){
