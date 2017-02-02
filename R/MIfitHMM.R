@@ -9,26 +9,13 @@ MIfitHMM<-function(nSims,ncores,crwOut,
                    userBounds = NULL, workcons = NULL, stateNames = NULL, knownStates=NULL,
                    type=c("LL", "UTM"),coordNames=c("x","y"),covNames=NULL,spatialCovs=NULL,
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad,
-                   fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL){
+                   fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL,
+                   poolEstimates = TRUE){
   
   if(!is.crwData(crwOut))
     stop("crwOut must be a list containing 'crwFits' (a list of crwFit objects) and 'crwPredict' (a crwPredict object)")
   
   Time.name<-attr(crwOut$crwPredict,"Time.name")
-  
-  #if(nrow(obsData)!=nrow(crwOut$crwPredict)){
-  #  if(!length(names(dist)[which(!(names(dist) %in% c("step","angle")))])){
-  #    if(nrow(obsData)==sum(!is.na(crwOut$crwPredict$x))){
-  #      tmpObs <- data.frame(ID=crwOut$crwPredict$ID,crwOut$crwPredict[Time.name])
-  #      obsData<-merge(obsData,tmpObs,by=c("ID",Time.name),all.y=TRUE)
-  #    } else stop('obsData should consist of ',sum(!is.na(crwOut$crwPredict$x)),' rows')
-  #  } else {
-  #      stop('Because additional data streams (',paste0(names(dist)[which(!(names(dist) %in% c("step","angle")))],collapse=", "),') are used, obsData must include ',nrow(crwOut$crwPredict),' rows. 
-  #      These should include ',sum(crwOut$crwPredict$locType=="o"),' rows corresponding to each observed location, 
-  #      and ',sum(crwOut$crwPredict$locType=="p"),' rows corresponding to the predicted time steps (sorted by ID and time).  See crwOut$crwPredict for appropriate structure.')
-  #  }
-  #}
-  
   distnames<-names(dist)[which(!(names(dist) %in% c("step","angle")))]
   ids = unique(crwOut$crwPredict$ID)
   
@@ -80,7 +67,10 @@ MIfitHMM<-function(nSims,ncores,crwOut,
     warning('Fit #',i,' failed; ',fits[[i]])
   }
   
-  if(nSims==1) fits<-fits[[1]]
-  
-  fits
+  if(nSims==1) out<-fits[[1]]
+  else {
+    if(poolEstimates) out<-MI_summary(fits)
+    else out <- fits
+  }
+  out
 }
