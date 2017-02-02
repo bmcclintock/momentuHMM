@@ -103,7 +103,7 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
 
       n <- apply(!(is.na(xmat[[parms[parm]]][[j]])+is.na(xvar[[parms[parm]]][[j]])),2,sum)
       
-      if(any(n<2)) stop("need at least 2 simulations with valid estimates for ",parms[parm]," ",j)
+      if(any(n<2)) warning("need at least 2 simulations with valid point and variance estimates for ",parms[parm]," ",j)
       
       xbar[[parms[parm]]][j,] <- apply(xmat[[parms[parm]]][[j]],2,mean,na.rm=TRUE)
       B_m[[parms[parm]]][[j]] <- apply(xmat[[parms[parm]]][[j]],2,var,na.rm=TRUE)
@@ -126,7 +126,7 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
   xvar[["delta"]] <- matrix(unlist(lapply(CI,function(x) x[["delta"]]$se^2)) , ncol=nbStates, nrow=nsims, byrow=TRUE)
   n <- apply(!(is.na(xmat[["delta"]])+is.na(xvar[["delta"]])),2,sum)
   
-  if(any(n<2)) stop("need at least 2 simulations with valid estimates for delta")
+  if(any(n<2)) warning("need at least 2 simulations with valid point and variance estimates for delta")
   
   xbar[["delta"]] <- apply(xmat[["delta"]],2,mean,na.rm=TRUE)
   B_m[["delta"]] <- apply(xmat[["delta"]],2,var,na.rm=TRUE)
@@ -147,7 +147,7 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
     
     n <- apply(!(is.na(xmat[["gamma"]])+is.na(xvar[["gamma"]])),1:2,sum)
     
-    if(any(n<2)) stop("need at least 2 simulations with valid estimates for gamma")
+    if(any(n<2)) warning("need at least 2 simulations with valid point and variance estimates for gamma")
     
     xbar[["gamma"]] <-   apply( xmat[["gamma"]] , 1:2 , mean,na.rm=TRUE)
     B_m[["gamma"]] <-   apply( xmat[["gamma"]] , 1:2 , var,na.rm=TRUE)
@@ -229,7 +229,7 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
       
       n <- apply(!(is.na(xmat[[parms[parm]]][[j]])+is.na(xvar[[parms[parm]]][[j]])),2,sum)
       
-      if(any(n<2)) stop("need at least 2 simulations with valid estimates for ",parms[parm]," ",j)
+      if(any(n<2)) warning("need at least 2 simulations with valid point and variance estimates for ",parms[parm]," ",j)
       
       xbar[[parms[parm]]][j,] <- apply(xmat[[parms[parm]]][[j]],2,mean,na.rm=TRUE)
       B_m[[parms[parm]]][[j]] <- apply(xmat[[parms[parm]]][[j]],2,var,na.rm=TRUE)
@@ -257,7 +257,7 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
     xvar[["stateProbs"]] <- array(0,c(nrow(data),nbStates,nsims)) # don't have se's; might be a way to get these but probably quite complicated
     n <- apply(!(is.na(xmat[["stateProbs"]])+is.na(xvar[["stateProbs"]])),1:2,sum)
     
-    if(any(n<2)) stop("need at least 2 simulations with valid estimates for stateProbs")
+    if(any(n<2)) warning("need at least 2 simulations with valid point and variance estimates for stateProbs")
     
     xbar[["stateProbs"]] <-   apply( xmat[["stateProbs"]] , 1:2 , mean,na.rm=TRUE)
     B_m[["stateProbs"]] <-   apply( xmat[["stateProbs"]] , 1:2 , var,na.rm=TRUE)
@@ -277,7 +277,7 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
     xvar[["timeInStates"]] <- matrix(0 , ncol=nbStates, nrow=nsims, byrow=TRUE) # don't have se's; might be a way to get these but probably quite complicated
     n <- apply(!(is.na(xmat[["timeInStates"]])+is.na(xvar[["timeInStates"]])),2,sum)
     
-    if(any(n<2)) stop("need at least 2 simulations with valid estimates for timeInStates")
+    if(any(n<2)) warning("need at least 2 simulations with valid point and variance estimates for timeInStates")
     
     xbar[["timeInStates"]] <- apply(xmat[["timeInStates"]],2,mean,na.rm=TRUE)
     B_m[["timeInStates"]] <- apply(xmat[["timeInStates"]],2,var,na.rm=TRUE)

@@ -1,5 +1,4 @@
 #' @export
-#' @importFrom sp coordinates
 #' @importFrom crawl crwMLE crwPredict
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
@@ -15,9 +14,6 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
   
   if(!is.character(coord) | length(coord)!=2) stop('coord must be character vector of length 2')
   if(any(!(c("ID",Time.name,coord) %in% names(obsData)))) stop('obsData is missing ',paste(c("ID",Time.name,coord)[!(c("ID",Time.name,coord) %in% names(obsData))],collapse=","))
-  
-  toProj = obsData[!is.na(obsData[[coord[1]]]) & !is.na(obsData[[coord[2]]]),c("ID",Time.name,coord)]
-  sp::coordinates(toProj) = formula(paste0("~",paste0(coord,collapse="+")))
   
   ids = unique(obsData$ID)
   ind_data<-vector('list',length(ids))
