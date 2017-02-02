@@ -83,7 +83,7 @@ CI_beta <- function(m,alpha=0.95)
   
   Par <- list()
   for(i in distnames){
-    est <- wpar[parindex[[i]]+1:ncol(fullDM[[i]])]^m$conditions$cons[[i]]+m$conditions$workcons[[i]]
+    est <- wpar[parindex[[i]]+1:ncol(fullDM[[i]])]#^m$conditions$cons[[i]]+m$conditions$workcons[[i]]
     var <- diag(Sigma)[parindex[[i]]+1:ncol(fullDM[[i]])]
     
     # if negative variance, replace by NA
