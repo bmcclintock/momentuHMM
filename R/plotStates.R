@@ -18,8 +18,10 @@
 
 plotStates <- function(m,animals=NULL,ask=TRUE)
 {
-  if(!is.momentuHMM(m) & !is.momentuHMMMI(m))
-    stop("'m' must be a momentuHMM or momentuHMMMI object (as output by fitHMM or MI_summary)")
+  if(!is.momentuHMM(m) & !is.miHMM(m) & !is.momentuHMMMI(m))
+    stop("'m' must be a momentuHMM, miHMM, or momentuHMMMI object (as output by fitHMM, MIfitHMM, or MI_summary)")
+  
+  if(is.miHMM(m)) m <- m$miSum
 
   nbAnimals <- length(unique(m$data$ID))
   nbStates <- length(m$stateNames)#ifelse(is.momentuHMM(m),ncol(m$mle$stepPar),ncol(m$Par$stepPar$est))

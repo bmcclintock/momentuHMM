@@ -1,12 +1,12 @@
 
-#' Plot \code{momentuHMMMI}
+#' Plot \code{miHMM}
 #'
 #' Plot the fitted step and angle densities over histograms of the data, transition probabilities
 #' as functions of the covariates, and maps of the animals' tracks colored by the decoded states.
 #'
-#' @method plot momentuHMMMI
+#' @method plot miHMM
 #'
-#' @param x Object \code{momentuHMMMI}
+#' @param x Object \code{miHMM}
 #' @param animals Vector of indices or IDs of animals for which information will be plotted.
 #' Default: \code{NULL} ; all animals are plotted.
 #' @param covs Data frame consisting of a single row indicating the covariate values to be used in plots. If none are specified, the means of any covariates appearing in the model are used (unless covariate is a factor, in which case the first factor is used).
@@ -28,7 +28,7 @@
 #' weighted by a factor 1/3, and in the second state by a factor 2/3.
 #'
 #' @examples
-#' # m is a momentuHMMMI object (as returned by fitHMM), automatically loaded with the package
+#' # m is a miHMM object (as returned by MIfitHMM), automatically loaded with the package
 #' m <- example$m
 #'
 #' plot(m,ask=TRUE,animals=1,breaks=20)
@@ -37,10 +37,10 @@
 #' @export
 #' @importFrom graphics legend lines segments
 
-plot.momentuHMMMI <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
+plot.miHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
                               sepStates=FALSE,col=NULL,...)
 {
-  m <- x # the name "x" is for compatibility with the generic method
+  m <- x$miSum # the name "x" is for compatibility with the generic method
   nbAnimals <- length(unique(m$data$ID))
   nbStates <- length(m$stateNames)
   
@@ -413,7 +413,7 @@ plot.momentuHMMMI <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges"
 # Plot histograms
 #
 # Plot histograms of steps and angles, and the fitted densities. This function is only
-# used in the function plot.momentuHMMMI.
+# used in the function plot.miHMM.
 #
 # Parameters:
 #  - step: list of series of steps if several animals, or series of steps otherwise.
@@ -424,7 +424,7 @@ plot.momentuHMMMI <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges"
 #    and the second the values of the density.
 #  - angleDensities: same as stepDensities, but for angles.
 #  - message: message to print above the histograms
-#  - sepStates, breaks, hist.ylim: see arguments of plot.momentuHMMMI.
+#  - sepStates, breaks, hist.ylim: see arguments of plot.miHMM.
 #  - state: if sepStates, this function needs to know which state needs to be plotted.
 #  - col: colors of the state-dependent density lines
 

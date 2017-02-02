@@ -12,8 +12,10 @@
 #' @export
 getPar<-function(m){
   
-  if(!is.momentuHMM(m) & !is.momentuHMMMI(m))
-    stop("'m' must be a momentuHMM or momentuHMMMI object (as output by fitHMM or MI_summary)")
+  if(!is.momentuHMM(m) & !is.miHMM(m) & !is.momentuHMMMI(m))
+    stop("'m' must be a momentuHMM, miHMM, or momentuHMMMI object (as output by fitHMM, MIfitHMM, or MI_summary)")
+  
+  if(is.miHMM(m)) m <- m$miSum
   
   nbStates <- length(m$stateNames)
   dist <- m$conditions$dist

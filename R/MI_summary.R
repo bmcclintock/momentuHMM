@@ -353,7 +353,7 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
   }
   mh$errorEllipse <- errorEllipse
   mh$Par <- Par
-  return(momentuHMMMI(mh))
+  return(miHMM(list(miSum=momentuHMMMI(mh),HMMfits=im)))
   
 }
 

@@ -1,15 +1,21 @@
 
-#' Print \code{momentuHMMMI}
-#' @method print momentuHMMMI
+#' Print \code{miHMM}
+#' @method print miHMM
 #'
-#' @param x A \code{momentuHMMMI} object.
+#' @param x A \code{miHMM} object.
 #' @param ... Currently unused. For compatibility with generic method.
+#'
+#' @examples
+#' # m is a miHMM object (as returned by MIfitHMM), automatically loaded with the package
+#' m <- example$m
+#'
+#' print(m)
 #'
 #' @export
 
-print.momentuHMMMI <- function(x,...)
+print.miHMM <- function(x,...)
 {
-  m <- x  
+  m <- x$miSum
   distnames <- names(m$conditions$dist)
   nbStates <- length(m$stateNames)
   DMind <- m$conditions$DMind
@@ -56,5 +62,4 @@ print.momentuHMMMI <- function(x,...)
     cat("--------------------------------------------\n")
     print(m$Par$timeInStates$est)   
   }
-  
 }
