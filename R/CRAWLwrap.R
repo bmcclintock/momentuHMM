@@ -6,7 +6,7 @@
 #' @importFrom stats formula
 
 CRAWLwrap<-function(obsData, timeStep=1, ncores, 
-                    mov.model = NULL, err.model = NULL, activity = NULL, drift = NULL, 
+                    mov.model = ~1, err.model = NULL, activity = NULL, drift = NULL, 
                     coord = c("x", "y"), Time.name = "time", initial.state, theta, fixPar, 
                     method = "L-BFGS-B", control = NULL, constr = NULL, 
                     prior = NULL, need.hess = TRUE, initialSANN = list(maxit = 200), attempts = 1,
@@ -31,14 +31,36 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
     for(i in 1:length(ids)){
       mov.model[[i]] <- ~1
     }
+  } else if(is.formula(mov.model)){
+    tmpmov.model<-mov.model
+    mov.model<-vector('list',length(ids))
+    for(i in 1:length(ids)){
+      mov.model[[i]] <- tmpmov.model
+    }    
   }
   
   if(is.null(err.model)){
     err.model<-vector('list',length(ids))
+  } else if(is.list(err.model)){
+    if(!is.null(names(err.model))){
+      if(all(names(err.model) %in% c(coord,"rho"))){
+        tmperr.model<-err.model
+        err.model<-vector('list',length(ids))
+        for(i in 1:length(ids)){
+          err.model[[i]] <- tmperr.model
+        } 
+      }
+    }
   }
   
   if(is.null(activity)){
     activity<-vector('list',length(ids))
+  } else if(is.formula(activity)){
+    tmpactivity<-activity
+    activity<-vector('list',length(ids))
+    for(i in 1:length(ids)){
+      activity[[i]] <- tmpactivity
+    }    
   }
   
   if(is.null(drift)){
@@ -46,6 +68,28 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
     for(i in 1:length(ids)){
       drift[[i]] <- FALSE
     }
+  } else if(is.logical(drift)){
+    tmpdrift<-drift
+    drift<-vector('list',length(ids))
+    for(i in 1:length(ids)){
+      drift[[i]] <- tmpdrift
+    }    
+  }
+  
+  if(!is.list(theta)){
+    tmptheta<-theta
+    theta<-vector('list',length(ids))
+    for(i in 1:length(ids)){
+      theta[[i]] <- tmptheta
+    } 
+  }
+  
+  if(!is.list(fixPar)){
+    tmpfixPar<-fixPar
+    fixPar<-vector('list',length(ids))
+    for(i in 1:length(ids)){
+      fixPar[[i]] <- tmpfixPar
+    } 
   }
   
   if(is.null(constr)){
@@ -53,10 +97,26 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
     for(i in 1:length(ids)){
       constr[[i]]<-list(lower = -Inf,upper = Inf)
     }
+  } else if(is.list(constr)){
+    if(!is.null(names(constr))){
+      if(all(names(constr) %in% c("upper","lower"))){
+        tmpconstr<-constr
+        constr<-vector('list',length(ids))
+        for(i in 1:length(ids)){
+          constr[[i]] <- tmpconstr
+        } 
+      }
+    }
   }
   
   if(is.null(prior)){
     prior<-vector('list',length(ids))
+  } else if(is.function(prior)){
+    tmpprior<-prior
+    prior<-vector('list',length(ids))
+    for(i in 1:length(ids)){
+      prior[[i]] <- tmpprior
+    }    
   }
   
   cat('Fitting',length(ids),'tracks using crawl::crwMLE...')
