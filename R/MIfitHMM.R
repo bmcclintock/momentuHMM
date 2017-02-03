@@ -2,7 +2,7 @@
 #' @importFrom crawl crwPostIS crwSimulator
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
-MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE,
+MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
                    miData,
                    nbStates, dist, Par, beta0 = NULL, delta0 = NULL,
                    estAngleMean = NULL, formula = ~1, stationary = FALSE, verbose = 0,
@@ -89,7 +89,7 @@ MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE,
   
   if(nSims==1) out<-fits[[1]]
   else {
-    if(poolEstimates) out<-MI_summary(fits)
+    if(poolEstimates) out<-MI_summary(fits,alpha=alpha,ncores=ncores,includeHMMfits=TRUE)
     else out <- fits
   }
   out

@@ -2,18 +2,18 @@
 % Please edit documentation in R/getPar.R
 \name{getPar}
 \alias{getPar}
-\title{Get starting values from momentuHMM or momentuHMMMI object returned by fitHMM or MI_summary}
+\title{Get starting values from momentuHMM or miSum object returned by fitHMM or MI_summary}
 \usage{
 getPar(m)
 }
 \arguments{
-\item{m}{A \code{momentuHMM} or \code{momentuHMMMI} object.}
+\item{m}{A \code{momentuHMM} or \code{miSum} object.}
 }
 \value{
 A list of parameter values (Par, beta, delta) that can be used as starting values in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
 }
 \description{
-Get starting values from momentuHMM or momentuHMMMI object returned by fitHMM or MI_summary
+Get starting values from momentuHMM or miSum object returned by fitHMM or MI_summary
 }
 \examples{
 # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package

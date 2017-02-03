@@ -3,7 +3,7 @@
 #'
 #' Plot the states and states probabilities.
 #'
-#' @param m A \code{\link{momentuHMM}} or \code{\link{momentuHMMMI}} object
+#' @param m A \code{\link{momentuHMM}} or \code{\link{miSum}} object
 #' @param animals Vector of indices or IDs of animals for which states will be plotted.
 #' @param ask If \code{TRUE}, the execution pauses between each plot.
 #'
@@ -18,8 +18,8 @@
 
 plotStates <- function(m,animals=NULL,ask=TRUE)
 {
-  if(!is.momentuHMM(m) & !is.miHMM(m) & !is.momentuHMMMI(m))
-    stop("'m' must be a momentuHMM, miHMM, or momentuHMMMI object (as output by fitHMM, MIfitHMM, or MI_summary)")
+  if(!is.momentuHMM(m) & !is.miHMM(m) & !is.miSum(m))
+    stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MI_summary)")
   
   if(is.miHMM(m)) m <- m$miSum
 

@@ -32,14 +32,14 @@
 
 plotPR <- function(m)
 {
-  if(!is.momentuHMM(m) & !is.miHMM(m) & !is.momentuHMMMI(m))
-    stop("'m' must be a momentuHMM, miHMM, or momentuHMMMI object (as output by fitHMM, MIfitHMM, or MI_summary)")
+  if(!is.momentuHMM(m) & !is.miHMM(m) & !is.miSum(m))
+    stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MI_summary)")
   
   if(is.miHMM(m)) m <- m$miSum
   
   distnames <- names(m$conditions$dist)
   
-  if(is.momentuHMMMI(m)){
+  if(is.miSum(m)){
     m$mle<-lapply(m$Par[distnames],function(x) x$est)
     m$mle$beta<-m$Par$beta$est
     m$mle$delta<-m$Par$delta$est

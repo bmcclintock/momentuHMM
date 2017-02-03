@@ -31,8 +31,8 @@
 
 pseudoRes <- function(m)
 {
-  if(!is.momentuHMM(m) & !is.miHMM(m) & !is.momentuHMMMI(m))
-    stop("'m' must be a momentuHMM, miHMM, or momentuHMMMI object (as output by fitHMM, MIfitHMM, or MI_summary)")
+  if(!is.momentuHMM(m) & !is.miHMM(m) & !is.miSum(m))
+    stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MI_summary)")
   
   if(is.miHMM(m)) m <- m$miSum
 
@@ -42,7 +42,7 @@ pseudoRes <- function(m)
   dist <- m$conditions$dist
   distnames <- names(dist)
   
-  if(is.momentuHMMMI(m)){
+  if(is.miSum(m)){
     warning('pseudo-residuals are based on pooled parameter estimates and mean covariate values across multiple imputations...')
     Par <- lapply(m$Par$real,function(x) x$est)
     for(i in distnames){

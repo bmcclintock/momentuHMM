@@ -5,7 +5,7 @@
 #' @importFrom boot logit inv.logit
 #' @importFrom CircStats circ.mean
 #' @importFrom car dataEllipse
-MI_summary<-function(im,alpha=0.95,ncores=4){
+MI_summary<-function(im,alpha=0.95,ncores,includeHMMfits=FALSE){
   
   simind <- which((unlist(lapply(im,is.momentuHMM))))
   nsims <- length(simind)
@@ -353,8 +353,9 @@ MI_summary<-function(im,alpha=0.95,ncores=4){
   }
   mh$errorEllipse <- errorEllipse
   mh$Par <- Par
-  return(miHMM(list(miSum=momentuHMMMI(mh),HMMfits=im)))
   
+  if(includeHMMfits) return(miHMM(list(miSum=miSum(mh),HMMfits=im)))
+  else return(miSum(mh))
 }
 
 mi_parm_list<-function(est,se,lower,upper,m){

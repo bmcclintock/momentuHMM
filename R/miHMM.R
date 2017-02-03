@@ -13,7 +13,7 @@ miHMM <- function(m)
   if(is.null(m$miSum) | is.null(m$HMMfits))
     stop("Can't construct miHMM object: fields are missing")
   
-  stopifnot(inherits(m$miSum,"momentuHMMMI"))
+  stopifnot(inherits(m$miSum,"miSum"))
   
   obj <- m
   

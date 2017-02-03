@@ -1,6 +1,6 @@
-#' Get starting values from momentuHMM or momentuHMMMI object returned by fitHMM or MI_summary
+#' Get starting values from momentuHMM or miSum object returned by fitHMM or MI_summary
 #'
-#' @param m A \code{momentuHMM} or \code{momentuHMMMI} object.
+#' @param m A \code{momentuHMM} or \code{miSum} object.
 #'
 #' @return A list of parameter values (Par, beta, delta) that can be used as starting values in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
 #'
@@ -12,8 +12,8 @@
 #' @export
 getPar<-function(m){
   
-  if(!is.momentuHMM(m) & !is.miHMM(m) & !is.momentuHMMMI(m))
-    stop("'m' must be a momentuHMM, miHMM, or momentuHMMMI object (as output by fitHMM, MIfitHMM, or MI_summary)")
+  if(!is.momentuHMM(m) & !is.miHMM(m) & !is.miSum(m))
+    stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MI_summary)")
   
   if(is.miHMM(m)) m <- m$miSum
   
@@ -22,7 +22,7 @@ getPar<-function(m){
   distnames <- names(dist)
   DM <- m$conditions$DM
   
-  if(is.momentuHMMMI(m)){
+  if(is.miSum(m)){
     m$mle<-lapply(m$Par[distnames],function(x) x$est)
     beta <- unname(m$Par$beta$beta$est)
     delta <- unname(m$Par$real$delta$est)
