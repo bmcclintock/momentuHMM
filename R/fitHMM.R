@@ -172,7 +172,7 @@ fitHMM <- function(data,nbStates,dist,
   Par <- Par[distnames]
   
   # build design matrix for t.p.m.
-  covsCol <- seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+  covsCol <- rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
   covs <- model.matrix(formula,data)
   if(nrow(covs)!=nrow(data)) stop("covariates cannot contain missing values")
   nbCovs <- ncol(covs)-1 # substract intercept column
@@ -353,7 +353,7 @@ fitHMM <- function(data,nbStates,dist,
   }
 
   if(!is.null(mle$beta)) {
-    rownames(mle$beta) <- c("(Intercept)",attr(terms(formula),"term.labels"))
+    rownames(mle$beta) <- colnames(covs)#c("(Intercept)",attr(terms(formula),"term.labels"))
     columns <- NULL
     for(i in 1:nbStates)
       for(j in 1:nbStates) {
