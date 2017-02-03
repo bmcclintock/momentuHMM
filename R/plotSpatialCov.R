@@ -64,6 +64,8 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=1,alph
   if(length(alpha)!=1)
     stop("'alpha' should be of length 1")
   
+  x <- y <- NULL #gets rid of no visible binding for global variable ‘x’ and 'y' NOTE in R cmd check
+  
   #################
   ## Plot tracks ##
   #################

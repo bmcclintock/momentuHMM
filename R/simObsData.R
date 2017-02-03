@@ -1,6 +1,7 @@
 #' @importFrom mvtnorm rmvnorm
 #' @importFrom argosfilter radian
 #' @importFrom crawl expandPred argosDiag2Cov
+#' @importFrom stats rexp
 simObsData<-function(data,dist,lambda,errorEllipse){
   
   distnames<-names(data)[which(!(names(data) %in% c("ID","x","y","step","angle")))]

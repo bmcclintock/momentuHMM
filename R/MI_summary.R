@@ -1,7 +1,7 @@
 #' @export
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
-#' @importFrom stats var qt
+#' @importFrom stats median var qt
 #' @importFrom boot logit inv.logit
 #' @importFrom CircStats circ.mean
 #' @importFrom car dataEllipse
