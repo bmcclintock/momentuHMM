@@ -120,8 +120,15 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
   DMind <- lapply(simpDM,function(x) all(unlist(apply(x,1,function(y) lapply(y,length)))==1))
   
   for(i in distnames){
-    bndInd <- which(!duplicated(getboundInd(simpDM[[i]])))
-    if(any(bounds[[i]]!=bounds[[i]][bndInd,][getboundInd(simpDM[[i]]),])) stop('userBounds not consistent with DM for ',i)
+    #if(DMind[[i]]){
+    #  getbndInd <- getboundInd(simpDM[[i]])
+    #} else {
+    #  getbndInd <- getboundInd(fullDM[[i]][,,1])
+    #  #getbndInd <- apply(fullDM[[i]],3,getboundInd)
+    #}
+    getbndInd <- getboundInd(fullDM[[i]][,,1])
+    bndInd <- which(!duplicated(getbndInd))
+    if(any(bounds[[i]]!=bounds[[i]][bndInd,][getbndInd,])) stop('userBounds not consistent with DM for ',i)
     if(is.null(rownames(DM[[i]]))) rownames(simpDM[[i]]) <- rownames(bounds[[i]])
   }
   
