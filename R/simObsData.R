@@ -56,7 +56,7 @@ simObsData<-function(data,dist,lambda,errorEllipse){
     xy<-t(apply(cbind(muxy,sigma2x,sigmaxy,sigma2y),1,function(x) mvtnorm::rmvnorm(1,c(x[1],x[2]),matrix(c(x[3],x[4],x[4],x[5]),2,2))))
     
     if(!is.null(errorEllipse))
-      tmpobsData<-data.frame(time=t,ID=rep(i,nobs),x=xy[,1],y=xy[,2],error_semimajor_axis=error_semimajor_axis,error_semiminor_axis=error_semiminor_axis,error_ellipse_orientation=error_ellipse_orientation,crawl::argosDiag2Cov(M,m,r),mux=mux,muy=muy)
+      tmpobsData<-data.frame(time=t,ID=rep(i,nobs),x=xy[,1],y=xy[,2],error_semimajor_axis=error_semimajor_axis,error_semiminor_axis=error_semiminor_axis,error_ellipse_orientation=error_ellipse_orientation,crawl::argosDiag2Cov(error_semimajor_axis,error_semiminor_axis,error_ellipse_orientation),mux=mux,muy=muy)
     else
       tmpobsData<-data.frame(time=t,ID=rep(i,nobs),x=xy[,1],y=xy[,2],mux=mux,muy=muy)
     
