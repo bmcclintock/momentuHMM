@@ -168,7 +168,7 @@ fitHMM <- function(data,nbStates,dist,
   if(!is.list(Par) | is.null(names(Par))) stop("'Par' must be a named list")
   distnames<-names(dist)
   if(any(is.na(match(distnames,names(data))))) stop(paste0(distnames[is.na(match(distnames,names(data)))],collapse=", ")," not found in data")
-  if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
+  if(!all(distnames %in% names(Par))) stop(paste0(distnames[which(!(distnames %in% names(Par)))],collapse=", ")," missing in 'Par'")
   Par <- Par[distnames]
   
   # build design matrix for t.p.m.
