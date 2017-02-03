@@ -35,10 +35,11 @@
 #'
 #'
 #' @export
-#' @importFrom graphics legend lines segments
+#' @importFrom graphics legend lines segments 
+#' @importFrom grDevices adjustcolor
 
 plot.miHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
-                              sepStates=FALSE,col=NULL,...)
+                              sepStates=FALSE,col=NULL,plotEllipse=TRUE,...)
 {
   m <- x$miSum # the name "x" is for compatibility with the generic method
   nbAnimals <- length(unique(m$data$ID))
@@ -389,14 +390,14 @@ plot.miHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.y
         # first point
         plot(x[[zoo]][1],y[[zoo]][1],xlim=c(xmin,xmax),ylim=c(ymin,ymax),pch=18,
              xlab="x",ylab="y",col=col[subStates[1]])
-        lines(errorEllipse[[zoo]][[1]],col=adjustcolor(col[subStates[1]],alpha.f=0.25),cex=0.6)
+        if(plotEllipse) lines(errorEllipse[[zoo]][[1]],col=adjustcolor(col[subStates[1]],alpha.f=0.25),cex=0.6)
         
         # trajectory
         for(i in 2:length(x[[zoo]])) {
           points(x[[zoo]][i],y[[zoo]][i],pch=16,col=col[subStates[i-1]],cex=0.6)
           segments(x0=x[[zoo]][i-1],y0=y[[zoo]][i-1],x1=x[[zoo]][i],y1=y[[zoo]][i],
                    col=col[subStates[i-1]],lwd=1.3)
-          lines(errorEllipse[[zoo]][[i]],col=adjustcolor(col[subStates[i-1]],alpha.f=0.25),cex=0.6)
+          if(plotEllipse) lines(errorEllipse[[zoo]][[i]],col=adjustcolor(col[subStates[i-1]],alpha.f=0.25),cex=0.6)
         }
         mtext(paste("Animal ID:",ID[zoo]),side=3,outer=TRUE,padj=2)
         legend("topleft",legText,lwd=rep(2,nbStates),col=col,bty="n")
