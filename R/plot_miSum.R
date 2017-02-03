@@ -136,6 +136,10 @@ plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.y
     if(nrow(covs)>1) stop('covs must consist of a single row')
     if(!all(names(covs) %in% names(m$data))) stop('invalid covs specified')
     if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(m$data$ID))
+    for(j in names(m$data)[which(!(names(m$data) %in% names(covs)))]){
+      if(class(m$data[[j]])=="factor") covs[[j]] <- m$data[[j]][which(m$data$ID %in% ID)][1]
+      else covs[[j]]<-mean(m$data[[j]][which(m$data$ID %in% ID)],na.rm=TRUE)
+    }
   }
   nbCovs <- ncol(model.matrix(m$conditions$formula,m$data))-1 # substract intercept column
   #par <- w2n(m$mod$estimate,m$conditions$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,DMind,m$conditions$workcons,nrow(m$data),m$conditions$dist,p$Bndind)
@@ -313,47 +317,67 @@ plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.y
     par(mfrow=c(nbStates,nbStates))
     par(mar=c(5,4,4,2)-c(0,0,1.5,1)) # bottom, left, top, right
     
-    rawCovs <- m$rawCovs
-    gridLength <- 100
-    
     if(nrow(beta)>1) {
-      for(cov in 1:ncol(m$rawCovs)) {
-        inf <- min(rawCovs[,cov],na.rm=T)
-        sup <- max(rawCovs[,cov],na.rm=T)
+      
+      # values of each covariate
+      rawCovs <- m$rawCovs
+      #if(is.null(covs)) {
+      #  rawCovs <- m$rawCovs
+      #  meanCovs <- colSums(rawCovs)/nrow(rawCovs)
+      #} else {
+      #  rawCovs <- m$data[,names(covs),drop=FALSE]
+      #  meanCovs <- as.numeric(covs)
+      #}
+      
+      for(cov in 1:ncol(rawCovs)) {
         
-        # mean values of each covariate
-        meanCovs <- colSums(rawCovs)/nrow(rawCovs)
+        if(!is.factor(rawCovs[,cov])){
+          
+          gridLength <- 100
+          
+          inf <- min(rawCovs[,cov],na.rm=T)
+          sup <- max(rawCovs[,cov],na.rm=T)
+          
+          # set all covariates to their mean, except for "cov"
+          # (which takes a grid of values from inf to sup)
+          tempCovs <- data.frame(matrix(covs[names(rawCovs)][[1]],nrow=gridLength,ncol=1))
+          if(ncol(rawCovs)>1)
+            for(i in 2:ncol(rawCovs))
+              tempCovs <- cbind(tempCovs,rep(covs[names(rawCovs)][[i]],gridLength))
+          
+          tempCovs[,cov] <- seq(inf,sup,length=gridLength)
+        } else {
+          gridLength<- nlevels(rawCovs[,cov])
+          # set all covariates to their mean, except for "cov"
+          tempCovs <- data.frame(matrix(covs[names(rawCovs)][[1]],nrow=gridLength,ncol=1))
+          if(ncol(rawCovs)>1)
+            for(i in 2:ncol(rawCovs))
+              tempCovs <- cbind(tempCovs,rep(covs[names(rawCovs)][[i]],gridLength))
+          
+          tempCovs[,cov] <- as.factor(levels(rawCovs[,cov]))
+        }
         
-        # set all covariates to their mean, except for "cov"
-        # (which takes a grid of values from inf to sup)
-        tempCovs <- data.frame(rep(meanCovs[1],gridLength))
-        if(length(meanCovs)>1)
-          for(i in 2:length(meanCovs))
-            tempCovs <- cbind(tempCovs,rep(meanCovs[i],gridLength))
-        
-        tempCovs[,cov] <- seq(inf,sup,length=gridLength)
-        colnames(tempCovs) <- colnames(rawCovs)
+        names(tempCovs) <- names(rawCovs)
+        tmpcovs<-covs[names(rawCovs)]
+        for(i in which(unlist(lapply(rawCovs,is.factor)))){
+          tempCovs[[i]] <- factor(tempCovs[[i]],levels=levels(rawCovs[,i]))
+        }
+        for(i in which(!unlist(lapply(rawCovs,is.factor)))){
+          tmpcovs[i]<-round(covs[names(rawCovs)][i],2)
+        }
         
         desMat <- model.matrix(m$conditions$formula,data=tempCovs)
         
-        # check that the current covariate (cov) is included in the model
-        used <- FALSE
-        for(i in 2:ncol(desMat)) {
-          c <- desMat[,i]
-          if(length(which(c!=mean(c)))>0)
-            used <- TRUE
-        }
+        trMat <- trMatrix_rcpp(nbStates,beta,desMat)
         
-        if(used) {
-          trMat <- trMatrix_rcpp(nbStates,beta,desMat)
-          
-          for(i in 1:nbStates)
-            for(j in 1:nbStates)
-              plot(tempCovs[,cov],trMat[i,j,],type="l",ylim=c(0,1),xlab=names(rawCovs)[cov],
-                   ylab=paste(i,"->",j))
-          
-          mtext("Transition probabilities",side=3,outer=TRUE,padj=2)
-        }
+        for(i in 1:nbStates)
+          for(j in 1:nbStates)
+            plot(tempCovs[,cov],trMat[i,j,],type="l",ylim=c(0,1),xlab=names(rawCovs)[cov],
+                 ylab=paste(i,"->",j))
+        
+        if(ncol(rawCovs)>1) mtext(paste("Transition probabilities:",paste(names(rawCovs)[-cov],"=",tmpcovs[-cov],collapse=", ")),side=3,outer=TRUE,padj=2)
+        else mtext("Transition probabilities:",side=3,outer=TRUE,padj=2)
+        
       }
     }
   }
