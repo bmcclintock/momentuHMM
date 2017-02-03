@@ -40,12 +40,12 @@ simObsData<-function(data,dist,lambda,errorEllipse){
     nobs<-length(mux)
     muxy<-cbind(mux,muy)
     
-    M<-tmpM<-runif(nobs,0,M)
-    m<-tmpm<-runif(nobs,0,m)
-    M[which(tmpM<tmpm)]<-tmpm[which(tmpM<tmpm)]
-    m[which(tmpM<tmpm)]<-tmpM[which(tmpM<tmpm)]
-    r<-runif(nobs,0,r)
-    rad<-argosfilter::radian(r)
+    error_semimajor_axis<-tmpM<-runif(nobs,0,M)
+    error_semiminor_axis<-tmpm<-runif(nobs,0,m)
+    error_semimajor_axis[which(tmpM<tmpm)]<-tmpm[which(tmpM<tmpm)]
+    error_semiminor_axis[which(tmpM<tmpm)]<-tmpM[which(tmpM<tmpm)]
+    error_ellipse_orientation<-runif(nobs,0,r)
+    rad<-argosfilter::radian(error_ellipse_orientation)
       
     #calculate bivariate normal error variance-covariance matrix (Sigma)
     sigma2x<-(M/sqrt(2))^2*sin(rad)^2+(m/sqrt(2))^2*cos(rad)^2 # x measurement error term
@@ -56,7 +56,7 @@ simObsData<-function(data,dist,lambda,errorEllipse){
     xy<-t(apply(cbind(muxy,sigma2x,sigmaxy,sigma2y),1,function(x) mvtnorm::rmvnorm(1,c(x[1],x[2]),matrix(c(x[3],x[4],x[4],x[5]),2,2))))
     
     if(!is.null(errorEllipse))
-      tmpobsData<-data.frame(time=t,ID=rep(i,nobs),x=xy[,1],y=xy[,2],error_semimajor_axis=M,error_semiminor_axis=m,error_ellipse_orientation=r,crawl::argosDiag2Cov(M,m,r),mux=mux,muy=muy)
+      tmpobsData<-data.frame(time=t,ID=rep(i,nobs),x=xy[,1],y=xy[,2],error_semimajor_axis=error_semimajor_axis,error_semiminor_axis=error_semiminor_axis,error_ellipse_orientation=error_ellipse_orientation,crawl::argosDiag2Cov(M,m,r),mux=mux,muy=muy)
     else
       tmpobsData<-data.frame(time=t,ID=rep(i,nobs),x=xy[,1],y=xy[,2],mux=mux,muy=muy)
     
