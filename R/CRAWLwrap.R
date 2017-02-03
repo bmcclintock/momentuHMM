@@ -34,6 +34,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
       mov.model[[i]] <- tmpmov.model
     }    
   }
+  if(!is.null(names(mov.model))) mov.model <- mov.model[ids]
   
   if(is.null(err.model)){
     err.model<-vector('list',length(ids))
@@ -48,6 +49,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
       }
     }
   }
+  if(!is.null(names(err.model)))  err.model <- err.model[ids]
   
   if(is.null(activity)){
     activity<-vector('list',length(ids))
@@ -58,6 +60,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
       activity[[i]] <- tmpactivity
     }    
   }
+  if(!is.null(names(activity))) activity <- activity[ids]
   
   if(is.null(drift)){
     drift<-vector('list',length(ids))
@@ -71,6 +74,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
       drift[[i]] <- tmpdrift
     }    
   }
+  if(!is.null(names(drift))) drift <- drift[ids]
   
   if(!is.list(theta)){
     tmptheta<-theta
@@ -79,6 +83,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
       theta[[i]] <- tmptheta
     } 
   }
+  if(!is.null(names(theta))) theta <- theta[ids]
   
   if(!is.list(fixPar)){
     tmpfixPar<-fixPar
@@ -87,6 +92,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
       fixPar[[i]] <- tmpfixPar
     } 
   }
+  if(!is.null(names(fixPar))) fixPar <- fixPar[ids]
   
   if(is.null(constr)){
     constr<-vector('list',length(ids))
@@ -104,6 +110,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
       }
     }
   }
+  if(!is.null(names(constr))) constr <- constr[ids]
   
   if(is.null(prior)){
     prior<-vector('list',length(ids))
@@ -114,6 +121,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
       prior[[i]] <- tmpprior
     }    
   }
+  if(!is.null(names(prior))) prior <- prior[ids]
   
   cat('Fitting',length(ids),'tracks using crawl::crwMLE...')
   registerDoParallel(cores=ncores) 
@@ -166,7 +174,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
     }
   }
   
-  cat('Predicting locations (and uncertainty) for',length(ids),'tracks using crawl::crwPredict...')
+  cat('Predicting locations (and uncertainty) for',length(ids),'track(s) using crawl::crwPredict...')
   registerDoParallel(cores=ncores)
   predData <- 
     foreach(i = 1:length(convFits), .export="crwPredict", .combine = rbind, .errorhandling="remove") %dopar% {
