@@ -67,9 +67,9 @@ getParDM<-function(data,nbStates,dist,
         ind22<-ind2[which(is.finite(a[ind2]) & is.finite(b[ind2]))]
         ind23<-ind2[which(is.infinite(a[ind2]) & is.finite(b[ind2]))]
         
-        if(length(ind21)) p[ind21]<-solve(unique(fullDM[[i]])[ind21,ind21],log(par[ind21]-a[ind21])-workcons[[i]][ind21])^(1/cons[[i]][ind21])
-        if(length(ind22)) p[ind22]<-solve(unique(fullDM[[i]])[ind22,ind22],logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22]))-workcons[[i]][ind22])^(1/cons[[i]][ind22])
-        if(length(ind23)) p[ind23]<-solve(unique(fullDM[[i]])[ind23,ind23],-log(-par[ind23]+b[ind23])-workcons[[i]][ind23])^(1/cons[[i]][ind23])
+        if(length(ind21)) p[ind21]<-(solve(unique(fullDM[[i]])[ind21,ind21],log(par[ind21]-a[ind21]))-workcons[[i]][ind21])^(1/cons[[i]][ind21])
+        if(length(ind22)) p[ind22]<-(solve(unique(fullDM[[i]])[ind22,ind22],logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][ind22])^(1/cons[[i]][ind22])
+        if(length(ind23)) p[ind23]<-(solve(unique(fullDM[[i]])[ind23,ind23],-log(-par[ind23]+b[ind23]))-workcons[[i]][ind23])^(1/cons[[i]][ind23])
         
         if(any(!is.finite(p))) stop(i," working scale parameters are not finite. Check natural parameter values, bounds, and constraints.")
         wpar[[i]]<-p
