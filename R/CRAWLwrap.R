@@ -144,8 +144,15 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
   stopImplicitCluster()
   cat("DONE\n")
   
-  for(i in which(!unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))){
-    warning('crawl::crwMLE for individual ',ids[i],' failed;\n',model_fits[[i]],"   Check crawl::crwMLE arguments and/or consult crawl documentation.")
+  for(i in 1:length(ids)){
+    if(!inherits(model_fits[[i]],"crwFit"))
+      warning('crawl::crwMLE for individual ',ids[i],' failed;\n',model_fits[[i]],"   Check crawl::crwMLE arguments and/or consult crawl documentation.")
+    else {
+      if(model_fits[[i]]$convergence)
+        warning('crawl::crwMLE for individual ',ids[i],' has suspect convergence: ',model_fits[[i]]$message)
+      if(any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))])))
+        warning('crawl::crwMLE for individual ',ids[i],' has NaN variance estimate(s)')
+    }
   }
   
   convFits<-which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))
