@@ -9,10 +9,6 @@ Maintainer: Brett McClintock <brett.mcclintock@noaa.gov>
 Description: Extended tools for analyzing telemetry data using hidden Markov models. These include processing of tracking data, fitting HMMs to location and auxiliary biotelemetry data, multiple imputation for incorporating location measurement error and missing data,visualization of data and fitted model, decoding of the state process...
 License: GPL-3
 LazyData: TRUE
-Depends:
-    boot,
-    MASS,
-    sp
 Imports:
     Rcpp,
     doParallel,
@@ -26,7 +22,10 @@ Imports:
     raster,
     argosfilter,
     car,
-    mvtnorm
+    mvtnorm,
+    boot,
+    sp,
+    MASS
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,
