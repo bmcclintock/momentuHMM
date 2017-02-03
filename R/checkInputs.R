@@ -46,6 +46,7 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,zeroInflation,DM,userBounds
       if(zeroInflation[[i]]) error<-paste0(error," -- zero-mass parameters should be included")
       stop(error)
     }
+    #if(!is.null(DM[[i]]) !is.null(userBounds[[i]])) stop("either userBounds$",i," or DM$",i," must be NULL")
   }
 
   return(list(p=p,estAngleMean=estAngleMean,DM=DM,cons=cons,workcons=workcons))
