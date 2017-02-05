@@ -193,6 +193,11 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       legText <- c(legText,paste("State",i))
   } else legText <- stateNames
   
+  tmpcovs<-covs
+  for(i in which(!mapply(is.factor,covs))){
+    tmpcovs[i]<-round(covs[i],2)
+  }
+  
   for(i in distnames){
   
     # split data by animals if necessary
@@ -264,6 +269,20 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     par(mar=c(5,4,4,2)-c(0,0,2,1)) # bottom, left, top, right
     par(ask=ask)
   
+    #get covariate names
+    if(!m$conditions$DMind[[i]]){
+      if(!is.list(m$conditions$DM[[i]]))
+        DMterms<-unique(m$conditions$DM[[i]][suppressWarnings(which(is.na(as.numeric(m$conditions$DM[[i]]))))])
+      else {
+        m$conditions$DM[[i]]<-m$conditions$DM[[i]][p$parNames[[i]]]
+        DMterms<-character()
+        for(j in 1:length(p$parNames[[i]]))
+          DMterms<-c(DMterms,rownames(attr(terms(m$conditions$DM[[i]][[p$parNames[[i]][j]]]),"factors")))#    colnamesmodel.matrix(DM[[i]][[p$parNames[[i]][j]]],data)
+        DMterms <- unique(DMterms)
+      }
+    }
+    covmess <- ifelse(!m$conditions$DMind[[i]],paste0(": ",paste0(DMterms," = ",tmpcovs[DMterms],collapse=", ")),"")
+    
     if(sepAnimals) {
   
       # loop over the animals
@@ -273,7 +292,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           # loop over the states
           for(state in 1:nbStates) {
             gen <- genData[[zoo]][which(states[which(m$data$ID==ID[zoo])]==state)]
-            message <- paste("Animal ID:",ID[zoo]," - State:",state)
+            message <- paste0("Animal ID ",ID[zoo]," - State ",state,covmess)
   
             # the function plotHist is defined below
             plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,state,hist.ylim,col,legText)
@@ -281,7 +300,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   
         } else { # if !sepStates
           gen <- genData[[zoo]]
-          message <- paste("Animal ID:",ID[zoo])
+          message <- paste0("Animal ID ",ID[zoo],covmess)
   
           plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,NULL,hist.ylim,col,legText)
         }
@@ -292,14 +311,14 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         # loop over the states
         for(state in 1:nbStates) {
           gen <- genData[which(states==state)]
-          message <- paste("All animals - State:",state)
+          message <- paste0("All animals - State ",state,covmess)
   
           plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,state,hist.ylim,col,legText)
         }
   
       } else { # if !sepStates
         gen <- genData
-        message <- "All animals"
+        message <- paste0("All animals",covmess)
   
         plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,NULL,hist.ylim,col,legText)
       }
