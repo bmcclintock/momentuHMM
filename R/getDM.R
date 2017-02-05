@@ -15,20 +15,21 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       tmpDM <- array(tmpDM,dim=c(nrow(tmpDM),ncol(tmpDM),nbObs))
       DMnames <- paste0(rep(parNames[[i]],each=nbStates),"_",1:nbStates,":(Intercept)")
     } else if(is.list(DM[[i]])){
-      if(!all(parNames[[i]] %in% names(DM[[i]])) | !all(unlist(lapply(DM[[i]],is.formula)))) stop('DM for ',i,' must include formula for ',paste(parNames[[i]],collapse=" and "))
+      if(!all(parNames[[i]] %in% names(DM[[i]])) | !all(unlist(lapply(DM[[i]],is.formula)))) stop('DM$',i,' must include formula for ',paste(parNames[[i]],collapse=" and "))
+      if(!zeroInflation[[i]] & "zeromass" %in% names(DM[[i]])) stop('zeromass should not be included in DM$',i)
       DM[[i]]<-DM[[i]][parNames[[i]]]
       if(any(unlist(lapply(DM[[i]],function(x) attr(terms(x),"response")!=0))))
         stop("The response variable should not be specified in the DM formula for ",i)
-      parSizeDM<-unlist(lapply(DM[[i]],function(x) length(attr(terms.formula(x),"term.labels"))))+1
+      tmpCov<-lapply(DM[[i]],function(x) model.matrix(x,data))
+      parSizeDM<-unlist(lapply(tmpCov,ncol))
       tmpDM<-array(0,dim=c(parSize[[i]]*nbStates,sum(parSizeDM)*nbStates,nbObs))
       DMnames<-character(sum(parSizeDM)*nbStates)
       parInd<-0
       for(j in 1:length(parNames[[i]])){
-        tmpCov<-model.matrix(DM[[i]][[parNames[[i]][j]]],data)
-        if(nrow(tmpCov)!=nbObs) stop("covariates cannot contain missing values")
+        if(nrow(tmpCov[[j]])!=nbObs) stop("covariates cannot contain missing values")
         for(state in 1:nbStates){
-          tmpDM[(j-1)*nbStates+state,(state-1)*parSizeDM[j]+parInd*nbStates+1:parSizeDM[j],]<-t(tmpCov)
-          DMnames[(state-1)*parSizeDM[j]+parInd*nbStates+1:parSizeDM[j]]<-paste0(parNames[[i]][j],"_",state,":",colnames(tmpCov))
+          tmpDM[(j-1)*nbStates+state,(state-1)*parSizeDM[j]+parInd*nbStates+1:parSizeDM[j],]<-t(tmpCov[[j]])
+          DMnames[(state-1)*parSizeDM[j]+parInd*nbStates+1:parSizeDM[j]]<-paste0(parNames[[i]][j],"_",state,":",colnames(tmpCov[[j]]))
         }
         parInd<-sum(parSizeDM[1:j])
       }
