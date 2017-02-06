@@ -6,7 +6,7 @@
 \usage{
 \method{plot}{momentuHMM}(x, animals = NULL, covs = NULL, ask = TRUE,
   breaks = "Sturges", hist.ylim = NULL, sepAnimals = FALSE,
-  sepStates = FALSE, col = NULL, ...)
+  sepStates = FALSE, col = NULL, alpha = 0.95, ...)
 }
 \arguments{
 \item{x}{Object \code{momentuHMM}}

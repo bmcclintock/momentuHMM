@@ -38,7 +38,7 @@
 #' @importFrom graphics legend lines segments
 
 plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
-                         sepStates=FALSE,col=NULL,...)
+                         sepStates=FALSE,col=NULL,alpha=0.95,...)
 {
   m <- x # the name "x" is for compatibility with the generic method
   nbAnimals <- length(unique(m$data$ID))
@@ -154,33 +154,42 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   beta <- m$mle$beta
   delta <- m$mle$delta
   
+  tmpPar <- Par
+  tmpConditions <- m$conditions
+  
   for(i in distnames[which(m$conditions$dist %in% angledists)]){
     if(!m$conditions$estAngleMean[[i]]){
-      m$conditions$estAngleMean[[i]]<-TRUE
-      m$conditions$userBounds[[i]]<-rbind(matrix(rep(c(-pi,pi),nbStates),nbStates,2,byrow=TRUE),m$conditions$bounds[[i]])
-      m$conditions$cons[[i]] <- c(rep(1,nbStates),m$conditions$cons[[i]])
-      m$conditions$workcons[[i]] <- c(rep(0,nbStates),m$conditions$workcons[[i]])
+      tmpConditions$estAngleMean[[i]]<-TRUE
+      tmpConditions$userBounds[[i]]<-rbind(matrix(rep(c(-pi,pi),nbStates),nbStates,2,byrow=TRUE),m$conditions$bounds[[i]])
+      tmpConditions$cons[[i]] <- c(rep(1,nbStates),m$conditions$cons[[i]])
+      tmpConditions$workcons[[i]] <- c(rep(0,nbStates),m$conditions$workcons[[i]])
       if(!is.null(m$conditions$DM[[i]])){
-        Par[[i]] <- c(rep(0,nbStates),Par[[i]])
+        tmpPar[[i]] <- c(rep(0,nbStates),Par[[i]])
         if(is.list(m$conditions$DM[[i]])){
-          m$conditions$DM[[i]]$mean<- ~1
+          tmpConditions$DM[[i]]$mean<- ~1
         } else {
-          tmpDM <- matrix(0,nrow(m$conditions$DM[[i]])+nbStates,ncol(m$conditions$DM[[i]])+nbStates)
-          tmpDM[nbStates+1:nrow(m$conditions$DM[[i]]),nbStates+1:ncol(m$conditions$DM[[i]])] <- m$conditions$DM[[i]]
+          tmpDM <- matrix(0,nrow(tmpConditions$DM[[i]])+nbStates,ncol(tmpConditions$DM[[i]])+nbStates)
+          tmpDM[nbStates+1:nrow(tmpConditions$DM[[i]]),nbStates+1:ncol(tmpConditions$DM[[i]])] <- tmpConditions$DM[[i]]
           diag(tmpDM)[1:nbStates] <- 1
-          m$conditions$DM[[i]] <- tmpDM
+          tmpConditions$DM[[i]] <- tmpDM
         }
+      } else {
+        Par[[i]] <- Par[[i]][-(1:nbStates)]
       }
     }
   }
   
-  inputs <- checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
-  p <- inputs$p
-  DMinputs<-getDM(covs,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation)
+  # get pars for probability density plots
+  tmpInputs <- checkInputs(nbStates,tmpConditions$dist,tmpPar,tmpConditions$estAngleMean,tmpConditions$zeroInflation,tmpConditions$DM,tmpConditions$userBounds,tmpConditions$cons,tmpConditions$workcons,m$stateNames)
+  tmpp <- tmpInputs$p
+  DMinputs<-getDM(covs,tmpInputs$DM,tmpConditions$dist,nbStates,tmpp$parNames,tmpp$bounds,tmpPar,tmpConditions$cons,tmpConditions$workcons,tmpConditions$zeroInflation)
   fullDM <- DMinputs$fullDM
   DMind <- DMinputs$DMind
-  wpar <- n2w(Par,p$bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
-  par <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,m$conditions$dist,p$Bndind)
+  wpar <- n2w(tmpPar,tmpp$bounds,beta,delta,nbStates,tmpInputs$estAngleMean,tmpInputs$DM,DMinputs$cons,DMinputs$workcons,tmpp$Bndind)
+  par <- w2n(wpar,tmpp$bounds,tmpp$parSize,nbStates,nbCovs,tmpInputs$estAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,tmpConditions$dist,tmpp$Bndind)
+  
+  inputs <- checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
+  p <- inputs$p
   
   zeroMass<-vector('list',length(m$conditions$dist))
   names(zeroMass)<-distnames
@@ -197,6 +206,13 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   for(i in which(!mapply(is.factor,covs))){
     tmpcovs[i]<-round(covs[i],2)
   }
+  
+  Sigma <- ginv(m$mod$hessian)
+  
+  # set graphical parameters
+  par(mfrow=c(1,1))
+  par(mar=c(5,4,4,2)-c(0,0,2,1)) # bottom, left, top, right
+  par(ask=ask)
   
   for(i in distnames){
   
@@ -223,7 +239,27 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     if(m$conditions$dist[[i]] %in% angledists)
       if(i=="angle" & ("step" %in% distnames))
         if(m$conditions$dist$step %in% stepdists & m$conditions$zeroInflation$step)
-          infInd <- TRUE
+          if(all(c("x","y") %in% names(m$data)))
+            infInd <- TRUE
+    
+    #get covariate names
+    if(!m$conditions$DMind[[i]]){
+      DMparterms<-list()
+      if(!is.list(m$conditions$DM[[i]])){
+        for(j in 1:length(p$parNames[[i]]))
+          DMparterms[[p$parNames[[i]][j]]]<-unique(m$conditions$DM[[i]][(j-1)*nbStates+1:nbStates,][suppressWarnings(which(is.na(as.numeric(m$conditions$DM[[i]][(j-1)*nbStates+1:nbStates,]))))])
+        DMterms<-unique(m$conditions$DM[[i]][suppressWarnings(which(is.na(as.numeric(m$conditions$DM[[i]]))))])
+      } else {
+        m$conditions$DM[[i]]<-m$conditions$DM[[i]][p$parNames[[i]]]
+        DMterms<-character()
+        for(j in 1:length(p$parNames[[i]])){
+          DMparterms[[p$parNames[[i]][j]]]<-rownames(attr(terms(m$conditions$DM[[i]][[p$parNames[[i]][j]]]),"factors"))#    colnamesmodel.matrix(DM[[i]][[p$parNames[[i]][j]]],data)
+          DMterms <- c(DMterms,DMparterms[[p$parNames[[i]][j]]])
+        }
+      }
+      DMterms <- unique(DMterms)
+    }
+    covmess <- ifelse(!m$conditions$DMind[[i]],paste0(": ",paste0(DMterms," = ",tmpcovs[DMterms],collapse=", ")),"")
   
     ###########################################
     ## Compute estimated densities on a grid ##
@@ -259,30 +295,66 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       } else {
         genDensities[[state]] <- cbind(grid,w[state]*do.call(genFun,genArgs))
       }
+      
+      for(j in p$parNames[[i]]){
+      
+        for(jj in DMparterms[[j]]){
+          
+          if(!is.factor(m$data[,jj])){
+            
+            gridLength <- 101
+            
+            inf <- min(m$data[,jj],na.rm=T)
+            sup <- max(m$data[,jj],na.rm=T)
+            
+            # set all covariates to their mean, except for "cov"
+            # (which takes a grid of values from inf to sup)
+            tempCovs <- data.frame(matrix(covs[DMparterms[[j]]][[1]],nrow=gridLength,ncol=1))
+            if(length(DMparterms[[j]])>1)
+              for(ii in 2:length(DMparterms[[j]]))
+                tempCovs <- cbind(tempCovs,rep(covs[DMparterms[[j]]][[ii]],gridLength))
+            names(tempCovs) <- DMparterms[[j]]
+            tempCovs[,jj] <- seq(inf,sup,length=gridLength)
+          } else {
+            gridLength<- nlevels(m$data[,jj])
+            # set all covariates to their mean, except for "cov"
+            tempCovs <- data.frame(matrix(covs[DMparterms[[j]]][[1]],nrow=gridLength,ncol=1))
+            if(length(DMparterms[[j]])>1)
+              for(ii in 2:length(DMparterms[[j]]))
+                tempCovs <- cbind(tempCovs,rep(covs[DMparterms[[j]]][[ii]],gridLength))
+            names(tempCovs) <- DMparterms[[j]]
+            tempCovs[,jj] <- as.factor(levels(m$data[,jj]))
+          }
+          
+          for(ii in DMparterms[[j]][which(unlist(lapply(m$data[DMparterms[[j]]],is.factor)))])
+            tempCovs[[ii]] <- factor(tempCovs[[ii]],levels=levels(m$data[[ii]]))
+          
+          DMinputs<-getDM(tempCovs,inputs$DM[i],m$conditions$dist[i],nbStates,p$parNames[i],p$bounds[i],Par[i],m$conditions$cons[i],m$conditions$workcons[i],m$conditions$zeroInflation[i])
+          fullDM <- DMinputs$fullDM
+          DMind <- DMinputs$DMind
+          gradfun<-function(wpar,k) {
+            w2n(wpar,p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,m$conditions$dist[i],p$Bndind[i])[[i]][(which(p$parNames[[i]]==j)-1)*nbStates+state,k]
+          }
+          dN<-t(mapply(function(x) numDeriv::grad(gradfun,c(m$mod$estimate[parindex[[i]]+1:ncol(fullDM[[i]])],beta),k=x),1:gridLength))
+          se<-t(apply(dN[,parindex[[i]]+1:ncol(fullDM[[i]])],1,function(x) suppressWarnings(sqrt(x%*%Sigma[parindex[[i]]+1:ncol(fullDM[[i]]),parindex[[i]]+1:ncol(fullDM[[i]])]%*%x))))
+          est<-w2n(c(m$mod$estimate[parindex[[i]]+1:ncol(fullDM[[i]])],beta),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,m$conditions$dist[i],p$Bndind[i])[[i]][(which(p$parNames[[i]]==j)-1)*nbStates+state,]
+          uci<-est+qnorm(1-(1-alpha)/2)*se
+          lci<-est-qnorm(1-(1-alpha)/2)*se
+          if(!all(is.na(se))){
+            plot(tempCovs[,jj],est,ylim=range(c(lci,est,uci),na.rm=TRUE),xaxt="n",xlab=jj,ylab=paste(i,j,'parameter'),main=paste0('State ',state,ifelse(length(tempCovs[,-which(names(tempCovs)==jj)]),paste0(": ",paste(names(tempCovs)[-which(names(tempCovs)==jj)],"=",tmpcovs[,names(tempCovs)[-which(names(tempCovs)==jj)]],collapse=", ")))),type="l")
+            arrows(as.numeric(tempCovs[,jj]), lci, as.numeric(tempCovs[,jj]), uci, length=0.05, angle=90, code=3, col=gray(.5)) 
+          } else plot(tempCovs[,jj],est,xaxt="n",xlab=jj,ylab=paste(i,j,'parameter'),main=paste0('State ',state,ifelse(length(tempCovs[,-which(names(tempCovs)==jj)]),paste0(": ",paste(names(tempCovs)[-which(names(tempCovs)==jj)],"=",tmpcovs[,names(tempCovs)[-which(names(tempCovs)==jj)]],collapse=", ")))),type="l") 
+          if(is.factor(tempCovs[,jj])) axis(1,at=tempCovs[,jj])
+          else axis(1)
+          
+        }
+      }
+      
     }
   
     #########################
     ## Plot the histograms ##
     #########################
-    # set graphical parameters
-    par(mfrow=c(1,1))
-    par(mar=c(5,4,4,2)-c(0,0,2,1)) # bottom, left, top, right
-    par(ask=ask)
-  
-    #get covariate names
-    if(!m$conditions$DMind[[i]]){
-      if(!is.list(m$conditions$DM[[i]]))
-        DMterms<-unique(m$conditions$DM[[i]][suppressWarnings(which(is.na(as.numeric(m$conditions$DM[[i]]))))])
-      else {
-        m$conditions$DM[[i]]<-m$conditions$DM[[i]][p$parNames[[i]]]
-        DMterms<-character()
-        for(j in 1:length(p$parNames[[i]]))
-          DMterms<-c(DMterms,rownames(attr(terms(m$conditions$DM[[i]][[p$parNames[[i]][j]]]),"factors")))#    colnamesmodel.matrix(DM[[i]][[p$parNames[[i]][j]]],data)
-        DMterms <- unique(DMterms)
-      }
-    }
-    covmess <- ifelse(!m$conditions$DMind[[i]],paste0(": ",paste0(DMterms," = ",tmpcovs[DMterms],collapse=", ")),"")
-    
     if(sepAnimals) {
   
       # loop over the animals
@@ -348,7 +420,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         
         if(!is.factor(rawCovs[,cov])){
           
-          gridLength <- 100
+          gridLength <- 101
           
           inf <- min(rawCovs[,cov],na.rm=T)
           sup <- max(rawCovs[,cov],na.rm=T)
