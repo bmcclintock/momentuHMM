@@ -45,7 +45,6 @@ CI_real <- function(m,alpha=0.95,nbSims=10^6)
 
   dist <- m$conditions$dist
   distnames <- names(dist)
-  fullDM <- m$conditions$fullDM
   DMind <- m$conditions$DMind
 
   # identify covariates
@@ -54,48 +53,50 @@ CI_real <- function(m,alpha=0.95,nbSims=10^6)
 
   # inverse of Hessian
   Sigma <- ginv(m$mod$hessian)
-
-  p <- parDef(dist,nbStates,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$DM,m$conditions$userBounds)
-  bounds <- p$bounds
-  #if(!all(unlist(lapply(p$bounds,is.numeric)))){
-  #  for(i in distnames){
-  #    if(!is.numeric(bounds[[i]])){
-  #      bounds[[i]] <- gsub(i,"",bounds[[i]],fixed=TRUE)
-  #    }
-  #  }
-  #}
   
-  parindex <- c(0,cumsum(unlist(lapply(fullDM,ncol)))[-length(fullDM)])
+  tmPar <- m$mle[distnames]
+  parindex <- c(0,cumsum(unlist(lapply(m$conditions$fullDM,ncol)))[-length(m$conditions$fullDM)])
   names(parindex) <- distnames
+  for(i in distnames){
+    if(!is.null(m$conditions$DM[[i]])){# & m$conditions$DMind[[i]]){
+      tmPar[[i]] <- m$mod$estimate[parindex[[i]]+1:ncol(m$conditions$fullDM[[i]])]
+      names(tmPar[[i]])<-colnames(m$conditions$fullDM[[i]])
+    } else{
+      if(m$conditions$dist[[i]] %in% angledists)
+        if(!m$conditions$estAngleMean[[i]])
+          tmPar[[i]] <- tmPar[[i]][-(1:nbStates)]
+    }
+  }
   
   Par <- list()
   lower<-list()
   upper<-list()
   se<-list()
   
+  tempCovs <- m$data[1,]
+  for(j in names(m$data)[which(unlist(lapply(m$data,class))!="factor")]){
+    tempCovs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
+  }
+  
+  inputs <- checkInputs(nbStates,m$conditions$dist,tmPar,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
+  p<-inputs$p
+  DMinputs<-getDM(tempCovs,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation)
+  fullDM<-DMinputs$fullDM
+  
   for(i in distnames){
     if(!m$conditions$DMind[[i]]){
-      tmpDM<-fullDM[[i]]
-      k <- which(matrix(mapply(length,fullDM[[i]])>1,nrow(fullDM[[i]]),ncol(fullDM[[i]])),arr.ind=TRUE)
-      if(length(k)){
-        for(j in 1:nrow(k)){
-          tmpDM[[k[j,1],k[j,2]]]<-mean(fullDM[[i]][[k[j,1],k[j,2]]],na.rm=TRUE)
-        }
-      }
-      fullDM[[i]]<-matrix(as.numeric(tmpDM),nrow(tmpDM),ncol(tmpDM))
-      DMind[[i]]<-TRUE
-      par <- c(w2n(m$mod$estimate,bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$stationary,m$conditions$cons,fullDM,DMind,m$conditions$workcons,1,dist[i],m$conditions$Bndind)[[i]])
+      par <- c(w2n(m$mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$stationary,m$conditions$cons,fullDM,m$conditions$DMind,m$conditions$workcons,1,dist[i],m$conditions$Bndind)[[i]])
     } else {
       par <- as.vector(t(m$mle[[i]]))
     }
     if(!(dist[[i]] %in% angledists) | (dist[[i]] %in% angledists & m$conditions$estAngleMean[[i]] & !m$conditions$Bndind[[i]])) {
-      Par[[i]] <- get_CI(m$mod$estimate,par,m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,nbStates,alpha,p$parNames[[i]],m$stateNames)
+      Par[[i]] <- get_CI(m$mod$estimate,par,m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,nbStates,alpha,p$parNames[[i]],m$stateNames)
     } else {
       if(!m$conditions$estAngleMean[[i]])
-        Par[[i]] <- get_CI(m$mod$estimate,par[-c(1:nbStates)],m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,nbStates,alpha,p$parNames[[i]],m$stateNames)
+        Par[[i]] <- get_CI(m$mod$estimate,par[-c(1:nbStates)],m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,nbStates,alpha,p$parNames[[i]],m$stateNames)
       else {
         if(m$conditions$Bndind[[i]]){
-          Par[[i]] <- CI_angle(m$mod$estimate,par,m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,nbStates,alpha,p$parNames[[i]],m$stateNames)
+          Par[[i]] <- CI_angle(m$mod$estimate,par,m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,nbStates,alpha,p$parNames[[i]],m$stateNames)
         }
       }
     }
