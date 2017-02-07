@@ -36,6 +36,7 @@
 #'
 #' @export
 #' @importFrom graphics legend lines segments
+#' @importFrom grDevices adjustcolor
 
 plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
                          sepStates=FALSE,col=NULL,alpha=0.95,...)
@@ -58,6 +59,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   }
   if(is.null(col))
     col <- 2:(nbStates+1)
+  
+  if("miSum" %in% class(x)) plotEllipse <- m$plotEllipse
+  else plotEllipse <- FALSE
   
   ######################
   ## Prepare the data ##
@@ -109,10 +113,12 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   if(all(c("x","y") %in% names(m$data))){
     x <- list()
     y <- list()
+    if(plotEllipse)  errorEllipse <- list()
     for(zoo in 1:nbAnimals) {
       ind <- which(m$data$ID==ID[zoo])
       x[[zoo]] <- m$data$x[ind]
       y[[zoo]] <- m$data$y[ind]
+      if(plotEllipse) errorEllipse[[zoo]] <- m$errorEllipse[ind]
     }
   }
   
@@ -243,8 +249,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             infInd <- TRUE
     
     #get covariate names
+    DMparterms<-list()
     if(!m$conditions$DMind[[i]]){
-      DMparterms<-list()
       if(!is.list(m$conditions$DM[[i]])){
         for(j in 1:length(p$parNames[[i]]))
           DMparterms[[p$parNames[[i]][j]]]<-unique(m$conditions$DM[[i]][(j-1)*nbStates+1:nbStates,][suppressWarnings(which(is.na(as.numeric(m$conditions$DM[[i]][(j-1)*nbStates+1:nbStates,]))))])
@@ -407,7 +413,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     if(nrow(m$mle$beta)>1) {
       
       # values of each covariate
-      rawCovs <- m$rawCovs
+      rawCovs <- m$rawCovs[which(m$data$ID %in% ID),]
       #if(is.null(covs)) {
       #  rawCovs <- m$rawCovs
       #  meanCovs <- colSums(rawCovs)/nrow(rawCovs)
@@ -501,12 +507,14 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         # first point
         plot(x[[zoo]][1],y[[zoo]][1],xlim=c(xmin,xmax),ylim=c(ymin,ymax),pch=18,
              xlab="x",ylab="y",col=col[subStates[1]])
-  
+        if(plotEllipse) lines(errorEllipse[[zoo]][[1]],col=adjustcolor(col[subStates[1]],alpha.f=0.25),cex=0.6)
+        
         # trajectory
         for(i in 2:length(x[[zoo]])) {
           points(x[[zoo]][i],y[[zoo]][i],pch=16,col=col[subStates[i-1]],cex=0.6)
           segments(x0=x[[zoo]][i-1],y0=y[[zoo]][i-1],x1=x[[zoo]][i],y1=y[[zoo]][i],
                    col=col[subStates[i-1]],lwd=1.3)
+          if(plotEllipse) lines(errorEllipse[[zoo]][[i]],col=adjustcolor(col[subStates[i-1]],alpha.f=0.25),cex=0.6)
         }
         mtext(paste("Animal ID:",ID[zoo]),side=3,outer=TRUE,padj=2)
         legend("topleft",legText,lwd=rep(2,nbStates),col=col,bty="n")
