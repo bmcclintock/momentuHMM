@@ -22,24 +22,31 @@ getPar<-function(m){
   distnames <- names(dist)
   DM <- m$conditions$DM
   
+  Par <- list()
   if(is.miSum(m)){
-    m$mle<-lapply(m$Par[distnames],function(x) x$est)
+    m$mle<-lapply(m$Par$real[distnames],function(x) x$est)
+    for(i in distnames){
+      if(!is.null(DM[[i]]))
+        m$mle[[i]]<-m$Par$beta[[i]]$est
+      else if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]])
+        m$mle[[i]]<-m$mle[[i]][-1,]
+      Par[[i]] <- c(t(unname(m$mle[[i]])))
+    }
     beta <- unname(m$Par$beta$beta$est)
     delta <- unname(m$Par$real$delta$est)
   } else {
+    for(i in distnames){
+      if(is.null(DM[[i]])){
+        par <- unname(m$mle[[i]])
+        if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]]) 
+          par <- par[-1,]
+        par <- c(t(par))
+      } else par <- unname(m$CI_beta[[i]]$est)
+      Par[[i]] <- par
+    }
     beta <- unname(m$mle$beta)
     delta <- unname(m$mle$delta)
   }
   
-  Par <- list()
-  for(i in distnames){
-    if(is.null(DM[[i]])){
-      par <- unname(m$mle[[i]])
-      if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]]) 
-        par <- par[-1,]
-      par <- c(t(par))
-    } else par <- unname(m$CI_beta[[i]]$est)
-    Par[[i]] <- par
-  }
   list(Par=Par,beta=beta,delta=delta)
 }
