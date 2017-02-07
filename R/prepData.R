@@ -159,5 +159,8 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spat
     }
   }
   if(!is.null(covs)) data <- cbind(data,covs)
+  
+  data$ID<-as.factor(data$ID)
+  
   return(momentuHMMData(data))
 }

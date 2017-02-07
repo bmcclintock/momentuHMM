@@ -64,7 +64,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,stationary,cons
   
   distnames <- names(dist)
   parindex <- c(0,cumsum(unlist(lapply(fullDM,ncol)))[-length(fullDM)])
-  names(parindex) <- distnames
+  names(parindex) <- names(fullDM)
 
   nbounds<-NULL
   parlist<-NULL
