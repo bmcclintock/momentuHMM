@@ -6,7 +6,7 @@
 \usage{
 \method{plot}{miSum}(x, animals = NULL, covs = NULL, ask = TRUE,
   breaks = "Sturges", hist.ylim = NULL, sepAnimals = FALSE,
-  sepStates = FALSE, col = NULL, plotEllipse = TRUE, ...)
+  sepStates = FALSE, col = NULL, alpha = 0.95, plotEllipse = TRUE, ...)
 }
 \arguments{
 \item{x}{Object \code{miSum}}
