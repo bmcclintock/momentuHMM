@@ -277,7 +277,7 @@ MI_summary<-function(im,alpha=0.95,ncores,includeHMMfits=FALSE){
   mh$mod <- NULL
   mh$CI_real <- NULL
   mh$CI_beta <- NULL
-  if(any(ident)) mh$conditions$fullDM <- NULL
+  if(any(ident)) mh$conditions$fullDM <- fullDM
   
   #average all numeric variables in imputed data
   for(i in distnames){
