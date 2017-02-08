@@ -6,11 +6,13 @@
 #' @importFrom CircStats circ.mean
 #' @importFrom car dataEllipse
 #' @importFrom mitools MIcombine
-MI_summary<-function(im,alpha=0.95,ncores,includeHMMfits=FALSE){
+#' @importFrom MASS ginv
+MI_summary<-function(HMMfits,alpha=0.95,ncores,includeHMMfits=FALSE){
   
+  im <- HMMfits
   simind <- which((unlist(lapply(im,is.momentuHMM))))
   nsims <- length(simind)
-  if(nsims<1) stop("'im' must be a list comprised of momentuHMM objects")
+  if(nsims<1) stop("'HMMfits' must be a list comprised of momentuHMM objects")
   
   checkmove <- which(!(unlist(lapply(im,is.momentuHMM))))
   if(length(checkmove)) {
@@ -24,6 +26,11 @@ MI_summary<-function(im,alpha=0.95,ncores,includeHMMfits=FALSE){
     checksims2 <- lapply(checksims, function(x) x$conditions[-match("fullDM",names(x$conditions))])
     ident2 <- !unlist(lapply(checksims2,function(x) isTRUE(all.equal(x,checksims2[[1]]))))
     if(any(ident2)) stop("Model conditions for each imputation must be identical. Imputations that do not match the first: ",paste(which(ident),collapse=", "))
+  }
+  
+  tmpDet <- which(unlist(lapply(im,function(x) det(x$mod$hessian)))==0)
+  if(length(tmpDet)){
+    warning("Hessian is singular for HMM fit(s): ",paste0(tmpDet,collapse=", "))
   }
   
   m <- im[[1]]
@@ -63,7 +70,7 @@ MI_summary<-function(im,alpha=0.95,ncores,includeHMMfits=FALSE){
   if(nbStates>1) names(parindex)[length(distnames)+1] <- "beta"
   names(parindex)[length(parindex)-1] <- "delta"
   
-  miBeta <- mitools::MIcombine(results=lapply(im,function(x) x$mod$estimate),variances=lapply(im,function(x) solve(x$mod$hessian)))
+  miBeta <- mitools::MIcombine(results=lapply(im,function(x) x$mod$estimate),variances=lapply(im,function(x) ginv(x$mod$hessian)))
   
   for(parm in 1:nparms){
     
@@ -283,7 +290,7 @@ MI_summary<-function(im,alpha=0.95,ncores,includeHMMfits=FALSE){
   mh$Par <- Par
   mh$MIcombine <- miBeta
   
-  if(includeHMMfits) return(miHMM(list(miSum=miSum(mh),HMMfits=im)))
+  if(includeHMMfits) return(miHMM(list(miSum=miSum(mh),HMMfits=HMMfits)))
   else return(miSum(mh))
 }
 
