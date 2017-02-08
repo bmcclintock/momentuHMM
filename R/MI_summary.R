@@ -94,14 +94,22 @@ MI_summary<-function(im,alpha=0.95,ncores,includeHMMfits=FALSE){
     Par$beta[[i]] <- mi_parm_list(xbar[[i]],MI_se[[i]],lower[[i]],upper[[i]],m$CI_beta[[i]]$est)
   }
   
+  #average all numeric variables in imputed data
   mhdata<-m$data
+  for(i in distnames){
+    if(dist[[i]] %in% angledists) {
+      mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,CircStats::circ.mean)
+    } else if(dist[[i]] %in% "pois"){
+      mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,median)     
+    } else {
+      mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,mean)
+    }
+  }
   for(j in names(m$data)[which(unlist(lapply(m$data,class))!="factor" & !(names(m$data) %in% distnames))]){
-    mhdata[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[j]])),ncol=length(m$data[[j]]),byrow=TRUE),2,mean)
     mhdata[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[j]])),ncol=length(m$data[[j]]),byrow=TRUE),2,mean)
   }
   mhrawCovs<-m$rawCovs
   for(j in names(m$rawCovs)[which(unlist(lapply(m$rawCovs,class))!="factor")]){
-    mhrawCovs[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$rawCovs[[j]])),ncol=length(m$rawCovs[[j]]),byrow=TRUE),2,mean)
     mhrawCovs[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$rawCovs[[j]])),ncol=length(m$rawCovs[[j]]),byrow=TRUE),2,mean)
   }
   
@@ -167,11 +175,11 @@ MI_summary<-function(im,alpha=0.95,ncores,includeHMMfits=FALSE){
     
   if(!is.null(m$mle$gamma)){
     gamInd<-(length(miBeta$coefficients)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(miBeta$coefficients))-(nbStates-1)
-    est <- get_gamma(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),as.matrix(model.matrix(m$conditions$formula,mhrawCovs)),nbStates,1:nbStates,1:nbStates)
+    est <- get_gamma(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),model.matrix(m$conditions$formula,mhdata),nbStates,1:nbStates,1:nbStates)
     lower<-upper<-se<-matrix(0,nrow(est),ncol(est))
     for(i in 1:nrow(est)){
       for(j in 1:ncol(est)){
-        dN<-numDeriv::grad(get_gamma,matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),covs=as.matrix(model.matrix(m$conditions$formula,mhrawCovs)),nbStates=nbStates,i=i,j=j)
+        dN<-numDeriv::grad(get_gamma,matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),covs=model.matrix(m$conditions$formula,mhdata),nbStates=nbStates,i=i,j=j)
         se[i,j]<-suppressWarnings(sqrt(dN%*%miBeta$variance[gamInd,gamInd]%*%dN))
         lower[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))-quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]-quantSup*se[i,j]
         upper[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))+quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]+quantSup*se[i,j]
@@ -253,24 +261,9 @@ MI_summary<-function(im,alpha=0.95,ncores,includeHMMfits=FALSE){
   mh$CI_beta <- NULL
   if(any(ident)) mh$conditions$fullDM <- fullDM
   
-  #average all numeric variables in imputed data
-  for(i in distnames){
-    if(dist[[i]] %in% angledists) {
-      mh$data[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(mh$data[[i]]),byrow=TRUE),2,CircStats::circ.mean)
-    } else if(dist[[i]] %in% "pois"){
-      mh$data[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(mh$data[[i]]),byrow=TRUE),2,median)     
-    } else {
-      mh$data[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(mh$data[[i]]),byrow=TRUE),2,mean)
-    }
-  }
-  for(j in names(mh$data)[which(unlist(lapply(mh$data,class))!="factor" & !(names(mh$data) %in% distnames))]){
-    mh$data[[j]]<-mhdata[[j]]
-    mh$data[[j]]<-mhdata[[j]]
-  }
-  for(j in names(mh$rawCovs)[which(unlist(lapply(mh$rawCovs,class))!="factor" & !(names(mh$rawCovs) %in% distnames))]){
-    mh$rawCovs[[j]]<-mhrawCovs[[j]]
-    mh$rawCovs[[j]]<-mhrawCovs[[j]]
-  }
+  mh$data<-mhdata
+  mh$rawCovs<-mhrawCovs
+
   errorEllipse<-NULL
   if(all(c("x","y") %in% names(mh$data))){
     checkerrs <- lapply(im,function(x) x$data[match(c("x","y"),names(x$data))])
