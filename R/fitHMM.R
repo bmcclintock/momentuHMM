@@ -131,7 +131,7 @@
 #' 
 #' @export
 #' @importFrom Rcpp evalCpp
-#' @importFrom stats model.matrix nlm terms terms.formula
+#' @importFrom stats model.matrix get_all_vars nlm terms terms.formula
 #' @importFrom CircStats dwrpcauchy dvm pvm
 #'
 #' @useDynLib momentuHMM
@@ -172,7 +172,7 @@ fitHMM <- function(data,nbStates,dist,
   Par <- Par[distnames]
   
   # build design matrix for t.p.m.
-  covsCol <- rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+  covsCol <- get_all_vars(formula,data)#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
   covs <- model.matrix(formula,data)
   if(nrow(covs)!=nrow(data)) stop("covariates cannot contain missing values")
   nbCovs <- ncol(covs)-1 # substract intercept column
@@ -191,7 +191,7 @@ fitHMM <- function(data,nbStates,dist,
   }
 
   if(length(covsCol)>0) {
-    rawCovs <- data[covsCol]
+    rawCovs <- covsCol
   }
   else {
     rawCovs <- NULL
