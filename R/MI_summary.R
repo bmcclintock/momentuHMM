@@ -50,34 +50,8 @@ MI_summary<-function(im,alpha=0.95,ncores,includeHMMfits=FALSE){
     cat("DONE\n")
   } else states <- rep(1,nrow(data))
   
-  if(is.null(m$CI_real) | is.null(m$CI_beta)){
-    #get variances for each parameter on natural scale
-    if(is.null(m$CI_real)){
-      registerDoParallel(cores=ncores)
-      if(nsims>5) cat("Calculating standard errors on natural scale; this might take a while for large models or simulations...")
-      CI <- foreach(i = 1:nsims) %dopar% {
-        ci<-momentuHMM::CI_real(im[[i]])
-      }
-      if(nsims>5) cat("DONE\n")
-      stopImplicitCluster()
-    }
-    #get variances for each parameter on working scale
-    if(is.null(m$CI_beta)){
-      registerDoParallel(cores=ncores)
-      if(nsims>5) cat("Calculating standard errors on working scale; this might take a while for large models or simulations...")
-      CIbeta <- foreach(i = 1:nsims) %dopar% {
-        ci<-momentuHMM::CI_beta(im[[i]])
-      }
-      if(nsims>5) cat("DONE\n")
-      stopImplicitCluster()
-    }
-  } else {
-    CI <- lapply(im,function(x) x$CI_real)
-    CIbeta <- lapply(im,function(x) x$CI_beta)
-  }
-  
   # pool estimates on working scale
-  parms <- names(CIbeta[[1]])
+  parms <- names(m$CI_beta)
   nparms <- length(parms)
   xmat <- xbar <- xvar <- W_m <- B_m <- MI_se <- lower <- upper <- list()
   parmcols <- lapply(m$conditions$fullDM,ncol)#
@@ -93,7 +67,7 @@ MI_summary<-function(im,alpha=0.95,ncores,includeHMMfits=FALSE){
   
   for(parm in 1:nparms){
     
-    parnames <- rownames(CIbeta[[1]][[parms[parm]]]$est)
+    parnames <- rownames(m$CI_beta[[parms[parm]]]$est)
     coeffs <- matrix(miBeta$coefficients[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
     vars <- matrix(diag(miBeta$variance)[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
     dfs <- matrix(miBeta$df[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
@@ -117,7 +91,7 @@ MI_summary<-function(im,alpha=0.95,ncores,includeHMMfits=FALSE){
   Par <- list()
   Par$beta <- list()
   for(i in parms){
-    Par$beta[[i]] <- mi_parm_list(xbar[[i]],MI_se[[i]],lower[[i]],upper[[i]],CIbeta[[1]][[i]]$est)
+    Par$beta[[i]] <- mi_parm_list(xbar[[i]],MI_se[[i]],lower[[i]],upper[[i]],m$CI_beta[[i]]$est)
   }
   
   mhdata<-m$data
