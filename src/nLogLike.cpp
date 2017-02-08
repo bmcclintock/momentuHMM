@@ -101,7 +101,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
 
     arma::mat diag(nbStates,nbStates);
     diag.eye(); // diagonal of ones
-    arma::mat Gamma = trMat.slice(0); // all slices are identical if stationary
+    arma::mat Gamma = trMat.slice(0).t(); // all slices are identical if stationary
     arma::colvec v(nbStates);
     v.ones(); // vector of ones
     try {
