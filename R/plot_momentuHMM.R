@@ -95,9 +95,12 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   ## States decoding with Viterbi ##
   ##################################
   if(nbStates>1) {
-    cat("Decoding states sequence... ")
-    states <- viterbi(m)
-    cat("DONE\n")
+    if("miSum" %in% class(x)) states <- m$Par$states
+    else {
+      cat("Decoding states sequence... ")
+      states <- viterbi(m)
+      cat("DONE\n")
+    }
   } else
     states <- rep(1,nrow(m$data))
 
@@ -347,9 +350,10 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           uci<-est+qnorm(1-(1-alpha)/2)*se
           lci<-est-qnorm(1-(1-alpha)/2)*se
           if(!all(is.na(se))){
-            plot(tempCovs[,jj],est,ylim=range(c(lci,est,uci),na.rm=TRUE),xaxt="n",xlab=jj,ylab=paste(i,j,'parameter'),main=paste0('State ',state,ifelse(length(tempCovs[,-which(names(tempCovs)==jj)]),paste0(": ",paste(names(tempCovs)[-which(names(tempCovs)==jj)],"=",tmpcovs[,names(tempCovs)[-which(names(tempCovs)==jj)]],collapse=", ")))),type="l")
-            arrows(as.numeric(tempCovs[,jj]), lci, as.numeric(tempCovs[,jj]), uci, length=0.05, angle=90, code=3, col=gray(.5)) 
-          } else plot(tempCovs[,jj],est,xaxt="n",xlab=jj,ylab=paste(i,j,'parameter'),main=paste0('State ',state,ifelse(length(tempCovs[,-which(names(tempCovs)==jj)]),paste0(": ",paste(names(tempCovs)[-which(names(tempCovs)==jj)],"=",tmpcovs[,names(tempCovs)[-which(names(tempCovs)==jj)]],collapse=", ")))),type="l") 
+            plot(tempCovs[,jj],est,ylim=range(c(lci,est,uci),na.rm=TRUE),xaxt="n",xlab=jj,ylab=paste(i,j,'parameter'),main=paste0('State ',state,ifelse(length(tempCovs[,-which(names(tempCovs)==jj)]),paste0(": ",paste(names(tempCovs)[-which(names(tempCovs)==jj)],"=",tmpcovs[,names(tempCovs)[-which(names(tempCovs)==jj)]],collapse=", ")),"")),type="l")
+            ciInd <- which(abs(uci-lci)>max(abs(uci-lci))/1000) #to aviod un-supressable warning in arrows()
+            arrows(as.numeric(tempCovs[ciInd,jj]), lci[ciInd], as.numeric(tempCovs[ciInd,jj]), uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5)) 
+          } else plot(tempCovs[,jj],est,xaxt="n",xlab=jj,ylab=paste(i,j,'parameter'),main=paste0('State ',state,ifelse(length(tempCovs[,-which(names(tempCovs)==jj)]),paste0(": ",paste(names(tempCovs)[-which(names(tempCovs)==jj)],"=",tmpcovs[,names(tempCovs)[-which(names(tempCovs)==jj)]],collapse=", ")),"")),type="l") 
           if(is.factor(tempCovs[,jj])) axis(1,at=tempCovs[,jj])
           else axis(1)
           
@@ -410,6 +414,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     par(mfrow=c(nbStates,nbStates))
     par(mar=c(5,4,4,2)-c(0,0,1.5,1)) # bottom, left, top, right
     
+    gamInd<-(length(m$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(m$mod$estimate))-(nbStates-1)
+    quantSup<-qnorm(1-(1-alpha)/2)
+    
     if(nrow(m$mle$beta)>1) {
       
       # values of each covariate
@@ -463,11 +470,18 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         
         trMat <- trMatrix_rcpp(nbStates,m$mle$beta,desMat)
           
-        for(i in 1:nbStates)
-          for(j in 1:nbStates)
+        for(i in 1:nbStates){
+          for(j in 1:nbStates){
+            dN<-t(apply(desMat,1,function(x) numDeriv::grad(get_gamma,beta,covs=matrix(x,nrow=1),nbStates=nbStates,i=i,j=j)))
+            se<-t(apply(dN,1,function(x) suppressWarnings(sqrt(x%*%Sigma[gamInd,gamInd]%*%x))))
+            lci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))-quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]-quantSup*se[i,j]
+            uci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))+quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]+quantSup*se[i,j]
             plot(tempCovs[,cov],trMat[i,j,],type="l",ylim=c(0,1),xlab=names(rawCovs)[cov],
                  ylab=paste(i,"->",j))
-        
+            ciInd <- which(abs(uci-lci)>1/1000) #to aviod un-supressable warning in arrows()
+            if(!all(is.na(se))) arrows(as.numeric(tempCovs[ciInd,cov]), lci[ciInd], as.numeric(tempCovs[ciInd,cov]), uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5))
+          }
+        }
         if(ncol(rawCovs)>1) mtext(paste("Transition probabilities:",paste(names(rawCovs)[-cov],"=",tmpcovs[-cov],collapse=", ")),side=3,outer=TRUE,padj=2)
         else mtext("Transition probabilities:",side=3,outer=TRUE,padj=2)
         
