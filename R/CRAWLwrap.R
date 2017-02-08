@@ -4,7 +4,7 @@
 #' @importFrom foreach foreach %dopar%
 #' @importFrom stats formula
 
-CRAWLwrap<-function(obsData, timeStep=1, ncores, 
+CRAWLwrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
                     mov.model = ~1, err.model = NULL, activity = NULL, drift = NULL, 
                     coord = c("x", "y"), Time.name = "time", initial.state, theta, fixPar, 
                     method = "L-BFGS-B", control = NULL, constr = NULL, 
@@ -14,6 +14,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
   
   if(!is.character(coord) | length(coord)!=2) stop('coord must be character vector of length 2')
   if(any(!(c("ID",Time.name,coord) %in% names(obsData)))) stop('obsData is missing ',paste(c("ID",Time.name,coord)[!(c("ID",Time.name,coord) %in% names(obsData))],collapse=","))
+  if(retryFits<0) stop("retryFits must be non-negative")
   
   ids = unique(obsData$ID)
   ind_data<-vector('list',length(ids))
@@ -152,14 +153,56 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
   stopImplicitCluster()
   cat("DONE\n")
   
+  # Check crwFits and re-try based on retryFits
   for(i in 1:length(ids)){
     if(!inherits(model_fits[[i]],"crwFit"))
       warning('crawl::crwMLE for individual ',ids[i],' failed;\n',model_fits[[i]],"   Check crawl::crwMLE arguments and/or consult crawl documentation.")
     else {
-      if(model_fits[[i]]$convergence)
-        warning('crawl::crwMLE for individual ',ids[i],' has suspect convergence: ',model_fits[[i]]$message)
-      if(any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))])))
-        warning('crawl::crwMLE for individual ',ids[i],' has NaN variance estimate(s)')
+      if(model_fits[[i]]$convergence | any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))]))){
+        if(retryFits){
+          fitCount<-0
+          fit <- model_fits[[i]]
+          if(model_fits[[i]]$convergence)
+            cat('crawl::crwMLE for individual',ids[i],'has suspect convergence: ',model_fits[[i]]$message,"\n")
+          if(any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))])))
+            cat('crawl::crwMLE for individual',ids[i],'has NaN variance estimate(s)\n')
+          cat('Attempting to achieve convergence and valid variance estimates for individual ',ids[i],". Press 'esc' to force exit from 'CRAWLwrap'\n",sep="")
+          while(fitCount<retryFits & (fit$convergence | any(is.na(fit$se[which(is.na(fixPar[[i]]))])))){
+            cat("\r    Attempt ",fitCount+1," of ",retryFits,"...",sep="")
+            tmp <- suppressWarnings(suppressMessages(crawl::crwMLE(
+              mov.model =  mov.model[[i]],
+              err.model = err.model[[i]],
+              activity = activity[[i]],
+              drift = drift[[i]],
+              data = ind_data[[i]],
+              coord = coord,
+              Time.name = Time.name,
+              initial.state = initial.state[[i]],
+              theta = fit$estPar + rnorm(length(fit$estPar),0,0.5),
+              fixPar = fixPar[[i]],
+              method = method,
+              control = list(maxit = control$maxit),
+              constr = constr[[i]],
+              prior = prior[[i]],
+              need.hess = need.hess,
+              initialSANN = list(maxit = initialSANN$maxit),
+              attempts = 1
+            )))
+            if(inherits(tmp,"crwFit"))
+              if(tmp$convergence==0)
+                if(tmp$aic < model_fits[[i]]$aic | all(!is.na(tmp$se[which(is.na(fixPar[[i]]))])))
+                  fit<-tmp
+            fitCount <- fitCount + 1
+          }
+          cat("DONE\n")
+          model_fits[[i]]<-fit
+        } else {
+          if(model_fits[[i]]$convergence)
+            warning('crawl::crwMLE for individual ',ids[i],' has suspect convergence: ',model_fits[[i]]$message)
+          if(any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))])))
+            warning('crawl::crwMLE for individual ',ids[i],' has NaN variance estimate(s)')
+        }
+      }
     }
   }
   
@@ -174,7 +217,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores,
     }
   }
   
-  cat('Predicting locations (and uncertainty) for',length(ids),'track(s) using crawl::crwPredict...')
+  cat('Predicting locations (and uncertainty) for',length(convFits),'track(s) using crawl::crwPredict...')
   registerDoParallel(cores=ncores)
   predData <- 
     foreach(i = 1:length(convFits), .export="crwPredict", .combine = rbind, .errorhandling="remove") %dopar% {
