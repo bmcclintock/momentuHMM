@@ -214,19 +214,24 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   arma::mat Gamma(nbStates,nbStates); // transition probability matrix
   double lscale = 0; // scaled log-likelihood
   int k=1; // animal index
-  arma::rowvec alpha = (delta * trMat.slice(0)) % allProbs.row(0);
+  if(nbStates>1)
+    Gamma = trMat.slice(0);
+  else
+    Gamma = 1; // no transition if only one state
+  arma::rowvec alpha = (delta * Gamma) % allProbs.row(0);
 
   for(unsigned int i=1;i<allProbs.n_rows;i++) {
-    if(k<aInd.size() && i==(unsigned)(aInd(k)-1)) {
-      // if 'i' is the 'k'-th element of 'aInd', switch to the next animal
-      k++;
-      alpha = (delta * trMat.slice(i)) % allProbs.row(i);
-    }
-
+    
     if(nbStates>1)
       Gamma = trMat.slice(i);
     else
       Gamma = 1; // no transition if only one state
+    
+    if(k<aInd.size() && i==(unsigned)(aInd(k)-1)) {
+      // if 'i' is the 'k'-th element of 'aInd', switch to the next animal
+      k++;
+      alpha = (delta * Gamma) % allProbs.row(i);
+    }
 
     alpha = alpha*Gamma%allProbs.row(i);
 
