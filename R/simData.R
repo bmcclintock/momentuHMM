@@ -108,6 +108,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     spatialCovs=NULL,
                     zeroInflation=NULL,
                     circularAngleMean=NULL,
+                    centers=NULL,
                     obsPerAnimal=c(500,1500),
                     DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,stateNames=NULL,
                     model=NULL,states=FALSE,
@@ -275,7 +276,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           while(is.na(covs[k,i])) k <- k+1
           for(j in k:2) covs[j-1,i] <- covs[j,i]
         }
-        for(j in 2:nrow(trackData))
+        for(j in 2:nrow(covs))
           if(is.na(covs[j,i])) covs[j,i] <- covs[j-1,i]
       }
     }
@@ -332,6 +333,15 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   if(anyDuplicated(spatialcovnames)) stop("spatialCovs must have unique names")
   if(any(colnames(allCovs) %in% spatialcovnames)) stop("spatialCovs name(s) cannot match other covariate name(s)")
   
+  if(!is.null(centers)){
+    if(any(dim(centers)!=c(nbStates,2))) stop("centers must be of dimension ",nbStates,"x",2)
+    centerInd <- which(!apply(centers,1,function(x) any(is.na(x))))
+    if(length(centerInd)){
+      centerNames<-paste0("center",".",rep(c("dist","angle"),length(centerInd)),rep(centerInd,each=2))
+      centerCovs <- data.frame(matrix(NA,nrow=sum(allNbObs),ncol=length(centerInd)*2,dimnames=list(NULL,centerNames)))
+    }  
+  }
+  
   allNbCovs <- nbCovs+nbSpatialCovs
   if(is.null(formula)) {
     if(allNbCovs) formula <- formula(paste0("~",paste0(c(colnames(allCovs),spatialcovnames),collapse="+")))
@@ -353,7 +363,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   zeroMass<-vector('list',length(dist))
   names(zeroMass)<-distnames
 
-  trackData <- NULL
   allStates <- NULL
   allSpatialcovs<-NULL
   
@@ -399,6 +408,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         if(!is.null(covs))
           colnames(subCovs) <- colnames(covs) # keep covariates names from input
     }
+    if(length(centerInd)) subCovs <- cbind(subCovs,centerCovs[cumNbObs[zoo]+1:nbObs,])
     
     subSpatialcovs<-as.data.frame(matrix(NA,nrow=nbObs,ncol=nbSpatialCovs))
     colnames(subSpatialcovs)<-spatialcovnames
@@ -422,7 +432,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     
     gamma <- diag(nbStates)
     
-    if(!nbSpatialCovs) {
+    if(!nbSpatialCovs & !length(centerInd)) {
       DMcov <- model.matrix(formula,subCovs)
       gFull <-  DMcov %*% beta
       
@@ -434,10 +444,19 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(formula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,dist,p$Bndind)
       g <- gFull[1,,drop=FALSE]
     } else {
-      for(j in 1:nbSpatialCovs){
-        getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[1,1],X[1,2]))
-        if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
-        subSpatialcovs[1,j]<-spatialCovs[[j]][getCell]
+      
+      if(nbSpatialCovs){
+        for(j in 1:nbSpatialCovs){
+          getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[1,1],X[1,2]))
+          if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+          subSpatialcovs[1,j]<-spatialCovs[[j]][getCell]
+        }
+      }
+      
+      if(length(centerInd)){
+        for(j in 1:length(centerInd)){
+          subCovs[1,centerNames[(j-1)*length(centerInd)+1:2]]<-distAngle(X[1,],X[1,],centers[centerInd[j],])
+        }
       }
       g <- model.matrix(formula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% beta
     }
@@ -453,7 +472,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     
     for (k in 1:(nbObs-1)){
       
-      if(nbSpatialCovs){
+      if(nbSpatialCovs |  length(centerInd)){
         # format parameters
         DMinputs<-getDM(cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE]),inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,inputs$circularAngleMean)
         fullDM <- DMinputs$fullDM
@@ -489,6 +508,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                 phi <- phi + genData[[i]][k]
               } else if(genData$step[k]==0) {
                 genData[[i]][k] <- NA # angle = NA if step = 0
+                #if(length(centerInd)) subCovs[k,centerNames[seq(2,2*length(centerInd),2)]] <- NA
               }
               m <- genData$step[k]*c(Re(exp(1i*phi)),Im(exp(1i*phi)))
               X[k+1,] <- X[k,] + m
@@ -514,11 +534,18 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       }
       # get next state
       gamma <- diag(nbStates)
-      if(nbSpatialCovs){
-        for(j in 1:nbSpatialCovs){
-          getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[k+1,1],X[k+1,2]))
-          if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
-          subSpatialcovs[k+1,j]<-spatialCovs[[j]][getCell]
+      if(nbSpatialCovs | length(centerInd)){
+        if(nbSpatialCovs){
+          for(j in 1:nbSpatialCovs){
+            getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[k+1,1],X[k+1,2]))
+            if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+            subSpatialcovs[k+1,j]<-spatialCovs[[j]][getCell]
+          }
+        }
+        if(length(centerInd)){
+          for(j in 1:length(centerInd)){
+            subCovs[k+1,centerNames[(j-1)*length(centerInd)+1:2]]<-distAngle(X[k,],X[k+1,],centers[centerInd[j],])
+          }
         }
         g <- model.matrix(formula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% beta
       } else {
@@ -538,9 +565,12 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(dist[["angle"]] %in% angledists & ("step" %in% distnames))
         if(dist[["step"]] %in% stepdists){
             d$angle[1] <- NA # the first angle value is arbitrary
+            #if(length(centerInd)) subCovs[1,centerNames[seq(2,2*length(centerInd),2)]] <- NA
             d$x=X[,1]
             d$y=X[,2]
         }
+    
+    if(length(centerInd)) centerCovs[cumNbObs[zoo]+1:nbObs,] <- subCovs[,centerNames]
     data <- rbind(data,d)
   }
   
@@ -551,6 +581,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   
   if(nbSpatialCovs>0)
     data <- cbind(data,allSpatialcovs)
+  
+  if(length(centerInd))
+    data <- cbind(data,centerCovs)
   
   # include states sequence in the data
   if(states)
