@@ -18,6 +18,7 @@ Imports:
     crawl,
     ggmap,
     ggplot2,
+    mitools,
     moveHMM,
     raster,
     argosfilter,

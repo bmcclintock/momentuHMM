@@ -89,9 +89,9 @@ test_that("Step length only + zero-inflation works",{
   nbAnimals <- 2
   nbStates <- 2
   nbCovs <- 2
-  mu <- c(10,60)
+  mu <- c(100,600)
   sigma <- c(10,40)
-  zeromass <- c(0.4,0.001)
+  zeromass <- c(0.1,0.05)
   stepPar <- c(mu,sigma,zeromass)
   anglePar <- NULL
   stepDist <- "gamma"
@@ -103,9 +103,9 @@ test_that("Step length only + zero-inflation works",{
                   Par=list(step=stepPar),nbCovs=nbCovs,zeroInflation=list(step=zeroInflation),
                   obsPerAnimal=nbAnim)
 
-  mu0 <- c(20,50)
-  sigma0 <- c(15,30)
-  zeromass0 <- c(0.2,0.05)
+  mu0 <- c(100,600)
+  sigma0 <- c(10,40)
+  zeromass0 <- c(0.1,0.05)
   stepPar0 <- c(mu0,sigma0,zeromass0)
   anglePar0 <- NULL
   angleMean <- NULL
@@ -122,9 +122,10 @@ test_that("equivalent momentuHMM and moveHMM models match",{
   nbStates<-simPar$nbStates
   
   data<-simData(nbAnimals=2,model=example$m)
-  momentuHMM_fit<-fitHMM(data=data,nbStates=nbStates,Par=list(step=log(par0$Par$step),angle=par0$Par$angle),
+  momentuHMM_fit<-fitHMM(data=data,nbStates=nbStates,Par=list(step=log(par0$Par$step),angle=par0$Par$angle),stationary=TRUE,
                          beta0=par0$beta0[1,,drop=FALSE],delta0=par0$delta0,DM=list(step=diag(4)),dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean)
-  moveHMM_fit<-moveHMM::fitHMM(moveData(data),nbStates=nbStates,stepPar=par0$Par$step,anglePar=par0$Par$angle,stepDist=simPar$dist$step,angleDist=simPar$dist$angle,beta0=par0$beta0[1,,drop=FALSE],delta0=par0$delta0)
+  moveHMM_fit<-moveHMM::fitHMM(moveData(data),nbStates=nbStates,stepPar=par0$Par$step,anglePar=par0$Par$angle,stepDist=simPar$dist$step,angleDist=simPar$dist$angle,stationary=TRUE,
+                               beta0=par0$beta0[1,,drop=FALSE],delta0=par0$delta0)
   expect_equal(momentuHMM_fit$mod$estimate,moveHMM_fit$mod$estimate)
   expect_equal(momentuHMM_fit$mod$minimum,moveHMM_fit$mod$minimum)
 })

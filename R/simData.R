@@ -106,7 +106,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     formula=NULL,
                     covs=NULL,nbCovs=0,
                     spatialCovs=NULL,
-                    zeroInflation=NULL,obsPerAnimal=c(500,1500),
+                    zeroInflation=NULL,
+                    circularAngleMean=NULL,
+                    obsPerAnimal=c(500,1500),
                     DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,stateNames=NULL,
                     model=NULL,states=FALSE,
                     lambda=NULL,
@@ -228,7 +230,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     else estAngleMean[[i]]<-FALSE
   }
   
-  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,zeroInflation,DM,userBounds,cons,workcons,stateNames)
+  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,DM,userBounds,cons,workcons,stateNames)
   p <- inputs$p
   parSize <- p$parSize
   bounds <- p$bounds
@@ -425,11 +427,11 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       gFull <-  DMcov %*% beta
       
       # format parameters
-      DMinputs<-getDM(subCovs,inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation)
+      DMinputs<-getDM(subCovs,inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,inputs$circularAngleMean)
       fullDM <- DMinputs$fullDM
       DMind <- DMinputs$DMind
       wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
-      fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(formula),"term.labels")),inputs$estAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,dist,p$Bndind)
+      fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(formula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,dist,p$Bndind)
       g <- gFull[1,,drop=FALSE]
     } else {
       for(j in 1:nbSpatialCovs){
@@ -453,11 +455,11 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       
       if(nbSpatialCovs){
         # format parameters
-        DMinputs<-getDM(cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE]),inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation)
+        DMinputs<-getDM(cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE]),inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,inputs$circularAngleMean)
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
         wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
-        subPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(formula),"term.labels")),inputs$estAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist,p$Bndind)
+        subPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(formula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist,p$Bndind)
       } else {
         subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
       }

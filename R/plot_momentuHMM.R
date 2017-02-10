@@ -35,8 +35,8 @@
 #'
 #'
 #' @export
-#' @importFrom graphics legend lines segments
-#' @importFrom grDevices adjustcolor
+#' @importFrom graphics legend lines segments arrows
+#' @importFrom grDevices adjustcolor gray
 
 plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
                          sepStates=FALSE,col=NULL,alpha=0.95,...)
@@ -189,15 +189,15 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   }
   
   # get pars for probability density plots
-  tmpInputs <- checkInputs(nbStates,tmpConditions$dist,tmpPar,tmpConditions$estAngleMean,tmpConditions$zeroInflation,tmpConditions$DM,tmpConditions$userBounds,tmpConditions$cons,tmpConditions$workcons,m$stateNames)
+  tmpInputs <- checkInputs(nbStates,tmpConditions$dist,tmpPar,tmpConditions$estAngleMean,tmpConditions$circularAngleMean,tmpConditions$zeroInflation,tmpConditions$DM,tmpConditions$userBounds,tmpConditions$cons,tmpConditions$workcons,m$stateNames)
   tmpp <- tmpInputs$p
-  DMinputs<-getDM(covs,tmpInputs$DM,tmpConditions$dist,nbStates,tmpp$parNames,tmpp$bounds,tmpPar,tmpConditions$cons,tmpConditions$workcons,tmpConditions$zeroInflation)
+  DMinputs<-getDM(covs,tmpInputs$DM,tmpConditions$dist,nbStates,tmpp$parNames,tmpp$bounds,tmpPar,tmpConditions$cons,tmpConditions$workcons,tmpConditions$zeroInflation,tmpConditions$circularAngleMean)
   fullDM <- DMinputs$fullDM
   DMind <- DMinputs$DMind
   wpar <- n2w(tmpPar,tmpp$bounds,beta,delta,nbStates,tmpInputs$estAngleMean,tmpInputs$DM,DMinputs$cons,DMinputs$workcons,tmpp$Bndind)
-  par <- w2n(wpar,tmpp$bounds,tmpp$parSize,nbStates,nbCovs,tmpInputs$estAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,tmpConditions$dist,tmpp$Bndind)
+  par <- w2n(wpar,tmpp$bounds,tmpp$parSize,nbStates,nbCovs,tmpInputs$estAngleMean,tmpInputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,tmpConditions$dist,tmpp$Bndind)
   
-  inputs <- checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
+  inputs <- checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
   p <- inputs$p
   
   zeroMass<-vector('list',length(m$conditions$dist))
@@ -338,15 +338,15 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           for(ii in DMparterms[[j]][which(unlist(lapply(m$data[DMparterms[[j]]],is.factor)))])
             tempCovs[[ii]] <- factor(tempCovs[[ii]],levels=levels(m$data[[ii]]))
           
-          DMinputs<-getDM(tempCovs,inputs$DM[i],m$conditions$dist[i],nbStates,p$parNames[i],p$bounds[i],Par[i],m$conditions$cons[i],m$conditions$workcons[i],m$conditions$zeroInflation[i])
+          DMinputs<-getDM(tempCovs,inputs$DM[i],m$conditions$dist[i],nbStates,p$parNames[i],p$bounds[i],Par[i],m$conditions$cons[i],m$conditions$workcons[i],m$conditions$zeroInflation[i],m$conditions$circularAngleMean[i])
           fullDM <- DMinputs$fullDM
           DMind <- DMinputs$DMind
           gradfun<-function(wpar,k) {
-            w2n(wpar,p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,m$conditions$dist[i],p$Bndind[i])[[i]][(which(p$parNames[[i]]==j)-1)*nbStates+state,k]
+            w2n(wpar,p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,m$conditions$dist[i],p$Bndind[i])[[i]][(which(p$parNames[[i]]==j)-1)*nbStates+state,k]
           }
           dN<-t(mapply(function(x) numDeriv::grad(gradfun,c(m$mod$estimate[parindex[[i]]+1:ncol(fullDM[[i]])],beta),k=x),1:gridLength))
           se<-t(apply(dN[,1:ncol(fullDM[[i]])],1,function(x) suppressWarnings(sqrt(x%*%Sigma[parindex[[i]]+1:ncol(fullDM[[i]]),parindex[[i]]+1:ncol(fullDM[[i]])]%*%x))))
-          est<-w2n(c(m$mod$estimate[parindex[[i]]+1:ncol(fullDM[[i]])],beta),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,m$conditions$dist[i],p$Bndind[i])[[i]][(which(p$parNames[[i]]==j)-1)*nbStates+state,]
+          est<-w2n(c(m$mod$estimate[parindex[[i]]+1:ncol(fullDM[[i]])],beta),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,m$conditions$dist[i],p$Bndind[i])[[i]][(which(p$parNames[[i]]==j)-1)*nbStates+state,]
           uci<-est+qnorm(1-(1-alpha)/2)*se
           lci<-est-qnorm(1-(1-alpha)/2)*se
           if(!all(is.na(se))){

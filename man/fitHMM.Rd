@@ -5,10 +5,10 @@
 \title{Fit an HMM to the data}
 \usage{
 fitHMM(data, nbStates, dist, Par, beta0 = NULL, delta0 = NULL,
-  estAngleMean = NULL, formula = ~1, stationary = FALSE, verbose = 0,
-  nlmPar = NULL, fit = TRUE, DM = NULL, cons = NULL,
-  userBounds = NULL, workcons = NULL, stateNames = NULL,
-  knownStates = NULL)
+  estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
+  stationary = FALSE, verbose = 0, nlmPar = NULL, fit = TRUE,
+  DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL,
+  stateNames = NULL, knownStates = NULL)
 }
 \arguments{
 \item{data}{An object \code{momentuHMMData}.}

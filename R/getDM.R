@@ -1,5 +1,5 @@
 #' @importFrom stats formula terms.formula
-getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInflation,ParChecks=TRUE){
+getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInflation,circularAngleMean,ParChecks=TRUE){
   
   distnames<-names(dist)
   fullDM <- vector('list',length(dist))
@@ -20,7 +20,13 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       DM[[i]]<-DM[[i]][parNames[[i]]]
       if(any(unlist(lapply(DM[[i]],function(x) attr(terms(x),"response")!=0))))
         stop("The response variable should not be specified in the DM formula for ",i)
-      tmpCov<-lapply(DM[[i]],function(x) model.matrix(x,data))
+      if(circularAngleMean[[i]]){
+        tmpCov <- list()
+        for(j in names(DM[[i]])){
+          tmpCov[[j]]<-model.matrix(DM[[i]][[j]],data)
+          if(j=="mean" & attr(terms.formula(DM[[i]][[j]]),"intercept")) tmpCov[[j]] <- tmpCov[[j]][,-1,drop=FALSE]
+        }
+      } else tmpCov<-lapply(DM[[i]],function(x) model.matrix(x,data))
       parSizeDM<-unlist(lapply(tmpCov,ncol))
       tmpDM<-array(0,dim=c(parSize[[i]]*nbStates,sum(parSizeDM)*nbStates,nbObs))
       DMnames<-character(sum(parSizeDM)*nbStates)

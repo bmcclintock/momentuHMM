@@ -40,7 +40,7 @@ n2wDM<-function(bounds,DM,par,cons,workcons){
   p
 }     
 
-w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,k=0){
+w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,nbStates,k=0){
   
   Par<-numeric(length(wpar))
 
@@ -51,9 +51,9 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,k=0){
   ind1<-which(piInd)
   ind2<-which(!piInd)
   
-  XB <- p <- getXB(DM,nbObs,wpar,cons,workcons,DMind)
+  XB <- p <- getXB(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,nbStates)
  
-  if(length(ind1))
+  if(length(ind1) & !circularAngleMean)
     p[ind1,] <- (2*atan(XB[ind1,]))
   
   ind21<-ind2[which(is.finite(a[ind2]) & is.infinite(b[ind2]))]

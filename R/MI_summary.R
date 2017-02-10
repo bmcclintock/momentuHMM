@@ -135,9 +135,9 @@ MI_summary<-function(HMMfits,alpha=0.95,ncores,includeHMMfits=FALSE){
     }
   }
   
-  inputs <- checkInputs(nbStates,m$conditions$dist,tmPar,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
+  inputs <- checkInputs(nbStates,m$conditions$dist,tmPar,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
   p<-inputs$p
-  DMinputs<-getDM(tempCovs,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation)
+  DMinputs<-getDM(tempCovs,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$circularAngleMean)
   fullDM<-DMinputs$fullDM
   nbCovs <- ncol(model.matrix(m$conditions$formula,m$data))-1 # substract intercept column
   
@@ -145,7 +145,7 @@ MI_summary<-function(HMMfits,alpha=0.95,ncores,includeHMMfits=FALSE){
   for(i in distnames){
     
     DMind[[i]] <- FALSE
-    par <- c(w2n(miBeta$coefficients,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$stationary,m$conditions$cons,fullDM,DMind,m$conditions$workcons,1,dist[i],m$conditions$Bndind)[[i]])
+    par <- c(w2n(miBeta$coefficients,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,fullDM,DMind,m$conditions$workcons,1,dist[i],m$conditions$Bndind)[[i]])
 
     if(!(dist[[i]] %in% angledists) | (dist[[i]] %in% angledists & m$conditions$estAngleMean[[i]] & !m$conditions$Bndind[[i]])) {
       Par$real[[i]] <- get_CI(miBeta$coefficients,par,m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],miBeta$variance,nbStates,alpha,p$parNames[[i]],m$stateNames)

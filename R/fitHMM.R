@@ -139,6 +139,7 @@
 fitHMM <- function(data,nbStates,dist,
                    Par,beta0=NULL,delta0=NULL,
                    estAngleMean=NULL,
+                   circularAngleMean=NULL,
                    formula=~1,
                    stationary=FALSE,verbose=0,nlmPar=NULL,fit=TRUE,
                    DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,stateNames=NULL,knownStates=NULL)
@@ -235,10 +236,10 @@ fitHMM <- function(data,nbStates,dist,
 
   mHind <- (is.null(DM) & is.null(userBounds) & ("step" %in% distnames)) # indicator for moveHMMwrap below
   
-  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,zeroInflation,DM,userBounds,cons,workcons,stateNames)
+  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,DM,userBounds,cons,workcons,stateNames)
   p <- inputs$p
   
-  DMinputs<-getDM(data,inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation)
+  DMinputs<-getDM(data,inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,inputs$circularAngleMean)
   fullDM <- DMinputs$fullDM
   DMind <- DMinputs$DMind
   
@@ -309,7 +310,7 @@ fitHMM <- function(data,nbStates,dist,
 
     # call to optimizer nlm
     withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,p$bounds,p$parSize,data,dist,covs,
-                                   inputs$estAngleMean,zeroInflation,
+                                   inputs$estAngleMean,inputs$circularAngleMean,zeroInflation,
                                    stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,
                                    print.level=verbose,gradtol=gradtol,
                                    stepmax=stepmax,steptol=steptol,
@@ -317,11 +318,11 @@ fitHMM <- function(data,nbStates,dist,
                         warning=h) # filter warnings using function h
 
     # convert the parameters back to their natural scale
-    mle <- w2n(mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind)
+    mle <- w2n(mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind)
   }
   else {
     mod <- NA
-    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind)
+    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind)
   }
 
   ####################
@@ -394,7 +395,7 @@ fitHMM <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,
-                     estAngleMean=inputs$estAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons)
+                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   

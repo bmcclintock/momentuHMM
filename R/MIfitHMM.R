@@ -5,7 +5,9 @@
 MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
                    miData,
                    nbStates, dist, Par, beta0 = NULL, delta0 = NULL,
-                   estAngleMean = NULL, formula = ~1, stationary = FALSE, verbose = 0,
+                   estAngleMean = NULL, 
+                   circularAngleMean = NULL,
+                   formula = ~1, stationary = FALSE, verbose = 0,
                    nlmPar = NULL, fit = TRUE, DM = NULL, cons = NULL,
                    userBounds = NULL, workcons = NULL, stateNames = NULL, knownStates=NULL,
                    covNames=NULL,spatialCovs=NULL,
@@ -76,7 +78,7 @@ MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
     foreach(j = 1:nSims, .export=c("fitHMM"), .errorhandling="pass") %dopar% {
 
       fitHMM(miData[[j]],nbStates, dist, Par, beta0, delta0,
-                              estAngleMean, formula, stationary, verbose,
+                              estAngleMean, circularAngleMean, formula, stationary, verbose,
                               nlmPar, fit, DM, cons,
                               userBounds, workcons, stateNames, knownStates)
     }  

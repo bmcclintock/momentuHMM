@@ -13,7 +13,7 @@ test_that("The output is in the right format",{
   delta <- c(0.6,0.4)
   
   wpar <- n2w(par,bounds,beta,delta,nbStates,m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
-  p <-   w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind)
+  p <-   w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind)
   
   expect_equal(length(p$step),parSize$step*nbStates)
   expect_equal(length(p$angle),parSize$angle*nbStates)
@@ -32,7 +32,7 @@ test_that("w2n and n2w are inverse",{
   delta <- c(0.6,0.4)
   
   wpar <- n2w(par,bounds,beta,delta,nbStates,m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
-  p <-   w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind)
+  p <-   w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind)
   
 
   expect_equal(p$step[,1],par$step,tolerance=1e-10)

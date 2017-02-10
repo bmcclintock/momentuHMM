@@ -12,6 +12,7 @@
 getParDM<-function(data,nbStates,dist,
                  Par,
                  estAngleMean=NULL,
+                 circularAngleMean=NULL,
                  DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,stateNames=NULL){
   
   if(nbStates<1) stop('nbStates must be >0')
@@ -36,9 +37,9 @@ getParDM<-function(data,nbStates,dist,
     else zeroInflation[[i]]<-FALSE
   }
   
-  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,zeroInflation,DM,userBounds,cons,workcons,stateNames)
+  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,DM,userBounds,cons,workcons,stateNames)
   
-  DMinputs<-getDM(data,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,FALSE)
+  DMinputs<-getDM(data,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,inputs$circularAngleMean,FALSE)
   fullDM <- DMinputs$fullDM
   DMind <- DMinputs$DMind
   cons <- DMinputs$cons
@@ -61,7 +62,10 @@ getParDM<-function(data,nbStates,dist,
         ind2<-which(!piInd)
         
         p<-numeric(length(bndInd))
-        if(length(ind1)) p[ind1] <- (solve(unique(fullDM[[i]])[ind1,ind1],tan(par[ind1]/2))-workcons[[i]][ind1])^(1/cons[[i]][ind1])
+        if(length(ind1)){
+          if(!circularAngleMean[[i]]) p[ind1] <- (solve(unique(fullDM[[i]])[ind1,ind1],tan(par[ind1]/2))-workcons[[i]][ind1])^(1/cons[[i]][ind1])
+          else stop("sorry, circular angle mean parameters are not supported by getParDM")
+        }
         
         ind21<-ind2[which(is.finite(a[ind2]) & is.infinite(b[ind2]))]
         ind22<-ind2[which(is.finite(a[ind2]) & is.finite(b[ind2]))]
