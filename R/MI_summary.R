@@ -180,7 +180,8 @@ MI_summary<-function(HMMfits,alpha=0.95,ncores,includeHMMfits=FALSE){
   Par$real$delta <- list(est=est,se=se,lower=lower,upper=upper)
   names(Par$real$delta$est) <- names(Par$real$delta$se) <- names(Par$real$delta$lower) <- names(Par$real$delta$upper) <- m$stateNames
     
-  if(!is.null(m$mle$gamma)){
+  # pooled gamma estimates
+  if(nbStates>1){
     gamInd<-(length(miBeta$coefficients)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(miBeta$coefficients))-(nbStates-1)
     est <- get_gamma(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),model.matrix(m$conditions$formula,mhdata),nbStates,1:nbStates,1:nbStates)
     lower<-upper<-se<-matrix(0,nrow(est),ncol(est))

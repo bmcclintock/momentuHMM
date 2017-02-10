@@ -48,6 +48,11 @@ print.momentuHMM <- function(x,...)
     cat("Transition probability matrix:\n")
     cat("-----------------------------\n")
     print(m$mle$gamma)
+  } else {
+    cat("\n")
+    cat("Transition probability matrix (based on mean covariate values):\n")
+    cat("--------------------------------------------------------------\n")
+    print(m$CI_real$gamma$est)    
   }
 
   cat("\n")

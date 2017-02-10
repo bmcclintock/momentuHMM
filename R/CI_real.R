@@ -102,30 +102,25 @@ CI_real <- function(m,alpha=0.95,nbSims=10^6)
     }
   }
 
-  if(nbStates>1 & !is.null(m$mle$gamma)) {
+  if(nbStates>1) {
     # identify parameters of interest
     i2 <- tail(cumsum(unlist(lapply(fullDM,ncol))),1)+1
     i3 <- i2+nbStates*(nbStates-1)*(nbCovs+1)-1
     wpar <- m$mle$beta
     quantSup <- qnorm(1-(1-alpha)/2)
+    tempCovMat <- model.matrix(m$conditions$formula,tempCovs)
+    est <- get_gamma(wpar,tempCovMat,nbStates)
     lower<-upper<-se<-matrix(NA,nbStates,nbStates)
     for(i in 1:nbStates){
       for(j in 1:nbStates){
-        dN<-numDeriv::grad(get_gamma,wpar,covs=covs,nbStates=nbStates,i=i,j=j)
+        dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j)
         se[i,j]<-suppressWarnings(sqrt(dN%*%Sigma[i2:i3,i2:i3]%*%dN))
-        lower[i,j]<-1/(1+exp(-(log(m$mle$gamma[i,j]/(1-m$mle$gamma[i,j]))-quantSup*(1/(m$mle$gamma[i,j]-m$mle$gamma[i,j]^2))*se[i,j])))#m$mle$gamma[i,j]-quantSup*se[i,j]
-        upper[i,j]<-1/(1+exp(-(log(m$mle$gamma[i,j]/(1-m$mle$gamma[i,j]))+quantSup*(1/(m$mle$gamma[i,j]-m$mle$gamma[i,j]^2))*se[i,j])))#m$mle$gamma[i,j]+quantSup*se[i,j]
+        lower[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))-quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]-quantSup*se[i,j]
+        upper[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))+quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#m$mle$gamma[i,j]+quantSup*se[i,j]
       }
     }
-    Par$gamma <- list(est=m$mle$gamma,se=se,lower=lower,upper=upper)
-    rownames(Par$gamma$est) <- m$stateNames
-    rownames(Par$gamma$se) <- m$stateNames
-    rownames(Par$gamma$lower) <- m$stateNames
-    rownames(Par$gamma$upper) <- m$stateNames
-    colnames(Par$gamma$est) <- m$stateNames
-    colnames(Par$gamma$se) <- m$stateNames
-    colnames(Par$gamma$lower) <- m$stateNames
-    colnames(Par$gamma$upper) <- m$stateNames
+    Par$gamma <- list(est=est,se=se,lower=lower,upper=upper)
+    dimnames(Par$gamma$est) <- dimnames(Par$gamma$se) <- dimnames(Par$gamma$lower) <- dimnames(Par$gamma$upper) <- list(m$stateNames,m$stateNames)
   }
   
   wpar<-m$mod$estimate

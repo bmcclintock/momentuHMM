@@ -44,12 +44,15 @@ print.miSum <- function(x,...)
     print(m$Par$beta$beta$est)
   }
   
-  if(!is.null(m$Par$real$gamma)) {
-    cat("\n")
+  cat("\n")
+  if(!length(attr(terms.formula(m$conditions$formula),"term.labels"))) {
     cat("Transition probability matrix:\n")
     cat("-----------------------------\n")
-    print(m$Par$real$gamma$est)
+  } else {
+    cat("Transition probability matrix (based on mean covariate values):\n")
+    cat("--------------------------------------------------------------\n")
   }
+  print(m$Par$real$gamma$est)
   
   cat("\n")
   cat("Initial distribution:\n")
