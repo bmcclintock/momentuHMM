@@ -275,7 +275,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           while(is.na(covs[k,i])) k <- k+1
           for(j in k:2) covs[j-1,i] <- covs[j,i]
         }
-        for(j in 2:nrow(trackData))
+        for(j in 2:nrow(covs))
           if(is.na(covs[j,i])) covs[j,i] <- covs[j-1,i]
       }
     }
@@ -353,7 +353,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   zeroMass<-vector('list',length(dist))
   names(zeroMass)<-distnames
 
-  trackData <- NULL
   allStates <- NULL
   allSpatialcovs<-NULL
   
