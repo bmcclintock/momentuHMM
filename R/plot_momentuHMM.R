@@ -345,7 +345,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             w2n(wpar,p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,m$conditions$dist[i],p$Bndind[i])[[i]][(which(p$parNames[[i]]==j)-1)*nbStates+state,k]
           }
           dN<-t(mapply(function(x) numDeriv::grad(gradfun,c(m$mod$estimate[parindex[[i]]+1:ncol(fullDM[[i]])],beta),k=x),1:gridLength))
-          se<-t(apply(dN[,parindex[[i]]+1:ncol(fullDM[[i]])],1,function(x) suppressWarnings(sqrt(x%*%Sigma[parindex[[i]]+1:ncol(fullDM[[i]]),parindex[[i]]+1:ncol(fullDM[[i]])]%*%x))))
+          se<-t(apply(dN[,1:ncol(fullDM[[i]])],1,function(x) suppressWarnings(sqrt(x%*%Sigma[parindex[[i]]+1:ncol(fullDM[[i]]),parindex[[i]]+1:ncol(fullDM[[i]])]%*%x))))
           est<-w2n(c(m$mod$estimate[parindex[[i]]+1:ncol(fullDM[[i]])],beta),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,m$conditions$dist[i],p$Bndind[i])[[i]][(which(p$parNames[[i]]==j)-1)*nbStates+state,]
           uci<-est+qnorm(1-(1-alpha)/2)*se
           lci<-est-qnorm(1-(1-alpha)/2)*se

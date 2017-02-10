@@ -63,7 +63,7 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,DM,userBounds=NULL)
                # (already in the right intervals for computing x and y)
                #tmpbounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(-Inf,Inf),nbStates)),
                #                       ncol=2,byrow=TRUE)
-               if(!is.null(DM[[i]])){
+               if(is.matrix(DM[[i]])){
                  dm <- DM[[i]]
                  meanind<-unique(unlist(apply(dm[1:nbStates,,drop=FALSE],1,function(x) which(x!=0))))
                  sdind<-unique(unlist(apply(dm[nbStates+1:nbStates,,drop=FALSE],1,function(x) which(x!=0))))
@@ -85,7 +85,7 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,DM,userBounds=NULL)
                # scaled from ]0,1[ to ]0,Inf[ (for computing x and y)
                #tmpbounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(-Inf,1),nbStates)),
                #                       ncol=2,byrow=TRUE)
-               if(!is.null(DM[[i]])){
+               if(is.matrix(DM[[i]])){
                  dm <- DM[[i]]
                  meanind<-unique(unlist(apply(dm[1:nbStates,,drop=FALSE],1,function(x) which(x!=0))))
                  sdind<-unique(unlist(apply(dm[nbStates+1:nbStates,,drop=FALSE],1,function(x) which(x!=0))))
