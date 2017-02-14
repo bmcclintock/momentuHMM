@@ -126,6 +126,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     userBounds <- model$conditions$bounds
     stateNames<-model$stateNames
     estAngleMean<-model$conditions$estAngleMean
+    circularAngleMean<-model$conditions$circularAngleMean
     DM <- model$conditions$DM
     cons <- model$conditions$cons
     workcons <- model$conditions$workcons
@@ -333,6 +334,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   if(anyDuplicated(spatialcovnames)) stop("spatialCovs must have unique names")
   if(any(colnames(allCovs) %in% spatialcovnames)) stop("spatialCovs name(s) cannot match other covariate name(s)")
   
+  centerInd<-NULL
   if(!is.null(centers)){
     if(any(dim(centers)!=c(nbStates,2))) stop("centers must be of dimension ",nbStates,"x",2)
     centerInd <- which(!apply(centers,1,function(x) any(is.na(x))))

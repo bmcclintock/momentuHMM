@@ -5,7 +5,7 @@ test_that("Output has the right format",{
   m <- example$m
   c <- CI_real(m)
 
-  expect_equal(length(c),3)
+  expect_equal(length(c),4)
   expect_equal(dim(c$step$est),dim(m$mle$step))
   expect_equal(dim(c$step$se),dim(m$mle$step))
   expect_equal(dim(c$step$lower),dim(m$mle$step))
