@@ -4,8 +4,9 @@
 \alias{getParDM}
 \title{Get starting values (Par) on working scale based on design matrix}
 \usage{
-getParDM(data, nbStates, dist, Par, estAngleMean = NULL, DM = NULL,
-  cons = NULL, userBounds = NULL, workcons = NULL, stateNames = NULL)
+getParDM(data, nbStates, dist, Par, estAngleMean = NULL,
+  circularAngleMean = NULL, DM = NULL, cons = NULL, userBounds = NULL,
+  workcons = NULL, stateNames = NULL)
 }
 \value{
 A list of parameter values (Par) that can be used as starting values in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
