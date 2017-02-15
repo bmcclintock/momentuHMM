@@ -37,6 +37,7 @@
 #' @export
 #' @importFrom graphics legend lines segments arrows
 #' @importFrom grDevices adjustcolor gray
+#' @importFrom stats get_all_vars
 
 plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
                          sepStates=FALSE,col=NULL,alpha=0.95,...)
@@ -255,19 +256,39 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     DMparterms<-list()
     if(!m$conditions$DMind[[i]]){
       if(!is.list(m$conditions$DM[[i]])){
-        for(j in 1:length(p$parNames[[i]]))
-          DMparterms[[p$parNames[[i]][j]]]<-unique(m$conditions$DM[[i]][(j-1)*nbStates+1:nbStates,][suppressWarnings(which(is.na(as.numeric(m$conditions$DM[[i]][(j-1)*nbStates+1:nbStates,]))))])
+        for(j in 1:length(p$parNames[[i]])){
+          DMparterms[[p$parNames[[i]][j]]] <- list()
+          for(jj in 1:nbStates){
+            DMparterms[[p$parNames[[i]][j]]][[jj]]<-unique(m$conditions$DM[[i]][(j-1)*nbStates+jj,][suppressWarnings(which(is.na(as.numeric(m$conditions$DM[[i]][(j-1)*nbStates+jj,]))))])
+          }
+        }
         DMterms<-unique(m$conditions$DM[[i]][suppressWarnings(which(is.na(as.numeric(m$conditions$DM[[i]]))))])
       } else {
         m$conditions$DM[[i]]<-m$conditions$DM[[i]][p$parNames[[i]]]
         DMterms<-character()
         for(j in 1:length(p$parNames[[i]])){
-          DMparterms[[p$parNames[[i]][j]]]<-rownames(attr(terms(m$conditions$DM[[i]][[p$parNames[[i]][j]]]),"factors"))#    colnamesmodel.matrix(DM[[i]][[p$parNames[[i]][j]]],data)
+          DMparterms[[p$parNames[[i]][j]]] <- list()
+          for(jj in 1:nbStates){
+            DMparterms[[p$parNames[[i]][j]]][[jj]]<-rownames(attr(terms(m$conditions$DM[[i]][[p$parNames[[i]][j]]]),"factors"))[(j-1)*nbStates+jj]#    colnamesmodel.matrix(DM[[i]][[p$parNames[[i]][j]]],data)
+          }
           DMterms <- c(DMterms,DMparterms[[p$parNames[[i]][j]]])
         }
       }
       DMterms <- unique(DMterms)
+      for(j in 1:length(p$parNames[[i]])){
+          for(jj in 1:nbStates){
+            if(length(DMparterms[[p$parNames[[i]][j]]][[jj]])){
+            for(k in 1:length(DMparterms[[p$parNames[[i]][j]]][[jj]])){
+              DMparterms[[p$parNames[[i]][j]]][[jj]][k]<-names(stats::get_all_vars(as.formula(paste0("~",DMparterms[[p$parNames[[i]][j]]][[jj]][k])),m$data))
+            }
+          }
+        }
+      }
+      for(j in 1:length(DMterms)){
+        DMterms[j]<-names(stats::get_all_vars(as.formula(paste0("~",DMterms[j])),m$data))
+      }
     }
+    
     covmess <- ifelse(!m$conditions$DMind[[i]],paste0(": ",paste0(DMterms," = ",tmpcovs[DMterms],collapse=", ")),"")
   
     ###########################################
@@ -307,7 +328,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       
       for(j in p$parNames[[i]]){
       
-        for(jj in DMparterms[[j]]){
+        for(jj in DMparterms[[j]][[state]]){
           
           if(!is.factor(m$data[,jj])){
             
@@ -318,24 +339,24 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             
             # set all covariates to their mean, except for "cov"
             # (which takes a grid of values from inf to sup)
-            tempCovs <- data.frame(matrix(covs[DMparterms[[j]]][[1]],nrow=gridLength,ncol=1))
-            if(length(DMparterms[[j]])>1)
-              for(ii in 2:length(DMparterms[[j]]))
-                tempCovs <- cbind(tempCovs,rep(covs[DMparterms[[j]]][[ii]],gridLength))
-            names(tempCovs) <- DMparterms[[j]]
+            tempCovs <- data.frame(matrix(covs[DMparterms[[j]][[state]]][[1]],nrow=gridLength,ncol=1))
+            if(length(DMterms)>1)
+              for(ii in 2:length(DMterms))
+                tempCovs <- cbind(tempCovs,rep(covs[[DMterms[[ii]]]],gridLength))
+            names(tempCovs) <- DMterms
             tempCovs[,jj] <- seq(inf,sup,length=gridLength)
           } else {
             gridLength<- nlevels(m$data[,jj])
             # set all covariates to their mean, except for "cov"
-            tempCovs <- data.frame(matrix(covs[DMparterms[[j]]][[1]],nrow=gridLength,ncol=1))
-            if(length(DMparterms[[j]])>1)
-              for(ii in 2:length(DMparterms[[j]]))
-                tempCovs <- cbind(tempCovs,rep(covs[DMparterms[[j]]][[ii]],gridLength))
-            names(tempCovs) <- DMparterms[[j]]
+            tempCovs <- data.frame(matrix(covs[DMparterms[[j]][[state]]][[1]],nrow=gridLength,ncol=1))
+            if(length(DMterms)>1)
+              for(ii in 2:length(DMterms))
+                tempCovs <- cbind(tempCovs,rep(covs[[DMterms[[ii]]]],gridLength))
+            names(tempCovs) <- DMterms
             tempCovs[,jj] <- as.factor(levels(m$data[,jj]))
           }
           
-          for(ii in DMparterms[[j]][which(unlist(lapply(m$data[DMparterms[[j]]],is.factor)))])
+          for(ii in DMterms[which(unlist(lapply(m$data[DMterms],is.factor)))])
             tempCovs[[ii]] <- factor(tempCovs[[ii]],levels=levels(m$data[[ii]]))
           
           DMinputs<-getDM(tempCovs,inputs$DM[i],m$conditions$dist[i],nbStates,p$parNames[i],p$bounds[i],Par[i],m$conditions$cons[i],m$conditions$workcons[i],m$conditions$zeroInflation[i],m$conditions$circularAngleMean[i])
@@ -350,10 +371,10 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           uci<-est+qnorm(1-(1-alpha)/2)*se
           lci<-est-qnorm(1-(1-alpha)/2)*se
           if(!all(is.na(se))){
-            plot(tempCovs[,jj],est,ylim=range(c(lci,est,uci),na.rm=TRUE),xaxt="n",xlab=jj,ylab=paste(i,j,'parameter'),main=paste0('State ',state,ifelse(length(tempCovs[,-which(names(tempCovs)==jj)]),paste0(": ",paste(names(tempCovs)[-which(names(tempCovs)==jj)],"=",tmpcovs[,names(tempCovs)[-which(names(tempCovs)==jj)]],collapse=", ")),"")),type="l")
+            plot(tempCovs[,jj],est,ylim=range(c(lci,est,uci),na.rm=TRUE),xaxt="n",xlab=jj,ylab=paste(i,j,'parameter'),main=paste0('State ',state,ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)]],collapse=", ")),"")),type="l")
             ciInd <- which(abs(uci-lci)>max(abs(uci-lci))/1000) #to aviod un-supressable warning in arrows()
             arrows(as.numeric(tempCovs[ciInd,jj]), lci[ciInd], as.numeric(tempCovs[ciInd,jj]), uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5)) 
-          } else plot(tempCovs[,jj],est,xaxt="n",xlab=jj,ylab=paste(i,j,'parameter'),main=paste0('State ',state,ifelse(length(tempCovs[,-which(names(tempCovs)==jj)]),paste0(": ",paste(names(tempCovs)[-which(names(tempCovs)==jj)],"=",tmpcovs[,names(tempCovs)[-which(names(tempCovs)==jj)]],collapse=", ")),"")),type="l") 
+          } else plot(tempCovs[,jj],est,xaxt="n",xlab=jj,ylab=paste(i,j,'parameter'),main=paste0('State ',state,ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)]],collapse=", ")),"")),type="l") 
           if(is.factor(tempCovs[,jj])) axis(1,at=tempCovs[,jj])
           else axis(1)
           
