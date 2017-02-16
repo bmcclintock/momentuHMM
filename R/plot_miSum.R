@@ -37,7 +37,7 @@
 #' @export
 
 plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
-                        sepStates=FALSE,col=NULL,alpha=0.95,plotEllipse=TRUE,...)
+                        sepStates=FALSE,col=NULL,plotCI=FALSE,alpha=0.95,plotEllipse=TRUE,...)
 {
   m <- x # the name "x" is for compatibility with the generic method
   m$mle <- lapply(x$Par$real,function(x) x$est)
@@ -51,5 +51,5 @@ plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.y
   class(m) <- append("momentuHMM",class(m))
   
   plot.momentuHMM(m,animals,covs,ask,breaks,hist.ylim,sepAnimals,
-                  sepStates,col,alpha,...)
+                  sepStates,col,plotCI,alpha,...)
 }

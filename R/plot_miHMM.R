@@ -37,9 +37,9 @@
 #' @export
 
 plot.miHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
-                              sepStates=FALSE,col=NULL,alpha=0.95,plotEllipse=TRUE,...)
+                              sepStates=FALSE,col=NULL,plotCI=FALSE,alpha=0.95,plotEllipse=TRUE,...)
 {
   m <- x$miSum # the name "x" is for compatibility with the generic method
   plot(m,animals,covs,ask,breaks,hist.ylim,sepAnimals,
-       sepStates,col,alpha,plotEllipse,...)
+       sepStates,col,plotCI,alpha,plotEllipse,...)
 }
