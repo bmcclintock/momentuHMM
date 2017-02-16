@@ -147,6 +147,10 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       if(class(m$data[[j]])=="factor") covs[[j]] <- m$data[[j]][which(m$data$ID %in% ID)][1]
       else covs[[j]]<-mean(m$data[[j]][which(m$data$ID %in% ID)],na.rm=TRUE)
     }
+    for(j in names(m$data)[which(names(m$data) %in% names(covs))]){
+      if(class(m$data[[j]])=="factor") covs[[j]] <- factor(covs[[j]],levels=levels(m$data[[j]]))
+      if(is.na(covs[[j]])) stop("check value for ",j)
+    }
   }
   nbCovs <- ncol(model.matrix(m$conditions$formula,m$data))-1 # substract intercept column
   #par <- w2n(m$mod$estimate,m$conditions$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,DMind,m$conditions$workcons,nrow(m$data),m$conditions$dist,p$Bndind)
@@ -216,6 +220,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   for(i in which(!mapply(is.factor,covs))){
     tmpcovs[i]<-round(covs[i],2)
   }
+  for(i in which(mapply(is.factor,covs))){
+    tmpcovs[i] <- as.character(covs[[i]])
+  }
   
   Sigma <- ginv(m$mod$hessian)
   
@@ -269,9 +276,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         for(j in 1:length(p$parNames[[i]])){
           DMparterms[[p$parNames[[i]][j]]] <- list()
           for(jj in 1:nbStates){
-            DMparterms[[p$parNames[[i]][j]]][[jj]]<-rownames(attr(terms(m$conditions$DM[[i]][[p$parNames[[i]][j]]]),"factors"))[(j-1)*nbStates+jj]#    colnamesmodel.matrix(DM[[i]][[p$parNames[[i]][j]]],data)
+            DMparterms[[p$parNames[[i]][j]]][[jj]]<-rownames(attr(terms(m$conditions$DM[[i]][[p$parNames[[i]][j]]]),"factors"))#    colnamesmodel.matrix(DM[[i]][[p$parNames[[i]][j]]],data)
           }
-          DMterms <- c(DMterms,DMparterms[[p$parNames[[i]][j]]])
+          DMterms <- c(DMterms,unlist(DMparterms[[p$parNames[[i]][j]]]))
         }
       }
       DMterms <- unique(DMterms)
@@ -486,6 +493,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         tmpcovs<-covs[names(rawCovs)]
         for(i in which(unlist(lapply(rawCovs,is.factor)))){
           tempCovs[[i]] <- factor(tempCovs[[i]],levels=levels(rawCovs[,i]))
+          tmpcovs[i] <- as.character(tmpcovs[[i]])
         }
         for(i in which(!unlist(lapply(rawCovs,is.factor)))){
           tmpcovs[i]<-round(covs[names(rawCovs)][i],2)
