@@ -188,6 +188,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     delta <- NULL
     
     mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & ("step" %in% names(dist)) & is.null(lambda) & is.null(errorEllipse)) # indicator for moveHMM::simData
+    if(mHind & !is.null(formula)){
+      if("ID" %in% rownames(attr(terms.formula(formula),"factors")) | any(mapply(is.factor,covs)))
+        mHind <- FALSE
+    }
     if(all(names(dist) %in% c("step","angle")) & mHind){
       zi <- FALSE
       if(!is.null(zeroInflation$step)) zi <- zeroInflation$step
@@ -345,19 +349,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   }
   
   allNbCovs <- nbCovs+nbSpatialCovs
-  if(is.null(formula)) {
-    if(allNbCovs) formula <- formula(paste0("~",paste0(c(colnames(allCovs),spatialcovnames),collapse="+")))
-    else formula <- formula(~1)
-  }
-  if(is.null(beta))
-    beta <- matrix(rnorm(nbStates*(nbStates-1)*(length(attr(terms.formula(formula),"term.labels"))+1)),nrow=length(attr(terms.formula(formula),"term.labels"))+1)
-  else {
-    if(ncol(beta)!=nbStates*(nbStates-1) | nrow(beta)!=length(attr(terms.formula(formula),"term.labels"))+1) {
-      error <- paste("beta has wrong dimensions: it should have",length(attr(terms.formula(formula),"term.labels"))+1,"rows and",
-                     nbStates*(nbStates-1),"columns.")
-      stop(error)
-    }
-  }
 
   # initial state distribution
   if(is.null(delta)) delta <- rep(1,nbStates)/nbStates
@@ -385,6 +376,33 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         data$y<-numeric()
       }
   
+  if(is.null(formula)) {
+    if(allNbCovs) formula <- formula(paste0("~",paste0(c(colnames(allCovs),spatialcovnames),collapse="+")))
+    else formula <- formula(~1)
+  }
+  formterms<-attr(terms.formula(formula),"term.labels")
+  if(is.null(covs)){
+    nbBetaCovs <- length(formterms[which(!grepl("ID",formterms))])+sum(grepl("ID",formterms)*(nbAnimals-1))+1
+  } else {
+    nbBetaCovs <- 1
+    for(i in rownames(attr(terms.formula(formula),"factors"))){
+     if(i=="ID"){
+       nbBetaCovs <- nbBetaCovs + sum(grepl(i,formterms)*(nbAnimals-1))
+     } else if(is.factor(covs[i])) {
+       nbBetaCovs <- nbBetaCovs + sum(grepl(i,formterms)*(levels(covs[i])-1))
+     } else nbBetaCovs <- nbBetaCovs + 1
+    }
+  }
+  if(is.null(beta))
+    beta <- matrix(rnorm(nbStates*(nbStates-1)*nbBetaCovs),nrow=nbBetaCovs)
+  else {
+    if(ncol(beta)!=nbStates*(nbStates-1) | nrow(beta)!=nbBetaCovs) {
+      error <- paste("beta has wrong dimensions: it should have",nbBetaCovs,"rows and",
+                     nbStates*(nbStates-1),"columns.")
+      stop(error)
+    }
+  }
+  
   ###########################
   ## Loop over the animals ##
   ###########################
@@ -398,17 +416,17 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     ###############################
     ## Simulate covariate values ##
     ###############################
-    subCovs<-as.data.frame(matrix(NA,nrow=nbObs,ncol=nbCovs))
+    subCovs<-data.frame(ID=rep(factor(zoo,levels=1:nbAnimals),nbObs))
     if(nbCovs>0) {
       # select covariate values which concern the current animal
       if(zoo<2)
         ind1 <- 1
       else
         ind1 <- sum(allNbObs[1:(zoo-1)])+1
-        ind2 <- sum(allNbObs[1:zoo])
-        subCovs <- data.frame(allCovs[ind1:ind2,,drop=FALSE])
-        if(!is.null(covs))
-          colnames(subCovs) <- colnames(covs) # keep covariates names from input
+      ind2 <- sum(allNbObs[1:zoo])
+      subCovs <- cbind(subCovs,data.frame(allCovs[ind1:ind2,,drop=FALSE]))
+      #if(!is.null(covs))
+        #colnames(subCovs) <- colnames(covs) # keep covariates names from input
     }
     if(length(centerInd)) subCovs <- cbind(subCovs,centerCovs[cumNbObs[zoo]+1:nbObs,])
     
