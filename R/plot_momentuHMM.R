@@ -445,7 +445,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     if(nrow(m$mle$beta)>1) {
       
       # values of each covariate
-      rawCovs <- m$rawCovs[which(m$data$ID %in% ID),]
+      rawCovs <- m$rawCovs[which(m$data$ID %in% ID),,drop=FALSE]
       #if(is.null(covs)) {
       #  rawCovs <- m$rawCovs
       #  meanCovs <- colSums(rawCovs)/nrow(rawCovs)
