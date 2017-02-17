@@ -6,7 +6,7 @@
 \usage{
 nLogLike(wpar, nbStates, formula, bounds, parSize, data, dist, covs,
   estAngleMean, circularAngleMean, zeroInflation, stationary = FALSE, cons,
-  fullDM, DMind, workcons, Bndind, knownStates)
+  fullDM, DMind, workcons, Bndind, knownStates, fixPar, wparIndex)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}

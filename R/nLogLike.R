@@ -47,7 +47,7 @@
 
 nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,circularAngleMean,zeroInflation,
-                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates)
+                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex)
 {
   # check arguments
   distnames<-names(dist)
@@ -56,6 +56,7 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
   nbCovs <- ncol(covs)-1 # substract intercept column
 
   # convert the parameters back to their natural scale
+  wpar[wparIndex] <- fixPar[wparIndex]
   par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind)
 
   nbAnimals <- length(unique(data$ID))

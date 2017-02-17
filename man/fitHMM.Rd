@@ -8,7 +8,7 @@ fitHMM(data, nbStates, dist, Par, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
   stationary = FALSE, verbose = 0, nlmPar = NULL, fit = TRUE,
   DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL,
-  stateNames = NULL, knownStates = NULL)
+  stateNames = NULL, knownStates = NULL, fixPar = NULL)
 }
 \arguments{
 \item{data}{An object \code{momentuHMMData}.}
