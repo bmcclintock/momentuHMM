@@ -13,7 +13,7 @@ test_that("Exceptions are thrown",{
 
   expect_error(nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,m$conditions$dist,model.matrix(m$conditions$formula,data),
                        m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,
-                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates),NA)
+                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex),NA)
 
 })
 
@@ -32,5 +32,5 @@ test_that("angleDist=NULL and zeroInflation=TRUE work",{
   
   expect_error(nLogLike(wpar,nbStates,m$conditions$formula,inputs$p$bounds,inputs$p$parSize,data,dist,model.matrix(m$conditions$formula,data),
                        inputs$estAngleMean,inputs$circularAngleMean,zeroInflation,
-                       m$conditions$stationary,DMinputs$cons,DMinputs$fullDM,m$conditions$DMind,DMinputs$workcons,m$conditions$Bndind,m$knownStates),NA)
+                       m$conditions$stationary,DMinputs$cons,DMinputs$fullDM,m$conditions$DMind,DMinputs$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex),NA)
 })

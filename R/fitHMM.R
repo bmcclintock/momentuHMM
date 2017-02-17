@@ -142,7 +142,8 @@ fitHMM <- function(data,nbStates,dist,
                    circularAngleMean=NULL,
                    formula=~1,
                    stationary=FALSE,verbose=0,nlmPar=NULL,fit=TRUE,
-                   DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,stateNames=NULL,knownStates=NULL)
+                   DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,
+                   stateNames=NULL,knownStates=NULL,fixPar=NULL)
 {
   
   #####################
@@ -234,7 +235,7 @@ fitHMM <- function(data,nbStates,dist,
     else zeroInflation[[i]]<-FALSE
   }
 
-  mHind <- (is.null(DM) & is.null(userBounds) & ("step" %in% distnames)) # indicator for moveHMMwrap below
+  mHind <- (is.null(DM) & is.null(userBounds) & ("step" %in% distnames) & is.null(fixPar)) # indicator for moveHMMwrap below
   
   inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,DM,userBounds,cons,workcons,stateNames)
   p <- inputs$p
@@ -280,9 +281,58 @@ fitHMM <- function(data,nbStates,dist,
     delta0 <- NULL
 
   # build the vector of initial working parameters
-  wpar <- n2w(Par,p$bounds,beta0,delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+  wparIndex <- numeric()
+  if(!is.null(fixPar)){
+    parindex <- c(0,cumsum(unlist(lapply(Par,length))))
+    names(parindex) <- c(distnames,"beta")
+    for(i in distnames){
+      if(!is.null(fixPar[[i]])){
+        if(length(fixPar[[i]])!=length(Par[[i]])) stop("fixPar$",i," must be of length ",length(Par[[i]]))
+        tmp <- which(!is.na(fixPar[[i]]))
+        Par[[i]][tmp]<-fixPar[[i]][tmp]
+        wparIndex <- c(wparIndex,parindex[[i]]+tmp)
+      } else {
+        fixPar[[i]] <- rep(NA,length(Par[[i]]))
+        #wparIndex <- c(wparIndex,parindex[[i]]+1:length(Par[[i]]))
+      }
+    }
+    if(nbStates>1){
+      if(!is.null(fixPar$beta)){
+        if(length(fixPar$beta)!=length(beta0)) stop("fixPar$beta must be of length ",length(beta0))
+        tmp <- which(!is.na(fixPar$beta))
+        beta0[tmp]<-fixPar$beta[tmp]
+        wparIndex <- c(wparIndex,parindex[["beta"]]+tmp)
+      } else {
+        fixPar$beta <- rep(NA,length(beta0))
+      }
+    }
+    if(!is.null(fixPar$delta)){
+      if(stationary & any(!is.na(fixPar$delta))) stop("delta cannot be fixed when stationary=TRUE")
+      else if(!stationary) {
+        tmp <- which(!is.na(fixPar$delta))
+        if(length(tmp)){
+          delta0[tmp] <- fixPar$delta[tmp]
+          if(length(tmp)!=length(delta0) | sum(delta0)!=1) stop("fixPar$delta must sum to 1")
+          wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0)+tmp)
+        }
+      }
+    } else {
+      fixPar$delta <- rep(NA,length(delta0))
+    }
+  } else {
+    fixPar <- vector('list',length(distnames))
+    names(fixPar) <- distnames
+    for(i in distnames){
+      fixPar[[i]] <- rep(NA,length(Par[[i]]))
+    }
+    fixPar$beta <- rep(NA,length(beta0))
+    fixPar$delta <- rep(NA,length(delta0))
+  }
+  fixPar <- fixPar[c(distnames,"beta","delta")]
   
+  wpar <- n2w(Par,p$bounds,beta0,delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
   if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
+
   
   ##################
   ## Optimization ##
@@ -311,7 +361,7 @@ fitHMM <- function(data,nbStates,dist,
     # call to optimizer nlm
     withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,p$bounds,p$parSize,data,dist,covs,
                                    inputs$estAngleMean,inputs$circularAngleMean,zeroInflation,
-                                   stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,
+                                   stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
                                    print.level=verbose,gradtol=gradtol,
                                    stepmax=stepmax,steptol=steptol,
                                    iterlim=iterlim,hessian=TRUE),
@@ -395,7 +445,7 @@ fitHMM <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,
-                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons)
+                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=fixPar,wparIndex=wparIndex)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   
