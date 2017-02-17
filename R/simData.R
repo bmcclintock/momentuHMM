@@ -96,7 +96,7 @@
 #'                 anglePar=anglePar,covs=cov)
 #'
 #' @export
-#' @importFrom stats rnorm runif step terms.formula
+#' @importFrom stats rnorm runif step terms.formula get_all_vars
 #' @importFrom raster cellFromXY getValues
 #' @importFrom moveHMM simData
 #' @importFrom CircStats rvm
@@ -170,12 +170,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(is.null(covs)) {
       if(!is.null(spatialCovs)) spatialcovnames <- names(spatialCovs)
       else spatialcovnames <- NULL
-      covsCol <- seq(1,ncol(model$data))[-match(c("ID","x","y",distnames,spatialcovnames),names(model$data),nomatch=0)]
-      #covs <- model.matrix(model$conditions$formula,model$data)
-
-      if(length(covsCol)) {
-        covs <- model$data[,covsCol,drop=FALSE]
-      }
+      covs <- model$rawCovs
     }
     # else, allow user to enter new values for covariates
 
@@ -384,11 +379,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   if(is.null(covs)){
     nbBetaCovs <- length(formterms[which(!grepl("ID",formterms))])+sum(grepl("ID",formterms)*(nbAnimals-1))+1
   } else {
-    nbBetaCovs <- 1
-    for(i in rownames(attr(terms.formula(formula),"factors"))){
-     if(i=="ID"){
-       nbBetaCovs <- nbBetaCovs + sum(grepl(i,formterms)*(nbAnimals-1))
-     } else if(is.factor(covs[i])) {
+    nbBetaCovs <- 1 + sum(grepl("ID",formterms)*(nbAnimals-1))
+    for(i in colnames(stats::get_all_vars(formula,covs))){
+     if(is.factor(covs[i])) {
        nbBetaCovs <- nbBetaCovs + sum(grepl(i,formterms)*(levels(covs[i])-1))
      } else nbBetaCovs <- nbBetaCovs + 1
     }
