@@ -378,11 +378,10 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             se<-t(apply(dN[,1:ncol(fullDM[[i]])],1,function(x) tryCatch(suppressWarnings(sqrt(x%*%Sigma[parindex[[i]]+1:ncol(fullDM[[i]]),parindex[[i]]+1:ncol(fullDM[[i]])]%*%x)),error=function(e) NA)))
             uci<-est+qnorm(1-(1-alpha)/2)*se
             lci<-est-qnorm(1-(1-alpha)/2)*se
-          }
-          if(plotCI){
             plot(tempCovs[,jj],est,ylim=range(c(lci,est,uci),na.rm=TRUE),xaxt="n",xlab=jj,ylab=paste(i,j,'parameter'),main=paste0('State ',state,ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)]],collapse=", ")),"")),type="l")
             if(!all(is.na(se))){
-              ciInd <- which(abs(uci-lci)>max(abs(uci-lci))/1000) #to aviod un-supressable warning in arrows()
+              seInd <- which(!is.na(se))
+              ciInd <- seInd[which(abs(uci[seInd]-lci[seInd])>max(abs(uci[seInd]-lci[seInd]))/1000)] #to aviod un-supressable warning in arrows()
               arrows(as.numeric(tempCovs[ciInd,jj]), lci[ciInd], as.numeric(tempCovs[ciInd,jj]), uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5)) 
             }
           } else plot(tempCovs[,jj],est,xaxt="n",xlab=jj,ylab=paste(i,j,'parameter'),main=paste0('State ',state,ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)]],collapse=", ")),"")),type="l") 
@@ -509,10 +508,13 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             if(plotCI){
               dN<-t(apply(desMat,1,function(x) tryCatch(numDeriv::grad(get_gamma,beta,covs=matrix(x,nrow=1),nbStates=nbStates,i=i,j=j),error=function(e) NA)))
               se<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%Sigma[gamInd,gamInd]%*%x)),error=function(e) NA)))
-              lci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))-quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]-quantSup*se[i,j]
-              uci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))+quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]+quantSup*se[i,j]
-              ciInd <- which(abs(uci-lci)>1/1000) #to aviod un-supressable warning in arrows()
-              if(!all(is.na(se))) arrows(as.numeric(tempCovs[ciInd,cov]), lci[ciInd], as.numeric(tempCovs[ciInd,cov]), uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5))
+              if(!all(is.na(se))) {
+                lci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))-quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]-quantSup*se[i,j]
+                uci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))+quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]+quantSup*se[i,j]
+                seInd <- which(!is.na(se))
+                ciInd <- seInd[which(abs(uci[seInd]-lci[seInd])>max(abs(uci[seInd]-lci[seInd]))/1000)] #to aviod un-supressable warning in arrows()
+                arrows(as.numeric(tempCovs[ciInd,cov]), lci[ciInd], as.numeric(tempCovs[ciInd,cov]), uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5))
+              }
             }
           }
         }
