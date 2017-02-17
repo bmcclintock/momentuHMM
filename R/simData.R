@@ -379,10 +379,11 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   if(is.null(covs)){
     nbBetaCovs <- length(formterms[which(!grepl("ID",formterms))])+sum(grepl("ID",formterms)*(nbAnimals-1))+1
   } else {
-    nbBetaCovs <- 1 + sum(grepl("ID",formterms)*(nbAnimals-1))
-    for(i in colnames(stats::get_all_vars(formula,covs))){
-     if(is.factor(covs[i])) {
-       nbBetaCovs <- nbBetaCovs + sum(grepl(i,formterms)*(levels(covs[i])-1))
+    tmpCovs <- cbind(data.frame(ID=factor(rep(1:nbAnimals,times=allNbObs),levels=1:nbAnimals)),covs)
+    nbBetaCovs <- 1
+    for(i in colnames(stats::get_all_vars(formula,tmpCovs))){
+     if(is.factor(tmpCovs[[i]])) {
+       nbBetaCovs <- nbBetaCovs + sum(grepl(i,formterms)*(nlevels(tmpCovs[[i]])-1))
      } else nbBetaCovs <- nbBetaCovs + 1
     }
   }
