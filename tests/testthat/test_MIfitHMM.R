@@ -21,4 +21,4 @@ test_that("Exceptions are thrown",{
   
   expect_error(MIfitHMM(2,ncores=1,miData=crwOut,nbStates=length(example$m$stateNames),dist=example$m$conditions$dist,Par=Par$Par,beta0=Par$beta,delta0=Par$delta,estAngleMean=example$m$conditions$estAngleMean,DM=example$m$conditions$DM,covNames=names(example$m$rawCovs)),NA)
   
-}
+})
