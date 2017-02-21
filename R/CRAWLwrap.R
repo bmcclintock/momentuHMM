@@ -77,6 +77,17 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   }
   if(!is.null(names(drift))) drift <- drift[ids]
   
+  if(!is.null(names(initial.state))){
+    if(all(names(initial.state) %in% c("a","P"))){
+      tmpinitial.state<-initial.state
+      initial.state<-vector('list',length(ids))
+      for(i in 1:length(ids)){
+        initial.state[[i]] <- tmpinitial.state
+      } 
+    }
+  }
+  if(!is.null(names(initial.state)))  initial.state <- initial.state[ids]
+  
   if(!is.list(theta)){
     tmptheta<-theta
     theta<-vector('list',length(ids))
