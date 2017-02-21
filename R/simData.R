@@ -184,8 +184,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     
     mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & ("step" %in% names(dist)) & is.null(lambda) & is.null(errorEllipse)) # indicator for moveHMM::simData
     if(mHind & !is.null(formula)){
-      if("ID" %in% rownames(attr(terms.formula(formula),"factors")) | any(mapply(is.factor,covs)))
-        mHind <- FALSE
+      if(!length(attr(terms.formula(formula),"term.labels"))) MHind <- FALSE
+      #if("ID" %in% rownames(attr(terms.formula(formula),"factors")) | any(mapply(is.factor,covs)))
+      #  mHind <- FALSE
     }
     if(all(names(dist) %in% c("step","angle")) & mHind){
       zi <- FALSE

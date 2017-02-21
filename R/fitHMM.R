@@ -235,7 +235,7 @@ fitHMM <- function(data,nbStates,dist,
     else zeroInflation[[i]]<-FALSE
   }
 
-  mHind <- (is.null(DM) & is.null(userBounds) & ("step" %in% distnames) & is.null(fixPar)) # indicator for moveHMMwrap below
+  mHind <- (is.null(DM) & is.null(userBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(formula),"term.labels")) & stationary) # indicator for moveHMMwrap below
   
   inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,DM,userBounds,cons,workcons,stateNames)
   p <- inputs$p
