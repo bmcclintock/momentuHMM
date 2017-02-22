@@ -339,7 +339,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(dim(centers)[2]!=2) stop("centers must be a matrix consisting of 2 columns (i.e., x- and y-coordinates)")
     centerInd <- which(!apply(centers,1,function(x) any(is.na(x))))
     if(length(centerInd)){
-      centerNames<-paste0("center",".",rep(c("dist","angle"),length(centerInd)),rep(centerInd,each=2))
+      if(is.null(rownames(centers))) centerNames<-paste0("center",rep(centerInd,each=2),".",rep(c("dist","angle"),length(centerInd)))
+      else centerNames <- paste0(rep(rownames(centers),each=2),".",rep(c("dist","angle"),length(centerInd)))
       centerCovs <- data.frame(matrix(NA,nrow=sum(allNbObs),ncol=length(centerInd)*2,dimnames=list(NULL,centerNames)))
     }  
   }
