@@ -24,4 +24,3 @@ m <- example$m
 plotStates(m,animals=c(1,2))
 
 }
-

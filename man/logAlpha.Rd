@@ -23,4 +23,3 @@ m <- example$m
 la <- logAlpha(m)
 }
 }
-

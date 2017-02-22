@@ -19,4 +19,3 @@ Vector of densities
 \description{
 Probability density function of the Weibull distribution (written in C++)
 }
-

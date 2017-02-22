@@ -36,4 +36,3 @@ m <- example$m
 CI_real(m)
 
 }
-

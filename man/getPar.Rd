@@ -21,4 +21,3 @@ m <- example$m
 Par <- getPar(m)
 
 }
-

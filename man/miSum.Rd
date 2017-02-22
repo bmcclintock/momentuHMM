@@ -17,4 +17,3 @@ An object \code{momentuHMM}.
 \description{
 Constructor of \code{miSum} objects
 }
-

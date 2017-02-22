@@ -50,4 +50,3 @@ wpar <- n2w(par=par,bounds=bounds,beta=beta,delta=delta,nbStates=nbStates,
 }
 
 }
-

@@ -9,4 +9,3 @@ exGen()
 \description{
 Generate the file \code{data/example.RData}, used in other functions' examples and unit tests.
 }
-

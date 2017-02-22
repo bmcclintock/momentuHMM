@@ -17,4 +17,3 @@ Check that an object is of class \code{\link{momentuHMM}}. Used in \code{\link{C
 \code{\link{plotPR}}, \code{\link{plotStates}}, \code{\link{pseudoRes}}, \code{\link{stateProbs}},
 and \code{\link{viterbi}}.
 }
-

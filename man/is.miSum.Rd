@@ -15,4 +15,3 @@ is.miSum(x)
 \description{
 Check that an object is of class \code{\link{miSum}}.
 }
-

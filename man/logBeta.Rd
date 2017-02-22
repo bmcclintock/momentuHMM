@@ -23,4 +23,3 @@ m <- example$m
 lb <- logBeta(m)
 }
 }
-

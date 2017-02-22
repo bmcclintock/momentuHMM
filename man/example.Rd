@@ -20,4 +20,3 @@ It is a list of the following objects:
 \item \code{par0} The initial parameters in the optimization to fit \code{m}
 }
 }
-

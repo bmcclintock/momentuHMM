@@ -15,4 +15,3 @@ An object \code{crwData}.
 \description{
 Constructor of \code{crwData} objects
 }
-

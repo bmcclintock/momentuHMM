@@ -42,4 +42,3 @@ plotted manually). If \code{FALSE}, the function automatically plots the map (de
 \description{
 Plot tracking data over a raster layer.
 }
-

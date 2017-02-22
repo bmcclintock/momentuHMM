@@ -19,4 +19,3 @@ Vector of densities
 \description{
 Probability density function of the gamma distribution (written in C++)
 }
-

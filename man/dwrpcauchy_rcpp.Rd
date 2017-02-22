@@ -19,4 +19,3 @@ Vector of densities
 \description{
 Probability density function of the wrapped Cauchy distribution (written in C++)
 }
-

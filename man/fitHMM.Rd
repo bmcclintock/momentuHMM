@@ -167,4 +167,3 @@ Langrock R., King R., Matthiopoulos J., Thomas L., Fortin D., Morales J.M. 2012.
 Flexible and practical modeling of animal telemetry data: hidden Markov models and extensions.
 Ecology, 93 (11), 2336-2342.
 }
-

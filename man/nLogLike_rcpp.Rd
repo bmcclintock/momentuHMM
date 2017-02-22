@@ -45,4 +45,3 @@ Negative log-likelihood
 \description{
 Computation of the negative log-likelihood (forward algorithm - written in C++)
 }
-

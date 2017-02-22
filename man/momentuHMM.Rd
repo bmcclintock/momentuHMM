@@ -20,4 +20,3 @@ An object \code{momentuHMM}.
 \description{
 Constructor of \code{momentuHMM} objects
 }
-

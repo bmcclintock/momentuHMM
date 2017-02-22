@@ -45,4 +45,3 @@ m <- example$m
 CI_beta(m)
 
 }
-

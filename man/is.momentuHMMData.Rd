@@ -15,4 +15,3 @@ is.momentuHMMData(x)
 \description{
 Check that an object is of class \code{\link{momentuHMMData}}. Used in \code{\link{fitHMM}}.
 }
-

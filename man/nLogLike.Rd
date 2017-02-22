@@ -66,4 +66,3 @@ l <- nLogLike(wpar=wpar,nbStates=simPar$nbStates,bounds=bounds,parSize=parSize,d
 }
 
 }
-

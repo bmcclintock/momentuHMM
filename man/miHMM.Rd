@@ -18,4 +18,3 @@ An object \code{miHMM}.
 \description{
 Constructor of \code{miHMM} objects
 }
-

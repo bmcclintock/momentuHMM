@@ -17,4 +17,3 @@ An object \code{momentuHMMData}.
 \description{
 Constructor of \code{momentuHMMData} objects
 }
-

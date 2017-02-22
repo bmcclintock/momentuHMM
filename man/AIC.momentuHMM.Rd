@@ -26,4 +26,3 @@ m <- example$m
 AIC(m)
 
 }
-

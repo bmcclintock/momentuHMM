@@ -20,4 +20,3 @@ Vector of densities
 Probability density function of the Von Mises distribution, defined as a function
 of the modified Bessel function of order 0 (written in C++)
 }
-

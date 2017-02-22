@@ -21,4 +21,3 @@ time t.
 Computation of the transition probability matrix, as a function of the covariates and the regression
 parameters. Written in C++. Used in \code{\link{viterbi}}.
 }
-

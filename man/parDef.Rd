@@ -31,4 +31,3 @@ angle distribution are always the same).}
 \description{
 Parameters definition
 }
-

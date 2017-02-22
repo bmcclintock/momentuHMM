@@ -15,4 +15,3 @@ is.crwData(x)
 \description{
 Check that an object is of class \code{\link{crwData}}. Used in \code{\link{MIfitHMM}}.
 }
-
