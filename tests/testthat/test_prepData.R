@@ -13,15 +13,19 @@ test_that("Exception is thrown",{
   expect_error(prepData(trackData),NA)
   
   trackData <- data.frame(x,y)
-  expect_error(prepData(trackData),NA)
-  expect_error(prepData(trackData,coordNames=c("x","y")),NA)
-  expect_error(prepData(trackData,coordNames=c("x")))
+  expect_error(prepData(trackData,type="UTM"),NA)
+  expect_error(prepData(trackData,type="UTM",coordNames=c("x","y")),NA)
+  expect_error(prepData(trackData,type="UTM",coordNames=c("x")))
+  
+  trackData <- data.frame(x,z)
+  expect_error(prepData(trackData,type="UTM",coordNames=c("x","z")),NA)
 
   trackData <- data.frame(x,y,z)
-  expect_error(prepData(trackData),NA)
-  expect_error(prepData(trackData,coordNames=c("x","y")),NA)
-  expect_error(prepData(trackData,coordNames=c("x","z")))
-  expect_error(prepData(trackData,coordNames=c("x","lat")))
+  expect_error(prepData(trackData,type="UTM"),NA)
+  expect_error(prepData(trackData,type="UTM",coordNames=c("x","y"),covNames="z"),NA)
+  expect_error(prepData(trackData,type="UTM",coordNames=c("x","z")))
+  expect_error(prepData(trackData,type="UTM",coordNames=c("x","lat")))
+  expect_error(prepData(trackData,type="UTM",coordNames=c("x","y"),covNames="z",centers=matrix(c(0,10,0,10),2,2)),NA)
   
 })
 

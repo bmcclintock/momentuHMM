@@ -5,7 +5,7 @@
 \title{Preprocessing of the data streams, including calculation of step length, turning angle, and covariates from location data}
 \usage{
 prepData(Data, type = c("LL", "UTM"), coordNames = NULL, covNames = NULL,
-  spatialCovs = NULL)
+  spatialCovs = NULL, centers = NULL)
 }
 \arguments{
 \item{Data}{A dataframe of data streams, including optionally a field \code{ID}

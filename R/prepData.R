@@ -26,7 +26,7 @@
 #' @importFrom sp spDistsN1
 #' @importFrom raster cellFromXY getValues
 
-prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spatialCovs=NULL)
+prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spatialCovs=NULL,centers=NULL)
 {
   if(!is.data.frame(Data)) stop("Data must be a data frame")
   if(any(dim(Data)==0)) stop("Data is empty")
@@ -58,6 +58,7 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spat
     }
     spatialcovnames<-names(spatialCovs)
     if(any(spatialcovnames %in% names(Data))) stop("spatialCovs cannot have same names as data")
+    if(anyDuplicated(spatialcovnames)) stop("spatialCovs must have unique names")
   } else nbSpatialCovs <- 0
   
   # check arguments
@@ -65,7 +66,7 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spat
   if(!is.null(coordNames)){
     if(length(which(coordNames %in% names(Data)))<2)
       stop("coordNames not found in Data")
-    if(any(names(Data)[which(!(names(Data) %in% coordNames))] %in% c("x","y"))) stop("non-coordinate data streams cannot be named 'x' or 'y'")
+    if(any(names(Data)[which(!(names(Data) %in% coordNames))] %in% c("x","y"))) stop("non-coordinate Data objects cannot be named 'x' or 'y'")
     x <- Data[,coordNames[1]]
     y <- Data[,coordNames[2]]
     distnames<-c("step","angle",distnames[-which(distnames %in% coordNames)])
@@ -156,6 +157,26 @@ prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spat
       }
       colnames(spCovs)<-spatialcovnames
       data<-cbind(data,spCovs)
+    }
+    if(!is.null(centers)){
+      if(dim(centers)[2]!=2) stop("centers must be a matrix consisting of 2 columns (i.e., x- and y-coordinates)")
+      centerInd <- which(!apply(centers,1,function(x) any(is.na(x))))
+      if(length(centerInd)){
+        centerNames<-paste0("center",".",rep(c("dist","angle"),length(centerInd)),rep(centerInd,each=2))
+        centerCovs <- data.frame(matrix(NA,nrow=nrow(Data),ncol=length(centerInd)*2,dimnames=list(NULL,centerNames)))
+        for(zoo in 1:nbAnimals) {
+          nbObs <- length(which(ID==unique(ID)[zoo]))
+          i1 <- which(ID==unique(ID)[zoo])[1]
+          i2 <- i1+nbObs-1
+          for(j in 1:length(centerInd)){
+            centerCovs[i1,centerNames[(j-1)*length(centerInd)+1:2]]<-distAngle(c(x[i1],y[i1]),c(x[i1],y[i1]),centers[centerInd[j],])
+            for(i in (i1+1):i2) {
+              centerCovs[i,centerNames[(j-1)*length(centerInd)+1:2]]<-distAngle(c(x[i-1],y[i-1]),c(x[i],y[i]),centers[centerInd[j],])
+            }
+          }
+        }
+        data<-cbind(data,centerCovs)
+      }  
     }
   }
   if(!is.null(covs)) data <- cbind(data,covs)

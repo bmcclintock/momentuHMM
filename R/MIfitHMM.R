@@ -10,7 +10,7 @@ MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
                    formula = ~1, stationary = FALSE, verbose = 0,
                    nlmPar = NULL, fit = TRUE, DM = NULL, cons = NULL,
                    userBounds = NULL, workcons = NULL, stateNames = NULL, knownStates=NULL,
-                   covNames=NULL,spatialCovs=NULL,
+                   covNames=NULL,spatialCovs=NULL,centers=NULL,
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad,
                    fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL
                    ){
@@ -53,7 +53,7 @@ MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
             }
           }
           df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",distnames,covNames),drop=FALSE])[which(predData$locType=="p"),]
-          prepData(df,type="UTM",coordNames=coordNames,covNames=covNames,spatialCovs=spatialCovs)
+          prepData(df,type="UTM",coordNames=coordNames,covNames=covNames,spatialCovs=spatialCovs,centers=centers)
         }
       stopImplicitCluster()
       cat("DONE\n")
@@ -61,7 +61,7 @@ MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
     } else {
       miData <- list()
       df <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames),drop=FALSE])[which(predData$locType=="p"),]
-      miData[[1]] <- prepData(df,type="UTM",coordNames=coordNames,covNames=covNames,spatialCovs=spatialCovs)
+      miData[[1]] <- prepData(df,type="UTM",coordNames=coordNames,covNames=covNames,spatialCovs=spatialCovs,centers=centers)
       cat('Fitting the most likely position process using fitHMM...')
     }
     
