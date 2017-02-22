@@ -39,6 +39,7 @@
 #'
 #'
 #' @importFrom boot inv.logit
+#' @importFrom Brobdingnag as.brob sum
 
 w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind)
 {
@@ -47,8 +48,13 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   if(!stationary & nbStates>1) {
     foo <- length(wpar)-nbStates+2
     delta <- wpar[foo:length(wpar)]
-    delta <- exp(c(0,delta))
-    delta <- delta/sum(delta)
+    expdelta <- exp(c(0,delta))
+    if(!is.finite(sum(expdelta))){
+      delta <- exp(Brobdingnag::as.brob(c(0,delta)))
+      delta <- as.numeric(delta/Brobdingnag::sum(delta))
+    } else {
+      delta <- expdelta/sum(expdelta)
+    }
     wpar <- wpar[-(foo:length(wpar))]
   }
   else delta <- NULL

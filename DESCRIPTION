@@ -26,7 +26,8 @@ Imports:
     mvtnorm,
     boot,
     sp,
-    MASS
+    MASS,
+    Brobdingnag
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,

@@ -29,6 +29,7 @@
 #' @importFrom MASS ginv
 #' @importFrom numDeriv grad
 #' @importFrom utils tail
+#' @importFrom Brobdingnag as.brob sum
 
 CI_real <- function(m,alpha=0.95,nbSims=10^6)
 {
@@ -152,8 +153,13 @@ get_gamma <- function(beta,covs,nbStates,i,j){
 }
 
 get_delta <- function(delta,i){
-  delta <- exp(c(0,delta))
-  delta <- delta/sum(delta)
+  expdelta <- exp(c(0,delta))
+  if(!is.finite(sum(expdelta))){
+    delta <- exp(Brobdingnag::as.brob(c(0,delta)))
+    delta <- as.numeric(delta/Brobdingnag::sum(delta))
+  } else {
+    delta <- expdelta/sum(expdelta)
+  }
   delta[i]
 }
 
