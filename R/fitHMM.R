@@ -342,6 +342,19 @@ fitHMM <- function(data,nbStates,dist,
     if(any(grepl("NA/Inf replaced by maximum positive value",w)) | any(grepl("value out of range in 'lgamma'",w)))
       invokeRestart("muffleWarning")
   }
+  
+  message("=======================================================================")
+  message("Fitting HMM with ",length(distnames)," data streams")#,
+  message("-----------------------------------------------------------------------\n")
+  for(i in distnames){
+    if(is.null(DM[[i]])){
+      message(" ",i," ~ ",dist[[i]],"(",paste0(p$parNames[[i]],"=~1",collapse=", "),")")
+    } else if(is.list(DM[[i]])){
+      message(" ",i," ~ ",dist[[i]],"(",paste0(p$parNames[[i]],"=",DM[[i]],collapse=", "),")")
+    } else message(" ",i," ~ ",dist[[i]],"(",paste0(p$parNames[[i]],": custom",collapse=", "),")")
+  }
+  message("\n Transition probability matrix formula: ",paste0(formula,collapse=""))
+  message("=======================================================================")
 
   # just use moveHMM if simpler models are specified
   if(all(distnames %in% c("step","angle")) & mHind){
@@ -454,6 +467,8 @@ fitHMM <- function(data,nbStates,dist,
   
   mh <- list(data=data,mle=mle,CI_real=CI_real,CI_beta=CI_beta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   #mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
+  
+  message("DONE")
   
   return(momentuHMM(mh))
 }

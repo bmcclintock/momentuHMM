@@ -135,7 +135,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   }
   if(!is.null(names(prior))) prior <- prior[ids]
   
-  cat('Fitting',length(ids),'tracks using crawl::crwMLE...')
+  cat('Fitting',length(ids),'track(s) using crawl::crwMLE...')
   registerDoParallel(cores=ncores) 
   model_fits <- 
     foreach(i = 1:length(ids)) %dopar% {

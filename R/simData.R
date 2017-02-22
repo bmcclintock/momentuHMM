@@ -376,6 +376,20 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(allNbCovs) formula <- formula(paste0("~",paste0(c(colnames(allCovs),spatialcovnames),collapse="+")))
     else formula <- formula(~1)
   }
+  
+  message("=======================================================================")
+  message("Simulating HMM with ",length(distnames)," data streams")#,
+  message("-----------------------------------------------------------------------\n")
+  for(i in distnames){
+    if(is.null(DM[[i]])){
+      message(" ",i," ~ ",dist[[i]],"(",paste0(p$parNames[[i]],"=~1",collapse=", "),")")
+    } else if(is.list(DM[[i]])){
+      message(" ",i," ~ ",dist[[i]],"(",paste0(p$parNames[[i]],"=",DM[[i]],collapse=", "),")")
+    } else message(" ",i," ~ ",dist[[i]],"(",paste0(p$parNames[[i]],": custom",collapse=", "),")")
+  }
+  message("\n Transition probability matrix formula: ",paste0(formula,collapse=""))
+  message("=======================================================================")
+  
   formterms<-attr(terms.formula(formula),"term.labels")
   if(is.null(covs)){
     nbBetaCovs <- length(formterms[which(!grepl("ID",formterms))])+sum(grepl("ID",formterms)*(nbAnimals-1))+1
@@ -615,11 +629,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(lambda<=0) stop('lambda must be >0')
     
     # account for location measurement error and/or temporal irregularity
-    return(simObsData(data,dist,lambda,errorEllipse))
+    out<-simObsData(data,dist,lambda,errorEllipse)
     
   } else {
     
-    return(momentuHMMData(data))
+    out<-momentuHMMData(data)
     
   }
+  message("DONE")
+  out
 }

@@ -77,10 +77,10 @@ MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   fits <-
     foreach(j = 1:nSims, .export=c("fitHMM"), .errorhandling="pass") %dopar% {
 
-      fitHMM(miData[[j]],nbStates, dist, Par, beta0, delta0,
+      suppressMessages(fitHMM(miData[[j]],nbStates, dist, Par, beta0, delta0,
                               estAngleMean, circularAngleMean, formula, stationary, verbose,
                               nlmPar, fit, DM, cons,
-                              userBounds, workcons, stateNames, knownStates)
+                              userBounds, workcons, stateNames, knownStates))
     }  
   stopImplicitCluster()
   cat("DONE\n")
