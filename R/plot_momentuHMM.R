@@ -37,7 +37,7 @@
 #' @export
 #' @importFrom graphics legend lines segments arrows
 #' @importFrom grDevices adjustcolor gray
-#' @importFrom stats get_all_vars
+#' @importFrom stats get_all_vars as.formula
 
 plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
                          sepStates=FALSE,col=NULL,plotCI=FALSE,alpha=0.95,...)
@@ -264,7 +264,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     if(!m$conditions$DMind[[i]]){
       if(!is.list(m$conditions$DM[[i]])){
         for(j in 1:length(p$parNames[[i]])){
-          DMparterms[[p$parNames[[i]][j]]] <- list()
+          DMparterms[[p$parNames[[i]][j]]] <- vector('list',nbStates)
           for(jj in 1:nbStates){
             DMparterms[[p$parNames[[i]][j]]][[jj]]<-unique(m$conditions$DM[[i]][(j-1)*nbStates+jj,][suppressWarnings(which(is.na(as.numeric(m$conditions$DM[[i]][(j-1)*nbStates+jj,]))))])
           }
@@ -274,17 +274,20 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         m$conditions$DM[[i]]<-m$conditions$DM[[i]][p$parNames[[i]]]
         DMterms<-character()
         for(j in 1:length(p$parNames[[i]])){
-          DMparterms[[p$parNames[[i]][j]]] <- list()
-          for(jj in 1:nbStates){
-            DMparterms[[p$parNames[[i]][j]]][[jj]]<-rownames(attr(terms(m$conditions$DM[[i]][[p$parNames[[i]][j]]]),"factors"))#    colnamesmodel.matrix(DM[[i]][[p$parNames[[i]][j]]],data)
+          DMparterms[[p$parNames[[i]][j]]] <- vector('list',nbStates)
+          tmpparnames <- rownames(attr(terms(m$conditions$DM[[i]][[p$parNames[[i]][j]]]),"factors"))
+          if(!is.null(tmpparnames)) {
+            for(jj in 1:nbStates){
+              DMparterms[[p$parNames[[i]][j]]][[jj]]<-tmpparnames
+            }
           }
           DMterms <- c(DMterms,unlist(DMparterms[[p$parNames[[i]][j]]]))
         }
       }
       DMterms <- unique(DMterms)
       for(j in 1:length(p$parNames[[i]])){
-          for(jj in 1:nbStates){
-            if(length(DMparterms[[p$parNames[[i]][j]]][[jj]])){
+        for(jj in 1:nbStates){
+          if(length(DMparterms[[p$parNames[[i]][j]]][[jj]])){
             for(k in 1:length(DMparterms[[p$parNames[[i]][j]]][[jj]])){
               DMparterms[[p$parNames[[i]][j]]][[jj]][k]<-names(stats::get_all_vars(as.formula(paste0("~",DMparterms[[p$parNames[[i]][j]]][[jj]][k])),m$data))
             }
