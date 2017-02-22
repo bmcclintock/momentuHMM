@@ -184,7 +184,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     
     mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & ("step" %in% names(dist)) & is.null(lambda) & is.null(errorEllipse)) # indicator for moveHMM::simData
     if(mHind & !is.null(formula)){
-      if(!length(attr(terms.formula(formula),"term.labels"))) MHind <- FALSE
+      if(length(attr(terms.formula(formula),"term.labels"))) mHind <- FALSE
       #if("ID" %in% rownames(attr(terms.formula(formula),"factors")) | any(mapply(is.factor,covs)))
       #  mHind <- FALSE
     }
@@ -336,7 +336,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   
   centerInd<-NULL
   if(!is.null(centers)){
-    if(any(dim(centers)!=c(nbStates,2))) stop("centers must be of dimension ",nbStates,"x",2)
+    if(dim(centers)[2]!=2) stop("centers must be a matrix consisting of 2 columns (i.e., x- and y-coordinates)")
     centerInd <- which(!apply(centers,1,function(x) any(is.na(x))))
     if(length(centerInd)){
       centerNames<-paste0("center",".",rep(c("dist","angle"),length(centerInd)),rep(centerInd,each=2))
