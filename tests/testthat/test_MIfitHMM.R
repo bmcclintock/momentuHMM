@@ -7,8 +7,8 @@ test_that("Exceptions are thrown",{
   
   # temporally irregular data with measurement error
   obsData <- simData(model=example$m,lambda=2,errorEllipse=list(M=10,m=10,r=180))
-  init <- list(a = c(obsData$x[1],0,
-                     obsData$y[1],0),
+  init <- list(a = c(obsData$mux[1],0,
+                     obsData$muy[1],0),
                P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 
                           5000 ^ 2, 10 * 3600 ^ 2)))
   fixPar<-c(1,1,NA,NA)
