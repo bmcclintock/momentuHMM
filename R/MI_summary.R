@@ -132,6 +132,8 @@ MI_summary<-function(HMMfits,alpha=0.95,ncores,includeHMMfits=FALSE){
     if(!is.null(m$conditions$DM[[i]])){# & m$conditions$DMind[[i]]){
       tmPar[[i]] <- m$mod$estimate[parindex[[i]]+1:ncol(m$conditions$fullDM[[i]])]
       names(tmPar[[i]])<-colnames(m$conditions$fullDM[[i]])
+    } else if((m$conditions$dist[[i]] %in% angledists) & (!m$conditions$estAngleMean[[i]])){
+      tmPar[[i]] <- tmPar[[i]][-1,]
     }
   }
   
