@@ -12,7 +12,7 @@ test_that("Exceptions are thrown",{
                P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 
                           5000 ^ 2, 10 * 3600 ^ 2)))
   fixPar<-c(1,1,NA,NA)
-  crwOut<-CRAWLwrap(obsData,ncores=1,retryFits=100,initial.state=init,err.model=err.model,theta=theta,fixPar=fixPar,attempts=20)
+  crwOut<-crawlWrap(obsData,ncores=1,retryFits=100,initial.state=init,err.model=err.model,theta=theta,fixPar=fixPar,attempts=20)
   
   
   bestFit<-MIfitHMM(1,ncores=1,miData=crwOut,nbStates=length(example$m$stateNames),dist=example$m$conditions$dist,Par=getPar(example$m)$Par,estAngleMean=example$m$conditions$estAngleMean,DM=example$m$conditions$DM,covNames=names(example$m$rawCovs))

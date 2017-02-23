@@ -29,7 +29,7 @@ MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
     
     if(nSims>1){
       if(all(unlist(lapply(model_fits,function(x) is.null(x$err.model))))) stop("Multiple realizations of the position process cannot be drawn if there is no location measurement error")
-      cat('Drawing',nSims,'realizations from the position process using crawl::crwPostIs...')
+      cat('Drawing',nSims,'realizations from the position process using crawl::crwPostIS...')
       
       registerDoParallel(cores=ncores)
       crwSim <- foreach(i = 1:length(ids), .export="crwSimulator") %dopar% {
@@ -66,8 +66,8 @@ MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
     }
     
   } else {
-    if(!is.list(miData)) stop("miData must either be a crwData object (as returned by CRAWLwrap) or a list of momentuHMMData objects (as returned by simData and prepData)")
-    if(!any(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))) stop("miData must either be a crwData object (as returned by CRAWLwrap) or a list of momentuHMMData objects (as returned by simData and prepData)")
+    if(!is.list(miData)) stop("miData must either be a crwData object (as returned by crawlWrap) or a list of momentuHMMData objects (as returned by simData and prepData)")
+    if(!any(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))) stop("miData must either be a crwData object (as returned by crawlWrap) or a list of momentuHMMData objects (as returned by simData and prepData)")
     if(nSims>length(miData))
       stop("nSims is greater than the length of miData. nSims must be <=",length(miData))
     cat('Fitting',nSims,'imputation(s) using fitHMM...')
