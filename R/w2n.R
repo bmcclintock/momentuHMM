@@ -105,3 +105,38 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   return(parlist)
 }
 
+w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,nbStates,k=0){
+  
+  Par<-numeric(length(wpar))
+  
+  a<-bounds[,1]
+  b<-bounds[,2]
+  
+  piInd<-(abs(a- -pi)<1.e-6 & abs(b - pi)<1.e-6)
+  ind1<-which(piInd)
+  ind2<-which(!piInd)
+  
+  XB <- p <- getXB(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,nbStates)
+  
+  if(length(ind1) & !circularAngleMean)
+    p[ind1,] <- (2*atan(XB[ind1,]))
+  
+  ind21<-ind2[which(is.finite(a[ind2]) & is.infinite(b[ind2]))]
+  ind22<-ind2[which(is.finite(a[ind2]) & is.finite(b[ind2]))]
+  ind23<-ind2[which(is.infinite(a[ind2]) & is.finite(b[ind2]))]
+  
+  p[ind21,] <- (exp(XB[ind21,,drop=FALSE])+a[ind21])
+  p[ind22,] <- ((b[ind22]-a[ind22])*boot::inv.logit(XB[ind22,,drop=FALSE])+a[ind22])
+  p[ind23,] <- -(exp(-XB[ind23,,drop=FALSE]) - b[ind23])
+  
+  if(any(p<a | p>b))
+    stop("Scaling error. Check initial values and bounds.")
+  
+  if(k) {
+    p <- p[k]
+    return(p)
+  } else {
+    if(DMind) p <- matrix(p,length(ind1)+length(ind2),nbObs)
+    return(list(p=p,Par=Par))
+  }
+}   

@@ -77,3 +77,29 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcon
   wdelta <- log(delta[-1]/delta[1]) # if delta is NULL, wdelta is NULL as well
   return(c(wpar,wbeta,wdelta))
 }
+
+n2wDM<-function(bounds,DM,par,cons,workcons){
+  
+  a<-bounds[,1]
+  b<-bounds[,2]
+  
+  piInd<-(abs(a- -pi)<1.e-6 & abs(b - pi)<1.e-6)
+  ind1<-which(piInd)
+  ind2<-which(!piInd)
+  
+  p<-numeric(nrow(DM))
+  
+  if(length(ind1)) p[ind1] <- (tan(par[ind1]/2)-workcons[ind1])^(1/cons[ind1])
+  
+  p[ind2] <- par[ind2]
+  
+  ind21<-ind2[which(is.finite(a[ind2]) & is.infinite(b[ind2]))]
+  ind22<-ind2[which(is.finite(a[ind2]) & is.finite(b[ind2]))]
+  ind23<-ind2[which(is.infinite(a[ind2]) & is.finite(b[ind2]))]
+  
+  p[ind21]<-(log(par[ind21]-a[ind21])-workcons[ind21])^(1/cons[ind21])
+  p[ind22]<-(logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22]))-workcons[ind22])^(1/cons[ind22])
+  p[ind23]<-(-log(-par[ind23]+b[ind23])-workcons[ind23])^(1/cons[ind23])
+  
+  p
+}     
