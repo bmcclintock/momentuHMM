@@ -2,7 +2,7 @@
 % Please edit documentation in R/getPar.R
 \name{getPar}
 \alias{getPar}
-\title{Get starting values from momentuHMM or miSum object returned by fitHMM or MI_summary}
+\title{Get starting values from momentuHMM, miHMM, or miSum object returned by fitHMM, MIfitHMM, or MIpool}
 \usage{
 getPar(m)
 }
@@ -13,7 +13,7 @@ getPar(m)
 A list of parameter values (Par, beta, delta) that can be used as starting values in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
 }
 \description{
-Get starting values from momentuHMM or miSum object returned by fitHMM or MI_summary
+Get starting values from momentuHMM, miHMM, or miSum object returned by fitHMM, MIfitHMM, or MIpool
 }
 \examples{
 # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package

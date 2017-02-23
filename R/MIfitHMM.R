@@ -91,7 +91,7 @@ MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   
   if(nSims==1) out<-fits[[1]]
   else {
-    if(poolEstimates) out<-MI_summary(fits,alpha=alpha,ncores=ncores,includeHMMfits=TRUE)
+    if(poolEstimates) out<-MIpool(fits,alpha=alpha,ncores=ncores,includeHMMfits=TRUE)
     else out <- fits
   }
   out

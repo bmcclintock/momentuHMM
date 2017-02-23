@@ -7,7 +7,7 @@
 #' @importFrom car dataEllipse
 #' @importFrom mitools MIcombine
 #' @importFrom MASS ginv
-MI_summary<-function(HMMfits,alpha=0.95,ncores,includeHMMfits=FALSE){
+MIpool<-function(HMMfits,alpha=0.95,ncores,includeHMMfits=FALSE){
   
   im <- HMMfits
   simind <- which((unlist(lapply(im,is.momentuHMM))))

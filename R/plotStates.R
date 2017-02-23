@@ -19,7 +19,7 @@
 plotStates <- function(m,animals=NULL,ask=TRUE)
 {
   if(!is.momentuHMM(m) & !is.miHMM(m) & !is.miSum(m))
-    stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MI_summary)")
+    stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
   
   if(is.miHMM(m)) m <- m$miSum
 
