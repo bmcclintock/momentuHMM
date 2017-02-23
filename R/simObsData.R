@@ -49,9 +49,9 @@ simObsData<-function(data,dist,lambda,errorEllipse){
     rad<-argosfilter::radian(error_ellipse_orientation)
       
     #calculate bivariate normal error variance-covariance matrix (Sigma)
-    sigma2x<-(M/sqrt(2))^2*sin(rad)^2+(m/sqrt(2))^2*cos(rad)^2 # x measurement error term
-    sigma2y<-(M/sqrt(2))^2*cos(rad)^2+(m/sqrt(2))^2*sin(rad)^2 # y mearurement error term
-    sigmaxy<-((M^2-m^2)/2)*cos(rad)*sin(rad) # measurement error ellipse rotation term
+    sigma2x<-(error_semimajor_axis/sqrt(2))^2*sin(rad)^2+(error_semiminor_axis/sqrt(2))^2*cos(rad)^2 # x measurement error term
+    sigma2y<-(error_semimajor_axis/sqrt(2))^2*cos(rad)^2+(error_semiminor_axis/sqrt(2))^2*sin(rad)^2 # y mearurement error term
+    sigmaxy<-((error_semimajor_axis^2-error_semiminor_axis^2)/2)*cos(rad)*sin(rad) # measurement error ellipse rotation term
     
     #Sigma<-matrix(c(sigma2x,sigmaxy,sigmaxy,sigma2y),2,2)
     xy<-t(apply(cbind(muxy,sigma2x,sigmaxy,sigma2y),1,function(x) mvtnorm::rmvnorm(1,c(x[1],x[2]),matrix(c(x[3],x[4],x[4],x[5]),2,2))))
