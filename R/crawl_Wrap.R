@@ -4,7 +4,7 @@
 #' @importFrom foreach foreach %dopar%
 #' @importFrom stats formula
 
-CRAWLwrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
+crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
                     mov.model = ~1, err.model = NULL, activity = NULL, drift = NULL, 
                     coord = c("x", "y"), Time.name = "time", initial.state, theta, fixPar, 
                     method = "L-BFGS-B", control = NULL, constr = NULL, 
@@ -177,7 +177,7 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
             cat('crawl::crwMLE for individual',ids[i],'has suspect convergence: ',model_fits[[i]]$message,"\n")
           if(any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))])))
             cat('crawl::crwMLE for individual',ids[i],'has NaN variance estimate(s)\n')
-          cat('Attempting to achieve convergence and valid variance estimates for individual ',ids[i],". Press 'esc' to force exit from 'CRAWLwrap'\n",sep="")
+          cat('Attempting to achieve convergence and valid variance estimates for individual ',ids[i],". Press 'esc' to force exit from 'crawlWrap'\n",sep="")
           while(fitCount<retryFits & (fit$convergence | any(is.na(fit$se[which(is.na(fixPar[[i]]))])))){
             cat("\r    Attempt ",fitCount+1," of ",retryFits,"...",sep="")
             tmp <- suppressWarnings(suppressMessages(crawl::crwMLE(
@@ -205,7 +205,11 @@ CRAWLwrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
                   fit<-tmp
             fitCount <- fitCount + 1
           }
-          cat("DONE\n")
+          if(fit$convergence | any(is.na(fit$se[which(is.na(fixPar[[i]]))]))){
+            cat("FAILED\n")
+          } else {
+            cat("DONE\n")
+          }
           model_fits[[i]]<-fit
         } else {
           if(model_fits[[i]]$convergence)
