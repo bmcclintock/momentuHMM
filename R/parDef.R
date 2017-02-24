@@ -70,12 +70,12 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,DM,userBounds=NULL)
                  if(any(intersect(meanind,sdind))) stop("'DM' for ",i," cannot have parameters in common for mean and sd")
                }
                tmpbounds <- rbind(matrix(rep(c(-pi,pi),nbStates),ncol=2,byrow=TRUE),matrix(rep(c(0,Inf),nbStates),ncol=2,byrow=TRUE))
-               parNames[[i]] <- c("mean","sd") 
+               parNames[[i]] <- c("mean","concentration") 
             }
              else {
                parSize[[i]] <- 1
                tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
-               parNames[[i]] <- c("sd")
+               parNames[[i]] <- c("concentration")
              }
            },
            "wrpcauchy"={

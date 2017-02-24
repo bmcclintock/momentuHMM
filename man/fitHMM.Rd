@@ -27,7 +27,7 @@ and any zero-mass parameters should be the last. Note that zero-mass parameters 
 data streams with a 'gamma','weibull','exp','lnorm', or 'beta' distribution.
 For example, for a 2-state model using the Von Mises (vm) distribution for a data stream named 'angle' and 
 the zero-inflated gamma distribution for a data stream named 'step', the vector of initial parameters would be something like: 
-\code{Par0=list(step=c(mean_1,mean_2,sd_1,sd_2,zeromass_1,zeromass_2), angle=c(mean_1,mean_2,kappa_1,kappa_2))}.
+\code{Par0=list(step=c(mean_1,mean_2,sd_1,sd_2,zeromass_1,zeromass_2), angle=c(mean_1,mean_2,concentration_1,concentration_2))}.
 If \code{DM} is not specified for a given data stream, then \code{Par0} is on the natural (i.e., real) scale of the parameters.  
 However, if \code{DM} is specified for a given data stream, then \code{Par0} must be on the working (i.e., beta) scale of the 
 parameters, and the length of \code{Par0} must match the number of columns in the design matrix.  See details below.}
@@ -155,6 +155,10 @@ In other words, the mean turning angle is zero when the coefficient(s) B=0.
 }
 }
 \examples{
+nbStates <- 2
+stepDist <- "gamma" # step distribution
+angleDist <- "vm" # turning angle distribution
+
 # extract data from momentuHMM example
 data <- example$data
 
@@ -176,11 +180,11 @@ print(m)
 # define initial values for the parameters on working scale
 Par0 <- getParDM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
         Par=list(step=stepPar,angle=anglePar),
-        DM=list(step=list(mean=~1,sd=~1),angle=list(sd=~1)))
+        DM=list(step=list(mean=~1,sd=~1),angle=list(concentration=~1)))
 
 mDMf <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
               Par0=Par0,formula=formula,
-              DM=list(step=list(mean=~1,sd=~1),angle=list(sd=~1)))
+              DM=list(step=list(mean=~1,sd=~1),angle=list(concentration=~1)))
 
 print(mDMf)
 
@@ -192,7 +196,8 @@ DMm <- list(step=diag(4),angle=diag(2))
 dimnames(DMm$step) <- list(c("mean_1","mean_2","sd_1","sd_2"),
                    c("mean_1:(Intercept)","mean_2:(Intercept)",
                    "sd_1:(Intercept)","sd_2:(Intercept)"))
-dimnames(DMm$angle) <- list(c("sd_1","sd_2"),c("sd_1:(Intercept)","sd_2:(Intercept)"))
+dimnames(DMm$angle) <- list(c("concentration_1","concentration_2"),
+                    c("concentration_1:(Intercept)","concentration_2:(Intercept)"))
                   
 mDMm <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
               Par0=Par0,formula=formula,
@@ -222,7 +227,7 @@ mDMcirc <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angl
                   formula=formula,
                   estAngleMean=list(angle=TRUE),
                   circularAngleMean=list(angle=TRUE),
-                  DM=list(angle=list(mean=~cov3,sd=~1)))
+                  DM=list(angle=list(mean=~cov3,concentration=~1)))
                   
 print(mDMcov)
 
