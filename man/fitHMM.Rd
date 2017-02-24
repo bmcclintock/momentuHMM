@@ -2,9 +2,9 @@
 % Please edit documentation in R/fitHMM.R
 \name{fitHMM}
 \alias{fitHMM}
-\title{Fit an HMM to the data}
+\title{Fit a multivariate HMM to the data}
 \usage{
-fitHMM(data, nbStates, dist, Par, beta0 = NULL, delta0 = NULL,
+fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
   stationary = FALSE, verbose = 0, nlmPar = NULL, fit = TRUE,
   DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL,
@@ -15,6 +15,23 @@ fitHMM(data, nbStates, dist, Par, beta0 = NULL, delta0 = NULL,
 
 \item{nbStates}{Number of states of the HMM.}
 
+\item{dist}{A named list indicating the probability distributions of the data streams. Currently
+supported distributions are 'gamma','weibull','exp','lnorm','beta','pois','wrpcauchy', and 'vm'. For example,
+\code{dist=list(step="gamma", angle="vm", dives="pois")} indicates 3 data streams ('step', 'angle', and 'dives')
+and their respective probability distributions ('gamma', 'vm', and 'pois').  The names of the data streams 
+(e.g., 'step', 'angle', 'dives') must match component names in \code{data}.}
+
+\item{Par0}{A named list containing vectors of initial state-dependent probability distribution parameters for 
+each data stream specified in \code{dist}. The parameters should be in the order expected by the pdfs of \code{dist}, 
+and any zero-mass parameters should be the last. Note that zero-mass parameters are mandatory if there are zeros in 
+data streams with a 'gamma','weibull','exp','lnorm', or 'beta' distribution.
+For example, for a 2-state model using the Von Mises (vm) distribution for a data stream named 'angle' and 
+the zero-inflated gamma distribution for a data stream named 'step', the vector of initial parameters would be something like: 
+\code{Par0=list(step=c(mean_1,mean_2,sd_1,sd_2,zeromass_1,zeromass_2), angle=c(mean_1,mean_2,kappa_1,kappa_2))}.
+If \code{DM} is not specified for a given data stream, then \code{Par0} is on the natural (i.e., real) scale of the parameters.  
+However, if \code{DM} is specified for a given data stream, then \code{Par0} must be on the working (i.e., beta) scale of the 
+parameters, and the length of \code{Par0} must match the number of columns in the design matrix.  See details below.}
+
 \item{beta0}{Initial matrix of regression coefficients for the transition probabilities (more
 information in "Details").
 Default: \code{NULL}. If not specified, \code{beta0} is initialized such that the diagonal elements
@@ -22,7 +39,23 @@ of the transition probability matrix are dominant.}
 
 \item{delta0}{Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}.}
 
-\item{formula}{Regression formula for the covariates. Default: \code{~1} (no covariate effect).}
+\item{estAngleMean}{An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
+distributions ('vm' and 'wrpcauchy'). For example, \code{estAngleMean=list(angle=TRUE)} indicates the angle mean is to be 
+estimated for 'angle'.  Default is \code{NULL}, which assumes any angle means are fixed to zero and are not to be estimated. 
+Any \code{estAngleMean} elements corresponding to data streams that do not have angular distributions are ignored.}
+
+\item{circularAngleMean}{An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
+regression on the angle mean of circular distributions ('vm' and 'wrpcauchy').  For example, 
+\code{circularAngleMean=list(angle=TRUE)} indicates the angle mean is be estimated for 'angle' using circular-circular 
+regression.  Whenever circular-circular regression is used for an angular data stream, a corresponding design matrix (\code{DM}) 
+must be specified for the data stream and the previous movement direction is automatically used as the reference angle 
+(i.e., the intercept). See Duchesne et al. (2015) for specifics on the circular-circular regression model using previous movement 
+direction as the reference angle. Default is \code{NULL}, which assumes circular-linear regression is used for any angular 
+distributions for which the mean angle is to be estimated. \code{circularAngleMean} elements corresponding to angular data 
+streams are ignored unless the corresponding element of \code{estAngleMean} is \code{TRUE}. Any \code{circularAngleMean} elements 
+corresponding to data streams that do not have angular distributions are ignored.}
+
+\item{formula}{Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effect).}
 
 \item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
@@ -37,13 +70,30 @@ for more detail)}
 
 \item{fit}{\code{TRUE} if an HMM should be fitted to the data, \code{FALSE} otherwise.
 If fit=\code{FALSE}, a model is returned with the MLE replaced by the initial parameters given in
-input. This option can be used to assess the initial parameters. Default: \code{TRUE}.}
+input. This option can be used to assess the initial parameters, parameter bounds, etc. Default: \code{TRUE}.}
 
-\item{cons}{Optional list specifying power to raise parameters corresponding to each column of the design matrix for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive by setting cons=2.  Default=NULL, which simply raises all parameters to the power of 1.}
+\item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
+stream. Each element of \code{DM} can either be a named list of linear regression formulas or a matrix.  For example, for a 2-state 
+model using the gamma distribution for a data stream named 'step', \code{DM=list(step=list(mean=~cov1, sd=~1))} specifies the mean 
+parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 matrix using 
+character strings for the covariate: 
+\code{DM=list(step=matrix(c(1,0,0,0,"cov1",0,0,0,0,1,0,0,0,"cov1",0,0,0,0,1,0,0,0,0,1),4,6))}
+where the rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the columns correspond to the regression 
+coefficients.}
 
-\item{userBounds}{User specified bounds for all parameters in order '\code{rbind(stepBounds,angleBounds,omegaBounds,dryBounds,diveBounds,iceBounds,landBounds)}'}
+\item{cons}{An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
+for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
+\code{cons=list(step=c(1,2,1,1))} raises the second parameter to the second power. Default=NULL, which simply raises all parameters to 
+the power of 1. \code{cons} is ignored for any given data stream unless \code{DM} is specified.}
 
-\item{workcons}{Lower (if positive) or upper (if negative) bound for working parameters}
+\item{userBounds}{An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
+distribution parameters for each data stream. For example, for a 2-state model using the wrapped Cauchy ('wrpcauchy') distribution for 
+a data stream named 'angle' with \code{estAngleMean$angle=TRUE)}, \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2))} 
+specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.}
+
+\item{workcons}{An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
+each data stream. Use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints through a 
+combination of \code{DM}, \code{cons}, and \code{workcons}.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
@@ -52,60 +102,29 @@ model (if any). Default: NULL (states are not known). This should be a vector wi
 of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
 the state is not known.}
 
-\item{stepPar}{Vector of initial state-dependent step length distribution parameters.
-The parameters should be in the order expected by the pdf of \code{stepDist}, and the zero-mass
-parameter should be the last. Note that zero-mass parameters are mandatory if there are steps of
-length zero in the data.
-For example, for a 2-state model using the gamma distribution and
-including zero-inflation, the vector of initial parameters would be something like:
-\code{c(mu1,mu2,sigma1,sigma2,zeromass1,zeromass2)}.}
-
-\item{anglePar}{Vector of initial state-dependent turning angle distribution parameters.
-The parameters should be in the order expected by the pdf of \code{angleDist}. For example, for a 2-state
-model using the Von Mises (vm) distribution, the vector of initial parameters would be something like:
-\code{c(mu1,mu2,kappa1,kappa2)}.}
-
-\item{stepDist}{Name of the distribution of the step lengths (as a character string).
-Supported distributions are: gamma, weibull, lnorm, exp. Default: gamma.}
-
-\item{angleDist}{Name of the distribution of the turning angles (as a character string).
-Supported distributions are: vm, wrpcauchy. Set to \code{"none"} if the angle distribution should
-not be estimated. Default: vm.}
-
-\item{angleMean}{Vector of means of turning angles if not estimated (one for each state).
-Default: \code{NULL} (the angle mean is estimated).}
-
-\item{stepDM}{stepPar design matrix}
-
-\item{angleDM}{anglePar design matrix}
-
-\item{omegaDM}{omegaPar design matrix}
-
-\item{dryDM}{dryPar design matrix}
-
-\item{diveDM}{divePar design matrix}
-
-\item{iceDM}{icePar design matrix}
-
-\item{landDM}{landPar design matrix}
+\item{fixPar}{An optional list of vectors indicating parameters which are assumed known prior to fitting the model. Default: NULL 
+(no parameters are fixed). Each element of \code{fixPar} should be a vector of the same length as the corresponding vector of 
+\code{Par0}; each element should either be numeric (the fixed value of the parameter) or NA if the parameter is to be estimated.}
 }
 \value{
 A \code{momentuHMM} object, i.e. a list of:
-\item{mle}{The maximum likelihood estimates of the parameters of the model (if the numerical algorithm
-has indeed identified the global maximum of the likelihood function), which is a list
-of: \code{stepPar} (step distribution parameters), \code{anglePar} (angle distribution
-parameters), \code{beta} (transition probabilities regression coefficients - more information
-in "Details"), and \code{delta} (initial distribution).}
+\item{mle}{A named list of the maximum likelihood estimates of the parameters of the model (if the numerical algorithm
+has indeed identified the global maximum of the likelihood function). Elements are included for the parameters of each
+data strea, as well as \code{beta} (transition probabilities regression coefficients - more information
+in "Details"), \code{gamma} (transition probabilities on real scale, based on mean covariate values if \code{formula!=~1}), 
+and \code{delta} (initial distribution).}
 \item{CI_real}{Standard errors and 95\% confidence intervals on the real (i.e., natural) scale of parameters}
 \item{CI_beta}{Standard errors and 95\% confidence intervals on the beta (i.e., working) scale of parameters}
-\item{data}{The movement data}
+\item{data}{The momentuHMMData object}
 \item{mod}{The object returned by the numerical optimizer \code{nlm}}
 \item{conditions}{Conditions used to fit the model (e.g., parameter bounds, distributions, \code{zeroInflation}, \code{estAngleMean},
-\code{stationary}, and \code{formula})}
-\item{rawCovs}{Raw covariate values, as found in the data (if any). Used in \code{\link{plot.momentuHMM}}.}
+\code{stationary}, \code{formula}, \code{DM}, etc.)}
+\item{rawCovs}{Raw covariate values for transition probabilities, as found in the data (if any). Used in \code{\link{plot.momentuHMM}}.}
+\item{stateNames}{The names of the states.}
+\item{knownStates}{Vector of values of the state process which are known.}
 }
 \description{
-Fit an hidden Markov model to the data provided, using numerical optimization of the log-likelihood
+Fit a (multivariate) hidden Markov model to the data provided, using numerical optimization of the log-likelihood
 function.
 }
 \details{
@@ -118,8 +137,17 @@ and six columns (six non-diagonal elements in the 3x3 transition probability mat
 filled in row-wise).
 In a covariate-free model (default), \code{beta} has one row, for the intercept.
 
-\item The choice of initial parameters is crucial to fit a model. The algorithm might not find
+\item The choice of initial parameters (particularly \code{Par0} and \code{beta0}) is crucial to fit a model. The algorithm might not find
 the global optimum of the likelihood function if the initial parameters are poorly chosen.
+
+\item If \code{DM} is specified for a particular data stream, then the initial values are specified on 
+the working (i.e., beta) scale of the parameters. The function \code{\link{getParDM}} is intended to help
+with obtaining initial values on the working scale when specifying a design matrix that does not rely on
+individual- or time-varying covariates. 
+
+\item The working scale of each parameter is determined by the link function used.
+If a parameter P is bound by (0,Inf) then the working scale is the log(P) scale.  If the parameter bounds are (-pi,pi) then the working 
+scale is tan(P/2).  Otherwise if the the parameter bounds are finite then logit(P) is the working scale.
 }
 }
 \examples{
@@ -130,8 +158,8 @@ nbStates <- 2
 nbCovs <- 2
 mu<-c(15,50)
 sigma<-c(10,20)
-angleMean <- c(pi,0)
-kappa <- c(0.7,1.5)
+angleMean <- c(0,0)
+kappa <- c(0.5,1.5)
 stepPar <- c(mu,sigma)
 anglePar <- c(angleMean,kappa)
 stepDist <- "gamma"
@@ -139,8 +167,8 @@ angleDist <- "vm"
 zeroInflation <- FALSE
 obsPerAnimal <- c(50,100)
 
-data <- simData(nbAnimals=nbAnimals,nbStates=nbStates,stepDist=stepDist,angleDist=angleDist,
-                 stepPar=stepPar,anglePar=anglePar,nbCovs=nbCovs,zeroInflation=zeroInflation,
+data <- simData(nbAnimals=nbAnimals,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+                 Par=list(step=stepPar,angle=anglePar),nbCovs=nbCovs,zeroInflation=list(step=zeroInflation),
                  obsPerAnimal=obsPerAnimal)
 
 ### 2. fit the model to the simulated data
@@ -149,21 +177,44 @@ mu0 <- c(20,70)
 sigma0 <- c(10,30)
 kappa0 <- c(1,1)
 stepPar <- c(mu0,sigma0) # no zero-inflation, so no zero-mass included
-anglePar <- kappa0 # the angle mean is not estimated, so only the concentration parameter is needed
+anglePar <- kappa0 # not estimating angle mean, so not included
 formula <- ~cov1+cos(cov2)
 
-m <- fitHMM(data=data,nbStates=nbStates,stepPar=stepPar,anglePar=anglePar,formula=formula,
-              stepDist=stepDist,angleDist=angleDist,angleMean=angleMean)
+m <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+            Par0=list(step=stepPar,angle=anglePar),formula=formula)
 
 print(m)
 
+### 3. fit the exact same model to the simulated data using DM
+# define initial values for the parameters on working scale
+Par0 <- getParDM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+        Par=list(step=stepPar,angle=anglePar),
+        DM=list(step=diag(4),angle=diag(2)))
+
+mDM <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+              Par0=Par0,formula=formula,
+              DM=list(step=diag(4),angle=diag(2)))
+
+print(mDM)
+
 }
 \references{
-Patterson T.A., Basson M., Bravington M.V., Gunn J.S. 2009.
-Classifying movement behaviour in relation to environmental conditions using hidden Markov models.
-Journal of Animal Ecology, 78 (6), 1113-1123.
+Duchesne, T., Fortin, D., Rivest L-P. 2015. Equivalence between step selection functions and 
+biased correlated random walks for statistical inference on animal movement. PLoS ONE 10 (4):
+e0122947.
 
 Langrock R., King R., Matthiopoulos J., Thomas L., Fortin D., Morales J.M. 2012.
 Flexible and practical modeling of animal telemetry data: hidden Markov models and extensions.
 Ecology, 93 (11), 2336-2342.
+
+McClintock B.T., King R., Thomas L., Matthiopoulos J., McConnell B.J., Morales J.M. 2012. A general 
+discrete‐time modeling framework for animal movement using multistate random walks. Ecological 
+Monographs, 82 (3), 335-349.
+
+McClintock B.T., Russell D.J., Matthiopoulos J., King R. 2013. Combining individual animal movement 
+and ancillary biotelemetry data to investigate population‐level activity budgets. Ecology, 94 (4), 838-849.
+
+Patterson T.A., Basson M., Bravington M.V., Gunn J.S. 2009.
+Classifying movement behaviour in relation to environmental conditions using hidden Markov models.
+Journal of Animal Ecology, 78 (6), 1113-1123.
 }

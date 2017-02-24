@@ -4,12 +4,12 @@
 #' @importFrom foreach foreach %dopar%
 MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
                    miData,
-                   nbStates, dist, Par, beta0 = NULL, delta0 = NULL,
+                   nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
                    estAngleMean = NULL, 
                    circularAngleMean = NULL,
                    formula = ~1, stationary = FALSE, verbose = 0,
                    nlmPar = NULL, fit = TRUE, DM = NULL, cons = NULL,
-                   userBounds = NULL, workcons = NULL, stateNames = NULL, knownStates=NULL,
+                   userBounds = NULL, workcons = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL,
                    covNames=NULL,spatialCovs=NULL,centers=NULL,
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad,
                    fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL
@@ -77,10 +77,10 @@ MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   fits <-
     foreach(j = 1:nSims, .export=c("fitHMM"), .errorhandling="pass") %dopar% {
 
-      suppressMessages(fitHMM(miData[[j]],nbStates, dist, Par, beta0, delta0,
+      suppressMessages(fitHMM(miData[[j]],nbStates, dist, Par0, beta0, delta0,
                               estAngleMean, circularAngleMean, formula, stationary, verbose,
                               nlmPar, fit, DM, cons,
-                              userBounds, workcons, stateNames, knownStates))
+                              userBounds, workcons, stateNames, knownStates, fixPar))
     }  
   stopImplicitCluster()
   cat("DONE\n")
