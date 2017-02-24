@@ -126,18 +126,11 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     }
   }
   
-  #DMind <- lapply(m$conditions$fullDM,function(x) all(unlist(apply(x,1,function(y) lapply(y,length)))==1))
-  #p <- parDef(m$conditions$dist,nbStates,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$DM,m$conditions$userBounds)
   if(is.null(covs)){
     covs <- m$data[which(m$data$ID %in% ID),][1,]
     for(j in names(m$data)[which(unlist(lapply(m$data,class))!="factor")]){
       covs[[j]]<-mean(m$data[[j]][which(m$data$ID %in% ID)],na.rm=TRUE)
     }
-    #if(!is.null(m$rawCovs)){
-    #  tmp <- apply(m$rawCovs,2,mean,na.rm=TRUE)
-    #  covs <- matrix(tmp,nrow=1,ncol=length(tmp),dimnames=list("covs",names(tmp)))
-    #  covs <- as.data.frame(covs)
-    #} else covs <- m$data[1,]
   } else {
     if(!is.data.frame(covs)) stop('covs must be a data frame')
     if(nrow(covs)>1) stop('covs must consist of a single row')
@@ -153,8 +146,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     }
   }
   nbCovs <- ncol(model.matrix(m$conditions$formula,m$data))-1 # substract intercept column
-  #par <- w2n(m$mod$estimate,m$conditions$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,DMind,m$conditions$workcons,nrow(m$data),m$conditions$dist,p$Bndind)
-  
+ 
   Par <- m$mle[distnames]
   parindex <- c(0,cumsum(unlist(lapply(m$conditions$fullDM,ncol)))[-length(m$conditions$fullDM)])
   names(parindex) <- distnames
@@ -201,7 +193,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   DMind <- DMinputs$DMind
   wpar <- n2w(tmpPar,tmpp$bounds,beta,rep(1/nbStates,nbStates),nbStates,tmpInputs$estAngleMean,tmpInputs$DM,DMinputs$cons,DMinputs$workcons,tmpp$Bndind)
   if(!m$conditions$stationary & nbStates>1) {
-    wpar[(length(wpar)-nbStates+2):length(wpar)] <- m$mod$estimate[(length(wpar)-nbStates+2):length(wpar)] #this is done to deal with any delta=0 in n2w
+    wpar[(length(wpar)-nbStates+2):length(wpar)] <- m$mod$estimate[(length(m$mod$estimate)-nbStates+2):length(m$mod$estimate)] #this is done to deal with any delta=0 in n2w
   }
   par <- w2n(wpar,tmpp$bounds,tmpp$parSize,nbStates,nbCovs,tmpInputs$estAngleMean,tmpInputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,tmpConditions$dist,tmpp$Bndind)
   
