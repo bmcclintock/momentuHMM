@@ -8,7 +8,7 @@
 #' @param nbStates Number of states of the HMM.
 #' @param dist A named list indicating the probability distributions of the data streams. Currently
 #' supported distributions are 'gamma','weibull','exp','lnorm','beta','pois','wrpcauchy', and 'vm'. For example,
-#' \code{dist=list(step="gamma", angle="vm", dives="pois")} indicates 3 data streams ('step', 'angle', and 'dives')
+#' \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
 #' and their respective probability distributions ('gamma', 'vm', and 'pois').  The names of the data streams 
 #' (e.g., 'step', 'angle', 'dives') must match component names in \code{data}.
 #' @param Par0 A named list containing vectors of initial state-dependent probability distribution parameters for 
@@ -22,7 +22,7 @@
 #' However, if \code{DM} is specified for a given data stream, then \code{Par0} must be on the working (i.e., beta) scale of the 
 #' parameters, and the length of \code{Par0} must match the number of columns in the design matrix.  See details below.
 #' @param beta0 Initial matrix of regression coefficients for the transition probabilities (more
-#' information in "Details").
+#' information in 'Details').
 #' Default: \code{NULL}. If not specified, \code{beta0} is initialized such that the diagonal elements
 #' of the transition probability matrix are dominant.
 #' @param delta0 Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}.
@@ -31,13 +31,13 @@
 #' estimated for 'angle'.  Default is \code{NULL}, which assumes any angle means are fixed to zero and are not to be estimated. 
 #' Any \code{estAngleMean} elements corresponding to data streams that do not have angular distributions are ignored.
 #' @param circularAngleMean An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
-#' regression on the angle mean of circular distributions ('vm' and 'wrpcauchy').  For example, 
+#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.  For example, 
 #' \code{circularAngleMean=list(angle=TRUE)} indicates the angle mean is be estimated for 'angle' using circular-circular 
 #' regression.  Whenever circular-circular regression is used for an angular data stream, a corresponding design matrix (\code{DM}) 
-#' must be specified for the data stream and the previous movement direction is automatically used as the reference angle 
-#' (i.e., the intercept). See Duchesne et al. (2015) for specifics on the circular-circular regression model using previous movement 
-#' direction as the reference angle. Default is \code{NULL}, which assumes circular-linear regression is used for any angular 
-#' distributions for which the mean angle is to be estimated. \code{circularAngleMean} elements corresponding to angular data 
+#' must be specified for the data stream and the previous movement direction (i.e., a turning angle of zero) is automatically used 
+#' as the reference angle (i.e., the intercept). See Duchesne et al. (2015) for specifics on the circular-circular regression model 
+#' using previous movement direction as the reference angle. Default is \code{NULL}, which assumes circular-linear regression is 
+#' used for any angular distributions for which the mean angle is to be estimated. \code{circularAngleMean} elements corresponding to angular data 
 #' streams are ignored unless the corresponding element of \code{estAngleMean} is \code{TRUE}. Any \code{circularAngleMean} elements 
 #' corresponding to data streams that do not have angular distributions are ignored.
 #' @param formula Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effect).
@@ -57,8 +57,8 @@
 #' model using the gamma distribution for a data stream named 'step', \code{DM=list(step=list(mean=~cov1, sd=~1))} specifies the mean 
 #' parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 matrix using 
 #' character strings for the covariate: 
-#' \code{DM=list(step=matrix(c(1,0,0,0,"cov1",0,0,0,0,1,0,0,0,"cov1",0,0,0,0,1,0,0,0,0,1),4,6))}
-#' where the rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the columns correspond to the regression 
+#' \code{DM=list(step=matrix(c(1,0,0,0,'cov1',0,0,0,0,1,0,0,0,'cov1',0,0,0,0,1,0,0,0,0,1),4,6))}
+#' where the 4 rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the 6 columns correspond to the regression 
 #' coefficients. 
 #' @param cons An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
 #' for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
@@ -69,8 +69,8 @@
 #' a data stream named 'angle' with \code{estAngleMean$angle=TRUE)}, \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2))} 
 #' specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.
 #' @param workcons An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
-#' each data stream. Use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints through a 
-#' combination of \code{DM}, \code{cons}, and \code{workcons}.
+#' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
+#' through a combination of \code{DM}, \code{cons}, and \code{workcons}.
 #' @param stateNames Optional character vector of length nbStates indicating state names.
 #' @param knownStates Vector of values of the state process which are known prior to fitting the
 #' model (if any). Default: NULL (states are not known). This should be a vector with length the number
@@ -84,14 +84,14 @@
 #' \item{mle}{A named list of the maximum likelihood estimates of the parameters of the model (if the numerical algorithm
 #' has indeed identified the global maximum of the likelihood function). Elements are included for the parameters of each
 #' data strea, as well as \code{beta} (transition probabilities regression coefficients - more information
-#' in "Details"), \code{gamma} (transition probabilities on real scale, based on mean covariate values if \code{formula!=~1}), 
-#' and \code{delta} (initial distribution).}
+#' in 'Details'), \code{gamma} (transition probabilities on real scale, based on mean covariate values if \code{formula}
+#' includes covariates), and \code{delta} (initial distribution).}
 #' \item{CI_real}{Standard errors and 95\% confidence intervals on the real (i.e., natural) scale of parameters}
 #' \item{CI_beta}{Standard errors and 95\% confidence intervals on the beta (i.e., working) scale of parameters}
 #' \item{data}{The momentuHMMData object}
 #' \item{mod}{The object returned by the numerical optimizer \code{nlm}}
-#' \item{conditions}{Conditions used to fit the model (e.g., parameter bounds, distributions, \code{zeroInflation}, \code{estAngleMean},
-#' \code{stationary}, \code{formula}, \code{DM}, etc.)}
+#' \item{conditions}{Conditions used to fit the model, e.g., \code{bounds} (parameter bounds), distributions, \code{zeroInflation}, 
+#' \code{estAngleMean}, \code{stationary}, \code{formula}, \code{DM}, \code{fullDM} (full design matrix), etc.)}
 #' \item{rawCovs}{Raw covariate values for transition probabilities, as found in the data (if any). Used in \code{\link{plot.momentuHMM}}.}
 #' \item{stateNames}{The names of the states.}
 #' \item{knownStates}{Vector of values of the state process which are known.}
@@ -110,37 +110,24 @@
 #' the global optimum of the likelihood function if the initial parameters are poorly chosen.
 #' 
 #' \item If \code{DM} is specified for a particular data stream, then the initial values are specified on 
-#' the working (i.e., beta) scale of the parameters. The function \code{\link{getParDM}} is intended to help
-#' with obtaining initial values on the working scale when specifying a design matrix that does not rely on
-#' individual- or time-varying covariates. 
-#' 
-#' \item The working scale of each parameter is determined by the link function used.
+#' the working (i.e., beta) scale of the parameters. The working scale of each parameter is determined by the link function used.
 #' If a parameter P is bound by (0,Inf) then the working scale is the log(P) scale.  If the parameter bounds are (-pi,pi) then the working 
-#' scale is tan(P/2).  Otherwise if the the parameter bounds are finite then logit(P) is the working scale.
+#' scale is tan(P/2) unless circular-circular regression is used. Otherwise if the parameter bounds are finite then logit(P) is the working scale.  
+#' The function \code{\link{getParDM}} is intended to help with obtaining initial values on the working scale when specifying a design matrix that does not rely on
+#' individual- or time-varying covariates (see example below). 
+#' 
+#' \item Circular-circular regression in \code{momentuHMM} is designed for turning angles (not bearings) as computed by \code{\link{simData}} and \code{\link{prepData}}. 
+#' When circular-circular regression is specified using \code{circularAngleMean}, the working scale for the mean turning angle is not as easily interpretable, but the 
+#' link function is atan2(sin(X)*B,1+cos(X)*B), where X are the angle covariates and B the angle coefficients (see Duchesne et al. 2015). 
+#' Under this formulation, the reference turning angle is 0 (i.e., movement in the same direction as the previous time step). 
+#' In other words, the mean turning angle is zero when the coefficient(s) B=0.
 #' }
 #'
 #' @examples
-#' ### 1. simulate data
-#' # define all the arguments of simData
-#' nbAnimals <- 2
-#' nbStates <- 2
-#' nbCovs <- 2
-#' mu<-c(15,50)
-#' sigma<-c(10,20)
-#' angleMean <- c(0,0)
-#' kappa <- c(0.5,1.5)
-#' stepPar <- c(mu,sigma)
-#' anglePar <- c(angleMean,kappa)
-#' stepDist <- "gamma"
-#' angleDist <- "vm"
-#' zeroInflation <- FALSE
-#' obsPerAnimal <- c(50,100)
+#' # extract data from momentuHMM example
+#' data <- example$data
 #'
-#' data <- simData(nbAnimals=nbAnimals,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
-#'                  Par=list(step=stepPar,angle=anglePar),nbCovs=nbCovs,zeroInflation=list(step=zeroInflation),
-#'                  obsPerAnimal=obsPerAnimal)
-#'
-#' ### 2. fit the model to the simulated data
+#' ### 1. fit the model to the simulated data
 #' # define initial values for the parameters
 #' mu0 <- c(20,70)
 #' sigma0 <- c(10,30)
@@ -154,17 +141,59 @@
 #'
 #' print(m)
 #' 
-#' ### 3. fit the exact same model to the simulated data using DM
+#' ### 2. fit the exact same model to the simulated data using DM formulas
 #' # define initial values for the parameters on working scale
 #' Par0 <- getParDM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
 #'         Par=list(step=stepPar,angle=anglePar),
-#'         DM=list(step=diag(4),angle=diag(2)))
+#'         DM=list(step=list(mean=~1,sd=~1),angle=list(sd=~1)))
 #'
-#' mDM <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+#' mDMf <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
 #'               Par0=Par0,formula=formula,
-#'               DM=list(step=diag(4),angle=diag(2)))
+#'               DM=list(step=list(mean=~1,sd=~1),angle=list(sd=~1)))
 #'
-#' print(mDM)
+#' print(mDMf)
+#' 
+#' ### 3. fit the exact same model to the simulated data using DM matrices
+#' # define DM
+#' DMm <- list(step=diag(4),angle=diag(2))
+#' 
+#' # user-specified dimnames not required but are recommended
+#' dimnames(DMm$step) <- list(c("mean_1","mean_2","sd_1","sd_2"),
+#'                    c("mean_1:(Intercept)","mean_2:(Intercept)",
+#'                    "sd_1:(Intercept)","sd_2:(Intercept)"))
+#' dimnames(DMm$angle) <- list(c("sd_1","sd_2"),c("sd_1:(Intercept)","sd_2:(Intercept)"))
+#'                   
+#' mDMm <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+#'               Par0=Par0,formula=formula,
+#'               DM=DMm)
+#'
+#' print(mDMm)
+#' 
+#' ### 4. fit step mean parameter covariate model to the simulated data using DM
+#'
+#' mDMcov <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+#'               Par0=list(step=c(Par0$step[1],0,Par0$step[2],0,Par0$step[3:4]),angle=Par0$angle),
+#'               formula=formula,
+#'               DM=list(step=list(mean=~cov1,sd=~1),angle=DMm$angle))
+#'
+#' print(mDMcov)
+#' 
+#' ### 5. fit circular-circular angle mean covariate model to the simulated data using DM
+#'
+#' # Generate fake circular covariate
+#' data$cov3 <- 2*atan(rnorm(nrow(data)))
+#' 
+#' # Fit circular-circular regression model for angle mean
+#' # Note no intercepts are estimated for angle means because these are by default
+#' # the previous movement direction (i.e., a turning angle of zero)
+#' mDMcirc <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+#'                  Par0=list(step=stepPar,angle=c(0,0,Par0$angle)),
+#'                   formula=formula,
+#'                   estAngleMean=list(angle=TRUE),
+#'                   circularAngleMean=list(angle=TRUE),
+#'                   DM=list(angle=list(mean=~cov3,sd=~1)))
+#'                   
+#' print(mDMcov)
 #'
 #' @references
 #' 

@@ -13,7 +13,7 @@ exGen <- function()
   nbCovs <- 2
   mu<-c(15,50)
   sigma<-c(10,20)
-  angleMean <- c(pi,0)
+  angleMean <- c(0,0)
   kappa <- c(0.7,1.5)
   stepPar <- c(mu,sigma)
   anglePar <- c(angleMean,kappa)
@@ -21,19 +21,20 @@ exGen <- function()
   angleDist <- "vm"
   zeroInflation <- FALSE
   obsPerAnimal <- c(500,1000)
+  beta <- matrix(c(-1.5,-1.5,0.25,-0.25,-0.1,0.1),3,2,byrow=TRUE)
 
   simPar <- list(nbAnimals=nbAnimals,nbStates=nbStates,angleMean=angleMean,dist=list(step=stepDist,angle=angleDist),zeroInflation=list(step=zeroInflation,angle=FALSE))
 
   data <- simData(nbAnimals=nbAnimals,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
-                  Par=list(step=stepPar,angle=anglePar),nbCovs=nbCovs,zeroInflation=list(step=zeroInflation),
-                  obsPerAnimal=obsPerAnimal)
+                  Par=list(step=stepPar,angle=anglePar),beta=beta,nbCovs=nbCovs,zeroInflation=list(step=zeroInflation),
+                  obsPerAnimal=obsPerAnimal,states=TRUE)
 
   # estimate model
   mu0 <- c(20,70)
   sigma0 <- c(10,30)
   kappa0 <- c(1,1)
   stepPar0 <- c(mu0,sigma0)
-  anglePar0 <- c(pi/2,0,kappa0)
+  anglePar0 <- c(-pi/2,pi/2,kappa0)
   formula <- ~cov1+cos(cov2)
   nbCovs <- length(attr(terms(formula), "term.labels"))
 
