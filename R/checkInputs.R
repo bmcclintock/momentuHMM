@@ -9,40 +9,33 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
   if(nbStates<0)
     stop("nbStates should be at least 1.")
   
-  if(is.null(circularAngleMean)){
-    circularAngleMean <- vector('list',length(distnames))
-    names(circularAngleMean) <- distnames
-  } else {
-    if(!is.list(circularAngleMean) | is.null(names(circularAngleMean))) stop("'circularAngleMean' must be a named list")
-  }
-  for(i in distnames[which(!(dist %in% angledists))]){
-    circularAngleMean[[i]] <- FALSE
-  }
-  for(i in distnames){
-    if(is.null(circularAngleMean[[i]])) circularAngleMean[[i]] <- FALSE
-    if(!is.logical(circularAngleMean[[i]])) stop("circularAngleMean$",i," must be logical")
-    if(circularAngleMean[[i]] & is.null(DM[[i]])) stop("DM$",i," must be specified when circularAngleMean$",i,"=TRUE")
-  }
-  circularAngleMean<-circularAngleMean[distnames]
-
   if(is.null(estAngleMean)){
     estAngleMean <- vector('list',length(distnames))
     names(estAngleMean) <- distnames
   } else {
     if(!is.list(estAngleMean) | is.null(names(estAngleMean))) stop("'estAngleMean' must be a named list")
   }
-  for(i in distnames){
-    if(is.null(estAngleMean[[i]]) & !circularAngleMean[[i]]) estAngleMean[[i]] <- FALSE
-    if(is.null(estAngleMean[[i]]) & circularAngleMean[[i]]) estAngleMean[[i]] <- TRUE
-    if(!estAngleMean[[i]] & circularAngleMean[[i]]) stop("estAngleMean$",i," cannot be FALSE if circularAngleMean$",i,"=TRUE")
-  }
   for(i in distnames[which(!(dist %in% angledists))]){
     estAngleMean[[i]] <- FALSE
   }
+  for(i in distnames){
+    if(is.null(estAngleMean[[i]])) estAngleMean[[i]] <- FALSE
+    if(!is.logical(estAngleMean[[i]])) stop("estAngleMean$",i," must be logical")
+  }
   estAngleMean<-estAngleMean[distnames]
   
-
-  
+  if(is.null(circularAngleMean)){
+    circularAngleMean <- vector('list',length(distnames))
+    names(circularAngleMean) <- distnames
+  } else {
+    if(!is.list(circularAngleMean) | is.null(names(circularAngleMean))) stop("'circularAngleMean' must be a named list")
+  }
+  for(i in distnames){
+    if(is.null(circularAngleMean[[i]]) | !estAngleMean[[i]]) circularAngleMean[[i]] <- FALSE
+    if(!is.logical(circularAngleMean[[i]])) stop("circularAngleMean$",i," must be logical")
+    if(circularAngleMean[[i]] & is.null(DM[[i]])) stop("DM$",i," must be specified when circularAngleMean$",i,"=TRUE")
+  }
+  circularAngleMean<-circularAngleMean[distnames]
   
   if(!is.null(stateNames) & length(stateNames)!=nbStates)
     stop("stateNames must have length ",nbStates)
