@@ -19,16 +19,15 @@ getXB<-function(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,nbStates){
       meanind<-unique(unlist(apply(DM[1:nbStates,,drop=FALSE],1,function(x) which(x!=0))))
       XB <- matrix(0,nrow(DM),1)
       XB[meanind,] <- atan2(Xvec%*%t(sin(DM[meanind,])),1+Xvec%*%t(cos(DM[meanind,])))[meanind]
-      #XB[1:nbStates,] <- atan2(Xvec%*%t(sin(DM)),1+Xvec%*%t(cos(DM)))[1:nbStates]
       XB[nbStates+1:nbStates,] <- matrix((Xvec%*%t(DM))[nbStates+1:nbStates],nbStates,1)
     } else {
       meanind<-which((apply(DM[1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
-      nc<-ncol(DM)
+      nc<-apply(DM,1:2,function(x) !all(unlist(x)==0))
       XB<-matrix(0,nrow(DM),nbObs)
       XB1<-XB2<-matrix(0,nbStates,nbObs)
       for(i in meanind){
         DMrow<-DM[i,]
-        for(j in 1:nc){
+        for(j in which(nc[i,])){
           XB1[i,]<-XB1[i,]+sin(DMrow[[j]])*Xvec[j]
           XB2[i,]<-XB2[i,]+cos(DMrow[[j]])*Xvec[j]
         }
@@ -36,7 +35,7 @@ getXB<-function(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,nbStates){
       }
       for(i in nbStates+1:nbStates){
         DMrow<-DM[i,]
-        for(j in 1:nc){
+        for(j in which(nc[i,])){
           XB[i,]<-XB[i,]+DMrow[[j]]*Xvec[j]
         }
       }
