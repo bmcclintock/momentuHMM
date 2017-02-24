@@ -9,16 +9,19 @@
 #' @param x Object \code{momentuHMM}
 #' @param animals Vector of indices or IDs of animals for which information will be plotted.
 #' Default: \code{NULL} ; all animals are plotted.
-#' @param covs Data frame consisting of a single row indicating the covariate values to be used in plots. If none are specified, the means of any covariates appearing in the model are used (unless covariate is a factor, in which case the first factor is used).
+#' @param covs Data frame consisting of a single row indicating the covariate values to be used in plots. 
+#' If none are specified, the means of any covariates appearing in the model are used (unless covariate is a factor, in which case the first factor in the data is used).
 #' @param ask If \code{TRUE}, the execution pauses between each plot.
 #' @param breaks Histogram parameter. See \code{hist} documentation.
-#' @param hist.ylim Parameter \code{ylim} for the step length histograms.
-#' See \code{hist} documentation. Default: \code{NULL} ; the function sets default values.
+#' @param hist.ylim An optional named list of vectors specifying \code{ylim=c(ymin,ymax)} for the data stream histograms.
+#' See \code{hist} documentation. Default: \code{NULL} ; the function sets default values for all data streams.
 #' @param sepAnimals If \code{TRUE}, the data is split by individuals in the histograms.
 #' Default: \code{FALSE}.
 #' @param sepStates If \code{TRUE}, the data is split by states in the histograms.
 #' Default: \code{FALSE}.
 #' @param col Vector or colors for the states (one color per state).
+#' @param cumul	If TRUE, the sum of weighted densities is plotted (default).
+#' @param plotTracks If TRUE, the Viterbi-decoded tracks are plotted (default).
 #' @param ... Currently unused. For compatibility with generic method.
 #'
 #' @details The state-dependent densities are weighted by the frequency of each state in the most
@@ -36,11 +39,11 @@
 #'
 #' @export
 #' @importFrom graphics legend lines segments arrows
-#' @importFrom grDevices adjustcolor gray
+#' @importFrom grDevices adjustcolor gray rainbow
 #' @importFrom stats get_all_vars as.formula
 
 plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
-                         sepStates=FALSE,col=NULL,plotCI=FALSE,alpha=0.95,...)
+                         sepStates=FALSE,col=NULL,cumul=TRUE,plotTracks=TRUE,plotCI=FALSE,alpha=0.95,...)
 {
   m <- x # the name "x" is for compatibility with the generic method
   nbAnimals <- length(unique(m$data$ID))
@@ -50,16 +53,30 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
 
   Fun <- lapply(m$conditions$dist,function(x) paste("d",x,sep=""))
 
-  if(!is.null(hist.ylim) & length(hist.ylim)!=2)
-    stop("hist.ylim needs to be a vector of two values (ymin,ymax)")
-
-  # prepare colors for the states (used in the maps and for the densities)
-  if(!is.null(col) & length(col)!=nbStates) {
-    warning("Length of 'col' should be equal to number of states - argument ignored")
-    col <- 2:(nbStates+1)
+  if(is.null(hist.ylim)){
+    hist.ylim<-vector('list',length(distnames))
+    names(hist.ylim)<-distnames
   }
-  if(is.null(col))
-    col <- 2:(nbStates+1)
+  for(i in distnames){
+    if(!is.null(hist.ylim[[i]]) & length(hist.ylim[[i]])!=2)
+      stop("hist.ylim$",i," needs to be a vector of two values (ymin,ymax)")
+  }
+  
+  # prepare colors for the states (used in the maps and for the densities)
+  if (!is.null(col) & length(col) != nbStates) {
+    warning("Length of 'col' should be equal to number of states - argument ignored")
+    col <- 2:(nbStates + 1)
+  }
+  if (is.null(col) & nbStates < 8) {
+    pal <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", 
+             "#0072B2", "#D55E00", "#CC79A7")
+    col <- pal[1:nbStates]
+  }
+  if (is.null(col) & nbStates >= 8) 
+    col <- rainbow(nbStates)
+  
+  if (sepStates | nbStates < 2) 
+    cumul <- FALSE
   
   if("miSum" %in% class(x)) plotEllipse <- m$plotEllipse
   else plotEllipse <- FALSE
@@ -406,14 +423,14 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             message <- paste0("Animal ID ",ID[zoo]," - State ",state,covmess)
   
             # the function plotHist is defined below
-            plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,state,hist.ylim,col,legText)
+            plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,state,hist.ylim[[i]],col,legText, cumul = cumul)
           }
   
         } else { # if !sepStates
           gen <- genData[[zoo]]
           message <- paste0("Animal ID ",ID[zoo],covmess)
   
-          plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,NULL,hist.ylim,col,legText)
+          plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul)
         }
       }
     } else { # if !sepAnimals
@@ -424,14 +441,14 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           gen <- genData[which(states==state)]
           message <- paste0("All animals - State ",state,covmess)
   
-          plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,state,hist.ylim,col,legText)
+          plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,state,hist.ylim[[i]],col,legText, cumul = cumul)
         }
   
       } else { # if !sepStates
         gen <- genData
         message <- paste0("All animals",covmess)
   
-        plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,NULL,hist.ylim,col,legText)
+        plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul)
       }
     }
   }
@@ -526,7 +543,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   #################################
   ## Plot maps colored by states ##
   #################################
-  if(all(c("x","y") %in% names(m$data))){
+  if(all(c("x","y") %in% names(m$data)) & plotTracks){
     
     if(nbStates>1) { # no need to plot the map if only one state
       par(mfrow=c(1,1))
@@ -595,7 +612,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
 #  - col: colors of the state-dependent density lines
 
 plotHist <- function (gen,genDensities,dist,message,
-                      sepStates,breaks="Sturges",state=NULL,hist.ylim=NULL,col=NULL,legText)
+                      sepStates,breaks="Sturges",state=NULL,hist.ylim=NULL,col=NULL,legText, cumul=TRUE)
 {
   # vertical limits
   if(!is.null(hist.ylim)) {
@@ -608,6 +625,12 @@ plotHist <- function (gen,genDensities,dist,message,
 
   if(!sepStates) {
     nbStates <- length(genDensities)
+    lty <- rep(1, nbStates)
+    if (cumul) {
+      legText <- c(legText, "Total")
+      col <- c(col, "black")
+      lty <- c(lty, 2)
+    }
   }
 
   distname <- names(dist)
@@ -615,9 +638,32 @@ plotHist <- function (gen,genDensities,dist,message,
   if(dist %in% angledists){
     h <- hist(gen,plot=F,breaks=breaks) # to determine 'breaks'
     breaks <- seq(-pi,pi,length=length(h$breaks))
-
-    h <- hist(gen,plot=F,breaks=breaks) # to determine 'ymax'
-    ymax <- 1.3*max(h$density)
+    
+    if(is.null(hist.ylim)) { # default
+      h <- hist(gen,plot=F,breaks=breaks)
+      ymax <- 1.3*max(h$density)
+      
+      # find the maximum of the gen densit-y-ies, and take it as ymax if necessary
+      if(sepStates) {
+        maxdens <- max(genDensities[[state]][,2])
+        if(maxdens>ymax & maxdens<2*max(h$density))
+          ymax <- maxdens
+        
+      } else {
+        maxdens <- max(genDensities[[1]][,2])
+        if(nbStates>1) {
+          for(state in 2:nbStates) {
+            if(is.finite(max(genDensities[[state]][,2]))){
+              if(max(genDensities[[state]][,2])>maxdens)
+                maxdens <- max(genDensities[[state]][,2])
+            }
+          }
+        }
+        if(maxdens>ymax){
+          ymax <- ifelse(maxdens<2*max(h$density),maxdens,2*max(h$density))
+        }
+      }
+    }
 
     # plot gen histogram
     hist(gen,prob=T,main="",ylim=c(0,ymax),xlab=paste0(distname," (radians)"),
@@ -633,8 +679,12 @@ plotHist <- function (gen,genDensities,dist,message,
     else {
       for(s in 1:nbStates)
         lines(genDensities[[s]],col=col[s],lwd=2)
-
-      legend("top",legText,lwd=rep(2,nbStates),col=col,bty="n")
+      if(cumul){
+        total <- genDensities[[1]]
+        for (s in 2:nbStates) total[, 2] <- total[, 2] + genDensities[[s]][, 2]
+        lines(total, lwd = 2, lty = 2)
+      }
+      legend("topright",legText,lwd=rep(2,nbStates),col=col,bty="n")
     }  
   } else {
     # determine ylim
@@ -658,8 +708,9 @@ plotHist <- function (gen,genDensities,dist,message,
             }
           }
         }
-        if(maxdens>ymax & maxdens<2*max(h$density))
-          ymax <- maxdens
+        if(maxdens>ymax){
+          ymax <- ifelse(maxdens<2*max(h$density),maxdens,2*max(h$density))
+        }
       }
     }
   
@@ -675,8 +726,12 @@ plotHist <- function (gen,genDensities,dist,message,
     else {
       for(s in 1:nbStates)
         lines(genDensities[[s]],col=col[s],lwd=2)
-  
-      legend("top",legText,lwd=rep(2,nbStates),col=col,bty="n")
+      if(cumul){
+        total <- genDensities[[1]]
+        for (s in 2:nbStates) total[, 2] <- total[, 2] + genDensities[[s]][, 2]
+        lines(total, lwd = 2, lty = 2)
+      }
+      legend("topright",legText,lwd=rep(2,nbStates),col=col,bty="n")
     }
   }
 

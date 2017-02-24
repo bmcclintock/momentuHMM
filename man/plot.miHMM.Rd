@@ -6,8 +6,8 @@
 \usage{
 \method{plot}{miHMM}(x, animals = NULL, covs = NULL, ask = TRUE,
   breaks = "Sturges", hist.ylim = NULL, sepAnimals = FALSE,
-  sepStates = FALSE, col = NULL, plotCI = FALSE, alpha = 0.95,
-  plotEllipse = TRUE, ...)
+  sepStates = FALSE, col = NULL, cumul = TRUE, plotTracks = TRUE,
+  plotCI = FALSE, alpha = 0.95, plotEllipse = TRUE, ...)
 }
 \arguments{
 \item{x}{Object \code{miHMM}}
@@ -31,6 +31,10 @@ Default: \code{FALSE}.}
 Default: \code{FALSE}.}
 
 \item{col}{Vector or colors for the states (one color per state).}
+
+\item{cumul}{If TRUE, the sum of weighted densities is plotted (default).}
+
+\item{plotTracks}{If TRUE, the Viterbi-decoded tracks are plotted (default).}
 
 \item{...}{Currently unused. For compatibility with generic method.}
 }
