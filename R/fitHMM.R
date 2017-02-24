@@ -198,7 +198,7 @@
 #'                   circularAngleMean=list(angle=TRUE),
 #'                   DM=list(angle=list(mean=~cov3,concentration=~1)))
 #'                   
-#' print(mDMcov)
+#' print(mDMcirc)
 #'
 #' @references
 #' 
@@ -439,11 +439,14 @@ fitHMM <- function(data,nbStates,dist,
   message("Fitting HMM with ",nbStates," states and ",length(distnames)," data streams")
   message("-----------------------------------------------------------------------\n")
   for(i in distnames){
+    pNames<-p$parNames[[i]]
+    if(inputs$circularAngleMean[[i]]) 
+      pNames[1]<-paste0("circular ",pNames[1])
     if(is.null(DM[[i]])){
-      message(" ",i," ~ ",dist[[i]],"(",paste0(p$parNames[[i]],"=~1",collapse=", "),")")
+      message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,"=~1",collapse=", "),")")
     } else if(is.list(DM[[i]])){
-      message(" ",i," ~ ",dist[[i]],"(",paste0(p$parNames[[i]],"=",DM[[i]],collapse=", "),")")
-    } else message(" ",i," ~ ",dist[[i]],"(",paste0(p$parNames[[i]],": custom",collapse=", "),")")
+      message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,"=",DM[[i]],collapse=", "),")")
+    } else message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,": custom",collapse=", "),")")
   }
   message("\n Transition probability matrix formula: ",paste0(formula,collapse=""))
   message("=======================================================================")

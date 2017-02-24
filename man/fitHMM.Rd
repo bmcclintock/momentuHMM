@@ -229,7 +229,7 @@ mDMcirc <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angl
                   circularAngleMean=list(angle=TRUE),
                   DM=list(angle=list(mean=~cov3,concentration=~1)))
                   
-print(mDMcov)
+print(mDMcirc)
 
 }
 \references{
