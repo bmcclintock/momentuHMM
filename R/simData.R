@@ -379,7 +379,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   }
   
   message("=======================================================================")
-  message("Simulating HMM with ",length(distnames)," data streams")#,
+  message("Simulating HMM with ",nbStates," states and ",length(distnames)," data streams")
   message("-----------------------------------------------------------------------\n")
   for(i in distnames){
     if(is.null(DM[[i]])){

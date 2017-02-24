@@ -436,7 +436,7 @@ fitHMM <- function(data,nbStates,dist,
   }
   
   message("=======================================================================")
-  message("Fitting HMM with ",length(distnames)," data streams")#,
+  message("Fitting HMM with ",nbStates," states and ",length(distnames)," data streams")
   message("-----------------------------------------------------------------------\n")
   for(i in distnames){
     if(is.null(DM[[i]])){
