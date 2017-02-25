@@ -80,7 +80,7 @@
 #' (no parameters are fixed). Each element of \code{fixPar} should be a vector of the same length as the corresponding vector of 
 #' \code{Par0}; each element should either be numeric (the fixed value of the parameter) or NA if the parameter is to be estimated. 
 #'
-#' @return A \code{momentuHMM} object, i.e. a list of:
+#' @return A \code{\link{momentuHMM}} object, i.e. a list of:
 #' \item{mle}{A named list of the maximum likelihood estimates of the parameters of the model (if the numerical algorithm
 #' has indeed identified the global maximum of the likelihood function). Elements are included for the parameters of each
 #' data strea, as well as \code{beta} (transition probabilities regression coefficients - more information
