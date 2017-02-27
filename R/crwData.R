@@ -5,6 +5,8 @@
 #'
 #'
 #' @return An object \code{crwData}.
+#' 
+#' @seealso \code{\link{crawlWrap}}
 
 crwData <- function(m)
 {

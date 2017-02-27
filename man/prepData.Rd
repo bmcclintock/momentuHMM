@@ -4,7 +4,7 @@
 \alias{prepData}
 \title{Preprocessing of the data streams, including calculation of step length, turning angle, and covariates from location data}
 \usage{
-prepData(Data, type = c("LL", "UTM"), coordNames = NULL, covNames = NULL,
+prepData(Data, type = c("UTM", "LL"), coordNames = NULL, covNames = NULL,
   spatialCovs = NULL, centers = NULL)
 }
 \arguments{

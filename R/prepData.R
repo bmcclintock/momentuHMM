@@ -26,7 +26,7 @@
 #' @importFrom sp spDistsN1
 #' @importFrom raster cellFromXY getValues
 
-prepData <- function(Data, type=c('LL','UTM'),coordNames=NULL,covNames=NULL,spatialCovs=NULL,centers=NULL)
+prepData <- function(Data, type=c('UTM','LL'),coordNames=NULL,covNames=NULL,spatialCovs=NULL,centers=NULL)
 {
   if(!is.data.frame(Data)) stop("Data must be a data frame")
   if(any(dim(Data)==0)) stop("Data is empty")

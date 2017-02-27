@@ -15,10 +15,10 @@ test_that("Exceptions are thrown",{
   crwOut<-crawlWrap(obsData,ncores=1,retryFits=100,initial.state=init,err.model=err.model,theta=theta,fixPar=fixPar,attempts=20)
   
   
-  bestFit<-MIfitHMM(1,ncores=1,miData=crwOut,nbStates=length(example$m$stateNames),dist=example$m$conditions$dist,Par=getPar(example$m)$Par,estAngleMean=example$m$conditions$estAngleMean,DM=example$m$conditions$DM,covNames=names(example$m$rawCovs))
+  bestFit<-MIfitHMM(miData=crwOut,nSims=1,ncores=1,nbStates=length(example$m$stateNames),dist=example$m$conditions$dist,Par=getPar(example$m)$Par,estAngleMean=example$m$conditions$estAngleMean,DM=example$m$conditions$DM,covNames=names(example$m$rawCovs))
   
   Par<-getPar(bestFit)
   
-  expect_error(MIfitHMM(2,ncores=1,miData=crwOut,nbStates=length(example$m$stateNames),dist=example$m$conditions$dist,Par=Par$Par,beta0=Par$beta,delta0=Par$delta,estAngleMean=example$m$conditions$estAngleMean,DM=example$m$conditions$DM,covNames=names(example$m$rawCovs)),NA)
+  expect_error(MIfitHMM(miData=crwOut,nSims=2,ncores=1,nbStates=length(example$m$stateNames),dist=example$m$conditions$dist,Par=Par$Par,beta0=Par$beta,delta0=Par$delta,estAngleMean=example$m$conditions$estAngleMean,DM=example$m$conditions$DM,covNames=names(example$m$rawCovs)),NA)
   
 })

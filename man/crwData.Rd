@@ -15,3 +15,6 @@ An object \code{crwData}.
 \description{
 Constructor of \code{crwData} objects
 }
+\seealso{
+\code{\link{crawlWrap}}
+}

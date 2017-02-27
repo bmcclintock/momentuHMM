@@ -7,7 +7,7 @@
 momentuHMMData(data)
 }
 \arguments{
-\item{data}{A dataframe containing: \code{ID} (the ID(s) of the observed animal(s)) and the data such as \code{step}
+\item{data}{A dataframe containing: \code{ID} (the ID(s) of the observed animal(s)) and the data streams such as \code{step}
 (the step lengths, if any), \code{angle} (the turning angles, if any), \code{x} (either easting or longitude, if any),
 \code{y} (either norting or latitude, if any), and covariates (if any).}
 }
