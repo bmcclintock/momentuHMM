@@ -25,9 +25,13 @@ exGen <- function()
 
   simPar <- list(nbAnimals=nbAnimals,nbStates=nbStates,angleMean=angleMean,dist=list(step=stepDist,angle=angleDist),zeroInflation=list(step=zeroInflation,angle=FALSE))
 
-  data <- simData(nbAnimals=nbAnimals,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+  obsData <- simData(nbAnimals=nbAnimals,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
                   Par=list(step=stepPar,angle=anglePar),beta=beta,nbCovs=nbCovs,zeroInflation=list(step=zeroInflation),
-                  obsPerAnimal=obsPerAnimal,states=TRUE)
+                  obsPerAnimal=obsPerAnimal,states=TRUE,lambda=2,errorEllipse=list(M=50,m=50,r=0))
+  
+  tInd <- which(!is.na(obsData$cov1))
+  tmpData <- obsData[tInd,]
+  data <- prepData(data.frame(ID=tmpData$ID,x=tmpData$mux,y=tmpData$muy,cov1=tmpData$cov1,cov2=tmpData$cov2,states=tmpData$states),coordNames=c("x","y"),covNames=c("cov1","cov2"))
 
   # estimate model
   mu0 <- c(20,70)
@@ -49,7 +53,26 @@ exGen <- function()
                 delta0=delta0,formula=formula,dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE))
 
   example <- list(data=data,m=m,simPar=simPar,par0=par0)
-  save(example,file="data/example.RData")
+  
+  inits <- list(a=c(0,0,0,0),P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 5000 ^ 2, 10 * 3600 ^ 2)))
+  err.model <- list(x= ~ ln.sd.x - 1, y =  ~ ln.sd.y - 1, rho =  ~ error.corr)
+  
+  crwOut <- crawlWrap(obsData,ncores=1,theta=c(4,0),fixPar=c(1,1,NA,NA),
+   initial.state=inits,
+   err.model=err.model)
+  
+  bestFit<-MIfitHMM(crwOut,nSims=1,ncores=1,nbStates=nbStates,Par0=list(step=stepPar0,angle=anglePar0),beta0=beta0,
+                    delta0=delta0,formula=formula,dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE),
+                    covNames=c("cov1","cov2"))
+  
+  bPar<-getPar(bestFit)
+  
+  miFits<-MIfitHMM(crwOut,nSims=5,ncores=1,nbStates=nbStates,Par0=bPar$Par,beta0=bPar$beta,
+                    delta0=bPar$delta,formula=formula,dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE),
+                    covNames=c("cov1","cov2"),parIS = 0, fullPost = FALSE)
+  
+  miExample <- list(obsData=obsData,inits=inits,err.model=err.model,crwData=crwOut,bestFit=bestFit,miHMM=miFits)
+  save(example,miExample,file="data/example.RData")
 }
 
 # Roxygen documentation for the data file "data/example.RData"
