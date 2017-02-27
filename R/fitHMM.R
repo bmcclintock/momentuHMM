@@ -230,10 +230,9 @@
 
 fitHMM <- function(data,nbStates,dist,
                    Par0,beta0=NULL,delta0=NULL,
-                   estAngleMean=NULL,
-                   circularAngleMean=NULL,
-                   formula=~1,
-                   stationary=FALSE,verbose=0,nlmPar=NULL,fit=TRUE,
+                   estAngleMean=NULL,circularAngleMean=NULL,
+                   formula=~1,stationary=FALSE,
+                   verbose=0,nlmPar=NULL,fit=TRUE,
                    DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,
                    stateNames=NULL,knownStates=NULL,fixPar=NULL)
 {
@@ -476,7 +475,8 @@ fitHMM <- function(data,nbStates,dist,
                         warning=h) # filter warnings using function h
 
     # convert the parameters back to their natural scale
-    mle <- w2n(mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind)
+    wpar <- mod$estimate
+    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind)
   }
   else {
     mod <- NA
@@ -504,7 +504,7 @@ fitHMM <- function(data,nbStates,dist,
       rownames(mle[[i]]) <- p$parNames[[i]]
       colnames(mle[[i]]) <- stateNames
     } else {
-      mle[[i]]<-matrix(mod$estimate[parindex[[i]]+1:ncol(fullDM[[i]])],1)
+      mle[[i]]<-matrix(wpar[parindex[[i]]+1:ncol(fullDM[[i]])],1)
       rownames(mle[[i]])<-"[1,]"
       colnames(mle[[i]])<-colnames(fullDM[[i]])
       #if(is.null(names(mle[[i]]))) warning("No names for the regression coeffs were provided in DM$",i)
@@ -564,7 +564,7 @@ fitHMM <- function(data,nbStates,dist,
   mh <- list(data=data,mle=mle,CI_real=CI_real,CI_beta=CI_beta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   #mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   
-  message("DONE")
+  if(fit) message("DONE")
   
   return(momentuHMM(mh))
 }
