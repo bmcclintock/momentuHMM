@@ -211,11 +211,11 @@
 #' Ecology, 93 (11), 2336-2342.
 #' 
 #' McClintock B.T., King R., Thomas L., Matthiopoulos J., McConnell B.J., Morales J.M. 2012. A general 
-#' discrete‐time modeling framework for animal movement using multistate random walks. Ecological 
+#' discrete-time modeling framework for animal movement using multistate random walks. Ecological 
 #' Monographs, 82 (3), 335-349.
 #' 
 #' McClintock B.T., Russell D.J., Matthiopoulos J., King R. 2013. Combining individual animal movement 
-#' and ancillary biotelemetry data to investigate population‐level activity budgets. Ecology, 94 (4), 838-849.
+#' and ancillary biotelemetry data to investigate population-level activity budgets. Ecology, 94 (4), 838-849.
 #' 
 #' Patterson T.A., Basson M., Bravington M.V., Gunn J.S. 2009.
 #' Classifying movement behaviour in relation to environmental conditions using hidden Markov models.
@@ -557,8 +557,9 @@ fitHMM <- function(data,nbStates,dist,
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   
-  CI_real<-CI_real(momentuHMM(mh))
-  CI_beta<-CI_beta(momentuHMM(mh))
+  #compute SEs and CIs on natural and working scale
+  CI_real<-tryCatch(CI_real(momentuHMM(mh)),error=function(e) e)
+  CI_beta<-tryCatch(CI_beta(momentuHMM(mh)),error=function(e) e)
   
   mh <- list(data=data,mle=mle,CI_real=CI_real,CI_beta=CI_beta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   #mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)

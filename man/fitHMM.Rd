@@ -242,11 +242,11 @@ Flexible and practical modeling of animal telemetry data: hidden Markov models a
 Ecology, 93 (11), 2336-2342.
 
 McClintock B.T., King R., Thomas L., Matthiopoulos J., McConnell B.J., Morales J.M. 2012. A general 
-discrete‐time modeling framework for animal movement using multistate random walks. Ecological 
+discrete-time modeling framework for animal movement using multistate random walks. Ecological 
 Monographs, 82 (3), 335-349.
 
 McClintock B.T., Russell D.J., Matthiopoulos J., King R. 2013. Combining individual animal movement 
-and ancillary biotelemetry data to investigate population‐level activity budgets. Ecology, 94 (4), 838-849.
+and ancillary biotelemetry data to investigate population-level activity budgets. Ecology, 94 (4), 838-849.
 
 Patterson T.A., Basson M., Bravington M.V., Gunn J.S. 2009.
 Classifying movement behaviour in relation to environmental conditions using hidden Markov models.

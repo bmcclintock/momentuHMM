@@ -45,7 +45,7 @@ exGen <- function()
   par0 <- list(Par=list(step=stepPar0,angle=anglePar0),formula=formula,nbCovs=nbCovs,beta0=beta0,
                delta0=delta0)
 
-  m <- fitHMM(data=data,nbStates=nbStates,Par=list(step=stepPar0,angle=anglePar0),beta0=beta0,
+  m <- fitHMM(data=data,nbStates=nbStates,Par0=list(step=stepPar0,angle=anglePar0),beta0=beta0,
                 delta0=delta0,formula=formula,dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE))
 
   example <- list(data=data,m=m,simPar=simPar,par0=par0)
