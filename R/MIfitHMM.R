@@ -1,15 +1,153 @@
+
+#' Fit HMMs to multiple imputation data
+#' 
+#' Fit a (multivariate) hidden Markov model to multiple imputation data. Multiple imputation is a method for accommodating 
+#' missing data, temporal-irregularity, or location measurement error in hidden Markov models, where pooled parameter estimates reflect uncertainty
+#' attributable to observation error.
+#' 
+#' \code{miData} can either be a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}) or a list of \code{\link{momentuHMMData}} objects 
+#' (e.g., each element of the list as returned by \code{\link{prepData}}). 
+#' 
+#' If \code{miData} is a \code{crwData} object, \code{MIfitHMM} uses a combination of 
+#' \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepData}}, and \code{\link{fitHMM}} to draw \code{nSims} realizations of the position process
+#' and fit the specified HMM to each imputation of the data. The vast majority of \code{MIfitHMM} arguments are identical to the corresponding arguments from these functions.
+#' 
+#' If \code{miData} is a \code{\link{crwData}} object, \code{nSims} determines both the number of realizations of the position process to draw 
+#' (using \code{\link[crawl]{crwSimulator}} and \code{\link{crwPostIS}}) as well as the number of HMM fits. If \code{miData} 
+#' is a \code{\link{crwData}} object and \code{nSims=1}, then the single best predicted position process from \code{\link[crawl]{crwPredict}} is fitted and all arguments
+#' related to \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}} are ignored.
+#' 
+#' If \code{miData} is a list of \code{momentuHMMData} objects, the specified HMM will simply be fitted to each of the \code{momentuHMMData} objects
+#' and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} are ignored.
+#' 
+#' @param miData A \code{\link{crwData}} object or a list of \code{\link{momentuHMMData}} objects.
+#' @param nSims Number of imputations in which to fit the HMM using \code{\link{fitHMM}}. If \code{miData} is a list of \code{momentuHMMData} 
+#' objects, \code{nSims} cannot exceed the length of \code{miData}.
+#' @param ncores Number of cores to use for parallel processing.
+#' @param poolEstimates Logical indicating whether or not to calculate pooled parameter estimates across the \code{nSims} imputations using \code{\link{MIpool}}. Default: \code{TRUE}.
+#' @param alpha Significance level for calculating confidence intervals of pooled estimates when \code{poolEstimates=TRUE} (see \code{\link{MIpool}}). Default: 0.95.
+#' @param nbStates Number of states of the HMM. See \code{\link{fitHMM}}.
+#' @param dist A named list indicating the probability distributions of the data streams. See \code{\link{fitHMM}}.
+#' @param Par0 A named list containing vectors of initial state-dependent probability distribution parameters for 
+#' each data stream specified in \code{dist}. See \code{\link{fitHMM}}.
+#' @param beta0 Initial matrix of regression coefficients for the transition probabilities. See \code{\link{fitHMM}}.
+#' @param delta0 Initial value for the initial distribution of the HMM. See \code{\link{fitHMM}}.
+#' @param estAngleMean An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
+#' distributions ('vm' and 'wrpcauchy'). See \code{\link{fitHMM}}.
+#' @param circularAngleMean An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
+#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. See \code{\link{fitHMM}}.
+#' @param formula Regression formula for the transition probability covariates. See \code{\link{fitHMM}}.
+#' @param stationary \code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
+#' equal to the stationary distribution. See \code{\link{fitHMM}}.
+#' @param verbose Determines the print level of the \code{fitHMM} optimizer. The default value of 0 means that no
+#' printing occurs, a value of 1 means that the first and last iterations of the optimization are
+#' detailed, and a value of 2 means that each iteration of the optimization is detailed.
+#' @param nlmPar List of parameters to pass to the \code{fitHMM} optimization function \code{nlm} (which should be either
+#' '\code{gradtol}', '\code{stepmax}', '\code{steptol}', or '\code{iterlim}' -- see \code{nlm}'s documentation
+#' for more detail)
+#' @param fit \code{TRUE} if the HMM should be fitted to the data, \code{FALSE} otherwise. See \code{\link{fitHMM}}.
+#' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
+#' stream. See \code{\link{fitHMM}}.
+#' @param cons An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
+#' for each data stream. See \code{\link{fitHMM}}.
+#' @param userBounds An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
+#' distribution parameters for each data stream. See \code{\link{fitHMM}}.
+#' @param workcons An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
+#' each data stream. See \code{\link{fitHMM}}.
+#' @param stateNames Optional character vector of length nbStates indicating state names.
+#' @param knownStates Vector of values of the state process which are known prior to fitting the
+#' model (if any). See \code{\link{fitHMM}}.
+#' @param fixPar An optional list of vectors indicating parameters which are assumed known prior to fitting the model. See \code{\link{fitHMM}}. 
+#' @param covNames Names of any covariates in \code{miData$crwPredict} (if \code{miData} is a \code{\link{crwData}} object; otherwise 
+#' \code{covNames} is ignored). See \code{\link{prepData}}. 
+#' @param spatialCovs List of raster layer(s) for any spatial covariates not included in \code{miData$crwPredict} (if \code{miData} is 
+#' a \code{\link{crwData}} object; otherwise \code{spatialCovs} is ignored). See \code{\link{prepData}}. 
+#' @param centers 2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
+#' centers of attraction or repulsion) from which distance and angle covariates will be calculated based on realizations of the position process. 
+#' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object. 
+#' @param method Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' @param parIS Size of the parameter importance sample. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' @param dfSim Degrees of freedom for the t approximation to the parameter posterior. See 'df' argument in \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' @param grid.eps Grid size for \code{method="quadrature"}. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' @param crit Criterion for deciding "significance" of quadrature points
+#' (difference in log-likelihood). See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' @param scaleSim Scale multiplier for the covariance matrix of the t approximation. See 'scale' argument in \code{\link[crawl]{crwSimulator}}. 
+#' Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' @param force.quad A logical indicating whether or not to force the execution 
+#' of the quadrature method for large parameter vectors. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' @param fullPost Logical indicating whether to draw parameter values as well to simulate full posterior. See \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' @param dfPostIS Degrees of freedom for multivariate t distribution approximation to parameter posterior. See 'df' argument in \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' @param scalePostIS Extra scaling factor for t distribution approximation. See 'scale' argument in \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' @param thetaSamp If multiple parameter samples are available in \code{\link[crawl]{crwSimulator}} objects,
+#' setting \code{thetaSamp=n} will use the nth sample. Defaults to the last. See \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}}. 
+#' Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' 
+#' @seealso \code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHMM}}, \code{\link{MIpool}}, \code{\link{prepData}} 
+#' 
+#' @examples
+#' 
+#' # extract crwData object from example data
+#' miData <- miExample$crwData
+#' 
+#' # HMM specifications
+#' nbStates <- 2
+#' stepDist <- "gamma"
+#' angleDist <- "vm"
+#' mu0 <- c(20,70)
+#' sigma0 <- c(10,30)
+#' kappa0 <- c(1,1)
+#' stepPar0 <- c(mu0,sigma0)
+#' anglePar0 <- c(-pi/2,pi/2,kappa0)
+#' formula <- ~cov1+cos(cov2)
+#' nbCovs <- 2
+#' beta0 <- matrix(c(rep(-1.5,nbStates*(nbStates-1)),rep(0,nbStates*(nbStates-1)*nbCovs)),
+#'                 nrow=nbCovs+1,byrow=TRUE)
+#' 
+#' # Fit HMM to best predicted position process
+#' bestFit<-MIfitHMM(miData=miData,nSims=1,ncores=1,
+#'                   nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+#'                   Par0=list(step=stepPar0,angle=anglePar0),beta0=beta0,delta0=delta0,
+#'                   formula=formula,estAngleMean=list(angle=TRUE),
+#'                   covNames=c("cov1","cov2"))
+#'             
+#' print(bestFit)
+#' 
+#' # Don't run because it takes too long on a single core
+#' \dontrun{ 
+#' # extract estimates from 'bestFit'
+#' bPar0 <- getPar(bestFit)
+#' 
+#' # Fit nSims=5 imputations of the position process
+#' miFits<-MIfitHMM(miData=miData,nSims=5,ncores=1,
+#'                   nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+#'                   Par0=bPar0$Par,beta0=bPar0$beta,delta0=bPar0$delta,
+#'                   formula=formula,estAngleMean=list(angle=TRUE),
+#'                   covNames=c("cov1","cov2"),
+#'                   parIS = 0, fullPost = FALSE)
+#'
+#' # print pooled estimates
+#' print(miFits)
+#'}
+#' 
+#' @references
+#' 
+#' Hooten M.B., Johnson D.S., McClintock B.T., Morales J.M. 2017. Animal Movement: Statistical Models for Telemetry Data. CRC Press, Boca Raton.
+#' 
+#' McClintock B.T. 2017. Incorporating telemetry error into hidden Markov movement models using multiple imputation. Journal of Agricultural, Biological,
+#' and Environmental Statistics.
+#' 
 #' @export
 #' @importFrom crawl crwPostIS crwSimulator
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
-MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
-                   miData,
-                   nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
-                   estAngleMean = NULL, 
-                   circularAngleMean = NULL,
-                   formula = ~1, stationary = FALSE, verbose = 0,
-                   nlmPar = NULL, fit = TRUE, DM = NULL, cons = NULL,
-                   userBounds = NULL, workcons = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL,
+MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
+                   nbStates, dist, 
+                   Par0, beta0 = NULL, delta0 = NULL,
+                   estAngleMean = NULL, circularAngleMean = NULL,
+                   formula = ~1, stationary = FALSE, 
+                   verbose = 0, nlmPar = NULL, fit = TRUE, 
+                   DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL, 
+                   stateNames = NULL, knownStates = NULL, fixPar = NULL,
                    covNames=NULL,spatialCovs=NULL,centers=NULL,
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad,
                    fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL
@@ -29,7 +167,7 @@ MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
     
     if(nSims>1){
       if(all(unlist(lapply(model_fits,function(x) is.null(x$err.model))))) stop("Multiple realizations of the position process cannot be drawn if there is no location measurement error")
-      cat('Drawing',nSims,'realizations from the position process using crawl::crwPostIS...')
+      cat('Drawing',nSims,'realizations from the position process using crawl::crwPostIS... ')
       
       registerDoParallel(cores=ncores)
       crwSim <- foreach(i = 1:length(ids), .export="crwSimulator") %dopar% {
@@ -57,12 +195,12 @@ MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
         }
       stopImplicitCluster()
       cat("DONE\n")
-      cat('Fitting',nSims,'realizations of the position process using fitHMM...')
+      cat('Fitting',nSims,'realizations of the position process using fitHMM... ')
     } else {
       miData <- list()
       df <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames),drop=FALSE])[which(predData$locType=="p"),]
       miData[[1]] <- prepData(df,type="UTM",coordNames=coordNames,covNames=covNames,spatialCovs=spatialCovs,centers=centers)
-      cat('Fitting the most likely position process using fitHMM...')
+      cat('Fitting the most likely position process using fitHMM... ')
     }
     
   } else {
@@ -70,9 +208,16 @@ MIfitHMM<-function(nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
     if(!any(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))) stop("miData must either be a crwData object (as returned by crawlWrap) or a list of momentuHMMData objects (as returned by simData and prepData)")
     if(nSims>length(miData))
       stop("nSims is greater than the length of miData. nSims must be <=",length(miData))
-    cat('Fitting',nSims,'imputation(s) using fitHMM...')
+    cat('Fitting',nSims,'imputation(s) using fitHMM... ')
   }
   
+  #check HMM inputs and print model message
+  test<-fitHMM(miData[[1]],nbStates, dist, Par0, beta0, delta0,
+         estAngleMean, circularAngleMean, formula, stationary, verbose,
+         nlmPar, fit = FALSE, DM, cons,
+         userBounds, workcons, stateNames, knownStates, fixPar)
+  
+  # fit HMM(s)
   registerDoParallel(cores=ncores)
   fits <-
     foreach(j = 1:nSims, .export=c("fitHMM"), .errorhandling="pass") %dopar% {
