@@ -1,10 +1,7 @@
 
 #' Constructor of \code{miHMM} objects
 #'
-#' @param m A list of attributes of the multiple imputation model: \code{Par} (the multiple imputation estimates of
-#' the parameters of the model), \code{data} (the movement data), \code{conditions} (conditions used to fit
-#' the model), \code{bounds} (parameter bounds), \code{rawCovs} (optional -- only if there are covariates
-#' in the data).
+#' @param m A list with attributes \code{miSum} (a \code{\link{miSum}} object) and \code{HMMfits} (a list of \code{\link{momentuHMM}} objects).
 #'
 #' @return An object \code{miHMM}.
 
@@ -14,6 +11,8 @@ miHMM <- function(m)
     stop("Can't construct miHMM object: fields are missing")
   
   stopifnot(inherits(m$miSum,"miSum"))
+  
+  stopifnot(any(unlist(lapply(m$HMMfits,is.momentuHMM))))
   
   obj <- m
   

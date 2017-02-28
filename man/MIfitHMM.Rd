@@ -114,6 +114,12 @@ of the quadrature method for large parameter vectors. See \code{\link[crawl]{crw
 setting \code{thetaSamp=n} will use the nth sample. Defaults to the last. See \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}}. 
 Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 }
+\value{
+If \code{poolEstimates=TRUE} (the default) a list comprised of:
+\item{miSum}{\code{\link{miSum}} object returned by \code{\link{MIpool}}.}
+\item{HMMfits}{List of length \code{nSims} comprised of \code{\link{momentuHMM}} objects.}
+If \code{poolEstimates=FALSE} a list of length \code{nSims} comprised of \code{\link{momentuHMM}} objects is returned.
+}
 \description{
 Fit a (multivariate) hidden Markov model to multiple imputation data. Multiple imputation is a method for accommodating 
 missing data, temporal-irregularity, or location measurement error in hidden Markov models, where pooled parameter estimates reflect uncertainty

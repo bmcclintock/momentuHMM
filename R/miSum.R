@@ -1,11 +1,11 @@
 
 #' Constructor of \code{miSum} objects
 #'
-#' @param m A list of attributes of the multiple imputation model: \code{Par} (the multiple imputation estimates of
-#' the parameters of the model), \code{data} (the movement data), \code{conditions} (conditions used to fit
-#' the model)
+#' @param m A list of attributes required for multiple imputation summaries: \code{data} (averaged across imputations), \code{Par} (the pooled estimates of
+#' the parameters of the model), \code{conditions} (conditions used to fit the model), and \code{MIcombine} (as returned by \code{\link[mitools]{MIcombine}} for
+#' the working parameters).
 #'
-#' @return An object \code{momentuHMM}.
+#' @return An object \code{miSum}.
 
 miSum <- function(m)
 {

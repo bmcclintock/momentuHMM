@@ -7,12 +7,12 @@
 miSum(m)
 }
 \arguments{
-\item{m}{A list of attributes of the multiple imputation model: \code{Par} (the multiple imputation estimates of
-the parameters of the model), \code{data} (the movement data), \code{conditions} (conditions used to fit
-the model)}
+\item{m}{A list of attributes required for multiple imputation summaries: \code{data} (averaged across imputations), \code{Par} (the pooled estimates of
+the parameters of the model), \code{conditions} (conditions used to fit the model), and \code{MIcombine} (as returned by \code{\link[mitools]{MIcombine}} for
+the working parameters).}
 }
 \value{
-An object \code{momentuHMM}.
+An object \code{miSum}.
 }
 \description{
 Constructor of \code{miSum} objects

@@ -7,10 +7,7 @@
 miHMM(m)
 }
 \arguments{
-\item{m}{A list of attributes of the multiple imputation model: \code{Par} (the multiple imputation estimates of
-the parameters of the model), \code{data} (the movement data), \code{conditions} (conditions used to fit
-the model), \code{bounds} (parameter bounds), \code{rawCovs} (optional -- only if there are covariates
-in the data).}
+\item{m}{A list with attributes \code{miSum} (a \code{\link{miSum}} object) and \code{HMMfits} (a list of \code{\link{momentuHMM}} objects).}
 }
 \value{
 An object \code{miHMM}.

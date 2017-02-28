@@ -82,6 +82,11 @@
 #' setting \code{thetaSamp=n} will use the nth sample. Defaults to the last. See \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}}. 
 #' Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' 
+#' @return  If \code{poolEstimates=TRUE} (the default) a list comprised of:
+#' \item{miSum}{\code{\link{miSum}} object returned by \code{\link{MIpool}}.}
+#' \item{HMMfits}{List of length \code{nSims} comprised of \code{\link{momentuHMM}} objects.}
+#' If \code{poolEstimates=FALSE} a list of length \code{nSims} comprised of \code{\link{momentuHMM}} objects is returned.
+#' 
 #' @seealso \code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHMM}}, \code{\link{MIpool}}, \code{\link{prepData}} 
 #' 
 #' @examples
@@ -236,7 +241,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   
   if(nSims==1) out<-fits[[1]]
   else {
-    if(poolEstimates) out<-MIpool(fits,alpha=alpha,ncores=ncores,includeHMMfits=TRUE)
+    if(poolEstimates) out<-miHMM(list(miSum=MIpool(fits,alpha=alpha,ncores=ncores),HMMfits=fits))
     else out <- fits
   }
   out

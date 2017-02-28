@@ -1,3 +1,25 @@
+#'
+#' Calculate pooled estimates across multiple imputations
+#' 
+#' @param HMMfits List comprised of \code{\link{momentuHMM}} objects
+#' 
+#' @return A \code{\link{miSum}} object, i.e., a list comprised of model and pooled parameter summaries, including \code{data} (averaged across imputations), \code{conditions}, \code{Par}, and \code{MIcombine} 
+#' (as returned by \code{\link[mitools]{MIcombine}} for working parameters).
+#' 
+#' \code{miSum$Par} is a list comprised of:
+#' \item{beta}{Pooled estimates for the working parameters}
+#' \item{real}{Pooled estimates for the natural parameters based on covariate means across imputations (if applicable)}
+#' \item{timeInStates}{The proportion of time steps assigned to each state}
+#' \item{states}{The most freqent state assignment for each time step based on the \code{\link{viterbi}} algorithm for each model fit}
+#' \item{stateProbs}{Pooled state probability estimates for each time step}
+#' 
+#' @details
+#' Pooled estimates, standard errors, and confidence intervals are calculated using standard multiple imputation formulas. Working scale parameters are pooled
+#' using \code{\link[mitools]{MIcombine}} and t-distributed confidence intervals. Natural scale parameters are pooled using similar formulae but are based on 
+#' covariate means across all imputations (if applicable) and normally-distributed confidence intervals.
+#' 
+#' Note that pooled estimates for \code{timeInStates} and \code{stateProbs} do not include within-model uncertainty and are based entirely on across-model variability.
+#' 
 #' @export
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
@@ -7,7 +29,7 @@
 #' @importFrom car dataEllipse
 #' @importFrom mitools MIcombine
 #' @importFrom MASS ginv
-MIpool<-function(HMMfits,alpha=0.95,ncores,includeHMMfits=FALSE){
+MIpool<-function(HMMfits,alpha=0.95,ncores){
   
   im <- HMMfits
   simind <- which((unlist(lapply(im,is.momentuHMM))))
@@ -62,7 +84,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,includeHMMfits=FALSE){
   nparms <- length(parms)
   xmat <- xbar <- xvar <- W_m <- B_m <- MI_se <- lower <- upper <- list()
   parmcols <- lapply(m$conditions$fullDM,ncol)#
-  parmcols$beta <- ncol(m$mle$beta)#unlist(lapply(m$mle,function(x) ncol(x)))
+  parmcols$beta <- ncol(m$mle$beta)
   parmcols <- unlist(parmcols[parms])
   
   parindex <- c(0,cumsum(c(unlist(lapply(m$conditions$fullDM,ncol)),length(m$mle$beta),nbStates-1)))
@@ -217,8 +239,6 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,includeHMMfits=FALSE){
     dfs<-(n-1)*(1+1/(n+1)*W_m[["stateProbs"]]/B_m[["stateProbs"]])^2
     quantSup<-qt(1-(1-alpha)/2,df=dfs)
     
-    #lower[["stateProbs"]] <- xbar[["stateProbs"]]-quantSup*MI_se[["stateProbs"]]
-    #upper[["stateProbs"]] <- xbar[["stateProbs"]]+quantSup*MI_se[["stateProbs"]]  
     lower[["stateProbs"]] <- suppressWarnings(probCI(xbar[["stateProbs"]],MI_se[["stateProbs"]],quantSup,"lower"))
     upper[["stateProbs"]] <- suppressWarnings(probCI(xbar[["stateProbs"]],MI_se[["stateProbs"]],quantSup,"upper"))
     
@@ -237,8 +257,6 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,includeHMMfits=FALSE){
     dfs<-(n-1)*(1+1/(n+1)*W_m[["timeInStates"]]/B_m[["timeInStates"]])^2
     quantSup<-qt(1-(1-alpha)/2,df=dfs)
     
-    #lower[["timeInStates"]] <- xbar[["timeInStates"]]-quantSup*MI_se[["timeInStates"]]
-    #upper[["timeInStates"]] <- xbar[["timeInStates"]]+quantSup*MI_se[["timeInStates"]]  
     lower[["timeInStates"]] <- probCI(xbar[["timeInStates"]],MI_se[["timeInStates"]],quantSup,"lower")
     upper[["timeInStates"]] <- probCI(xbar[["timeInStates"]],MI_se[["timeInStates"]],quantSup,"upper")
   }
@@ -293,8 +311,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,includeHMMfits=FALSE){
   mh$Par <- Par
   mh$MIcombine <- miBeta
   
-  if(includeHMMfits) return(miHMM(list(miSum=miSum(mh),HMMfits=HMMfits)))
-  else return(miSum(mh))
+  return(miSum(mh))
 }
 
 mi_parm_list<-function(est,se,lower,upper,m){
