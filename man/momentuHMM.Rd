@@ -8,11 +8,11 @@ momentuHMM(m)
 }
 \arguments{
 \item{m}{A list of attributes of the fitted model: \code{mle} (the maximum likelihood estimates of
-the parameters of the model), \code{data} (the movement data), \code{mod} (the object
-returned by the numerical optimizer \code{nlm}), \code{conditions} (a few conditions used to fit
-the model: \code{stepDist}, \code{angleDist}, \code{zeroInflation}, \code{estAngleMean},
-\code{stationary}, and \code{formula}), \code{rawCovs} (optional -- only if there are covariates
-in the data).}
+the parameters of the model), \code{data} (the \code{fitHMM} data), \code{mod} (the object
+returned by the \code{fitHMM} numerical optimizer \code{nlm}), \code{conditions} (conditions used to fit
+the model: \code{dist}, \code{zeroInflation}, \code{estAngleMean}, \code{circularAngleMean}
+\code{stationary}, \code{formula}, \code{cons}, \code{userBounds}, \code{bounds}, \code{workcons}, \code{DM}, etc.), 
+\code{stateNames}, and \code{rawCovs} (optional -- only if there are transition probability matrix covariates in the data).}
 }
 \value{
 An object \code{momentuHMM}.

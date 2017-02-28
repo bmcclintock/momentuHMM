@@ -2,12 +2,16 @@
 % Please edit documentation in R/MIpool.R
 \name{MIpool}
 \alias{MIpool}
-\title{Calculate pooled estimates across multiple imputations}
+\title{Calculate pooled parameter estimates and states across multiple imputations}
 \usage{
 MIpool(HMMfits, alpha = 0.95, ncores)
 }
 \arguments{
 \item{HMMfits}{List comprised of \code{\link{momentuHMM}} objects}
+
+\item{alpha}{Significance level for calculating confidence intervals of pooled estimates. Default: 0.95.}
+
+\item{ncores}{Number of cores to use for parallel processing.}
 }
 \value{
 A \code{\link{miSum}} object, i.e., a list comprised of model and pooled parameter summaries, including \code{data} (averaged across imputations), \code{conditions}, \code{Par}, and \code{MIcombine} 
@@ -21,7 +25,7 @@ A \code{\link{miSum}} object, i.e., a list comprised of model and pooled paramet
 \item{stateProbs}{Pooled state probability estimates for each time step}
 }
 \description{
-Calculate pooled estimates across multiple imputations
+Calculate pooled parameter estimates and states across multiple imputations
 }
 \details{
 Pooled estimates, standard errors, and confidence intervals are calculated using standard multiple imputation formulas. Working scale parameters are pooled
@@ -29,4 +33,12 @@ using \code{\link[mitools]{MIcombine}} and t-distributed confidence intervals. N
 covariate means across all imputations (if applicable) and normally-distributed confidence intervals.
 
 Note that pooled estimates for \code{timeInStates} and \code{stateProbs} do not include within-model uncertainty and are based entirely on across-model variability.
+}
+\examples{
+# extract list of momentuHMM objects from example data
+HMMfits <- miExample$miHMM$HMMfits
+
+miSum <- MIpool(HMMfits,ncores=1)
+print(miSum)
+
 }

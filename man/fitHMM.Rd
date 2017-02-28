@@ -48,14 +48,15 @@ Any \code{estAngleMean} elements corresponding to data streams that do not have 
 regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.  For example, 
 \code{circularAngleMean=list(angle=TRUE)} indicates the angle mean is be estimated for 'angle' using circular-circular 
 regression.  Whenever circular-circular regression is used for an angular data stream, a corresponding design matrix (\code{DM}) 
-must be specified for the data stream and the previous movement direction (i.e., a turning angle of zero) is automatically used 
-as the reference angle (i.e., the intercept). See Duchesne et al. (2015) for specifics on the circular-circular regression model 
+must be specified for the data stream, and the previous movement direction (i.e., a turning angle of zero) is automatically used 
+as the reference angle (i.e., the intercept). Any circular-circular regression covariates in \code{data} should therefore be relative to the previous 
+direction of movement (instead of true north; see \code{\link{prepData}} and \code{\link{circAngles}}).  See Duchesne et al. (2015) for specifics on the circular-circular regression model 
 using previous movement direction as the reference angle. Default is \code{NULL}, which assumes circular-linear regression is 
 used for any angular distributions for which the mean angle is to be estimated. \code{circularAngleMean} elements corresponding to angular data 
 streams are ignored unless the corresponding element of \code{estAngleMean} is \code{TRUE}. Any \code{circularAngleMean} elements 
 corresponding to data streams that do not have angular distributions are ignored.}
 
-\item{formula}{Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effect).}
+\item{formula}{Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effects).}
 
 \item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
@@ -145,13 +146,17 @@ the working (i.e., beta) scale of the parameters. The working scale of each para
 If a parameter P is bound by (0,Inf) then the working scale is the log(P) scale.  If the parameter bounds are (-pi,pi) then the working 
 scale is tan(P/2) unless circular-circular regression is used. Otherwise if the parameter bounds are finite then logit(P) is the working scale.  
 The function \code{\link{getParDM}} is intended to help with obtaining initial values on the working scale when specifying a design matrix that does not rely on
-individual- or time-varying covariates (see example below). 
-
-\item Circular-circular regression in \code{momentuHMM} is designed for turning angles (not bearings) as computed by \code{\link{simData}} and \code{\link{prepData}}. 
-When circular-circular regression is specified using \code{circularAngleMean}, the working scale for the mean turning angle is not as easily interpretable, but the 
+individual- or time-varying covariates (see example below). When circular-circular regression is specified using \code{circularAngleMean}, the working scale 
+for the mean turning angle is not as easily interpretable, but the 
 link function is atan2(sin(X)*B,1+cos(X)*B), where X are the angle covariates and B the angle coefficients (see Duchesne et al. 2015). 
 Under this formulation, the reference turning angle is 0 (i.e., movement in the same direction as the previous time step). 
 In other words, the mean turning angle is zero when the coefficient(s) B=0.
+
+\item Circular-circular regression in \code{momentuHMM} is designed for turning angles (not bearings) as computed by \code{\link{simData}} and \code{\link{prepData}}. 
+Any circular-circular regression covariates for time step t should therefore be relative to the previous 
+direction of movement for time step t-1 (instead of true north).  In other words, circular-circular regression covariates for time step t should be the turning angle
+between the direction of movement for time step t-1 and the bearing of the covariate relative to true north for time step t.  If provided bearings relative to true north, 
+\code{\link{circAngles}} or \code{\link{prepData}} can perform this calculation for you.  
 }
 }
 \examples{
@@ -216,8 +221,8 @@ print(mDMcov)
 
 ### 5. fit circular-circular angle mean covariate model to the simulated data using DM
 
-# Generate fake circular covariate
-data$cov3 <- 2*atan(rnorm(nrow(data)))
+# Generate fake circular covariate using circAngles
+data$cov3 <- circAngles(refAngle=2*atan(rnorm(nrow(data))),data)
 
 # Fit circular-circular regression model for angle mean
 # Note no intercepts are estimated for angle means because these are by default

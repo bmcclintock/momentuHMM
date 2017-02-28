@@ -79,7 +79,7 @@ be specified as an alternative to the automatic sequences generated according to
 A \code{\link{crwData}} object, i.e. a list of:
 \item{crwFits}{A list of \code{crwFit} objects returned by crawl::crwMLE. See \code{\link[crawl]{crwMLE}}}
 \item{crwPredict}{A \code{crwPredict} data frame with \code{obsData} merged with the predicted locations. See \code{\link[crawl]{crwPredict}}.}
-The \code{\link{crwData}} object is as the data for \code{\link{MIfitHMM}} analyses that account for temporal irregularity or location measurement error.
+The \code{\link{crwData}} object is used in \code{\link{MIfitHMM}} analyses that account for temporal irregularity or location measurement error.
 }
 \description{
 Wrapper function for fitting crawl::crwMLE models and predicting locations with crawl::crwPredict for multiple individuals.
@@ -88,9 +88,34 @@ Wrapper function for fitting crawl::crwMLE models and predicting locations with 
 \itemize{
 \item Consult \code{\link[crawl]{crwMLE}} and \code{\link[crawl]{crwPredict}} for futher details about model fitting and prediction. 
 
-\item Note that the names of the elements for each individual in \code{mov.model}, \code{err.model}, \code{activity}, \code{drift}, \code{initial.state},
-\code{theta}, \code{fixPar}, \code{constr}, \code{prior}, and \code{predTime} must match the individual IDs in \code{obsData}.
+\item Note that the names of the list elements corresponding to each individual in \code{mov.model}, \code{err.model}, \code{activity}, \code{drift}, \code{initial.state},
+\code{theta}, \code{fixPar}, \code{constr}, \code{prior}, and \code{predTime} must match the individual IDs in \code{obsData}.  If only one element is provided
+for any of these arguments, then the same element will be applied to all individuals.
 }
+}
+\examples{
+# extract simulated obsData from example data
+obsData <- miExample$obsData
+
+# extract crwMLE inputs from example data
+inits <- miExample$inits # initial state
+err.model <- miExample$err.model # error ellipse model
+
+# Fit crwMLE models to obsData and predict locations 
+# at default intervals for both individuals
+crwOut1 <- crawlWrap(obsData=obsData,ncores=1,
+         theta=c(4,0),fixPar=c(1,1,NA,NA),
+         initial.state=inits,
+         err.model=err.model)
+                    
+# Fit the same crwMLE models and predict locations 
+at same intervals but specify for each individual using lists
+crwOut2 <- crawlWrap(obsData=obsData,ncores=1,
+         theta=list(c(4,0),c(4,0)), fixPar=list(c(1,1,NA,NA),c(1,1,NA,NA)),
+         initial.state=list(inits,inits),
+         err.model=list(err.model,err.model),
+         predTime=list(seq(1,633),seq(1,686)))
+
 }
 \seealso{
 \code{\link{MIfitHMM}}, \code{\link{simData}}

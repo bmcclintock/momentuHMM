@@ -1,7 +1,9 @@
 #'
-#' Calculate pooled estimates across multiple imputations
+#' Calculate pooled parameter estimates and states across multiple imputations
 #' 
 #' @param HMMfits List comprised of \code{\link{momentuHMM}} objects
+#' @param alpha Significance level for calculating confidence intervals of pooled estimates. Default: 0.95.
+#' @param ncores Number of cores to use for parallel processing.
 #' 
 #' @return A \code{\link{miSum}} object, i.e., a list comprised of model and pooled parameter summaries, including \code{data} (averaged across imputations), \code{conditions}, \code{Par}, and \code{MIcombine} 
 #' (as returned by \code{\link[mitools]{MIcombine}} for working parameters).
@@ -19,6 +21,13 @@
 #' covariate means across all imputations (if applicable) and normally-distributed confidence intervals.
 #' 
 #' Note that pooled estimates for \code{timeInStates} and \code{stateProbs} do not include within-model uncertainty and are based entirely on across-model variability.
+#' 
+#' @examples
+#' # extract list of momentuHMM objects from example data
+#' HMMfits <- miExample$miHMM$HMMfits
+#' 
+#' miSum <- MIpool(HMMfits,ncores=1)
+#' print(miSum)
 #' 
 #' @export
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
