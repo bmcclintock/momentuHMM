@@ -24,10 +24,11 @@
 #' 
 #' @examples
 #' # extract list of momentuHMM objects from example data
-#' HMMfits <- miExample$miHMM$HMMfits
+#' HMMfits <- miExample$HMMfits
 #' 
 #' miSum <- MIpool(HMMfits,ncores=1)
 #' print(miSum)
+#' plot(miSum,plotCI=TRUE)
 #' 
 #' @export
 #' @importFrom doParallel registerDoParallel stopImplicitCluster

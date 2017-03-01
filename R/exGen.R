@@ -5,7 +5,8 @@
 #' 
 #' @importFrom gstat gstat vgm
 #' @importFrom raster raster
-#' @importFrom sp gridded
+#' @importFrom sp gridded spplot
+#' @importFrom stats predict
 exGen <- function()
 {
   set.seed(1)
@@ -70,11 +71,11 @@ exGen <- function()
   
   bPar<-getPar(bestFit)
   
-  miFits<-MIfitHMM(crwOut,nSims=5,ncores=1,nbStates=nbStates,Par0=bPar$Par,beta0=bPar$beta,
+  miFits<-MIfitHMM(crwOut,nSims=4,ncores=1,nbStates=nbStates,Par0=bPar$Par,beta0=bPar$beta,
                     delta0=bPar$delta,formula=formula,dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE),
                     covNames=c("cov1","cov2"),parIS = 0, fullPost = FALSE)
   
-  miExample <- list(obsData=obsData,inits=inits,err.model=err.model,crwData=crwOut,bestFit=bestFit,miHMM=miFits)
+  miExample <- list(obsData=obsData,inits=inits,err.model=err.model,HMMfits=miFits$HMMfits)
   
   set.seed(3)
   buffer<-100000        # grid half-width
@@ -86,8 +87,8 @@ exGen <- function()
   forest$sim1<-scale(forest$sim1,center=mean(forest$sim1))
   forest$sim1<-forest$sim1/max(forest$sim1)
   forest$sim1[which(forest$sim1<0)]<-0
-  gridded(forest) = ~x+y
-  spplot(forest[1])
+  sp::gridded(forest) = ~x+y
+  sp::spplot(forest[1])
   forest<-raster::raster(forest)
   names(forest)<-"forest"
   
@@ -121,7 +122,10 @@ exGen <- function()
 #' 
 #' \code{forest} is a simulated spatial covariate raster layer
 #'
+#' @aliases example miExample forest
 #' @name example
-#' @usage example miExample
+#' @usage example 
+#' @usage miExample 
+#' @usage forest
 #' @docType data
 NULL

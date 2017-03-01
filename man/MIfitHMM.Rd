@@ -143,8 +143,19 @@ and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[craw
 }
 \examples{
 
-# extract crwData object from example data
-miData <- miExample$crwData
+# extract simulated obsData from example data
+obsData <- miExample$obsData
+
+# extract crwMLE inputs from example data
+inits <- miExample$inits # initial state
+err.model <- miExample$err.model # error ellipse model
+
+# create crwData object by fitting crwMLE models to obsData and predict locations 
+# at default intervals for both individuals
+miData <- crawlWrap(obsData=obsData,ncores=1,
+         theta=c(4,0),fixPar=c(1,1,NA,NA),
+         initial.state=inits,
+         err.model=err.model,attempts=100,retryFits=100)
 
 # HMM specifications
 nbStates <- 2
@@ -163,7 +174,7 @@ beta0 <- matrix(c(rep(-1.5,nbStates*(nbStates-1)),rep(0,nbStates*(nbStates-1)*nb
 # Fit HMM to best predicted position process
 bestFit<-MIfitHMM(miData=miData,nSims=1,ncores=1,
                   nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
-                  Par0=list(step=stepPar0,angle=anglePar0),beta0=beta0,delta0=delta0,
+                  Par0=list(step=stepPar0,angle=anglePar0),beta0=beta0,
                   formula=formula,estAngleMean=list(angle=TRUE),
                   covNames=c("cov1","cov2"))
             

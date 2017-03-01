@@ -7,7 +7,7 @@
 #' and observed locations (x- and y- coordinates identified by \code{coord}), such as that returned by \code{\link{simData}} when temporally-irregular observed locations or
 #' measurement error are included. Alternatively, a 'SpatialPointsDataFrame' object from the package 'sp' will 
 #' also be accepted, in which case the \code{coord} values will be taken from the spatial data set and ignored in the arguments.  
-#' For further details see \code{\link[crawl]{crwMLE}}.
+#' Note that \code{\link[crawl]{crwMLE}} requires that longitude/latitude coordinates be projected to UTM (i.e., easting/northing). For further details see \code{\link[crawl]{crwMLE}}.
 #' @param timeStep Length of the time step at which to predict regular locations from the fitted model. Unless \code{predTime} is specified, the sequence of times
 #' is \code{seq(a_i,b_i,timeStep)} where a_i and b_i are the times of the first and last observations for individual i. \code{timeStep} must be numeric (regardless of
 #' whether \code{obsData[[Time.name]]} is numeric or POSIXct). \code{timeStep} is not used for individuals for which \code{predTime} is specified.
@@ -73,18 +73,18 @@
 #'
 #' # Fit crwMLE models to obsData and predict locations 
 #' # at default intervals for both individuals
-#' crwOut1 <- crawlWrap(obsData=obsData,ncores=1,
+#' crwOut1 <- crawlWrap(obsData=obsData,ncores=1,retryFits=100,
 #'          theta=c(4,0),fixPar=c(1,1,NA,NA),
 #'          initial.state=inits,
-#'          err.model=err.model)
+#'          err.model=err.model,attempts=100)
 #'                     
 #' # Fit the same crwMLE models and predict locations 
-#' at same intervals but specify for each individual using lists
-#' crwOut2 <- crawlWrap(obsData=obsData,ncores=1,
+#' # at same intervals but specify for each individual using lists
+#' crwOut2 <- crawlWrap(obsData=obsData,ncores=1,retryFits=100,
 #'          theta=list(c(4,0),c(4,0)), fixPar=list(c(1,1,NA,NA),c(1,1,NA,NA)),
 #'          initial.state=list(inits,inits),
 #'          err.model=list(err.model,err.model),
-#'          predTime=list(seq(1,633),seq(1,686)))
+#'          predTime=list(seq(1,633),seq(1,686)),attempts=100)
 #' 
 #' @export
 #' @importFrom crawl crwMLE crwPredict

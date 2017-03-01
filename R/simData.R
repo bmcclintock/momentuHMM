@@ -23,7 +23,7 @@
 #' \code{covs} to \code{NULL} (the default), and specifying \code{nbCovs>0}.
 #' @param nbCovs Number of covariates to simulate (0 by default). Does not need to be specified if
 #' \code{covs} is specified. Simulated covariates are provided generic names (e.g., 'cov1' and 'cov2' for \code{nbCovs=2}) and can be included in \code{formula} and/or \code{DM}.
-#' @param spatialCovs List of \code{\link[raster]{RasterLayer}} objects for spatially-referenced covariates. Covariates specified by \code{spatialCovs} are
+#' @param spatialCovs List of \code{\link[raster]{RasterLayer-class}} objects for spatially-referenced covariates. Covariates specified by \code{spatialCovs} are
 #' extracted from the raster layer(s) based on the simulated location data for each time step. The names of the raster layer(s) can be included in 
 #' \code{formula} and/or \code{DM}.  Note that \code{simData} usually takes longer to generate simulated data when \code{spatialCovs} is specified.
 #' @param zeroInflation A named list of logicals indicating whether the probability distributions of the data streams should be zero-inlated. If \code{zeroInflation} is \code{TRUE} 
@@ -153,12 +153,17 @@
 #'                 zeroInflation=list(step=TRUE),
 #'                 obsPerAnimal=obsPerAnimal)
 #'
+#' # natural scale parameters for step and angle
 #' stepPar <- c(1,10,1,5) # shape_1, shape_2, scale_1, scale_2
 #' anglePar <- c(pi,0,0.5,0.7) # mean_1, mean_2, concentration_1, concentration_2
-#' omegaPar <- c(log(1),0.1,log(10),-0.1,log(10),-0.1,log(1),0.1) # working scale parameters for omega DM
+#' 
+#' # working scale parameters for omega DM
+#' omegaPar <- c(log(1),0.1,log(10),-0.1,log(10),-0.1,log(1),0.1)
+#' 
 #' stepDist <- "weibull"
 #' angleDist <- "wrpcauchy"
 #' omegaDist <- "beta"
+#' 
 #' data <- simData(nbAnimals=5,nbStates=2,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),
 #'                 Par=list(step=stepPar,angle=anglePar,omega=omegaPar),nbCovs=2,
 #'                 DM=list(omega=list(shape1=~cov1,shape2=~cov2)),

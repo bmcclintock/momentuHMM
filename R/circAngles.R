@@ -40,7 +40,7 @@ circAngles<-function(refAngle,data,coordNames=c("x","y")){
   
   ind<-as.numeric(table(ID))
   cumind<-c(0,cumsum(ind))
-  angle <- rep(NA,length(x))
+  angle <- rep(0,length(x))
   for(s in 1:length(ind)){
     for(i in cumind[s]+2:ind[s]){
       w <- c(x[i-1]-x[i],y[i-1]-y[i])

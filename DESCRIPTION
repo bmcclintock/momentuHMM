@@ -27,7 +27,8 @@ Imports:
     boot,
     sp,
     MASS,
-    Brobdingnag
+    Brobdingnag,
+    gstat
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,
