@@ -174,14 +174,23 @@
 #' # include covariates
 #' # (note that it is useless to specify "nbCovs", which are overruled
 #' # by the number of columns of "cov")
-#' cov <- data.frame(temp=rnorm(500,20,5))
-#' stepPar <- c(1,10,1,5) # mean_1, mean_2, sd_1, sd_2
+#' cov <- data.frame(temp=log(rnorm(500,20,5)))
+#' stepPar <- c(log(10),0.1,log(100),-0.1,log(5),log(25)) # working scale parameters for step DM
 #' anglePar <- c(pi,0,0.5,2) # mean_1, mean_2, concentration_1, concentration_2
 #' stepDist <- "gamma"
 #' angleDist <- "vm"
 #' data <- simData(nbAnimals=5,nbStates=2,dist=list(step=stepDist,angle=angleDist),
 #'                 Par=list(step=stepPar,angle=anglePar),
+#'                 DM=list(step=list(mean=~temp,sd=~1)),
 #'                 covs=cov)
+#'                 
+#' # include example 'forest' spatial covariate raster layer
+#' # nbAnimals and obsPerAnimal kept small to reduce example run time
+#' data <- simData(nbAnimals=1,nbStates=2,dist=list(step=stepDist,angle=angleDist),
+#'                 Par=list(step=c(100,1000,50,100),angle=c(0,0,0.1,5)),
+#'                 beta=matrix(c(5,-10,-25,50),nrow=2,ncol=2,byrow=TRUE),
+#'                 formula=~forest,spatialCovs=forest,
+#'                 obsPerAnimal=250,states=TRUE)
 #'
 #' @export
 #' @importFrom stats rnorm runif step terms.formula
