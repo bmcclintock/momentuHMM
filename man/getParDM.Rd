@@ -2,21 +2,91 @@
 % Please edit documentation in R/getParDM.R
 \name{getParDM}
 \alias{getParDM}
-\title{Get starting values (Par) on working scale based on design matrix}
+\title{Get starting values on working scale based on design matrix and other parameter constraints}
 \usage{
 getParDM(data, nbStates, dist, Par, estAngleMean = NULL,
   circularAngleMean = NULL, DM = NULL, cons = NULL, userBounds = NULL,
-  workcons = NULL, stateNames = NULL)
+  workcons = NULL)
+}
+\arguments{
+\item{data}{A \code{\link{momentuHMMData}} object}
+
+\item{nbStates}{Number of states of the HMM.}
+
+\item{dist}{A named list indicating the probability distributions of the data streams. Currently
+supported distributions are 'gamma','weibull','exp','lnorm','beta','pois','wrpcauchy', and 'vm'. For example,
+\code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
+and their respective probability distributions ('gamma', 'vm', and 'pois').  The names of the data streams 
+(e.g., 'step', 'angle', 'dives') must match component names in \code{data}.}
+
+\item{Par}{A named list containing vectors of state-dependent probability distribution parameters for 
+each data stream specified in \code{dist}. The parameters should be on the natural scale,
+in the order expected by the pdfs of \code{dist}, and any zero-mass parameters should be the last. Note that zero-mass parameters are mandatory if there are zeros in 
+data streams with a 'gamma','weibull','exp','lnorm', or 'beta' distribution.}
+
+\item{estAngleMean}{An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
+distributions ('vm' and 'wrpcauchy'). Any \code{estAngleMean} elements corresponding to data streams that do not have angular distributions are ignored.}
+
+\item{circularAngleMean}{An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
+regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. \code{circularAngleMean} elements corresponding to angular data 
+streams are ignored unless the corresponding element of \code{estAngleMean} is \code{TRUE}. Any \code{circularAngleMean} elements 
+corresponding to data streams that do not have angular distributions are ignored.}
+
+\item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
+stream. Each element of \code{DM} can either be a named list of linear regression formulas or a matrix.  For example, for a 2-state 
+model using the gamma distribution for a data stream named 'step', \code{DM=list(step=list(mean=~cov1, sd=~1))} specifies the mean 
+parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 matrix using 
+character strings for the covariate: 
+\code{DM=list(step=matrix(c(1,0,0,0,'cov1',0,0,0,0,1,0,0,0,'cov1',0,0,0,0,1,0,0,0,0,1),4,6))}
+where the 4 rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the 6 columns correspond to the regression 
+coefficients.}
+
+\item{cons}{An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
+for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
+\code{cons=list(step=c(1,2,1,1))} raises the second parameter to the second power. Default=NULL, which simply raises all parameters to 
+the power of 1. \code{cons} is ignored for any given data stream unless \code{DM} is specified.}
+
+\item{userBounds}{An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
+distribution parameters for each data stream. For example, for a 2-state model using the wrapped Cauchy ('wrpcauchy') distribution for 
+a data stream named 'angle' with \code{estAngleMean$angle=TRUE)}, \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2))} 
+specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.}
+
+\item{workcons}{An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
+each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
+through a combination of \code{DM}, \code{cons}, and \code{workcons}.}
 }
 \value{
-A list of parameter values (Par) that can be used as starting values in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
+A list of parameter values that can be used as starting values in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
 }
 \description{
-Get starting values (Par) on working scale based on design matrix
+Get starting values on working scale based on design matrix and other parameter constraints
 }
 \examples{
 # m is a moveHMMext object (as returned by fitHMM), automatically loaded with the package
 m <- example$m
-Par <- getPar(m)
+stepDist <- "gamma"
+angleDist <- "vm"
+nbStates <- 2
+stepPar0 <- c(15,50,10,20) # natural scale mean_1, mean_2, sd_1, sd_2
+anglePar0 <- c(0.7,1.5) # natural scale conentration_1, concentration_2
 
+# get working parameters for 'DM' and 'cons' that constrain step length mean_1 < mean_2
+stepDM <- matrix(c(1,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1),4,4,
+          dimnames=list(NULL,c("mean:(Intercept)","mean_2",
+                               "sd_1:(Intercept)","sd_2:(Intercept)")))
+stepcons <- c(1,2,1,1) # coefficient for 'mean_2' constrained to be positive
+wPar0 <- getParDM(m$data,nbStates=2,dist=list(step=stepDist),
+                      Par=list(step=stepPar0),
+                      DM=list(step=stepDM),cons=list(step=stepcons))
+
+\dontrun{
+# Fit HMM using wPar0 as initial values for the step data stream
+mPar <- fitHMM(m$data,nbStates=2,dist=list(step=stepDist,angle=angleDist),
+               Par0=list(step=wPar0$step,angle=anglePar0),
+               DM=list(step=stepDM),cons=list(step=stepcons))
+}
+
+}
+\seealso{
+\code{\link{simData}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 }
