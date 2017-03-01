@@ -29,4 +29,6 @@ other functions to keep them as short as possible.
 \item \code{bestFit} A \code{momentuHMM} object based on the best predicted locations from crawl (as returned by \code{\link{MIfitHMM}})
 \item \code{miFits} A \code{miHMM} object based on multiple imputation of the position process (as returned by \code{\link{MIfitHMM}})
 }
+
+\code{forest} is a simulated spatial covariate raster layer
 }

@@ -2,7 +2,10 @@
 #' Example data simulation
 #'
 #' Generate the file \code{data/example.RData}, used in other functions' examples and unit tests.
-
+#' 
+#' @importFrom gstat gstat vgm
+#' @importFrom raster raster
+#' @importFrom sp gridded
 exGen <- function()
 {
   set.seed(1)
@@ -26,7 +29,7 @@ exGen <- function()
   simPar <- list(nbAnimals=nbAnimals,nbStates=nbStates,angleMean=angleMean,dist=list(step=stepDist,angle=angleDist),zeroInflation=list(step=zeroInflation,angle=FALSE))
 
   obsData <- simData(nbAnimals=nbAnimals,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
-                  Par=list(step=stepPar,angle=anglePar),beta=beta,nbCovs=nbCovs,zeroInflation=list(step=zeroInflation),
+                  Par=list(step=stepPar,angle=anglePar),formula=~cov1+cov2,beta=beta,nbCovs=nbCovs,zeroInflation=list(step=zeroInflation),
                   obsPerAnimal=obsPerAnimal,states=TRUE,lambda=2,errorEllipse=list(M=50,m=50,r=0))
   
   tInd <- which(!is.na(obsData$cov1))
@@ -72,7 +75,23 @@ exGen <- function()
                     covNames=c("cov1","cov2"),parIS = 0, fullPost = FALSE)
   
   miExample <- list(obsData=obsData,inits=inits,err.model=err.model,crwData=crwOut,bestFit=bestFit,miHMM=miFits)
-  save(example,miExample,file="data/example.RData")
+  
+  set.seed(3)
+  buffer<-100000        # grid half-width
+  res<-1000             # grid cell resolution
+  xy <- expand.grid(seq(-buffer,buffer,res), seq(-buffer,buffer,res))
+  names(xy) <- c("x","y")
+  g <- gstat::gstat(formula=z~1, locations=~x+y, dummy=T, beta=1, model=gstat::vgm(psill=0.025,model="Exp",range=buffer), nmax=20)
+  forest <- predict(g, newdata=xy, nsim=1)
+  forest$sim1<-scale(forest$sim1,center=mean(forest$sim1))
+  forest$sim1<-forest$sim1/max(forest$sim1)
+  forest$sim1[which(forest$sim1<0)]<-0
+  gridded(forest) = ~x+y
+  spplot(forest[1])
+  forest<-raster::raster(forest)
+  names(forest)<-"forest"
+  
+  save(example,miExample,forest,file="data/example.RData")
 }
 
 # Roxygen documentation for the data file "data/example.RData"
@@ -99,6 +118,8 @@ exGen <- function()
 #' \item \code{bestFit} A \code{momentuHMM} object based on the best predicted locations from crawl (as returned by \code{\link{MIfitHMM}})
 #' \item \code{miFits} A \code{miHMM} object based on multiple imputation of the position process (as returned by \code{\link{MIfitHMM}})
 #' }
+#' 
+#' \code{forest} is a simulated spatial covariate raster layer
 #'
 #' @name example
 #' @usage example miExample
