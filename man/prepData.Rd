@@ -5,7 +5,7 @@
 \title{Preprocessing of the data streams, including calculation of step length, turning angle, and covariates from location data}
 \usage{
 prepData(Data, type = c("UTM", "LL"), coordNames = NULL, covNames = NULL,
-  spatialCovs = NULL, centers = NULL)
+  spatialCovs = NULL, centers = NULL, refAngles = NULL)
 }
 \arguments{
 \item{Data}{A dataframe of data streams, including optionally a field \code{ID}
@@ -16,14 +16,24 @@ must identify the names for the longitunal and latitudinal coordinates (e.g., \c
 With the exception of \code{ID} and coordinates, all variables in Data are treated as data streams unless identified
 as covariates in \code{covNames}.}
 
-\item{type}{\code{'LL'} if longitude/latitude provided (default), \code{'UTM'} if easting/northing.}
+\item{type}{\code{'UTM'} if easting/northing provided (default), \code{'LL'} if longitude/latitude.}
 
 \item{coordNames}{Names of the columns of coordinates in the \code{Data} data frame. Default: \code{c("x","y")}.}
 
-\item{covNames}{Names of any covariates in \code{Data} dataframe. Any variables in \code{Data} (other than \code{ID}) that are not identified in \code{covNames} are treated as data streams.}
+\item{covNames}{Character vector indicating the names of any covariates in \code{Data} dataframe. Any variables in \code{Data} (other than \code{ID}) that are not identified in \code{covNames} are treated as data streams.}
 
 \item{spatialCovs}{List of raster layer(s) for any spatial covariates not included in \code{Data}. Covariates specified by 'spatialCovs' are
 extracted based on location data for each time step.}
+
+\item{centers}{2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
+centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the location data. If no row names are provided, then generic names are generated 
+for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'center2.dist', 'center2.angle'); otherwise the covariate names are derived from the row names
+of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. As with covariates identified in \code{refAngles}, note that the angle covariates for each activity center are calculated relative to 
+the previous movement direction (instead of true north); this is to allow mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
+or \code{\link{MIfitHMM}}.}
+
+\item{refAngles}{Character vector indicating the names of any circular-circular regression covariates in \code{Data} that need conversion from bearing (relative to true north) to turning angle (relative to previous movement direction) 
+using \code{\link{circAngles}}.}
 }
 \value{
 An object \code{momentuHMMData}
