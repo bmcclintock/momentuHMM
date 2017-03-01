@@ -32,7 +32,7 @@ print.momentuHMM <- function(x,...)
       cat("\n")
       cat(i,"parameters (based on mean covariate values):\n")
       cat("---------------------------------------------\n")
-      print(x$CI_real[[i]]$est)
+      print(x$CIreal[[i]]$est)
     }
   }
   
@@ -52,7 +52,7 @@ print.momentuHMM <- function(x,...)
     cat("\n")
     cat("Transition probability matrix (based on mean covariate values):\n")
     cat("--------------------------------------------------------------\n")
-    print(m$CI_real$gamma$est)    
+    print(m$CIreal$gamma$est)    
   }
 
   cat("\n")

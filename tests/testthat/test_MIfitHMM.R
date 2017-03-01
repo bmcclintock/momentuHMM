@@ -17,6 +17,6 @@ test_that("Exceptions are thrown",{
   
   Par<-getPar(bestFit)
   
-  expect_error(MIfitHMM(miData=crwOut,nSims=2,ncores=1,nbStates=length(example$m$stateNames),dist=example$m$conditions$dist,Par0=Par$Par,beta0=Par$beta,delta0=Par$delta,estAngleMean=example$m$conditions$estAngleMean,DM=example$m$conditions$DM,covNames=names(example$m$rawCovs)),NA)
+  expect_error(MIfitHMM(miData=crwOut,nSims=3,ncores=1,nbStates=length(example$m$stateNames),dist=example$m$conditions$dist,Par0=Par$Par,beta0=Par$beta,delta0=Par$delta,estAngleMean=example$m$conditions$estAngleMean,DM=example$m$conditions$DM,covNames=names(example$m$rawCovs)),NA)
   
 })

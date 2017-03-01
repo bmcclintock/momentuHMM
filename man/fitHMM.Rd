@@ -114,8 +114,8 @@ has indeed identified the global maximum of the likelihood function). Elements a
 data strea, as well as \code{beta} (transition probabilities regression coefficients - more information
 in 'Details'), \code{gamma} (transition probabilities on real scale, based on mean covariate values if \code{formula}
 includes covariates), and \code{delta} (initial distribution).}
-\item{CI_real}{Standard errors and 95\% confidence intervals on the real (i.e., natural) scale of parameters}
-\item{CI_beta}{Standard errors and 95\% confidence intervals on the beta (i.e., working) scale of parameters}
+\item{CIreal}{Standard errors and 95\% confidence intervals on the real (i.e., natural) scale of parameters}
+\item{CIbeta}{Standard errors and 95\% confidence intervals on the beta (i.e., working) scale of parameters}
 \item{data}{The momentuHMMData object}
 \item{mod}{The object returned by the numerical optimizer \code{nlm}}
 \item{conditions}{Conditions used to fit the model, e.g., \code{bounds} (parameter bounds), distributions, \code{zeroInflation}, 

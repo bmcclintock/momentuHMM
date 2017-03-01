@@ -87,8 +87,8 @@
 #' data strea, as well as \code{beta} (transition probabilities regression coefficients - more information
 #' in 'Details'), \code{gamma} (transition probabilities on real scale, based on mean covariate values if \code{formula}
 #' includes covariates), and \code{delta} (initial distribution).}
-#' \item{CI_real}{Standard errors and 95\% confidence intervals on the real (i.e., natural) scale of parameters}
-#' \item{CI_beta}{Standard errors and 95\% confidence intervals on the beta (i.e., working) scale of parameters}
+#' \item{CIreal}{Standard errors and 95\% confidence intervals on the real (i.e., natural) scale of parameters}
+#' \item{CIbeta}{Standard errors and 95\% confidence intervals on the beta (i.e., working) scale of parameters}
 #' \item{data}{The momentuHMMData object}
 #' \item{mod}{The object returned by the numerical optimizer \code{nlm}}
 #' \item{conditions}{Conditions used to fit the model, e.g., \code{bounds} (parameter bounds), distributions, \code{zeroInflation}, 
@@ -563,10 +563,10 @@ fitHMM <- function(data,nbStates,dist,
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   
   #compute SEs and CIs on natural and working scale
-  CI_real<-tryCatch(CI_real(momentuHMM(mh)),error=function(e) e)
-  CI_beta<-tryCatch(CI_beta(momentuHMM(mh)),error=function(e) e)
+  CIreal<-tryCatch(CIreal(momentuHMM(mh)),error=function(e) e)
+  CIbeta<-tryCatch(CIbeta(momentuHMM(mh)),error=function(e) e)
   
-  mh <- list(data=data,mle=mle,CI_real=CI_real,CI_beta=CI_beta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
+  mh <- list(data=data,mle=mle,CIreal=CIreal,CIbeta=CIbeta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   #mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   
   if(fit) message("DONE")

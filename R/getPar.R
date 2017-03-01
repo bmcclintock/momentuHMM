@@ -41,7 +41,7 @@ getPar<-function(m){
         if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]]) 
           par <- par[-1,]
         par <- c(t(par))
-      } else par <- unname(m$CI_beta[[i]]$est)
+      } else par <- unname(m$CIbeta[[i]]$est)
       Par[[i]] <- par
     }
     beta <- unname(m$mle$beta)

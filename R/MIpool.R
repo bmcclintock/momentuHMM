@@ -90,7 +90,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
   } else states <- rep(1,nrow(data))
   
   # pool estimates on working scale
-  parms <- names(m$CI_beta)
+  parms <- names(m$CIbeta)
   nparms <- length(parms)
   xmat <- xbar <- xvar <- W_m <- B_m <- MI_se <- lower <- upper <- list()
   parmcols <- lapply(m$conditions$fullDM,ncol)#
@@ -106,7 +106,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
   
   for(parm in 1:nparms){
     
-    parnames <- rownames(m$CI_beta[[parms[parm]]]$est)
+    parnames <- rownames(m$CIbeta[[parms[parm]]]$est)
     coeffs <- matrix(miBeta$coefficients[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
     vars <- matrix(diag(miBeta$variance)[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
     dfs <- matrix(miBeta$df[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
@@ -130,7 +130,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
   Par <- list()
   Par$beta <- list()
   for(i in parms){
-    Par$beta[[i]] <- mi_parm_list(xbar[[i]],MI_se[[i]],lower[[i]],upper[[i]],m$CI_beta[[i]]$est)
+    Par$beta[[i]] <- mi_parm_list(xbar[[i]],MI_se[[i]],lower[[i]],upper[[i]],m$CIbeta[[i]]$est)
   }
   
   #average all numeric variables in imputed data
@@ -295,8 +295,8 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
   attr(mh,"class") <- NULL
   mh$mle <- NULL
   mh$mod <- NULL
-  mh$CI_real <- NULL
-  mh$CI_beta <- NULL
+  mh$CIreal <- NULL
+  mh$CIbeta <- NULL
   if(any(ident)) mh$conditions$fullDM <- fullDM
   
   mh$data<-mhdata

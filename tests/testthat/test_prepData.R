@@ -8,9 +8,10 @@ test_that("Exception is thrown",{
 
   trackData <- data.frame()
   expect_error(prepData(trackData))
-
+  
   trackData <- data.frame(x)
-  expect_error(prepData(trackData),NA)
+  expect_error(prepData(trackData))
+  expect_error(prepData(trackData,coordNames=NULL),NA)
   
   trackData <- data.frame(x,y)
   expect_error(prepData(trackData,type="UTM"),NA)

@@ -23,7 +23,7 @@ momentuHMM <- function(m)
 
 #' Is momentuHMM
 #'
-#' Check that an object is of class \code{\link{momentuHMM}}. Used in \code{\link{CI_real}}, \code{\link{CI_beta}},
+#' Check that an object is of class \code{\link{momentuHMM}}. Used in \code{\link{CIreal}}, \code{\link{CIbeta}},
 #' \code{\link{plotPR}}, \code{\link{plotStates}}, \code{\link{pseudoRes}}, \code{\link{stateProbs}},
 #' and \code{\link{viterbi}}.
 #'
