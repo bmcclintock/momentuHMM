@@ -40,7 +40,7 @@
 #' @export
 #' @importFrom graphics legend lines segments arrows
 #' @importFrom grDevices adjustcolor gray rainbow
-#' @importFrom stats get_all_vars as.formula
+#' @importFrom stats as.formula
 
 plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
                          sepStates=FALSE,col=NULL,cumul=TRUE,plotTracks=TRUE,plotCI=FALSE,alpha=0.95,...)
@@ -301,13 +301,13 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         for(jj in 1:nbStates){
           if(length(DMparterms[[p$parNames[[i]][j]]][[jj]])){
             for(k in 1:length(DMparterms[[p$parNames[[i]][j]]][[jj]])){
-              DMparterms[[p$parNames[[i]][j]]][[jj]][k]<-names(stats::get_all_vars(as.formula(paste0("~",DMparterms[[p$parNames[[i]][j]]][[jj]][k])),m$data))
+              DMparterms[[p$parNames[[i]][j]]][[jj]][k]<-all.vars(as.formula(paste0("~",DMparterms[[p$parNames[[i]][j]]][[jj]][k])))
             }
           }
         }
       }
       for(j in 1:length(DMterms)){
-        DMterms[j]<-names(stats::get_all_vars(as.formula(paste0("~",DMterms[j])),m$data))
+        DMterms[j]<-all.vars(as.formula(paste0("~",DMterms[j])))
       }
     }
     
