@@ -2,49 +2,80 @@
 % Please edit documentation in R/prepData.R
 \name{prepData}
 \alias{prepData}
-\title{Preprocessing of the data streams, including calculation of step length, turning angle, and covariates from location data}
+\title{Preprocessing of the data streams and covariates}
 \usage{
-prepData(Data, type = c("UTM", "LL"), coordNames = NULL, covNames = NULL,
-  spatialCovs = NULL, centers = NULL, refAngles = NULL)
+prepData(Data, type = c("UTM", "LL"), coordNames = c("x", "y"),
+  covNames = NULL, spatialCovs = NULL, centers = NULL, angleCovs = NULL)
 }
 \arguments{
 \item{Data}{A dataframe of data streams, including optionally a field \code{ID}
 (identifiers for the observed individuals), coordinates from which step length ('step') 
-and turning angle ('angle') area calculated, and any covariates (with names matching \code{covNames}). 
+and turning angle ('angle') area calculated, and any covariates (with names matching \code{covNames} and/or \code{angleCovs}). 
 If step length and turning angle are to be calculated from coordinates, the \code{coordNames} argument 
-must identify the names for the longitunal and latitudinal coordinates (e.g., \code{coordNames=c("x","y")}).
-With the exception of \code{ID} and coordinates, all variables in Data are treated as data streams unless identified
-as covariates in \code{covNames}.}
+must identify the names for the x- (longitunal) and y- (latitudinal) coordinates.
+With the exception of \code{ID} and \code{coordNames}, all variables in \code{Data} are treated as data streams unless identified
+as covariates in \code{covNames} and/or \code{angleCovs}.}
 
-\item{type}{\code{'UTM'} if easting/northing provided (default), \code{'LL'} if longitude/latitude.}
+\item{type}{\code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude.}
 
-\item{coordNames}{Names of the columns of coordinates in the \code{Data} data frame. Default: \code{c("x","y")}.}
+\item{coordNames}{Names of the columns of coordinates in the \code{Data} data frame. Default: \code{c("x","y")}. If \code{coordNames=NULL} then step lengths, turning angles, 
+and location covariates (i.e., those specified by \code{spatialCovs}, \code{centers}, and \code{angleCovs}) are not calculated.}
 
-\item{covNames}{Character vector indicating the names of any covariates in \code{Data} dataframe. Any variables in \code{Data} (other than \code{ID}) that are not identified in \code{covNames} are treated as data streams.}
+\item{covNames}{Character vector indicating the names of any covariates in \code{Data} dataframe. Any variables in \code{Data} (other than \code{ID}) that are not identified in 
+\code{covNames} and/or \code{angleCovs} are assumed to be data streams (i.e., missing values will not be accounted for).}
 
-\item{spatialCovs}{List of raster layer(s) for any spatial covariates not included in \code{Data}. Covariates specified by 'spatialCovs' are
-extracted based on location data for each time step.}
+\item{spatialCovs}{List of \code{\link[raster]{RasterLayer-class}} objects for spatially-referenced covariates. Covariates specified by \code{spatialCovs} are
+extracted from the raster layer(s) based on the location data for each time step.}
 
 \item{centers}{2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the location data. If no row names are provided, then generic names are generated 
 for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'center2.dist', 'center2.angle'); otherwise the covariate names are derived from the row names
-of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. As with covariates identified in \code{refAngles}, note that the angle covariates for each activity center are calculated relative to 
+of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. As with covariates identified in \code{angleCovs}, note that the angle covariates for each activity center are calculated relative to 
 the previous movement direction (instead of true north); this is to allow mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
 or \code{\link{MIfitHMM}}.}
 
-\item{refAngles}{Character vector indicating the names of any circular-circular regression covariates in \code{Data} that need conversion from bearing (relative to true north) to turning angle (relative to previous movement direction) 
+\item{angleCovs}{Character vector indicating the names of any circular-circular regression covariates in \code{Data} that need conversion from bearing (relative to true north) to turning angle (relative to previous movement direction) 
 using \code{\link{circAngles}}.}
 }
 \value{
-An object \code{momentuHMMData}
+An object \code{\link{momentuHMMData}}, i.e., a dataframe of:
+\item{ID}{The ID(s) of the observed animal(s)}
+\item{...}{Data streams (e.g., 'step', 'angle', etc.)}
+\item{x}{Either easting or longitude (if \code{coordNames} is specified)}
+\item{y}{Either norting or latitude (if \code{coordNames} is specified)}
+\item{...}{Covariates (if any)}
 }
 \description{
-Preprocessing of the data streams, including calculation of step length, turning angle, and covariates from location data
+Preprocessing of the data streams, including calculation of step length, turning angle, and covariates from location data to be suitable for
+analysis using \code{\link{fitHMM}}
 }
 \examples{
 coord1 <- c(1,2,3,4,5,6,7,8,9,10)
 coord2 <- c(1,1,1,2,2,2,1,1,1,2)
-Data <- data.frame(coord1=coord1,coord2=coord2)
-d <- prepData(Data,type='UTM',coordNames=c("coord1","coord2"))
+cov1 <- rnorm(10)
+
+Data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1)
+d <- prepData(Data,coordNames=c("coord1","coord2"),covNames="cov1")
+
+# include additional data stream named 'omega'
+omega <- rbeta(10,1,1)
+Data <- data.frame(coord1=coord1,coord2=coord2,omega=omega,cov1=cov1)
+d <- prepData(Data,coordNames=c("coord1","coord2"),covNames="cov1")
+
+# include 'forest' example raster layer as covariate
+Data <- data.frame(coord1=coord1*1000,coord2=coord2*1000)
+d <- prepData(Data,coordNames=c("coord1","coord2"),spatialCovs=forest)
+
+# include 2 activity centers
+Data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1)
+d <- prepData(Data,coordNames=c("coord1","coord2"),covNames="cov1",
+              centers=matrix(c(0,10,0,10),2,2,dimnames=list(c("c1","c2"),NULL)))
+              
+# Include angle covariate (relative to true north) that needs conversion to 
+# turning angle relative to previous movement direction
+cov2 <- 2*atan(rnorm(10))
+Data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1,cov2=cov2)
+d <- prepData(Data,coordNames=c("coord1","coord2"),covNames="cov1",
+              angleCovs="cov2")
 
 }

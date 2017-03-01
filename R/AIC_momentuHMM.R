@@ -1,7 +1,7 @@
 
 #' AIC
 #'
-#' Akaike information criterion of a momentuHMM model.
+#' Akaike information criterion of momentuHMM model(s).
 #'
 #' @method AIC momentuHMM
 #'

@@ -3,34 +3,14 @@
 #'
 #' Used in functions \code{\link{viterbi}}, \code{\link{logAlpha}}, \code{\link{logBeta}}.
 #'
-#' @param data Object \code{momentuHMMData}.
+#' @param m Object \code{momentuHMMD}.
 #' @param nbStates Number of states of the HMM.
-#' @param stepDist Name of the distribution of the step lengths.
-#' @param angleDist Name of the distribution of the turning angles.
-#' Set to "none" if the angle distribution should not be estimated.
-#' @param stepPar Parameters of the step length distribution. Must be provided in a
-#' matrix with one row for each parameter (in the order expected by the pdf of \code{stepDist}),
-#' and one column for each state.
-#' @param anglePar Parameters of the turning angle distribution. Must be provided in a
-#' matrix with one row for each parameter (in the order expected by the pdf of \code{angleDist}),
-#' and one column for each state. Default: \code{NULL} ; if the turning angles distribution
-#' is not estimated.
-#' @param zeroInflation \code{TRUE} if the step length distribution is inflated in zero.
-#' Default: \code{FALSE}.
 #'
 #' @return Matrix of all probabilities.
 #'
 #' @examples
 #' \dontrun{
-#' stepPar <- c(1,10,1,5,0.2,0.3)
-#' anglePar <- c(0,pi,0.5,2)
-#' stepDist <- "gamma"
-#' angleDist <- "vm"
-#' data <- simData(nbAnimals=5,nbStates=2,stepDist=stepDist,angleDist=angleDist,stepPar=stepPar,
-#'                  anglePar=anglePar,nbCovs=2,zeroInflation=TRUE)
-#' P <- allProbs(data=data,nbStates=2,stepDist=stepDist,angleDist=angleDist,
-#'                stepPar=matrix(stepPar,ncol=2,byrow=TRUE),anglePar=matrix(anglePar,ncol=2,
-#'                byrow=TRUE),zeroInflation=TRUE)
+#' P <- momentuHMM:::allProbs(m=example$m,nbStates=2)
 #' }
 
 allProbs <- function(m,nbStates)

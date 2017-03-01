@@ -18,7 +18,7 @@ The AIC of the model(s) provided. If several models are provided, the AICs are o
 in ascending order.
 }
 \description{
-Akaike information criterion of a momentuHMM model.
+Akaike information criterion of momentuHMM model(s).
 }
 \examples{
 # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
