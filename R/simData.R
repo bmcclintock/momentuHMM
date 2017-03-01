@@ -1,46 +1,124 @@
 
 #' Simulation tool
 #'
-#' Simulates movement data from an HMM.
+#' Simulates data from a (multivariate) hidden Markov model. Movement data can be generated with or without observation error attributable to temporal irregularity or location measurement error.
 #'
 #' @param nbAnimals Number of observed individuals to simulate.
 #' @param nbStates Number of behavioural states to simulate.
-#' @param stepDist Name of the distribution of the step lengths (as a character string).
-#' Supported distributions are: gamma, weibull, lnorm, exp. Default: gamma.
-#' @param angleDist Name of the distribution of the turning angles (as a character string).
-#' Supported distributions are: vm, wrpcauchy. Set to \code{"none"} if the angle distribution should
-#' not be estimated. Default: vm.
-#' @param stepPar Parameters of the step length distribution.
-#' @param anglePar Parameters of the turning angle distribution.
+#' @param dist A named list indicating the probability distributions of the data streams. Currently
+#' supported distributions are 'gamma','weibull','exp','lnorm','beta','pois','wrpcauchy', and 'vm'. For example,
+#' \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
+#' and their respective probability distributions ('gamma', 'vm', and 'pois').
+#' @param Par A named list containing vectors of initial state-dependent probability distribution parameters for 
+#' each data stream specified in \code{dist}. The parameters should be in the order expected by the pdfs of \code{dist}, 
+#' and any zero-mass parameters should be the last. If \code{DM} is not specified for a given data stream, then \code{Par} 
+#' is on the natural (i.e., real) scale of the parameters. However, if \code{DM} is specified for a given data stream, then 
+#' \code{Par} must be on the working (i.e., beta) scale of the parameters, and the length of \code{Par} must match the number 
+#' of columns in the design matrix. See details below.
 #' @param beta Matrix of regression parameters for the transition probabilities (more information
 #' in "Details").
-#' @param covs Covariate values to include in the model, as a dataframe. Default: \code{NULL}.
-#' Covariates can also be simulated according to a standard normal distribution, by setting
-#' \code{covs} to \code{NULL}, and specifying \code{nbCovs>0}.
+#' @param formula Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effect).
+#' @param covs Covariate values to include in the simulated data, as a dataframe. The names of any covariates specified by \code{covs} can
+#' be included in \code{formula} and/or \code{DM}. Covariates can also be simulated according to a standard normal distribution, by setting
+#' \code{covs} to \code{NULL} (the default), and specifying \code{nbCovs>0}.
 #' @param nbCovs Number of covariates to simulate (0 by default). Does not need to be specified if
-#' \code{covs} is specified.
-#' @param zeroInflation \code{TRUE} if the step length distribution is inflated in zero.
-#' Default: \code{FALSE}. If \code{TRUE}, values for the zero-mass parameters should be
-#' included in \code{stepPar}.
+#' \code{covs} is specified. Simulated covariates are provided generic names (e.g., 'cov1' and 'cov2' for \code{nbCovs=2}) and can be included in \code{formula} and/or \code{DM}.
+#' @param spatialCovs List of \code{\link[raster]{RasterLayer}} objects for spatially-referenced covariates. Covariates specified by \code{spatialCovs} are
+#' extracted from the raster layer(s) based on the simulated location data for each time step. The names of the raster layer(s) can be included in 
+#' \code{formula} and/or \code{DM}.  Note that \code{simData} usually takes longer to generate simulated data when \code{spatialCovs} is specified.
+#' @param zeroInflation A named list of logicals indicating whether the probability distributions of the data streams should be zero-inlated. If \code{zeroInflation} is \code{TRUE} 
+#' for a given data stream, then values for the zero-mass parameters should be
+#' included in the corresponding element of \code{Par}.
+#' @param circularAngleMean An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
+#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.  For example, 
+#' \code{circularAngleMean=list(angle=TRUE)} indicates the angle mean is be estimated for 'angle' using circular-circular 
+#' regression.  Whenever circular-circular regression is used for an angular data stream, a corresponding design matrix (\code{DM}) 
+#' must be specified for the data stream, and the previous movement direction (i.e., a turning angle of zero) is automatically used 
+#' as the reference angle (i.e., the intercept). Default is \code{NULL}, which assumes circular-linear regression is 
+#' used for any angular distributions. Any \code{circularAngleMean} elements 
+#' corresponding to data streams that do not have angular distributions are ignored.
+#' @param centers 2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
+#' centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the simulated location data. These distance and angle 
+#' covariates can be included in \code{formula} and \code{DM} using the row names of \code{centers}.  If no row names are provided, then generic names are generated 
+#' for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'center2.dist', 'center2.angle'); otherwise the covariate names are derived from the row names
+#' of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. Note that the angle covariates for each activity center are calculated relative to 
+#' the previous movement direction instead of true north; this is to allow mean turning angle to be simulated as a function of these covariates using circular-circular regression.
 #' @param obsPerAnimal Either the number of the number of observations per animal (if single value),
 #' or the bounds of the number of observations per animal (if vector of two values). In the latter case,
 #' the numbers of obervations generated for each animal are uniformously picked from this interval.
 #' Default: \code{c(500,1500)}.
+#' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
+#' stream. Each element of \code{DM} can either be a named list of regression formulas or a matrix.  For example, for a 2-state 
+#' model using the gamma distribution for a data stream named 'step', \code{DM=list(step=list(mean=~cov1, sd=~1))} specifies the mean 
+#' parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 matrix using 
+#' character strings for the covariate: 
+#' \code{DM=list(step=matrix(c(1,0,0,0,'cov1',0,0,0,0,1,0,0,0,'cov1',0,0,0,0,1,0,0,0,0,1),4,6))}
+#' where the 4 rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the 6 columns correspond to the regression 
+#' coefficients. 
+#' @param cons An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
+#' for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
+#' \code{cons=list(step=c(1,2,1,1))} raises the second parameter to the second power. Default=NULL, which simply raises all parameters to 
+#' the power of 1. \code{cons} is ignored for any given data stream unless \code{DM} is specified.
+#' @param userBounds An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
+#' distribution parameters for each data stream. For example, for a 2-state model using the wrapped Cauchy ('wrpcauchy') distribution for 
+#' a data stream named 'angle', \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2))} 
+#' specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.
+#' @param workcons An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
+#' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
+#' through a combination of \code{DM}, \code{cons}, and \code{workcons}.
+#' @param stateNames Optional character vector of length nbStates indicating state names.
 #' @param model A momentuHMM object. This option can be used to simulate from a fitted model.  Default: NULL.
-#' Note that, if this argument is specified, most other arguments will be ignored -- except for nbAnimals,
-#' obsPerAnimal, covs (if covariate values different from those in the data should be specified),
-#' and states.
+#' Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
+#' \code{obsPerAnimal}, \code{states}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
+#' \code{covs}, \code{spatialCovs}, and \code{centers}.
 #' @param states \code{TRUE} if the simulated states should be returned, \code{FALSE} otherwise (default).
+#' @param lambda Observation rate for location data. If \code{NULL} (the default), location data are obtained at regular intervals. Otherwise 
+#' \code{lambda} is the rate parameter of the exponential distribution for the waiting times between successive location observations, i.e., 
+#' \code{1/lambda} is the expected time between successive location observations. Only the 'step' and 'angle' data streams are subject to temporal irregularity;
+#' any other data streams are observed at temporally-regular intervals.  Ignored unless a valid distribution for the 'step' data stream is specified.
+#' @param errorEllipse List providing the upper bound for the semi-major axis (\code{M}; on scale of x- and y-coordinates), semi-minor axis (\code{m}; 
+#' on scale of x- and y-coordinates), and orientation (\code{r}; in degrees) of location error ellipses. If \code{NULL} (the default), no location 
+#' measurement error is simulated. If \code{errorEllipse} is specified, then each observed location is subject to bivariate normal errors as described 
+#' in McClintock et al. (2015), where the components of the error ellipse for each location are randomly drawn from \code{runif(1,0,errorEllipse$M)}, 
+#' \code{runif(1,0,errorEllipse$m)}, and \code{runif(1,0,errorEllipse$r)}. Only the 'step' and 'angle' data streams are subject to location measurement error;
+#' any other data streams are observed without error.  Ignored unless a valid distribution for the 'step' data stream is specified.
 #'
-#' @return An object momentuHMMData, i.e. a dataframe of:
+#' @return If the simulated data are temporally regular (i.e., \code{lambda=NULL}) with no measurement error (i.e., \code{errorEllipse=NULL}), an object \code{\link{momentuHMMData}}, 
+#' i.e., a dataframe of:
 #' \item{ID}{The ID(s) of the observed animal(s)}
-#' \item{step}{The step lengths}
-#' \item{angle}{The turning angles (if any)}
-#' \item{x}{Either easting or longitude}
-#' \item{y}{Either norting or latitude}
+#' \item{...}{Data streams as specified by \code{dist}}
+#' \item{x}{Either easting or longitude (if data streams include valid non-negative distribution for 'step')}
+#' \item{y}{Either norting or latitude (if data streams include valid non-negative distribution for 'step')}
 #' \item{...}{Covariates (if any)}
+#' 
+#' If simulated location data are temporally irregular (i.e., \code{lambda>0}) and/or include measurement error (i.e., \code{errorEllipse!=NULL}), a dataframe of:
+#' \item{time}{Numeric time of each observed (and missing) observation}
+#' \item{ID}{The ID(s) of the observed animal(s)}
+#' \item{x}{Either easting or longitude observed location}
+#' \item{y}{Either norting or latitude observed location}
+#' \item{...}{Data streams that are not derived from location (if applicable)}
+#' \item{...}{Covariates at temporally-regular true (\code{mux},\code{muy}) locations (if any)}
+#' \item{mux}{Either easting or longitude true location}
+#' \item{muy}{Either norting or latitude true location}
+#' \item{error_semimajor_axis}{error ellipse semi-major axis (if applicable)}
+#' \item{error_semiminor_axis}{error ellipse semi-minor axis (if applicable)}
+#' \item{error_ellipse_orientation}{error ellipse orientation (if applicable)}
+#' \item{ln.sd.x}{log of the square root of the x-variance of bivariate normal error (if applicable; required for error ellipse models in \code{\link{crawlWrap}})}
+#' \item{ln.sd.y}{log of the square root of the y-variance of bivariate normal error (if applicable; required for error ellipse models in \code{\link{crawlWrap}})}
+#' \item{error.corr}{correlation term of bivariate normal error (if applicable; required for error ellipse models in \code{\link{crawlWrap}})}
+#' 
 #'
 #' @details \itemize{
+#' \item x- and y-coordinate location data are generated only if valid 'step' and 'angle' data streams are specified.  Vaild distributions for 'step' include 
+#' 'gamma', 'weibull', 'exp', and 'lnorm'.  Valid distributions for 'angle' include 'vm' and 'wrpcauchy'.  If only a valid 'step' data stream is specified, then only x-coordinates
+#' are generated.
+#' 
+#' \item Simulated data that are temporally regular (i.e., \code{lambda=NULL}) and without location measurement error (i.e., \code{errorEllipse=NULL}) are returned
+#' as a \code{\link{momentuHMMData}} object suitable for analysis using \code{\link{fitHMM}}.
+#' 
+#' \item Simulated location data that are temporally-irregular (i.e., \code{lambda>0}) and/or with location measurement error (i.e., \code{errorEllipse!=NULL}) are returned
+#' as a data frame suitable for analysis using \code{\link{crawlWrap}}.
+#' 
 #' \item The matrix \code{beta} of regression coefficients for the transition probabilities has
 #' one row for the intercept, plus one row for each covariate, and one column for
 #' each non-diagonal element of the transition probability matrix. For example, in a 3-state
@@ -64,46 +142,56 @@
 #' data <- simData(model=m,obsPerAnimal=obsPerAnimal)
 #'
 #' # 2. Pass the parameters of the model to simulate from
-#' stepPar <- c(1,10,1,5,0.2,0.3) # mean1, mean2, sd1, sd2, z1, z2
-#' anglePar <- c(pi,0,0.5,2) # mean1, mean2, k1, k2
+#' stepPar <- c(1,10,1,5,0.2,0.3) # mean_1, mean_2, sd_1, sd_2, zeromass_1, zeromass_2
+#' anglePar <- c(pi,0,0.5,2) # mean_1, mean_2, concentration_1, concentration_2
+#' omegaPar <- c(1,10,10,1) # shape1_1, shape1_2, shape2_1, shape2_2
 #' stepDist <- "gamma"
 #' angleDist <- "vm"
-#' data <- simData(nbAnimals=5,nbStates=2,stepDist=stepDist,angleDist=angleDist,stepPar=stepPar,
-#'                anglePar=anglePar,nbCovs=2,zeroInflation=TRUE,obsPerAnimal=obsPerAnimal)
+#' omegaDist <- "beta"
+#' data <- simData(nbAnimals=5,nbStates=2,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),
+#'                 Par=list(step=stepPar,angle=anglePar,omega=omegaPar),nbCovs=2,
+#'                 zeroInflation=list(step=TRUE),
+#'                 obsPerAnimal=obsPerAnimal)
 #'
-#' stepPar <- c(1,10,1,5) # mean1, mean2, sd1, sd2
-#' anglePar <- c(pi,0,0.5,0.7) # mean1, mean2, k1, k2
+#' stepPar <- c(1,10,1,5) # shape_1, shape_2, scale_1, scale_2
+#' anglePar <- c(pi,0,0.5,0.7) # mean_1, mean_2, concentration_1, concentration_2
+#' omegaPar <- c(log(1),0.1,log(10),-0.1,log(10),-0.1,log(1),0.1) # working scale parameters for omega DM
 #' stepDist <- "weibull"
 #' angleDist <- "wrpcauchy"
-#' data <- simData(nbAnimals=5,nbStates=2,stepDist=stepDist,angleDist=angleDist,stepPar=stepPar,
-#'                anglePar=anglePar,obsPerAnimal=obsPerAnimal)
+#' omegaDist <- "beta"
+#' data <- simData(nbAnimals=5,nbStates=2,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),
+#'                 Par=list(step=stepPar,angle=anglePar,omega=omegaPar),nbCovs=2,
+#'                 DM=list(omega=list(shape1=~cov1,shape2=~cov2)),
+#'                 obsPerAnimal=obsPerAnimal,states=TRUE)
 #'
 #' # step length only and zero-inflation
-#' stepPar <- c(1,10,1,5,0.2,0.3) # mean1, mean2, sd1, sd2, z1, z2
+#' stepPar <- c(1,10,1,5,0.2,0.3) # mean_1, mean_2, sd_1, sd_2, zeromass_1, zeromass_2
 #' stepDist <- "gamma"
-#' data <- simData(nbAnimals=5,nbStates=2,stepDist=stepDist,angleDist="none",stepPar=stepPar,
-#'                nbCovs=2,zeroInflation=TRUE,obsPerAnimal=obsPerAnimal)
+#' data <- simData(nbAnimals=5,nbStates=2,dist=list(step=stepDist),
+#'                 Par=list(step=stepPar),nbCovs=2,zeroInflation=list(step=TRUE),
+#'                 obsPerAnimal=obsPerAnimal)
 #'
 #' # include covariates
-#' # (note that it is useless to specify "nbCovs", which respectively determined
+#' # (note that it is useless to specify "nbCovs", which are overruled
 #' # by the number of columns of "cov")
 #' cov <- data.frame(temp=rnorm(500,20,5))
-#' stepPar <- c(1,10,1,5) # mean1, mean2, sd1, sd2
-#' anglePar <- c(pi,0,0.5,2) # mean1, mean2, k1, k2
+#' stepPar <- c(1,10,1,5) # mean_1, mean_2, sd_1, sd_2
+#' anglePar <- c(pi,0,0.5,2) # mean_1, mean_2, concentration_1, concentration_2
 #' stepDist <- "gamma"
 #' angleDist <- "vm"
-#' data <- simData(nbAnimals=5,nbStates=2,stepDist=stepDist,angleDist=angleDist,stepPar=stepPar,
-#'                 anglePar=anglePar,covs=cov)
+#' data <- simData(nbAnimals=5,nbStates=2,dist=list(step=stepDist,angle=angleDist),
+#'                 Par=list(step=stepPar,angle=anglePar),
+#'                 covs=cov)
 #'
 #' @export
-#' @importFrom stats rnorm runif step terms.formula get_all_vars
+#' @importFrom stats rnorm runif step terms.formula
 #' @importFrom raster cellFromXY getValues
 #' @importFrom moveHMM simData
 #' @importFrom CircStats rvm
 
 simData <- function(nbAnimals=1,nbStates=2,dist,
                     Par,beta=NULL,
-                    formula=NULL,
+                    formula=~1,
                     covs=NULL,nbCovs=0,
                     spatialCovs=NULL,
                     zeroInflation=NULL,
@@ -168,8 +256,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(states) model$data$states <- NULL
 
     if(is.null(covs)) {
-      if(!is.null(spatialCovs)) spatialcovnames <- names(spatialCovs)
-      else spatialcovnames <- NULL
+      #if(!is.null(spatialCovs)) spatialcovnames <- names(spatialCovs)
+      #else spatialcovnames <- NULL
       covs <- model$rawCovs
     }
     # else, allow user to enter new values for covariates
@@ -183,11 +271,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     delta <- NULL
     
     mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & ("step" %in% names(dist)) & is.null(lambda) & is.null(errorEllipse)) # indicator for moveHMM::simData
-    if(mHind & !is.null(formula)){
-      if(length(attr(terms.formula(formula),"term.labels"))) mHind <- FALSE
+    if(mHind & length(attr(terms.formula(formula),"term.labels"))) mHind <- FALSE
       #if("ID" %in% rownames(attr(terms.formula(formula),"factors")) | any(mapply(is.factor,covs)))
       #  mHind <- FALSE
-    }
     if(all(names(dist) %in% c("step","angle")) & mHind){
       zi <- FALSE
       if(!is.null(zeroInflation$step)) zi <- zeroInflation$step
@@ -239,8 +325,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
 
   spatialcovnames<-NULL
   if(!is.null(spatialCovs)){
-    if(!all(c("step","angle") %in% distnames)) stop("spatialCovs can only be included when 'step' and 'angle' distributions are specified") 
-    else if(!(dist[["angle"]] %in% angledists) | !(dist[["step"]] %in% stepdists)) stop("spatialCovs can only be included when valid 'step' and 'angle' distributions are specified") 
+    if(!("step" %in% distnames)) stop("spatialCovs can only be included when 'step' distribution is specified") 
+    else if(!(dist[["step"]] %in% stepdists)) stop("spatialCovs can only be included when valid 'step' distributions are specified") 
     nbSpatialCovs<-length(names(spatialCovs))
     for(j in 1:nbSpatialCovs){
       if(class(spatialCovs[[j]])!="RasterLayer") stop("spatialCovs must be of class 'RasterLayer'")
@@ -343,7 +429,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       else centerNames <- paste0(rep(rownames(centers),each=2),".",rep(c("dist","angle"),length(centerInd)))
       centerCovs <- data.frame(matrix(NA,nrow=sum(allNbObs),ncol=length(centerInd)*2,dimnames=list(NULL,centerNames)))
     }  
-  }
+  } else centerNames <- NULL
   
   allNbCovs <- nbCovs+nbSpatialCovs
 
@@ -366,17 +452,23 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   for(i in distnames){
     data[[i]]<-numeric()
   }
-  if("angle" %in% distnames) 
+  if("angle" %in% distnames){ 
     if(dist[["angle"]] %in% angledists & ("step" %in% distnames))
       if(dist[["step"]] %in% stepdists){
         data$x<-numeric()
         data$y<-numeric()
       }
-  
-  if(is.null(formula)) {
-    if(allNbCovs) formula <- formula(paste0("~",paste0(c(colnames(allCovs),spatialcovnames),collapse="+")))
-    else formula <- formula(~1)
+  } else if("step" %in% distnames){
+      if(dist[["step"]] %in% stepdists){
+        data$x<-numeric()
+        data$y<-numeric()
+      }    
   }
+  
+  #if(is.null(formula)) {
+  #  if(allNbCovs) formula <- formula(paste0("~",paste0(c(colnames(allCovs),spatialcovnames),collapse="+")))
+  #  else formula <- formula(~1)
+  #}
   
   message("=======================================================================")
   message("Simulating HMM with ",nbStates," states and ",length(distnames)," data streams")
@@ -394,13 +486,16 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   message("\n Transition probability matrix formula: ",paste0(formula,collapse=""))
   message("=======================================================================")
   
+  if(length(all.vars(formula)))
+    if(!all(all.vars(formula) %in% c("ID",names(allCovs),centerNames,spatialcovnames)))
+      stop("'formula' covariate(s) not found")
   formterms<-attr(terms.formula(formula),"term.labels")
   if(is.null(covs)){
     nbBetaCovs <- length(formterms[which(!grepl("ID",formterms))])+sum(grepl("ID",formterms)*(nbAnimals-1))+1
   } else {
     tmpCovs <- cbind(data.frame(ID=factor(rep(1:nbAnimals,times=allNbObs),levels=1:nbAnimals)),covs)
     nbBetaCovs <- 1
-    for(i in colnames(stats::get_all_vars(formula,tmpCovs))){
+    for(i in all.vars(formula)){
      if(is.factor(tmpCovs[[i]])) {
        nbBetaCovs <- nbBetaCovs + sum(grepl(i,formterms)*(nlevels(tmpCovs[[i]])-1))
      } else nbBetaCovs <- nbBetaCovs + 1
@@ -594,15 +689,20 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       allSpatialcovs <- rbind(allSpatialcovs,subSpatialcovs)
     }
     
-    if("angle" %in% distnames) 
+    if("angle" %in% distnames){ 
       if(dist[["angle"]] %in% angledists & ("step" %in% distnames))
         if(dist[["step"]] %in% stepdists){
-            d$angle[1] <- NA # the first angle value is arbitrary
-            #if(length(centerInd)) subCovs[1,centerNames[seq(2,2*length(centerInd),2)]] <- NA
-            d$x=X[,1]
-            d$y=X[,2]
+          d$angle[1] <- NA # the first angle value is arbitrary
+          #if(length(centerInd)) subCovs[1,centerNames[seq(2,2*length(centerInd),2)]] <- NA
+          d$x=X[,1]
+          d$y=X[,2]
         }
-    
+    } else if("step" %in% distnames){
+      if(dist[["step"]] %in% stepdists){
+        d$x=c(0,cumsum(d$step)[-nrow(d)])
+        d$y=X[,2]
+      }    
+    }
     if(length(centerInd)) centerCovs[cumNbObs[zoo]+1:nbObs,] <- subCovs[,centerNames]
     data <- rbind(data,d)
   }
@@ -622,7 +722,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   if(states)
     data <- cbind(data,states=allStates)
   
-  if(!is.null(lambda) | !is.null(errorEllipse)){
+  if(all(c("x","y") %in% names(data)) & (!is.null(lambda) | !is.null(errorEllipse))){
     if(!is.null(errorEllipse)){
       if(!is.list(errorEllipse) | any(!(c("M","m","r") %in% names(errorEllipse)))) stop("errorEllipse must be a list of scalars named 'M', 'm', and 'r'.")
       if(any(unlist(lapply(errorEllipse[c("M","m","r")],length))>1)) stop('errorEllipse must consist of positive scalars')
