@@ -62,7 +62,9 @@ plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compa
   par(mar=c(5,4,4,2)-c(0,0,2,1)) # bottom, left, top, right
   par(ask=ask)
   
-  if(!all(dataNames %in% names(data))) stop('dataNames not found in data')
+  if(any(dataNames %in% names(data))){
+    dataNames <- dataNames[which(dataNames %in% names(data))]
+  } else stop('dataNames not found in data')
   
   if(all(c("step","angle") %in% dataNames)){
     if(compact) {
@@ -169,7 +171,34 @@ plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compa
       mtext(paste("Animal ID:",ID),side=3,outer=TRUE,padj=2)
     }
     dataNames<-dataNames[-which(dataNames %in% c("step","angle"))]
-  }
+    
+  } else if(is.null(data$angle) | !is.null(data$y)) { # only step length is provided
+    if(all(data$y==0)){
+      for(zoo in animalsInd) {
+          ################
+          ## Plot track ##
+          ################*
+          par(mfrow=c(1,1))
+          ID <- unique(data$ID)[zoo]
+          x <- data$x[which(data$ID==ID)]
+          plot(x, type="o",lwd=1.3, xlab="time", ylab="x", pch=20)
+          mtext(paste("Animal ID:",ID),side=3,outer=TRUE,padj=2)
+          
+          ##########################################
+          ## Plot steps time series and histogram ##
+          ##########################################
+          par(mfrow=c(1,2))
+          step <- data$step[which(data$ID==ID)]
+          # step length time series
+          plot(step,type="l",xlab="t",ylab="step length",
+               ylim=c(0,max(step,na.rm=T)))
+          # step length histogram
+          hist(step,xlab="step length",main="",col="grey",border="white",breaks=breaks)
+          mtext(paste("Animal ID:",ID),side=3,outer=TRUE,padj=2)
+      }
+      dataNames<-dataNames[-which(dataNames %in% "step")]
+    }
+  } 
   
   for(i in dataNames){
     
