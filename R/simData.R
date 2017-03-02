@@ -26,7 +26,7 @@
 #' @param spatialCovs List of \code{\link[raster]{RasterLayer-class}} objects for spatially-referenced covariates. Covariates specified by \code{spatialCovs} are
 #' extracted from the raster layer(s) based on the simulated location data for each time step. The names of the raster layer(s) can be included in 
 #' \code{formula} and/or \code{DM}.  Note that \code{simData} usually takes longer to generate simulated data when \code{spatialCovs} is specified.
-#' @param zeroInflation A named list of logicals indicating whether the probability distributions of the data streams should be zero-inlated. If \code{zeroInflation} is \code{TRUE} 
+#' @param zeroInflation A named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated. If \code{zeroInflation} is \code{TRUE} 
 #' for a given data stream, then values for the zero-mass parameters should be
 #' included in the corresponding element of \code{Par}.
 #' @param circularAngleMean An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
@@ -65,7 +65,7 @@
 #' specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.
 #' @param workcons An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 #' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
-#' through a combination of \code{DM}, \code{cons}, and \code{workcons}.
+#' through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.
 #' @param stateNames Optional character vector of length nbStates indicating state names.
 #' @param model A momentuHMM object. This option can be used to simulate from a fitted model.  Default: NULL.
 #' Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
@@ -112,6 +112,11 @@
 #' \item x- and y-coordinate location data are generated only if valid 'step' and 'angle' data streams are specified.  Vaild distributions for 'step' include 
 #' 'gamma', 'weibull', 'exp', and 'lnorm'.  Valid distributions for 'angle' include 'vm' and 'wrpcauchy'.  If only a valid 'step' data stream is specified, then only x-coordinates
 #' are generated.
+#' 
+#' \item If \code{DM} is specified for a particular data stream, then the initial values are specified on 
+#' the working (i.e., beta) scale of the parameters. The working scale of each parameter is determined by the link function used.
+#' The function \code{\link{getParDM}} is intended to help with obtaining initial values on the working scale when specifying a design matrix and other 
+#' parameter constraints. 
 #' 
 #' \item Simulated data that are temporally regular (i.e., \code{lambda=NULL}) and without location measurement error (i.e., \code{errorEllipse=NULL}) are returned
 #' as a \code{\link{momentuHMMData}} object suitable for analysis using \code{\link{fitHMM}}.
@@ -747,7 +752,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(lambda<=0) stop('lambda must be >0')
     
     # account for location measurement error and/or temporal irregularity
-    out<-simObsData(data,dist,lambda,errorEllipse)
+    out<-simObsData(data,lambda,errorEllipse)
     
   } else {
     
