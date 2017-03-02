@@ -1,4 +1,12 @@
 #' Get starting values on working scale based on design matrix and other parameter constraints
+#' 
+#' Convert starting values on the natural scale of data stream probability distributions to the appropriate
+#' working scale based on a design matrix and other parameter constraints. Working scale parameters can then
+#' be used in functions that utilize a design matrix and other constraints for data stream parameters
+#' (e.g., \code{\link{simData}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}).
+#' 
+#' If design matrix includes non-factor covariates, then natural scale parameters are assumed to correspond to the 
+#' mean value(s) for the covariate(s).
 #'
 #' @param data A \code{\link{momentuHMMData}} object
 #' @param nbStates Number of states of the HMM.
@@ -17,7 +25,7 @@
 #' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. \code{circularAngleMean} elements corresponding to angular data 
 #' streams are ignored unless the corresponding element of \code{estAngleMean} is \code{TRUE}. Any \code{circularAngleMean} elements 
 #' corresponding to data streams that do not have angular distributions are ignored.
-#' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
+#' @param DM A named list indicating the design matrices to be used for the probability distribution parameters of each data 
 #' stream. Each element of \code{DM} can either be a named list of linear regression formulas or a matrix.  For example, for a 2-state 
 #' model using the gamma distribution for a data stream named 'step', \code{DM=list(step=list(mean=~cov1, sd=~1))} specifies the mean 
 #' parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 matrix using 
@@ -35,7 +43,7 @@
 #' specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.
 #' @param workcons An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 #' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
-#' through a combination of \code{DM}, \code{cons}, and \code{workcons}.
+#' through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.
 #'
 #' @return A list of parameter values that can be used as starting values in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
 #' 
@@ -64,6 +72,19 @@
 #' mPar <- fitHMM(m$data,nbStates=2,dist=list(step=stepDist,angle=angleDist),
 #'                Par0=list(step=wPar0$step,angle=anglePar0),
 #'                DM=list(step=stepDM),cons=list(step=stepcons))
+#' }
+#' 
+#' # get working parameters for 'DM' with using 'cov1' and 'cov2' covariates
+#' stepDM2 <- list(mean=~cov1,sd=~cov2)
+#' wPar20 <- getParDM(m$data,nbStates=2,dist=list(step=stepDist),
+#'                       Par=list(step=stepPar0),
+#'                       DM=list(step=stepDM))
+#'
+#' \dontrun{
+#' # Fit HMM using wPar20 as initial values for the step data stream
+#' mPar2 <- fitHMM(m$data,nbStates=2,dist=list(step=stepDist,angle=angleDist),
+#'                Par0=list(step=wPar20$step,angle=anglePar0),
+#'                DM=list(step=stepDM2))
 #' }
 #'
 #' @export
@@ -99,11 +120,16 @@ getParDM<-function(data,nbStates,dist,
     else zeroInflation[[i]]<-FALSE
   }
   
+  tempCovs <- data[1,]
+  for(j in names(data)[which(unlist(lapply(data,class))!="factor")]){
+    tempCovs[[j]]<-mean(data[[j]],na.rm=TRUE)
+  }
+  
   inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,DM,userBounds,cons,workcons,stateNames=NULL)
   
-  DMinputs<-getDM(data,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,inputs$circularAngleMean,FALSE)
+  DMinputs<-getDM(tempCovs,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,inputs$circularAngleMean,FALSE)
   fullDM <- DMinputs$fullDM
-  DMind <- DMinputs$DMind
+  DMind <- getDM(data,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,inputs$circularAngleMean,FALSE)$DMind
   cons <- DMinputs$cons
   workcons <- DMinputs$workcons
   
@@ -125,7 +151,7 @@ getParDM<-function(data,nbStates,dist,
         
         p<-numeric(length(bndInd))
         if(length(ind1)){
-          if(!circularAngleMean[[i]]) p[ind1] <- (solve(unique(fullDM[[i]])[ind1,ind1],tan(par[ind1]/2))-workcons[[i]][ind1])^(1/cons[[i]][ind1])
+          if(!inputs$circularAngleMean[[i]]) p[ind1] <- (solve(unique(fullDM[[i]])[ind1,ind1],tan(par[ind1]/2))-workcons[[i]][ind1])^(1/cons[[i]][ind1])
           else stop("sorry, circular angle mean parameters are not supported by getParDM")
         }
         
@@ -139,7 +165,83 @@ getParDM<-function(data,nbStates,dist,
         
         if(any(!is.finite(p))) stop(i," working scale parameters are not finite. Check natural parameter values, bounds, and constraints.")
         wpar[[i]]<-p
-      } else stop('sorry, design matrices with individual covariates are not supported by getParDM')
+      } else {
+        
+        if(length(wpar[[i]])!=nrow(fullDM[[i]])) stop('Par$',i,' should be of length ',nrow(fullDM[[i]]))
+        bounds<-inputs$p$bounds[[i]]
+        if(any(wpar[[i]]<=bounds[,1] | wpar[[i]]>=bounds[,2])) stop('Par$',i,' must be within parameter bounds')
+        bndInd <- which(!duplicated(getboundInd(fullDM[[i]])))
+        a<-bounds[bndInd,1]
+        b<-bounds[bndInd,2]
+        par <- wpar[[i]][bndInd]
+        if(any(wpar[[i]]!=par[getboundInd(fullDM[[i]])])) stop('Par$',i,' values are not consistent with DM$',i)
+        piInd<-(abs(a- -pi)<1.e-6 & abs(b - pi)<1.e-6)
+        ind1<-which(piInd)
+        ind2<-which(!piInd)
+        
+        ind21<-ind2[which(is.finite(a[ind2]) & is.infinite(b[ind2]))]
+        ind22<-ind2[which(is.finite(a[ind2]) & is.finite(b[ind2]))]
+        ind23<-ind2[which(is.infinite(a[ind2]) & is.finite(b[ind2]))]
+        
+        if(length(ind1)){
+          if(inputs$estAngleMean[[i]]){
+            meanind<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
+            if(!inputs$circularAngleMean[[i]]) {
+              
+              p<-numeric(ncol(fullDM[[i]]))
+              meanind<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
+              
+              asvd<-svd(unique(fullDM[[i]])[ind1,meanind])
+              adiag <- diag(1/asvd$d)
+              p[meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% tan(par[ind1]/2))-workcons[[i]][meanind])^(1/cons[[i]][meanind])
+              #p[meanind] <- (solve(unique(fullDM[[i]])[ind1,meanind],tan(par[ind1]/2))-workcons[[i]][meanind])^(1/cons[[i]][meanind])
+
+              if(length(ind21)){
+                asvd<-svd(unique(fullDM[[i]])[ind21,-meanind])
+                adiag <- diag(1/asvd$d)
+                p[-meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% log(par[ind21]-a[ind21]))-workcons[[i]][-meanind])^(1/cons[[i]][-meanind])
+              }
+              
+              if(length(ind22)){
+                asvd<-svd(unique(fullDM[[i]])[ind22,-meanind])
+                adiag <- diag(1/asvd$d)
+                p[-meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][-meanind])^(1/cons[[i]][-meanind])
+              }
+              
+              if(length(ind23)){
+                asvd<-svd(unique(fullDM[[i]])[ind23,-meanind])
+                adiag <- diag(1/asvd$d)
+                p[-meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23])))-workcons[[i]][-meanind])^(1/cons[[i]][-meanind])
+              }
+            } else stop("sorry, circular angle mean parameters are not supported by getParDM")
+          } else if(!length(ind2)){
+            p <- (solve(unique(fullDM[[i]]),tan(par/2))-workcons[[i]])^(1/cons[[i]])
+          } else stop("sorry, the parameters for ",i," cannot have different bounds")
+        } else if(((length(ind21)>0) + (length(ind22)>0) + (length(ind23)>0))>1){ 
+          stop("sorry, getParDM requires the parameters for ",i," to have identical bounds when covariates are included in the design matrix")
+        } else {
+          if(length(ind21)){
+            asvd<-svd(unique(fullDM[[i]])[ind21,])
+            adiag <- diag(1/asvd$d)
+            p <- ((asvd$v %*% adiag %*% t(asvd$u) %*% log(par[ind21]-a[ind21]))-workcons[[i]])^(1/cons[[i]])
+          }
+          
+          if(length(ind22)){
+            asvd<-svd(unique(fullDM[[i]])[ind22,])
+            adiag <- diag(1/asvd$d)
+            p <- ((asvd$v %*% adiag %*% t(asvd$u) %*% logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]])^(1/cons[[i]])
+          }
+          
+          if(length(ind23)){
+            asvd<-svd(unique(fullDM[[i]])[ind23,])
+            adiag <- diag(1/asvd$d)
+            p <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23])))-workcons[[i]])^(1/cons[[i]])
+          }
+        }
+        
+        if(any(!is.finite(p))) stop(i," working scale parameters are not finite. Check natural parameter values, bounds, and constraints.")
+        wpar[[i]]<-p
+      }
     }
   }
   wpar

@@ -32,7 +32,7 @@ regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turn
 streams are ignored unless the corresponding element of \code{estAngleMean} is \code{TRUE}. Any \code{circularAngleMean} elements 
 corresponding to data streams that do not have angular distributions are ignored.}
 
-\item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
+\item{DM}{A named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream. Each element of \code{DM} can either be a named list of linear regression formulas or a matrix.  For example, for a 2-state 
 model using the gamma distribution for a data stream named 'step', \code{DM=list(step=list(mean=~cov1, sd=~1))} specifies the mean 
 parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 matrix using 
@@ -53,13 +53,20 @@ specifies (-1,1) bounds for the concentration parameters instead of the default 
 
 \item{workcons}{An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
-through a combination of \code{DM}, \code{cons}, and \code{workcons}.}
+through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.}
 }
 \value{
 A list of parameter values that can be used as starting values in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
 }
 \description{
-Get starting values on working scale based on design matrix and other parameter constraints
+Convert starting values on the natural scale of data stream probability distributions to the appropriate
+working scale based on a design matrix and other parameter constraints. Working scale parameters can then
+be used in functions that utilize a design matrix and other constraints for data stream parameters
+(e.g., \code{\link{simData}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}).
+}
+\details{
+If design matrix includes non-factor covariates, then natural scale parameters are assumed to correspond to the 
+mean value(s) for the covariate(s).
 }
 \examples{
 # m is a moveHMMext object (as returned by fitHMM), automatically loaded with the package
@@ -84,6 +91,19 @@ wPar0 <- getParDM(m$data,nbStates=2,dist=list(step=stepDist),
 mPar <- fitHMM(m$data,nbStates=2,dist=list(step=stepDist,angle=angleDist),
                Par0=list(step=wPar0$step,angle=anglePar0),
                DM=list(step=stepDM),cons=list(step=stepcons))
+}
+
+# get working parameters for 'DM' with using 'cov1' and 'cov2' covariates
+stepDM2 <- list(mean=~cov1,sd=~cov2)
+wPar20 <- getParDM(m$data,nbStates=2,dist=list(step=stepDist),
+                      Par=list(step=stepPar0),
+                      DM=list(step=stepDM))
+
+\dontrun{
+# Fit HMM using wPar20 as initial values for the step data stream
+mPar2 <- fitHMM(m$data,nbStates=2,dist=list(step=stepDist,angle=angleDist),
+               Par0=list(step=wPar20$step,angle=anglePar0),
+               DM=list(step=stepDM2))
 }
 
 }
