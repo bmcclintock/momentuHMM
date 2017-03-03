@@ -282,7 +282,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(is.null(covs)) {
       #if(!is.null(spatialCovs)) spatialcovnames <- names(spatialCovs)
       #else spatialcovnames <- NULL
-      covs <- model$rawCovs
+      covsCol <- which(!(names(model$data) %in% c("ID","x","y",distnames,"states")))
+      if(length(covsCol)) covs <- model$data[covsCol]
     }
     # else, allow user to enter new values for covariates
 
