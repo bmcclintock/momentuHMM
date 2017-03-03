@@ -61,7 +61,8 @@
 #' the power of 1. \code{cons} is ignored for any given data stream unless \code{DM} is specified.
 #' @param userBounds An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 #' distribution parameters for each data stream. For example, for a 2-state model using the wrapped Cauchy ('wrpcauchy') distribution for 
-#' a data stream named 'angle', \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2))} 
+#' a data stream named 'angle' with \code{estAngleMean$angle=TRUE)}, \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2,dimnames=list(c("mean_1",
+#' "mean_2","concentration_1","concentration_2"))))} 
 #' specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.
 #' @param workcons An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 #' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 

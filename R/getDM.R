@@ -137,7 +137,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
     getbndInd <- getboundInd(fullDM[[i]][,,1])
     bndInd <- which(!duplicated(getbndInd))
     if(any(bounds[[i]]!=bounds[[i]][bndInd,][getbndInd,])) stop('userBounds not consistent with DM for ',i)
-    if(is.null(rownames(DM[[i]]))) rownames(simpDM[[i]]) <- rownames(bounds[[i]])
+    rownames(simpDM[[i]]) <- rownames(bounds[[i]])
   }
   
   return(list(fullDM=simpDM,DMind=DMind,cons=cons,workcons=workcons))

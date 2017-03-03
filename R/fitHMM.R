@@ -67,7 +67,8 @@
 #' the power of 1. \code{cons} is ignored for any given data stream unless \code{DM} is specified.
 #' @param userBounds An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 #' distribution parameters for each data stream. For example, for a 2-state model using the wrapped Cauchy ('wrpcauchy') distribution for 
-#' a data stream named 'angle' with \code{estAngleMean$angle=TRUE)}, \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2))} 
+#' a data stream named 'angle' with \code{estAngleMean$angle=TRUE)}, \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2,dimnames=list(c("mean_1",
+#' "mean_2","concentration_1","concentration_2"))))} 
 #' specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.
 #' @param workcons An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 #' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
@@ -183,15 +184,33 @@
 #' print(mDMm)
 #' 
 #' ### 4. fit step mean parameter covariate model to the simulated data using DM
-#'
-#' mDMcov <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
-#'               Par0=list(step=c(Par0$step[1],0,Par0$step[2],0,Par0$step[3:4]),angle=Par0$angle),
+#' stepDMf <- list(mean=~cov1,sd=~1)
+#' Par0 <- getParDM(data,nbStates,list(step=stepDist,angle=angleDist),
+#'                  Par=list(step=stepPar,angle=anglePar),
+#'                  DM=list(step=stepDMf,angle=DMm$angle))
+#' mDMfcov <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+#'               Par0=Par0,
 #'               formula=formula,
-#'               DM=list(step=list(mean=~cov1,sd=~1),angle=DMm$angle))
+#'               DM=list(step=stepDMf,angle=DMm$angle))
 #'
-#' print(mDMcov)
+#' print(mDMfcov)
 #' 
-#' ### 5. fit circular-circular angle mean covariate model to the simulated data using DM
+#' ### 5. fit the exact same step mean parameter covariate model using DM matrix
+#' stepDMm <- matrix(c(1,0,0,0,"cov1",0,0,0,0,1,0,0,0,"cov1",0,0,
+#'                  0,0,1,0,0,0,0,1),4,6,dimnames=list(c("mean_1","mean_2","sd_1","sd_2"),
+#'                  c("mean_1:(Intercept)","mean_1:cov1","mean_2:(Intercept)","mean_2:cov1",
+#'                  "sd_1:(Intercept)","sd_2:(Intercept)")))
+#' Par0 <- getParDM(data,nbStates,list(step=stepDist,angle=angleDist),
+#'                  Par=list(step=stepPar,angle=anglePar),
+#'                  DM=list(step=stepDMm,angle=DMm$angle))
+#' mDMmcov <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+#'               Par0=Par0,
+#'               formula=formula,
+#'               DM=list(step=stepDMm,angle=DMm$angle))
+#'
+#' print(mDMmcov)
+#' 
+#' ### 6. fit circular-circular angle mean covariate model to the simulated data using DM
 #'
 #' # Generate fake circular covariate using circAngles
 #' data$cov3 <- circAngles(refAngle=2*atan(rnorm(nrow(data))),data)
@@ -208,7 +227,7 @@
 #'                   
 #' print(mDMcircf)
 #'                   
-#' ### 6. fit the exact same circular-circular angle mean model using DM matrices
+#' ### 7. fit the exact same circular-circular angle mean model using DM matrices
 #' 
 #' # Note no intercept terms are included in DM for angle means because the intercept is
 #' # by default the previous movement direction (i.e., a turning angle of zero)
