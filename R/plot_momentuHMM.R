@@ -22,6 +22,8 @@
 #' @param col Vector or colors for the states (one color per state).
 #' @param cumul	If TRUE, the sum of weighted densities is plotted (default).
 #' @param plotTracks If TRUE, the Viterbi-decoded tracks are plotted (default).
+#' @param plotCI Logical indicating whether to include confidence intervals in natural parameter plots (default: FALSE)
+#' @param alpha Significance level of the confidence intervals (if \code{plotCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).
 #' @param ... Currently unused. For compatibility with generic method.
 #'
 #' @details The state-dependent densities are weighted by the frequency of each state in the most
@@ -34,8 +36,7 @@
 #' # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
 #' m <- example$m
 #'
-#' plot(m,ask=TRUE,animals=1,breaks=20)
-#'
+#' plot(m,ask=TRUE,animals=1,breaks=20,plotCI=TRUE)
 #'
 #' @export
 #' @importFrom graphics legend lines segments arrows

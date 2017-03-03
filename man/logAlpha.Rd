@@ -7,7 +7,7 @@
 logAlpha(m)
 }
 \arguments{
-\item{m}{A \code{momentuHMM} object.}
+\item{m}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.}
 }
 \value{
 The matrix of forward log-probabilities.

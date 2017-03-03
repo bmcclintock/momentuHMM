@@ -3,7 +3,7 @@
 #'
 #' Plot the states and states probabilities.
 #'
-#' @param m A \code{\link{momentuHMM}} or \code{\link{miSum}} object
+#' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object
 #' @param animals Vector of indices or IDs of animals for which states will be plotted.
 #' @param ask If \code{TRUE}, the execution pauses between each plot.
 #'

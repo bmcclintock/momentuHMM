@@ -1,5 +1,5 @@
 
-#' Convert bearings (relative to true north) to turning angle covariates suitable for circular-circular regression
+#' Convert bearings (relative to true north) to turning angle covariates suitable for circular-circular regression on the angle mean
 #' 
 #' This function can be used to convert angular covariates measured relative to true north (e.g., ocean currents, wind direction) to turning angle
 #' covariates sutiable for circular-circular regression in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}.

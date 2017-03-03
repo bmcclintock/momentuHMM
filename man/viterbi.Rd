@@ -7,7 +7,7 @@
 viterbi(m)
 }
 \arguments{
-\item{m}{An object \code{moveHMM}}
+\item{m}{An object \code{momentuHMM}}
 }
 \value{
 The sequence of most probable states.
@@ -17,7 +17,7 @@ For a given model, reconstructs the most probable states sequence,
 using the Viterbi algorithm.
 }
 \examples{
-# m is a moveHMM object (as returned by fitHMM), automatically loaded with the package
+# m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
 m <- example$m
 
 # reconstruction of states sequence

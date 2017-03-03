@@ -3,6 +3,8 @@ Type: Package
 Title: Models Of animal MovemENT behavior Using multivariate Hidden Markov Models
 Version: 0.0
 Date: 2016-12-31
+Depends:
+    R (>= 2.10)
 Author: Brett McClintock, Theo Michelot, Roland Langrock, Toby Patterson, Eric
     Rexstad
 Maintainer: Brett McClintock <brett.mcclintock@noaa.gov>
@@ -28,7 +30,8 @@ Imports:
     sp,
     MASS,
     Brobdingnag,
-    gstat
+    gstat,
+    conicfit
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,

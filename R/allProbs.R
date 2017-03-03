@@ -3,7 +3,7 @@
 #'
 #' Used in functions \code{\link{viterbi}}, \code{\link{logAlpha}}, \code{\link{logBeta}}.
 #'
-#' @param m Object \code{momentuHMMD}.
+#' @param m Object \code{momentuHMM}.
 #' @param nbStates Number of states of the HMM.
 #'
 #' @return Matrix of all probabilities.

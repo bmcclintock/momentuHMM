@@ -2,18 +2,20 @@
 #' Plot pseudo-residuals
 #'
 #' Plots time series, qq-plots (against the standard normal distribution), and sample
-#' ACF functions of the pseudo-residuals
+#' ACF functions of the pseudo-residuals for each data stream
 #'
-#' @param m A \code{\link{momentuHMM}} object
+#' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.
 #'
 #' @details \itemize{
 #' \item If some turning angles in the data are equal to pi, the corresponding pseudo-residuals
 #' will not be included. Indeed, given that the turning angles are defined on (-pi,pi], an angle of pi
 #' results in a pseudo-residual of +Inf (check Section 6.2 of reference for more information on the
 #' computation of pseudo-residuals).
-#' \item If some steps are of length zero (i.e. if there is zero-inflation), the corresponding pseudo-
+#' \item If some data streams are zero-inflated, the corresponding pseudo-
 #' residuals are shown as segments, because pseudo-residuals for discrete data are defined as
 #' segments (see Zucchini and MacDonald, 2009, Section 6.2).
+#' \item Note that pseudo-residuals for multiple imputation analyses are based on pooled parameter 
+#' estimates and the means of the data values across all imputations.
 #' }
 #'
 #' @examples

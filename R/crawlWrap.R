@@ -18,13 +18,13 @@
 #' @param mov.model List of mov.model objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one movement model is provided, then the same movement model is used
 #' for each individual.
 #' @param err.model List of err.model objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one error model is provided, then the same error model is used
-#' for each individual.
+#' for each individual (in which case the names of the \code{err.model} components corresponding to easting/longitudinal and northing/latitudinal location error must match \code{coord}).
 #' @param activity List of activity objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one activity covariate is provided, then the same activity covariate is used
 #' for each individual.
 #' @param drift List of drift objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one drift component is provided, then the same drift component is used
 #' for each individual.
-#' @param coord A 2-vector of character values giving the names of the "X" and
-#' "Y" coordinates in \code{data}. See \code{\link[crawl]{crwMLE}}.
+#' @param coord A 2-vector of character values giving the names of the "x" and
+#' "y" coordinates in \code{data}. See \code{\link[crawl]{crwMLE}}.
 #' @param Time.name Character indicating name of the location time column.  See \code{\link[crawl]{crwMLE}}.
 #' @param initial.state List of initial.state objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one initial state is provided, then the same initial states are used
 #' for each individual.
@@ -77,7 +77,8 @@
 #'          theta=c(4,0),fixPar=c(1,1,NA,NA),
 #'          initial.state=inits,
 #'          err.model=err.model,attempts=100)
-#'                     
+#'   
+#' \dontrun{                                       
 #' # Fit the same crwMLE models and predict locations 
 #' # at same intervals but specify for each individual using lists
 #' crwOut2 <- crawlWrap(obsData=obsData,ncores=1,retryFits=100,
@@ -85,6 +86,7 @@
 #'          initial.state=list(inits,inits),
 #'          err.model=list(err.model,err.model),
 #'          predTime=list(seq(1,633),seq(1,686)),attempts=100)
+#' }
 #' 
 #' @export
 #' @importFrom crawl crwMLE crwPredict

@@ -8,10 +8,10 @@ n2w(par, bounds, beta, delta = NULL, nbStates, estAngleMean, DM, cons,
   workcons, Bndind)
 }
 \arguments{
-\item{par}{Vector of state-dependent distributions parameters.}
+\item{par}{Named list of vectors containing the initial parameter values for each data stream.}
 
-\item{bounds}{Matrix with 2 columns and as many rows as there are elements in \code{par}. Each row
-contains the lower and upper bound for the correponding parameter.}
+\item{bounds}{Named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
+distribution parameters for each data stream.}
 
 \item{beta}{Matrix of regression coefficients for the transition probabilities.}
 
@@ -19,34 +19,47 @@ contains the lower and upper bound for the correponding parameter.}
 
 \item{nbStates}{The number of states of the HMM.}
 
-\item{estAngleMean}{\code{TRUE} if the angle mean is estimated, \code{FALSE} otherwise.}
+\item{estAngleMean}{Named list indicating whether or not to estimate the angle mean for data streams with angular 
+distributions ('vm' and 'wrpcauchy').}
 
-\item{cons}{Logical indicating whether to use parameter constraints (cons=\code{1}) or not (cons=\code{0}).}
+\item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
+stream. Each element of \code{DM} can either be a named list of linear regression formulas or a matrix.}
+
+\item{cons}{Named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
+for each data stream.}
+
+\item{workcons}{Named list of vectors specifying constants to add to the regression coefficients on the working scale for 
+each data stream.}
+
+\item{Bndind}{Named list indicating whether \code{DM} is NULL with default parameter bounds for each data stream.}
 }
 \value{
 A vector of unconstrained parameters.
 }
 \description{
 Scales each parameter from its natural interval to the set of real numbers, to allow for
-unconstrained optimization. Used during the optimization of the log-likelihood.
+unconstrained optimization. Used during the optimization of the log-likelihood. Parameters of
+any data streams for which a design matrix is specified are ignored.
 }
 \examples{
 \dontrun{
-nbStates <- 3
-par <- c(0.001,0.999,0.5,0.001,1500.3,7.1)
-bounds <- matrix(c(0,1, # bounds for first parameter
-                   0,1, # bounds for second parameter
-                   0,1, # ...
-                   0,Inf,
-                   0,Inf,
-                   0,Inf),
-                 byrow=TRUE,ncol=2)
-beta <- matrix(rnorm(18),ncol=6,nrow=3)
-delta <- c(0.6,0.3,0.1)
+m<-example$m
+nbStates <- 2
+nbCovs <- 2
+parSize <- list(step=2,angle=2)
+par <- list(step=c(t(m$mle$step)),angle=c(t(m$mle$angle)))
+bounds <- m$conditions$bounds
+beta <- matrix(rnorm(6),ncol=2,nrow=3)
+delta <- c(0.6,0.4)
 
-# vector of working parameters
-wpar <- n2w(par=par,bounds=bounds,beta=beta,delta=delta,nbStates=nbStates,
-           estAngleMean=FALSE)
+#working parameters
+wpar <- momentuHMM:::n2w(par,bounds,beta,delta,nbStates,m$conditions$estAngleMean,NULL,
+m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+
+#natural parameter
+p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
+m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
+m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind)
 }
 
 }

@@ -37,6 +37,10 @@ Default: \code{FALSE}.}
 
 \item{plotTracks}{If TRUE, the Viterbi-decoded tracks are plotted (default).}
 
+\item{plotCI}{Logical indicating whether to include confidence intervals in natural parameter plots (default: FALSE)}
+
+\item{alpha}{Significance level of the confidence intervals (if \code{plotCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).}
+
 \item{...}{Currently unused. For compatibility with generic method.}
 }
 \description{
@@ -54,7 +58,6 @@ weighted by a factor 1/3, and in the second state by a factor 2/3.
 # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
 m <- example$m
 
-plot(m,ask=TRUE,animals=1,breaks=20)
-
+plot(m,ask=TRUE,animals=1,breaks=20,plotCI=TRUE)
 
 }

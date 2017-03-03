@@ -153,11 +153,34 @@
 #' stepDist <- "gamma"
 #' angleDist <- "vm"
 #' omegaDist <- "beta"
-#' data <- simData(nbAnimals=5,nbStates=2,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),
+#' data <- simData(nbAnimals=4,nbStates=2,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),
 #'                 Par=list(step=stepPar,angle=anglePar,omega=omegaPar),nbCovs=2,
 #'                 zeroInflation=list(step=TRUE),
 #'                 obsPerAnimal=obsPerAnimal)
 #'
+#' # 3. Include covariates
+#' # (note that it is useless to specify "nbCovs", which are overruled
+#' # by the number of columns of "cov")
+#' cov <- data.frame(temp=log(rnorm(500,20,5)))
+#' stepPar <- c(log(10),0.1,log(100),-0.1,log(5),log(25)) # working scale parameters for step DM
+#' anglePar <- c(pi,0,0.5,2) # mean_1, mean_2, concentration_1, concentration_2
+#' stepDist <- "gamma"
+#' angleDist <- "vm"
+#' data <- simData(nbAnimals=2,nbStates=2,dist=list(step=stepDist,angle=angleDist),
+#'                 Par=list(step=stepPar,angle=anglePar),
+#'                 DM=list(step=list(mean=~temp,sd=~1)),
+#'                 covs=cov,
+#'                 obsPerAnimal=obsPerAnimal)
+#'                 
+#' # 4. Include example 'forest' spatial covariate raster layer
+#' # nbAnimals and obsPerAnimal kept small to reduce example run time
+#' data <- simData(nbAnimals=1,nbStates=2,dist=list(step=stepDist,angle=angleDist),
+#'                 Par=list(step=c(100,1000,50,100),angle=c(0,0,0.1,5)),
+#'                 beta=matrix(c(5,-10,-25,50),nrow=2,ncol=2,byrow=TRUE),
+#'                 formula=~forest,spatialCovs=forest,
+#'                 obsPerAnimal=250,states=TRUE)
+#'                 
+#' # 5. Specify design matrix for 'omega' data stream
 #' # natural scale parameters for step and angle
 #' stepPar <- c(1,10,1,5) # shape_1, shape_2, scale_1, scale_2
 #' anglePar <- c(pi,0,0.5,0.7) # mean_1, mean_2, concentration_1, concentration_2
@@ -169,38 +192,20 @@
 #' angleDist <- "wrpcauchy"
 #' omegaDist <- "beta"
 #' 
-#' data <- simData(nbAnimals=5,nbStates=2,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),
+#' data <- simData(nbStates=2,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),
 #'                 Par=list(step=stepPar,angle=anglePar,omega=omegaPar),nbCovs=2,
 #'                 DM=list(omega=list(shape1=~cov1,shape2=~cov2)),
 #'                 obsPerAnimal=obsPerAnimal,states=TRUE)
-#'
-#' # step length only and zero-inflation
-#' stepPar <- c(1,10,1,5,0.2,0.3) # mean_1, mean_2, sd_1, sd_2, zeromass_1, zeromass_2
-#' stepDist <- "gamma"
-#' data <- simData(nbAnimals=5,nbStates=2,dist=list(step=stepDist),
-#'                 Par=list(step=stepPar),nbCovs=2,zeroInflation=list(step=TRUE),
-#'                 obsPerAnimal=obsPerAnimal)
-#'
-#' # include covariates
-#' # (note that it is useless to specify "nbCovs", which are overruled
-#' # by the number of columns of "cov")
-#' cov <- data.frame(temp=log(rnorm(500,20,5)))
-#' stepPar <- c(log(10),0.1,log(100),-0.1,log(5),log(25)) # working scale parameters for step DM
-#' anglePar <- c(pi,0,0.5,2) # mean_1, mean_2, concentration_1, concentration_2
-#' stepDist <- "gamma"
-#' angleDist <- "vm"
-#' data <- simData(nbAnimals=5,nbStates=2,dist=list(step=stepDist,angle=angleDist),
-#'                 Par=list(step=stepPar,angle=anglePar),
-#'                 DM=list(step=list(mean=~temp,sd=~1)),
-#'                 covs=cov)
 #'                 
-#' # include example 'forest' spatial covariate raster layer
-#' # nbAnimals and obsPerAnimal kept small to reduce example run time
-#' data <- simData(nbAnimals=1,nbStates=2,dist=list(step=stepDist,angle=angleDist),
-#'                 Par=list(step=c(100,1000,50,100),angle=c(0,0,0.1,5)),
-#'                 beta=matrix(c(5,-10,-25,50),nrow=2,ncol=2,byrow=TRUE),
-#'                 formula=~forest,spatialCovs=forest,
-#'                 obsPerAnimal=250,states=TRUE)
+#' # 6. Include temporal irregularity and location measurement error
+#' lambda <- 2 # expect 2 observations per time step
+#' errorEllipse <- list(M=50,m=25,r=180)
+#' obsData <- simData(model=m,obsPerAnimal=obsPerAnimal,
+#'                    lambda=lambda, errorEllipse=errorEllipse)
+#'                 
+#' @references
+#' McClintock BT, London JM, Cameron MF, Boveng PL. 2015. Modelling animal movement using the Argos satellite telemetry location error ellipse. 
+#' Methods in Ecology and Evolution 6(3):266-277.
 #'
 #' @export
 #' @importFrom stats rnorm runif step terms.formula
@@ -741,24 +746,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   if(states)
     data <- cbind(data,states=allStates)
   
-  if(all(c("x","y") %in% names(data)) & (!is.null(lambda) | !is.null(errorEllipse))){
-    if(!is.null(errorEllipse)){
-      if(!is.list(errorEllipse) | any(!(c("M","m","r") %in% names(errorEllipse)))) stop("errorEllipse must be a list of scalars named 'M', 'm', and 'r'.")
-      if(any(unlist(lapply(errorEllipse[c("M","m","r")],length))>1)) stop('errorEllipse must consist of positive scalars')
-      if(any(unlist(lapply(errorEllipse[c("M","m")],function(x) x<0)))) stop("errorEllipse$M and errorEllipse$m must be >=0")
-      if(errorEllipse$r < 0 | errorEllipse$r > 180) stop('errorEllipse$r must be in [0,180]')
-    }
-    if(!is.null(lambda))
-      if(lambda<=0) stop('lambda must be >0')
-    
-    # account for location measurement error and/or temporal irregularity
-    out<-simObsData(data,lambda,errorEllipse)
-    
-  } else {
-    
-    out<-momentuHMMData(data)
-    
-  }
+  # account for observation error (if any)
+  out<-simObsData(momentuHMMData(data),lambda,errorEllipse)
+  
   message("DONE")
-  out
+  return(out)
 }

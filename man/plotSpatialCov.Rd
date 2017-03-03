@@ -12,7 +12,7 @@ plotSpatialCov(data, spatialCov, segments = TRUE, compact = TRUE, col = 1,
 \item{data}{Data frame of the location data, with necessary fields 'x' (longitudinal direction) and
 'y' (latitudinal direction).}
 
-\item{spatialCov}{Raster layer on which to plot the location data}
+\item{spatialCov}{\code{\link[raster]{RasterLayer-class}} object on which to plot the location data}
 
 \item{segments}{\code{TRUE} if segments should be plotted between the observations (default),
 \code{FALSE} otherwise.}
@@ -41,4 +41,18 @@ plotted manually). If \code{FALSE}, the function automatically plots the map (de
 }
 \description{
 Plot tracking data over a raster layer.
+}
+\examples{
+stepDist <- "gamma"
+angleDist <- "vm"
+
+data <- simData(nbAnimals=2,nbStates=2,dist=list(step=stepDist,angle=angleDist),
+                Par=list(step=c(100,1000,50,100),angle=c(0,0,0.1,5)),
+                beta=matrix(c(5,-10,-25,50),nrow=2,ncol=2,byrow=TRUE),
+                formula=~forest,spatialCovs=forest,
+                obsPerAnimal=225,states=TRUE)
+
+# plot data over forest raster automatically loaded with the packge
+plotSpatialCov(data,forest,states=data$states)
+
 }

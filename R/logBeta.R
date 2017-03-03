@@ -3,7 +3,7 @@
 #'
 #' Used in \code{\link{stateProbs}}.
 #'
-#' @param m A \code{momentuHMM} object.
+#' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.
 #'
 #' @return The matrix of backward log-probabilities.
 #'

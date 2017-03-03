@@ -31,7 +31,7 @@ from \code{attempts} because \code{retryFits} uses random perturbations of the c
 for each individual.}
 
 \item{err.model}{List of err.model objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one error model is provided, then the same error model is used
-for each individual.}
+for each individual (in which case the names of the \code{err.model} components corresponding to easting/longitudinal and northing/latitudinal location error must match \code{coord}).}
 
 \item{activity}{List of activity objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one activity covariate is provided, then the same activity covariate is used
 for each individual.}
@@ -39,8 +39,8 @@ for each individual.}
 \item{drift}{List of drift objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one drift component is provided, then the same drift component is used
 for each individual.}
 
-\item{coord}{A 2-vector of character values giving the names of the "X" and
-"Y" coordinates in \code{data}. See \code{\link[crawl]{crwMLE}}.}
+\item{coord}{A 2-vector of character values giving the names of the "x" and
+"y" coordinates in \code{data}. See \code{\link[crawl]{crwMLE}}.}
 
 \item{Time.name}{Character indicating name of the location time column.  See \code{\link[crawl]{crwMLE}}.}
 
@@ -107,7 +107,8 @@ crwOut1 <- crawlWrap(obsData=obsData,ncores=1,retryFits=100,
          theta=c(4,0),fixPar=c(1,1,NA,NA),
          initial.state=inits,
          err.model=err.model,attempts=100)
-                    
+  
+\dontrun{                                       
 # Fit the same crwMLE models and predict locations 
 # at same intervals but specify for each individual using lists
 crwOut2 <- crawlWrap(obsData=obsData,ncores=1,retryFits=100,
@@ -115,6 +116,7 @@ crwOut2 <- crawlWrap(obsData=obsData,ncores=1,retryFits=100,
          initial.state=list(inits,inits),
          err.model=list(err.model,err.model),
          predTime=list(seq(1,633),seq(1,686)),attempts=100)
+}
 
 }
 \seealso{

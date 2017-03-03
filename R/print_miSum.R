@@ -6,10 +6,9 @@
 #' @param ... Currently unused. For compatibility with generic method.
 #'
 #' @examples
-#' # m is a miSum object (as returned by MIfitHMM), automatically loaded with the package
-#' m <- example$m
-#'
-#' print(m)
+#' # create miSum object from example data
+#' mi <- MIpool(miExample$HMMfits,ncores=1)
+#' print(mi)
 #'
 #' @export
 

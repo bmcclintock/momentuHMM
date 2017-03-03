@@ -4,7 +4,7 @@
 #'
 #' @param data Data frame of the location data, with necessary fields 'x' (longitudinal direction) and
 #' 'y' (latitudinal direction).
-#' @param spatialCov Raster layer on which to plot the location data
+#' @param spatialCov \code{\link[raster]{RasterLayer-class}} object on which to plot the location data
 #' @param segments \code{TRUE} if segments should be plotted between the observations (default),
 #' \code{FALSE} otherwise.
 #' @param compact \code{FALSE} if tracks should be plotted separately, \code{TRUE}
@@ -21,6 +21,19 @@
 #' @param ask If \code{TRUE}, the execution pauses between each plot.
 #' @param return If \code{TRUE}, the function returns a ggplot object (which can be edited and
 #' plotted manually). If \code{FALSE}, the function automatically plots the map (default).
+#' 
+#' @examples 
+#' stepDist <- "gamma"
+#' angleDist <- "vm"
+#' 
+#' data <- simData(nbAnimals=2,nbStates=2,dist=list(step=stepDist,angle=angleDist),
+#'                 Par=list(step=c(100,1000,50,100),angle=c(0,0,0.1,5)),
+#'                 beta=matrix(c(5,-10,-25,50),nrow=2,ncol=2,byrow=TRUE),
+#'                 formula=~forest,spatialCovs=forest,
+#'                 obsPerAnimal=225,states=TRUE)
+#' 
+#' # plot data over forest raster automatically loaded with the packge
+#' plotSpatialCov(data,forest,states=data$states)
 #'
 #' @importFrom ggplot2 ggplot element_rect element_blank
 #' @importFrom ggplot2 geom_point

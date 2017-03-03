@@ -6,10 +6,10 @@
 #'
 #' @method plot miSum
 #'
-#' @param x Object \code{miSum}
+#' @param x Object \code{miSum} (as return by \code{\link{MIpool}})
 #' @param animals Vector of indices or IDs of animals for which information will be plotted.
 #' Default: \code{NULL} ; all animals are plotted.
-#' @param covs Data frame consisting of a single row indicating the covariate values to be used in plots. If none are specified, the means of any covariates appearing in the model are used (unless covariate is a factor, in which case the first factor is used).
+#' @param covs Data frame consisting of a single row indicating the covariate values to be used in plots. If none are specified, the means of any covariates appearing in the model are used (unless covariate is a factor, in which case the first factor appearing in the data is used).
 #' @param ask If \code{TRUE}, the execution pauses between each plot.
 #' @param breaks Histogram parameter. See \code{hist} documentation.
 #' @param hist.ylim Parameter \code{ylim} for the step length histograms.
@@ -21,20 +21,21 @@
 #' @param col Vector or colors for the states (one color per state).
 #' @param cumul	If TRUE, the sum of weighted densities is plotted (default).
 #' @param plotTracks If TRUE, the Viterbi-decoded tracks are plotted (default).
+#' @param plotCI Logical indicating whether to include confidence intervals in natural parameter plots (default: FALSE)
+#' @param alpha Significance level of the confidence intervals (if \code{plotCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).
+#' @param plotEllipse Logical indicating whether to plot error ellipses around imputed location means. Default: TRUE.
 #' @param ... Currently unused. For compatibility with generic method.
 #'
 #' @details The state-dependent densities are weighted by the frequency of each state in the most
-#' probable state sequence (decoded with the function \code{\link{viterbi}}). For example, if the
+#' probable state sequence (decoded with the function \code{\link{viterbi}} for each imputation). For example, if the
 #' most probable state sequence indicates that one third of observations correspond to the first
 #' state, and two thirds to the second state, the plots of the densities in the first state are
 #' weighted by a factor 1/3, and in the second state by a factor 2/3.
 #'
 #' @examples
-#' # m is a miSum object (as returned by MIfitHMM), automatically loaded with the package
-#' m <- example$m
-#'
-#' plot(m,ask=TRUE,animals=1,breaks=20)
-#'
+#' # create miSum object from example data
+#' mi <- MIpool(miExample$HMMfits,ncores=1)
+#' plot(mi)
 #'
 #' @export
 

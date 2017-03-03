@@ -44,7 +44,7 @@ be included in \code{formula} and/or \code{DM}. Covariates can also be simulated
 extracted from the raster layer(s) based on the simulated location data for each time step. The names of the raster layer(s) can be included in 
 \code{formula} and/or \code{DM}.  Note that \code{simData} usually takes longer to generate simulated data when \code{spatialCovs} is specified.}
 
-\item{zeroInflation}{A named list of logicals indicating whether the probability distributions of the data streams should be zero-inlated. If \code{zeroInflation} is \code{TRUE} 
+\item{zeroInflation}{A named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated. If \code{zeroInflation} is \code{TRUE} 
 for a given data stream, then values for the zero-mass parameters should be
 included in the corresponding element of \code{Par}.}
 
@@ -90,7 +90,7 @@ specifies (-1,1) bounds for the concentration parameters instead of the default 
 
 \item{workcons}{An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
-through a combination of \code{DM}, \code{cons}, and \code{workcons}.}
+through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
@@ -147,6 +147,11 @@ Simulates data from a (multivariate) hidden Markov model. Movement data can be g
 'gamma', 'weibull', 'exp', and 'lnorm'.  Valid distributions for 'angle' include 'vm' and 'wrpcauchy'.  If only a valid 'step' data stream is specified, then only x-coordinates
 are generated.
 
+\item If \code{DM} is specified for a particular data stream, then the initial values are specified on 
+the working (i.e., beta) scale of the parameters. The working scale of each parameter is determined by the link function used.
+The function \code{\link{getParDM}} is intended to help with obtaining initial values on the working scale when specifying a design matrix and other 
+parameter constraints. 
+
 \item Simulated data that are temporally regular (i.e., \code{lambda=NULL}) and without location measurement error (i.e., \code{errorEllipse=NULL}) are returned
 as a \code{\link{momentuHMMData}} object suitable for analysis using \code{\link{fitHMM}}.
 
@@ -182,11 +187,34 @@ omegaPar <- c(1,10,10,1) # shape1_1, shape1_2, shape2_1, shape2_2
 stepDist <- "gamma"
 angleDist <- "vm"
 omegaDist <- "beta"
-data <- simData(nbAnimals=5,nbStates=2,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),
+data <- simData(nbAnimals=4,nbStates=2,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),
                 Par=list(step=stepPar,angle=anglePar,omega=omegaPar),nbCovs=2,
                 zeroInflation=list(step=TRUE),
                 obsPerAnimal=obsPerAnimal)
 
+# 3. Include covariates
+# (note that it is useless to specify "nbCovs", which are overruled
+# by the number of columns of "cov")
+cov <- data.frame(temp=log(rnorm(500,20,5)))
+stepPar <- c(log(10),0.1,log(100),-0.1,log(5),log(25)) # working scale parameters for step DM
+anglePar <- c(pi,0,0.5,2) # mean_1, mean_2, concentration_1, concentration_2
+stepDist <- "gamma"
+angleDist <- "vm"
+data <- simData(nbAnimals=2,nbStates=2,dist=list(step=stepDist,angle=angleDist),
+                Par=list(step=stepPar,angle=anglePar),
+                DM=list(step=list(mean=~temp,sd=~1)),
+                covs=cov,
+                obsPerAnimal=obsPerAnimal)
+                
+# 4. Include example 'forest' spatial covariate raster layer
+# nbAnimals and obsPerAnimal kept small to reduce example run time
+data <- simData(nbAnimals=1,nbStates=2,dist=list(step=stepDist,angle=angleDist),
+                Par=list(step=c(100,1000,50,100),angle=c(0,0,0.1,5)),
+                beta=matrix(c(5,-10,-25,50),nrow=2,ncol=2,byrow=TRUE),
+                formula=~forest,spatialCovs=forest,
+                obsPerAnimal=250,states=TRUE)
+                
+# 5. Specify design matrix for 'omega' data stream
 # natural scale parameters for step and angle
 stepPar <- c(1,10,1,5) # shape_1, shape_2, scale_1, scale_2
 anglePar <- c(pi,0,0.5,0.7) # mean_1, mean_2, concentration_1, concentration_2
@@ -198,37 +226,19 @@ stepDist <- "weibull"
 angleDist <- "wrpcauchy"
 omegaDist <- "beta"
 
-data <- simData(nbAnimals=5,nbStates=2,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),
+data <- simData(nbStates=2,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),
                 Par=list(step=stepPar,angle=anglePar,omega=omegaPar),nbCovs=2,
                 DM=list(omega=list(shape1=~cov1,shape2=~cov2)),
                 obsPerAnimal=obsPerAnimal,states=TRUE)
-
-# step length only and zero-inflation
-stepPar <- c(1,10,1,5,0.2,0.3) # mean_1, mean_2, sd_1, sd_2, zeromass_1, zeromass_2
-stepDist <- "gamma"
-data <- simData(nbAnimals=5,nbStates=2,dist=list(step=stepDist),
-                Par=list(step=stepPar),nbCovs=2,zeroInflation=list(step=TRUE),
-                obsPerAnimal=obsPerAnimal)
-
-# include covariates
-# (note that it is useless to specify "nbCovs", which are overruled
-# by the number of columns of "cov")
-cov <- data.frame(temp=log(rnorm(500,20,5)))
-stepPar <- c(log(10),0.1,log(100),-0.1,log(5),log(25)) # working scale parameters for step DM
-anglePar <- c(pi,0,0.5,2) # mean_1, mean_2, concentration_1, concentration_2
-stepDist <- "gamma"
-angleDist <- "vm"
-data <- simData(nbAnimals=5,nbStates=2,dist=list(step=stepDist,angle=angleDist),
-                Par=list(step=stepPar,angle=anglePar),
-                DM=list(step=list(mean=~temp,sd=~1)),
-                covs=cov)
                 
-# include example 'forest' spatial covariate raster layer
-# nbAnimals and obsPerAnimal kept small to reduce example run time
-data <- simData(nbAnimals=1,nbStates=2,dist=list(step=stepDist,angle=angleDist),
-                Par=list(step=c(100,1000,50,100),angle=c(0,0,0.1,5)),
-                beta=matrix(c(5,-10,-25,50),nrow=2,ncol=2,byrow=TRUE),
-                formula=~forest,spatialCovs=forest,
-                obsPerAnimal=250,states=TRUE)
-
+# 6. Include temporal irregularity and location measurement error
+lambda <- 2 # expect 2 observations per time step
+errorEllipse <- list(M=50,m=25,r=180)
+obsData <- simData(model=m,obsPerAnimal=obsPerAnimal,
+                   lambda=lambda, errorEllipse=errorEllipse)
+                
+}
+\references{
+McClintock BT, London JM, Cameron MF, Boveng PL. 2015. Modelling animal movement using the Argos satellite telemetry location error ellipse. 
+Methods in Ecology and Evolution 6(3):266-277.
 }

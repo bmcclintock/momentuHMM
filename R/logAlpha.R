@@ -3,7 +3,7 @@
 #'
 #' Used in \code{\link{stateProbs}} and \code{\link{pseudoRes}}.
 #'
-#' @param m A \code{momentuHMM} object.
+#' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.
 #'
 #' @return The matrix of forward log-probabilities.
 #'

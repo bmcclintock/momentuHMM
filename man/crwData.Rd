@@ -16,5 +16,5 @@ An object \code{crwData}.
 Constructor of \code{crwData} objects
 }
 \seealso{
-\code{\link{crawlWrap}}
+\code{\link{crawlWrap}}, \code{\link{MIfitHMM}}
 }

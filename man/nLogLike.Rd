@@ -13,30 +13,49 @@ nLogLike(wpar, nbStates, formula, bounds, parSize, data, dist, covs,
 
 \item{nbStates}{Number of states of the HMM.}
 
-\item{bounds}{Matrix with 2 columns and as many rows as there are elements in \code{wpar}. Each row
-contains the lower and upper bound for the correponding parameter.}
+\item{formula}{Regression formula for the transition probability covariates.}
 
-\item{parSize}{Vector of two values: number of parameters of the step length distribution,
-number of parameters of the turning angle distribution.}
+\item{bounds}{Named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
+distribution parameters for each data stream.}
+
+\item{parSize}{Named list indicating the number of natural parameters of the data stream probability distributions}
 
 \item{data}{An object \code{momentuHMMData}.}
 
-\item{zeroInflation}{\code{TRUE} if the step length distribution is inflated in zero.
-Default: \code{FALSE}. If \code{TRUE}, initial values for the zero-mass parameters should be
-included in \code{stepPar0}.}
+\item{dist}{Named list indicating the probability distributions of the data streams.}
+
+\item{covs}{data frame containing the model covariates (if any)}
+
+\item{estAngleMean}{Named list indicating whether or not to estimate the angle mean for data streams with angular 
+distributions ('vm' and 'wrpcauchy').}
+
+\item{circularAngleMean}{Named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
+regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.}
+
+\item{zeroInflation}{Named list of logicals indicating whether the probability distributions of the data streams are zero-inflated.}
 
 \item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
 
-\item{stepDist}{Name of the distribution of the step lengths (as a character string).
-Supported distributions are: gamma, weibull, lnorm, exp. Default: gamma.}
+\item{cons}{Named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
+for each data stream.}
 
-\item{angleDist}{Name of the distribution of the turning angles (as a character string).
-Supported distributions are: vm, wrpcauchy. Set to \code{"none"} if the angle distribution should
-not be estimated. Default: vm.}
+\item{fullDM}{Named list containing the full (i.e. not shorthand) design matrix for each data stream.}
 
-\item{angleMean}{Vector of means of turning angles if not estimated (one for each state).
-Default: \code{NULL} (the angle mean is estimated).}
+\item{DMind}{Named list indicating whether \code{fullDM} includes individual- and/or temporal-covariates for each data stream
+specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.}
+
+\item{workcons}{Named list of vectors specifying constants to add to the regression coefficients on the working scale for 
+each data stream.}
+
+\item{Bndind}{Named list indicating whether \code{DM} is NULL with default parameter bounds for each data stream.}
+
+\item{knownStates}{Vector of values of the state process which are known prior to fitting the
+model (if any).}
+
+\item{fixPar}{Vector of working parameters which are assumed known prior to fitting the model (NA indicates parameters is to be estimated).}
+
+\item{wparIndex}{Vector of indices for the elements of \code{fixPar} that are not NA.}
 }
 \value{
 The negative log-likelihood of the parameters given the data.
@@ -48,21 +67,24 @@ Negative log-likelihood function
 \dontrun{
 # data is a momentuHMMData object (as returned by prepData), automatically loaded with the package
 data <- example$data
-simPar <- example$simPar
-par0 <- example$par0
+m<-example$m
+Par <- list(step=example$par0$Par$step,angle=example$par0$Par$angle)
+nbStates <- length(m$stateNames)
 
-estAngleMean <- is.null(simPar$angleMean)
-bounds <- parDef(simPar$stepDist,simPar$angleDist,simPar$nbStates,
-                 estAngleMean,simPar$zeroInflation)$bounds
-parSize <- parDef(simPar$stepDist,simPar$angleDist,simPar$nbStates,
-                  estAngleMean,simPar$zeroInflation)$parSize
+inputs <- momentuHMM:::checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,
+          m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$DM,
+          m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
 
-par <- c(par0$stepPar0,par0$anglePar0)
-wpar <- n2w(par,bounds,par0$beta0,par0$delta0,simPar$nbStates,FALSE)
+wpar <- momentuHMM:::n2w(Par,m$conditions$bounds,m$mle$beta,m$mle$delta,nbStates,
+       m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,
+       m$conditions$Bndind)
 
-l <- nLogLike(wpar=wpar,nbStates=simPar$nbStates,bounds=bounds,parSize=parSize,data=data,
-             stepDist=simPar$stepDist,angleDist=simPar$angleDist,angleMean=simPar$angleMean,
-             zeroInflation=simPar$zeroInflation)
+l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,
+     inputs$p$parSize,data,m$conditions$dist,model.matrix(m$conditions$formula,data),
+                   m$conditions$estAngleMean,m$conditions$circularAngleMean,
+                   m$conditions$zeroInflation,m$conditions$stationary,m$conditions$cons,
+                   m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,
+                   m$knownStates,unlist(m$conditions$fixPar),m$conditions$wparIndex)
 }
 
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/circAngles.R
 \name{circAngles}
 \alias{circAngles}
-\title{Convert bearings (relative to true north) to turning angle covariates suitable for circular-circular regression}
+\title{Convert bearings (relative to true north) to turning angle covariates suitable for circular-circular regression on the angle mean}
 \usage{
 circAngles(refAngle, data, coordNames = c("x", "y"))
 }

@@ -4,18 +4,15 @@
 //'
 //' Computation of the negative log-likelihood (forward algorithm - written in C++)
 //'
-//' @param nbStates Number of states
-//' @param beta Matrix of regression coefficients for the transition probabilities
-//' @param covs Covariates
-//' @param data A \code{\link{momentuHMMData}} object of the observations
-//' @param stepDist The name of the step length distribution
-//' @param angleDist The name of the turning angle distribution
-//' @param stepPar State-dependent parameters of the step length distribution
-//' @param anglePar State-dependent parameters of the turning angle distribution
-//' @param delta Stationary distribution
+//' @param nbStates Number of states,
+//' @param covs Covariates,
+//' @param data A \code{\link{momentuHMMData}} object of the observations,
+//' @param dataNames Character vector containing the names of the data streams,
+//' @param dist Named list indicating the probability distributions of the data streams. 
+//' @param Par Named list containing the state-dependent parameters of the data streams, matrix of regression coefficients 
+//' for the transition probabilities ('beta'), and stationary distribution ('delta').
 //' @param aInd Vector of indices of the rows at which the data switches to another animal
-//' @param zeroInflation \code{true} if zero-inflation is included in the step length distribution,
-//' \code{false} otherwise.
+//' @param zeroInflation Named list of logicals indicating whether the probability distributions of the data streams are zero-inflated.
 //' @param stationary \code{false} if there are covariates. If \code{true}, the initial distribution is considered
 //' equal to the stationary distribution. Default: \code{false}.
 //' @param knownStates Vector of values of the state process which are known prior to fitting the
@@ -150,18 +147,6 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       genPar = genPar.rows(0,genPar.n_rows-nbStates-1); //genPar.tube(0, 0, genPar.n_rows-2, genPar.n_cols-1);
       noZeros = arma::find(as<arma::vec>(genData)>0);
       nbZeros = arma::find(as<arma::vec>(genData)==0);
-      //for(int j=0; j<zeromass.n_rows; j++){
-      //  for(int jj=0; jj<zeromass.n_cols; jj++){
-      //    Rprintf("zeromass %f ",zeromass(j,jj));
-      //  }
-      //}
-      //for(int j=0; j<genPar.n_rows; j++){
-      //  for(int jj=0; jj<genPar.n_cols; jj++){
-      //    Rprintf("genPar %f ",genPar(j,jj));
-      //  }
-      //}
-      //Rprintf("zeromass %f %f \n",zeromass(0,0),zeromass(1,0));
-      //Rprintf("genPar %f %f %f %f \n",genPar(0,0),genPar(1,0),genPar(2,0),genPar(3,0));
     }
 
     for(int state=0;state<nbStates;state++){

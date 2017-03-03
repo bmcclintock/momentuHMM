@@ -7,27 +7,37 @@
 parDef(dist, nbStates, estAngleMean, zeroInflation, DM, userBounds = NULL)
 }
 \arguments{
+\item{dist}{Named list indicating the probability distributions of the data streams.}
+
 \item{nbStates}{Number of states of the HMM.}
 
-\item{estAngleMean}{\code{TRUE} if the mean of the turning angles distribution is estimated,
-\code{FALSE} otherwise.}
+\item{estAngleMean}{Named list indicating whether or not to estimate the angle mean for data streams with angular 
+distributions ('vm' and 'wrpcauchy').}
 
-\item{zeroInflation}{\code{TRUE} if the step length distribution is inflated in zero.}
+\item{zeroInflation}{Named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated.}
 
-\item{stepDist}{Name of the distribution of the step lengths.}
+\item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
+stream. Each element of \code{DM} can either be a named list of linear regression formulas or a matrix.}
 
-\item{angleDist}{Name of the distribution of the turning angles.
-Set to \code{"none"} if the angle distribution should not be estimated.}
+\item{userBounds}{An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
+distribution parameters for each data stream. For example, for a 2-state model using the wrapped Cauchy ('wrpcauchy') distribution for 
+a data stream named 'angle' with \code{estAngleMean$angle=TRUE)}, \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2))} 
+specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.}
 }
 \value{
 A list of:
-\item{parSize}{Vector of two values: number of parameters of the step length distribution,
-number of parameters of the turning angle distribution}
-\item{bounds}{Matrix with 2 columns and \code{sum(parSize)} rows - each row contains the lower and upper
-bound for the correponding parameter)}
-\item{parNames}{Names of parameters of step distribution (the names of the parameters of the
-angle distribution are always the same).}
+\item{parSize}{Named list indicating the number of natural parameters of the data stream probability distributions.}
+\item{bounds}{Named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
+distribution parameters for each data stream.}
+\item{parNames}{Names of parameters of the probability distribution for each data stream.}
+\item{Bndind}{Named list indicating whether \code{DM} is NULL with default parameter bounds for each data stream.}
 }
 \description{
 Parameters definition
+}
+\examples{
+\dontrun{
+pD<-momentuHMM:::parDef(list(step="gamma",angle="wrpcauchy"),
+    nbStates=2,list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),NULL,NULL)
+}
 }

@@ -87,10 +87,11 @@
 #' \item{HMMfits}{List of length \code{nSims} comprised of \code{\link{momentuHMM}} objects.}
 #' If \code{poolEstimates=FALSE} a list of length \code{nSims} comprised of \code{\link{momentuHMM}} objects is returned.
 #' 
-#' @seealso \code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHMM}}, \code{\link{MIpool}}, \code{\link{prepData}} 
+#' @seealso \code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHMM}}, \code{\link{getParDM}}, \code{\link{MIpool}}, \code{\link{prepData}} 
 #' 
 #' @examples
 #' 
+#' \dontrun{
 #' # extract simulated obsData from example data
 #' obsData <- miExample$obsData
 #' 
@@ -127,6 +128,7 @@
 #'                   covNames=c("cov1","cov2"))
 #'             
 #' print(bestFit)
+#' }
 #' 
 #' # Don't run because it takes too long on a single core
 #' \dontrun{ 

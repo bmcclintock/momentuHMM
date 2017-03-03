@@ -1,4 +1,5 @@
 #' @importFrom stats rcauchy
+# wrapped cauchy distribution with rho in (-1,1)
 rwrpcauchy<-function (n, location = 0, rho = exp(-1)) 
 {
   if(rho == 0) 

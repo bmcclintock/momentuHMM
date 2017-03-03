@@ -143,6 +143,7 @@ and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[craw
 }
 \examples{
 
+\dontrun{
 # extract simulated obsData from example data
 obsData <- miExample$obsData
 
@@ -179,6 +180,7 @@ bestFit<-MIfitHMM(miData=miData,nSims=1,ncores=1,
                   covNames=c("cov1","cov2"))
             
 print(bestFit)
+}
 
 # Don't run because it takes too long on a single core
 \dontrun{ 
@@ -205,5 +207,5 @@ McClintock B.T. 2017. Incorporating telemetry error into hidden Markov movement 
 and Environmental Statistics.
 }
 \seealso{
-\code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHMM}}, \code{\link{MIpool}}, \code{\link{prepData}}
+\code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHMM}}, \code{\link{getParDM}}, \code{\link{MIpool}}, \code{\link{prepData}}
 }

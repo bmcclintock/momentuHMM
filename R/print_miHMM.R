@@ -6,10 +6,9 @@
 #' @param ... Currently unused. For compatibility with generic method.
 #'
 #' @examples
-#' # m is a miHMM object (as returned by MIfitHMM), automatically loaded with the package
-#' m <- example$m
-#'
-#' print(m)
+#' # create miHMM object from example data
+#' mi <- momentuHMM:::miHMM(list(miSum=MIpool(miExample$HMMfits,ncores=1),HMMfits=miExample$HMMfits))
+#' print(mi)
 #'
 #' @export
 

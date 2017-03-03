@@ -2,7 +2,7 @@
 #' Calculate pooled parameter estimates and states across multiple imputations
 #' 
 #' @param HMMfits List comprised of \code{\link{momentuHMM}} objects
-#' @param alpha Significance level for calculating confidence intervals of pooled estimates. Default: 0.95.
+#' @param alpha Significance level for calculating confidence intervals of pooled estimates (including location error ellipses). Default: 0.95.
 #' @param ncores Number of cores to use for parallel processing.
 #' 
 #' @return A \code{\link{miSum}} object, i.e., a list comprised of model and pooled parameter summaries, including \code{data} (averaged across imputations), \code{conditions}, \code{Par}, and \code{MIcombine} 
@@ -28,7 +28,6 @@
 #' 
 #' miSum <- MIpool(HMMfits,ncores=1)
 #' print(miSum)
-#' plot(miSum,plotCI=TRUE)
 #' 
 #' @export
 #' @importFrom doParallel registerDoParallel stopImplicitCluster

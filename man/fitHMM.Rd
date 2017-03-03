@@ -94,7 +94,7 @@ specifies (-1,1) bounds for the concentration parameters instead of the default 
 
 \item{workcons}{An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
-through a combination of \code{DM}, \code{cons}, and \code{workcons}.}
+through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
@@ -145,8 +145,8 @@ the global optimum of the likelihood function if the initial parameters are poor
 the working (i.e., beta) scale of the parameters. The working scale of each parameter is determined by the link function used.
 If a parameter P is bound by (0,Inf) then the working scale is the log(P) scale.  If the parameter bounds are (-pi,pi) then the working 
 scale is tan(P/2) unless circular-circular regression is used. Otherwise if the parameter bounds are finite then logit(P) is the working scale.  
-The function \code{\link{getParDM}} is intended to help with obtaining initial values on the working scale when specifying a design matrix that does not rely on
-individual- or time-varying covariates (see example below). When circular-circular regression is specified using \code{circularAngleMean}, the working scale 
+The function \code{\link{getParDM}} is intended to help with obtaining initial values on the working scale when specifying a design matrix and other 
+parameter constraints (see example below). When circular-circular regression is specified using \code{circularAngleMean}, the working scale 
 for the mean turning angle is not as easily interpretable, but the 
 link function is atan2(sin(X)*B,1+cos(X)*B), where X are the angle covariates and B the angle coefficients (see Duchesne et al. 2015). 
 Under this formulation, the reference turning angle is 0 (i.e., movement in the same direction as the previous time step). 
@@ -181,8 +181,9 @@ m <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist)
 
 print(m)
 
+\dontrun{
 ### 2. fit the exact same model to the simulated data using DM formulas
-# define initial values for the parameters on working scale
+# Get initial values for the parameters on working scale
 Par0 <- getParDM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
         Par=list(step=stepPar,angle=anglePar),
         DM=list(step=list(mean=~1,sd=~1),angle=list(concentration=~1)))
@@ -227,14 +228,28 @@ data$cov3 <- circAngles(refAngle=2*atan(rnorm(nrow(data))),data)
 # Fit circular-circular regression model for angle mean
 # Note no intercepts are estimated for angle means because these are by default
 # the previous movement direction (i.e., a turning angle of zero)
-mDMcirc <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+mDMcircf <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
                  Par0=list(step=stepPar,angle=c(0,0,Par0$angle)),
                   formula=formula,
                   estAngleMean=list(angle=TRUE),
                   circularAngleMean=list(angle=TRUE),
                   DM=list(angle=list(mean=~cov3,concentration=~1)))
                   
-print(mDMcirc)
+print(mDMcircf)
+                  
+### 6. fit the exact same circular-circular angle mean model using DM matrices
+
+# Note no intercept terms are included in DM for angle means because the intercept is
+# by default the previous movement direction (i.e., a turning angle of zero)
+mDMcircm <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+                 Par0=list(step=stepPar,angle=c(0,0,Par0$angle)),
+                  formula=formula,
+                  estAngleMean=list(angle=TRUE),
+                  circularAngleMean=list(angle=TRUE),
+                  DM=list(angle=matrix(c("cov3",0,0,0,0,"cov3",0,0,0,0,1,0,0,0,0,1),4,4)))
+                  
+print(mDMcircm)
+}
 
 }
 \references{
@@ -256,4 +271,7 @@ and ancillary biotelemetry data to investigate population-level activity budgets
 Patterson T.A., Basson M., Bravington M.V., Gunn J.S. 2009.
 Classifying movement behaviour in relation to environmental conditions using hidden Markov models.
 Journal of Animal Ecology, 78 (6), 1113-1123.
+}
+\seealso{
+\code{\link{getParDM}}, \code{\link{prepData}}, \code{\link{simData}}
 }

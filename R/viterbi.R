@@ -4,12 +4,12 @@
 #' For a given model, reconstructs the most probable states sequence,
 #' using the Viterbi algorithm.
 #'
-#' @param m An object \code{moveHMM}
+#' @param m An object \code{momentuHMM}
 #'
 #' @return The sequence of most probable states.
 #'
 #' @examples
-#' # m is a moveHMM object (as returned by fitHMM), automatically loaded with the package
+#' # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
 #' m <- example$m
 #'
 #' # reconstruction of states sequence

@@ -50,8 +50,8 @@
 #' @seealso \code{\link{simData}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 #'
 #' @examples
-#' # m is a moveHMMext object (as returned by fitHMM), automatically loaded with the package
-#' m <- example$m
+#' # data is a momentuHMMData object, automatically loaded with the package
+#' data <- example$data
 #' stepDist <- "gamma"
 #' angleDist <- "vm"
 #' nbStates <- 2
@@ -63,26 +63,26 @@
 #'           dimnames=list(NULL,c("mean:(Intercept)","mean_2",
 #'                                "sd_1:(Intercept)","sd_2:(Intercept)")))
 #' stepcons <- c(1,2,1,1) # coefficient for 'mean_2' constrained to be positive
-#' wPar0 <- getParDM(m$data,nbStates=2,dist=list(step=stepDist),
+#' wPar0 <- getParDM(data,nbStates=2,dist=list(step=stepDist),
 #'                       Par=list(step=stepPar0),
 #'                       DM=list(step=stepDM),cons=list(step=stepcons))
 #'
 #' \dontrun{
 #' # Fit HMM using wPar0 as initial values for the step data stream
-#' mPar <- fitHMM(m$data,nbStates=2,dist=list(step=stepDist,angle=angleDist),
+#' mPar <- fitHMM(data,nbStates=2,dist=list(step=stepDist,angle=angleDist),
 #'                Par0=list(step=wPar0$step,angle=anglePar0),
 #'                DM=list(step=stepDM),cons=list(step=stepcons))
 #' }
 #' 
 #' # get working parameters for 'DM' with using 'cov1' and 'cov2' covariates
 #' stepDM2 <- list(mean=~cov1,sd=~cov2)
-#' wPar20 <- getParDM(m$data,nbStates=2,dist=list(step=stepDist),
+#' wPar20 <- getParDM(data,nbStates=2,dist=list(step=stepDist),
 #'                       Par=list(step=stepPar0),
 #'                       DM=list(step=stepDM))
 #'
 #' \dontrun{
 #' # Fit HMM using wPar20 as initial values for the step data stream
-#' mPar2 <- fitHMM(m$data,nbStates=2,dist=list(step=stepDist,angle=angleDist),
+#' mPar2 <- fitHMM(data,nbStates=2,dist=list(step=stepDist,angle=angleDist),
 #'                Par0=list(step=wPar20$step,angle=anglePar0),
 #'                DM=list(step=stepDM2))
 #' }

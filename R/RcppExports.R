@@ -108,18 +108,15 @@ dpois_rcpp <- function(x, rate, foo) {
 #'
 #' Computation of the negative log-likelihood (forward algorithm - written in C++)
 #'
-#' @param nbStates Number of states
-#' @param beta Matrix of regression coefficients for the transition probabilities
-#' @param covs Covariates
-#' @param data A \code{\link{momentuHMMData}} object of the observations
-#' @param stepDist The name of the step length distribution
-#' @param angleDist The name of the turning angle distribution
-#' @param stepPar State-dependent parameters of the step length distribution
-#' @param anglePar State-dependent parameters of the turning angle distribution
-#' @param delta Stationary distribution
+#' @param nbStates Number of states,
+#' @param covs Covariates,
+#' @param data A \code{\link{momentuHMMData}} object of the observations,
+#' @param dataNames Character vector containing the names of the data streams,
+#' @param dist Named list indicating the probability distributions of the data streams. 
+#' @param Par Named list containing the state-dependent parameters of the data streams, matrix of regression coefficients 
+#' for the transition probabilities ('beta'), and stationary distribution ('delta').
 #' @param aInd Vector of indices of the rows at which the data switches to another animal
-#' @param zeroInflation \code{true} if zero-inflation is included in the step length distribution,
-#' \code{false} otherwise.
+#' @param zeroInflation Named list of logicals indicating whether the probability distributions of the data streams are zero-inflated.
 #' @param stationary \code{false} if there are covariates. If \code{true}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{false}.
 #' @param knownStates Vector of values of the state process which are known prior to fitting the

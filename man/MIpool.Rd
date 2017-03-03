@@ -9,7 +9,7 @@ MIpool(HMMfits, alpha = 0.95, ncores)
 \arguments{
 \item{HMMfits}{List comprised of \code{\link{momentuHMM}} objects}
 
-\item{alpha}{Significance level for calculating confidence intervals of pooled estimates. Default: 0.95.}
+\item{alpha}{Significance level for calculating confidence intervals of pooled estimates (including location error ellipses). Default: 0.95.}
 
 \item{ncores}{Number of cores to use for parallel processing.}
 }
@@ -40,6 +40,5 @@ HMMfits <- miExample$HMMfits
 
 miSum <- MIpool(HMMfits,ncores=1)
 print(miSum)
-plot(miSum,plotCI=TRUE)
 
 }

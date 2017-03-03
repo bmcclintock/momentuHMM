@@ -8,16 +8,22 @@ nLogLike_rcpp(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation,
   stationary, knownStates)
 }
 \arguments{
-\item{nbStates}{Number of states}
+\item{nbStates}{Number of states,}
 
-\item{covs}{Covariates}
+\item{covs}{Covariates,}
 
-\item{data}{A \code{\link{momentuHMMData}} object of the observations}
+\item{data}{A \code{\link{momentuHMMData}} object of the observations,}
+
+\item{dataNames}{Character vector containing the names of the data streams,}
+
+\item{dist}{Named list indicating the probability distributions of the data streams.}
+
+\item{Par}{Named list containing the state-dependent parameters of the data streams, matrix of regression coefficients 
+for the transition probabilities ('beta'), and stationary distribution ('delta').}
 
 \item{aInd}{Vector of indices of the rows at which the data switches to another animal}
 
-\item{zeroInflation}{\code{true} if zero-inflation is included in the step length distribution,
-\code{false} otherwise.}
+\item{zeroInflation}{Named list of logicals indicating whether the probability distributions of the data streams are zero-inflated.}
 
 \item{stationary}{\code{false} if there are covariates. If \code{true}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{false}.}
@@ -26,18 +32,6 @@ equal to the stationary distribution. Default: \code{false}.}
 model (if any). Default: NULL (states are not known). This should be a vector with length the number
 of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
 the state is not known.}
-
-\item{beta}{Matrix of regression coefficients for the transition probabilities}
-
-\item{stepDist}{The name of the step length distribution}
-
-\item{angleDist}{The name of the turning angle distribution}
-
-\item{stepPar}{State-dependent parameters of the step length distribution}
-
-\item{anglePar}{State-dependent parameters of the turning angle distribution}
-
-\item{delta}{Stationary distribution}
 }
 \value{
 Negative log-likelihood

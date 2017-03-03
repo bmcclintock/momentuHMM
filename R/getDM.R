@@ -25,6 +25,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
         for(j in names(DM[[i]])){
           tmpCov[[j]]<-model.matrix(DM[[i]][[j]],data)
           if(j=="mean" & attr(terms.formula(DM[[i]][[j]]),"intercept")) tmpCov[[j]] <- tmpCov[[j]][,-1,drop=FALSE]
+          if(!length(tmpCov[[j]])) stop("invalid circular-circular regression formula for ",i," ",j)
         }
       } else tmpCov<-lapply(DM[[i]],function(x) model.matrix(x,data))
       parSizeDM<-unlist(lapply(tmpCov,ncol))

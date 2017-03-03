@@ -6,7 +6,7 @@
 #'
 #' @return An object \code{crwData}.
 #' 
-#' @seealso \code{\link{crawlWrap}}
+#' @seealso \code{\link{crawlWrap}}, \code{\link{MIfitHMM}}
 
 crwData <- function(m)
 {

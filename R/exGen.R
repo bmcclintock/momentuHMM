@@ -92,7 +92,7 @@ exGen <- function()
   forest<-raster::raster(forest)
   names(forest)<-"forest"
   
-  save(example,miExample,forest,file="data/example.RData")
+  save(example,miExample,forest,file="data/example.RData", compress='xz')
 }
 
 # Roxygen documentation for the data file "data/example.RData"

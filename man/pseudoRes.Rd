@@ -7,21 +7,22 @@
 pseudoRes(m)
 }
 \arguments{
-\item{m}{A \code{momentuHMM} object.}
+\item{m}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.}
 }
 \value{
-A list of:
-\item{stepRes}{The pseudo-residuals for the step lengths}
-\item{angleRes}{The pseudo-residuals for the turning angles}
+A list of psuedo-residuals for each data stream (e.g., 'stepRes', 'angleRes')
 }
 \description{
-The pseudo-residuals of a momentuHMM model, as described in Zucchini and McDonad (2009).
+The pseudo-residuals of momentuHMM models, as described in Zucchini and McDonad (2009).
 }
 \details{
 If some turning angles in the data are equal to pi, the corresponding pseudo-residuals
 will not be included. Indeed, given that the turning angles are defined on (-pi,pi], an angle of pi
 results in a pseudo-residual of +Inf (check Section 6.2 of reference for more information on the
 computation of pseudo-residuals).
+
+Note that pseudo-residuals for multiple imputation analyses are based on pooled parameter 
+estimates and the means of the data values across all imputations.
 }
 \examples{
 # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
