@@ -80,7 +80,11 @@ parameters as a function of the covariate 'cov1' for each state.  This model cou
 character strings for the covariate: 
 \code{DM=list(step=matrix(c(1,0,0,0,'cov1',0,0,0,0,1,0,0,0,'cov1',0,0,0,0,1,0,0,0,0,1),4,6))}
 where the 4 rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the 6 columns correspond to the regression 
-coefficients.}
+coefficients. 
+
+Design matrices specified using formulas automatically include effects on the parameters for all \code{nbStates} states. Thus 
+for models including covariates on a subset of the state-dependent parameters, the design matrix must be specified manually using matrices or through
+a combination of formulas and \code{fixPar} (i.e., fixing the working parameters to zero ).}
 
 \item{cons}{An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
 for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
