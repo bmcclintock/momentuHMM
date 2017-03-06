@@ -1,24 +1,27 @@
 #' Get starting values on working scale based on design matrix and other parameter constraints
 #' 
-#' Convert starting values on the natural scale of data stream probability distributions to the appropriate
-#' working scale based on a design matrix and other parameter constraints. Working scale parameters can then
-#' be used in functions that utilize a design matrix and other constraints for data stream parameters
-#' (e.g., \code{\link{simData}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}).
+#' Convert starting values on the natural scale of data stream probability distributions to
+#' a feasible set of working scale parameters based on a design matrix and other parameter constraints.
 #' 
 #' If design matrix includes non-factor covariates, then natural scale parameters are assumed to correspond to the 
-#' mean value(s) for the covariate(s).
+#' mean value(s) for the covariate(s) (if \code{nrow(data)>1}) and \code{getParDM} simply returns one possible solution to the 
+#' system of linear equations defined by \code{Par}, \code{DM}, and any other constraints using singular value decomposition. 
+#' This can be helpful for exploring relationships between the natural and working scale parameters when covariates are included, but \code{getParDM}
+#' will not necessarily return ``good'' starting values (i.e., \code{Par0}) for \code{\link{fitHMM}} or \code{\link{MIfitHMM}}. 
 #'
-#' @param data A \code{\link{momentuHMMData}} object
+#' @param data Optional \code{\link{momentuHMMData}} object or a data frame containing the covariate values. 
+#' \code{data} must be specified if covariates are included in \code{DM}.
 #' @param nbStates Number of states of the HMM.
 #' @param dist A named list indicating the probability distributions of the data streams. Currently
 #' supported distributions are 'gamma','weibull','exp','lnorm','beta','pois','wrpcauchy', and 'vm'. For example,
 #' \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
-#' and their respective probability distributions ('gamma', 'vm', and 'pois').  The names of the data streams 
-#' (e.g., 'step', 'angle', 'dives') must match component names in \code{data}.
+#' and their respective probability distributions ('gamma', 'vm', and 'pois').
 #' @param Par A named list containing vectors of state-dependent probability distribution parameters for 
 #' each data stream specified in \code{dist}. The parameters should be on the natural scale,
-#' in the order expected by the pdfs of \code{dist}, and any zero-mass parameters should be the last. Note that zero-mass parameters are mandatory if there are zeros in 
-#' data streams with a 'gamma','weibull','exp','lnorm', or 'beta' distribution.
+#' in the order expected by the pdfs of \code{dist}, and any zero-mass parameters should be the last.
+#' @param zeroInflation A named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated. If \code{zeroInflation} is \code{TRUE} 
+#' for a given data stream, then values for the zero-mass parameters should be
+#' included in the corresponding element of \code{Par}. Ignored if \code{data} is a \code{\link{momentuHMMData}} object.
 #' @param estAngleMean An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy'). Any \code{estAngleMean} elements corresponding to data streams that do not have angular distributions are ignored.
 #' @param circularAngleMean An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
@@ -45,13 +48,11 @@
 #' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
 #' through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.
 #'
-#' @return A list of parameter values that can be used as starting values in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
+#' @return A list of parameter values that can be used as starting values (\code{Par}) in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
 #' 
-#' @seealso \code{\link{simData}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
+#' @seealso \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 #'
 #' @examples
-#' # data is a momentuHMMData object, automatically loaded with the package
-#' data <- example$data
 #' stepDist <- "gamma"
 #' angleDist <- "vm"
 #' nbStates <- 2
@@ -63,7 +64,7 @@
 #'           dimnames=list(NULL,c("mean:(Intercept)","mean_2",
 #'                                "sd_1:(Intercept)","sd_2:(Intercept)")))
 #' stepcons <- c(1,2,1,1) # coefficient for 'mean_2' constrained to be positive
-#' wPar0 <- getParDM(data,nbStates=2,dist=list(step=stepDist),
+#' wPar0 <- getParDM(nbStates=2,dist=list(step=stepDist),
 #'                       Par=list(step=stepPar0),
 #'                       DM=list(step=stepDM),cons=list(step=stepcons))
 #'
@@ -74,11 +75,11 @@
 #'                DM=list(step=stepDM),cons=list(step=stepcons))
 #' }
 #' 
-#' # get working parameters for 'DM' with using 'cov1' and 'cov2' covariates
+#' # get working parameters for 'DM' using 'cov1' and 'cov2' covariates
 #' stepDM2 <- list(mean=~cov1,sd=~cov2)
 #' wPar20 <- getParDM(data,nbStates=2,dist=list(step=stepDist),
 #'                       Par=list(step=stepPar0),
-#'                       DM=list(step=stepDM))
+#'                       DM=list(step=stepDM2))
 #'
 #' \dontrun{
 #' # Fit HMM using wPar20 as initial values for the step data stream
@@ -88,39 +89,63 @@
 #' }
 #'
 #' @export
-getParDM<-function(data,nbStates,dist,
+getParDM<-function(data=data.frame(),nbStates,dist,
                  Par,
+                 zeroInflation=NULL,
                  estAngleMean=NULL,
                  circularAngleMean=NULL,
                  DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL){
   
-  # check that the data is a momentuHMMData object
+  ## check that the data is a momentuHMMData object or valid data frame
   if(!is.momentuHMMData(data))
-    stop("'data' must be a momentuHMMData object (as output by prepData or simData)")
+    if(!is.data.frame(data)) stop('data must be a data.frame')
+    #else if(ncol(data)<1) stop('data is empty')
   
   if(nbStates<1) stop('nbStates must be >0')
   
   if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
   if(!is.list(Par) | is.null(names(Par))) stop("'Par' must be a named list")
   distnames<-names(dist)
-  if(any(is.na(match(distnames,names(data))))) stop(paste0(distnames[is.na(match(distnames,names(data)))],collapse=", ")," not found in data")
   if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
   Par <- Par[distnames]
   
-  zeroInflation <- vector('list',length(distnames))
-  names(zeroInflation) <- distnames
-  for(i in distnames){
-    if(dist[[i]] %in% zeroInflationdists){
-      if(length(which(data[[i]]==0))>0) {
-        zeroInflation[[i]]<-TRUE
+  if(is.momentuHMMData(data)){
+    if(any(is.na(match(distnames,names(data))))) stop(paste0(distnames[is.na(match(distnames,names(data)))],collapse=", ")," not found in data")
+    
+    zeroInflation <- vector('list',length(distnames))
+    names(zeroInflation) <- distnames
+    for(i in distnames){
+      if(dist[[i]] %in% zeroInflationdists){
+        if(length(which(data[[i]]==0))>0) {
+          zeroInflation[[i]]<-TRUE
+        }
+        else 
+          zeroInflation[[i]]<-FALSE
       }
-      else 
-        zeroInflation[[i]]<-FALSE
+      else zeroInflation[[i]]<-FALSE
     }
-    else zeroInflation[[i]]<-FALSE
+  } else {
+    if(is.null(zeroInflation)){
+      zeroInflation <- vector('list',length(distnames))
+      names(zeroInflation) <- distnames
+      for(i in distnames){
+        zeroInflation[[i]]<-FALSE
+      }
+    } else {
+      if(!is.list(zeroInflation) | is.null(names(zeroInflation))) stop("'zeroInflation' must be a named list")
+      for(i in distnames){
+        if(is.null(zeroInflation[[i]])) zeroInflation[[i]] <- FALSE
+      }
+    }
+    
+    if(!all(unlist(lapply(zeroInflation,is.logical)))) stop("zeroInflation must be a list of logical objects")
+    for(i in distnames){
+      if((dist[[i]] %in% angledists | dist[[i]]=="pois") & zeroInflation[[i]])
+        stop(dist[[i]]," distribution cannot be zero inflated")
+    }
   }
   
-  tempCovs <- data[1,]
+  tempCovs <- data[1,,drop=FALSE]
   for(j in names(data)[which(unlist(lapply(data,class))!="factor")]){
     tempCovs[[j]]<-mean(data[[j]],na.rm=TRUE)
   }
@@ -129,14 +154,16 @@ getParDM<-function(data,nbStates,dist,
   
   DMinputs<-getDM(tempCovs,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,inputs$circularAngleMean,FALSE)
   fullDM <- DMinputs$fullDM
-  DMind <- getDM(data,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,inputs$circularAngleMean,FALSE)$DMind
-  cons <- DMinputs$cons
+  if(length(data))
+    DMind <- getDM(data,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,inputs$circularAngleMean,FALSE)$DMind
+  else DMind <- DMinputs$DMind
+    cons <- DMinputs$cons
   workcons <- DMinputs$workcons
   
   wpar <- Par
   for(i in distnames){
     if(!is.null(DM[[i]])){
-      if(DMind[[i]]){
+      if(DMind[[i]] & nrow(unique(fullDM[[i]]))==ncol(unique(fullDM[[i]]))){
         if(length(wpar[[i]])!=nrow(fullDM[[i]])) stop('Par$',i,' should be of length ',nrow(fullDM[[i]]))
         bounds<-inputs$p$bounds[[i]]
         if(any(wpar[[i]]<=bounds[,1] | wpar[[i]]>=bounds[,2])) stop('Par$',i,' must be within parameter bounds')
@@ -163,8 +190,6 @@ getParDM<-function(data,nbStates,dist,
         if(length(ind22)) p[ind22]<-(solve(unique(fullDM[[i]])[ind22,ind22],logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][ind22])^(1/cons[[i]][ind22])
         if(length(ind23)) p[ind23]<-(solve(unique(fullDM[[i]])[ind23,ind23],-log(-par[ind23]+b[ind23]))-workcons[[i]][ind23])^(1/cons[[i]][ind23])
         
-        if(any(!is.finite(p))) stop(i," working scale parameters are not finite. Check natural parameter values, bounds, and constraints.")
-        wpar[[i]]<-p
       } else {
         
         if(length(wpar[[i]])!=nrow(fullDM[[i]])) stop('Par$',i,' should be of length ',nrow(fullDM[[i]]))
@@ -238,10 +263,9 @@ getParDM<-function(data,nbStates,dist,
             p <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23])))-workcons[[i]])^(1/cons[[i]])
           }
         }
-        
-        if(any(!is.finite(p))) stop(i," working scale parameters are not finite. Check natural parameter values, bounds, and constraints.")
-        wpar[[i]]<-p
       }
+      if(any(!is.finite(p))) stop(i," working scale parameters are not finite. Check natural parameter values, bounds, and constraints.")
+      wpar[[i]]<-c(p)      
     }
   }
   wpar

@@ -4,25 +4,28 @@
 \alias{getParDM}
 \title{Get starting values on working scale based on design matrix and other parameter constraints}
 \usage{
-getParDM(data, nbStates, dist, Par, estAngleMean = NULL,
-  circularAngleMean = NULL, DM = NULL, cons = NULL, userBounds = NULL,
-  workcons = NULL)
+getParDM(data = data.frame(), nbStates, dist, Par, zeroInflation = NULL,
+  estAngleMean = NULL, circularAngleMean = NULL, DM = NULL, cons = NULL,
+  userBounds = NULL, workcons = NULL)
 }
 \arguments{
-\item{data}{A \code{\link{momentuHMMData}} object}
+\item{data}{Optional \code{\link{momentuHMMData}} object or a data frame containing the covariate values. 
+\code{data} must be specified if covariates are included in \code{DM}.}
 
 \item{nbStates}{Number of states of the HMM.}
 
 \item{dist}{A named list indicating the probability distributions of the data streams. Currently
 supported distributions are 'gamma','weibull','exp','lnorm','beta','pois','wrpcauchy', and 'vm'. For example,
 \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
-and their respective probability distributions ('gamma', 'vm', and 'pois').  The names of the data streams 
-(e.g., 'step', 'angle', 'dives') must match component names in \code{data}.}
+and their respective probability distributions ('gamma', 'vm', and 'pois').}
 
 \item{Par}{A named list containing vectors of state-dependent probability distribution parameters for 
 each data stream specified in \code{dist}. The parameters should be on the natural scale,
-in the order expected by the pdfs of \code{dist}, and any zero-mass parameters should be the last. Note that zero-mass parameters are mandatory if there are zeros in 
-data streams with a 'gamma','weibull','exp','lnorm', or 'beta' distribution.}
+in the order expected by the pdfs of \code{dist}, and any zero-mass parameters should be the last.}
+
+\item{zeroInflation}{A named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated. If \code{zeroInflation} is \code{TRUE} 
+for a given data stream, then values for the zero-mass parameters should be
+included in the corresponding element of \code{Par}. Ignored if \code{data} is a \code{\link{momentuHMMData}} object.}
 
 \item{estAngleMean}{An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy'). Any \code{estAngleMean} elements corresponding to data streams that do not have angular distributions are ignored.}
@@ -56,21 +59,20 @@ each data stream. Warning: use of \code{workcons} is recommended only for advanc
 through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.}
 }
 \value{
-A list of parameter values that can be used as starting values in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
+A list of parameter values that can be used as starting values (\code{Par}) in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
 }
 \description{
-Convert starting values on the natural scale of data stream probability distributions to the appropriate
-working scale based on a design matrix and other parameter constraints. Working scale parameters can then
-be used in functions that utilize a design matrix and other constraints for data stream parameters
-(e.g., \code{\link{simData}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}).
+Convert starting values on the natural scale of data stream probability distributions to
+a feasible set of working scale parameters based on a design matrix and other parameter constraints.
 }
 \details{
 If design matrix includes non-factor covariates, then natural scale parameters are assumed to correspond to the 
-mean value(s) for the covariate(s).
+mean value(s) for the covariate(s) (if \code{nrow(data)>1}) and \code{getParDM} simply returns one possible solution to the 
+system of linear equations defined by \code{Par}, \code{DM}, and any other constraints using singular value decomposition. 
+This can be helpful for exploring relationships between the natural and working scale parameters when covariates are included, but \code{getParDM}
+will not necessarily return ``good'' starting values (i.e., \code{Par0}) for \code{\link{fitHMM}} or \code{\link{MIfitHMM}}.
 }
 \examples{
-# data is a momentuHMMData object, automatically loaded with the package
-data <- example$data
 stepDist <- "gamma"
 angleDist <- "vm"
 nbStates <- 2
@@ -82,7 +84,7 @@ stepDM <- matrix(c(1,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1),4,4,
           dimnames=list(NULL,c("mean:(Intercept)","mean_2",
                                "sd_1:(Intercept)","sd_2:(Intercept)")))
 stepcons <- c(1,2,1,1) # coefficient for 'mean_2' constrained to be positive
-wPar0 <- getParDM(data,nbStates=2,dist=list(step=stepDist),
+wPar0 <- getParDM(nbStates=2,dist=list(step=stepDist),
                       Par=list(step=stepPar0),
                       DM=list(step=stepDM),cons=list(step=stepcons))
 
@@ -93,11 +95,11 @@ mPar <- fitHMM(data,nbStates=2,dist=list(step=stepDist,angle=angleDist),
                DM=list(step=stepDM),cons=list(step=stepcons))
 }
 
-# get working parameters for 'DM' with using 'cov1' and 'cov2' covariates
+# get working parameters for 'DM' using 'cov1' and 'cov2' covariates
 stepDM2 <- list(mean=~cov1,sd=~cov2)
 wPar20 <- getParDM(data,nbStates=2,dist=list(step=stepDist),
                       Par=list(step=stepPar0),
-                      DM=list(step=stepDM))
+                      DM=list(step=stepDM2))
 
 \dontrun{
 # Fit HMM using wPar20 as initial values for the step data stream
@@ -108,5 +110,5 @@ mPar2 <- fitHMM(data,nbStates=2,dist=list(step=stepDist,angle=angleDist),
 
 }
 \seealso{
-\code{\link{simData}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
+\code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 }
