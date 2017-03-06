@@ -53,6 +53,8 @@
 #' @seealso \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 #'
 #' @examples
+#' # data is a momentuHMMData object, automatically loaded with the package
+#' data <- example$data
 #' stepDist <- "gamma"
 #' angleDist <- "vm"
 #' nbStates <- 2

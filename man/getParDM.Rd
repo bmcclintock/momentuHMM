@@ -73,6 +73,8 @@ This can be helpful for exploring relationships between the natural and working 
 will not necessarily return ``good'' starting values (i.e., \code{Par0}) for \code{\link{fitHMM}} or \code{\link{MIfitHMM}}.
 }
 \examples{
+# data is a momentuHMMData object, automatically loaded with the package
+data <- example$data
 stepDist <- "gamma"
 angleDist <- "vm"
 nbStates <- 2
