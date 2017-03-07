@@ -26,13 +26,14 @@
 #' stepDist <- "gamma"
 #' angleDist <- "vm"
 #' 
+#' # plot simulated data over forest raster automatically loaded with the packge
+#' spatialCov<-list(forest=forest)
 #' data <- simData(nbAnimals=2,nbStates=2,dist=list(step=stepDist,angle=angleDist),
 #'                 Par=list(step=c(100,1000,50,100),angle=c(0,0,0.1,5)),
 #'                 beta=matrix(c(5,-10,-25,50),nrow=2,ncol=2,byrow=TRUE),
-#'                 formula=~forest,spatialCovs=forest,
+#'                 formula=~forest,spatialCovs=spatialCov,
 #'                 obsPerAnimal=225,states=TRUE)
 #' 
-#' # plot data over forest raster automatically loaded with the packge
 #' plotSpatialCov(data,forest,states=data$states)
 #'
 #' @importFrom ggplot2 ggplot element_rect element_blank

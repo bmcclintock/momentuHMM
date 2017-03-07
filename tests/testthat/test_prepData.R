@@ -27,6 +27,7 @@ test_that("Exception is thrown",{
   expect_error(prepData(trackData,type="UTM",coordNames=c("x","z")))
   expect_error(prepData(trackData,type="UTM",coordNames=c("x","lat")))
   expect_error(prepData(trackData,type="UTM",coordNames=c("x","y"),covNames="z",centers=matrix(c(0,10,0,10),2,2)),NA)
+  expect_error(prepData(trackData,type="UTM",coordNames=c("x","y"),covNames="z",spatialCovs=list(forest=forest)),NA)
   
 })
 

@@ -179,10 +179,11 @@
 #'                 
 #' # 4. Include example 'forest' spatial covariate raster layer
 #' # nbAnimals and obsPerAnimal kept small to reduce example run time
+#' spatialCov<-list(forest=forest)
 #' data <- simData(nbAnimals=1,nbStates=2,dist=list(step=stepDist,angle=angleDist),
 #'                 Par=list(step=c(100,1000,50,100),angle=c(0,0,0.1,5)),
 #'                 beta=matrix(c(5,-10,-25,50),nrow=2,ncol=2,byrow=TRUE),
-#'                 formula=~forest,spatialCovs=forest,
+#'                 formula=~forest,spatialCovs=spatialCov,
 #'                 obsPerAnimal=250,states=TRUE)
 #'                 
 #' # 5. Specify design matrix for 'omega' data stream
@@ -300,7 +301,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     Par <- Par[distnames]
     delta <- NULL
     
-    mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & ("step" %in% names(dist)) & is.null(lambda) & is.null(errorEllipse)) # indicator for moveHMM::simData
+    mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & is.null(centers) & ("step" %in% names(dist)) & is.null(lambda) & is.null(errorEllipse)) # indicator for moveHMM::simData
     if(mHind & length(attr(terms.formula(formula),"term.labels"))) mHind <- FALSE
       #if("ID" %in% rownames(attr(terms.formula(formula),"factors")) | any(mapply(is.factor,covs)))
       #  mHind <- FALSE
@@ -355,14 +356,16 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
 
   spatialcovnames<-NULL
   if(!is.null(spatialCovs)){
+    if(!is.list(spatialCovs)) stop('spatialCovs must be a list')
+    spatialcovnames<-names(spatialCovs)
+    if(is.null(spatialcovnames)) stop('spatialCovs must be a named list')
+    nbSpatialCovs<-length(spatialcovnames)
     if(!("step" %in% distnames)) stop("spatialCovs can only be included when 'step' distribution is specified") 
     else if(!(dist[["step"]] %in% stepdists)) stop("spatialCovs can only be included when valid 'step' distributions are specified") 
-    nbSpatialCovs<-length(names(spatialCovs))
     for(j in 1:nbSpatialCovs){
-      if(class(spatialCovs[[j]])!="RasterLayer") stop("spatialCovs must be of class 'RasterLayer'")
+      if(class(spatialCovs[[j]])!="RasterLayer") stop("spatialCovs$",spatialcovnames[j]," must be of class 'RasterLayer'")
       if(any(is.na(raster::getValues(spatialCovs[[j]])))) stop("missing values are not permitted in spatialCovs")
     }
-    spatialcovnames<-names(spatialCovs)
   } else nbSpatialCovs <- 0
 
   if(length(which(obsPerAnimal<1))>0)

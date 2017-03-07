@@ -9,6 +9,10 @@ test_that("Exceptions are thrown",{
               NA)
   expect_error(simData(1,2,dist=list(step="gamma",angle="vm"),Par=list(step=stepPar[1:4],angle=anglePar),nbCovs=2),
               NA)
+  expect_error(simData(1,2,dist=list(step="gamma",angle="vm"),Par=list(step=stepPar[1:4],angle=anglePar),spatialCovs=list(forest=forest),obsPerAnimal=250),
+               NA)
+  expect_error(simData(1,2,dist=list(step="gamma",angle="vm"),Par=list(step=stepPar[1:4],angle=anglePar),centers=matrix(c(0,500,0,500),2,2),obsPerAnimal=250),
+               NA)
 
   expect_that(simData(0,2,dist=list(step="gamma",angle="vm"),Par=list(step=stepPar,angle=anglePar),nbCovs=2,zeroInflation=list(step=TRUE)),
               throws_error("nbAnimals should be at least 1."))

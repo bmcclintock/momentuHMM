@@ -213,10 +213,11 @@ data <- simData(nbAnimals=2,nbStates=2,dist=list(step=stepDist,angle=angleDist),
                 
 # 4. Include example 'forest' spatial covariate raster layer
 # nbAnimals and obsPerAnimal kept small to reduce example run time
+spatialCov<-list(forest=forest)
 data <- simData(nbAnimals=1,nbStates=2,dist=list(step=stepDist,angle=angleDist),
                 Par=list(step=c(100,1000,50,100),angle=c(0,0,0.1,5)),
                 beta=matrix(c(5,-10,-25,50),nrow=2,ncol=2,byrow=TRUE),
-                formula=~forest,spatialCovs=forest,
+                formula=~forest,spatialCovs=spatialCov,
                 obsPerAnimal=250,states=TRUE)
                 
 # 5. Specify design matrix for 'omega' data stream

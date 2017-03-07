@@ -16,8 +16,10 @@
 #' and location covariates (i.e., those specified by \code{spatialCovs}, \code{centers}, and \code{angleCovs}) are not calculated.
 #' @param covNames Character vector indicating the names of any covariates in \code{Data} dataframe. Any variables in \code{Data} (other than \code{ID}) that are not identified in 
 #' \code{covNames} and/or \code{angleCovs} are assumed to be data streams (i.e., missing values will not be accounted for).
-#' @param spatialCovs List of \code{\link[raster]{RasterLayer-class}} objects for spatially-referenced covariates. Covariates specified by \code{spatialCovs} are
-#' extracted from the raster layer(s) based on the location data for each time step.
+#' @param spatialCovs List of \code{\link[raster]{Raster-class}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
+#' layer(s) based on the location data (and the z values for a raster \code{\link[raster]{stack}} 
+#' or \code{\link[raster]{brick}}) for each time step.  If an element of \code{spatialCovs} is a raster \code{\link[raster]{stack}} or \code{\link[raster]{brick}}, 
+#' then z values must be set using \code{\link[raster]{setZ}} and \code{Data} must include column(s) of the corresponding z value(s) for each observation (e.g., 'time').
 #' @param centers 2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 #' centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the location data. If no row names are provided, then generic names are generated 
 #' for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'center2.dist', 'center2.angle'); otherwise the covariate names are derived from the row names
@@ -49,7 +51,8 @@
 #' 
 #' # include 'forest' example raster layer as covariate
 #' Data <- data.frame(coord1=coord1*1000,coord2=coord2*1000)
-#' d <- prepData(Data,coordNames=c("coord1","coord2"),spatialCovs=forest)
+#' spatialCov <- list(forest=forest)
+#' d <- prepData(Data,coordNames=c("coord1","coord2"),spatialCovs=spatialCov)
 #' 
 #' # include 2 activity centers
 #' Data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1)
@@ -65,7 +68,7 @@
 #' 
 #' @export
 #' @importFrom sp spDistsN1
-#' @importFrom raster cellFromXY getValues
+#' @importFrom raster cellFromXY getValues getZ
 
 prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NULL,spatialCovs=NULL,centers=NULL,angleCovs=NULL)
 {
@@ -93,12 +96,18 @@ prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
     stop("Missing IDs")
   
   if(!is.null(spatialCovs)){
-    nbSpatialCovs<-length(names(spatialCovs))
-    for(j in 1:nbSpatialCovs){
-      if(class(spatialCovs[[j]])!="RasterLayer") stop("spatialCovs must be of class 'RasterLayer'")
-      if(any(is.na(raster::getValues(spatialCovs[[j]])))) stop("missing values are not permitted in spatialCovs")
-    }
+    if(!is.list(spatialCovs)) stop('spatialCovs must be a list')
     spatialcovnames<-names(spatialCovs)
+    if(is.null(spatialcovnames)) stop('spatialCovs must be a named list')
+    nbSpatialCovs<-length(spatialcovnames)
+    for(j in 1:nbSpatialCovs){
+      if(!any(class(spatialCovs[[j]]) %in% c("RasterLayer","RasterBrick","RasterStack"))) stop("spatialCovs$",spatialcovnames[j]," must be of class 'RasterLayer', 'RasterStack', or 'RasterBrick'")
+      if(any(is.na(raster::getValues(spatialCovs[[j]])))) stop("missing values are not permitted in spatialCovs$",spatialcovnames[j])
+      if(any(class(spatialCovs[[j]]) %in% c("RasterBrick","RasterStack"))){
+        if(is.null(raster::getZ(spatialCovs[[j]]))) stop("spatialCovs$",spatialcovnames[j]," is a raster stack or brick that must have set z values (see ?raster::setZ)")
+        else if(!(names(attributes(spatialCovs[[j]])$z) %in% names(Data))) stop("spatialCovs$",spatialcovnames[j]," z value '",names(attributes(spatialCovs[[j]])$z),"' not found in Data")
+      }
+    }
     if(any(spatialcovnames %in% names(Data))) stop("spatialCovs cannot have same names as data")
     if(anyDuplicated(spatialcovnames)) stop("spatialCovs must have unique names")
   } else nbSpatialCovs <- 0
@@ -192,10 +201,21 @@ prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
       xy<-data
       sp::coordinates(xy)<-c("x","y")
       for(j in 1:nbSpatialCovs){
-        #spCovs<-cbind(spCovs,spatialCovs[[j]][raster::cellFromXY(spatialCovs[[j]],xy)])
         getCells<-raster::cellFromXY(spatialCovs[[j]],xy)
         if(any(is.na(getCells))) stop("Location data are beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
-        spCovs<-cbind(spCovs,spatialCovs[[j]][getCells])
+        fullspCovs <- spatialCovs[[j]][getCells]
+        if(inherits(spatialCovs[[j]],"RasterLayer")){
+          spCovs<-cbind(spCovs,fullspCovs)
+        } else {
+          tmpspCovs <- numeric(nrow(data))
+          zname <- names(attributes(spatialCovs[[j]])$z)
+          zvalues <- raster::getZ(spatialCovs[[j]])
+          if(!all(unique(Data[[zname]]) %in% zvalues)) stop("Data$",zname," includes z-values with no matching raster layer in spatialCovs$",spatialcovnames[j])
+          for(ii in 1:length(zvalues)){
+            tmpspCovs[which(Data[[zname]]==zvalues[ii])] <- fullspCovs[which(Data[[zname]]==zvalues[ii]),ii]
+          }
+          spCovs<-cbind(spCovs,tmpspCovs)
+        }
       }
       colnames(spCovs)<-spatialcovnames
       data<-cbind(data,spCovs)

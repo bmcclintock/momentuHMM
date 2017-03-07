@@ -24,8 +24,10 @@ and location covariates (i.e., those specified by \code{spatialCovs}, \code{cent
 \item{covNames}{Character vector indicating the names of any covariates in \code{Data} dataframe. Any variables in \code{Data} (other than \code{ID}) that are not identified in 
 \code{covNames} and/or \code{angleCovs} are assumed to be data streams (i.e., missing values will not be accounted for).}
 
-\item{spatialCovs}{List of \code{\link[raster]{RasterLayer-class}} objects for spatially-referenced covariates. Covariates specified by \code{spatialCovs} are
-extracted from the raster layer(s) based on the location data for each time step.}
+\item{spatialCovs}{List of \code{\link[raster]{Raster-class}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
+layer(s) based on the location data (and the z values for a raster \code{\link[raster]{stack}} 
+or \code{\link[raster]{brick}}) for each time step.  If an element of \code{spatialCovs} is a raster \code{\link[raster]{stack}} or \code{\link[raster]{brick}}, 
+then z values must be set using \code{\link[raster]{setZ}} and \code{Data} must include column(s) of the corresponding z value(s) for each observation (e.g., 'time').}
 
 \item{centers}{2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the location data. If no row names are provided, then generic names are generated 
@@ -64,7 +66,8 @@ d <- prepData(Data,coordNames=c("coord1","coord2"),covNames="cov1")
 
 # include 'forest' example raster layer as covariate
 Data <- data.frame(coord1=coord1*1000,coord2=coord2*1000)
-d <- prepData(Data,coordNames=c("coord1","coord2"),spatialCovs=forest)
+spatialCov <- list(forest=forest)
+d <- prepData(Data,coordNames=c("coord1","coord2"),spatialCovs=spatialCov)
 
 # include 2 activity centers
 Data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1)
