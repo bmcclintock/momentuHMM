@@ -45,7 +45,8 @@
 #' @param nlmPar List of parameters to pass to the \code{fitHMM} optimization function \code{nlm} (which should be either
 #' '\code{gradtol}', '\code{stepmax}', '\code{steptol}', or '\code{iterlim}' -- see \code{nlm}'s documentation
 #' for more detail)
-#' @param fit \code{TRUE} if the HMM should be fitted to the data, \code{FALSE} otherwise. See \code{\link{fitHMM}}.
+#' @param fit \code{TRUE} if the HMM should be fitted to the data, \code{FALSE} otherwise. See \code{\link{fitHMM}}. If \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}}
+#' object, then \code{MIfitHMM} returns a list of \code{\link{momentuHMMData}} object(s) for each realization of the position process.
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 #' stream. See \code{\link{fitHMM}}.
 #' @param cons An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
@@ -82,10 +83,11 @@
 #' setting \code{thetaSamp=n} will use the nth sample. Defaults to the last. See \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}}. 
 #' Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' 
-#' @return  If \code{poolEstimates=TRUE} (the default) a list comprised of:
+#' @return  If \code{poolEstimates=TRUE} (the default) a list consisting of:
 #' \item{miSum}{\code{\link{miSum}} object returned by \code{\link{MIpool}}.}
 #' \item{HMMfits}{List of length \code{nSims} comprised of \code{\link{momentuHMM}} objects.}
-#' If \code{poolEstimates=FALSE} a list of length \code{nSims} comprised of \code{\link{momentuHMM}} objects is returned.
+#' If \code{poolEstimates=FALSE} a list of length \code{nSims} consisting of \code{\link{momentuHMM}} objects is returned. However, if \code{miData} is a \code{\link{crwData}} 
+#' object and  \code{fit=FALSE}, \code{MIfitHMM} simply returns a list of \code{\link{momentuHMMData}} object(s) for each realization of the position process.
 #' 
 #' @seealso \code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHMM}}, \code{\link{getParDM}}, \code{\link{MIpool}}, \code{\link{prepData}} 
 #' 
@@ -213,12 +215,14 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
         }
       stopImplicitCluster()
       cat("DONE\n")
-      cat('Fitting',nSims,'realizations of the position process using fitHMM... ')
+      if(fit) cat('Fitting',nSims,'realizations of the position process using fitHMM... ')
+      else return(miData)
     } else {
       miData <- list()
       df <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames),drop=FALSE])[which(predData$locType=="p"),]
       miData[[1]] <- prepData(df,type="UTM",coordNames=coordNames,covNames=covNames,spatialCovs=spatialCovs,centers=centers)
-      cat('Fitting the most likely position process using fitHMM... ')
+      if(fit) cat('Fitting the most likely position process using fitHMM... ')
+      else return(miData)
     }
     
   } else {

@@ -56,7 +56,8 @@ detailed, and a value of 2 means that each iteration of the optimization is deta
 '\code{gradtol}', '\code{stepmax}', '\code{steptol}', or '\code{iterlim}' -- see \code{nlm}'s documentation
 for more detail)}
 
-\item{fit}{\code{TRUE} if the HMM should be fitted to the data, \code{FALSE} otherwise. See \code{\link{fitHMM}}.}
+\item{fit}{\code{TRUE} if the HMM should be fitted to the data, \code{FALSE} otherwise. See \code{\link{fitHMM}}. If \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}}
+object, then \code{MIfitHMM} returns a list of \code{\link{momentuHMMData}} object(s) for each realization of the position process.}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream. See \code{\link{fitHMM}}.}
@@ -115,10 +116,11 @@ setting \code{thetaSamp=n} will use the nth sample. Defaults to the last. See \c
 Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 }
 \value{
-If \code{poolEstimates=TRUE} (the default) a list comprised of:
+If \code{poolEstimates=TRUE} (the default) a list consisting of:
 \item{miSum}{\code{\link{miSum}} object returned by \code{\link{MIpool}}.}
 \item{HMMfits}{List of length \code{nSims} comprised of \code{\link{momentuHMM}} objects.}
-If \code{poolEstimates=FALSE} a list of length \code{nSims} comprised of \code{\link{momentuHMM}} objects is returned.
+If \code{poolEstimates=FALSE} a list of length \code{nSims} consisting of \code{\link{momentuHMM}} objects is returned. However, if \code{miData} is a \code{\link{crwData}} 
+object and  \code{fit=FALSE}, \code{MIfitHMM} simply returns a list of \code{\link{momentuHMMData}} object(s) for each realization of the position process.
 }
 \description{
 Fit a (multivariate) hidden Markov model to multiple imputation data. Multiple imputation is a method for accommodating 
