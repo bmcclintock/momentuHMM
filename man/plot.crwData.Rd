@@ -5,7 +5,7 @@
 \title{Plot \code{crwData}}
 \usage{
 \method{plot}{crwData}(x, animals = NULL, compact = FALSE, ask = TRUE,
-  ...)
+  plotEllipse = TRUE, ...)
 }
 \arguments{
 \item{x}{An object \code{crwData} (as returned by \code{\link{crawlWrap}}).}
@@ -17,6 +17,8 @@ Default: \code{NULL} ; all animals are plotted.}
 (default -- one individual at a time).}
 
 \item{ask}{If \code{TRUE}, the execution pauses between each plot.}
+
+\item{plotEllipse}{If \code{TRUE} (the default) then error ellipses are plotted (if applicable)}
 
 \item{...}{Currently unused. For compatibility with generic method.}
 }
