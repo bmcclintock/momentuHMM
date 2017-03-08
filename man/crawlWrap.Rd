@@ -8,7 +8,8 @@ crawlWrap(obsData, timeStep = 1, ncores, retryFits = 0, mov.model = ~1,
   err.model = NULL, activity = NULL, drift = NULL, coord = c("x", "y"),
   Time.name = "time", initial.state, theta, fixPar, method = "L-BFGS-B",
   control = NULL, constr = NULL, prior = NULL, need.hess = TRUE,
-  initialSANN = list(maxit = 200), attempts = 1, predTime = NULL)
+  initialSANN = list(maxit = 200), attempts = 1, predTime = NULL,
+  fillCols = FALSE)
 }
 \arguments{
 \item{obsData}{data.frame object containing fields for animal ID ('ID'), time of observation (identified by \code{Time.name}, must be numeric or POSIXct), 
@@ -74,6 +75,10 @@ attempted using \code{theta} as the starting values.  Note this is not the same 
 
 \item{predTime}{A list of predTime objects (see \code{\link[crawl]{crwPredict}}) containing an element for each individual. \code{predTime} can 
 be specified as an alternative to the automatic sequences generated according to \code{timeStep} for any (or all) individuals.}
+
+\item{fillCols}{Logical indicating whether or not to use the crawl::\code{\link[crawl]{fillCols}} function for filling in missing values in \code{obsData} for which
+there is a single unique value. Default: FALSE. If the output from \code{crawlWrap} is intended for analyses using \code{\link{fitHMM}} or \code{\link{MIfitHMM}}, 
+setting \code{fillCols=TRUE} should typically be avoided.}
 }
 \value{
 A \code{\link{crwData}} object, i.e. a list of:

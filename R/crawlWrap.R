@@ -46,6 +46,9 @@
 #' attempted using \code{theta} as the starting values.  Note this is not the same as \code{retryFits}.
 #' @param predTime A list of predTime objects (see \code{\link[crawl]{crwPredict}}) containing an element for each individual. \code{predTime} can 
 #' be specified as an alternative to the automatic sequences generated according to \code{timeStep} for any (or all) individuals.
+#' @param fillCols Logical indicating whether or not to use the crawl::\code{\link[crawl]{fillCols}} function for filling in missing values in \code{obsData} for which
+#' there is a single unique value. Default: FALSE. If the output from \code{crawlWrap} is intended for analyses using \code{\link{fitHMM}} or \code{\link{MIfitHMM}}, 
+#' setting \code{fillCols=TRUE} should typically be avoided.
 #' 
 #' @return A \code{\link{crwData}} object, i.e. a list of:
 #' \item{crwFits}{A list of \code{crwFit} objects returned by crawl::crwMLE. See \code{\link[crawl]{crwMLE}}}
@@ -101,7 +104,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
                     coord = c("x", "y"), Time.name = "time", initial.state, theta, fixPar, 
                     method = "L-BFGS-B", control = NULL, constr = NULL, 
                     prior = NULL, need.hess = TRUE, initialSANN = list(maxit = 200), attempts = 1,
-                    predTime = NULL)
+                    predTime = NULL, fillCols = FALSE)
 {
   
   if(is.data.frame(obsData)){
@@ -114,129 +117,158 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
     
   if(retryFits<0) stop("retryFits must be non-negative")
   
-  ids = unique(obsData$ID)
-  ind_data<-vector('list',length(ids))
+  ids = as.character(unique(obsData$ID))
+  ind_data<-list()
   
-  for(i in 1:length(ids)){
-    ind_data[[i]] = obsData[which(obsData$ID==ids[i]),]
+  for(i in ids){
+    ind_data[[i]] = obsData[which(obsData$ID==i),]
+    if(any(is.na(ind_data[[i]][[Time.name]]))) stop("obsData$",Time.name," cannot contain missing values")
   }
   
   if(is.null(mov.model)){
-    mov.model<-vector('list',length(ids))
-    for(i in 1:length(ids)){
+    mov.model<-list()
+    for(i in ids){
       mov.model[[i]] <- ~1
     }
   } else if(is.formula(mov.model)){
     tmpmov.model<-mov.model
-    mov.model<-vector('list',length(ids))
-    for(i in 1:length(ids)){
+    mov.model<-list()
+    for(i in ids){
       mov.model[[i]] <- tmpmov.model
     }    
   }
-  if(!is.null(names(mov.model))) mov.model <- mov.model[ids]
+  if(!is.null(names(mov.model))) {
+    if(!all(names(mov.model) %in% ids)) stop("mov.model names must match obsData$ID")
+    mov.model <- mov.model[ids]
+  }
   
   if(is.null(err.model)){
     err.model<-vector('list',length(ids))
+    names(err.model)<-ids
   } else if(is.list(err.model)){
-    if(!is.null(names(err.model))){
-      if(all(names(err.model) %in% c(coord,"rho"))){
-        tmperr.model<-err.model
-        err.model<-vector('list',length(ids))
-        for(i in 1:length(ids)){
-          err.model[[i]] <- tmperr.model
-        } 
-      }
+    if(all(unlist(lapply(err.model,is.formula)))){
+      tmperr.model<-err.model
+      err.model<-list()
+      for(i in ids){
+        err.model[[i]] <- tmperr.model
+      } 
     }
   }
-  if(!is.null(names(err.model)))  err.model <- err.model[ids]
+  if(!is.null(names(err.model)))  {
+    if(!all(names(err.model) %in% ids)) stop("err.model names must match obsData$ID")
+    err.model <- err.model[ids]
+  }
   
   if(is.null(activity)){
     activity<-vector('list',length(ids))
+    names(activity)<-ids
   } else if(is.formula(activity)){
     tmpactivity<-activity
-    activity<-vector('list',length(ids))
-    for(i in 1:length(ids)){
+    activity<-list()
+    for(i in ids){
       activity[[i]] <- tmpactivity
     }    
   }
-  if(!is.null(names(activity))) activity <- activity[ids]
+  if(!is.null(names(activity))) {
+    if(!all(names(activity) %in% ids)) stop("activity names must match obsData$ID")
+    activity <- activity[ids]
+  }
   
   if(is.null(drift)){
-    drift<-vector('list',length(ids))
-    for(i in 1:length(ids)){
+    drift<-list()
+    for(i in ids){
       drift[[i]] <- FALSE
     }
   } else if(is.logical(drift)){
     tmpdrift<-drift
-    drift<-vector('list',length(ids))
-    for(i in 1:length(ids)){
+    drift<-list()
+    for(i in ids){
       drift[[i]] <- tmpdrift
     }    
   }
-  if(!is.null(names(drift))) drift <- drift[ids]
+  if(!is.null(names(drift))) {
+    if(!all(names(drift) %in% ids)) stop("drift names must match obsData$ID")
+    drift <- drift[ids]
+  }
   
   if(!is.null(names(initial.state))){
     if(all(names(initial.state) %in% c("a","P"))){
       tmpinitial.state<-initial.state
-      initial.state<-vector('list',length(ids))
-      for(i in 1:length(ids)){
+      initial.state<-list()
+      for(i in ids){
         initial.state[[i]] <- tmpinitial.state
       } 
     }
   }
-  if(!is.null(names(initial.state)))  initial.state <- initial.state[ids]
+  if(!is.null(names(initial.state)))  {
+    if(!all(names(initial.state) %in% ids)) stop("initial.state names must match obsData$ID")
+    initial.state <- initial.state[ids]
+  }
   
   if(!is.list(theta)){
     tmptheta<-theta
-    theta<-vector('list',length(ids))
-    for(i in 1:length(ids)){
+    theta<-list()
+    for(i in ids){
       theta[[i]] <- tmptheta
     } 
   }
-  if(!is.null(names(theta))) theta <- theta[ids]
+  if(!is.null(names(theta))) {
+    if(!all(names(theta) %in% ids)) stop("theta names must match obsData$ID")
+    theta <- theta[ids]
+  }
   
   if(!is.list(fixPar)){
     tmpfixPar<-fixPar
-    fixPar<-vector('list',length(ids))
-    for(i in 1:length(ids)){
+    fixPar<-list()
+    for(i in ids){
       fixPar[[i]] <- tmpfixPar
     } 
   }
-  if(!is.null(names(fixPar))) fixPar <- fixPar[ids]
+  if(!is.null(names(fixPar))) {
+    if(!all(names(fixPar) %in% ids)) stop("fixPar names must match obsData$ID")
+    fixPar <- fixPar[ids]
+  }
   
   if(is.null(constr)){
-    constr<-vector('list',length(ids))
-    for(i in 1:length(ids)){
+    constr<-list()
+    for(i in ids){
       constr[[i]]<-list(lower = -Inf,upper = Inf)
     }
   } else if(is.list(constr)){
     if(!is.null(names(constr))){
       if(all(names(constr) %in% c("upper","lower"))){
         tmpconstr<-constr
-        constr<-vector('list',length(ids))
-        for(i in 1:length(ids)){
+        constr<-list()
+        for(i in ids){
           constr[[i]] <- tmpconstr
         } 
       }
     }
   }
-  if(!is.null(names(constr))) constr <- constr[ids]
+  if(!is.null(names(constr))) {
+    if(!all(names(constr) %in% ids)) stop("constr names must match obsData$ID")
+    constr <- constr[ids]
+  }
   
   if(is.null(prior)){
     prior<-vector('list',length(ids))
+    names(prior)<-ids
   } else if(is.function(prior)){
     tmpprior<-prior
-    prior<-vector('list',length(ids))
-    for(i in 1:length(ids)){
+    prior<-list()
+    for(i in ids){
       prior[[i]] <- tmpprior
     }    
   }
-  if(!is.null(names(prior))) prior <- prior[ids]
+  if(!is.null(names(prior))) {
+    if(!all(names(prior) %in% ids)) stop("prior names must match obsData$ID")
+    prior <- prior[ids]
+  }
   
   cat('Fitting',length(ids),'track(s) using crawl::crwMLE...')
   registerDoParallel(cores=ncores) 
   model_fits <- 
-    foreach(i = 1:length(ids)) %dopar% {
+    foreach(i = ids) %dopar% {
       
       fit <- crawl::crwMLE(
         mov.model =  mov.model[[i]],
@@ -262,20 +294,22 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   stopImplicitCluster()
   cat("DONE\n")
   
+  names(model_fits) <- ids
+  
   # Check crwFits and re-try based on retryFits
-  for(i in 1:length(ids)){
+  for(i in ids){
     if(!inherits(model_fits[[i]],"crwFit"))
-      warning('crawl::crwMLE for individual ',ids[i],' failed;\n',model_fits[[i]],"   Check crawl::crwMLE arguments and/or consult crawl documentation.")
+      warning('crawl::crwMLE for individual ',i,' failed;\n',model_fits[[i]],"   Check crawl::crwMLE arguments and/or consult crawl documentation.")
     else {
       if(model_fits[[i]]$convergence | any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))]))){
         if(retryFits){
           fitCount<-0
           fit <- model_fits[[i]]
           if(model_fits[[i]]$convergence)
-            cat('crawl::crwMLE for individual',ids[i],'has suspect convergence: ',model_fits[[i]]$message,"\n")
+            cat('crawl::crwMLE for individual',i,'has suspect convergence: ',model_fits[[i]]$message,"\n")
           if(any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))])))
-            cat('crawl::crwMLE for individual',ids[i],'has NaN variance estimate(s)\n')
-          cat('Attempting to achieve convergence and valid variance estimates for individual ',ids[i],". Press 'esc' to force exit from 'crawlWrap'\n",sep="")
+            cat('crawl::crwMLE for individual',i,'has NaN variance estimate(s)\n')
+          cat('Attempting to achieve convergence and valid variance estimates for individual ',i,". Press 'esc' to force exit from 'crawlWrap'\n",sep="")
           while(fitCount<retryFits & (fit$convergence | any(is.na(fit$se[which(is.na(fixPar[[i]]))])))){
             cat("\r    Attempt ",fitCount+1," of ",retryFits,"...",sep="")
             tmp <- suppressWarnings(suppressMessages(crawl::crwMLE(
@@ -311,34 +345,45 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
           model_fits[[i]]<-fit
         } else {
           if(model_fits[[i]]$convergence)
-            warning('crawl::crwMLE for individual ',ids[i],' has suspect convergence: ',model_fits[[i]]$message)
+            warning('crawl::crwMLE for individual ',i,' has suspect convergence: ',model_fits[[i]]$message)
           if(any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))])))
-            warning('crawl::crwMLE for individual ',ids[i],' has NaN variance estimate(s)')
+            warning('crawl::crwMLE for individual ',i,' has NaN variance estimate(s)')
         }
       }
     }
   }
   
-  convFits<-which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))
-  model_fits<-model_fits[convFits]
+  convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
+  model_fits <- model_fits[convFits]
   
   if(is.null(predTime)){
-    predTime<-vector('list',length(ids))
-    for(i in 1:length(ids)){
-      iTime <- range(obsData[which(obsData$ID==ids[i]),][[Time.name]])#range(subset(obsData,ID==i)[[Time.name]])
+    predTime<-list()
+    for(i in ids){
+      iTime <- range(obsData[which(obsData$ID==i),][[Time.name]])
       predTime[[i]] <- seq(iTime[1],iTime[2],timeStep)
     }
   }
+  if(!is.null(names(predTime))) {
+    if(!all(names(predTime) %in% ids)) stop("predTime names must match obsData$ID")
+    predTime <- predTime[ids]
+  }
   
-  if(inherits(obsData$time,"POSIXct")){
+  if(inherits(obsData[[Time.name]],"POSIXct")){
     td <- utils::capture.output(difftime(predTime[[1]][2],predTime[[1]][1],units="auto"))
     cat('Predicting locations (and uncertainty) at',substr(td,20,nchar(td)),'time steps for',length(convFits),'track(s) using crawl::crwPredict...')
   } else cat('Predicting locations (and uncertainty) for',length(convFits),'track(s) using crawl::crwPredict...')
   
   registerDoParallel(cores=ncores)
   predData <- 
-    foreach(i = 1:length(convFits), .export="crwPredict", .combine = rbind, .errorhandling="remove") %dopar% {
-      crawl::crwPredict(model_fits[[i]], predTime=predTime[[convFits[i]]])
+    foreach(i = convFits, .export="crwPredict", .combine = rbind, .errorhandling="remove") %dopar% {
+      pD<-crawl::crwPredict(model_fits[[i]], predTime=predTime[[i]])
+      pD[[Time.name]][which(pD$locType=="p")]<-predTime[[i]]
+      if(!fillCols){
+        for(j in names(pD)[names(pD) %in% names(ind_data[[i]])]){
+          if(!isTRUE(all.equal(pD[[j]],ind_data[[i]][[j]]))) pD[[j]] <- ind_data[[i]][[j]]
+        }
+      }
+      pD
     }
   stopImplicitCluster()
   cat("DONE\n")
