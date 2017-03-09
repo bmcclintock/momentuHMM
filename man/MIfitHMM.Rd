@@ -10,9 +10,10 @@ MIfitHMM(miData, nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   verbose = 0, nlmPar = NULL, fit = TRUE, DM = NULL, cons = NULL,
   userBounds = NULL, workcons = NULL, stateNames = NULL,
   knownStates = NULL, fixPar = NULL, covNames = NULL,
-  spatialCovs = NULL, centers = NULL, method = "IS", parIS = 1000,
-  dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad,
-  fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1, thetaSamp = NULL)
+  spatialCovs = NULL, centers = NULL, angleCovs = NULL, method = "IS",
+  parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
+  force.quad, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
+  thetaSamp = NULL)
 }
 \arguments{
 \item{miData}{A \code{\link{crwData}} object or a list of \code{\link{momentuHMMData}} objects.}
@@ -88,6 +89,9 @@ a \code{\link{crwData}} object; otherwise \code{spatialCovs} is ignored). See \c
 centers of attraction or repulsion) from which distance and angle covariates will be calculated based on realizations of the position process. 
 See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 
+\item{angleCovs}{Character vector indicating the names of any circular-circular regression covariates in \code{miData$crwPredict} that need conversion from bearing (relative to true north) to turning angle (relative to previous movement direction) 
+See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+
 \item{method}{Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 
 \item{parIS}{Size of the parameter importance sample. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
@@ -120,7 +124,8 @@ If \code{poolEstimates=TRUE} (the default) a list consisting of:
 \item{miSum}{\code{\link{miSum}} object returned by \code{\link{MIpool}}.}
 \item{HMMfits}{List of length \code{nSims} comprised of \code{\link{momentuHMM}} objects.}
 If \code{poolEstimates=FALSE} a list of length \code{nSims} consisting of \code{\link{momentuHMM}} objects is returned. However, if \code{miData} is a \code{\link{crwData}} 
-object and  \code{fit=FALSE}, \code{MIfitHMM} simply returns a list of \code{\link{momentuHMMData}} object(s) for each realization of the position process.
+object and  \code{fit=FALSE}, \code{MIfitHMM} simply returns a list of \code{\link{momentuHMMData}} object(s) for each realization of the position process (and most other arguments 
+related to \code{\link{fitHMM}} are ignored).
 }
 \description{
 Fit a (multivariate) hidden Markov model to multiple imputation data. Multiple imputation is a method for accommodating 

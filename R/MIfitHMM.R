@@ -65,7 +65,9 @@
 #' a \code{\link{crwData}} object; otherwise \code{spatialCovs} is ignored). See \code{\link{prepData}}. 
 #' @param centers 2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 #' centers of attraction or repulsion) from which distance and angle covariates will be calculated based on realizations of the position process. 
-#' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object. 
+#' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' @param angleCovs Character vector indicating the names of any circular-circular regression covariates in \code{miData$crwPredict} that need conversion from bearing (relative to true north) to turning angle (relative to previous movement direction) 
+#' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param method Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param parIS Size of the parameter importance sample. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param dfSim Degrees of freedom for the t approximation to the parameter posterior. See 'df' argument in \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
@@ -87,7 +89,8 @@
 #' \item{miSum}{\code{\link{miSum}} object returned by \code{\link{MIpool}}.}
 #' \item{HMMfits}{List of length \code{nSims} comprised of \code{\link{momentuHMM}} objects.}
 #' If \code{poolEstimates=FALSE} a list of length \code{nSims} consisting of \code{\link{momentuHMM}} objects is returned. However, if \code{miData} is a \code{\link{crwData}} 
-#' object and  \code{fit=FALSE}, \code{MIfitHMM} simply returns a list of \code{\link{momentuHMMData}} object(s) for each realization of the position process.
+#' object and  \code{fit=FALSE}, \code{MIfitHMM} simply returns a list of \code{\link{momentuHMMData}} object(s) for each realization of the position process (and most other arguments 
+#' related to \code{\link{fitHMM}} are ignored).
 #' 
 #' @seealso \code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHMM}}, \code{\link{getParDM}}, \code{\link{MIpool}}, \code{\link{prepData}} 
 #' 
@@ -160,6 +163,7 @@
 #' @importFrom crawl crwPostIS crwSimulator
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
+#' @importFrom raster getZ
 MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
                    nbStates, dist, 
                    Par0, beta0 = NULL, delta0 = NULL,
@@ -168,7 +172,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
                    verbose = 0, nlmPar = NULL, fit = TRUE, 
                    DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL, 
                    stateNames = NULL, knownStates = NULL, fixPar = NULL,
-                   covNames=NULL,spatialCovs=NULL,centers=NULL,
+                   covNames=NULL,spatialCovs=NULL,centers=NULL,angleCovs=NULL,
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad,
                    fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL
                    ){
@@ -182,8 +186,20 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
 
     Time.name<-attr(predData,"Time.name")
     ids = unique(predData$ID)
-    distnames<-names(dist)[which(!(names(dist) %in% c("step","angle")))]
-    coordNames <- attr(predData,"coord")
+    
+    if(!is.null(covNames) | !is.null(angleCovs)){
+      covNames <- unique(c(covNames,angleCovs))
+    }
+    znames <- unlist(lapply(spatialCovs,function(x) names(attributes(x)$z)))
+    #coordNames <- attr(predData,"coord")
+    
+    if(fit | !missing("dist")) {
+      if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
+      distnames <- names(dist)[which(!(names(dist) %in% c("step","angle")))]
+      if(any(is.na(match(distnames,names(predData))))) stop(paste0(distnames[is.na(match(distnames,names(predData)))],collapse=", ")," not found in miData")
+    } else {
+      distnames <- names(predData)[which(!(names(predData) %in% c("ID",covNames,znames)))]
+    }
     
     if(nSims>1){
       if(all(unlist(lapply(model_fits,function(x) is.null(x$err.model))))) stop("Multiple realizations of the position process cannot be drawn if there is no location measurement error")
@@ -210,8 +226,8 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
               locs<-rbind(locs,predData[which(predData$ID==ids[i]),c("mu.x","mu.y")])
             }
           }
-          df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",distnames,covNames),drop=FALSE])[which(predData$locType=="p"),]
-          prepData(df,type="UTM",coordNames=coordNames,covNames=covNames,spatialCovs=spatialCovs,centers=centers)
+          df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
+          prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,angleCovs=angleCovs)
         }
       stopImplicitCluster()
       cat("DONE\n")
@@ -219,8 +235,8 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
       else return(miData)
     } else {
       miData <- list()
-      df <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames),drop=FALSE])[which(predData$locType=="p"),]
-      miData[[1]] <- prepData(df,type="UTM",coordNames=coordNames,covNames=covNames,spatialCovs=spatialCovs,centers=centers)
+      df <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
+      miData[[1]] <- prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,angleCovs=angleCovs)
       if(fit) cat('Fitting the most likely position process using fitHMM... ')
       else return(miData)
     }
