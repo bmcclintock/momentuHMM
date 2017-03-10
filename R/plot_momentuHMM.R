@@ -146,7 +146,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   
   if(is.null(covs)){
     covs <- m$data[which(m$data$ID %in% ID),][1,]
-    for(j in names(m$data)[which(unlist(lapply(m$data,class))!="factor")]){
+    for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
       covs[[j]]<-mean(m$data[[j]][which(m$data$ID %in% ID)],na.rm=TRUE)
     }
   } else {
@@ -230,7 +230,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   } else legText <- stateNames
   
   tmpcovs<-covs
-  for(i in which(!mapply(is.factor,covs))){
+  for(i in which(mapply(is.numeric,covs))){
     tmpcovs[i]<-round(covs[i],2)
   }
   for(i in which(mapply(is.factor,covs))){

@@ -143,16 +143,17 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
       mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,mean)
     }
   }
-  for(j in names(m$data)[which(unlist(lapply(m$data,class))!="factor" & !(names(m$data) %in% distnames))]){
+  for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))) & !(names(m$data) %in% distnames))]){
     mhdata[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[j]])),ncol=length(m$data[[j]]),byrow=TRUE),2,mean)
   }
   mhrawCovs<-m$rawCovs
-  for(j in names(m$rawCovs)[which(unlist(lapply(m$rawCovs,class))!="factor")]){
-    mhrawCovs[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$rawCovs[[j]])),ncol=length(m$rawCovs[[j]]),byrow=TRUE),2,mean)
+  if(length(mhrawCovs)){
+    for(j in names(m$rawCovs)[which(unlist(lapply(m$rawCovs,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
+      mhrawCovs[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$rawCovs[[j]])),ncol=length(m$rawCovs[[j]]),byrow=TRUE),2,mean)
+    }
   }
-  
   tempCovs <- mhdata[1,]
-  for(j in names(m$data)[which(unlist(lapply(m$data,class))!="factor")]){
+  for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
     tempCovs[[j]]<-mean(mhdata[[j]],na.rm=TRUE)
   }
   

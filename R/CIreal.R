@@ -54,7 +54,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   # identify covariates
   if(is.null(covs)){
     tempCovs <- m$data[1,]
-    for(j in names(m$data)[which(unlist(lapply(m$data,class))!="factor")]){
+    for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
       tempCovs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
     }
   } else {

@@ -148,10 +148,11 @@ getParDM<-function(data=data.frame(),nbStates,dist,
   }
   
   tempCovs <- data[1,,drop=FALSE]
-  for(j in names(data)[which(unlist(lapply(data,class))!="factor")]){
-    tempCovs[[j]]<-mean(data[[j]],na.rm=TRUE)
+  if(length(data)){
+    for(j in names(data)[which(unlist(lapply(data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
+      tempCovs[[j]]<-mean(data[[j]],na.rm=TRUE)
+    }
   }
-  
   inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,DM,userBounds,cons,workcons,stateNames=NULL)
   
   DMinputs<-getDM(tempCovs,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,inputs$circularAngleMean,FALSE)
