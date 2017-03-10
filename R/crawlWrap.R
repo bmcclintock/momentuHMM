@@ -140,7 +140,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   if(!is.null(names(mov.model))) {
     if(!all(names(mov.model) %in% ids)) stop("mov.model names must match obsData$ID")
     mov.model <- mov.model[ids]
-  }
+  } else names(mov.model) <- ids
   
   if(is.null(err.model)){
     err.model<-vector('list',length(ids))
@@ -157,7 +157,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   if(!is.null(names(err.model)))  {
     if(!all(names(err.model) %in% ids)) stop("err.model names must match obsData$ID")
     err.model <- err.model[ids]
-  }
+  } else names(err.model) <- ids
   
   if(is.null(activity)){
     activity<-vector('list',length(ids))
@@ -172,7 +172,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   if(!is.null(names(activity))) {
     if(!all(names(activity) %in% ids)) stop("activity names must match obsData$ID")
     activity <- activity[ids]
-  }
+  } else names(activity) <- ids
   
   if(is.null(drift)){
     drift<-list()
@@ -189,7 +189,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   if(!is.null(names(drift))) {
     if(!all(names(drift) %in% ids)) stop("drift names must match obsData$ID")
     drift <- drift[ids]
-  }
+  } else names(drift) <- ids
   
   if(!is.null(names(initial.state))){
     if(all(names(initial.state) %in% c("a","P"))){
@@ -203,7 +203,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   if(!is.null(names(initial.state)))  {
     if(!all(names(initial.state) %in% ids)) stop("initial.state names must match obsData$ID")
     initial.state <- initial.state[ids]
-  }
+  } else names(initial.state) <- ids
   
   if(!is.list(theta)){
     tmptheta<-theta
@@ -215,7 +215,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   if(!is.null(names(theta))) {
     if(!all(names(theta) %in% ids)) stop("theta names must match obsData$ID")
     theta <- theta[ids]
-  }
+  } else names(theta) <- ids
   
   if(!is.list(fixPar)){
     tmpfixPar<-fixPar
@@ -227,7 +227,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   if(!is.null(names(fixPar))) {
     if(!all(names(fixPar) %in% ids)) stop("fixPar names must match obsData$ID")
     fixPar <- fixPar[ids]
-  }
+  } else names(fixPar) <- ids
   
   if(is.null(constr)){
     constr<-list()
@@ -248,7 +248,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   if(!is.null(names(constr))) {
     if(!all(names(constr) %in% ids)) stop("constr names must match obsData$ID")
     constr <- constr[ids]
-  }
+  } else names(constr) <- ids
   
   if(is.null(prior)){
     prior<-vector('list',length(ids))
@@ -263,7 +263,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   if(!is.null(names(prior))) {
     if(!all(names(prior) %in% ids)) stop("prior names must match obsData$ID")
     prior <- prior[ids]
-  }
+  } else names(prior) <- ids
   
   cat('Fitting',length(ids),'track(s) using crawl::crwMLE...')
   registerDoParallel(cores=ncores) 
@@ -366,7 +366,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   if(!is.null(names(predTime))) {
     if(!all(names(predTime) %in% ids)) stop("predTime names must match obsData$ID")
     predTime <- predTime[ids]
-  }
+  } else names(predTime) <- ids
   
   if(inherits(obsData[[Time.name]],"POSIXct")){
     td <- utils::capture.output(difftime(predTime[[1]][2],predTime[[1]][1],units="auto"))
