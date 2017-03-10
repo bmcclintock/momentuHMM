@@ -11,11 +11,12 @@
 #' \code{lambda} is the rate parameter of the exponential distribution for the waiting times between successive location observations, i.e., 
 #' \code{1/lambda} is the expected time between successive location observations. Only the 'step' and 'angle' data streams are subject to temporal irregularity;
 #' any other data streams are kept at temporally-regular intervals.  Ignored unless a valid distribution for the 'step' data stream is specified.
-#' @param errorEllipse List providing the upper bound for the semi-major axis (\code{M}; on scale of x- and y-coordinates), semi-minor axis (\code{m}; 
+#' @param errorEllipse List providing the bounds for the semi-major axis (\code{M}; on scale of x- and y-coordinates), semi-minor axis (\code{m}; 
 #' on scale of x- and y-coordinates), and orientation (\code{r}; in degrees) of location error ellipses. If \code{NULL}, no location 
 #' measurement error is simulated. If \code{errorEllipse} is specified, then each observed location is subject to bivariate normal errors as described 
-#' in McClintock et al. (2015), where the components of the error ellipse for each location are randomly drawn from \code{runif(1,0,errorEllipse$M)}, 
-#' \code{runif(1,0,errorEllipse$m)}, and \code{runif(1,0,errorEllipse$r)}. Only the 'step' and 'angle' data streams are subject to location measurement error;
+#' in McClintock et al. (2015), where the components of the error ellipse for each location are randomly drawn from \code{runif(1,min(errorEllipse$M),max(errorEllipse$M))}, 
+#' \code{runif(1,min(errorEllipse$m),max(errorEllipse$m))}, and \code{runif(1,min(errorEllipse$r),max(errorEllipse$r))}. If only a single value is provided for any of the 
+#' error ellipse elements, then the corresponding component is fixed to this value for each location. Only the 'step' and 'angle' data streams are subject to location measurement error;
 #' any other data streams are observed without error.  Ignored unless a valid distribution for the 'step' data stream is specified.
 #' 
 #' @return A dataframe of:
@@ -44,8 +45,11 @@
 #' # extract momentuHMMData example
 #' data <- example$data
 #' lambda <- 2 # expect 2 observations per time step
-#' errorEllipse <- list(M=50,m=25,r=180)
-#' obsData <- simObsData(data,lambda=lambda,errorEllipse=errorEllipse)
+#' errorEllipse <- list(M=c(0,50),m=c(0,50),r=c(0,180))
+#' obsData1 <- simObsData(data,lambda=lambda,errorEllipse=errorEllipse)
+#' 
+#' errorEllipse <- list(M=50,m=50,r=180)
+#' obsData2 <- simObsData(data,lambda=lambda,errorEllipse=errorEllipse)
 #' 
 #' @importFrom mvtnorm rmvnorm
 #' @importFrom argosfilter radian
@@ -62,16 +66,16 @@ simObsData<-function(data,lambda,errorEllipse){
     
     if(!is.null(errorEllipse)){
       if(!is.list(errorEllipse) | any(!(c("M","m","r") %in% names(errorEllipse)))) stop("errorEllipse must be a list of scalars named 'M', 'm', and 'r'.")
-      if(any(unlist(lapply(errorEllipse[c("M","m","r")],length))>1)) stop('errorEllipse must consist of positive scalars')
-      if(any(unlist(lapply(errorEllipse[c("M","m")],function(x) x<0)))) stop("errorEllipse$M and errorEllipse$m must be >=0")
-      if(errorEllipse$r < 0 | errorEllipse$r > 180) stop('errorEllipse$r must be in [0,180]')
+      if(any(unlist(lapply(errorEllipse[c("M","m","r")],length))>2)) stop('errorEllipse elements must be of length 1 or 2')
+      if(any(unlist(lapply(errorEllipse[c("M","m")],function(x) any(x<0))))) stop("errorEllipse$M and errorEllipse$m must be >=0")
+      if(any(errorEllipse$r < 0) | any(errorEllipse$r > 180)) stop('errorEllipse$r must be in [0,180]')
       
-      M<-errorEllipse$M
-      m<-errorEllipse$m
-      r<-errorEllipse$r
+      M<-c(min(errorEllipse$M),max(errorEllipse$M))
+      m<-c(min(errorEllipse$m),max(errorEllipse$m))
+      r<-c(min(errorEllipse$r),max(errorEllipse$r))
       
     } else {
-      M<-m<-r<-0
+      M<-m<-r<-c(0,0)
     }
     if(!is.null(lambda))
       if(lambda<=0) stop('lambda must be >0')
@@ -106,11 +110,11 @@ simObsData<-function(data,lambda,errorEllipse){
       nobs<-length(mux)
       muxy<-cbind(mux,muy)
       
-      error_semimajor_axis<-tmpM<-runif(nobs,0,M)
-      error_semiminor_axis<-tmpm<-runif(nobs,0,m)
+      error_semimajor_axis<-tmpM<-runif(nobs,M[1],M[2])
+      error_semiminor_axis<-tmpm<-runif(nobs,m[1],m[2])
       error_semimajor_axis[which(tmpM<tmpm)]<-tmpm[which(tmpM<tmpm)]
       error_semiminor_axis[which(tmpM<tmpm)]<-tmpM[which(tmpM<tmpm)]
-      error_ellipse_orientation<-runif(nobs,0,r)
+      error_ellipse_orientation<-runif(nobs,r[1],r[2])
       rad<-argosfilter::radian(error_ellipse_orientation)
         
       #calculate bivariate normal error variance-covariance matrix (Sigma)
