@@ -11,7 +11,9 @@
 #' and their respective probability distributions ('gamma', 'vm', and 'pois').
 #' @param Par A named list containing vectors of initial state-dependent probability distribution parameters for 
 #' each data stream specified in \code{dist}. The parameters should be in the order expected by the pdfs of \code{dist}, 
-#' and any zero-mass parameters should be the last. If \code{DM} is not specified for a given data stream, then \code{Par} 
+#' and any zero-mass and/or one-mass parameters should be the last (if both are present, then zero-mass parameters must preceed one-mass parameters). 
+#' 
+#' If \code{DM} is not specified for a given data stream, then \code{Par} 
 #' is on the natural (i.e., real) scale of the parameters. However, if \code{DM} is specified for a given data stream, then 
 #' \code{Par} must be on the working (i.e., beta) scale of the parameters, and the length of \code{Par} must match the number 
 #' of columns in the design matrix. See details below.
@@ -28,6 +30,9 @@
 #' \code{formula} and/or \code{DM}.  Note that \code{simData} usually takes longer to generate simulated data when \code{spatialCovs} is specified.
 #' @param zeroInflation A named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated. If \code{zeroInflation} is \code{TRUE} 
 #' for a given data stream, then values for the zero-mass parameters should be
+#' included in the corresponding element of \code{Par}.
+#' @param oneInflation A named list of logicals indicating whether the probability distributions of the data streams should be one-inflated. If \code{oneInflation} is \code{TRUE} 
+#' for a given data stream, then values for the one-mass parameters should be
 #' included in the corresponding element of \code{Par}.
 #' @param circularAngleMean An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
 #' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.  For example, 
@@ -226,6 +231,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     covs=NULL,nbCovs=0,
                     spatialCovs=NULL,
                     zeroInflation=NULL,
+                    oneInflation=NULL,
                     circularAngleMean=NULL,
                     centers=NULL,
                     obsPerAnimal=c(500,1500),
@@ -250,6 +256,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     cons <- model$conditions$cons
     workcons <- model$conditions$workcons
     zeroInflation <- model$conditions$zeroInflation
+    oneInflation <- model$conditions$oneInflation
     formula <- model$conditions$formula
   
     Par <- model$mle[distnames]
@@ -336,11 +343,26 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(is.null(zeroInflation[[i]])) zeroInflation[[i]] <- FALSE
     }
   }
+  if(is.null(oneInflation)){
+    oneInflation <- vector('list',length(distnames))
+    names(oneInflation) <- distnames
+    for(i in distnames){
+      oneInflation[[i]]<-FALSE
+    }
+  } else {
+    if(!is.list(oneInflation) | is.null(names(oneInflation))) stop("'oneInflation' must be a named list")
+    for(i in distnames){
+      if(is.null(oneInflation[[i]])) oneInflation[[i]] <- FALSE
+    }
+  }
 
   if(!all(unlist(lapply(zeroInflation,is.logical)))) stop("zeroInflation must be a list of logical objects")
+  if(!all(unlist(lapply(oneInflation,is.logical)))) stop("oneInflation must be a list of logical objects")
   for(i in distnames){
-    if((dist[[i]] %in% angledists | dist[[i]]=="pois") & zeroInflation[[i]])
+    if(!(dist[[i]] %in% zeroInflationdists) & zeroInflation[[i]])
       stop(dist[[i]]," distribution cannot be zero inflated")
+    if(!(dist[[i]] %in% oneInflationdists) & oneInflation[[i]])
+      stop(dist[[i]]," distribution cannot be one inflated")
   }
   
   estAngleMean <- vector('list',length(distnames))
@@ -350,7 +372,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     else estAngleMean[[i]]<-FALSE
   }
   
-  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,DM,userBounds,cons,workcons,stateNames)
+  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames)
   p <- inputs$p
   parSize <- p$parSize
   bounds <- p$bounds
@@ -470,8 +492,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   # initial state distribution
   if(is.null(delta)) delta <- rep(1,nbStates)/nbStates
 
-  zeroMass<-vector('list',length(dist))
-  names(zeroMass)<-distnames
+  zeroMass<-oneMass<-vector('list',length(dist))
+  names(zeroMass)<-names(oneMass)<-distnames
 
   allStates <- NULL
   allSpatialcovs<-NULL
@@ -599,7 +621,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       gFull <-  DMcov %*% beta
       
       # format parameters
-      DMinputs<-getDM(subCovs,inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,inputs$circularAngleMean)
+      DMinputs<-getDM(subCovs,inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
       fullDM <- DMinputs$fullDM
       DMind <- DMinputs$DMind
       wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
@@ -636,7 +658,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       
       if(nbSpatialCovs |  length(centerInd)){
         # format parameters
-        DMinputs<-getDM(cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE]),inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,inputs$circularAngleMean)
+        DMinputs<-getDM(cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE]),inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
         wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
@@ -647,15 +669,15 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       
       for(i in distnames){
         
-        if(zeroInflation[[i]]) {
-          zeroMass[[i]] <- subPar[[i]][parSize[[i]]*nbStates-(nbStates-1):0]
-          subPar[[i]] <- subPar[[i]][-(parSize[[i]]*nbStates-(nbStates-1):0)]
-        }
-        else {
-          zeroMass[[i]] <- rep(0,nbStates)
+        zeroMass[[i]] <- rep(0,nbStates)
+        oneMass[[i]] <- rep(0,nbStates)
+        if(zeroInflation[[i]] | oneInflation[[i]]) {
+          if(zeroInflation[[i]]) zeroMass[[i]] <- subPar[[i]][parSize[[i]]*nbStates-nbStates*oneInflation[[i]]-(nbStates-1):0]
+          if(oneInflation[[i]])  oneMass[[i]] <- subPar[[i]][parSize[[i]]*nbStates-(nbStates-1):0]
+          subPar[[i]] <- subPar[[i]][-(parSize[[i]]*nbStates-(nbStates*oneInflation[[i]]-nbStates*zeroInflation[[i]]-1):0)]
         }
 
-        for(j in 1:(parSize[[i]]-zeroInflation[[i]]))
+        for(j in 1:(parSize[[i]]-zeroInflation[[i]]-oneInflation[[i]]))
           genArgs[[i]][[j+1]] <- subPar[[i]][(j-1)*nbStates+Z[k]]
         
         if(dist[[i]] %in% angledists){
@@ -685,10 +707,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             genArgs[[i]][[3]] <- 1/scale # rgamma expects rate=1/scale
           }
     
-          if(runif(1)>zeroMass[[i]][Z[k]])
+          rU <- runif(1)
+          if(rU<((1.-zeroMass[[i]][Z[k]])*(1.-oneMass[[i]][Z[k]])))
             genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
-          else
+          else if(rU<zeroMass[[i]])
             genData[[i]][k] <- 0
+          else
+            genData[[i]][k] <- 1
         }
         
         d[[i]] <- genData[[i]]

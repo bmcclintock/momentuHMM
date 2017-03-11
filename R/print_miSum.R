@@ -53,10 +53,12 @@ print.miSum <- function(x,...)
   }
   print(m$Par$real$gamma$est)
   
-  cat("\n")
-  cat("Initial distribution:\n")
-  cat("--------------------\n")
-  print(m$Par$real$delta$est)
+  if(!is.null(m$Par$real$delta)){
+    cat("\n")
+    cat("Initial distribution:\n")
+    cat("--------------------\n")
+    print(m$Par$real$delta$est)
+  }
   
   if(nbStates>1 & !is.null(m$Par$timeInStates)){
     cat("\n")

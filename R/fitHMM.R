@@ -13,11 +13,14 @@
 #' (e.g., 'step', 'angle', 'dives') must match component names in \code{data}.
 #' @param Par0 A named list containing vectors of initial state-dependent probability distribution parameters for 
 #' each data stream specified in \code{dist}. The parameters should be in the order expected by the pdfs of \code{dist}, 
-#' and any zero-mass parameters should be the last. Note that zero-mass parameters are mandatory if there are zeros in 
-#' data streams with a 'gamma','weibull','exp','lnorm', or 'beta' distribution.
+#' and any zero-mass and/or one-mass parameters should be the last (if both are present, then zero-mass parameters must preceed one-mass parameters). 
+#' Note that zero-mass parameters are mandatory if there are zeros in 
+#' data streams with a 'gamma','weibull','exp','lnorm', or 'beta' distribution, and one-mass parameters are mandatory if there are ones in 
+#' data streams with a 'beta' distribution.
 #' For example, for a 2-state model using the Von Mises (vm) distribution for a data stream named 'angle' and 
 #' the zero-inflated gamma distribution for a data stream named 'step', the vector of initial parameters would be something like: 
 #' \code{Par0=list(step=c(mean_1,mean_2,sd_1,sd_2,zeromass_1,zeromass_2), angle=c(mean_1,mean_2,concentration_1,concentration_2))}.
+#' 
 #' If \code{DM} is not specified for a given data stream, then \code{Par0} is on the natural (i.e., real) scale of the parameters.  
 #' However, if \code{DM} is specified for a given data stream, then \code{Par0} must be on the working (i.e., beta) scale of the 
 #' parameters, and the length of \code{Par0} must match the number of columns in the design matrix.  See details below.
@@ -96,7 +99,7 @@
 #' \item{CIbeta}{Standard errors and 95\% confidence intervals on the beta (i.e., working) scale of parameters}
 #' \item{data}{The momentuHMMData object}
 #' \item{mod}{The object returned by the numerical optimizer \code{nlm}}
-#' \item{conditions}{Conditions used to fit the model, e.g., \code{bounds} (parameter bounds), distributions, \code{zeroInflation}, 
+#' \item{conditions}{Conditions used to fit the model, e.g., \code{bounds} (parameter bounds), distributions, \code{zeroInflation},
 #' \code{estAngleMean}, \code{stationary}, \code{formula}, \code{DM}, \code{fullDM} (full design matrix), etc.)}
 #' \item{rawCovs}{Raw covariate values for transition probabilities, as found in the data (if any). Used in \code{\link{plot.momentuHMM}}.}
 #' \item{stateNames}{The names of the states.}
@@ -345,38 +348,57 @@ fitHMM <- function(data,nbStates,dist,
       stop(distnames[[i]]," data should be between -pi and pi")
   
   for(i in which(unlist(lapply(dist,function(x) x %in% "beta"))))
-    if(length(which(data[[distnames[[i]]]]<0 | data[[distnames[[i]]]]>=1))>0)
+    if(length(which(data[[distnames[[i]]]]<0 | data[[distnames[[i]]]]>1))>0)
       stop(distnames[[i]]," data should be between 0 and 1")
 
   for(i in which(unlist(lapply(dist,function(x) x %in% "pois"))))
     if(!isTRUE(all.equal(data[[distnames[[i]]]],as.integer(data[[distnames[[i]]]]))))
       stop(distnames[[i]]," data should be non-negative integers")
   
-  # determine whether zero-inflation should be included
-  zeroInflation <- vector('list',length(distnames))
-  names(zeroInflation) <- distnames
+  # determine whether zero-inflation or one-inflation should be included
+  zeroInflation <- oneInflation <- vector('list',length(distnames))
+  names(zeroInflation) <- names(oneInflation) <- distnames
   for(i in distnames){
     if(dist[[i]] %in% zeroInflationdists){
       if(length(which(data[[i]]==0))>0) {
         zeroInflation[[i]]<-TRUE
-        # check that zero-mass is in the open interval (0,1)
-        zm0 <- Par0[[i]][(length(Par0[[i]])-nbStates+1):length(Par0[[i]])]
-        zm0[which(zm0==0)] <- 1e-8
-        zm0[which(zm0==1)] <- 1-1e-8
-        Par0[[i]][(length(Par0[[i]])-nbStates+1):length(Par0[[i]])] <- zm0
       }
       else 
         zeroInflation[[i]]<-FALSE
     }
     else zeroInflation[[i]]<-FALSE
+    if(dist[[i]] %in% oneInflationdists){
+      if(length(which(data[[i]]==1))>0) {
+        oneInflation[[i]]<-TRUE
+      }
+      else 
+        oneInflation[[i]]<-FALSE
+    }
+    else oneInflation[[i]]<-FALSE
+    if(is.null(DM[[i]])){
+      if(zeroInflation[[i]]){
+        # check that zero-mass is in the open interval (0,1)
+        zm0 <- Par0[[i]][(length(Par0[[i]])-nbStates+1):length(Par0[[i]])]
+        zm0[which(zm0==0)] <- 1e-8
+        zm0[which(zm0==1)] <- 1-1e-8
+        Par0[[i]][(length(Par0[[i]])-nbStates*oneInflation[[i]]-nbStates+1):(length(Par0[[i]])-nbStates*oneInflation[[i]])] <- zm0
+      }
+      if(oneInflation[[i]]){
+        # check that one-mass is in the open interval (0,1)
+        om0 <- Par0[[i]][(length(Par0[[i]])-nbStates+1):length(Par0[[i]])]
+        om0[which(om0==0)] <- 1e-8
+        om0[which(om0==1)] <- 1-1e-8
+        Par0[[i]][(length(Par0[[i]])-nbStates+1):length(Par0[[i]])] <- om0
+      }
+    }
   }
 
   mHind <- (is.null(DM) & is.null(userBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(formula),"term.labels")) & stationary) # indicator for moveHMMwrap below
   
-  inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,DM,userBounds,cons,workcons,stateNames)
+  inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames)
   p <- inputs$p
   
-  DMinputs<-getDM(data,inputs$DM,dist,nbStates,p$parNames,p$bounds,Par0,inputs$cons,inputs$workcons,zeroInflation,inputs$circularAngleMean)
+  DMinputs<-getDM(data,inputs$DM,dist,nbStates,p$parNames,p$bounds,Par0,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
   fullDM <- DMinputs$fullDM
   DMind <- DMinputs$DMind
   
@@ -512,7 +534,7 @@ fitHMM <- function(data,nbStates,dist,
 
     # call to optimizer nlm
     withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,p$bounds,p$parSize,data,dist,covs,
-                                   inputs$estAngleMean,inputs$circularAngleMean,zeroInflation,
+                                   inputs$estAngleMean,inputs$circularAngleMean,zeroInflation,oneInflation,
                                    stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
                                    print.level=verbose,gradtol=gradtol,
                                    stepmax=stepmax,steptol=steptol,
@@ -597,7 +619,7 @@ fitHMM <- function(data,nbStates,dist,
   }
 
   # conditions of the fit
-  conditions <- list(dist=dist,zeroInflation=zeroInflation,
+  conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
                      estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=fixPar,wparIndex=wparIndex)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)

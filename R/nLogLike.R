@@ -15,6 +15,7 @@
 #' @param circularAngleMean Named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
 #' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.  
 #' @param zeroInflation Named list of logicals indicating whether the probability distributions of the data streams are zero-inflated.
+#' @param oneInflation Named list of logicals indicating whether the probability distributions of the data streams are one-inflated.
 #' @param stationary \code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param cons Named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
@@ -41,8 +42,9 @@
 #' nbStates <- length(m$stateNames)
 #' 
 #' inputs <- momentuHMM:::checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,
-#'           m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$DM,
-#'           m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
+#'           m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,
+#'           m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,
+#'           m$stateNames)
 #' 
 #' wpar <- momentuHMM:::n2w(Par,m$conditions$bounds,m$mle$beta,m$mle$delta,nbStates,
 #'        m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,
@@ -51,14 +53,15 @@
 #' l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,
 #'      inputs$p$parSize,data,m$conditions$dist,model.matrix(m$conditions$formula,data),
 #'                    m$conditions$estAngleMean,m$conditions$circularAngleMean,
-#'                    m$conditions$zeroInflation,m$conditions$stationary,m$conditions$cons,
-#'                    m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,
-#'                    m$knownStates,unlist(m$conditions$fixPar),m$conditions$wparIndex)
+#'                    m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$stationary,
+#'                    m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
+#'                    m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),
+#'                    m$conditions$wparIndex)
 #' }
 #'
 
 nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
-                     estAngleMean,circularAngleMean,zeroInflation,
+                     estAngleMean,circularAngleMean,zeroInflation,oneInflation,
                      stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex)
 {
   # check arguments
@@ -96,7 +99,7 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
 
   nllk <- nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,
                         par,
-                        aInd,zeroInflation,stationary,knownStates)
+                        aInd,zeroInflation,oneInflation,stationary,knownStates)
 
   return(nllk)
 }

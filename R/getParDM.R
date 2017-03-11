@@ -22,6 +22,9 @@
 #' @param zeroInflation A named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated. If \code{zeroInflation} is \code{TRUE} 
 #' for a given data stream, then values for the zero-mass parameters should be
 #' included in the corresponding element of \code{Par}. Ignored if \code{data} is a \code{\link{momentuHMMData}} object.
+#' @param oneInflation Named list of logicals indicating whether the probability distributions of the data streams are one-inflated. If \code{oneInflation} is \code{TRUE} 
+#' for a given data stream, then values for the one-mass parameters should be
+#' included in the corresponding element of \code{Par}. Ignored if \code{data} is a \code{\link{momentuHMMData}} object.
 #' @param estAngleMean An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy'). Any \code{estAngleMean} elements corresponding to data streams that do not have angular distributions are ignored.
 #' @param circularAngleMean An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
@@ -94,6 +97,7 @@
 getParDM<-function(data=data.frame(),nbStates,dist,
                  Par,
                  zeroInflation=NULL,
+                 oneInflation=NULL,
                  estAngleMean=NULL,
                  circularAngleMean=NULL,
                  DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL){
@@ -126,6 +130,18 @@ getParDM<-function(data=data.frame(),nbStates,dist,
       }
       else zeroInflation[[i]]<-FALSE
     }
+    oneInflation <- vector('list',length(distnames))
+    names(oneInflation) <- distnames
+    for(i in distnames){
+      if(dist[[i]] %in% oneInflationdists){
+        if(length(which(data[[i]]==1))>0) {
+          oneInflation[[i]]<-TRUE
+        }
+        else 
+          oneInflation[[i]]<-FALSE
+      }
+      else oneInflation[[i]]<-FALSE
+    }
   } else {
     if(is.null(zeroInflation)){
       zeroInflation <- vector('list',length(distnames))
@@ -139,11 +155,26 @@ getParDM<-function(data=data.frame(),nbStates,dist,
         if(is.null(zeroInflation[[i]])) zeroInflation[[i]] <- FALSE
       }
     }
+    if(is.null(oneInflation)){
+      oneInflation <- vector('list',length(distnames))
+      names(oneInflation) <- distnames
+      for(i in distnames){
+        oneInflation[[i]]<-FALSE
+      }
+    } else {
+      if(!is.list(oneInflation) | is.null(names(oneInflation))) stop("'oneInflation' must be a named list")
+      for(i in distnames){
+        if(is.null(oneInflation[[i]])) oneInflation[[i]] <- FALSE
+      }
+    }
     
     if(!all(unlist(lapply(zeroInflation,is.logical)))) stop("zeroInflation must be a list of logical objects")
+    if(!all(unlist(lapply(oneInflation,is.logical)))) stop("oneInflation must be a list of logical objects")
     for(i in distnames){
-      if((dist[[i]] %in% angledists | dist[[i]]=="pois") & zeroInflation[[i]])
+      if(!(dist[[i]] %in% zeroInflationdists) & zeroInflation[[i]])
         stop(dist[[i]]," distribution cannot be zero inflated")
+      if(!(dist[[i]] %in% oneInflationdists) & oneInflation[[i]])
+        stop(dist[[i]]," distribution cannot be one inflated")
     }
   }
   
@@ -153,12 +184,12 @@ getParDM<-function(data=data.frame(),nbStates,dist,
       tempCovs[[j]]<-mean(data[[j]],na.rm=TRUE)
     }
   }
-  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,DM,userBounds,cons,workcons,stateNames=NULL)
+  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames=NULL)
   
-  DMinputs<-getDM(tempCovs,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,inputs$circularAngleMean,FALSE)
+  DMinputs<-getDM(tempCovs,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)
   fullDM <- DMinputs$fullDM
   if(length(data))
-    DMind <- getDM(data,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,inputs$circularAngleMean,FALSE)$DMind
+    DMind <- getDM(data,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)$DMind
   else DMind <- DMinputs$DMind
     cons <- DMinputs$cons
   workcons <- DMinputs$workcons

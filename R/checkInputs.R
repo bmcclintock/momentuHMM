@@ -1,4 +1,4 @@
-checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,DM,userBounds,cons,workcons,stateNames)
+checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames)
 {
   distnames<-names(dist)
   
@@ -40,7 +40,7 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
   if(!is.null(stateNames) & length(stateNames)!=nbStates)
     stop("stateNames must have length ",nbStates)
 
-  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,DM,userBounds)
+  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds)
   parSize <- p$parSize
   
   bounds <- p$bounds
@@ -57,6 +57,7 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
     if(is.null(DM[[i]]) & length(Par[[i]])!=(parSize[[i]]*nbStates)){
       error<-paste0("Wrong number of initial parameters -- there should be ",parSize[[i]]*nbStates," initial ",i," parameters")
       if(zeroInflation[[i]]) error<-paste0(error," -- zero-mass parameters should be included")
+      if(oneInflation[[i]]) error<-paste0(error," -- one-mass parameters should be included")
       stop(error)
     }
     #if(!is.null(DM[[i]]) !is.null(userBounds[[i]])) stop("either userBounds$",i," or DM$",i," must be NULL")

@@ -4,7 +4,8 @@
 \alias{parDef}
 \title{Parameters definition}
 \usage{
-parDef(dist, nbStates, estAngleMean, zeroInflation, DM, userBounds = NULL)
+parDef(dist, nbStates, estAngleMean, zeroInflation, oneInflation, DM,
+  userBounds = NULL)
 }
 \arguments{
 \item{dist}{Named list indicating the probability distributions of the data streams.}
@@ -15,6 +16,8 @@ parDef(dist, nbStates, estAngleMean, zeroInflation, DM, userBounds = NULL)
 distributions ('vm' and 'wrpcauchy').}
 
 \item{zeroInflation}{Named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated.}
+
+\item{oneInflation}{Named list of logicals indicating whether the probability distributions of the data streams are one-inflated.}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream. Each element of \code{DM} can either be a named list of linear regression formulas or a matrix.}
@@ -38,6 +41,6 @@ Parameters definition
 \examples{
 \dontrun{
 pD<-momentuHMM:::parDef(list(step="gamma",angle="wrpcauchy"),
-    nbStates=2,list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),NULL,NULL)
+    nbStates=2,list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),NULL,NULL)
 }
 }

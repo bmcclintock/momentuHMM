@@ -23,11 +23,14 @@ and their respective probability distributions ('gamma', 'vm', and 'pois').  The
 
 \item{Par0}{A named list containing vectors of initial state-dependent probability distribution parameters for 
 each data stream specified in \code{dist}. The parameters should be in the order expected by the pdfs of \code{dist}, 
-and any zero-mass parameters should be the last. Note that zero-mass parameters are mandatory if there are zeros in 
-data streams with a 'gamma','weibull','exp','lnorm', or 'beta' distribution.
+and any zero-mass and/or one-mass parameters should be the last (if both are present, then zero-mass parameters must preceed one-mass parameters). 
+Note that zero-mass parameters are mandatory if there are zeros in 
+data streams with a 'gamma','weibull','exp','lnorm', or 'beta' distribution, and one-mass parameters are mandatory if there are ones in 
+data streams with a 'beta' distribution.
 For example, for a 2-state model using the Von Mises (vm) distribution for a data stream named 'angle' and 
 the zero-inflated gamma distribution for a data stream named 'step', the vector of initial parameters would be something like: 
 \code{Par0=list(step=c(mean_1,mean_2,sd_1,sd_2,zeromass_1,zeromass_2), angle=c(mean_1,mean_2,concentration_1,concentration_2))}.
+
 If \code{DM} is not specified for a given data stream, then \code{Par0} is on the natural (i.e., real) scale of the parameters.  
 However, if \code{DM} is specified for a given data stream, then \code{Par0} must be on the working (i.e., beta) scale of the 
 parameters, and the length of \code{Par0} must match the number of columns in the design matrix.  See details below.}
@@ -123,7 +126,7 @@ includes covariates), and \code{delta} (initial distribution).}
 \item{CIbeta}{Standard errors and 95\% confidence intervals on the beta (i.e., working) scale of parameters}
 \item{data}{The momentuHMMData object}
 \item{mod}{The object returned by the numerical optimizer \code{nlm}}
-\item{conditions}{Conditions used to fit the model, e.g., \code{bounds} (parameter bounds), distributions, \code{zeroInflation}, 
+\item{conditions}{Conditions used to fit the model, e.g., \code{bounds} (parameter bounds), distributions, \code{zeroInflation},
 \code{estAngleMean}, \code{stationary}, \code{formula}, \code{DM}, \code{fullDM} (full design matrix), etc.)}
 \item{rawCovs}{Raw covariate values for transition probabilities, as found in the data (if any). Used in \code{\link{plot.momentuHMM}}.}
 \item{stateNames}{The names of the states.}

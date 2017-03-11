@@ -1,5 +1,5 @@
 #' @importFrom stats formula terms.formula
-getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInflation,circularAngleMean,ParChecks=TRUE){
+getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInflation,oneInflation,circularAngleMean,ParChecks=TRUE){
   
   distnames<-names(dist)
   fullDM <- vector('list',length(dist))
@@ -17,6 +17,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
     } else if(is.list(DM[[i]])){
       if(!all(parNames[[i]] %in% names(DM[[i]])) | !all(unlist(lapply(DM[[i]],is.formula)))) stop('DM$',i,' must include formula for ',paste(parNames[[i]],collapse=" and "))
       if(!zeroInflation[[i]] & "zeromass" %in% names(DM[[i]])) stop('zeromass should not be included in DM$',i)
+      if(!oneInflation[[i]] & "onemass" %in% names(DM[[i]])) stop('onemass should not be included in DM$',i)
       DM[[i]]<-DM[[i]][parNames[[i]]]
       if(any(unlist(lapply(DM[[i]],function(x) attr(terms(x),"response")!=0))))
         stop("The response variable should not be specified in the DM formula for ",i)
@@ -76,6 +77,8 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       error<- paste0("DM for ",i," should have ",(parSize[[i]]*nbStates)," rows")
       if(zeroInflation[[i]])
         stop(paste0(error,". Should zero inflation parameters be included?"))
+      if(oneInflation[[i]])
+        stop(paste0(error,". Should one inflation parameters be included?"))
       else stop(error)
     }
   }

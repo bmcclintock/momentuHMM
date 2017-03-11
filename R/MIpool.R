@@ -64,6 +64,13 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
     warning("Hessian is singular for HMM fit(s): ",paste0(tmpDet,collapse=", "))
   }
   
+  tmpVar <- which(unlist(lapply(im,function(x) any(class(tryCatch(ginv(x$mod$hessian),error=function(e) e)) %in% "error"))))
+  if(length(tmpVar)){
+    warning("ginv of the hessian failed for HMM fit(s): ",paste0(tmpVar,collapse=", "))
+    im[tmpVar] <- NULL
+    nsims <- length(im)
+  }
+  
   m <- im[[1]]
   data <- m$data
   nbStates <- length(m$stateNames)
@@ -71,10 +78,11 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
   distnames <- names(dist)
   estAngleMean <- m$conditions$estAngleMean
   zeroInflation <- m$conditions$zeroInflation
+  oneInflation <- m$conditions$oneInflation
   DM <- m$conditions$DM
   DMind <- m$conditions$DMind
   
-  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,DM,m$conditions$bounds)
+  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,m$conditions$bounds)
   
   if(nbStates>1) {
     cat("Decoding state sequences and probabilities for each imputation... ")
@@ -169,9 +177,9 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
     }
   }
   
-  inputs <- checkInputs(nbStates,m$conditions$dist,tmPar,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
+  inputs <- checkInputs(nbStates,m$conditions$dist,tmPar,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
   p<-inputs$p
-  DMinputs<-getDM(tempCovs,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$circularAngleMean)
+  DMinputs<-getDM(tempCovs,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
   fullDM<-DMinputs$fullDM
   nbCovs <- ncol(model.matrix(m$conditions$formula,m$data))-1 # substract intercept column
   
@@ -202,21 +210,23 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
   quantSup<-qnorm(1-(1-alpha)/2)
   
   # pooled delta estimates
-  deltInd<-(length(miBeta$coefficients)-nbStates+2):length(miBeta$coefficients)
-  est <- get_delta(miBeta$coefficients[deltInd],1:nbStates)
-  lower<-upper<-se<-numeric(length(est))
-  for(k in 1:length(est)){
-    dN<-numDeriv::grad(get_delta,miBeta$coefficients[deltInd],i=k)
-    se[k]<-suppressWarnings(sqrt(dN%*%miBeta$variance[deltInd,deltInd]%*%dN))
-    lower[k] <- probCI(est[k],se[k],quantSup,bound="lower")
-    upper[k] <- probCI(est[k],se[k],quantSup,bound="upper")
+  if(!m$conditions$stationary){
+    deltInd<-(length(miBeta$coefficients)-nbStates+2):length(miBeta$coefficients)
+    est <- get_delta(miBeta$coefficients[deltInd],1:nbStates)
+    lower<-upper<-se<-numeric(length(est))
+    for(k in 1:length(est)){
+      dN<-numDeriv::grad(get_delta,miBeta$coefficients[deltInd],i=k)
+      se[k]<-suppressWarnings(sqrt(dN%*%miBeta$variance[deltInd,deltInd]%*%dN))
+      lower[k] <- probCI(est[k],se[k],quantSup,bound="lower")
+      upper[k] <- probCI(est[k],se[k],quantSup,bound="upper")
+    }
+    Par$real$delta <- list(est=est,se=se,lower=lower,upper=upper)
+    names(Par$real$delta$est) <- names(Par$real$delta$se) <- names(Par$real$delta$lower) <- names(Par$real$delta$upper) <- m$stateNames
   }
-  Par$real$delta <- list(est=est,se=se,lower=lower,upper=upper)
-  names(Par$real$delta$est) <- names(Par$real$delta$se) <- names(Par$real$delta$lower) <- names(Par$real$delta$upper) <- m$stateNames
     
   # pooled gamma estimates
   if(nbStates>1){
-    gamInd<-(length(miBeta$coefficients)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(miBeta$coefficients))-(nbStates-1)
+    gamInd<-(length(miBeta$coefficients)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(miBeta$coefficients))-(nbStates-1)*(1-m$conditions$stationary)
     est <- get_gamma(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),model.matrix(m$conditions$formula,mhdata),nbStates,1:nbStates,1:nbStates)
     lower<-upper<-se<-matrix(0,nrow(est),ncol(est))
     for(i in 1:nrow(est)){

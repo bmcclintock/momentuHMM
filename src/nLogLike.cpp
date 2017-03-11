@@ -13,6 +13,7 @@
 //' for the transition probabilities ('beta'), and stationary distribution ('delta').
 //' @param aInd Vector of indices of the rows at which the data switches to another animal
 //' @param zeroInflation Named list of logicals indicating whether the probability distributions of the data streams are zero-inflated.
+//' @param oneInflation Named list of logicals indicating whether the probability distributions of the data streams are one-inflated.
 //' @param stationary \code{false} if there are covariates. If \code{true}, the initial distribution is considered
 //' equal to the stationary distribution. Default: \code{false}.
 //' @param knownStates Vector of values of the state process which are known prior to fitting the
@@ -24,7 +25,7 @@
 // [[Rcpp::export]]
 double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist,
                      List Par,
-                     IntegerVector aInd, List zeroInflation,
+                     IntegerVector aInd, List zeroInflation, List oneInflation,
                      bool stationary, IntegerVector knownStates)
 {
   int nbObs = data.nrows();
@@ -117,14 +118,22 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
 
   arma::colvec genProb(nbObs);
   arma::rowvec zerom(nbObs);
+  arma::rowvec onem(nbObs);
   bool genzeroInflation;
+  bool genoneInflation;
   arma::mat genArgs1;
   arma::mat genArgs2;
   arma::mat zeromass(nbStates,nbObs);
   arma::uvec noZeros;
   arma::uvec nbZeros;
+  arma::mat onemass(nbStates,nbObs);
+  arma::uvec noOnes;
+  arma::uvec nbOnes;
+  arma::uvec noZerosOnes;
   
   double NAvalue = -99999999; // value designating NAs in data
+  int zeroInd = 0;
+  int oneInd = 0;
 
   for(unsigned int k=0;k<dist.size();k++){
     genname = as<std::string>(dataNames[k]);
@@ -132,6 +141,17 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
     genDist = as<std::string>(dist[genname]);
     genPar = as<arma::mat>(Par[genname]);
     genzeroInflation = as<bool>(zeroInflation[genname]);
+    genoneInflation = as<bool>(oneInflation[genname]);
+    
+    if(genoneInflation) 
+      oneInd = nbStates;
+    else 
+      oneInd = 0;
+    
+    if(genzeroInflation) 
+      zeroInd = nbStates;
+    else 
+      zeroInd = 0;
     
     // remove the NAs from step (impossible to subset a vector with NAs)
     for(int i=0;i<nbObs;i++) {
@@ -141,12 +161,26 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
     }
     arma::uvec noNAs = arma::find(as<arma::vec>(genData)!=NAvalue);
     
-    // extract zero-mass parameters if necessary
-    if(genzeroInflation) {
-      zeromass = genPar.rows(genPar.n_rows-nbStates,genPar.n_rows-1);   //genPar(arma::span(genPar.n_rows-1),arma::span(),arma::span());
-      genPar = genPar.rows(0,genPar.n_rows-nbStates-1); //genPar.tube(0, 0, genPar.n_rows-2, genPar.n_cols-1);
-      noZeros = arma::find(as<arma::vec>(genData)>0);
-      nbZeros = arma::find(as<arma::vec>(genData)==0);
+    // extract zero-mass and one-mass parameters if necessary
+    if(genzeroInflation || genoneInflation) {
+      
+      if(genzeroInflation){
+        zeromass = genPar.rows(genPar.n_rows-oneInd-nbStates,genPar.n_rows-oneInd-1);   //genPar(arma::span(genPar.n_rows-1),arma::span(),arma::span());
+        
+        noZeros = arma::find(as<arma::vec>(genData)>0);
+        nbZeros = arma::find(as<arma::vec>(genData)==0);
+      }
+      
+      if(genoneInflation){
+        onemass = genPar.rows(genPar.n_rows-nbStates,genPar.n_rows-1);   //genPar(arma::span(genPar.n_rows-1),arma::span(),arma::span());
+        noOnes = arma::find(as<arma::vec>(genData)<1);
+        nbOnes = arma::find(as<arma::vec>(genData)==1);
+      }
+      
+      if(genzeroInflation && genoneInflation)
+        noZerosOnes = arma::find(as<arma::vec>(genData)>0 && as<arma::vec>(genData)<1);
+      
+      genPar = genPar.rows(0,genPar.n_rows-oneInd-zeroInd-1); //genPar.tube(0, 0, genPar.n_rows-2, genPar.n_cols-1);
     }
 
     for(int state=0;state<nbStates;state++){
@@ -156,15 +190,39 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       genArgs1 = genPar.row(state); //genPar(arma::span(0),arma::span(state),arma::span());
       genArgs2 = genPar.row(genPar.n_rows - nbStates + state); //genPar(arma::span(genPar.n_rows-1),arma::span(state),arma::span());
     
-      if(genzeroInflation) {
+      if(genzeroInflation && !genoneInflation) {
         
         zerom = zeromass.row(state);
 
         // compute probability of non-zero observations
-        genProb.elem(noZeros) = (1-zerom.elem(noZeros)) % funMap[genDist](genData[genData>0],genArgs1.elem(noZeros),genArgs2.elem(noZeros));
+        genProb.elem(noZeros) = (1. - zerom.elem(noZeros)) % funMap[genDist](genData[genData>0],genArgs1.elem(noZeros),genArgs2.elem(noZeros));
 
         // compute probability of zero observations
         genProb.elem(nbZeros) = zerom.elem(nbZeros);
+        
+      } else if(genoneInflation && !genzeroInflation){
+        
+        onem = onemass.row(state);
+        
+        // compute probability of non-one observations
+        genProb.elem(noOnes) = (1. - onem.elem(noOnes)) % funMap[genDist](genData[genData<1],genArgs1.elem(noOnes),genArgs2.elem(noOnes));
+        
+        // compute probability of one observations
+        genProb.elem(nbOnes) = onem.elem(nbOnes);
+        
+      } else if(genzeroInflation && genoneInflation){
+        
+        zerom = zeromass.row(state);
+        onem = onemass.row(state);
+        
+        // compute probability of non-zero and non-one observations
+        genProb.elem(noZerosOnes) = (1. - zerom.elem(noZerosOnes)) % (1. - onem.elem(noZerosOnes)) % funMap[genDist](genData[genData>0 & genData<1],genArgs1.elem(noZerosOnes),genArgs2.elem(noZerosOnes));
+        
+        // compute probability of zero observations
+        genProb.elem(nbZeros) = zerom.elem(nbZeros);
+        
+        // compute probability of one observations
+        genProb.elem(nbOnes) = onem.elem(nbOnes) % (1. - zerom.elem(nbOnes));
         
       } else {
         

@@ -31,7 +31,7 @@ exGen <- function()
 
   obsData <- simData(nbAnimals=nbAnimals,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
                   Par=list(step=stepPar,angle=anglePar),formula=~cov1+cov2,beta=beta,nbCovs=nbCovs,zeroInflation=list(step=zeroInflation),
-                  obsPerAnimal=obsPerAnimal,states=TRUE,lambda=2,errorEllipse=list(M=50,m=50,r=0))
+                  obsPerAnimal=obsPerAnimal,states=TRUE,lambda=2,errorEllipse=list(M=c(0,50),m=c(0,50),r=0))
   
   tInd <- which(!is.na(obsData$cov1))
   tmpData <- obsData[tInd,]

@@ -6,6 +6,7 @@
 #' @param estAngleMean Named list indicating whether or not to estimate the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy').
 #' @param zeroInflation Named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated.
+#' @param oneInflation Named list of logicals indicating whether the probability distributions of the data streams are one-inflated.
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 #' stream. Each element of \code{DM} can either be a named list of linear regression formulas or a matrix.  
 #' @param userBounds An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
@@ -23,10 +24,11 @@
 #' @examples 
 #' \dontrun{
 #' pD<-momentuHMM:::parDef(list(step="gamma",angle="wrpcauchy"),
-#'     nbStates=2,list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),NULL,NULL)
+#'     nbStates=2,list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),
+#'     list(step=FALSE,angle=FALSE),NULL,NULL)
 #' }
 
-parDef <- function(dist,nbStates,estAngleMean,zeroInflation,DM,userBounds=NULL)
+parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds=NULL)
 {
   distnames<-names(dist)
   parSize <- parNames <- bounds <- vector('list',length(dist))
@@ -35,7 +37,7 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,DM,userBounds=NULL)
   for(i in distnames){
     switch(dist[[i]],
            "beta"={
-             parSize[[i]] <- 2 + zeroInflation[[i]]
+             parSize[[i]] <- 2 + zeroInflation[[i]] + oneInflation[[i]]
              tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
              parNames[[i]]<-c("shape1","shape2")
            },
@@ -111,8 +113,12 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,DM,userBounds=NULL)
            }
           )
     if(zeroInflation[[i]]) {
-      tmpbounds[(parSize[[i]] * nbStates)-nbStates:1+1,2] <- 1
+      tmpbounds[(parSize[[i]] * nbStates)-nbStates*oneInflation[[i]]-nbStates:1+1,2] <- 1
       parNames[[i]] <- c(parNames[[i]],"zeromass")
+    } 
+    if(oneInflation[[i]]) {
+      tmpbounds[(parSize[[i]] * nbStates)-nbStates:1+1,2] <- 1
+      parNames[[i]] <- c(parNames[[i]],"onemass")
     } 
     rownames(tmpbounds) <- paste0(rep(parNames[[i]],each=nbStates),"_",1:nbStates)
     bounds[[i]] <- tmpbounds
@@ -131,7 +137,7 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,DM,userBounds=NULL)
       if(is.null(userBounds[[i]])) 
         userBounds[[i]]<-bounds[[i]]
       else {
-        if(all(dim(bounds[[i]])!=dim(userBounds[[i]]))) stop("userBounds for ",i," must be of dimension ",dim(bounds[[i]])[1],"x",dim(bounds[[i]])[2])
+        if(!all(dim(bounds[[i]])==dim(userBounds[[i]]))) stop("userBounds for ",i," must be of dimension ",dim(bounds[[i]])[1],"x",dim(bounds[[i]])[2])
         rownames(userBounds[[i]])<-rownames(bounds[[i]])
         Bndind[[i]] <- (isTRUE(all.equal(userBounds[[i]],bounds[[i]])) & Bndind[[i]])
         if(dist[[i]]=="wrpcauchy") bounds[[i]][nrow(bounds[[i]])-(nbStates-1):0,1] <- -1

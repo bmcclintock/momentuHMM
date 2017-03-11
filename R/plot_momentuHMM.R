@@ -204,9 +204,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   }
   
   # get pars for probability density plots
-  tmpInputs <- checkInputs(nbStates,tmpConditions$dist,tmpPar,tmpConditions$estAngleMean,tmpConditions$circularAngleMean,tmpConditions$zeroInflation,tmpConditions$DM,tmpConditions$userBounds,tmpConditions$cons,tmpConditions$workcons,m$stateNames)
+  tmpInputs <- checkInputs(nbStates,tmpConditions$dist,tmpPar,tmpConditions$estAngleMean,tmpConditions$circularAngleMean,tmpConditions$zeroInflation,tmpConditions$oneInflation,tmpConditions$DM,tmpConditions$userBounds,tmpConditions$cons,tmpConditions$workcons,m$stateNames)
   tmpp <- tmpInputs$p
-  DMinputs<-getDM(covs,tmpInputs$DM,tmpConditions$dist,nbStates,tmpp$parNames,tmpp$bounds,tmpPar,tmpConditions$cons,tmpConditions$workcons,tmpConditions$zeroInflation,tmpConditions$circularAngleMean)
+  DMinputs<-getDM(covs,tmpInputs$DM,tmpConditions$dist,nbStates,tmpp$parNames,tmpp$bounds,tmpPar,tmpConditions$cons,tmpConditions$workcons,tmpConditions$zeroInflation,tmpConditions$oneInflation,tmpConditions$circularAngleMean)
   fullDM <- DMinputs$fullDM
   DMind <- DMinputs$DMind
   wpar <- n2w(tmpPar,tmpp$bounds,beta,rep(1/nbStates,nbStates),nbStates,tmpInputs$estAngleMean,tmpInputs$DM,DMinputs$cons,DMinputs$workcons,tmpp$Bndind)
@@ -215,11 +215,11 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   }
   par <- w2n(wpar,tmpp$bounds,tmpp$parSize,nbStates,nbCovs,tmpInputs$estAngleMean,tmpInputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,tmpConditions$dist,tmpp$Bndind)
   
-  inputs <- checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
+  inputs <- checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
   p <- inputs$p
   
-  zeroMass<-vector('list',length(m$conditions$dist))
-  names(zeroMass)<-distnames
+  zeroMass<-oneMass<-vector('list',length(m$conditions$dist))
+  names(zeroMass)<-names(oneMass)<-distnames
   
   # text for legends
   stateNames <- m$stateNames
@@ -258,11 +258,12 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       genData <- m$data[[i]][ind]
     }
     
-    if(m$conditions$zeroInflation[[i]]) {
-      zeroMass[[i]] <- par[[i]][nrow(par[[i]])-(nbStates-1):0,]#m$mle[[i]][nrow(m$mle[[i]]),]
-      par[[i]] <- par[[i]][-(nrow(par[[i]])-(nbStates-1):0),,drop=FALSE]#m$mle[[i]][-nrow(m$mle[[i]]),]
-    } else {
-      zeroMass[[i]] <- rep(0,nbStates)
+    zeroMass[[i]] <- rep(0,nbStates)
+    oneMass[[i]] <- rep(0,nbStates)
+    if(m$conditions$zeroInflation[[i]] | m$conditions$oneInflation[[i]]) {
+      if(m$conditions$zeroInflation[[i]]) zeroMass[[i]] <- par[[i]][nrow(par[[i]])-nbStates*m$conditions$oneInflation[[i]]-(nbStates-1):0,]
+      if(m$conditions$oneInflation[[i]]) oneMass[[i]] <- par[[i]][nrow(par[[i]])-(nbStates-1):0,]
+      par[[i]] <- par[[i]][-(nrow(par[[i]])-(nbStates*m$conditions$oneInflation[[i]]-nbStates*m$conditions$zeroInflation[[i]]-1):0),,drop=FALSE]
     }
     
     infInd <- FALSE
@@ -341,8 +342,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         genArgs[[3]] <- 1/scale # dgamma expects rate=1/scale
       }
       # (weighted by the proportion of each state in the Viterbi states sequence)
-      if(m$conditions$zeroInflation[[i]]){
-        genDensities[[state]] <- cbind(grid,(1-zeroMass[[i]][state])*w[state]*do.call(genFun,genArgs))
+      if(m$conditions$zeroInflation[[i]] | m$conditions$oneInflation[[i]]){
+        genDensities[[state]] <- cbind(grid,(1-zeroMass[[i]][state])*(1-oneMass[[i]][state])*w[state]*do.call(genFun,genArgs))
       } else if(infInd) {
         genDensities[[state]] <- cbind(grid,(1-zeroMass$step[state])*w[state]*do.call(genFun,genArgs))
       } else {
@@ -382,7 +383,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           for(ii in DMterms[which(unlist(lapply(m$data[DMterms],is.factor)))])
             tempCovs[[ii]] <- factor(tempCovs[[ii]],levels=levels(m$data[[ii]]))
           
-          DMinputs<-getDM(tempCovs,inputs$DM[i],m$conditions$dist[i],nbStates,p$parNames[i],p$bounds[i],Par[i],m$conditions$cons[i],m$conditions$workcons[i],m$conditions$zeroInflation[i],m$conditions$circularAngleMean[i])
+          DMinputs<-getDM(tempCovs,inputs$DM[i],m$conditions$dist[i],nbStates,p$parNames[i],p$bounds[i],Par[i],m$conditions$cons[i],m$conditions$workcons[i],m$conditions$zeroInflation[i],m$conditions$oneInflation[i],m$conditions$circularAngleMean[i])
           fullDM <- DMinputs$fullDM
           DMind <- DMinputs$DMind
           gradfun<-function(wpar,k) {

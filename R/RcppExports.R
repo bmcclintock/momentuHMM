@@ -117,6 +117,7 @@ dpois_rcpp <- function(x, rate, foo) {
 #' for the transition probabilities ('beta'), and stationary distribution ('delta').
 #' @param aInd Vector of indices of the rows at which the data switches to another animal
 #' @param zeroInflation Named list of logicals indicating whether the probability distributions of the data streams are zero-inflated.
+#' @param oneInflation Named list of logicals indicating whether the probability distributions of the data streams are one-inflated.
 #' @param stationary \code{false} if there are covariates. If \code{true}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{false}.
 #' @param knownStates Vector of values of the state process which are known prior to fitting the
@@ -125,8 +126,8 @@ dpois_rcpp <- function(x, rate, foo) {
 #' the state is not known.
 #' 
 #' @return Negative log-likelihood
-nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, stationary, knownStates) {
-    .Call('momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, stationary, knownStates)
+nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates) {
+    .Call('momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates)
 }
 
 #' Transition probability matrix

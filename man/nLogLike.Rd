@@ -5,8 +5,9 @@
 \title{Negative log-likelihood function}
 \usage{
 nLogLike(wpar, nbStates, formula, bounds, parSize, data, dist, covs,
-  estAngleMean, circularAngleMean, zeroInflation, stationary = FALSE, cons,
-  fullDM, DMind, workcons, Bndind, knownStates, fixPar, wparIndex)
+  estAngleMean, circularAngleMean, zeroInflation, oneInflation,
+  stationary = FALSE, cons, fullDM, DMind, workcons, Bndind, knownStates,
+  fixPar, wparIndex)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}
@@ -33,6 +34,8 @@ distributions ('vm' and 'wrpcauchy').}
 regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.}
 
 \item{zeroInflation}{Named list of logicals indicating whether the probability distributions of the data streams are zero-inflated.}
+
+\item{oneInflation}{Named list of logicals indicating whether the probability distributions of the data streams are one-inflated.}
 
 \item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
@@ -72,8 +75,8 @@ Par <- list(step=example$par0$Par$step,angle=example$par0$Par$angle)
 nbStates <- length(m$stateNames)
 
 inputs <- momentuHMM:::checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,
-          m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$DM,
-          m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
+          m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,
+          m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
 
 wpar <- momentuHMM:::n2w(Par,m$conditions$bounds,m$mle$beta,m$mle$delta,nbStates,
        m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,
@@ -82,9 +85,9 @@ wpar <- momentuHMM:::n2w(Par,m$conditions$bounds,m$mle$beta,m$mle$delta,nbStates
 l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,
      inputs$p$parSize,data,m$conditions$dist,model.matrix(m$conditions$formula,data),
                    m$conditions$estAngleMean,m$conditions$circularAngleMean,
-                   m$conditions$zeroInflation,m$conditions$stationary,m$conditions$cons,
-                   m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,
-                   m$knownStates,unlist(m$conditions$fixPar),m$conditions$wparIndex)
+                   m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$stationary,
+                   m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
+                   m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),m$conditions$wparIndex)
 }
 
 }

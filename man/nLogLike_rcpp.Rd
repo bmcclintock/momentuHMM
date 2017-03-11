@@ -5,7 +5,7 @@
 \title{Negative log-likelihood}
 \usage{
 nLogLike_rcpp(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation,
-  stationary, knownStates)
+  oneInflation, stationary, knownStates)
 }
 \arguments{
 \item{nbStates}{Number of states,}
@@ -24,6 +24,8 @@ for the transition probabilities ('beta'), and stationary distribution ('delta')
 \item{aInd}{Vector of indices of the rows at which the data switches to another animal}
 
 \item{zeroInflation}{Named list of logicals indicating whether the probability distributions of the data streams are zero-inflated.}
+
+\item{oneInflation}{Named list of logicals indicating whether the probability distributions of the data streams are one-inflated.}
 
 \item{stationary}{\code{false} if there are covariates. If \code{true}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{false}.}

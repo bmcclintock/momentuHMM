@@ -5,8 +5,8 @@
 \title{Get starting values on working scale based on design matrix and other parameter constraints}
 \usage{
 getParDM(data = data.frame(), nbStates, dist, Par, zeroInflation = NULL,
-  estAngleMean = NULL, circularAngleMean = NULL, DM = NULL, cons = NULL,
-  userBounds = NULL, workcons = NULL)
+  oneInflation = NULL, estAngleMean = NULL, circularAngleMean = NULL,
+  DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL)
 }
 \arguments{
 \item{data}{Optional \code{\link{momentuHMMData}} object or a data frame containing the covariate values. 
@@ -25,6 +25,10 @@ in the order expected by the pdfs of \code{dist}, and any zero-mass parameters s
 
 \item{zeroInflation}{A named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated. If \code{zeroInflation} is \code{TRUE} 
 for a given data stream, then values for the zero-mass parameters should be
+included in the corresponding element of \code{Par}. Ignored if \code{data} is a \code{\link{momentuHMMData}} object.}
+
+\item{oneInflation}{Named list of logicals indicating whether the probability distributions of the data streams are one-inflated. If \code{oneInflation} is \code{TRUE} 
+for a given data stream, then values for the one-mass parameters should be
 included in the corresponding element of \code{Par}. Ignored if \code{data} is a \code{\link{momentuHMMData}} object.}
 
 \item{estAngleMean}{An optional named list indicating whether or not to estimate the angle mean for data streams with angular 

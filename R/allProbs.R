@@ -20,6 +20,7 @@ allProbs <- function(m,nbStates)
   dist <- m$conditions$dist
   distnames <- names(dist)
   zeroInflation <- m$conditions$zeroInflation
+  oneInflation <- m$conditions$oneInflation
   nbObs <- nrow(data)
   
   nbCovs <- ncol(model.matrix(m$conditions$formula,data))-1 # substract intercept column
@@ -43,9 +44,13 @@ allProbs <- function(m,nbStates)
       
       # Constitute the lists of state-dependent parameters for the step and angle
       genArgs <- list(data[[i]][genInd])
-      if(zeroInflation[[i]]) {
-        zeromass <- genPar[nrow(genPar)-nbStates+state,genInd]
-        genPar <- genPar[-(nrow(genPar)-(nbStates-1):0),]
+      
+      zeromass <- 0
+      onemass <- 0
+      if(zeroInflation[[i]] | oneInflation[[i]]) {
+        if(zeroInflation[[i]]) zeromass <- genPar[nrow(genPar)-nbStates*oneInflation[[i]]-nbStates+state,genInd]
+        if(oneInflation[[i]]) onemass <- genPar[nrow(genPar)-nbStates+state,genInd]
+        genPar <- genPar[-(nrow(genPar)-(nbStates*(zeroInflation[[i]]+oneInflation[[i]])-1):0),]
       }
   
       for(j in 1:(nrow(genPar)/nbStates))
@@ -58,10 +63,20 @@ allProbs <- function(m,nbStates)
         genArgs[[2]] <- shape
         genArgs[[3]] <- 1/scale # dgamma expects rate=1/scale
       }
-      if(zeroInflation[[i]]) {
-        genProb[genInd] <- ifelse(data[[i]][genInd]==0,
-                                    zeromass, # if gen==0
-                                    (1-zeromass)*do.call(genFun,genArgs)) # if gen != 0
+      if(zeroInflation[[i]] | oneInflation[[i]]) {
+        if(zeroInflation[[i]] & !oneInflation[[i]]){
+          genProb[genInd] <- ifelse(data[[i]][genInd]==0,
+                                      zeromass, # if gen==0
+                                      (1-zeromass)*do.call(genFun,genArgs)) # if gen != 0
+        } else if(oneInflation[[i]] & !zeroInflation[[i]]){
+          genProb[genInd] <- ifelse(data[[i]][genInd]==1,
+                                    onemass, # if gen==0
+                                    (1-onemass)*do.call(genFun,genArgs)) # if gen != 1          
+        } else {
+          genProb[genInd][data[[i]][genInd]==0] <- zeromass[data[[i]][genInd]==0]
+          genProb[genInd][data[[i]][genInd]==1] <- (1.-zeromass[data[[i]][genInd]==1]) * onemass[data[[i]][genInd]==1]
+          genProb[genInd][data[[i]][genInd]>0 & data[[i]][genInd]<1] <- (1.-zeromass[data[[i]][genInd]>0 & data[[i]][genInd]<1]) * (1.-onemass[data[[i]][genInd]>0 & data[[i]][genInd]<1]) * do.call(genFun,genArgs)[data[[i]][genInd]>0 & data[[i]][genInd]<1] # if gen !=0 and gen!=1
+        }
       }
       else genProb[genInd] <- do.call(genFun,genArgs)
   

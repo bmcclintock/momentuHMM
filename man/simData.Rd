@@ -6,8 +6,8 @@
 \usage{
 simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
   formula = ~1, covs = NULL, nbCovs = 0, spatialCovs = NULL,
-  zeroInflation = NULL, circularAngleMean = NULL, centers = NULL,
-  obsPerAnimal = c(500, 1500), DM = NULL, cons = NULL,
+  zeroInflation = NULL, oneInflation = NULL, circularAngleMean = NULL,
+  centers = NULL, obsPerAnimal = c(500, 1500), DM = NULL, cons = NULL,
   userBounds = NULL, workcons = NULL, stateNames = NULL, model = NULL,
   states = FALSE, lambda = NULL, errorEllipse = NULL)
 }
@@ -23,7 +23,9 @@ and their respective probability distributions ('gamma', 'vm', and 'pois').}
 
 \item{Par}{A named list containing vectors of initial state-dependent probability distribution parameters for 
 each data stream specified in \code{dist}. The parameters should be in the order expected by the pdfs of \code{dist}, 
-and any zero-mass parameters should be the last. If \code{DM} is not specified for a given data stream, then \code{Par} 
+and any zero-mass and/or one-mass parameters should be the last (if both are present, then zero-mass parameters must preceed one-mass parameters). 
+
+If \code{DM} is not specified for a given data stream, then \code{Par} 
 is on the natural (i.e., real) scale of the parameters. However, if \code{DM} is specified for a given data stream, then 
 \code{Par} must be on the working (i.e., beta) scale of the parameters, and the length of \code{Par} must match the number 
 of columns in the design matrix. See details below.}
@@ -46,6 +48,10 @@ extracted from the raster layer(s) based on the simulated location data for each
 
 \item{zeroInflation}{A named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated. If \code{zeroInflation} is \code{TRUE} 
 for a given data stream, then values for the zero-mass parameters should be
+included in the corresponding element of \code{Par}.}
+
+\item{oneInflation}{A named list of logicals indicating whether the probability distributions of the data streams should be one-inflated. If \code{oneInflation} is \code{TRUE} 
+for a given data stream, then values for the one-mass parameters should be
 included in the corresponding element of \code{Par}.}
 
 \item{circularAngleMean}{An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
