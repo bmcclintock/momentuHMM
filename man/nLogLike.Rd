@@ -76,7 +76,8 @@ nbStates <- length(m$stateNames)
 
 inputs <- momentuHMM:::checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,
           m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,
-          m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
+          m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,
+          m$stateNames)
 
 wpar <- momentuHMM:::n2w(Par,m$conditions$bounds,m$mle$beta,m$mle$delta,nbStates,
        m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,
@@ -87,7 +88,8 @@ l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bound
                    m$conditions$estAngleMean,m$conditions$circularAngleMean,
                    m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$stationary,
                    m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
-                   m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),m$conditions$wparIndex)
+                   m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),
+                   m$conditions$wparIndex)
 }
 
 }

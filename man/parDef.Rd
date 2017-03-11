@@ -41,6 +41,7 @@ Parameters definition
 \examples{
 \dontrun{
 pD<-momentuHMM:::parDef(list(step="gamma",angle="wrpcauchy"),
-    nbStates=2,list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),NULL,NULL)
+    nbStates=2,list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),
+    list(step=FALSE,angle=FALSE),NULL,NULL)
 }
 }
