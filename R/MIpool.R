@@ -64,6 +64,13 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
     warning("Hessian is singular for HMM fit(s): ",paste0(tmpDet,collapse=", "))
   }
   
+  tmpVar <- which(unlist(lapply(im,function(x) any(class(tryCatch(ginv(x$mod$hessian),error=function(e) e)) %in% "error"))))
+  if(length(tmpVar)){
+    warning("ginv of the hessian failed for HMM fit(s): ",paste0(tmpVar,collapse=", "))
+    im[tmpVar] <- NULL
+    nsims <- length(im)
+  }
+  
   m <- im[[1]]
   data <- m$data
   nbStates <- length(m$stateNames)
