@@ -220,7 +220,7 @@
 #' Methods in Ecology and Evolution 6(3):266-277.
 #'
 #' @export
-#' @importFrom stats rnorm runif step terms.formula
+#' @importFrom stats rnorm runif rmultinom step terms.formula
 #' @importFrom raster cellFromXY getValues
 #' @importFrom moveHMM simData
 #' @importFrom CircStats rvm
@@ -707,10 +707,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             genArgs[[i]][[3]] <- 1/scale # rgamma expects rate=1/scale
           }
     
-          rU <- runif(1)
-          if(rU<((1.-zeroMass[[i]][Z[k]])*(1.-oneMass[[i]][Z[k]])))
+          rU <- which(rmultinom(1,1,prob=c(((1.-zeroMass[[i]][Z[k]])*(1.-oneMass[[i]][Z[k]])),zeroMass[[i]][Z[k]],(1.-zeroMass[[i]][Z[k]])*oneMass[[i]][Z[k]]))==1)
+          if(rU==1)
             genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
-          else if(rU<zeroMass[[i]])
+          else if(rU==2)
             genData[[i]][k] <- 0
           else
             genData[[i]][k] <- 1
