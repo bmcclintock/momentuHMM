@@ -20,6 +20,6 @@ Used in \code{\link{stateProbs}} and \code{\link{pseudoRes}}.
 # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
 m <- example$m
 
-la <- logAlpha(m)
+la <- momentuHMM:::logAlpha(m)
 }
 }

@@ -45,6 +45,6 @@ crwOut <- crawlWrap(obsData=obsData,ncores=1,retryFits=100,
          initial.state=inits,
          err.model=err.model,attempts=100)
 
-plot(crwOut,compact=TRUE,ask=FALSE)
+plot(crwOut,compact=TRUE,ask=FALSE,plotEllipse=FALSE)
 
 }

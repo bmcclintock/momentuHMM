@@ -34,7 +34,7 @@
 #'          initial.state=inits,
 #'          err.model=err.model,attempts=100)
 #'
-#' plot(crwOut,compact=TRUE,ask=FALSE)
+#' plot(crwOut,compact=TRUE,ask=FALSE,plotEllipse=FALSE)
 #'
 #' @export
 #' @importFrom grDevices rainbow gray adjustcolor

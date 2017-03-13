@@ -14,7 +14,7 @@
 #' x <- c(0,0)
 #' y <- c(4,6)
 #' z <- c(10,7)
-#' turnAngle(x,y,z)
+#' momentuHMM:::turnAngle(x,y,z)
 #' }
 
 turnAngle <- function(x,y,z)

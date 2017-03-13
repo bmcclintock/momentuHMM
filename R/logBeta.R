@@ -12,7 +12,7 @@
 #' # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
 #' m <- example$m
 #'
-#' lb <- logBeta(m)
+#' lb <- momentuHMM:::logBeta(m)
 #' }
 
 logBeta <- function(m)
