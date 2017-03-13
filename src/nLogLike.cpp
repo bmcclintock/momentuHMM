@@ -173,7 +173,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       
       if(genoneInflation){
         onemass = genPar.rows(genPar.n_rows-nbStates,genPar.n_rows-1);   //genPar(arma::span(genPar.n_rows-1),arma::span(),arma::span());
-        noOnes = arma::find(as<arma::vec>(genData)<1);
+        noOnes = arma::find(as<arma::vec>(genData)!=NAvalue && as<arma::vec>(genData)<1);
         nbOnes = arma::find(as<arma::vec>(genData)==1);
       }
       
@@ -205,7 +205,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         onem = onemass.row(state);
         
         // compute probability of non-one observations
-        genProb.elem(noOnes) = (1. - onem.elem(noOnes)) % funMap[genDist](genData[genData<1],genArgs1.elem(noOnes),genArgs2.elem(noOnes));
+        genProb.elem(noOnes) = (1. - onem.elem(noOnes)) % funMap[genDist](genData[genData!=NAvalue & genData<1],genArgs1.elem(noOnes),genArgs2.elem(noOnes));
         
         // compute probability of one observations
         genProb.elem(nbOnes) = onem.elem(nbOnes);
