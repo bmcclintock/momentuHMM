@@ -128,4 +128,40 @@ test_that("equivalent momentuHMM and moveHMM models match",{
                                beta0=par0$beta0[1,,drop=FALSE],delta0=par0$delta0)
   expect_equal(momentuHMM_fit$mod$estimate,moveHMM_fit$mod$estimate)
   expect_equal(momentuHMM_fit$mod$minimum,moveHMM_fit$mod$minimum)
+  
+  #zeroInflation
+  set.seed(5)
+  nbAnimals <- 2
+  nbStates <- 2
+  nbCovs <- 2
+  mu <- c(100,600)
+  sigma <- c(10,40)
+  zeromass <- c(0.1,0.05)
+  stepPar <- c(mu,sigma,zeromass)
+  anglePar <- c(0,0,0.25,0.75)
+  stepDist <- "gamma"
+  angleDist <- "wrpcauchy"
+  zeroInflation <- TRUE
+  nbAnim <- c(50,100)
+  beta0 <- matrix(-1.5,1,nbStates)
+  
+  data <- simData(nbAnimals=nbAnimals,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+                  Par=list(step=stepPar,angle=anglePar),nbCovs=nbCovs,zeroInflation=list(step=zeroInflation),
+                  obsPerAnimal=nbAnim)
+  
+  mu0 <- c(100,600)
+  sigma0 <- c(10,40)
+  zeromass0 <- c(0.1,0.05)
+  stepPar0 <- c(mu0,sigma0,zeromass0)
+  anglePar0 <- anglePar
+  stepDM <- diag(6)
+  Par0<-getParDM(data,nbStates,dist=list(step=stepDist,angle=angleDist),Par=list(step=stepPar0,angle=anglePar0),zeroInflation=list(step=TRUE),estAngleMean=list(angle=TRUE),
+                 DM=list(step=stepDM))
+  
+  momentuHMM_fit<-fitHMM(data=data,nbStates=nbStates,Par0=Par0,stationary=TRUE,
+                         beta0=beta0,delta0=example$par0$delta0,DM=list(step=stepDM),dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE))
+  moveHMM_fit<-moveHMM::fitHMM(moveData(data),nbStates=nbStates,stepPar=stepPar0,anglePar=anglePar0,stationary=TRUE,
+                               beta0=beta0,delta0=example$par0$delta0,stepDist=stepDist,angleDist=angleDist)
+  expect_equal(momentuHMM_fit$mod$estimate,moveHMM_fit$mod$estimate)
+  expect_equal(momentuHMM_fit$mod$minimum,moveHMM_fit$mod$minimum)
 })
