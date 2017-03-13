@@ -2,6 +2,10 @@ context("crawlWrap")
 
 test_that("Exceptions are thrown",{
 
+  oldRNG<-setRNG::setRNG()
+  
+  setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=5)
+  
   theta<-c(6,-0.5)
   err.model <- miExample$err.model
   
@@ -33,5 +37,7 @@ test_that("Exceptions are thrown",{
   # temporally regular data without measurement error data
   fixPar<-c(NA,NA)
   expect_error(crawlWrap(simData(model=example$m),ncores=1,initial.state=init,theta=theta,fixPar=fixPar))
+  
+  setRNG::setRNG(oldRNG)
   
 })

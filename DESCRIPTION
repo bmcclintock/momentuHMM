@@ -35,7 +35,8 @@ Imports:
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,
-    knitr
+    knitr,
+    setRNG
 VignetteBuilder: knitr
 RoxygenNote: 6.0.1
 NeedsCompilation: yes

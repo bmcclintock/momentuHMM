@@ -85,7 +85,12 @@ test_that("The output has the right class",{
 })
 
 test_that("Step length only + zero-inflation works",{
-  set.seed(1)
+  
+  oldRNG<-setRNG::setRNG()
+  
+  setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=1)
+  
+  #set.seed(1)
   nbAnimals <- 2
   nbStates <- 2
   nbCovs <- 2
@@ -113,24 +118,30 @@ test_that("Step length only + zero-inflation works",{
 
   expect_error(fitHMM(data=data,nbStates=nbStates,Par=list(step=c(log(stepPar0[1:(2*nbStates)]),boot::logit(zeromass0))),DM=list(step=diag(3*nbStates)),dist=list(step=stepDist),formula=formula,
               verbose=0), NA)
+  
+  setRNG::setRNG(oldRNG)
 })
 
 test_that("equivalent momentuHMM and moveHMM models match",{
 
+  oldRNG<-setRNG::setRNG()
+  
   simPar <- example$simPar
   par0 <- example$par0
   nbStates<-simPar$nbStates
+  
+  setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=10)
   
   data<-simData(nbAnimals=2,model=example$m)
   momentuHMM_fit<-fitHMM(data=data,nbStates=nbStates,Par=list(step=log(par0$Par$step),angle=par0$Par$angle),stationary=TRUE,
                          beta0=par0$beta0[1,,drop=FALSE],delta0=par0$delta0,DM=list(step=diag(4)),dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean)
   moveHMM_fit<-moveHMM::fitHMM(moveData(data),nbStates=nbStates,stepPar=par0$Par$step,anglePar=par0$Par$angle,stepDist=simPar$dist$step,angleDist=simPar$dist$angle,stationary=TRUE,
                                beta0=par0$beta0[1,,drop=FALSE],delta0=par0$delta0)
-  expect_equal(momentuHMM_fit$mod$estimate,moveHMM_fit$mod$estimate)
-  expect_equal(momentuHMM_fit$mod$minimum,moveHMM_fit$mod$minimum)
+  expect_equal(abs(momentuHMM_fit$mod$estimate-moveHMM_fit$mod$estimate)<1.e-6,rep(TRUE,length(momentuHMM_fit$mod$estimate)))
+  expect_equal(abs(momentuHMM_fit$mod$minimum-moveHMM_fit$mod$minimum)<1.e-6,TRUE)
   
   #zeroInflation
-  set.seed(5)
+  setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=5)
   nbAnimals <- 2
   nbStates <- 2
   nbCovs <- 2
@@ -162,6 +173,9 @@ test_that("equivalent momentuHMM and moveHMM models match",{
                          beta0=beta0,delta0=example$par0$delta0,DM=list(step=stepDM),dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE))
   moveHMM_fit<-moveHMM::fitHMM(moveData(data),nbStates=nbStates,stepPar=stepPar0,anglePar=anglePar0,stationary=TRUE,
                                beta0=beta0,delta0=example$par0$delta0,stepDist=stepDist,angleDist=angleDist)
-  expect_equal(momentuHMM_fit$mod$estimate,moveHMM_fit$mod$estimate)
-  expect_equal(momentuHMM_fit$mod$minimum,moveHMM_fit$mod$minimum)
+  expect_equal(abs(momentuHMM_fit$mod$estimate-moveHMM_fit$mod$estimate)<1.e-6,rep(TRUE,length(momentuHMM_fit$mod$estimate)))
+  expect_equal(abs(momentuHMM_fit$mod$minimum-moveHMM_fit$mod$minimum)<1.e-6,TRUE)
+  
+  setRNG::setRNG(oldRNG)
+  
 })
