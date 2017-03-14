@@ -24,11 +24,14 @@ logBeta <- function(m)
   
   if(is.miSum(m)){
     beta<-m$Par$beta$beta$est
+    delta<-m$Par$real$delta$est
   } else {
     beta <- m$mle$beta
+    delta <- m$mle$delta
   }
   
   nbStates <- length(m$stateNames)
+  nbAnimals <- length(unique(m$data$ID))
   nbObs <- nrow(m$data)
   lbeta <- matrix(NA,nbObs,nbStates)
 
@@ -38,14 +41,26 @@ logBeta <- function(m)
   allProbs <- allProbs(m,nbStates)
   
   trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs))
+  
+  aInd <- NULL
+  #aInd2 <- NULL
+  for(i in 1:nbAnimals){
+    aInd <- c(aInd,max(which(m$data$ID==unique(m$data$ID)[i])))
+    #aInd2 <- c(aInd2,which(m$data$ID==unique(m$data$ID)[i])[1])
+  }
 
-  lscale <- log(nbStates)
-  foo <- rep(1,nbStates)/nbStates
-  lbeta[nbObs,] <- rep(0,nbStates)
-
-  for(i in (nbObs-1):1) {
-    gamma <- trMat[,,(i+1)]
-    foo <- gamma%*%(allProbs[i+1,]*foo)
+  for(i in nbObs:1) {
+    
+    if(any(i==aInd)){
+        foo <- rep(1,nbStates)
+        lscale <- 0
+    } else {
+      gamma <- trMat[,,i+1]
+      #if(any(i==aInd2)){
+      #  gamma <- delta %*% gamma
+      #}
+      foo <- gamma%*%(allProbs[i+1,]*foo)
+    }
     lbeta[i,] <- log(foo)+lscale
     sumfoo <- sum(foo)
     foo <- foo/sumfoo
