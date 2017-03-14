@@ -31,6 +31,7 @@ logAlpha <- function(m)
   }
   
   nbStates <- length(m$stateNames)
+  nbAnimals <- length(unique(m$data$ID))
   nbObs <- nrow(m$data)
   lalpha <- matrix(NA,nbObs,nbStates)
 
@@ -40,18 +41,25 @@ logAlpha <- function(m)
 
   allProbs <- allProbs(m,nbStates)
   
+  aInd <- NULL
+  for(i in 1:nbAnimals)
+    aInd <- c(aInd,which(m$data$ID==unique(m$data$ID)[i])[1])
+  
   if(nbStates>1)
     trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs))
   else
     trMat <- array(1,dim=c(1,1,nbObs))
 
-  lscale <- 0
-  foo <- (delta%*%trMat[,,1])*allProbs[1,]
-  lalpha[1,] <- log(foo)+lscale
-
-  for(i in 2:nbObs) {
+  k <- 1
+  for(i in 1:nbObs) {
     gamma <- trMat[,,i]
-    foo <- foo%*%gamma*allProbs[i,]
+    if(any(i==aInd)){
+      k <- max(nbAnimals,k+1)
+      foo <- (delta %*% gamma)*allProbs[i,]
+      lscale <- 0
+    } else {
+      foo <- (foo %*% gamma)*allProbs[i,]
+    }
     lscale <- lscale+log(sum(foo))
     foo <- foo/sum(foo)
     lalpha[i,] <- log(foo)+lscale
