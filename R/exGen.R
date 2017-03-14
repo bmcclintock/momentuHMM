@@ -9,13 +9,15 @@
 #' @importFrom stats predict
 exGen <- function()
 {
-  set.seed(1)
+  oldRNG<-setRNG::setRNG()
+  
+  setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=10)
 
   # simulate data
   nbAnimals <- 2
   nbStates <- 2
   nbCovs <- 2
-  mu<-c(15,50)
+  mu<-c(15,150)
   sigma<-c(10,20)
   angleMean <- c(0,0)
   kappa <- c(0.7,1.5)
@@ -93,6 +95,8 @@ exGen <- function()
   names(forest)<-"forest"
   
   save(example,miExample,forest,file="data/example.RData", compress='xz')
+  
+  setRNG::setRNG(oldRNG)
 }
 
 # Roxygen documentation for the data file "data/example.RData"

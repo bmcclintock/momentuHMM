@@ -208,21 +208,6 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
   }
   
   quantSup<-qnorm(1-(1-alpha)/2)
-  
-  # pooled delta estimates
-  if(!m$conditions$stationary){
-    deltInd<-(length(miBeta$coefficients)-nbStates+2):length(miBeta$coefficients)
-    est <- get_delta(miBeta$coefficients[deltInd],1:nbStates)
-    lower<-upper<-se<-numeric(length(est))
-    for(k in 1:length(est)){
-      dN<-numDeriv::grad(get_delta,miBeta$coefficients[deltInd],i=k)
-      se[k]<-suppressWarnings(sqrt(dN%*%miBeta$variance[deltInd,deltInd]%*%dN))
-      lower[k] <- probCI(est[k],se[k],quantSup,bound="lower")
-      upper[k] <- probCI(est[k],se[k],quantSup,bound="upper")
-    }
-    Par$real$delta <- list(est=est,se=se,lower=lower,upper=upper)
-    names(Par$real$delta$est) <- names(Par$real$delta$se) <- names(Par$real$delta$lower) <- names(Par$real$delta$upper) <- m$stateNames
-  }
     
   # pooled gamma estimates
   if(nbStates>1){
@@ -240,6 +225,42 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
     Par$real$gamma <- list(est=est,se=se,lower=lower,upper=upper)
     dimnames(Par$real$gamma$est) <- dimnames(Par$real$gamma$se) <- dimnames(Par$real$gamma$lower) <- dimnames(Par$real$gamma$upper) <- list(m$stateNames,m$stateNames)
   }
+  
+  # pooled delta estimates
+  if(!m$conditions$stationary & nbStates>1){
+    deltInd<-(length(miBeta$coefficients)-nbStates+2):length(miBeta$coefficients)
+    est <- get_delta(miBeta$coefficients[deltInd],1:nbStates)
+    lower<-upper<-se<-numeric(length(est))
+    for(k in 1:length(est)){
+      dN<-numDeriv::grad(get_delta,miBeta$coefficients[deltInd],i=k)
+      se[k]<-suppressWarnings(sqrt(dN%*%miBeta$variance[deltInd,deltInd]%*%dN))
+      lower[k] <- probCI(est[k],se[k],quantSup,bound="lower")
+      upper[k] <- probCI(est[k],se[k],quantSup,bound="upper")
+    }
+  } else {
+    if(nbStates>1){
+      covs<-model.matrix(m$conditions$formula,data)
+      statFun<-function(beta,nbStates,covs,i){
+        gamma <- trMatrix_rcpp(nbStates,beta,covs)[,,1]
+        tryCatch(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i],error = function(e) {
+          "A problem occurred in the calculation of the stationary distribution."})
+      }
+      est <- statFun(matrix(miBeta$coefficients[gamInd],nbStates,nrow=nbCovs+1),nbStates,covs,1:nbStates)
+      lower<-upper<-se<-numeric(length(est))
+      for(k in 1:nbStates){
+        dN<-numDeriv::grad(statFun,matrix(miBeta$coefficients[gamInd],nbStates,nrow=nbCovs+1),nbStates=nbStates,covs=covs,i=k)
+        se[k]<-suppressWarnings(sqrt(dN%*%miBeta$variance[gamInd,gamInd]%*%dN))
+        lower[k] <- probCI(est[k],se[k],quantSup,bound="lower")
+        upper[k] <- probCI(est[k],se[k],quantSup,bound="upper")
+      }
+    } else {
+      est <- lower <- upper <- 1
+      se <- 0
+    }
+  }
+  Par$real$delta <- list(est=est,se=se,lower=lower,upper=upper)
+  names(Par$real$delta$est) <- names(Par$real$delta$se) <- names(Par$real$delta$lower) <- names(Par$real$delta$upper) <- m$stateNames
+  
   
   xmat <- xbar <- xvar <- W_m <- B_m <- MI_se <- lower <- upper <- list()
   
