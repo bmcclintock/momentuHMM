@@ -555,34 +555,18 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         # states for animal 'zoo'
         subStates <- states[which(m$data$ID==ID[zoo])]
   
-        # determine the bounds of the plot
-        xmin <- min(x[[zoo]],na.rm=T)
-        xmax <- max(x[[zoo]],na.rm=T)
-        ymin <- min(y[[zoo]],na.rm=T)
-        ymax <- max(y[[zoo]],na.rm=T)
-        # make sure that x and y have same scale
-        if(xmax-xmin>ymax-ymin) {
-          ymid <- (ymax+ymin)/2
-          ymax <- ymid+(xmax-xmin)/2
-          ymin <- ymid-(xmax-xmin)/2
-        } else {
-          xmid <- (xmax+xmin)/2
-          xmax <- xmid+(ymax-ymin)/2
-          xmin <- xmid-(ymax-ymin)/2
-        }
-  
-        # first point
-        plot(x[[zoo]][1],y[[zoo]][1],xlim=c(xmin,xmax),ylim=c(ymin,ymax),pch=18,
-             xlab="x",ylab="y",col=col[subStates[1]])
-        if(plotEllipse) lines(errorEllipse[[zoo]][[1]],col=adjustcolor(col[subStates[1]],alpha.f=0.25),cex=0.6)
+        # plot trajectory
+        plot(x[[zoo]],y[[zoo]],pch=16,xlab="x",ylab="y",col=col[subStates],cex=0.6,asp=1)
+
+        segments(x0=x[[zoo]][-length(x[[zoo]])],y0=y[[zoo]][-length(x[[zoo]])],x1=x[[zoo]][-1],y1=y[[zoo]][-1],
+                 col=col[subStates[-length(subStates)]],lwd=1.3)
         
-        # trajectory
-        for(i in 2:length(x[[zoo]])) {
-          points(x[[zoo]][i],y[[zoo]][i],pch=16,col=col[subStates[i-1]],cex=0.6)
-          segments(x0=x[[zoo]][i-1],y0=y[[zoo]][i-1],x1=x[[zoo]][i],y1=y[[zoo]][i],
-                   col=col[subStates[i-1]],lwd=1.3)
-          if(plotEllipse) lines(errorEllipse[[zoo]][[i]],col=adjustcolor(col[subStates[i-1]],alpha.f=0.25),cex=0.6)
+        if(plotEllipse) {
+          lines(errorEllipse[[zoo]][[1]],col=adjustcolor(col[subStates[1]],alpha.f=0.25),cex=0.6)
+          for(i in 2:length(x[[zoo]]))
+            lines(errorEllipse[[zoo]][[i]],col=adjustcolor(col[subStates[i-1]],alpha.f=0.25),cex=0.6)
         }
+        
         mtext(paste("Animal ID:",ID[zoo]),side=3,outer=TRUE,padj=2)
         legend("topleft",legText,lwd=rep(2,nbStates),col=col,bty="n")
       }
