@@ -562,9 +562,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
                  col=col[subStates[-length(subStates)]],lwd=1.3)
         
         if(plotEllipse) {
-          lines(errorEllipse[[zoo]][[1]],col=adjustcolor(col[subStates[1]],alpha.f=0.25),cex=0.6)
-          for(i in 2:length(x[[zoo]]))
-            lines(errorEllipse[[zoo]][[i]],col=adjustcolor(col[subStates[i-1]],alpha.f=0.25),cex=0.6)
+          for(i in 1:length(x[[zoo]]))
+            lines(errorEllipse[[zoo]][[i]],col=adjustcolor(col[subStates[i]],alpha.f=0.25),cex=0.6)
         }
         
         mtext(paste("Animal ID:",ID[zoo]),side=3,outer=TRUE,padj=2)
