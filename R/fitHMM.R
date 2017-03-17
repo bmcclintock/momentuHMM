@@ -532,6 +532,8 @@ fitHMM <- function(data,nbStates,dist,
     steptol <- ifelse(is.null(nlmPar$steptol),1e-6,nlmPar$steptol)
     iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
 
+    startTime <- proc.time()
+    
     # call to optimizer nlm
     withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,p$bounds,p$parSize,data,dist,covs,
                                    inputs$estAngleMean,inputs$circularAngleMean,zeroInflation,oneInflation,
@@ -541,6 +543,10 @@ fitHMM <- function(data,nbStates,dist,
                                    iterlim=iterlim,hessian=TRUE),
                         warning=h) # filter warnings using function h
 
+    endTime <- proc.time()-startTime
+    
+    mod$elapsedTime <- endTime[3]
+    
     # convert the parameters back to their natural scale
     wpar <- mod$estimate
     mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind)
