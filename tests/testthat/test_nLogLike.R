@@ -17,6 +17,49 @@ test_that("Exceptions are thrown",{
 
 })
 
+test_that("logAlpha, logBeta, and nLogLike are consistent",{
+  data <- example$data
+  m<-example$m
+  Par <- getPar(m)$Par
+  nbStates <- length(m$stateNames)
+  nbAnimals<-length(unique(data$ID))
+  
+  inputs <- checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
+  
+  wpar <- n2w(Par,m$conditions$bounds,m$mle$beta,m$mle$delta,nbStates,m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+
+  # all data
+  nll<-nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,m$conditions$dist,model.matrix(m$conditions$formula,data),
+                       m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,
+                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex)
+  la<-logAlpha(m)
+  lb<-logBeta(m)
+  ll<-0
+  for(i in 1:nbAnimals){
+    aInd<-max(which(data$ID==i))
+    c <- max(la[aInd,]+lb[aInd,]) # cancels below ; prevents numerical errors
+    ll <- ll + c + log(sum(exp(la[aInd,]+lb[aInd,]-c)))
+  }
+  expect_equal(nll,-ll)
+  
+  # random time step from each individual
+  for(i in 1:nbAnimals){
+    data<-example$data
+    aInd<-which(data$ID==i)
+    
+    data<-data[aInd,]
+    nll<-nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,m$conditions$dist,model.matrix(m$conditions$formula,data),
+                       m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,
+                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex)
+  
+    samp<-sample(aInd,1)
+    c <- max(la[samp,]+lb[samp,]) # cancels below ; prevents numerical errors
+    ll <- c + log(sum(exp(la[samp,]+lb[samp,]-c)))
+    expect_equal(nll,-ll)
+  }
+  
+})
+
 test_that("angleDist=NULL and zeroInflation=TRUE work",{
   data <- example$data
   m<-example$m
