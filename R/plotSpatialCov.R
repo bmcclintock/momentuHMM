@@ -102,8 +102,10 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
       pal <- rainbow(nbCol) # to make sure that all colors are distinct
   } else {
     # if one color given, duplicate for all tracks or states
-    if(length(col)==1)
+    if(length(col)==1) {
       col <- rep(col,nbCol)
+      nbCol <- 1 # to remove legend below
+    }
     
     if(length(col)<nbCol)
       stop(paste("'col' should be at least of length the number of colors needed (",
