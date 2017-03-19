@@ -102,6 +102,10 @@ CIbeta <- function(m,alpha=0.95)
   if(nbStates>1){
     est <- wpar[tail(cumsum(unlist(lapply(fullDM,ncol))),1)+1:((nbCovs+1)*nbStates*(nbStates-1))]
     var <- diag(Sigma)[tail(cumsum(unlist(lapply(fullDM,ncol))),1)+1:((nbCovs+1)*nbStates*(nbStates-1))]
+    
+    # if negative variance, replace by NA
+    var[which(var<0)] <- NA
+    
     wse <- sqrt(var)
     wlower <- est-quantSup*wse
     wupper <- est+quantSup*wse
