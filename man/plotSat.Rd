@@ -5,7 +5,7 @@
 \title{Plot observations on satellite image}
 \usage{
 plotSat(data, zoom = NULL, location = NULL, segments = TRUE,
-  compact = TRUE, col = 1, alpha = 1, size = 1, states = NULL,
+  compact = TRUE, col = NULL, alpha = 1, size = 1, states = NULL,
   animals = NULL, ask = TRUE, return = FALSE)
 }
 \arguments{
@@ -23,16 +23,14 @@ plotSat(data, zoom = NULL, location = NULL, segments = TRUE,
 \item{compact}{\code{FALSE} if tracks should be plotted separately, \code{TRUE}
 otherwise (default).}
 
-\item{col}{Color(s) of the dots and segments. Should be either of length 1, or of
-the length of the data.}
+\item{col}{Palette of colours to use for the dots and segments. If not specified, uses default palette.}
 
 \item{alpha}{Transparency argument for \code{\link{geom_point}}.}
 
 \item{size}{Size argument for \code{\link{geom_point}}.}
 
 \item{states}{A sequence of integers, corresponding to the decoded states for these data
-(such that the observations are colored by states). If 'states' if specified, the
-argument 'col' gives the colors correponding to each state.}
+(such that the observations are colored by states).}
 
 \item{animals}{Vector of indices or IDs of animals/tracks to be plotted.
 Default: \code{NULL}; all animals are plotted.}

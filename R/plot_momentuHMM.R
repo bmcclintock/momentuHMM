@@ -397,9 +397,13 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             lci<-est-qnorm(1-(1-alpha)/2)*se
             plot(tempCovs[,jj],est,ylim=range(c(lci,est,uci),na.rm=TRUE),xaxt="n",xlab=jj,ylab=paste(i,j,'parameter'),main=paste0('State ',state,ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)]],collapse=", ")),"")),type="l")
             if(!all(is.na(se))){
-              seInd <- which(!is.na(se))
-              ciInd <- seInd[which(abs(uci[seInd]-lci[seInd])>max(abs(uci[seInd]-lci[seInd]))/1000)] #to aviod un-supressable warning in arrows()
-              arrows(as.numeric(tempCovs[ciInd,jj]), lci[ciInd], as.numeric(tempCovs[ciInd,jj]), uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5)) 
+              ciInd <- which(!is.na(se))
+              
+              options(warn = -1) # to muffle "zero-length arrow is of indeterminate angle and so skipped" warning
+              arrows(as.numeric(tempCovs[ciInd,jj]), lci[ciInd], as.numeric(tempCovs[ciInd,jj]),
+                     uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5))
+              options(warn = 1)
+              
             }
           } else plot(tempCovs[,jj],est,xaxt="n",xlab=jj,ylab=paste(i,j,'parameter'),main=paste0('State ',state,ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==j)]],collapse=", ")),"")),type="l") 
           if(is.factor(tempCovs[,jj])) axis(1,at=tempCovs[,jj])
@@ -407,7 +411,6 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           
         }
       }
-      
     }
   
     #########################
@@ -528,9 +531,13 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
               if(!all(is.na(se))) {
                 lci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))-quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]-quantSup*se[i,j]
                 uci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))+quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]+quantSup*se[i,j]
-                seInd <- which(!is.na(se))
-                ciInd <- seInd[which(abs(uci[seInd]-lci[seInd])>max(abs(uci[seInd]-lci[seInd]))/1000)] #to aviod un-supressable warning in arrows()
-                arrows(as.numeric(tempCovs[ciInd,cov]), lci[ciInd], as.numeric(tempCovs[ciInd,cov]), uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5))
+                
+                ciInd <- which(!is.na(se))
+                
+                options(warn = -1) # to muffle "zero-length arrow is of indeterminate angle and so skipped" warning
+                arrows(as.numeric(tempCovs[ciInd,cov]), lci[ciInd], as.numeric(tempCovs[ciInd,cov]), 
+                       uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5))
+                options(warn = 1)
               }
             }
           }
