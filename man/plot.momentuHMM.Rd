@@ -53,6 +53,13 @@ probable state sequence (decoded with the function \code{\link{viterbi}}). For e
 most probable state sequence indicates that one third of observations correspond to the first
 state, and two thirds to the second state, the plots of the densities in the first state are
 weighted by a factor 1/3, and in the second state by a factor 2/3.
+
+Confidence intervals for natural parameters are calculated from the working parameter point and covariance estimates
+using finite-difference approximations of the first derivative for the transformation (see \code{\link[numDeriv]{grad}}).
+For example, if \code{dN} is the numerical approximation of the first derivative of the transformation \code{N = exp(x_1 * B_1 + x_2 * B_2)}
+for covariates (x_1, x_2) and working parameters (B_1, B_2), then 
+\code{var(N)=dN \%*\% Sigma \%*\% dN}, where \code{Sigma=cov(B_1,B_2)}, and normal confidence intervals can be 
+constructed as \code{N +/- qnorm(1-(1-alpha)/2) * se(N)}.
 }
 \examples{
 # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
