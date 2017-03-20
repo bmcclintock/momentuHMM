@@ -39,7 +39,7 @@ logAlpha <- function(m)
   covs <- model.matrix(m$conditions$formula,m$data)
   nbCovs <- ncol(covs)-1 # substract intercept column
 
-  allProbs <- allProbs(m,nbStates)
+  probs <- allProbs(m,nbStates)
   
   aInd <- NULL
   for(i in 1:nbAnimals)
@@ -55,10 +55,10 @@ logAlpha <- function(m)
     gamma <- trMat[,,i]
     if(any(i==aInd)){
       k <- max(nbAnimals,k+1)
-      foo <- (delta %*% gamma)*allProbs[i,]
+      foo <- (delta %*% gamma)*probs[i,]
       lscale <- 0
     } else {
-      foo <- (foo %*% gamma)*allProbs[i,]
+      foo <- (foo %*% gamma)*probs[i,]
     }
     lscale <- lscale+log(sum(foo))
     foo <- foo/sum(foo)

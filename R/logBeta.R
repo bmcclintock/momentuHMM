@@ -38,7 +38,7 @@ logBeta <- function(m)
   # identify covariates
   covs <- model.matrix(m$conditions$formula,m$data)
   
-  allProbs <- allProbs(m,nbStates)
+  probs <- allProbs(m,nbStates)
   
   trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs))
   
@@ -59,7 +59,7 @@ logBeta <- function(m)
       #if(any(i==aInd2)){
       #  gamma <- delta %*% gamma
       #}
-      foo <- gamma%*%(allProbs[i+1,]*foo)
+      foo <- gamma%*%(probs[i+1,]*foo)
     }
     lbeta[i,] <- log(foo)+lscale
     sumfoo <- sum(foo)

@@ -38,7 +38,7 @@ viterbi <- function(m)
   # identify covariates
   covs <- model.matrix(m$conditions$formula,data)
 
-  allProbs <- allProbs(m)
+  probs <- allProbs(m)
   trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs))
 
   nbAnimals <- length(unique(data$ID))
@@ -51,12 +51,12 @@ viterbi <- function(m)
     nbObs <- length(which(data$ID==unique(data$ID)[zoo])) # nb of observations for animal zoo
 
     if(zoo!=nbAnimals) {
-      p <- allProbs[aInd[zoo]:(aInd[zoo+1]-1),]
+      p <- probs[aInd[zoo]:(aInd[zoo+1]-1),]
       tm <- trMat[,,aInd[zoo]:(aInd[zoo+1]-1)]
     }
     else {
-      p <- allProbs[aInd[zoo]:nrow(allProbs),]
-      tm <- trMat[,,aInd[zoo]:nrow(allProbs)]
+      p <- probs[aInd[zoo]:nrow(probs),]
+      tm <- trMat[,,aInd[zoo]:nrow(probs)]
     }
 
     xi <- matrix(NA,nbObs,nbStates)

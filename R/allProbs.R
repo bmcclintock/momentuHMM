@@ -30,7 +30,7 @@ allProbs <- function(m,nbStates)
   Fun <- lapply(dist,function(x) paste("d",x,sep=""))
   
 
-  allProbs <- matrix(1,nrow=nbObs,ncol=nbStates)
+  probs <- matrix(1,nrow=nbObs,ncol=nbStates)
   
   for(i in distnames){
   
@@ -80,15 +80,15 @@ allProbs <- function(m,nbStates)
       }
       else genProb[genInd] <- do.call(genFun,genArgs)
   
-      allProbs[,state] <- allProbs[,state]*genProb;
+      probs[,state] <- probs[,state]*genProb;
     }
   }
   if(!is.null(m$knownStates)) {
     for (i in which(!is.na(m$knownStates))) {
-      prob <- allProbs[i, m$knownStates[i]]
-      allProbs[i, ] <- 0
-      allProbs[i, m$knownStates[i]] <- prob
+      prob <- probs[i, m$knownStates[i]]
+      probs[i, ] <- 0
+      probs[i, m$knownStates[i]] <- prob
     }
   }
-  return(allProbs)
+  return(probs)
 }
