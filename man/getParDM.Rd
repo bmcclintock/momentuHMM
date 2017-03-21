@@ -63,7 +63,7 @@ each data stream. Warning: use of \code{workcons} is recommended only for advanc
 through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.}
 }
 \value{
-A list of parameter values that can be used as starting values (\code{Par}) in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
+A list of parameter values that can be used as starting values (\code{Par0}) in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
 }
 \description{
 Convert starting values on the natural scale of data stream probability distributions to

@@ -51,7 +51,7 @@
 #' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
 #' through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.
 #'
-#' @return A list of parameter values that can be used as starting values (\code{Par}) in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
+#' @return A list of parameter values that can be used as starting values (\code{Par0}) in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
 #' 
 #' @seealso \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 #'
@@ -281,8 +281,8 @@ getParDM<-function(data=data.frame(),nbStates,dist,
               
               meanind1<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
               meanind2<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
-              nc<-apply(fullDM[[i]][1:nbStates,],1:2,function(x) !all(unlist(x)==0))
               xmat <- fullDM[[i]][gbInd,][meanind1,meanind2]
+              nc<-apply(xmat,1:2,function(x) !all(unlist(x)==0))
               
               solveatan2<-function(x,theta,covs,cons,workcons){
                 Xvec <- x^cons+workcons
