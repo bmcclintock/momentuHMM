@@ -93,6 +93,8 @@
 #'                DM=list(step=stepDM2))
 #' }
 #'
+#' @importFrom CircStats circ.mean
+#' @importFrom nleqslv nleqslv
 #' @export
 getParDM<-function(data=data.frame(),nbStates,dist,
                  Par,
@@ -181,7 +183,8 @@ getParDM<-function(data=data.frame(),nbStates,dist,
   tempCovs <- data[1,,drop=FALSE]
   if(length(data)){
     for(j in names(data)[which(unlist(lapply(data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
-      tempCovs[[j]]<-mean(data[[j]],na.rm=TRUE)
+      if("angle" %in% class(data[[j]])) tempCovs[[j]] <- CircStats::circ.mean(data[[j]][!is.na(data[[j]])])
+      else tempCovs[[j]]<-mean(data[[j]],na.rm=TRUE)
     }
   }
   inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames=NULL)
@@ -197,7 +200,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
   wpar <- Par
   for(i in distnames){
     if(!is.null(DM[[i]])){
-      if(DMind[[i]] & nrow(unique(fullDM[[i]]))==ncol(unique(fullDM[[i]]))){
+      if(DMind[[i]] & nrow(unique(fullDM[[i]]))==ncol(unique(fullDM[[i]])) & !inputs$circularAngleMean[[i]]){
         if(length(wpar[[i]])!=nrow(fullDM[[i]])) stop('Par$',i,' should be of length ',nrow(fullDM[[i]]))
         bounds<-inputs$p$bounds[[i]]
         if(any(wpar[[i]]<=bounds[,1] | wpar[[i]]>=bounds[,2])) stop('Par$',i,' must be within parameter bounds')
@@ -229,11 +232,13 @@ getParDM<-function(data=data.frame(),nbStates,dist,
         if(length(wpar[[i]])!=nrow(fullDM[[i]])) stop('Par$',i,' should be of length ',nrow(fullDM[[i]]))
         bounds<-inputs$p$bounds[[i]]
         if(any(wpar[[i]]<=bounds[,1] | wpar[[i]]>=bounds[,2])) stop('Par$',i,' must be within parameter bounds')
-        bndInd <- which(!duplicated(getboundInd(fullDM[[i]])))
+        if(is.list(inputs$DM[[i]])) gbInd <- getboundInd(fullDM[[i]])
+        else gbInd <- getboundInd(inputs$DM[[i]])
+        bndInd <- which(!duplicated(gbInd))
         a<-bounds[bndInd,1]
         b<-bounds[bndInd,2]
         par <- wpar[[i]][bndInd]
-        if(any(wpar[[i]]!=par[getboundInd(fullDM[[i]])])) stop('Par$',i,' values are not consistent with DM$',i)
+        if(any(wpar[[i]]!=par[gbInd])) stop('Par$',i,' values are not consistent with DM$',i)
         piInd<-(abs(a- -pi)<1.e-6 & abs(b - pi)<1.e-6)
         ind1<-which(piInd)
         ind2<-which(!piInd)
@@ -244,55 +249,97 @@ getParDM<-function(data=data.frame(),nbStates,dist,
         
         if(length(ind1)){
           if(inputs$estAngleMean[[i]]){
+            
+            p<-numeric(ncol(fullDM[[i]]))
             meanind<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
+            
             if(!inputs$circularAngleMean[[i]]) {
               
-              p<-numeric(ncol(fullDM[[i]]))
-              meanind<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
-              
-              asvd<-svd(unique(fullDM[[i]])[ind1,meanind])
+              asvd<-svd(fullDM[[i]][gbInd,][ind1,meanind])
               adiag <- diag(1/asvd$d)
               p[meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% tan(par[ind1]/2))-workcons[[i]][meanind])^(1/cons[[i]][meanind])
               #p[meanind] <- (solve(unique(fullDM[[i]])[ind1,meanind],tan(par[ind1]/2))-workcons[[i]][meanind])^(1/cons[[i]][meanind])
 
               if(length(ind21)){
-                asvd<-svd(unique(fullDM[[i]])[ind21,-meanind])
+                asvd<-svd(fullDM[[i]][gbInd,][ind21,-meanind])
                 adiag <- diag(1/asvd$d)
                 p[-meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% log(par[ind21]-a[ind21]))-workcons[[i]][-meanind])^(1/cons[[i]][-meanind])
               }
               
               if(length(ind22)){
-                asvd<-svd(unique(fullDM[[i]])[ind22,-meanind])
+                asvd<-svd(fullDM[[i]][gbInd,][ind22,-meanind])
                 adiag <- diag(1/asvd$d)
                 p[-meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][-meanind])^(1/cons[[i]][-meanind])
               }
               
               if(length(ind23)){
-                asvd<-svd(unique(fullDM[[i]])[ind23,-meanind])
+                asvd<-svd(fullDM[[i]][gbInd,][ind23,-meanind])
                 adiag <- diag(1/asvd$d)
                 p[-meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23])))-workcons[[i]][-meanind])^(1/cons[[i]][-meanind])
               }
-            } else stop("sorry, circular angle mean parameters are not supported by getParDM")
+            } else {
+              
+              meanind1<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+              meanind2<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
+              nc<-apply(fullDM[[i]][1:nbStates,],1:2,function(x) !all(unlist(x)==0))
+              xmat <- fullDM[[i]][gbInd,][meanind1,meanind2]
+              
+              solveatan2<-function(x,theta,covs,cons,workcons){
+                Xvec <- x^cons+workcons
+                XB<-rep(0,length(meanind1))
+                XB1<-XB2<-rep(0,length(meanind1))
+                for(i in 1:length(meanind1)){
+                  ncind <- which(nc[meanind1[i],])
+                  XB1[i]<-sin(covs[i,ncind])%*%Xvec[ncind]
+                  XB2[i]<-cos(covs[i,ncind])%*%Xvec[ncind]
+                  XB[i] <- atan2(XB1[i],1+XB2[i])
+                }
+                c(abs(theta - XB),rep(0,length(x)-length(theta)))
+              }
+
+              if(length(meanind1)) p[meanind2] <- nleqslv::nleqslv(x=rep(1,ncol(xmat)),fn=solveatan2,theta=par[meanind1],covs=xmat,cons=cons[[i]][meanind2],workcons=workcons[[i]][meanind2],control=list(allowSingular=TRUE))$x
+              
+              meanind<-which((apply(fullDM[[i]][nbStates+1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
+              
+              if(length(ind21)){
+                asvd<-svd(fullDM[[i]][gbInd,][ind21,meanind])
+                adiag <- diag(1/asvd$d)
+                p[meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% log(par[ind21]-a[ind21]))-workcons[[i]][meanind])^(1/cons[[i]][meanind])
+              }
+              
+              if(length(ind22)){
+                asvd<-svd(fullDM[[i]][gbInd,][ind22,meanind])
+                adiag <- diag(1/asvd$d)
+                p[meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][meanind])^(1/cons[[i]][meanind])
+              }
+              
+              if(length(ind23)){
+                asvd<-svd(fullDM[[i]][gbInd,][ind23,meanind])
+                adiag <- diag(1/asvd$d)
+                p[meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23])))-workcons[[i]][meanind])^(1/cons[[i]][meanind])
+              }
+            
+            }
           } else if(!length(ind2)){
-            p <- (solve(unique(fullDM[[i]]),tan(par/2))-workcons[[i]])^(1/cons[[i]])
+            p <- (solve(fullDM[[i]][gbInd,],tan(par/2))-workcons[[i]])^(1/cons[[i]])
           } else stop("sorry, the parameters for ",i," cannot have different bounds")
         } else if(((length(ind21)>0) + (length(ind22)>0) + (length(ind23)>0))>1){ 
           stop("sorry, getParDM requires the parameters for ",i," to have identical bounds when covariates are included in the design matrix")
         } else {
           if(length(ind21)){
-            asvd<-svd(unique(fullDM[[i]])[ind21,])
+            asvd<-svd(fullDM[[i]][gbInd,][ind21,])
             adiag <- diag(1/asvd$d)
             p <- ((asvd$v %*% adiag %*% t(asvd$u) %*% log(par[ind21]-a[ind21]))-workcons[[i]])^(1/cons[[i]])
           }
           
           if(length(ind22)){
-            asvd<-svd(unique(fullDM[[i]])[ind22,])
+            asvd<-svd(fullDM[[i]][gbInd,][ind22,])
             adiag <- diag(1/asvd$d)
             p <- ((asvd$v %*% adiag %*% t(asvd$u) %*% logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]])^(1/cons[[i]])
           }
           
           if(length(ind23)){
-            asvd<-svd(unique(fullDM[[i]])[ind23,])
+            asvd<-svd(fullDM[[i]][gbInd,][ind23,])
             adiag <- diag(1/asvd$d)
             p <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23])))-workcons[[i]])^(1/cons[[i]])
           }
