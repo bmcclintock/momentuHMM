@@ -33,6 +33,7 @@
 #' @importFrom numDeriv grad
 #' @importFrom utils tail
 #' @importFrom Brobdingnag as.brob sum
+#' @importFrom CircStats circ.mean
 
 CIreal <- function(m,alpha=0.95,covs=NULL)
 {
@@ -55,7 +56,8 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   if(is.null(covs)){
     tempCovs <- m$data[1,]
     for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
-      tempCovs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
+      if("angle" %in% class(m$data[[j]])) tempCovs[[j]] <- CircStats::circ.mean(m$data[[j]][!is.na(m$data[[j]])])
+      else tempCovs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
     }
   } else {
     if(!is.data.frame(covs)) stop('covs must be a data frame')

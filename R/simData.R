@@ -774,8 +774,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   if(nbSpatialCovs>0)
     data <- cbind(data,allSpatialcovs)
   
-  if(length(centerInd))
+  if(length(centerInd)){
     data <- cbind(data,centerCovs)
+    for(j in which(grepl(".angle",names(data)))){
+      if(names(data[j]) %in% centerNames)
+        class(data[[j]]) <- c(class(data[[j]]), "angle")
+    }
+  }
   
   # include states sequence in the data
   if(states)

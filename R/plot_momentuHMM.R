@@ -49,6 +49,7 @@
 #' @importFrom graphics legend lines segments arrows
 #' @importFrom grDevices adjustcolor gray rainbow
 #' @importFrom stats as.formula
+#' @importFrom CircStats circ.mean
 
 plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
                          sepStates=FALSE,col=NULL,cumul=TRUE,plotTracks=TRUE,plotCI=FALSE,alpha=0.95,...)
@@ -154,7 +155,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   if(is.null(covs)){
     covs <- m$data[which(m$data$ID %in% ID),][1,]
     for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
-      covs[[j]]<-mean(m$data[[j]][which(m$data$ID %in% ID)],na.rm=TRUE)
+      if("angle" %in% class(m$data[[j]])) covs[[j]] <- CircStats::circ.mean(m$data[[j]][which(m$data$ID %in% ID)][!is.na(m$data[[j]][which(m$data$ID %in% ID)])])
+      else covs[[j]]<-mean(m$data[[j]][which(m$data$ID %in% ID)],na.rm=TRUE)
     }
   } else {
     if(!is.data.frame(covs)) stop('covs must be a data frame')
@@ -162,7 +164,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     if(!all(names(covs) %in% names(m$data))) stop('invalid covs specified')
     if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(m$data$ID))
     for(j in names(m$data)[which(!(names(m$data) %in% names(covs)))]){
-      if(class(m$data[[j]])=="factor") covs[[j]] <- m$data[[j]][which(m$data$ID %in% ID)][1]
+      if("factor" %in% class(m$data[[j]])) covs[[j]] <- m$data[[j]][which(m$data$ID %in% ID)][1]
+      else if("angle" %in% class(m$data[[j]])) covs[[j]] <- CircStats::circ.mean(m$data[[j]][which(m$data$ID %in% ID)][!is.na(m$data[[j]][which(m$data$ID %in% ID)])])
       else covs[[j]]<-mean(m$data[[j]][which(m$data$ID %in% ID)],na.rm=TRUE)
     }
     for(j in names(m$data)[which(names(m$data) %in% names(covs))]){

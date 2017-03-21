@@ -49,6 +49,7 @@ circAngles<-function(refAngle,data,coordNames=c("x","y")){
       while(angle[i]>pi) angle[i] <- angle[i] -2*pi
     }
   }
+  class(angle) <- c(class(angle), "angle")
   return(angle)
 }
 

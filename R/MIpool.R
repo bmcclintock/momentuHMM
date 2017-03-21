@@ -162,7 +162,8 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
   }
   tempCovs <- mhdata[1,]
   for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
-    tempCovs[[j]]<-mean(mhdata[[j]],na.rm=TRUE)
+    if("angle" %in% class(mhdata[[j]])) tempCovs[[j]] <- CircStats::circ.mean(mhdata[[j]][!is.na(mhdata[[j]])])
+    else tempCovs[[j]]<-mean(mhdata[[j]],na.rm=TRUE)
   }
   
   tmPar <- m$mle[distnames]

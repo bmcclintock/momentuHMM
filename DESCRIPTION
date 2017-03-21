@@ -31,7 +31,8 @@ Imports:
     MASS,
     Brobdingnag,
     gstat,
-    conicfit
+    conicfit,
+    nleqslv
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,
