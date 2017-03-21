@@ -240,16 +240,16 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
     }
   } else {
     if(nbStates>1){
-      covs<-model.matrix(m$conditions$formula,data)
+      covs<-model.matrix(m$conditions$formula,mhdata)
       statFun<-function(beta,nbStates,covs,i){
         gamma <- trMatrix_rcpp(nbStates,beta,covs)[,,1]
         tryCatch(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i],error = function(e) {
           "A problem occurred in the calculation of the stationary distribution."})
       }
-      est <- statFun(matrix(miBeta$coefficients[gamInd],nbStates,nrow=nbCovs+1),nbStates,covs,1:nbStates)
+      est <- statFun(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),nbStates,covs,1:nbStates)
       lower<-upper<-se<-numeric(length(est))
       for(k in 1:nbStates){
-        dN<-numDeriv::grad(statFun,matrix(miBeta$coefficients[gamInd],nbStates,nrow=nbCovs+1),nbStates=nbStates,covs=covs,i=k)
+        dN<-numDeriv::grad(statFun,matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),nbStates=nbStates,covs=covs,i=k)
         se[k]<-suppressWarnings(sqrt(dN%*%miBeta$variance[gamInd,gamInd]%*%dN))
         lower[k] <- probCI(est[k],se[k],quantSup,bound="lower")
         upper[k] <- probCI(est[k],se[k],quantSup,bound="upper")
