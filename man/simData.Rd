@@ -7,9 +7,10 @@
 simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
   formula = ~1, covs = NULL, nbCovs = 0, spatialCovs = NULL,
   zeroInflation = NULL, oneInflation = NULL, circularAngleMean = NULL,
-  centers = NULL, obsPerAnimal = c(500, 1500), DM = NULL, cons = NULL,
-  userBounds = NULL, workcons = NULL, stateNames = NULL, model = NULL,
-  states = FALSE, retrySims = 0, lambda = NULL, errorEllipse = NULL)
+  centers = NULL, obsPerAnimal = c(500, 1500), initialPosition = c(0, 0),
+  DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL,
+  stateNames = NULL, model = NULL, states = FALSE, retrySims = 0,
+  lambda = NULL, errorEllipse = NULL)
 }
 \arguments{
 \item{nbAnimals}{Number of observed individuals to simulate.}
@@ -74,6 +75,8 @@ the previous movement direction instead of true north; this is to allow mean tur
 or the bounds of the number of observations per animal (if vector of two values). In the latter case,
 the numbers of obervations generated for each animal are uniformously picked from this interval.
 Default: \code{c(500,1500)}.}
+
+\item{initialPosition}{2-vector providing the x- and y-coordinates of the initial position for all animals. Default: \code{c(0,0)}.}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream. Each element of \code{DM} can either be a named list of regression formulas or a matrix.  For example, for a 2-state 

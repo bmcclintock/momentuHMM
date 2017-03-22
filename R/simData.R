@@ -52,6 +52,7 @@
 #' or the bounds of the number of observations per animal (if vector of two values). In the latter case,
 #' the numbers of obervations generated for each animal are uniformously picked from this interval.
 #' Default: \code{c(500,1500)}.
+#' @param initialPosition 2-vector providing the x- and y-coordinates of the initial position for all animals. Default: \code{c(0,0)}.
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 #' stream. Each element of \code{DM} can either be a named list of regression formulas or a matrix.  For example, for a 2-state 
 #' model using the gamma distribution for a data stream named 'step', \code{DM=list(step=list(mean=~cov1, sd=~1))} specifies the mean 
@@ -239,6 +240,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     circularAngleMean=NULL,
                     centers=NULL,
                     obsPerAnimal=c(500,1500),
+                    initialPosition=c(0,0),
                     DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,stateNames=NULL,
                     model=NULL,states=FALSE,
                     retrySims=0,
@@ -314,7 +316,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     Par <- Par[distnames]
     delta <- NULL
     
-    mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & is.null(centers) & ("step" %in% names(dist)) & is.null(lambda) & is.null(errorEllipse)) # indicator for moveHMM::simData
+    mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & is.null(centers) & ("step" %in% names(dist)) & all(initialPosition==c(0,0)) & is.null(lambda) & is.null(errorEllipse)) # indicator for moveHMM::simData
     if(mHind & length(attr(terms.formula(formula),"term.labels"))) mHind <- FALSE
       #if("ID" %in% rownames(attr(terms.formula(formula),"factors")) | any(mapply(is.factor,covs)))
       #  mHind <- FALSE
@@ -572,6 +574,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
   }
   
+  if(length(initialPosition)!=2 | !is.numeric(initialPosition)) stop("initialPosition must be a numeric vector of length 2")
+  
   if(!nbSpatialCovs | !retrySims){
   
     ###########################
@@ -605,7 +609,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       colnames(subSpatialcovs)<-spatialcovnames
   
       X <- matrix(0,nrow=nbObs,ncol=2)
-      X[1,] <- c(0,0) # initial position of animal
+      X[1,] <- initialPosition # initial position of animal
   
       phi <- 0
       
@@ -813,6 +817,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                           circularAngleMean,
                           centers,
                           obsPerAnimal,
+                          initialPosition,
                           DM,cons,userBounds,workcons,stateNames,
                           model,states,
                           retrySims=0,
