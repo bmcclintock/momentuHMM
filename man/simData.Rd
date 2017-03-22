@@ -9,7 +9,7 @@ simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
   zeroInflation = NULL, oneInflation = NULL, circularAngleMean = NULL,
   centers = NULL, obsPerAnimal = c(500, 1500), DM = NULL, cons = NULL,
   userBounds = NULL, workcons = NULL, stateNames = NULL, model = NULL,
-  states = FALSE, lambda = NULL, errorEllipse = NULL)
+  states = FALSE, retrySims = 0, lambda = NULL, errorEllipse = NULL)
 }
 \arguments{
 \item{nbAnimals}{Number of observed individuals to simulate.}
@@ -43,7 +43,7 @@ be included in \code{formula} and/or \code{DM}. Covariates can also be simulated
 \code{covs} is specified. Simulated covariates are provided generic names (e.g., 'cov1' and 'cov2' for \code{nbCovs=2}) and can be included in \code{formula} and/or \code{DM}.}
 
 \item{spatialCovs}{List of \code{\link[raster]{RasterLayer-class}} objects for spatially-referenced covariates. Covariates specified by \code{spatialCovs} are
-extracted from the raster layer(s) based on the simulated location data for each time step. The names of the raster layer(s) can be included in 
+extracted from the raster layer(s) based on the simulated location data for each time step (if applicable). The names of the raster layer(s) can be included in 
 \code{formula} and/or \code{DM}.  Note that \code{simData} usually takes longer to generate simulated data when \code{spatialCovs} is specified.}
 
 \item{zeroInflation}{A named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated. If \code{zeroInflation} is \code{TRUE} 
@@ -111,6 +111,11 @@ Note that, if this argument is specified, most other arguments will be ignored -
 \code{covs}, \code{spatialCovs}, and \code{centers}.}
 
 \item{states}{\code{TRUE} if the simulated states should be returned, \code{FALSE} otherwise (default).}
+
+\item{retrySims}{Number of times to attempt to simulate data within the spatial extent of \code{spatialCovs}. If \code{retrySims=0} (the default), an
+error is returned if the simulated tracks(s) move beyond the extent(s) of the raster layer(s). Instead of relying on \code{retrySims}, in many cases
+it might be better to simply expand the extent of the raster layer(s) and/or adjust the step length and turning angle probability distributions. 
+Ignored if \code{spatialCovs=NULL}.}
 
 \item{lambda}{Observation rate for location data. If \code{NULL} (the default), location data are obtained at regular intervals. Otherwise 
 \code{lambda} is the rate parameter of the exponential distribution for the waiting times between successive location observations, i.e., 
