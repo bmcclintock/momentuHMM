@@ -16,7 +16,7 @@ MIfitHMM(miData, nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   thetaSamp = NULL)
 }
 \arguments{
-\item{miData}{A \code{\link{crwData}} object or a list of \code{\link{momentuHMMData}} objects.}
+\item{miData}{A \code{\link{crwData}} object, a \code{\link{crwSim}} object, or a list of \code{\link{momentuHMMData}} objects.}
 
 \item{nSims}{Number of imputations in which to fit the HMM using \code{\link{fitHMM}}. If \code{miData} is a list of \code{momentuHMMData} 
 objects, \code{nSims} cannot exceed the length of \code{miData}.}
@@ -58,7 +58,7 @@ detailed, and a value of 2 means that each iteration of the optimization is deta
 for more detail)}
 
 \item{fit}{\code{TRUE} if the HMM should be fitted to the data, \code{FALSE} otherwise. See \code{\link{fitHMM}}. If \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}}
-object, then \code{MIfitHMM} returns a list of \code{\link{momentuHMMData}} object(s) for each realization of the position process.}
+object, then \code{MIfitHMM} returns a list containing a \code{\link{momentuHMMData}} object (if \code{nSims=1}) or, if \code{nSims>1}, a \code{\link{crwSim}} object.}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream. See \code{\link{fitHMM}}.}
@@ -120,12 +120,14 @@ setting \code{thetaSamp=n} will use the nth sample. Defaults to the last. See \c
 Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 }
 \value{
-If \code{poolEstimates=TRUE} (the default) a list consisting of:
+If \code{nSims>1}, \code{poolEstimates=TRUE}, and \code{fit=TRUE}, a \code{\link{miHMM}} object, i.e., a list consisting of:
 \item{miSum}{\code{\link{miSum}} object returned by \code{\link{MIpool}}.}
 \item{HMMfits}{List of length \code{nSims} comprised of \code{\link{momentuHMM}} objects.}
-If \code{poolEstimates=FALSE} a list of length \code{nSims} consisting of \code{\link{momentuHMM}} objects is returned. However, if \code{miData} is a \code{\link{crwData}} 
-object and  \code{fit=FALSE}, \code{MIfitHMM} simply returns a list of \code{\link{momentuHMMData}} object(s) for each realization of the position process (and most other arguments 
-related to \code{\link{fitHMM}} are ignored).
+If \code{poolEstimates=FALSE} and \code{fit=TRUE}, a list of length \code{nSims} consisting of \code{\link{momentuHMM}} objects is returned. 
+
+However, if \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}} 
+object, then \code{MIfitHMM} returns a list containing a \code{\link{momentuHMMData}} object (if \code{nSims=1}) or, if \code{nSims>1}, a \code{\link{crwSim}} object 
+(and most other arguments related to \code{\link{fitHMM}} are ignored).
 }
 \description{
 Fit a (multivariate) hidden Markov model to multiple imputation data. Multiple imputation is a method for accommodating 
@@ -133,8 +135,8 @@ missing data, temporal-irregularity, or location measurement error in hidden Mar
 attributable to observation error.
 }
 \details{
-\code{miData} can either be a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}) or a list of \code{\link{momentuHMMData}} objects 
-(e.g., each element of the list as returned by \code{\link{prepData}}).
+\code{miData} can either be a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} object (as returned by \code{MIfitHMM} when \code{fit=FALSE}
+and \code{nSims>1}), or a list of \code{\link{momentuHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}}).
 
 If \code{miData} is a \code{crwData} object, \code{MIfitHMM} uses a combination of 
 \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepData}}, and \code{\link{fitHMM}} to draw \code{nSims} realizations of the position process
@@ -145,7 +147,7 @@ If \code{miData} is a \code{\link{crwData}} object, \code{nSims} determines both
 is a \code{\link{crwData}} object and \code{nSims=1}, then the single best predicted position process from \code{\link[crawl]{crwPredict}} is fitted and all arguments
 related to \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}} are ignored.
 
-If \code{miData} is a list of \code{momentuHMMData} objects, the specified HMM will simply be fitted to each of the \code{momentuHMMData} objects
+If \code{miData} is a \code{\link{crwSim}} object or a list of \code{\link{momentuHMMData}} object(s), the specified HMM will simply be fitted to each of the \code{momentuHMMData} objects
 and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} are ignored.
 }
 \examples{

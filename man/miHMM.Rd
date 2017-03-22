@@ -7,7 +7,9 @@
 miHMM(m)
 }
 \arguments{
-\item{m}{A list with attributes \code{miSum} (a \code{\link{miSum}} object) and \code{HMMfits} (a list of \code{\link{momentuHMM}} objects).}
+\item{m}{A list with attributes \code{miSum} (a \code{\link{miSum}} object) and \code{HMMfits} (a list of \code{\link{momentuHMM}} objects).
+
+\code{miHMM} objects are returned by \code{\link{MIfitHMM}} when arguments \code{fit=TRUE}, \code{nSims>1}, and \code{poolEstimates=TRUE}.}
 }
 \value{
 An object \code{miHMM}.

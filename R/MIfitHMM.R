@@ -5,8 +5,8 @@
 #' missing data, temporal-irregularity, or location measurement error in hidden Markov models, where pooled parameter estimates reflect uncertainty
 #' attributable to observation error.
 #' 
-#' \code{miData} can either be a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}) or a list of \code{\link{momentuHMMData}} objects 
-#' (e.g., each element of the list as returned by \code{\link{prepData}}). 
+#' \code{miData} can either be a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} object (as returned by \code{MIfitHMM} when \code{fit=FALSE}
+#' and \code{nSims>1}), or a list of \code{\link{momentuHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}}). 
 #' 
 #' If \code{miData} is a \code{crwData} object, \code{MIfitHMM} uses a combination of 
 #' \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepData}}, and \code{\link{fitHMM}} to draw \code{nSims} realizations of the position process
@@ -17,10 +17,10 @@
 #' is a \code{\link{crwData}} object and \code{nSims=1}, then the single best predicted position process from \code{\link[crawl]{crwPredict}} is fitted and all arguments
 #' related to \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}} are ignored.
 #' 
-#' If \code{miData} is a list of \code{momentuHMMData} objects, the specified HMM will simply be fitted to each of the \code{momentuHMMData} objects
+#' If \code{miData} is a \code{\link{crwSim}} object or a list of \code{\link{momentuHMMData}} object(s), the specified HMM will simply be fitted to each of the \code{momentuHMMData} objects
 #' and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} are ignored.
 #' 
-#' @param miData A \code{\link{crwData}} object or a list of \code{\link{momentuHMMData}} objects.
+#' @param miData A \code{\link{crwData}} object, a \code{\link{crwSim}} object, or a list of \code{\link{momentuHMMData}} objects.
 #' @param nSims Number of imputations in which to fit the HMM using \code{\link{fitHMM}}. If \code{miData} is a list of \code{momentuHMMData} 
 #' objects, \code{nSims} cannot exceed the length of \code{miData}.
 #' @param ncores Number of cores to use for parallel processing.
@@ -46,7 +46,7 @@
 #' '\code{gradtol}', '\code{stepmax}', '\code{steptol}', or '\code{iterlim}' -- see \code{nlm}'s documentation
 #' for more detail)
 #' @param fit \code{TRUE} if the HMM should be fitted to the data, \code{FALSE} otherwise. See \code{\link{fitHMM}}. If \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}}
-#' object, then \code{MIfitHMM} returns a list of \code{\link{momentuHMMData}} object(s) for each realization of the position process.
+#' object, then \code{MIfitHMM} returns a list containing a \code{\link{momentuHMMData}} object (if \code{nSims=1}) or, if \code{nSims>1}, a \code{\link{crwSim}} object.
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 #' stream. See \code{\link{fitHMM}}.
 #' @param cons An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
@@ -85,12 +85,14 @@
 #' setting \code{thetaSamp=n} will use the nth sample. Defaults to the last. See \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}}. 
 #' Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' 
-#' @return  If \code{poolEstimates=TRUE} (the default) a list consisting of:
+#' @return  If \code{nSims>1}, \code{poolEstimates=TRUE}, and \code{fit=TRUE}, a \code{\link{miHMM}} object, i.e., a list consisting of:
 #' \item{miSum}{\code{\link{miSum}} object returned by \code{\link{MIpool}}.}
 #' \item{HMMfits}{List of length \code{nSims} comprised of \code{\link{momentuHMM}} objects.}
-#' If \code{poolEstimates=FALSE} a list of length \code{nSims} consisting of \code{\link{momentuHMM}} objects is returned. However, if \code{miData} is a \code{\link{crwData}} 
-#' object and  \code{fit=FALSE}, \code{MIfitHMM} simply returns a list of \code{\link{momentuHMMData}} object(s) for each realization of the position process (and most other arguments 
-#' related to \code{\link{fitHMM}} are ignored).
+#' If \code{poolEstimates=FALSE} and \code{fit=TRUE}, a list of length \code{nSims} consisting of \code{\link{momentuHMM}} objects is returned. 
+#' 
+#' However, if \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}} 
+#' object, then \code{MIfitHMM} returns a list containing a \code{\link{momentuHMMData}} object (if \code{nSims=1}) or, if \code{nSims>1}, a \code{\link{crwSim}} object 
+#' (and most other arguments related to \code{\link{fitHMM}} are ignored).
 #' 
 #' @seealso \code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHMM}}, \code{\link{getParDM}}, \code{\link{MIpool}}, \code{\link{prepData}} 
 #' 
@@ -232,7 +234,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
       stopImplicitCluster()
       cat("DONE\n")
       if(fit) cat('Fitting',nSims,'realizations of the position process using fitHMM... ')
-      else return(miData)
+      else return(crwSim(list(miData=miData,crwSimulator=crwSim)))
     } else {
       miData <- list()
       df <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
@@ -242,10 +244,14 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
     }
     
   } else {
-    if(!is.list(miData)) stop("miData must either be a crwData object (as returned by crawlWrap) or a list of momentuHMMData objects (as returned by simData and prepData)")
-    if(!any(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))) stop("miData must either be a crwData object (as returned by crawlWrap) or a list of momentuHMMData objects (as returned by simData and prepData)")
+    if(!is.list(miData)) stop("miData must either be a crwData object (as returned by crawlWrap) or a list of momentuHMMData objects as returned by simData, prepData, or MIfitHMM (when fit=FALSE)")
+    if(is.crwSim(miData)) miData <- miData$miData
+    if(!any(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))) stop("miData must either be a crwData object (as returned by crawlWrap) or a list of momentuHMMData objects as returned by simData, prepData, or MIfitHMM (when fit=FALSE)")
+    if(missing(nSims)) nSims <- length(miData)
     if(nSims>length(miData))
       stop("nSims is greater than the length of miData. nSims must be <=",length(miData))
+    if(nSims<1)
+      stop("nSims must be >0")
     cat('Fitting',nSims,'imputation(s) using fitHMM... ')
   }
   

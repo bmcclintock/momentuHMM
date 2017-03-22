@@ -2,6 +2,8 @@
 #' Constructor of \code{miHMM} objects
 #'
 #' @param m A list with attributes \code{miSum} (a \code{\link{miSum}} object) and \code{HMMfits} (a list of \code{\link{momentuHMM}} objects).
+#' 
+#' \code{miHMM} objects are returned by \code{\link{MIfitHMM}} when arguments \code{fit=TRUE}, \code{nSims>1}, and \code{poolEstimates=TRUE}.
 #'
 #' @return An object \code{miHMM}.
 
