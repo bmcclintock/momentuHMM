@@ -229,10 +229,13 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
             }
           }
           df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
-          prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,angleCovs=angleCovs)
+          tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,angleCovs=angleCovs),error=function(e) e)
         }
       stopImplicitCluster()
       cat("DONE\n")
+      for(i in which(unlist(lapply(miData,function(x) inherits(x,"error"))))){
+        warning('prepData failed for imputation ',i,"; ",miData[[i]])
+      }
       if(fit) cat('Fitting',nSims,'realizations of the position process using fitHMM... ')
       else return(crwSim(list(miData=miData,crwSimulator=crwSim)))
     } else {
