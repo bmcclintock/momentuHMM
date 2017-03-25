@@ -217,7 +217,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
       
       registerDoParallel(cores=ncores)
       miData<-
-        foreach(j = 1:nSims, .export=c("crwPostIS","prepData")) %dopar% {
+        foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass") %dopar% {
           locs<-data.frame()
           for(i in 1:length(ids)){
             if(!is.null(model_fits[[i]]$err.model)){
@@ -229,7 +229,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
             }
           }
           df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
-          tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,angleCovs=angleCovs),error=function(e) e)
+          prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,angleCovs=angleCovs)
         }
       stopImplicitCluster()
       cat("DONE\n")
