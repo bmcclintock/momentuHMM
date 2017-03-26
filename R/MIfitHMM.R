@@ -236,12 +236,14 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
       for(i in which(unlist(lapply(miData,function(x) inherits(x,"error"))))){
         warning('prepData failed for imputation ',i,"; ",miData[[i]])
       }
-      if(fit) cat('Fitting',nSims,'realizations of the position process using fitHMM... ')
+      ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))
+      if(fit) cat('Fitting',length(ind),'realizations of the position process using fitHMM... ')
       else return(crwSim(list(miData=miData,crwSimulator=crwSim)))
     } else {
       miData <- list()
       df <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
       miData[[1]] <- prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,angleCovs=angleCovs)
+      ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))
       if(fit) cat('Fitting the most likely position process using fitHMM... ')
       else return(miData)
     }
@@ -249,17 +251,18 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   } else {
     if(!is.list(miData)) stop("miData must either be a crwData object (as returned by crawlWrap) or a list of momentuHMMData objects as returned by simData, prepData, or MIfitHMM (when fit=FALSE)")
     if(is.crwSim(miData)) miData <- miData$miData
-    if(!any(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))) stop("miData must either be a crwData object (as returned by crawlWrap) or a list of momentuHMMData objects as returned by simData, prepData, or MIfitHMM (when fit=FALSE)")
+    ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))
+    if(!length(ind)) stop("miData must either be a crwData object (as returned by crawlWrap) or a list of momentuHMMData objects as returned by simData, prepData, or MIfitHMM (when fit=FALSE)")
     if(missing(nSims)) nSims <- length(miData)
     if(nSims>length(miData))
       stop("nSims is greater than the length of miData. nSims must be <=",length(miData))
     if(nSims<1)
       stop("nSims must be >0")
-    cat('Fitting',nSims,'imputation(s) using fitHMM... ')
+    cat('Fitting',length(ind),'imputation(s) using fitHMM... ')
   }
   
   #check HMM inputs and print model message
-  test<-fitHMM(miData[[1]],nbStates, dist, Par0, beta0, delta0,
+  test<-fitHMM(miData[[ind[1]]],nbStates, dist, Par0, beta0, delta0,
          estAngleMean, circularAngleMean, formula, stationary, verbose,
          nlmPar, fit = FALSE, DM, cons,
          userBounds, workcons, stateNames, knownStates, fixPar)
