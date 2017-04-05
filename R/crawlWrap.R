@@ -380,7 +380,12 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
       pD[[Time.name]][which(pD$locType=="p")]<-predTime[[i]]
       if(!fillCols){
         for(j in names(pD)[names(pD) %in% names(ind_data[[i]])]){
-          if(!isTRUE(all.equal(pD[[j]],ind_data[[i]][[j]]))) pD[[j]] <- ind_data[[i]][[j]]
+          if(!(j %in% c(Time.name,"ID",coord))){
+            if(!isTRUE(all.equal(pD[[j]],ind_data[[i]][[j]]))) {
+              pD[[j]][pD[[Time.name]] %in% ind_data[[i]][[Time.name]]] <- ind_data[[i]][[j]]
+              pD[[j]][!(pD[[Time.name]] %in% ind_data[[i]][[Time.name]])] <- NA
+            }
+          }
         }
       }
       pD
