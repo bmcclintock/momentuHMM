@@ -650,7 +650,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         
         if(length(centerInd)){
           for(j in 1:length(centerInd)){
-            subCovs[1,centerNames[(j-1)*length(centerInd)+1:2]]<-distAngle(X[1,],X[1,],centers[centerInd[j],])
+            subCovs[1,centerNames[(j-1)*2+1:2]]<-distAngle(X[1,],X[1,],centers[centerInd[j],])
           }
         }
         g <- model.matrix(formula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% beta
@@ -742,7 +742,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           }
           if(length(centerInd)){
             for(j in 1:length(centerInd)){
-              subCovs[k+1,centerNames[(j-1)*length(centerInd)+1:2]]<-distAngle(X[k,],X[k+1,],centers[centerInd[j],])
+              subCovs[k+1,centerNames[(j-1)*2+1:2]]<-distAngle(X[k,],X[k+1,],centers[centerInd[j],])
             }
           }
           g <- model.matrix(formula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% beta
