@@ -57,7 +57,7 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   if(!inherits(spatialCov,"RasterLayer")) 
     stop("spatialCov should be of class 'RasterLayer'")
   
-  x <- y <- NULL #gets rid of no visible binding for global variable ‘x’ and 'y' NOTE in R cmd check
+  x <- y <- NULL #gets rid of no visible binding for global variable 'x' and 'y' NOTE in R cmd check
   ID <- NULL # same for ID
   
   #############################

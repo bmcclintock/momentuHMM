@@ -76,7 +76,7 @@ plotSat <- function(data,zoom=NULL,location=NULL,segments=TRUE,compact=TRUE,col=
   if(!compact & return)
     stop("Cannot return map if not compact. Either set 'compact=TRUE' or 'return=FALSE'.")
   
-  x <- y <- NULL # gets rid of no visible binding for global variable ‘x’ and 'y' NOTE in R cmd check
+  x <- y <- NULL # gets rid of no visible binding for global variable 'x' and 'y' NOTE in R cmd check
   ID <- NULL # same for ID
   
   ##############################

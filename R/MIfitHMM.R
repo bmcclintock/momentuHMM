@@ -179,7 +179,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
                    fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL
                    ){
 
-  j <- NULL #gets rid of no visible binding for global variable ‘j’ NOTE in R cmd check
+  j <- NULL #gets rid of no visible binding for global variable 'j' NOTE in R cmd check
   
   if(is.crwData(miData)){
     
