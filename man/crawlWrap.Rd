@@ -73,8 +73,9 @@ annealing is used for obtaining start values. See details}
 \item{attempts}{The number of times likelihood optimization will be
 attempted using \code{theta} as the starting values.  Note this is not the same as \code{retryFits}.}
 
-\item{predTime}{A list of predTime objects (see \code{\link[crawl]{crwPredict}}) containing an element for each individual. \code{predTime} can 
-be specified as an alternative to the automatic sequences generated according to \code{timeStep} for any (or all) individuals.}
+\item{predTime}{List of predTime objects (see \code{\link[crawl]{crwPredict}}) containing an element for each individual. \code{predTime} can 
+be specified as an alternative to the automatic sequences generated according to \code{timeStep}.  If only one predTime object is provided, then the same prediction times are used
+for each individual.}
 
 \item{fillCols}{Logical indicating whether or not to use the crawl::\code{\link[crawl]{fillCols}} function for filling in missing values in \code{obsData} for which
 there is a single unique value. Default: FALSE. If the output from \code{crawlWrap} is intended for analyses using \code{\link{fitHMM}} or \code{\link{MIfitHMM}}, 
