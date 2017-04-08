@@ -19,7 +19,6 @@
 #' plot(data,compact=TRUE,breaks=20,ask=FALSE)
 #'
 #' @export
-#' @importFrom grDevices rainbow
 #' @importFrom graphics abline axis hist mtext par plot points
 
 plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compact=FALSE,ask=TRUE,breaks="Sturges",...)
@@ -90,10 +89,12 @@ plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compa
         xmin <- xmid-(ymax-ymin)/2
       }
 
-      if(length(animalsInd)>6)
-        colors <- rainbow(length(animalsInd)) # to make sure that all colors are distinct
-      else
-        colors <- c(2,3,4,5,6,7)
+      if(length(animalsInd)>7) {
+        # to make sure that all colours are distinct (emulate ggplot default palette)
+        hues <- seq(15, 375, length = length(animalsInd) + 1)
+        colors <- hcl(h = hues, l = 65, c = 100)[1:length(animalsInd)]
+      } else
+        colors <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
       ID <- unique(data$ID)[animalsInd[1]]
       x <- data$x[which(data$ID==ID)]

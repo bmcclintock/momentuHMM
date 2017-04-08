@@ -98,8 +98,11 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
       pal <- "black"
     } else if(nbCol<8) {
       pal <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-    } else
-      pal <- rainbow(nbCol) # to make sure that all colors are distinct
+    } else {
+      # to make sure that all colours are distinct (emulate ggplot default palette)
+      hues <- seq(15, 375, length = nbCol + 1)
+      pal <- hcl(h = hues, l = 65, c = 100)[1:nbCol]
+    }
   } else {
     # if one color given, duplicate for all tracks or states
     if(length(col)==1) {

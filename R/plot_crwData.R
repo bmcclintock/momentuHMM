@@ -37,7 +37,7 @@
 #' plot(crwOut,compact=TRUE,ask=FALSE,plotEllipse=FALSE)
 #'
 #' @export
-#' @importFrom grDevices rainbow gray adjustcolor
+#' @importFrom grDevices gray adjustcolor
 #' @importFrom graphics abline axis hist mtext par plot points legend
 #' @importFrom conicfit calculateEllipse
 
@@ -87,9 +87,11 @@ plot.crwData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,plotEllipse=TRUE,
     }
   }
   
-  if(length(animalsInd)>7)
-    colors <- rainbow(length(animalsInd)) # to make sure that all colors are distinct
-  else
+  if(length(animalsInd)>7) {
+    # to make sure that all colours are distinct (emulate ggplot default palette)
+    hues <- seq(15, 375, length = length(animalsInd) + 1)
+    colors <- hcl(h = hues, l = 65, c = 100)[1:length(animalsInd)]
+  } else
     colors <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
   
   # graphical parameters
