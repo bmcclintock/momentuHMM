@@ -47,7 +47,7 @@
 #'
 #' @export
 #' @importFrom graphics legend lines segments arrows
-#' @importFrom grDevices adjustcolor gray rainbow
+#' @importFrom grDevices adjustcolor gray hcl
 #' @importFrom stats as.formula
 #' @importFrom CircStats circ.mean
 
@@ -81,8 +81,11 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
              "#0072B2", "#D55E00", "#CC79A7")
     col <- pal[1:nbStates]
   }
-  if (is.null(col) & nbStates >= 8) 
-    col <- rainbow(nbStates)
+  if (is.null(col) & nbStates >= 8) {
+    # to make sure that all colours are distinct (emulate ggplot default palette)
+    hues <- seq(15, 375, length = nbStates + 1)
+    col <- hcl(h = hues, l = 65, c = 100)[1:nbStates]
+  }
   
   if (sepStates | nbStates < 2) 
     cumul <- FALSE
