@@ -200,7 +200,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
       distnames <- names(dist)[which(!(names(dist) %in% c("step","angle")))]
       if(any(is.na(match(distnames,names(predData))))) stop(paste0(distnames[is.na(match(distnames,names(predData)))],collapse=", ")," not found in miData")
     } else {
-      distnames <- names(predData)[which(!(names(predData) %in% c("ID",covNames,znames)))]
+      distnames <- names(predData)[which(!(names(predData) %in% c("ID","x","y",covNames,znames)))]
     }
     
     if(nSims>1){
