@@ -75,7 +75,8 @@ each data stream. See \code{\link{fitHMM}}.}
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
 \item{knownStates}{Vector of values of the state process which are known prior to fitting the
-model (if any). See \code{\link{fitHMM}}.}
+model (if any). See \code{\link{fitHMM}}. If \code{miData} is a list of \code{\link{momentuHMMData}} objects, then \code{knownStates} can alternatively
+be a list of vectors containing the known values for the state process for each element of \code{miData}.}
 
 \item{fixPar}{An optional list of vectors indicating parameters which are assumed known prior to fitting the model. See \code{\link{fitHMM}}.}
 

@@ -57,7 +57,8 @@
 #' each data stream. See \code{\link{fitHMM}}.
 #' @param stateNames Optional character vector of length nbStates indicating state names.
 #' @param knownStates Vector of values of the state process which are known prior to fitting the
-#' model (if any). See \code{\link{fitHMM}}.
+#' model (if any). See \code{\link{fitHMM}}. If \code{miData} is a list of \code{\link{momentuHMMData}} objects, then \code{knownStates} can alternatively
+#' be a list of vectors containing the known values for the state process for each element of \code{miData}.
 #' @param fixPar An optional list of vectors indicating parameters which are assumed known prior to fitting the model. See \code{\link{fitHMM}}. 
 #' @param covNames Names of any covariates in \code{miData$crwPredict} (if \code{miData} is a \code{\link{crwData}} object; otherwise 
 #' \code{covNames} is ignored). See \code{\link{prepData}}. 
@@ -261,11 +262,19 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
     cat('Fitting',length(ind),'imputation(s) using fitHMM... ')
   }
   
+  if(!is.list(knownStates)){
+    tmpStates<-knownStates
+    knownStates<-vector('list',nSims)
+    if(!is.null(tmpStates))
+      for(i in 1:nSims)
+        knownStates[[i]]<-tmpStates
+  } else if(length(knownStates)!=nSims) stop("knownStates must be a list of length ",nSims)
+  
   #check HMM inputs and print model message
   test<-fitHMM(miData[[ind[1]]],nbStates, dist, Par0, beta0, delta0,
          estAngleMean, circularAngleMean, formula, stationary, verbose,
          nlmPar, fit = FALSE, DM, cons,
-         userBounds, workcons, stateNames, knownStates, fixPar)
+         userBounds, workcons, stateNames, knownStates[[ind[1]]], fixPar)
   
   # fit HMM(s)
   registerDoParallel(cores=ncores)
@@ -275,7 +284,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
       suppressMessages(fitHMM(miData[[j]],nbStates, dist, Par0, beta0, delta0,
                               estAngleMean, circularAngleMean, formula, stationary, verbose,
                               nlmPar, fit, DM, cons,
-                              userBounds, workcons, stateNames, knownStates, fixPar))
+                              userBounds, workcons, stateNames, knownStates[[j]], fixPar))
     }  
   stopImplicitCluster()
   cat("DONE\n")

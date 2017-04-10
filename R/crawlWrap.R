@@ -77,7 +77,7 @@
 #'
 #' # Fit crwMLE models to obsData and predict locations 
 #' # at default intervals for both individuals
-#' crwOut1 <- crawlWrap(obsData=obsData,ncores=1,retryFits=100,
+#' crwOut1 <- crawlWrap(obsData=obsData,ncores=1,
 #'          theta=c(4,0),fixPar=c(1,1,NA,NA),
 #'          initial.state=inits,
 #'          err.model=err.model,attempts=100)
@@ -85,11 +85,11 @@
 #' \dontrun{                                       
 #' # Fit the same crwMLE models and predict locations 
 #' # at same intervals but specify for each individual using lists
-#' crwOut2 <- crawlWrap(obsData=obsData,ncores=1,retryFits=100,
+#' crwOut2 <- crawlWrap(obsData=obsData,ncores=1,
 #'          theta=list(c(4,0),c(4,0)), fixPar=list(c(1,1,NA,NA),c(1,1,NA,NA)),
 #'          initial.state=list(inits,inits),
 #'          err.model=list(err.model,err.model),
-#'          predTime=list(seq(1,633),seq(1,686)),attempts=100)
+#'          predTime=list(seq(1,633),seq(1,686)))
 #' }
 #' 
 #' @export
