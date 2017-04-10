@@ -25,7 +25,7 @@ whether \code{obsData[[Time.name]]} is numeric or POSIXct). \code{timeStep} is n
 \item{ncores}{Number of cores to use for parallel processing.}
 
 \item{retryFits}{Number of times to attempt to achieve convergence and valid (i.e., not NaN) variance estimates after the initial model fit. \code{retryFits} differs
-from \code{attempts} because \code{retryFits} uses random perturbations of the current parameter estimates as the initial values for likelihood optimization, while 
+from \code{attempts} because \code{retryFits} iteratively uses random perturbations of the current parameter estimates as the initial values for likelihood optimization, while 
 \code{attempts} uses the same initial values (\code{theta}) for each attempt.}
 
 \item{mov.model}{List of mov.model objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one movement model is provided, then the same movement model is used

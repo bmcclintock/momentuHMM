@@ -13,7 +13,7 @@
 #' whether \code{obsData[[Time.name]]} is numeric or POSIXct). \code{timeStep} is not used for individuals for which \code{predTime} is specified.
 #' @param ncores Number of cores to use for parallel processing.
 #' @param retryFits Number of times to attempt to achieve convergence and valid (i.e., not NaN) variance estimates after the initial model fit. \code{retryFits} differs
-#' from \code{attempts} because \code{retryFits} uses random perturbations of the current parameter estimates as the initial values for likelihood optimization, while 
+#' from \code{attempts} because \code{retryFits} iteratively uses random perturbations of the current parameter estimates as the initial values for likelihood optimization, while 
 #' \code{attempts} uses the same initial values (\code{theta}) for each attempt. 
 #' @param mov.model List of mov.model objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one movement model is provided, then the same movement model is used
 #' for each individual.
@@ -302,16 +302,21 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
     if(!inherits(model_fits[[i]],"crwFit"))
       warning('crawl::crwMLE for individual ',i,' failed;\n',model_fits[[i]],"   Check crawl::crwMLE arguments and/or consult crawl documentation.")
     else {
-      if(model_fits[[i]]$convergence | any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))]))){
+      if((model_fits[[i]]$convergence | any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))]))) | retryFits){
         if(retryFits){
           fitCount<-0
           fit <- model_fits[[i]]
-          if(model_fits[[i]]$convergence)
-            cat('crawl::crwMLE for individual',i,'has suspect convergence: ',model_fits[[i]]$message,"\n")
-          if(any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))])))
-            cat('crawl::crwMLE for individual',i,'has NaN variance estimate(s)\n')
-          cat('Attempting to achieve convergence and valid variance estimates for individual ',i,". Press 'esc' to force exit from 'crawlWrap'\n",sep="")
-          while(fitCount<retryFits & (fit$convergence | any(is.na(fit$se[which(is.na(fixPar[[i]]))])))){
+          if(model_fits[[i]]$convergence | any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))]))){
+            if(model_fits[[i]]$convergence)
+              cat('crawl::crwMLE for individual',i,'has suspect convergence: ',model_fits[[i]]$message,"\n")
+            if(any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))])))
+              cat('crawl::crwMLE for individual',i,'has NaN variance estimate(s)\n')
+            cat('Attempting to achieve convergence and valid variance estimates for individual ',i,". Press 'esc' to force exit from 'crawlWrap'\n",sep="")
+          } else {
+            cleanFit<-fit
+            cat('Attempting to improve fit for individual ',i,". Press 'esc' to force exit from 'crawlWrap'\n",sep="")
+          }
+          while(fitCount<retryFits){ # & (fit$convergence | any(is.na(fit$se[which(is.na(fixPar[[i]]))])))){
             cat("\r    Attempt ",fitCount+1," of ",retryFits,"...",sep="")
             tmp <- suppressWarnings(suppressMessages(crawl::crwMLE(
               mov.model =  mov.model[[i]],
@@ -332,18 +337,22 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
               initialSANN = list(maxit = initialSANN$maxit),
               attempts = 1
             )))
-            if(inherits(tmp,"crwFit"))
-              if(tmp$convergence==0)
+            if(inherits(tmp,"crwFit")){
+              if(tmp$convergence==0){
                 if(tmp$aic < model_fits[[i]]$aic | all(!is.na(tmp$se[which(is.na(fixPar[[i]]))])))
                   fit<-tmp
+                if(tmp$aic <= model_fits[[i]]$aic & all(!is.na(tmp$se[which(is.na(fixPar[[i]]))])))
+                  cleanFit<-tmp
+              }
+            }
             fitCount <- fitCount + 1
           }
-          if(fit$convergence | any(is.na(fit$se[which(is.na(fixPar[[i]]))]))){
+          if(cleanFit$convergence | any(is.na(cleanFit$se[which(is.na(fixPar[[i]]))]))){
             cat("FAILED\n")
           } else {
             cat("DONE\n")
           }
-          model_fits[[i]]<-fit
+          model_fits[[i]]<-cleanFit
         } else {
           if(model_fits[[i]]$convergence)
             warning('crawl::crwMLE for individual ',i,' has suspect convergence: ',model_fits[[i]]$message)
