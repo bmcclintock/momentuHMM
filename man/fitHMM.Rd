@@ -8,7 +8,7 @@ fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
   stationary = FALSE, verbose = 0, nlmPar = NULL, fit = TRUE,
   DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL,
-  stateNames = NULL, knownStates = NULL, fixPar = NULL)
+  stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0)
 }
 \arguments{
 \item{data}{An object \code{momentuHMMData}.}
@@ -114,6 +114,11 @@ the state is not known.}
 \item{fixPar}{An optional list of vectors indicating parameters which are assumed known prior to fitting the model. Default: NULL 
 (no parameters are fixed). Each element of \code{fixPar} should be a vector of the same length as the corresponding vector of 
 \code{Par0}; each element should either be numeric (the fixed value of the parameter) or NA if the parameter is to be estimated.}
+
+\item{retryFits}{Non-negative integer indicating the number of times to attempt to iteratively fit the model using random perturbations of the current parameter estimates as the 
+initial values for likelihood optimization. Standard normal perturbations are used on the working scale probability distribution parameters, while
+Normal(0,10^2) pertubations are used for working scale transition probability parameters. Default: 0.  When \code{retryFits>0}, the model with the largest log likelihood 
+value is returned.  Ignored if \code{fit=FALSE}.}
 }
 \value{
 A \code{\link{momentuHMM}} object, i.e. a list of:

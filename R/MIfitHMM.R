@@ -60,6 +60,8 @@
 #' model (if any). See \code{\link{fitHMM}}. If \code{miData} is a list of \code{\link{momentuHMMData}} objects, then \code{knownStates} can alternatively
 #' be a list of vectors containing the known values for the state process for each element of \code{miData}.
 #' @param fixPar An optional list of vectors indicating parameters which are assumed known prior to fitting the model. See \code{\link{fitHMM}}. 
+#' @param retryFits Non-negative integer indicating the number of times to attempt to iteratively fit the model using random perturbations of the current parameter estimates as the 
+#' initial values for likelihood optimization.  See \code{\link{fitHMM}}. 
 #' @param covNames Names of any covariates in \code{miData$crwPredict} (if \code{miData} is a \code{\link{crwData}} object; otherwise 
 #' \code{covNames} is ignored). See \code{\link{prepData}}. 
 #' @param spatialCovs List of raster layer(s) for any spatial covariates not included in \code{miData$crwPredict} (if \code{miData} is 
@@ -112,7 +114,7 @@
 #' miData <- crawlWrap(obsData=obsData,ncores=1,
 #'          theta=c(4,0),fixPar=c(1,1,NA,NA),
 #'          initial.state=inits,
-#'          err.model=err.model,attempts=100,retryFits=100)
+#'          err.model=err.model)
 #' 
 #' # HMM specifications
 #' nbStates <- 2
@@ -174,7 +176,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
                    formula = ~1, stationary = FALSE, 
                    verbose = 0, nlmPar = NULL, fit = TRUE, 
                    DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL, 
-                   stateNames = NULL, knownStates = NULL, fixPar = NULL,
+                   stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
                    covNames=NULL,spatialCovs=NULL,centers=NULL,angleCovs=NULL,
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad,
                    fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL
@@ -274,17 +276,20 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   test<-fitHMM(miData[[ind[1]]],nbStates, dist, Par0, beta0, delta0,
          estAngleMean, circularAngleMean, formula, stationary, verbose,
          nlmPar, fit = FALSE, DM, cons,
-         userBounds, workcons, stateNames, knownStates[[ind[1]]], fixPar)
+         userBounds, workcons, stateNames, knownStates[[ind[1]]], fixPar, retryFits)
   
   # fit HMM(s)
   registerDoParallel(cores=ncores)
   fits <-
     foreach(j = 1:nSims, .export=c("fitHMM"), .errorhandling="pass") %dopar% {
 
-      suppressMessages(fitHMM(miData[[j]],nbStates, dist, Par0, beta0, delta0,
+      if(nSims>1) cat("\rImputation ",j,"...",sep="")
+      fit<-suppressMessages(fitHMM(miData[[j]],nbStates, dist, Par0, beta0, delta0,
                               estAngleMean, circularAngleMean, formula, stationary, verbose,
                               nlmPar, fit, DM, cons,
-                              userBounds, workcons, stateNames, knownStates[[j]], fixPar))
+                              userBounds, workcons, stateNames, knownStates[[j]], fixPar, retryFits))
+      if(retryFits>=1) cat("\n")
+      fit
     }  
   stopImplicitCluster()
   cat("DONE\n")

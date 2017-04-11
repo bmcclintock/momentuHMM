@@ -9,7 +9,7 @@ MIfitHMM(miData, nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   circularAngleMean = NULL, formula = ~1, stationary = FALSE,
   verbose = 0, nlmPar = NULL, fit = TRUE, DM = NULL, cons = NULL,
   userBounds = NULL, workcons = NULL, stateNames = NULL,
-  knownStates = NULL, fixPar = NULL, covNames = NULL,
+  knownStates = NULL, fixPar = NULL, retryFits = 0, covNames = NULL,
   spatialCovs = NULL, centers = NULL, angleCovs = NULL, method = "IS",
   parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
   force.quad, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
@@ -79,6 +79,9 @@ model (if any). See \code{\link{fitHMM}}. If \code{miData} is a list of \code{\l
 be a list of vectors containing the known values for the state process for each element of \code{miData}.}
 
 \item{fixPar}{An optional list of vectors indicating parameters which are assumed known prior to fitting the model. See \code{\link{fitHMM}}.}
+
+\item{retryFits}{Non-negative integer indicating the number of times to attempt to iteratively fit the model using random perturbations of the current parameter estimates as the 
+initial values for likelihood optimization.  See \code{\link{fitHMM}}.}
 
 \item{covNames}{Names of any covariates in \code{miData$crwPredict} (if \code{miData} is a \code{\link{crwData}} object; otherwise 
 \code{covNames} is ignored). See \code{\link{prepData}}.}
@@ -166,7 +169,7 @@ err.model <- miExample$err.model # error ellipse model
 miData <- crawlWrap(obsData=obsData,ncores=1,
          theta=c(4,0),fixPar=c(1,1,NA,NA),
          initial.state=inits,
-         err.model=err.model,attempts=100,retryFits=100)
+         err.model=err.model)
 
 # HMM specifications
 nbStates <- 2

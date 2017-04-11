@@ -88,6 +88,10 @@
 #' @param fixPar An optional list of vectors indicating parameters which are assumed known prior to fitting the model. Default: NULL 
 #' (no parameters are fixed). Each element of \code{fixPar} should be a vector of the same length as the corresponding vector of 
 #' \code{Par0}; each element should either be numeric (the fixed value of the parameter) or NA if the parameter is to be estimated. 
+#' @param retryFits Non-negative integer indicating the number of times to attempt to iteratively fit the model using random perturbations of the current parameter estimates as the 
+#' initial values for likelihood optimization. Standard normal perturbations are used on the working scale probability distribution parameters, while
+#' Normal(0,10^2) pertubations are used for working scale transition probability parameters. Default: 0.  When \code{retryFits>0}, the model with the largest log likelihood 
+#' value is returned.  Ignored if \code{fit=FALSE}.
 #'
 #' @return A \code{\link{momentuHMM}} object, i.e. a list of:
 #' \item{mle}{A named list of the maximum likelihood estimates of the parameters of the model (if the numerical algorithm
@@ -282,7 +286,7 @@ fitHMM <- function(data,nbStates,dist,
                    formula=~1,stationary=FALSE,
                    verbose=0,nlmPar=NULL,fit=TRUE,
                    DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,
-                   stateNames=NULL,knownStates=NULL,fixPar=NULL)
+                   stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0)
 {
   
   #####################
@@ -393,7 +397,7 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
 
-  mHind <- (is.null(DM) & is.null(userBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(formula),"term.labels")) & stationary) # indicator for moveHMMwrap below
+  mHind <- (is.null(DM) & is.null(userBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(formula),"term.labels")) & stationary & retryFits==0) # indicator for moveHMMwrap below
   
   inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames)
   p <- inputs$p
@@ -491,6 +495,7 @@ fitHMM <- function(data,nbStates,dist,
   wpar <- n2w(Par0,p$bounds,beta0,delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
   if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
 
+  if(retryFits<0) stop("retryFits must be non-negative")
   
   ##################
   ## Optimization ##
@@ -532,20 +537,42 @@ fitHMM <- function(data,nbStates,dist,
     steptol <- ifelse(is.null(nlmPar$steptol),1e-6,nlmPar$steptol)
     iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
 
-    startTime <- proc.time()
+    fitCount<-0
     
-    # call to optimizer nlm
-    withCallingHandlers(mod <- nlm(nLogLike,wpar,nbStates,formula,p$bounds,p$parSize,data,dist,covs,
-                                   inputs$estAngleMean,inputs$circularAngleMean,zeroInflation,oneInflation,
-                                   stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
-                                   print.level=verbose,gradtol=gradtol,
-                                   stepmax=stepmax,steptol=steptol,
-                                   iterlim=iterlim,hessian=TRUE),
-                        warning=h) # filter warnings using function h
-
-    endTime <- proc.time()-startTime
-    
-    mod$elapsedTime <- endTime[3]
+    while(fitCount<=retryFits){
+      
+      startTime <- proc.time()
+      
+      # call to optimizer nlm
+      withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,wpar,nbStates,formula,p$bounds,p$parSize,data,dist,covs,
+                                             inputs$estAngleMean,inputs$circularAngleMean,zeroInflation,oneInflation,
+                                             stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
+                                             print.level=verbose,gradtol=gradtol,
+                                             stepmax=stepmax,steptol=steptol,
+                                             iterlim=iterlim,hessian=TRUE),error=function(e) e),warning=h)
+  
+      endTime <- proc.time()-startTime
+      
+      if(fitCount==0){
+        if(inherits(curmod,"error")) stop(curmod)
+        else {
+          mod <- curmod
+          if(retryFits>=1) cat("Attempting to improve fit using random perturbation. Press 'esc' to force exit from 'fitHMM'\n")
+        }
+      }
+      
+      if((fitCount+1)<=retryFits){
+        cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,sep="")
+        if(!inherits(curmod,"error")){
+          curmod$elapsedTime <- endTime[3]
+          if(curmod$minimum < mod$minimum) mod <- curmod
+        }
+        parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)-(nbStates-1)*(!stationary)
+        wpar[1:parmInd] <- mod$estimate[1:parmInd]+rnorm(parmInd)
+        wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1))] <- mod$estimate[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1))]+rnorm((nbCovs+1)*nbStates*(nbStates-1),0,10)
+      }
+      fitCount<-fitCount+1
+    }
     
     # convert the parameters back to their natural scale
     wpar <- mod$estimate
@@ -635,7 +662,6 @@ fitHMM <- function(data,nbStates,dist,
   CIbeta<-tryCatch(CIbeta(momentuHMM(mh)),error=function(e) e)
   
   mh <- list(data=data,mle=mle,CIreal=CIreal,CIbeta=CIbeta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
-  #mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   
   if(fit) message("DONE")
   
