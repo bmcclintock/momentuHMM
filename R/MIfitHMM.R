@@ -150,8 +150,7 @@
 #'                   nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
 #'                   Par0=bPar0$Par,beta0=bPar0$beta,delta0=bPar0$delta,
 #'                   formula=formula,estAngleMean=list(angle=TRUE),
-#'                   covNames=c("cov1","cov2"),
-#'                   parIS = 0, fullPost = FALSE)
+#'                   covNames=c("cov1","cov2"))
 #'
 #' # print pooled estimates
 #' print(miFits)
@@ -214,7 +213,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
       crwSim <- foreach(i = 1:length(ids), .export="crwSimulator") %dopar% {
         if(!is.null(model_fits[[i]]$err.model))
           crawl::crwSimulator(model_fits[[i]],predTime=predData[[Time.name]][which(predData$ID==ids[i] & predData$locType=="p")], method = method, parIS = parIS,
-                                  df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, force.quad)
+                                  df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, force.quad = force.quad)
       }
       stopImplicitCluster()
       

@@ -205,8 +205,7 @@ miFits<-MIfitHMM(miData=miData,nSims=5,ncores=1,
                   nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
                   Par0=bPar0$Par,beta0=bPar0$beta,delta0=bPar0$delta,
                   formula=formula,estAngleMean=list(angle=TRUE),
-                  covNames=c("cov1","cov2"),
-                  parIS = 0, fullPost = FALSE)
+                  covNames=c("cov1","cov2"))
 
 # print pooled estimates
 print(miFits)
