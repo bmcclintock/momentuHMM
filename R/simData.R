@@ -78,9 +78,9 @@
 #' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
 #' through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.
 #' @param stateNames Optional character vector of length nbStates indicating state names.
-#' @param model A momentuHMM object. This option can be used to simulate from a fitted model.  Default: NULL.
+#' @param model A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. This option can be used to simulate from a fitted model.  Default: NULL.
 #' Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
-#' \code{obsPerAnimal}, \code{states}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
+#' \code{obsPerAnimal}, \code{states}, \code{initialPosition}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
 #' \code{covs}, \code{spatialCovs}, and \code{centers}.
 #' @param states \code{TRUE} if the simulated states should be returned, \code{FALSE} otherwise (default).
 #' @param retrySims Number of times to attempt to simulate data within the spatial extent of \code{spatialCovs}. If \code{retrySims=0} (the default), an
@@ -153,6 +153,8 @@
 #' covariates is either shortened (removing last values - if too long) or extended (starting
 #' over from the first values - if too short).
 #' }
+#' 
+#' @seealso \code{\link{prepData}}, \code{\link{simObsData}}
 #'
 #' @examples
 #' # 1. Pass a fitted model to simulate from
@@ -251,6 +253,18 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   ## Check if !is.null(model) ##
   ##############################
   if(!is.null(model)) {
+    
+    if(is.miHMM(model)){
+      model <- model$miSum
+    }
+    if(is.miSum(model)){
+      model$mle <- lapply(model$Par$real,function(x) x$est)
+      model$mle$beta <- model$Par$beta$beta$est
+      model$mle$delta <- model$Par$real$delta$est
+      model$mod <- list()
+      model$mod$estimate <- model$MIcombine$coefficients
+    }
+    
     # extract simulation parameters from model
     nbStates <- length(model$stateNames)
     dist<-model$conditions$dist

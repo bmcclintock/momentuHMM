@@ -108,9 +108,9 @@ through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{work
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
-\item{model}{A momentuHMM object. This option can be used to simulate from a fitted model.  Default: NULL.
+\item{model}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. This option can be used to simulate from a fitted model.  Default: NULL.
 Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
-\code{obsPerAnimal}, \code{states}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
+\code{obsPerAnimal}, \code{states}, \code{initialPosition}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
 \code{covs}, \code{spatialCovs}, and \code{centers}.}
 
 \item{states}{\code{TRUE} if the simulated states should be returned, \code{FALSE} otherwise (default).}
@@ -262,4 +262,7 @@ obsData <- simData(model=m,obsPerAnimal=obsPerAnimal,
 \references{
 McClintock BT, London JM, Cameron MF, Boveng PL. 2015. Modelling animal movement using the Argos satellite telemetry location error ellipse. 
 Methods in Ecology and Evolution 6(3):266-277.
+}
+\seealso{
+\code{\link{prepData}}, \code{\link{simObsData}}
 }

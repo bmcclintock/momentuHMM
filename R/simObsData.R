@@ -66,8 +66,8 @@ simObsData<-function(data,lambda,errorEllipse){
     
     if(!is.null(errorEllipse)){
       if(!is.list(errorEllipse) | any(!(c("M","m","r") %in% names(errorEllipse)))) stop("errorEllipse must be a list of scalars named 'M', 'm', and 'r'.")
-      if(any(unlist(lapply(errorEllipse[c("M","m","r")],length))>2)) stop('errorEllipse elements must be of length 1 or 2')
-      if(any(unlist(lapply(errorEllipse[c("M","m")],function(x) any(x<0))))) stop("errorEllipse$M and errorEllipse$m must be >=0")
+      if(any(unlist(lapply(errorEllipse,length))>2)) stop('errorEllipse elements must be of length 1 or 2')
+      if(any(errorEllipse$M<0 | errorEllipse$m<0)) stop("errorEllipse$M and errorEllipse$m must be >=0")
       if(any(errorEllipse$r < 0) | any(errorEllipse$r > 180)) stop('errorEllipse$r must be in [0,180]')
       
       M<-c(min(errorEllipse$M),max(errorEllipse$M))
