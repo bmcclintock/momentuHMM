@@ -556,6 +556,7 @@ fitHMM <- function(data,nbStates,dist,
       if(fitCount==0){
         if(inherits(curmod,"error")) stop(curmod)
         else {
+          curmod$elapsedTime <- endTime[3]
           mod <- curmod
           if(retryFits>=1) cat("Attempting to improve fit using random perturbation. Press 'esc' to force exit from 'fitHMM'\n")
         }

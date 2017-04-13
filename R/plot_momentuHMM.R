@@ -288,44 +288,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             infInd <- TRUE
     
     #get covariate names
-    DMparterms<-list()
-    if(!m$conditions$DMind[[i]]){
-      if(!is.list(m$conditions$DM[[i]])){
-        for(j in 1:length(p$parNames[[i]])){
-          DMparterms[[p$parNames[[i]][j]]] <- vector('list',nbStates)
-          for(jj in 1:nbStates){
-            DMparterms[[p$parNames[[i]][j]]][[jj]]<-unique(m$conditions$DM[[i]][(j-1)*nbStates+jj,][suppressWarnings(which(is.na(as.numeric(m$conditions$DM[[i]][(j-1)*nbStates+jj,]))))])
-          }
-        }
-        DMterms<-unique(m$conditions$DM[[i]][suppressWarnings(which(is.na(as.numeric(m$conditions$DM[[i]]))))])
-      } else {
-        m$conditions$DM[[i]]<-m$conditions$DM[[i]][p$parNames[[i]]]
-        DMterms<-character()
-        for(j in 1:length(p$parNames[[i]])){
-          DMparterms[[p$parNames[[i]][j]]] <- vector('list',nbStates)
-          tmpparnames <- rownames(attr(terms(m$conditions$DM[[i]][[p$parNames[[i]][j]]]),"factors"))
-          if(!is.null(tmpparnames)) {
-            for(jj in 1:nbStates){
-              DMparterms[[p$parNames[[i]][j]]][[jj]]<-tmpparnames
-            }
-          }
-          DMterms <- c(DMterms,unlist(DMparterms[[p$parNames[[i]][j]]]))
-        }
-      }
-      DMterms <- unique(DMterms)
-      for(j in 1:length(p$parNames[[i]])){
-        for(jj in 1:nbStates){
-          if(length(DMparterms[[p$parNames[[i]][j]]][[jj]])){
-            for(k in 1:length(DMparterms[[p$parNames[[i]][j]]][[jj]])){
-              DMparterms[[p$parNames[[i]][j]]][[jj]][k]<-all.vars(as.formula(paste0("~",DMparterms[[p$parNames[[i]][j]]][[jj]][k])))
-            }
-          }
-        }
-      }
-      for(j in 1:length(DMterms)){
-        DMterms[j]<-all.vars(as.formula(paste0("~",DMterms[j])))
-      }
-    }
+    covNames <- getCovNames(m,p,i)
+    DMterms<-covNames$DMterms
+    DMparterms<-covNames$DMparterms
     
     covmess <- ifelse(!m$conditions$DMind[[i]],paste0(": ",paste0(DMterms," = ",tmpcovs[DMterms],collapse=", ")),"")
   

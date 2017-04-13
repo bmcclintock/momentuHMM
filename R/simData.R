@@ -284,7 +284,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     parindex <- c(0,cumsum(unlist(lapply(model$conditions$fullDM,ncol)))[-length(model$conditions$fullDM)])
     names(parindex) <- distnames
     for(i in distnames){
-      if(!is.null(DM[[i]]) & model$conditions$DMind[[i]]){
+      if(!is.null(DM[[i]])){
         Par[[i]] <- model$mod$estimate[parindex[[i]]+1:ncol(model$conditions$fullDM[[i]])]
         names(Par[[i]])<-colnames(model$conditions$fullDM[[i]])
       }
@@ -315,9 +315,15 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(states) model$data$states <- NULL
 
     if(is.null(covs)) {
-      #if(!is.null(spatialCovs)) spatialcovnames <- names(spatialCovs)
-      #else spatialcovnames <- NULL
-      covsCol <- which(!(names(model$data) %in% c("ID","x","y",distnames,"states")))
+      p<-parDef(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds)
+      covNames<-character()
+      for(i in distnames){
+        covNames<-c(covNames,getCovNames(model,p,i)$DMterms)
+      }
+      if(!is.null(model$rawCovs)){
+        covNames <- c(colnames(model$rawCovs),covNames)
+      }
+      covsCol <- unique(covNames)
       if(length(covsCol)) covs <- model$data[covsCol]
     }
     # else, allow user to enter new values for covariates
