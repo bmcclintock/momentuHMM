@@ -1,6 +1,6 @@
 Package: momentuHMM
 Type: Package
-Title: Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models
+Title: Maximum Likelihood Analysis of Animal Movement Behavior Using Multivariate Hidden Markov Models
 Version: 0.0
 Date: 2017-03-17
 Depends:

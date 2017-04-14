@@ -1,12 +1,12 @@
 # momentuHMM
 An R package for Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models 
 
-Get started with the vignette: [Guide to using momentuHMM](https://cran.r-project.org/web/packages/momentuHMM/vignettes/momentuHMM-guide.pdf)
+Get started with the vignette: [Guide to using momentuHMM](https://cran.r-project.org/package=momentuHMM/vignettes/momentuHMM-guide.pdf)
 
 ## Installation instructions
 
 ### Stable release
-The package is available on [CRAN](https://cran.r-project.org/web/packages/momentuHMM/index.html). To install it from CRAN,
+The package is available on [CRAN](https://cran.r-project.org/package=momentuHMM). To install it from CRAN,
 you can use the following commands:
 ``` R
 # install momentuHMM
