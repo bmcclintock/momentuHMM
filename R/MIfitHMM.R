@@ -283,12 +283,12 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
     foreach(j = 1:nSims, .export=c("fitHMM"), .errorhandling="pass") %dopar% {
 
       if(nSims>1) cat("\rImputation ",j,"...",sep="")
-      fit<-suppressMessages(fitHMM(miData[[j]],nbStates, dist, Par0, beta0, delta0,
+      tmpFit<-suppressMessages(fitHMM(miData[[j]],nbStates, dist, Par0, beta0, delta0,
                               estAngleMean, circularAngleMean, formula, stationary, verbose,
                               nlmPar, fit, DM, cons,
                               userBounds, workcons, stateNames, knownStates[[j]], fixPar, retryFits))
       if(retryFits>=1) cat("\n")
-      fit
+      tmpFit
     }  
   stopImplicitCluster()
   cat("DONE\n")
