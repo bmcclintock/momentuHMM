@@ -90,7 +90,7 @@
 #'          theta=list(c(4,0),c(4,0)), fixPar=list(c(1,1,NA,NA),c(1,1,NA,NA)),
 #'          initial.state=list(inits,inits),
 #'          err.model=list(err.model,err.model),
-#'          predTime=list(seq(1,633),seq(1,686)))
+#'          predTime=list('1'=seq(1,633),'2'=seq(1,686)))
 #' }
 #' 
 #' @export
@@ -267,6 +267,27 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
     prior <- prior[ids]
   } else names(prior) <- ids
   
+  if(is.null(predTime)){
+    predTime<-list()
+  }
+  if(!is.list(predTime)){
+    tmpPredTime<-predTime
+    predTime<-list()
+    for(i in ids){
+      predTime[[i]]<-tmpPredTime
+    }
+  }
+  for(i in ids){
+    if(is.null(predTime[[i]])){
+      iTime <- range(obsData[which(obsData$ID==i),][[Time.name]])
+      predTime[[i]] <- seq(iTime[1],iTime[2],timeStep)
+    }
+  }
+  if(!is.null(names(predTime))) {
+    if(!all(names(predTime) %in% ids)) stop("predTime names must be character strings that match elements of obsData$ID. See example in ?crawlWrap.")
+    predTime <- predTime[ids]
+  } else names(predTime) <- ids
+  
   cat('Fitting',length(ids),'track(s) using crawl::crwMLE...')
   registerDoParallel(cores=ncores) 
   model_fits <- 
@@ -366,27 +387,6 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   
   convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
   model_fits <- model_fits[convFits]
-  
-  if(is.null(predTime)){
-    predTime<-list()
-  }
-  if(!is.list(predTime)){
-    tmpPredTime<-predTime
-    predTime<-list()
-    for(i in ids){
-      predTime[[i]]<-tmpPredTime
-    }
-  }
-  for(i in ids){
-    if(is.null(predTime[[i]])){
-      iTime <- range(obsData[which(obsData$ID==i),][[Time.name]])
-      predTime[[i]] <- seq(iTime[1],iTime[2],timeStep)
-    }
-  }
-  if(!is.null(names(predTime))) {
-    if(!all(names(predTime) %in% ids)) stop("predTime names must match obsData$ID")
-    predTime <- predTime[ids]
-  } else names(predTime) <- ids
   
   if(inherits(obsData[[Time.name]],"POSIXct")){
     td <- utils::capture.output(difftime(predTime[[1]][2],predTime[[1]][1],units="auto"))

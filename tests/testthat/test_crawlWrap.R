@@ -35,8 +35,9 @@ test_that("Exceptions are thrown",{
   expect_error(crawlWrap(obsData,ncores=1,initial.state=init,err.model=err.model,theta=theta,fixPar=fixPar,attempts=100,retryFits=0),NA)
   
   # temporally regular data without measurement error data
+  obsData <- simData(model=example$m)
   fixPar<-c(NA,NA)
-  expect_error(crawlWrap(simData(model=example$m),ncores=1,initial.state=init,theta=theta,fixPar=fixPar))
+  expect_error(crawlWrap(obsData,ncores=1,initial.state=init,theta=theta,fixPar=fixPar))
   
   setRNG::setRNG(oldRNG)
   
