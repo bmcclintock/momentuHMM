@@ -817,6 +817,11 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(states)
       data <- cbind(data,states=allStates)
     
+    for(i in distnames){
+      if(dist[[i]] %in% angledists)
+        class(data[[i]]) <- c(class(data[[i]]), "angle")
+    }
+    
     # account for observation error (if any)
     out<-simObsData(momentuHMMData(data),lambda,errorEllipse)
     

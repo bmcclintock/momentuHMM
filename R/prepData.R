@@ -196,6 +196,7 @@ prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
   
   if(!is.null(coordNames)) {
     data <- cbind(data,x=x,y=y)
+    class(data$angle)<-c(class(data$angle), "angle")
     if(nbSpatialCovs){
       spCovs<-numeric()
       xy<-data
