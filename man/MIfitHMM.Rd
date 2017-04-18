@@ -12,7 +12,7 @@ MIfitHMM(miData, nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   knownStates = NULL, fixPar = NULL, retryFits = 0, covNames = NULL,
   spatialCovs = NULL, centers = NULL, angleCovs = NULL, method = "IS",
   parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
-  force.quad, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
+  force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
   thetaSamp = NULL)
 }
 \arguments{
@@ -111,7 +111,7 @@ See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwDat
 Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 
 \item{force.quad}{A logical indicating whether or not to force the execution 
-of the quadrature method for large parameter vectors. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+of the quadrature method for large parameter vectors. See \code{\link[crawl]{crwSimulator}}. Default: TRUE. Ignored unless \code{miData} is a \code{\link{crwData}} object and \code{method=``quadrature''}.}
 
 \item{fullPost}{Logical indicating whether to draw parameter values as well to simulate full posterior. See \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 

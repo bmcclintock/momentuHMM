@@ -80,7 +80,7 @@
 #' @param scaleSim Scale multiplier for the covariance matrix of the t approximation. See 'scale' argument in \code{\link[crawl]{crwSimulator}}. 
 #' Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param force.quad A logical indicating whether or not to force the execution 
-#' of the quadrature method for large parameter vectors. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' of the quadrature method for large parameter vectors. See \code{\link[crawl]{crwSimulator}}. Default: TRUE. Ignored unless \code{miData} is a \code{\link{crwData}} object and \code{method=``quadrature''}.
 #' @param fullPost Logical indicating whether to draw parameter values as well to simulate full posterior. See \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param dfPostIS Degrees of freedom for multivariate t distribution approximation to parameter posterior. See 'df' argument in \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param scalePostIS Extra scaling factor for t distribution approximation. See 'scale' argument in \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
@@ -177,7 +177,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
                    DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL, 
                    stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
                    covNames=NULL,spatialCovs=NULL,centers=NULL,angleCovs=NULL,
-                   method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad,
+                   method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad = TRUE,
                    fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL
                    ){
 
