@@ -9,8 +9,9 @@
 #' also be accepted, in which case the \code{coord} values will be taken from the spatial data set and ignored in the arguments.  
 #' Note that \code{\link[crawl]{crwMLE}} requires that longitude/latitude coordinates be projected to UTM (i.e., easting/northing). For further details see \code{\link[crawl]{crwMLE}}.
 #' @param timeStep Length of the time step at which to predict regular locations from the fitted model. Unless \code{predTime} is specified, the sequence of times
-#' is \code{seq(a_i,b_i,timeStep)} where a_i and b_i are the times of the first and last observations for individual i. \code{timeStep} must be numeric (regardless of
-#' whether \code{obsData[[Time.name]]} is numeric or POSIXct). \code{timeStep} is not used for individuals for which \code{predTime} is specified.
+#' is \code{seq(a_i,b_i,timeStep)} where a_i and b_i are the times of the first and last observations for individual i. \code{timeStep} can be numeric (regardless of
+#' whether \code{obsData[[Time.name]]} is numeric or POSIXct) or a character string (if \code{obsData[[Time.name]]} is of class POSIXct) containing one of "sec", "min", "hour", "day", "DSTday", "week", "month", "quarter" or "year". 
+#' This can optionally be preceded by a positive integer and a space, or followed by "s" (e.g., ``2 hours''; see \code{\link[base]{seq.POSIXt}}). \code{timeStep} is not used for individuals for which \code{predTime} is specified.
 #' @param ncores Number of cores to use for parallel processing.
 #' @param retryFits Number of times to attempt to achieve convergence and valid (i.e., not NaN) variance estimates after the initial model fit. \code{retryFits} differs
 #' from \code{attempts} because \code{retryFits} iteratively uses random perturbations of the current parameter estimates as the initial values for likelihood optimization, while 
@@ -368,16 +369,18 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   
   if(is.null(predTime)){
     predTime<-list()
-    for(i in ids){
-      iTime <- range(obsData[which(obsData$ID==i),][[Time.name]])
-      predTime[[i]] <- seq(iTime[1],iTime[2],timeStep)
-    }
   }
   if(!is.list(predTime)){
     tmpPredTime<-predTime
     predTime<-list()
     for(i in ids){
       predTime[[i]]<-tmpPredTime
+    }
+  }
+  for(i in ids){
+    if(is.null(predTime[[i]])){
+      iTime <- range(obsData[which(obsData$ID==i),][[Time.name]])
+      predTime[[i]] <- seq(iTime[1],iTime[2],timeStep)
     }
   }
   if(!is.null(names(predTime))) {
