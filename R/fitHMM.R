@@ -397,7 +397,7 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
 
-  mHind <- (is.null(DM) & is.null(userBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(formula),"term.labels")) & stationary & retryFits==0) # indicator for moveHMMwrap below
+  mHind <- (is.null(DM) & is.null(userBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(formula),"term.labels")) & stationary) # indicator for moveHMMwrap below
   
   inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames)
   p <- inputs$p
@@ -522,36 +522,48 @@ fitHMM <- function(data,nbStates,dist,
   message("\n Transition probability matrix formula: ",paste0(formula,collapse=""))
   message("=======================================================================")
 
-  # just use moveHMM if simpler models are specified
-  if(all(distnames %in% c("step","angle")) & mHind){
-    out<-moveHMMwrap(data,nbStates,dist,Par0,beta0,delta0,inputs$estAngleMean,formula,stationary,verbose,nlmPar,fit)
-    mod<-out$mod
-    mle<-out$mle
-  } 
-  else if(fit) {
-    # check additional parameters for nlm
-    gradtol <- ifelse(is.null(nlmPar$gradtol),1e-6,nlmPar$gradtol)
-    typsize = rep(1, length(wpar))
-    defStepmax <- max(1000 * sqrt(sum((wpar/typsize)^2)),1000)
-    stepmax <- ifelse(is.null(nlmPar$stepmax),defStepmax,nlmPar$stepmax)
-    steptol <- ifelse(is.null(nlmPar$steptol),1e-6,nlmPar$steptol)
-    iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
-
+  if(fit) {
+    
     fitCount<-0
     
     while(fitCount<=retryFits){
       
-      startTime <- proc.time()
-      
-      # call to optimizer nlm
-      withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,wpar,nbStates,formula,p$bounds,p$parSize,data,dist,covs,
-                                             inputs$estAngleMean,inputs$circularAngleMean,zeroInflation,oneInflation,
-                                             stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
-                                             print.level=verbose,gradtol=gradtol,
-                                             stepmax=stepmax,steptol=steptol,
-                                             iterlim=iterlim,hessian=TRUE),error=function(e) e),warning=h)
+      # just use moveHMM if simpler models are specified
+      if(all(distnames %in% c("step","angle")) & mHind){
+        fullPar<-w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind)
+        Par<-lapply(fullPar[distnames],function(x) x[,1])
+        for(i in distnames){
+          if(dist[[i]] %in% angledists & !inputs$estAngleMean[[i]])
+            Par[[i]]<-Par[[i]][-(1:nbStates)]
+        }
+        startTime <- proc.time()
+        withCallingHandlers(curmod<-tryCatch(moveHMMwrap(data,nbStates,dist,Par,fullPar$beta,fullPar$delta,inputs$estAngleMean,formula,stationary,verbose,nlmPar,fit)$mod,error=function(e) e),warning=h)
+        endTime <- proc.time()-startTime
+        #curmod<-out$mod
+        #mle<-out$mle
+      } else {
+
+        # check additional parameters for nlm
+        gradtol <- ifelse(is.null(nlmPar$gradtol),1e-6,nlmPar$gradtol)
+        typsize = rep(1, length(wpar))
+        defStepmax <- max(1000 * sqrt(sum((wpar/typsize)^2)),1000)
+        stepmax <- ifelse(is.null(nlmPar$stepmax),defStepmax,nlmPar$stepmax)
+        steptol <- ifelse(is.null(nlmPar$steptol),1e-6,nlmPar$steptol)
+        iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
   
-      endTime <- proc.time()-startTime
+  
+        startTime <- proc.time()
+  
+        # call to optimizer nlm
+        withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,wpar,nbStates,formula,p$bounds,p$parSize,data,dist,covs,
+                                               inputs$estAngleMean,inputs$circularAngleMean,zeroInflation,oneInflation,
+                                               stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
+                                               print.level=verbose,gradtol=gradtol,
+                                               stepmax=stepmax,steptol=steptol,
+                                               iterlim=iterlim,hessian=TRUE),error=function(e) e),warning=h)
+    
+        endTime <- proc.time()-startTime
+      }
       
       if(fitCount==0){
         if(inherits(curmod,"error")) stop(curmod)
