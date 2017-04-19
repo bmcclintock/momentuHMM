@@ -43,11 +43,13 @@ getCovNames<-function(m,p,distname){
             DMparterms[[p$parNames[[distname]][j]]][[jj]][k]<-all.vars(as.formula(paste0("~",DMparterms[[p$parNames[[distname]][j]]][[jj]][k])))
           }
         }
+        DMparterms[[p$parNames[[distname]][j]]][[jj]]<-unique(DMparterms[[p$parNames[[distname]][j]]][[jj]])
       }
     }
     for(j in 1:length(DMterms)){
       DMterms[j]<-all.vars(as.formula(paste0("~",DMterms[j])))
     }
+    DMterms <- unique(DMterms)
   }
   list(DMterms=DMterms,DMparterms=DMparterms)
 }
