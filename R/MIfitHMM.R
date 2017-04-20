@@ -211,7 +211,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
       crwSim <- foreach(i = 1:length(ids), .export="crwSimulator") %dopar% {
         if(!is.null(model_fits[[i]]$err.model))
           crawl::crwSimulator(model_fits[[i]],predTime=predData[[Time.name]][which(predData$ID==ids[i] & predData$locType=="p")], method = method, parIS = parIS,
-                                  df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim)
+                                  df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, force.quad)
       }
       stopImplicitCluster()
       
