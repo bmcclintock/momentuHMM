@@ -4,10 +4,12 @@
 \alias{plotPR}
 \title{Plot pseudo-residuals}
 \usage{
-plotPR(m)
+plotPR(m, lag.max = NULL)
 }
 \arguments{
 \item{m}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.}
+
+\item{lag.max}{maximum lag at which to calculate the acf.  See \code{\link[stats]{acf}}.}
 }
 \description{
 Plots time series, qq-plots (against the standard normal distribution), and sample
