@@ -142,23 +142,26 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     }
     Par$gamma <- list(est=est,se=se,lower=lower,upper=upper)
     dimnames(Par$gamma$est) <- dimnames(Par$gamma$se) <- dimnames(Par$gamma$lower) <- dimnames(Par$gamma$upper) <- list(m$stateNames,m$stateNames)
-  }
+
   
-  wpar<-m$mod$estimate
-  foo <- length(wpar)-nbStates+2
-  quantSup <- qnorm(1-(1-alpha)/2)
-  lower<-upper<-se<-rep(NA,nbStates)
-  for(i in 1:nbStates){
-    dN<-numDeriv::grad(get_delta,wpar[foo:length(wpar)],i=i)
-    se[i]<-suppressWarnings(sqrt(dN%*%Sigma[foo:length(wpar),foo:length(wpar)]%*%dN))
-    lower[i]<-1/(1+exp(-(log(m$mle$delta[i]/(1-m$mle$delta[i]))-quantSup*(1/(m$mle$delta[i]-m$mle$delta[i]^2))*se[i])))#m$mle$delta[i]-quantSup*se[i]
-    upper[i]<-1/(1+exp(-(log(m$mle$delta[i]/(1-m$mle$delta[i]))+quantSup*(1/(m$mle$delta[i]-m$mle$delta[i]^2))*se[i])))#m$mle$delta[i]+quantSup*se[i]
+    wpar<-m$mod$estimate
+    foo <- length(wpar)-nbStates+2
+    quantSup <- qnorm(1-(1-alpha)/2)
+    lower<-upper<-se<-rep(NA,nbStates)
+    for(i in 1:nbStates){
+      dN<-numDeriv::grad(get_delta,wpar[foo:length(wpar)],i=i)
+      se[i]<-suppressWarnings(sqrt(dN%*%Sigma[foo:length(wpar),foo:length(wpar)]%*%dN))
+      lower[i]<-1/(1+exp(-(log(m$mle$delta[i]/(1-m$mle$delta[i]))-quantSup*(1/(m$mle$delta[i]-m$mle$delta[i]^2))*se[i])))#m$mle$delta[i]-quantSup*se[i]
+      upper[i]<-1/(1+exp(-(log(m$mle$delta[i]/(1-m$mle$delta[i]))+quantSup*(1/(m$mle$delta[i]-m$mle$delta[i]^2))*se[i])))#m$mle$delta[i]+quantSup*se[i]
+    }
+    est<-matrix(m$mle$delta,nrow=1,ncol=nbStates,byrow=TRUE)
+    lower<-matrix(lower,nrow=1,ncol=nbStates,byrow=TRUE)
+    upper<-matrix(upper,nrow=1,ncol=nbStates,byrow=TRUE)  
+    se<-matrix(se,nrow=1,ncol=nbStates,byrow=TRUE)
+    Par$delta <- list(est=est,se=se,lower=lower,upper=upper)  
+  } else {
+    Par$delta <- list(est=matrix(1),se=matrix(NA),lower=matrix(NA),upper=matrix(NA))
   }
-  est<-matrix(m$mle$delta,nrow=1,ncol=nbStates,byrow=TRUE)
-  lower<-matrix(lower,nrow=1,ncol=nbStates,byrow=TRUE)
-  upper<-matrix(upper,nrow=1,ncol=nbStates,byrow=TRUE)  
-  se<-matrix(se,nrow=1,ncol=nbStates,byrow=TRUE)
-  Par$delta <- list(est=est,se=se,lower=lower,upper=upper)  
   colnames(Par$delta$est) <- m$stateNames
   colnames(Par$delta$se) <- m$stateNames
   colnames(Par$delta$lower) <- m$stateNames

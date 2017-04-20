@@ -36,27 +36,29 @@ print.momentuHMM <- function(x,...)
     }
   }
   
-  if(!is.null(m$mle$beta)) {
+  if(length(m$stateNames)>1){
+    #if(!is.null(m$mle$beta)) {
+      cat("\n")
+      cat("Regression coeffs for the transition probabilities:\n")
+      cat("--------------------------------------------------\n")
+      print(m$mle$beta)
+    #}
+  
+    if(!is.null(m$mle$gamma)) {
+      cat("\n")
+      cat("Transition probability matrix:\n")
+      cat("-----------------------------\n")
+      print(m$mle$gamma)
+    } else {
+      cat("\n")
+      cat("Transition probability matrix (based on mean covariate values):\n")
+      cat("--------------------------------------------------------------\n")
+      print(m$CIreal$gamma$est)    
+    }
+  
     cat("\n")
-    cat("Regression coeffs for the transition probabilities:\n")
-    cat("--------------------------------------------------\n")
-    print(m$mle$beta)
+    cat("Initial distribution:\n")
+    cat("--------------------\n")
+    print(m$mle$delta)
   }
-
-  if(!is.null(m$mle$gamma)) {
-    cat("\n")
-    cat("Transition probability matrix:\n")
-    cat("-----------------------------\n")
-    print(m$mle$gamma)
-  } else {
-    cat("\n")
-    cat("Transition probability matrix (based on mean covariate values):\n")
-    cat("--------------------------------------------------------------\n")
-    print(m$CIreal$gamma$est)    
-  }
-
-  cat("\n")
-  cat("Initial distribution:\n")
-  cat("--------------------\n")
-  print(m$mle$delta)
 }
