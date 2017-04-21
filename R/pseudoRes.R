@@ -93,6 +93,8 @@ pseudoRes <- function(m)
     pgenMat <- matrix(NA,nbObs,nbStates)
     sp <- par[[j]]
     genInd <- which(!is.na(data[[j]]))
+    zeroInflation <- m$conditions$zeroInflation[[j]]
+    oneInflation <- m$conditions$oneInflation[[j]]
   
     for(state in 1:nbStates) {
       
@@ -102,12 +104,12 @@ pseudoRes <- function(m)
         
         genArgs <- list(data[[j]][genInd])
         
-        if(!m$conditions$zeroInflation[[j]]) {
-          zeromass <- 0
-        }
-        else {
-          zeromass <- genPar[nrow(genPar)-nbStates+state,genInd]
-          genPar <- genPar[-(nrow(genPar)-(nbStates-1):0),]
+        zeromass <- 0
+        onemass <- 0
+        if(zeroInflation | oneInflation) {
+          if(zeroInflation) zeromass <- genPar[nrow(genPar)-nbStates*oneInflation-nbStates+state,genInd]
+          if(oneInflation) onemass <- genPar[nrow(genPar)-nbStates+state,genInd]
+          genPar <- genPar[-(nrow(genPar)-(nbStates*(zeroInflation+oneInflation)-1):0),]
         }
         for(k in 1:(nrow(genPar)/nbStates))
           genArgs[[k+1]] <- genPar[(k-1)*nbStates+state,genInd]
@@ -119,7 +121,25 @@ pseudoRes <- function(m)
           genArgs[[3]] <- 1/scale # dgamma expects rate=1/scale
         }
         
-        pgenMat[genInd,state] <- zeromass+(1-zeromass)*do.call(Fun[[j]],genArgs)
+        if(zeroInflation | oneInflation) {
+          if(zeroInflation & !oneInflation){
+            pgenMat[genInd,state] <- ifelse(data[[j]][genInd]==0,
+                                      zeromass, # if gen==0
+                                      (1-zeromass)*do.call(Fun[[j]],genArgs)) # if gen != 0
+          } else if(oneInflation & !zeroInflation){
+            pgenMat[genInd,state] <- ifelse(data[[j]][genInd]==1,
+                                      onemass, # if gen==0
+                                      (1-onemass)*do.call(Fun[[j]],genArgs)) # if gen != 1          
+          } else {
+            pgenMat[genInd,state][data[[j]][genInd]==0] <- zeromass[data[[j]][genInd]==0]
+            pgenMat[genInd,state][data[[j]][genInd]==1] <- (1.-zeromass[data[[j]][genInd]==1]) * onemass[data[[j]][genInd]==1]
+            pgenMat[genInd,state][data[[j]][genInd]>0 & data[[j]][genInd]<1] <- (1.-zeromass[data[[j]][genInd]>0 & data[[j]][genInd]<1]) * (1.-onemass[data[[j]][genInd]>0 & data[[j]][genInd]<1]) * do.call(Fun[[j]],genArgs)[data[[j]][genInd]>0 & data[[j]][genInd]<1] # if gen !=0 and gen!=1
+          }
+        }
+        else pgenMat[genInd,state] <- do.call(Fun[[j]],genArgs)
+        
+        
+        #pgenMat[genInd,state] <- zeromass+(1-zeromass)*do.call(Fun[[j]],genArgs)
         #for(i in 1:nbObs) {
         #  if(!is.na(data[[j]][i])) {
         #    genArgs[[1]] <- data[[j]][i]
