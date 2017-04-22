@@ -24,6 +24,7 @@
 #' @param ask If \code{TRUE}, the execution pauses between each plot.
 #' @param return If \code{TRUE}, the function returns a ggplot object (which can be edited and
 #' plotted manually). If \code{FALSE}, the function automatically plots the map (default).
+#' @param stateNames Optional character vector of length \code{unique(states)} indicating state names. Ignored unless \code{states} is provided.
 #'
 #' @details If the plot displays the message "Sorry, we have no imagery here", try a
 #' lower level of zoom.
@@ -38,7 +39,7 @@
 #' @export
 
 plotSat <- function(data,zoom=NULL,location=NULL,segments=TRUE,compact=TRUE,col=NULL,alpha=1,size=1,
-                    states=NULL,animals=NULL,ask=TRUE,return=FALSE)
+                    states=NULL,animals=NULL,ask=TRUE,return=FALSE,stateNames=NULL)
 {
   #####################
   ## Check arguments ##
@@ -195,9 +196,10 @@ plotSat <- function(data,zoom=NULL,location=NULL,segments=TRUE,compact=TRUE,col=
     
     if(nbCol==1) # no legend if only one colour
       mapMove <- mapMove + scale_color_manual(values=pal) + guides(col=FALSE)
-    else
-      mapMove <- mapMove + scale_color_manual(name = colname, values=pal)
-    
+    else {
+      if(!is.null(stateNames)) mapMove <- mapMove + scale_color_manual(name = colname, values=pal, labels=stateNames)
+      else mapMove <- mapMove + scale_color_manual(name = colname, values=pal)
+    }
     if(return) {
       par(ask=FALSE)
       return(mapMove) # return map object
