@@ -83,12 +83,14 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
     }
   }
   
-  if(any(unlist(lapply(Par,length))!=unlist(lapply(simpDM,ncol))) & ParChecks)
-    stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(simpDM,ncol)))),collapse=", "))
-  
-  if(sum((unlist(parSize)>0)*unlist(lapply(simpDM,ncol)))!=length(unlist(Par)) & ParChecks) {
-    error <- "Wrong number of initial parameters"
-    stop(error)
+  if(ParChecks){
+    if(any(unlist(lapply(Par,length))!=unlist(lapply(simpDM,ncol))))
+      stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(simpDM,ncol)))),collapse=", "))
+    
+    if(sum((unlist(parSize)>0)*unlist(lapply(simpDM,ncol)))!=length(unlist(Par))) {
+      error <- "Wrong number of initial parameters"
+      stop(error)
+    }
   }
   
   if(is.null(cons)){
