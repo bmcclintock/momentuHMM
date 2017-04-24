@@ -53,7 +53,7 @@
 #'
 #' @return A list of parameter values that can be used as starting values (\code{Par0}) in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
 #' 
-#' @seealso \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
+#' @seealso \code{\link{getPar0}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 #'
 #' @examples
 #' # data is a momentuHMMData object, automatically loaded with the package
