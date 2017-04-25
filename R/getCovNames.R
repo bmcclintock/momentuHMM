@@ -22,32 +22,26 @@ getCovNames<-function(m,p,distname){
         }
       }
       DMterms<-unique(m$conditions$DM[[distname]][suppressWarnings(which(is.na(as.numeric(m$conditions$DM[[distname]]))))])
+      for(j in 1:length(p$parNames[[distname]])){
+        for(jj in 1:nbStates){
+          if(length(DMparterms[[p$parNames[[distname]][j]]][[jj]])){
+            DMparterms[[p$parNames[[distname]][j]]][[jj]]<-all.vars(as.formula(paste0("~",paste0(DMparterms[[p$parNames[[distname]][j]]][[jj]],collapse="+"))))
+          }
+        }
+      }
+      if(length(DMterms))
+        DMterms<-all.vars(as.formula(paste0("~",paste0(DMterms,collapse="+"))))
     } else {
       m$conditions$DM[[distname]]<-m$conditions$DM[[distname]][p$parNames[[distname]]]
       for(j in 1:length(p$parNames[[distname]])){
         DMparterms[[p$parNames[[distname]][j]]] <- vector('list',nbStates)
-        tmpparnames <- rownames(attr(terms(m$conditions$DM[[distname]][[p$parNames[[distname]][j]]]),"factors"))
-        if(!is.null(tmpparnames)) {
-          for(jj in 1:nbStates){
-            DMparterms[[p$parNames[[distname]][j]]][[jj]]<-tmpparnames
-          }
+        formulaStates<- stateFormulas(m$conditions$DM[[distname]][[j]],nbStates)
+        for(jj in 1:nbStates){
+          tmpparnames<-all.vars(formulaStates[[jj]])
+          if(length(tmpparnames)) DMparterms[[p$parNames[[distname]][j]]][[jj]]<-tmpparnames
         }
         DMterms <- c(DMterms,unlist(DMparterms[[p$parNames[[distname]][j]]]))
       }
-    }
-    DMterms <- unique(DMterms)
-    for(j in 1:length(p$parNames[[distname]])){
-      for(jj in 1:nbStates){
-        if(length(DMparterms[[p$parNames[[distname]][j]]][[jj]])){
-          for(k in 1:length(DMparterms[[p$parNames[[distname]][j]]][[jj]])){
-            DMparterms[[p$parNames[[distname]][j]]][[jj]][k]<-all.vars(as.formula(paste0("~",DMparterms[[p$parNames[[distname]][j]]][[jj]][k])))
-          }
-          DMparterms[[p$parNames[[distname]][j]]][[jj]]<-unique(DMparterms[[p$parNames[[distname]][j]]][[jj]])
-        }
-      }
-    }
-    for(j in 1:length(DMterms)){
-      DMterms[j]<-all.vars(as.formula(paste0("~",DMterms[j])))
     }
     DMterms <- unique(DMterms)
   }
