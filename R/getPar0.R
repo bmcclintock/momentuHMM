@@ -66,7 +66,7 @@
 #'                            
 #' # to be extracted, new design matrix column names must match 
 #' # column names of model$conditions$fullDM
-#' colnames(newDM$step)<-paste0(rep(c("mean_","sd_"),each=2*nbStates),
+#' colnames(newDM2$step)<-paste0(rep(c("mean_","sd_"),each=2*nbStates),
 #'                       rep(1:nbStates,each=2),
 #'                       rep(c(":(Intercept)",":cov1"),2*nbStates))
 #' Par0 <- getPar0(model,DM=newDM2)
