@@ -38,7 +38,7 @@ AIC.momentuHMM <- function(object,...,k=2)
 
     for(i in 1:length(models)) {
       m <- models[[i]]
-      nbPar <- length(m$mod$estimate)
+      nbPar <- length(m$mod$estimate)-sum(!is.na(unlist(m$conditions$fixPar)))
       maxLogLike <- -m$mod$minimum
       AIC[i] <- -2*maxLogLike+k*nbPar
     }
