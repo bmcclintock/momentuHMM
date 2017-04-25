@@ -21,25 +21,36 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       DM[[i]]<-DM[[i]][parNames[[i]]]
       if(any(unlist(lapply(DM[[i]],function(x) attr(terms(x),"response")!=0))))
         stop("The response variable should not be specified in the DM formula for ",i)
-      if(circularAngleMean[[i]]){
-        tmpCov <- list()
-        for(j in names(DM[[i]])){
-          tmpCov[[j]]<-model.matrix(DM[[i]][[j]],data)
-          if(j=="mean" & attr(terms.formula(DM[[i]][[j]]),"intercept")) tmpCov[[j]] <- tmpCov[[j]][,-1,drop=FALSE]
-          if(!length(tmpCov[[j]])) stop("invalid circular-circular regression formula for ",i," ",j)
+      
+      formulaStates <- vector('list',length(parNames[[i]]))
+      for(j in parNames[[i]])
+        formulaStates[[j]]<- stateFormulas(DM[[i]][[j]],nbStates)
+      
+      #if(circularAngleMean[[i]]){
+      tmpCov <- vector('list',length(parNames[[i]]))
+      names(tmpCov) <- parNames[[i]]
+      for(j in names(DM[[i]])){
+        tmpCov[[j]] <- vector('list',nbStates)
+        for(state in 1:nbStates){
+          tmpCov[[j]][[state]]<-model.matrix(formulaStates[[j]][[state]],data)
+          if(circularAngleMean[[i]]){
+            if(j=="mean" & attr(terms.formula(formulaStates[[j]][[state]]),"intercept")) tmpCov[[j]][[state]] <- tmpCov[[j]][[state]][,-1,drop=FALSE]
+            if(!length(tmpCov[[j]][[state]])) stop("invalid circular-circular regression formula for ",i," ",j)
+          }
         }
-      } else tmpCov<-lapply(DM[[i]],function(x) model.matrix(x,data))
-      parSizeDM<-unlist(lapply(tmpCov,ncol))
-      tmpDM<-array(0,dim=c(parSize[[i]]*nbStates,sum(parSizeDM)*nbStates,nbObs))
-      DMnames<-character(sum(parSizeDM)*nbStates)
+      }
+      #} else tmpCov<-lapply(DM[[i]],function(x) model.matrix(x,data))
+      parSizeDM<-unlist(lapply(tmpCov,function(x) lapply(x,ncol)))
+      tmpDM<-array(0,dim=c(parSize[[i]]*nbStates,sum(parSizeDM),nbObs))
+      DMnames<-character(sum(parSizeDM))
       parInd<-0
       for(j in 1:length(parNames[[i]])){
-        if(nrow(tmpCov[[j]])!=nbObs) stop("covariates cannot contain missing values")
         for(state in 1:nbStates){
-          tmpDM[(j-1)*nbStates+state,(state-1)*parSizeDM[j]+parInd*nbStates+1:parSizeDM[j],]<-t(tmpCov[[j]])
-          DMnames[(state-1)*parSizeDM[j]+parInd*nbStates+1:parSizeDM[j]]<-paste0(parNames[[i]][j],"_",state,":",colnames(tmpCov[[j]]))
+          if(nrow(tmpCov[[j]][[state]])!=nbObs) stop("covariates cannot contain missing values")
+          tmpDM[(j-1)*nbStates+state,parInd+1:parSizeDM[(j-1)*nbStates+state],]<-t(tmpCov[[j]][[state]])
+          DMnames[parInd+1:parSizeDM[(j-1)*nbStates+state]]<-paste0(parNames[[i]][j],"_",state,":",colnames(tmpCov[[j]][[state]]))
+          parInd<-sum(parSizeDM[1:((j-1)*nbStates+state)])
         }
-        parInd<-sum(parSizeDM[1:j])
       }
       if(ncol(tmpDM)!=length(Par[[i]]) & ParChecks) stop("Based on DM$",i,", Par$",i," must be of length ",ncol(tmpDM))
     } else {

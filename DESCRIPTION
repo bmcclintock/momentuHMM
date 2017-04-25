@@ -32,7 +32,8 @@ Imports:
     Brobdingnag,
     gstat,
     conicfit,
-    nleqslv
+    nleqslv,
+    survival
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,
