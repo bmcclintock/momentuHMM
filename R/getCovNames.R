@@ -42,8 +42,8 @@ getCovNames<-function(m,p,distname){
           for(k in 1:length(DMparterms[[p$parNames[[distname]][j]]][[jj]])){
             DMparterms[[p$parNames[[distname]][j]]][[jj]][k]<-all.vars(as.formula(paste0("~",DMparterms[[p$parNames[[distname]][j]]][[jj]][k])))
           }
+          DMparterms[[p$parNames[[distname]][j]]][[jj]]<-unique(DMparterms[[p$parNames[[distname]][j]]][[jj]])
         }
-        DMparterms[[p$parNames[[distname]][j]]][[jj]]<-unique(DMparterms[[p$parNames[[distname]][j]]][[jj]])
       }
     }
     for(j in 1:length(DMterms)){
