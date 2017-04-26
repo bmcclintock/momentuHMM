@@ -56,7 +56,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   if(is.null(covs)){
     tempCovs <- m$data[1,]
     for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
-      if("angle" %in% class(m$data[[j]])) tempCovs[[j]] <- CircStats::circ.mean(m$data[[j]][!is.na(m$data[[j]])])
+      if(inherits(m$data[[j]],"angle")) tempCovs[[j]] <- CircStats::circ.mean(m$data[[j]][!is.na(m$data[[j]])])
       else tempCovs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
     }
   } else {
@@ -65,11 +65,11 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     if(!all(names(covs) %in% names(m$data))) stop('invalid covs specified')
     if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(m$data$ID))
     for(j in names(m$data)[which(!(names(m$data) %in% names(covs)))]){
-      if(class(m$data[[j]])=="factor") covs[[j]] <- m$data[[j]][1]
+      if(inherits(m$data[[j]],"factor")) covs[[j]] <- m$data[[j]][1]
       else covs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
     }
     for(j in names(m$data)[which(names(m$data) %in% names(covs))]){
-      if(class(m$data[[j]])=="factor") covs[[j]] <- factor(covs[[j]],levels=levels(m$data[[j]]))
+      if(inherits(m$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(m$data[[j]]))
       if(is.na(covs[[j]])) stop("check value for ",j)
     }    
     tempCovs <- covs[1,]

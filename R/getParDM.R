@@ -183,7 +183,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
   tempCovs <- data[1,,drop=FALSE]
   if(length(data)){
     for(j in names(data)[which(unlist(lapply(data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
-      if("angle" %in% class(data[[j]])) tempCovs[[j]] <- CircStats::circ.mean(data[[j]][!is.na(data[[j]])])
+      if(inherits(data[[j]],"angle")) tempCovs[[j]] <- CircStats::circ.mean(data[[j]][!is.na(data[[j]])])
       else tempCovs[[j]]<-mean(data[[j]],na.rm=TRUE)
     }
   }
