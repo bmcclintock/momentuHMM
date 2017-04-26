@@ -35,7 +35,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
           tmpCov[[j]][[state]]<-model.matrix(formulaStates[[j]][[state]],data)
           if(circularAngleMean[[i]]){
             if(j=="mean" & attr(terms.formula(formulaStates[[j]][[state]]),"intercept")) tmpCov[[j]][[state]] <- tmpCov[[j]][[state]][,-1,drop=FALSE]
-            if(!length(tmpCov[[j]][[state]])) stop("invalid circular-circular regression formula for ",i," ",j)
+            #if(!length(tmpCov[[j]][[state]])) stop("invalid circular-circular regression formula for ",i," ",j)
           }
         }
       }
@@ -45,7 +45,8 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       DMnames<-character(sum(parSizeDM))
       parInd<-0
       for(j in 1:length(parNames[[i]])){
-        for(state in 1:nbStates){
+        parmStates<-which(unlist(lapply(tmpCov[[j]],length))>0)
+        for(state in parmStates){
           if(nrow(tmpCov[[j]][[state]])!=nbObs) stop("covariates cannot contain missing values")
           tmpDM[(j-1)*nbStates+state,parInd+1:parSizeDM[(j-1)*nbStates+state],]<-t(tmpCov[[j]][[state]])
           DMnames[parInd+1:parSizeDM[(j-1)*nbStates+state]]<-paste0(parNames[[i]][j],"_",state,":",colnames(tmpCov[[j]][[state]]))
