@@ -19,13 +19,12 @@ distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. If \c
 \item{circularAngleMean}{Named list indicating whether circular-linear (FALSE) or circular-circular (TRUE) 
 regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model. If \code{circularAngleMean=NULL} (the default), then \code{circularAngleMean=model$conditions$circularAngleMean}}
 
-\item{formula}{Regression formula for the transition probability covariates of the new model.  If \code{formula=NULL} (the default), then \code{formula=model$conditions$formula}.}
+\item{formula}{Regression formula for the transition probability covariates of the new model (see \code{\link{fitHMM}}).  If \code{formula=NULL} (the default), then \code{formula=model$conditions$formula}.}
 
-\item{DM}{Named list indicating the design matrices to be used for the probability distribution parameters of each data stream in the new model. Only parameters with design matrix column names that match those in model$conditions$fullDM are extracted, so care must be taken in naming columns if any elements of \code{DM}
-are specified as matrices.
-stream for the new model. If \code{DM=NULL} (the default), then \code{DM=model$conditions$DM}.}
+\item{DM}{Named list indicating the design matrices to be used for the probability distribution parameters of each data stream in the new model (see \code{\link{fitHMM}}). Only parameters with design matrix column names that match those in model$conditions$fullDM are extracted, so care must be taken in naming columns if any elements of \code{DM}
+are specified as matrices instead of formulas. If \code{DM=NULL} (the default), then \code{DM=model$conditions$DM}.}
 
-\item{stateNames}{Character vector of length \code{nbStates} indicating the names of the states in the new model. If \code{stateNames=NULL} (the default), then \code{stateNames=model$stateNames[1:nbStates]}.}
+\item{stateNames}{Character vector of length \code{nbStates} indicating the names and order of the states in the new model. If \code{stateNames=NULL} (the default), then \code{stateNames=model$stateNames[1:nbStates]}.}
 }
 \value{
 A named list containing starting values suitable for \code{Par0} and \code{beta0} arguments in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}:

@@ -65,8 +65,8 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     if(!all(names(covs) %in% names(m$data))) stop('invalid covs specified')
     if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(m$data$ID))
     for(j in names(m$data)[which(!(names(m$data) %in% names(covs)))]){
-      if(inherits(m$data[[j]],"factor")) covs[[j]] <- m$data[[j]][1]
-      else covs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
+      if(any(class(m$data[[j]]) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime"))) covs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
+      else covs[[j]] <- m$data[[j]][1]
     }
     for(j in names(m$data)[which(names(m$data) %in% names(covs))]){
       if(inherits(m$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(m$data[[j]]))
@@ -74,7 +74,33 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     }    
     tempCovs <- covs[1,]
   }
-  covs <- model.matrix(m$conditions$formula,m$data)
+  
+  formula<-m$conditions$formula
+  stateForms<- terms(formula, specials = paste0("state",1:nbStates))
+  newformula<-formula
+  if(nbStates>1){
+    if(length(unlist(attr(stateForms,"specials")))){
+      newForm<-attr(stateForms,"term.labels")[-unlist(attr(stateForms,"specials"))]
+      for(i in 1:nbStates){
+        if(!is.null(attr(stateForms,"specials")[[paste0("state",i)]])){
+          for(j in 1:(nbStates-1)){
+            newForm<-c(newForm,gsub(paste0("state",i),paste0("betaCol",(i-1)*(nbStates-1)+j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("state",i)]]]))
+          }
+        }
+      }
+      newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
+    }
+    formulaStates<-stateFormulas(newformula,nbStates*(nbStates-1),spec="betaCol")
+    if(length(unlist(attr(terms(newformula, specials = c(paste0("betaCol",1:(nbStates*(nbStates-1))),"cosinor")),"specials")))){
+      allTerms<-unlist(lapply(formulaStates,function(x) attr(terms(x),"term.labels")))
+      newformula<-as.formula(paste("~",paste(allTerms,collapse="+")))
+      formterms<-attr(terms.formula(newformula),"term.labels")
+    } else {
+      formterms<-attr(terms.formula(newformula),"term.labels")
+      newformula<-formula
+    }
+  }
+  covs <- model.matrix(newformula,m$data)
   nbCovs <- ncol(covs)-1 # substract intercept column
 
   # inverse of Hessian
@@ -129,7 +155,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     i3 <- i2+nbStates*(nbStates-1)*(nbCovs+1)-1
     wpar <- m$mle$beta
     quantSup <- qnorm(1-(1-alpha)/2)
-    tempCovMat <- model.matrix(m$conditions$formula,tempCovs)
+    tempCovMat <- model.matrix(newformula,tempCovs)
     est <- get_gamma(wpar,tempCovMat,nbStates)
     lower<-upper<-se<-matrix(NA,nbStates,nbStates)
     for(i in 1:nbStates){

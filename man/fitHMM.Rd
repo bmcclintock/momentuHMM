@@ -59,7 +59,9 @@ used for any angular distributions for which the mean angle is to be estimated. 
 streams are ignored unless the corresponding element of \code{estAngleMean} is \code{TRUE}. Any \code{circularAngleMean} elements 
 corresponding to data streams that do not have angular distributions are ignored.}
 
-\item{formula}{Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effects).}
+\item{formula}{Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effect). In addition to allowing standard functions in R formulas
+(e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns and state- or parameter-specific formulas (see details).
+Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.}
 
 \item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
@@ -85,9 +87,9 @@ character strings for the covariate:
 where the 4 rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the 6 columns correspond to the regression 
 coefficients. 
 
-Design matrices specified using formulas automatically include effects on the parameters for all \code{nbStates} states. Thus 
-for models including covariates on a subset of the state-dependent parameters, the design matrix must be specified manually using matrices or through
-a combination of formulas and \code{fixPar} (i.e., fixing the working parameters to zero ).}
+Design matrices specified using formulas allow standard functions in R formulas
+(e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).  Special formula functions include \code{cosinor(cov,period)} for modeling cyclical patterns 
+and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.}
 
 \item{cons}{An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
 for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
@@ -170,6 +172,24 @@ Any circular-circular regression covariates for time step t should therefore be 
 direction of movement for time step t-1 (instead of true north).  In other words, circular-circular regression covariates for time step t should be the turning angle
 between the direction of movement for time step t-1 and the bearing of the covariate relative to true north for time step t.  If provided bearings relative to true north, 
 \code{\link{circAngles}} or \code{\link{prepData}} can perform this calculation for you.  
+
+\item State-specific formulas can be specified in \code{DM} using special formula functions. These special functions can take
+the names \code{paste0("state",1:nbStates)} (where the integer indicates the state-specific formula).  For example, 
+\code{DM=list(step=list(mean=~cov1+state1(cov2),sd=~cov2+state2(cov1)))} includes \code{cov1} on the mean parameter for all states, \code{cov2}
+on the mean parameter for state 1, \code{cov2} on the sd parameter for all states, and \code{cov1} on the sd parameter for state 2.
+
+\item State- and parameter-specific formulas can be specified for transition probabilities in \code{formula} using special formula functions.
+These special functions can take the names \code{paste0("state",1:nbStates)} (where the integer indicates the current state from which transitions occur),
+or \code{paste0("betaCol",nbStates*(nbStates-1))} (where the integer indicates the column of the \code{beta} matrix).  For example with \code{nbStates=3},
+\code{formula=~cov1+betaCol1(cov2)+state3(cov3)} includes \code{cov1} on all transition probability parameters, \code{cov2} on the \code{beta} column corresponding
+to the transition from state 1->2, and \code{cov3} on transition probabilities from state 3 (i.e., \code{beta} columns corresponding to state transitions 3->1 and 3->2).
+
+\item Cyclical relationships (e.g., hourly, monthly) may be modeled in \code{DM} or \code{formula} using the \code{consinor(x,period)} special formula function for covariate \code{x}
+and sine curve period of time length \code{period}. For example, if 
+the data are hourly, a 24-hour cycle can be modeled using \code{~cosinor(cov1,24)}, where the covariate \code{cov1} is a repeating sequential series
+of integers indicating the hour of day (\code{0,1,...,23,0,1,...,23,0,1,...}) (note that \code{fitHMM} will not do this for you, the appropriate covariate must be included in \code{data}; see example below). 
+The \code{cosinor(x,period)} function converts \code{x} to 2 covariates \code{cosinorCos(x)=cos(2*pi*x/period)} and \code{consinorSin(x)=sin(2*pi*x/period} for inclusion in the model (i.e., 2 additional parameters per state). The amplitude of the sine wave
+is thus \code{sqrt(B_cos^2 + B_sin^2)}, where \code{B_cos} and \code{B_sin} are the working parameters correponding to \code{cosinorCos(x)} and \code{cosinorSin(x)}, respectively (e.g., see Cornelissen 2014).
 }
 }
 \examples{
@@ -280,10 +300,37 @@ mDMcircm <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=ang
                   DM=list(angle=matrix(c("cov3",0,0,0,0,"cov3",0,0,0,0,1,0,0,0,0,1),4,4)))
                   
 print(mDMcircm)
+
+### 8. Cosinor and state-dependent formulas
+nbStates<-2
+dist<-list(step="gamma")
+Par<-list(step=c(100,1000,50,100))
+
+# include 24-hour cycle on all transition probabilities
+# include 12-hour cycle on transitions from state 2
+formula=~cosinor(hour24,24)+state2(cosinor(hour12,12))
+
+# specify appropriate covariates
+covs<-data.frame(hour24=0:23,hour12=0:11)
+
+beta<-matrix(c(-1.5,1,1,NA,NA,-1.5,-1,-1,1,1),5,2)
+# row names for beta not required but can be helpful
+rownames(beta)<-c("(Intercept)",
+                  "cosinorCos(hour24, 24)",
+                  "cosinorSin(hour24, 24)",
+                  "cosinorCos(hour12, 12)",
+                  "cosinorSin(hour12, 12)")
+data.cos<-simData(nbStates=nbStates,dist=dist,Par=Par,
+                      beta=beta,formula=formula,covs=covs)    
+
+m.cosinor<-fitHMM(data.cos,nbStates=nbStates,dist=dist,Par0=Par,formula=formula)
+m.cosinor    
 }
 
 }
 \references{
+Cornelissen, G. 2014. Cosinor-based rhythmometry. Theoretical Biology and Medical Modelling 11:16.
+
 Duchesne, T., Fortin, D., Rivest L-P. 2015. Equivalence between step selection functions and 
 biased correlated random walks for statistical inference on animal movement. PLoS ONE 10 (4):
 e0122947.

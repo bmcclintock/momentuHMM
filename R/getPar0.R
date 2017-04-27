@@ -8,11 +8,10 @@
 #' distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. If \code{estAngleMean=NULL} (the default), then \code{estAngleMean=model$conditions$estAngleMean}
 #' @param circularAngleMean Named list indicating whether circular-linear (FALSE) or circular-circular (TRUE) 
 #' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model. If \code{circularAngleMean=NULL} (the default), then \code{circularAngleMean=model$conditions$circularAngleMean}
-#' @param formula Regression formula for the transition probability covariates of the new model.  If \code{formula=NULL} (the default), then \code{formula=model$conditions$formula}.
-#' @param DM Named list indicating the design matrices to be used for the probability distribution parameters of each data stream in the new model. Only parameters with design matrix column names that match those in model$conditions$fullDM are extracted, so care must be taken in naming columns if any elements of \code{DM}
-#' are specified as matrices.
-#' stream for the new model. If \code{DM=NULL} (the default), then \code{DM=model$conditions$DM}.
-#' @param stateNames Character vector of length \code{nbStates} indicating the names of the states in the new model. If \code{stateNames=NULL} (the default), then \code{stateNames=model$stateNames[1:nbStates]}.
+#' @param formula Regression formula for the transition probability covariates of the new model (see \code{\link{fitHMM}}).  If \code{formula=NULL} (the default), then \code{formula=model$conditions$formula}.
+#' @param DM Named list indicating the design matrices to be used for the probability distribution parameters of each data stream in the new model (see \code{\link{fitHMM}}). Only parameters with design matrix column names that match those in model$conditions$fullDM are extracted, so care must be taken in naming columns if any elements of \code{DM}
+#' are specified as matrices instead of formulas. If \code{DM=NULL} (the default), then \code{DM=model$conditions$DM}.
+#' @param stateNames Character vector of length \code{nbStates} indicating the names and order of the states in the new model. If \code{stateNames=NULL} (the default), then \code{stateNames=model$stateNames[1:nbStates]}.
 #'
 #' @return 
 #' A named list containing starting values suitable for \code{Par0} and \code{beta0} arguments in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}:
@@ -145,7 +144,7 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
   DMinputs<-getDM(model$data,DM,dist,nbStates,p$parNames,p$bounds,Par,cons=NULL,workcons=NULL,zeroInflation,oneInflation,circularAngleMean,FALSE)$fullDM
   
   for(i in distnames){
-    if(!is.null(DM[[i]])) {
+    #if(!is.null(DM[[i]])) {
       tmpPar <- rep(0,ncol(DMinputs[[i]]))
       parmNames<-colnames(model$conditions$fullDM[[i]])
       for(j in 1:length(model$stateNames)){
@@ -163,11 +162,46 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
         tmpPar[match(parmNames,newparmNames,nomatch=0)] <- model$CIbeta[[i]]$est[parmNames %in% newparmNames]
       names(tmpPar)<-colnames(DMinputs[[i]])
       Par[[i]] <- tmpPar
+    #}
+    if(is.null(DM[[i]])){
+      for(j in model$stateNames){
+        if(dist[[i]] %in% angledists & !estAngleMean[[i]]){
+          Par[[i]][grepl(j,newparmNames)]<-model$mle[[i]][-1,j]
+        } else {
+          Par[[i]][grepl(j,newparmNames)]<-model$mle[[i]][,j]
+        }
+        names(Par[[i]])<-paste0(rep(p$parNames[[i]],each=nbStates),"_",1:nbStates)
+      }
     }
   }
+  
+  stateForms<- terms(formula, specials = paste0("state",1:nbStates))
+  newformula<-formula
   if(nbStates>1){
-    betaNames <- colnames(model.matrix(formula,model$data))
+    if(length(unlist(attr(stateForms,"specials")))){
+      newForm<-attr(stateForms,"term.labels")[-unlist(attr(stateForms,"specials"))]
+      for(i in 1:nbStates){
+        if(!is.null(attr(stateForms,"specials")[[paste0("state",i)]])){
+          for(j in 1:(nbStates-1)){
+            newForm<-c(newForm,gsub(paste0("state",i),paste0("betaCol",(i-1)*(nbStates-1)+j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("state",i)]]]))
+          }
+        }
+      }
+      newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
+    }
+    formulaStates<-stateFormulas(newformula,nbStates*(nbStates-1),spec="betaCol")
+    if(length(unlist(attr(terms(newformula, specials = c(paste0("betaCol",1:(nbStates*(nbStates-1))),"cosinor")),"specials")))){
+      allTerms<-unlist(lapply(formulaStates,function(x) attr(terms(x),"term.labels")))
+      newformula<-as.formula(paste("~",paste(allTerms,collapse="+")))
+      formterms<-attr(terms.formula(newformula),"term.labels")
+    } else {
+      formterms<-attr(terms.formula(newformula),"term.labels")
+      newformula<-formula
+    }
+    
+    betaNames <- colnames(model.matrix(newformula,model$data))
     tmpPar <- matrix(0,length(betaNames),nbStates*(nbStates-1))
+    #if(length(model$stateNames)==1) tmpPar[1,] <- rep(-1.5,nbStates*(nbStates-1))
     columns <- NULL
     for(i in 1:nbStates){
       for(j in 1:nbStates) {
@@ -187,6 +221,10 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
            tmpPar[betaNames %in% rownames(model$mle$beta),paste(i,"->",j)]<-model$mle$beta[rownames(model$mle$beta) %in% betaNames,paste(match(stateNames[i],model$stateNames),"->",match(stateNames[j],model$stateNames))]
         }
       }
+    }
+    for(state in 1:(nbStates*(nbStates-1))){
+      noBeta<-which(match(colnames(model.matrix(newformula,model$data)),colnames(model.matrix(formulaStates[[state]],model$data)),nomatch=0)==0)
+      if(length(noBeta)) tmpPar[noBeta,state] <- 0
     }
     Par$beta<-tmpPar
     #Par$delta<-model$mle$delta[names(model$mle$delta) %in% stateNames]

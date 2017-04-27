@@ -44,7 +44,9 @@
 #' used for any angular distributions for which the mean angle is to be estimated. \code{circularAngleMean} elements corresponding to angular data 
 #' streams are ignored unless the corresponding element of \code{estAngleMean} is \code{TRUE}. Any \code{circularAngleMean} elements 
 #' corresponding to data streams that do not have angular distributions are ignored.
-#' @param formula Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effects).
+#' @param formula Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effect). In addition to allowing standard functions in R formulas
+#' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns and state- or parameter-specific formulas (see details).
+#' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.
 #' @param stationary \code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param verbose Determines the print level of the optimizer. The default value of 0 means that no
@@ -65,9 +67,9 @@
 #' where the 4 rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the 6 columns correspond to the regression 
 #' coefficients. 
 #' 
-#' Design matrices specified using formulas automatically include effects on the parameters for all \code{nbStates} states. Thus 
-#' for models including covariates on a subset of the state-dependent parameters, the design matrix must be specified manually using matrices or through
-#' a combination of formulas and \code{fixPar} (i.e., fixing the working parameters to zero ).
+#' Design matrices specified using formulas allow standard functions in R formulas
+#' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).  Special formula functions include \code{cosinor(cov,period)} for modeling cyclical patterns 
+#' and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.
 #' @param cons An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
 #' for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
 #' \code{cons=list(step=c(1,2,1,1))} raises the second parameter to the second power. Default=NULL, which simply raises all parameters to 
@@ -138,6 +140,24 @@
 #' direction of movement for time step t-1 (instead of true north).  In other words, circular-circular regression covariates for time step t should be the turning angle
 #' between the direction of movement for time step t-1 and the bearing of the covariate relative to true north for time step t.  If provided bearings relative to true north, 
 #' \code{\link{circAngles}} or \code{\link{prepData}} can perform this calculation for you.  
+#' 
+#' \item State-specific formulas can be specified in \code{DM} using special formula functions. These special functions can take
+#' the names \code{paste0("state",1:nbStates)} (where the integer indicates the state-specific formula).  For example, 
+#' \code{DM=list(step=list(mean=~cov1+state1(cov2),sd=~cov2+state2(cov1)))} includes \code{cov1} on the mean parameter for all states, \code{cov2}
+#' on the mean parameter for state 1, \code{cov2} on the sd parameter for all states, and \code{cov1} on the sd parameter for state 2.
+#'
+#' \item State- and parameter-specific formulas can be specified for transition probabilities in \code{formula} using special formula functions.
+#' These special functions can take the names \code{paste0("state",1:nbStates)} (where the integer indicates the current state from which transitions occur),
+#' or \code{paste0("betaCol",nbStates*(nbStates-1))} (where the integer indicates the column of the \code{beta} matrix).  For example with \code{nbStates=3},
+#' \code{formula=~cov1+betaCol1(cov2)+state3(cov3)} includes \code{cov1} on all transition probability parameters, \code{cov2} on the \code{beta} column corresponding
+#' to the transition from state 1->2, and \code{cov3} on transition probabilities from state 3 (i.e., \code{beta} columns corresponding to state transitions 3->1 and 3->2).
+#' 
+#' \item Cyclical relationships (e.g., hourly, monthly) may be modeled in \code{DM} or \code{formula} using the \code{consinor(x,period)} special formula function for covariate \code{x}
+#' and sine curve period of time length \code{period}. For example, if 
+#' the data are hourly, a 24-hour cycle can be modeled using \code{~cosinor(cov1,24)}, where the covariate \code{cov1} is a repeating sequential series
+#' of integers indicating the hour of day (\code{0,1,...,23,0,1,...,23,0,1,...}) (note that \code{fitHMM} will not do this for you, the appropriate covariate must be included in \code{data}; see example below). 
+#' The \code{cosinor(x,period)} function converts \code{x} to 2 covariates \code{cosinorCos(x)=cos(2*pi*x/period)} and \code{consinorSin(x)=sin(2*pi*x/period} for inclusion in the model (i.e., 2 additional parameters per state). The amplitude of the sine wave
+#' is thus \code{sqrt(B_cos^2 + B_sin^2)}, where \code{B_cos} and \code{B_sin} are the working parameters correponding to \code{cosinorCos(x)} and \code{cosinorSin(x)}, respectively (e.g., see Cornelissen 2014).
 #' }
 #' 
 #' @seealso \code{\link{getParDM}}, \code{\link{prepData}}, \code{\link{simData}}
@@ -250,9 +270,36 @@
 #'                   DM=list(angle=matrix(c("cov3",0,0,0,0,"cov3",0,0,0,0,1,0,0,0,0,1),4,4)))
 #'                   
 #' print(mDMcircm)
+#' 
+#' ### 8. Cosinor and state-dependent formulas
+#' nbStates<-2
+#' dist<-list(step="gamma")
+#' Par<-list(step=c(100,1000,50,100))
+#' 
+#' # include 24-hour cycle on all transition probabilities
+#' # include 12-hour cycle on transitions from state 2
+#' formula=~cosinor(hour24,24)+state2(cosinor(hour12,12))
+#' 
+#' # specify appropriate covariates
+#' covs<-data.frame(hour24=0:23,hour12=0:11)
+#' 
+#' beta<-matrix(c(-1.5,1,1,NA,NA,-1.5,-1,-1,1,1),5,2)
+#' # row names for beta not required but can be helpful
+#' rownames(beta)<-c("(Intercept)",
+#'                   "cosinorCos(hour24, 24)",
+#'                   "cosinorSin(hour24, 24)",
+#'                   "cosinorCos(hour12, 12)",
+#'                   "cosinorSin(hour12, 12)")
+#' data.cos<-simData(nbStates=nbStates,dist=dist,Par=Par,
+#'                       beta=beta,formula=formula,covs=covs)    
+#' 
+#' m.cosinor<-fitHMM(data.cos,nbStates=nbStates,dist=dist,Par0=Par,formula=formula)
+#' m.cosinor    
 #' }
 #' 
 #' @references
+#' 
+#' Cornelissen, G. 2014. Cosinor-based rhythmometry. Theoretical Biology and Medical Modelling 11:16.
 #' 
 #' Duchesne, T., Fortin, D., Rivest L-P. 2015. Equivalence between step selection functions and 
 #' biased correlated random walks for statistical inference on animal movement. PLoS ONE 10 (4):
@@ -316,9 +363,34 @@ fitHMM <- function(data,nbStates,dist,
   if(!all(distnames %in% names(Par0))) stop(paste0(distnames[which(!(distnames %in% names(Par0)))],collapse=", ")," missing in 'Par0'")
   Par0 <- Par0[distnames]
   
+  stateForms<- terms(formula, specials = paste0("state",1:nbStates))
+  newformula<-formula
+  if(nbStates>1){
+    if(length(unlist(attr(stateForms,"specials")))){
+      newForm<-attr(stateForms,"term.labels")[-unlist(attr(stateForms,"specials"))]
+      for(i in 1:nbStates){
+        if(!is.null(attr(stateForms,"specials")[[paste0("state",i)]])){
+          for(j in 1:(nbStates-1)){
+            newForm<-c(newForm,gsub(paste0("state",i),paste0("betaCol",(i-1)*(nbStates-1)+j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("state",i)]]]))
+          }
+        }
+      }
+      newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
+    }
+    formulaStates<-stateFormulas(newformula,nbStates*(nbStates-1),spec="betaCol")
+    if(length(unlist(attr(terms(newformula, specials = c(paste0("betaCol",1:(nbStates*(nbStates-1))),"cosinor")),"specials")))){
+      allTerms<-unlist(lapply(formulaStates,function(x) attr(terms(x),"term.labels")))
+      newformula<-as.formula(paste("~",paste(allTerms,collapse="+")))
+      formterms<-attr(terms.formula(newformula),"term.labels")
+    } else {
+      formterms<-attr(terms.formula(newformula),"term.labels")
+      newformula<-formula
+    }
+  }
+  
   # build design matrix for t.p.m.
-  covsCol <- get_all_vars(formula,data)#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
-  covs <- model.matrix(formula,data)
+  covsCol <- get_all_vars(newformula,data)#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+  covs <- model.matrix(newformula,data)
   if(nrow(covs)!=nrow(data)) stop("covariates cannot contain missing values")
   nbCovs <- ncol(covs)-1 # substract intercept column
   
@@ -397,7 +469,7 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
 
-  mHind <- (is.null(DM) & is.null(userBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(formula),"term.labels")) & stationary) # indicator for moveHMMwrap below
+  mHind <- (is.null(DM) & is.null(userBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(newformula),"term.labels")) & stationary) # indicator for moveHMMwrap below
   
   inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames)
   p <- inputs$p
@@ -441,55 +513,67 @@ fitHMM <- function(data,nbStates,dist,
     delta0 <- rep(1,nbStates)/nbStates
   if(stationary)
     delta0 <- NULL
-
+  
+  if(nbStates>1){
+    for(state in 1:(nbStates*(nbStates-1))){
+      noBeta<-which(match(colnames(model.matrix(newformula,data)),colnames(model.matrix(formulaStates[[state]],data)),nomatch=0)==0)
+      if(length(noBeta)) beta0[noBeta,state] <- NA
+    }
+  }
+  
   # build the vector of initial working parameters
   wparIndex <- numeric()
-  if(!is.null(fixPar)){
-    parindex <- c(0,cumsum(unlist(lapply(Par0,length))))
-    names(parindex) <- c(distnames,"beta")
-    for(i in distnames){
-      if(!is.null(fixPar[[i]])){
-        if(length(fixPar[[i]])!=length(Par0[[i]])) stop("fixPar$",i," must be of length ",length(Par0[[i]]))
-        tmp <- which(!is.na(fixPar[[i]]))
-        Par0[[i]][tmp]<-fixPar[[i]][tmp]
-        wparIndex <- c(wparIndex,parindex[[i]]+tmp)
-      } else {
-        fixPar[[i]] <- rep(NA,length(Par0[[i]]))
-        #wparIndex <- c(wparIndex,parindex[[i]]+1:length(Par0[[i]]))
-      }
-    }
-    if(nbStates>1){
-      if(!is.null(fixPar$beta)){
-        if(length(fixPar$beta)!=length(beta0)) stop("fixPar$beta must be of length ",length(beta0))
-        tmp <- which(!is.na(fixPar$beta))
-        beta0[tmp]<-fixPar$beta[tmp]
-        wparIndex <- c(wparIndex,parindex[["beta"]]+tmp)
-      } else {
-        fixPar$beta <- rep(NA,length(beta0))
-      }
-    }
-    if(!is.null(fixPar$delta)){
-      if(stationary & any(!is.na(fixPar$delta))) stop("delta cannot be fixed when stationary=TRUE")
-      else if(!stationary) {
-        tmp <- which(!is.na(fixPar$delta))
-        if(length(tmp)){
-          delta0[tmp] <- fixPar$delta[tmp]
-          if(length(tmp)!=length(delta0) | sum(delta0)!=1) stop("fixPar$delta must sum to 1")
-          wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0)+tmp)
-        }
-      }
-    } else {
-      fixPar$delta <- rep(NA,length(delta0))
-    }
-  } else {
+  if(is.null(fixPar)){
     fixPar <- vector('list',length(distnames))
     names(fixPar) <- distnames
     for(i in distnames){
       fixPar[[i]] <- rep(NA,length(Par0[[i]]))
     }
-    fixPar$beta <- rep(NA,length(beta0))
     fixPar$delta <- rep(NA,length(delta0))
   }
+  if(is.null(fixPar$beta)) {
+    fixPar$beta <- rep(NA,length(beta0))
+    if(nbStates>1) fixPar$beta[which(is.na(beta0))] <- 0
+  }
+  if(nbStates>1) beta0[which(is.na(beta0))] <- 0
+
+  parindex <- c(0,cumsum(unlist(lapply(Par0,length))))
+  names(parindex) <- c(distnames,"beta")
+  for(i in distnames){
+    if(!is.null(fixPar[[i]])){
+      if(length(fixPar[[i]])!=length(Par0[[i]])) stop("fixPar$",i," must be of length ",length(Par0[[i]]))
+      tmp <- which(!is.na(fixPar[[i]]))
+      Par0[[i]][tmp]<-fixPar[[i]][tmp]
+      wparIndex <- c(wparIndex,parindex[[i]]+tmp)
+    } else {
+      fixPar[[i]] <- rep(NA,length(Par0[[i]]))
+      #wparIndex <- c(wparIndex,parindex[[i]]+1:length(Par0[[i]]))
+    }
+  }
+  if(nbStates>1){
+    if(!is.null(fixPar$beta)){
+      if(length(fixPar$beta)!=length(beta0)) stop("fixPar$beta must be of length ",length(beta0))
+      tmp <- which(!is.na(fixPar$beta))
+      beta0[tmp]<-fixPar$beta[tmp]
+      wparIndex <- c(wparIndex,parindex[["beta"]]+tmp)
+    } else {
+      fixPar$beta <- rep(NA,length(beta0))
+    }
+  }
+  if(!is.null(fixPar$delta)){
+    if(stationary & any(!is.na(fixPar$delta))) stop("delta cannot be fixed when stationary=TRUE")
+    else if(!stationary) {
+      tmp <- which(!is.na(fixPar$delta))
+      if(length(tmp)){
+        delta0[tmp] <- fixPar$delta[tmp]
+        if(length(tmp)!=length(delta0) | sum(delta0)!=1) stop("fixPar$delta must sum to 1")
+        wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0)+tmp)
+      }
+    }
+  } else {
+    fixPar$delta <- rep(NA,length(delta0))
+  }
+
   fixPar <- fixPar[c(distnames,"beta","delta")]
   
   wpar <- n2w(Par0,p$bounds,beta0,delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
@@ -537,7 +621,7 @@ fitHMM <- function(data,nbStates,dist,
             Par[[i]]<-Par[[i]][-(1:nbStates)]
         }
         startTime <- proc.time()
-        withCallingHandlers(curmod<-tryCatch(moveHMMwrap(data,nbStates,dist,Par,fullPar$beta,fullPar$delta,inputs$estAngleMean,formula,stationary,verbose,nlmPar,fit)$mod,error=function(e) e),warning=h)
+        withCallingHandlers(curmod<-tryCatch(moveHMMwrap(data,nbStates,dist,Par,fullPar$beta,fullPar$delta,inputs$estAngleMean,newformula,stationary,verbose,nlmPar,fit)$mod,error=function(e) e),warning=h)
         endTime <- proc.time()-startTime
         #curmod<-out$mod
         #mle<-out$mle
@@ -555,7 +639,7 @@ fitHMM <- function(data,nbStates,dist,
         startTime <- proc.time()
   
         # call to optimizer nlm
-        withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,wpar,nbStates,formula,p$bounds,p$parSize,data,dist,covs,
+        withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,wpar,nbStates,newformula,p$bounds,p$parSize,data,dist,covs,
                                                inputs$estAngleMean,inputs$circularAngleMean,zeroInflation,oneInflation,
                                                stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
                                                print.level=verbose,gradtol=gradtol,
@@ -672,7 +756,9 @@ fitHMM <- function(data,nbStates,dist,
   
   #compute SEs and CIs on natural and working scale
   CIreal<-tryCatch(CIreal(momentuHMM(mh)),error=function(e) e)
+  if(inherits(CIreal,"error") & fit==TRUE) warning("Failed to compute SEs and confidence intervals on the real scale -- ",CIreal)
   CIbeta<-tryCatch(CIbeta(momentuHMM(mh)),error=function(e) e)
+  if(inherits(CIbeta,"error") & fit==TRUE) warning("Failed to compute SEs confidence intervals on the natural scale -- ",CIbeta)
   
   mh <- list(data=data,mle=mle,CIreal=CIreal,CIbeta=CIbeta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   

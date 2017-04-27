@@ -11,7 +11,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
   
   for(i in distnames){
     if(is.null(DM[[i]])){
-      tmpDM <- diag(length(Par[[i]]))
+      tmpDM <- diag(parSize[[i]]*nbStates)
       tmpDM <- array(tmpDM,dim=c(nrow(tmpDM),ncol(tmpDM),nbObs))
       DMnames <- paste0(rep(parNames[[i]],each=nbStates),"_",1:nbStates,":(Intercept)")
     } else if(is.list(DM[[i]])){
@@ -23,6 +23,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
         stop("The response variable should not be specified in the DM formula for ",i)
       
       formulaStates <- vector('list',length(parNames[[i]]))
+      names(formulaStates) <- parNames[[i]]
       for(j in parNames[[i]])
         formulaStates[[j]]<- stateFormulas(DM[[i]][[j]],nbStates)
       
