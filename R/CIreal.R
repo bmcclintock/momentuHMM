@@ -106,7 +106,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   # inverse of Hessian
   Sigma <- ginv(m$mod$hessian)
   
-  tmPar <- m$mle[distnames]
+  tmPar <- lapply(m$mle[distnames],function(x) c(t(x)))
   parindex <- c(0,cumsum(unlist(lapply(m$conditions$fullDM,ncol)))[-length(m$conditions$fullDM)])
   names(parindex) <- distnames
   for(i in distnames){

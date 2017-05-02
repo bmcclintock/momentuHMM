@@ -166,7 +166,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
     else tempCovs[[j]]<-mean(mhdata[[j]],na.rm=TRUE)
   }
   
-  tmPar <- m$mle[distnames]
+  tmPar <- lapply(m$mle[distnames],function(x) c(t(x)))
   parindex <- c(0,cumsum(unlist(lapply(m$conditions$fullDM,ncol)))[-length(m$conditions$fullDM)])
   names(parindex) <- distnames
   for(i in distnames){
@@ -174,7 +174,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
       tmPar[[i]] <- m$mod$estimate[parindex[[i]]+1:ncol(m$conditions$fullDM[[i]])]
       names(tmPar[[i]])<-colnames(m$conditions$fullDM[[i]])
     } else if((m$conditions$dist[[i]] %in% angledists) & (!m$conditions$estAngleMean[[i]])){
-      tmPar[[i]] <- tmPar[[i]][-1,]
+      tmPar[[i]] <- tmPar[[i]][-(1:nbStates)]
     }
   }
   
