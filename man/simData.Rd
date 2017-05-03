@@ -35,7 +35,9 @@ of columns in the design matrix. See details below.}
 in "Details").}
 
 \item{formula}{Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effect). In addition to allowing standard functions in R formulas
-(e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns and state- or parameter-specific formulas (see details).
+(e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
+(\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
+and state- or parameter-specific formulas (see details).
 Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.}
 
 \item{covs}{Covariate values to include in the simulated data, as a dataframe. The names of any covariates specified by \code{covs} can
@@ -90,7 +92,8 @@ where the 4 rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_
 coefficients. 
 
 Design matrices specified using formulas allow standard functions in R formulas
-(e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).  Special formula functions include \code{cosinor(cov,period)} for modeling cyclical patterns 
+(e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).  Special formula functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
+(\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
 and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.}
 
 \item{cons}{An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
@@ -299,7 +302,18 @@ rownames(beta)<-c("(Intercept)",
                   "cosinorCos(hour12, 12)",
                   "cosinorSin(hour12, 12)")
 data.cos<-simData(nbStates=nbStates,dist=dist,Par=Par,
-                  beta=beta,formula=formula,covs=covs)                   
+                  beta=beta,formula=formula,covs=covs)     
+                  
+# 8. Piecewise constant B-spline on step length mean and angle concentration
+nObs <- 1000 # length of simulated track
+cov <- data.frame(time=1:nObs) # time covariate for splines
+dist <- list(step="gamma",angle="vm")
+stepDM <- list(mean=~bSpline(time,df=3,degree=0),sd=~1)
+angleDM <- list(mean=~1,concentration=~bSpline(time,df=3,degree=0))
+DM <- list(step=stepDM,angle=angleDM)
+Par <- list(step=c(log(1000),1,-1,log(100)),angle=c(0,log(10),2,-5))
+
+data.spline<-simData(obsPerAnimal=nObs,nbStates=1,dist=dist,Par=Par,DM=DM,covs=cov)              
                 
 }
 \references{

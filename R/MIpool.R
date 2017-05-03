@@ -151,17 +151,17 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
       mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,mean)
     }
   }
-  for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))) & !(names(m$data) %in% distnames))]){
+  for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansList))) & !(names(m$data) %in% distnames))]){
     mhdata[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[j]])),ncol=length(m$data[[j]]),byrow=TRUE),2,mean)
   }
   mhrawCovs<-m$rawCovs
   if(length(mhrawCovs)){
-    for(j in names(m$rawCovs)[which(unlist(lapply(m$rawCovs,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
+    for(j in names(m$rawCovs)[which(unlist(lapply(m$rawCovs,function(x) any(class(x) %in% meansList))))]){
       mhrawCovs[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$rawCovs[[j]])),ncol=length(m$rawCovs[[j]]),byrow=TRUE),2,mean)
     }
   }
   tempCovs <- mhdata[1,]
-  for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
+  for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansList))))]){
     if("angle" %in% class(mhdata[[j]])) tempCovs[[j]] <- CircStats::circ.mean(mhdata[[j]][!is.na(mhdata[[j]])])
     else tempCovs[[j]]<-mean(mhdata[[j]],na.rm=TRUE)
   }
@@ -180,8 +180,11 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
   
   inputs <- checkInputs(nbStates,m$conditions$dist,tmPar,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
   p<-inputs$p
-  DMinputs<-getDM(tempCovs,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
-  fullDM<-DMinputs$fullDM
+  splineInputs<-getSplineDM(distnames,inputs$DM,m,tempCovs)
+  DMinputs<-getDM(splineInputs$covs,splineInputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+  fullDM <- DMinputs$fullDM
+  #DMinputs<-getDM(tempCovs,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+  #fullDM<-DMinputs$fullDM
   
   formula<-m$conditions$formula
   stateForms<- terms(formula, specials = paste0("state",1:nbStates))
@@ -239,7 +242,9 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
   # pooled gamma estimates
   if(nbStates>1){
     gamInd<-(length(miBeta$coefficients)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(miBeta$coefficients))-(nbStates-1)*(1-m$conditions$stationary)
-    est <- get_gamma(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),model.matrix(newformula,mhdata),nbStates,1:nbStates,1:nbStates)
+    tmpSplineInputs<-getSplineFormula(newformula,mhdata,tempCovs)
+    tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+    est <- get_gamma(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),tempCovMat,nbStates,1:nbStates,1:nbStates)
     lower<-upper<-se<-matrix(0,nrow(est),ncol(est))
     for(i in 1:nrow(est)){
       for(j in 1:ncol(est)){

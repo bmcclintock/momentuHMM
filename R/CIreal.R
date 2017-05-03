@@ -55,7 +55,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   # identify covariates
   if(is.null(covs)){
     tempCovs <- m$data[1,]
-    for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
+    for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansList))))]){
       if(inherits(m$data[[j]],"angle")) tempCovs[[j]] <- CircStats::circ.mean(m$data[[j]][!is.na(m$data[[j]])])
       else tempCovs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
     }
@@ -65,7 +65,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     if(!all(names(covs) %in% names(m$data))) stop('invalid covs specified')
     if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(m$data$ID))
     for(j in names(m$data)[which(!(names(m$data) %in% names(covs)))]){
-      if(any(class(m$data[[j]]) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime"))) covs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
+      if(any(class(m$data[[j]]) %in% meansList)) covs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
       else covs[[j]] <- m$data[[j]][1]
     }
     for(j in names(m$data)[which(names(m$data) %in% names(covs))]){
@@ -127,8 +127,13 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   
   inputs <- checkInputs(nbStates,m$conditions$dist,tmPar,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
   p<-inputs$p
-  DMinputs<-getDM(tempCovs,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
-  fullDM<-DMinputs$fullDM
+  splineInputs<-getSplineDM(distnames,inputs$DM,m,tempCovs)
+  covs<-splineInputs$covs
+  DMinputs<-getDM(covs,splineInputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+  fullDM <- DMinputs$fullDM
+  #DMind <- DMinputs$DMind
+  #DMinputs<-getDM(tempCovs,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+  #fullDM<-DMinputs$fullDM
   
   for(i in distnames){
     if(!m$conditions$DMind[[i]]){
@@ -155,7 +160,8 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     i3 <- i2+nbStates*(nbStates-1)*(nbCovs+1)-1
     wpar <- m$mle$beta
     quantSup <- qnorm(1-(1-alpha)/2)
-    tempCovMat <- model.matrix(newformula,tempCovs)
+    tmpSplineInputs<-getSplineFormula(newformula,m$data,tempCovs)
+    tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
     est <- get_gamma(wpar,tempCovMat,nbStates)
     lower<-upper<-se<-matrix(NA,nbStates,nbStates)
     for(i in 1:nbStates){
