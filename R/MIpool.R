@@ -4,6 +4,9 @@
 #' @param HMMfits List comprised of \code{\link{momentuHMM}} objects
 #' @param alpha Significance level for calculating confidence intervals of pooled estimates (including location error ellipses). Default: 0.95.
 #' @param ncores Number of cores to use for parallel processing.
+#' @param covs Data frame consisting of a single row indicating the covariate values to be used in the calculation of pooled natural parameters. 
+#' For any covariates that are not specified using \code{covs}, the means of the covariate(s) across the imputations are used 
+#' (unless the covariate is a factor, in which case the first factor in the data is used). By default, no covariates are specified.
 #' 
 #' @return A \code{\link{miSum}} object, i.e., a list comprised of model and pooled parameter summaries, including \code{data} (averaged across imputations), \code{conditions}, \code{Par}, and \code{MIcombine} 
 #' (as returned by \code{\link[mitools]{MIcombine}} for working parameters).
@@ -38,7 +41,7 @@
 #' @importFrom car dataEllipse
 #' @importFrom mitools MIcombine
 #' @importFrom MASS ginv
-MIpool<-function(HMMfits,alpha=0.95,ncores){
+MIpool<-function(HMMfits,alpha=0.95,ncores,covs=NULL){
   
   im <- HMMfits
   simind <- which((unlist(lapply(im,is.momentuHMM))))
@@ -160,10 +163,30 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
       mhrawCovs[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$rawCovs[[j]])),ncol=length(m$rawCovs[[j]]),byrow=TRUE),2,mean)
     }
   }
-  tempCovs <- mhdata[1,]
-  for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansList))))]){
-    if("angle" %in% class(mhdata[[j]])) tempCovs[[j]] <- CircStats::circ.mean(mhdata[[j]][!is.na(mhdata[[j]])])
-    else tempCovs[[j]]<-mean(mhdata[[j]],na.rm=TRUE)
+  
+  # identify covariates
+  if(is.null(covs)){
+    tempCovs <- mhdata[1,]
+    for(j in names(mhdata)[which(unlist(lapply(mhdata,function(x) any(class(x) %in% meansList))))]){
+      if(inherits(mhdata[[j]],"angle")) tempCovs[[j]] <- CircStats::circ.mean(mhdata[[j]][!is.na(mhdata[[j]])])
+      else tempCovs[[j]]<-mean(mhdata[[j]],na.rm=TRUE)
+    }
+  } else {
+    if(!is.data.frame(covs)) stop('covs must be a data frame')
+    if(nrow(covs)>1) stop('covs must consist of a single row')
+    if(!all(names(covs) %in% names(mhdata))) stop('invalid covs specified')
+    if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(mhdata$ID))
+    for(j in names(mhdata)[which(!(names(mhdata) %in% names(covs)))]){
+      if(any(class(mhdata[[j]]) %in% meansList)) {
+        if(inherits(mhdata[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(mhdata[[j]][!is.na(mhdata[[j]])])
+        else covs[[j]]<-mean(mhdata[[j]],na.rm=TRUE)
+      } else covs[[j]] <- mhdata[[j]][1]
+    }
+    for(j in names(mhdata)[which(names(mhdata) %in% names(covs))]){
+      if(inherits(mhdata[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(mhdata[[j]]))
+      if(is.na(covs[[j]])) stop("check covs value for ",j)
+    }    
+    tempCovs <- covs[1,]
   }
   
   tmPar <- lapply(m$mle[distnames],function(x) c(t(x)))
@@ -271,7 +294,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
     }
   } else {
     if(nbStates>1){
-      covs<-model.matrix(newformula,mhdata)
+      covs<-model.matrix(newformula,tempCovs)
       statFun<-function(beta,nbStates,covs,i){
         gamma <- trMatrix_rcpp(nbStates,beta,covs)[,,1]
         tryCatch(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i],error = function(e) {

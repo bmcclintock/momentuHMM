@@ -12,8 +12,8 @@ CIreal(m, alpha = 0.95, covs = NULL)
 \item{alpha}{Significance level of the confidence intervals. Default: 0.95 (i.e. 95\% CIs).}
 
 \item{covs}{Data frame consisting of a single row indicating the covariate values to be used in the calculations. 
-If none are specified (the default), the means of any covariates appearing in the model are used 
-(unless covariate is a factor, in which case the first factor in the data is used).}
+For any covariates that are not specified using \code{covs}, the means of the covariate(s) are used 
+(unless the covariate is a factor, in which case the first factor in the data is used). By default, no covariates are specified.}
 }
 \value{
 A list of the following objects:

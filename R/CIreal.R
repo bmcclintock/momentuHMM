@@ -9,8 +9,8 @@
 #' @param m A \code{momentuHMM} object
 #' @param alpha Significance level of the confidence intervals. Default: 0.95 (i.e. 95\% CIs).
 #' @param covs Data frame consisting of a single row indicating the covariate values to be used in the calculations. 
-#' If none are specified (the default), the means of any covariates appearing in the model are used 
-#' (unless covariate is a factor, in which case the first factor in the data is used).
+#' For any covariates that are not specified using \code{covs}, the means of the covariate(s) are used 
+#' (unless the covariate is a factor, in which case the first factor in the data is used). By default, no covariates are specified.
 #'
 #' @return A list of the following objects:
 #' \item{...}{List(s) of estimates ('est'), standard errors ('se'), and confidence intervals ('lower', 'upper') for the natural parameters of the data streams}
@@ -65,12 +65,14 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     if(!all(names(covs) %in% names(m$data))) stop('invalid covs specified')
     if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(m$data$ID))
     for(j in names(m$data)[which(!(names(m$data) %in% names(covs)))]){
-      if(any(class(m$data[[j]]) %in% meansList)) covs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
-      else covs[[j]] <- m$data[[j]][1]
+      if(any(class(m$data[[j]]) %in% meansList)){
+        if(inherits(m$data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(m$data[[j]][!is.na(m$data[[j]])])
+        else covs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
+      } else covs[[j]] <- m$data[[j]][1]
     }
     for(j in names(m$data)[which(names(m$data) %in% names(covs))]){
       if(inherits(m$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(m$data[[j]]))
-      if(is.na(covs[[j]])) stop("check value for ",j)
+      if(is.na(covs[[j]])) stop("check covs value for ",j)
     }    
     tempCovs <- covs[1,]
   }

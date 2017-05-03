@@ -24,14 +24,18 @@ print.momentuHMM <- function(x,...)
   
   for(i in distnames){
     cat("\n")
-    if(DMind[[i]]) cat(i,"parameters:\n")
-    else cat("Regression coeffs for",i,"parameters:\n")
-    cat("---------------------------------------------\n")
+    if(DMind[[i]]) {
+      cat(i,                "parameters:\n")      
+      cat(rep("-",nchar(i)),"------------\n",sep="")
+    } else {
+      cat("Regression coeffs for",i,"parameters:\n")
+      cat(rep("-",nchar(i)),"----------------------------------\n",sep="")
+    }
     print(m$mle[[i]])
     if(!DMind[[i]]){
       cat("\n")
-      cat(i,"parameters (based on mean covariate values):\n")
-      cat("---------------------------------------------\n")
+      cat(i,                "parameters (based on mean covariate values):\n")
+      cat(rep("-",nchar(i)),"---------------------------------------------\n",sep="")
       print(x$CIreal[[i]]$est)
     }
   }
@@ -40,25 +44,25 @@ print.momentuHMM <- function(x,...)
     #if(!is.null(m$mle$beta)) {
       cat("\n")
       cat("Regression coeffs for the transition probabilities:\n")
-      cat("--------------------------------------------------\n")
+      cat("---------------------------------------------------\n")
       print(m$mle$beta)
     #}
   
     if(!is.null(m$mle$gamma)) {
       cat("\n")
       cat("Transition probability matrix:\n")
-      cat("-----------------------------\n")
+      cat("------------------------------\n")
       print(m$mle$gamma)
     } else {
       cat("\n")
       cat("Transition probability matrix (based on mean covariate values):\n")
-      cat("--------------------------------------------------------------\n")
+      cat("---------------------------------------------------------------\n")
       print(m$CIreal$gamma$est)    
     }
   
     cat("\n")
     cat("Initial distribution:\n")
-    cat("--------------------\n")
+    cat("---------------------\n")
     print(m$mle$delta)
   }
 }
