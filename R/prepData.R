@@ -26,7 +26,7 @@
 #' of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. As with covariates identified in \code{angleCovs}, note that the angle covariates for each activity center are calculated relative to 
 #' the previous movement direction (instead of true north); this is to allow mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
 #' or \code{\link{MIfitHMM}}.
-#' @param angleCovs Character vector indicating the names of any circular-circular regression covariates in \code{Data} that need conversion from bearing (relative to true north) to turning angle (relative to previous movement direction) 
+#' @param angleCovs Character vector indicating the names of any circular-circular regression covariates in \code{Data} or \code{spatialCovs} that need conversion from bearing (relative to true north) to turning angle (relative to previous movement direction) 
 #' using \code{\link{circAngles}}.
 
 #' @return An object \code{\link{momentuHMMData}}, i.e., a dataframe of:
@@ -80,10 +80,12 @@ prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
     if(length(coordNames)!=2) stop('coordNames must be of length 2')
   }
   if(!is.null(covNames) | !is.null(angleCovs)){
-    covNames <- unique(c(covNames,angleCovs))
-    covsCol <- which(distnames %in% covNames)
-    if(!length(covsCol)) stop("covNames not found in Data")
-    else distnames<-distnames[-covsCol]
+    covNames <- unique(c(covNames,angleCovs[!(angleCovs %in% names(spatialCovs))]))
+    if(length(covNames)){
+      covsCol <- which(distnames %in% covNames)
+      if(!length(covsCol)) stop("covNames or angleCovs not found in Data")
+      else distnames<-distnames[-covsCol]
+    }
   }
   if(!is.null(Data$ID)){
     ID <- as.character(Data$ID) # homogenization of numeric and string IDs
@@ -170,7 +172,7 @@ prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
   }
   
   # identify covariate columns
-  if(!is.null(covNames)){
+  if(length(covNames)){
     if(length(covsCol)>0) {
       covs <- Data[,covsCol,drop=FALSE]
       colnames(covs) <- names(Data)[covsCol]
@@ -210,6 +212,7 @@ prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
         } else {
           tmpspCovs <- numeric(nrow(data))
           zname <- names(attributes(spatialCovs[[j]])$z)
+          if(!(zname %in% names(Data))) stop(zname," z-value for ",spatialcovnames[j], "not found in Data")
           zvalues <- raster::getZ(spatialCovs[[j]])
           if(!all(unique(Data[[zname]]) %in% zvalues)) stop("Data$",zname," includes z-values with no matching raster layer in spatialCovs$",spatialcovnames[j])
           for(ii in 1:length(zvalues)){
@@ -218,8 +221,11 @@ prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
           spCovs<-cbind(spCovs,tmpspCovs)
         }
       }
-      colnames(spCovs)<-spatialcovnames
-      data<-cbind(data,spCovs)
+      spCovs<-data.frame(spCovs)
+      names(spCovs)<-spatialcovnames
+      #data<-cbind(data,spCovs)
+      if(is.null(covs)) covs <- spCovs
+      else covs<-cbind(covs,spCovs)
     }
     if(!is.null(centers)){
       if(dim(centers)[2]!=2) stop("centers must be a matrix consisting of 2 columns (i.e., x- and y-coordinates)")
@@ -243,7 +249,7 @@ prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
       }  
     }
     if(!is.null(angleCovs)){
-      if(!all(angleCovs %in% names(covs))) stop('angleCovs not found in data')
+      if(!all(angleCovs %in% colnames(covs))) stop('angleCovs not found in Data or spatialCovs')
       for(i in angleCovs){
         covs[[i]]<-circAngles(covs[[i]],data)
       }

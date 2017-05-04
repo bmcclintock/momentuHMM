@@ -192,9 +192,12 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
     ids = unique(predData$ID)
     
     if(!is.null(covNames) | !is.null(angleCovs)){
-      covNames <- unique(c(covNames,angleCovs))
+      covNames <- unique(c(covNames,angleCovs[!(angleCovs %in% names(spatialCovs))]))
+      if(!length(covNames)) covNames <- NULL
     }
     znames <- unlist(lapply(spatialCovs,function(x) names(attributes(x)$z)))
+    if(length(znames))
+      if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(miData)),"$crwPredict")
     #coordNames <- attr(predData,"coord")
     
     if(fit | !missing("dist")) {
@@ -260,7 +263,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
       stop("nSims is greater than the length of miData. nSims must be <=",length(miData))
     if(nSims<1)
       stop("nSims must be >0")
-    cat('Fitting',length(ind),'imputation(s) using fitHMM... ')
+    cat('Fitting',min(nSims,length(ind)),'imputation(s) using fitHMM... ')
   }
   
   if(!is.list(knownStates)){

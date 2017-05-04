@@ -36,7 +36,7 @@ of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angl
 the previous movement direction (instead of true north); this is to allow mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
 or \code{\link{MIfitHMM}}.}
 
-\item{angleCovs}{Character vector indicating the names of any circular-circular regression covariates in \code{Data} that need conversion from bearing (relative to true north) to turning angle (relative to previous movement direction) 
+\item{angleCovs}{Character vector indicating the names of any circular-circular regression covariates in \code{Data} or \code{spatialCovs} that need conversion from bearing (relative to true north) to turning angle (relative to previous movement direction) 
 using \code{\link{circAngles}}.}
 }
 \value{
