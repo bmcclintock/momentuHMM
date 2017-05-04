@@ -49,8 +49,12 @@ getSplineDM<-function(distnames,DM,m,covs){
                   }
                 }
               } else {
-                if(length(specials)) lfact <- grep(paste(specials,collapse="|"),colnames(factors), value=TRUE,fixed=TRUE,invert=TRUE)
-                else lfact <- colnames(factors)
+                if(length(specials)) {
+                  tmpspec<-specials
+                  tmpspec<-gsub("(","\\(",tmpspec,fixed=TRUE)
+                  tmpspec<-gsub(")","\\)",tmpspec,fixed=TRUE)
+                  lfact <- grep(paste(tmpspec,collapse="|"),colnames(factors), value=TRUE,invert=TRUE)
+                } else lfact <- colnames(factors)
                 for(l in lfact){
                   if(factors[k,l]){
                     tmpDM[[state]]<-c(tmpDM[[state]],l)
@@ -108,8 +112,12 @@ getSplineFormula<-function(formula,data,covs){
         }
       }
     } else {
-      if(length(specials)) lfact <- grep(paste(specials,collapse="|"),colnames(factors), value=TRUE,fixed=TRUE,invert=TRUE)
-      else lfact <- colnames(factors)
+      if(length(specials)) {
+        tmpspec<-specials
+        tmpspec<-gsub("(","\\(",tmpspec,fixed=TRUE)
+        tmpspec<-gsub(")","\\)",tmpspec,fixed=TRUE)
+        lfact <- grep(paste(tmpspec,collapse="|"),colnames(factors), value=TRUE,invert=TRUE)
+      } else lfact <- colnames(factors)
       for(l in lfact){
         if(factors[k,l]){
           newformula<-c(newformula,l)
