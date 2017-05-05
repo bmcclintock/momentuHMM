@@ -1,10 +1,10 @@
 
-#' Convert bearings (relative to true north) to turning angle covariates suitable for circular-circular regression on the angle mean
+#' Convert standard direction angles (in radians relative to the x-axis) to turning angle covariates suitable for circular-circular regression on the angle mean
 #' 
-#' This function can be used to convert angular covariates measured relative to true north (e.g., ocean currents, wind direction) to turning angle
+#' This function can be used to convert angular covariates (e.g., ocean currents, wind direction) measured in radians relative to the x-axis to turning angle
 #' covariates sutiable for circular-circular regression in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}.
 #' 
-#' @param refAngle Numeric vector of bearings relative to true north
+#' @param refAngle Numeric vector of standard direction angles (in radians) relative to the x-axis, where 0 = east, pi/2 = north, pi = west, -pi/2 = south
 #' @param data data frame containing fields for the x- and y-coordinates (identified by \code{coordNames}) and 'ID' (if more than one individual)
 #' @param coordNames Names of the columns of coordinates in \code{data}. Default: \code{c("x","y")}.
 #' 
@@ -14,8 +14,10 @@
 #' # extract data from momentuHMM example
 #' data<-example$data
 #' 
-#' # generate fake bearings
-#' refAngle<-2*atan(rnorm(nrow(data)))
+#' # generate fake angle covariates
+#' u <- rnorm(nrow(data)) # horizontal component
+#' v <- rnorm(nrow(data)) # vertical component
+#' refAngle <- atan2(v,u)
 #' 
 #' # add turning angle covariate to data
 #' data$cov3 <- circAngles(refAngle=refAngle,data=data)
@@ -44,8 +46,9 @@ circAngles<-function(refAngle,data,coordNames=c("x","y")){
   for(s in 1:length(ind)){
     for(i in cumind[s]+2:ind[s]){
       w <- c(x[i]-x[i-1],y[i]-y[i-1])
-      b <- -(atan2(w[2],w[1])-pi/2) # bearing; 0 is north, pi/2 east
-      b <- atan2(sin(b),cos(b)) # bearing on [-pi,pi)
+      #b <- -(atan2(w[2],w[1])-pi/2) # bearing; 0 is north, pi/2 east
+      #b <- atan2(sin(b),cos(b)) # bearing on [-pi,pi)
+      b <- atan2(w[2],w[1]) # 0 is east, pi/2 north, -pi/2 south, pi west
       angle[i] <- refAngle[i] - b
       while(angle[i]<=(-pi)) angle[i] <- angle[i] + 2*pi
       while(angle[i]>pi) angle[i] <- angle[i] -2*pi

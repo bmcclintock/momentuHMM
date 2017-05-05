@@ -69,7 +69,7 @@
 #' @param centers 2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 #' centers of attraction or repulsion) from which distance and angle covariates will be calculated based on realizations of the position process. 
 #' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
-#' @param angleCovs Character vector indicating the names of any circular-circular regression covariates in \code{miData$crwPredict} that need conversion from bearing (relative to true north) to turning angle (relative to previous movement direction) 
+#' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{miData$crwPredict} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 #' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param method Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param parIS Size of the parameter importance sample. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.

@@ -340,7 +340,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
           curFit<-fit
           while(fitCount<retryFits){ # & (fit$convergence | any(is.na(fit$se[which(is.na(fixPar[[i]]))])))){
             cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",curFit$loglik,"  ...",sep="")
-            tmp <- suppressWarnings(suppressMessages(crawl::crwMLE(
+            tmp <- tryCatch(suppressWarnings(suppressMessages(crawl::crwMLE(
               mov.model =  mov.model[[i]],
               err.model = err.model[[i]],
               activity = activity[[i]],
@@ -358,7 +358,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
               need.hess = need.hess,
               initialSANN = list(maxit = initialSANN$maxit),
               attempts = 1
-            )))
+            ))),error=function(e) e)
             if(inherits(tmp,"crwFit")){
               if(tmp$convergence==0){
                 if(tmp$aic < model_fits[[i]]$aic | all(!is.na(tmp$se[which(is.na(fixPar[[i]]))])))

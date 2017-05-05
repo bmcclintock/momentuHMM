@@ -24,9 +24,9 @@
 #' centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the location data. If no row names are provided, then generic names are generated 
 #' for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'center2.dist', 'center2.angle'); otherwise the covariate names are derived from the row names
 #' of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. As with covariates identified in \code{angleCovs}, note that the angle covariates for each activity center are calculated relative to 
-#' the previous movement direction (instead of true north); this is to allow mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
+#' the previous movement direction (instead of standard direction relative to the x-axis); this is to allow mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
 #' or \code{\link{MIfitHMM}}.
-#' @param angleCovs Character vector indicating the names of any circular-circular regression covariates in \code{Data} or \code{spatialCovs} that need conversion from bearing (relative to true north) to turning angle (relative to previous movement direction) 
+#' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{Data} or \code{spatialCovs} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 #' using \code{\link{circAngles}}.
 
 #' @return An object \code{\link{momentuHMMData}}, i.e., a dataframe of:
@@ -59,9 +59,11 @@
 #' d <- prepData(Data,coordNames=c("coord1","coord2"),covNames="cov1",
 #'               centers=matrix(c(0,10,0,10),2,2,dimnames=list(c("c1","c2"),NULL)))
 #'               
-#' # Include angle covariate (relative to true north) that needs conversion to 
+#' # Include angle covariate that needs conversion to 
 #' # turning angle relative to previous movement direction
-#' cov2 <- 2*atan(rnorm(10))
+#' u <- rnorm(10) # horizontal component
+#' v <- rnorm(10) # vertical component
+#' cov2 <- atan2(v,u)
 #' Data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1,cov2=cov2)
 #' d <- prepData(Data,coordNames=c("coord1","coord2"),covNames="cov1",
 #'               angleCovs="cov2")

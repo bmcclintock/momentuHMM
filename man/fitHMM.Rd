@@ -53,7 +53,7 @@ regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turn
 regression.  Whenever circular-circular regression is used for an angular data stream, a corresponding design matrix (\code{DM}) 
 must be specified for the data stream, and the previous movement direction (i.e., a turning angle of zero) is automatically used 
 as the reference angle (i.e., the intercept). Any circular-circular regression covariates in \code{data} should therefore be relative to the previous 
-direction of movement (instead of true north; see \code{\link{prepData}} and \code{\link{circAngles}}).  See Duchesne et al. (2015) for specifics on the circular-circular regression model 
+direction of movement (instead of standard directions relative to the x-axis); see \code{\link{prepData}} and \code{\link{circAngles}}).  See Duchesne et al. (2015) for specifics on the circular-circular regression model 
 using previous movement direction as the reference angle. Default is \code{NULL}, which assumes circular-linear regression is 
 used for any angular distributions for which the mean angle is to be estimated. \code{circularAngleMean} elements corresponding to angular data 
 streams are ignored unless the corresponding element of \code{estAngleMean} is \code{TRUE}. Any \code{circularAngleMean} elements 
@@ -172,9 +172,9 @@ In other words, the mean turning angle is zero when the coefficient(s) B=0.
 
 \item Circular-circular regression in \code{momentuHMM} is designed for turning angles (not bearings) as computed by \code{\link{simData}} and \code{\link{prepData}}. 
 Any circular-circular regression covariates for time step t should therefore be relative to the previous 
-direction of movement for time step t-1 (instead of true north).  In other words, circular-circular regression covariates for time step t should be the turning angle
-between the direction of movement for time step t-1 and the bearing of the covariate relative to true north for time step t.  If provided bearings relative to true north, 
-\code{\link{circAngles}} or \code{\link{prepData}} can perform this calculation for you.  
+direction of movement for time step t-1.  In other words, circular-circular regression covariates for time step t should be the turning angle
+between the direction of movement for time step t-1 and the standard direction of the covariate relative to the x-axis for time step t.  If provided standard directions in radians relative to the x-axis 
+(where 0 = east, pi/2 = north, pi = west, and -pi/2 = south), \code{\link{circAngles}} or \code{\link{prepData}} can perform this calculation for you.  
 
 \item State-specific formulas can be specified in \code{DM} using special formula functions. These special functions can take
 the names \code{paste0("state",1:nbStates)} (where the integer indicates the state-specific formula).  For example, 

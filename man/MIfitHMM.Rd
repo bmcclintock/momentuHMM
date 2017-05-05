@@ -93,7 +93,7 @@ a \code{\link{crwData}} object; otherwise \code{spatialCovs} is ignored). See \c
 centers of attraction or repulsion) from which distance and angle covariates will be calculated based on realizations of the position process. 
 See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 
-\item{angleCovs}{Character vector indicating the names of any circular-circular regression covariates in \code{miData$crwPredict} that need conversion from bearing (relative to true north) to turning angle (relative to previous movement direction) 
+\item{angleCovs}{Character vector indicating the names of any circular-circular regression angular covariates in \code{miData$crwPredict} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 
 \item{method}{Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}

@@ -73,7 +73,7 @@ centers of attraction or repulsion) from which distance and angle covariates wil
 covariates can be included in \code{formula} and \code{DM} using the row names of \code{centers}.  If no row names are provided, then generic names are generated 
 for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'center2.dist', 'center2.angle'); otherwise the covariate names are derived from the row names
 of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. Note that the angle covariates for each activity center are calculated relative to 
-the previous movement direction instead of true north; this is to allow mean turning angle to be simulated as a function of these covariates using circular-circular regression.}
+the previous movement direction instead of standard directions relative to the x-axis; this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression.}
 
 \item{obsPerAnimal}{Either the number of the number of observations per animal (if single value),
 or the bounds of the number of observations per animal (if vector of two values). In the latter case,
