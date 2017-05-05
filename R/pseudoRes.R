@@ -58,7 +58,7 @@ pseudoRes <- function(m)
     delta <- m$Par$real$delta$est
     inputs <- checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
     p <- inputs$p
-    DMinputs<-getDM(data,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean[i])
+    DMinputs<-getDM(data,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
     m$conditions$fullDM <- DMinputs$fullDM
     m$mod$estimate <- n2w(Par,p$bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
   } else {
