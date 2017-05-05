@@ -43,8 +43,10 @@ circAngles<-function(refAngle,data,coordNames=c("x","y")){
   angle <- rep(0,length(x))
   for(s in 1:length(ind)){
     for(i in cumind[s]+2:ind[s]){
-      w <- c(x[i-1]-x[i],y[i-1]-y[i])
-      angle[i] <- refAngle[i] - atan2(w[2],w[1])
+      w <- c(x[i]-x[i-1],y[i]-y[i-1])
+      b <- -(atan2(w[2],w[1])-pi/2) # bearing; 0 is north, pi/2 east
+      b <- atan2(sin(b),cos(b)) # bearing on [-pi,pi)
+      angle[i] <- refAngle[i] - b
       while(angle[i]<=(-pi)) angle[i] <- angle[i] + 2*pi
       while(angle[i]>pi) angle[i] <- angle[i] -2*pi
     }
