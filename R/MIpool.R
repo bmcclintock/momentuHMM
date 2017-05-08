@@ -176,16 +176,16 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,covs=NULL){
     if(nrow(covs)>1) stop('covs must consist of a single row')
     if(!all(names(covs) %in% names(mhdata))) stop('invalid covs specified')
     if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(mhdata$ID))
+    for(j in names(mhdata)[which(names(mhdata) %in% names(covs))]){
+      if(inherits(mhdata[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(mhdata[[j]]))
+      if(is.na(covs[[j]])) stop("check covs value for ",j)
+    }    
     for(j in names(mhdata)[which(!(names(mhdata) %in% names(covs)))]){
       if(any(class(mhdata[[j]]) %in% meansList)) {
         if(inherits(mhdata[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(mhdata[[j]][!is.na(mhdata[[j]])])
         else covs[[j]]<-mean(mhdata[[j]],na.rm=TRUE)
       } else covs[[j]] <- mhdata[[j]][1]
     }
-    for(j in names(mhdata)[which(names(mhdata) %in% names(covs))]){
-      if(inherits(mhdata[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(mhdata[[j]]))
-      if(is.na(covs[[j]])) stop("check covs value for ",j)
-    }    
     tempCovs <- covs[1,]
   }
   
