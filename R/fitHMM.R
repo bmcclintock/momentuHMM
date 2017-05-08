@@ -676,7 +676,7 @@ fitHMM <- function(data,nbStates,dist,
       }
       
       if((fitCount+1)<=retryFits){
-        cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,sep="")
+        cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,"         ",sep="")
         if(!inherits(curmod,"error")){
           curmod$elapsedTime <- endTime[3]
           if(curmod$minimum < mod$minimum) mod <- curmod
