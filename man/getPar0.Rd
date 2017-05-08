@@ -9,7 +9,7 @@ getPar0(model, nbStates = NULL, estAngleMean = NULL,
   stateNames = NULL)
 }
 \arguments{
-\item{model}{\code{\link{momentuHMM}} object (as returned by \code{\link{fitHMM}})}
+\item{model}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})}
 
 \item{nbStates}{Number of states in the new model. If \code{nbStates=NULL} (the default), then \code{nbStates=length(model$stateNames)}}
 

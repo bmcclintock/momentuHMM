@@ -2,7 +2,7 @@
 #' 
 #' For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}) from an existing \code{\link{momentuHMM}} model fit based on the provided arguments for the new model. Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
 #' 
-#' @param model \code{\link{momentuHMM}} object (as returned by \code{\link{fitHMM}})
+#' @param model A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})
 #' @param nbStates Number of states in the new model. If \code{nbStates=NULL} (the default), then \code{nbStates=length(model$stateNames)}
 #' @param estAngleMean Named list indicating whether or not the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. If \code{estAngleMean=NULL} (the default), then \code{estAngleMean=model$conditions$estAngleMean}
@@ -80,6 +80,23 @@
 #' 
 #' @export
 getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=NULL,DM=NULL,stateNames=NULL){
+  
+  if(!is.momentuHMM(model) & !is.miHMM(model) & !is.miSum(model))
+    stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
+  
+  if(is.miHMM(model)) model <- model$miSum
+  
+  if(is.miSum(model)){
+    model$mle <- lapply(model$Par$real,function(x) x$est)
+    model$mle$beta <- model$Par$beta$beta$est
+    model$mle$delta <- model$Par$real$delta$est
+    model$mod <- list()
+    model$mod$estimate <- model$MIcombine$coefficients
+    model$mod$hessian <- ginv(model$MIcombine$variance)
+    model$CIbeta <- model$Par$beta
+    model$CIreal <- model$Par$real
+  }
+  
   dist<-model$conditions$dist
   Par<-model$mle
   zeroInflation<-model$conditions$zeroInflation
