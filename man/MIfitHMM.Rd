@@ -32,11 +32,14 @@ objects, \code{nSims} cannot exceed the length of \code{miData}.}
 \item{dist}{A named list indicating the probability distributions of the data streams. See \code{\link{fitHMM}}.}
 
 \item{Par0}{A named list containing vectors of initial state-dependent probability distribution parameters for 
-each data stream specified in \code{dist}. See \code{\link{fitHMM}}.}
+each data stream specified in \code{dist}. See \code{\link{fitHMM}}.  \code{Par0} may also be a list of length \code{nSims}, where each element is a named list containing vectors
+of initial state-dependent probability distribution parameters for each imputation.}
 
-\item{beta0}{Initial matrix of regression coefficients for the transition probabilities. See \code{\link{fitHMM}}.}
+\item{beta0}{Initial matrix of regression coefficients for the transition probabilities. See \code{\link{fitHMM}}. \code{beta0} may also be a list of length \code{nSims}, where each element 
+is an initial matrix of regression coefficients for the transition probabilities for each imputation.}
 
-\item{delta0}{Initial value for the initial distribution of the HMM. See \code{\link{fitHMM}}.}
+\item{delta0}{Initial values for the initial distribution of the HMM. See \code{\link{fitHMM}}. \code{delta0} may also be a list of length \code{nSims}, where each element 
+is the initial values for the initial distribution of the HMM for each imputation.}
 
 \item{estAngleMean}{An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy'). See \code{\link{fitHMM}}.}
