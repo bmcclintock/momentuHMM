@@ -18,6 +18,7 @@
 #' \item{Par}{A list of vectors of state-dependent probability distribution parameters for 
 #' each data stream specified in \code{model$conditions$dist}}
 #' \item{beta}{Matrix of regression coefficients for the transition probabilities}
+#' \item{delta}{Initial distribution of the HMM. Only returned if \code{stateNames} has the same membership as the state names for \code{model}}.
 #' 
 #' All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{cons}, \code{userBounds}, \code{workcons}, etc.) and \code{data} are assumed to be the same 
 #' for \code{model} and the new model (as specified by  \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{DM}, and \code{stateNames}).
@@ -244,10 +245,14 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
       if(length(noBeta)) tmpPar[noBeta,state] <- 0
     }
     Par$beta<-tmpPar
-    #Par$delta<-model$mle$delta[names(model$mle$delta) %in% stateNames]
+    if(setequal(names(model$mle$delta),stateNames)) {
+      Par$delta<-model$mle$delta[match(names(model$mle$delta),stateNames)]
+    } else {
+      Par$delta<-NULL
+    }
   } else {
     Par$beta<-NULL
-    #Par$delta<-NULL
+    Par$delta<-NULL
   }
-  list(Par=Par[distnames],beta=Par$beta)#,delta=Par$delta)
+  list(Par=Par[distnames],beta=Par$beta,delta=Par$delta)
 }
