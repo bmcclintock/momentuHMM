@@ -232,8 +232,12 @@ getParDM<-function(data=data.frame(),nbStates,dist,
         if(length(wpar[[i]])!=nrow(fullDM[[i]])) stop('Par$',i,' should be of length ',nrow(fullDM[[i]]))
         bounds<-inputs$p$bounds[[i]]
         if(any(wpar[[i]]<=bounds[,1] | wpar[[i]]>=bounds[,2])) stop('Par$',i,' must be within parameter bounds')
-        if(is.list(inputs$DM[[i]])) gbInd <- getboundInd(fullDM[[i]])
-        else {
+        if(is.list(inputs$DM[[i]])){
+          if(!inputs$circularAngleMean[[i]])
+            gbInd <- getboundInd(fullDM[[i]])
+          else
+            gbInd <- c(1:nbStates,getboundInd(fullDM[[i]][1:nbStates+nbStates,])+nbStates)
+        } else {
           if(!inputs$circularAngleMean[[i]])
             gbInd <- getboundInd(inputs$DM[[i]])
           else 
