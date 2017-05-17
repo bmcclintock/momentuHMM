@@ -108,9 +108,8 @@ CIbeta <- function(m,alpha=0.95)
   
   Par <- list()
   for(i in distnames){
-    est <- wpar[parindex[[i]]+1:ncol(fullDM[[i]])]#^m$conditions$cons[[i]]+m$conditions$workcons[[i]]
-    var <- diag(Sigma)[parindex[[i]]+1:ncol(fullDM[[i]])]
-    
+    est <- wpar[parindex[[i]]+1:ncol(fullDM[[i]])]^m$conditions$cons[[i]]+m$conditions$workcons[[i]]
+    var <- ((m$conditions$cons[[i]]*(est^(m$conditions$cons[[i]]-1)))^2)*(diag(Sigma)[parindex[[i]]+1:ncol(fullDM[[i]])])
     # if negative variance, replace by NA
     var[which(var<0)] <- NA
     

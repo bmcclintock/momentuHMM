@@ -177,7 +177,7 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
         }
       }
       if(any(newparmNames %in% parmNames))
-        tmpPar[match(parmNames,newparmNames,nomatch=0)] <- model$CIbeta[[i]]$est[parmNames %in% newparmNames]
+        tmpPar[match(parmNames,newparmNames,nomatch=0)] <- ((model$CIbeta[[i]]$est-model$conditions$workcons[[i]])^(1/model$conditions$cons[[i]]))[parmNames %in% newparmNames]#model$CIbeta[[i]]$est[parmNames %in% newparmNames]
       names(tmpPar)<-colnames(DMinputs[[i]])
       Par[[i]] <- tmpPar
     #}

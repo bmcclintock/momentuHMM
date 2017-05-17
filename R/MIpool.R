@@ -117,8 +117,13 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,covs=NULL){
   for(parm in 1:nparms){
     
     parnames <- rownames(m$CIbeta[[parms[parm]]]$est)
-    coeffs <- matrix(miBeta$coefficients[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
-    vars <- matrix(diag(miBeta$variance)[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
+    if(parms[parm] %in% distnames){
+      coeffs <- matrix(miBeta$coefficients[(parindex[parm]+1):parindex[parm+1]]^m$conditions$cons[[parms[parm]]]+m$conditions$workcons[[parms[parm]]],nrow=length(parnames),dimnames=list(parnames))
+      vars <- matrix(((m$conditions$cons[[parms[parm]]]*(miBeta$coefficients[(parindex[parm]+1):parindex[parm+1]]^(m$conditions$cons[[parms[parm]]]-1)))^2)*(diag(miBeta$variance)[(parindex[parm]+1):parindex[parm+1]]),nrow=length(parnames),dimnames=list(parnames))
+    } else {
+      coeffs <- matrix(miBeta$coefficients[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
+      vars <- matrix(diag(miBeta$variance)[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
+    }
     dfs <- matrix(miBeta$df[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
     
     xbar[[parms[parm]]] <- matrix(NA,nrow=length(parnames),ncol=parmcols[parm])
