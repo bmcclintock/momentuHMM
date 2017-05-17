@@ -23,7 +23,7 @@ A \code{\link{miSum}} object, i.e., a list comprised of model and pooled paramet
 
 \code{miSum$Par} is a list comprised of:
 \item{beta}{Pooled estimates for the working parameters}
-\item{real}{Pooled estimates for the natural parameters based on covariate means across imputations (if applicable)}
+\item{real}{Estimates for the natural parameters based on pooled working parameters and covariate means (or \code{covs}) across imputations (if applicable)}
 \item{timeInStates}{The proportion of time steps assigned to each state}
 \item{states}{The most freqent state assignment for each time step based on the \code{\link{viterbi}} algorithm for each model fit}
 \item{stateProbs}{Pooled state probability estimates for each time step}
@@ -33,8 +33,8 @@ Calculate pooled parameter estimates and states across multiple imputations
 }
 \details{
 Pooled estimates, standard errors, and confidence intervals are calculated using standard multiple imputation formulas. Working scale parameters are pooled
-using \code{\link[mitools]{MIcombine}} and t-distributed confidence intervals. Natural scale parameters are pooled using similar formulae but are based on 
-covariate means across all imputations (if applicable) and normally-distributed confidence intervals.
+using \code{\link[mitools]{MIcombine}} and t-distributed confidence intervals. Natural scale parameters and normally-distributed confidence intervals are calculated by transforming the pooled working scale parameters 
+and, if applicable, are based on covariate means across all imputations (and/or values specified in \code{covs}).
 
 Note that pooled estimates for \code{timeInStates} and \code{stateProbs} do not include within-model uncertainty and are based entirely on across-model variability.
 }
