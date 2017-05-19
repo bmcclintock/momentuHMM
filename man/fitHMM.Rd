@@ -65,7 +65,7 @@ corresponding to data streams that do not have angular distributions are ignored
  and state- or parameter-specific formulas (see details).
 Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.}
 
-\item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
+\item{stationary}{\code{FALSE} if there are covariates in \code{formula}. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
 
 \item{verbose}{Determines the print level of the optimizer. The default value of 0 means that no

@@ -49,7 +49,7 @@
 #' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}),
 #'  and state- or parameter-specific formulas (see details).
 #' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.
-#' @param stationary \code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
+#' @param stationary \code{FALSE} if there are covariates in \code{formula}. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param verbose Determines the print level of the optimizer. The default value of 0 means that no
 #' printing occurs, a value of 1 means that the first and last iterations of the optimization are
