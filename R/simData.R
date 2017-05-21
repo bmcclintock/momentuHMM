@@ -347,6 +347,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(!is.null(DM[[i]])){
         Par[[i]] <- model$mod$estimate[parindex[[i]]+1:ncol(model$conditions$fullDM[[i]])]
         names(Par[[i]])<-colnames(model$conditions$fullDM[[i]])
+        cons[[i]]<-rep(1,length(cons[[i]]))
+        workcons[[i]]<-rep(0,length(workcons[[i]]))
       }
     }
     for(i in distnames[which(dist %in% angledists)]){
