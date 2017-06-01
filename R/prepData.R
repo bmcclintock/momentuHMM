@@ -4,16 +4,16 @@
 #' Preprocessing of the data streams, including calculation of step length, turning angle, and covariates from location data to be suitable for
 #' analysis using \code{\link{fitHMM}}
 #'
-#' @param Data A dataframe of data streams, including optionally a field \code{ID}
+#' @param Data Either a data frame of data streams or a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}). If \code{Data} is a data frame, it can optionally include a field \code{ID}
 #' (identifiers for the observed individuals), coordinates from which step length ('step') 
 #' and turning angle ('angle') area calculated, and any covariates (with names matching \code{covNames} and/or \code{angleCovs}). 
 #' If step length and turning angle are to be calculated from coordinates, the \code{coordNames} argument 
 #' must identify the names for the x- (longitunal) and y- (latitudinal) coordinates.
 #' With the exception of \code{ID} and \code{coordNames}, all variables in \code{Data} are treated as data streams unless identified
 #' as covariates in \code{covNames} and/or \code{angleCovs}.
-#' @param type \code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude.
+#' @param type \code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude. Ignored if \code{Data} is a \code{\link{crwData}} object.
 #' @param coordNames Names of the columns of coordinates in the \code{Data} data frame. Default: \code{c("x","y")}. If \code{coordNames=NULL} then step lengths, turning angles, 
-#' and location covariates (i.e., those specified by \code{spatialCovs}, \code{centers}, and \code{angleCovs}) are not calculated.
+#' and location covariates (i.e., those specified by \code{spatialCovs}, \code{centers}, and \code{angleCovs}) are not calculated. Ignored if \code{Data} is a \code{\link{crwData}} object.
 #' @param covNames Character vector indicating the names of any covariates in \code{Data} dataframe. Any variables in \code{Data} (other than \code{ID}) that are not identified in 
 #' \code{covNames} and/or \code{angleCovs} are assumed to be data streams (i.e., missing values will not be accounted for).
 #' @param spatialCovs List of \code{\link[raster]{Raster-class}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
@@ -32,9 +32,15 @@
 #' @return An object \code{\link{momentuHMMData}}, i.e., a dataframe of:
 #' \item{ID}{The ID(s) of the observed animal(s)}
 #' \item{...}{Data streams (e.g., 'step', 'angle', etc.)}
-#' \item{x}{Either easting or longitude (if \code{coordNames} is specified)}
-#' \item{y}{Either norting or latitude (if \code{coordNames} is specified)}
+#' \item{x}{Either easting or longitude (if \code{coordNames} is specified or \code{Data} is a \code{crwData} object)}
+#' \item{y}{Either norting or latitude (if \code{coordNames} is specified or \code{Data} is a \code{crwData} object)}
 #' \item{...}{Covariates (if any)}
+#' 
+#' If \code{Data} is a \code{\link{crwData}} object, the \code{\link{momentuHMMData}} object created by \code{prepData} includes step lengths and turning angles calculated from the best predicted 
+#' locations (\code{crwData$crwPredict$mu.x} and \code{crwData$crwPredict$mu.y}). Prior to using \code{prepData}, additional data streams or covariates unrelated to location (including z-values associated with
+#' \code{spatialCovs} raster stacks or bricks) can be merged with the \code{crwData} object using \code{\link{crawlMerge}}.
+#' 
+#' @seealso \code{\link{crawlMerge}}, \code{\link{crawlWrap}}, \code{\link{crwData}}
 #'
 #' @examples
 #' coord1 <- c(1,2,3,4,5,6,7,8,9,10)
@@ -74,6 +80,20 @@
 
 prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NULL,spatialCovs=NULL,centers=NULL,angleCovs=NULL)
 {
+  if(is.crwData(Data)){
+    predData <- Data$crwPredict
+    if(!is.null(covNames) | !is.null(angleCovs)){
+      covNames <- unique(c(covNames,angleCovs[!(angleCovs %in% names(spatialCovs))]))
+      if(!length(covNames)) covNames <- NULL
+    }
+    znames <- unlist(lapply(spatialCovs,function(x) names(attributes(x)$z)))
+    if(length(znames))
+      if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(Data)),"$crwPredict")
+    distnames <- names(predData)[which(!(names(predData) %in% c("ID","x","y",covNames,znames)))]
+    Data <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
+    type <- 'UTM'
+    coordNames <- c("x","y")
+  }
   if(!is.data.frame(Data)) stop("Data must be a data frame")
   if(any(dim(Data)==0)) stop("Data is empty")
   distnames<-names(Data)
