@@ -5,17 +5,15 @@
 #' missing data, temporal-irregularity, or location measurement error in hidden Markov models, where pooled parameter estimates reflect uncertainty
 #' attributable to observation error.
 #' 
-#' \code{miData} can either be a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} object (as returned by \code{MIfitHMM} when \code{fit=FALSE}
-#' and \code{nSims>1}), or a list of \code{\link{momentuHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}}). 
+#' \code{miData} can either be a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} object (as returned by \code{MIfitHMM} when \code{fit=FALSE}), 
+#' or a list of \code{\link{momentuHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}}). 
 #' 
 #' If \code{miData} is a \code{crwData} object, \code{MIfitHMM} uses a combination of 
 #' \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepData}}, and \code{\link{fitHMM}} to draw \code{nSims} realizations of the position process
 #' and fit the specified HMM to each imputation of the data. The vast majority of \code{MIfitHMM} arguments are identical to the corresponding arguments from these functions.
 #' 
 #' If \code{miData} is a \code{\link{crwData}} object, \code{nSims} determines both the number of realizations of the position process to draw 
-#' (using \code{\link[crawl]{crwSimulator}} and \code{\link{crwPostIS}}) as well as the number of HMM fits. If \code{miData} 
-#' is a \code{\link{crwData}} object and \code{nSims=1}, then the single best predicted position process from \code{\link[crawl]{crwPredict}} is fitted and all arguments
-#' related to \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}} are ignored.
+#' (using \code{\link[crawl]{crwSimulator}} and \code{\link{crwPostIS}}) as well as the number of HMM fits.
 #' 
 #' If \code{miData} is a \code{\link{crwSim}} object or a list of \code{\link{momentuHMMData}} object(s), the specified HMM will simply be fitted to each of the \code{momentuHMMData} objects
 #' and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} are ignored.
@@ -97,13 +95,14 @@
 #' If \code{poolEstimates=FALSE} and \code{fit=TRUE}, a list of length \code{nSims} consisting of \code{\link{momentuHMM}} objects is returned. 
 #' 
 #' However, if \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}} 
-#' object, then \code{MIfitHMM} returns a list containing a \code{\link{momentuHMMData}} object (if \code{nSims=1}) or, if \code{nSims>1}, a \code{\link{crwSim}} object 
-#' (and most other arguments related to \code{\link{fitHMM}} are ignored).
+#' object, then \code{MIfitHMM} returns a \code{\link{crwSim}} object, i.e., a list containing \code{miData} (a list of 
+#' \code{\link{momentuHMMData}} objects) and \code{crwSimulator} (a list of \code{\link[crawl]{crwSimulator}} objects),and most other arguments related to \code{\link{fitHMM}} are ignored.
 #' 
 #' @seealso \code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHMM}}, \code{\link{getParDM}}, \code{\link{MIpool}}, \code{\link{prepData}} 
 #' 
 #' @examples
 #' 
+#' # Don't run because it takes too long on a single core
 #' \dontrun{
 #' # extract simulated obsData from example data
 #' obsData <- miExample$obsData
@@ -114,7 +113,7 @@
 #'
 #' # create crwData object by fitting crwMLE models to obsData and predict locations 
 #' # at default intervals for both individuals
-#' miData <- crawlWrap(obsData=obsData,ncores=1,
+#' crwOut <- crawlWrap(obsData=obsData,ncores=1,
 #'          theta=c(4,0),fixPar=c(1,1,NA,NA),
 #'          initial.state=inits,
 #'          err.model=err.model)
@@ -133,23 +132,20 @@
 #' beta0 <- matrix(c(rep(-1.5,nbStates*(nbStates-1)),rep(0,nbStates*(nbStates-1)*nbCovs)),
 #'                 nrow=nbCovs+1,byrow=TRUE)
 #' 
-#' # Fit HMM to best predicted position process
-#' bestFit<-MIfitHMM(miData=miData,nSims=1,ncores=1,
-#'                   nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
-#'                   Par0=list(step=stepPar0,angle=anglePar0),beta0=beta0,
-#'                   formula=formula,estAngleMean=list(angle=TRUE),
-#'                   covNames=c("cov1","cov2"))
+#' # first fit HMM to best predicted position process
+#' bestData<-prepData(crwOut,covNames=c("cov1","cov2"))
+#' bestFit<-fitHMM(bestData,
+#'                 nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+#'                 Par0=list(step=stepPar0,angle=anglePar0),beta0=beta0,
+#'                 formula=formula,estAngleMean=list(angle=TRUE))
 #'             
 #' print(bestFit)
-#' }
 #' 
-#' # Don't run because it takes too long on a single core
-#' \dontrun{ 
 #' # extract estimates from 'bestFit'
 #' bPar0 <- getPar(bestFit)
 #' 
 #' # Fit nSims=5 imputations of the position process
-#' miFits<-MIfitHMM(miData=miData,nSims=5,ncores=1,
+#' miFits<-MIfitHMM(miData=crwOut,nSims=5,ncores=1,
 #'                   nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
 #'                   Par0=bPar0$Par,beta0=bPar0$beta,delta0=bPar0$delta,
 #'                   formula=formula,estAngleMean=list(angle=TRUE),
@@ -188,30 +184,31 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   
   if(is.crwData(miData)){
     
-    model_fits <- miData$crwFits
-    predData <- miData$crwPredict
-
-    Time.name<-attr(predData,"Time.name")
-    ids = unique(predData$ID)
-    
-    if(!is.null(covNames) | !is.null(angleCovs)){
-      covNames <- unique(c(covNames,angleCovs[!(angleCovs %in% names(spatialCovs))]))
-      if(!length(covNames)) covNames <- NULL
-    }
-    znames <- unlist(lapply(spatialCovs,function(x) names(attributes(x)$z)))
-    if(length(znames))
-      if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(miData)),"$crwPredict")
-    #coordNames <- attr(predData,"coord")
-    
-    if(fit | !missing("dist")) {
-      if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
-      distnames <- names(dist)[which(!(names(dist) %in% c("step","angle")))]
-      if(any(is.na(match(distnames,names(predData))))) stop(paste0(distnames[is.na(match(distnames,names(predData)))],collapse=", ")," not found in miData")
-    } else {
-      distnames <- names(predData)[which(!(names(predData) %in% c("ID","x","y",covNames,znames)))]
-    }
-    
-    if(nSims>1){
+    if(nSims>=1) {
+      
+      model_fits <- miData$crwFits
+      predData <- miData$crwPredict
+  
+      Time.name<-attr(predData,"Time.name")
+      ids = unique(predData$ID)
+      
+      if(!is.null(covNames) | !is.null(angleCovs)){
+        covNames <- unique(c(covNames,angleCovs[!(angleCovs %in% names(spatialCovs))]))
+        if(!length(covNames)) covNames <- NULL
+      }
+      znames <- unlist(lapply(spatialCovs,function(x) names(attributes(x)$z)))
+      if(length(znames))
+        if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(miData)),"$crwPredict")
+      #coordNames <- attr(predData,"coord")
+      
+      if(fit | !missing("dist")) {
+        if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
+        distnames <- names(dist)[which(!(names(dist) %in% c("step","angle")))]
+        if(any(is.na(match(distnames,names(predData))))) stop(paste0(distnames[is.na(match(distnames,names(predData)))],collapse=", ")," not found in miData")
+      } else {
+        distnames <- names(predData)[which(!(names(predData) %in% c("ID","x","y",covNames,znames)))]
+      }
+      
       if(all(unlist(lapply(model_fits,function(x) is.null(x$err.model))))) stop("Multiple realizations of the position process cannot be drawn if there is no location measurement error")
       cat('Drawing',nSims,'realizations from the position process using crawl::crwPostIS... ')
       
@@ -247,14 +244,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
       ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))
       if(fit) cat('Fitting',length(ind),'realizations of the position process using fitHMM... ')
       else return(crwSim(list(miData=miData,crwSimulator=crwSim)))
-    } else {
-      miData <- list()
-      df <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
-      miData[[1]] <- prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,angleCovs=angleCovs)
-      ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))
-      if(fit) cat('Fitting the most likely position process using fitHMM... ')
-      else return(miData)
-    }
+    } else stop("nSims must be >0")
     
   } else {
     if(!is.list(miData)) stop("miData must either be a crwData object (as returned by crawlWrap) or a list of momentuHMMData objects as returned by simData, prepData, or MIfitHMM (when fit=FALSE)")
@@ -262,10 +252,8 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
     ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))
     if(!length(ind)) stop("miData must either be a crwData object (as returned by crawlWrap) or a list of momentuHMMData objects as returned by simData, prepData, or MIfitHMM (when fit=FALSE)")
     if(missing(nSims)) nSims <- length(miData)
-    if(nSims>length(miData))
-      stop("nSims is greater than the length of miData. nSims must be <=",length(miData))
-    if(nSims<1)
-      stop("nSims must be >0")
+    if(nSims>length(miData)) stop("nSims is greater than the length of miData. nSims must be <=",length(miData))
+    if(nSims<1) stop("nSims must be >0")
     cat('Fitting',min(nSims,length(ind)),'imputation(s) using fitHMM... ')
   }
   

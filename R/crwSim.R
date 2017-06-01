@@ -4,8 +4,7 @@
 #' @param m A list of attributes required for multiple imputation data generated from a \code{\link{crwData}} object using \code{\link{MIfitHMM}}: \code{miData} (a list of 
 #' \code{\link{momentuHMMData}} objects), and \code{crwSimulator} (a list of \code{\link[crawl]{crwSimulator}} objects).
 #' 
-#' \code{crwSim} objects are returned by \code{\link{MIfitHMM}} when argument \code{miData} is a \code{\link{crwData}} object, argument \code{fit=FALSE}, and argument
-#' \code{nSims>1}.
+#' \code{crwSim} objects are returned by \code{\link{MIfitHMM}} when argument \code{miData} is a \code{\link{crwData}} object and argument \code{fit=FALSE}.
 #'
 #' @return An object \code{crwSim}.
 
