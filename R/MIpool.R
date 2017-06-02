@@ -163,12 +163,12 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,covs=NULL){
       mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,mean)
     }
   }
-  for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansList))) & !(names(m$data) %in% distnames))]){
+  for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansListNoTime))) & !(names(m$data) %in% distnames))]){
     mhdata[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[j]])),ncol=length(m$data[[j]]),byrow=TRUE),2,mean)
   }
   mhrawCovs<-m$rawCovs
   if(length(mhrawCovs)){
-    for(j in names(m$rawCovs)[which(unlist(lapply(m$rawCovs,function(x) any(class(x) %in% meansList))))]){
+    for(j in names(m$rawCovs)[which(unlist(lapply(m$rawCovs,function(x) any(class(x) %in% meansListNoTime))))]){
       mhrawCovs[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$rawCovs[[j]])),ncol=length(m$rawCovs[[j]]),byrow=TRUE),2,mean)
     }
   }
