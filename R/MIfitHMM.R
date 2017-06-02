@@ -196,7 +196,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
         covNames <- unique(c(covNames,angleCovs[!(angleCovs %in% names(spatialCovs))]))
         if(!length(covNames)) covNames <- NULL
       }
-      znames <- unlist(lapply(spatialCovs,function(x) names(attributes(x)$z)))
+      znames <- unique(unlist(lapply(spatialCovs,function(x) names(attributes(x)$z))))
       if(length(znames))
         if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(miData)),"$crwPredict")
       #coordNames <- attr(predData,"coord")
