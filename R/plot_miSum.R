@@ -48,7 +48,6 @@ plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.y
   m$mle$delta <- x$Par$real$delta$est
   m$mod <- list()
   m$mod$estimate <- x$MIcombine$coefficients
-  m$mod$hessian <- ginv(x$MIcombine$variance)
   m$plotEllipse <- plotEllipse
   
   class(m) <- append("momentuHMM",class(m))

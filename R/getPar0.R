@@ -93,7 +93,6 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
     model$mle$delta <- model$Par$real$delta$est
     model$mod <- list()
     model$mod$estimate <- model$MIcombine$coefficients
-    model$mod$hessian <- ginv(model$MIcombine$variance)
     model$CIbeta <- model$Par$beta
     model$CIreal <- model$Par$real
   }
