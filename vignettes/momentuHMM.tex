@@ -485,13 +485,14 @@ Similar to \cite{McClintockEtAl2012}, we assume a Weibull distribution for step 
 > greySealFits <- MIfitHMM(miDat, nSims = 400,
 +                          nbStates = 5, dist = dist,
 +                          Par0 = Par0, beta0 = beta0, fixPar = fixPar,
++                          formula = distFormula,
 +                          estAngleMean = list(angle=TRUE), 
 +                          circularAngleMean = list(angle=TRUE),
 +                          DM = DM, knownStates = knownStates)
 > plot(greySealFits, plotCI = TRUE)
 \end{Sinput}
 \end{Schunk}
-The starting values (\verb|Par0| and \verb|beta0|) for each imputation were extracted from a single HMM fitted to the best predicted locations from \verb|crawlWrap|, and \verb|fixPar| was used to remove short-term directional persistence (and thus formulate the model as a mixture of biased and simple random walks; see Supplementary Material for these finer details). 
+As with the step length and turning angle concentration parameters, the state transition probabilities are also allowed to change as a function of distance to activity centers (as specified by the \verb|formula| argument). The starting values (\verb|Par0| and \verb|beta0|) for each imputation were extracted from a single HMM fitted to the best predicted locations from \verb|crawlWrap|, and \verb|fixPar| was used to remove short-term directional persistence (and thus formulate the model as a mixture of biased and simple random walks; see Supplementary Material for these finer details). 
 
 Estimated activity budgets for the 5 states of this multiple imputation HMM were 0.28 $(0.27-0.3)$ for the ``Abertay'' haul-out state, 0.12 $(0.11-0.14)$ for the ``Farne Islands'' haul-out state, 0.37 $(0.35-0.38)$ for the ``Dogger Bank'' foraging state, 0.09 $(0.03-0.2)$ for a low-speed ``exploratory'' state, and 0.14 $(0.08-0.23)$ for a high-speed ``exploratory'' state. All three activity center states exhibited shorter step lengths and less biased movements when within the viscinity of these targets (Figure \ref{fig:greySealResults}). Results from this analysis were thus very similar to those of \cite{McClintockEtAl2012}, but this implementation required far less computation time and no custom model-fitting algorithms. 
 
