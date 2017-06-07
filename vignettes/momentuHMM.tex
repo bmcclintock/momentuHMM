@@ -7,6 +7,7 @@
 \usepackage{setspace}
 \usepackage{natbib}
 \usepackage{adjustbox}
+\usepackage{booktabs}
 \setcitestyle{aysep={}}
 
 \makeatletter
@@ -132,9 +133,9 @@ Before delving into some of the finer details, we will first provide an overview
 \begin{table}
   \caption{\label{tab:functions} Workhorse functions for the R package momentuHMM.}
   \begin{tabular}{ll}
-  \hline 
+  \toprule
   Function & Description \tabularnewline
-  \hline 
+  \midrule
   %\verb|AIC.momentuHMM| & AIC for one or several \verb|momentuHMM| models  \tabularnewline
   %\verb|CIbeta| & Confidence intervals for working (beta) parameters  \tabularnewline
   %\verb|CIreal| & Confidence intervals for natural (real) parameters  \tabularnewline
@@ -156,7 +157,7 @@ Before delving into some of the finer details, we will first provide an overview
   \verb|simData| & Simulate movement data using a (multivariate) HMM \tabularnewline 
   \verb|stateProbs| & State probabilities for each time step \tabularnewline 
   \verb|viterbi| & Most likely state sequence (using the Viterbi algorithm)  \tabularnewline  
-  \hline 
+  \bottomrule
   \end{tabular}
 \end{table}
 
@@ -164,9 +165,9 @@ One of the key features of \verb|momentuHMM| is the ability to specify an unlimi
 \begin{table}
   \caption{\label{tab:pdfs} Data stream $(z)$ probability distributions, natural parameters, and default link functions for covariate modelling. Probability distributions with positive support can be zero-inflated (with additional zero-mass parameters), while the Beta distribution can be zero- and one-inflated (with additional one-mass parameters). If user-specified bounds are provided, then custom link functions are used instead of the defaults (see package documentation for further details). If circular-circular regression is specified for the mean of angular distributions (``vm'' and ``wrpcauchy''), then the link function described in \cite{DuchesneEtAl2015} is used. Users seeking additional probability distributions are encouraged to contact the authors.}
   \begin{tabular}{llll}
-  \hline 
+  \toprule
   Distribution & Support & Parameters & Link function \tabularnewline
-  \hline 
+  \midrule
   Beta (``\verb|beta|'')               & $z_t\in(0,1)$            & $\verb|shape1|>0$                &  $\log$ \tabularnewline  
                                        &                          & $\verb|shape2|>0$                &  $\log$ \tabularnewline
                                        &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
@@ -186,7 +187,7 @@ One of the key features of \verb|momentuHMM| is the ability to specify an unlimi
                                        &                          & $\verb|scale|>0$                 &  $\log$ \tabularnewline  
   Wrapped Cauchy (``\verb|wrpcauchy|'')& $z_t\in(-\pi,\pi]$       & $\verb|mean|\in(-\pi,\pi]$       &  $\tan(\verb|mean|/2)$ \tabularnewline  
                                        &                          & $\verb|concentration|\in(0,1)$ &  $\text{logit}$ \tabularnewline 
-  \hline 
+  \bottomrule
   \end{tabular}
 \end{table}
 
