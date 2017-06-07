@@ -134,8 +134,10 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   double NAvalue = -99999999; // value designating NAs in data
   int zeroInd = 0;
   int oneInd = 0;
+  
+  unsigned int nDists = dist.size();
 
-  for(unsigned int k=0;k<dist.size();k++){
+  for(unsigned int k=0;k<nDists;k++){
     genname = as<std::string>(dataNames[k]);
     genData = as<NumericVector>(data[genname]);
     genDist = as<std::string>(dist[genname]);
@@ -205,7 +207,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         onem = onemass.row(state);
         
         // compute probability of non-one observations
-        genProb.elem(noOnes) = (1. - onem.elem(noOnes)) % funMap[genDist](genData[genData!=NAvalue & genData<1],genArgs1.elem(noOnes),genArgs2.elem(noOnes));
+        genProb.elem(noOnes) = (1. - onem.elem(noOnes)) % funMap[genDist](genData[(genData!=NAvalue) & (genData<1)],genArgs1.elem(noOnes),genArgs2.elem(noOnes));
         
         // compute probability of one observations
         genProb.elem(nbOnes) = onem.elem(nbOnes);
@@ -216,7 +218,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         onem = onemass.row(state);
         
         // compute probability of non-zero and non-one observations
-        genProb.elem(noZerosOnes) = (1. - zerom.elem(noZerosOnes)) % (1. - onem.elem(noZerosOnes)) % funMap[genDist](genData[genData>0 & genData<1],genArgs1.elem(noZerosOnes),genArgs2.elem(noZerosOnes));
+        genProb.elem(noZerosOnes) = (1. - zerom.elem(noZerosOnes)) % (1. - onem.elem(noZerosOnes)) % funMap[genDist](genData[(genData>0) & (genData<1)],genArgs1.elem(noZerosOnes),genArgs2.elem(noZerosOnes));
         
         // compute probability of zero observations
         genProb.elem(nbZeros) = zerom.elem(nbZeros);
@@ -241,7 +243,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   double prob = 0;
   if(knownStates(0) != -1) {
     // loop over rows
-    for(int i=0 ; i<allProbs.n_rows ; i++) {
+    for(unsigned int i=0 ; i<allProbs.n_rows ; i++) {
       if(knownStates(i)>0) {
         prob = allProbs(i,knownStates(i)-1); // save non-zero probability
         allProbs.row(i).zeros(); // set other probabilities to zero

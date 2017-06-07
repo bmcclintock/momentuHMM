@@ -4,21 +4,24 @@
 #' @param HMMfits List comprised of \code{\link{momentuHMM}} objects
 #' @param alpha Significance level for calculating confidence intervals of pooled estimates (including location error ellipses). Default: 0.95.
 #' @param ncores Number of cores to use for parallel processing.
+#' @param covs Data frame consisting of a single row indicating the covariate values to be used in the calculation of pooled natural parameters. 
+#' For any covariates that are not specified using \code{covs}, the means of the covariate(s) across the imputations are used 
+#' (unless the covariate is a factor, in which case the first factor in the data is used). By default, no covariates are specified.
 #' 
 #' @return A \code{\link{miSum}} object, i.e., a list comprised of model and pooled parameter summaries, including \code{data} (averaged across imputations), \code{conditions}, \code{Par}, and \code{MIcombine} 
 #' (as returned by \code{\link[mitools]{MIcombine}} for working parameters).
 #' 
 #' \code{miSum$Par} is a list comprised of:
 #' \item{beta}{Pooled estimates for the working parameters}
-#' \item{real}{Pooled estimates for the natural parameters based on covariate means across imputations (if applicable)}
+#' \item{real}{Estimates for the natural parameters based on pooled working parameters and covariate means (or \code{covs}) across imputations (if applicable)}
 #' \item{timeInStates}{The proportion of time steps assigned to each state}
 #' \item{states}{The most freqent state assignment for each time step based on the \code{\link{viterbi}} algorithm for each model fit}
 #' \item{stateProbs}{Pooled state probability estimates for each time step}
 #' 
 #' @details
 #' Pooled estimates, standard errors, and confidence intervals are calculated using standard multiple imputation formulas. Working scale parameters are pooled
-#' using \code{\link[mitools]{MIcombine}} and t-distributed confidence intervals. Natural scale parameters are pooled using similar formulae but are based on 
-#' covariate means across all imputations (if applicable) and normally-distributed confidence intervals.
+#' using \code{\link[mitools]{MIcombine}} and t-distributed confidence intervals. Natural scale parameters and normally-distributed confidence intervals are calculated by transforming the pooled working scale parameters 
+#' and, if applicable, are based on covariate means across all imputations (and/or values specified in \code{covs}).
 #' 
 #' Note that pooled estimates for \code{timeInStates} and \code{stateProbs} do not include within-model uncertainty and are based entirely on across-model variability.
 #' 
@@ -38,7 +41,7 @@
 #' @importFrom car dataEllipse
 #' @importFrom mitools MIcombine
 #' @importFrom MASS ginv
-MIpool<-function(HMMfits,alpha=0.95,ncores){
+MIpool<-function(HMMfits,alpha=0.95,ncores,covs=NULL){
   
   im <- HMMfits
   simind <- which((unlist(lapply(im,is.momentuHMM))))
@@ -109,13 +112,22 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
   if(nbStates>1) names(parindex)[length(distnames)+1] <- "beta"
   names(parindex)[length(parindex)-1] <- "delta"
   
-  miBeta <- mitools::MIcombine(results=lapply(im,function(x) x$mod$estimate),variances=lapply(im,function(x) ginv(x$mod$hessian)))
+  tempcons<-rep(1,length(m$mod$estimate))
+  tempworkcons<-rep(0,length(m$mod$estimate))
+  tempcons[1:length(unlist(m$conditions$cons))]<-unlist(m$conditions$cons)
+  tempworkcons[1:length(unlist(m$conditions$workcons))]<-unlist(m$conditions$workcons)
+  miBeta <- mitools::MIcombine(results=lapply(im,function(x) x$mod$estimate^tempcons+tempworkcons),variances=lapply(im,function(x) diag(tempcons*(x$mod$estimate^(tempcons-1)))%*%ginv(x$mod$hessian)%*%t(diag(tempcons*(x$mod$estimate^(tempcons-1))))))
   
   for(parm in 1:nparms){
     
     parnames <- rownames(m$CIbeta[[parms[parm]]]$est)
+    #if(parms[parm] %in% distnames){
+    #  coeffs <- matrix(miBeta$coefficients[(parindex[parm]+1):parindex[parm+1]]^m$conditions$cons[[parms[parm]]]+m$conditions$workcons[[parms[parm]]],nrow=length(parnames),dimnames=list(parnames))
+    #  vars <- matrix(((m$conditions$cons[[parms[parm]]]*(miBeta$coefficients[(parindex[parm]+1):parindex[parm+1]]^(m$conditions$cons[[parms[parm]]]-1)))^2)*(diag(miBeta$variance)[(parindex[parm]+1):parindex[parm+1]]),nrow=length(parnames),dimnames=list(parnames))
+    #} else {
     coeffs <- matrix(miBeta$coefficients[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
     vars <- matrix(diag(miBeta$variance)[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
+    #}
     dfs <- matrix(miBeta$df[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
     
     xbar[[parms[parm]]] <- matrix(NA,nrow=length(parnames),ncol=parmcols[parm])
@@ -151,22 +163,42 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
       mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,mean)
     }
   }
-  for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))) & !(names(m$data) %in% distnames))]){
+  for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansListNoTime))) & !(names(m$data) %in% distnames))]){
     mhdata[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[j]])),ncol=length(m$data[[j]]),byrow=TRUE),2,mean)
   }
   mhrawCovs<-m$rawCovs
   if(length(mhrawCovs)){
-    for(j in names(m$rawCovs)[which(unlist(lapply(m$rawCovs,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
+    for(j in names(m$rawCovs)[which(unlist(lapply(m$rawCovs,function(x) any(class(x) %in% meansListNoTime))))]){
       mhrawCovs[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$rawCovs[[j]])),ncol=length(m$rawCovs[[j]]),byrow=TRUE),2,mean)
     }
   }
-  tempCovs <- mhdata[1,]
-  for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
-    if("angle" %in% class(mhdata[[j]])) tempCovs[[j]] <- CircStats::circ.mean(mhdata[[j]][!is.na(mhdata[[j]])])
-    else tempCovs[[j]]<-mean(mhdata[[j]],na.rm=TRUE)
+  
+  # identify covariates
+  if(is.null(covs)){
+    tempCovs <- mhdata[1,]
+    for(j in names(mhdata)[which(unlist(lapply(mhdata,function(x) any(class(x) %in% meansList))))]){
+      if(inherits(mhdata[[j]],"angle")) tempCovs[[j]] <- CircStats::circ.mean(mhdata[[j]][!is.na(mhdata[[j]])])
+      else tempCovs[[j]]<-mean(mhdata[[j]],na.rm=TRUE)
+    }
+  } else {
+    if(!is.data.frame(covs)) stop('covs must be a data frame')
+    if(nrow(covs)>1) stop('covs must consist of a single row')
+    if(!all(names(covs) %in% names(mhdata))) stop('invalid covs specified')
+    if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(mhdata$ID))
+    for(j in names(mhdata)[which(names(mhdata) %in% names(covs))]){
+      if(inherits(mhdata[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(mhdata[[j]]))
+      if(is.na(covs[[j]])) stop("check covs value for ",j)
+    }    
+    for(j in names(mhdata)[which(!(names(mhdata) %in% names(covs)))]){
+      if(any(class(mhdata[[j]]) %in% meansList)) {
+        if(inherits(mhdata[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(mhdata[[j]][!is.na(mhdata[[j]])])
+        else covs[[j]]<-mean(mhdata[[j]],na.rm=TRUE)
+      } else covs[[j]] <- mhdata[[j]][1]
+    }
+    tempCovs <- covs[1,]
   }
   
-  tmPar <- m$mle[distnames]
+  tmPar <- lapply(m$mle[distnames],function(x) c(t(x)))
   parindex <- c(0,cumsum(unlist(lapply(m$conditions$fullDM,ncol)))[-length(m$conditions$fullDM)])
   names(parindex) <- distnames
   for(i in distnames){
@@ -174,27 +206,58 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
       tmPar[[i]] <- m$mod$estimate[parindex[[i]]+1:ncol(m$conditions$fullDM[[i]])]
       names(tmPar[[i]])<-colnames(m$conditions$fullDM[[i]])
     } else if((m$conditions$dist[[i]] %in% angledists) & (!m$conditions$estAngleMean[[i]])){
-      tmPar[[i]] <- tmPar[[i]][-1,]
+      tmPar[[i]] <- tmPar[[i]][-(1:nbStates)]
     }
   }
   
-  inputs <- checkInputs(nbStates,m$conditions$dist,tmPar,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
+  inputs <- checkInputs(nbStates,m$conditions$dist,tmPar,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,NULL,NULL,m$stateNames)
   p<-inputs$p
-  DMinputs<-getDM(tempCovs,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
-  fullDM<-DMinputs$fullDM
-  nbCovs <- ncol(model.matrix(m$conditions$formula,m$data))-1 # substract intercept column
+  splineInputs<-getSplineDM(distnames,inputs$DM,m,tempCovs)
+  DMinputs<-getDM(splineInputs$covs,splineInputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,NULL,NULL,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+  fullDM <- DMinputs$fullDM
+  #DMinputs<-getDM(tempCovs,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+  #fullDM<-DMinputs$fullDM
+  
+  formula<-m$conditions$formula
+  stateForms<- terms(formula, specials = paste0("state",1:nbStates))
+  newformula<-formula
+  if(nbStates>1){
+    if(length(unlist(attr(stateForms,"specials")))){
+      newForm<-attr(stateForms,"term.labels")[-unlist(attr(stateForms,"specials"))]
+      for(i in 1:nbStates){
+        if(!is.null(attr(stateForms,"specials")[[paste0("state",i)]])){
+          for(j in 1:(nbStates-1)){
+            newForm<-c(newForm,gsub(paste0("state",i),paste0("betaCol",(i-1)*(nbStates-1)+j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("state",i)]]]))
+          }
+        }
+      }
+      newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
+    }
+    formulaStates<-stateFormulas(newformula,nbStates*(nbStates-1),spec="betaCol")
+    if(length(unlist(attr(terms(newformula, specials = c(paste0("betaCol",1:(nbStates*(nbStates-1))),"cosinor")),"specials")))){
+      allTerms<-unlist(lapply(formulaStates,function(x) attr(terms(x),"term.labels")))
+      newformula<-as.formula(paste("~",paste(allTerms,collapse="+")))
+      formterms<-attr(terms.formula(newformula),"term.labels")
+    } else {
+      formterms<-attr(terms.formula(newformula),"term.labels")
+      newformula<-formula
+    }
+  }
+  nbCovs <- ncol(model.matrix(newformula,m$data))-1 # substract intercept column
+  
+  #miBeta <- mitools::MIcombine(results=lapply(im,function(x) x$mod$estimate),variances=lapply(im,function(x) ginv(x$mod$hessian)))
   
   Par$real<-list()
   for(i in distnames){
     
     DMind[[i]] <- FALSE
-    par <- c(w2n(miBeta$coefficients,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,fullDM,DMind,m$conditions$workcons,1,dist[i],m$conditions$Bndind)[[i]])
+    par <- c(w2n(miBeta$coefficients,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist[i],m$conditions$Bndind)[[i]])
 
     if(!(dist[[i]] %in% angledists) | (dist[[i]] %in% angledists & m$conditions$estAngleMean[[i]] & !m$conditions$Bndind[[i]])) {
-      Par$real[[i]] <- get_CI(miBeta$coefficients,par,m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],nbStates,alpha,p$parNames[[i]],m$stateNames)
+      Par$real[[i]] <- get_CI(miBeta$coefficients,par,m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],p$bounds[[i]],DMinputs$cons[[i]],DMinputs$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],nbStates,alpha,p$parNames[[i]],m$stateNames)
     } else {
       if(!m$conditions$estAngleMean[[i]]){
-        Par$real[[i]] <- get_CI(miBeta$coefficients,par[-(1:nbStates)],m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],nbStates,alpha,p$parNames[[i]],m$stateNames)
+        Par$real[[i]] <- get_CI(miBeta$coefficients,par[-(1:nbStates)],m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],p$bounds[[i]],DMinputs$cons[[i]],DMinputs$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],nbStates,alpha,p$parNames[[i]],m$stateNames)
         Par$real[[i]]$est <- matrix(c(rep(0,nbStates),Par$real[[i]]$est),ncol=nbStates,byrow=T)
         Par$real[[i]]$se <- matrix(c(rep(NA,nbStates),Par$real[[i]]$se),ncol=nbStates,byrow=T)
         Par$real[[i]]$lower <- matrix(c(rep(NA,nbStates),Par$real[[i]]$lower),ncol=nbStates,byrow=T)
@@ -202,7 +265,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
         dimnames(Par$real[[i]]$est) <- dimnames(Par$real[[i]]$se) <- dimnames(Par$real[[i]]$lower) <- dimnames(Par$real[[i]]$upper) <- list(c("mean",p$parNames[[i]]),m$stateNames)
       } else {
         if(m$conditions$Bndind[[i]]){
-          Par$real[[i]] <- CI_angle(miBeta$coefficients,par,m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],nbStates,alpha,p$parNames[[i]],m$stateNames)
+          Par$real[[i]] <- CI_angle(miBeta$coefficients,par,m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],p$bounds[[i]],DMinputs$cons[[i]],DMinputs$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],nbStates,alpha,p$parNames[[i]],m$stateNames)
         }
       }
     }
@@ -213,11 +276,13 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
   # pooled gamma estimates
   if(nbStates>1){
     gamInd<-(length(miBeta$coefficients)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(miBeta$coefficients))-(nbStates-1)*(1-m$conditions$stationary)
-    est <- get_gamma(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),model.matrix(m$conditions$formula,mhdata),nbStates,1:nbStates,1:nbStates)
+    tmpSplineInputs<-getSplineFormula(newformula,mhdata,tempCovs)
+    tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+    est <- get_gamma(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),tempCovMat,nbStates,1:nbStates,1:nbStates)
     lower<-upper<-se<-matrix(0,nrow(est),ncol(est))
     for(i in 1:nrow(est)){
       for(j in 1:ncol(est)){
-        dN<-numDeriv::grad(get_gamma,matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),covs=model.matrix(m$conditions$formula,mhdata),nbStates=nbStates,i=i,j=j)
+        dN<-numDeriv::grad(get_gamma,matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),covs=model.matrix(newformula,mhdata),nbStates=nbStates,i=i,j=j)
         se[i,j]<-suppressWarnings(sqrt(dN%*%miBeta$variance[gamInd,gamInd]%*%dN))
         lower[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))-quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]-quantSup*se[i,j]
         upper[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))+quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]+quantSup*se[i,j]
@@ -240,7 +305,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores){
     }
   } else {
     if(nbStates>1){
-      covs<-model.matrix(m$conditions$formula,mhdata)
+      covs<-model.matrix(newformula,tempCovs)
       statFun<-function(beta,nbStates,covs,i){
         gamma <- trMatrix_rcpp(nbStates,beta,covs)[,,1]
         tryCatch(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i],error = function(e) {

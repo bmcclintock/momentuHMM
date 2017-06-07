@@ -19,13 +19,14 @@ also be accepted, in which case the \code{coord} values will be taken from the s
 Note that \code{\link[crawl]{crwMLE}} requires that longitude/latitude coordinates be projected to UTM (i.e., easting/northing). For further details see \code{\link[crawl]{crwMLE}}.}
 
 \item{timeStep}{Length of the time step at which to predict regular locations from the fitted model. Unless \code{predTime} is specified, the sequence of times
-is \code{seq(a_i,b_i,timeStep)} where a_i and b_i are the times of the first and last observations for individual i. \code{timeStep} must be numeric (regardless of
-whether \code{obsData[[Time.name]]} is numeric or POSIXct). \code{timeStep} is not used for individuals for which \code{predTime} is specified.}
+is \code{seq(a_i,b_i,timeStep)} where a_i and b_i are the times of the first and last observations for individual i. \code{timeStep} can be numeric (regardless of
+whether \code{obsData[[Time.name]]} is numeric or POSIXct) or a character string (if \code{obsData[[Time.name]]} is of class POSIXct) containing one of "sec", "min", "hour", "day", "DSTday", "week", "month", "quarter" or "year". 
+This can optionally be preceded by a positive integer and a space, or followed by "s" (e.g., ``2 hours''; see \code{\link[base]{seq.POSIXt}}). \code{timeStep} is not used for individuals for which \code{predTime} is specified.}
 
 \item{ncores}{Number of cores to use for parallel processing.}
 
 \item{retryFits}{Number of times to attempt to achieve convergence and valid (i.e., not NaN) variance estimates after the initial model fit. \code{retryFits} differs
-from \code{attempts} because \code{retryFits} uses random perturbations of the current parameter estimates as the initial values for likelihood optimization, while 
+from \code{attempts} because \code{retryFits} iteratively uses random perturbations of the current parameter estimates as the initial values for likelihood optimization, while 
 \code{attempts} uses the same initial values (\code{theta}) for each attempt.}
 
 \item{mov.model}{List of mov.model objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one movement model is provided, then the same movement model is used
@@ -109,7 +110,7 @@ err.model <- miExample$err.model # error ellipse model
 
 # Fit crwMLE models to obsData and predict locations 
 # at default intervals for both individuals
-crwOut1 <- crawlWrap(obsData=obsData,ncores=1,retryFits=100,
+crwOut1 <- crawlWrap(obsData=obsData,ncores=1,
          theta=c(4,0),fixPar=c(1,1,NA,NA),
          initial.state=inits,
          err.model=err.model,attempts=100)
@@ -117,11 +118,11 @@ crwOut1 <- crawlWrap(obsData=obsData,ncores=1,retryFits=100,
 \dontrun{                                       
 # Fit the same crwMLE models and predict locations 
 # at same intervals but specify for each individual using lists
-crwOut2 <- crawlWrap(obsData=obsData,ncores=1,retryFits=100,
+crwOut2 <- crawlWrap(obsData=obsData,ncores=1,
          theta=list(c(4,0),c(4,0)), fixPar=list(c(1,1,NA,NA),c(1,1,NA,NA)),
          initial.state=list(inits,inits),
          err.model=list(err.model,err.model),
-         predTime=list(seq(1,633),seq(1,686)),attempts=100)
+         predTime=list('1'=seq(1,633),'2'=seq(1,686)))
 }
 
 }

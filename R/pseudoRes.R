@@ -58,7 +58,7 @@ pseudoRes <- function(m)
     delta <- m$Par$real$delta$est
     inputs <- checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
     p <- inputs$p
-    DMinputs<-getDM(data,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean[i])
+    DMinputs<-getDM(data,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
     m$conditions$fullDM <- DMinputs$fullDM
     m$mod$estimate <- n2w(Par,p$bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
   } else {
@@ -77,7 +77,32 @@ pseudoRes <- function(m)
   la <- logAlpha(m)
   
   # identify covariates
-  covs <- model.matrix(m$conditions$formula,data)
+  formula<-m$conditions$formula
+  stateForms<- terms(formula, specials = paste0("state",1:nbStates))
+  newformula<-formula
+  if(nbStates>1){
+    if(length(unlist(attr(stateForms,"specials")))){
+      newForm<-attr(stateForms,"term.labels")[-unlist(attr(stateForms,"specials"))]
+      for(i in 1:nbStates){
+        if(!is.null(attr(stateForms,"specials")[[paste0("state",i)]])){
+          for(j in 1:(nbStates-1)){
+            newForm<-c(newForm,gsub(paste0("state",i),paste0("betaCol",(i-1)*(nbStates-1)+j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("state",i)]]]))
+          }
+        }
+      }
+      newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
+    }
+    formulaStates<-stateFormulas(newformula,nbStates*(nbStates-1),spec="betaCol")
+    if(length(unlist(attr(terms(newformula, specials = c(paste0("betaCol",1:(nbStates*(nbStates-1))),"cosinor")),"specials")))){
+      allTerms<-unlist(lapply(formulaStates,function(x) attr(terms(x),"term.labels")))
+      newformula<-as.formula(paste("~",paste(allTerms,collapse="+")))
+      formterms<-attr(terms.formula(newformula),"term.labels")
+    } else {
+      formterms<-attr(terms.formula(newformula),"term.labels")
+      newformula<-formula
+    }
+  }
+  covs <- model.matrix(newformula,data)
   nbCovs <- ncol(covs)-1 # substract intercept column
   
   par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind)
@@ -93,6 +118,8 @@ pseudoRes <- function(m)
     pgenMat <- matrix(NA,nbObs,nbStates)
     sp <- par[[j]]
     genInd <- which(!is.na(data[[j]]))
+    zeroInflation <- m$conditions$zeroInflation[[j]]
+    oneInflation <- m$conditions$oneInflation[[j]]
   
     for(state in 1:nbStates) {
       
@@ -102,12 +129,12 @@ pseudoRes <- function(m)
         
         genArgs <- list(data[[j]][genInd])
         
-        if(!m$conditions$zeroInflation[[j]]) {
-          zeromass <- 0
-        }
-        else {
-          zeromass <- genPar[nrow(genPar)-nbStates+state,genInd]
-          genPar <- genPar[-(nrow(genPar)-(nbStates-1):0),]
+        zeromass <- 0
+        onemass <- 0
+        if(zeroInflation | oneInflation) {
+          if(zeroInflation) zeromass <- genPar[nrow(genPar)-nbStates*oneInflation-nbStates+state,genInd]
+          if(oneInflation) onemass <- genPar[nrow(genPar)-nbStates+state,genInd]
+          genPar <- genPar[-(nrow(genPar)-(nbStates*(zeroInflation+oneInflation)-1):0),]
         }
         for(k in 1:(nrow(genPar)/nbStates))
           genArgs[[k+1]] <- genPar[(k-1)*nbStates+state,genInd]
@@ -119,7 +146,25 @@ pseudoRes <- function(m)
           genArgs[[3]] <- 1/scale # dgamma expects rate=1/scale
         }
         
-        pgenMat[genInd,state] <- zeromass+(1-zeromass)*do.call(Fun[[j]],genArgs)
+        if(zeroInflation | oneInflation) {
+          if(zeroInflation & !oneInflation){
+            pgenMat[genInd,state] <- ifelse(data[[j]][genInd]==0,
+                                      zeromass, # if gen==0
+                                      (1-zeromass)*do.call(Fun[[j]],genArgs)) # if gen != 0
+          } else if(oneInflation & !zeroInflation){
+            pgenMat[genInd,state] <- ifelse(data[[j]][genInd]==1,
+                                      onemass, # if gen==0
+                                      (1-onemass)*do.call(Fun[[j]],genArgs)) # if gen != 1          
+          } else {
+            pgenMat[genInd,state][data[[j]][genInd]==0] <- zeromass[data[[j]][genInd]==0]
+            pgenMat[genInd,state][data[[j]][genInd]==1] <- (1.-zeromass[data[[j]][genInd]==1]) * onemass[data[[j]][genInd]==1]
+            pgenMat[genInd,state][data[[j]][genInd]>0 & data[[j]][genInd]<1] <- (1.-zeromass[data[[j]][genInd]>0 & data[[j]][genInd]<1]) * (1.-onemass[data[[j]][genInd]>0 & data[[j]][genInd]<1]) * do.call(Fun[[j]],genArgs)[data[[j]][genInd]>0 & data[[j]][genInd]<1] # if gen !=0 and gen!=1
+          }
+        }
+        else pgenMat[genInd,state] <- do.call(Fun[[j]],genArgs)
+        
+        
+        #pgenMat[genInd,state] <- zeromass+(1-zeromass)*do.call(Fun[[j]],genArgs)
         #for(i in 1:nbObs) {
         #  if(!is.na(data[[j]][i])) {
         #    genArgs[[1]] <- data[[j]][i]

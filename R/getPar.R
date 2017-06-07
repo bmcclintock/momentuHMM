@@ -27,7 +27,7 @@ getPar<-function(m){
     m$mle<-lapply(m$Par$real[distnames],function(x) x$est)
     for(i in distnames){
       if(!is.null(DM[[i]]))
-        m$mle[[i]]<-m$Par$beta[[i]]$est
+        m$mle[[i]]<-(m$Par$beta[[i]]$est-m$conditions$workcons[[i]])^(1/m$conditions$cons[[i]])
       else if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]])
         m$mle[[i]]<-m$mle[[i]][-1,]
       Par[[i]] <- c(t(unname(m$mle[[i]])))
@@ -41,7 +41,7 @@ getPar<-function(m){
         if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]]) 
           par <- par[-1,]
         par <- c(t(par))
-      } else par <- unname(m$CIbeta[[i]]$est)
+      } else par <- unname((m$CIbeta[[i]]$est-m$conditions$workcons[[i]])^(1/m$conditions$cons[[i]]))
       Par[[i]] <- par
     }
     beta <- unname(m$mle$beta)

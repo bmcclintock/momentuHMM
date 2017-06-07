@@ -88,8 +88,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   parindex <- c(0,cumsum(unlist(lapply(fullDM,ncol)))[-length(fullDM)])
   names(parindex) <- names(fullDM)
 
-  nbounds<-NULL
-  parlist<-NULL
+  parlist<-list()
   
   for(i in distnames){
     tmpwpar<-wpar[parindex[[i]]+1:ncol(fullDM[[i]])]

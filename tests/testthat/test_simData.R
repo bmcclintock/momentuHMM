@@ -75,3 +75,12 @@ test_that("The returned object is of the correct class",{
 
   expect_equal(class(data),c("momentuHMMData","data.frame"))
 })
+
+test_that("Data can be simulated with observation error from existing model",{
+  m<-example$m
+  obsPerAnimal<-c(50,100)
+  lambda <- 2 # expect 2 observations per time step
+  errorEllipse <- list(M=50,m=25,r=180)
+  expect_error(simData(model=m,obsPerAnimal=obsPerAnimal,lambda=lambda, errorEllipse=errorEllipse),
+               NA)
+})

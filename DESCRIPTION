@@ -1,14 +1,14 @@
 Package: momentuHMM
 Type: Package
-Title: Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models
+Title: Maximum Likelihood Analysis of Animal Movement Behavior Using Multivariate Hidden Markov Models
 Version: 0.0
-Date: 2017-03-17
+Date: 2017-05-01
 Depends:
-    R (>= 2.10)
+    R (>= 2.10), splines, splines2
 Author: Brett McClintock, Theo Michelot, Roland Langrock, Toby Patterson, Eric
     Rexstad
 Maintainer: Brett McClintock <brett.mcclintock@noaa.gov>
-Description: Extended tools for analyzing telemetry data using hidden Markov models. These include processing of tracking data, fitting HMMs to location and auxiliary biotelemetry data, multiple imputation for incorporating location measurement error and missing data,visualization of data and fitted model, decoding of the state process...
+Description: Extended tools for analyzing telemetry data using (multivariate) hidden Markov models. These include processing of tracking data, fitting HMMs to location and auxiliary biotelemetry or environmental data, multiple imputation for incorporating location measurement error and missing data, visualization of data and fitted model, decoding of the state process...
 License: GPL-3
 LazyData: TRUE
 Imports:
@@ -32,7 +32,9 @@ Imports:
     Brobdingnag,
     gstat,
     conicfit,
-    nleqslv
+    nleqslv,
+    survival,
+    qdapRegex
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,

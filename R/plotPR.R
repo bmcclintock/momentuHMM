@@ -5,6 +5,7 @@
 #' ACF functions of the pseudo-residuals for each data stream
 #'
 #' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.
+#' @param lag.max maximum lag at which to calculate the acf.  See \code{\link[stats]{acf}}.
 #'
 #' @details \itemize{
 #' \item If some turning angles in the data are equal to pi, the corresponding pseudo-residuals
@@ -32,7 +33,7 @@
 #' @export
 #' @importFrom stats acf na.pass qqnorm
 
-plotPR <- function(m)
+plotPR <- function(m, lag.max = NULL)
 {
   if(!is.momentuHMM(m) & !is.miHMM(m) & !is.miSum(m))
     stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
@@ -78,7 +79,7 @@ plotPR <- function(m)
     abline(0,1,lwd=2)
     
     # ACF functions
-    acf(pr[[paste0(i,"Res")]],na.action=na.pass,main="")
+    acf(pr[[paste0(i,"Res")]],lag.max=lag.max,na.action=na.pass,main="")
   }
 
   # back to default

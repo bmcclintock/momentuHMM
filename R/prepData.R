@@ -4,16 +4,16 @@
 #' Preprocessing of the data streams, including calculation of step length, turning angle, and covariates from location data to be suitable for
 #' analysis using \code{\link{fitHMM}}
 #'
-#' @param Data A dataframe of data streams, including optionally a field \code{ID}
+#' @param Data Either a data frame of data streams or a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}). If \code{Data} is a data frame, it can optionally include a field \code{ID}
 #' (identifiers for the observed individuals), coordinates from which step length ('step') 
 #' and turning angle ('angle') area calculated, and any covariates (with names matching \code{covNames} and/or \code{angleCovs}). 
 #' If step length and turning angle are to be calculated from coordinates, the \code{coordNames} argument 
 #' must identify the names for the x- (longitunal) and y- (latitudinal) coordinates.
 #' With the exception of \code{ID} and \code{coordNames}, all variables in \code{Data} are treated as data streams unless identified
 #' as covariates in \code{covNames} and/or \code{angleCovs}.
-#' @param type \code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude.
+#' @param type \code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude. Ignored if \code{Data} is a \code{\link{crwData}} object.
 #' @param coordNames Names of the columns of coordinates in the \code{Data} data frame. Default: \code{c("x","y")}. If \code{coordNames=NULL} then step lengths, turning angles, 
-#' and location covariates (i.e., those specified by \code{spatialCovs}, \code{centers}, and \code{angleCovs}) are not calculated.
+#' and location covariates (i.e., those specified by \code{spatialCovs}, \code{centers}, and \code{angleCovs}) are not calculated. Ignored if \code{Data} is a \code{\link{crwData}} object.
 #' @param covNames Character vector indicating the names of any covariates in \code{Data} dataframe. Any variables in \code{Data} (other than \code{ID}) that are not identified in 
 #' \code{covNames} and/or \code{angleCovs} are assumed to be data streams (i.e., missing values will not be accounted for).
 #' @param spatialCovs List of \code{\link[raster]{Raster-class}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
@@ -24,17 +24,23 @@
 #' centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the location data. If no row names are provided, then generic names are generated 
 #' for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'center2.dist', 'center2.angle'); otherwise the covariate names are derived from the row names
 #' of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. As with covariates identified in \code{angleCovs}, note that the angle covariates for each activity center are calculated relative to 
-#' the previous movement direction (instead of true north); this is to allow mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
+#' the previous movement direction (instead of standard direction relative to the x-axis); this is to allow mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
 #' or \code{\link{MIfitHMM}}.
-#' @param angleCovs Character vector indicating the names of any circular-circular regression covariates in \code{Data} that need conversion from bearing (relative to true north) to turning angle (relative to previous movement direction) 
+#' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{Data} or \code{spatialCovs} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 #' using \code{\link{circAngles}}.
 
 #' @return An object \code{\link{momentuHMMData}}, i.e., a dataframe of:
 #' \item{ID}{The ID(s) of the observed animal(s)}
 #' \item{...}{Data streams (e.g., 'step', 'angle', etc.)}
-#' \item{x}{Either easting or longitude (if \code{coordNames} is specified)}
-#' \item{y}{Either norting or latitude (if \code{coordNames} is specified)}
+#' \item{x}{Either easting or longitude (if \code{coordNames} is specified or \code{Data} is a \code{crwData} object)}
+#' \item{y}{Either norting or latitude (if \code{coordNames} is specified or \code{Data} is a \code{crwData} object)}
 #' \item{...}{Covariates (if any)}
+#' 
+#' If \code{Data} is a \code{\link{crwData}} object, the \code{\link{momentuHMMData}} object created by \code{prepData} includes step lengths and turning angles calculated from the best predicted 
+#' locations (\code{crwData$crwPredict$mu.x} and \code{crwData$crwPredict$mu.y}). Prior to using \code{prepData}, additional data streams or covariates unrelated to location (including z-values associated with
+#' \code{spatialCovs} raster stacks or bricks) can be merged with the \code{crwData} object using \code{\link{crawlMerge}}.
+#' 
+#' @seealso \code{\link{crawlMerge}}, \code{\link{crawlWrap}}, \code{\link{crwData}}
 #'
 #' @examples
 #' coord1 <- c(1,2,3,4,5,6,7,8,9,10)
@@ -59,9 +65,11 @@
 #' d <- prepData(Data,coordNames=c("coord1","coord2"),covNames="cov1",
 #'               centers=matrix(c(0,10,0,10),2,2,dimnames=list(c("c1","c2"),NULL)))
 #'               
-#' # Include angle covariate (relative to true north) that needs conversion to 
+#' # Include angle covariate that needs conversion to 
 #' # turning angle relative to previous movement direction
-#' cov2 <- 2*atan(rnorm(10))
+#' u <- rnorm(10) # horizontal component
+#' v <- rnorm(10) # vertical component
+#' cov2 <- atan2(v,u)
 #' Data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1,cov2=cov2)
 #' d <- prepData(Data,coordNames=c("coord1","coord2"),covNames="cov1",
 #'               angleCovs="cov2")
@@ -72,6 +80,20 @@
 
 prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NULL,spatialCovs=NULL,centers=NULL,angleCovs=NULL)
 {
+  if(is.crwData(Data)){
+    predData <- Data$crwPredict
+    if(!is.null(covNames) | !is.null(angleCovs)){
+      covNames <- unique(c(covNames,angleCovs[!(angleCovs %in% names(spatialCovs))]))
+      if(!length(covNames)) covNames <- NULL
+    }
+    znames <- unlist(lapply(spatialCovs,function(x) names(attributes(x)$z)))
+    if(length(znames))
+      if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(Data)),"$crwPredict")
+    distnames <- names(predData)[which(!(names(predData) %in% c("ID","x","y",covNames,znames)))]
+    Data <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
+    type <- 'UTM'
+    coordNames <- c("x","y")
+  }
   if(!is.data.frame(Data)) stop("Data must be a data frame")
   if(any(dim(Data)==0)) stop("Data is empty")
   distnames<-names(Data)
@@ -80,10 +102,12 @@ prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
     if(length(coordNames)!=2) stop('coordNames must be of length 2')
   }
   if(!is.null(covNames) | !is.null(angleCovs)){
-    covNames <- unique(c(covNames,angleCovs))
-    covsCol <- which(distnames %in% covNames)
-    if(!length(covsCol)) stop("covNames not found in Data")
-    else distnames<-distnames[-covsCol]
+    covNames <- unique(c(covNames,angleCovs[!(angleCovs %in% names(spatialCovs))]))
+    if(length(covNames)){
+      covsCol <- which(distnames %in% covNames)
+      if(!length(covsCol)) stop("covNames or angleCovs not found in Data")
+      else distnames<-distnames[-covsCol]
+    }
   }
   if(!is.null(Data$ID)){
     ID <- as.character(Data$ID) # homogenization of numeric and string IDs
@@ -170,7 +194,7 @@ prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
   }
   
   # identify covariate columns
-  if(!is.null(covNames)){
+  if(length(covNames)){
     if(length(covsCol)>0) {
       covs <- Data[,covsCol,drop=FALSE]
       colnames(covs) <- names(Data)[covsCol]
@@ -196,6 +220,7 @@ prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
   
   if(!is.null(coordNames)) {
     data <- cbind(data,x=x,y=y)
+    class(data$angle)<-c(class(data$angle), "angle")
     if(nbSpatialCovs){
       spCovs<-numeric()
       xy<-data
@@ -209,6 +234,7 @@ prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
         } else {
           tmpspCovs <- numeric(nrow(data))
           zname <- names(attributes(spatialCovs[[j]])$z)
+          if(!(zname %in% names(Data))) stop(zname," z-value for ",spatialcovnames[j], "not found in Data")
           zvalues <- raster::getZ(spatialCovs[[j]])
           if(!all(unique(Data[[zname]]) %in% zvalues)) stop("Data$",zname," includes z-values with no matching raster layer in spatialCovs$",spatialcovnames[j])
           for(ii in 1:length(zvalues)){
@@ -217,8 +243,11 @@ prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
           spCovs<-cbind(spCovs,tmpspCovs)
         }
       }
-      colnames(spCovs)<-spatialcovnames
-      data<-cbind(data,spCovs)
+      spCovs<-data.frame(spCovs)
+      names(spCovs)<-spatialcovnames
+      #data<-cbind(data,spCovs)
+      if(is.null(covs)) covs <- spCovs
+      else covs<-cbind(covs,spCovs)
     }
     if(!is.null(centers)){
       if(dim(centers)[2]!=2) stop("centers must be a matrix consisting of 2 columns (i.e., x- and y-coordinates)")
@@ -242,7 +271,7 @@ prepData <- function(Data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
       }  
     }
     if(!is.null(angleCovs)){
-      if(!all(angleCovs %in% names(covs))) stop('angleCovs not found in data')
+      if(!all(angleCovs %in% colnames(covs))) stop('angleCovs not found in Data or spatialCovs')
       for(i in angleCovs){
         covs[[i]]<-circAngles(covs[[i]],data)
       }

@@ -40,10 +40,10 @@ inits <- miExample$inits # initial state
 err.model <- miExample$err.model # error ellipse model
 
 # create crwData object
-crwOut <- crawlWrap(obsData=obsData,ncores=1,retryFits=100,
+crwOut <- crawlWrap(obsData=obsData,ncores=1,
          theta=c(4,0),fixPar=c(1,1,NA,NA),
          initial.state=inits,
-         err.model=err.model,attempts=100)
+         err.model=err.model)
 
 plot(crwOut,compact=TRUE,ask=FALSE,plotEllipse=FALSE)
 

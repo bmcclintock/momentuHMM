@@ -9,11 +9,12 @@
 #' also be accepted, in which case the \code{coord} values will be taken from the spatial data set and ignored in the arguments.  
 #' Note that \code{\link[crawl]{crwMLE}} requires that longitude/latitude coordinates be projected to UTM (i.e., easting/northing). For further details see \code{\link[crawl]{crwMLE}}.
 #' @param timeStep Length of the time step at which to predict regular locations from the fitted model. Unless \code{predTime} is specified, the sequence of times
-#' is \code{seq(a_i,b_i,timeStep)} where a_i and b_i are the times of the first and last observations for individual i. \code{timeStep} must be numeric (regardless of
-#' whether \code{obsData[[Time.name]]} is numeric or POSIXct). \code{timeStep} is not used for individuals for which \code{predTime} is specified.
+#' is \code{seq(a_i,b_i,timeStep)} where a_i and b_i are the times of the first and last observations for individual i. \code{timeStep} can be numeric (regardless of
+#' whether \code{obsData[[Time.name]]} is numeric or POSIXct) or a character string (if \code{obsData[[Time.name]]} is of class POSIXct) containing one of "sec", "min", "hour", "day", "DSTday", "week", "month", "quarter" or "year". 
+#' This can optionally be preceded by a positive integer and a space, or followed by "s" (e.g., ``2 hours''; see \code{\link[base]{seq.POSIXt}}). \code{timeStep} is not used for individuals for which \code{predTime} is specified.
 #' @param ncores Number of cores to use for parallel processing.
 #' @param retryFits Number of times to attempt to achieve convergence and valid (i.e., not NaN) variance estimates after the initial model fit. \code{retryFits} differs
-#' from \code{attempts} because \code{retryFits} uses random perturbations of the current parameter estimates as the initial values for likelihood optimization, while 
+#' from \code{attempts} because \code{retryFits} iteratively uses random perturbations of the current parameter estimates as the initial values for likelihood optimization, while 
 #' \code{attempts} uses the same initial values (\code{theta}) for each attempt. 
 #' @param mov.model List of mov.model objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one movement model is provided, then the same movement model is used
 #' for each individual.
@@ -77,7 +78,7 @@
 #'
 #' # Fit crwMLE models to obsData and predict locations 
 #' # at default intervals for both individuals
-#' crwOut1 <- crawlWrap(obsData=obsData,ncores=1,retryFits=100,
+#' crwOut1 <- crawlWrap(obsData=obsData,ncores=1,
 #'          theta=c(4,0),fixPar=c(1,1,NA,NA),
 #'          initial.state=inits,
 #'          err.model=err.model,attempts=100)
@@ -85,11 +86,11 @@
 #' \dontrun{                                       
 #' # Fit the same crwMLE models and predict locations 
 #' # at same intervals but specify for each individual using lists
-#' crwOut2 <- crawlWrap(obsData=obsData,ncores=1,retryFits=100,
+#' crwOut2 <- crawlWrap(obsData=obsData,ncores=1,
 #'          theta=list(c(4,0),c(4,0)), fixPar=list(c(1,1,NA,NA),c(1,1,NA,NA)),
 #'          initial.state=list(inits,inits),
 #'          err.model=list(err.model,err.model),
-#'          predTime=list(seq(1,633),seq(1,686)),attempts=100)
+#'          predTime=list('1'=seq(1,633),'2'=seq(1,686)))
 #' }
 #' 
 #' @export
@@ -266,6 +267,27 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
     prior <- prior[ids]
   } else names(prior) <- ids
   
+  if(is.null(predTime)){
+    predTime<-list()
+  }
+  if(!is.list(predTime)){
+    tmpPredTime<-predTime
+    predTime<-list()
+    for(i in ids){
+      predTime[[i]]<-tmpPredTime
+    }
+  }
+  for(i in ids){
+    if(is.null(predTime[[i]])){
+      iTime <- range(obsData[which(obsData$ID==i),][[Time.name]])
+      predTime[[i]] <- seq(iTime[1],iTime[2],timeStep)
+    }
+  }
+  if(!is.null(names(predTime))) {
+    if(!all(names(predTime) %in% ids)) stop("predTime names must be character strings that match elements of obsData$ID. See example in ?crawlWrap.")
+    predTime <- predTime[ids]
+  } else names(predTime) <- ids
+  
   cat('Fitting',length(ids),'track(s) using crawl::crwMLE...')
   registerDoParallel(cores=ncores) 
   model_fits <- 
@@ -302,18 +324,23 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
     if(!inherits(model_fits[[i]],"crwFit"))
       warning('crawl::crwMLE for individual ',i,' failed;\n',model_fits[[i]],"   Check crawl::crwMLE arguments and/or consult crawl documentation.")
     else {
-      if(model_fits[[i]]$convergence | any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))]))){
+      if((model_fits[[i]]$convergence | any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))]))) | retryFits){
         if(retryFits){
           fitCount<-0
           fit <- model_fits[[i]]
-          if(model_fits[[i]]$convergence)
-            cat('crawl::crwMLE for individual',i,'has suspect convergence: ',model_fits[[i]]$message,"\n")
-          if(any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))])))
-            cat('crawl::crwMLE for individual',i,'has NaN variance estimate(s)\n')
-          cat('Attempting to achieve convergence and valid variance estimates for individual ',i,". Press 'esc' to force exit from 'crawlWrap'\n",sep="")
-          while(fitCount<retryFits & (fit$convergence | any(is.na(fit$se[which(is.na(fixPar[[i]]))])))){
-            cat("\r    Attempt ",fitCount+1," of ",retryFits,"...",sep="")
-            tmp <- suppressWarnings(suppressMessages(crawl::crwMLE(
+          if(model_fits[[i]]$convergence | any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))]))){
+            if(model_fits[[i]]$convergence)
+              cat('crawl::crwMLE for individual',i,'has suspect convergence: ',model_fits[[i]]$message,"\n")
+            if(any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))])))
+              cat('crawl::crwMLE for individual',i,'has NaN variance estimate(s)\n')
+            cat('Attempting to achieve convergence and valid variance estimates for individual ',i,". Press 'esc' to force exit from 'crawlWrap'\n",sep="")
+          } else {
+            cat('Attempting to improve fit for individual ',i,". Press 'esc' to force exit from 'crawlWrap'\n",sep="")
+          }
+          curFit<-fit
+          while(fitCount<retryFits){ # & (fit$convergence | any(is.na(fit$se[which(is.na(fixPar[[i]]))])))){
+            cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",curFit$loglik,"  ...",sep="")
+            tmp <- tryCatch(suppressWarnings(suppressMessages(crawl::crwMLE(
               mov.model =  mov.model[[i]],
               err.model = err.model[[i]],
               activity = activity[[i]],
@@ -331,19 +358,23 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
               need.hess = need.hess,
               initialSANN = list(maxit = initialSANN$maxit),
               attempts = 1
-            )))
-            if(inherits(tmp,"crwFit"))
-              if(tmp$convergence==0)
+            ))),error=function(e) e)
+            if(inherits(tmp,"crwFit")){
+              if(tmp$convergence==0){
                 if(tmp$aic < model_fits[[i]]$aic | all(!is.na(tmp$se[which(is.na(fixPar[[i]]))])))
                   fit<-tmp
+                if(tmp$aic <= model_fits[[i]]$aic & all(!is.na(tmp$se[which(is.na(fixPar[[i]]))])))
+                  curFit<-tmp
+              }
+            }
             fitCount <- fitCount + 1
           }
-          if(fit$convergence | any(is.na(fit$se[which(is.na(fixPar[[i]]))]))){
+          if(curFit$convergence | any(is.na(curFit$se[which(is.na(fixPar[[i]]))]))){
             cat("FAILED\n")
           } else {
             cat("DONE\n")
           }
-          model_fits[[i]]<-fit
+          model_fits[[i]]<-curFit
         } else {
           if(model_fits[[i]]$convergence)
             warning('crawl::crwMLE for individual ',i,' has suspect convergence: ',model_fits[[i]]$message)
@@ -356,25 +387,6 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   
   convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
   model_fits <- model_fits[convFits]
-  
-  if(is.null(predTime)){
-    predTime<-list()
-    for(i in ids){
-      iTime <- range(obsData[which(obsData$ID==i),][[Time.name]])
-      predTime[[i]] <- seq(iTime[1],iTime[2],timeStep)
-    }
-  }
-  if(!is.list(predTime)){
-    tmpPredTime<-predTime
-    predTime<-list()
-    for(i in ids){
-      predTime[[i]]<-tmpPredTime
-    }
-  }
-  if(!is.null(names(predTime))) {
-    if(!all(names(predTime) %in% ids)) stop("predTime names must match obsData$ID")
-    predTime <- predTime[ids]
-  } else names(predTime) <- ids
   
   if(inherits(obsData[[Time.name]],"POSIXct")){
     td <- utils::capture.output(difftime(predTime[[1]][2],predTime[[1]][1],units="auto"))

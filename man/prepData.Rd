@@ -8,7 +8,7 @@ prepData(Data, type = c("UTM", "LL"), coordNames = c("x", "y"),
   covNames = NULL, spatialCovs = NULL, centers = NULL, angleCovs = NULL)
 }
 \arguments{
-\item{Data}{A dataframe of data streams, including optionally a field \code{ID}
+\item{Data}{Either a data frame of data streams or a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}). If \code{Data} is a data frame, it can optionally include a field \code{ID}
 (identifiers for the observed individuals), coordinates from which step length ('step') 
 and turning angle ('angle') area calculated, and any covariates (with names matching \code{covNames} and/or \code{angleCovs}). 
 If step length and turning angle are to be calculated from coordinates, the \code{coordNames} argument 
@@ -16,10 +16,10 @@ must identify the names for the x- (longitunal) and y- (latitudinal) coordinates
 With the exception of \code{ID} and \code{coordNames}, all variables in \code{Data} are treated as data streams unless identified
 as covariates in \code{covNames} and/or \code{angleCovs}.}
 
-\item{type}{\code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude.}
+\item{type}{\code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude. Ignored if \code{Data} is a \code{\link{crwData}} object.}
 
 \item{coordNames}{Names of the columns of coordinates in the \code{Data} data frame. Default: \code{c("x","y")}. If \code{coordNames=NULL} then step lengths, turning angles, 
-and location covariates (i.e., those specified by \code{spatialCovs}, \code{centers}, and \code{angleCovs}) are not calculated.}
+and location covariates (i.e., those specified by \code{spatialCovs}, \code{centers}, and \code{angleCovs}) are not calculated. Ignored if \code{Data} is a \code{\link{crwData}} object.}
 
 \item{covNames}{Character vector indicating the names of any covariates in \code{Data} dataframe. Any variables in \code{Data} (other than \code{ID}) that are not identified in 
 \code{covNames} and/or \code{angleCovs} are assumed to be data streams (i.e., missing values will not be accounted for).}
@@ -33,19 +33,23 @@ then z values must be set using \code{\link[raster]{setZ}} and \code{Data} must 
 centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the location data. If no row names are provided, then generic names are generated 
 for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'center2.dist', 'center2.angle'); otherwise the covariate names are derived from the row names
 of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. As with covariates identified in \code{angleCovs}, note that the angle covariates for each activity center are calculated relative to 
-the previous movement direction (instead of true north); this is to allow mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
+the previous movement direction (instead of standard direction relative to the x-axis); this is to allow mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
 or \code{\link{MIfitHMM}}.}
 
-\item{angleCovs}{Character vector indicating the names of any circular-circular regression covariates in \code{Data} that need conversion from bearing (relative to true north) to turning angle (relative to previous movement direction) 
+\item{angleCovs}{Character vector indicating the names of any circular-circular regression angular covariates in \code{Data} or \code{spatialCovs} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 using \code{\link{circAngles}}.}
 }
 \value{
 An object \code{\link{momentuHMMData}}, i.e., a dataframe of:
 \item{ID}{The ID(s) of the observed animal(s)}
 \item{...}{Data streams (e.g., 'step', 'angle', etc.)}
-\item{x}{Either easting or longitude (if \code{coordNames} is specified)}
-\item{y}{Either norting or latitude (if \code{coordNames} is specified)}
+\item{x}{Either easting or longitude (if \code{coordNames} is specified or \code{Data} is a \code{crwData} object)}
+\item{y}{Either norting or latitude (if \code{coordNames} is specified or \code{Data} is a \code{crwData} object)}
 \item{...}{Covariates (if any)}
+
+If \code{Data} is a \code{\link{crwData}} object, the \code{\link{momentuHMMData}} object created by \code{prepData} includes step lengths and turning angles calculated from the best predicted 
+locations (\code{crwData$crwPredict$mu.x} and \code{crwData$crwPredict$mu.y}). Prior to using \code{prepData}, additional data streams or covariates unrelated to location (including z-values associated with
+\code{spatialCovs} raster stacks or bricks) can be merged with the \code{crwData} object using \code{\link{crawlMerge}}.
 }
 \description{
 Preprocessing of the data streams, including calculation of step length, turning angle, and covariates from location data to be suitable for
@@ -74,11 +78,16 @@ Data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1)
 d <- prepData(Data,coordNames=c("coord1","coord2"),covNames="cov1",
               centers=matrix(c(0,10,0,10),2,2,dimnames=list(c("c1","c2"),NULL)))
               
-# Include angle covariate (relative to true north) that needs conversion to 
+# Include angle covariate that needs conversion to 
 # turning angle relative to previous movement direction
-cov2 <- 2*atan(rnorm(10))
+u <- rnorm(10) # horizontal component
+v <- rnorm(10) # vertical component
+cov2 <- atan2(v,u)
 Data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1,cov2=cov2)
 d <- prepData(Data,coordNames=c("coord1","coord2"),covNames="cov1",
               angleCovs="cov2")
 
+}
+\seealso{
+\code{\link{crawlMerge}}, \code{\link{crawlWrap}}, \code{\link{crwData}}
 }

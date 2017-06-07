@@ -53,7 +53,7 @@
 #' 
 #' @importFrom mvtnorm rmvnorm
 #' @importFrom argosfilter radian
-#' @importFrom crawl expandPred argosDiag2Cov
+#' @importFrom crawl argosDiag2Cov
 #' @importFrom stats rexp
 #' @export
 simObsData<-function(data,lambda,errorEllipse){
@@ -66,8 +66,8 @@ simObsData<-function(data,lambda,errorEllipse){
     
     if(!is.null(errorEllipse)){
       if(!is.list(errorEllipse) | any(!(c("M","m","r") %in% names(errorEllipse)))) stop("errorEllipse must be a list of scalars named 'M', 'm', and 'r'.")
-      if(any(unlist(lapply(errorEllipse[c("M","m","r")],length))>2)) stop('errorEllipse elements must be of length 1 or 2')
-      if(any(unlist(lapply(errorEllipse[c("M","m")],function(x) any(x<0))))) stop("errorEllipse$M and errorEllipse$m must be >=0")
+      if(any(unlist(lapply(errorEllipse,length))>2)) stop('errorEllipse elements must be of length 1 or 2')
+      if(any(errorEllipse$M<0 | errorEllipse$m<0)) stop("errorEllipse$M and errorEllipse$m must be >=0")
       if(any(errorEllipse$r < 0) | any(errorEllipse$r > 180)) stop('errorEllipse$r must be in [0,180]')
       
       M<-c(min(errorEllipse$M),max(errorEllipse$M))
@@ -122,7 +122,6 @@ simObsData<-function(data,lambda,errorEllipse){
       sigma2y<-(error_semimajor_axis/sqrt(2))^2*cos(rad)^2+(error_semiminor_axis/sqrt(2))^2*sin(rad)^2 # y mearurement error term
       sigmaxy<-((error_semimajor_axis^2-error_semiminor_axis^2)/2)*cos(rad)*sin(rad) # measurement error ellipse rotation term
       
-      #Sigma<-matrix(c(sigma2x,sigmaxy,sigmaxy,sigma2y),2,2)
       xy<-t(apply(cbind(muxy,sigma2x,sigmaxy,sigma2y),1,function(x) mvtnorm::rmvnorm(1,c(x[1],x[2]),matrix(c(x[3],x[4],x[4],x[5]),2,2))))
       
       if(!is.null(errorEllipse))
@@ -131,17 +130,11 @@ simObsData<-function(data,lambda,errorEllipse){
         tmpobsData<-data.frame(time=t,ID=rep(i,nobs),x=xy[,1],y=xy[,2],mux=mux,muy=muy)
       
       if(!is.null(lambda)) {
-        tmpobsData<-crawl::expandPred(tmpobsData,Time="time",predTime=1:nbObs,time.col=TRUE)
-        tmpobsData[match(2:(nbObs-1),tmpobsData$time),c("x","y")]<-NA
-        if(!is.null(errorEllipse)) tmpobsData[match(2:(nbObs-1),tmpobsData$time),c("error_semimajor_axis","error_semiminor_axis","error_ellipse_orientation","ln.sd.x","ln.sd.y","error.corr","diag.check")]<-NA
-        tmpobsData[match(1:nbObs,tmpobsData$time),c("mux","muy")]<-cbind(X,Y)
+        tmpobsData<-merge(tmpobsData,data.frame(idat[,c("ID",distnames),drop=FALSE],time=1:nbObs,mux=idat$x,muy=idat$y),all = TRUE,by=c("ID","time","mux","muy"))
+      } else if(length(distnames)){
+        tmpobsData<-cbind(tmpobsData,idat[,distnames,drop=FALSE])
       }
-      if(length(distnames)){
-        addStreams<-matrix(NA,nrow=nrow(tmpobsData),ncol=length(distnames))
-        colnames(addStreams)<-distnames
-        tmpobsData<-cbind(tmpobsData,addStreams)
-        tmpobsData[match(1:nbObs,tmpobsData$time),distnames]<-as.data.frame(idat)[,distnames,drop=FALSE]
-      }
+      tmpobsData[order(tmpobsData$time),]
       obsData<-rbind(obsData,tmpobsData)
     }
     dnames <- names(obsData)

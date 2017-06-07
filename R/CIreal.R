@@ -9,8 +9,8 @@
 #' @param m A \code{momentuHMM} object
 #' @param alpha Significance level of the confidence intervals. Default: 0.95 (i.e. 95\% CIs).
 #' @param covs Data frame consisting of a single row indicating the covariate values to be used in the calculations. 
-#' If none are specified (the default), the means of any covariates appearing in the model are used 
-#' (unless covariate is a factor, in which case the first factor in the data is used).
+#' For any covariates that are not specified using \code{covs}, the means of the covariate(s) are used 
+#' (unless the covariate is a factor, in which case the first factor in the data is used). By default, no covariates are specified.
 #'
 #' @return A list of the following objects:
 #' \item{...}{List(s) of estimates ('est'), standard errors ('se'), and confidence intervals ('lower', 'upper') for the natural parameters of the data streams}
@@ -55,8 +55,8 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   # identify covariates
   if(is.null(covs)){
     tempCovs <- m$data[1,]
-    for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
-      if("angle" %in% class(m$data[[j]])) tempCovs[[j]] <- CircStats::circ.mean(m$data[[j]][!is.na(m$data[[j]])])
+    for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansList))))]){
+      if(inherits(m$data[[j]],"angle")) tempCovs[[j]] <- CircStats::circ.mean(m$data[[j]][!is.na(m$data[[j]])])
       else tempCovs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
     }
   } else {
@@ -65,22 +65,50 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     if(!all(names(covs) %in% names(m$data))) stop('invalid covs specified')
     if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(m$data$ID))
     for(j in names(m$data)[which(!(names(m$data) %in% names(covs)))]){
-      if(class(m$data[[j]])=="factor") covs[[j]] <- m$data[[j]][1]
-      else covs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
+      if(any(class(m$data[[j]]) %in% meansList)){
+        if(inherits(m$data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(m$data[[j]][!is.na(m$data[[j]])])
+        else covs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
+      } else covs[[j]] <- m$data[[j]][1]
     }
     for(j in names(m$data)[which(names(m$data) %in% names(covs))]){
-      if(class(m$data[[j]])=="factor") covs[[j]] <- factor(covs[[j]],levels=levels(m$data[[j]]))
-      if(is.na(covs[[j]])) stop("check value for ",j)
+      if(inherits(m$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(m$data[[j]]))
+      if(is.na(covs[[j]])) stop("check covs value for ",j)
     }    
     tempCovs <- covs[1,]
   }
-  covs <- model.matrix(m$conditions$formula,m$data)
+  
+  formula<-m$conditions$formula
+  stateForms<- terms(formula, specials = paste0("state",1:nbStates))
+  newformula<-formula
+  if(nbStates>1){
+    if(length(unlist(attr(stateForms,"specials")))){
+      newForm<-attr(stateForms,"term.labels")[-unlist(attr(stateForms,"specials"))]
+      for(i in 1:nbStates){
+        if(!is.null(attr(stateForms,"specials")[[paste0("state",i)]])){
+          for(j in 1:(nbStates-1)){
+            newForm<-c(newForm,gsub(paste0("state",i),paste0("betaCol",(i-1)*(nbStates-1)+j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("state",i)]]]))
+          }
+        }
+      }
+      newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
+    }
+    formulaStates<-stateFormulas(newformula,nbStates*(nbStates-1),spec="betaCol")
+    if(length(unlist(attr(terms(newformula, specials = c(paste0("betaCol",1:(nbStates*(nbStates-1))),"cosinor")),"specials")))){
+      allTerms<-unlist(lapply(formulaStates,function(x) attr(terms(x),"term.labels")))
+      newformula<-as.formula(paste("~",paste(allTerms,collapse="+")))
+      formterms<-attr(terms.formula(newformula),"term.labels")
+    } else {
+      formterms<-attr(terms.formula(newformula),"term.labels")
+      newformula<-formula
+    }
+  }
+  covs <- model.matrix(newformula,m$data)
   nbCovs <- ncol(covs)-1 # substract intercept column
 
   # inverse of Hessian
   Sigma <- ginv(m$mod$hessian)
   
-  tmPar <- m$mle[distnames]
+  tmPar <- lapply(m$mle[distnames],function(x) c(t(x)))
   parindex <- c(0,cumsum(unlist(lapply(m$conditions$fullDM,ncol)))[-length(m$conditions$fullDM)])
   names(parindex) <- distnames
   for(i in distnames){
@@ -101,8 +129,13 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   
   inputs <- checkInputs(nbStates,m$conditions$dist,tmPar,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
   p<-inputs$p
-  DMinputs<-getDM(tempCovs,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
-  fullDM<-DMinputs$fullDM
+  splineInputs<-getSplineDM(distnames,inputs$DM,m,tempCovs)
+  covs<-splineInputs$covs
+  DMinputs<-getDM(covs,splineInputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+  fullDM <- DMinputs$fullDM
+  #DMind <- DMinputs$DMind
+  #DMinputs<-getDM(tempCovs,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+  #fullDM<-DMinputs$fullDM
   
   for(i in distnames){
     if(!m$conditions$DMind[[i]]){
@@ -129,7 +162,8 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     i3 <- i2+nbStates*(nbStates-1)*(nbCovs+1)-1
     wpar <- m$mle$beta
     quantSup <- qnorm(1-(1-alpha)/2)
-    tempCovMat <- model.matrix(m$conditions$formula,tempCovs)
+    tmpSplineInputs<-getSplineFormula(newformula,m$data,tempCovs)
+    tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
     est <- get_gamma(wpar,tempCovMat,nbStates)
     lower<-upper<-se<-matrix(NA,nbStates,nbStates)
     for(i in 1:nbStates){
@@ -142,23 +176,26 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     }
     Par$gamma <- list(est=est,se=se,lower=lower,upper=upper)
     dimnames(Par$gamma$est) <- dimnames(Par$gamma$se) <- dimnames(Par$gamma$lower) <- dimnames(Par$gamma$upper) <- list(m$stateNames,m$stateNames)
-  }
+
   
-  wpar<-m$mod$estimate
-  foo <- length(wpar)-nbStates+2
-  quantSup <- qnorm(1-(1-alpha)/2)
-  lower<-upper<-se<-rep(NA,nbStates)
-  for(i in 1:nbStates){
-    dN<-numDeriv::grad(get_delta,wpar[foo:length(wpar)],i=i)
-    se[i]<-suppressWarnings(sqrt(dN%*%Sigma[foo:length(wpar),foo:length(wpar)]%*%dN))
-    lower[i]<-1/(1+exp(-(log(m$mle$delta[i]/(1-m$mle$delta[i]))-quantSup*(1/(m$mle$delta[i]-m$mle$delta[i]^2))*se[i])))#m$mle$delta[i]-quantSup*se[i]
-    upper[i]<-1/(1+exp(-(log(m$mle$delta[i]/(1-m$mle$delta[i]))+quantSup*(1/(m$mle$delta[i]-m$mle$delta[i]^2))*se[i])))#m$mle$delta[i]+quantSup*se[i]
+    wpar<-m$mod$estimate
+    foo <- length(wpar)-nbStates+2
+    quantSup <- qnorm(1-(1-alpha)/2)
+    lower<-upper<-se<-rep(NA,nbStates)
+    for(i in 1:nbStates){
+      dN<-numDeriv::grad(get_delta,wpar[foo:length(wpar)],i=i)
+      se[i]<-suppressWarnings(sqrt(dN%*%Sigma[foo:length(wpar),foo:length(wpar)]%*%dN))
+      lower[i]<-1/(1+exp(-(log(m$mle$delta[i]/(1-m$mle$delta[i]))-quantSup*(1/(m$mle$delta[i]-m$mle$delta[i]^2))*se[i])))#m$mle$delta[i]-quantSup*se[i]
+      upper[i]<-1/(1+exp(-(log(m$mle$delta[i]/(1-m$mle$delta[i]))+quantSup*(1/(m$mle$delta[i]-m$mle$delta[i]^2))*se[i])))#m$mle$delta[i]+quantSup*se[i]
+    }
+    est<-matrix(m$mle$delta,nrow=1,ncol=nbStates,byrow=TRUE)
+    lower<-matrix(lower,nrow=1,ncol=nbStates,byrow=TRUE)
+    upper<-matrix(upper,nrow=1,ncol=nbStates,byrow=TRUE)  
+    se<-matrix(se,nrow=1,ncol=nbStates,byrow=TRUE)
+    Par$delta <- list(est=est,se=se,lower=lower,upper=upper)  
+  } else {
+    Par$delta <- list(est=matrix(1),se=matrix(NA),lower=matrix(NA),upper=matrix(NA))
   }
-  est<-matrix(m$mle$delta,nrow=1,ncol=nbStates,byrow=TRUE)
-  lower<-matrix(lower,nrow=1,ncol=nbStates,byrow=TRUE)
-  upper<-matrix(upper,nrow=1,ncol=nbStates,byrow=TRUE)  
-  se<-matrix(se,nrow=1,ncol=nbStates,byrow=TRUE)
-  Par$delta <- list(est=est,se=se,lower=lower,upper=upper)  
   colnames(Par$delta$est) <- m$stateNames
   colnames(Par$delta$se) <- m$stateNames
   colnames(Par$delta$lower) <- m$stateNames

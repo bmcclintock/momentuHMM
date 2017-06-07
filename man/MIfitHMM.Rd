@@ -9,10 +9,10 @@ MIfitHMM(miData, nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   circularAngleMean = NULL, formula = ~1, stationary = FALSE,
   verbose = 0, nlmPar = NULL, fit = TRUE, DM = NULL, cons = NULL,
   userBounds = NULL, workcons = NULL, stateNames = NULL,
-  knownStates = NULL, fixPar = NULL, covNames = NULL,
+  knownStates = NULL, fixPar = NULL, retryFits = 0, covNames = NULL,
   spatialCovs = NULL, centers = NULL, angleCovs = NULL, method = "IS",
   parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
-  force.quad, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
+  force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
   thetaSamp = NULL)
 }
 \arguments{
@@ -32,11 +32,14 @@ objects, \code{nSims} cannot exceed the length of \code{miData}.}
 \item{dist}{A named list indicating the probability distributions of the data streams. See \code{\link{fitHMM}}.}
 
 \item{Par0}{A named list containing vectors of initial state-dependent probability distribution parameters for 
-each data stream specified in \code{dist}. See \code{\link{fitHMM}}.}
+each data stream specified in \code{dist}. See \code{\link{fitHMM}}.  \code{Par0} may also be a list of length \code{nSims}, where each element is a named list containing vectors
+of initial state-dependent probability distribution parameters for each imputation.}
 
-\item{beta0}{Initial matrix of regression coefficients for the transition probabilities. See \code{\link{fitHMM}}.}
+\item{beta0}{Initial matrix of regression coefficients for the transition probabilities. See \code{\link{fitHMM}}. \code{beta0} may also be a list of length \code{nSims}, where each element 
+is an initial matrix of regression coefficients for the transition probabilities for each imputation.}
 
-\item{delta0}{Initial value for the initial distribution of the HMM. See \code{\link{fitHMM}}.}
+\item{delta0}{Initial values for the initial distribution of the HMM. See \code{\link{fitHMM}}. \code{delta0} may also be a list of length \code{nSims}, where each element 
+is the initial values for the initial distribution of the HMM for each imputation.}
 
 \item{estAngleMean}{An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy'). See \code{\link{fitHMM}}.}
@@ -75,9 +78,13 @@ each data stream. See \code{\link{fitHMM}}.}
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
 \item{knownStates}{Vector of values of the state process which are known prior to fitting the
-model (if any). See \code{\link{fitHMM}}.}
+model (if any). See \code{\link{fitHMM}}. If \code{miData} is a list of \code{\link{momentuHMMData}} objects, then \code{knownStates} can alternatively
+be a list of vectors containing the known values for the state process for each element of \code{miData}.}
 
 \item{fixPar}{An optional list of vectors indicating parameters which are assumed known prior to fitting the model. See \code{\link{fitHMM}}.}
+
+\item{retryFits}{Non-negative integer indicating the number of times to attempt to iteratively fit the model using random perturbations of the current parameter estimates as the 
+initial values for likelihood optimization.  See \code{\link{fitHMM}}.}
 
 \item{covNames}{Names of any covariates in \code{miData$crwPredict} (if \code{miData} is a \code{\link{crwData}} object; otherwise 
 \code{covNames} is ignored). See \code{\link{prepData}}.}
@@ -89,7 +96,7 @@ a \code{\link{crwData}} object; otherwise \code{spatialCovs} is ignored). See \c
 centers of attraction or repulsion) from which distance and angle covariates will be calculated based on realizations of the position process. 
 See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 
-\item{angleCovs}{Character vector indicating the names of any circular-circular regression covariates in \code{miData$crwPredict} that need conversion from bearing (relative to true north) to turning angle (relative to previous movement direction) 
+\item{angleCovs}{Character vector indicating the names of any circular-circular regression angular covariates in \code{miData$crwPredict} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 
 \item{method}{Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
@@ -107,7 +114,7 @@ See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwDat
 Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 
 \item{force.quad}{A logical indicating whether or not to force the execution 
-of the quadrature method for large parameter vectors. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+of the quadrature method for large parameter vectors. See \code{\link[crawl]{crwSimulator}}. Default: TRUE. Ignored unless \code{miData} is a \code{\link{crwData}} object and \code{method=``quadrature''}.}
 
 \item{fullPost}{Logical indicating whether to draw parameter values as well to simulate full posterior. See \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 
@@ -126,8 +133,8 @@ If \code{nSims>1}, \code{poolEstimates=TRUE}, and \code{fit=TRUE}, a \code{\link
 If \code{poolEstimates=FALSE} and \code{fit=TRUE}, a list of length \code{nSims} consisting of \code{\link{momentuHMM}} objects is returned. 
 
 However, if \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}} 
-object, then \code{MIfitHMM} returns a list containing a \code{\link{momentuHMMData}} object (if \code{nSims=1}) or, if \code{nSims>1}, a \code{\link{crwSim}} object 
-(and most other arguments related to \code{\link{fitHMM}} are ignored).
+object, then \code{MIfitHMM} returns a \code{\link{crwSim}} object, i.e., a list containing \code{miData} (a list of 
+\code{\link{momentuHMMData}} objects) and \code{crwSimulator} (a list of \code{\link[crawl]{crwSimulator}} objects),and most other arguments related to \code{\link{fitHMM}} are ignored.
 }
 \description{
 Fit a (multivariate) hidden Markov model to multiple imputation data. Multiple imputation is a method for accommodating 
@@ -135,23 +142,22 @@ missing data, temporal-irregularity, or location measurement error in hidden Mar
 attributable to observation error.
 }
 \details{
-\code{miData} can either be a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} object (as returned by \code{MIfitHMM} when \code{fit=FALSE}
-and \code{nSims>1}), or a list of \code{\link{momentuHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}}).
+\code{miData} can either be a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} object (as returned by \code{MIfitHMM} when \code{fit=FALSE}), 
+or a list of \code{\link{momentuHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}}).
 
 If \code{miData} is a \code{crwData} object, \code{MIfitHMM} uses a combination of 
 \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepData}}, and \code{\link{fitHMM}} to draw \code{nSims} realizations of the position process
 and fit the specified HMM to each imputation of the data. The vast majority of \code{MIfitHMM} arguments are identical to the corresponding arguments from these functions.
 
 If \code{miData} is a \code{\link{crwData}} object, \code{nSims} determines both the number of realizations of the position process to draw 
-(using \code{\link[crawl]{crwSimulator}} and \code{\link{crwPostIS}}) as well as the number of HMM fits. If \code{miData} 
-is a \code{\link{crwData}} object and \code{nSims=1}, then the single best predicted position process from \code{\link[crawl]{crwPredict}} is fitted and all arguments
-related to \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}} are ignored.
+(using \code{\link[crawl]{crwSimulator}} and \code{\link{crwPostIS}}) as well as the number of HMM fits.
 
 If \code{miData} is a \code{\link{crwSim}} object or a list of \code{\link{momentuHMMData}} object(s), the specified HMM will simply be fitted to each of the \code{momentuHMMData} objects
 and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} are ignored.
 }
 \examples{
 
+# Don't run because it takes too long on a single core
 \dontrun{
 # extract simulated obsData from example data
 obsData <- miExample$obsData
@@ -162,10 +168,10 @@ err.model <- miExample$err.model # error ellipse model
 
 # create crwData object by fitting crwMLE models to obsData and predict locations 
 # at default intervals for both individuals
-miData <- crawlWrap(obsData=obsData,ncores=1,
+crwOut <- crawlWrap(obsData=obsData,ncores=1,
          theta=c(4,0),fixPar=c(1,1,NA,NA),
          initial.state=inits,
-         err.model=err.model,attempts=100,retryFits=100)
+         err.model=err.model)
 
 # HMM specifications
 nbStates <- 2
@@ -181,28 +187,24 @@ nbCovs <- 2
 beta0 <- matrix(c(rep(-1.5,nbStates*(nbStates-1)),rep(0,nbStates*(nbStates-1)*nbCovs)),
                 nrow=nbCovs+1,byrow=TRUE)
 
-# Fit HMM to best predicted position process
-bestFit<-MIfitHMM(miData=miData,nSims=1,ncores=1,
-                  nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
-                  Par0=list(step=stepPar0,angle=anglePar0),beta0=beta0,
-                  formula=formula,estAngleMean=list(angle=TRUE),
-                  covNames=c("cov1","cov2"))
+# first fit HMM to best predicted position process
+bestData<-prepData(crwOut,covNames=c("cov1","cov2"))
+bestFit<-fitHMM(bestData,
+                nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+                Par0=list(step=stepPar0,angle=anglePar0),beta0=beta0,
+                formula=formula,estAngleMean=list(angle=TRUE))
             
 print(bestFit)
-}
 
-# Don't run because it takes too long on a single core
-\dontrun{ 
 # extract estimates from 'bestFit'
 bPar0 <- getPar(bestFit)
 
 # Fit nSims=5 imputations of the position process
-miFits<-MIfitHMM(miData=miData,nSims=5,ncores=1,
+miFits<-MIfitHMM(miData=crwOut,nSims=5,ncores=1,
                   nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
                   Par0=bPar0$Par,beta0=bPar0$beta,delta0=bPar0$delta,
                   formula=formula,estAngleMean=list(angle=TRUE),
-                  covNames=c("cov1","cov2"),
-                  parIS = 0, fullPost = FALSE)
+                  covNames=c("cov1","cov2"))
 
 # print pooled estimates
 print(miFits)

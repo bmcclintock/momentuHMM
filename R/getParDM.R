@@ -53,7 +53,7 @@
 #'
 #' @return A list of parameter values that can be used as starting values (\code{Par0}) in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
 #' 
-#' @seealso \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
+#' @seealso \code{\link{getPar0}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 #'
 #' @examples
 #' # data is a momentuHMMData object, automatically loaded with the package
@@ -182,8 +182,8 @@ getParDM<-function(data=data.frame(),nbStates,dist,
   
   tempCovs <- data[1,,drop=FALSE]
   if(length(data)){
-    for(j in names(data)[which(unlist(lapply(data,function(x) any(class(x) %in% c("numeric","logical","Date","POSIXlt","POSIXct","difftime")))))]){
-      if("angle" %in% class(data[[j]])) tempCovs[[j]] <- CircStats::circ.mean(data[[j]][!is.na(data[[j]])])
+    for(j in names(data)[which(unlist(lapply(data,function(x) any(class(x) %in% meansList))))]){
+      if(inherits(data[[j]],"angle")) tempCovs[[j]] <- CircStats::circ.mean(data[[j]][!is.na(data[[j]])])
       else tempCovs[[j]]<-mean(data[[j]],na.rm=TRUE)
     }
   }
@@ -232,8 +232,12 @@ getParDM<-function(data=data.frame(),nbStates,dist,
         if(length(wpar[[i]])!=nrow(fullDM[[i]])) stop('Par$',i,' should be of length ',nrow(fullDM[[i]]))
         bounds<-inputs$p$bounds[[i]]
         if(any(wpar[[i]]<=bounds[,1] | wpar[[i]]>=bounds[,2])) stop('Par$',i,' must be within parameter bounds')
-        if(is.list(inputs$DM[[i]])) gbInd <- getboundInd(fullDM[[i]])
-        else {
+        if(is.list(inputs$DM[[i]])){
+          if(!inputs$circularAngleMean[[i]])
+            gbInd <- getboundInd(fullDM[[i]])
+          else
+            gbInd <- c(1:nbStates,getboundInd(fullDM[[i]][1:nbStates+nbStates,])+nbStates)
+        } else {
           if(!inputs$circularAngleMean[[i]])
             gbInd <- getboundInd(inputs$DM[[i]])
           else 

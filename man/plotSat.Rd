@@ -6,7 +6,7 @@
 \usage{
 plotSat(data, zoom = NULL, location = NULL, segments = TRUE,
   compact = TRUE, col = NULL, alpha = 1, size = 1, states = NULL,
-  animals = NULL, ask = TRUE, return = FALSE)
+  animals = NULL, ask = TRUE, return = FALSE, stateNames = NULL)
 }
 \arguments{
 \item{data}{Data frame of the data, with necessary fields 'x' (longitude values) and
@@ -39,6 +39,8 @@ Default: \code{NULL}; all animals are plotted.}
 
 \item{return}{If \code{TRUE}, the function returns a ggplot object (which can be edited and
 plotted manually). If \code{FALSE}, the function automatically plots the map (default).}
+
+\item{stateNames}{Optional character vector of length \code{unique(states)} indicating state names. Ignored unless \code{states} is provided.}
 }
 \description{
 Plot tracking data on a satellite map. This function only works with longitude
