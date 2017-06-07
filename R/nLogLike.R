@@ -36,7 +36,7 @@
 #' @examples
 #' \dontrun{
 #' # data is a momentuHMMData object (as returned by prepData), automatically loaded with the package
-#' data <- example$data
+#' data <- example$m$data
 #' m<-example$m
 #' Par <- list(step=example$par0$Par$step,angle=example$par0$Par$angle)
 #' nbStates <- length(m$stateNames)

@@ -22,7 +22,7 @@ covariates sutiable for circular-circular regression in \code{\link{fitHMM}} or 
 }
 \examples{
 # extract data from momentuHMM example
-data<-example$data
+data<-example$m$data
 
 # generate fake angle covariates
 u <- rnorm(nrow(data)) # horizontal component

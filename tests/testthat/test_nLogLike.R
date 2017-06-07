@@ -2,7 +2,7 @@
 context("nLogLike")
 
 test_that("Exceptions are thrown",{
-  data <- example$data
+  data <- example$m$data
   m<-example$m
   Par <- list(step=example$par0$Par$step,angle=example$par0$Par$angle)
   nbStates <- length(m$stateNames)
@@ -18,7 +18,7 @@ test_that("Exceptions are thrown",{
 })
 
 test_that("logAlpha, logBeta, and nLogLike are consistent",{
-  data <- example$data
+  data <- example$m$data
   m<-example$m
   Par <- getPar(m)$Par
   nbStates <- length(m$stateNames)
@@ -44,7 +44,7 @@ test_that("logAlpha, logBeta, and nLogLike are consistent",{
   
   # random time step from each individual
   for(i in 1:nbAnimals){
-    data<-example$data
+    data<-example$m$data
     aInd<-which(data$ID==i)
     
     data<-data[aInd,]
@@ -61,7 +61,7 @@ test_that("logAlpha, logBeta, and nLogLike are consistent",{
 })
 
 test_that("angleDist=NULL and zeroInflation=TRUE work",{
-  data <- example$data
+  data <- example$m$data
   m<-example$m
   Par <- list(step=c(example$par0$Par$step,.05,.05))
   zeroInflation<-list(step=TRUE)

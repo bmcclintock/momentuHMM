@@ -78,7 +78,7 @@ will not necessarily return ``good'' starting values (i.e., \code{Par0}) for \co
 }
 \examples{
 # data is a momentuHMMData object, automatically loaded with the package
-data <- example$data
+data <- example$m$data
 stepDist <- "gamma"
 angleDist <- "vm"
 nbStates <- 2
