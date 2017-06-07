@@ -39,10 +39,27 @@ and, if applicable, are based on covariate means across all imputations (and/or 
 Note that pooled estimates for \code{timeInStates} and \code{stateProbs} do not include within-model uncertainty and are based entirely on across-model variability.
 }
 \examples{
-# extract list of momentuHMM objects from example data
-HMMfits <- miExample$HMMfits
+\dontrun{
+# Extract data and crawl inputs from miExample
+obsData <- miExample$obsData
+inits <- miExample$inits
+err.model <- miExample$err.model
 
+# Fit crawl to obsData
+crwOut <- crawlWrap(obsData,ncores=1,theta=c(4,0),fixPar=c(1,1,NA,NA),
+                    initial.state=inits,err.model=err.model)
+                    
+# Fit four imputations
+bPar <- getPar(example$m)
+HMMfits <- MIfitHMM(crwOut,nSims=4,ncores=1,poolEstimates=FALSE,
+                   nbStates=2,dist=list(step="gamma",angle="vm"),
+                   Par0=bPar$Par,beta0=bPar$beta,delta0=bPar$delta,
+                   formula=~cov1+cos(cov2),
+                   estAngleMean=list(angle=TRUE),
+                   covNames=c("cov1","cov2"))
+                   
+# Pool estimates
 miSum <- MIpool(HMMfits,ncores=1)
 print(miSum)
-
+}
 }

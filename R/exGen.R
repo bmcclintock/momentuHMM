@@ -31,14 +31,10 @@ exGen <- function()
 
   simPar <- list(nbAnimals=nbAnimals,nbStates=nbStates,angleMean=angleMean,dist=list(step=stepDist,angle=angleDist),zeroInflation=list(step=zeroInflation,angle=FALSE))
 
-  obsData <- simData(nbAnimals=nbAnimals,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+  data <- simData(nbAnimals=nbAnimals,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
                   Par=list(step=stepPar,angle=anglePar),formula=~cov1+cov2,beta=beta,nbCovs=nbCovs,zeroInflation=list(step=zeroInflation),
-                  obsPerAnimal=obsPerAnimal,states=TRUE,lambda=2,errorEllipse=list(M=c(0,50),m=c(0,50),r=0))
+                  obsPerAnimal=obsPerAnimal,states=TRUE)
   
-  tInd <- which(!is.na(obsData$cov1))
-  tmpData <- obsData[tInd,]
-  data <- prepData(data.frame(ID=tmpData$ID,x=tmpData$mux,y=tmpData$muy,cov1=tmpData$cov1,cov2=tmpData$cov2,states=tmpData$states),coordNames=c("x","y"),covNames=c("cov1","cov2"))
-
   # estimate model
   mu0 <- c(20,70)
   sigma0 <- c(10,30)
@@ -63,6 +59,8 @@ exGen <- function()
   inits <- list(a=c(0,0,0,0),P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 5000 ^ 2, 10 * 3600 ^ 2)))
   err.model <- list(x= ~ ln.sd.x - 1, y =  ~ ln.sd.y - 1, rho =  ~ error.corr)
   
+  obsData<-simObsData(data,lambda=2,errorEllipse=list(M=c(0,50),m=c(0,50),r=0))
+  
   crwOut <- crawlWrap(obsData,ncores=1,theta=c(4,0),fixPar=c(1,1,NA,NA),
    initial.state=inits,
    err.model=err.model)
@@ -75,9 +73,9 @@ exGen <- function()
   
   miFits<-MIfitHMM(crwOut,nSims=4,ncores=1,nbStates=nbStates,Par0=bPar$Par,beta0=bPar$beta,
                     delta0=bPar$delta,formula=formula,dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE),
-                    covNames=c("cov1","cov2"),parIS = 0, fullPost = FALSE)
+                    covNames=c("cov1","cov2"))
   
-  miExample <- list(obsData=obsData,inits=inits,err.model=err.model,HMMfits=miFits$HMMfits)
+  miExample <- list(obsData=obsData,inits=inits,err.model=err.model)
   
   set.seed(3)
   buffer<-100000        # grid half-width
