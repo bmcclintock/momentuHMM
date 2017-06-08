@@ -4,7 +4,7 @@ test_that("Exceptions are thrown",{
 
   oldRNG<-setRNG::setRNG()
   
-  setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=5)
+  setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=1)
   
   theta<-c(6,-0.5)
   err.model <- miExample$err.model

@@ -48,7 +48,7 @@ as a data frame suitable for analysis using \code{\link{crawlWrap}}.
 }
 \examples{
 # extract momentuHMMData example
-data <- example$data
+data <- example$m$data
 lambda <- 2 # expect 2 observations per time step
 errorEllipse <- list(M=c(0,50),m=c(0,50),r=c(0,180))
 obsData1 <- simObsData(data,lambda=lambda,errorEllipse=errorEllipse)

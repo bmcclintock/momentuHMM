@@ -6,9 +6,6 @@ note <- sprintf("R package version %s",meta$Version)
 bibentry(bibtype = "Manual",
          title = "{momentuHMM}: Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models",
          author = c(person("Brett","McClintock"),
-                    person("Theo","Michelot"),
-                    person("Roland","Langrock"),
-                    person("Toby","Patterson"),
-                    person("Eric","Rexstad")),
+                    person("Theo","Michelot")),
          year = year,
          note = note)

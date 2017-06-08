@@ -171,7 +171,7 @@
 #' angleDist <- "vm" # turning angle distribution
 #' 
 #' # extract data from momentuHMM example
-#' data <- example$data
+#' data <- example$m$data
 #'
 #' ### 1. fit the model to the simulated data
 #' # define initial values for the parameters

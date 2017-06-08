@@ -14,7 +14,7 @@
 #'
 #' @examples
 #' # data is a momentuHMMData object (as returned by prepData), automatically loaded with the package
-#' data <- example$data
+#' data <- example$m$data
 #'
 #' plot(data,compact=TRUE,breaks=20,ask=FALSE)
 #'

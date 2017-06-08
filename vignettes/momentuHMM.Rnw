@@ -7,7 +7,6 @@
 \usepackage{setspace}
 \usepackage{natbib}
 \usepackage{adjustbox}
-\usepackage{booktabs}
 \setcitestyle{aysep={}}
 
 \makeatletter
@@ -112,15 +111,15 @@ Discrete-time hidden Markov models (HMMs) have become immensely popular for the 
   \mathcal{L}={\boldsymbol \delta}^{(0)} {\mathbf \Gamma}^{(1)} {\mathbf P}({\mathbf z}_1) {\mathbf \Gamma}^{(2)} {\mathbf P}({\mathbf z}_2) {\mathbf \Gamma}^{(3)} \cdots {\mathbf \Gamma}^{(T-1)} {\mathbf P}({\mathbf z}_{T-1}) {\mathbf \Gamma}^{(T)} {\mathbf P}({\mathbf z}_{T}) {\bf 1}^N
   \label{eq:HMMlike}
 \end{equation}
-where ${\mathbf \Gamma}^{(t)}=\left(\gamma_{ij}^{(t)} \right)$ is the $N \times N$ transition probability matrix, ${\mathbf P}({\mathbf z}_t)=\text{diag}(p_1({\mathbf z}_t), \ldots, p_N({\mathbf z}_t))$, $p_s({\mathbf z}_t)$ is the conditional probability density of ${\mathbf Z}_t$ given $S_t=s$, and ${\bf 1}^N$ is a $N$-vector of ones \citep[for a thorough introduction to HMMs see][]{ZucchiniEtAl2016}.  
+where the $N \times N$ transition probability matrix ${\mathbf \Gamma}^{(t)}=\left(\gamma_{ij}^{(t)} \right)$, ${\mathbf P}({\mathbf z}_t)=\text{diag}(p_1({\mathbf z}_t), \ldots, p_N({\mathbf z}_t))$, $p_s({\mathbf z}_t)$ is the conditional probability density of ${\mathbf Z}_t$ given $S_t=s$, and ${\bf 1}^N$ is a $N$-vector of ones \citep[for a thorough introduction to HMMs see][]{ZucchiniEtAl2016}.  
 
 One of the most common discrete-time animal movement HMMs for telemetry location data is composed of two data streams, step length and turning angle (or bearing), which are calculated for each of the $T$ time steps from the temporally-regular observations of an animal's position, $(x_t,y_t)$, for $t=1,\ldots,T+1$ \citep[e.g.][]{MoralesEtAl2004,LangrockEtAl2012,McClintockEtAl2012}. Step length $(l_t)$ is typically calculated as the Euclidean distance between the locations $(x_t,y_t)$ and $(x_{t+1},y_{t+1})$, while turning angle $(\phi_t)$ is calculated as the change in bearing $\left(b_t=\text{atan2}(y_{t+1}-y_t,x_{t+1}-x_t)\right)$ between the intervals $[t-1,t]$ and $[t,t+1]$ (e.g. $\phi_t=0$ if $b_{t-1}=b_t$). For this HMM composed of 2 data streams, ${\mathbf z}_t=(l_t,\phi_t)$, and, conditional on the latent state $S_t$, independent probability distributions are typically assumed for each stream, e.g., $p_s({\mathbf z}_t)=p_s(l_t)p_s(\phi_t)$. Some common probability distributions for the step length data stream are the Gamma or Weibull distributions, while the wrapped Cauchy or von Mises distributions are often employed for turning angle or bearing.
 
-While HMMs for animal movement based solely on location data are somewhat limited in the number and type of biologically-meaningful movement behavior states they are able to accurately identify, advances in biologging technology are now allowing the collection of valuable auxiliary biotelemetry data (e.g., dive activity, accelerometer, heart rate, stomach temperature), which, when combined with location data, allow for multivariate HMMs that can incorporate much more behavioral realism and facilitate inferences about complex ecological relationships that would otherwise be difficult or impossible to infer from location data alone \citep[e.g.][]{McClintockEtAl2013c,DeRuiterEtAl2017,McClintockEtAl2017}.  Multivariate HMMs that utilize both location and auxiliary biotelemetry data can facilitate the identification of additional states that go beyond the $N=2$ state approaches that are most frequently used by practitioners. For example, the most widely used 2-state HMMs for animal movement include ``encamped'' (or ``foraging'') and ``exploratory'' (or ``transit'') states characterized by area-restricted-search-type movements (shorter step lengths with little to no directional persistence) and migratory-type movements (longer step lengths with high directional persistence), respectively \citep{MoralesEtAl2004,JonsenEtAl2005}.  However, very different behaviors can exhibit similar horizontal trajectories.  For example, for herbivores such as North American elk \citep{MoralesEtAl2004} or central-place foragers such as harbour seals \citep{McClintockEtAl2013c}, the horizontal trajectories of ``resting'' and ``foraging'' movements can be very difficult to distinguish. Standard 2-state HMMs based solely on horizontal trajectory will tend to lump these behaviors together, and this could have unintended consequences if, for example, one intends to use the estimated state sequences to identify foraging habitat. In order to tweeze apart distinct behaviors with similar horizontal trajectories, additional states informed by auxiliary information (such as mandible accelerometer or dive data) must often be incorporated as additional data stream(s) in a multivariate HMM.
+While HMMs for animal movement based solely on location data are somewhat limited in the number and type of biologically-meaningful movement behavior states they are able to accurately identify, advances in biologging technology are now allowing the collection of valuable auxiliary biotelemetry data (e.g., dive activity, accelerometer, heart rate, stomach temperature), which, when combined with location data, allow for multivariate HMMs that can incorporate much more behavioral realism and facilitate inferences about complex ecological relationships that would otherwise be difficult or impossible to infer from location data alone \citep[e.g.][]{McClintockEtAl2013c,DeRuiterEtAl2017,McClintockEtAl2017}.  Multivariate HMMs that utilize both location and auxiliary biotelemetry data can facilitate the identification of additional states that go beyond the $N=2$ state approaches that are most frequently used by practitioners. For example, the most widely used 2-state HMMs for animal movement include ``encamped'' (or ``foraging'') and ``exploratory'' (or ``transit'') states characterized by area-restricted-search-type movements (shorter step lengths with little to no directional persistence) and migratory-type movements (longer step lengths with high directional persistence), respectively \citep{MoralesEtAl2004,JonsenEtAl2005}.  However, very different behaviors can exhibit similar horizontal trajectories.  For example, for herbivores such as North American elk \citep{MoralesEtAl2004} or central-place foragers such as harbour seals \citep{McClintockEtAl2013c}, the horzontal trajectories of ``resting'' and ``foraging'' movements can be very difficult to distinguish. Standard 2-state HMMs based solely on horizontal trajectory will tend to lump these behaviors together, and this could have unintended consequences if, for example, one intends to use the estimated state sequences to identify foraging habitat. In order to tweeze apart distinct behaviors with similar horizontal trajectories, additional states informed by auxiliary information (such as mandible accelerometer or dive data) must often be incorporated as additional data stream(s) in a multivariate HMM.
 
 When data streams are observed without error and at regular time intervals, a major advantage of HMMs is the relatively fast and efficient maximization of the likelihood using the forward algorithm (Eq. \ref{eq:HMMlike}).  However, location measurement error is rarely non-existent in animal-borne telemetry studies and depends on both the device and the system under study.  For example, GPS errors are typically less than 50m, but Argos errors can exceed 10km \citep[e.g.][]{CostaEtAl2010}.  An extreme case of missing data can arise when location data are obtained with little or no temporal regularity, as in many marine mammal telemetry studies \citep[e.g.][]{JonsenEtAl2005}, such that few (if any) observations align with the regular time steps required by discrete-time HMMs. When explicitly accounting for uncertainty attributable to location measurement error, temporally-irregular observations, or other forms of missing data, one must typically fit (multivariate) HMMs using computationally-intensive (and often time-consuming) model fitting techniques such as Markov chain Monte Carlo \citep{JonsenEtAl2005,McClintockEtAl2012}.  However, complex analyses requiring novel statistical methods and custom model-fitting algorithms are not practical for many practitioners.
 
-While statisticians have been applying HMMs to telemetry data for decades, R \citep{RCoreTeam2016} packages such as \verb|bsam| \citep{JonsenEtAl2005}, \verb|moveHMM| \citep{MichelotEtAl2016}, and \verb|swim| \citep{WhoriskeyEtAl2017} have recently helped make these models of animal movement behavior more accessible to the practitioners that are actually conducting telemetry studies.  These advances represent important steps toward making HMMs of animal movement more accessible, but the models that can currently be implemented using existing software remain limited in many key respects. For example, existing HMM software for animal movement is limited to two data streams based solely on location data (e.g. step length and turning angle), and while \verb|moveHMM| allows for a user-specified number of latent behavioral states (\verb|bsam| and \verb|swim| are limited to $N=2$ states), it is typically difficult to identify >2 biologically-meaningful behavior states from only 2 data streams \citep[e.g.][]{MoralesEtAl2004,BeyerEtAl2013,McClintockEtAl2014b}. Both \verb|moveHMM| and \verb|swim| are designed for temporally-regular (or linearly-interpolated) location data with negligible measurement error, but the realities of animal-borne telemetry often yield temporally-irregular location data subject to error (particularly in aquatic environments). Other notable deficiencies of existing software include limited abilities to incorporate spatio-temporal environmental or individual covariates on parameters, biased (or directed) movements in response to attractive or repulsive forces \citep[e.g.][]{McClintockEtAl2012,LangrockEtAl2014}, cyclical (e.g. daily, seasonal) and other more complicated behavioral patterns, or constraints on parameters. 
+While statisticians have been applying HMMs to telemetry data for decades, R \citep{RCoreTeam2016} packages such as \verb|bsam| \citep{JonsenEtAl2005}, \verb|moveHMM| \citep{MichelotEtAl2016}, and \verb|swim| \citep{WhoriskeyEtAl2017} have recently helped make these models of animal movement behavior more accessible to the practitioners that are actually conducting telemetry studies.  These advances represent important steps toward making HMMs of animal movement more accessible, but the models that can currrently be implemented using existing software remain limited in many key respects. For example, existing HMM software for animal movement is limited to two data streams based soley on location data (e.g. step length and turning angle), and while \verb|moveHMM| allows for a user-specified number of latent behavioral states (\verb|bsam| and \verb|swim| are limited to $N=2$ states), it is typically difficult to identify >2 biologically-meaningful behavior states from only 2 data streams \citep[e.g.][]{MoralesEtAl2004,BeyerEtAl2013,McClintockEtAl2014b}. Both \verb|moveHMM| and \verb|swim| are designed for temporally-regular (or linearly-interpolated) location data with negligible measurement error, but the realities of animal-borne telemetry often yield temporally-irregular location data subject to error (particularly in aquatic environments). Other notable deficiencies of existing software include limited abilities to incorporate spatio-temporal environmental or individual covariates on parameters, biased (or directed) movements in response to attractive or repulsive forces \citep[e.g.][]{McClintockEtAl2012,LangrockEtAl2014}, cyclical (e.g. daily, seasonal) and other more complicated behavioral patterns, or constraints on parameters. 
 
 To address these defeciencies in existing software, we introduce a new user-friendly R package, \verb|momentuHMM| (Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models), intended for practitioners wishing to implement more flexible and realistic (multivariate) HMM analyses of animal movement while accounting for common challenges associated with telemetry data. Features for multivariate HMM analyses in \verb|momentuHMM| include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states; 3) user-specified design matrices and constraints for covariate modelling of state transition probability and probability distribution parameters using linear model formulas familiar to most R users; 4) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data \citep{HootenEtAl2017,McClintock2017}; 5) seamless integration of spatio-temporal environmental covariate data (e.g., wind direction, forest cover, sea ice concentration) using the \verb|raster| package \citep{Hijmans2016}; 6) incorporation of ``activity center'' effects (e.g., areas associated with attractive or repulsive forces); 7) circular-circular regression models for angular probability distributions \citep{DuchesneEtAl2015}; 8) cosinor \citep[e.g.][]{Cornelissen2014} and spline regression formulas for cyclical and other complicated behavioral patterns; and 9) data simulation capabilities for power analyses and assessing model performance, including simulation of location data subject to temporal irregularity and/or measurement error.  
 
@@ -132,9 +131,9 @@ Before delving into some of the finer details, we will first provide an overview
 \begin{table}
   \caption{\label{tab:functions} Workhorse functions for the R package momentuHMM.}
   \begin{tabular}{ll}
-  \toprule
+  \hline 
   Function & Description \tabularnewline
-  \midrule
+  \hline 
   %\verb|AIC.momentuHMM| & AIC for one or several \verb|momentuHMM| models  \tabularnewline
   %\verb|CIbeta| & Confidence intervals for working (beta) parameters  \tabularnewline
   %\verb|CIreal| & Confidence intervals for natural (real) parameters  \tabularnewline
@@ -156,7 +155,7 @@ Before delving into some of the finer details, we will first provide an overview
   \verb|simData| & Simulate movement data using a (multivariate) HMM \tabularnewline 
   \verb|stateProbs| & State probabilities for each time step \tabularnewline 
   \verb|viterbi| & Most likely state sequence (using the Viterbi algorithm)  \tabularnewline  
-  \bottomrule
+  \hline 
   \end{tabular}
 \end{table}
 
@@ -164,9 +163,9 @@ One of the key features of \verb|momentuHMM| is the ability to specify an unlimi
 \begin{table}
   \caption{\label{tab:pdfs} Data stream $(z)$ probability distributions, natural parameters, and default link functions for covariate modelling. Probability distributions with positive support can be zero-inflated (with additional zero-mass parameters), while the Beta distribution can be zero- and one-inflated (with additional one-mass parameters). If user-specified bounds are provided, then custom link functions are used instead of the defaults (see package documentation for further details). If circular-circular regression is specified for the mean of angular distributions (``vm'' and ``wrpcauchy''), then the link function described in \cite{DuchesneEtAl2015} is used. Users seeking additional probability distributions are encouraged to contact the authors.}
   \begin{tabular}{llll}
-  \toprule
+  \hline 
   Distribution & Support & Parameters & Link function \tabularnewline
-  \midrule
+  \hline 
   Beta (``\verb|beta|'')               & $z_t\in(0,1)$            & $\verb|shape1|>0$                &  $\log$ \tabularnewline  
                                        &                          & $\verb|shape2|>0$                &  $\log$ \tabularnewline
                                        &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
@@ -186,7 +185,7 @@ One of the key features of \verb|momentuHMM| is the ability to specify an unlimi
                                        &                          & $\verb|scale|>0$                 &  $\log$ \tabularnewline  
   Wrapped Cauchy (``\verb|wrpcauchy|'')& $z_t\in(-\pi,\pi]$       & $\verb|mean|\in(-\pi,\pi]$       &  $\tan(\verb|mean|/2)$ \tabularnewline  
                                        &                          & $\verb|concentration|\in(0,1)$ &  $\text{logit}$ \tabularnewline 
-  \bottomrule
+  \hline 
   \end{tabular}
 \end{table}
 
@@ -195,13 +194,13 @@ One of the key features of \verb|momentuHMM| is the ability to specify an unlimi
 \subsection{Data preparation and visualization}
 For temporally-regular location data with negligible measurement error, the \verb|prepData| function is used to create a \verb|momentuHMMData| object that can be used for data visualization and further analysis. The arguments for \verb|prepData| include:
 \begin{itemize}
-  \item{\verb|Data|} A data frame with $T+1$ rows including optionally a field `ID' (identifiers for different individuals), coordinates from which step length (`step') and turning angle (`angle') data streams are to be calculated, any additional data streams, and any covariates identified in the \verb|covNames| and \verb|angleCovs| arguments. Altervatively, \verb|Data| can be a \verb|crwData| object returned by \verb|crawlWrap|.
+  \item{\verb|data|} A data frame with $T+1$ rows including optionally a field `ID' (identifiers for different individuals), coordinates from which step length (`step') and turning angle (`angle') data streams are to be calculated, any additional data streams, and any covariates identified in the \verb|covNames| and \verb|angleCovs| arguments. Altervatively, \verb|data| can be a \verb|crwData| object returned by \verb|crawlWrap|.
   \item{\verb|type|} Coordinate type; `UTM' if easting-northing or `LL' if longitude-latitude.
-  \item{\verb|coordNames|} Names of the two coordinate columns in \verb|Data|. If \verb|coordNames=NULL| then step lengths, turning angles, and any location-based covariates (i.e., those specified by \verb|spatialCovs|, \verb|centers|, and \verb|angleCovs|) are not calculated.
-  \item{\verb|covNames|} Character vector indicating the names of any covariates in \verb|Data|. Any variables in \verb|Data| (other than ``ID'') that are not identified in \verb|covNames| or \verb|angleCovs| are assumed to be data streams.
-  \item{\verb|spatialCovs|} List of Raster-class objects \citep{Hijmans2016} containing spatio-temporally referenced covariates. Covariates specified by \verb|spatialCovs| are extracted from the raster layer(s) based on the location data. Raster stacks may also be included, in which case the appropriate $z$ values (e.g. time, date) must also be included in \verb|Data|.
+  \item{\verb|coordNames|} Names of the two coordinate columns in \verb|data|. If \verb|coordNames=NULL| then step lengths, turning angles, and any location-based covariates (i.e., those specified by \verb|spatialCovs|, \verb|centers|, and \verb|angleCovs|) are not calculated.
+  \item{\verb|covNames|} Character vector indicating the names of any covariates in \verb|data|. Any variables in \verb|data| (other than ``ID'') that are not identified in \verb|covNames| or \verb|angleCovs| are assumed to be data streams.
+  \item{\verb|spatialCovs|} List of Raster-class objects \citep{Hijmans2016} containing spatio-temporally referenced covariates. Covariates specified by \verb|spatialCovs| are extracted from the raster layer(s) based on the location data. Raster stacks may also be included, in which case the appropriate $z$ values (e.g. time, date) must also be included in \verb|data|.
   \item{\verb|centers|} 2-column matrix providing the coordinates for any activity centers (e.g., potential centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the location data and returned in the \verb|momentuHMMData| object.
-  \item{\verb|angleCovs|} Character vector indicating the names of any circular-circular regression angular covariates in \verb|Data| or \verb|spatialCovs| that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction).
+  \item{\verb|angleCovs|} Character vector indicating the names of any circular-circular regression angular covariates in \verb|data| or \verb|spatialCovs| that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction).
 \end{itemize}
 Summary plots of the \verb|momentuHMMData| object returned by \verb|prepData| can be created for any data stream or covariate using the generic \verb|plot| function.
 
@@ -218,7 +217,7 @@ Once a \verb|momentuHMMData| object has been created using \verb|prepData|, then
   \item{\verb|stationary|} Logical indicating whether or not the initial distribution is considered equal to the stationary distribution (must be \verb|FALSE| if \verb|formula| includes covariates) 
   \item{\verb|Par0|} A named list containing vectors of starting values for the state-dependent probability distribution parameters of each data stream
 \end{itemize}
-These seven arguments are all that are needed in order to fit the HMMs currently supported in \verb|moveHMM| \citep{MichelotEtAl2016}. For example, here is how the analysis of 15 ``wild haggis'' tracks described in \cite{MichelotEtAl2016} would be implemented using \verb|momentuHMM|:
+These seven arguments are all that are needed in order to fit the HMMs currently supported in \verb|moveHMM| \citep{MichelotEtAl2016}. For example, here is how the analysis of 15 ``wild haggis'' tracks described in \citep{MichelotEtAl2016} would be implemented using \verb|momentuHMM|:
 <<load-library, echo=TRUE, eval=FALSE>>=
 library(momentuHMM)
 ### Load raw data
@@ -289,7 +288,7 @@ When location data are temporally-irregular or subject to measurement error, the
 There are three primary functions (\verb|MIfitHMM|, \verb|MIpool|, and \verb|crawlWrap|) for performing multiple imputation HMM analyses in \verb|momentuHMM|, and all rely on parallel processing to speed up computations. \verb|crawlWrap| is a wrapper function for fitting the continuous-time correlated random walk (CTCRW) model of \cite{JohnsonEtAl2008} to one or more tracks (subject to location measurement error and/or temporal irregularity) and then predicting temporally-regular tracks of the user's choosing (e.g. 15 min, hourly, daily) based on the CTCRW model output.  \verb|crawlWrap| returns a \verb|crwData| object that can be used to draw $m$ realization of the position process within the \verb|MIfitHMM| function.  \verb|MIfitHMM| is essentially a wrapper function for \verb|fitHMM| that repeatedly fits the same user-specified HMM to $m$ imputed data sets and stores the output from each of the $m$ model fits. If a \verb|crwData| object is provided, then \verb|MIfitHMM| will first draw $m$ imputations based on the \verb|crwData| output and then fit the specified HMM to each imputed data set. If users wish to use a movement model other than the CTCRW to account for measurement error and temporal irregularity \citep[e.g.][]{CalabreseEtAl2016,GurarieEtAl2017}, or if other observation error processes (e.g. missing data) are to be accounted for in the imputation step, \verb|MIfitHMM| can also be used for analysis of a list of $m$ \verb|momentuHMMData| objects that were imputed by the user. Based on the $m$ model fits, the \verb|MIpool| function calculates pooled estimates, standard errors, and confidence intervals for the working scale parameters, natural scale parameters (based on transformations of the pooled working parameters and mean or user-specified values for any covariates), state sequences, state probabilities, and activity budgets (i.e. the proportion of the $T$ times step assigned to each state) using standard multiple imputation formulae \citep{RubinSchenker1986,McClintock2017}.  \verb|MIpool| can be called separately or within \verb|MIfitHMM| (using the \verb|poolEstimates| argument), and the function returns a \verb|miSum| object containing the pooled output across all imputatons. See sections \ref{sec:nfs}, \ref{sec:turtle}, and \ref{sec:greySeal} for example HMM analyses that use multiple imputation to account for location measurement error and temporally irregularity.
 
 \subsection{Model visualization and diagnostics}
-The generic \verb|plot| functions for \verb|momentuHMM| models (\verb|plot.momentuHMM| and \verb|plot.miSum|) plot the data stream histograms along with their corresponding estimated probability distributions, the estimated natural parameters and state transition probabilities as a function of any covariates included in the model, and the tracks of all individuals (color-coded by the most likely state sequence). By default, the probability distributions are plotted based on the means of any covariate values, but user-specified covariate values for the plots can be provided using the \verb|covs| argument.  When the argument \verb|plotCI=TRUE|, then confidence intervals for the natural parameters and state transition probabilities are also plotted. Confidence intervals are calculated from the working parameter estimates based on the delta method and finite-difference approximations of the first derivative for the transformation using the \verb|numDeriv::grad| function \citep{GilbertVaradhan2016}.  For multiple imputation analyses (\verb|plot.miSum|), all plots are based on the pooled parameter estimates and the means of any covariates (if not provided by the \verb|covs| argument) across each imputation. Using the argument \verb|errorEllipse|, \verb|plot.miSum| will include estimated location error ellipses in the plots of individual tracks. The functions \verb|plotSat|, \verb|plotSpatialCov|, and \verb|plotStates| (Table \ref{tab:functions}) provide further methods for visualizing model results.
+The generic \verb|plot| functions for \verb|momentuHMM| models (\verb|plot.momentuHMM| and \verb|plot.miSum| plot the data stream histograms along with their corresponding estimated probability distributions, the estimated natural parameters and state transition probabilities as a function of any covariates included in the model, and the tracks of all individuals (color-coded by the most likely state sequence). By default, the probability distributions are plotted based on the means of any covariate values, but user-specified covariate values for the plots can be provided using the \verb|covs| argument.  When the argument \verb|plotCI=TRUE|, then confidence intervals for the natural parameters and state transition probabilities are also plotted. Confidence intervals are calculated from the working parameter estimates based on the delta method and finite-difference approximations of the first derivative for the transformation using the \verb|numDeriv::grad| function \citep{GilbertVaradhan2016}.  For multiple imputation analyses (\verb|plot.miSum|), all plots are based on the pooled parameter estimates and the means of any covariates (if not provided by the \verb|covs| argument) across each imputation. Using the argument \verb|errorEllipse|, \verb|plot.miSum| will include estimated location error ellipses in the plots of individual tracks. The functions \verb|plotSat|, \verb|plotSpatialCov|, and \verb|plotStates| (Table \ref{tab:functions}) provide further methods for visualizing model results.
 
 Diagnostic tools include the calculation and plotting of pseudo-residuals \citep{ZucchiniEtAl2016} using the \verb|pseudoRes| and \verb|plotPR| functions, respectively. Akaike's Information Criterion can be calculated for one or more models using the \verb|AIC.momentuHMM| function.
 
@@ -305,8 +304,9 @@ We will now demonstrate some of the capabilities of \verb|momentuHMM| using real
 <<load-library, results=hide, echo=FALSE, eval=TRUE>>=
 library(momentuHMM)
 library(sp)
-#source("elephantExample.R")
-load("elephantExample.RData")
+example_wd<-("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/vignette examples/")
+#source(paste0(example_wd,"elephantExample.R"))
+load(paste0(example_wd,"elephantExample.RData"))
 elephantFit$stateNames<-c("encamped","exploratory")
 
 activityBudgets<-table(viterbi(elephantFit))/nrow(elephantFit$data)
@@ -328,7 +328,7 @@ plotSat(data.frame(x=elephantData$long,y=elephantData$lat),zoom=8,location=c(med
 acf(dataHMM$step,na.action=na.pass,lag=acfLag,main="",xlab="Lag (hours)")
 dev.off()
 @
-As our first example, we use an African elephant ({\it Loxodonta africana}) bull track described in \cite{WallEtAl2014} and publicly available from the movebank.org data repository. In addition to hourly locations, the tag also collected external temperature data. Location measurement error is negligible for these terrestrial GPS data, although about 1\% of the hourly observations collected between 22 March 2008 and 30 September 2010 are missing. Instead of simply ignoring these missing data, we can employ \verb|crawlWrap| to predict the missing locations based on the CTCRW model of \cite{JohnsonEtAl2008} prior to conducting our HMM analysis:
+As our first example, we use an African elephant ({\it Loxodonta africana}) bull track described in \cite{WallEtAl2014} and publicly available from the movebank.org data repository. In addition to hourly locations, the tag also collected external temperature data. Location measurement error is negligible for these terrestrial GPS data, although about 1\% of the hourly observatons collected between 22 March 2008 and 30 September 2010 are missing. Instead of simply ignoring these missing data, we can employ \verb|crawlWrap| to predict the missing locations based on the CTCRW model of \cite{JohnsonEtAl2008} prior to conducting our HMM analysis:
 <<load-library, echo=TRUE, eval=FALSE>>=
 crwOut <- crawlWrap(obsData = elephantData, timeStep = "hour",
                   initial.state = inits, theta = c(4,-10), fixPar = c(NA,NA))
@@ -338,7 +338,7 @@ Here the desired time step is specified by the \verb|timeStep| argument, and the
 During preliminary exploratory data analysis, autocorrelation function estimates suggested there are 24-hour cycles in the step length data (see Figure \ref{fig:elephantResults1}), and this presents an opporunity to demonstrate the use of the \verb|cosinor| function for incorporating cyclical behavior in model parameters using \verb|momentuHMM|. But first we must create a \verb|momentuHMMData| object and the 24-hour cosinor model covariate: 
 <<load-library, echo=TRUE, eval=FALSE>>=
 ### create momentuHMMData object from crwData object
-dataHMM <- prepData(crwOut,covNames="temp")
+dataHMM <- prepData(data =  crwOut, covNames = "temp")
 ### add cosinor covariate based on hour of day
 dataHMM$hour <- as.integer(strftime(dataHMM$time, format = "%H", tz="GMT"))
 @
@@ -383,15 +383,15 @@ The above model identifed an ``encamped'' (\Sexpr{round(as.numeric(activityBudge
 \subsection{Northern fur seal}
 \label{sec:nfs}
 <<load-library,echo=FALSE,results=hide,eval=TRUE>>=
-#source("nfsExample.R")
-load("nfsExample.RData")
+#source(paste0(example_wd,"nfsExample.R"))
+load(paste0(example_wd,"nfsExample.RData"))
 @
 <<plot_nfsResults,echo=FALSE,results=hide,eval=FALSE>>=
 pdf(file="plot_nfsResults.pdf")
 plot(nfsFits,ask=FALSE)
 dev.off()
 @
-In our second example, we use the northern fur seal ({\it Callorhinus ursinus}) example from \cite{McClintockEtAl2014b} to demonstrate the use of additional data streams for distinguishing behaviors with similar horizontal trajectories in a multivariate HMM. The data consist of 241 temporally-irregular Fastloc GPS locations obtained during a foraging trip of a nursing female near the Pribilof Islands of Alaska, USA, from 10-17 October 2007. The tag included time-depth recording capabilities, and the dive activity data were summarized as the number of foraging dives over $T=228$ temporally-regular 1 hr time steps. To fit the $Z=3$ state (1=``resting'', 2=``foraging'', 3=``transit'') of \cite{McClintockEtAl2014b} using \verb|momentuHMM|, we first used \verb|crawlWrap| to predict temporally-regular locations at 1 hr time steps assuming a bivariate normal measurement error model and merged the results with the foraging dive data using the \verb|crawlMerge| function (see Supplementary Material). Then multiple imputation was used to account for location measurement error by repeatedly fitting the HMM to \verb|nSims| realizations of the position process using \verb|MIfitHMM|:% in parallel on \verb|ncores| cores of a (multi-core) processor:
+In our second example, we use the northern fur seal ({\it Callorhinus ursinus}) example from \cite{McClintockEtAl2014b} to demonstrate the use of additional data streams for distinguishing behaviors with similar horizontal trajectories in a multivariate HMM. The data consist of 241 temporally-irregular Fastloc GPS locations obtained during a foraging trip of a nursing female near the Pribilof Islands of Alaska, USA, from 10-17 October 2007. The tag included time-depth recording capabilities, and the dive activity data were summarized as the number of foraging dives over $T=228$ temporally-regular 1 hr time steps. To fit the $Z=3$ state (1=``resting'', 2=``foraging'', 3=``transit'') of \cite{McClintockEtAl2014b} using \verb|momentuHMM|, we first used \verb|crawlWrap| to predict temporally-regular locations at 1 hr time steps assuming a bivariate normal measurement error model and merged the results with the foraging dive data using the \verb|crawlMerge| function (see Supplementary Material). Then multiple imputation was used to account for locaton measurement error by repeatedly fitting the HMM to \verb|nSims| realizations of the position process using \verb|MIfitHMM|:% in parallel on \verb|ncores| cores of a (multi-core) processor:
 <<load-library, echo=TRUE, eval=FALSE>>=
 nbStates <- 3
 stateNames <- c("resting", "foraging", "transit")
@@ -422,8 +422,8 @@ The results are very similar to those of the discrete-time model of \cite{McClin
 \subsection{Loggerhead turtle}
 \label{sec:turtle}
 <<load-library,echo=FALSE,results=hide,eval=TRUE>>=
-#source("turtleExample.R")
-load("turtleExample.RData")
+#source(paste0(example_wd,"turtleExample.R"))
+load(paste0(example_wd,"turtleExample.RData"))
 @
 <<plot_turtleResults,echo=FALSE,results=hide,eval=FALSE>>=
 library(sp)
@@ -475,7 +475,7 @@ and the turning angle mean parameter $(\mu^\phi_t)$ as a trade-off between short
 \end{equation}
 where $d_t=\text{atan2}(\sin(r_t-b_{t-1}),\cos(r_t-b_{t-1}))$.
 
-We wish to fit a 2-state HMM to the turtle data, with a ``foraging'' state unaffected by currents and a ``transit'' state potentially influenced by ocean surface currents as in Eqs. \ref{eq:turtleMeanStep} and \ref{eq:turtleMeanAngle}.  We used \verb|crawlWrap| to predict $T=350$ temporally-regular locations at 2 hr time steps assuming a bivariate normal measurement error model that accounts for the Argos location quality class  (i.e. 3,2,1,0,A,B) of each observation (see Supplementary Material). We then again used multiple imputation to account for location uncertainty by repeatedly fitting the HMM to \verb|nSims| realizations of the position process using \verb|MIfitHMM|. We first draw \verb|nSims| realizations of the position process and extract the corresponding spatial covariates from the raster bricks for ocean surface current speed (``speedBrick'') and direction (``dirBrick'') using \verb|MIfitHMM| with \verb|fit=FALSE|:
+We wish to fit a 2-state HMM to the turtle data, with a ``foraging'' state unaffected by currents and a ``transit'' state potentially influenced by ocean surface currents as in Eqs. \ref{eq:turtleMeanStep} and \ref{eq:turtleMeanAngle}.  We used \verb|crawlWrap| to predict $T=350$ temporally-regular locations at 2 hr time steps assuming a bivariate normal measurement error model that accounts for the Argos location quality class  (i.e. 3,2,1,0,A,B) of each observation (see Supplementary Material). We then again used multiple imputation to account for locaton uncertainty by repeatedly fitting the HMM to \verb|nSims| realizations of the position process using \verb|MIfitHMM|. We first draw \verb|nSims| realizations of the position process and extract the corresponding spatial covariates from the raster bricks for ocean surface current speed (``speedBrick'') and direction (``dirBrick'') using \verb|MIfitHMM| with \verb|fit=FALSE|:
 <<load-library, echo=TRUE, eval=FALSE>>=
 miTurtleData <- MIfitHMM(crwOut, nSims = 100, fit=FALSE,
                  spatialCovs = list(w = speedBrick, d = dirBrick, r = dirBrick),
@@ -518,16 +518,16 @@ For the ``transit'' state, pooled parameter estimates indicated step lengths inc
 \subsection{Grey seal}
 \label{sec:greySeal}
 <<load-library,echo=FALSE,results=hide,eval=TRUE>>=
-#source("greySealExample_TPM.R")
-load("greySealResults_TPM.RData")
+#source(paste0(example_wd,"greySealExample_TPM.R"))
+load(paste0(example_wd,"greySealResults_TPM.RData"))
 @
 <<plot_greySealResults,echo=FALSE,results=hide,eval=FALSE>>=
 pdf(file="plot_greySealResults1.pdf")
 plot(greySealPool,plotCI=TRUE,ask=FALSE)
 dev.off()
 
-load("greySealData.RData")
-load("coastUTM.RData")
+load(paste0(example_wd,"greySealData.RData"))
+load(paste0(example_wd,"coastUTM.RData"))
 
 colvect<-c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2")
 

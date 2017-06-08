@@ -2,7 +2,7 @@
 context("fitHMM")
 
 test_that("Exceptions are thrown",{
-  data <- example$data
+  data <- example$m$data
   simPar <- example$simPar
   par0 <- example$par0
 
@@ -74,7 +74,7 @@ test_that("Exceptions are thrown",{
 })
 
 test_that("The output has the right class",{
-  data <- example$data
+  data <- example$m$data
   simPar <- example$simPar
   par0 <- example$par0
 
