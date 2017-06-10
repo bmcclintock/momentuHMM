@@ -1,6 +1,6 @@
 \documentclass[12pt]{article}
 \usepackage[latin9]{inputenc}
-\usepackage[margin=2.5cm]{geometry}
+\usepackage{geometry}
 \geometry{verbose}
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -8,7 +8,7 @@
 \usepackage{natbib}
 \setcitestyle{aysep={}}
 \usepackage{adjustbox}
-\usepackage[labelfont=bf,labelsep=period]{caption}
+\usepackage[labelfont=bf,labelsep=period,font={small,sl}]{caption}
 \usepackage{amsthm}
 \usepackage{epsfig}
 \usepackage{psfrag}
@@ -24,6 +24,9 @@
 \usepackage{Sweave}
 \begin{document}
 \input{momentuHMM-concordance}
+
+% set margin to 4cm for title page
+\newgeometry{margin=4cm}
 
 \begin{center}
 \texttt{\LARGE momentuHMM}{\LARGE : R package for analysis of telemetry data using generalized multivariate hidden Markov models of animal movement}\vspace{0.5in}
@@ -79,6 +82,9 @@ May 1, 2017
 \newpage{}
 
 %\linenumbers
+
+% set margin to 3cm for main text
+\newgeometry{margin=3cm}
 
 \noindent \textbf{Summary}\\
 \textbf{1.} Discrete-time hidden Markov models (HMMs) have become an immensely popular tool for inferring latent animal behaviors from telemetry data, largely because they are relatively fast and easy to implement when data streams are observed without error and at regular time intervals. While movement HMMs typically rely solely on location data, auxiliary biotelemetry and environmental data are powerful and readily-available resources for incorporating much more behavioral realism and inferring ecological relationships that would otherwise be difficult or impossible to infer from location data alone.  However, there is a paucity of generalized user-friendly software available for implementing (multivariate) HMMs of animal movement. Furthermore, location measurement error, temporal irregularity, and other forms of missing data are often pervasive in telemetry studies (particularly in marine systems).\\ %and the incorporation of uncertainty attributable to location measurement error or missing data typically requires fitting HMMs using custom and computationally-demanding model fitting techniques, such as Markov chain Monte Carlo.\\ 
@@ -347,12 +353,13 @@ The above model identifed an ``encamped'' (0.74 of time steps) and ``exploratory
 \end{figure}
 
 \begin{figure}[htbp]
-  \includegraphics[width=0.4\textwidth,page=9]{plot_elephantResults}
-  \includegraphics[width=0.4\textwidth,page=12]{plot_elephantResults} \\
-  \includegraphics[width=0.4\textwidth,page=1]{plot_elephantResults} 
-  \includegraphics[width=0.4\textwidth,page=2]{plot_elephantResults} \\
-  \includegraphics[width=0.4\textwidth,page=10]{plot_elephantResults}
-  \includegraphics[width=0.4\textwidth,page=13]{plot_elephantResults} \\
+  \centering
+  \includegraphics[width=0.35\textwidth,page=9]{plot_elephantResults}
+  \includegraphics[width=0.35\textwidth,page=12]{plot_elephantResults} \\
+  \includegraphics[width=0.35\textwidth,page=1]{plot_elephantResults} 
+  \includegraphics[width=0.35\textwidth,page=2]{plot_elephantResults} \\
+  \includegraphics[width=0.35\textwidth,page=10]{plot_elephantResults}
+  \includegraphics[width=0.35\textwidth,page=13]{plot_elephantResults} \\
   \caption{Selected plots for the 2-state (``encamped'' and ``exploratory'') African elephant example generated using the generic 'plot' function. Top panels present histograms of the step length (top-left) and turning angle (top-right) data along with the estimated state-dependent probability distributions based on the mean temperature (temp = 29.7 degrees celsius) at 12:00 GMT (hour = 12). Middle panels present estimates (and 95\% confidence intervals) for the step length mean parameter of the ``encamped'' state as a function of temperature and hour of day.  Bottom-left panel presents estimates for the turning angle concentration parameter of the ``encamped'' state as a function of temperature.  Bottom-right panel presents estimated state transition probabilities (1 = ``encampled'', 2 = ``exploratory'') as a function of temperature at 12:00 GMT.}
   \label{fig:elephantResults2}
 \end{figure}
@@ -440,13 +447,14 @@ When the \verb|fit| argument is \verb|FALSE|, \verb|MIfitHMM| returns a list of 
 Note that the \verb|state2| special function in \verb|DM| indicates the covariate formulas are specific to state 2 (``transit'') and the \verb|circularAngleMean| argument indicates that circular-circular regression link function is to be used on the mean turning angle parameter as in Eq. \ref{eq:turtleMeanAngle}. 
 
 For the ``transit'' state, pooled parameter estimates indicated step lengths increased with ocean surface current speed and as the bearing of movement aligned with ocean surface current direction ($\beta^l_1=0.43, \text{95\% CI: } 0.1-0.77$; Figure \ref{fig:turtleResults}). The estimated wrapped Cauchy distribution for turning angle had mean angles $(\mu^\phi_t)$ biased towards the direction of ocean surface currents for each time step $(\beta^\phi=0.24, \text{95\% CI: } -0.01-0.5)$, with concentration parameter $\rho^\phi_2=0.85$ (95\% CI: 0.77$-$0.92) indicating turning angles were concentrated at $\mu^\phi_t$. Thus movement during the ``transit'' state appears to strongly follow ocean surface currents (mean ${\text angle\_osc}=0.87,{\text SD}=0.23$), while movement during the ``foraging'' state exhibited shorter step lengths $(\mu^l_1=2996{\text m}, \text{95\% CI: } 1791-4202)$ perpendicular to ocean surface currents (mean ${\text angle\_osc}=0.07,{\text SD}=0.26$), with no directional persistence $(\rho^\phi_1=0.03)$. The turtle spent 0.53 (95\% CI: 0.34$-$0.71) of the 2 hr time steps in the ``foraging'' state and 0.47 (95\% CI: 0.29$-$0.66) of time steps in the ``transit'' state as it travelled northeast along a predominant current until it (presumably) found an attractive foraging patch (Figure \ref{fig:turtleResults}).
-\begin{figure}[ht]
+
+\begin{figure}[htbp]
+  \centering
   \includegraphics[width=0.32\textwidth,page=1]{plot_turtleResults1}
   \includegraphics[width=0.32\textwidth,page=2]{plot_turtleResults1}
   \includegraphics[width=0.32\textwidth,page=4]{plot_turtleResults1}
-  %\centering
   %\begin{adjustbox}{trim=0cm 0.25cm 0cm 1.5cm}
-    \includegraphics[width=0.95\textwidth,page=1]{plot_turtleResults2}
+    \includegraphics[width=\textwidth,page=1]{plot_turtleResults2}
   %\end{adjustbox}
   \caption{Selected results from the loggerhead turtle example. Top panels include estimates and 95\% confidence intervals for the mean step length parameter as a function of ocean surface current speed $(w)$ when ocean surface current direction $(r_t)$ is the same as the bearing $(b_t)$ of movement (i.e. ${\text angle\_osc}=\cos(b_t-r_t)=1$; top-left panel), mean step length parameter as a function of ${\text angle\_osc}$ at the mean ocean surface current speed ($w=0.46$ m/s; top-middle panel), and mean turning angle parameter as a function of $d_t=\text{atan2}(\sin(r_t-b_{t-1}),\cos(r_t-b_{t-1}))$ (top-right panel). Bottom panel plots the pooled track, 95\% error ellipse confidence bands, and state (orange = ``foraging'', blue = ``transit'') estimates based on multiple imputations of the position process relative to ocean surface current speed (m/s) and direction on 2 December 2012.}
   \label{fig:turtleResults}
@@ -510,10 +518,10 @@ A simulated track is presented along with the fitted track in Figure \ref{fig:gr
 \end{figure}
 
 \begin{figure}[htbp]
-  %\centering
+  \centering
   %\begin{adjustbox}{trim=0cm 0.25cm 0cm 1.5cm}
-    \includegraphics[width=0.95\textwidth,page=1]{plot_greySealResults2}\\
-    \includegraphics[width=0.95\textwidth,page=2]{plot_greySealResults2}
+    \includegraphics[width=0.8\textwidth,page=1]{plot_greySealResults2}\\
+    \includegraphics[width=0.8\textwidth,page=2]{plot_greySealResults2}
   %\end{adjustbox}
   \caption{Fitted and simulated tracks from the grey seal example. This seal tended to move in a clockwise fashion between two haul-out locations (``Abertay'' and ``Farne Islands'') and a foraging area (``Dogger Bank'') in the North Sea. Top panel plots the pooled track, 95\% error ellipse confidence bands, and state estimates based on the 5-state HMM fitted to multiple imputations of the position process. Red points indicate the locations of the three activity centers. Black points indicate the (temporally-irregular) observed locations. Bottom panel presents the locations and states for a track simulated from the fitted model using the `simData' function.}
   \label{fig:greySealStateSims}
