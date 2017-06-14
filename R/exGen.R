@@ -75,7 +75,7 @@ exGen <- function()
                     delta0=bPar$delta,formula=formula,dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE),
                     covNames=c("cov1","cov2"))
   
-  miExample <- list(obsData=obsData,inits=inits,err.model=err.model)
+  miExample <- list(obsData=obsData,bPar=bPar,inits=inits,err.model=err.model)
   
   set.seed(3)
   buffer<-100000        # grid half-width

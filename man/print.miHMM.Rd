@@ -26,7 +26,7 @@ crwOut <- crawlWrap(obsData,ncores=1,theta=c(4,0),fixPar=c(1,1,NA,NA),
                     initial.state=inits,err.model=err.model)
                     
 # Fit four imputations
-bPar <- getPar(example$m)
+bPar <- miExample$bPar
 HMMfits <- MIfitHMM(crwOut,nSims=4,ncores=1,poolEstimates=FALSE,
                    nbStates=2,dist=list(step="gamma",angle="vm"),
                    Par0=bPar$Par,beta0=bPar$beta,delta0=bPar$delta,

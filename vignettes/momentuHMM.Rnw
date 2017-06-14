@@ -309,8 +309,8 @@ We will now demonstrate some of the capabilities of \verb|momentuHMM| using real
 <<load-library, results=hide, echo=FALSE, eval=TRUE>>=
 library(momentuHMM)
 library(sp)
-example_wd <- ("~/Dropbox/vignette examples/")
-#example_wd<-("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/vignette examples/")
+#example_wd <- ("~/Dropbox/vignette examples/")
+example_wd<-("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/vignette examples/")
 #source(paste0(example_wd,"elephantExample.R"))
 load(paste0(example_wd,"elephantExample.RData"))
 elephantFit$stateNames<-c("encamped","exploratory")
