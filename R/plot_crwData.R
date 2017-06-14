@@ -142,28 +142,28 @@ plot.crwData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,plotEllipse=TRUE,
         if(plotEllipse & !is.null(data$error_semimajor_axis) & !is.null(data$error_semiminor_axis) & !is.null(data$error_ellipse_orientation)){
           s<-which(!is.na(x))[1]
           errorEllipse<-getEllipse(x[s],y[s],data$error_semimajor_axis[ind][s],data$error_semiminor_axis[ind][s],data$error_ellipse_orientation[ind][s])
-          plot(errorEllipse[,1],errorEllipse[,2],type="l",xlab="x",ylab="y",xlim=c(xmin,xmax),ylim=c(ymin,ymax),lty=1,cex=0.5,col=adjustcolor(1,alpha.f=0.1))
+          plot(errorEllipse[,1],errorEllipse[,2],type="l",xlab="x",ylab="y",xlim=c(xmin,xmax),ylim=c(ymin,ymax),lty=1,cex=0.5,col=adjustcolor(1,alpha.f=0.1),asp=1)
           for(s in which(!is.na(x))[-1]){
             errorEllipse<-getEllipse(x[s],y[s],data$error_semimajor_axis[ind][s],data$error_semiminor_axis[ind][s],data$error_ellipse_orientation[ind][s])
             lines(errorEllipse[,1],errorEllipse[,2],lty=1,cex=0.5,col=adjustcolor(1,alpha.f=0.1))
           }
           points(truex,truey,type="l",lwd=3,col=gray(.75))
         } else {
-          plot(truex,truey,type="l",lwd=3,xlab="x",ylab="y",xlim=c(xmin,xmax),ylim=c(ymin,ymax),col=gray(.75))
+          plot(truex,truey,type="l",lwd=3,xlab="x",ylab="y",xlim=c(xmin,xmax),ylim=c(ymin,ymax),col=gray(.75),asp=1)
         }
         points(mu.x,mu.y,type="o",lwd=1.3,xlab="x",ylab="y",pch=20,col=colors[1],cex=0.5)
       } else {
         if(plotEllipse & !is.null(data$error_semimajor_axis) & !is.null(data$error_semiminor_axis) & !is.null(data$error_ellipse_orientation)){
           s<-which(!is.na(x))[1]
           errorEllipse<-getEllipse(x[s],y[s],data$error_semimajor_axis[ind][s],data$error_semiminor_axis[ind][s],data$error_ellipse_orientation[ind][s])
-          plot(errorEllipse[,1],errorEllipse[,2],type="l",xlab="x",ylab="y",xlim=c(xmin,xmax),ylim=c(ymin,ymax),lty=1,cex=0.5,col=adjustcolor(1,alpha.f=0.1))
+          plot(errorEllipse[,1],errorEllipse[,2],type="l",xlab="x",ylab="y",xlim=c(xmin,xmax),ylim=c(ymin,ymax),lty=1,cex=0.5,col=adjustcolor(1,alpha.f=0.1),asp=1)
           for(s in which(!is.na(x))[-1]){
             errorEllipse<-getEllipse(x[s],y[s],data$error_semimajor_axis[ind][s],data$error_semiminor_axis[ind][s],data$error_ellipse_orientation[ind][s])
             lines(errorEllipse[,1],errorEllipse[,2],lty=1,cex=0.5,col=adjustcolor(1,alpha.f=0.1))
           }
           points(mu.x,mu.y,type="o",lwd=1.3,pch=20,col=colors[1],cex=0.5)
         } else {
-          plot(mu.x,mu.y,type="o",lwd=1.3,xlab="x",ylab="y",pch=20,xlim=c(xmin,xmax),ylim=c(ymin,ymax),col=colors[1],cex=0.5)
+          plot(mu.x,mu.y,type="o",lwd=1.3,xlab="x",ylab="y",pch=20,xlim=c(xmin,xmax),ylim=c(ymin,ymax),col=colors[1],cex=0.5,asp=1)
         }
       }
       points(x[!is.na(x)],y[!is.na(x)],xlab="x",ylab="y",pch=20,cex=0.5)
@@ -246,14 +246,14 @@ plot.crwData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,plotEllipse=TRUE,
           if(plotEllipse & !is.null(data$error_semimajor_axis) & !is.null(data$error_semiminor_axis) & !is.null(data$error_ellipse_orientation)){
             s<-which(!is.na(x))[1]
             errorEllipse<-getEllipse(x[s],y[s],data$error_semimajor_axis[ind][s],data$error_semiminor_axis[ind][s],data$error_ellipse_orientation[ind][s])
-            plot(errorEllipse[,1],errorEllipse[,2],type="l",xlab="x",ylab="y",xlim=c(xmin,xmax),ylim=c(ymin,ymax),lty=1,cex=0.5,col=adjustcolor(1,alpha.f=0.1))
+            plot(errorEllipse[,1],errorEllipse[,2],type="l",xlab="x",ylab="y",xlim=c(xmin,xmax),ylim=c(ymin,ymax),lty=1,cex=0.5,col=adjustcolor(1,alpha.f=0.1),asp=1)
             for(s in which(!is.na(x))[-1]){
               errorEllipse<-getEllipse(x[s],y[s],data$error_semimajor_axis[ind][s],data$error_semiminor_axis[ind][s],data$error_ellipse_orientation[ind][s])
               lines(errorEllipse[,1],errorEllipse[,2],lty=1,cex=0.5,col=adjustcolor(1,alpha.f=0.1))
             }
             points(truex,truey,type="l",lwd=3,col=gray(.75))
           } else {
-            plot(truex,truey,type="l",lwd=3,xlab="x",ylab="y",xlim=c(xmin,xmax),ylim=c(ymin,ymax),col=gray(.75))
+            plot(truex,truey,type="l",lwd=3,xlab="x",ylab="y",xlim=c(xmin,xmax),ylim=c(ymin,ymax),col=gray(.75),asp=1)
           }
           points(mu.x,mu.y,type="o",lwd=1.3,pch=20,col=colors[zoo])
           legendtxt<-c("true",legendtxt)
@@ -265,14 +265,14 @@ plot.crwData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,plotEllipse=TRUE,
           if(plotEllipse & !is.null(data$error_semimajor_axis) & !is.null(data$error_semiminor_axis) & !is.null(data$error_ellipse_orientation)){
             s<-which(!is.na(x))[1]
             errorEllipse<-getEllipse(x[s],y[s],data$error_semimajor_axis[ind][s],data$error_semiminor_axis[ind][s],data$error_ellipse_orientation[ind][s])
-            plot(errorEllipse[,1],errorEllipse[,2],type="l",xlab="x",ylab="y",xlim=c(xmin,xmax),ylim=c(ymin,ymax),lty=1,cex=0.5,col=adjustcolor(1,alpha.f=0.1))
+            plot(errorEllipse[,1],errorEllipse[,2],type="l",xlab="x",ylab="y",xlim=c(xmin,xmax),ylim=c(ymin,ymax),lty=1,cex=0.5,col=adjustcolor(1,alpha.f=0.1),asp=1)
             for(s in which(!is.na(x))[-1]){
               errorEllipse<-getEllipse(x[s],y[s],data$error_semimajor_axis[ind][s],data$error_semiminor_axis[ind][s],data$error_ellipse_orientation[ind][s])
               lines(errorEllipse[,1],errorEllipse[,2],lty=1,cex=0.5,col=adjustcolor(1,alpha.f=0.1))
             }
             points(mu.x,mu.y,type="o",lwd=1.3,pch=20,col=colors[zoo])
           } else {
-            plot(mu.x,mu.y,type="o",lwd=1.3,xlab="x",ylab="y",pch=20,xlim=c(xmin,xmax),ylim=c(ymin,ymax),col=colors[zoo])
+            plot(mu.x,mu.y,type="o",lwd=1.3,xlab="x",ylab="y",pch=20,xlim=c(xmin,xmax),ylim=c(ymin,ymax),col=colors[zoo],asp=1)
           }
         }
         points(x[!is.na(x)],y[!is.na(x)],pch=20,cex=0.5)
