@@ -334,37 +334,162 @@ plotSat(data.frame(x=elephantData$long,y=elephantData$lat),zoom=8,location=c(med
 acf(dataHMM$step,na.action=na.pass,lag=acfLag,main="",xlab="Lag (hours)")
 dev.off()
 @
-As our first example, we use an African elephant ({\it Loxodonta africana}) bull track described in \cite{WallEtAl2014} and publicly available from the movebank.org data repository. In addition to hourly locations, the tag also collected external temperature data. Location measurement error is negligible for these terrestrial GPS data, although about 1\% of the hourly observations collected between 22 March 2008 and 30 September 2010 are missing. Instead of simply ignoring these missing data, we can employ \verb|crawlWrap| to predict the missing locations based on the CTCRW model of \cite{JohnsonEtAl2008} prior to conducting our HMM analysis:
-<<load-library, echo=TRUE, eval=FALSE>>=
-crwOut <- crawlWrap(obsData = elephantData, timeStep = "hour",
-                  initial.state = inits, theta = c(4,-10), fixPar = c(NA,NA))
-@
-Here the desired time step is specified by the \verb|timeStep| argument, and the \verb|initial.state|, \verb|theta|, and \verb|fixPar| arguments are the same as for \verb|crawl::crwMLE| \citep{Johnson2017}. Now that we have our complete set of temporally-regular location data, we can begin fitting HMMs using \verb|fitHMM|.
 
-During preliminary exploratory data analysis, autocorrelation function estimates suggested there are 24-hour cycles in the step length data (see Figure \ref{fig:elephantResults1}), and this presents an opporunity to demonstrate the use of the \verb|cosinor| function for incorporating cyclical behavior in model parameters using \verb|momentuHMM|. But first we must create a \verb|momentuHMMData| object and the 24-hour cosinor model covariate: 
-<<load-library, echo=TRUE, eval=FALSE>>=
-### create momentuHMMData object from crwData object
-dataHMM <- prepData(data =  crwOut, covNames = "temp")
-### add cosinor covariate based on hour of day
+As our first example, we use an African elephant ({\it Loxodonta africana}) bull track described in \cite{WallEtAl2014} and publicly available from the movebank.org data repository. 
+
+We can load the data from the URL (this requires an Internet connection):
+<<load-data, echo=TRUE>>=
+URL <- paste0("https://www.datarepository.movebank.org/bitstream/handle/",
+              "10255/move.373/Elliptical%20Time-Density%20Model%20%28Wall%",
+              "20et%20al.%202014%29%20African%20Elephant%20Dataset%20%",
+              "28Source-Save%20the%20Elephants%29.csv")
+rawData <- read.csv(url(URL))
+@ 
+
+The data set contains two tracks; for this analysis, we only consider the first one. In addition to hourly locations, the tag also collected external temperature data. We subset the data frame to keep only the relevant rows and columns:
+<<subset-data, echo=TRUE>>=
+# select and rename relevant columns
+rawData <- rawData[,c(11,3,4,5,6)]
+colnames(rawData) <- c("ID","time","lon","lat","temp")
+
+# only keep first track
+rawData <- subset(rawData,ID==unique(ID)[1])
+@
+
+The data now has the following columns:
+<<head-data, echo=TRUE>>=
+head(rawData)
+@ 
+
+Location measurement error is negligible for these terrestrial GPS data, although about 1\% of the hourly observations collected between 22 March 2008 and 30 September 2010 are missing. Instead of simply ignoring these missing data, we can employ \verb|crawlWrap| to predict the missing locations based on the CTCRW model of \cite{JohnsonEtAl2008} prior to conducting our HMM analysis.
+
+To use \verb|crawlWrap|, we convert times from factors to POSIX, and project the observed locations to UTM coordinates:
+<<project-data, echo=TRUE, eval=FALSE>>=
+# convert times from factors to POSIX
+rawData$time <- as.POSIXct(rawData$time,tz="GMT")
+
+# project to UTM coordinates using package rgdal
+library(rgdal)
+llcoord <- SpatialPoints(rawData[,3:4], 
+                         proj4string=CRS("+proj=longlat +datum=WGS84"))
+utmcoord <- spTransform(llcoord,CRS("+proj=utm +zone=30 ellps=WGS84"))
+
+# add UTM locations to data frame
+rawData$x <- attr(utmcoord,"coords")[,1]
+rawData$y <- attr(utmcoord,"coords")[,2]
+@ 
+
+Then, we call \verb|crawlWrap| to fit a CTCRW model and predict hourly locations:
+<<crawl, echo=TRUE, eval=FALSE>>=
+# initial parameters for crawl fit
+inits <- list(a = c(rawData$x[1],0,rawData$y[1],0),
+              P = diag(c(5000^2, 10*3600^2, 5000^2, 10*3600^2)))
+
+# fit crawl model
+crwOut <- crawlWrap(obsData=rawData, timeStep="hour", initial.state=inits,
+                    theta=c(4,-10), fixPar=c(NA,NA))
+@
+
+Here the desired time step is specified by the \verb|timeStep| argument, and the \verb|initial.state|, \verb|theta|, and \verb|fixPar| arguments are the same as for \verb|crawl::crwMLE| \citep{Johnson2017}. For the choice of initial parameters in \verb|crawlWrap|, we refer the reader to the documentation of the package crawl, in particular \verb|crawl::crwMLE| and \verb|crawl::crwPredict|. We now have a complete set of temporally-regular location data.
+
+Autocorrelation function estimates suggest there are 24-hour cycles in the step length data, and this presents an opporunity to demonstrate the use of the \verb|cosinor| function for incorporating cyclical behavior in model parameters using \verb|momentuHMM|. The ACF plot, shown in Figure \ref{fig:elephantResults1}, was obtained with:
+<<acf-before, echo=TRUE, eval=FALSE>>=
+acf(data$step[!is.na(data$step)],lag.max=300)
+@ 
+
+We create a \verb|momentuHMMData| object, and the 24-hour cosinor model covariate: 
+<<prepData, echo=TRUE, eval=FALSE>>=
+# create momentuHMMData object from crwData object
+dataHMM <- prepData(data=crwOut, covNames="temp")
+
+# add cosinor covariate based on hour of day
 dataHMM$hour <- as.integer(strftime(dataHMM$time, format = "%H", tz="GMT"))
 @
-As seen here, the function \verb|prepData| can also be used for pre-processing the best predicted track data from \verb|crawlWrap| output. The 24-hour cosinor covariate (``hour'') is simply a set of integers $(0,1,\ldots,23)$ indicating the hour of day for each observation. Now that the data have been pre-processed and the cosinor covariate has been created,  we're ready to fit a 2-state HMM to the elephant track that includes temperature effects on the turning angle concentration parameters and cycling temperature effects (with a 24-hour periodicity) on the step length and state transition probability parameters:
-<<load-library, echo=TRUE, eval=FALSE>>=
-DM <- list(step = list(mean = ~ temp * cosinor(hour, period = 24),
-                         sd = ~ temp * cosinor(hour, period = 24)),
-          angle = list(concentration = ~ temp))
+
+As seen here, the function \verb|prepData| can also be used for pre-processing the best predicted track data from \verb|crawlWrap| output. The 24-hour cosinor covariate (``hour'') is simply a set of integers $(0,1,\ldots,23)$ indicating the hour of day for each observation. 
+
+Our aim is to fit a 2-state HMM to the elephant track that includes temperature effects on the turning angle concentration parameters and cycling temperature effects (with a 24-hour periodicity) on the step length and state transition probability parameters. A complex model, like this one, requires many parameters, such that it is challenging to choose good starting parameter values for the optimization. Here, we take an incremental approach, starting from a simpler model with no covariates. In \verb|momentuHMM|, the function \verb|getPar0| extracts initial parameters from a fitted (nested) HMM, given arguments for the more complex model.
+
+For the covariate-free 2-state model, six initial parameters need to be chosen: for each state, the mean and standard deviation of the gamma distribution of step lengths, and the concentration of the wrapped Cauchy distribution of turning angles. Looking at the histograms of the step lengths and the turning angles (e.g.\ output by \verb|plot(data)|) is often useful to choose good starting parameter values.
+
+<<fitm1, echo=TRUE, eval=FALSE>>=
+# label states
+stateNames <- c("encamped","exploratory")
+# distributions for observation processes
+dist = list(step = "gamma", angle = "wrpcauchy")
+
+# initial parameters
+nPar0_m1 <- list(step=c(100,500,100,200),angle=c(0.3,0.7))
+
+# fit model
+m1 <- fitHMM(data = data, nbStates = 2, dist = dist, Par0 = nPar0_m1, 
+             estAngleMean = list(angle=FALSE), stateNames = stateNames)
+@ 
+
+To ensure convergence, we could also use the argument \verb|retryFits| to specify the number of attempts to minimize the negative log-likelihood based on random perturbations of the parameter estimates at the current minimum.\\
+
+We can build on complexity, by including the temperature and time of day as covariates in the state transition probabilities. We use the function \verb|getPar0| to extract the new starting parameter values.
+<<fitm2, echo=TRUE, eval=FALSE>>=
+# formula for transition probabilities
 formula <- ~ temp * cosinor(hour, period = 24)
 
-elephantFit <- fitHMM(data = dataHMM, nbStates = 2, 
-                      dist = list(step = "gamma", angle = "wrpcauchy"),
-                      Par0 = Par0$Par, beta0 = Par0$beta,
-                      DM = DM, formula = formula,
-                      estAngleMean = list(angle=FALSE))
-plot(elephantFit, plotCI = TRUE, covs = data.frame(hour=12))
-@
-The special function \verb|cosinor(hour, period = 24)| internally creates the cosinor model covariates, $\cos(2\pi \times hour / period)$ and $\sin(2\pi \times hour / period)$, and includes both terms (plus interactions with ``temp'') in the fitted model. The function \verb|getPar0| was used to extract parameters from an existing model and organize the starting values for the data stream (\verb|Par0|) and state transition probability (\verb|beta0|) working parameters in the correct format based on \verb|DM| and \verb|formula|, respectively. %To help with convergence, the \verb|retryFits| argument specifies the number of attempts to minimize the negative log-likelihood based on random perturbations of the parameter estimates at the current minimum. 
+# initial parameters (obtained from nested model m1)
+nPar0_m2 <- getPar0(model=m1, formula=formula)
 
-The above model identifed an ``encamped'' (\Sexpr{round(as.numeric(activityBudgets[1]),2)} of time steps) and ``exploratory'' (\Sexpr{round(as.numeric(activityBudgets[2]),2)} of time steps) state (Figure \ref{fig:elephantResults1}), and was overwhelmingly supported by AIC when compared to alternative models with fewer covariates. Interestingly, this model suggests step lengths and directional persistence for the ``encamped'' state decreased as temperature increased, step lengths for both states tended to decrease in the late evening and early morning, and transition probabilities from the ``encamped'' to ``exploratory'' state decreased as temperature increased (Figure \ref{fig:elephantResults2}). Autocorrelation function plots of the pseudo-residuals (Figure \ref{fig:elephantResults1}) indicate this model explained much of the periodicity in step length, although there does still appear to be some room for improvement.
+# fit model
+m2 <- fitHMM(data = data, nbStates = 2, dist = dist, Par0 = nPar0_m2$Par, 
+             beta0=nPar0_m2$beta, stateNames = stateNames, formula=formula)
+@ 
+
+The special function \verb|cosinor(hour, period = 24)| internally creates the cosinor model covariates, $\cos(2\pi \times hour / period)$ and $\sin(2\pi \times hour / period)$, and includes both terms (plus interactions with ``temp'') in the fitted model.\\
+
+Finally, we can fit the more complex model, including the effect of temperature and time of day on the parameters of the state-dependent distributions of steps and angles.
+
+<<fitm3, echo=TRUE, eval=FALSE>>=
+# formulas for parameters of state-dependent observation distributions
+DM <- list(step = list(mean = ~ temp * cosinor(hour, period = 24),
+                       sd = ~ temp * cosinor(hour, period = 24)),
+           angle = list(concentration = ~ temp))
+
+# initial parameters (obtained from nested model m2)
+nPar0_m3 <- getPar0(model=m2, formula=formula, DM=DM)
+
+# fit model
+m3 <- fitHMM(data = data, nbStates = 2, dist = dist, Par0 = nPar0_m3$Par, 
+             beta0 = nPar0_m3$beta, DM = DM, stateNames = stateNames,
+             formula = formula)
+@ 
+
+The above model \verb|m3| identifed a state of slow undirected movement (``encamped''), and a state of faster and more directed movement (``exploratory'') (Figure \ref{fig:elephantResults1}). For a fitted model, the function \verb|viterbi| computes the most likely state sequence:
+<<viterbi, echo=TRUE, eval=FALSE>>=
+# decode most likely state sequence
+states <- viterbi(m3)
+# derive percentage of time spent in each state
+table(states)/nrow(data)
+@
+
+Here, about \Sexpr{round(as.numeric(activityBudgets[1]),2)*100}\% of the steps were attributed to the ``encamped'' state, and \Sexpr{round(as.numeric(activityBudgets[2]),2)*100}\% were attributed to the ``exploratory'' state. 
+
+We can use \verb|AIC(m1,m2,m3)| to compare the three fitted models in terms of AIC; here, \verb|m3| is overwhelmingly supported by the AIC when compared to alternative models with fewer covariates.
+
+The model can be visualized with the generic function \verb|plot|, which was used for the plots shown in Figure \ref{fig:elephantResults2}, and the decoded track in Figure \ref{fig:elephantResults1}.
+
+<<plotm3, echo=TRUE, eval=FALSE>>=
+plot(m3, plotCI = TRUE, covs = data.frame(hour=12))
+@ 
+
+Interestingly, this model suggests step lengths and directional persistence for the ``encamped'' state decreased as temperature increased, step lengths for both states tended to decrease in the late evening and early morning, and transition probabilities from the ``encamped'' to ``exploratory'' state decreased as temperature increased (Figure \ref{fig:elephantResults2}). 
+
+Model fit can be assessed using the pseudo-residuals, with the functions \verb|pseudoRes| and \verb|plotPR|. The residual ACF plot shown in Figure \ref{fig:elephantResults1} was produced by:
+<<pseudoRes, echo=TRUE, eval=FALSE>>=
+# compute pseudo-residuals for the steps and the angles
+pr <- pseudoRes(m3)
+
+# plot the ACF of step pseudo-residuals
+acf(pr$stepRes[!is.na(pr$stepRes)],lag.max = 300)
+@ 
+
+Autocorrelation function plots of the pseudo-residuals indicate this model explained much of the periodicity in step length, although there does still appear to be some room for improvement.
 
 \begin{figure}[htbp]
   \includegraphics[width=0.49\textwidth,page=17]{plot_elephantResults}
