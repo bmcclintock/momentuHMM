@@ -419,10 +419,10 @@ stateNames <- c("encamped","exploratory")
 dist = list(step = "gamma", angle = "wrpcauchy")
 
 # initial parameters
-nPar0_m1 <- list(step=c(100,500,100,200),angle=c(0.3,0.7))
+Par0_m1 <- list(step=c(100,500,100,200),angle=c(0.3,0.7))
 
 # fit model
-m1 <- fitHMM(data = data, nbStates = 2, dist = dist, Par0 = nPar0_m1, 
+m1 <- fitHMM(data = data, nbStates = 2, dist = dist, Par0 = Par0_m1, 
              estAngleMean = list(angle=FALSE), stateNames = stateNames)
 @ 
 
@@ -434,11 +434,11 @@ We can build on complexity, by including the temperature and time of day as cova
 formula <- ~ temp * cosinor(hour, period = 24)
 
 # initial parameters (obtained from nested model m1)
-nPar0_m2 <- getPar0(model=m1, formula=formula)
+Par0_m2 <- getPar0(model=m1, formula=formula)
 
 # fit model
-m2 <- fitHMM(data = data, nbStates = 2, dist = dist, Par0 = nPar0_m2$Par, 
-             beta0=nPar0_m2$beta, stateNames = stateNames, formula=formula)
+m2 <- fitHMM(data = data, nbStates = 2, dist = dist, Par0 = Par0_m2$Par, 
+             beta0=Par0_m2$beta, stateNames = stateNames, formula=formula)
 @ 
 
 The special function \verb|cosinor(hour, period = 24)| internally creates the cosinor model covariates, $\cos(2\pi \times hour / period)$ and $\sin(2\pi \times hour / period)$, and includes both terms (plus interactions with ``temp'') in the fitted model.\\
@@ -452,11 +452,11 @@ DM <- list(step = list(mean = ~ temp * cosinor(hour, period = 24),
            angle = list(concentration = ~ temp))
 
 # initial parameters (obtained from nested model m2)
-nPar0_m3 <- getPar0(model=m2, formula=formula, DM=DM)
+Par0_m3 <- getPar0(model=m2, formula=formula, DM=DM)
 
 # fit model
-m3 <- fitHMM(data = data, nbStates = 2, dist = dist, Par0 = nPar0_m3$Par, 
-             beta0 = nPar0_m3$beta, DM = DM, stateNames = stateNames,
+m3 <- fitHMM(data = data, nbStates = 2, dist = dist, Par0 = Par0_m3$Par, 
+             beta0 = Par0_m3$beta, DM = DM, stateNames = stateNames,
              formula = formula)
 @ 
 
