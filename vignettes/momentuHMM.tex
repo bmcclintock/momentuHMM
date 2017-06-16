@@ -571,7 +571,7 @@ We wish to fit a 2-state HMM to the turtle data, with a ``foraging'' state unaff
 \end{Sinput}
 \end{Schunk}
 When the \verb|fit| argument is \verb|FALSE|, \verb|MIfitHMM| returns a list of length \verb|nSims| composed of \verb|momentuHMMData| objects (\verb|miData|). For convenience and ease of interpretation, we manually added an additional covariate $\left({\text angle\_osc}=\cos(b_t-r_t)\right)$ to each of the imputed data sets and fitted the 2-state HMM using Eqs. \ref{eq:turtleMeanStep} and \ref{eq:turtleMeanAngle} for state 2 (``transit''):
-%<<load-library, echo=TRUE, eval=FALSE>>=
+%<<prep-turtle, echo=TRUE, eval=FALSE>>=
 %for(j in 1:30){
 %  miTurtleData$miData[[j]]$angle_osc <- miTurtleData$miData[[j]]$angle
 %                                        -miTurtleData$miData[[j]]$osc_dir
