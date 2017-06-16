@@ -28,6 +28,7 @@ Only rows of \code{data} with \code{ID} and \code{Time.name} values that exactly
 in \code{data} should match predicted times of locations in \code{crwData$crwPredict} (i.e. those corresponding to \code{crwData$crwPredict$locType=="p"})
 }
 \examples{
+\dontrun{
 # extract simulated obsData from example data
 obsData <- miExample$obsData
 
@@ -49,4 +50,5 @@ data <- data.frame(ID=rep(factor(c(1,2)),times=c(753,652)),
 
 # merge fake data stream with crwOut
 crwOut <- crawlMerge(crwOut,data,"time")
+}
 }

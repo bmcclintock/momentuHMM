@@ -21,6 +21,7 @@
 #' \code{\link{simData}} or \code{\link{simObsData}}, then the true locations (\code{mux},\code{muy}) are also plotted.
 #'
 #' @examples
+#' \dontrun{
 #' # extract simulated obsData from example data
 #' obsData <- miExample$obsData
 #' 
@@ -35,6 +36,7 @@
 #'          err.model=err.model)
 #'
 #' plot(crwOut,compact=TRUE,ask=FALSE,plotEllipse=FALSE)
+#' }
 #'
 #' @export
 #' @importFrom grDevices gray adjustcolor

@@ -69,6 +69,7 @@
 #' @seealso \code{\link{MIfitHMM}}, \code{\link{simData}}
 #' 
 #' @examples
+#' \dontrun{
 #' # extract simulated obsData from example data
 #' obsData <- miExample$obsData
 #' 
@@ -82,8 +83,7 @@
 #'          theta=c(4,0),fixPar=c(1,1,NA,NA),
 #'          initial.state=inits,
 #'          err.model=err.model,attempts=100)
-#'   
-#' \dontrun{                                       
+#'
 #' # Fit the same crwMLE models and predict locations 
 #' # at same intervals but specify for each individual using lists
 #' crwOut2 <- crawlWrap(obsData=obsData,ncores=1,

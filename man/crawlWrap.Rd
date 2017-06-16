@@ -101,6 +101,7 @@ for any of these arguments, then the same element will be applied to all individ
 }
 }
 \examples{
+\dontrun{
 # extract simulated obsData from example data
 obsData <- miExample$obsData
 
@@ -114,8 +115,7 @@ crwOut1 <- crawlWrap(obsData=obsData,ncores=1,
          theta=c(4,0),fixPar=c(1,1,NA,NA),
          initial.state=inits,
          err.model=err.model,attempts=100)
-  
-\dontrun{                                       
+
 # Fit the same crwMLE models and predict locations 
 # at same intervals but specify for each individual using lists
 crwOut2 <- crawlWrap(obsData=obsData,ncores=1,
