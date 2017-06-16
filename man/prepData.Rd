@@ -10,7 +10,7 @@ prepData(data, type = c("UTM", "LL"), coordNames = c("x", "y"),
 \arguments{
 \item{data}{Either a data frame of data streams or a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}). If \code{data} is a data frame, it can optionally include a field \code{ID}
 (identifiers for the observed individuals), coordinates from which step length ('step') 
-and turning angle ('angle') area calculated, and any covariates (with names matching \code{covNames} and/or \code{angleCovs}). 
+and turning angle ('angle') are calculated, and any covariates (with names matching \code{covNames} and/or \code{angleCovs}). 
 If step length and turning angle are to be calculated from coordinates, the \code{coordNames} argument 
 must identify the names for the x- (longitunal) and y- (latitudinal) coordinates.
 With the exception of \code{ID} and \code{coordNames}, all variables in \code{data} are treated as data streams unless identified
