@@ -32,6 +32,7 @@ and \code{error_ellipse_orientation}. If the \code{crwData} object was created u
 \code{\link{simData}} or \code{\link{simObsData}}, then the true locations (\code{mux},\code{muy}) are also plotted.
 }
 \examples{
+\dontrun{
 # extract simulated obsData from example data
 obsData <- miExample$obsData
 
@@ -46,5 +47,6 @@ crwOut <- crawlWrap(obsData=obsData,ncores=1,
          err.model=err.model)
 
 plot(crwOut,compact=TRUE,ask=FALSE,plotEllipse=FALSE)
+}
 
 }

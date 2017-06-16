@@ -16,6 +16,7 @@
 #' 
 #' @return A \code{\link{crwData}} object
 #' @examples
+#' \dontrun{
 #' # extract simulated obsData from example data
 #' obsData <- miExample$obsData
 #' 
@@ -37,6 +38,7 @@
 #' 
 #' # merge fake data stream with crwOut
 #' crwOut <- crawlMerge(crwOut,data,"time")
+#' }
 #' @export
 crawlMerge<-function(crwData, data, Time.name){
   if(!is.crwData(crwData)) stop("crwData must be a crwData object")
