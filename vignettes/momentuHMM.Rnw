@@ -246,7 +246,7 @@ Note that many of the arguments in \verb|fitHMM| are lists, with each element of
 As seen above, the \verb|formula| argument can include many of the functions and operators commonly used to construct terms in R linear model formulas (e.g. \verb|a*b|, \verb|a:b|, \verb|cos(a)|). Unique to \verb|momentuHMM|, the \verb|formula| argument can also be used to specify transition probability matrix models that incorporate cyclical patterns (using the \verb|cosinor| special function; see example in section \ref{sec:elephant}), splines for explaining other more complicated patterns (e.g., \verb|bs| and \verb|ns| functions in the R base package \verb|splines|), and factor variables (e.g., \verb|formula=~ID| for individual-level effects).  By default the \verb|formula| argument applies to all state transition probabilities, but the special functions \verb|state| and \verb|betaCol| allow for state- and parameter-specific formulas to be specified (see example in section \ref{sec:greySeal}). Specific state transition probabilities can also be fixed to zero (or any other value) using the \verb|fixPar| argument, which can be useful for incorporating more behavioral realism.  For example, \verb|fixPar| can be used to prohibit or enforce switching from one particular state to another (possibly as a function of spatio-temporal covariates). 
 
 Similar to the \verb|formula| argument for state transition probability modelling, it is through the \verb|DM| argument of \verb|fitHMM| that models are specified for the state-dependent probability distribution parameters for each data stream.  \verb|DM| is a list argument containing an element for each data stream, but each element itself is also a list specifying the design matrix formulas for each parameter. For example, the following fits the exact same wild haggis model as above, but employs a user-specified (intercept-only) design matrix for the step length data stream:
-<<load-library, echo=TRUE, eval=FALSE>>=
+<<fit-haggis, echo=TRUE, eval=FALSE>>=
 stepDM <- list(mean = ~1, sd = ~1)
 
 ### Fit HMM	using user-specified DM
@@ -260,7 +260,7 @@ fitHaggisDM <- fitHMM(data = processedHaggis, nbStates = 2,
 Note that when \verb|DM| is specified for a data stream, the initial parameter values (\verb|Par0|) for that data stream now correspond to columns of the resulting design matrix and must be on the working scale instead of the natural scale.  In this case, because the log link is used for the natural parameters of the gamma distribution, \verb|Par0$step| was specified on the log scale.  The functions \verb|getPar0| and \verb|getParDM| are designed to assist users in the specification of design matrices and corresponding initial values on the working scale for any given model (see package documentation for further details).  \verb|DM| formulas are just as flexible as the \verb|formula| argument and, in addition to common linear model formula functions and operators, can also include cyclical cosinor models, splines, factor variables, and state-specific probability distribution parameter formulas (see examples in sections \ref{sec:turtle} and \ref{sec:greySeal}). As with the state transition probabilities, working parameters for probability distributions can also be fixed to user-specified values using the \verb|fixPar| argument.
 
 Specification of design matrices using \verb|DM| is not limited to formulas. Alternatively, ``pseudo-design'' matrices can be specified, using an R matrix with rows corresponding to the natural parameters and columns corresponding to the working parameters. The elements in the matrix may be numeric or character strings containing model formula terms (see examples in sections \ref{sec:nfs} and \ref{sec:greySeal}). Using a pseudo-design matrix for step length, the following is yet another way to implement the exact same wild haggis model:
-<<load-library, echo=TRUE, eval=FALSE>>=
+<<fit-haggis-2, echo=TRUE, eval=FALSE>>=
 stepDMp <- matrix(c(1,0,0,0,
                    0,1,0,0,
                    0,0,1,0,
@@ -306,7 +306,7 @@ We will now demonstrate some of the capabilities of \verb|momentuHMM| using real
 
 \subsection{African elephant}
 \label{sec:elephant}
-<<load-library, results=hide, echo=FALSE, eval=TRUE>>=
+<<load-elephant, results=hide, echo=FALSE, eval=TRUE>>=
 library(momentuHMM)
 library(sp)
 #example_wd <- ("~/Dropbox/vignette examples/")
@@ -514,7 +514,7 @@ Autocorrelation function plots of the pseudo-residuals indicate this model expla
 
 \subsection{Northern fur seal}
 \label{sec:nfs}
-<<load-library,echo=FALSE,results=hide,eval=TRUE>>=
+<<load-nfs,echo=FALSE,results=hide,eval=TRUE>>=
 #source(paste0(example_wd,"nfsExample.R"))
 load(paste0(example_wd,"nfsExample.RData"))
 @
@@ -524,7 +524,7 @@ plot(nfsFits,ask=FALSE)
 dev.off()
 @
 In our second example, we use the northern fur seal ({\it Callorhinus ursinus}) example from \cite{McClintockEtAl2014b} to demonstrate the use of additional data streams for distinguishing behaviors with similar horizontal trajectories in a multivariate HMM. The data consist of 241 temporally-irregular Fastloc GPS locations obtained during a foraging trip of a nursing female near the Pribilof Islands of Alaska, USA, from 10-17 October 2007. The tag included time-depth recording capabilities, and the dive activity data were summarized as the number of foraging dives over $T=228$ temporally-regular 1 hr time steps. To fit the $Z=3$ state (1=``resting'', 2=``foraging'', 3=``transit'') of \cite{McClintockEtAl2014b} using \verb|momentuHMM|, we first used \verb|crawlWrap| to predict temporally-regular locations at 1 hr time steps assuming a bivariate normal measurement error model and merged the results with the foraging dive data using the \verb|crawlMerge| function. Then multiple imputation was used to account for location measurement error by repeatedly fitting the HMM to \verb|nSims| realizations of the position process using \verb|MIfitHMM|:% in parallel on \verb|ncores| cores of a (multi-core) processor:
-<<load-library, echo=TRUE, eval=FALSE>>=
+<<fit-nfs, echo=TRUE, eval=FALSE>>=
 nbStates <- 3
 stateNames <- c("resting", "foraging", "transit")
 dist <- list(step = "gamma", angle = "wrpcauchy", dive = "pois")
@@ -553,7 +553,7 @@ The results are very similar to those of the discrete-time model of \cite{McClin
 \end{figure}
 \subsection{Loggerhead turtle}
 \label{sec:turtle}
-<<load-library,echo=FALSE,results=hide,eval=TRUE>>=
+<<load-turtle,echo=FALSE,results=hide,eval=TRUE>>=
 #source(paste0(example_wd,"turtleExample.R"))
 load(paste0(example_wd,"turtleExample.RData"))
 @
@@ -608,20 +608,20 @@ and the turning angle mean parameter $(\mu^\phi_t)$ as a trade-off between short
 where $d_t=\text{atan2}(\sin(r_t-b_{t-1}),\cos(r_t-b_{t-1}))$.
 
 We wish to fit a 2-state HMM to the turtle data, with a ``foraging'' state unaffected by currents and a ``transit'' state potentially influenced by ocean surface currents as in Eqs. \ref{eq:turtleMeanStep} and \ref{eq:turtleMeanAngle}.  We used \verb|crawlWrap| to predict $T=350$ temporally-regular locations at 2 hr time steps assuming a bivariate normal measurement error model that accounts for the Argos location quality class  (i.e. 3,2,1,0,A,B) of each observation. We then again used multiple imputation to account for location uncertainty by repeatedly fitting the HMM to \verb|nSims| realizations of the position process using \verb|MIfitHMM|. We first draw \verb|nSims| realizations of the position process and extract the corresponding spatial covariates from the raster bricks for ocean surface current speed (``speedBrick'') and direction (``dirBrick'') using \verb|MIfitHMM| with \verb|fit=FALSE|:
-<<load-library, echo=TRUE, eval=FALSE>>=
+<<fit-turtle, echo=TRUE, eval=FALSE>>=
 miTurtleData <- MIfitHMM(crwOut, nSims = 100, fit=FALSE,
                  spatialCovs = list(w = speedBrick, d = dirBrick, r = dirBrick),
                  angleCovs = "d")
 @
 When the \verb|fit| argument is \verb|FALSE|, \verb|MIfitHMM| returns a list of length \verb|nSims| composed of \verb|momentuHMMData| objects (\verb|miData|). For convenience and ease of interpretation, we manually added an additional covariate $\left({\text angle\_osc}=\cos(b_t-r_t)\right)$ to each of the imputed data sets and fitted the 2-state HMM using Eqs. \ref{eq:turtleMeanStep} and \ref{eq:turtleMeanAngle} for state 2 (``transit''):
-%<<load-library, echo=TRUE, eval=FALSE>>=
+%<<prep-turtle, echo=TRUE, eval=FALSE>>=
 %for(j in 1:30){
 %  miTurtleData$miData[[j]]$angle_osc <- miTurtleData$miData[[j]]$angle
 %                                        -miTurtleData$miData[[j]]$osc_dir
 %}
 %@
 %Now the imputed data are ready to be fitted to the 2-state HMM using Eqs. \ref{eq:turtleMeanStep} and \ref{eq:turtleMeanAngle} for state 2 (``transit''):
-<<load-library, echo=TRUE, eval=FALSE>>=
+<<fit-turtle, echo=TRUE, eval=FALSE>>=
 nbStates<-2
 dist <- list(step = "gamma", angle = "wrpcauchy")
 DM <- list(step = list(mean = ~state2(w:angle_osc), sd = ~1),
@@ -650,7 +650,7 @@ For the ``transit'' state, pooled parameter estimates indicated step lengths inc
 
 \subsection{Grey seal}
 \label{sec:greySeal}
-<<load-library,echo=FALSE,results=hide,eval=TRUE>>=
+<<load-grey-seal,echo=FALSE,results=hide,eval=TRUE>>=
 #source(paste0(example_wd,"greySealExample_TPM.R"))
 load(paste0(example_wd,"greySealResults_TPM.RData"))
 @
@@ -716,12 +716,12 @@ points(centers,col="#D55E00",pch=20,cex=1.6)
 dev.off()
 @
 For our last example, we perform a similar analysis of a grey seal ({\it Halichoerus grypus}) track that was originally conducted by \cite{McClintockEtAl2012} using Bayesian methods and (computationally-intensive) Markov chain Monte Carlo. The data consist of 1045 temporally-irregular Fastloc GPS locations collected in the North Sea between 9 April and 11 August 2008. Because the seal repeatedly visited the same haulout and foraging locations, it provides a nice example for demonstrating how to implement biased movements relative to activity centers using \verb|momentuHMM|. \cite{McClintockEtAl2012} fitted a 5-state model to these data that included three center of attraction states, with movement biased towards two haulout sites (``Abertay'' and ``Farne Islands'') and a foraging area (``Dogger Bank''), and two ``exploratory'' states (''low speed'', ''high speed'') that were unassociated with an activity center. After using \verb|crawlWrap| to predict $T=1515$ temporally-regular locations at 2 hr time steps including a bivariate normal measurement error model, we can perform a very similar analysis to \cite{McClintockEtAl2012} in \verb|momentuHMM| by using the \verb|centers| argument and state-specific functions for the probability distribution parameters. A cluster analysis on the observed locations using the R package \verb|dtwclust| \citep{SardaEspinosa2017} identified three centroids with coordinates that were nearly identical to the three activity centers (``Abertay'', ``Farne Islands'', and ``Dogger Bank'') identified by \cite{McClintockEtAl2012}. We use these coordinates to derive covariates relative to the activity centers when drawing \verb|nSims| realizations of the position process:
-<<load-library, echo=TRUE, eval=FALSE>>=
+<<fit-grey-seal, echo=TRUE, eval=FALSE>>=
 crwSim <- MIfitHMM(crwOut, nSims = 100, fit=FALSE,
                   center = centers)
 @
 Specifying the \verb|centers| argument results in the calculation of two covariates for each activity center: the distance (with `.dist' suffix) and angle (with `.angle' suffix) from each location at time $t$. These covariates can then be used to model parameters as a function of the distance and angle to activity centers for each time step:
-<<load-library, echo=TRUE, eval=FALSE>>=
+<<spec-grey-seal, echo=TRUE, eval=FALSE>>=
 dist <- list(step = "weibull", angle = "wrpcauchy")
 distFormula <- ~state1(I(Abertay.dist>2500)) + state2(I(Farne.dist>2500)) 
                   + state3(I(Dogger.dist>15000))
@@ -732,7 +732,7 @@ angleDM <- list(mean = angleFormula, concentration = distFormula)
 DM <- list(step = stepDM, angle = angleDM)
 @
 Similar to \cite{McClintockEtAl2012}, we assume a Weibull distribution for step length where both the shape and scale parameter depend on the distance from the location at time $t$ to each activity center. For the activity centers on land (``Abertay'' and ``Farne''), we allow the (state-dependent) step length parameters to change when the seal is beyond 2500m of the haulout. For the ``Dogger'' activity center, we allow the parameters to change when the seal is beyond 15000m of this (presumably) foraging area. We thus allow the movement behavior to change within these activity center states upon entering or leaving the viscinity of these sites.  We assume a wrapped Cauchy distribution for turning angle with (state-dependent) mean angle derived from the direction to each activity center at time $t$, and the concentration parameter is modeled similarly to the step length parameters. For the two ``exploratory'' states, we assumed they are simple random walks unaffected by proximity to activity centers. To complete our model specification, we use the \verb|knownStates| argument to assign the seal to the corresponding activity center state whenever it was within the 2500m (haulout area) or 15000m (foraging area) thresholds for each imputed data set:
-<<load-library, echo=TRUE, eval=FALSE>>=
+<<fit-grey-seal, echo=TRUE, eval=FALSE>>=
 greySealFits <- MIfitHMM(miDat, nSims = 400,
                          nbStates = 5, dist = dist,
                          Par0 = Par0, beta0 = beta0, fixPar = fixPar,
@@ -747,7 +747,7 @@ As with the step length and turning angle concentration parameters, the state tr
 Estimated activity budgets for the 5 states of this multiple imputation HMM were \Sexpr{round(greySealPool$Par$timeInStates$est["Abertay"],2)} $(\Sexpr{round(greySealPool$Par$timeInStates$lower["Abertay"],2)}-\Sexpr{round(greySealPool$Par$timeInStates$upper["Abertay"],2)})$ for the ``Abertay'' haul-out state, \Sexpr{round(greySealPool$Par$timeInStates$est["Farne"],2)} $(\Sexpr{round(greySealPool$Par$timeInStates$lower["Farne"],2)}-\Sexpr{round(greySealPool$Par$timeInStates$upper["Farne"],2)})$ for the ``Farne Islands'' haul-out state, \Sexpr{round(greySealPool$Par$timeInStates$est["Dogger"],2)} $(\Sexpr{round(greySealPool$Par$timeInStates$lower["Dogger"],2)}-\Sexpr{round(greySealPool$Par$timeInStates$upper["Dogger"],2)})$ for the ``Dogger Bank'' foraging state, \Sexpr{round(greySealPool$Par$timeInStates$est["low"],2)} $(\Sexpr{round(greySealPool$Par$timeInStates$lower["low"],2)}-\Sexpr{round(greySealPool$Par$timeInStates$upper["low"],2)})$ for a low-speed ``exploratory'' state, and \Sexpr{round(greySealPool$Par$timeInStates$est["high"],2)} $(\Sexpr{round(greySealPool$Par$timeInStates$lower["high"],2)}-\Sexpr{round(greySealPool$Par$timeInStates$upper["high"],2)})$ for a high-speed ``exploratory'' state. All three activity center states exhibited shorter step lengths and less biased movements when within the viscinity of these targets (Figure \ref{fig:greySealResults}). Results from this analysis were thus very similar to those of \cite{McClintockEtAl2012}, but this implementation required far less computation time and no custom model-fitting algorithms. 
 
 The \verb|simData| function can be used to simulate tracks from a fitted model:
-<<load-library, echo=TRUE, eval=FALSE>>=
+<<sim-grey-seal, echo=TRUE, eval=FALSE>>=
 greySealSim<-simData(model = greySealFits, centers = centers,
                      initialPosition = centers[1,],
                      obsPerAnimal = 1515)
