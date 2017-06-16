@@ -621,7 +621,7 @@ When the \verb|fit| argument is \verb|FALSE|, \verb|MIfitHMM| returns a list of 
 %}
 %@
 %Now the imputed data are ready to be fitted to the 2-state HMM using Eqs. \ref{eq:turtleMeanStep} and \ref{eq:turtleMeanAngle} for state 2 (``transit''):
-<<fit-turtle, echo=TRUE, eval=FALSE>>=
+<<fit-turtle-2, echo=TRUE, eval=FALSE>>=
 nbStates<-2
 dist <- list(step = "gamma", angle = "wrpcauchy")
 DM <- list(step = list(mean = ~state2(w:angle_osc), sd = ~1),
@@ -732,7 +732,7 @@ angleDM <- list(mean = angleFormula, concentration = distFormula)
 DM <- list(step = stepDM, angle = angleDM)
 @
 Similar to \cite{McClintockEtAl2012}, we assume a Weibull distribution for step length where both the shape and scale parameter depend on the distance from the location at time $t$ to each activity center. For the activity centers on land (``Abertay'' and ``Farne''), we allow the (state-dependent) step length parameters to change when the seal is beyond 2500m of the haulout. For the ``Dogger'' activity center, we allow the parameters to change when the seal is beyond 15000m of this (presumably) foraging area. We thus allow the movement behavior to change within these activity center states upon entering or leaving the viscinity of these sites.  We assume a wrapped Cauchy distribution for turning angle with (state-dependent) mean angle derived from the direction to each activity center at time $t$, and the concentration parameter is modeled similarly to the step length parameters. For the two ``exploratory'' states, we assumed they are simple random walks unaffected by proximity to activity centers. To complete our model specification, we use the \verb|knownStates| argument to assign the seal to the corresponding activity center state whenever it was within the 2500m (haulout area) or 15000m (foraging area) thresholds for each imputed data set:
-<<fit-grey-seal, echo=TRUE, eval=FALSE>>=
+<<fit-grey-seal-2, echo=TRUE, eval=FALSE>>=
 greySealFits <- MIfitHMM(miDat, nSims = 400,
                          nbStates = 5, dist = dist,
                          Par0 = Par0, beta0 = beta0, fixPar = fixPar,
