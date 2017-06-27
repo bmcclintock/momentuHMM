@@ -73,9 +73,19 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   }
   
   # prepare colors for the states (used in the maps and for the densities)
-  if (!is.null(col) & length(col) != nbStates) {
-    warning("Length of 'col' should be equal to number of states - argument ignored")
-    col <- 2:(nbStates + 1)
+  if (!is.null(col) & length(col) >= nbStates)
+      col <- col[1:nbStates]
+  if(!is.null(col) & length(col)<nbStates) {
+    warning("Length of 'col' should be at least number of states - argument ignored")
+    if(nbStates<8) {
+      pal <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", 
+               "#0072B2", "#D55E00", "#CC79A7")
+      col <- pal[1:nbStates]
+    } else {
+      # to make sure that all colours are distinct (emulate ggplot default palette)
+      hues <- seq(15, 375, length = nbStates + 1)
+      col <- hcl(h = hues, l = 65, c = 100)[1:nbStates]
+    }
   }
   if (is.null(col) & nbStates < 8) {
     pal <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", 

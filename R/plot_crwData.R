@@ -204,7 +204,7 @@ plot.crwData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,plotEllipse=TRUE,
         legendlty<-c(1,legendlty)
         legendlwd<-c(3,legendlwd)
       }
-      legend("topright",legendtxt,col=legendcol,pch=legendpch,lty=legendlty,lwd=legendlwd)
+      legend("topright",legendtxt,col=legendcol,pch=legendpch,lty=legendlty,lwd=legendlwd,bty="n")
       
     } else {
       for(zoo in animalsInd) {
@@ -280,7 +280,7 @@ plot.crwData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,plotEllipse=TRUE,
         points(x[!is.na(x)],y[!is.na(x)],pch=20,cex=0.5)
 
         mtext(paste("Animal ID:",ID),side=3,outer=TRUE,padj=2)
-        legend("topright",legendtxt,col=legendcol,pch=legendpch,lty=legendlty,lwd=legendlwd)
+        legend("topright",legendtxt,col=legendcol,pch=legendpch,lty=legendlty,lwd=legendlwd,bty="n")
       }      
     }
     
