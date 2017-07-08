@@ -674,6 +674,114 @@ A simulated track is presented along with the fitted track in Figure \ref{fig:gr
   \label{fig:greySealStateSims}
 \end{figure}
 
+\subsection{Southern elephant seal}
+Here, we analyse the southern elephant seal (\emph{Mirounga leonina}) data from \cite{MichelotEtAl2017}, using \verb|momentuHMM|. The data set consists of 15 tracks, each encompassing (at most) one migration cycle, starting from Kerguelen Island. We want to fit the model described by \cite{MichelotEtAl2017}, with the four following states:
+\begin{enumerate}
+\item outbound trip from the colony to the ice;
+\item searching;
+\item foraging;
+\item inbound trip from the ice to the colony.
+\end{enumerate}
+
+
+
+The data set has three columns: ``ID'' (track ID), ``x'' (longitude), and ``y'' (latitude):
+
+\begin{Schunk}
+\begin{Sinput}
+> head(tracks)
+\end{Sinput}
+\begin{Soutput}
+  ID        x         y
+1  1 70.60946 -49.60737
+2  1 70.82908 -50.08287
+3  1 70.90029 -50.32835
+4  1 70.85766 -50.54746
+5  1 70.63792 -50.90529
+6  1 70.48480 -50.99666
+\end{Soutput}
+\end{Schunk}
+
+From the locations, we use \verb|prepData| to derive the step lengths and turning angles, as well as the distance and bearing to Kerguelen Island (with coordinates (70,-49)):
+\begin{Schunk}
+\begin{Sinput}
+> center <- matrix(c(70,-49),nrow=1)
+> data <- prepData(data=tracks, type="LL", centers=center)
+\end{Sinput}
+\end{Schunk}
+
+We start by fitting a covariate-free 4-state model, which we will use to extract starting parameter values for the more complex model.
+\begin{Schunk}
+\begin{Sinput}
+> # initial parameters
+> stepPar0 <- c(25,5,1,25,10,5,3,10)
+> anglePar0 <- c(15,5,2,15)
+> m1 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"), 
++              Par0=list(step=stepPar0, angle=anglePar0))
+\end{Sinput}
+\end{Schunk}
+
+In states ``outbound'' and ``inbound'', we want to model the effect of the distance to the colony on the parameters of the step length distribution, and the effect of the bearing to the colony on the parameters of the turning angle distribution. We define the following formulas:
+\begin{Schunk}
+\begin{Sinput}
+> distFormula <- ~ state1(center1.dist) + state4(center1.dist)
+> angleFormula <- ~ state1(center1.angle) + state4(center1.angle)
+> stepDM <- list(mean=distFormula, sd=distFormula)
+> angleDM <- list(mean=angleFormula, concentration=distFormula)
+\end{Sinput}
+\end{Schunk}
+
+Following \cite{MichelotEtAl2017}, we include the distance to the colony and the time since departure from the colony as covariates on the transition probabilities:
+\begin{Schunk}
+\begin{Sinput}
+> # time spent since left colony
+> time <- NULL
+> for(id in unique(data$ID)) {
++     nbSubObs <- length(which(data$ID==id))
++     
++     # approximately in months for interval = 9.6h
++     time <- c(time, (1:nbSubObs)/75)
++ }
+> data$time <- time
+> # compute time since departure and include in formula below
+> formula <- ~ center1.dist + time
+\end{Sinput}
+\end{Schunk}
+
+We constrain the transition probability matrix, to prevent some of the transitions (e.g.\ from forage to inbound, etc.). We define a $3 \times 12$ matrix, in which each column corresponds to a transition ($1 \rightarrow 2, 1 \rightarrow 3, 1 \rightarrow 4, 2 \rightarrow 1, \dots$), and the each row corresponds to a covariate (intercept, distance to center, time since departure). We set to \verb|NA| the columns of unconstrained transition probabilities, and we fix the intercept of the other columns to a large negative number (here $-100$) to set the corresponding transition probabilities to be virtually zero (i.e.\ impossible transition).
+
+\begin{Schunk}
+\begin{Sinput}
+> fixbeta <- matrix(c(NA,-100,-100,-100,NA,NA,-100,NA,-100,-100,-100,-100,
++                     NA,0,0,0,NA,NA,0,NA,0,0,0,0,
++                     NA,0,0,0,NA,NA,0,NA,0,0,0,0),
++                   nrow=3,byrow=TRUE)
+> fixPar <- list(beta=fixbeta)
+\end{Sinput}
+\end{Schunk}
+
+We can now extract starting parameter values for the new model formulation, given the simple model fitted earlier.
+
+\begin{Schunk}
+\begin{Sinput}
+> Par0 <- getPar0(model=m1, nbStates=4, DM=list(step=stepDM, angle=angleDM), 
++                 formula=formula)
+> m2 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"), 
++              Par0=list(step=Par0$Par$step, angle=Par0$Par$angle),
++              beta0=Par0$beta, fixPar=fixPar, formula=formula, 
++              DM = list(step=stepDM, angle=angleDM))
+\end{Sinput}
+\end{Schunk}
+
+The most likely state sequence can be computed with \verb|viterbi(m2)|. Figure \ref{fig:ses-results} shows a map of the state-decoded tracks. The map was produced with the R package marmap \citep{PanteSimonBouhet2013}.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{plot_sesResults}
+  \caption{The 15 elephant seal tracks, colored by the most likely state sequence.}
+  \label{fig:ses-results}
+\end{figure}
+
 \section{Discussion}
 Here we have introduced version 1.0.0 of the R package \verb|momentuHMM| and demonstrated some of its capabilities for conducting multivariate HMM analyses with animal location, auxiliary biotelemetry, and environmental data. The package allows for fitting (and simulating from) a suite of biased and correlated random walk movement process models \citep[e.g.][]{McClintockEtAl2012}, can be used for an unlimited number of data streams and latent behavior states, includes multiple imputation methods to account for measurement error, temporal irregularity, and other forms of missing data that would otherwise be prohibitive to maximum likelihood analysis, and integrates seamlessly with rasters to facilitate spatio-temporal covariate modelling. Because the package incorporates biased random walks, it can also be used to implement group dynamic models \cite[e.g.][]{LangrockEtAl2014}. The package therefore greatly expands on available software and facilitates the incoporation of more ecological and behavioral realism for hypothesis-driven analyses of animal movement that account for many of the challenges commonly associated with telemetry data. While many of the features of \verb|momentuHMM| were motivated by animal movement data, we note that the package is not limited to location data and can be used for analyzing any type of data that is amenable to (multivariate) HMMs.
 
