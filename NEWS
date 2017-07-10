@@ -1,0 +1,14 @@
+momentuHMM 1.0.1 2017-07-10
+-----------------
+NEW FEATURES
+
+* Elephant seal example of Michelot et al (2017) added to vignette
+
+CHANGES
+
+* bug fix when calculating activity center distances from lat/long (type='LL') coordinates in distAngle
+
+
+momentuHMM 1.0.0 2017-06-16
+-----------------
+Initial CRAN posting

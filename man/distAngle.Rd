@@ -4,7 +4,7 @@
 \alias{distAngle}
 \title{Calculate distance between points y and z and turning angle between points x, y, and z}
 \usage{
-distAngle(x, y, z)
+distAngle(x, y, z, type = "UTM")
 }
 \arguments{
 \item{x}{location 1}
@@ -12,6 +12,8 @@ distAngle(x, y, z)
 \item{y}{location 2}
 
 \item{z}{location 3}
+
+\item{type}{\code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude}
 }
 \value{
 2-vector with first element the distance between y and z and second element the turning angle
