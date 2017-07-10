@@ -182,7 +182,7 @@ prepData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
             genData[i-i1+1] <- turnAngle(c(x[i-1],y[i-1]),
                                          c(x[i],y[i]),
                                          c(x[i+1],y[i+1]))
-          } else genData[i-i1] <- data[[j]][i-1]
+          }
         }
         if(j=="step" & !is.null(coordNames)) {
           genData[i2-i1] <- spDistsN1(pts = matrix(c(x[i2-1],y[i2-1]),ncol=2),pt = c(x[i2],y[i2]),longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise

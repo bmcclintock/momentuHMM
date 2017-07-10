@@ -8,6 +8,8 @@ CHANGES
 
 * bug fix when calculating activity center distances from lat/long (type='LL') coordinates in distAngle
 
+* bug fix in prepData when successive pairs of coordinates are NA
+
 
 momentuHMM 1.0.0 2017-06-16
 -----------------
