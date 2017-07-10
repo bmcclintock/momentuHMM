@@ -16,6 +16,10 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       DMnames <- paste0(rep(parNames[[i]],each=nbStates),"_",1:nbStates,":(Intercept)")
     } else if(is.list(DM[[i]])){
       if(!all(parNames[[i]] %in% names(DM[[i]])) | !all(unlist(lapply(DM[[i]],is.formula)))) stop('DM$',i,' must include formula for ',paste(parNames[[i]],collapse=" and "))
+      if(!all(names(DM[[i]]) %in% parNames[[i]])){
+        err <- paste0('DM$',i,' should only include formula for ',paste(parNames[[i]],collapse=" and ")," parameter(s)")
+        if(dist[[i]] %in% angledists) stop(err,". Check DM$",i,", estAngleMean$",i,", and circularAngleMean$",i)
+      }
       if(!zeroInflation[[i]] & "zeromass" %in% names(DM[[i]])) stop('zeromass should not be included in DM$',i)
       if(!oneInflation[[i]] & "onemass" %in% names(DM[[i]])) stop('onemass should not be included in DM$',i)
       DM[[i]]<-DM[[i]][parNames[[i]]]
