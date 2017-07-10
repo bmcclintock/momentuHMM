@@ -12,13 +12,14 @@
 #' @details 
 #' Used in \code{\link{prepData}} and \code{\link{simData}} to get distance and turning angle covariates 
 #' between locations (x1,x2), (y1,y2) and activity center (z1,z2).
+#' 
+#' If \code{type='LL'} then distance is calculated as great circle distance using \code{\link[sp]{spDistsN1}}, and turning angle is calculated based on initial bearings using \code{\link[geosphere]{bearing}}.
 #' @importFrom sp spDistsN1
 
 distAngle<-function(x,y,z,type='UTM'){
   dist <- spDistsN1(pts = matrix(y,ncol=2),
                     pt = z,
                     longlat = (type=='LL'))
-  #dist <- sqrt((y[1]-z[1])^2+(y[2]-z[2])^2)
-  angle <- turnAngle(x,y,z)
+  angle <- turnAngle(x,y,z,type)
   c(dist,angle)
 }

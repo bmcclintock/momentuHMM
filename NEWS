@@ -6,7 +6,9 @@ NEW FEATURES
 
 CHANGES
 
-* bug fix when calculating activity center distances from lat/long (type='LL') coordinates in distAngle
+* turning angles for lat/long coordinates (type='LL') now calculated based on initial bearings using geosphere::bearing in turnAngle
+
+* bug fix when calculating activity center distances from lat/long coordinates (type='LL') in distAngle
 
 * bug fix in prepData when successive pairs of coordinates are NA
 

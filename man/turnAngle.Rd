@@ -4,7 +4,7 @@
 \alias{turnAngle}
 \title{Turning angle}
 \usage{
-turnAngle(x, y, z)
+turnAngle(x, y, z, type = "UTM")
 }
 \arguments{
 \item{x}{First point}
@@ -12,9 +12,13 @@ turnAngle(x, y, z)
 \item{y}{Second point}
 
 \item{z}{Third point}
+
+\item{type}{\code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude.}
 }
 \value{
-The angle between vectors (x,y) and (y,z)
+The angle between vectors (x,y) and (y,z).  
+
+If \code{type='LL'} then turning angle is calculated based on initial bearings using \code{\link[geosphere]{bearing}}.
 }
 \description{
 Used in \code{\link{prepData}} and \code{\link{simData}}.

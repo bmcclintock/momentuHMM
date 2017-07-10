@@ -34,7 +34,8 @@ Imports:
     conicfit,
     nleqslv,
     survival,
-    qdapRegex
+    qdapRegex,
+    geosphere
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,

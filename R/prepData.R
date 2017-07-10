@@ -11,7 +11,8 @@
 #' must identify the names for the x- (longitunal) and y- (latitudinal) coordinates.
 #' With the exception of \code{ID} and \code{coordNames}, all variables in \code{data} are treated as data streams unless identified
 #' as covariates in \code{covNames} and/or \code{angleCovs}.
-#' @param type \code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude. Ignored if \code{data} is a \code{\link{crwData}} object.
+#' @param type \code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude. If \code{type='LL'} then step lengths are calculated in kilometers and turning angles are based on initial bearings (see \code{\link{turnAngle}}).
+#' Ignored if \code{data} is a \code{\link{crwData}} object.
 #' @param coordNames Names of the columns of coordinates in the \code{data} data frame. Default: \code{c("x","y")}. If \code{coordNames=NULL} then step lengths, turning angles, 
 #' and location covariates (i.e., those specified by \code{spatialCovs}, \code{centers}, and \code{angleCovs}) are not calculated. Ignored if \code{data} is a \code{\link{crwData}} object.
 #' @param covNames Character vector indicating the names of any covariates in \code{data} dataframe. Any variables in \code{data} (other than \code{ID}) that are not identified in 
@@ -181,7 +182,7 @@ prepData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
             # turning angle
             genData[i-i1+1] <- turnAngle(c(x[i-1],y[i-1]),
                                          c(x[i],y[i]),
-                                         c(x[i+1],y[i+1]))
+                                         c(x[i+1],y[i+1]),type)
           }
         }
         if(j=="step" & !is.null(coordNames)) {

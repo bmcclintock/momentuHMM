@@ -16,7 +16,8 @@ must identify the names for the x- (longitunal) and y- (latitudinal) coordinates
 With the exception of \code{ID} and \code{coordNames}, all variables in \code{data} are treated as data streams unless identified
 as covariates in \code{covNames} and/or \code{angleCovs}.}
 
-\item{type}{\code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude. Ignored if \code{data} is a \code{\link{crwData}} object.}
+\item{type}{\code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude. If \code{type='LL'} then step lengths are calculated in kilometers and turning angles are based on initial bearings (see \code{\link{turnAngle}}).
+Ignored if \code{data} is a \code{\link{crwData}} object.}
 
 \item{coordNames}{Names of the columns of coordinates in the \code{data} data frame. Default: \code{c("x","y")}. If \code{coordNames=NULL} then step lengths, turning angles, 
 and location covariates (i.e., those specified by \code{spatialCovs}, \code{centers}, and \code{angleCovs}) are not calculated. Ignored if \code{data} is a \code{\link{crwData}} object.}
