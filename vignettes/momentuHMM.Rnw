@@ -862,7 +862,7 @@ The most likely state sequence can be computed with \verb|viterbi(m2)|. Figure \
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=\textwidth]{plot_sesResults}
+  \includegraphics[width=\textwidth]{plot_sesResults2}
   \caption{The 15 elephant seal tracks, colored by the most likely state sequence.}
   \label{fig:ses-results}
 \end{figure}
