@@ -710,28 +710,26 @@ From the locations, we use \verb|prepData| to derive the step lengths and turnin
 \end{Sinput}
 \end{Schunk}
 
-We start by fitting a covariate-free 4-state model, which we will use to extract starting parameter values for the more complex model.
+\subsubsection{Model 1: no covariates}
+We start by fitting a covariate-free 4-state model, which we will use to extract starting parameter values for the more complex model. We use the argument `fixPar' to fix some transition probabilities to zero, following \cite{MichelotEtAl2017}.
 \begin{Schunk}
 \begin{Sinput}
+> stateNames <- c("outbound","search","forage","inbound")
 > # initial parameters
 > stepPar0 <- c(25,5,1,25,10,5,3,10)
 > anglePar0 <- c(15,5,2,15)
+> # constrain transition probabilities
+> fixbeta <- matrix(c(NA,-100,-100,-100,NA,NA,-100,NA,-100,-100,-100,-100),
++                   nrow=1)
 > m1 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"), 
-+              Par0=list(step=stepPar0, angle=anglePar0))
++              Par0=list(step=stepPar0, angle=anglePar0),
++              stateNames = stateNames)
 \end{Sinput}
 \end{Schunk}
 
-In states ``outbound'' and ``inbound'', we want to model the effect of the distance to the colony on the parameters of the step length distribution, and the effect of the bearing to the colony on the parameters of the turning angle distribution. We define the following formulas:
-\begin{Schunk}
-\begin{Sinput}
-> distFormula <- ~ state1(center1.dist) + state4(center1.dist)
-> angleFormula <- ~ state1(center1.angle) + state4(center1.angle)
-> stepDM <- list(mean=distFormula, sd=distFormula)
-> angleDM <- list(mean=angleFormula, concentration=distFormula)
-\end{Sinput}
-\end{Schunk}
 
-Following \cite{MichelotEtAl2017}, we include the distance to the colony and the time since departure from the colony as covariates on the transition probabilities:
+\subsubsection{Model 2}
+This model mimics the formulation of \cite{MichelotEtAl2017}. We model the effect of the distance to colony on the transition probability from outbound to search, and of the time since departure on the transition probability from search to inbound.
 \begin{Schunk}
 \begin{Sinput}
 > # time spent since left colony
@@ -748,32 +746,83 @@ Following \cite{MichelotEtAl2017}, we include the distance to the colony and the
 \end{Sinput}
 \end{Schunk}
 
-We constrain the transition probability matrix, to prevent some of the transitions (e.g.\ from forage to inbound, etc.). We define a $3 \times 12$ matrix, in which each column corresponds to a transition ($1 \rightarrow 2, 1 \rightarrow 3, 1 \rightarrow 4, 2 \rightarrow 1, \dots$), and the each row corresponds to a covariate (intercept, distance to center, time since departure). We set to \verb|NA| the columns of unconstrained transition probabilities, and we fix the intercept of the other columns to a large negative number (here $-100$) to set the corresponding transition probabilities to be virtually zero (i.e.\ impossible transition).
+We constrain the transition probability matrix, to prevent some of the transitions (e.g.\ from forage to inbound, etc.). We define a $3 \times 12$ matrix, in which each column corresponds to a transition ($1 \rightarrow 2, 1 \rightarrow 3, 1 \rightarrow 4, 2 \rightarrow 1, \dots$), and each row corresponds to a covariate (intercept, distance to center, time since departure). We set to \verb|NA| the columns of unconstrained transition probabilities, and we fix the intercept of the other columns to a large negative number (here $-100$) to set the corresponding transition probabilities to be virtually zero (i.e.\ impossible transition).
 
 \begin{Schunk}
 \begin{Sinput}
 > fixbeta <- matrix(c(NA,-100,-100,-100,NA,NA,-100,NA,-100,-100,-100,-100,
-+                     NA,0,0,0,NA,NA,0,NA,0,0,0,0,
-+                     NA,0,0,0,NA,NA,0,NA,0,0,0,0),
++                     NA,   0,   0,   0, 0, 0,   0, 0,   0,   0,   0,   0,
++                      0,   0,   0,   0, 0,NA,   0, 0,   0,   0,   0,   0),
 +                   nrow=3,byrow=TRUE)
-> fixPar <- list(beta=fixbeta)
 \end{Sinput}
 \end{Schunk}
 
-We can now extract starting parameter values for the new model formulation, given the simple model fitted earlier.
+Biased random walks are used to model the movement in states 1 and 4, with repulsion away from the colony in the outbound trip, and attraction towards the colony in the inbound trip. For that purpose, we include the bearing to the center as a covariate on the turning angles in states 1 and 4. 
 
 \begin{Schunk}
 \begin{Sinput}
-> Par0 <- getPar0(model=m1, nbStates=4, DM=list(step=stepDM, angle=angleDM), 
-+                 formula=formula)
-> m2 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"), 
-+              Par0=list(step=Par0$Par$step, angle=Par0$Par$angle),
-+              beta0=Par0$beta, fixPar=fixPar, formula=formula, 
-+              DM = list(step=stepDM, angle=angleDM))
+> angleFormula <- ~ state1(center1.angle) + state4(center1.angle)
 \end{Sinput}
 \end{Schunk}
 
-The most likely state sequence can be computed with \verb|viterbi(m2)|. Figure \ref{fig:ses-results} shows a map of the state-decoded tracks. The map was produced with the R package marmap \citep{PanteSimonBouhet2013}.
+To specify the direction of the bias (away from or towards the colony), we fix the parameters linking the mean turning angle to the direction of the colony. In state 1, we fix the coefficient to a large negative number (e.g.\ -100) so that the mean direction is away from the colony. In state 4, we fix it to a large positive number (e.g.\ 100) so that the mean direction is towards the colony. The four other parameters correspond to the angle concentrations, and should be estimated (NAs in fixPar).
+\begin{Schunk}
+\begin{Sinput}
+> fixPar <- list(angle=c(-100,100,NA,NA,NA,NA),beta=fixbeta)
+\end{Sinput}
+\end{Schunk}
+
+We can now extract starting parameter values for the new model formulation, given the simple model fitted earlier, and fit the second model. We use the options `estAngleMean' and `circularAngleMean' to indicate that the angle mean is to be estimated using circular-circular regression.
+
+\begin{Schunk}
+\begin{Sinput}
+> Par0 <- getPar0(model=m1, nbStates=4, 
++                 DM=list(angle=list(mean=angleFormula, concentration=~1)), 
++                 estAngleMean=list(angle=TRUE), 
++                 circularAngleMean=list(angle=TRUE), formula=formula)
+> m2 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"), 
++              Par0=list(step=Par0$Par$step, angle=Par0$Par$angle),
++              beta0=Par0$beta, fixPar=fixPar, formula=formula, 
++              DM=list(angle=list(mean=angleFormula, concentration=~1)), 
++              estAngleMean=list(angle=TRUE), circularAngleMean=list(angle=TRUE), 
++              stateNames = stateNames)
+\end{Sinput}
+\end{Schunk}
+
+\subsubsection{Model 3}
+In addition to the covariates included in the model 2, we add the effect of the distance to colony on the step length parameters, and of the bearing to colony on the turning angle parameters. We specify the following formulas:
+\begin{Schunk}
+\begin{Sinput}
+> distFormula <- ~ state1(center1.dist) + state4(center1.dist)
+> stepDM <- list(mean=distFormula, sd=distFormula)
+> angleDM <- list(mean=angleFormula, concentration=distFormula)
+\end{Sinput}
+\end{Schunk}
+
+The initial parameters are extracted from the model 2, using the function \verb|getPar0|. Instead of fixing the mean direction of movement like in model 2, we estimate it here.
+\begin{Schunk}
+\begin{Sinput}
+> # remove fixed angle parameters
+> fixPar <- list(beta=fixbeta)
+> # get starting parameters from m2
+> Par0 <- getPar0(model=m2, nbStates=4, 
++                 DM = list(step=stepDM, angle=angleDM), 
++                 estAngleMean=list(angle=TRUE), 
++                 circularAngleMean=list(angle=TRUE), 
++                 formula=formula)
+> # the bias is estimated rather than fixed
+> Par0$Par$angle[c("mean_1:center1.angle","mean_4:center1.angle")] <- 0
+> m3 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"), 
++              Par0=list(step=Par0$Par$step, angle=Par0$Par$angle),
++              beta0=Par0$beta, fixPar=fixPar, formula=formula, 
++              DM = list(step=stepDM, angle=angleDM), 
++              estAngleMean=list(angle=TRUE), 
++              circularAngleMean=list(angle=TRUE), 
++              stateNames = stateNames)
+\end{Sinput}
+\end{Schunk}
+
+The three fitted model can be compared with \verb|AIC(m1,m2,m3)|, which overwhelmingly favours model 3. The most likely state sequence is obtained with \verb|viterbi(m3)|. Figure \ref{fig:ses-results} shows a map of the state-decoded track.
 
 \begin{figure}[htbp]
   \centering
