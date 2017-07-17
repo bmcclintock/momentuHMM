@@ -284,7 +284,12 @@ Another noteworthy \verb|fitHMM| argument, \verb|circularAngleMean|, is a list a
   {\boldsymbol \mu}=\text{atan2}(\sin({\mathbf X}_\mu){\boldsymbol \beta}_\mu,1+\cos({\mathbf X}_\mu){\boldsymbol \beta}_\mu),
   \label{eq:circ}
 \end{equation}
-where ${\mathbf X}_\mu$ is a $T \times k$ matrix composed of the turning angles between $k$ angular covariates (e.g., wind direction, sea surface currents) and the bearing of movement during the previous time step, i.e., each element $x_{t,i}=\text{atan2}(\sin(r_{t,i}-b_{t-1}),\cos(r_{t,i}-b_{t-1}))$ for angular covariate $r_{t,i}$ and $i=1,\ldots,k$ (note that \verb|prepData| calculates ${\mathbf X}_\mu$ based on the \verb|angleCovs| argument so users need not bother). Because this link function is designed for turning angles, a turning angle of 0 is provided as the reference angle (hence the ``$1+$'' preceeding the cosine term in Eq. \ref{eq:circ}).  Thus as a trade-off between biased and correlated movements, the working parameters $({\boldsymbol \beta}_\mu)$ for the expected turning angle at time $t$ weight the attractive (or repulsive) strengths of the angular covariates relative to directional persistence.  When all ${\boldsymbol \beta}_\mu=0$, the model reduces to a correlated random walk, but an increasingly biased random walk results as ${\boldsymbol \beta}_\mu$ gets larger (or smaller). Many interesting hypotheses about animal movmement can be addressed using circular-circular regression on movement direction, including the effects of wind, sea surface currents (see example in section \ref{sec:turtle}), and centers of attraction or repulsion (see example in section \ref{sec:greySeal})
+where ${\mathbf X}_\mu$ is a $T \times k$ matrix composed of the turning angles between $k$ angular covariates (e.g., wind direction, sea surface currents) and the bearing of movement during the previous time step, i.e., each element 
+\begin{equation}
+x_{t,i}=\text{atan2}(\sin(r_{t,i}-b_{t-1}),\cos(r_{t,i}-b_{t-1})) 
+  \label{eq:angleCov}
+\end{equation}
+for angular covariate $r_{t,i}$ and $i=1,\ldots,k$ (note that \verb|prepData| calculates ${\mathbf X}_\mu$ based on the \verb|angleCovs| or \verb|centers| arguments so users need not bother). Because this link function is designed for turning angles, a turning angle of 0 is provided as the reference angle (hence the ``$1+$'' preceeding the cosine term in Eq. \ref{eq:circ}).  Thus as a trade-off between biased and correlated movements, the working parameters $({\boldsymbol \beta}_\mu)$ for the expected turning angle at time $t$ weight the attractive (or repulsive) strengths of the angular covariates relative to directional persistence.  When all ${\boldsymbol \beta}_\mu=0$, the model reduces to a correlated random walk, but an increasingly biased random walk results as ${\boldsymbol \beta}_\mu$ gets larger (or smaller). Many interesting hypotheses about animal movmement can be addressed using circular-circular regression on movement direction, including the effects of wind, sea surface currents (see example in section \ref{sec:turtle}), and centers of attraction or repulsion (see example in section \ref{sec:greySeal})
 
 \subsection{Multiple imputation}
 \label{sec:mi}
@@ -773,7 +778,32 @@ A simulated track is presented along with the fitted track in Figure \ref{fig:gr
 \end{figure}
 
 \subsection{Southern elephant seal}
-Here, we analyse the southern elephant seal (\emph{Mirounga leonina}) data from \cite{MichelotEtAl2017}, using \verb|momentuHMM|. The data set consists of 15 tracks, each encompassing (at most) one migration cycle, starting from Kerguelen Island. We want to fit the model described by \cite{MichelotEtAl2017}, with the four following states:
+<<load-grey-seal,echo=FALSE,results=hide,eval=TRUE>>=
+#source(paste0(example_wd,"sesExample.R"))
+load(paste0(example_wd,"sesExample.RData"))
+@
+<<plot_sesResults,echo=FALSE,results=hide,eval=FALSE>>=
+library(maps) # for map plots
+library(mapdata) # for map plots
+library(marmap) # to plot bathymetry
+library(sp) # for degAxis
+pdf(file="plot_sesResults2.pdf",width=12,height=6)
+plot(data$x, data$y, axes=FALSE, xlab="longitude", ylab="latitude", col="white")
+degAxis(1)
+degAxis(2)
+map('worldHires', add=TRUE, fill=TRUE, col='white')
+
+for(id in unique(data$ID)) {
+  ind <- which(data$ID==id)
+  segments(x0 = data$x[ind[-length(ind)]], y0 = data$y[ind[-length(ind)]], x1 = data$x[ind[-1]], y1 = data$y[ind[-1]], 
+           col = pal[states[ind[-length(ind)]]], lwd=2)
+}
+
+legend("topleft", legend = stateNames,
+       col = pal, lwd=2, bg="white")
+dev.off()
+@
+Here, we analyse the southern elephant seal (\emph{Mirounga leonina}) data from \cite{MichelotEtAl2017} using \verb|momentuHMM|. The data set consists of 15 tracks, each encompassing (at most) one foraging trip, starting from Kerguelen Island. We want to fit the model described by \cite{MichelotEtAl2017}, with the four following states:
 \begin{enumerate}
 \item outbound trip from the colony to the ice;
 \item searching;
@@ -794,14 +824,15 @@ The data set has three columns: ``ID'' (track ID), ``x'' (longitude), and ``y'' 
 head(tracks)
 @ 
 
-From the locations, we use \verb|prepData| to derive the step lengths and turning angles, as well as the distance and bearing to Kerguelen Island (with coordinates (70,-49)):
+From the locations, we use \verb|prepData| to derive the step lengths and turning angles, as well as the distance and bearing (relative to previous movement direction as in Eq. \ref{eq:angleCov}) to the Kerguelen Island colony (with coordinates 70$^{\circ}$ longitude and -49$^{\circ}$ latitude):
 <<prep-ses, echo=TRUE>>=
-center <- matrix(c(70,-49),nrow=1)
+center <- matrix(c(70,-49),nrow=1,dimnames=list("colony"))
 data <- prepData(data=tracks, type="LL", centers=center)
 @
+Note that distances are in kilometers and angles are based on initial bearings \citep[using geosphere::bearing;][]{Hijmans2016geo} when calculated from longitude and latitude coordinates.  
 
 \subsubsection{Model 1: no covariates}
-We start by fitting a covariate-free 4-state model, which we will use to extract starting parameter values for the more complex model. We use the argument `fixPar' to fix some transition probabilities to zero, following \cite{MichelotEtAl2017}.
+We start by fitting a covariate-free 4-state correlated random walk model, which we will use to extract starting parameter values for more complex models. We use the argument \verb|fixPar| to fix some transition probabilities to zero, following \cite{MichelotEtAl2017}.  We set to \verb|NA| the columns of unconstrained transition probabilities, and we fix the intercept of the other columns to a large negative number (here $-100$) to set the corresponding transition probabilities to be virtually zero (i.e.\ impossible transition).  As in \cite{MichelotEtAl2017}, we set transition probabilities from outbound to forage, outbound to inbound, search to outbound, forage to outbound, forage to inbound, inbound to outbound, inbound to search, and inbound to forage to be effectively zero.
 <<m1-ses, echo=TRUE, eval=FALSE>>=
 stateNames <- c("outbound","search","forage","inbound")
 
@@ -815,9 +846,8 @@ fixbeta <- matrix(c(NA,-100,-100,-100,NA,NA,-100,NA,-100,-100,-100,-100),
 
 m1 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"), 
              Par0=list(step=stepPar0, angle=anglePar0),
-             stateNames = stateNames)
+             fixPar=list(beta=fixbeta), stateNames = stateNames)
 @ 
-
 
 \subsubsection{Model 2}
 This model mimics the formulation of \cite{MichelotEtAl2017}. We model the effect of the distance to colony on the transition probability from outbound to search, and of the time since departure on the transition probability from search to inbound.
@@ -834,10 +864,10 @@ for(id in unique(data$ID)) {
 data$time <- time
 
 # compute time since departure and include in formula below
-formula <- ~ center1.dist + time
+formula <- ~ colony.dist + time
 @
 
-We constrain the transition probability matrix, to prevent some of the transitions (e.g.\ from forage to inbound, etc.). We define a $3 \times 12$ matrix, in which each column corresponds to a transition ($1 \rightarrow 2, 1 \rightarrow 3, 1 \rightarrow 4, 2 \rightarrow 1, \dots$), and each row corresponds to a covariate (intercept, distance to center, time since departure). We set to \verb|NA| the columns of unconstrained transition probabilities, and we fix the intercept of the other columns to a large negative number (here $-100$) to set the corresponding transition probabilities to be virtually zero (i.e.\ impossible transition).
+As before, we constrain the transition probability matrix to prevent some of the transitions (e.g.\ from forage to inbound, etc.). We define a $3 \times 12$ matrix for the beta parameters, in which each column corresponds to a transition ($1 \rightarrow 2, 1 \rightarrow 3, 1 \rightarrow 4, 2 \rightarrow 1, \dots$), and each row corresponds to a covariate (intercept, distance to center, time since departure). We set to \verb|NA| the columns of unconstrained transition probabilities, and we again fix the intercept of the other columns to a large negative number (here $-100$) to set the corresponding transition probabilities to be virtually zero (i.e.\ impossible transition).
 
 <<fixpar-ses, echo=TRUE, eval=FALSE>>=
 fixbeta <- matrix(c(NA,-100,-100,-100,NA,NA,-100,NA,-100,-100,-100,-100,
@@ -846,18 +876,19 @@ fixbeta <- matrix(c(NA,-100,-100,-100,NA,NA,-100,NA,-100,-100,-100,-100,
                   nrow=3,byrow=TRUE)
 @ 
 
-Biased random walks are used to model the movement in states 1 and 4, with repulsion away from the colony in the outbound trip, and attraction towards the colony in the inbound trip. For that purpose, we include the bearing to the center as a covariate on the turning angles in states 1 and 4. 
+Biased random walks are used to model the movement in states 1 and 4, with repulsion away from the colony in the outbound trip, and attraction towards the colony in the inbound trip. For that purpose, we include `colony.angle' as a covariate on the angle mean of the von Mises distributions for turning angles in states 1 and 4. 
 
 <<crw-ses-1, echo=TRUE, eval=FALSE>>=
-angleFormula <- ~ state1(center1.angle) + state4(center1.angle)
+angleFormula <- ~ state1(colony.angle) + state4(colony.angle)
 @ 
 
-To specify the direction of the bias (away from or towards the colony), we fix the parameters linking the mean turning angle to the direction of the colony. In state 1, we fix the coefficient to a large negative number (e.g.\ -100) so that the mean direction is away from the colony. In state 4, we fix it to a large positive number (e.g.\ 100) so that the mean direction is towards the colony. The four other parameters correspond to the angle concentrations, and should be estimated (NAs in fixPar).
+To specify the direction of the bias (away from or towards the colony), we fix the parameters linking the mean turning angle to the direction of the colony. In state 1, we fix the coefficient to a large negative number (e.g.\ -100) so that the mean direction is away from the colony. In state 4, we fix it to a large positive number (e.g.\ 100) so that the mean direction is towards the colony. Fixing these parameters to large positive (or negative) values effectively removes the correlated random walk component of Eq. \ref{eq:circ} for states 1 and 4. The four other parameters correspond to the angle concentrations and should be estimated (NAs in \verb|fixPar|).
 <<crw-ses-2, echo=TRUE, eval=FALSE>>=
 fixPar <- list(angle=c(-100,100,NA,NA,NA,NA),beta=fixbeta)
 @ 
+Because no covariates are specified for the mean angle of state 2 (searching) and state 3 (foraging), the mean angle for these states is fixed to zero (i.e. $\text{atan2}(0,1)=0$ as in Eq. \ref{eq:circ}).
 
-We can now extract starting parameter values for the new model formulation, given the simple model fitted earlier, and fit the second model. We use the options `estAngleMean' and `circularAngleMean' to indicate that the angle mean is to be estimated using circular-circular regression.
+We can now fit the second model with starting parameter values extracted from the simpler model using \verb|getPar0|. In \verb|fitHMM|, we use the arguments \verb|estAngleMean| and \verb|circularAngleMean| to indicate that the angle mean is to be estimated using circular-circular regression.
 
 <<fit-ses, echo=TRUE, eval=FALSE>>=
 Par0 <- getPar0(model=m1, nbStates=4, 
@@ -873,15 +904,28 @@ m2 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"),
              stateNames = stateNames)
 @ 
 
+Instead of relying entirely on \verb|fixPar| for parameter constraints, an equivalent model for the transition probabilities could be specified using the special function \verb|betaCol| in \verb|formula|:
+<<crw-ses-2, echo=TRUE, eval=FALSE>>=
+formula <- ~ betaCol1(colony.dist) + betaCol6(time)
+
+fixbeta <- matrix(c(NA,-100,-100,-100,NA,NA,-100,NA,-100,-100,-100,-100,
+                    rep(NA,12),
+                    rep(NA,12)),
+                  nrow=3,byrow=TRUE)
+
+fixPar <- list(angle=c(-100,100,NA,NA,NA,NA),beta=fixbeta)
+@
+Here \verb|betaCol1(colony.dist)| specifies an effect of distance to colony only on the transition from state 1 to state 2 (which corresponds to the first column of the beta matrix) and \verb|betaCol6(time)| specifies an effect of time since departure only on the transition from state 2 to state 4 (which corresponds to the sixth column of the beta matrix).  When the special function \verb|betaCol| is used, then \verb|fitHMM| automatically fixes the appropriate elements in the second (`colony.dist') and third (`time') rows of the beta matrix to zero (without the user needing to do so manually using \verb|fixPar|). However, note that the first row (corresponding to the intercept terms) must still be manually fixed to achieve the desired constraints on the transition probability matrix.
+
 \subsubsection{Model 3}
-In addition to the covariates included in the model 2, we add the effect of the distance to colony on the step length parameters, and of the bearing to colony on the turning angle parameters. We specify the following formulas:
+In addition to the covariates included in model 2, we add the effect of distance to colony on the step length and turning angle concentration parameters for states 1 and 4. We specify the following formulas:
 <<mod3-ses, echo=TRUE, eval=FALSE>>=
-distFormula <- ~ state1(center1.dist) + state4(center1.dist)
+distFormula <- ~ state1(colony.dist) + state4(colony.dist)
 stepDM <- list(mean=distFormula, sd=distFormula)
 angleDM <- list(mean=angleFormula, concentration=distFormula)
 @ 
 
-The initial parameters are extracted from the model 2, using the function \verb|getPar0|. Instead of fixing the mean direction of movement like in model 2, we estimate it here.
+The initial parameters are extracted from model 2, again using the function \verb|getPar0|. Instead of fixing the mean direction of movement like in model 2, we estimate it here as a trade-off between short-term directional persistence and bias toward (or away) from the colony (i.e. a biased correlated random walk as in Eq. \ref{eq:circ}).
 <<fit-ses-2, echo=TRUE, eval=FALSE>>=
 # remove fixed angle parameters
 fixPar <- list(beta=fixbeta)
@@ -894,7 +938,7 @@ Par0 <- getPar0(model=m2, nbStates=4,
                 formula=formula)
 
 # the bias is estimated rather than fixed
-Par0$Par$angle[c("mean_1:center1.angle","mean_4:center1.angle")] <- 0
+Par0$Par$angle[c("mean_1:colony.angle","mean_4:colony.angle")] <- 0
 
 m3 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"), 
              Par0=list(step=Par0$Par$step, angle=Par0$Par$angle),
@@ -905,7 +949,7 @@ m3 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"),
              stateNames = stateNames)
 @ 
 
-The three fitted model can be compared with \verb|AIC(m1,m2,m3)|, which overwhelmingly favours model 3. The most likely state sequence is obtained with \verb|viterbi(m3)|. Figure \ref{fig:ses-results} shows a map of the state-decoded track.
+The three fitted model can be compared with \verb|AIC(m1,m2,m3)|, which overwhelmingly supports model 3. The most likely state sequence is obtained with \verb|viterbi(m3)|. Figure \ref{fig:ses-results} shows a map of the state-decoded track. The estimated circular-circular regression coefficients for the angle means of state 1 (outbound) and state 4 (inbound) were $\Sexpr{round(m3$CIbeta$angle$est[,"mean_1:center1.angle"],2)}$ (95\% CI: $\Sexpr{round(m3$CIbeta$angle$lower[,"mean_1:center1.angle"],2)}-\Sexpr{round(m3$CIbeta$angle$upper[,"mean_1:center1.angle"],2)}$) and $\Sexpr{round(m3$CIbeta$angle$est[,"mean_4:center1.angle"],2)}$ (95\% CI: $\Sexpr{round(m3$CIbeta$angle$lower[,"mean_4:center1.angle"],2)}-\Sexpr{round(m3$CIbeta$angle$upper[,"mean_4:center1.angle"],2)}$), respectively, thus indicating biased correlated random walks with repulsion away from the colony during outbound movements and attraction towards the colony during inbound movements.
 
 \begin{figure}[htbp]
   \centering
