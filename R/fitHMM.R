@@ -531,13 +531,6 @@ fitHMM <- function(data,nbStates,dist,
   if(stationary)
     delta0 <- NULL
   
-  if(nbStates>1){
-    for(state in 1:(nbStates*(nbStates-1))){
-      noBeta<-which(match(colnames(model.matrix(newformula,data)),colnames(model.matrix(formulaStates[[state]],data)),nomatch=0)==0)
-      if(length(noBeta)) beta0[noBeta,state] <- NA
-    }
-  }
-  
   # build the vector of initial working parameters
   wparIndex <- numeric()
   if(is.null(fixPar)){
@@ -548,11 +541,20 @@ fitHMM <- function(data,nbStates,dist,
     }
     fixPar$delta <- rep(NA,length(delta0))
   }
+  
   if(is.null(fixPar$beta)) {
     fixPar$beta <- rep(NA,length(beta0))
-    if(nbStates>1) fixPar$beta[which(is.na(beta0))] <- 0
   }
-  if(nbStates>1) beta0[which(is.na(beta0))] <- 0
+  
+  if(nbStates>1){
+    for(state in 1:(nbStates*(nbStates-1))){
+      noBeta<-which(match(colnames(model.matrix(newformula,data)),colnames(model.matrix(formulaStates[[state]],data)),nomatch=0)==0)
+      if(length(noBeta)) {
+        beta0[noBeta,state] <- NA
+        fixPar$beta[noBeta+(state-1)*(nbCovs+1)] <- 0
+      }
+    }
+  }
 
   parindex <- c(0,cumsum(unlist(lapply(Par0,length))))
   names(parindex) <- c(distnames,"beta")
@@ -568,14 +570,15 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
   if(nbStates>1){
-    if(!is.null(fixPar$beta)){
+      beta0[which(is.na(beta0))] <- 0
+    #if(!is.null(fixPar$beta)){
       if(length(fixPar$beta)!=length(beta0)) stop("fixPar$beta must be of length ",length(beta0))
       tmp <- which(!is.na(fixPar$beta))
       beta0[tmp]<-fixPar$beta[tmp]
       wparIndex <- c(wparIndex,parindex[["beta"]]+tmp)
-    } else {
-      fixPar$beta <- rep(NA,length(beta0))
-    }
+    #} else {
+    #  fixPar$beta <- rep(NA,length(beta0))
+    #}
   }
   if(!is.null(fixPar$delta)){
     if(stationary & any(!is.na(fixPar$delta))) stop("delta cannot be fixed when stationary=TRUE")
