@@ -42,3 +42,4 @@ Suggests:
     setRNG
 RoxygenNote: 6.0.1
 NeedsCompilation: yes
+VignetteBuilder: utils

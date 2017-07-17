@@ -21,6 +21,7 @@
 
 \begin{document}
 \SweaveOpts{concordance=TRUE}
+%\VignetteIndexEntry{momentuHMM vignette}
 
 % set margin to 4cm for title page
 \newgeometry{margin=4cm}
@@ -315,7 +316,7 @@ We will now demonstrate some of the capabilities of \verb|momentuHMM| using real
 library(momentuHMM)
 library(sp)
 #example_wd <- ("~/Dropbox/vignette examples/")
-example_wd<-("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/vignette examples/")
+example_wd<-("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/momentuHMM/vignettes/")
 #source(paste0(example_wd,"elephantExample.R"))
 load(paste0(example_wd,"elephantExample.RData"))
 elephantFit$stateNames<-c("encamped","exploratory")
