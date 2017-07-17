@@ -32,7 +32,7 @@ stateFormulas<-function(formula,nbStates,spec="state"){
     for(j in 1:nbStates){
       tmplabs<-attr(Terms,"term.labels")[attr(Terms,"specials")[[paste0(spec,j)]]]
       if(length(tmplabs)){
-        tmp<- terms(as.formula(paste("~",substr(tmplabs,nchar(paste0(spec,j))+1,nchar(tmplabs)))),specials="cosinor")
+        tmp<- terms(as.formula(paste("~",substr(tmplabs,nchar(paste0(spec,j))+1,nchar(tmplabs)),collapse="+")),specials="cosinor")
       
         tmpnames<-attr(tmp,"term.labels")
         mp<-tmpnames
