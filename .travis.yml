@@ -3,3 +3,5 @@ cache: packages
 
 before_install:
  - tlmgr install psfrag
+ 
+r_build_args: --compact-vignettes="gs+qpdf"
