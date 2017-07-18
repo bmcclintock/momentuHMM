@@ -821,7 +821,7 @@ There remain many potential avenues for refining and extending the capabilities 
 \noindent The findings and conclusions in the manuscript are those of the author(s) and do not necessarily represent the views of the National Marine Fisheries Service, NOAA. Any use of trade, product, or firm names does not imply an endorsement by the US Government.
 
 \bibliographystyle{mee}
-\bibliography{master.bib.bib}
+\bibliography{master}
 
 \clearpage
 

@@ -12,7 +12,7 @@ Description: Extended tools for analyzing telemetry data using (multivariate) hi
 License: GPL-3
 LazyData: TRUE
 Imports:
-    Rcpp,
+    Rcpp (== 0.12.11),
     doParallel,
     foreach,
     numDeriv,
