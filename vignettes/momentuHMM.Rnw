@@ -310,41 +310,20 @@ The function \verb|simData| can be used to simulate multivariate HMM data from s
 \label{sec:example}
 We will now demonstrate some of the capabilities of \verb|momentuHMM| using real telemetry data. These examples are intended for demonstration purposes only, and we do not claim these example analyses represent improvements relative to previous or alternative analyses for these data sets. While only some of the key workflow elements are included here, complete R code and further details for these analyses are available on request.
 
+<<load-vignette_inputs, results=hide, echo=FALSE, eval=TRUE>>=
+library(momentuHMM)
+#example_wd <- ("~/Dropbox/vignette examples/")
+example_wd <- ("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/vignette examples/")
+
+#source("vignette_examples.R")
+load("vignette_inputs.RData")
+@
 \subsection{African elephant}
 \label{sec:elephant}
-<<load-elephant, results=hide, echo=FALSE, eval=TRUE>>=
-library(momentuHMM)
-library(sp)
-#example_wd <- ("~/Dropbox/vignette examples/")
-example_wd<-("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/momentuHMM/vignettes/")
-#source(paste0(example_wd,"elephantExample.R"))
-load(paste0(example_wd,"elephantExample.RData"))
-elephantFit$stateNames<-c("encamped","exploratory")
-
-activityBudgets<-table(viterbi(elephantFit))/nrow(elephantFit$data)
-
-#latlongDat<-as.data.frame(dataHMM)
-#sp::coordinates(latlongDat)<-c("x","y")
-#sp::proj4string(latlongDat) = sp::CRS("+proj=utm +zone=30N +datum=WGS84" )
-#latlongDat<-sp::spTransform(latlongDat,sp::CRS("+proj=longlat +datum=WGS84"))
-#satPlotStates<-plotSat(as.data.frame(latlongDat),zoom=8,location=c(median(elephantData$long),median(elephantData$lat)),ask=FALSE,return=TRUE,states=viterbi(elephantFit),col=c("#009E73", "#F0E442"),stateNames=c("encamped","exploratory"))
-
-@
-<<plot_elephantResults,echo=FALSE,results=hide,eval=FALSE>>=
-pr<-pseudoRes(elephantFit)
-acfLag<-24*14
-pdf(file="plot_elephantResults.pdf")
-plot(elephantFit,ask=FALSE,plotCI=TRUE,covs=data.frame(hour=12))
-acf(pr[["stepRes"]], lag.max = acfLag, na.action = na.pass, xlab="Lag (hours)", main = "")
-plotSat(data.frame(x=elephantData$long,y=elephantData$lat),zoom=8,location=c(median(elephantData$long),median(elephantData$lat)),ask=FALSE,return=TRUE)
-acf(dataHMM$step,na.action=na.pass,lag=acfLag,main="",xlab="Lag (hours)")
-dev.off()
-@
-
 As our first example, we use an African elephant ({\it Loxodonta africana}) bull track described in \cite{WallEtAl2014} and publicly available from the movebank.org data repository. 
 
 We can load the data from the URL (this requires an Internet connection):
-<<load-data, echo=TRUE>>=
+<<load-data, echo=TRUE, eval=FALSE>>=
 URL <- paste0("https://www.datarepository.movebank.org/bitstream/handle/",
               "10255/move.373/Elliptical%20Time-Density%20Model%20%28Wall%",
               "20et%20al.%202014%29%20African%20Elephant%20Dataset%20%",
@@ -520,15 +499,6 @@ Autocorrelation function plots of the pseudo-residuals indicate this model expla
 
 \subsection{Northern fur seal}
 \label{sec:nfs}
-<<load-nfs,echo=FALSE,results=hide,eval=TRUE>>=
-#source(paste0(example_wd,"nfsExample.R"))
-load(paste0(example_wd,"nfsExample.RData"))
-@
-<<plot_nfsResults,echo=FALSE,results=hide,eval=FALSE>>=
-pdf(file="plot_nfsResults.pdf")
-plot(nfsFits,ask=FALSE)
-dev.off()
-@
 In our second example, we use the northern fur seal ({\it Callorhinus ursinus}) example from \cite{McClintockEtAl2014b} to demonstrate the use of additional data streams for distinguishing behaviors with similar horizontal trajectories in a multivariate HMM. The data consist of 241 temporally-irregular Fastloc GPS locations obtained during a foraging trip of a nursing female near the Pribilof Islands of Alaska, USA, from 10-17 October 2007. The tag included time-depth recording capabilities, and the dive activity data were summarized as the number of foraging dives over $T=228$ temporally-regular 1 hr time steps. To fit the $Z=3$ state (1=``resting'', 2=``foraging'', 3=``transit'') of \cite{McClintockEtAl2014b} using \verb|momentuHMM|, we first used \verb|crawlWrap| to predict temporally-regular locations at 1 hr time steps assuming a bivariate normal measurement error model and merged the results with the foraging dive data using the \verb|crawlMerge| function. Then multiple imputation was used to account for location measurement error by repeatedly fitting the HMM to \verb|nSims| realizations of the position process using \verb|MIfitHMM|:% in parallel on \verb|ncores| cores of a (multi-core) processor:
 <<fit-nfs, echo=TRUE, eval=FALSE>>=
 nbStates <- 3
@@ -547,7 +517,7 @@ plot(nfsFits)
 @
 Here we specified a gamma distribution for step length (`step'), wrapped Cauchy distribution for turning angle (`angle'), and Poisson distribution for the number of foraging dives (`dive'). The function \verb|getParDM| was used to organize the starting values for the data stream working parameters (\verb|Par0|) in the correct format based on \verb|DM|, \verb|cons|, and estimates of the natural parameters (\verb|Par|) from \cite{McClintockEtAl2014b}. The \verb|DM| and \verb|cons| arguments were specified to avoid label switching among the \verb|nSims| imputed data model fits and enforce similar state-dependent probability distribution constraints as \cite{McClintockEtAl2014b}, e.g., constraining the Poisson rate parameters such that the ``foraging'' state tends to have higher numbers of foraging dives than the ``transit'' state $(\lambda_2 > \lambda_3)$. To prohibit foraging dives for the ``resting'' state, we used the \verb|fixPar| argument to effectively fix the Poisson rate parameter to zero on the natural scale (i.e. $\lambda_1 \approx 0$).  To help deal with the problem of convergence to local maxima, the \verb|retryFits| argument allows users to specify the number of times to attempt to re-fit each model using random perturbations of the parameter estimates as the starting values for optimization.
 
-The results are very similar to those of the discrete-time model of \cite{McClintockEtAl2014b}, with periods of foraging often followed by resting (Figure \ref{fig:nfsResults}).  The ``activity budgets'' (i.e. the proportion of time steps allocated to each state) calculated by \verb|MIpool| based on the estimated state sequences for each imputation were \Sexpr{round(as.numeric(nfsFits$miSum$Par$timeInStates$est["resting"]),2)} (95\% CI: \Sexpr{round(as.numeric(nfsFits$miSum$Par$timeInStates$lower["resting"]),2)}$-$\Sexpr{round(as.numeric(nfsFits$miSum$Par$timeInStates$upper["resting"]),2)}) for ``resting'', \Sexpr{round(as.numeric(nfsFits$miSum$Par$timeInStates$est["foraging"]),2)} (95\% CI: \Sexpr{round(as.numeric(nfsFits$miSum$Par$timeInStates$lower["foraging"]),2)}$-$\Sexpr{round(as.numeric(nfsFits$miSum$Par$timeInStates$upper["foraging"]),2)}) for ``foraging'', and \Sexpr{round(as.numeric(nfsFits$miSum$Par$timeInStates$est["transit"]),2)} (95\% CI: \Sexpr{round(as.numeric(nfsFits$miSum$Par$timeInStates$lower["transit"]),2)}$-$\Sexpr{round(as.numeric(nfsFits$miSum$Par$timeInStates$upper["transit"]),2)}) for ``transit''.
+The results are very similar to those of the discrete-time model of \cite{McClintockEtAl2014b}, with periods of foraging often followed by resting (Figure \ref{fig:nfsResults}).  The ``activity budgets'' (i.e. the proportion of time steps allocated to each state) calculated by \verb|MIpool| based on the estimated state sequences for each imputation were \Sexpr{round(as.numeric(nfsTimeInStates$est["resting"]),2)} (95\% CI: \Sexpr{round(as.numeric(nfsTimeInStates$lower["resting"]),2)}$-$\Sexpr{round(as.numeric(nfsTimeInStates$upper["resting"]),2)}) for ``resting'', \Sexpr{round(as.numeric(nfsTimeInStates$est["foraging"]),2)} (95\% CI: \Sexpr{round(as.numeric(nfsTimeInStates$lower["foraging"]),2)}$-$\Sexpr{round(as.numeric(nfsTimeInStates$upper["foraging"]),2)}) for ``foraging'', and \Sexpr{round(as.numeric(nfsTimeInStates$est["transit"]),2)} (95\% CI: \Sexpr{round(as.numeric(nfsTimeInStates$lower["transit"]),2)}$-$\Sexpr{round(as.numeric(nfsTimeInStates$upper["transit"]),2)}) for ``transit''.
 
 \begin{figure}[htbp]
   \includegraphics[width=0.49\textwidth,page=1]{plot_nfsResults}
@@ -559,43 +529,6 @@ The results are very similar to those of the discrete-time model of \cite{McClin
 \end{figure}
 \subsection{Loggerhead turtle}
 \label{sec:turtle}
-<<load-turtle,echo=FALSE,results=hide,eval=TRUE>>=
-#source(paste0(example_wd,"turtleExample.R"))
-load(paste0(example_wd,"turtleExample.RData"))
-@
-<<plot_turtleResults,echo=FALSE,results=hide,eval=FALSE>>=
-library(sp)
-library(TeachingDemos)
-library(raster)
-
-speedrast<-speedBrick[["X2012.12.02"]]
-speedrast<-projectRaster(speedrast,crs="+init=epsg:26718 +proj=utm +zone=18 +datum=NAD27 +units=km +no_defs +ellps=clrk66 +nadgrids=@conus,@alaska,@ntv2_0.gsb,@ntv1_can.dat")
-dirrast<-dirBrick[["X2012.12.02"]]
-dirrast<-projectRaster(dirrast,crs="+init=epsg:26718 +proj=utm +zone=18 +datum=NAD27 +units=km +no_defs +ellps=clrk66 +nadgrids=@conus,@alaska,@ntv2_0.gsb,@ntv1_can.dat")
-
-rastxy<-coordinates(speedrast)
-rastx0<-unique(rastxy[,1])
-rasty0<-unique(rastxy[,2])
-rastx<-rep(rastx0,length(rasty0))
-rasty<-rep(rasty0,each=length(rastx0))
-
-x<-turtleFits$miSum$data$x/1000
-y<-turtleFits$miSum$data$y/1000
-pdf(file="plot_turtleResults1.pdf")
-plot(turtleFits,plotCI=TRUE,covs=data.frame(angle_osc=1),ask=FALSE)
-dev.off()
-pdf(file="plot_turtleResults2.pdf",width=7,height=7*50/73)
-par(mar=c(4,4,0,1))
-plot(speedrast,col=gray.colors(20, start=1, end=0.3),xlab="easting (km)",ylab="northing (km)",legend.args=list(text='       speed (m/s)', side=3, line=1),box=FALSE,bty="n")
-my.symbols(rastx,rasty,ms.arrows, xsize=20,ysize=20,add=TRUE,angle=getValues(dirrast), r=getValues(speedrast), length=.015)
-points(x,y,type="o",pch=20,col=c("#E69F00", "#56B4E9")[turtleFits$miSum$Par$states],cex=.5)
-segments(x0=x[-length(x)],y0=y[-length(y)],x1=x[-1],y1=y[-1],
-         col=c("#E69F00", "#56B4E9")[turtleFits$miSum$Par$states][-length(turtleFits$miSum$Par$states)],lwd=1.3)
-#points(coordinates(turtleData)/1000,cex=0.15)
-for(i in 1:length(turtleFits$miSum$errorEllipse))
-  lines(turtleFits$miSum$errorEllipse[[i]]/1000,col=adjustcolor(c("#E69F00", "#56B4E9")[turtleFits$miSum$Par$states][i],alpha.f=0.25),cex=0.6)
-dev.off()
-@
 For our third example, we demonstrate how to model movement direction and step length as a function of angular covariates using hitherto unpublished loggerhead turtle ({\it Caretta caretta}) data for a captive-raised juvenile released in 2012 on the coast of North Carolina, USA. The data consist of 165 temporally-irregular Argos locations subject to measurement error and rasters of daily ocean surface currents collected between 20 November and 19 December 2012. Assuming a gamma distribution for step length $(l_t)$ and a wrapped Cauchy distribution for turning angle $(\phi_t)$, we model the mean step length parameter $(\mu^l_t)$ as a function of ocean surface current speed $(w_t)$ and direction $(r_t)$ relative to the bearing of movement $(b_t)$:
 \begin{equation}
   \mu^l_t=\exp(\beta^l_0+\beta^l_1 w_t \cos(b_t-r_t)),
@@ -640,7 +573,7 @@ plot(turtleFits, plotCI = TRUE, covs = data.frame(angle_osc = cos(0)))
 @
 Note that the \verb|state2| special function in \verb|DM| indicates the covariate formulas are specific to state 2 (``transit'') and the \verb|circularAngleMean| argument indicates that circular-circular regression link function is to be used on the mean turning angle parameter as in Eq. \ref{eq:turtleMeanAngle}. 
 
-For the ``transit'' state, pooled parameter estimates indicated step lengths increased with ocean surface current speed and as the bearing of movement aligned with ocean surface current direction ($\beta^l_1=\Sexpr{round(as.numeric(turtleFits$miSum$Par$beta$step$est[,"mean_2:w:angle_osc"]),2)}, \text{95\% CI: } \Sexpr{round(as.numeric(turtleFits$miSum$Par$beta$step$lower[,"mean_2:w:angle_osc"]),2)}-\Sexpr{round(as.numeric(turtleFits$miSum$Par$beta$step$upper[,"mean_2:w:angle_osc"]),2)}$; Figure \ref{fig:turtleResults}). The estimated wrapped Cauchy distribution for turning angle had mean angles $(\mu^\phi_t)$ biased towards the direction of ocean surface currents for each time step $(\beta^\phi=\Sexpr{round(as.numeric(turtleFits$miSum$Par$beta$angle$est[,"mean_2:d"]),2)}, \text{95\% CI: } \Sexpr{round(as.numeric(turtleFits$miSum$Par$beta$angle$lower[,"mean_2:d"]),2)}-\Sexpr{round(as.numeric(turtleFits$miSum$Par$beta$angle$upper[,"mean_2:d"]),2)})$, with concentration parameter $\rho^\phi_2=\Sexpr{round(as.numeric(turtleFits$miSum$Par$real$angle$est["concentration","state 2"]),2)}$ (95\% CI: \Sexpr{round(as.numeric(turtleFits$miSum$Par$real$angle$lower["concentration","state 2"]),2)}$-$\Sexpr{round(as.numeric(turtleFits$miSum$Par$real$angle$upper["concentration","state 2"]),2)}) indicating turning angles were concentrated at $\mu^\phi_t$. Thus movement during the ``transit'' state appears to strongly follow ocean surface currents (mean ${\text angle\_osc}=\Sexpr{round(mean(turtleFits$miSum$data$angle_osc[which(turtleFits$miSum$Par$states==2)]),2)},{\text SD}=\Sexpr{round(sd(turtleFits$miSum$data$angle_osc[which(turtleFits$miSum$Par$states==2)]),2)}$), while movement during the ``foraging'' state exhibited shorter step lengths $(\mu^l_1=\Sexpr{round(as.numeric(turtleFits$miSum$Par$real$step$est["mean","state 1"]),0)}{\text m}, \text{95\% CI: } \Sexpr{round(as.numeric(turtleFits$miSum$Par$real$step$lower["mean","state 1"]),0)}-\Sexpr{round(as.numeric(turtleFits$miSum$Par$real$step$upper["mean","state 1"]),0)})$ perpendicular to ocean surface currents (mean ${\text angle\_osc}=\Sexpr{round(mean(turtleFits$miSum$data$angle_osc[which(turtleFits$miSum$Par$states==1)]),2)},{\text SD}=\Sexpr{round(sd(turtleFits$miSum$data$angle_osc[which(turtleFits$miSum$Par$states==1)]),2)}$), with no directional persistence $(\rho^\phi_1=\Sexpr{round(as.numeric(turtleFits$miSum$Par$real$angle$est["concentration","state 1"]),2)})$. The turtle spent \Sexpr{round(as.numeric(turtleFits$miSum$Par$timeInStates$est["state 1"]),2)} (95\% CI: \Sexpr{round(as.numeric(turtleFits$miSum$Par$timeInStates$lower["state 1"]),2)}$-$\Sexpr{round(as.numeric(turtleFits$miSum$Par$timeInStates$upper["state 1"]),2)}) of the 2 hr time steps in the ``foraging'' state and \Sexpr{round(as.numeric(turtleFits$miSum$Par$timeInStates$est["state 2"]),2)} (95\% CI: \Sexpr{round(as.numeric(turtleFits$miSum$Par$timeInStates$lower["state 2"]),2)}$-$\Sexpr{round(as.numeric(turtleFits$miSum$Par$timeInStates$upper["state 2"]),2)}) of time steps in the ``transit'' state as it travelled northeast along a predominant current until it (presumably) found an attractive foraging patch (Figure \ref{fig:turtleResults}).
+For the ``transit'' state, pooled parameter estimates indicated step lengths increased with ocean surface current speed and as the bearing of movement aligned with ocean surface current direction ($\beta^l_1=\Sexpr{round(as.numeric(turtle_miSum$Par$beta$step$est[,"mean_2:w:angle_osc"]),2)}, \text{95\% CI: } \Sexpr{round(as.numeric(turtle_miSum$Par$beta$step$lower[,"mean_2:w:angle_osc"]),2)}-\Sexpr{round(as.numeric(turtle_miSum$Par$beta$step$upper[,"mean_2:w:angle_osc"]),2)}$; Figure \ref{fig:turtleResults}). The estimated wrapped Cauchy distribution for turning angle had mean angles $(\mu^\phi_t)$ biased towards the direction of ocean surface currents for each time step $(\beta^\phi=\Sexpr{round(as.numeric(turtle_miSum$Par$beta$angle$est[,"mean_2:d"]),2)}, \text{95\% CI: } \Sexpr{round(as.numeric(turtle_miSum$Par$beta$angle$lower[,"mean_2:d"]),2)}-\Sexpr{round(as.numeric(turtle_miSum$Par$beta$angle$upper[,"mean_2:d"]),2)})$, with concentration parameter $\rho^\phi_2=\Sexpr{round(as.numeric(turtle_miSum$Par$real$angle$est["concentration","state 2"]),2)}$ (95\% CI: \Sexpr{round(as.numeric(turtle_miSum$Par$real$angle$lower["concentration","state 2"]),2)}$-$\Sexpr{round(as.numeric(turtle_miSum$Par$real$angle$upper["concentration","state 2"]),2)}) indicating turning angles were concentrated at $\mu^\phi_t$. Thus movement during the ``transit'' state appears to strongly follow ocean surface currents (mean ${\text angle\_osc}=\Sexpr{round(mean(turtle_miSum$data$angle_osc[which(turtle_miSum$Par$states==2)]),2)},{\text SD}=\Sexpr{round(sd(turtle_miSum$data$angle_osc[which(turtle_miSum$Par$states==2)]),2)}$), while movement during the ``foraging'' state exhibited shorter step lengths $(\mu^l_1=\Sexpr{round(as.numeric(turtle_miSum$Par$real$step$est["mean","state 1"]),0)}{\text m}, \text{95\% CI: } \Sexpr{round(as.numeric(turtle_miSum$Par$real$step$lower["mean","state 1"]),0)}-\Sexpr{round(as.numeric(turtle_miSum$Par$real$step$upper["mean","state 1"]),0)})$ perpendicular to ocean surface currents (mean ${\text angle\_osc}=\Sexpr{round(mean(turtle_miSum$data$angle_osc[which(turtle_miSum$Par$states==1)]),2)},{\text SD}=\Sexpr{round(sd(turtle_miSum$data$angle_osc[which(turtle_miSum$Par$states==1)]),2)}$), with no directional persistence $(\rho^\phi_1=\Sexpr{round(as.numeric(turtle_miSum$Par$real$angle$est["concentration","state 1"]),2)})$. The turtle spent \Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$est["state 1"]),2)} (95\% CI: \Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$lower["state 1"]),2)}$-$\Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$upper["state 1"]),2)}) of the 2 hr time steps in the ``foraging'' state and \Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$est["state 2"]),2)} (95\% CI: \Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$lower["state 2"]),2)}$-$\Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$upper["state 2"]),2)}) of time steps in the ``transit'' state as it travelled northeast along a predominant current until it (presumably) found an attractive foraging patch (Figure \ref{fig:turtleResults}).
 
 \begin{figure}[htbp]
   \centering
@@ -656,72 +589,7 @@ For the ``transit'' state, pooled parameter estimates indicated step lengths inc
 
 \subsection{Grey seal}
 \label{sec:greySeal}
-<<load-grey-seal,echo=FALSE,results=hide,eval=TRUE>>=
-#source(paste0(example_wd,"greySealExample_TPM.R"))
-load(paste0(example_wd,"greySealResults_TPM.RData"))
-@
-<<plot_greySealResults,echo=FALSE,results=hide,eval=FALSE>>=
-pdf(file="plot_greySealResults1.pdf")
-plot(greySealPool,plotCI=TRUE,ask=FALSE)
-dev.off()
-
-load(paste0(example_wd,"greySealData_TPM.RData"))
-load(paste0(example_wd,"coastUTM.RData"))
-
-colvect<-c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2")
-
-pdf(file="plot_greySealResults2.pdf",width=7.25,height=5)
-plot(greySealPool$data$x,greySealPool$data$y,type="o", asp=1, pch=20,ylab="Latitude",xlab="Longitude",ylim=c(6060000,6289000),xlim=c(513000,925000),xaxt="n",yaxt="n",xaxs="i",yaxs="i")
-axis(1,labels=c(-2,0,2,4),at=c(565312,696098,(434680-312928+696098),(565330-312928+696098)))
-axis(2,labels=c(55,56,57),at=c(6094820,6206100,6317500))
-
-points(greySealData$x,greySealData$y,pch=20)
-cx=1.6
-
-for(j in 1:5) {
-  points(greySealPool$data$x[greySealPool$Par$states==j],greySealPool$data$y[greySealPool$Par$states==j],col=colvect[j],asp=1, pch=20,cex=cx)
-}
-points(greySealPool$data$x[length(greySealPool$data$x)],greySealPool$data$y[length(greySealPool$data$y)],col=colvect[greySealPool$Par$states[length(greySealPool$Par$states)]],asp=1, pch=20,cex=cx)
-
-for(i in 1:(length(greySealPool$data$x)-1)) {
-  polygon(greySealPool$errorEllipse[[i]],lty=2,border=rgb(red=col2rgb(colvect,alpha=FALSE)[1,greySealPool$Par$states[i]]/255,green=col2rgb(colvect,alpha=FALSE)[2,greySealPool$Par$states[i]]/255,blue=col2rgb(colvect,alpha=FALSE)[3,greySealPool$Par$states[i]]/255,alpha=0.25))
-}
-polygon(greySealPool$errorEllipse[[length(greySealPool$errorEllipse)]],lty=2,border=rgb(red=col2rgb(colvect,alpha=FALSE)[1,greySealPool$Par$states[length(greySealPool$Par$states)]]/255,green=col2rgb(colvect,alpha=FALSE)[2,greySealPool$Par$states[length(greySealPool$Par$states)]]/255,blue=col2rgb(colvect,alpha=FALSE)[3,greySealPool$Par$states[length(greySealPool$Par$states)]]/255,alpha=0.25))
-
-#for(i in 1:nrow(greySealPool$Par$stateProbs$est)){
-#  tmp<-sort(greySealPool$Par$stateProbs$est[i,])
-#  for(j in 1:(5-1)){
-#    if(tmp[j]>0.05){
-#      ind<-order(greySealPool$Par$stateProbs$est[2,])[j]
-#      points(greySealPool$data$x[i],greySealPool$data$y[i],col=colvect[ind],asp=1, pch=20,cex=cx/(j+1))
-#    }
-#  }
-#}
-
-leg=character(5)
-leg[1]="Abertay haul-out state"
-leg[2]="Farne Islands haul-out state"
-leg[3]="Dogger Bank foraging state"
-leg[4]="Low-speed exploratory state"
-leg[5]="High-speed exploratory state"
-
-legend("topright",leg,pch=rep(20,length(leg)),col=colvect,bty="n")
-
-lines(coastUTM$Easting, coastUTM$Northing)
-
-#add estimated locations for centres of attraction
-points(centers,col="#D55E00",pch=20,cex=cx)
-
-plot(greySealSim$x,greySealSim$y,type="o", asp=1, pch=20,ylab="Latitude",xlab="Longitude",ylim=c(6060000,6289000),xlim=c(513000,925000),xaxt="n",yaxt="n",xaxs="i",yaxs="i")
-points(greySealSim$x,greySealSim$y,col=colvect[greySealSim$states],pch=20)
-axis(1,labels=c(-2,0,2,4),at=c(565312,696098,(434680-312928+696098),(565330-312928+696098)))
-axis(2,labels=c(55,56,57),at=c(6094820,6206100,6317500))
-legend("topright",leg,pch=rep(20,length(leg)),col=colvect,bty="n")
-lines(coastUTM$Easting, coastUTM$Northing)
-points(centers,col="#D55E00",pch=20,cex=1.6)
-dev.off()
-@
-For our last example, we perform a similar analysis of a grey seal ({\it Halichoerus grypus}) track that was originally conducted by \cite{McClintockEtAl2012} using Bayesian methods and (computationally-intensive) Markov chain Monte Carlo. The data consist of 1045 temporally-irregular Fastloc GPS locations collected in the North Sea between 9 April and 11 August 2008. Because the seal repeatedly visited the same haulout and foraging locations, it provides a nice example for demonstrating how to implement biased movements relative to activity centers using \verb|momentuHMM|. \cite{McClintockEtAl2012} fitted a 5-state model to these data that included three center of attraction states, with movement biased towards two haulout sites (``Abertay'' and ``Farne Islands'') and a foraging area (``Dogger Bank''), and two ``exploratory'' states (''low speed'', ''high speed'') that were unassociated with an activity center. After using \verb|crawlWrap| to predict $T=1515$ temporally-regular locations at 2 hr time steps including a bivariate normal measurement error model, we can perform a very similar analysis to \cite{McClintockEtAl2012} in \verb|momentuHMM| by using the \verb|centers| argument and state-specific functions for the probability distribution parameters. A cluster analysis on the observed locations using the R package \verb|dtwclust| \citep{SardaEspinosa2017} identified three centroids with coordinates that were nearly identical to the three activity centers (``Abertay'', ``Farne Islands'', and ``Dogger Bank'') identified by \cite{McClintockEtAl2012}. We use these coordinates to derive covariates relative to the activity centers when drawing \verb|nSims| realizations of the position process:
+For our next example, we perform a similar analysis of a grey seal ({\it Halichoerus grypus}) track that was originally conducted by \cite{McClintockEtAl2012} using Bayesian methods and (computationally-intensive) Markov chain Monte Carlo. The data consist of 1045 temporally-irregular Fastloc GPS locations collected in the North Sea between 9 April and 11 August 2008. Because the seal repeatedly visited the same haulout and foraging locations, it provides a nice example for demonstrating how to implement biased movements relative to activity centers using \verb|momentuHMM|. \cite{McClintockEtAl2012} fitted a 5-state model to these data that included three center of attraction states, with movement biased towards two haulout sites (``Abertay'' and ``Farne Islands'') and a foraging area (``Dogger Bank''), and two ``exploratory'' states (''low speed'', ''high speed'') that were unassociated with an activity center. After using \verb|crawlWrap| to predict $T=1515$ temporally-regular locations at 2 hr time steps including a bivariate normal measurement error model, we can perform a very similar analysis to \cite{McClintockEtAl2012} in \verb|momentuHMM| by using the \verb|centers| argument and state-specific functions for the probability distribution parameters. A cluster analysis on the observed locations using the R package \verb|dtwclust| \citep{SardaEspinosa2017} identified three centroids with coordinates that were nearly identical to the three activity centers (``Abertay'', ``Farne Islands'', and ``Dogger Bank'') identified by \cite{McClintockEtAl2012}. We use these coordinates to derive covariates relative to the activity centers when drawing \verb|nSims| realizations of the position process:
 <<fit-grey-seal, echo=TRUE, eval=FALSE>>=
 crwSim <- MIfitHMM(crwOut, nSims = 100, fit=FALSE,
                   center = centers)
@@ -750,7 +618,7 @@ plot(greySealFits, plotCI = TRUE)
 @
 As with the step length and turning angle concentration parameters, the state transition probabilities are also allowed to change as a function of distance to activity centers (as specified by the \verb|formula| argument). The starting values (\verb|Par0| and \verb|beta0|) for each imputation were extracted from a single HMM fitted to the best predicted locations from \verb|crawlWrap|, and \verb|fixPar| was used to remove short-term directional persistence (and thus formulate the model as a mixture of biased and simple random walks). 
 
-Estimated activity budgets for the 5 states of this multiple imputation HMM were \Sexpr{round(greySealPool$Par$timeInStates$est["Abertay"],2)} $(\Sexpr{round(greySealPool$Par$timeInStates$lower["Abertay"],2)}-\Sexpr{round(greySealPool$Par$timeInStates$upper["Abertay"],2)})$ for the ``Abertay'' haul-out state, \Sexpr{round(greySealPool$Par$timeInStates$est["Farne"],2)} $(\Sexpr{round(greySealPool$Par$timeInStates$lower["Farne"],2)}-\Sexpr{round(greySealPool$Par$timeInStates$upper["Farne"],2)})$ for the ``Farne Islands'' haul-out state, \Sexpr{round(greySealPool$Par$timeInStates$est["Dogger"],2)} $(\Sexpr{round(greySealPool$Par$timeInStates$lower["Dogger"],2)}-\Sexpr{round(greySealPool$Par$timeInStates$upper["Dogger"],2)})$ for the ``Dogger Bank'' foraging state, \Sexpr{round(greySealPool$Par$timeInStates$est["low"],2)} $(\Sexpr{round(greySealPool$Par$timeInStates$lower["low"],2)}-\Sexpr{round(greySealPool$Par$timeInStates$upper["low"],2)})$ for a low-speed ``exploratory'' state, and \Sexpr{round(greySealPool$Par$timeInStates$est["high"],2)} $(\Sexpr{round(greySealPool$Par$timeInStates$lower["high"],2)}-\Sexpr{round(greySealPool$Par$timeInStates$upper["high"],2)})$ for a high-speed ``exploratory'' state. All three activity center states exhibited shorter step lengths and less biased movements when within the viscinity of these targets (Figure \ref{fig:greySealResults}). Results from this analysis were thus very similar to those of \cite{McClintockEtAl2012}, but this implementation required far less computation time and no custom model-fitting algorithms. 
+Estimated activity budgets for the 5 states of this multiple imputation HMM were \Sexpr{round(greySealTimeInStates$est["Abertay"],2)} $(\Sexpr{round(greySealTimeInStates$lower["Abertay"],2)}-\Sexpr{round(greySealTimeInStates$upper["Abertay"],2)})$ for the ``Abertay'' haul-out state, \Sexpr{round(greySealTimeInStates$est["Farne"],2)} $(\Sexpr{round(greySealTimeInStates$lower["Farne"],2)}-\Sexpr{round(greySealTimeInStates$upper["Farne"],2)})$ for the ``Farne Islands'' haul-out state, \Sexpr{round(greySealTimeInStates$est["Dogger"],2)} $(\Sexpr{round(greySealTimeInStates$lower["Dogger"],2)}-\Sexpr{round(greySealTimeInStates$upper["Dogger"],2)})$ for the ``Dogger Bank'' foraging state, \Sexpr{round(greySealTimeInStates$est["low"],2)} $(\Sexpr{round(greySealTimeInStates$lower["low"],2)}-\Sexpr{round(greySealTimeInStates$upper["low"],2)})$ for a low-speed ``exploratory'' state, and \Sexpr{round(greySealTimeInStates$est["high"],2)} $(\Sexpr{round(greySealTimeInStates$lower["high"],2)}-\Sexpr{round(greySealTimeInStates$upper["high"],2)})$ for a high-speed ``exploratory'' state. All three activity center states exhibited shorter step lengths and less biased movements when within the viscinity of these targets (Figure \ref{fig:greySealResults}). Results from this analysis were thus very similar to those of \cite{McClintockEtAl2012}, but this implementation required far less computation time and no custom model-fitting algorithms. 
 
 The \verb|simData| function can be used to simulate tracks from a fitted model:
 <<sim-grey-seal, echo=TRUE, eval=FALSE>>=
@@ -779,34 +647,6 @@ A simulated track is presented along with the fitted track in Figure \ref{fig:gr
 \end{figure}
 
 \subsection{Southern elephant seal}
-<<load-grey-seal,echo=FALSE,results=hide,eval=TRUE>>=
-#source(paste0(example_wd,"sesExample.R"))
-load(paste0(example_wd,"sesExample.RData"))
-@
-<<plot_sesResults,echo=FALSE,results=hide,eval=FALSE>>=
-pdf(file="plot_sesResults.pdf")
-plot(m3,plotCI=TRUE,ask=FALSE)
-dev.off()
-library(maps) # for map plots
-library(mapdata) # for map plots
-library(marmap) # to plot bathymetry
-library(sp) # for degAxis
-pdf(file="plot_sesResults2.pdf",width=12,height=6)
-plot(data$x, data$y, axes=FALSE, xlab="longitude", ylab="latitude", col="white")
-degAxis(1)
-degAxis(2)
-map('worldHires', add=TRUE, fill=TRUE, col='white')
-
-for(id in unique(data$ID)) {
-  ind <- which(data$ID==id)
-  segments(x0 = data$x[ind[-length(ind)]], y0 = data$y[ind[-length(ind)]], x1 = data$x[ind[-1]], y1 = data$y[ind[-1]], 
-           col = pal[states[ind[-length(ind)]]], lwd=2)
-}
-
-legend("topleft", legend = stateNames,
-       col = pal, lwd=2, bg="white")
-dev.off()
-@
 Here, we analyse the southern elephant seal (\emph{Mirounga leonina}) data from \cite{MichelotEtAl2017} using \verb|momentuHMM|. The data set consists of 15 tracks, each encompassing (at most) one foraging trip, starting from Kerguelen Island. We want to fit the model described by \cite{MichelotEtAl2017}, with the four following states:
 \begin{enumerate}
 \item outbound trip from the colony to the ice;
@@ -814,13 +654,6 @@ Here, we analyse the southern elephant seal (\emph{Mirounga leonina}) data from 
 \item foraging;
 \item inbound trip from the ice to the colony.
 \end{enumerate}
-
-
-<<load-ses, echo=FALSE, eval=TRUE>>=
-tracks <- read.csv(paste0(example_wd,"sesData.csv"))
-tracks <- tracks[,c(1,2,3)]
-colnames(tracks) <- c("ID","x","y")
-@
 
 The data set has three columns: ``ID'' (track ID), ``x'' (longitude), and ``y'' (latitude):
 
@@ -953,7 +786,7 @@ m3 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"),
              stateNames = stateNames)
 @ 
 
-The three fitted model can be compared with \verb|AIC(m1,m2,m3)|, which overwhelmingly supports model 3. The most likely state sequence is obtained with \verb|viterbi(m3)|. Figure \ref{fig:sesTracks} shows a map of the state-decoded track. The estimated circular-circular regression coefficients for the angle means of state 1 (outbound) and state 4 (inbound) were $\Sexpr{round(m3$CIbeta$angle$est[,"mean_1:colony.angle"],2)}$ (95\% CI: $\Sexpr{round(m3$CIbeta$angle$lower[,"mean_1:colony.angle"],2)}-\Sexpr{round(m3$CIbeta$angle$upper[,"mean_1:colony.angle"],2)}$) and $\Sexpr{round(m3$CIbeta$angle$est[,"mean_4:colony.angle"],2)}$ (95\% CI: $\Sexpr{round(m3$CIbeta$angle$lower[,"mean_4:colony.angle"],2)}-\Sexpr{round(m3$CIbeta$angle$upper[,"mean_4:colony.angle"],2)}$), respectively, thus indicating biased correlated random walks with repulsion away from the colony during outbound movements and attraction towards the colony during inbound movements. The estimated regressoin coefficients for the step length mean and turning angle concentration parameters for states 1 and 4 suggest that step lengths decreased and turning angles became more concentrated at the mean angle as distance to colony increased (Fig. \ref{fig:sesResults})
+The three fitted model can be compared with \verb|AIC(m1,m2,m3)|, which overwhelmingly supports model 3. The most likely state sequence is obtained with \verb|viterbi(m3)|. Figure \ref{fig:sesTracks} shows a map of the state-decoded track. The estimated circular-circular regression coefficients for the angle means of state 1 (outbound) and state 4 (inbound) were $\Sexpr{round(sesCIbeta$angle$est[,"mean_1:colony.angle"],2)}$ (95\% CI: $\Sexpr{round(sesCIbeta$angle$lower[,"mean_1:colony.angle"],2)}-\Sexpr{round(sesCIbeta$angle$upper[,"mean_1:colony.angle"],2)}$) and $\Sexpr{round(sesCIbeta$angle$est[,"mean_4:colony.angle"],2)}$ (95\% CI: $\Sexpr{round(sesCIbeta$angle$lower[,"mean_4:colony.angle"],2)}-\Sexpr{round(sesCIbeta$angle$upper[,"mean_4:colony.angle"],2)}$), respectively, thus indicating biased correlated random walks with repulsion away from the colony during outbound movements and attraction towards the colony during inbound movements. The estimated regressoin coefficients for the step length mean and turning angle concentration parameters for states 1 and 4 suggest that step lengths decreased and turning angles became more concentrated at the mean angle as distance to colony increased (Figure \ref{fig:sesResults})
 
 \begin{figure}[htbp]
   \centering
