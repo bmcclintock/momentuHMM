@@ -774,7 +774,7 @@ To specify the direction of the bias (away from or towards the colony), we fix t
 > fixPar <- list(angle=c(-100,100,NA,NA,NA,NA),beta=fixbeta)
 \end{Sinput}
 \end{Schunk}
-Because no covariates are specified for the mean angle of state 2 (searching) and state 3 (foraging), the mean angle for these states is fixed to zero (i.e. $\text{atan2}(0,1)=0$ as in Eq. \ref{eq:circ}).
+Because no covariates are specified for the mean angle of state 2 (searching) and state 3 (foraging), these states are reduced to correlated random walks with a mean turning angle of zero (i.e. $\text{atan2}(0,1)=0$ as in Eq. \ref{eq:circ}).
 
 We can now fit the second model with starting parameter values extracted from the simpler model using \verb|getPar0|. In \verb|fitHMM|, we use the arguments \verb|estAngleMean| and \verb|circularAngleMean| to indicate that the angle mean is to be estimated using circular-circular regression.
 
