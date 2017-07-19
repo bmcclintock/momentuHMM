@@ -323,7 +323,7 @@ load("vignette_inputs.RData")
 As our first example, we use an African elephant ({\it Loxodonta africana}) bull track described in \cite{WallEtAl2014} and publicly available from the movebank.org data repository. 
 
 We can load the data from the URL (this requires an Internet connection):
-<<load-data, echo=TRUE, eval=FALSE>>=
+<<load-data, echo=TRUE, eval=TRUE>>=
 URL <- paste0("https://www.datarepository.movebank.org/bitstream/handle/",
               "10255/move.373/Elliptical%20Time-Density%20Model%20%28Wall%",
               "20et%20al.%202014%29%20African%20Elephant%20Dataset%20%",
