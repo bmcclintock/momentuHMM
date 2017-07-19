@@ -477,22 +477,22 @@ acf(pr$stepRes[!is.na(pr$stepRes)],lag.max = 300)
 Autocorrelation function plots of the pseudo-residuals indicate this model explained much of the periodicity in step length, although there does still appear to be some room for improvement.
 
 \begin{figure}[htbp]
-  \includegraphics[width=0.49\textwidth,page=17]{plot_elephantResults}
-  \includegraphics[width=0.49\textwidth,page=18]{plot_elephantResults}
-  \includegraphics[width=0.49\textwidth,page=15]{plot_elephantResults}
-  \includegraphics[width=0.49\textwidth,page=16]{plot_elephantResults}
+  \includegraphics[width=0.49\textwidth]{elephant_plotSat.png}
+  \includegraphics[width=0.49\textwidth]{plot_elephantResults017.pdf}
+  \includegraphics[width=0.49\textwidth]{plot_elephantResults015.pdf}
+  \includegraphics[width=0.49\textwidth]{plot_elephantResults016.pdf}
   \caption{Plot of the elephant track produced using the `plotSat' function (top-left panel), autocorrelation function (ACF) plot of the corresponding step length data (top-right panel), plot of the Viterbi-decoded state sequence for the 2-state (``encamped'' and ``exploratory'') model generated using the generic `plot' function (bottom-left panel), and the step length pseudo-residual ACF plot for this model using the `plotPR' function (bottom-right panel).}
   \label{fig:elephantResults1}
 \end{figure}
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.35\textwidth,page=9]{plot_elephantResults}
-  \includegraphics[width=0.35\textwidth,page=12]{plot_elephantResults} \\
-  \includegraphics[width=0.35\textwidth,page=1]{plot_elephantResults} 
-  \includegraphics[width=0.35\textwidth,page=2]{plot_elephantResults} \\
-  \includegraphics[width=0.35\textwidth,page=10]{plot_elephantResults}
-  \includegraphics[width=0.35\textwidth,page=13]{plot_elephantResults} \\
+  \includegraphics[width=0.35\textwidth]{plot_elephantResults009.pdf}
+  \includegraphics[width=0.35\textwidth]{plot_elephantResults012.pdf} \\
+  \includegraphics[width=0.35\textwidth]{plot_elephantResults001.pdf} 
+  \includegraphics[width=0.35\textwidth]{plot_elephantResults002.pdf} \\
+  \includegraphics[width=0.35\textwidth]{plot_elephantResults010.pdf}
+  \includegraphics[width=0.35\textwidth]{plot_elephantResults013.pdf} \\
   \caption{Selected plots for the 2-state (``encamped'' and ``exploratory'') African elephant example generated using the generic 'plot' function. Top panels present histograms of the step length (top-left) and turning angle (top-right) data along with the estimated state-dependent probability distributions based on the mean temperature (temp = 29.7 degrees celsius) at 12:00 GMT (hour = 12). Middle panels present estimates (and 95\% confidence intervals) for the step length mean parameter of the ``encamped'' state as a function of temperature and hour of day.  Bottom-left panel presents estimates for the turning angle concentration parameter of the ``encamped'' state as a function of temperature.  Bottom-right panel presents estimated state transition probabilities (1 = ``encampled'', 2 = ``exploratory'') as a function of temperature at 12:00 GMT.}
   \label{fig:elephantResults2}
 \end{figure}
@@ -577,11 +577,11 @@ For the ``transit'' state, pooled parameter estimates indicated step lengths inc
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.32\textwidth,page=1]{plot_turtleResults1}
-  \includegraphics[width=0.32\textwidth,page=2]{plot_turtleResults1}
-  \includegraphics[width=0.32\textwidth,page=4]{plot_turtleResults1}
+  \includegraphics[width=0.32\textwidth]{plot_turtleResults001.pdf}
+  \includegraphics[width=0.32\textwidth]{plot_turtleResults002.pdf}
+  \includegraphics[width=0.32\textwidth]{plot_turtleResults004.pdf}
   %\begin{adjustbox}{trim=0cm 0.25cm 0cm 1.5cm}
-    \includegraphics[width=\textwidth,page=1]{plot_turtleResults2}
+    \includegraphics[width=\textwidth]{plot_turtleResults2.pdf}
   %\end{adjustbox}
   \caption{Selected results from the loggerhead turtle example. Top panels include estimates and 95\% confidence intervals for the mean step length parameter as a function of ocean surface current speed $(w)$ when ocean surface current direction $(r_t)$ is the same as the bearing $(b_t)$ of movement (i.e. ${\text angle\_osc}=\cos(b_t-r_t)=1$; top-left panel), mean step length parameter as a function of ${\text angle\_osc}$ at the mean ocean surface current speed ($w=0.46$ m/s; top-middle panel), and mean turning angle parameter as a function of $d_t=\text{atan2}(\sin(r_t-b_{t-1}),\cos(r_t-b_{t-1}))$ (top-right panel). Bottom panel plots the pooled track, 95\% error ellipse confidence bands, and state (orange = ``foraging'', blue = ``transit'') estimates based on multiple imputations of the position process relative to ocean surface current speed (m/s) and direction on 2 December 2012.}
   \label{fig:turtleResults}
@@ -628,10 +628,10 @@ greySealSim<-simData(model = greySealFits, centers = centers,
 @
 A simulated track is presented along with the fitted track in Figure \ref{fig:greySealStateSims}. While potentially useful for study design, power analysis, and prediction, the \verb|simData| function can also be helpful in assessing goodness of fit by repeatedly drawing simulated data sets from a fitted model and comparing them to observed properties of the data \citep[e.g.][]{MoralesEtAl2004}.
 \begin{figure}[htbp]
-  \includegraphics[width=0.49\textwidth,page=2]{plot_greySealResults1}
-  \includegraphics[width=0.49\textwidth,page=9]{plot_greySealResults1}\\
-  \includegraphics[width=0.49\textwidth,page=6]{plot_greySealResults1}
-  \includegraphics[width=0.49\textwidth,page=13]{plot_greySealResults1}\\
+  \includegraphics[width=0.49\textwidth]{plot_greySealResults002.pdf}
+  \includegraphics[width=0.49\textwidth]{plot_greySealResults009.pdf}\\
+  \includegraphics[width=0.49\textwidth]{plot_greySealResults006.pdf}
+  \includegraphics[width=0.49\textwidth]{plot_greySealResults013.pdf}\\
   \caption{Selected results from the grey seal example. Panels include estimates and 95\% confidence intervals for the ``Abertay'' haul-out state step length scale parameter as a function of distance in meters (`Abertay.dist'; top-left panel), ``Abertay'' haul-out state turning angle concentration parameter as a function of distance (top-right panel), ``Dogger Bank'' foraging state step length scale parameter as a function of distance (`Dogger.dist'; bottom-left panel), and the ``Dogger Bank'' foraging state turning angle concentration parameter as a function of distance (bottom-right panel).}
   \label{fig:greySealResults}
 \end{figure}
@@ -639,8 +639,8 @@ A simulated track is presented along with the fitted track in Figure \ref{fig:gr
 \begin{figure}[htbp]
   \centering
   %\begin{adjustbox}{trim=0cm 0.25cm 0cm 1.5cm}
-    \includegraphics[width=0.8\textwidth,page=1]{plot_greySealResults2}\\
-    \includegraphics[width=0.8\textwidth,page=2]{plot_greySealResults2}
+    \includegraphics[width=0.8\textwidth]{plot_greySealResults1.png}\\
+    \includegraphics[width=0.8\textwidth]{plot_greySealResults2.png}
   %\end{adjustbox}
   \caption{Fitted and simulated tracks from the grey seal example. This seal tended to move in a clockwise fashion between two haul-out locations (``Abertay'' and ``Farne Islands'') and a foraging area (``Dogger Bank'') in the North Sea. Top panel plots the pooled track, 95\% error ellipse confidence bands, and state estimates based on the 5-state HMM fitted to multiple imputations of the position process. Red points indicate the locations of the three activity centers. Black points indicate the (temporally-irregular) observed locations. Bottom panel presents the locations and states for a track simulated from the fitted model using the `simData' function.}
   \label{fig:greySealStateSims}
@@ -797,10 +797,10 @@ The three fitted model can be compared with \verb|AIC(m1,m2,m3)|, which overwhel
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.49\textwidth,page=1]{plot_sesResults}
-  \includegraphics[width=0.49\textwidth,page=3]{plot_sesResults}\\
-  \includegraphics[width=0.49\textwidth,page=7]{plot_sesResults}
-  \includegraphics[width=0.49\textwidth,page=9]{plot_sesResults}\\
+  \includegraphics[width=0.49\textwidth]{plot_sesResults001.pdf}
+  \includegraphics[width=0.49\textwidth]{plot_sesResults003.pdf}\\
+  \includegraphics[width=0.49\textwidth]{plot_sesResults007.pdf}
+  \includegraphics[width=0.49\textwidth]{plot_sesResults009.pdf}\\
   \caption{Selected results from the elephant seal example. Panels include estimates and 95\% confidence intervals for the ``outbound'' mean step length parameter (top-left panel), ``inbound'' mean step length parameter (top-right panel), ``outbound'' turning angle concentration parameter (bottom-left panel), and ``inbound'' turning angle concentration parameter (bottom-right panel) as a function of distance to colony (`colony.dist'). Distance to colony has been standardized based on a mean of 2539 km (SD = 1021.3).}
   \label{fig:sesResults}
 \end{figure}

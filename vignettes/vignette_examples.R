@@ -10,7 +10,7 @@ append.RData <- function(x, file) {
 ### Elephant example
 ###################################################
 #source(paste0(getwd(),"/elephantExample.R"))
-load(paste0(example_wd,"/elephantExample.RData"))
+load(paste0(example_wd,"elephantExample.RData"))
 elephantFit$stateNames<-c("encamped","exploratory")
 
 activityBudgets<-table(viterbi(elephantFit))/nrow(elephantFit$data)
@@ -31,19 +31,26 @@ save(rawData,activityBudgets,file=paste0(getwd(),"/vignette_inputs.RData"))
 
 pr<-pseudoRes(elephantFit)
 acfLag<-24*14
-pdf(file=paste0(getwd(),"/plot_elephantResults.pdf"))
+pdf(file=paste0(getwd(),"/plot_elephantResults%03d.pdf"),onefile=FALSE)
 plot(elephantFit,ask=FALSE,plotCI=TRUE,covs=data.frame(hour=12))
 acf(pr[["stepRes"]], lag.max = acfLag, na.action = na.pass, xlab="Lag (hours)", main = "")
-plotSat(data.frame(x=elephantData$long,y=elephantData$lat),zoom=8,location=c(median(elephantData$long),median(elephantData$lat)),ask=FALSE)
 acf(dataHMM$step,na.action=na.pass,lag=acfLag,main="",xlab="Lag (hours)")
 dev.off()
+
+for(plt in seq(1,17)[-c(1,2,9,10,12,13,15,16,17)])
+  unlink(paste0("plot_elephantResults0",ifelse(plt>9,"","0"),plt,".pdf"))
+
+png(filename="elephant_plotSat.png",width=6,height=6,units="in",res=90)
+plotSat(data.frame(x=elephantData$long,y=elephantData$lat),zoom=8,location=c(median(elephantData$long),median(elephantData$lat)),ask=FALSE)
+dev.off()
+
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
 ###################################################
 ### Northern fur seal example
 ###################################################
 #source(paste0(getwd(),"/nfsExample.R"))
-load(paste0(example_wd,"/nfsExample.RData"))
+load(paste0(example_wd,"nfsExample.RData"))
 
 nfsTimeInStates<-nfsFits$miSum$Par$timeInStates
 
@@ -58,7 +65,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ### Turtle example
 ###################################################
 #source(paste0(getwd(),"/turtleExample.R"))
-load(paste0(example_wd,"/turtleExample.RData"))
+load(paste0(example_wd,"turtleExample.RData"))
 
 turtle_miSum<-turtleFits$miSum[c("Par","data")]
 
@@ -80,9 +87,15 @@ rasty<-rep(rasty0,each=length(rastx0))
 
 x<-turtleFits$miSum$data$x/1000
 y<-turtleFits$miSum$data$y/1000
-pdf(file=paste0(getwd(),"/plot_turtleResults1.pdf"))
+
+pdf(file=paste0(getwd(),"/plot_turtleResults%03d.pdf"),onefile=FALSE)
 plot(turtleFits,plotCI=TRUE,covs=data.frame(angle_osc=1),ask=FALSE)
 dev.off()
+
+for(plt in seq(1,6)[-c(1,2,4)])
+  unlink(paste0("plot_turtleResults0",ifelse(plt>9,"","0"),plt,".pdf"))
+
+
 pdf(file=paste0(getwd(),"/plot_turtleResults2.pdf"),width=7,height=7*50/73)
 par(mar=c(4,4,0,1))
 plot(speedrast,col=gray.colors(20, start=1, end=0.3),xlab="easting (km)",ylab="northing (km)",legend.args=list(text='       speed (m/s)', side=3, line=1),box=FALSE,bty="n")
@@ -100,22 +113,25 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ### Grey seal example
 ###################################################
 #source(paste0(getwd(),"/greySealExample_TPM.R"))
-load(paste0(example_wd,"/greySealResults_TPM.RData"))
+load(paste0(example_wd,"greySealResults_TPM.RData"))
 
 greySealTimeInStates<-greySealPool$Par$timeInStates
 
 append.RData(greySealTimeInStates,file=paste0(getwd(),"/vignette_inputs.RData"))
 
-pdf(file=paste0(getwd(),"/plot_greySealResults1.pdf"))
+pdf(file=paste0(getwd(),"/plot_greySealResults%03d.pdf"),onefile=FALSE)
 plot(greySealPool,plotCI=TRUE,ask=FALSE)
 dev.off()
 
-load(paste0(example_wd,"/greySealData_TPM.RData"))
+for(plt in seq(1,18)[-c(2,6,9,13)])
+  unlink(paste0("plot_greySealResults0",ifelse(plt>9,"","0"),plt,".pdf"))
+
+load(paste0(getwd(),"/greySealData_TPM.RData"))
 load(paste0(getwd(),"/coastUTM.RData"))
 
 colvect<-c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2")
 
-pdf(file=paste0(getwd(),"/plot_greySealResults2.pdf"),width=7.25,height=5)
+png(file=paste0(getwd(),"/plot_greySealResults1.png"),width=7.25,height=5,units="in",res=90)
 plot(greySealPool$data$x,greySealPool$data$y,type="o", asp=1, pch=20,ylab="Latitude",xlab="Longitude",ylim=c(6060000,6289000),xlim=c(513000,925000),xaxt="n",yaxt="n",xaxs="i",yaxs="i")
 axis(1,labels=c(-2,0,2,4),at=c(565312,696098,(434680-312928+696098),(565330-312928+696098)))
 axis(2,labels=c(55,56,57),at=c(6094820,6206100,6317500))
@@ -156,7 +172,9 @@ lines(coastUTM$Easting, coastUTM$Northing)
 
 #add estimated locations for centres of attraction
 points(centers,col="#D55E00",pch=20,cex=cx)
+dev.off()
 
+png(file=paste0(getwd(),"/plot_greySealResults2.png"),width=7.25,height=5,units="in",res=90)
 plot(greySealSim$x,greySealSim$y,type="o", asp=1, pch=20,ylab="Latitude",xlab="Longitude",ylim=c(6060000,6289000),xlim=c(513000,925000),xaxt="n",yaxt="n",xaxs="i",yaxs="i")
 points(greySealSim$x,greySealSim$y,col=colvect[greySealSim$states],pch=20)
 axis(1,labels=c(-2,0,2,4),at=c(565312,696098,(434680-312928+696098),(565330-312928+696098)))
@@ -171,16 +189,21 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ### Elephant seal example
 ###################################################
 #source(paste0(getwd(),"/sesExample.R"))
-load(paste0(example_wd,"/sesExample.RData"))
+load(paste0(example_wd,"sesExample.RData"))
 
 sesCIbeta<-m3$CIbeta
 
 append.RData(tracks,file=paste0(getwd(),"/vignette_inputs.RData"))
 append.RData(sesCIbeta,file=paste0(getwd(),"/vignette_inputs.RData"))
 
-pdf(file=paste0(getwd(),"/plot_sesResults.pdf"))
+pdf(file=paste0(getwd(),"/plot_sesResults%03d.pdf"),onefile=FALSE)
 plot(m3,plotCI=TRUE,ask=FALSE)
 dev.off()
+
+for(plt in seq(1,27)[-c(1,3,7,9)])
+  unlink(paste0("plot_sesResults0",ifelse(plt>9,"","0"),plt,".pdf"))
+
+
 library(maps) # for map plots
 library(mapdata) # for map plots
 library(marmap) # to plot bathymetry

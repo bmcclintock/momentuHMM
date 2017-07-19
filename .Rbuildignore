@@ -1,3 +1,8 @@
 .travis.yml
 ^.*\.Rproj$
 ^\.Rproj\.user$
+vignettes/nfsData.RData
+vignettes/turtleData.RData
+vignettes/greySealData_TPM.RData
+vignettes/coastUTM.RData
+vignettes/sesData.csv

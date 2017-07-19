@@ -4,8 +4,6 @@ NEW FEATURES
 
 * Elephant seal example of Michelot et al (2017) added to vignette
 
-* Example data and scripts added to vignettes folder
-
 CHANGES
 
 * turning angles for lat/long coordinates (type='LL') now calculated based on initial bearings using geosphere::bearing in turnAngle
