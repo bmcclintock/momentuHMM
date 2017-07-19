@@ -11,9 +11,9 @@ append.RData <- function(x, file) {
 ###################################################
 #source(paste0(getwd(),"/elephantExample.R"))
 load(paste0(example_wd,"elephantExample.RData"))
-elephantFit$stateNames<-c("encamped","exploratory")
+m3$stateNames<-c("encamped","exploratory")
 
-activityBudgets<-table(viterbi(elephantFit))/nrow(elephantFit$data)
+activityBudgets<-table(viterbi(m3))/nrow(m3$data)
 
 URL <- paste0("https://www.datarepository.movebank.org/bitstream/handle/",
               "10255/move.373/Elliptical%20Time-Density%20Model%20%28Wall%",
@@ -27,12 +27,12 @@ save(rawData,activityBudgets,file=paste0(getwd(),"/vignette_inputs.RData"))
 #sp::coordinates(latlongDat)<-c("x","y")
 #sp::proj4string(latlongDat) = sp::CRS("+proj=utm +zone=30N +datum=WGS84" )
 #latlongDat<-sp::spTransform(latlongDat,sp::CRS("+proj=longlat +datum=WGS84"))
-#satPlotStates<-plotSat(as.data.frame(latlongDat),zoom=8,location=c(median(elephantData$long),median(elephantData$lat)),ask=FALSE,return=TRUE,states=viterbi(elephantFit),col=c("#009E73", "#F0E442"),stateNames=c("encamped","exploratory"))
+#satPlotStates<-plotSat(as.data.frame(latlongDat),zoom=8,location=c(median(elephantData$long),median(elephantData$lat)),ask=FALSE,return=TRUE,states=viterbi(m3),col=c("#009E73", "#F0E442"),stateNames=c("encamped","exploratory"))
 
-pr<-pseudoRes(elephantFit)
+pr<-pseudoRes(m3)
 acfLag<-24*14
 pdf(file=paste0(getwd(),"/plot_elephantResults%03d.pdf"),onefile=FALSE)
-plot(elephantFit,ask=FALSE,plotCI=TRUE,covs=data.frame(hour=12))
+plot(m3,ask=FALSE,plotCI=TRUE,covs=data.frame(hour=12))
 acf(pr[["stepRes"]], lag.max = acfLag, na.action = na.pass, xlab="Lag (hours)", main = "")
 acf(dataHMM$step,na.action=na.pass,lag=acfLag,main="",xlab="Lag (hours)")
 dev.off()

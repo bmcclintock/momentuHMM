@@ -377,12 +377,7 @@ crwOut <- crawlWrap(obsData=rawData, timeStep="hour", initial.state=inits,
 
 Here the desired time step is specified by the \verb|timeStep| argument, and the \verb|initial.state|, \verb|theta|, and \verb|fixPar| arguments are the same as for \verb|crawl::crwMLE| \citep{Johnson2017}. For the choice of initial parameters in \verb|crawlWrap|, we refer the reader to the documentation of the package crawl, in particular \verb|crawl::crwMLE| and \verb|crawl::crwPredict|. We now have a complete set of temporally-regular location data.
 
-Autocorrelation function estimates suggest there are 24-hour cycles in the step length data, and this presents an opporunity to demonstrate the use of the \verb|cosinor| function for incorporating cyclical behavior in model parameters using \verb|momentuHMM|. The ACF plot, shown in Figure \ref{fig:elephantResults1}, was obtained with:
-<<acf-before, echo=TRUE, eval=FALSE>>=
-acf(data$step[!is.na(data$step)],lag.max=300)
-@ 
-
-We create a \verb|momentuHMMData| object, and the 24-hour cosinor model covariate: 
+Autocorrelation function (ACF) estimates suggest there are 24-hour cycles in the step length data, and this presents an opporunity to demonstrate the use of the \verb|cosinor| function for incorporating cyclical behavior in model parameters using \verb|momentuHMM|. We create a \verb|momentuHMMData| object, and the 24-hour cosinor model covariate: 
 <<prepData, echo=TRUE, eval=FALSE>>=
 # create momentuHMMData object from crwData object
 dataHMM <- prepData(data=crwOut, covNames="temp")
@@ -391,7 +386,10 @@ dataHMM <- prepData(data=crwOut, covNames="temp")
 dataHMM$hour <- as.integer(strftime(dataHMM$time, format = "%H", tz="GMT"))
 @
 
-As seen here, the function \verb|prepData| can also be used for pre-processing the best predicted track data from \verb|crawlWrap| output. The 24-hour cosinor covariate (``hour'') is simply a set of integers $(0,1,\ldots,23)$ indicating the hour of day for each observation. 
+As seen here, the function \verb|prepData| can also be used for pre-processing the best predicted track data from \verb|crawlWrap| output. The 24-hour cosinor covariate (``hour'') is simply a set of integers $(0,1,\ldots,23)$ indicating the hour of day for each observation. The ACF plot of the step lengths, shown in Figure \ref{fig:elephantResults1}, was obtained with:
+<<acf-before, echo=TRUE, eval=FALSE>>=
+acf(dataHMM$step[!is.na(dataHMM$step)],lag.max=300)
+@ 
 
 Our aim is to fit a 2-state HMM to the elephant track that includes temperature effects on the turning angle concentration parameters and cycling temperature effects (with a 24-hour periodicity) on the step length and state transition probability parameters. A complex model, like this one, requires many parameters, such that it is challenging to choose good starting parameter values for the optimization. Here, we take an incremental approach, starting from a simpler model with no covariates. In \verb|momentuHMM|, the function \verb|getPar0| extracts initial parameters from a fitted (nested) HMM, given arguments for the more complex model.
 
@@ -407,7 +405,7 @@ dist = list(step = "gamma", angle = "wrpcauchy")
 Par0_m1 <- list(step=c(100,500,100,200),angle=c(0.3,0.7))
 
 # fit model
-m1 <- fitHMM(data = data, nbStates = 2, dist = dist, Par0 = Par0_m1, 
+m1 <- fitHMM(data = dataHMM, nbStates = 2, dist = dist, Par0 = Par0_m1, 
              estAngleMean = list(angle=FALSE), stateNames = stateNames)
 @ 
 
@@ -422,7 +420,7 @@ formula <- ~ temp * cosinor(hour, period = 24)
 Par0_m2 <- getPar0(model=m1, formula=formula)
 
 # fit model
-m2 <- fitHMM(data = data, nbStates = 2, dist = dist, Par0 = Par0_m2$Par, 
+m2 <- fitHMM(data = dataHMM, nbStates = 2, dist = dist, Par0 = Par0_m2$Par, 
              beta0=Par0_m2$beta, stateNames = stateNames, formula=formula)
 @ 
 
@@ -440,7 +438,7 @@ DM <- list(step = list(mean = ~ temp * cosinor(hour, period = 24),
 Par0_m3 <- getPar0(model=m2, formula=formula, DM=DM)
 
 # fit model
-m3 <- fitHMM(data = data, nbStates = 2, dist = dist, Par0 = Par0_m3$Par, 
+m3 <- fitHMM(data = dataHMM, nbStates = 2, dist = dist, Par0 = Par0_m3$Par, 
              beta0 = Par0_m3$beta, DM = DM, stateNames = stateNames,
              formula = formula)
 @ 
@@ -450,7 +448,7 @@ The above model \verb|m3| identifed a state of slow undirected movement (``encam
 # decode most likely state sequence
 states <- viterbi(m3)
 # derive percentage of time spent in each state
-table(states)/nrow(data)
+table(states)/nrow(dataHMM)
 @
 
 Here, about \Sexpr{round(as.numeric(activityBudgets[1]),2)*100}\% of the steps were attributed to the ``encamped'' state, and \Sexpr{round(as.numeric(activityBudgets[2]),2)*100}\% were attributed to the ``exploratory'' state. 
