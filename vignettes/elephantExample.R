@@ -32,13 +32,13 @@ crwOut<-crawlWrap(rawData,ncores=1,timeStep="hour",initial.state=inits,theta=c(2
 plot(crwOut,ask=FALSE)
 
 # create momentuHMMData object from crwData object
-dataHMM <- prepData(data=crwOut, covNames="temp")
+elephantData <- prepData(data=crwOut, covNames="temp")
 
 # add cosinor covariate based on hour of day
-dataHMM$hour <- as.integer(strftime(dataHMM$time, format = "%H", tz="GMT"))
+elephantData$hour <- as.integer(strftime(elephantData$time, format = "%H", tz="GMT"))
 
 # acf plot of step lengths
-acf(dataHMM$step[!is.na(dataHMM$step)],lag.max=300)
+acf(elephantData$step[!is.na(elephantData$step)],lag.max=300)
 
 # label states
 stateNames <- c("encamped","exploratory")
@@ -49,7 +49,7 @@ dist = list(step = "gamma", angle = "wrpcauchy")
 Par0_m1 <- list(step=c(100,500,100,200),angle=c(0.3,0.7))
 
 # fit model
-m1 <- fitHMM(data = dataHMM, nbStates = 2, dist = dist, Par0 = Par0_m1, 
+m1 <- fitHMM(data = elephantData, nbStates = 2, dist = dist, Par0 = Par0_m1, 
              estAngleMean = list(angle=FALSE), stateNames = stateNames)
 
 
@@ -60,7 +60,7 @@ formula <- ~ temp * cosinor(hour, period = 24)
 Par0_m2 <- getPar0(model=m1, formula=formula)
 
 # fit model
-m2 <- fitHMM(data = dataHMM, nbStates = 2, dist = dist, Par0 = Par0_m2$Par, 
+m2 <- fitHMM(data = elephantData, nbStates = 2, dist = dist, Par0 = Par0_m2$Par, 
              beta0=Par0_m2$beta, stateNames = stateNames, formula=formula)
 
 
@@ -73,7 +73,7 @@ DM <- list(step = list(mean = ~ temp * cosinor(hour, period = 24),
 Par0_m3 <- getPar0(model=m2, formula=formula, DM=DM)
 
 # fit model
-m3 <- fitHMM(data = dataHMM, nbStates = 2, dist = dist, Par0 = Par0_m3$Par, 
+m3 <- fitHMM(data = elephantData, nbStates = 2, dist = dist, Par0 = Par0_m3$Par, 
              beta0 = Par0_m3$beta, DM = DM, stateNames = stateNames,
              formula = formula)
 
@@ -83,7 +83,7 @@ AIC(m1,m2,m3)
 # decode most likely state sequence
 states <- viterbi(m3)
 # derive percentage of time spent in each state
-table(states)/nrow(dataHMM)
+table(states)/nrow(elephantData)
 
 # plot results for model m3
 plot(m3, plotCI = TRUE, covs = data.frame(hour=12))

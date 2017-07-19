@@ -13,45 +13,19 @@ load(paste0(example_wd,"elephantExample.RData"))
 
 activityBudgets<-table(viterbi(m3))/nrow(m3$data)
 
-URL <- paste0("https://www.datarepository.movebank.org/bitstream/handle/",
-              "10255/move.373/Elliptical%20Time-Density%20Model%20%28Wall%",
-              "20et%20al.%202014%29%20African%20Elephant%20Dataset%20%",
-              "28Source-Save%20the%20Elephants%29.csv")
-rawData <- read.csv(url(URL))
-
-# select and rename relevant columns
-rawData <- rawData[,c(11,3,4,5,6)]
-colnames(rawData) <- c("ID","time","lon","lat","temp")
-
-# only keep first track
-rawData <- subset(rawData,ID==unique(ID)[1])
-
-rawData$time <- as.POSIXct(rawData$time,tz="GMT")
-
-# project to UTM coordinates using package rgdal
-library(rgdal)
-llcoord <- SpatialPoints(rawData[,3:4], 
-                         proj4string=CRS("+proj=longlat +datum=WGS84"))
-utmcoord <- spTransform(llcoord,CRS("+proj=utm +zone=30 ellps=WGS84"))
-
-# add UTM locations to data frame
-rawData$x <- attr(utmcoord,"coords")[,1]
-rawData$y <- attr(utmcoord,"coords")[,2]
-
 save(activityBudgets,file=paste0(getwd(),"/vignette_inputs.RData"))
 
-#latlongDat<-as.data.frame(dataHMM)
+#latlongDat<-as.data.frame(elephantData)
 #sp::coordinates(latlongDat)<-c("x","y")
 #sp::proj4string(latlongDat) = sp::CRS("+proj=utm +zone=30N +datum=WGS84" )
 #latlongDat<-sp::spTransform(latlongDat,sp::CRS("+proj=longlat +datum=WGS84"))
 #satPlotStates<-plotSat(as.data.frame(latlongDat),zoom=8,location=c(median(rawData$lon),median(rawData$lat)),ask=FALSE,return=TRUE,states=viterbi(m3),col=c("#009E73", "#F0E442"),stateNames=c("encamped","exploratory"))
 
-pr<-pseudoRes(m3)
 acfLag<-24*14
 pdf(file=paste0(getwd(),"/plot_elephantResults%03d.pdf"),onefile=FALSE)
 plot(m3,ask=FALSE,plotCI=TRUE,covs=data.frame(hour=12))
 acf(pr[["stepRes"]], lag.max = acfLag, na.action = na.pass, xlab="Lag (hours)", main = "")
-acf(dataHMM$step,na.action=na.pass,lag=acfLag,main="",xlab="Lag (hours)")
+acf(elephantData$step,na.action=na.pass,lag=acfLag,main="",xlab="Lag (hours)")
 dev.off()
 
 for(plt in seq(1,17)[-c(1,2,9,10,12,13,15,16,17)])

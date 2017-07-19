@@ -312,7 +312,7 @@ The function \verb|simData| can be used to simulate multivariate HMM data from s
   
 \section{Examples}
 \label{sec:example}
-We will now demonstrate some of the capabilities of \verb|momentuHMM| using real telemetry data. These examples are intended for demonstration purposes only, and we do not claim these example analyses represent improvements relative to previous or alternative analyses for these data sets. While only some of the key workflow elements are included here, complete R code and further details for these analyses are available on request.
+We will now demonstrate some of the capabilities of \verb|momentuHMM| using real telemetry data. These examples are intended for demonstration purposes only, and we do not claim these example analyses represent improvements relative to previous or alternative analyses for these data sets. While only some of the key workflow elements are included here, complete R code and further details for these analyses are available in the ``vignettes'' source directory.
 
 \subsection{African elephant}
 \label{sec:elephant}
@@ -392,22 +392,22 @@ Autocorrelation function (ACF) estimates suggest there are 24-hour cycles in the
 \begin{Schunk}
 \begin{Sinput}
 > # create momentuHMMData object from crwData object
-> dataHMM <- prepData(data=crwOut, covNames="temp")
+> elephantData <- prepData(data=crwOut, covNames="temp")
 > # add cosinor covariate based on hour of day
-> dataHMM$hour <- as.integer(strftime(dataHMM$time, format = "%H", tz="GMT"))
+> elephantData$hour <- as.integer(strftime(elephantData$time, format = "%H", tz="GMT"))
 \end{Sinput}
 \end{Schunk}
 
 As seen here, the function \verb|prepData| can also be used for pre-processing the best predicted track data from \verb|crawlWrap| output. The 24-hour cosinor covariate (``hour'') is simply a set of integers $(0,1,\ldots,23)$ indicating the hour of day for each observation. The ACF plot of the step lengths, shown in Figure \ref{fig:elephantResults1}, was obtained with:
 \begin{Schunk}
 \begin{Sinput}
-> acf(dataHMM$step[!is.na(dataHMM$step)],lag.max=300)
+> acf(elephantData$step[!is.na(elephantData$step)],lag.max=300)
 \end{Sinput}
 \end{Schunk}
 
-Our aim is to fit a 2-state HMM to the elephant track that includes temperature effects on the turning angle concentration parameters and cycling temperature effects (with a 24-hour periodicity) on the step length and state transition probability parameters. A complex model, like this one, requires many parameters, such that it is challenging to choose good starting parameter values for the optimization. Here, we take an incremental approach, starting from a simpler model with no covariates. In \verb|momentuHMM|, the function \verb|getPar0| extracts initial parameters from a fitted (nested) HMM, given arguments for the more complex model.
+Our aim is to fit a 2-state HMM to the elephant track that includes temperature effects on the turning angle concentration parameters and cycling temperature effects (with a 24-hour periodicity) on the step length and state transition probability parameters. Complex models such as this can require many parameters, and it can be challenging to choose good starting parameter values for the optimization. Here, we take an incremental approach, starting from a simpler model with no covariates. In \verb|momentuHMM|, the function \verb|getPar0| extracts initial parameters from a fitted (nested) HMM, given arguments for the more complex model.
 
-For the covariate-free 2-state model, six initial parameters need to be chosen: for each state, the mean and standard deviation of the gamma distribution of step lengths, and the concentration of the wrapped Cauchy distribution of turning angles. Looking at the histograms of the step lengths and the turning angles (e.g.\ output by \verb|plot(data)|) is often useful to choose good starting parameter values.
+For the covariate-free 2-state model, six initial parameters need to be chosen: for each state, the mean and standard deviation of the gamma distribution of step lengths, and the concentration of the wrapped Cauchy distribution of turning angles. Looking at the histograms of the step lengths and the turning angles (e.g.\ output by \verb|plot(elephantData)|) is often useful to choose good starting parameter values.
 
 \begin{Schunk}
 \begin{Sinput}
@@ -418,7 +418,7 @@ For the covariate-free 2-state model, six initial parameters need to be chosen: 
 > # initial parameters
 > Par0_m1 <- list(step=c(100,500,100,200),angle=c(0.3,0.7))
 > # fit model
-> m1 <- fitHMM(data = dataHMM, nbStates = 2, dist = dist, Par0 = Par0_m1, 
+> m1 <- fitHMM(data = elephantData, nbStates = 2, dist = dist, Par0 = Par0_m1, 
 +              estAngleMean = list(angle=FALSE), stateNames = stateNames)
 \end{Sinput}
 \end{Schunk}
@@ -433,7 +433,7 @@ We can build on complexity, by including the temperature and time of day as cova
 > # initial parameters (obtained from nested model m1)
 > Par0_m2 <- getPar0(model=m1, formula=formula)
 > # fit model
-> m2 <- fitHMM(data = dataHMM, nbStates = 2, dist = dist, Par0 = Par0_m2$Par, 
+> m2 <- fitHMM(data = elephantData, nbStates = 2, dist = dist, Par0 = Par0_m2$Par, 
 +              beta0=Par0_m2$beta, stateNames = stateNames, formula=formula)
 \end{Sinput}
 \end{Schunk}
@@ -451,7 +451,7 @@ Finally, we can fit the more complex model, including the effect of temperature 
 > # initial parameters (obtained from nested model m2)
 > Par0_m3 <- getPar0(model=m2, formula=formula, DM=DM)
 > # fit model
-> m3 <- fitHMM(data = dataHMM, nbStates = 2, dist = dist, Par0 = Par0_m3$Par, 
+> m3 <- fitHMM(data = elephantData, nbStates = 2, dist = dist, Par0 = Par0_m3$Par, 
 +              beta0 = Par0_m3$beta, DM = DM, stateNames = stateNames,
 +              formula = formula)
 \end{Sinput}
@@ -463,7 +463,7 @@ The above model \verb|m3| identifed a state of slow undirected movement (``encam
 > # decode most likely state sequence
 > states <- viterbi(m3)
 > # derive percentage of time spent in each state
-> table(states)/nrow(dataHMM)
+> table(states)/nrow(elephantData)
 \end{Sinput}
 \end{Schunk}
 
