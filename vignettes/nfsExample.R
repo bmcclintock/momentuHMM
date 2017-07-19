@@ -1,5 +1,7 @@
 library(momentuHMM)
-load("nfsData.RData")
+
+# load nfs data from github
+load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/nfsData.RData"))
 
 nSims <- 100 # number of imputatons
 retryFits <- 30 # number attempt to re-fit based on random perturbation

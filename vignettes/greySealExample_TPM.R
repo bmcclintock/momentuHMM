@@ -1,6 +1,8 @@
 library(momentuHMM)
 library(dtwclust)
-load("greySealData_TPM.RData")
+
+# load grey seal data from github
+load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/greySealData_TPM.RData"))
 
 nSims <- 400 # number of imputatons
 ncores <- 7 # number of CPU cores

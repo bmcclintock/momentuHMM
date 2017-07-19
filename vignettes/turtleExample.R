@@ -1,6 +1,8 @@
 library(momentuHMM)
 library(sp)
-load("turtleData.RData")
+
+# load turtle data from github
+load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/turtleData.RData"))
 
 nSims <- 100 # number of imputatons
 retryFits <- 30 # number attempt to re-fit based on random perturbation

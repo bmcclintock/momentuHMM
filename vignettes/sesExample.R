@@ -1,6 +1,7 @@
 library(momentuHMM)
 
-tracks <- read.csv("sesData.csv")
+# load ses data from github
+tracks <- read.csv(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/sesData.csv"))
 tracks <- tracks[,c(1,2,3)]
 colnames(tracks) <- c("ID","x","y")
 
