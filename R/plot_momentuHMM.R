@@ -177,14 +177,14 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     if(nrow(covs)>1) stop('covs must consist of a single row')
     if(!all(names(covs) %in% names(m$data))) stop('invalid covs specified')
     if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(m$data$ID))
+    for(j in names(m$data)[which(names(m$data) %in% names(covs))]){
+      if(inherits(m$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(m$data[[j]]))
+      if(is.na(covs[[j]])) stop("check value for ",j)
+    }
     for(j in names(m$data)[which(!(names(m$data) %in% names(covs)) & unlist(lapply(m$data,function(x) any(class(x) %in% meansList))))]){
       if(inherits(m$data[[j]],"factor")) covs[[j]] <- m$data[[j]][which(m$data$ID %in% ID)][1]
       else if(inherits(m$data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(m$data[[j]][which(m$data$ID %in% ID)][!is.na(m$data[[j]][which(m$data$ID %in% ID)])])
       else covs[[j]]<-mean(m$data[[j]][which(m$data$ID %in% ID)],na.rm=TRUE)
-    }
-    for(j in names(m$data)[which(names(m$data) %in% names(covs))]){
-      if(inherits(m$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(m$data[[j]]))
-      if(is.na(covs[[j]])) stop("check value for ",j)
     }
   }
   
