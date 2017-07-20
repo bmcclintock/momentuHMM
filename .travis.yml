@@ -9,3 +9,8 @@ before_install:
 r_build_args: --compact-vignettes="gs+qpdf"
 
 r_check_args: --as-cran
+
+addons:
+  apt:
+    packages: 
+      - ghostscript
