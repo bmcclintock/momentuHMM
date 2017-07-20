@@ -1,4 +1,54 @@
-\documentclass[12pt]{article}
+\documentclass[12pt]{article}\usepackage[]{graphicx}\usepackage[]{color}
+%% maxwidth is the original width if it is less than linewidth
+%% otherwise use linewidth (to make sure the graphics do not exceed the margin)
+\makeatletter
+\def\maxwidth{ %
+  \ifdim\Gin@nat@width>\linewidth
+    \linewidth
+  \else
+    \Gin@nat@width
+  \fi
+}
+\makeatother
+
+\definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
+\newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
+\newcommand{\hlstr}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
+\newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
+\newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
+\newcommand{\hlstd}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
+\newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
+\newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
+\newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
+\newcommand{\hlkwd}[1]{\textcolor[rgb]{0.737,0.353,0.396}{\textbf{#1}}}%
+\let\hlipl\hlkwb
+
+\usepackage{framed}
+\makeatletter
+\newenvironment{kframe}{%
+ \def\at@end@of@kframe{}%
+ \ifinner\ifhmode%
+  \def\at@end@of@kframe{\end{minipage}}%
+  \begin{minipage}{\columnwidth}%
+ \fi\fi%
+ \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
+ \colorbox{shadecolor}{##1}\hskip-\fboxsep
+     % There is no \\@totalrightmargin, so:
+     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
+ \MakeFramed {\advance\hsize-\width
+   \@totalleftmargin\z@ \linewidth\hsize
+   \@setminipage}}%
+ {\par\unskip\endMakeFramed%
+ \at@end@of@kframe}
+\makeatother
+
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
+\definecolor{messagecolor}{rgb}{0, 0, 0}
+\definecolor{warningcolor}{rgb}{1, 0, 1}
+\definecolor{errorcolor}{rgb}{1, 0, 0}
+\newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
+
+\usepackage{alltt}
 \usepackage[latin9]{inputenc}
 \usepackage{geometry}
 \geometry{verbose}
@@ -18,11 +68,13 @@
 % \usepackage{lineno}
 
 \renewcommand{\baselinestretch}{1.3}
-
-\usepackage{Sweave}
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 \begin{document}
-\input{momentuHMM-concordance}
-%\VignetteIndexEntry{momentuHMM vignette}
+
+
+
+%\VignetteIndexEntry{Guide to using momentuHMM}
+%\VignetteEngine{knitr::knitr}
 
 % set margin to 4cm for title page
 \newgeometry{margin=4cm}
@@ -225,63 +277,72 @@ Once a \verb|momentuHMMData| object has been created using \verb|prepData|, then
   \item{\verb|Par0|} A named list containing vectors of starting values for the state-dependent probability distribution parameters of each data stream
 \end{itemize}
 These seven arguments are all that are needed in order to fit the HMMs currently supported in \verb|moveHMM| \citep{MichelotEtAl2016}. For example, here is how the analysis of 15 ``wild haggis'' tracks described in \cite{MichelotEtAl2016} would be implemented using \verb|momentuHMM|:
-\begin{Schunk}
-\begin{Sinput}
-> library(momentuHMM)
-> ### Load raw data
-> rawHaggis<-read.csv("rawHaggises.csv")
-> ### Process data
-> processedHaggis<-prepData(data=rawHaggis,covNames=c("slope","temp"))
-> ### Fit HMM	
-> # initial step distribution natural scale parameters
-> stepPar0 <- c(1,5,0.5,3) # (mu_1,mu_2,sd_1,sd_2)
-> # initial angle distribution natural scale parameters 
-> anglePar0 <- c(0,0,1,8) # (mean_1,mean_2,concentration_1,concentration_2)       	
-> fitHaggis <- fitHMM(data = processedHaggis, nbStates = 2,
-+                     dist = list(step = "gamma", angle = "vm"),
-+                     Par0 = list(step = stepPar0, angle = anglePar0),
-+                     formula = ~ slope + I(slope^2),
-+                     estAngleMean = list(angle=TRUE))
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{library}\hlstd{(momentuHMM)}
+\hlcom{### Load raw data}
+\hlstd{rawHaggis}\hlkwb{<-}\hlkwd{read.csv}\hlstd{(}\hlstr{"rawHaggises.csv"}\hlstd{)}
+\hlcom{### Process data}
+\hlstd{processedHaggis}\hlkwb{<-}\hlkwd{prepData}\hlstd{(}\hlkwc{data}\hlstd{=rawHaggis,}\hlkwc{covNames}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"slope"}\hlstd{,}\hlstr{"temp"}\hlstd{))}
+
+\hlcom{### Fit HMM	}
+\hlcom{# initial step distribution natural scale parameters}
+\hlstd{stepPar0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{5}\hlstd{,}\hlnum{0.5}\hlstd{,}\hlnum{3}\hlstd{)} \hlcom{# (mu_1,mu_2,sd_1,sd_2)}
+\hlcom{# initial angle distribution natural scale parameters }
+\hlstd{anglePar0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{8}\hlstd{)} \hlcom{# (mean_1,mean_2,concentration_1,concentration_2)       	}
+\hlstd{fitHaggis} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(}\hlkwc{data} \hlstd{= processedHaggis,} \hlkwc{nbStates} \hlstd{=} \hlnum{2}\hlstd{,}
+                    \hlkwc{dist} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{=} \hlstr{"gamma"}\hlstd{,} \hlkwc{angle} \hlstd{=} \hlstr{"vm"}\hlstd{),}
+                    \hlkwc{Par0} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{= stepPar0,} \hlkwc{angle} \hlstd{= anglePar0),}
+                    \hlkwc{formula} \hlstd{=} \hlopt{~} \hlstd{slope} \hlopt{+} \hlkwd{I}\hlstd{(slope}\hlopt{^}\hlnum{2}\hlstd{),}
+                    \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 Note that many of the arguments in \verb|fitHMM| are lists, with each element of the list corresponding to a data stream.  The list names provided in \verb|dist|, \verb|Par0|, and \verb|estAngleMean| (e.g. `step' and `angle') must therefore have a corresponding column in \verb|data| with the same name.  Additional data streams can be added to the model by simply adding the additional elements to these list arguments (see example in section \ref{sec:nfs}).  
 
 As seen above, the \verb|formula| argument can include many of the functions and operators commonly used to construct terms in R linear model formulas (e.g. \verb|a*b|, \verb|a:b|, \verb|cos(a)|). Unique to \verb|momentuHMM|, the \verb|formula| argument can also be used to specify transition probability matrix models that incorporate cyclical patterns (using the \verb|cosinor| special function; see example in section \ref{sec:elephant}), splines for explaining other more complicated patterns (e.g., \verb|bs| and \verb|ns| functions in the R base package \verb|splines|), and factor variables (e.g., \verb|formula=~ID| for individual-level effects).  By default the \verb|formula| argument applies to all state transition probabilities, but the special functions \verb|state| and \verb|betaCol| allow for state- and parameter-specific formulas to be specified (see example in section \ref{sec:greySeal}). Specific state transition probabilities can also be fixed to zero (or any other value) using the \verb|fixPar| argument, which can be useful for incorporating more behavioral realism.  For example, \verb|fixPar| can be used to prohibit or enforce switching from one particular state to another (possibly as a function of spatio-temporal covariates). 
 
 Similar to the \verb|formula| argument for state transition probability modelling, it is through the \verb|DM| argument of \verb|fitHMM| that models are specified for the state-dependent probability distribution parameters for each data stream.  \verb|DM| is a list argument containing an element for each data stream, but each element itself is also a list specifying the design matrix formulas for each parameter. For example, the following fits the exact same wild haggis model as above, but employs a user-specified (intercept-only) design matrix for the step length data stream:
-\begin{Schunk}
-\begin{Sinput}
-> stepDM <- list(mean = ~1, sd = ~1)
-> ### Fit HMM	using user-specified DM
-> fitHaggisDM <- fitHMM(data = processedHaggis, nbStates = 2,
-+                       dist = list(step = "gamma", angle = "vm"),
-+                       DM = list(step = stepDM),
-+                       Par0 = list(step = log(stepPar0), angle = anglePar0),
-+                       formula = ~ slope + I(slope^2),
-+                       estAngleMean = list(angle=TRUE))
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{stepDM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mean} \hlstd{=} \hlopt{~}\hlnum{1}\hlstd{,} \hlkwc{sd} \hlstd{=} \hlopt{~}\hlnum{1}\hlstd{)}
+
+\hlcom{### Fit HMM	using user-specified DM}
+\hlstd{fitHaggisDM} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(}\hlkwc{data} \hlstd{= processedHaggis,} \hlkwc{nbStates} \hlstd{=} \hlnum{2}\hlstd{,}
+                      \hlkwc{dist} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{=} \hlstr{"gamma"}\hlstd{,} \hlkwc{angle} \hlstd{=} \hlstr{"vm"}\hlstd{),}
+                      \hlkwc{DM} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{= stepDM),}
+                      \hlkwc{Par0} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{=} \hlkwd{log}\hlstd{(stepPar0),} \hlkwc{angle} \hlstd{= anglePar0),}
+                      \hlkwc{formula} \hlstd{=} \hlopt{~} \hlstd{slope} \hlopt{+} \hlkwd{I}\hlstd{(slope}\hlopt{^}\hlnum{2}\hlstd{),}
+                      \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 Note that when \verb|DM| is specified for a data stream, the initial parameter values (\verb|Par0|) for that data stream now correspond to columns of the resulting design matrix and must be on the working scale instead of the natural scale.  In this case, because the log link is used for the natural parameters of the gamma distribution, \verb|Par0$step| was specified on the log scale.  The functions \verb|getPar0| and \verb|getParDM| are designed to assist users in the specification of design matrices and corresponding initial values on the working scale for any given model (see package documentation for further details).  \verb|DM| formulas are just as flexible as the \verb|formula| argument and, in addition to common linear model formula functions and operators, can also include cyclical cosinor models, splines, factor variables, and state-specific probability distribution parameter formulas (see examples in sections \ref{sec:turtle} and \ref{sec:greySeal}). As with the state transition probabilities, working parameters for probability distributions can also be fixed to user-specified values using the \verb|fixPar| argument.
 
 Specification of design matrices using \verb|DM| is not limited to formulas. Alternatively, ``pseudo-design'' matrices can be specified, using an R matrix with rows corresponding to the natural parameters and columns corresponding to the working parameters. The elements in the matrix may be numeric or character strings containing model formula terms (see examples in sections \ref{sec:nfs} and \ref{sec:greySeal}). Using a pseudo-design matrix for step length, the following is yet another way to implement the exact same wild haggis model:
-\begin{Schunk}
-\begin{Sinput}
-> stepDMp <- matrix(c(1,0,0,0,
-+                    0,1,0,0,
-+                    0,0,1,0,
-+                    0,0,0,1),4,4,byrow=TRUE)
-> rownames(stepDMp) <- c("mean_1","mean_2","sd_1","sd_2")
-> colnames(stepDMp) <- c("mean_1:(Intercept)","mean_2:(Intercept)",
-+                       "sd_1:(Intercept)","sd_2:(Intercept)")
-> ### Fit HMM	using user-specified DM
-> fitHaggisDMp <- fitHMM(data = processedHaggis, nbStates = 2,
-+                        dist = list(step = "gamma", angle = "vm"),
-+                        DM = list(step = stepDMp),
-+                        Par0 = list(step = log(stepPar0), angle = anglePar0),
-+                        formula = ~ slope + I(slope^2),
-+                        estAngleMean = list(angle=TRUE))
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{stepDMp} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
+                   \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
+                   \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}
+                   \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{),}\hlnum{4}\hlstd{,}\hlnum{4}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{)}
+\hlkwd{rownames}\hlstd{(stepDMp)} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"mean_1"}\hlstd{,}\hlstr{"mean_2"}\hlstd{,}\hlstr{"sd_1"}\hlstd{,}\hlstr{"sd_2"}\hlstd{)}
+\hlkwd{colnames}\hlstd{(stepDMp)} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"mean_1:(Intercept)"}\hlstd{,}\hlstr{"mean_2:(Intercept)"}\hlstd{,}
+                      \hlstr{"sd_1:(Intercept)"}\hlstd{,}\hlstr{"sd_2:(Intercept)"}\hlstd{)}
+
+\hlcom{### Fit HMM	using user-specified DM}
+\hlstd{fitHaggisDMp} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(}\hlkwc{data} \hlstd{= processedHaggis,} \hlkwc{nbStates} \hlstd{=} \hlnum{2}\hlstd{,}
+                       \hlkwc{dist} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{=} \hlstr{"gamma"}\hlstd{,} \hlkwc{angle} \hlstd{=} \hlstr{"vm"}\hlstd{),}
+                       \hlkwc{DM} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{= stepDMp),}
+                       \hlkwc{Par0} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{=} \hlkwd{log}\hlstd{(stepPar0),} \hlkwc{angle} \hlstd{= anglePar0),}
+                       \hlkwc{formula} \hlstd{=} \hlopt{~} \hlstd{slope} \hlopt{+} \hlkwd{I}\hlstd{(slope}\hlopt{^}\hlnum{2}\hlstd{),}
+                       \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 (note that column and rownames for pseudo-design matrices are not required but can be useful). Pseudo-design matrices allow for the sharing of common working parameters (such as intercept terms) among natural scale parameters, and this can be used to constrain natural scale parameters (e.g., $\mu_1 \le \mu_2$) when used in tandem with the \verb|cons| argument.  This is particularly useful for preventing state label switching when repeatedly fitting the same HMM using multiple imputation methods (see section \ref{sec:mi}).
 
 Another noteworthy \verb|fitHMM| argument, \verb|circularAngleMean|, is a list argument that enables users to specify circular-circular regression models for the mean $(\mu)$ parameter of angular distributions, such as the wrapped Cauchy and von Mises, instead of circular-linear models based on the tangent link function (Table \ref{tab:pdfs}). When \verb|circularAngleMean| is specified as \verb|TRUE| for any given angular data stream (e.g. turning angle), then a special link function based on \cite{DuchesneEtAl2015} is used:
@@ -314,158 +375,192 @@ The function \verb|simData| can be used to simulate multivariate HMM data from s
 \label{sec:example}
 We will now demonstrate some of the capabilities of \verb|momentuHMM| using real telemetry data. These examples are intended for demonstration purposes only, and we do not claim these example analyses represent improvements relative to previous or alternative analyses for these data sets. While only some of the key workflow elements are included here, complete R code and further details for these analyses are available in the ``vignettes'' source directory.
 
+
 \subsection{African elephant}
 \label{sec:elephant}
 As our first example, we use an African elephant ({\it Loxodonta africana}) bull track described in \cite{WallEtAl2014} and publicly available from the movebank.org data repository. 
 
 We can load the data from the URL (this requires an Internet connection):
-\begin{Schunk}
-\begin{Sinput}
-> URL <- paste0("https://www.datarepository.movebank.org/bitstream/handle/",
-+               "10255/move.373/Elliptical%20Time-Density%20Model%20%28Wall%",
-+               "20et%20al.%202014%29%20African%20Elephant%20Dataset%20%",
-+               "28Source-Save%20the%20Elephants%29.csv")
-> rawData <- read.csv(url(URL))
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{URL} \hlkwb{<-} \hlkwd{paste0}\hlstd{(}\hlstr{"https://www.datarepository.movebank.org/bitstream/handle/"}\hlstd{,}
+              \hlstr{"10255/move.373/Elliptical%20Time-Density%20Model%20%28Wall%"}\hlstd{,}
+              \hlstr{"20et%20al.%202014%29%20African%20Elephant%20Dataset%20%"}\hlstd{,}
+              \hlstr{"28Source-Save%20the%20Elephants%29.csv"}\hlstd{)}
+\hlstd{rawData} \hlkwb{<-} \hlkwd{read.csv}\hlstd{(}\hlkwd{url}\hlstd{(URL))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 The data set contains two tracks; for this analysis, we only consider the first one. In addition to hourly locations, the tag also collected external temperature data. We subset the data frame to keep only the relevant rows and columns:
-\begin{Schunk}
-\begin{Sinput}
-> # select and rename relevant columns
-> rawData <- rawData[,c(11,3,4,5,6)]
-> colnames(rawData) <- c("ID","time","lon","lat","temp")
-> # only keep first track
-> rawData <- subset(rawData,ID==unique(ID)[1])
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# select and rename relevant columns}
+\hlstd{rawData} \hlkwb{<-} \hlstd{rawData[,}\hlkwd{c}\hlstd{(}\hlnum{11}\hlstd{,}\hlnum{3}\hlstd{,}\hlnum{4}\hlstd{,}\hlnum{5}\hlstd{,}\hlnum{6}\hlstd{)]}
+\hlkwd{colnames}\hlstd{(rawData)} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"ID"}\hlstd{,}\hlstr{"time"}\hlstd{,}\hlstr{"lon"}\hlstd{,}\hlstr{"lat"}\hlstd{,}\hlstr{"temp"}\hlstd{)}
+
+\hlcom{# only keep first track}
+\hlstd{rawData} \hlkwb{<-} \hlkwd{subset}\hlstd{(rawData,ID}\hlopt{==}\hlkwd{unique}\hlstd{(ID)[}\hlnum{1}\hlstd{])}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 The data now has the following columns:
-\begin{Schunk}
-\begin{Sinput}
-> head(rawData)
-\end{Sinput}
-\begin{Soutput}
-           ID                    time       lon      lat temp
-1 Salif Keita 2008-03-22 17:00:00.000 -2.160167 15.65350   38
-2 Salif Keita 2008-03-22 18:00:00.000 -2.160075 15.65452   35
-3 Salif Keita 2008-03-22 19:00:00.000 -2.159902 15.65451   32
-4 Salif Keita 2008-03-22 20:00:00.000 -2.159435 15.65489   30
-5 Salif Keita 2008-03-22 21:00:00.000 -2.158113 15.65512   29
-6 Salif Keita 2008-03-22 22:00:00.000 -2.157848 15.65461   28
-\end{Soutput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{head}\hlstd{(rawData)}
+\end{alltt}
+\begin{verbatim}
+##            ID                    time       lon      lat temp
+## 1 Salif Keita 2008-03-22 17:00:00.000 -2.160167 15.65350   38
+## 2 Salif Keita 2008-03-22 18:00:00.000 -2.160075 15.65452   35
+## 3 Salif Keita 2008-03-22 19:00:00.000 -2.159902 15.65451   32
+## 4 Salif Keita 2008-03-22 20:00:00.000 -2.159435 15.65489   30
+## 5 Salif Keita 2008-03-22 21:00:00.000 -2.158113 15.65512   29
+## 6 Salif Keita 2008-03-22 22:00:00.000 -2.157848 15.65461   28
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
 
 Location measurement error is negligible for these terrestrial GPS data, although about 1\% of the hourly observations collected between 22 March 2008 and 30 September 2010 are missing. Instead of simply ignoring these missing data, we can employ \verb|crawlWrap| to predict the missing locations based on the CTCRW model of \cite{JohnsonEtAl2008} prior to conducting our HMM analysis.
 
 To use \verb|crawlWrap|, we convert times from factors to POSIX, and project the observed locations to UTM coordinates:
-\begin{Schunk}
-\begin{Sinput}
-> # convert times from factors to POSIX
-> rawData$time <- as.POSIXct(rawData$time,tz="GMT")
-> # project to UTM coordinates using package rgdal
-> library(rgdal)
-> llcoord <- SpatialPoints(rawData[,3:4], 
-+                          proj4string=CRS("+proj=longlat +datum=WGS84"))
-> utmcoord <- spTransform(llcoord,CRS("+proj=utm +zone=30 ellps=WGS84"))
-> # add UTM locations to data frame
-> rawData$x <- attr(utmcoord,"coords")[,1]
-> rawData$y <- attr(utmcoord,"coords")[,2]
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# convert times from factors to POSIX}
+\hlstd{rawData}\hlopt{$}\hlstd{time} \hlkwb{<-} \hlkwd{as.POSIXct}\hlstd{(rawData}\hlopt{$}\hlstd{time,}\hlkwc{tz}\hlstd{=}\hlstr{"GMT"}\hlstd{)}
+
+\hlcom{# project to UTM coordinates using package rgdal}
+\hlkwd{library}\hlstd{(rgdal)}
+\hlstd{llcoord} \hlkwb{<-} \hlkwd{SpatialPoints}\hlstd{(rawData[,}\hlnum{3}\hlopt{:}\hlnum{4}\hlstd{],}
+                         \hlkwc{proj4string}\hlstd{=}\hlkwd{CRS}\hlstd{(}\hlstr{"+proj=longlat +datum=WGS84"}\hlstd{))}
+\hlstd{utmcoord} \hlkwb{<-} \hlkwd{spTransform}\hlstd{(llcoord,}\hlkwd{CRS}\hlstd{(}\hlstr{"+proj=utm +zone=30 ellps=WGS84"}\hlstd{))}
+
+\hlcom{# add UTM locations to data frame}
+\hlstd{rawData}\hlopt{$}\hlstd{x} \hlkwb{<-} \hlkwd{attr}\hlstd{(utmcoord,}\hlstr{"coords"}\hlstd{)[,}\hlnum{1}\hlstd{]}
+\hlstd{rawData}\hlopt{$}\hlstd{y} \hlkwb{<-} \hlkwd{attr}\hlstd{(utmcoord,}\hlstr{"coords"}\hlstd{)[,}\hlnum{2}\hlstd{]}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 Then, we call \verb|crawlWrap| to fit a CTCRW model and predict hourly locations:
-\begin{Schunk}
-\begin{Sinput}
-> # initial parameters for crawl fit
-> inits <- list(a = c(rawData$x[1],0,rawData$y[1],0),
-+               P = diag(c(5000^2, 10*3600^2, 5000^2, 10*3600^2)))
-> # fit crawl model
-> crwOut <- crawlWrap(obsData=rawData, timeStep="hour", initial.state=inits,
-+                     theta=c(4,-10), fixPar=c(NA,NA))
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# initial parameters for crawl fit}
+\hlstd{inits} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{a} \hlstd{=} \hlkwd{c}\hlstd{(rawData}\hlopt{$}\hlstd{x[}\hlnum{1}\hlstd{],}\hlnum{0}\hlstd{,rawData}\hlopt{$}\hlstd{y[}\hlnum{1}\hlstd{],}\hlnum{0}\hlstd{),}
+              \hlkwc{P} \hlstd{=} \hlkwd{diag}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{5000}\hlopt{^}\hlnum{2}\hlstd{,} \hlnum{10}\hlopt{*}\hlnum{3600}\hlopt{^}\hlnum{2}\hlstd{,} \hlnum{5000}\hlopt{^}\hlnum{2}\hlstd{,} \hlnum{10}\hlopt{*}\hlnum{3600}\hlopt{^}\hlnum{2}\hlstd{)))}
+
+\hlcom{# fit crawl model}
+\hlstd{crwOut} \hlkwb{<-} \hlkwd{crawlWrap}\hlstd{(}\hlkwc{obsData}\hlstd{=rawData,} \hlkwc{timeStep}\hlstd{=}\hlstr{"hour"}\hlstd{,} \hlkwc{initial.state}\hlstd{=inits,}
+                    \hlkwc{theta}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{4}\hlstd{,}\hlopt{-}\hlnum{10}\hlstd{),} \hlkwc{fixPar}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 Here the desired time step is specified by the \verb|timeStep| argument, and the \verb|initial.state|, \verb|theta|, and \verb|fixPar| arguments are the same as for \verb|crawl::crwMLE| \citep{Johnson2017}. For the choice of initial parameters in \verb|crawlWrap|, we refer the reader to the documentation of the package crawl, in particular \verb|crawl::crwMLE| and \verb|crawl::crwPredict|. We now have a complete set of temporally-regular location data.
 
 Autocorrelation function (ACF) estimates suggest there are 24-hour cycles in the step length data, and this presents an opporunity to demonstrate the use of the \verb|cosinor| function for incorporating cyclical behavior in model parameters using \verb|momentuHMM|. We create a \verb|momentuHMMData| object, and the 24-hour cosinor model covariate: 
-\begin{Schunk}
-\begin{Sinput}
-> # create momentuHMMData object from crwData object
-> elephantData <- prepData(data=crwOut, covNames="temp")
-> # add cosinor covariate based on hour of day
-> elephantData$hour <- as.integer(strftime(elephantData$time, format = "%H", tz="GMT"))
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# create momentuHMMData object from crwData object}
+\hlstd{elephantData} \hlkwb{<-} \hlkwd{prepData}\hlstd{(}\hlkwc{data}\hlstd{=crwOut,} \hlkwc{covNames}\hlstd{=}\hlstr{"temp"}\hlstd{)}
+
+\hlcom{# add cosinor covariate based on hour of day}
+\hlstd{elephantData}\hlopt{$}\hlstd{hour} \hlkwb{<-} \hlkwd{as.integer}\hlstd{(}\hlkwd{strftime}\hlstd{(elephantData}\hlopt{$}\hlstd{time,} \hlkwc{format} \hlstd{=} \hlstr{"%H"}\hlstd{,} \hlkwc{tz}\hlstd{=}\hlstr{"GMT"}\hlstd{))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 As seen here, the function \verb|prepData| can also be used for pre-processing the best predicted track data from \verb|crawlWrap| output. The 24-hour cosinor covariate (``hour'') is simply a set of integers $(0,1,\ldots,23)$ indicating the hour of day for each observation. The ACF plot of the step lengths, shown in Figure \ref{fig:elephantResults1}, was obtained with:
-\begin{Schunk}
-\begin{Sinput}
-> acf(elephantData$step[!is.na(elephantData$step)],lag.max=300)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{acf}\hlstd{(elephantData}\hlopt{$}\hlstd{step[}\hlopt{!}\hlkwd{is.na}\hlstd{(elephantData}\hlopt{$}\hlstd{step)],}\hlkwc{lag.max}\hlstd{=}\hlnum{300}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 Our aim is to fit a 2-state HMM to the elephant track that includes temperature effects on the turning angle concentration parameters and cycling temperature effects (with a 24-hour periodicity) on the step length and state transition probability parameters. Complex models such as this can require many parameters, and it can be challenging to choose good starting parameter values for the optimization. Here, we take an incremental approach, starting from a simpler model with no covariates. In \verb|momentuHMM|, the function \verb|getPar0| extracts initial parameters from a fitted (nested) HMM, given arguments for the more complex model.
 
 For the covariate-free 2-state model, six initial parameters need to be chosen: for each state, the mean and standard deviation of the gamma distribution of step lengths, and the concentration of the wrapped Cauchy distribution of turning angles. Looking at the histograms of the step lengths and the turning angles (e.g.\ output by \verb|plot(elephantData)|) is often useful to choose good starting parameter values.
 
-\begin{Schunk}
-\begin{Sinput}
-> # label states
-> stateNames <- c("encamped","exploratory")
-> # distributions for observation processes
-> dist = list(step = "gamma", angle = "wrpcauchy")
-> # initial parameters
-> Par0_m1 <- list(step=c(100,500,100,200),angle=c(0.3,0.7))
-> # fit model
-> m1 <- fitHMM(data = elephantData, nbStates = 2, dist = dist, Par0 = Par0_m1, 
-+              estAngleMean = list(angle=FALSE), stateNames = stateNames)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# label states}
+\hlstd{stateNames} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"encamped"}\hlstd{,}\hlstr{"exploratory"}\hlstd{)}
+\hlcom{# distributions for observation processes}
+\hlstd{dist} \hlkwb{=} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{=} \hlstr{"gamma"}\hlstd{,} \hlkwc{angle} \hlstd{=} \hlstr{"wrpcauchy"}\hlstd{)}
+
+\hlcom{# initial parameters}
+\hlstd{Par0_m1} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{100}\hlstd{,}\hlnum{500}\hlstd{,}\hlnum{100}\hlstd{,}\hlnum{200}\hlstd{),}\hlkwc{angle}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{0.3}\hlstd{,}\hlnum{0.7}\hlstd{))}
+
+\hlcom{# fit model}
+\hlstd{m1} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(}\hlkwc{data} \hlstd{= elephantData,} \hlkwc{nbStates} \hlstd{=} \hlnum{2}\hlstd{,} \hlkwc{dist} \hlstd{= dist,} \hlkwc{Par0} \hlstd{= Par0_m1,}
+             \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{FALSE}\hlstd{),} \hlkwc{stateNames} \hlstd{= stateNames)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 To ensure convergence, we could also use the argument \verb|retryFits| to specify the number of attempts to minimize the negative log-likelihood based on random perturbations of the parameter estimates at the current minimum.\\
 
 We can build on complexity, by including the temperature and time of day as covariates in the state transition probabilities. We use the function \verb|getPar0| to extract the new starting parameter values.
-\begin{Schunk}
-\begin{Sinput}
-> # formula for transition probabilities
-> formula <- ~ temp * cosinor(hour, period = 24)
-> # initial parameters (obtained from nested model m1)
-> Par0_m2 <- getPar0(model=m1, formula=formula)
-> # fit model
-> m2 <- fitHMM(data = elephantData, nbStates = 2, dist = dist, Par0 = Par0_m2$Par, 
-+              beta0=Par0_m2$beta, stateNames = stateNames, formula=formula)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# formula for transition probabilities}
+\hlstd{formula} \hlkwb{<-} \hlopt{~} \hlstd{temp} \hlopt{*} \hlkwd{cosinor}\hlstd{(hour,} \hlkwc{period} \hlstd{=} \hlnum{24}\hlstd{)}
+
+\hlcom{# initial parameters (obtained from nested model m1)}
+\hlstd{Par0_m2} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(}\hlkwc{model}\hlstd{=m1,} \hlkwc{formula}\hlstd{=formula)}
+
+\hlcom{# fit model}
+\hlstd{m2} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(}\hlkwc{data} \hlstd{= elephantData,} \hlkwc{nbStates} \hlstd{=} \hlnum{2}\hlstd{,} \hlkwc{dist} \hlstd{= dist,} \hlkwc{Par0} \hlstd{= Par0_m2}\hlopt{$}\hlstd{Par,}
+             \hlkwc{beta0}\hlstd{=Par0_m2}\hlopt{$}\hlstd{beta,} \hlkwc{stateNames} \hlstd{= stateNames,} \hlkwc{formula}\hlstd{=formula)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 The special function \verb|cosinor(hour, period = 24)| internally creates the cosinor model covariates, $\cos(2\pi \times hour / period)$ and $\sin(2\pi \times hour / period)$, and includes both terms (plus interactions with ``temp'') in the fitted model.\\
 
 Finally, we can fit the more complex model, including the effect of temperature and time of day on the parameters of the state-dependent distributions of steps and angles.
 
-\begin{Schunk}
-\begin{Sinput}
-> # formulas for parameters of state-dependent observation distributions
-> DM <- list(step = list(mean = ~ temp * cosinor(hour, period = 24),
-+                        sd = ~ temp * cosinor(hour, period = 24)),
-+            angle = list(concentration = ~ temp))
-> # initial parameters (obtained from nested model m2)
-> Par0_m3 <- getPar0(model=m2, formula=formula, DM=DM)
-> # fit model
-> m3 <- fitHMM(data = elephantData, nbStates = 2, dist = dist, Par0 = Par0_m3$Par, 
-+              beta0 = Par0_m3$beta, DM = DM, stateNames = stateNames,
-+              formula = formula)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# formulas for parameters of state-dependent observation distributions}
+\hlstd{DM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{mean} \hlstd{=} \hlopt{~} \hlstd{temp} \hlopt{*} \hlkwd{cosinor}\hlstd{(hour,} \hlkwc{period} \hlstd{=} \hlnum{24}\hlstd{),}
+                       \hlkwc{sd} \hlstd{=} \hlopt{~} \hlstd{temp} \hlopt{*} \hlkwd{cosinor}\hlstd{(hour,} \hlkwc{period} \hlstd{=} \hlnum{24}\hlstd{)),}
+           \hlkwc{angle} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{concentration} \hlstd{=} \hlopt{~} \hlstd{temp))}
+
+\hlcom{# initial parameters (obtained from nested model m2)}
+\hlstd{Par0_m3} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(}\hlkwc{model}\hlstd{=m2,} \hlkwc{formula}\hlstd{=formula,} \hlkwc{DM}\hlstd{=DM)}
+
+\hlcom{# fit model}
+\hlstd{m3} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(}\hlkwc{data} \hlstd{= elephantData,} \hlkwc{nbStates} \hlstd{=} \hlnum{2}\hlstd{,} \hlkwc{dist} \hlstd{= dist,} \hlkwc{Par0} \hlstd{= Par0_m3}\hlopt{$}\hlstd{Par,}
+             \hlkwc{beta0} \hlstd{= Par0_m3}\hlopt{$}\hlstd{beta,} \hlkwc{DM} \hlstd{= DM,} \hlkwc{stateNames} \hlstd{= stateNames,}
+             \hlkwc{formula} \hlstd{= formula)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 The above model \verb|m3| identifed a state of slow undirected movement (``encamped''), and a state of faster and more directed movement (``exploratory'') (Figure \ref{fig:elephantResults1}). For a fitted model, the function \verb|viterbi| computes the most likely state sequence:
-\begin{Schunk}
-\begin{Sinput}
-> # decode most likely state sequence
-> states <- viterbi(m3)
-> # derive percentage of time spent in each state
-> table(states)/nrow(elephantData)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# decode most likely state sequence}
+\hlstd{states} \hlkwb{<-} \hlkwd{viterbi}\hlstd{(m3)}
+\hlcom{# derive percentage of time spent in each state}
+\hlkwd{table}\hlstd{(states)}\hlopt{/}\hlkwd{nrow}\hlstd{(elephantData)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 Here, about 74\% of the steps were attributed to the ``encamped'' state, and 26\% were attributed to the ``exploratory'' state. 
 
@@ -473,23 +568,28 @@ We can use \verb|AIC(m1,m2,m3)| to compare the three fitted models in terms of A
 
 The model can be visualized with the generic function \verb|plot|, which was used for the plots shown in Figure \ref{fig:elephantResults2}, and the decoded track in Figure \ref{fig:elephantResults1}.
 
-\begin{Schunk}
-\begin{Sinput}
-> plot(m3, plotCI = TRUE, covs = data.frame(hour=12))
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{plot}\hlstd{(m3,} \hlkwc{plotCI} \hlstd{=} \hlnum{TRUE}\hlstd{,} \hlkwc{covs} \hlstd{=} \hlkwd{data.frame}\hlstd{(}\hlkwc{hour}\hlstd{=}\hlnum{12}\hlstd{))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 Interestingly, this model suggests step lengths and directional persistence for the ``encamped'' state decreased as temperature increased, step lengths for both states tended to decrease in the late evening and early morning, and transition probabilities from the ``encamped'' to ``exploratory'' state decreased as temperature increased (Figure \ref{fig:elephantResults2}). 
 
 Model fit can be assessed using the pseudo-residuals, with the functions \verb|pseudoRes| and \verb|plotPR|. The residual ACF plot shown in Figure \ref{fig:elephantResults1} was produced by:
-\begin{Schunk}
-\begin{Sinput}
-> # compute pseudo-residuals for the steps and the angles
-> pr <- pseudoRes(m3)
-> # plot the ACF of step pseudo-residuals
-> acf(pr$stepRes[!is.na(pr$stepRes)],lag.max = 300)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# compute pseudo-residuals for the steps and the angles}
+\hlstd{pr} \hlkwb{<-} \hlkwd{pseudoRes}\hlstd{(m3)}
+
+\hlcom{# plot the ACF of step pseudo-residuals}
+\hlkwd{acf}\hlstd{(pr}\hlopt{$}\hlstd{stepRes[}\hlopt{!}\hlkwd{is.na}\hlstd{(pr}\hlopt{$}\hlstd{stepRes)],}\hlkwc{lag.max} \hlstd{=} \hlnum{300}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 Autocorrelation function plots of the pseudo-residuals indicate this model explained much of the periodicity in step length, although there does still appear to be some room for improvement.
 
@@ -517,23 +617,25 @@ Autocorrelation function plots of the pseudo-residuals indicate this model expla
 \subsection{Northern fur seal}
 \label{sec:nfs}
 In our second example, we use the northern fur seal ({\it Callorhinus ursinus}) example from \cite{McClintockEtAl2014b} to demonstrate the use of additional data streams for distinguishing behaviors with similar horizontal trajectories in a multivariate HMM. The data consist of 241 temporally-irregular Fastloc GPS locations obtained during a foraging trip of a nursing female near the Pribilof Islands of Alaska, USA, from 10-17 October 2007. The tag included time-depth recording capabilities, and the dive activity data were summarized as the number of foraging dives over $T=228$ temporally-regular 1 hr time steps. To fit the $Z=3$ state (1=``resting'', 2=``foraging'', 3=``transit'') of \cite{McClintockEtAl2014b} using \verb|momentuHMM|, we first used \verb|crawlWrap| to predict temporally-regular locations at 1 hr time steps assuming a bivariate normal measurement error model and merged the results with the foraging dive data using the \verb|crawlMerge| function. Then multiple imputation was used to account for location measurement error by repeatedly fitting the HMM to \verb|nSims| realizations of the position process using \verb|MIfitHMM|:% in parallel on \verb|ncores| cores of a (multi-core) processor:
-\begin{Schunk}
-\begin{Sinput}
-> nbStates <- 3
-> stateNames <- c("resting", "foraging", "transit")
-> dist <- list(step = "gamma", angle = "wrpcauchy", dive = "pois")
-> Par0 <- getParDM(nbStates = nbStates, dist = dist,
-+                  Par = Par, DM = DM, cons = cons,
-+                  estAngleMean = list(angle = FALSE))
-> Fixpar <- list(dive = c(-100, NA, NA))
-> nfsFits <- MIfitHMM(crwOut, nSims = 100, nbStates = nbStates, dist = dist,
-+                     Par0 = Par0, DM = DM, cons = cons,
-+                     estAngleMean = list(angle = FALSE), 
-+                     fixPar = fixPar, retryFits = 30,
-+                     stateNames=stateNames)
-> plot(nfsFits)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{nbStates} \hlkwb{<-} \hlnum{3}
+\hlstd{stateNames} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"resting"}\hlstd{,} \hlstr{"foraging"}\hlstd{,} \hlstr{"transit"}\hlstd{)}
+\hlstd{dist} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{=} \hlstr{"gamma"}\hlstd{,} \hlkwc{angle} \hlstd{=} \hlstr{"wrpcauchy"}\hlstd{,} \hlkwc{dive} \hlstd{=} \hlstr{"pois"}\hlstd{)}
+\hlstd{Par0} \hlkwb{<-} \hlkwd{getParDM}\hlstd{(}\hlkwc{nbStates} \hlstd{= nbStates,} \hlkwc{dist} \hlstd{= dist,}
+                 \hlkwc{Par} \hlstd{= Par,} \hlkwc{DM} \hlstd{= DM,} \hlkwc{cons} \hlstd{= cons,}
+                 \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle} \hlstd{=} \hlnum{FALSE}\hlstd{))}
+\hlstd{Fixpar} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{dive} \hlstd{=} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{100}\hlstd{,} \hlnum{NA}\hlstd{,} \hlnum{NA}\hlstd{))}
+\hlstd{nfsFits} \hlkwb{<-} \hlkwd{MIfitHMM}\hlstd{(crwOut,} \hlkwc{nSims} \hlstd{=} \hlnum{100}\hlstd{,} \hlkwc{nbStates} \hlstd{= nbStates,} \hlkwc{dist} \hlstd{= dist,}
+                    \hlkwc{Par0} \hlstd{= Par0,} \hlkwc{DM} \hlstd{= DM,} \hlkwc{cons} \hlstd{= cons,}
+                    \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle} \hlstd{=} \hlnum{FALSE}\hlstd{),}
+                    \hlkwc{fixPar} \hlstd{= fixPar,} \hlkwc{retryFits} \hlstd{=} \hlnum{30}\hlstd{,}
+                    \hlkwc{stateNames}\hlstd{=stateNames)}
+\hlkwd{plot}\hlstd{(nfsFits)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 Here we specified a gamma distribution for step length (`step'), wrapped Cauchy distribution for turning angle (`angle'), and Poisson distribution for the number of foraging dives (`dive'). The function \verb|getParDM| was used to organize the starting values for the data stream working parameters (\verb|Par0|) in the correct format based on \verb|DM|, \verb|cons|, and estimates of the natural parameters (\verb|Par|) from \cite{McClintockEtAl2014b}. The \verb|DM| and \verb|cons| arguments were specified to avoid label switching among the \verb|nSims| imputed data model fits and enforce similar state-dependent probability distribution constraints as \cite{McClintockEtAl2014b}, e.g., constraining the Poisson rate parameters such that the ``foraging'' state tends to have higher numbers of foraging dives than the ``transit'' state $(\lambda_2 > \lambda_3)$. To prohibit foraging dives for the ``resting'' state, we used the \verb|fixPar| argument to effectively fix the Poisson rate parameter to zero on the natural scale (i.e. $\lambda_1 \approx 0$).  To help deal with the problem of convergence to local maxima, the \verb|retryFits| argument allows users to specify the number of times to attempt to re-fit each model using random perturbations of the parameter estimates as the starting values for optimization.
 
 The results are very similar to those of the discrete-time model of \cite{McClintockEtAl2014b}, with periods of foraging often followed by resting (Figure \ref{fig:nfsResults}).  The ``activity budgets'' (i.e. the proportion of time steps allocated to each state) calculated by \verb|MIpool| based on the estimated state sequences for each imputation were 0.3 (95\% CI: 0.22$-$0.39) for ``resting'', 0.29 (95\% CI: 0.22$-$0.36) for ``foraging'', and 0.41 (95\% CI: 0.32$-$0.52) for ``transit''.
@@ -566,13 +668,15 @@ and the turning angle mean parameter $(\mu^\phi_t)$ as a trade-off between short
 where $d_t=\text{atan2}(\sin(r_t-b_{t-1}),\cos(r_t-b_{t-1}))$.
 
 We wish to fit a 2-state HMM to the turtle data, with a ``foraging'' state unaffected by currents and a ``transit'' state potentially influenced by ocean surface currents as in Eqs. \ref{eq:turtleMeanStep} and \ref{eq:turtleMeanAngle}.  We used \verb|crawlWrap| to predict $T=350$ temporally-regular locations at 2 hr time steps assuming a bivariate normal measurement error model that accounts for the Argos location quality class  (i.e. 3,2,1,0,A,B) of each observation. We then again used multiple imputation to account for location uncertainty by repeatedly fitting the HMM to \verb|nSims| realizations of the position process using \verb|MIfitHMM|. We first draw \verb|nSims| realizations of the position process and extract the corresponding spatial covariates from the raster bricks for ocean surface current speed (``speedBrick'') and direction (``dirBrick'') using \verb|MIfitHMM| with \verb|fit=FALSE|:
-\begin{Schunk}
-\begin{Sinput}
-> miTurtleData <- MIfitHMM(crwOut, nSims = 100, fit=FALSE,
-+                  spatialCovs = list(w = speedBrick, d = dirBrick, r = dirBrick),
-+                  angleCovs = "d")
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{miTurtleData} \hlkwb{<-} \hlkwd{MIfitHMM}\hlstd{(crwOut,} \hlkwc{nSims} \hlstd{=} \hlnum{100}\hlstd{,} \hlkwc{fit}\hlstd{=}\hlnum{FALSE}\hlstd{,}
+                 \hlkwc{spatialCovs} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{w} \hlstd{= speedBrick,} \hlkwc{d} \hlstd{= dirBrick,} \hlkwc{r} \hlstd{= dirBrick),}
+                 \hlkwc{angleCovs} \hlstd{=} \hlstr{"d"}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 When the \verb|fit| argument is \verb|FALSE|, \verb|MIfitHMM| returns a list of length \verb|nSims| composed of \verb|momentuHMMData| objects (\verb|miData|). For convenience and ease of interpretation, we manually added an additional covariate $\left({\text angle\_osc}=\cos(b_t-r_t)\right)$ to each of the imputed data sets and fitted the 2-state HMM using Eqs. \ref{eq:turtleMeanStep} and \ref{eq:turtleMeanAngle} for state 2 (``transit''):
 %<<prep-turtle, echo=TRUE, eval=FALSE>>=
 %for(j in 1:30){
@@ -581,19 +685,21 @@ When the \verb|fit| argument is \verb|FALSE|, \verb|MIfitHMM| returns a list of 
 %}
 %@
 %Now the imputed data are ready to be fitted to the 2-state HMM using Eqs. \ref{eq:turtleMeanStep} and \ref{eq:turtleMeanAngle} for state 2 (``transit''):
-\begin{Schunk}
-\begin{Sinput}
-> nbStates<-2
-> dist <- list(step = "gamma", angle = "wrpcauchy")
-> DM <- list(step = list(mean = ~state2(w:angle_osc), sd = ~1),
-+            angle = list(mean = ~state2(d), concentration= ~1))
-> turtleFits <- MIfitHMM(miTurtleData$miData, nbStates = nbStates, dist = dist, 
-+                        Par0 = Par0, DM = DM, 
-+                        estAngleMean = list(angle = TRUE),
-+                        circularAngleMean = list(angle = TRUE))
-> plot(turtleFits, plotCI = TRUE, covs = data.frame(angle_osc = cos(0)))
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{nbStates}\hlkwb{<-}\hlnum{2}
+\hlstd{dist} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{=} \hlstr{"gamma"}\hlstd{,} \hlkwc{angle} \hlstd{=} \hlstr{"wrpcauchy"}\hlstd{)}
+\hlstd{DM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{mean} \hlstd{=} \hlopt{~}\hlkwd{state2}\hlstd{(w}\hlopt{:}\hlstd{angle_osc),} \hlkwc{sd} \hlstd{=} \hlopt{~}\hlnum{1}\hlstd{),}
+           \hlkwc{angle} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{mean} \hlstd{=} \hlopt{~}\hlkwd{state2}\hlstd{(d),} \hlkwc{concentration}\hlstd{=} \hlopt{~}\hlnum{1}\hlstd{))}
+\hlstd{turtleFits} \hlkwb{<-} \hlkwd{MIfitHMM}\hlstd{(miTurtleData}\hlopt{$}\hlstd{miData,} \hlkwc{nbStates} \hlstd{= nbStates,} \hlkwc{dist} \hlstd{= dist,}
+                       \hlkwc{Par0} \hlstd{= Par0,} \hlkwc{DM} \hlstd{= DM,}
+                       \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle} \hlstd{=} \hlnum{TRUE}\hlstd{),}
+                       \hlkwc{circularAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle} \hlstd{=} \hlnum{TRUE}\hlstd{))}
+\hlkwd{plot}\hlstd{(turtleFits,} \hlkwc{plotCI} \hlstd{=} \hlnum{TRUE}\hlstd{,} \hlkwc{covs} \hlstd{=} \hlkwd{data.frame}\hlstd{(}\hlkwc{angle_osc} \hlstd{=} \hlkwd{cos}\hlstd{(}\hlnum{0}\hlstd{)))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 Note that the \verb|state2| special function in \verb|DM| indicates the covariate formulas are specific to state 2 (``transit'') and the \verb|circularAngleMean| argument indicates that circular-circular regression link function is to be used on the mean turning angle parameter as in Eq. \ref{eq:turtleMeanAngle}. 
 
 For the ``transit'' state, pooled parameter estimates indicated step lengths increased with ocean surface current speed and as the bearing of movement aligned with ocean surface current direction ($\beta^l_1=0.43, \text{95\% CI: } 0.1-0.77$; Figure \ref{fig:turtleResults}). The estimated wrapped Cauchy distribution for turning angle had mean angles $(\mu^\phi_t)$ biased towards the direction of ocean surface currents for each time step $(\beta^\phi=0.24, \text{95\% CI: } -0.01-0.5)$, with concentration parameter $\rho^\phi_2=0.85$ (95\% CI: 0.77$-$0.92) indicating turning angles were concentrated at $\mu^\phi_t$. Thus movement during the ``transit'' state appears to strongly follow ocean surface currents (mean ${\text angle\_osc}=0.87,{\text SD}=0.23$), while movement during the ``foraging'' state exhibited shorter step lengths $(\mu^l_1=2996{\text m}, \text{95\% CI: } 1791-4202)$ perpendicular to ocean surface currents (mean ${\text angle\_osc}=0.07,{\text SD}=0.26$), with no directional persistence $(\rho^\phi_1=0.03)$. The turtle spent 0.53 (95\% CI: 0.34$-$0.71) of the 2 hr time steps in the ``foraging'' state and 0.47 (95\% CI: 0.29$-$0.66) of time steps in the ``transit'' state as it travelled northeast along a predominant current until it (presumably) found an attractive foraging patch (Figure \ref{fig:turtleResults}).
@@ -613,50 +719,58 @@ For the ``transit'' state, pooled parameter estimates indicated step lengths inc
 \subsection{Grey seal}
 \label{sec:greySeal}
 For our next example, we perform a similar analysis of a grey seal ({\it Halichoerus grypus}) track that was originally conducted by \cite{McClintockEtAl2012} using Bayesian methods and (computationally-intensive) Markov chain Monte Carlo. The data consist of 1045 temporally-irregular Fastloc GPS locations collected in the North Sea between 9 April and 11 August 2008. Because the seal repeatedly visited the same haulout and foraging locations, it provides a nice example for demonstrating how to implement biased movements relative to activity centers using \verb|momentuHMM|. \cite{McClintockEtAl2012} fitted a 5-state model to these data that included three center of attraction states, with movement biased towards two haulout sites (``Abertay'' and ``Farne Islands'') and a foraging area (``Dogger Bank''), and two ``exploratory'' states (''low speed'', ''high speed'') that were unassociated with an activity center. After using \verb|crawlWrap| to predict $T=1515$ temporally-regular locations at 2 hr time steps including a bivariate normal measurement error model, we can perform a very similar analysis to \cite{McClintockEtAl2012} in \verb|momentuHMM| by using the \verb|centers| argument and state-specific functions for the probability distribution parameters. A cluster analysis on the observed locations using the R package \verb|dtwclust| \citep{SardaEspinosa2017} identified three centroids with coordinates that were nearly identical to the three activity centers (``Abertay'', ``Farne Islands'', and ``Dogger Bank'') identified by \cite{McClintockEtAl2012}. We use these coordinates to derive covariates relative to the activity centers when drawing \verb|nSims| realizations of the position process:
-\begin{Schunk}
-\begin{Sinput}
-> crwSim <- MIfitHMM(crwOut, nSims = 100, fit=FALSE,
-+                   center = centers)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{crwSim} \hlkwb{<-} \hlkwd{MIfitHMM}\hlstd{(crwOut,} \hlkwc{nSims} \hlstd{=} \hlnum{100}\hlstd{,} \hlkwc{fit}\hlstd{=}\hlnum{FALSE}\hlstd{,}
+                  \hlkwc{center} \hlstd{= centers)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 Specifying the \verb|centers| argument results in the calculation of two covariates for each activity center: the distance (with `.dist' suffix) and angle (with `.angle' suffix) from each location at time $t$. These covariates can then be used to model parameters as a function of the distance and angle to activity centers for each time step:
-\begin{Schunk}
-\begin{Sinput}
-> dist <- list(step = "weibull", angle = "wrpcauchy")
-> distFormula <- ~state1(I(Abertay.dist>2500)) + state2(I(Farne.dist>2500)) 
->                   + state3(I(Dogger.dist>15000))
-> angleFormula <- ~state1(Abertay.angle) + state2(Farne.angle) 
->                   + state3(Dogger.angle)
-> stepDM <- list(shape = distFormula, scale = distFormula)
-> angleDM <- list(mean = angleFormula, concentration = distFormula)
-> DM <- list(step = stepDM, angle = angleDM)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{dist} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{=} \hlstr{"weibull"}\hlstd{,} \hlkwc{angle} \hlstd{=} \hlstr{"wrpcauchy"}\hlstd{)}
+\hlstd{distFormula} \hlkwb{<-} \hlopt{~}\hlkwd{state1}\hlstd{(}\hlkwd{I}\hlstd{(Abertay.dist}\hlopt{>}\hlnum{2500}\hlstd{))} \hlopt{+} \hlkwd{state2}\hlstd{(}\hlkwd{I}\hlstd{(Farne.dist}\hlopt{>}\hlnum{2500}\hlstd{))}
+                  \hlopt{+} \hlkwd{state3}\hlstd{(}\hlkwd{I}\hlstd{(Dogger.dist}\hlopt{>}\hlnum{15000}\hlstd{))}
+\hlstd{angleFormula} \hlkwb{<-} \hlopt{~}\hlkwd{state1}\hlstd{(Abertay.angle)} \hlopt{+} \hlkwd{state2}\hlstd{(Farne.angle)}
+                  \hlopt{+} \hlkwd{state3}\hlstd{(Dogger.angle)}
+\hlstd{stepDM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{shape} \hlstd{= distFormula,} \hlkwc{scale} \hlstd{= distFormula)}
+\hlstd{angleDM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mean} \hlstd{= angleFormula,} \hlkwc{concentration} \hlstd{= distFormula)}
+\hlstd{DM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{= stepDM,} \hlkwc{angle} \hlstd{= angleDM)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 Similar to \cite{McClintockEtAl2012}, we assume a Weibull distribution for step length where both the shape and scale parameter depend on the distance from the location at time $t$ to each activity center. For the activity centers on land (``Abertay'' and ``Farne''), we allow the (state-dependent) step length parameters to change when the seal is beyond 2500m of the haulout. For the ``Dogger'' activity center, we allow the parameters to change when the seal is beyond 15000m of this (presumably) foraging area. We thus allow the movement behavior to change within these activity center states upon entering or leaving the viscinity of these sites.  We assume a wrapped Cauchy distribution for turning angle with (state-dependent) mean angle derived from the direction to each activity center at time $t$, and the concentration parameter is modeled similarly to the step length parameters. For the two ``exploratory'' states, we assumed they are simple random walks unaffected by proximity to activity centers. To complete our model specification, we use the \verb|knownStates| argument to assign the seal to the corresponding activity center state whenever it was within the 2500m (haulout area) or 15000m (foraging area) thresholds for each imputed data set:
-\begin{Schunk}
-\begin{Sinput}
-> greySealFits <- MIfitHMM(miDat, nSims = 400,
-+                          nbStates = 5, dist = dist,
-+                          Par0 = Par0, beta0 = beta0, fixPar = fixPar,
-+                          formula = distFormula,
-+                          estAngleMean = list(angle=TRUE), 
-+                          circularAngleMean = list(angle=TRUE),
-+                          DM = DM, knownStates = knownStates)
-> plot(greySealFits, plotCI = TRUE)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{greySealFits} \hlkwb{<-} \hlkwd{MIfitHMM}\hlstd{(miDat,} \hlkwc{nSims} \hlstd{=} \hlnum{400}\hlstd{,}
+                         \hlkwc{nbStates} \hlstd{=} \hlnum{5}\hlstd{,} \hlkwc{dist} \hlstd{= dist,}
+                         \hlkwc{Par0} \hlstd{= Par0,} \hlkwc{beta0} \hlstd{= beta0,} \hlkwc{fixPar} \hlstd{= fixPar,}
+                         \hlkwc{formula} \hlstd{= distFormula,}
+                         \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),}
+                         \hlkwc{circularAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),}
+                         \hlkwc{DM} \hlstd{= DM,} \hlkwc{knownStates} \hlstd{= knownStates)}
+\hlkwd{plot}\hlstd{(greySealFits,} \hlkwc{plotCI} \hlstd{=} \hlnum{TRUE}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 As with the step length and turning angle concentration parameters, the state transition probabilities are also allowed to change as a function of distance to activity centers (as specified by the \verb|formula| argument). The starting values (\verb|Par0| and \verb|beta0|) for each imputation were extracted from a single HMM fitted to the best predicted locations from \verb|crawlWrap|, and \verb|fixPar| was used to remove short-term directional persistence (and thus formulate the model as a mixture of biased and simple random walks). 
 
 Estimated activity budgets for the 5 states of this multiple imputation HMM were 0.28 $(0.27-0.3)$ for the ``Abertay'' haul-out state, 0.12 $(0.11-0.14)$ for the ``Farne Islands'' haul-out state, 0.37 $(0.35-0.38)$ for the ``Dogger Bank'' foraging state, 0.09 $(0.03-0.2)$ for a low-speed ``exploratory'' state, and 0.14 $(0.08-0.23)$ for a high-speed ``exploratory'' state. All three activity center states exhibited shorter step lengths and less biased movements when within the viscinity of these targets (Figure \ref{fig:greySealResults}). Results from this analysis were thus very similar to those of \cite{McClintockEtAl2012}, but this implementation required far less computation time and no custom model-fitting algorithms. 
 
 The \verb|simData| function can be used to simulate tracks from a fitted model:
-\begin{Schunk}
-\begin{Sinput}
-> greySealSim<-simData(model = greySealFits, centers = centers,
-+                      initialPosition = centers[1,],
-+                      obsPerAnimal = 1515)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{greySealSim}\hlkwb{<-}\hlkwd{simData}\hlstd{(}\hlkwc{model} \hlstd{= greySealFits,} \hlkwc{centers} \hlstd{= centers,}
+                     \hlkwc{initialPosition} \hlstd{= centers[}\hlnum{1}\hlstd{,],}
+                     \hlkwc{obsPerAnimal} \hlstd{=} \hlnum{1515}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 A simulated track is presented along with the fitted track in Figure \ref{fig:greySealStateSims}. While potentially useful for study design, power analysis, and prediction, the \verb|simData| function can also be helpful in assessing goodness of fit by repeatedly drawing simulated data sets from a fitted model and comparing them to observed properties of the data \citep[e.g.][]{MoralesEtAl2004}.
 \begin{figure}[htbp]
   \includegraphics[width=0.49\textwidth]{plot_greySealResults002.pdf}
@@ -688,154 +802,187 @@ Here, we analyse the southern elephant seal (\emph{Mirounga leonina}) data from 
 
 The data set has three columns: ``ID'' (track ID), ``x'' (longitude), and ``y'' (latitude):
 
-\begin{Schunk}
-\begin{Sinput}
-> head(tracks)
-\end{Sinput}
-\begin{Soutput}
-  ID        x         y
-1  1 70.60946 -49.60737
-2  1 70.82908 -50.08287
-3  1 70.90029 -50.32835
-4  1 70.85766 -50.54746
-5  1 70.63792 -50.90529
-6  1 70.48480 -50.99666
-\end{Soutput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{head}\hlstd{(tracks)}
+\end{alltt}
+\begin{verbatim}
+##   ID        x         y
+## 1  1 70.60946 -49.60737
+## 2  1 70.82908 -50.08287
+## 3  1 70.90029 -50.32835
+## 4  1 70.85766 -50.54746
+## 5  1 70.63792 -50.90529
+## 6  1 70.48480 -50.99666
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
 
 From the locations, we use \verb|prepData| to derive the step lengths and turning angles, as well as the distance and bearing (relative to previous movement direction as in Eq. \ref{eq:angleCov}) to the Kerguelen Island colony (with coordinates 70$^{\circ}$ longitude and -49$^{\circ}$ latitude):
-\begin{Schunk}
-\begin{Sinput}
-> center <- matrix(c(70,-49),nrow=1,dimnames=list("colony"))
-> data <- prepData(data=tracks, type="LL", centers=center)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{center} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{70}\hlstd{,}\hlopt{-}\hlnum{49}\hlstd{),}\hlkwc{nrow}\hlstd{=}\hlnum{1}\hlstd{,}\hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlstr{"colony"}\hlstd{))}
+\hlstd{data} \hlkwb{<-} \hlkwd{prepData}\hlstd{(}\hlkwc{data}\hlstd{=tracks,} \hlkwc{type}\hlstd{=}\hlstr{"LL"}\hlstd{,} \hlkwc{centers}\hlstd{=center)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 Note that distances are in kilometers and angles are based on initial bearings \citep[using geosphere::bearing;][]{Hijmans2016geo} when calculated from longitude and latitude coordinates.  
 
 \subsubsection{Model 1: no covariates}
 We start by fitting a covariate-free 4-state correlated random walk model, which we will use to extract starting parameter values for more complex models. We use the argument \verb|fixPar| to fix some transition probabilities to zero, following \cite{MichelotEtAl2017}.  We set to \verb|NA| the columns of unconstrained transition probabilities, and we fix the intercept of the other columns to a large negative number (here $-100$) to set the corresponding transition probabilities to be virtually zero (i.e.\ impossible transition).  As in \cite{MichelotEtAl2017}, we set transition probabilities from outbound to forage, outbound to inbound, search to outbound, forage to outbound, forage to inbound, inbound to outbound, inbound to search, and inbound to forage to be effectively zero.
-\begin{Schunk}
-\begin{Sinput}
-> stateNames <- c("outbound","search","forage","inbound")
-> # initial parameters
-> stepPar0 <- c(25,5,1,25,10,5,3,10)
-> anglePar0 <- c(15,5,2,15)
-> # constrain transition probabilities
-> fixbeta <- matrix(c(NA,-100,-100,-100,NA,NA,-100,NA,-100,-100,-100,-100),
-+                   nrow=1)
-> m1 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"), 
-+              Par0=list(step=stepPar0, angle=anglePar0),
-+              fixPar=list(beta=fixbeta), stateNames = stateNames)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{stateNames} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"outbound"}\hlstd{,}\hlstr{"search"}\hlstd{,}\hlstr{"forage"}\hlstd{,}\hlstr{"inbound"}\hlstd{)}
+
+\hlcom{# initial parameters}
+\hlstd{stepPar0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{25}\hlstd{,}\hlnum{5}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{25}\hlstd{,}\hlnum{10}\hlstd{,}\hlnum{5}\hlstd{,}\hlnum{3}\hlstd{,}\hlnum{10}\hlstd{)}
+\hlstd{anglePar0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{15}\hlstd{,}\hlnum{5}\hlstd{,}\hlnum{2}\hlstd{,}\hlnum{15}\hlstd{)}
+
+\hlcom{# constrain transition probabilities}
+\hlstd{fixbeta} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{NA}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlnum{NA}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{),}
+                  \hlkwc{nrow}\hlstd{=}\hlnum{1}\hlstd{)}
+
+\hlstd{m1} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(}\hlkwc{data}\hlstd{=data,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=}\hlstr{"gamma"}\hlstd{,}\hlkwc{angle}\hlstd{=}\hlstr{"vm"}\hlstd{),}
+             \hlkwc{Par0}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=stepPar0,} \hlkwc{angle}\hlstd{=anglePar0),}
+             \hlkwc{fixPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{beta}\hlstd{=fixbeta),} \hlkwc{stateNames} \hlstd{= stateNames)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 \subsubsection{Model 2}
 This model mimics the formulation of \cite{MichelotEtAl2017}. We model the effect of the distance to colony on the transition probability from outbound to search, and of the time since departure on the transition probability from search to inbound.
-\begin{Schunk}
-\begin{Sinput}
-> # time spent since left colony
-> time <- NULL
-> for(id in unique(data$ID)) {
-+     nbSubObs <- length(which(data$ID==id))
-+     
-+     # approximately in months for interval = 9.6h
-+     time <- c(time, (1:nbSubObs)/75)
-+ }
-> data$time <- time
-> # compute time since departure and include in formula below
-> formula <- ~ colony.dist + time
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# time spent since left colony}
+\hlstd{time} \hlkwb{<-} \hlkwa{NULL}
+\hlkwa{for}\hlstd{(id} \hlkwa{in} \hlkwd{unique}\hlstd{(data}\hlopt{$}\hlstd{ID)) \{}
+    \hlstd{nbSubObs} \hlkwb{<-} \hlkwd{length}\hlstd{(}\hlkwd{which}\hlstd{(data}\hlopt{$}\hlstd{ID}\hlopt{==}\hlstd{id))}
+
+    \hlcom{# approximately in months for interval = 9.6h}
+    \hlstd{time} \hlkwb{<-} \hlkwd{c}\hlstd{(time, (}\hlnum{1}\hlopt{:}\hlstd{nbSubObs)}\hlopt{/}\hlnum{75}\hlstd{)}
+\hlstd{\}}
+
+\hlstd{data}\hlopt{$}\hlstd{time} \hlkwb{<-} \hlstd{time}
+
+\hlcom{# compute time since departure and include in formula below}
+\hlstd{formula} \hlkwb{<-} \hlopt{~} \hlstd{colony.dist} \hlopt{+} \hlstd{time}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 As before, we constrain the transition probability matrix to prevent some of the transitions (e.g.\ from forage to inbound, etc.). We define a $3 \times 12$ matrix for the beta parameters, in which each column corresponds to a transition ($1 \rightarrow 2, 1 \rightarrow 3, 1 \rightarrow 4, 2 \rightarrow 1, \dots$), and each row corresponds to a covariate (intercept, distance to center, time since departure). We set to \verb|NA| the columns of unconstrained transition probabilities, and we again fix the intercept of the other columns to a large negative number (here $-100$) to set the corresponding transition probabilities to be virtually zero (i.e.\ impossible transition).
 
-\begin{Schunk}
-\begin{Sinput}
-> fixbeta <- matrix(c(NA,-100,-100,-100,NA,NA,-100,NA,-100,-100,-100,-100,
-+                     NA,   0,   0,   0, 0, 0,   0, 0,   0,   0,   0,   0,
-+                      0,   0,   0,   0, 0,NA,   0, 0,   0,   0,   0,   0),
-+                   nrow=3,byrow=TRUE)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{fixbeta} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{NA}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlnum{NA}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}
+                    \hlnum{NA}\hlstd{,}   \hlnum{0}\hlstd{,}   \hlnum{0}\hlstd{,}   \hlnum{0}\hlstd{,} \hlnum{0}\hlstd{,} \hlnum{0}\hlstd{,}   \hlnum{0}\hlstd{,} \hlnum{0}\hlstd{,}   \hlnum{0}\hlstd{,}   \hlnum{0}\hlstd{,}   \hlnum{0}\hlstd{,}   \hlnum{0}\hlstd{,}
+                     \hlnum{0}\hlstd{,}   \hlnum{0}\hlstd{,}   \hlnum{0}\hlstd{,}   \hlnum{0}\hlstd{,} \hlnum{0}\hlstd{,}\hlnum{NA}\hlstd{,}   \hlnum{0}\hlstd{,} \hlnum{0}\hlstd{,}   \hlnum{0}\hlstd{,}   \hlnum{0}\hlstd{,}   \hlnum{0}\hlstd{,}   \hlnum{0}\hlstd{),}
+                  \hlkwc{nrow}\hlstd{=}\hlnum{3}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 Biased random walks are used to model the movement in states 1 and 4, with repulsion away from the colony in the outbound trip, and attraction towards the colony in the inbound trip. For that purpose, we include `colony.angle' as a covariate on the angle mean of the von Mises distributions for turning angles in states 1 and 4. 
 
-\begin{Schunk}
-\begin{Sinput}
-> angleFormula <- ~ state1(colony.angle) + state4(colony.angle)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{angleFormula} \hlkwb{<-} \hlopt{~} \hlkwd{state1}\hlstd{(colony.angle)} \hlopt{+} \hlkwd{state4}\hlstd{(colony.angle)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 To specify the direction of the bias (away from or towards the colony), we fix the parameters linking the mean turning angle to the direction of the colony. In state 1, we fix the coefficient to a large negative number (e.g.\ -100) so that the mean direction is away from the colony. In state 4, we fix it to a large positive number (e.g.\ 100) so that the mean direction is towards the colony. Fixing these parameters to large positive (or negative) values effectively removes the correlated random walk component of Eq. \ref{eq:circ} for states 1 and 4. The four other parameters correspond to the angle concentrations and should be estimated (NAs in \verb|fixPar|).
-\begin{Schunk}
-\begin{Sinput}
-> fixPar <- list(angle=c(-100,100,NA,NA,NA,NA),beta=fixbeta)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{fixPar} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{100}\hlstd{,}\hlnum{100}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{),}\hlkwc{beta}\hlstd{=fixbeta)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 Because no covariates are specified for the mean angle of state 2 (searching) and state 3 (foraging), these states are reduced to correlated random walks with a mean turning angle of zero (i.e. $\text{atan2}(0,1)=0$ as in Eq. \ref{eq:circ}).
 
 We can now fit the second model with starting parameter values extracted from the simpler model using \verb|getPar0|. In \verb|fitHMM|, we use the arguments \verb|estAngleMean| and \verb|circularAngleMean| to indicate that the angle mean is to be estimated using circular-circular regression.
 
-\begin{Schunk}
-\begin{Sinput}
-> Par0 <- getPar0(model=m1, nbStates=4, 
-+                 DM=list(angle=list(mean=angleFormula, concentration=~1)), 
-+                 estAngleMean=list(angle=TRUE), 
-+                 circularAngleMean=list(angle=TRUE), formula=formula)
-> m2 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"), 
-+              Par0=list(step=Par0$Par$step, angle=Par0$Par$angle),
-+              beta0=Par0$beta, fixPar=fixPar, formula=formula, 
-+              DM=list(angle=list(mean=angleFormula, concentration=~1)), 
-+              estAngleMean=list(angle=TRUE), circularAngleMean=list(angle=TRUE), 
-+              stateNames = stateNames)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{Par0} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(}\hlkwc{model}\hlstd{=m1,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,}
+                \hlkwc{DM}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mean}\hlstd{=angleFormula,} \hlkwc{concentration}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{)),}
+                \hlkwc{estAngleMean}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),}
+                \hlkwc{circularAngleMean}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),} \hlkwc{formula}\hlstd{=formula)}
+
+\hlstd{m2} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(}\hlkwc{data}\hlstd{=data,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=}\hlstr{"gamma"}\hlstd{,}\hlkwc{angle}\hlstd{=}\hlstr{"vm"}\hlstd{),}
+             \hlkwc{Par0}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=Par0}\hlopt{$}\hlstd{Par}\hlopt{$}\hlstd{step,} \hlkwc{angle}\hlstd{=Par0}\hlopt{$}\hlstd{Par}\hlopt{$}\hlstd{angle),}
+             \hlkwc{beta0}\hlstd{=Par0}\hlopt{$}\hlstd{beta,} \hlkwc{fixPar}\hlstd{=fixPar,} \hlkwc{formula}\hlstd{=formula,}
+             \hlkwc{DM}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mean}\hlstd{=angleFormula,} \hlkwc{concentration}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{)),}
+             \hlkwc{estAngleMean}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),} \hlkwc{circularAngleMean}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),}
+             \hlkwc{stateNames} \hlstd{= stateNames)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 Instead of relying entirely on \verb|fixPar| for parameter constraints, an equivalent model for the transition probabilities could be specified using the special function \verb|betaCol| in \verb|formula|:
-\begin{Schunk}
-\begin{Sinput}
-> formula <- ~ betaCol1(colony.dist) + betaCol6(time)
-> fixbeta <- matrix(c(NA,-100,-100,-100,NA,NA,-100,NA,-100,-100,-100,-100,
-+                     rep(NA,12),
-+                     rep(NA,12)),
-+                   nrow=3,byrow=TRUE)
-> fixPar <- list(angle=c(-100,100,NA,NA,NA,NA),beta=fixbeta)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{formula} \hlkwb{<-} \hlopt{~} \hlkwd{betaCol1}\hlstd{(colony.dist)} \hlopt{+} \hlkwd{betaCol6}\hlstd{(time)}
+
+\hlstd{fixbeta} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{NA}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlnum{NA}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}\hlopt{-}\hlnum{100}\hlstd{,}
+                    \hlkwd{rep}\hlstd{(}\hlnum{NA}\hlstd{,}\hlnum{12}\hlstd{),}
+                    \hlkwd{rep}\hlstd{(}\hlnum{NA}\hlstd{,}\hlnum{12}\hlstd{)),}
+                  \hlkwc{nrow}\hlstd{=}\hlnum{3}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{)}
+
+\hlstd{fixPar} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{100}\hlstd{,}\hlnum{100}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{),}\hlkwc{beta}\hlstd{=fixbeta)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 Here \verb|betaCol1(colony.dist)| specifies an effect of distance to colony only on the transition from state 1 to state 2 (which corresponds to the first column of the beta matrix) and \verb|betaCol6(time)| specifies an effect of time since departure only on the transition from state 2 to state 4 (which corresponds to the sixth column of the beta matrix).  When the special function \verb|betaCol| is used, then \verb|fitHMM| automatically fixes the appropriate elements in the second (`colony.dist') and third (`time') rows of the beta matrix to zero (without the user needing to do so manually using \verb|fixPar|). However, note that the first row (corresponding to the intercept terms) must still be manually fixed to achieve the desired constraints on the transition probability matrix.
 
 \subsubsection{Model 3}
 In addition to the covariates included in model 2, we add the effect of distance to colony on the step length and turning angle concentration parameters for states 1 and 4. We specify the following formulas:
-\begin{Schunk}
-\begin{Sinput}
-> distFormula <- ~ state1(colony.dist) + state4(colony.dist)
-> stepDM <- list(mean=distFormula, sd=distFormula)
-> angleDM <- list(mean=angleFormula, concentration=distFormula)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{distFormula} \hlkwb{<-} \hlopt{~} \hlkwd{state1}\hlstd{(colony.dist)} \hlopt{+} \hlkwd{state4}\hlstd{(colony.dist)}
+\hlstd{stepDM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mean}\hlstd{=distFormula,} \hlkwc{sd}\hlstd{=distFormula)}
+\hlstd{angleDM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mean}\hlstd{=angleFormula,} \hlkwc{concentration}\hlstd{=distFormula)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 The initial parameters are extracted from model 2, again using the function \verb|getPar0|. Instead of fixing the mean direction of movement like in model 2, we estimate it here as a trade-off between short-term directional persistence and bias toward (or away) from the colony (i.e. a biased correlated random walk as in Eq. \ref{eq:circ}).
-\begin{Schunk}
-\begin{Sinput}
-> # remove fixed angle parameters
-> fixPar <- list(beta=fixbeta)
-> # get starting parameters from m2
-> Par0 <- getPar0(model=m2, nbStates=4, 
-+                 DM = list(step=stepDM, angle=angleDM), 
-+                 estAngleMean=list(angle=TRUE), 
-+                 circularAngleMean=list(angle=TRUE), 
-+                 formula=formula)
-> # the bias is estimated rather than fixed
-> Par0$Par$angle[c("mean_1:colony.angle","mean_4:colony.angle")] <- 0
-> m3 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"), 
-+              Par0=list(step=Par0$Par$step, angle=Par0$Par$angle),
-+              beta0=Par0$beta, fixPar=fixPar, formula=formula, 
-+              DM = list(step=stepDM, angle=angleDM), 
-+              estAngleMean=list(angle=TRUE), 
-+              circularAngleMean=list(angle=TRUE), 
-+              stateNames = stateNames)
-\end{Sinput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# remove fixed angle parameters}
+\hlstd{fixPar} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{beta}\hlstd{=fixbeta)}
+
+\hlcom{# get starting parameters from m2}
+\hlstd{Par0} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(}\hlkwc{model}\hlstd{=m2,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,}
+                \hlkwc{DM} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=stepDM,} \hlkwc{angle}\hlstd{=angleDM),}
+                \hlkwc{estAngleMean}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),}
+                \hlkwc{circularAngleMean}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),}
+                \hlkwc{formula}\hlstd{=formula)}
+
+\hlcom{# the bias is estimated rather than fixed}
+\hlstd{Par0}\hlopt{$}\hlstd{Par}\hlopt{$}\hlstd{angle[}\hlkwd{c}\hlstd{(}\hlstr{"mean_1:colony.angle"}\hlstd{,}\hlstr{"mean_4:colony.angle"}\hlstd{)]} \hlkwb{<-} \hlnum{0}
+
+\hlstd{m3} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(}\hlkwc{data}\hlstd{=data,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=}\hlstr{"gamma"}\hlstd{,}\hlkwc{angle}\hlstd{=}\hlstr{"vm"}\hlstd{),}
+             \hlkwc{Par0}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=Par0}\hlopt{$}\hlstd{Par}\hlopt{$}\hlstd{step,} \hlkwc{angle}\hlstd{=Par0}\hlopt{$}\hlstd{Par}\hlopt{$}\hlstd{angle),}
+             \hlkwc{beta0}\hlstd{=Par0}\hlopt{$}\hlstd{beta,} \hlkwc{fixPar}\hlstd{=fixPar,} \hlkwc{formula}\hlstd{=formula,}
+             \hlkwc{DM} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=stepDM,} \hlkwc{angle}\hlstd{=angleDM),}
+             \hlkwc{estAngleMean}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),}
+             \hlkwc{circularAngleMean}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),}
+             \hlkwc{stateNames} \hlstd{= stateNames)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
 The three fitted model can be compared with \verb|AIC(m1,m2,m3)|, which overwhelmingly supports model 3. The most likely state sequence is obtained with \verb|viterbi(m3)|. Figure \ref{fig:sesTracks} shows a map of the state-decoded track. The estimated circular-circular regression coefficients for the angle means of state 1 (outbound) and state 4 (inbound) were $-0.66$ (95\% CI: $-0.82--0.5$) and $0.4$ (95\% CI: $0.32-0.49$), respectively, thus indicating biased correlated random walks with repulsion away from the colony during outbound movements and attraction towards the colony during inbound movements. The estimated regressoin coefficients for the step length mean and turning angle concentration parameters for states 1 and 4 suggest that step lengths decreased and turning angles became more concentrated at the mean angle as distance to colony increased (Figure \ref{fig:sesResults})
 

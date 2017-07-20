@@ -20,8 +20,16 @@
 \renewcommand{\baselinestretch}{1.3}
 
 \begin{document}
-\SweaveOpts{concordance=TRUE}
-%\VignetteIndexEntry{momentuHMM vignette}
+
+<<include=FALSE>>=
+library(knitr)
+opts_chunk$set(
+concordance=TRUE
+)
+@
+
+%\VignetteIndexEntry{Guide to using momentuHMM}
+%\VignetteEngine{knitr::knitr}
 
 % set margin to 4cm for title page
 \newgeometry{margin=4cm}
@@ -310,7 +318,7 @@ The function \verb|simData| can be used to simulate multivariate HMM data from s
 \label{sec:example}
 We will now demonstrate some of the capabilities of \verb|momentuHMM| using real telemetry data. These examples are intended for demonstration purposes only, and we do not claim these example analyses represent improvements relative to previous or alternative analyses for these data sets. While only some of the key workflow elements are included here, complete R code and further details for these analyses are available in the ``vignettes'' source directory.
 
-<<load-vignette_inputs, results=hide, echo=FALSE, eval=TRUE>>=
+<<load-vignette_inputs, results='hide', echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE>>=
 library(momentuHMM)
 #example_wd <- ("~/Dropbox/vignette examples/")
 example_wd <- ("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/vignette examples/")
@@ -740,7 +748,7 @@ m2 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"),
 @ 
 
 Instead of relying entirely on \verb|fixPar| for parameter constraints, an equivalent model for the transition probabilities could be specified using the special function \verb|betaCol| in \verb|formula|:
-<<crw-ses-2, echo=TRUE, eval=FALSE>>=
+<<crw-ses-3, echo=TRUE, eval=FALSE>>=
 formula <- ~ betaCol1(colony.dist) + betaCol6(time)
 
 fixbeta <- matrix(c(NA,-100,-100,-100,NA,NA,-100,NA,-100,-100,-100,-100,
