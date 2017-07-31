@@ -91,8 +91,8 @@
 #' of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
 #' the state is not known.
 #' @param fixPar An optional list of vectors indicating parameters which are assumed known prior to fitting the model. Default: NULL 
-#' (no parameters are fixed). Each element of \code{fixPar} should be a vector of the same length as the corresponding vector of 
-#' \code{Par0}; each element should either be numeric (the fixed value of the parameter) or NA if the parameter is to be estimated. 
+#' (no parameters are fixed). For data streams, each element of \code{fixPar} should be a vector of the same name and length as the corresponding element of 
+#' \code{Par0}. For transition probability parameters, the corresponding element of \code{fixPar} must be named ``beta'' and have the same dimensions as \code{beta0}. For initial distribution parameters, the corresponding element of \code{fixPar} must be named ``delta'' and have the same dimensions as \code{delta0}. Each parameter should either be numeric (the fixed value of the parameter) or NA if the parameter is to be estimated. For each data stream, \code{fixPar} parameters must be on the same scale as \code{Par0} (e.g. if \code{DM} is specified for a given data stream, any fixed parameters for this data stream must be on the working scale).  Any fixed values for the transition probabilities (\code{beta}) must be on the working scale (i.e. the same scale as \code{beta0}). Any fixed values for the initial distribution (\code{delta}) must be on the natural scale (i.e. the same scale as \code{delta0}).
 #' @param retryFits Non-negative integer indicating the number of times to attempt to iteratively fit the model using random perturbations of the current parameter estimates as the 
 #' initial values for likelihood optimization. Standard normal perturbations are used on the working scale probability distribution parameters, while
 #' Normal(0,10^2) pertubations are used for working scale transition probability parameters. Default: 0.  When \code{retryFits>0}, the model with the largest log likelihood 
@@ -558,14 +558,20 @@ fitHMM <- function(data,nbStates,dist,
 
   parindex <- c(0,cumsum(unlist(lapply(Par0,length))))
   names(parindex) <- c(distnames,"beta")
+  ofixPar <- fixPar
   for(i in distnames){
     if(!is.null(fixPar[[i]])){
       if(length(fixPar[[i]])!=length(Par0[[i]])) stop("fixPar$",i," must be of length ",length(Par0[[i]]))
       tmp <- which(!is.na(fixPar[[i]]))
       Par0[[i]][tmp]<-fixPar[[i]][tmp]
+      
+      # if DM is not specified convert fixPar from real to working scale
+      if(is.null(inputs$DM[[i]])){
+        fixPar[[i]][tmp]<-n2w(Par0[i],p$bounds,NULL,NULL,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)[tmp]
+      } 
       wparIndex <- c(wparIndex,parindex[[i]]+tmp)
     } else {
-      fixPar[[i]] <- rep(NA,length(Par0[[i]]))
+      fixPar[[i]] <- ofixPar[[i]] <- rep(NA,length(Par0[[i]]))
       #wparIndex <- c(wparIndex,parindex[[i]]+1:length(Par0[[i]]))
     }
   }
@@ -591,10 +597,11 @@ fitHMM <- function(data,nbStates,dist,
       }
     }
   } else {
-    fixPar$delta <- rep(NA,length(delta0))
+    fixPar$delta <- ofixPar$delta <- rep(NA,length(delta0))
   }
 
   fixPar <- fixPar[c(distnames,"beta","delta")]
+  ofixPar <- ofixPar[c(distnames,"beta","delta")]
   
   wpar <- n2w(Par0,p$bounds,beta0,delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
   if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
@@ -771,7 +778,7 @@ fitHMM <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
-                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=fixPar,wparIndex=wparIndex)
+                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=ofixPar,wparIndex=wparIndex)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   

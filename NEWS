@@ -1,8 +1,14 @@
-momentuHMM 1.0.2 2017-07-20
+momentuHMM 1.1.0 2017-07-31
 -----------------
+NEW FEATURES
+
+* fixPar argument in fitHMM and MIfitHMM now specified on the same scale as the initial parameters (Par0, beta0, and delta0 arguments)
+
 CHANGES
 
 * vignette now built using knitr
+
+* bug fix in crawlWrap when predTimes argument includes times that are before the time of first observation
 
 
 momentuHMM 1.0.1 2017-07-17
