@@ -2,11 +2,11 @@ getXB<-function(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,nbStates){
   Xvec<-wpar^cons+workcons
   if(!circularAngleMean){
     if(DMind){
-      XB <- matrix(Xvec%*%t(DM),nrow(DM),1)
+      XB <- DM%*%Xvec
     } else {
       nr<-nrow(DM)
       nc<-ncol(DM)
-      XB<-matrix(0,nrow(DM),nbObs)
+      XB<-matrix(0,nr,nbObs)
       for(i in 1:nr){
         DMrow<-DM[i,]
         for(j in 1:nc){
