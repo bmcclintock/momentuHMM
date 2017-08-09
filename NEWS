@@ -6,6 +6,8 @@ NEW FEATURES
 
 * Factor-level covariates (e.g. 'sexM', `sexF') can now be included in pseudo design matrix DM arguments of fitHMM, MIfitHMM, and simData
 
+* obsPerAnimal argument in simData can now be specified as a list indicating the number of observations for each individual
+
 CHANGES
 
 * vignette now built using knitr

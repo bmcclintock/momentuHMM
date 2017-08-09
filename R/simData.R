@@ -52,9 +52,9 @@
 #' for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'center2.dist', 'center2.angle'); otherwise the covariate names are derived from the row names
 #' of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. Note that the angle covariates for each activity center are calculated relative to 
 #' the previous movement direction instead of standard directions relative to the x-axis; this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression.
-#' @param obsPerAnimal Either the number of the number of observations per animal (if single value),
-#' or the bounds of the number of observations per animal (if vector of two values). In the latter case,
-#' the numbers of obervations generated for each animal are uniformously picked from this interval.
+#' @param obsPerAnimal Either the number of the number of observations per animal (if single value) or the bounds of the number of observations per animal (if vector of two values). In the latter case, 
+#' the numbers of obervations generated for each animal are uniformously picked from this interval. Alternatively, \code{obsPerAnimal} can be specified as
+#' a list of length \code{nbAnimals} with each element providing the number of observations (if single value) or the bounds (if vector of two values) for each individual.
 #' Default: \code{c(500,1500)}.
 #' @param initialPosition 2-vector providing the x- and y-coordinates of the initial position for all animals. Default: \code{c(0,0)}.
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
@@ -419,7 +419,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     Par <- Par[distnames]
     delta <- NULL
     
-    mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & is.null(centers) & ("step" %in% names(dist)) & all(initialPosition==c(0,0)) & is.null(lambda) & is.null(errorEllipse)) # indicator for moveHMM::simData
+    mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & is.null(centers) & ("step" %in% names(dist)) & all(initialPosition==c(0,0)) & is.null(lambda) & is.null(errorEllipse) & !is.list(obsPerAnimal)) # indicator for moveHMM::simData
     if(mHind & length(attr(terms.formula(formula),"term.labels"))) mHind <- FALSE
       #if("ID" %in% rownames(attr(terms.formula(formula),"factors")) | any(mapply(is.factor,covs)))
       #  mHind <- FALSE
@@ -501,8 +501,29 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
   } else nbSpatialCovs <- 0
 
-  if(length(which(obsPerAnimal<1))>0)
-    stop("obsPerAnimal should have positive values.")
+  if(is.list(obsPerAnimal)){
+    if(length(obsPerAnimal)!=nbAnimals) stop("obsPerAnimal must be a list of length ",nbAnimals)
+    for(i in 1:length(obsPerAnimal)){
+      if(length(which(obsPerAnimal[[i]]<1))>0)
+        stop("obsPerAnimal elements should have positive values.")
+      if(length(obsPerAnimal[[i]])==1)
+        obsPerAnimal[[i]] <- rep(obsPerAnimal[[i]],2)
+      else if(length(obsPerAnimal[[i]])!=2)
+        stop("obsPerAnimal elements should be of length 1 or 2.")
+    }
+  } else {
+    if(length(which(obsPerAnimal<1))>0) 
+      stop("obsPerAnimal should have positive values.")
+    if(length(obsPerAnimal)==1)
+      obsPerAnimal <- rep(obsPerAnimal,2)
+    else if(length(obsPerAnimal)!=2)
+      stop("obsPerAnimal should be of length 1 or 2.")
+    tmpObs<-obsPerAnimal
+    obsPerAnimal<-vector('list',nbAnimals)
+    for(i in 1:nbAnimals){
+      obsPerAnimal[[i]]<-tmpObs
+    }
+  }
 
   if(!is.null(covs) & nbCovs>0) {
     if(ncol(covs)!=nbCovs)
@@ -535,21 +556,16 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
   }
 
-  if(length(obsPerAnimal)==1)
-    obsPerAnimal <- rep(obsPerAnimal,2)
-  else if(length(obsPerAnimal)!=2)
-    stop("obsPerAnimal should be of length 1 or 2.")
-
   #######################################
   ## Prepare parameters for simulation ##
   #######################################
   # define number of observations for each animal
   allNbObs <- rep(NA,nbAnimals)
   for(zoo in 1:nbAnimals) {
-    if(obsPerAnimal[1]!=obsPerAnimal[2])
-      allNbObs[zoo] <- sample(obsPerAnimal[1]:obsPerAnimal[2],size=1)
+    if(obsPerAnimal[[zoo]][1]!=obsPerAnimal[[zoo]][2])
+      allNbObs[zoo] <- sample(obsPerAnimal[[zoo]][1]:obsPerAnimal[[zoo]][2],size=1)
     else
-      allNbObs[zoo] <- obsPerAnimal[1]
+      allNbObs[zoo] <- obsPerAnimal[[zoo]][1]
   }
   cumNbObs <- c(0,cumsum(allNbObs))
 
