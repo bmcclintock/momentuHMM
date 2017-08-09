@@ -790,7 +790,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
         wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
-        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,dist,p$Bndind)
+        nc <- meanind <- vector('list',length(distnames))
+        names(nc) <- names(meanind) <- distnames
+        for(i in distnames){
+          nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
+          if(inputs$circularAngleMean[[i]]) meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+        }
+        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,dist,p$Bndind,nc,meanind)
         g <- gFull[1,,drop=FALSE]
       } else {
         
@@ -827,7 +833,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           fullDM <- DMinputs$fullDM
           DMind <- DMinputs$DMind
           wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
-          subPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist,p$Bndind)
+          nc <- meanind <- vector('list',length(distnames))
+          names(nc) <- names(meanind) <- distnames
+          for(i in distnames){
+            nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
+            if(inputs$circularAngleMean[[i]]) meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+          }
+          subPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist,p$Bndind,nc,meanind)
         } else {
           subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
         }

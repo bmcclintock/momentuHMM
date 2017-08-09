@@ -311,7 +311,9 @@
 #' data.spline<-simData(obsPerAnimal=nObs,nbStates=1,dist=dist,Par=Par,DM=DM,covs=cov) 
 #' 
 #' Par0 <- list(step=Par$step,angle=Par$angle[-1])
-#' m.spline<-fitHMM(data.spline,nbStates=1,dist=dist,Par0=Par0,DM=DM)  
+#' m.spline<-fitHMM(data.spline,nbStates=1,dist=dist,Par0=Par0,
+#'                  DM=list(step=stepDM,
+#'                          angle=list(concentration=~bSpline(time,df=3,degree=0))))  
 #' }
 #' 
 #' @references
@@ -632,6 +634,13 @@ fitHMM <- function(data,nbStates,dist,
   }
   message("\n Transition probability matrix formula: ",paste0(formula,collapse=""))
   message("=======================================================================")
+  
+  nc <- meanind <- vector('list',length(distnames))
+  names(nc) <- names(meanind) <- distnames
+  for(i in distnames){
+    nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
+    if(inputs$circularAngleMean[[i]]) meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+  }
 
   if(fit) {
     
@@ -641,7 +650,7 @@ fitHMM <- function(data,nbStates,dist,
       
       # just use moveHMM if simpler models are specified
       if(all(distnames %in% c("step","angle")) & mHind){
-        fullPar<-w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind)
+        fullPar<-w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind,nc,meanind)
         Par<-lapply(fullPar[distnames],function(x) x[,1])
         for(i in distnames){
           if(dist[[i]] %in% angledists & !inputs$estAngleMean[[i]])
@@ -669,6 +678,7 @@ fitHMM <- function(data,nbStates,dist,
         withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,wpar,nbStates,newformula,p$bounds,p$parSize,data,dist,covs,
                                                inputs$estAngleMean,inputs$circularAngleMean,zeroInflation,oneInflation,
                                                stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
+                                               nc,meanind,
                                                print.level=verbose,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
                                                iterlim=iterlim,hessian=TRUE),error=function(e) e),warning=h)
@@ -701,11 +711,11 @@ fitHMM <- function(data,nbStates,dist,
     
     # convert the parameters back to their natural scale
     wpar <- mod$estimate
-    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind)
+    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind,nc,meanind)
   }
   else {
     mod <- NA
-    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind)
+    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind,nc,meanind)
   }
 
   ####################

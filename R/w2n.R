@@ -26,6 +26,8 @@
 #' @param nbObs Number of observations in the data.
 #' @param dist Named list indicating the probability distributions of the data streams. 
 #' @param Bndind Named list indicating whether \code{DM} is NULL with default parameter bounds for each data stream.
+#' @param nc indicator for zeros in fullDM
+#' @param meanind index for circular-circular regression mean angles with at least one non-zero entry in fullDM
 #'
 #' @return A list of:
 #' \item{...}{Matrices containing the natural parameters for each data stream (e.g., 'step', 'angle', etc.)}
@@ -57,7 +59,7 @@
 #' @importFrom boot inv.logit
 #' @importFrom Brobdingnag as.brob sum
 
-w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind)
+w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind,nc,meanind)
 {
 
   # identify initial distribution parameters
@@ -104,7 +106,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
       tmpwpar[(foo - nbStates):(foo - 1)] <- angleMean
       tmpwpar[foo:length(tmpwpar)] <- kappa
     }
-    parlist[[i]]<-w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],workcons[[i]],nbObs,circularAngleMean[[i]],nbStates)
+    parlist[[i]]<-w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],workcons[[i]],nbObs,circularAngleMean[[i]],nbStates,0,nc[[i]],meanind[[i]])
 
     if((dist[[i]] %in% angledists) & !estAngleMean[[i]]){
       tmp<-matrix(0,nrow=(parSize[[i]]+1)*nbStates,ncol=nbObs)
@@ -120,7 +122,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   return(parlist)
 }
 
-w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,nbStates,k=0){
+w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,nbStates,k=0,nc,meanind){
   
   a<-bounds[,1]
   b<-bounds[,2]
@@ -129,7 +131,7 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,nbSta
   ind1<-which(piInd)
   ind2<-which(!piInd)
   
-  XB <- p <- getXB(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,nbStates)
+  XB <- p <- getXB(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,nbStates,nc,meanind)
   
   if(length(ind1) & !circularAngleMean)
     p[ind1,] <- (2*atan(XB[ind1,]))

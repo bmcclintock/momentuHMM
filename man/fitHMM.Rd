@@ -341,7 +341,9 @@ Par <- list(step=c(log(1000),1,-1,log(100)),angle=c(0,log(10),2,-5))
 data.spline<-simData(obsPerAnimal=nObs,nbStates=1,dist=dist,Par=Par,DM=DM,covs=cov) 
 
 Par0 <- list(step=Par$step,angle=Par$angle[-1])
-m.spline<-fitHMM(data.spline,nbStates=1,dist=dist,Par0=Par0,DM=DM)  
+m.spline<-fitHMM(data.spline,nbStates=1,dist=dist,Par0=Par0,
+                 DM=list(step=stepDM,
+                         angle=list(concentration=~bSpline(time,df=3,degree=0))))  
 }
 
 }

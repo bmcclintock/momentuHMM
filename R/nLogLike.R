@@ -30,6 +30,8 @@
 #' model (if any).
 #' @param fixPar Vector of working parameters which are assumed known prior to fitting the model (NA indicates parameters is to be estimated).
 #' @param wparIndex Vector of indices for the elements of \code{fixPar} that are not NA.
+#' @param nc indicator for zeros in fullDM
+#' @param meanind index for circular-circular regression mean angles with at least one non-zero entry in fullDM
 #'
 #' @return The negative log-likelihood of the parameters given the data.
 #'
@@ -62,7 +64,7 @@
 
 nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,circularAngleMean,zeroInflation,oneInflation,
-                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex)
+                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind)
 {
   # check arguments
   distnames<-names(dist)
@@ -72,7 +74,7 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
 
   # convert the parameters back to their natural scale
   if(length(wparIndex)) wpar[wparIndex] <- fixPar[wparIndex]
-  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind)
+  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind)
 
   nbAnimals <- length(unique(data$ID))
 
