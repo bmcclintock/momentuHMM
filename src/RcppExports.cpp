@@ -6,6 +6,21 @@
 
 using namespace Rcpp;
 
+// XBloop_rcpp
+arma::mat XBloop_rcpp(List DM, NumericVector Xvec, int nbObs, int nr, int nc);
+RcppExport SEXP momentuHMM_XBloop_rcpp(SEXP DMSEXP, SEXP XvecSEXP, SEXP nbObsSEXP, SEXP nrSEXP, SEXP ncSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< List >::type DM(DMSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type Xvec(XvecSEXP);
+    Rcpp::traits::input_parameter< int >::type nbObs(nbObsSEXP);
+    Rcpp::traits::input_parameter< int >::type nr(nrSEXP);
+    Rcpp::traits::input_parameter< int >::type nc(ncSEXP);
+    rcpp_result_gen = Rcpp::wrap(XBloop_rcpp(DM, Xvec, nbObs, nr, nc));
+    return rcpp_result_gen;
+END_RCPP
+}
 // dgamma_rcpp
 arma::colvec dgamma_rcpp(NumericVector x, arma::mat mu, arma::mat sigma);
 RcppExport SEXP momentuHMM_dgamma_rcpp(SEXP xSEXP, SEXP muSEXP, SEXP sigmaSEXP) {

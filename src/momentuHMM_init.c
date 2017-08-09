@@ -16,6 +16,7 @@ extern SEXP momentuHMM_dweibull_rcpp(SEXP, SEXP, SEXP);
 extern SEXP momentuHMM_dwrpcauchy_rcpp(SEXP, SEXP, SEXP);
 extern SEXP momentuHMM_nLogLike_rcpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP momentuHMM_trMatrix_rcpp(SEXP, SEXP, SEXP);
+extern SEXP momentuHMM_XBloop_rcpp(SEXP, SEXP, SEXP, SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
   {"momentuHMM_dbeta_rcpp",      (DL_FUNC) &momentuHMM_dbeta_rcpp,       3},
@@ -28,6 +29,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"momentuHMM_dwrpcauchy_rcpp", (DL_FUNC) &momentuHMM_dwrpcauchy_rcpp,  3},
   {"momentuHMM_nLogLike_rcpp",   (DL_FUNC) &momentuHMM_nLogLike_rcpp,   11},
   {"momentuHMM_trMatrix_rcpp",   (DL_FUNC) &momentuHMM_trMatrix_rcpp,    3},
+  {"momentuHMM_XBloop_rcpp",     (DL_FUNC) &momentuHMM_XBloop_rcpp,      5},
   {NULL, NULL, 0}
 };
 
