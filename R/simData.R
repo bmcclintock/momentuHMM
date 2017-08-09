@@ -58,9 +58,9 @@
 #' Default: \code{c(500,1500)}.
 #' @param initialPosition 2-vector providing the x- and y-coordinates of the initial position for all animals. Default: \code{c(0,0)}.
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
-#' stream. Each element of \code{DM} can either be a named list of regression formulas or a matrix.  For example, for a 2-state 
+#' stream. Each element of \code{DM} can either be a named list of regression formulas or a ``pseudo'' design matrix.  For example, for a 2-state 
 #' model using the gamma distribution for a data stream named 'step', \code{DM=list(step=list(mean=~cov1, sd=~1))} specifies the mean 
-#' parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 matrix using 
+#' parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 ``pseudo'' design matrix using 
 #' character strings for the covariate: 
 #' \code{DM=list(step=matrix(c(1,0,0,0,'cov1',0,0,0,0,1,0,0,0,'cov1',0,0,0,0,1,0,0,0,0,1),4,6))}
 #' where the 4 rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the 6 columns correspond to the regression 
@@ -368,6 +368,11 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             DM[[i]] <- tmpDM
           }
         }
+        model$conditions$estAngleMean[[i]]<-estAngleMean[[i]]
+        model$conditions$userBounds[[i]]<-userBounds[[i]]
+        model$conditions$cons[[i]]<-cons[[i]]
+        model$conditions$workcons[[i]]<-workcons[[i]]
+        model$conditions$DM[[i]]<-DM[[i]]
       }
     }
     beta <- model$mle$beta
@@ -386,6 +391,22 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         covNames <- c(colnames(model$rawCovs),covNames)
       }
       covsCol <- unique(covNames)
+      factorterms<-names(model$data)[unlist(lapply(model$data,is.factor))]
+      factorcovs<-paste0(rep(factorterms,times=unlist(lapply(model$data[factorterms],nlevels))),unlist(lapply(model$data[factorterms],levels)))
+      
+      if(length(covsCol)){
+        for(jj in 1:length(covsCol)){
+          cov<-covsCol[jj]
+          form<-formula(paste("~",cov))
+          varform<-all.vars(form)
+          if(any(varform %in% factorcovs)){
+            factorvar<-factorcovs %in% varform
+            covsCol[jj]<-rep(factorterms,times=unlist(lapply(model$data[factorterms],nlevels)))[which(factorvar)]
+          } 
+        }
+      }
+      covsCol<-unique(covsCol)
+
       if(length(covsCol)) covs <- model$data[covsCol]
     }
     # else, allow user to enter new values for covariates

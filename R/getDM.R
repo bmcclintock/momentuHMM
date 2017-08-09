@@ -65,8 +65,21 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       DMnames<-colnames(DM[[i]])
       if(is.null(DMnames)) DMnames<-paste0(i,"Beta",1:ncol(DM[[i]]))
       DMterms<-unique(DM[[i]][suppressWarnings(which(is.na(as.numeric(DM[[i]]))))])
+      factorterms<-names(data)[unlist(lapply(data,is.factor))]
+      factorcovs<-paste0(rep(factorterms,times=unlist(lapply(data[factorterms],nlevels))),unlist(lapply(data[factorterms],levels)))
       for(cov in DMterms){
-        covs<-model.matrix(formula(paste("~",cov)),data)[,2]
+        if(is.factor(data[[cov]])) stop('factor levels must be specified individually when using pseudo-design matrices')
+        form<-formula(paste("~",cov))
+        varform<-all.vars(form)
+        if(any(varform %in% factorcovs)){
+          factorvar<-factorcovs %in% varform
+          tmpcov<-rep(factorterms,times=unlist(lapply(data[factorterms],nlevels)))[which(factorvar)]
+          tmpcov<-gsub(factorcovs[factorvar],tmpcov,cov)
+          covs<-model.matrix(formula(paste("~ 0 + ",tmpcov)),data)
+          covs<-covs[,which(gsub(" ","",colnames(covs)) %in% gsub(" ","",cov))]
+        } else {
+          covs<-model.matrix(form,data)[,2]
+        }
         if(length(covs)!=nbObs) stop("covariates cannot contain missing values")
         for(k in 1:nbObs){
           ind<-which(tmpDM[,,k]==cov)

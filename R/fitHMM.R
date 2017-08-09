@@ -61,9 +61,9 @@
 #' If fit=\code{FALSE}, a model is returned with the MLE replaced by the initial parameters given in
 #' input. This option can be used to assess the initial parameters, parameter bounds, etc. Default: \code{TRUE}.
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
-#' stream. Each element of \code{DM} can either be a named list of linear regression formulas or a matrix.  For example, for a 2-state 
+#' stream. Each element of \code{DM} can either be a named list of linear regression formulas or a ``pseudo'' design matrix.  For example, for a 2-state 
 #' model using the gamma distribution for a data stream named 'step', \code{DM=list(step=list(mean=~cov1, sd=~1))} specifies the mean 
-#' parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 matrix using 
+#' parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 ``pseudo'' design matrix using 
 #' character strings for the covariate: 
 #' \code{DM=list(step=matrix(c(1,0,0,0,'cov1',0,0,0,0,1,0,0,0,'cov1',0,0,0,0,1,0,0,0,0,1),4,6))}
 #' where the 4 rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the 6 columns correspond to the regression 

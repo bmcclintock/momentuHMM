@@ -336,6 +336,40 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     DMterms<-covNames$DMterms
     DMparterms<-covNames$DMparterms
     
+    factorterms<-names(m$data)[unlist(lapply(m$data,is.factor))]
+    factorcovs<-paste0(rep(factorterms,times=unlist(lapply(m$data[factorterms],nlevels))),unlist(lapply(m$data[factorterms],levels)))
+    
+    if(length(DMterms)){
+      for(jj in 1:length(DMterms)){
+        cov<-DMterms[jj]
+        form<-formula(paste("~",cov))
+        varform<-all.vars(form)
+        if(any(varform %in% factorcovs)){
+          factorvar<-factorcovs %in% varform
+          DMterms[jj]<-rep(factorterms,times=unlist(lapply(m$data[factorterms],nlevels)))[which(factorvar)]
+        } 
+      }
+    }
+    DMterms<-unique(DMterms)
+    
+    if(length(DMparterms)){
+      for(ii in 1:length(DMparterms)){
+        for(state in 1:nbStates){
+          if(length(DMparterms[[ii]][[state]])){
+            for(jj in 1:length(DMparterms[[ii]][[state]])){
+              cov<-DMparterms[[ii]][[state]][jj]
+              form<-formula(paste("~",cov))
+              varform<-all.vars(form)
+              if(any(varform %in% factorcovs)){
+                factorvar<-factorcovs %in% varform
+                DMparterms[[ii]][[state]][jj]<-rep(factorterms,times=unlist(lapply(m$data[factorterms],nlevels)))[which(factorvar)]
+              }
+            }
+            DMparterms[[ii]][[state]]<-unique(DMparterms[[ii]][[state]])
+          }
+        }
+      }
+    }
     covmess <- ifelse(!m$conditions$DMind[[i]],paste0(": ",paste0(DMterms," = ",tmpcovs[DMterms],collapse=", ")),"")
   
     ###########################################

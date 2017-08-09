@@ -1,8 +1,10 @@
-momentuHMM 1.1.0 2017-07-31
+momentuHMM 1.1.0 2017-08-09
 -----------------
 NEW FEATURES
 
 * fixPar argument in fitHMM and MIfitHMM now specified on the same scale as the initial parameters (Par0, beta0, and delta0 arguments)
+
+* Factor-level covariates (e.g. 'sexM', `sexF') can now be included in pseudo design matrix DM arguments of fitHMM, MIfitHMM, and simData
 
 CHANGES
 
