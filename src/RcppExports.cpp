@@ -111,13 +111,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // getDM_rcpp
-arma::cube getDM_rcpp(arma::cube DM, IntegerVector covs, arma::cube tmpDM, int nr, int nc, std::string cov, int nbObs);
+arma::cube getDM_rcpp(arma::cube DM, NumericVector covs, arma::cube tmpDM, int nr, int nc, std::string cov, int nbObs);
 RcppExport SEXP _momentuHMM_getDM_rcpp(SEXP DMSEXP, SEXP covsSEXP, SEXP tmpDMSEXP, SEXP nrSEXP, SEXP ncSEXP, SEXP covSEXP, SEXP nbObsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::cube >::type DM(DMSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type covs(covsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type covs(covsSEXP);
     Rcpp::traits::input_parameter< arma::cube >::type tmpDM(tmpDMSEXP);
     Rcpp::traits::input_parameter< int >::type nr(nrSEXP);
     Rcpp::traits::input_parameter< int >::type nc(ncSEXP);

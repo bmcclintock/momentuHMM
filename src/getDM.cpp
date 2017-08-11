@@ -4,7 +4,7 @@
 using namespace Rcpp;
 using namespace std;
 // [[Rcpp::export]]
-arma::cube getDM_rcpp(arma::cube DM, IntegerVector covs, arma::cube tmpDM, int nr, int nc, std::string cov, int nbObs)
+arma::cube getDM_rcpp(arma::cube DM, NumericVector covs, arma::cube tmpDM, int nr, int nc, std::string cov, int nbObs)
 {
   for(unsigned int k=0; k<nbObs; k++){
     for(unsigned int j=0; j<nr; j++){
