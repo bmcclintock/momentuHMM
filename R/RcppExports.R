@@ -104,6 +104,10 @@ dpois_rcpp <- function(x, rate, foo) {
     .Call('_momentuHMM_dpois_rcpp', PACKAGE = 'momentuHMM', x, rate, foo)
 }
 
+getDM_rcpp <- function(DM, covs, tmpDM, nr, nc, cov, nbObs) {
+    .Call('_momentuHMM_getDM_rcpp', PACKAGE = 'momentuHMM', DM, covs, tmpDM, nr, nc, cov, nbObs)
+}
+
 #' Negative log-likelihood
 #'
 #' Computation of the negative log-likelihood (forward algorithm - written in C++)

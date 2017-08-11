@@ -61,7 +61,8 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       if(ncol(tmpDM)!=length(Par[[i]]) & ParChecks) stop("Based on DM$",i,", Par$",i," must be of length ",ncol(tmpDM))
     } else {
       if(is.null(dim(DM[[i]]))) stop("DM for ",i," is not specified correctly")
-      tmpDM<-array(DM[[i]],dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs))
+      otmpDM<-array(DM[[i]],dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs))
+      tmpDM<-suppressWarnings(array(as.numeric(DM[[i]]),dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs)))
       DMnames<-colnames(DM[[i]])
       if(is.null(DMnames)) DMnames<-paste0(i,"Beta",1:ncol(DM[[i]]))
       DMterms<-unique(DM[[i]][suppressWarnings(which(is.na(as.numeric(DM[[i]]))))])
@@ -81,12 +82,8 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
           covs<-model.matrix(form,data)[,2]
         }
         if(length(covs)!=nbObs) stop("covariates cannot contain missing values")
-        for(k in 1:nbObs){
-          ind<-which(tmpDM[,,k]==cov)
-          tmpDM[,,k][ind]<-covs[k]
-        }
+        tmpDM<-getDM_rcpp(tmpDM,covs,otmpDM==cov,nrow(tmpDM),ncol(tmpDM),cov,nbObs)
       }
-      tmpDM<-array(as.numeric(tmpDM),dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs))
     }
     colnames(tmpDM)<-DMnames
     fullDM[[i]]<-tmpDM
@@ -135,7 +132,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
   cons<-cons[distnames]
   if(ParChecks){
     if(any(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))) 
-    stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
+      stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
   } else {
     if(any(unlist(lapply(cons,length))!=unlist(lapply(simpDM,ncol)))) 
       stop("Length mismatch between DM and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(simpDM,ncol)))),collapse=", "))    

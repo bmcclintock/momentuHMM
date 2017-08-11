@@ -110,6 +110,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// getDM_rcpp
+arma::cube getDM_rcpp(arma::cube DM, IntegerVector covs, arma::cube tmpDM, int nr, int nc, std::string cov, int nbObs);
+RcppExport SEXP _momentuHMM_getDM_rcpp(SEXP DMSEXP, SEXP covsSEXP, SEXP tmpDMSEXP, SEXP nrSEXP, SEXP ncSEXP, SEXP covSEXP, SEXP nbObsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::cube >::type DM(DMSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type covs(covsSEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type tmpDM(tmpDMSEXP);
+    Rcpp::traits::input_parameter< int >::type nr(nrSEXP);
+    Rcpp::traits::input_parameter< int >::type nc(ncSEXP);
+    Rcpp::traits::input_parameter< std::string >::type cov(covSEXP);
+    Rcpp::traits::input_parameter< int >::type nbObs(nbObsSEXP);
+    rcpp_result_gen = Rcpp::wrap(getDM_rcpp(DM, covs, tmpDM, nr, nc, cov, nbObs));
+    return rcpp_result_gen;
+END_RCPP
+}
 // nLogLike_rcpp
 double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist, List Par, IntegerVector aInd, List zeroInflation, List oneInflation, bool stationary, IntegerVector knownStates);
 RcppExport SEXP _momentuHMM_nLogLike_rcpp(SEXP nbStatesSEXP, SEXP covsSEXP, SEXP dataSEXP, SEXP dataNamesSEXP, SEXP distSEXP, SEXP ParSEXP, SEXP aIndSEXP, SEXP zeroInflationSEXP, SEXP oneInflationSEXP, SEXP stationarySEXP, SEXP knownStatesSEXP) {
