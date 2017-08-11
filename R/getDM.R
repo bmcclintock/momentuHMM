@@ -61,29 +61,31 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       if(ncol(tmpDM)!=length(Par[[i]]) & ParChecks) stop("Based on DM$",i,", Par$",i," must be of length ",ncol(tmpDM))
     } else {
       if(is.null(dim(DM[[i]]))) stop("DM for ",i," is not specified correctly")
-      otmpDM<-array(DM[[i]],dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs))
       tmpDM<-suppressWarnings(array(as.numeric(DM[[i]]),dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs)))
       DMnames<-colnames(DM[[i]])
       if(is.null(DMnames)) DMnames<-paste0(i,"Beta",1:ncol(DM[[i]]))
       DMterms<-unique(DM[[i]][suppressWarnings(which(is.na(as.numeric(DM[[i]]))))])
       factorterms<-names(data)[unlist(lapply(data,is.factor))]
       factorcovs<-paste0(rep(factorterms,times=unlist(lapply(data[factorterms],nlevels))),unlist(lapply(data[factorterms],levels)))
+      covs<-numeric()
       for(cov in DMterms){
         if(is.factor(data[[cov]])) stop('factor levels must be specified individually when using pseudo-design matrices')
-        form<-formula(paste("~",cov))
+        form<-formula(paste("~0+",cov))
         varform<-all.vars(form)
         if(any(varform %in% factorcovs)){
           factorvar<-factorcovs %in% varform
           tmpcov<-rep(factorterms,times=unlist(lapply(data[factorterms],nlevels)))[which(factorvar)]
           tmpcov<-gsub(factorcovs[factorvar],tmpcov,cov)
-          covs<-model.matrix(formula(paste("~ 0 + ",tmpcov)),data)
-          covs<-covs[,which(gsub(" ","",colnames(covs)) %in% gsub(" ","",cov))]
+          tmpcovs<-model.matrix(formula(paste("~ 0 + ",tmpcov)),data)
+          tmpcovs<-tmpcovs[,which(gsub(" ","",colnames(tmpcovs)) %in% gsub(" ","",cov))]
+          covs<-cbind(covs,tmpcovs)
         } else {
-          covs<-model.matrix(form,data)[,2]
+          tmpcovs<-model.matrix(form,data)
+          covs<-cbind(covs,tmpcovs)
         }
-        if(length(covs)!=nbObs) stop("covariates cannot contain missing values")
-        tmpDM<-getDM_rcpp(tmpDM,covs,otmpDM==cov,nrow(tmpDM),ncol(tmpDM),cov,nbObs)
+        if(length(tmpcovs)!=nbObs) stop("covariates cannot contain missing values")
       }
+      if(length(DMterms)) tmpDM<-getDM_rcpp(tmpDM,covs,c(DM[[i]]),nrow(tmpDM),ncol(tmpDM),DMterms,nbObs)
     }
     colnames(tmpDM)<-DMnames
     fullDM[[i]]<-tmpDM
