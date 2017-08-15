@@ -70,7 +70,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       covs<-numeric()
       for(cov in DMterms){
         if(is.factor(data[[cov]])) stop('factor levels must be specified individually when using pseudo-design matrices')
-        form<-formula(paste("~0+",cov))
+        form<-formula(paste("~",cov))
         varform<-all.vars(form)
         if(any(varform %in% factorcovs)){
           factorvar<-factorcovs %in% varform
@@ -80,7 +80,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
           tmpcovs<-tmpcovs[,which(gsub(" ","",colnames(tmpcovs)) %in% gsub(" ","",cov))]
           covs<-cbind(covs,tmpcovs)
         } else {
-          tmpcovs<-model.matrix(form,data)
+          tmpcovs<-model.matrix(form,data)[,2]
           covs<-cbind(covs,tmpcovs)
         }
         if(length(tmpcovs)!=nbObs) stop("covariates cannot contain missing values")
