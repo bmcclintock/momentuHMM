@@ -67,6 +67,10 @@ plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.y
   m$mle$delta <- x$Par$real$delta$est
   m$mod <- list()
   m$mod$estimate <- x$MIcombine$coefficients
+  for(i in names(m$conditions$dist)){
+    m$conditions$cons[[i]]<-rep(1,length(m$conditions$cons[[i]]))
+    m$conditions$workcons[[i]]<-rep(0,length(m$conditions$workcons[[i]]))
+  }
   m$plotEllipse <- plotEllipse
   
   class(m) <- append("momentuHMM",class(m))
