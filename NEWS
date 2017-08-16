@@ -1,3 +1,22 @@
+momentuHMM 1.1.0 2017-08-15
+-----------------
+NEW FEATURES
+
+* fixPar argument in fitHMM and MIfitHMM now specified on the same scale as the initial parameters (Par0, beta0, and delta0 arguments)
+
+* Factor-level covariates (e.g. 'sexM', `sexF') can now be included in pseudo design matrix DM arguments of fitHMM, MIfitHMM, and simData
+
+* obsPerAnimal argument in simData can now be specified as a list indicating the number of observations for each individual
+
+CHANGES
+
+* vignette now built using knitr
+
+* bug fix in crawlWrap when predTimes argument includes times that are before the time of first observation
+
+* bug fix in plot.miSum calculation of natural scale parameters when cons and/or workcons MIfitHMM arguments are used
+
+
 momentuHMM 1.0.1 2017-07-17
 -----------------
 NEW FEATURES

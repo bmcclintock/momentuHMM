@@ -75,17 +75,17 @@ for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'c
 of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. Note that the angle covariates for each activity center are calculated relative to 
 the previous movement direction instead of standard directions relative to the x-axis; this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression.}
 
-\item{obsPerAnimal}{Either the number of the number of observations per animal (if single value),
-or the bounds of the number of observations per animal (if vector of two values). In the latter case,
-the numbers of obervations generated for each animal are uniformously picked from this interval.
+\item{obsPerAnimal}{Either the number of the number of observations per animal (if single value) or the bounds of the number of observations per animal (if vector of two values). In the latter case, 
+the numbers of obervations generated for each animal are uniformously picked from this interval. Alternatively, \code{obsPerAnimal} can be specified as
+a list of length \code{nbAnimals} with each element providing the number of observations (if single value) or the bounds (if vector of two values) for each individual.
 Default: \code{c(500,1500)}.}
 
 \item{initialPosition}{2-vector providing the x- and y-coordinates of the initial position for all animals. Default: \code{c(0,0)}.}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
-stream. Each element of \code{DM} can either be a named list of regression formulas or a matrix.  For example, for a 2-state 
+stream. Each element of \code{DM} can either be a named list of regression formulas or a ``pseudo'' design matrix.  For example, for a 2-state 
 model using the gamma distribution for a data stream named 'step', \code{DM=list(step=list(mean=~cov1, sd=~1))} specifies the mean 
-parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 matrix using 
+parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 ``pseudo'' design matrix using 
 character strings for the covariate: 
 \code{DM=list(step=matrix(c(1,0,0,0,'cov1',0,0,0,0,1,0,0,0,'cov1',0,0,0,0,1,0,0,0,0,1),4,6))}
 where the 4 rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the 6 columns correspond to the regression 

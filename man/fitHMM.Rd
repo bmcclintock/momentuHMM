@@ -81,9 +81,9 @@ If fit=\code{FALSE}, a model is returned with the MLE replaced by the initial pa
 input. This option can be used to assess the initial parameters, parameter bounds, etc. Default: \code{TRUE}.}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
-stream. Each element of \code{DM} can either be a named list of linear regression formulas or a matrix.  For example, for a 2-state 
+stream. Each element of \code{DM} can either be a named list of linear regression formulas or a ``pseudo'' design matrix.  For example, for a 2-state 
 model using the gamma distribution for a data stream named 'step', \code{DM=list(step=list(mean=~cov1, sd=~1))} specifies the mean 
-parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 matrix using 
+parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 ``pseudo'' design matrix using 
 character strings for the covariate: 
 \code{DM=list(step=matrix(c(1,0,0,0,'cov1',0,0,0,0,1,0,0,0,'cov1',0,0,0,0,1,0,0,0,0,1),4,6))}
 where the 4 rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the 6 columns correspond to the regression 
@@ -117,8 +117,8 @@ of rows of 'data'; each element should either be an integer (the value of the kn
 the state is not known.}
 
 \item{fixPar}{An optional list of vectors indicating parameters which are assumed known prior to fitting the model. Default: NULL 
-(no parameters are fixed). Each element of \code{fixPar} should be a vector of the same length as the corresponding vector of 
-\code{Par0}; each element should either be numeric (the fixed value of the parameter) or NA if the parameter is to be estimated.}
+(no parameters are fixed). For data streams, each element of \code{fixPar} should be a vector of the same name and length as the corresponding element of 
+\code{Par0}. For transition probability parameters, the corresponding element of \code{fixPar} must be named ``beta'' and have the same dimensions as \code{beta0}. For initial distribution parameters, the corresponding element of \code{fixPar} must be named ``delta'' and have the same dimensions as \code{delta0}. Each parameter should either be numeric (the fixed value of the parameter) or NA if the parameter is to be estimated. For each data stream, \code{fixPar} parameters must be on the same scale as \code{Par0} (e.g. if \code{DM} is specified for a given data stream, any fixed parameters for this data stream must be on the working scale).  Any fixed values for the transition probabilities (\code{beta}) must be on the working scale (i.e. the same scale as \code{beta0}). Any fixed values for the initial distribution (\code{delta}) must be on the natural scale (i.e. the same scale as \code{delta0}).}
 
 \item{retryFits}{Non-negative integer indicating the number of times to attempt to iteratively fit the model using random perturbations of the current parameter estimates as the 
 initial values for likelihood optimization. Standard normal perturbations are used on the working scale probability distribution parameters, while
@@ -341,7 +341,9 @@ Par <- list(step=c(log(1000),1,-1,log(100)),angle=c(0,log(10),2,-5))
 data.spline<-simData(obsPerAnimal=nObs,nbStates=1,dist=dist,Par=Par,DM=DM,covs=cov) 
 
 Par0 <- list(step=Par$step,angle=Par$angle[-1])
-m.spline<-fitHMM(data.spline,nbStates=1,dist=dist,Par0=Par0,DM=DM)  
+m.spline<-fitHMM(data.spline,nbStates=1,dist=dist,Par0=Par0,
+                 DM=list(step=stepDM,
+                         angle=list(concentration=~bSpline(time,df=3,degree=0))))  
 }
 
 }

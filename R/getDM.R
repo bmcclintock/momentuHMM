@@ -61,19 +61,31 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       if(ncol(tmpDM)!=length(Par[[i]]) & ParChecks) stop("Based on DM$",i,", Par$",i," must be of length ",ncol(tmpDM))
     } else {
       if(is.null(dim(DM[[i]]))) stop("DM for ",i," is not specified correctly")
-      tmpDM<-array(DM[[i]],dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs))
+      tmpDM<-suppressWarnings(array(as.numeric(DM[[i]]),dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs)))
       DMnames<-colnames(DM[[i]])
       if(is.null(DMnames)) DMnames<-paste0(i,"Beta",1:ncol(DM[[i]]))
       DMterms<-unique(DM[[i]][suppressWarnings(which(is.na(as.numeric(DM[[i]]))))])
+      factorterms<-names(data)[unlist(lapply(data,is.factor))]
+      factorcovs<-paste0(rep(factorterms,times=unlist(lapply(data[factorterms],nlevels))),unlist(lapply(data[factorterms],levels)))
+      covs<-numeric()
       for(cov in DMterms){
-        covs<-model.matrix(formula(paste("~",cov)),data)[,2]
-        if(length(covs)!=nbObs) stop("covariates cannot contain missing values")
-        for(k in 1:nbObs){
-          ind<-which(tmpDM[,,k]==cov)
-          tmpDM[,,k][ind]<-covs[k]
+        if(is.factor(data[[cov]])) stop('factor levels must be specified individually when using pseudo-design matrices')
+        form<-formula(paste("~",cov))
+        varform<-all.vars(form)
+        if(any(varform %in% factorcovs)){
+          factorvar<-factorcovs %in% varform
+          tmpcov<-rep(factorterms,times=unlist(lapply(data[factorterms],nlevels)))[which(factorvar)]
+          tmpcov<-gsub(factorcovs[factorvar],tmpcov,cov)
+          tmpcovs<-model.matrix(formula(paste("~ 0 + ",tmpcov)),data)
+          tmpcovs<-tmpcovs[,which(gsub(" ","",colnames(tmpcovs)) %in% gsub(" ","",cov))]
+          covs<-cbind(covs,tmpcovs)
+        } else {
+          tmpcovs<-model.matrix(form,data)[,2]
+          covs<-cbind(covs,tmpcovs)
         }
+        if(length(tmpcovs)!=nbObs) stop("covariates cannot contain missing values")
       }
-      tmpDM<-array(as.numeric(tmpDM),dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs))
+      if(length(DMterms)) tmpDM<-getDM_rcpp(tmpDM,covs,c(DM[[i]]),nrow(tmpDM),ncol(tmpDM),DMterms,nbObs)
     }
     colnames(tmpDM)<-DMnames
     fullDM[[i]]<-tmpDM
@@ -122,7 +134,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
   cons<-cons[distnames]
   if(ParChecks){
     if(any(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))) 
-    stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
+      stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
   } else {
     if(any(unlist(lapply(cons,length))!=unlist(lapply(simpDM,ncol)))) 
       stop("Length mismatch between DM and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(simpDM,ncol)))),collapse=", "))    

@@ -7,7 +7,7 @@
 nLogLike(wpar, nbStates, formula, bounds, parSize, data, dist, covs,
   estAngleMean, circularAngleMean, zeroInflation, oneInflation,
   stationary = FALSE, cons, fullDM, DMind, workcons, Bndind, knownStates,
-  fixPar, wparIndex)
+  fixPar, wparIndex, nc, meanind)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}
@@ -59,6 +59,10 @@ model (if any).}
 \item{fixPar}{Vector of working parameters which are assumed known prior to fitting the model (NA indicates parameters is to be estimated).}
 
 \item{wparIndex}{Vector of indices for the elements of \code{fixPar} that are not NA.}
+
+\item{nc}{indicator for zeros in fullDM}
+
+\item{meanind}{index for circular-circular regression mean angles with at least one non-zero entry in fullDM}
 }
 \value{
 The negative log-likelihood of the parameters given the data.

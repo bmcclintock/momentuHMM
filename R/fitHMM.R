@@ -61,9 +61,9 @@
 #' If fit=\code{FALSE}, a model is returned with the MLE replaced by the initial parameters given in
 #' input. This option can be used to assess the initial parameters, parameter bounds, etc. Default: \code{TRUE}.
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
-#' stream. Each element of \code{DM} can either be a named list of linear regression formulas or a matrix.  For example, for a 2-state 
+#' stream. Each element of \code{DM} can either be a named list of linear regression formulas or a ``pseudo'' design matrix.  For example, for a 2-state 
 #' model using the gamma distribution for a data stream named 'step', \code{DM=list(step=list(mean=~cov1, sd=~1))} specifies the mean 
-#' parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 matrix using 
+#' parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 ``pseudo'' design matrix using 
 #' character strings for the covariate: 
 #' \code{DM=list(step=matrix(c(1,0,0,0,'cov1',0,0,0,0,1,0,0,0,'cov1',0,0,0,0,1,0,0,0,0,1),4,6))}
 #' where the 4 rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the 6 columns correspond to the regression 
@@ -91,8 +91,8 @@
 #' of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
 #' the state is not known.
 #' @param fixPar An optional list of vectors indicating parameters which are assumed known prior to fitting the model. Default: NULL 
-#' (no parameters are fixed). Each element of \code{fixPar} should be a vector of the same length as the corresponding vector of 
-#' \code{Par0}; each element should either be numeric (the fixed value of the parameter) or NA if the parameter is to be estimated. 
+#' (no parameters are fixed). For data streams, each element of \code{fixPar} should be a vector of the same name and length as the corresponding element of 
+#' \code{Par0}. For transition probability parameters, the corresponding element of \code{fixPar} must be named ``beta'' and have the same dimensions as \code{beta0}. For initial distribution parameters, the corresponding element of \code{fixPar} must be named ``delta'' and have the same dimensions as \code{delta0}. Each parameter should either be numeric (the fixed value of the parameter) or NA if the parameter is to be estimated. For each data stream, \code{fixPar} parameters must be on the same scale as \code{Par0} (e.g. if \code{DM} is specified for a given data stream, any fixed parameters for this data stream must be on the working scale).  Any fixed values for the transition probabilities (\code{beta}) must be on the working scale (i.e. the same scale as \code{beta0}). Any fixed values for the initial distribution (\code{delta}) must be on the natural scale (i.e. the same scale as \code{delta0}).
 #' @param retryFits Non-negative integer indicating the number of times to attempt to iteratively fit the model using random perturbations of the current parameter estimates as the 
 #' initial values for likelihood optimization. Standard normal perturbations are used on the working scale probability distribution parameters, while
 #' Normal(0,10^2) pertubations are used for working scale transition probability parameters. Default: 0.  When \code{retryFits>0}, the model with the largest log likelihood 
@@ -311,7 +311,9 @@
 #' data.spline<-simData(obsPerAnimal=nObs,nbStates=1,dist=dist,Par=Par,DM=DM,covs=cov) 
 #' 
 #' Par0 <- list(step=Par$step,angle=Par$angle[-1])
-#' m.spline<-fitHMM(data.spline,nbStates=1,dist=dist,Par0=Par0,DM=DM)  
+#' m.spline<-fitHMM(data.spline,nbStates=1,dist=dist,Par0=Par0,
+#'                  DM=list(step=stepDM,
+#'                          angle=list(concentration=~bSpline(time,df=3,degree=0))))  
 #' }
 #' 
 #' @references
@@ -558,14 +560,20 @@ fitHMM <- function(data,nbStates,dist,
 
   parindex <- c(0,cumsum(unlist(lapply(Par0,length))))
   names(parindex) <- c(distnames,"beta")
+  ofixPar <- fixPar
   for(i in distnames){
     if(!is.null(fixPar[[i]])){
       if(length(fixPar[[i]])!=length(Par0[[i]])) stop("fixPar$",i," must be of length ",length(Par0[[i]]))
       tmp <- which(!is.na(fixPar[[i]]))
       Par0[[i]][tmp]<-fixPar[[i]][tmp]
+      
+      # if DM is not specified convert fixPar from real to working scale
+      if(is.null(inputs$DM[[i]])){
+        fixPar[[i]][tmp]<-n2w(Par0[i],p$bounds,NULL,NULL,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)[tmp]
+      } 
       wparIndex <- c(wparIndex,parindex[[i]]+tmp)
     } else {
-      fixPar[[i]] <- rep(NA,length(Par0[[i]]))
+      fixPar[[i]] <- ofixPar[[i]] <- rep(NA,length(Par0[[i]]))
       #wparIndex <- c(wparIndex,parindex[[i]]+1:length(Par0[[i]]))
     }
   }
@@ -591,10 +599,11 @@ fitHMM <- function(data,nbStates,dist,
       }
     }
   } else {
-    fixPar$delta <- rep(NA,length(delta0))
+    fixPar$delta <- ofixPar$delta <- rep(NA,length(delta0))
   }
 
   fixPar <- fixPar[c(distnames,"beta","delta")]
+  ofixPar <- ofixPar[c(distnames,"beta","delta")]
   
   wpar <- n2w(Par0,p$bounds,beta0,delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
   if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
@@ -625,6 +634,13 @@ fitHMM <- function(data,nbStates,dist,
   }
   message("\n Transition probability matrix formula: ",paste0(formula,collapse=""))
   message("=======================================================================")
+  
+  nc <- meanind <- vector('list',length(distnames))
+  names(nc) <- names(meanind) <- distnames
+  for(i in distnames){
+    nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
+    if(inputs$circularAngleMean[[i]]) meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+  }
 
   if(fit) {
     
@@ -634,7 +650,7 @@ fitHMM <- function(data,nbStates,dist,
       
       # just use moveHMM if simpler models are specified
       if(all(distnames %in% c("step","angle")) & mHind){
-        fullPar<-w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind)
+        fullPar<-w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind,nc,meanind)
         Par<-lapply(fullPar[distnames],function(x) x[,1])
         for(i in distnames){
           if(dist[[i]] %in% angledists & !inputs$estAngleMean[[i]])
@@ -662,6 +678,7 @@ fitHMM <- function(data,nbStates,dist,
         withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,wpar,nbStates,newformula,p$bounds,p$parSize,data,dist,covs,
                                                inputs$estAngleMean,inputs$circularAngleMean,zeroInflation,oneInflation,
                                                stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
+                                               nc,meanind,
                                                print.level=verbose,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
                                                iterlim=iterlim,hessian=TRUE),error=function(e) e),warning=h)
@@ -694,11 +711,11 @@ fitHMM <- function(data,nbStates,dist,
     
     # convert the parameters back to their natural scale
     wpar <- mod$estimate
-    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind)
+    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind,nc,meanind)
   }
   else {
     mod <- NA
-    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind)
+    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind,nc,meanind)
   }
 
   ####################
@@ -771,7 +788,7 @@ fitHMM <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
-                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=fixPar,wparIndex=wparIndex)
+                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=ofixPar,wparIndex=wparIndex)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   

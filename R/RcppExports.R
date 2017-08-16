@@ -11,7 +11,7 @@
 #'
 #' @return Vector of densities
 dgamma_rcpp <- function(x, mu, sigma) {
-    .Call('momentuHMM_dgamma_rcpp', PACKAGE = 'momentuHMM', x, mu, sigma)
+    .Call('_momentuHMM_dgamma_rcpp', PACKAGE = 'momentuHMM', x, mu, sigma)
 }
 
 #' Weibull density function
@@ -24,7 +24,7 @@ dgamma_rcpp <- function(x, mu, sigma) {
 #'
 #' @return Vector of densities
 dweibull_rcpp <- function(x, shape, scale) {
-    .Call('momentuHMM_dweibull_rcpp', PACKAGE = 'momentuHMM', x, shape, scale)
+    .Call('_momentuHMM_dweibull_rcpp', PACKAGE = 'momentuHMM', x, shape, scale)
 }
 
 #' Log-normal density function
@@ -37,7 +37,7 @@ dweibull_rcpp <- function(x, shape, scale) {
 #'
 #' @return Vector of densities
 dlnorm_rcpp <- function(x, meanlog, sdlog) {
-    .Call('momentuHMM_dlnorm_rcpp', PACKAGE = 'momentuHMM', x, meanlog, sdlog)
+    .Call('_momentuHMM_dlnorm_rcpp', PACKAGE = 'momentuHMM', x, meanlog, sdlog)
 }
 
 #' Exponential density function
@@ -50,7 +50,7 @@ dlnorm_rcpp <- function(x, meanlog, sdlog) {
 #'
 #' @return Vector of densities
 dexp_rcpp <- function(x, rate, foo) {
-    .Call('momentuHMM_dexp_rcpp', PACKAGE = 'momentuHMM', x, rate, foo)
+    .Call('_momentuHMM_dexp_rcpp', PACKAGE = 'momentuHMM', x, rate, foo)
 }
 
 #' Von Mises density function
@@ -64,7 +64,7 @@ dexp_rcpp <- function(x, rate, foo) {
 #'
 #' @return Vector of densities
 dvm_rcpp <- function(x, mu, kappa) {
-    .Call('momentuHMM_dvm_rcpp', PACKAGE = 'momentuHMM', x, mu, kappa)
+    .Call('_momentuHMM_dvm_rcpp', PACKAGE = 'momentuHMM', x, mu, kappa)
 }
 
 #' Wrapped Cauchy density function
@@ -77,7 +77,7 @@ dvm_rcpp <- function(x, mu, kappa) {
 #'
 #' @return Vector of densities
 dwrpcauchy_rcpp <- function(x, mu, rho) {
-    .Call('momentuHMM_dwrpcauchy_rcpp', PACKAGE = 'momentuHMM', x, mu, rho)
+    .Call('_momentuHMM_dwrpcauchy_rcpp', PACKAGE = 'momentuHMM', x, mu, rho)
 }
 
 #' Probability density function of the beta distribution (written in C++)
@@ -88,7 +88,7 @@ dwrpcauchy_rcpp <- function(x, mu, rho) {
 #'
 #' @return Vector of densities
 dbeta_rcpp <- function(x, shape1, shape2) {
-    .Call('momentuHMM_dbeta_rcpp', PACKAGE = 'momentuHMM', x, shape1, shape2)
+    .Call('_momentuHMM_dbeta_rcpp', PACKAGE = 'momentuHMM', x, shape1, shape2)
 }
 
 #' Poisson density function
@@ -101,7 +101,11 @@ dbeta_rcpp <- function(x, shape1, shape2) {
 #'
 #' @return Vector of densities
 dpois_rcpp <- function(x, rate, foo) {
-    .Call('momentuHMM_dpois_rcpp', PACKAGE = 'momentuHMM', x, rate, foo)
+    .Call('_momentuHMM_dpois_rcpp', PACKAGE = 'momentuHMM', x, rate, foo)
+}
+
+getDM_rcpp <- function(DM, covs, tmpDM, nr, nc, cov, nbObs) {
+    .Call('_momentuHMM_getDM_rcpp', PACKAGE = 'momentuHMM', DM, covs, tmpDM, nr, nc, cov, nbObs)
 }
 
 #' Negative log-likelihood
@@ -127,7 +131,7 @@ dpois_rcpp <- function(x, rate, foo) {
 #' 
 #' @return Negative log-likelihood
 nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates) {
-    .Call('momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates)
+    .Call('_momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates)
 }
 
 #' Transition probability matrix
@@ -142,6 +146,24 @@ nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zero
 #' @return Three dimensional array \code{trMat}, such that \code{trMat[,,t]} is the transition matrix at
 #' time t.
 trMatrix_rcpp <- function(nbStates, beta, covs) {
-    .Call('momentuHMM_trMatrix_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs)
+    .Call('_momentuHMM_trMatrix_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs)
+}
+
+#' Get XB
+#'
+#' Loop for computation of design matrix (X) times the working scale parameters (B). Written in C++. Used in \code{\link{w2n}}.
+#'
+#' @param DM design matrix
+#' @param Xvec working parameters
+#' @param nbObs number of observations
+#' @param nr number of rows in design matrix
+#' @param nc number of column in design matrix
+#' @param circularAngleMean indicator for whether or not circular-circular regression model
+#' @param rindex row index for design matrix
+#' @param cindex column index for design matrix
+#'
+#' @return XB matrix
+XBloop_rcpp <- function(DM, Xvec, nbObs, nr, nc, circularAngleMean, rindex, cindex) {
+    .Call('_momentuHMM_XBloop_rcpp', PACKAGE = 'momentuHMM', DM, Xvec, nbObs, nr, nc, circularAngleMean, rindex, cindex)
 }
 

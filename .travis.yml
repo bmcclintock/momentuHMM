@@ -1,7 +1,16 @@
 language: r
 cache: packages
+cran: https://cran.rstudio.com/
 
 before_install:
  - tlmgr install psfrag
+ - echo "options(repos = c(CRAN='https://cran.rstudio.com'))" >> ~/.Rprofile
  
 r_build_args: --compact-vignettes="gs+qpdf"
+
+r_check_args: --as-cran
+
+addons:
+  apt:
+    packages: 
+      - ghostscript

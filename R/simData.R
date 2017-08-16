@@ -52,15 +52,15 @@
 #' for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'center2.dist', 'center2.angle'); otherwise the covariate names are derived from the row names
 #' of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. Note that the angle covariates for each activity center are calculated relative to 
 #' the previous movement direction instead of standard directions relative to the x-axis; this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression.
-#' @param obsPerAnimal Either the number of the number of observations per animal (if single value),
-#' or the bounds of the number of observations per animal (if vector of two values). In the latter case,
-#' the numbers of obervations generated for each animal are uniformously picked from this interval.
+#' @param obsPerAnimal Either the number of the number of observations per animal (if single value) or the bounds of the number of observations per animal (if vector of two values). In the latter case, 
+#' the numbers of obervations generated for each animal are uniformously picked from this interval. Alternatively, \code{obsPerAnimal} can be specified as
+#' a list of length \code{nbAnimals} with each element providing the number of observations (if single value) or the bounds (if vector of two values) for each individual.
 #' Default: \code{c(500,1500)}.
 #' @param initialPosition 2-vector providing the x- and y-coordinates of the initial position for all animals. Default: \code{c(0,0)}.
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
-#' stream. Each element of \code{DM} can either be a named list of regression formulas or a matrix.  For example, for a 2-state 
+#' stream. Each element of \code{DM} can either be a named list of regression formulas or a ``pseudo'' design matrix.  For example, for a 2-state 
 #' model using the gamma distribution for a data stream named 'step', \code{DM=list(step=list(mean=~cov1, sd=~1))} specifies the mean 
-#' parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 matrix using 
+#' parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 ``pseudo'' design matrix using 
 #' character strings for the covariate: 
 #' \code{DM=list(step=matrix(c(1,0,0,0,'cov1',0,0,0,0,1,0,0,0,'cov1',0,0,0,0,1,0,0,0,0,1),4,6))}
 #' where the 4 rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the 6 columns correspond to the regression 
@@ -368,6 +368,11 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             DM[[i]] <- tmpDM
           }
         }
+        model$conditions$estAngleMean[[i]]<-estAngleMean[[i]]
+        model$conditions$userBounds[[i]]<-userBounds[[i]]
+        model$conditions$cons[[i]]<-cons[[i]]
+        model$conditions$workcons[[i]]<-workcons[[i]]
+        model$conditions$DM[[i]]<-DM[[i]]
       }
     }
     beta <- model$mle$beta
@@ -386,6 +391,22 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         covNames <- c(colnames(model$rawCovs),covNames)
       }
       covsCol <- unique(covNames)
+      factorterms<-names(model$data)[unlist(lapply(model$data,is.factor))]
+      factorcovs<-paste0(rep(factorterms,times=unlist(lapply(model$data[factorterms],nlevels))),unlist(lapply(model$data[factorterms],levels)))
+      
+      if(length(covsCol)){
+        for(jj in 1:length(covsCol)){
+          cov<-covsCol[jj]
+          form<-formula(paste("~",cov))
+          varform<-all.vars(form)
+          if(any(varform %in% factorcovs)){
+            factorvar<-factorcovs %in% varform
+            covsCol[jj]<-rep(factorterms,times=unlist(lapply(model$data[factorterms],nlevels)))[which(factorvar)]
+          } 
+        }
+      }
+      covsCol<-unique(covsCol)
+
       if(length(covsCol)) covs <- model$data[covsCol]
     }
     # else, allow user to enter new values for covariates
@@ -398,7 +419,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     Par <- Par[distnames]
     delta <- NULL
     
-    mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & is.null(centers) & ("step" %in% names(dist)) & all(initialPosition==c(0,0)) & is.null(lambda) & is.null(errorEllipse)) # indicator for moveHMM::simData
+    mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & is.null(centers) & ("step" %in% names(dist)) & all(initialPosition==c(0,0)) & is.null(lambda) & is.null(errorEllipse) & !is.list(obsPerAnimal)) # indicator for moveHMM::simData
     if(mHind & length(attr(terms.formula(formula),"term.labels"))) mHind <- FALSE
       #if("ID" %in% rownames(attr(terms.formula(formula),"factors")) | any(mapply(is.factor,covs)))
       #  mHind <- FALSE
@@ -480,8 +501,29 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
   } else nbSpatialCovs <- 0
 
-  if(length(which(obsPerAnimal<1))>0)
-    stop("obsPerAnimal should have positive values.")
+  if(is.list(obsPerAnimal)){
+    if(length(obsPerAnimal)!=nbAnimals) stop("obsPerAnimal must be a list of length ",nbAnimals)
+    for(i in 1:length(obsPerAnimal)){
+      if(length(which(obsPerAnimal[[i]]<1))>0)
+        stop("obsPerAnimal elements should have positive values.")
+      if(length(obsPerAnimal[[i]])==1)
+        obsPerAnimal[[i]] <- rep(obsPerAnimal[[i]],2)
+      else if(length(obsPerAnimal[[i]])!=2)
+        stop("obsPerAnimal elements should be of length 1 or 2.")
+    }
+  } else {
+    if(length(which(obsPerAnimal<1))>0) 
+      stop("obsPerAnimal should have positive values.")
+    if(length(obsPerAnimal)==1)
+      obsPerAnimal <- rep(obsPerAnimal,2)
+    else if(length(obsPerAnimal)!=2)
+      stop("obsPerAnimal should be of length 1 or 2.")
+    tmpObs<-obsPerAnimal
+    obsPerAnimal<-vector('list',nbAnimals)
+    for(i in 1:nbAnimals){
+      obsPerAnimal[[i]]<-tmpObs
+    }
+  }
 
   if(!is.null(covs) & nbCovs>0) {
     if(ncol(covs)!=nbCovs)
@@ -514,21 +556,16 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
   }
 
-  if(length(obsPerAnimal)==1)
-    obsPerAnimal <- rep(obsPerAnimal,2)
-  else if(length(obsPerAnimal)!=2)
-    stop("obsPerAnimal should be of length 1 or 2.")
-
   #######################################
   ## Prepare parameters for simulation ##
   #######################################
   # define number of observations for each animal
   allNbObs <- rep(NA,nbAnimals)
   for(zoo in 1:nbAnimals) {
-    if(obsPerAnimal[1]!=obsPerAnimal[2])
-      allNbObs[zoo] <- sample(obsPerAnimal[1]:obsPerAnimal[2],size=1)
+    if(obsPerAnimal[[zoo]][1]!=obsPerAnimal[[zoo]][2])
+      allNbObs[zoo] <- sample(obsPerAnimal[[zoo]][1]:obsPerAnimal[[zoo]][2],size=1)
     else
-      allNbObs[zoo] <- obsPerAnimal[1]
+      allNbObs[zoo] <- obsPerAnimal[[zoo]][1]
   }
   cumNbObs <- c(0,cumsum(allNbObs))
 
@@ -753,7 +790,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
         wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
-        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,dist,p$Bndind)
+        nc <- meanind <- vector('list',length(distnames))
+        names(nc) <- names(meanind) <- distnames
+        for(i in distnames){
+          nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
+          if(inputs$circularAngleMean[[i]]) meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+        }
+        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,dist,p$Bndind,nc,meanind)
         g <- gFull[1,,drop=FALSE]
       } else {
         
@@ -790,7 +833,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           fullDM <- DMinputs$fullDM
           DMind <- DMinputs$DMind
           wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
-          subPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist,p$Bndind)
+          nc <- meanind <- vector('list',length(distnames))
+          names(nc) <- names(meanind) <- distnames
+          for(i in distnames){
+            nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
+            if(inputs$circularAngleMean[[i]]) meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+          }
+          subPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist,p$Bndind,nc,meanind)
         } else {
           subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
         }

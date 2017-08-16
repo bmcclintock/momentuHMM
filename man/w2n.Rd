@@ -5,7 +5,7 @@
 \title{Scaling function: working to natural parameters}
 \usage{
 w2n(wpar, bounds, parSize, nbStates, nbCovs, estAngleMean, circularAngleMean,
-  stationary, cons, fullDM, DMind, workcons, nbObs, dist, Bndind)
+  stationary, cons, fullDM, DMind, workcons, nbObs, dist, Bndind, nc, meanind)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}
@@ -44,6 +44,10 @@ each data stream.}
 \item{dist}{Named list indicating the probability distributions of the data streams.}
 
 \item{Bndind}{Named list indicating whether \code{DM} is NULL with default parameter bounds for each data stream.}
+
+\item{nc}{indicator for zeros in fullDM}
+
+\item{meanind}{index for circular-circular regression mean angles with at least one non-zero entry in fullDM}
 }
 \value{
 A list of:
