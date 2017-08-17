@@ -19,18 +19,22 @@ using namespace std;
 //'
 //' @return XB matrix
 // [[Rcpp::export]]
-arma::mat XBloop_rcpp(List DM, NumericVector Xvec, int nbObs, int nr, int nc, bool circularAngleMean, IntegerVector rindex, arma::mat cindex)
+arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned int nr, unsigned int nc, bool circularAngleMean, IntegerVector rindex, arma::mat cindex)
 {
   unsigned int i;
   unsigned int j;
   unsigned int k;
+  
   arma::mat XB(nr,nbObs);
   XB.zeros();
   arma::mat XB1(nr,nbObs);
   XB1.zeros();
   arma::mat XB2(nr,nbObs);
   XB2.zeros();
-  for(i=0; i<rindex.size(); i++){
+  
+  unsigned int nrindex = rindex.size();
+  
+  for(i=0; i<nrindex; i++){
     for(j=0; j<nc; j++){
       if(cindex(rindex[i],j)){
         NumericVector DMelem = DM[j*nr+rindex[i]];

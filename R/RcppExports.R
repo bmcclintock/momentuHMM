@@ -104,8 +104,21 @@ dpois_rcpp <- function(x, rate, foo) {
     .Call('_momentuHMM_dpois_rcpp', PACKAGE = 'momentuHMM', x, rate, foo)
 }
 
-getDM_rcpp <- function(DM, covs, tmpDM, nr, nc, cov, nbObs) {
-    .Call('_momentuHMM_getDM_rcpp', PACKAGE = 'momentuHMM', DM, covs, tmpDM, nr, nc, cov, nbObs)
+#' Get design matrix
+#'
+#' Loop for creating full design matrix (X) from pseudo-design matrix (DM). Written in C++. Used in \code{getDM}.
+#'
+#' @param X full design matrix
+#' @param covs matrix of covariates
+#' @param DM pseudo design matrix
+#' @param nr number of rows in design matrix
+#' @param nc number of column in design matrix
+#' @param cov covariate names
+#' @param nbObs number of observations
+#'
+#' @return full design matrix (X)
+getDM_rcpp <- function(X, covs, DM, nr, nc, cov, nbObs) {
+    .Call('_momentuHMM_getDM_rcpp', PACKAGE = 'momentuHMM', X, covs, DM, nr, nc, cov, nbObs)
 }
 
 #' Negative log-likelihood
