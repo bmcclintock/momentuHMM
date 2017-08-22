@@ -1,8 +1,8 @@
-momentuHMM 1.1.1 2017-08-17
+momentuHMM 1.1.1 2017-08-21
 -----------------
-CHANGES
+NEW FEATURES
 
-* minor vignette typos
+* Harbour seal example of McClintock et al (2013) added to vignette
 
 
 momentuHMM 1.1.0 2017-08-15

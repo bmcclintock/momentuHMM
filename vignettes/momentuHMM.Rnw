@@ -133,7 +133,7 @@ While statisticians have been applying HMMs to telemetry data for decades, R \ci
 
 To address these defeciencies in existing software, we introduce a new user-friendly R package, \verb|momentuHMM| (Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models), intended for practitioners wishing to implement more flexible and realistic (multivariate) HMM analyses of animal movement while accounting for common challenges associated with telemetry data. Features for multivariate HMM analyses in \verb|momentuHMM| include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states; 3) user-specified design matrices and constraints for covariate modelling of state transition probability and probability distribution parameters using linear model formulas familiar to most R users; 4) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data \citep{HootenEtAl2017,McClintock2017}; 5) seamless integration of spatio-temporal environmental covariate data (e.g., wind direction, forest cover, sea ice concentration) using the \verb|raster| package \citep{Hijmans2016}; 6) incorporation of ``activity center'' effects (e.g., areas associated with attractive or repulsive forces); 7) circular-circular regression models for angular probability distributions \citep{DuchesneEtAl2015}; 8) cosinor \citep[e.g.][]{Cornelissen2014} and spline regression formulas for cyclical and other complicated behavioral patterns; and 9) data simulation capabilities for power analyses and assessing model performance, including simulation of location data subject to temporal irregularity and/or measurement error.  
 
-In the following tutorial, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples, including an example of periodic cycles in African elephant movement, a 3-state (``resting'', ``foraging'', ``transit'') northern fur seal example incorporating auxiliary dive activity data \citep{McClintockEtAl2014b}, a loggerhead turtle example relating ``foraging'' and ``transit'' movements to ocean surface currents, a 5-state grey seal example incorporating biased movements toward haul-out and foraging locations \citep{McClintockEtAl2012}, and a 4-state (``outbound'', ``searching'', ``foraging'', ``inbound'') southern elephant seal example with biased movements toward and away from a colony \citep{MichelotEtAl2017}. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics. While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs.  Additional information, including help files, data, examples, and package usage is available by downloading the \verb|momentuHMM| package from CRAN (\url{cran.r-project.org}) or Github (\url{github.com/bmcclintock/momentuHMM}). This article describes \verb|momentuHMM| version \Sexpr{installed.packages()["momentuHMM","Version"]}.
+In the following tutorial, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples, including an example of periodic cycles in African elephant movement, a 3-state (``resting'', ``foraging'', ``transit'') northern fur seal example incorporating auxiliary dive activity data \citep{McClintockEtAl2014b}, a loggerhead turtle example relating ``foraging'' and ``transit'' movements to ocean surface currents, a 5-state grey seal example incorporating biased movements toward haul-out and foraging locations \citep{McClintockEtAl2012}, a 4-state (``outbound'', ``searching'', ``foraging'', ``inbound'') southern elephant seal example with biased movements toward and away from a colony \citep{MichelotEtAl2017}, and a 3-state (``resting'', ``foraging'', ``transit'') harbour seal example using population-level constraints on movement parameters \cite{McClintockEtAl2013c}. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics. While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs.  Additional information, including help files, data, examples, and package usage is available by downloading the \verb|momentuHMM| package from CRAN (\url{cran.r-project.org}) or Github (\url{github.com/bmcclintock/momentuHMM}). This article describes \verb|momentuHMM| version \Sexpr{installed.packages()["momentuHMM","Version"]}.
 
 \section{momentuHMM overview}
 %Given the deliberately similar syntax between the two packages, 
@@ -304,7 +304,7 @@ for angular covariate $r_{t,i}$ and $i=1,\ldots,k$ (note that \verb|prepData| ca
 \label{sec:mi}
 When location data are temporally-irregular or subject to measurement error, then they are not suitable for standard maximum-likelihood HMM analyses based on the forward algorithm (Eq. \ref{eq:HMMlike}). In this case, \verb|momentuHMM| can be used to perform the 2-stage multiple imputation approach of \cite{McClintock2017}. The basic concept is to first employ a single-state (i.e., $N=1$) movement model that is relatively easy to fit but can accommodate location measurement error and temporally-irregular or missing observations \citep[e.g.][]{JohnsonEtAl2008}. The second stage involves repeatedly fitting the desired HMM to $m$ temporally-regular realizations of the position process drawn from the model output of the first stage.  Data streams or covariates that are dependent on location (e.g., step length, turning angle, habitat type, snow depth, sea surface temperature) will of course vary among the $m$ realizations of the position process, and the pooled inferences across the HMM analyses therefore reflect location uncertainty.  
 
-There are three primary functions (\verb|MIfitHMM|, \verb|MIpool|, and \verb|crawlWrap|) for performing multiple imputation HMM analyses in \verb|momentuHMM|, and all rely on parallel processing to speed up computations. \verb|crawlWrap| is a wrapper function for fitting the continuous-time correlated random walk (CTCRW) model of \cite{JohnsonEtAl2008} to one or more tracks (subject to location measurement error and/or temporal irregularity) and then predicting temporally-regular tracks of the user's choosing (e.g. 15 min, hourly, daily) based on the CTCRW model output.  \verb|crawlWrap| returns a \verb|crwData| object that can be used to draw $m$ realization of the position process within the \verb|MIfitHMM| function.  \verb|MIfitHMM| is essentially a wrapper function for \verb|fitHMM| that repeatedly fits the same user-specified HMM to $m$ imputed data sets and stores the output from each of the $m$ model fits. If a \verb|crwData| object is provided, then \verb|MIfitHMM| will first draw $m$ imputations based on the \verb|crwData| output and then fit the specified HMM to each imputed data set. If users wish to use a movement model other than the CTCRW to account for measurement error and temporal irregularity \citep[e.g.][]{CalabreseEtAl2016,GurarieEtAl2017}, or if other observation error processes (e.g. missing data) are to be accounted for in the imputation step, \verb|MIfitHMM| can also be used for analysis of a list of $m$ \verb|momentuHMMData| objects that were imputed by the user. Based on the $m$ model fits, the \verb|MIpool| function calculates pooled estimates, standard errors, and confidence intervals for the working scale parameters, natural scale parameters (based on transformations of the pooled working parameters and mean or user-specified values for any covariates), state sequences, state probabilities, and activity budgets (i.e. the proportion of the $T$ times step assigned to each state) using standard multiple imputation formulae \citep{RubinSchenker1986,McClintock2017}.  \verb|MIpool| can be called separately or within \verb|MIfitHMM| (using the \verb|poolEstimates| argument), and the function returns a \verb|miSum| object containing the pooled output across all imputatons. See sections \ref{sec:nfs}, \ref{sec:turtle}, and \ref{sec:greySeal} for example HMM analyses that use multiple imputation to account for location measurement error and temporally irregularity.
+There are three primary functions (\verb|MIfitHMM|, \verb|MIpool|, and \verb|crawlWrap|) for performing multiple imputation HMM analyses in \verb|momentuHMM|, and all rely on parallel processing to speed up computations. \verb|crawlWrap| is a wrapper function for fitting the continuous-time correlated random walk (CTCRW) model of \cite{JohnsonEtAl2008} to one or more tracks (subject to location measurement error and/or temporal irregularity) and then predicting temporally-regular tracks of the user's choosing (e.g. 15 min, hourly, daily) based on the CTCRW model output.  \verb|crawlWrap| returns a \verb|crwData| object that can be used to draw $m$ realization of the position process within the \verb|MIfitHMM| function.  \verb|MIfitHMM| is essentially a wrapper function for \verb|fitHMM| that repeatedly fits the same user-specified HMM to $m$ imputed data sets and stores the output from each of the $m$ model fits. If a \verb|crwData| object is provided, then \verb|MIfitHMM| will first draw $m$ imputations based on the \verb|crwData| output and then fit the specified HMM to each imputed data set. If users wish to use a movement model other than the CTCRW to account for measurement error and temporal irregularity \citep[e.g.][]{CalabreseEtAl2016,GurarieEtAl2017}, or if other observation error processes (e.g. missing data) are to be accounted for in the imputation step, \verb|MIfitHMM| can also be used for analysis of a list of $m$ \verb|momentuHMMData| objects that were imputed by the user. Based on the $m$ model fits, the \verb|MIpool| function calculates pooled estimates, standard errors, and confidence intervals for the working scale parameters, natural scale parameters (based on transformations of the pooled working parameters and mean or user-specified values for any covariates), state sequences, state probabilities, and activity budgets (i.e. the proportion of the $T$ times step assigned to each state) using standard multiple imputation formulae \citep{RubinSchenker1986,McClintock2017}.  \verb|MIpool| can be called separately or within \verb|MIfitHMM| (using the \verb|poolEstimates| argument), and the function returns a \verb|miSum| object containing the pooled output across all imputatons. See sections \ref{sec:nfs}, \ref{sec:turtle}, \ref{sec:greySeal}, and \ref{sec:harbourSeal} for example HMM analyses that use multiple imputation to account for location measurement error and temporally irregularity.
 
 \subsection{Model visualization and diagnostics}
 The generic \verb|plot| functions for \verb|momentuHMM| models (\verb|plot.momentuHMM| and \verb|plot.miSum|) plot the data stream histograms along with their corresponding estimated probability distributions, the estimated natural parameters and state transition probabilities as a function of any covariates included in the model, and the tracks of all individuals (color-coded by the most likely state sequence). By default, the probability distributions are plotted based on the means of any covariate values, but user-specified covariate values for the plots can be provided using the \verb|covs| argument.  When the argument \verb|plotCI=TRUE|, then confidence intervals for the natural parameters and state transition probabilities are also plotted. Confidence intervals are calculated from the working parameter estimates based on the delta method and finite-difference approximations of the first derivative for the transformation using the \verb|numDeriv::grad| function \citep{GilbertVaradhan2016}.  For multiple imputation analyses (\verb|plot.miSum|), all plots are based on the pooled parameter estimates and the means of any covariates (if not provided by the \verb|covs| argument) across each imputation. Using the argument \verb|errorEllipse|, \verb|plot.miSum| will include estimated location error ellipses in the plots of individual tracks. The functions \verb|plotSat|, \verb|plotSpatialCov|, and \verb|plotStates| (Table \ref{tab:functions}) provide further methods for visualizing model results.
@@ -521,7 +521,7 @@ nfsFits <- MIfitHMM(crwOut, nSims = 100, nbStates = nbStates, dist = dist,
                     stateNames=stateNames)
 plot(nfsFits)
 @
-Here we specified a gamma distribution for step length (`step'), wrapped Cauchy distribution for turning angle (`angle'), and Poisson distribution for the number of foraging dives (`dive'). The function \verb|getParDM| was used to organize the starting values for the data stream working parameters (\verb|Par0|) in the correct format based on \verb|DM|, \verb|cons|, and estimates of the natural parameters (\verb|Par|) from \cite{McClintockEtAl2014b}. The \verb|DM| and \verb|cons| arguments were specified to avoid label switching among the \verb|nSims| imputed data model fits and enforce similar state-dependent probability distribution constraints as \cite{McClintockEtAl2014b}, e.g., constraining the Poisson rate parameters such that the ``foraging'' state tends to have higher numbers of foraging dives than the ``transit'' state $(\lambda_2 > \lambda_3)$. To prohibit foraging dives for the ``resting'' state, we used the \verb|fixPar| argument to effectively fix the Poisson rate parameter to zero on the natural scale (i.e. $\lambda_1 \approx 0$).  To help deal with the problem of convergence to local maxima, the \verb|retryFits| argument allows users to specify the number of times to attempt to re-fit each model using random perturbations of the parameter estimates as the starting values for optimization.
+Here we specified a gamma distribution for step length (`step'), wrapped Cauchy distribution for turning angle (`angle'), and Poisson distribution for the number of foraging dives (`dive'). The function \verb|getParDM| was used to organize the starting values for the data stream working parameters (\verb|Par0|) in the correct format based on \verb|DM|, \verb|cons|, and estimates of the natural parameters (\verb|Par|) from \cite{McClintockEtAl2014b}. The \verb|DM| and \verb|cons| arguments were specified to avoid label switching among the \verb|nSims| imputed data model fits and enforce similar state-dependent probability distribution constraints as \cite{McClintockEtAl2014b}, e.g., constraining the Poisson rate parameters such that the ``foraging'' state tends to have higher numbers of foraging dives than the ``transit'' state ($\lambda_2 > \lambda_3$; see Eq. \ref{eq:link} in section \ref{sec:harbourSeal} for more details on parameter constraints using \verb|DM| in conjunction with the \verb|userBounds|, \verb|cons|, and \verb|workcons| arguments). To prohibit foraging dives for the ``resting'' state, we used the \verb|fixPar| argument to effectively fix the Poisson rate parameter to zero on the natural scale (i.e. $\lambda_1 \approx 0$).  To help deal with the problem of convergence to local maxima, the \verb|retryFits| argument allows users to specify the number of times to attempt to re-fit each model using random perturbations of the parameter estimates as the starting values for optimization.
 
 The results are very similar to those of the discrete-time model of \cite{McClintockEtAl2014b}, with periods of foraging often followed by resting (Figure \ref{fig:nfsResults}).  The ``activity budgets'' (i.e. the proportion of time steps allocated to each state) calculated by \verb|MIpool| based on the estimated state sequences for each imputation were \Sexpr{round(as.numeric(nfsTimeInStates$est["resting"]),2)} (95\% CI: \Sexpr{round(as.numeric(nfsTimeInStates$lower["resting"]),2)}$-$\Sexpr{round(as.numeric(nfsTimeInStates$upper["resting"]),2)}) for ``resting'', \Sexpr{round(as.numeric(nfsTimeInStates$est["foraging"]),2)} (95\% CI: \Sexpr{round(as.numeric(nfsTimeInStates$lower["foraging"]),2)}$-$\Sexpr{round(as.numeric(nfsTimeInStates$upper["foraging"]),2)}) for ``foraging'', and \Sexpr{round(as.numeric(nfsTimeInStates$est["transit"]),2)} (95\% CI: \Sexpr{round(as.numeric(nfsTimeInStates$lower["transit"]),2)}$-$\Sexpr{round(as.numeric(nfsTimeInStates$upper["transit"]),2)}) for ``transit''.
 
@@ -809,6 +809,152 @@ The three fitted model can be compared with \verb|AIC(m1,m2,m3)|, which overwhel
   \includegraphics[width=0.49\textwidth]{plot_sesResults009.pdf}\\
   \caption{Selected results from the elephant seal example. Panels include estimates and 95\% confidence intervals for the ``outbound'' mean step length parameter (top-left panel), ``inbound'' mean step length parameter (top-right panel), ``outbound'' turning angle concentration parameter (bottom-left panel), and ``inbound'' turning angle concentration parameter (bottom-right panel) as a function of distance to colony (`colony.dist'). Distance to colony has been standardized based on a mean of 2539 km (SD = 1021.3).}
   \label{fig:sesResults}
+\end{figure}
+
+\subsection{Harbour seals}
+\label{sec:harbourSeal}
+As our final example, we demonstrate how more complicated parameter constraints can be implemented using the \verb|userBounds|, \verb|cons|, and \verb|workcons| arguments in \verb|fitHMM| and \verb|MIfitHMM|. This example is based on the harbour seal analysis of \cite{McClintockEtAl2013c}. Using individual-level random effects on probability distribution parameters, \cite{McClintockEtAl2013c} performed a Bayesian analysis of population-level activity budgets for 3-states (``resting'', ``foraging'', and ``transit''). While \verb|momentuHMM| cannot be used to replicate this analysis exactly, we can perform a similar analysis in the absence of individual-level random effects. Here we will focus on several specific parameter constraints, but the full example code can be found in the ``vignettes'' source directory. 
+
+The harbour seal data consist of 17 individuals (10 male, 7 female) and, as in the northern fur example in section \ref{sec:nfs}, both location and dive activity data. The location data were obtained at temporally-irregular intervals, while the dive activity data were obtained at regular 2-hour time steps. We therefore first used \verb|crawlWrap| to fit and predict locations for all 17 tracks at 2-hour time steps and then used \verb|crawlMerge| to merge the predicted locations with the dive activity data. We then fitted several different models assuming: 1) no individual- or sex-level effects on all parameters (i.e., the ``null'' model); 2) sex-level effects on all parameters; and 3) individual-level effects on all parameters.  Based on \verb|fitHMM| fits for the best predicted tracks, AIC overwhelmingly supported the model including individual-level effects on all parameters, but for simplicity we will use the model including no individual- or sex-level effects to demonstrate how the constraints of \cite{McClintockEtAl2013c} can be implemented in \verb|momentuHMM|.  In addition to the lack of individual-level random effects in our example, we also depart from \cite{McClintockEtAl2013c} in our use of zero-inflation parameters to account for steps of length zero (i.e., $l_t=0$) and time steps with no dive activity (i.e., $\omega_t=0$). Unlike \cite{McClintockEtAl2013c}, note that our model 3 also includes individual-level fixed effects on the state transition probabilities.
+
+\cite{McClintockEtAl2013c} fit their 3-state model using more complicated constraints on the probability distribution parameters than any of our previous vignette examples. In addition to relational constraints among the ``resting'', ``foraging'', and ``transit'' states similar to those used in the northern fur seal example (section \ref{sec:nfs}), these constraints included upper bounds for the shape and scale parameters of the Weibull distribution for step length, a minimum value for the ``transit'' concentration parameter of the wrapped Cauchy distribution for turning angle, and bounds on the shape parameters of the beta distribution for dive activity specifically chosen to prevent any ``bathtub'' shaped distributions for the proportion of each time step spent diving below 1.5m. 
+
+Before we can demonstrate how to implement these constraints, we should first provide more detail on exactly how the \verb|DM|, \verb|userBounds|, \verb|cons|, and \verb|workcons| arguments work together in \verb|momentuHMM|. While the \verb|DM| argument should now be familiar, we have thus far spent little time discussing the latter three arguments. The \verb|userBounds| argument specifies the lower and upper bounds for the natural scale parameters as a 2-column matrix.  The \verb|workcons| argument can be used to add some constant to working scale parameters and, in conjunction with the \verb|cons| argument, impose more complicated constraints on the natural scale parameters than could be achieved using \verb|userBounds| or \verb|cons| alone. Specifically, \verb|momentuHMM| calculates natural scale parameters with finite bounds as
+\begin{eqnarray}
+\label{eq:link}
+{\boldsymbol \theta} &=&  \left({\mathbf U}_\theta - {\mathbf L}_\theta \right) g^{-1} \left( {\mathbf X}_\theta  {\boldsymbol \beta}_\theta^* \right) + {\mathbf L}_\theta \nonumber \\ 
+{\boldsymbol \beta}_\theta^* &=& {\mathbf W}_\theta + {\boldsymbol \beta}_\theta^{\circ {\mathbf C}_\theta}
+%A^{\circ\frac12}
+\end{eqnarray}
+where ${\mathbf W}_\theta$ is a $k$-vector of \verb|workcons| values, ${\mathbf C}_\theta$ is a $k$-vector of \verb|cons| values specifying the element-wise power to which to raise each of the working scale parameters $({\boldsymbol \beta}_\theta)$, ${\mathbf L}_\theta$ is the lower bound on the natural scale, and ${\mathbf U}_\theta$ is the upper bound on the natural scale.  Note that ${\boldsymbol \beta}_\theta^*={\boldsymbol \beta}_\theta$ under the default values for \verb|cons| (a $k$-vector of ones) and \verb|workcons| (a $k$-vector of zeros). For natural scale parameters with finite lower bounds and infinite upper bounds, we have
+\begin{eqnarray*}
+{\boldsymbol \theta} =  g^{-1} \left( {\mathbf X}_\theta  {\boldsymbol \beta}_\theta^* \right) + {\mathbf L}_\theta.
+%A^{\circ\frac12}
+\end{eqnarray*}
+Although optimization within \verb|fitHMM| and \verb|MIfitHMM| is performed on ${\boldsymbol \beta}_\theta$, note that ${\boldsymbol \beta}_\theta^*$ (and a delta method approximation for the variance of this transformation) is returned by \verb|CIbeta| and \verb|print| function calls.  
+
+For the Weibull distribution parameters for step length, \cite{McClintockEtAl2013c} constrained the shape parameter $a_s<5$ (to prevent too ``peaked'' distributions) and the scale parameter less than the maximum distance a harbour seal could travel in 2 hours at 2 m/s (i.e., $b_s<14400$m) for $s \in \{1=\text{``resting''},2=\text{``foraging''},3=\text{``transit''} \}$. They also constrained $b_3\ge b_2 \ge b_1$.  This is easily accomplished in \verb|momentuHMM| using the \verb|DM|, \verb|cons|, and \verb|userBounds| arguments:
+<<spec-hsStep, echo=TRUE, eval=FALSE>>=
+nbStates <- 3
+stateNames <- c("resting", "foraging", "transit")
+dist <- list(step = "weibull", angle = "wrpcauchy", dive = "beta")
+stepDM<-matrix(c(1,0,0,0,0,0,0,0,0,
+                 0,1,0,0,0,0,0,0,0,
+                 0,0,1,0,0,0,0,0,0,
+                 0,0,0,1,0,0,0,0,0,
+                 0,0,0,1,1,0,0,0,0,
+                 0,0,0,1,1,1,0,0,0,
+                 0,0,0,0,0,0,1,0,0,
+                 0,0,0,0,0,0,0,1,0,
+                 0,0,0,0,0,0,0,0,1),nrow=3*nbStates,byrow=TRUE,
+        dimnames=list(c(paste0("shape_",1:nbStates),
+                        paste0("scale_",1:nbStates),
+                        paste0("zeromass_",1:nbStates)),
+                      c(paste0("shape_",1:nbStates,":(Intercept)"),
+                        "scale:(Intercept)","scale_2","scale_3",
+                        paste0("zeromass_",1:nbStates,":(Intercept)"))))
+stepcons<-c(1,1,1,1,2,2,1,1,1)
+stepBounds<-matrix(c(0,5,
+                     0,5,
+                     0,5,
+                     0,14400,
+                     0,14400,
+                     0,14400,
+                     0,1,
+                     0,1,
+                     0,1),nrow=3*nbStates,byrow=TRUE,
+                    dimnames=list(c(paste0("shape_",1:nbStates),
+                                    paste0("scale_",1:nbStates),
+                                    paste0("zeromass_",1:nbStates))))
+@
+
+In order to force the ``transit'' state to have strong directional persistence, \cite{McClintockEtAl2013c} constrained the concentration parameter $\rho_3>0.75$. In the absence of relational constraints, \verb|userBounds| could be used to constrain $\rho_3>0.75$.  However, because we also wish to constrain  $\rho_2 \le \rho_3$, we must make use of the \verb|workcons| argument.  We can constrain $\rho_3 \ge 0.75$, $\rho_2 \le \rho_3$, and $\rho_s \le 0.95$ $(s \in \{ 1,2,3 \})$ using the following combination of \verb|DM|, \verb|userBounds|, \verb|cons|, and \verb|workcons| arguments:
+<<spec-hsAngle, echo=TRUE, eval=FALSE>>=
+angleDM <- matrix(c(1,0,0,
+                    0,1,-1,
+                    0,1,0),nrow=nbStates,byrow=TRUE,
+                  dimnames=list(paste0("concentration_",1:nbStates),
+                                c("concentration_1:(Intercept)",
+                                  "concentration_23:(Intercept)",
+                                  "concentration_2")))
+angleBounds <- matrix(c(0,0.95,
+                        0,0.95,
+                        0,0.95),nrow=nbStates,byrow=TRUE,
+                      dimnames=list(paste0("concentration_",1:nbStates)))
+anglecons <- c(1,2,2)
+transitcons <- boot::logit((0.75 - angleBounds[3,1])
+                           /(angleBounds[3,2] - angleBounds[3,1]))
+angleworkcons <- c(0,transitcons,0)
+@
+Here we constrained $\rho_s \le 0.95$ to avoid numerical convergence issues that can arise with sparse data sets as $\rho_s \rightarrow 1$. Also note that when using \verb|workcons| to enforce a specific constraint on the natural scale, \verb|userBounds| should not also include the corresponding natural parameter constraint(s). For example, because we are constraining $\rho_3 \ge 0.75$ with the \verb|workcons| argument, we did not also include a $0.75$ lower bound for $\rho_3$ in `angleBounds' above.
+
+For the beta distribution of the dive activity data, \cite{McClintockEtAl2013c} constrained the shape1 $(\upsilon_s)$ and shape2 $(\delta_s)$ parameters as follows:
+\begin{eqnarray*}
+1 \le \upsilon_1 \le \delta_1 \le 10 \\
+1 \le \delta_2 \le \upsilon_2 \le 10
+\end{eqnarray*}
+where $\upsilon_2=\upsilon_3$ and $\delta_2=\delta_3$. These constraints can be imposed using the following combination of \verb|DM|, \verb|userBounds|, and \verb|cons| arguments:
+<<spec-hsDive, echo=TRUE, eval=FALSE>>=
+omegaDM <- matrix(c(1,0,0,0,0,0,0,
+                    0,0,1,1,0,0,0,
+                    0,0,1,1,0,0,0,
+                    1,1,0,0,0,0,0,
+                    0,0,1,0,0,0,0,
+                    0,0,1,0,0,0,0,
+                    0,0,0,0,1,0,0,
+                    0,0,0,0,0,1,0,
+                    0,0,0,0,0,0,1),nrow=nbStates*3,byrow=TRUE,
+                dimnames=list(c(paste0("shape1_",1:nbStates),
+                                paste0("shape2_",1:nbStates),
+                                paste0("zeromass_",1:nbStates)),
+                              c("shape_1:(Intercept)","shape2_1",
+                                "shape_2:(Intercept)","shape1_2",
+                                paste0("zeromass_",1:nbStates,":(Intercept)"))))
+omegacons <- c(1,2,1,2,1,1,1)
+omegaBounds <- matrix(c(1,10,
+                        1,10,
+                        1,10,
+                        1,10,
+                        1,10,
+                        1,10,
+                        0,1,
+                        0,1,
+                        0,1),nrow=nbStates*3,byrow=TRUE,
+                    dimnames=list(c(paste0("shape1_",1:nbStates),
+                                    paste0("shape2_",1:nbStates),
+                                    paste0("zeromass_",1:nbStates))))
+@
+Lastly, we wish to impose some biologically-meaningful constraints on the zero-inflation parameters using the \verb|fixPar| argument. Because we would never expect a harbour seal in the ``transit'' state to exhibit a step length of zero, it makes sense to constrain the zero-mass step length parameter for the ``transit'' state to (effectively) zero.  Similarly, we would not expect a harbour seal in the ``foraging'' or ``transit'' states to exhibit no dive activity, and it therefore also makes sense to constrain the zero-mass dive activity parameters for these states to zero.  We can accomplish this using the following \verb|fixPar| argument:
+<<spec-hsFixPar, echo=TRUE, eval=FALSE>>=
+fixPar <- list(step=c(rep(NA,nbStates*2),NA,NA,boot::logit(1.e-100)),
+             omega=c(rep(NA,(nbStates-1)*2),NA,rep(boot::logit(1.e-100),2)))
+@
+Putting it all together, we can fit our constrained model assuming no individual- or sex-level effects using \verb|MIfitHMM|:
+<<fit-hs, echo=TRUE, eval=FALSE>>=
+DM <- list(step = stepDM, angle = angleDM, omega = omegaDM)
+cons <- list(step = stepcons, angle = anglecons, omega = omegacons)
+userBounds <- list(step = stepBounds, angle = angleBounds, omega = omegaBounds)
+workcons <- list(angle=angleworkcons)
+hsFits <- MIfitHMM(crwOut, nSims = 30,
+                   nbStates = nbStates, dist = dist, Par0 = Par0,
+                   DM = DM, cons = cons, 
+                   userBounds = userBounds, workcons = workcons,
+                   fixPar = fixPar, stateNames = stateNames)
+@
+
+As was mentioned earlier, we found overwhelming AIC support for the individual-level effects model relative to the sex-level effects models and the null model above. While our best supported \verb|momentuHMM| model included individual-level fixed effects, the estimated tracks (Fig. \ref{fig:hsTracks}) and inferences about population-level activity budgets were similar to the individual-level random effects model of \cite{McClintockEtAl2013c}. Estimated activity budgets for the males were $\Sexpr{round(hsActivityBudgets[["M"]]["resting","est"],2)}$ (95\% CI: $\Sexpr{round(hsActivityBudgets[["M"]]["resting","lower"],2)}-\Sexpr{round(hsActivityBudgets[["M"]]["resting","upper"],2)}$) for ``resting'', $\Sexpr{round(hsActivityBudgets[["M"]]["foraging","est"],2)}$ (95\% CI: $\Sexpr{round(hsActivityBudgets[["M"]]["foraging","lower"],2)}-\Sexpr{round(hsActivityBudgets[["M"]]["foraging","upper"],2)}$) for ``foraging'', and $\Sexpr{round(hsActivityBudgets[["M"]]["transit","est"],2)}$ (95\% CI: $\Sexpr{round(hsActivityBudgets[["M"]]["transit","lower"],2)}-\Sexpr{round(hsActivityBudgets[["M"]]["transit","upper"],2)}$) for ``transit''.  Activity budgets for females were $\Sexpr{round(hsActivityBudgets[["F"]]["resting","est"],2)}$ (95\% CI: $\Sexpr{round(hsActivityBudgets[["F"]]["resting","lower"],2)}-\Sexpr{round(hsActivityBudgets[["F"]]["resting","upper"],2)}$) for ``resting'', $\Sexpr{round(hsActivityBudgets[["F"]]["foraging","est"],2)}$ (95\% CI: $\Sexpr{round(hsActivityBudgets[["F"]]["foraging","lower"],2)}-\Sexpr{round(hsActivityBudgets[["F"]]["foraging","upper"],2)}$) for ``foraging'', and $\Sexpr{round(hsActivityBudgets[["F"]]["transit","est"],2)}$ (95\% CI: $\Sexpr{round(hsActivityBudgets[["F"]]["transit","lower"],2)}-\Sexpr{round(hsActivityBudgets[["F"]]["transit","upper"],2)}$) for ``transit''. We found considerable individual variation in the state transition probabilities (Fig. \ref{fig:hsTPM}), and when comparing the estimated activity budgets of our analysis with those of \cite{McClintockEtAl2013c}, we suspect the more noticeable differences between the time spent in the ``resting'' and ``foraging'' states for males is attributable to our having included individual-level effects on the state transition probabilities.  
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.49\textwidth]{plot_harbourSeal8.png}
+    \includegraphics[width=0.49\textwidth]{plot_harbourSeal1.png}
+  \caption{Two harbour seal tracks, colored by the most likely state sequence.}
+  \label{fig:hsTracks}
+\end{figure}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{plot_harbourSealResults021}
+  \caption{Estimated individual-level state transition probabilities for the harbour seal example.}
+  \label{fig:hsTPM}
 \end{figure}
 
 \section{Discussion}
