@@ -7,7 +7,7 @@
 #' @param data An object \code{momentuHMMData}.
 #' @param nbStates Number of states of the HMM.
 #' @param dist A named list indicating the probability distributions of the data streams. Currently
-#' supported distributions are 'gamma','weibull','exp','lnorm','beta','pois','wrpcauchy', and 'vm'. For example,
+#' supported distributions are 'gamma','weibull','exp','norm','lnorm','beta','pois','wrpcauchy', and 'vm'. For example,
 #' \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
 #' and their respective probability distributions ('gamma', 'vm', and 'pois').  The names of the data streams 
 #' (e.g., 'step', 'angle', 'dives') must match component names in \code{data}.

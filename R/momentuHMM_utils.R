@@ -1,4 +1,4 @@
-momentuHMMdists<-c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm')
+momentuHMMdists<-c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm',"norm")
 angledists<-c('wrpcauchy','vm')
 stepdists<-c('gamma','weibull','exp','lnorm')
 singleParmdists<-c('exp','pois')

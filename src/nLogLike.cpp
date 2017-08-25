@@ -85,6 +85,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   map<std::string,FunPtr> funMap;
   funMap["gamma"] = dgamma_rcpp;
   funMap["weibull"] = dweibull_rcpp;
+  funMap["norm"] = dnorm_rcpp;
   funMap["lnorm"] = dlnorm_rcpp;
   funMap["exp"] = dexp_rcpp;
   funMap["vm"] = dvm_rcpp;

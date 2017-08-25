@@ -7,7 +7,7 @@ test_that("Exceptions are thrown",{
   expect_error(parDef(list(step="gamma",angle="vm"),nbStates,list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),NULL,NULL),NA)
 
   expect_error(parDef(list(step="unif",angle="vm"),nbStates,list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),NULL,NULL))
-  expect_error(parDef(list(step="gamma",angle="norm"),nbStates,list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),NULL,NULL))
+  expect_error(parDef(list(step="gamma",angle="unif"),nbStates,list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),list(step=FALSE,angle=FALSE),NULL,NULL))
 })
 
 test_that("The output has the right format",{

@@ -32,6 +32,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// dnorm_rcpp
+arma::colvec dnorm_rcpp(NumericVector x, arma::mat mean, arma::mat sd);
+RcppExport SEXP _momentuHMM_dnorm_rcpp(SEXP xSEXP, SEXP meanSEXP, SEXP sdSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type mean(meanSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type sd(sdSEXP);
+    rcpp_result_gen = Rcpp::wrap(dnorm_rcpp(x, mean, sd));
+    return rcpp_result_gen;
+END_RCPP
+}
 // dlnorm_rcpp
 arma::colvec dlnorm_rcpp(NumericVector x, arma::mat meanlog, arma::mat sdlog);
 RcppExport SEXP _momentuHMM_dlnorm_rcpp(SEXP xSEXP, SEXP meanlogSEXP, SEXP sdlogSEXP) {

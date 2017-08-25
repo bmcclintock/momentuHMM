@@ -62,6 +62,30 @@ arma::colvec dweibull_rcpp(NumericVector x, arma::mat shape, arma::mat scale)
   return res;
 }
 
+//' Normal density function
+//'
+//' Probability density function of the normal distribution (written in C++)
+//'
+//' @param x Vector of quantiles
+//' @param mean Mean of the distribution 
+//' @param sd Standard deviation of the distribution 
+//'
+//' @return Vector of densities
+// [[Rcpp::export]]
+arma::colvec dnorm_rcpp(NumericVector x, arma::mat mean, arma::mat sd)
+{
+  arma::colvec res(x.size());
+  
+  for(int i=0;i<x.size();i++) {
+    if(!arma::is_finite(x(i)))
+      res(i) = 1; // if missing observation
+    else
+      res(i) = R::dnorm(x(i),mean(i),sd(i),0);
+  }
+  
+  return res;
+}
+
 //' Log-normal density function
 //'
 //' Probability density function of the log-normal distribution (written in C++)

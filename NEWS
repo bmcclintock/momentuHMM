@@ -1,6 +1,8 @@
-momentuHMM 1.1.1 2017-08-21
+momentuHMM 1.1.1 2017-08-24
 -----------------
 NEW FEATURES
+
+* Normal (Gaussian) distribution can now be specified for data streams
 
 * Harbour seal example of McClintock et al (2013) added to vignette
 

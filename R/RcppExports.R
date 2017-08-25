@@ -27,6 +27,19 @@ dweibull_rcpp <- function(x, shape, scale) {
     .Call('_momentuHMM_dweibull_rcpp', PACKAGE = 'momentuHMM', x, shape, scale)
 }
 
+#' Normal density function
+#'
+#' Probability density function of the normal distribution (written in C++)
+#'
+#' @param x Vector of quantiles
+#' @param mean Mean of the distribution 
+#' @param sd Standard deviation of the distribution 
+#'
+#' @return Vector of densities
+dnorm_rcpp <- function(x, mean, sd) {
+    .Call('_momentuHMM_dnorm_rcpp', PACKAGE = 'momentuHMM', x, mean, sd)
+}
+
 #' Log-normal density function
 #'
 #' Probability density function of the log-normal distribution (written in C++)

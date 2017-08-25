@@ -29,7 +29,7 @@ test_that("Exceptions are thrown",{
   # if angleDist not in list
   expect_error(fitHMM(data=data,nbStates=simPar$nbStates,Par=par0$Par,
                      beta0=par0$beta0,delta0=par0$delta0,formula=par0$formula,
-                     dist=list(step=simPar$dist$step,angle="norm"),estAngleMean=example$m$conditions$estAngleMean))
+                     dist=list(step=simPar$dist$step,angle="unif"),estAngleMean=example$m$conditions$estAngleMean))
 
   # if stepPar not within bounds
   expect_error(fitHMM(data=data,nbStates=simPar$nbStates,Par=list(step=-par0$Par$step,angle=par0$Par$angle),
