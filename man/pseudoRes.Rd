@@ -37,7 +37,7 @@ qqnorm(res$angleRes)
 
 }
 \references{
-Harte, D. 2017. HiddenMarkov: Hidden Markov Models. R package version \Sexpr{installed.packages()["HiddenMarkov","Version"]}.
+Harte, D. 2017. HiddenMarkov: Hidden Markov Models. R package version 1.8-8.
 
 Zucchini, W. and MacDonald, I.L. 2009.
 Hidden Markov Models for Time Series: An Introduction Using R.
