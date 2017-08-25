@@ -36,31 +36,25 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
 
   for(i in distnames){
     switch(dist[[i]],
+           "bern"={
+             parSize[[i]] <- 1
+             tmpbounds <- matrix(rep(c(0,1),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
+             parNames[[i]]<-"prob"
+           },
            "beta"={
              parSize[[i]] <- 2 + zeroInflation[[i]] + oneInflation[[i]]
              tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
              parNames[[i]]<-c("shape1","shape2")
            },
-           "pois"={
-             parSize[[i]] <- 1
+           "exp"={
+             parSize[[i]] <- 1 + zeroInflation[[i]]
              tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
-             parNames[[i]]<-"lambda"
-           },
-           "weibull"={
-             parSize[[i]] <- 2 + zeroInflation[[i]]
-             tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
-             parNames[[i]]<-c("shape","scale")
+             parNames[[i]] <- c("rate")
            },
            "gamma"={
              parSize[[i]] <- 2 + zeroInflation[[i]]
              tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
              parNames[[i]]<-c("mean","sd")
-           },
-           "norm"={
-             parSize[[i]] <- 2
-             tmpbounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates)),
-                                  ncol=2,byrow=TRUE)
-             parNames[[i]] <- c("mean","sd")
            },
            "lnorm"={
              parSize[[i]] <- 2 + zeroInflation[[i]]
@@ -68,10 +62,16 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
                                   ncol=2,byrow=TRUE)
              parNames[[i]] <- c("location","scale")
            },
-           "exp"={
-             parSize[[i]] <- 1 + zeroInflation[[i]]
+           "norm"={
+             parSize[[i]] <- 2
+             tmpbounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates)),
+                                  ncol=2,byrow=TRUE)
+             parNames[[i]] <- c("mean","sd")
+           },
+           "pois"={
+             parSize[[i]] <- 1
              tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
-             parNames[[i]] <- c("rate")
+             parNames[[i]]<-"lambda"
            },
            "vm"={
              if(estAngleMean[[i]]) { # if the angle mean is estimated
@@ -90,6 +90,11 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
                tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
                parNames[[i]] <- c("concentration")
              }
+           },
+           "weibull"={
+             parSize[[i]] <- 2 + zeroInflation[[i]]
+             tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
+             parNames[[i]]<-c("shape","scale")
            },
            "wrpcauchy"={
              if(estAngleMean[[i]]) {

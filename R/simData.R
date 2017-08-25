@@ -6,7 +6,7 @@
 #' @param nbAnimals Number of observed individuals to simulate.
 #' @param nbStates Number of behavioural states to simulate.
 #' @param dist A named list indicating the probability distributions of the data streams. Currently
-#' supported distributions are 'gamma','weibull','exp','norm','lnorm','beta','pois','wrpcauchy', and 'vm'. For example,
+#' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'weibull', and 'wrpcauchy'. For example,
 #' \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
 #' and their respective probability distributions ('gamma', 'vm', and 'pois').
 #' @param Par A named list containing vectors of initial state-dependent probability distribution parameters for 
@@ -291,6 +291,7 @@
 #' @importFrom raster cellFromXY getValues
 #' @importFrom moveHMM simData
 #' @importFrom CircStats rvm
+#' @importFrom LaplacesDemon rbern
 
 simData <- function(nbAnimals=1,nbStates=2,dist,
                     Par,beta=NULL,

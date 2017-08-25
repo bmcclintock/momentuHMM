@@ -12,6 +12,7 @@
 #' \dontrun{
 #' P <- momentuHMM:::allProbs(m=example$m,nbStates=2)
 #' }
+#' @importFrom LaplacesDemon dbern
 
 allProbs <- function(m,nbStates)
 {

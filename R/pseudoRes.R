@@ -29,6 +29,7 @@
 #'
 #' @export
 #' @importFrom stats integrate qnorm
+#' @importFrom LaplacesDemon pbern
 
 pseudoRes <- function(m)
 {

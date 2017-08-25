@@ -237,6 +237,30 @@ arma::colvec dpois_rcpp(NumericVector x, arma::mat rate, arma::mat foo)
   return res;
 }
 
+//' Bernoulli density function
+//'
+//' Probability density function of the Bernoulli distribution (written in C++)
+//'
+//' @param x Vector of quantiles
+//' @param prob success probability
+//' @param foo Unused (for compatibility with template)
+//'
+//' @return Vector of densities
+// [[Rcpp::export]]
+arma::colvec dbern_rcpp(NumericVector x, arma::mat prob, arma::mat foo)
+{
+  arma::colvec res(x.size());
+  
+  for(int i=0;i<x.size();i++) {
+    if(!arma::is_finite(x(i)))
+      res(i) = 1; // if missing observation
+    else
+      res(i) = R::dbinom(x(i),1,prob(i),0);
+  }
+  
+  return res;
+}
+
 // used in nLogLike_rcpp to map the functions' names to the functions
 typedef arma::colvec (*FunPtr)(NumericVector, arma::mat, arma::mat);
 

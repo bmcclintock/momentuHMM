@@ -7,7 +7,7 @@
 #' @param data An object \code{momentuHMMData}.
 #' @param nbStates Number of states of the HMM.
 #' @param dist A named list indicating the probability distributions of the data streams. Currently
-#' supported distributions are 'gamma','weibull','exp','norm','lnorm','beta','pois','wrpcauchy', and 'vm'. For example,
+#' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'weibull', and 'wrpcauchy'. For example,
 #' \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
 #' and their respective probability distributions ('gamma', 'vm', and 'pois').  The names of the data streams 
 #' (e.g., 'step', 'angle', 'dives') must match component names in \code{data}.
@@ -449,6 +449,10 @@ fitHMM <- function(data,nbStates,dist,
   for(i in which(unlist(lapply(dist,function(x) x %in% "pois"))))
     if(!isTRUE(all.equal(data[[distnames[[i]]]],as.integer(data[[distnames[[i]]]]))))
       stop(distnames[[i]]," data should be non-negative integers")
+  
+  for(i in which(unlist(lapply(dist,function(x) x %in% "bern"))))
+    if(any(data[[distnames[[i]]]]!=0 & data[[distnames[[i]]]]!=1,na.rm=TRUE))
+      stop(distnames[[i]]," data should be binary (0 or 1)")
   
   # determine whether zero-inflation or one-inflation should be included
   zeroInflation <- oneInflation <- vector('list',length(distnames))

@@ -83,15 +83,16 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   // map the functions names with the actual functions
   // (the type FunPtr and the density functions are defined in densities.h)
   map<std::string,FunPtr> funMap;
-  funMap["gamma"] = dgamma_rcpp;
-  funMap["weibull"] = dweibull_rcpp;
-  funMap["norm"] = dnorm_rcpp;
-  funMap["lnorm"] = dlnorm_rcpp;
-  funMap["exp"] = dexp_rcpp;
-  funMap["vm"] = dvm_rcpp;
-  funMap["wrpcauchy"] = dwrpcauchy_rcpp;
+  funMap["bern"] = dbern_rcpp;
   funMap["beta"] = dbeta_rcpp;
+  funMap["exp"] = dexp_rcpp;
+  funMap["gamma"] = dgamma_rcpp;
+  funMap["lnorm"] = dlnorm_rcpp;
+  funMap["norm"] = dnorm_rcpp;
   funMap["pois"] = dpois_rcpp;
+  funMap["vm"] = dvm_rcpp;
+  funMap["weibull"] = dweibull_rcpp;
+  funMap["wrpcauchy"] = dwrpcauchy_rcpp;
 
   if(nbStates==1)
     delta = 1; // no distribution if only one state

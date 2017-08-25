@@ -6,6 +6,7 @@
 // Generated with tools::package_native_routine_registration_skeleton (R 3.4)
 
 /* .Call calls */
+extern SEXP _momentuHMM_dbern_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dbeta_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dexp_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dgamma_rcpp(SEXP, SEXP, SEXP);
@@ -21,6 +22,7 @@ extern SEXP _momentuHMM_trMatrix_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_XBloop_rcpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_momentuHMM_dbern_rcpp",      (DL_FUNC) &_momentuHMM_dbern_rcpp,       3},
     {"_momentuHMM_dbeta_rcpp",      (DL_FUNC) &_momentuHMM_dbeta_rcpp,       3},
     {"_momentuHMM_dexp_rcpp",       (DL_FUNC) &_momentuHMM_dexp_rcpp,        3},
     {"_momentuHMM_dgamma_rcpp",     (DL_FUNC) &_momentuHMM_dgamma_rcpp,      3},

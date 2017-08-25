@@ -117,6 +117,19 @@ dpois_rcpp <- function(x, rate, foo) {
     .Call('_momentuHMM_dpois_rcpp', PACKAGE = 'momentuHMM', x, rate, foo)
 }
 
+#' Bernoulli density function
+#'
+#' Probability density function of the Bernoulli distribution (written in C++)
+#'
+#' @param x Vector of quantiles
+#' @param prob success probability
+#' @param foo Unused (for compatibility with template)
+#'
+#' @return Vector of densities
+dbern_rcpp <- function(x, prob, foo) {
+    .Call('_momentuHMM_dbern_rcpp', PACKAGE = 'momentuHMM', x, prob, foo)
+}
+
 #' Get design matrix
 #'
 #' Loop for creating full design matrix (X) from pseudo-design matrix (DM). Written in C++. Used in \code{getDM}.

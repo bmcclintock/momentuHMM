@@ -16,7 +16,7 @@ fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
 \item{nbStates}{Number of states of the HMM.}
 
 \item{dist}{A named list indicating the probability distributions of the data streams. Currently
-supported distributions are 'gamma','weibull','exp','norm','lnorm','beta','pois','wrpcauchy', and 'vm'. For example,
+supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'weibull', and 'wrpcauchy'. For example,
 \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
 and their respective probability distributions ('gamma', 'vm', and 'pois').  The names of the data streams 
 (e.g., 'step', 'angle', 'dives') must match component names in \code{data}.}

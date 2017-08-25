@@ -123,6 +123,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// dbern_rcpp
+arma::colvec dbern_rcpp(NumericVector x, arma::mat prob, arma::mat foo);
+RcppExport SEXP _momentuHMM_dbern_rcpp(SEXP xSEXP, SEXP probSEXP, SEXP fooSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type prob(probSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type foo(fooSEXP);
+    rcpp_result_gen = Rcpp::wrap(dbern_rcpp(x, prob, foo));
+    return rcpp_result_gen;
+END_RCPP
+}
 // getDM_rcpp
 arma::cube getDM_rcpp(arma::cube X, arma::mat covs, CharacterVector DM, unsigned int nr, unsigned int nc, CharacterVector cov, unsigned int nbObs);
 RcppExport SEXP _momentuHMM_getDM_rcpp(SEXP XSEXP, SEXP covsSEXP, SEXP DMSEXP, SEXP nrSEXP, SEXP ncSEXP, SEXP covSEXP, SEXP nbObsSEXP) {
