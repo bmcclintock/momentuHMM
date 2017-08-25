@@ -12,6 +12,10 @@
 #' results in a pseudo-residual of +Inf (check Section 6.2 of reference for more information on the
 #' computation of pseudo-residuals).
 #' 
+#' A continuity adjustment (adapted from Harte 2017) is made for discrete probability distributions. When
+#' the data are near the boundary (e.g. 0 for ``pois''; 0 and 1 for ``bern''), then the pseudo residuals can
+#' be a poor indicator of lack of fit.
+#' 
 #' Note that pseudo-residuals for multiple imputation analyses are based on pooled parameter 
 #' estimates and the means of the data values across all imputations.
 #'
@@ -23,6 +27,8 @@
 #' qqnorm(res$angleRes)
 #'
 #' @references
+#' Harte, D. 2017. HiddenMarkov: Hidden Markov Models. R package version \Sexpr{installed.packages()["HiddenMarkov","Version"]}.
+#'
 #' Zucchini, W. and MacDonald, I.L. 2009.
 #' Hidden Markov Models for Time Series: An Introduction Using R.
 #' Chapman & Hall (London).
@@ -123,7 +129,7 @@ pseudoRes <- function(m)
   genRes <- list()
   for(j in distnames){
     genRes[[paste0(j,"Res")]] <- rep(NA,nbObs)
-    pgenMat <- matrix(NA,nbObs,nbStates)
+    pgenMat <- pgenMat2 <- matrix(NA,nbObs,nbStates)
     sp <- par[[j]]
     genInd <- which(!is.na(data[[j]]))
     zeroInflation <- m$conditions$zeroInflation[[j]]
@@ -169,8 +175,13 @@ pseudoRes <- function(m)
             pgenMat[genInd,state][data[[j]][genInd]>0 & data[[j]][genInd]<1] <- (1.-zeromass[data[[j]][genInd]>0 & data[[j]][genInd]<1]) * (1.-onemass[data[[j]][genInd]>0 & data[[j]][genInd]<1]) * do.call(Fun[[j]],genArgs)[data[[j]][genInd]>0 & data[[j]][genInd]<1] # if gen !=0 and gen!=1
           }
         }
-        else pgenMat[genInd,state] <- do.call(Fun[[j]],genArgs)
-        
+        else {
+          pgenMat[genInd,state] <- do.call(Fun[[j]],genArgs)
+          if(dist[[j]] %in% integerdists){
+            genArgs[[1]] <- genArgs[[1]] - 1
+            pgenMat2[genInd,state] <- do.call(Fun[[j]],genArgs)
+          }
+        }
         
         #pgenMat[genInd,state] <- zeromass+(1-zeromass)*do.call(Fun[[j]],genArgs)
         #for(i in 1:nbObs) {
@@ -204,16 +215,23 @@ pseudoRes <- function(m)
       }
     }
   
-    if(!is.na(data[[j]][1]))
-      genRes[[paste0(j,"Res")]][1] <- qnorm((delta%*%trMat[,,1])%*%pgenMat[1,])
-
+    if(!is.na(data[[j]][1])){
+      genRes[[paste0(j,"Res")]][1] <- (delta%*%trMat[,,1])%*%pgenMat[1,]
+      if(dist[[j]] %in% integerdists)
+        genRes[[paste0(j,"Res")]][1] <- (genRes[[paste0(j,"Res")]][1] + (delta%*%trMat[,,1])%*%pgenMat2[1,])/2
+      genRes[[paste0(j,"Res")]][1] <- qnorm(genRes[[paste0(j,"Res")]][1])
+    }
     for(i in 2:nbObs) {
       gamma <- trMat[,,i]
       c <- max(la[i-1,]) # cancels below ; prevents numerical errors
       a <- exp(la[i-1,]-c)
   
-      if(!is.na(data[[j]][i]))
-        genRes[[paste0(j,"Res")]][i] <-qnorm(t(a)%*%(gamma/sum(a))%*%pgenMat[i,])
+      if(!is.na(data[[j]][i])){
+        genRes[[paste0(j,"Res")]][i] <- t(a)%*%(gamma/sum(a))%*%pgenMat[i,]
+        if(dist[[j]] %in% integerdists)
+          genRes[[paste0(j,"Res")]][i] <- (genRes[[paste0(j,"Res")]][i] + t(a)%*%(gamma/sum(a))%*%pgenMat2[i,])/2
+        genRes[[paste0(j,"Res")]][i] <- qnorm(genRes[[paste0(j,"Res")]][i])
+      }
     }
   }
 

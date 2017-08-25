@@ -21,6 +21,10 @@ will not be included. Indeed, given that the turning angles are defined on (-pi,
 results in a pseudo-residual of +Inf (check Section 6.2 of reference for more information on the
 computation of pseudo-residuals).
 
+A continuity adjustment (adapted from Harte 2017) is made for discrete probability distributions. When
+the data are near the boundary (e.g. 0 for ``pois''; 0 and 1 for ``bern''), then the pseudo residuals can
+be a poor indicator of lack of fit.
+
 Note that pseudo-residuals for multiple imputation analyses are based on pooled parameter 
 estimates and the means of the data values across all imputations.
 }
@@ -33,6 +37,8 @@ qqnorm(res$angleRes)
 
 }
 \references{
+Harte, D. 2017. HiddenMarkov: Hidden Markov Models. R package version \Sexpr{installed.packages()["HiddenMarkov","Version"]}.
+
 Zucchini, W. and MacDonald, I.L. 2009.
 Hidden Markov Models for Time Series: An Introduction Using R.
 Chapman & Hall (London).
