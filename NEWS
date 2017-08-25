@@ -6,6 +6,10 @@ NEW FEATURES
 
 * Harbour seal example of McClintock et al (2013) added to vignette
 
+Changes
+
+* added pseudoRes continuity adjustment for discrete distributions
+
 
 momentuHMM 1.1.0 2017-08-15
 -----------------

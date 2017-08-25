@@ -234,6 +234,7 @@ The state transition probabilities can also be modelled as a function of covaria
   \toprule
   Distribution & Support & Parameters & Link function \tabularnewline
   \midrule
+  Bernoulli (``\verb|bern|'')          & $z_t\in\{0,1\}$          & $\verb|prob|\in(0,1)$            &  $\text{logit}$ \tabularnewline  
   Beta (``\verb|beta|'')               & $z_t\in(0,1)$            & $\verb|shape1|>0$                &  $\log$ \tabularnewline  
                                        &                          & $\verb|shape2|>0$                &  $\log$ \tabularnewline
                                        &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
@@ -255,7 +256,7 @@ The state transition probabilities can also be modelled as a function of covaria
                                        &                          & $\verb|scale|>0$                 &  $\log$ \tabularnewline  
                                        &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
   Wrapped Cauchy (``\verb|wrpcauchy|'')& $z_t\in(-\pi,\pi]$       & $\verb|mean|\in(-\pi,\pi]$       &  $\tan(\verb|mean|/2)$ \tabularnewline  
-                                       &                          & $\verb|concentration|\in[0,1)$ &  $\text{logit}$ \tabularnewline 
+                                       &                          & $\verb|concentration|\in(0,1)$ &  $\text{logit}$ \tabularnewline 
   \bottomrule
   \end{tabular}
 \end{table}

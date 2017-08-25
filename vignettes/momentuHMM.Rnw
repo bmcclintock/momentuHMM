@@ -179,6 +179,7 @@ The state transition probabilities can also be modelled as functions of covariat
   \toprule
   Distribution & Support & Parameters & Link function \tabularnewline
   \midrule
+  Bernoulli (``\verb|bern|'')          & $z_t\in\{0,1\}$          & $\verb|prob|\in(0,1)$            &  $\text{logit}$ \tabularnewline  
   Beta (``\verb|beta|'')               & $z_t\in(0,1)$            & $\verb|shape1|>0$                &  $\log$ \tabularnewline  
                                        &                          & $\verb|shape2|>0$                &  $\log$ \tabularnewline
                                        &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 

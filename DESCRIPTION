@@ -34,7 +34,8 @@ Imports:
     nleqslv,
     survival,
     qdapRegex,
-    geosphere
+    geosphere,
+    LaplacesDemon
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,
