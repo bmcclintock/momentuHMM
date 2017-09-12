@@ -1147,7 +1147,7 @@ Putting it all together, we can fit our constrained model assuming no individual
 \hlstd{DM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{= stepDM,} \hlkwc{angle} \hlstd{= angleDM,} \hlkwc{omega} \hlstd{= omegaDM)}
 \hlstd{cons} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{= stepcons,} \hlkwc{angle} \hlstd{= anglecons,} \hlkwc{omega} \hlstd{= omegacons)}
 \hlstd{userBounds} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{= stepBounds,} \hlkwc{angle} \hlstd{= angleBounds,} \hlkwc{omega} \hlstd{= omegaBounds)}
-\hlstd{workcons} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=angleworkcons)}
+\hlstd{workcons} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{angle} \hlstd{= angleworkcons)}
 \hlstd{hsFits} \hlkwb{<-} \hlkwd{MIfitHMM}\hlstd{(crwOut,} \hlkwc{nSims} \hlstd{=} \hlnum{30}\hlstd{,}
                    \hlkwc{nbStates} \hlstd{= nbStates,} \hlkwc{dist} \hlstd{= dist,} \hlkwc{Par0} \hlstd{= Par0,}
                    \hlkwc{DM} \hlstd{= DM,} \hlkwc{cons} \hlstd{= cons,}

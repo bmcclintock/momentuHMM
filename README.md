@@ -1,4 +1,5 @@
-# momentuHMM
+# momentuHMM [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/momentuHMM)](https://cran.r-project.org/package=momentuHMM) [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0) [![Downloads](http://cranlogs.r-pkg.org/badges/momentuHMM)](https://cran.r-project.org/package=momentuHMM)
+
 An R package for Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models 
 
 <!--

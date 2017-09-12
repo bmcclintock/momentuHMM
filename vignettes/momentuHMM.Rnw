@@ -937,7 +937,7 @@ Putting it all together, we can fit our constrained model assuming no individual
 DM <- list(step = stepDM, angle = angleDM, omega = omegaDM)
 cons <- list(step = stepcons, angle = anglecons, omega = omegacons)
 userBounds <- list(step = stepBounds, angle = angleBounds, omega = omegaBounds)
-workcons <- list(angle=angleworkcons)
+workcons <- list(angle = angleworkcons)
 hsFits <- MIfitHMM(crwOut, nSims = 30,
                    nbStates = nbStates, dist = dist, Par0 = Par0,
                    DM = DM, cons = cons, 
