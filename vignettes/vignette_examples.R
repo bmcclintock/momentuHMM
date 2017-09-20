@@ -261,7 +261,9 @@ coordinates(tmpData)<-c("x","y")
 proj4string(tmpData)<-CRS("+init=epsg:27700 +units=m")
 tmpData<-spTransform(tmpData,CRS="+proj=longlat +ellps=WGS84")
 
-for(id in c(1,8)){
+png(file=paste0(getwd(),"/plot_harbourSeal.png"),width=7.25,height=5,units="in",res=84)
+par(mfrow=c(1,2))
+for(id in c(8,1)){
   freqs<-miSum.ind$Par$states[hsData$ID==id]
   x<-tmpData$x[which(hsData$ID==id)]
   y<-tmpData$y[which(hsData$ID==id)]
@@ -272,20 +274,20 @@ for(id in c(1,8)){
                                                 x<-spTransform(x,CRS="+proj=longlat +ellps=WGS84");
                                                 as.data.frame(x)})
   
-  png(file=paste0(getwd(),"/plot_harbourSeal",id,".png"),width=5,height=7.25,units="in",res=90)
-  plot(x,y,type="o",pch=20,cex=.5,xlab="longitude",ylab="latitude")
+  #png(file=paste0(getwd(),"/plot_harbourSeal",id,".png"),width=5,height=7.25,units="in",res=90)
+  plot(x,y,type="o",pch=20,cex=.5,xlab="longitude",ylab="latitude",cex.lab=0.8,cex.axis=.7)
   points(x_ti[which(data$ID==id)],y_ti[which(data$ID==id)],pch=20,type="o",cex=0.5,col=gray(.5))
   map('worldHires', c('UK', 'Ireland', 'Isle of Man','Isle of Wight'), col=gray(0.85),fill=T,add=T)
-  map.axes()
+  map.axes(cex.axis=.7)
   points(x,y,type="o",pch=20,col=c("#E69F00", "#56B4E9", "#009E73")[freqs],cex=.5)
   segments(x0=x[-length(x)],y0=y[-length(y)],x1=x[-1],y1=y[-1],
            col=c("#E69F00", "#56B4E9", "#009E73")[freqs][-length(freqs)],lwd=1.3)
   #points(coordinates(turtleData)/1000,cex=0.15)
   for(i in 1:length(errorEllipse))
     lines(errorEllipse[[i]],col=adjustcolor(c("#E69F00", "#56B4E9", "#009E73")[freqs][i],alpha.f=0.25),cex=0.6)
-  legend("topright",c(stateNames,"observed"),col=c("#E69F00", "#56B4E9", "#009E73",gray(.5)),pch=20)
-  dev.off()
 }
+legend("topright",c(stateNames,"observed"),col=c("#E69F00", "#56B4E9", "#009E73",gray(.5)),pch=20,cex=.7)
+dev.off()
 
 pdf(file=paste0(getwd(),"/plot_harbourSealResults%03d.pdf"),onefile=FALSE)
 plot(miSum.ind,plotCI=TRUE,ask=FALSE)
