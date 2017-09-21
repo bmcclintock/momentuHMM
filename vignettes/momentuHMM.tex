@@ -207,7 +207,7 @@ Before delving into some of the finer details, we will first provide an overview
   \verb|plotStates| & Plot the (Viterbi-)decoded states and state probabilities \tabularnewline 
   \verb|prepData| & Pre-process data streams and covariates \tabularnewline 
   \verb|pseudoRes| & Calculate pseudo-residuals for \verb|momentuHMM| models \tabularnewline 
-  \verb|simData| & Simulate movement data using a (multivariate) HMM \tabularnewline 
+  \verb|simData| & Simulate data from a (multivariate) HMM \tabularnewline 
   \verb|stateProbs| & State probabilities for each time step \tabularnewline 
   \verb|viterbi| & Most likely state sequence (using the Viterbi algorithm)  \tabularnewline  
   \bottomrule
@@ -467,7 +467,7 @@ Then, we call \verb|crawlWrap| to fit a CTCRW model and predict hourly locations
 
 Here the desired time step is specified by the \verb|timeStep| argument, and the \verb|initial.state|, \verb|theta|, and \verb|fixPar| arguments are the same as for \verb|crawl::crwMLE| \citep{Johnson2017}. For the choice of initial parameters in \verb|crawlWrap|, we refer the reader to the documentation of the package crawl, in particular \verb|crawl::crwMLE| and \verb|crawl::crwPredict|. We now have a complete set of temporally-regular location data.
 
-Autocorrelation function (ACF) estimates suggest there are 24-hour cycles in the step length data, and this presents an opporunity to demonstrate the use of the \verb|cosinor| function for incorporating cyclical behavior in model parameters using \verb|momentuHMM|. We create a \verb|momentuHMMData| object, and the 24-hour cosinor model covariate: 
+Autocorrelation function (ACF) estimates suggest there are 24-hour cycles in the step length data, and this presents an opportunity to demonstrate the use of the \verb|cosinor| function for incorporating cyclical behavior in model parameters using \verb|momentuHMM|. We create a \verb|momentuHMMData| object, and the 24-hour cosinor model covariate: 
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
