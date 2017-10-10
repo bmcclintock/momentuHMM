@@ -346,7 +346,7 @@ It is straightforward to add additional data stream probability distributions, a
                                        &                          & $\verb|concentration|\in(0,1)$ &  $\text{logit}$ \tabularnewline 
   \bottomrule
   \end{tabular}
-  \footnotesize{$^1$Link functions $(g)$ relate a natural scale parameter $(\theta)$ to a design matrix $({\mathbf X})$ and vector of working scale parameters $(\boldsymbol{\beta}\in \mathbb{R}^n)$ such that $g(\theta)={\mathbf X}\boldsymbol{\beta}$.}
+  \footnotesize{$^1$Link functions $(g)$ relate natural scale parameters $({\boldsymbol \theta})$ to a $T \times k$ design matrix $({\mathbf X})$ and $k-$vector of working scale parameters $(\boldsymbol{\beta}\in \mathbb{R}^k)$ such that $g({\boldsymbol \theta})={\mathbf X}\boldsymbol{\beta}$.}
 \end{table}
 
 \begin{figure}[htbp]
