@@ -707,7 +707,8 @@ fitHMM <- function(data,nbStates,dist,
         }
         parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)-(nbStates-1)*(!stationary)
         wpar[1:parmInd] <- mod$estimate[1:parmInd]+rnorm(parmInd)
-        wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1))] <- mod$estimate[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1))]+rnorm((nbCovs+1)*nbStates*(nbStates-1),0,10)
+        if(nbStates>1)
+          wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1))] <- mod$estimate[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1))]+rnorm((nbCovs+1)*nbStates*(nbStates-1),0,10)
         if(length(wparIndex)) wpar[wparIndex] <- unlist(fixPar)[wparIndex]
       }
       fitCount<-fitCount+1
