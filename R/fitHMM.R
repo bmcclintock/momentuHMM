@@ -799,9 +799,9 @@ fitHMM <- function(data,nbStates,dist,
   
   #compute SEs and CIs on natural and working scale
   CIreal<-tryCatch(CIreal(momentuHMM(mh)),error=function(e) e)
-  if(inherits(CIreal,"error") & fit==TRUE) warning("Failed to compute SEs and confidence intervals on the real scale -- ",CIreal)
+  if(inherits(CIreal,"error") & fit==TRUE) warning("Failed to compute SEs and confidence intervals on the natural scale -- ",CIreal)
   CIbeta<-tryCatch(CIbeta(momentuHMM(mh)),error=function(e) e)
-  if(inherits(CIbeta,"error") & fit==TRUE) warning("Failed to compute SEs confidence intervals on the natural scale -- ",CIbeta)
+  if(inherits(CIbeta,"error") & fit==TRUE) warning("Failed to compute SEs confidence intervals on the working scale -- ",CIbeta)
   
   mh <- list(data=data,mle=mle,CIreal=CIreal,CIbeta=CIbeta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates)
   
