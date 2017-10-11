@@ -35,6 +35,8 @@ getSplineDM<-function(distnames,DM,m,covs){
                 tmp<-gsub(" ","_",tmp)
                 tmp<-gsub(",","_",tmp)
                 tmp<-gsub("=","_",tmp)
+                tmp<-gsub("\\*","_",tmp)
+                tmp<-gsub("\\^","_",tmp)
                 colnames(tmpcovs)<-tmp
                 newcovs<-cbind(newcovs,tmpcovs)
                 for(l in colnames(factors)){
@@ -45,6 +47,8 @@ getSplineDM<-function(distnames,DM,m,covs){
                     tmp<-gsub(" ","_",tmp)
                     tmp<-gsub(",","_",tmp)
                     tmp<-gsub("=","_",tmp)
+                    tmp<-gsub("\\*","_",tmp)
+                    tmp<-gsub("\\^","_",tmp)
                     tmpDM[[state]]<-c(tmpDM[[state]],tmp)
                   }
                 }
