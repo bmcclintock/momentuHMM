@@ -545,7 +545,7 @@ fitHMM <- function(data,nbStates,dist,
     for(i in distnames){
       fixPar[[i]] <- rep(NA,length(Par0[[i]]))
     }
-    fixPar$delta <- rep(NA,length(delta0)-1)
+    fixPar$delta <- rep(NA,ifelse(is.null(delta0),0,length(delta0)-1))
   }
   
   if(is.null(fixPar$beta)) {
