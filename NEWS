@@ -2,6 +2,8 @@ momentuHMM 1.1.2 2017-11-11
 -----------------
 Changes
 
+* bug fix when using fixPar to fix initial distribution (delta)
+
 * bug fix when nbStates=1 and circularAngleMean=TRUE
 
 * bug fix when nbStates=1 and retryFits>0

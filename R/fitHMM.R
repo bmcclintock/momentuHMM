@@ -545,7 +545,7 @@ fitHMM <- function(data,nbStates,dist,
     for(i in distnames){
       fixPar[[i]] <- rep(NA,length(Par0[[i]]))
     }
-    fixPar$delta <- rep(NA,length(delta0))
+    fixPar$delta <- rep(NA,length(delta0)-1)
   }
   
   if(is.null(fixPar$beta)) {
@@ -599,11 +599,12 @@ fitHMM <- function(data,nbStates,dist,
       if(length(tmp)){
         delta0[tmp] <- fixPar$delta[tmp]
         if(length(tmp)!=length(delta0) | sum(delta0)!=1) stop("fixPar$delta must sum to 1")
-        wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0)+tmp)
+        fixPar$delta <- log(delta0[-1]/delta0[1])
+        wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0)+1:(length(delta0)-1))
       }
     }
   } else {
-    fixPar$delta <- ofixPar$delta <- rep(NA,length(delta0))
+    fixPar$delta <- ofixPar$delta <- rep(NA,length(delta0)-1)
   }
 
   fixPar <- fixPar[c(distnames,"beta","delta")]
