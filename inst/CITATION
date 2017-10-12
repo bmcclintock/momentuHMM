@@ -1,11 +1,12 @@
-citHeader("To cite the R package 'momentuHMM' in publications, use:")
+citHeader("To cite momentuHMM in a publication use:")
 
-year <- sub("-.*","",meta$Date)
-note <- sprintf("R package version %s",meta$Version)
+citEntry(
+	entry="Article",
+	title="momentuHMM: R package for generalized hidden {M}arkov models of animal movement",
+	author=personList(as.person("Brett T. McClintock"), as.person("Theo Michelot")),
+	journal="arXiv:1710.03786",
+	year=2017,
+	textVersion="McClintock, B.T. and Michelot, T. (2017) momentuHMM: R package for generalized hidden Markov models of animal movement. arXiv:1710.03786."
+)
 
-bibentry(bibtype = "Manual",
-         title = "{momentuHMM}: Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models",
-         author = c(person("Brett","McClintock"),
-                    person("Theo","Michelot")),
-         year = year,
-         note = note)
+citFooter("Additions and modifications to momentuHMM are frequent, to help with reproducibility of output please cite its version number. Find it with 'help(package=momentuHMM)'.")
