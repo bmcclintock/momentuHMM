@@ -8,7 +8,8 @@ fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
   stationary = FALSE, verbose = 0, nlmPar = NULL, fit = TRUE,
   DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL,
-  stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0)
+  stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
+  formulaDelta = ~1)
 }
 \arguments{
 \item{data}{An object \code{momentuHMMData}.}
@@ -124,6 +125,8 @@ the state is not known.}
 initial values for likelihood optimization. Standard normal perturbations are used on the working scale probability distribution parameters, while
 Normal(0,10^2) pertubations are used for working scale transition probability parameters. Default: 0.  When \code{retryFits>0}, the model with the largest log likelihood 
 value is returned.  Ignored if \code{fit=FALSE}.}
+
+\item{formulaDelta}{Formula for the initial distribution. Limited to \code{~1} (no covariate effects) or \code{~ID} (individual effects). Default: \code{~1}.}
 }
 \value{
 A \code{\link{momentuHMM}} object, i.e. a list of:

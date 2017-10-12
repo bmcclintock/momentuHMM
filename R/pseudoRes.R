@@ -43,6 +43,7 @@ pseudoRes <- function(m)
     stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
   
   if(is.miHMM(m)) m <- m$miSum
+  m <- delta_bc(m)
 
   data <- m$data
   nbObs <- nrow(data)
@@ -67,7 +68,7 @@ pseudoRes <- function(m)
     p <- inputs$p
     DMinputs<-getDM(data,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
     m$conditions$fullDM <- DMinputs$fullDM
-    m$mod$estimate <- n2w(Par,p$bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+    m$mod$estimate <- n2w(Par,p$bounds,beta,m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
   } else {
     beta <- m$mle$beta
     delta <- m$mle$delta
@@ -112,6 +113,10 @@ pseudoRes <- function(m)
   covs <- model.matrix(newformula,data)
   nbCovs <- ncol(covs)-1 # substract intercept column
   
+  aInd <- NULL
+  for(i in 1:length(unique(m$data$ID)))
+    aInd <- c(aInd,which(m$data$ID==unique(m$data$ID)[i])[1])
+  
   nc <- meanind <- vector('list',length(distnames))
   names(nc) <- names(meanind) <- distnames
   for(i in distnames){
@@ -119,7 +124,7 @@ pseudoRes <- function(m)
     if(m$conditions$circularAngleMean[[i]]) meanind[[i]] <- which((apply(m$conditions$fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
   }
   
-  par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind,nc,meanind)
+  par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta)
   
   if(nbStates>1)
     trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs))
@@ -215,22 +220,25 @@ pseudoRes <- function(m)
       }
     }
   
-    if(!is.na(data[[j]][1])){
-      genRes[[paste0(j,"Res")]][1] <- (delta%*%trMat[,,1])%*%pgenMat[1,]
-      if(dist[[j]] %in% integerdists)
-        genRes[[paste0(j,"Res")]][1] <- (genRes[[paste0(j,"Res")]][1] + (delta%*%trMat[,,1])%*%pgenMat2[1,])/2
-      genRes[[paste0(j,"Res")]][1] <- qnorm(genRes[[paste0(j,"Res")]][1])
-    }
-    for(i in 2:nbObs) {
-      gamma <- trMat[,,i]
-      c <- max(la[i-1,]) # cancels below ; prevents numerical errors
-      a <- exp(la[i-1,]-c)
-  
+    k <- 1
+    for(i in 1:nbObs) {
       if(!is.na(data[[j]][i])){
-        genRes[[paste0(j,"Res")]][i] <- t(a)%*%(gamma/sum(a))%*%pgenMat[i,]
-        if(dist[[j]] %in% integerdists)
-          genRes[[paste0(j,"Res")]][i] <- (genRes[[paste0(j,"Res")]][i] + t(a)%*%(gamma/sum(a))%*%pgenMat2[i,])/2
-        genRes[[paste0(j,"Res")]][i] <- qnorm(genRes[[paste0(j,"Res")]][i])
+        if(any(i==aInd)){
+          genRes[[paste0(j,"Res")]][i] <- (delta[k,]%*%trMat[,,i])%*%pgenMat[i,]
+          if(dist[[j]] %in% integerdists)
+            genRes[[paste0(j,"Res")]][i] <- (genRes[[paste0(j,"Res")]][i] + (delta[k,]%*%trMat[,,i])%*%pgenMat2[i,])/2
+          genRes[[paste0(j,"Res")]][i] <- qnorm(genRes[[paste0(j,"Res")]][i])
+          k <- k + 1
+        } else {
+          gamma <- trMat[,,i]
+          c <- max(la[i-1,]) # cancels below ; prevents numerical errors
+          a <- exp(la[i-1,]-c)
+          
+          genRes[[paste0(j,"Res")]][i] <- t(a)%*%(gamma/sum(a))%*%pgenMat[i,]
+          if(dist[[j]] %in% integerdists)
+            genRes[[paste0(j,"Res")]][i] <- (genRes[[paste0(j,"Res")]][i] + t(a)%*%(gamma/sum(a))%*%pgenMat2[i,])/2
+          genRes[[paste0(j,"Res")]][i] <- qnorm(genRes[[paste0(j,"Res")]][i])
+        }
       }
     }
   }

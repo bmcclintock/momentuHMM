@@ -9,7 +9,7 @@
 #' @param parSize Named list indicating the number of natural parameters of the data stream probability distributions
 #' @param data An object \code{momentuHMMData}.
 #' @param dist Named list indicating the probability distributions of the data streams. 
-#' @param covs data frame containing the model covariates (if any)
+#' @param covs data frame containing the beta model covariates (if any)
 #' @param estAngleMean Named list indicating whether or not to estimate the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy').
 #' @param circularAngleMean Named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
@@ -32,6 +32,7 @@
 #' @param wparIndex Vector of indices for the elements of \code{fixPar} that are not NA.
 #' @param nc indicator for zeros in fullDM
 #' @param meanind index for circular-circular regression mean angles with at least one non-zero entry in fullDM
+#' @param covsDelta data frame containing the delta model covariates (if any)
 #'
 #' @return The negative log-likelihood of the parameters given the data.
 #'
@@ -48,7 +49,7 @@
 #'           m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,
 #'           m$stateNames)
 #' 
-#' wpar <- momentuHMM:::n2w(Par,m$conditions$bounds,m$mle$beta,m$mle$delta,nbStates,
+#' wpar <- momentuHMM:::n2w(Par,m$conditions$bounds,m$mle$beta,log(m$mle$delta[-1]/m$mle$delta[1]),nbStates,
 #'        m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,
 #'        m$conditions$Bndind)
 #' 
@@ -64,17 +65,17 @@
 
 nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,circularAngleMean,zeroInflation,oneInflation,
-                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind)
+                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta)
 {
   # check arguments
   distnames<-names(dist)
 
   #covs <- model.matrix(formula,data)
-  nbCovs <- ncol(covs)-1 # substract intercept column
-
+  nbCovs <- ncol(covs)-1
+  
   # convert the parameters back to their natural scale
   if(length(wparIndex)) wpar[wparIndex] <- fixPar[wparIndex]
-  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind)
+  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta)
 
   nbAnimals <- length(unique(data$ID))
 

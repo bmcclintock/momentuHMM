@@ -27,6 +27,6 @@ test_that("Lengths of input and output are the same",{
   beta <- matrix(rnorm(6),ncol=2,nrow=3)
   delta <- c(0.6,0.4)
 
-  expect_equal(length(n2w(par,bounds,beta,delta,nbStates,list(step=FALSE),NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)),
+  expect_equal(length(n2w(par,bounds,beta,log(delta[-1]/delta[1]),nbStates,list(step=FALSE),NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)),
                length(par$step)+length(beta)+length(delta)-1)
 })

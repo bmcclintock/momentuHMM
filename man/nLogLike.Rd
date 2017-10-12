@@ -7,7 +7,7 @@
 nLogLike(wpar, nbStates, formula, bounds, parSize, data, dist, covs,
   estAngleMean, circularAngleMean, zeroInflation, oneInflation,
   stationary = FALSE, cons, fullDM, DMind, workcons, Bndind, knownStates,
-  fixPar, wparIndex, nc, meanind)
+  fixPar, wparIndex, nc, meanind, covsDelta)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}
@@ -25,7 +25,7 @@ distribution parameters for each data stream.}
 
 \item{dist}{Named list indicating the probability distributions of the data streams.}
 
-\item{covs}{data frame containing the model covariates (if any)}
+\item{covs}{data frame containing the beta model covariates (if any)}
 
 \item{estAngleMean}{Named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy').}
@@ -63,6 +63,8 @@ model (if any).}
 \item{nc}{indicator for zeros in fullDM}
 
 \item{meanind}{index for circular-circular regression mean angles with at least one non-zero entry in fullDM}
+
+\item{covsDelta}{data frame containing the delta model covariates (if any)}
 }
 \value{
 The negative log-likelihood of the parameters given the data.
@@ -83,7 +85,7 @@ inputs <- momentuHMM:::checkInputs(nbStates,m$conditions$dist,Par,m$conditions$e
           m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,
           m$stateNames)
 
-wpar <- momentuHMM:::n2w(Par,m$conditions$bounds,m$mle$beta,m$mle$delta,nbStates,
+wpar <- momentuHMM:::n2w(Par,m$conditions$bounds,m$mle$beta,log(m$mle$delta[-1]/m$mle$delta[1]),nbStates,
        m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,
        m$conditions$Bndind)
 

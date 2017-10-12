@@ -1,6 +1,6 @@
 # wrapper for calling moveHMM::fitHMM when appropriate models are specified
 #' @importFrom moveHMM fitHMM
-moveHMMwrap<-function(data,nbStates,dist,Par,beta0,delta0,estAngleMean,formula,stationary,verbose,nlmPar,fit){
+moveHMMwrap<-function(data,nbStates,dist,Par,beta0,delta0,estAngleMean,formula,stationary,verbose,nlmPar,fit,nbAnimals){
   data <- moveData(data)
   distnames<-names(dist)
   if(any(distnames %in% "angle")){
@@ -26,5 +26,6 @@ moveHMMwrap<-function(data,nbStates,dist,Par,beta0,delta0,estAngleMean,formula,s
   }
   mod<-out$mod
   mle$step<-matrix(c(t(mle$stepPar)),length(mle$stepPar),1)
+  mle$delta<-matrix(mle$delta,nrow=nbAnimals,ncol=nbStates,byrow=TRUE)
   return(list(mod=mod,mle=mle))
 }

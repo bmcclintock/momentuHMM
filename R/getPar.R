@@ -17,6 +17,8 @@ getPar<-function(m){
   
   if(is.miHMM(m)) m <- m$miSum
   
+  m <- delta_bc(m)
+  
   nbStates <- length(m$stateNames)
   dist <- m$conditions$dist
   distnames <- names(dist)
@@ -48,5 +50,9 @@ getPar<-function(m){
     delta <- unname(m$mle$delta)
   }
   
+  if(!length(attr(terms.formula(m$conditions$formulaDelta),"term.labels"))){
+    delta <- delta[1,]
+    rownames(delta)<-NULL
+  }
   list(Par=Par,beta=beta,delta=delta)
 }

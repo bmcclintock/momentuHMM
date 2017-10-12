@@ -92,6 +92,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,covs=NULL){
   }
   
   m <- im[[1]]
+  m <- delta_bc(m)
   data <- m$data
   nbStates <- length(m$stateNames)
   dist <- m$conditions$dist
@@ -275,7 +276,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,covs=NULL){
   for(i in distnames){
     
     DMind[[i]] <- FALSE
-    par <- c(w2n(miBeta$coefficients,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist[i],m$conditions$Bndind,nc,meanind)[[i]])
+    par <- c(w2n(miBeta$coefficients,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta)[[i]])
 
     if(!(dist[[i]] %in% angledists) | (dist[[i]] %in% angledists & m$conditions$estAngleMean[[i]] & !m$conditions$Bndind[[i]])) {
       Par$real[[i]] <- get_CI(miBeta$coefficients,par,m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],p$bounds[[i]],DMinputs$cons[[i]],DMinputs$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],nbStates,alpha,p$parNames[[i]],m$stateNames,nc[[i]],meanind[[i]])

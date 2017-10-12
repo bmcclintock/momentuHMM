@@ -2,9 +2,13 @@ momentuHMM 1.1.2 2017-11-11
 -----------------
 Changes
 
-* bug fix when nbStates=1 and circularAngleMean=TRUE
+* bug fix in pseudoRes such that pseudo-residuals now "reset" for each individual
 
-* bug fix when nbStates=1 and retryFits>0
+* bug fix in fitHMM when using fixPar to fix initial distribution (delta)
+
+* bug fix in fitHMM when nbStates=1 and circularAngleMean=TRUE
+
+* bug fix in fitHMM when nbStates=1 and retryFits>0
 
 
 momentuHMM 1.1.1 2017-09-19

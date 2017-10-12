@@ -47,7 +47,7 @@ test_that("w2n and n2w are inverse",{
     if(m$conditions$circularAngleMean[[i]]) meanind[[i]] <- which((apply(m$conditions$fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
   }
   
-  wpar <- n2w(par,bounds,beta,delta,nbStates,m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+  wpar <- n2w(par,bounds,beta,log(delta[-1]/delta[1]),nbStates,m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
   p <-   w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,nc,meanind)
   
 

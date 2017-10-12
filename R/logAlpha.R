@@ -79,9 +79,9 @@ logAlpha <- function(m)
   for(i in 1:nbObs) {
     gamma <- trMat[,,i]
     if(any(i==aInd)){
-      k <- max(nbAnimals,k+1)
-      foo <- (delta %*% gamma)*probs[i,]
+      foo <- (delta[k,] %*% gamma)*probs[i,]
       lscale <- 0
+      k <- k + 1
     } else {
       foo <- (foo %*% gamma)*probs[i,]
     }

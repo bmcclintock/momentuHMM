@@ -19,7 +19,7 @@ nLogLike_rcpp(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation,
 \item{dist}{Named list indicating the probability distributions of the data streams.}
 
 \item{Par}{Named list containing the state-dependent parameters of the data streams, matrix of regression coefficients 
-for the transition probabilities ('beta'), and stationary distribution ('delta').}
+for the transition probabilities ('beta'), and initial distribution ('delta').}
 
 \item{aInd}{Vector of indices of the rows at which the data switches to another animal}
 

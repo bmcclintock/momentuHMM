@@ -103,7 +103,9 @@
 #' \code{runif(1,min(errorEllipse$m),max(errorEllipse$m))}, and \code{runif(1,min(errorEllipse$r),max(errorEllipse$r))}. If only a single value is provided for any of the 
 #' error ellipse elements, then the corresponding component is fixed to this value for each location. Only the 'step' and 'angle' data streams are subject to location measurement error;
 #' any other data streams are observed without error.  Ignored unless a valid distribution for the 'step' data stream is specified.
-#'
+#' @param delta Initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}.
+#' @param formulaDelta Formula for the initial distribution. Limited to \code{~1} (no covariate effects) or \code{~ID} (individual effects). Default: \code{~1}.
+#' 
 #' @return If the simulated data are temporally regular (i.e., \code{lambda=NULL}) with no measurement error (i.e., \code{errorEllipse=NULL}), an object \code{\link{momentuHMMData}}, 
 #' i.e., a dataframe of:
 #' \item{ID}{The ID(s) of the observed animal(s)}
@@ -292,6 +294,7 @@
 #' @importFrom moveHMM simData
 #' @importFrom CircStats rvm
 #' @importFrom LaplacesDemon rbern
+#' @importFrom Brobdingnag as.brob sum
 
 simData <- function(nbAnimals=1,nbStates=2,dist,
                     Par,beta=NULL,
@@ -308,7 +311,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     model=NULL,states=FALSE,
                     retrySims=0,
                     lambda=NULL,
-                    errorEllipse=NULL)
+                    errorEllipse=NULL,
+                    delta=rep(1/nbStates,nbStates),formulaDelta=~1)
 {
   ##############################
   ## Check if !is.null(model) ##
@@ -326,6 +330,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       model$mod$estimate <- model$MIcombine$coefficients
     }
     
+    model <- delta_bc(model)
+    
     # extract simulation parameters from model
     nbStates <- length(model$stateNames)
     dist<-model$conditions$dist
@@ -340,6 +346,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     zeroInflation <- model$conditions$zeroInflation
     oneInflation <- model$conditions$oneInflation
     formula <- model$conditions$formula
+    formulaDelta <- model$condition$formulaDelta
   
     Par <- model$mle[distnames]
     parindex <- c(0,cumsum(unlist(lapply(model$conditions$fullDM,ncol)))[-length(model$conditions$fullDM)])
@@ -378,6 +385,14 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
     beta <- model$mle$beta
     delta <- model$mle$delta
+    if(!length(attr(terms.formula(formulaDelta),"term.labels"))){
+      delta <- delta[1,]
+      rownames(delta)<-NULL
+    } else {
+      nbCovsDelta <- ncol(model$covsDelta)-1
+      foo <- length(model$mod$estimate)-(nbCovsDelta+1)*(nbStates-1)+1
+      delta <- matrix(model$mod$estimate[foo:length(model$mod$estimate)],nrow=nbCovsDelta+1)
+    }  
     Par<-lapply(Par,function(x) c(t(x)))
     
     if(states) model$data$states <- NULL
@@ -391,6 +406,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(!is.null(model$rawCovs)){
         covNames <- c(colnames(model$rawCovs),covNames)
       }
+      covNames <- c(covNames,colnames(model$covsDelta)[-1])
       covsCol <- unique(covNames)
       factorterms<-names(model$data)[unlist(lapply(model$data,is.factor))]
       factorcovs<-paste0(rep(factorterms,times=unlist(lapply(model$data[factorterms],nlevels))),unlist(lapply(model$data[factorterms],levels)))
@@ -407,6 +423,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         }
       }
       covsCol<-unique(covsCol)
+      
+      
 
       if(length(covsCol)) covs <- model$data[covsCol]
     }
@@ -418,12 +436,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     distnames<-names(dist)
     if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
     Par <- Par[distnames]
-    delta <- NULL
     
-    mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & is.null(centers) & ("step" %in% names(dist)) & all(initialPosition==c(0,0)) & is.null(lambda) & is.null(errorEllipse) & !is.list(obsPerAnimal)) # indicator for moveHMM::simData
-    if(mHind & length(attr(terms.formula(formula),"term.labels"))) mHind <- FALSE
-      #if("ID" %in% rownames(attr(terms.formula(formula),"factors")) | any(mapply(is.factor,covs)))
-      #  mHind <- FALSE
+    mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & is.null(centers) & ("step" %in% names(dist)) & all(initialPosition==c(0,0)) & is.null(lambda) & is.null(errorEllipse) & !is.list(obsPerAnimal) & is.null(covs) & !nbCovs & !length(attr(terms.formula(formula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & all(delta==1/nbStates)) # indicator for moveHMM::simData
     if(all(names(dist) %in% c("step","angle")) & mHind){
       zi <- FALSE
       if(!is.null(zeroInflation$step)) zi <- zeroInflation$step
@@ -601,7 +615,16 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   
   if(anyDuplicated(colnames(allCovs))) stop("covariates must have unique names")
   if(anyDuplicated(spatialcovnames)) stop("spatialCovs must have unique names")
-  if(any(colnames(allCovs) %in% spatialcovnames)) stop("spatialCovs name(s) cannot match other covariate name(s)")
+  if(!is.null(model) & nbSpatialCovs>0){
+    spInd <- which(!(colnames(allCovs) %in% spatialcovnames))
+    if(length(spInd)) {
+      allCovs <- allCovs[,spInd,drop=FALSE]
+      nbCovs <- ncol(allCovs)
+    } else {
+      allCovs <- NULL
+      nbCovs <- 0
+    }
+  } else if(any(colnames(allCovs) %in% spatialcovnames)) stop("spatialCovs name(s) cannot match other covariate name(s)")
   
   centerInd<-NULL
   if(!is.null(centers)){
@@ -613,6 +636,17 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       centerCovs <- data.frame(matrix(NA,nrow=sum(allNbObs),ncol=length(centerInd)*2,dimnames=list(NULL,centerNames)))
     }  
   } else centerNames <- NULL
+  
+  if(!is.null(model) & length(centerInd)){
+    cInd <- which(!(colnames(allCovs) %in% centerNames))
+    if(length(cInd)) {
+      allCovs <- allCovs[,cInd,drop=FALSE]
+      nbCovs <- ncol(allCovs)
+    } else {
+      allCovs <- NULL
+      nbCovs <- 0
+    }
+  } else if(any(colnames(allCovs) %in% centerNames)) stop("centers name(s) cannot match other covariate name(s)")
   
   allNbCovs <- nbCovs+nbSpatialCovs
 
@@ -667,12 +701,16 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     } else message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,": custom",collapse=", "),")")
   }
   message("\n Transition probability matrix formula: ",paste0(formula,collapse=""))
+  message("\n Initial distribution formula: ",paste0(formulaDelta,collapse=""))
   message("=======================================================================")
   
   if(length(all.vars(formula)))
     if(!all(all.vars(formula) %in% c("ID",names(allCovs),centerNames,spatialcovnames)))
       stop("'formula' covariate(s) not found")
-  if("ID" %in% all.vars(formula) & nbAnimals<2) stop("ID cannot be a covariate when nbAnimals=1")
+  if(length(all.vars(formulaDelta)))
+    if(!all(all.vars(formulaDelta) %in% c("ID",names(allCovs),centerNames,spatialcovnames)))
+      stop("'formulaDelta' covariate(s) not found")
+  if(("ID" %in% all.vars(formula) | "ID" %in% all.vars(formulaDelta)) & nbAnimals<2) stop("ID cannot be a covariate when nbAnimals=1")
   
   stateForms<- terms(formula, specials = paste0("state",1:nbStates))
   newformula<-formula
@@ -734,6 +772,22 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   }
   if(length(initialPosition)!=2 | !is.numeric(initialPosition)) stop("initialPosition must be a numeric vector of length 2")
   
+  covsDelta <- model.matrix(formulaDelta,tmpCovs)
+  nbCovsDelta <- ncol(covsDelta)-1
+  if(!nbCovsDelta){
+    if(length(delta) != (nbCovsDelta+1)*nbStates)
+      stop(paste("delta has the wrong length: it should have",nbStates,"elements."))
+    deltaB <- log(delta[-1]/delta[1])
+  } else {
+    if(is.null(dim(delta)))
+      stop(paste("delta has wrong dimensions: it should have",nbCovsDelta+1,"rows and",
+                 nbStates-1,"columns."))
+    if(ncol(delta)!=nbStates-1 | nrow(delta)!=nbCovsDelta+1)
+      stop(paste("delta has wrong dimensions: it should have",nbCovsDelta+1,"rows and",
+                 nbStates-1,"columns."))
+    deltaB <- delta
+  }
+  
   if(!nbSpatialCovs | !retrySims){
   
     ###########################
@@ -790,15 +844,17 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         DMinputs<-getDM(subCovs,inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
-        wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+        wpar <- n2w(Par,bounds,beta,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
         nc <- meanind <- vector('list',length(distnames))
         names(nc) <- names(meanind) <- distnames
         for(i in distnames){
           nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
           if(inputs$circularAngleMean[[i]]) meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
         }
-        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,dist,p$Bndind,nc,meanind)
+        covsDelta <- model.matrix(formulaDelta,subCovs[1,,drop=FALSE])
+        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,dist,p$Bndind,nc,meanind,covsDelta)
         g <- gFull[1,,drop=FALSE]
+        delta <- fullsubPar$delta
       } else {
         
         if(nbSpatialCovs){
@@ -815,6 +871,15 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           }
         }
         g <- model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% beta
+        covsDelta <- model.matrix(formulaDelta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
+        delta <- c(rep(0,nbCovsDelta+1),deltaB)
+        deltaXB <- covsDelta %*% matrix(delta,nrow=nbCovsDelta+1)
+        expdelta <- exp(deltaXB)
+        delta <- expdelta/rowSums(expdelta)
+        for(i in which(!is.finite(rowSums(delta)))){
+          tmp <- exp(Brobdingnag::as.brob(deltaXB[i,]))
+          delta[i,] <- as.numeric(tmp/Brobdingnag::sum(tmp))
+        }
       }
       gamma[!gamma] <- exp(g)
       gamma <- t(gamma)
@@ -833,14 +898,14 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           DMinputs<-getDM(cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE]),inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
           fullDM <- DMinputs$fullDM
           DMind <- DMinputs$DMind
-          wpar <- n2w(Par,bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+          wpar <- n2w(Par,bounds,beta,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
           nc <- meanind <- vector('list',length(distnames))
           names(nc) <- names(meanind) <- distnames
           for(i in distnames){
             nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
             if(inputs$circularAngleMean[[i]]) meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
           }
-          subPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist,p$Bndind,nc,meanind)
+          subPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist,p$Bndind,nc,meanind,covsDelta)
         } else {
           subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
         }

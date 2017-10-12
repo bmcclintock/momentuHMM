@@ -10,7 +10,8 @@ simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
   centers = NULL, obsPerAnimal = c(500, 1500), initialPosition = c(0, 0),
   DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL,
   stateNames = NULL, model = NULL, states = FALSE, retrySims = 0,
-  lambda = NULL, errorEllipse = NULL)
+  lambda = NULL, errorEllipse = NULL, delta = rep(1/nbStates, nbStates),
+  formulaDelta = ~1)
 }
 \arguments{
 \item{nbAnimals}{Number of observed individuals to simulate.}
@@ -137,6 +138,10 @@ in McClintock et al. (2015), where the components of the error ellipse for each 
 \code{runif(1,min(errorEllipse$m),max(errorEllipse$m))}, and \code{runif(1,min(errorEllipse$r),max(errorEllipse$r))}. If only a single value is provided for any of the 
 error ellipse elements, then the corresponding component is fixed to this value for each location. Only the 'step' and 'angle' data streams are subject to location measurement error;
 any other data streams are observed without error.  Ignored unless a valid distribution for the 'step' data stream is specified.}
+
+\item{delta}{Initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}.}
+
+\item{formulaDelta}{Formula for the initial distribution. Limited to \code{~1} (no covariate effects) or \code{~ID} (individual effects). Default: \code{~1}.}
 }
 \value{
 If the simulated data are temporally regular (i.e., \code{lambda=NULL}) with no measurement error (i.e., \code{errorEllipse=NULL}), an object \code{\link{momentuHMMData}}, 
