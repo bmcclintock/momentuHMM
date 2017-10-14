@@ -112,6 +112,10 @@ pseudoRes <- function(m)
   covs <- model.matrix(newformula,data)
   nbCovs <- ncol(covs)-1 # substract intercept column
   
+  aInd <- NULL
+  for(i in 1:length(unique(m$data$ID)))
+    aInd <- c(aInd,which(m$data$ID==unique(m$data$ID)[i])[1])
+  
   nc <- meanind <- vector('list',length(distnames))
   names(nc) <- names(meanind) <- distnames
   for(i in distnames){
@@ -214,23 +218,24 @@ pseudoRes <- function(m)
         #}
       }
     }
-  
-    if(!is.na(data[[j]][1])){
-      genRes[[paste0(j,"Res")]][1] <- (delta%*%trMat[,,1])%*%pgenMat[1,]
-      if(dist[[j]] %in% integerdists)
-        genRes[[paste0(j,"Res")]][1] <- (genRes[[paste0(j,"Res")]][1] + (delta%*%trMat[,,1])%*%pgenMat2[1,])/2
-      genRes[[paste0(j,"Res")]][1] <- qnorm(genRes[[paste0(j,"Res")]][1])
-    }
-    for(i in 2:nbObs) {
-      gamma <- trMat[,,i]
-      c <- max(la[i-1,]) # cancels below ; prevents numerical errors
-      a <- exp(la[i-1,]-c)
-  
+    
+    for(i in 1:nbObs) {
       if(!is.na(data[[j]][i])){
-        genRes[[paste0(j,"Res")]][i] <- t(a)%*%(gamma/sum(a))%*%pgenMat[i,]
-        if(dist[[j]] %in% integerdists)
-          genRes[[paste0(j,"Res")]][i] <- (genRes[[paste0(j,"Res")]][i] + t(a)%*%(gamma/sum(a))%*%pgenMat2[i,])/2
-        genRes[[paste0(j,"Res")]][i] <- qnorm(genRes[[paste0(j,"Res")]][i])
+        if(any(i==aInd)){
+          genRes[[paste0(j,"Res")]][i] <- (delta%*%trMat[,,i])%*%pgenMat[i,]
+          if(dist[[j]] %in% integerdists)
+            genRes[[paste0(j,"Res")]][i] <- (genRes[[paste0(j,"Res")]][i] + (delta%*%trMat[,,i])%*%pgenMat2[i,])/2
+          genRes[[paste0(j,"Res")]][i] <- qnorm(genRes[[paste0(j,"Res")]][i])
+        } else {
+          gamma <- trMat[,,i]
+          c <- max(la[i-1,]) # cancels below ; prevents numerical errors
+          a <- exp(la[i-1,]-c)
+    
+          genRes[[paste0(j,"Res")]][i] <- t(a)%*%(gamma/sum(a))%*%pgenMat[i,]
+          if(dist[[j]] %in% integerdists)
+            genRes[[paste0(j,"Res")]][i] <- (genRes[[paste0(j,"Res")]][i] + t(a)%*%(gamma/sum(a))%*%pgenMat2[i,])/2
+          genRes[[paste0(j,"Res")]][i] <- qnorm(genRes[[paste0(j,"Res")]][i])
+        }
       }
     }
   }
