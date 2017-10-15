@@ -1,6 +1,8 @@
-momentuHMM 1.1.2 2017-11-11
+momentuHMM 1.1.2 2017-11-16
 -----------------
 Changes
+
+* If step length is zero at time t or t+1, simData and prepData now return NA for turning angle at time step t 
 
 * bug fix in pseudoRes such that pseudo-residuals now "reset" for each individual
 

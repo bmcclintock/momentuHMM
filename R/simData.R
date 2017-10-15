@@ -868,10 +868,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
               if(dist[["step"]] %in% stepdists) {
                 if(genData$step[k]>0){
                   phi <- phi + genData[[i]][k]
-                } else if(genData$step[k]==0) {
-                  genData[[i]][k] <- NA # angle = NA if step = 0
-                  #if(length(centerInd)) subCovs[k,centerNames[seq(2,2*length(centerInd),2)]] <- NA
-                }
+                } #else if(genData$step[k]==0) {
+                  #genData[[i]][k] <- NA # angle = NA if step = 0
+                #}
                 m <- genData$step[k]*c(Re(exp(1i*phi)),Im(exp(1i*phi)))
                 X[k+1,] <- X[k,] + m
               }
@@ -930,6 +929,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         if(dist[["angle"]] %in% angledists & ("step" %in% distnames))
           if(dist[["step"]] %in% stepdists){
             d$angle[1] <- NA # the first angle value is arbitrary
+            step0 <- which(d$step==0)
+            d$angle[c(step0,step0+1)] <- NA
             #if(length(centerInd)) subCovs[1,centerNames[seq(2,2*length(centerInd),2)]] <- NA
             d$x=X[,1]
             d$y=X[,2]
