@@ -23,6 +23,10 @@
 
 turnAngle <- function(x,y,z,type='UTM')
 {
+  # NA angle if zero step length
+  if(all(x==y) | all(y==z))
+    return(NA)
+
   if(type=='UTM'){
     v <- c(y[1]-x[1],y[2]-x[2])
     w <- c(z[1]-y[1],z[2]-y[2])
