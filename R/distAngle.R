@@ -5,6 +5,7 @@
 #' @param y location 2
 #' @param z location 3
 #' @param type \code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude
+#' @param angleCov logical indicating to not return NA when x=y or y=z. Default: TRUE (i.e. NA is not returned if x=y or y=z).
 #' 
 #' @return 2-vector with first element the distance between y and z and second element the turning angle
 #' between (x,y) and (y,z).
@@ -16,10 +17,10 @@
 #' If \code{type='LL'} then distance is calculated as great circle distance using \code{\link[sp]{spDistsN1}}, and turning angle is calculated based on initial bearings using \code{\link[geosphere]{bearing}}.
 #' @importFrom sp spDistsN1
 
-distAngle<-function(x,y,z,type='UTM'){
+distAngle<-function(x,y,z,type='UTM',angleCov=TRUE){
   dist <- spDistsN1(pts = matrix(y,ncol=2),
                     pt = z,
                     longlat = (type=='LL'))
-  angle <- turnAngle(x,y,z,type)
+  angle <- turnAngle(x,y,z,type,angleCov)
   c(dist,angle)
 }

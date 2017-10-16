@@ -4,7 +4,7 @@
 \alias{turnAngle}
 \title{Turning angle}
 \usage{
-turnAngle(x, y, z, type = "UTM")
+turnAngle(x, y, z, type = "UTM", angleCov = FALSE)
 }
 \arguments{
 \item{x}{First point}
@@ -14,6 +14,8 @@ turnAngle(x, y, z, type = "UTM")
 \item{z}{Third point}
 
 \item{type}{\code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude.}
+
+\item{angleCov}{logical indicating to not return NA when x=y or y=z. Default: FALSE (i.e. NA is returned if x=y or y=z).}
 }
 \value{
 The angle between vectors (x,y) and (y,z).  
