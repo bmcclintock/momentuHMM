@@ -87,6 +87,8 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
   
   if(is.miHMM(model)) model <- model$miSum
   
+  model <- delta_bc(model)
+  
   if(is.miSum(model)){
     model$mle <- lapply(model$Par$real,function(x) x$est)
     model$mle$beta <- model$Par$beta$beta$est
@@ -244,8 +246,12 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
       if(length(noBeta)) tmpPar[noBeta,state] <- 0
     }
     Par$beta<-tmpPar
-    if(setequal(names(model$mle$delta),stateNames)) {
-      Par$delta<-model$mle$delta[match(names(model$mle$delta),stateNames)]
+    if(setequal(colnames(model$mle$delta),stateNames)) {
+      if(!length(attr(terms.formula(model$conditions$formulaDelta),"term.labels"))){
+        Par$delta<-model$mle$delta[match(colnames(model$mle$delta),stateNames)]
+      } else {
+        Par$delta<-model$CIbeta$delta$est
+      }
     } else {
       Par$delta<-NULL
     }

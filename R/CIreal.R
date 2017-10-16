@@ -192,19 +192,19 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)+1
     delta <- matrix(wpar[foo:length(wpar)],nrow=nbCovsDelta+1)
     quantSup <- qnorm(1-(1-alpha)/2)
-    lower<-upper<-se<-rep(NA,nbStates)
+    lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsDelta),ncol=nbStates)
     for(j in 1:nrow(m$covsDelta)){
       for(i in 1:nbStates){
         dN<-numDeriv::grad(get_delta,delta,covsDelta=m$covsDelta[j,,drop=FALSE],i=i)
-        se[i]<-suppressWarnings(sqrt(dN%*%Sigma[foo:length(wpar),foo:length(wpar)]%*%dN))
-        lower[i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))-quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[i])))#m$mle$delta[j,i]-quantSup*se[i]
-        upper[i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))+quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[i])))#m$mle$delta[j,i]+quantSup*se[i]
+        se[j,i]<-suppressWarnings(sqrt(dN%*%Sigma[foo:length(wpar),foo:length(wpar)]%*%dN))
+        lower[j,i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))-quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[j,i])))#m$mle$delta[j,i]-quantSup*se[i]
+        upper[j,i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))+quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[j,i])))#m$mle$delta[j,i]+quantSup*se[i]
       }
     }
     est<-matrix(m$mle$delta,nrow=nrow(m$covsDelta),ncol=nbStates)
-    lower<-matrix(lower,nrow=nrow(m$covsDelta),ncol=nbStates)
-    upper<-matrix(upper,nrow=nrow(m$covsDelta),ncol=nbStates)  
-    se<-matrix(se,nrow=nrow(m$covsDelta),ncol=nbStates)
+    #lower<-matrix(lower,nrow=nrow(m$covsDelta),ncol=nbStates)
+    #upper<-matrix(upper,nrow=nrow(m$covsDelta),ncol=nbStates)  
+    #se<-matrix(se,nrow=nrow(m$covsDelta),ncol=nbStates)
     Par$delta <- list(est=est,se=se,lower=lower,upper=upper)  
   } else {
     Par$delta <- list(est=matrix(1,nrow(m$covsDelta)),se=matrix(NA,nrow(m$covsDelta)),lower=matrix(NA,nrow(m$covsDelta)),upper=matrix(NA,nrow(m$covsDelta)))

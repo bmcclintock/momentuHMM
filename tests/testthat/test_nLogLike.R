@@ -70,7 +70,7 @@ test_that("logAlpha, logBeta, and nLogLike are consistent",{
     data<-data[aInd,]
     nll<-nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,m$conditions$dist,model.matrix(m$conditions$formula,data),
                        m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,
-                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind)
+                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta)
   
     samp<-sample(aInd,1)
     c <- max(la[samp,]+lb[samp,]) # cancels below ; prevents numerical errors

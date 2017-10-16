@@ -91,8 +91,9 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,covs=NULL){
     nsims <- length(im)
   }
   
+  im <- lapply(im,delta_bc)
+  
   m <- im[[1]]
-  m <- delta_bc(m)
   data <- m$data
   nbStates <- length(m$stateNames)
   dist <- m$conditions$dist
@@ -123,9 +124,10 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,covs=NULL){
   xmat <- xbar <- xvar <- W_m <- B_m <- MI_se <- lower <- upper <- list()
   parmcols <- lapply(m$conditions$fullDM,ncol)#
   parmcols$beta <- ncol(m$mle$beta)
+  parmcols$delta <- ncol(m$covsDelta)*(nbStates-1)
   parmcols <- unlist(parmcols[parms])
   
-  parindex <- c(0,cumsum(c(unlist(lapply(m$conditions$fullDM,ncol)),length(m$mle$beta),nbStates-1)))
+  parindex <- c(0,cumsum(c(unlist(lapply(m$conditions$fullDM,ncol)),length(m$mle$beta),ncol(m$covsDelta)*(nbStates-1))))
   names(parindex)[1:length(distnames)] <- distnames
   if(nbStates>1) names(parindex)[length(distnames)+1] <- "beta"
   names(parindex)[length(parindex)-1] <- "delta"
@@ -319,14 +321,18 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,covs=NULL){
   
   # pooled delta estimates
   if(!m$conditions$stationary & nbStates>1){
-    deltInd<-(length(miBeta$coefficients)-nbStates+2):length(miBeta$coefficients)
-    est <- get_delta(miBeta$coefficients[deltInd],1:nbStates)
-    lower<-upper<-se<-numeric(length(est))
-    for(k in 1:length(est)){
-      dN<-numDeriv::grad(get_delta,miBeta$coefficients[deltInd],i=k)
-      se[k]<-suppressWarnings(sqrt(dN%*%miBeta$variance[deltInd,deltInd]%*%dN))
-      lower[k] <- probCI(est[k],se[k],quantSup,bound="lower")
-      upper[k] <- probCI(est[k],se[k],quantSup,bound="upper")
+    nbCovsDelta <- ncol(m$covsDelta)-1
+    deltInd <- (length(miBeta$coefficients)-(nbCovsDelta+1)*(nbStates-1)+1):length(miBeta$coefficients)
+    delta <- matrix(miBeta$coefficients[deltInd],nrow=nbCovsDelta+1)
+    est<-lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsDelta),ncol=nbStates)
+    for(j in 1:nrow(m$covsDelta)){
+      est[j,] <- get_delta(delta,m$covsDelta[j,,drop=FALSE],1:nbStates)
+      for(i in 1:nbStates){
+        dN<-numDeriv::grad(get_delta,delta,covsDelta=m$covsDelta[j,,drop=FALSE],i=i)
+        se[j,i]<-suppressWarnings(sqrt(dN%*%miBeta$variance[deltInd,deltInd]%*%dN))
+        lower[j,i] <- probCI(est[j,i],se[j,i],quantSup,bound="lower")
+        upper[j,i] <- probCI(est[j,i],se[j,i],quantSup,bound="upper")
+      }
     }
   } else {
     if(nbStates>1){
@@ -336,22 +342,23 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,covs=NULL){
         tryCatch(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i],error = function(e) {
           "A problem occurred in the calculation of the stationary distribution."})
       }
-      est <- statFun(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),nbStates,covs,1:nbStates)
-      lower<-upper<-se<-numeric(length(est))
+      delta <- statFun(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),nbStates,covs,1:nbStates)
+      est <- matrix(delta,nrow=nrow(m$covsDelta),ncol=nbStates,byrow=TRUE)
+      lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsDelta),ncol=nbStates)
       for(k in 1:nbStates){
         dN<-numDeriv::grad(statFun,matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),nbStates=nbStates,covs=covs,i=k)
-        se[k]<-suppressWarnings(sqrt(dN%*%miBeta$variance[gamInd,gamInd]%*%dN))
-        lower[k] <- probCI(est[k],se[k],quantSup,bound="lower")
-        upper[k] <- probCI(est[k],se[k],quantSup,bound="upper")
+        se[,k]<-suppressWarnings(sqrt(dN%*%miBeta$variance[gamInd,gamInd]%*%dN))
+        lower[,k] <- probCI(est[,k],se[,k],quantSup,bound="lower")
+        upper[,k] <- probCI(est[,k],se[,k],quantSup,bound="upper")
       }
     } else {
-      est <- lower <- upper <- 1
-      se <- 0
+      est <- matrix(1,nrow(m$covsDelta))
+      lower <- upper <- se <- matrix(NA,nrow(m$covsDelta))
     }
   }
   Par$real$delta <- list(est=est,se=se,lower=lower,upper=upper)
-  names(Par$real$delta$est) <- names(Par$real$delta$se) <- names(Par$real$delta$lower) <- names(Par$real$delta$upper) <- m$stateNames
-  
+  colnames(Par$real$delta$est) <- colnames(Par$real$delta$se) <- colnames(Par$real$delta$lower) <- colnames(Par$real$delta$upper) <- m$stateNames
+  rownames(Par$real$delta$est) <- rownames(Par$real$delta$se) <- rownames(Par$real$delta$lower) <- rownames(Par$real$delta$upper) <- paste0("ID:",unique(m$data$ID))
   
   xmat <- xbar <- xvar <- W_m <- B_m <- MI_se <- lower <- upper <- list()
   

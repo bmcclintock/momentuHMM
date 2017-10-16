@@ -76,7 +76,12 @@ print.miSum <- function(x,...)
     cat("\n")
     cat("Initial distribution:\n")
     cat("---------------------\n")
-    print(m$Par$real$delta$est)
+    m <- delta_bc(m)
+    if(!length(attr(terms.formula(m$conditions$formulaDelta),"term.labels"))){
+      tmp <- m$Par$real$delta$est[1,]
+      rownames(tmp)<-NULL
+      print(tmp)
+    } else print(m$Par$real$delta$est)
   }
   
   if(nbStates>1 & !is.null(m$Par$timeInStates)){

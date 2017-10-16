@@ -322,6 +322,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(is.miHMM(model)){
       model <- model$miSum
     }
+    
+    model <- delta_bc(model)
+    
     if(is.miSum(model)){
       model$mle <- lapply(model$Par$real,function(x) x$est)
       model$mle$beta <- model$Par$beta$beta$est
@@ -329,8 +332,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       model$mod <- list()
       model$mod$estimate <- model$MIcombine$coefficients
     }
-    
-    model <- delta_bc(model)
     
     # extract simulation parameters from model
     nbStates <- length(model$stateNames)
