@@ -7,6 +7,7 @@
 #' @param y Second point
 #' @param z Third point
 #' @param type \code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude.
+#' @param angleCov logical indicating to not return NA when x=y or y=z. Default: FALSE (i.e. NA is returned if x=y or y=z).
 #'
 #' @return The angle between vectors (x,y) and (y,z).  
 #' 
@@ -21,10 +22,10 @@
 #' }
 #' @importFrom geosphere bearing
 
-turnAngle <- function(x,y,z,type='UTM')
+turnAngle <- function(x,y,z,type='UTM',angleCov=FALSE)
 {
   # NA angle if zero step length
-  if(all(x==y) | all(y==z))
+  if(!angleCov & (all(x==y) | all(y==z)))
     return(NA)
 
   if(type=='UTM'){

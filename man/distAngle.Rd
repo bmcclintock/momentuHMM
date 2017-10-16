@@ -4,7 +4,7 @@
 \alias{distAngle}
 \title{Calculate distance between points y and z and turning angle between points x, y, and z}
 \usage{
-distAngle(x, y, z, type = "UTM")
+distAngle(x, y, z, type = "UTM", angleCov = TRUE)
 }
 \arguments{
 \item{x}{location 1}
@@ -14,6 +14,8 @@ distAngle(x, y, z, type = "UTM")
 \item{z}{location 3}
 
 \item{type}{\code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude}
+
+\item{angleCov}{logical indicating to not return NA when x=y or y=z. Default: TRUE (i.e. NA is not returned if x=y or y=z).}
 }
 \value{
 2-vector with first element the distance between y and z and second element the turning angle
