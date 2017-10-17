@@ -77,15 +77,15 @@ Negative log-likelihood function
 # data is a momentuHMMData object (as returned by prepData), automatically loaded with the package
 data <- example$m$data
 m<-example$m
-Par <- list(step=example$par0$Par$step,angle=example$par0$Par$angle)
+Par <- getPar(m)
 nbStates <- length(m$stateNames)
 
-inputs <- momentuHMM:::checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,
+inputs <- momentuHMM:::checkInputs(nbStates,m$conditions$dist,Par$Par,m$conditions$estAngleMean,
           m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,
           m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,
           m$stateNames)
 
-wpar <- momentuHMM:::n2w(Par,m$conditions$bounds,m$mle$beta,log(m$mle$delta[-1]/m$mle$delta[1]),nbStates,
+wpar <- momentuHMM:::n2w(Par$Par,m$conditions$bounds,Par$beta,log(Par$delta[-1]/Par$delta[1]),nbStates,
        m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,
        m$conditions$Bndind)
 
@@ -95,7 +95,7 @@ l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bound
                    m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$stationary,
                    m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
                    m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),
-                   m$conditions$wparIndex)
+                   m$conditions$wparIndex,covsDelta=m$covsDelta)
 }
 
 }

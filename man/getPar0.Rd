@@ -6,7 +6,7 @@
 \usage{
 getPar0(model, nbStates = NULL, estAngleMean = NULL,
   circularAngleMean = NULL, formula = NULL, DM = NULL,
-  stateNames = NULL)
+  stateNames = NULL, formulaDelta = NULL)
 }
 \arguments{
 \item{model}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})}
@@ -25,6 +25,8 @@ regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turn
 are specified as matrices instead of formulas. If \code{DM=NULL} (the default), then \code{DM=model$conditions$DM}.}
 
 \item{stateNames}{Character vector of length \code{nbStates} indicating the names and order of the states in the new model. If \code{stateNames=NULL} (the default), then \code{stateNames=model$stateNames[1:nbStates]}.}
+
+\item{formulaDelta}{Formula for the initial distribution.}
 }
 \value{
 A named list containing starting values suitable for \code{Par0} and \code{beta0} arguments in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}:

@@ -66,7 +66,7 @@ Used during the optimization of the log-likelihood.
 \dontrun{
 m<-example$m
 nbStates <- 2
-nbCovs <- c(2,0)
+nbCovs <- 2
 parSize <- list(step=2,angle=2)
 par <- list(step=c(t(m$mle$step)),angle=c(t(m$mle$angle)))
 bounds <- m$conditions$bounds
@@ -80,7 +80,7 @@ m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
 #natural parameter
 p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
 m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
-m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,matrix(1,nrow=length(unique(m$data$ID)),ncol=1))
+m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta)
 }
 
 

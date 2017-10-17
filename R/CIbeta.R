@@ -150,7 +150,7 @@ CIbeta <- function(m,alpha=0.95)
   }
   
   # group CIs for initial distribution
-  if(nbStates>1){
+  if(nbStates>1 & !m$conditions$stationary){
     nbCovsDelta <- ncol(m$covsDelta)-1
     foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)+1
     est <- wpar[foo:length(wpar)]
@@ -167,9 +167,21 @@ CIbeta <- function(m,alpha=0.95)
     rownames(Par$delta$se) <- colnames(m$covsDelta)
     rownames(Par$delta$lower) <- colnames(m$covsDelta)
     rownames(Par$delta$upper) <- colnames(m$covsDelta)  
-  } else {
-    Par$delta <- list(est=matrix(0,1+nbCovsDelta,ncol=nbStates-1),se=matrix(NA,1+nbCovsDelta,ncol=nbStates-1),lower=matrix(NA,1+nbCovsDelta,ncol=nbStates-1),upper=matrix(NA,1+nbCovsDelta,ncol=nbStates-1))
-  }
+    colnames(Par$delta$est) <- m$stateNames[-1]
+    colnames(Par$delta$se) <- m$stateNames[-1]
+    colnames(Par$delta$lower) <- m$stateNames[-1]
+    colnames(Par$delta$upper) <- m$stateNames[-1]  
+  } #else if(nbStates==1) {
+  #  Par$delta <- list(est=matrix(0,1+nbCovsDelta,ncol=nbStates),se=matrix(NA,1+nbCovsDelta,ncol=nbStates),lower=matrix(NA,1+nbCovsDelta,ncol=nbStates),upper=matrix(NA,1+nbCovsDelta,ncol=nbStates))
+  #  rownames(Par$delta$est) <- colnames(m$covsDelta)
+  #  rownames(Par$delta$se) <- colnames(m$covsDelta)
+  #  rownames(Par$delta$lower) <- colnames(m$covsDelta)
+  #  rownames(Par$delta$upper) <- colnames(m$covsDelta)  
+  #  colnames(Par$delta$est) <- m$stateNames
+  #  colnames(Par$delta$se) <- m$stateNames
+  #  colnames(Par$delta$lower) <- m$stateNames
+  #  colnames(Par$delta$upper) <- m$stateNames
+  #}
   return(Par)
 }
 

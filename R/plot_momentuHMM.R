@@ -542,7 +542,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     par(mfrow=c(nbStates,nbStates))
     par(mar=c(5,4,4,2)-c(0,0,1.5,1)) # bottom, left, top, right
     
-    gamInd<-(length(m$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(m$mod$estimate))-(nbStates-1)
+    gamInd<-(length(m$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(m$mod$estimate))-ncol(m$covsDelta)*(nbStates-1)*(!m$conditions$stationary)
     quantSup<-qnorm(1-(1-alpha)/2)
     
     if(nrow(beta)>1) {

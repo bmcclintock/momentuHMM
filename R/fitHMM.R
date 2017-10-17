@@ -755,10 +755,10 @@ fitHMM <- function(data,nbStates,dist,
           curmod$elapsedTime <- endTime[3]
           if(curmod$minimum < mod$minimum) mod <- curmod
         }
-        parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)-(nbStates-1)*(!stationary)
+        parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)-ncol(covsDelta)*(nbStates-1)*(!stationary)
         wpar[1:parmInd] <- mod$estimate[1:parmInd]+rnorm(parmInd)
         if(nbStates>1)
-          wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1))] <- mod$estimate[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1))]+rnorm((nbCovs+1)*nbStates*(nbStates-1),0,10)
+          wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary))] <- mod$estimate[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary))]+rnorm((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary),0,10)
         if(length(wparIndex)) wpar[wparIndex] <- unlist(fixPar)[wparIndex]
       }
       fitCount<-fitCount+1

@@ -129,8 +129,10 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,covs=NULL){
   
   parindex <- c(0,cumsum(c(unlist(lapply(m$conditions$fullDM,ncol)),length(m$mle$beta),ncol(m$covsDelta)*(nbStates-1))))
   names(parindex)[1:length(distnames)] <- distnames
-  if(nbStates>1) names(parindex)[length(distnames)+1] <- "beta"
-  names(parindex)[length(parindex)-1] <- "delta"
+  if(nbStates>1) {
+    names(parindex)[length(distnames)+1] <- "beta"
+    names(parindex)[length(parindex)-1] <- "delta"
+  }
   
   tempcons<-rep(1,length(m$mod$estimate))
   tempworkcons<-rep(0,length(m$mod$estimate))
@@ -302,7 +304,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,covs=NULL){
     
   # pooled gamma estimates
   if(nbStates>1){
-    gamInd<-(length(miBeta$coefficients)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(miBeta$coefficients))-(nbStates-1)*(1-m$conditions$stationary)
+    gamInd<-(length(miBeta$coefficients)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(miBeta$coefficients))-ncol(m$covsDelta)*(nbStates-1)*(1-m$conditions$stationary)
     tmpSplineInputs<-getSplineFormula(newformula,mhdata,tempCovs)
     tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
     est <- get_gamma(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),tempCovMat,nbStates,1:nbStates,1:nbStates)
