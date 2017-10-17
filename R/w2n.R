@@ -47,13 +47,14 @@
 #' delta <- c(0.6,0.4)
 #' 
 #' #working parameters
-#' wpar <- momentuHMM:::n2w(par,bounds,beta,log(delta[-1]/delta[1]),nbStates,m$conditions$estAngleMean,NULL,
-#' m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+#' wpar <- momentuHMM:::n2w(par,bounds,beta,log(delta[-1]/delta[1]),nbStates,
+#' m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
 #' 
 #' #natural parameter
 #' p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
 #' m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
-#' m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta)
+#' m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,
+#' matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta)
 #' }
 #'
 #'

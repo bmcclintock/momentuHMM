@@ -28,7 +28,8 @@
 #' information in 'Details').
 #' Default: \code{NULL}. If not specified, \code{beta0} is initialized such that the diagonal elements
 #' of the transition probability matrix are dominant.
-#' @param delta0 Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}.
+#' @param delta0 Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}. If \code{formulaDelta} includes covariates, then \code{delta0} must be specified
+#' as a k x (\code{nbStates}-1) matrix, where k is the number of covariates and the columns correspond to states 2:\code{nbStates}. See details below.
 #' @param estAngleMean An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy'). For example, \code{estAngleMean=list(angle=TRUE)} indicates the angle mean is to be 
 #' estimated for 'angle'.  Default is \code{NULL}, which assumes any angle means are fixed to zero and are not to be estimated. 
@@ -49,7 +50,8 @@
 #' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}),
 #'  and state- or parameter-specific formulas (see details).
 #' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.
-#' @param stationary \code{FALSE} if there are covariates in \code{formula}. If \code{TRUE}, the initial distribution is considered
+#' @param formulaDelta Regression formula for the initial distribution. Default: \code{~1} (no covariate effect). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).
+#' @param stationary \code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param verbose Determines the print level of the optimizer. The default value of 0 means that no
 #' printing occurs, a value of 1 means that the first and last iterations of the optimization are
@@ -97,7 +99,6 @@
 #' initial values for likelihood optimization. Standard normal perturbations are used on the working scale probability distribution parameters, while
 #' Normal(0,10^2) pertubations are used for working scale transition probability parameters. Default: 0.  When \code{retryFits>0}, the model with the largest log likelihood 
 #' value is returned.  Ignored if \code{fit=FALSE}.
-#' @param formulaDelta Formula for the initial distribution. Limited to \code{~1} (no covariate effects) or \code{~ID} (individual effects). Default: \code{~1}.
 #'
 #' @return A \code{\link{momentuHMM}} object, i.e. a list of:
 #' \item{mle}{A named list of the maximum likelihood estimates of the parameters of the model (if the numerical algorithm
@@ -114,16 +115,24 @@
 #' \item{rawCovs}{Raw covariate values for transition probabilities, as found in the data (if any). Used in \code{\link{plot.momentuHMM}}.}
 #' \item{stateNames}{The names of the states.}
 #' \item{knownStates}{Vector of values of the state process which are known.}
+#' \item{covsDelta}{Design matrix for initial distribution.}
 #'
 #' @details
 #' \itemize{
-#' \item The matrix \code{beta} of regression coefficients for the transition probabilities has
+#' \item The matrix \code{beta0} of regression coefficients for the transition probabilities has
 #' one row for the intercept, plus one row for each covariate, and one column for
 #' each non-diagonal element of the transition probability matrix. For example, in a 3-state
-#' HMM with 2 covariates, the matrix \code{beta} has three rows (intercept + two covariates)
+#' HMM with 2 \code{formula} covariates, the matrix \code{beta} has three rows (intercept + two covariates)
 #' and six columns (six non-diagonal elements in the 3x3 transition probability matrix -
 #' filled in row-wise).
-#' In a covariate-free model (default), \code{beta} has one row, for the intercept.
+#' In a covariate-free model (default), \code{beta0} has one row, for the intercept.
+#' 
+#' \item When covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=~1}), then \code{delta0} (and \code{fixPar$delta}) are specified as a vector of length \code{nbStates} that 
+#' sums to 1.  When covariates are included in \code{formulaDelta}, then \code{delta0}  (and \code{fixPar$delta}) must be specified
+#' as a k x (\code{nbStates}-1) matrix of working parameters, where k is the number of regression coefficients and the columns correspond to states 2:\code{nbStates}. For example, in a 3-state
+#' HMM with \code{formulaDelta=~cov1+cov2}, the matrix \code{delta0} has three rows (intercept + two covariates)
+#' and 2 columns (corresponding to states 2 and 3). The initial distribution working parameters are transformed to the real scale as \code{exp(covsDelta*Delta)/rowSums(exp(covsDelta*Delta))}, where \code{covsDelta} is the N x k design matrix, \code{Delta=cbind(rep(0,k),delta0)} is a k x \code{nbStates} matrix of working parameters,
+#' and \code{N=length(unique(data$ID))}.
 #'
 #' \item The choice of initial parameters (particularly \code{Par0} and \code{beta0}) is crucial to fit a model. The algorithm might not find
 #' the global optimum of the likelihood function if the initial parameters are poorly chosen.
@@ -315,6 +324,25 @@
 #' m.spline<-fitHMM(data.spline,nbStates=1,dist=dist,Par0=Par0,
 #'                  DM=list(step=stepDM,
 #'                          angle=list(concentration=~bSpline(time,df=3,degree=0))))  
+#'   
+#' ### 10. Initial state (delta) based on covariate                       
+#' nObs <- 100
+#' dist <- list(step="gamma",angle="vm")
+#' Par <- list(step=c(100,1000,50,100),angle=c(0,0,0.01,0.75))
+#' 
+#' # create sex covariate
+#' cov <- data.frame(sex=factor(rep(c("F","M"),each=nObs))) # sex covariate
+#' formulaDelta <- ~ sex + 0
+#' 
+#' # Female begins in state 1, male begins in state 2
+#' delta <- matrix(c(-100,100),2,1,dimnames=list(c("sexF","sexM"),"state 2")) 
+#'
+#' data.delta<-simData(nbAnimals=2,obsPerAnimal=nObs,nbStates=2,dist=dist,Par=Par,
+#'                     delta=delta,formulaDelta=formulaDelta,covs=cov) 
+#'        
+#' Par0 <- list(step=Par$step, angle=Par$angle[3:4])   
+#' m.delta <- fitHMM(data.delta, nbStates=2, dist=dist, Par0 = Par0, 
+#'                   formulaDelta=formulaDelta)
 #' }
 #' 
 #' @references
@@ -350,11 +378,10 @@
 fitHMM <- function(data,nbStates,dist,
                    Par0,beta0=NULL,delta0=NULL,
                    estAngleMean=NULL,circularAngleMean=NULL,
-                   formula=~1,stationary=FALSE,
+                   formula=~1,formulaDelta=~1,stationary=FALSE,
                    verbose=0,nlmPar=NULL,fit=TRUE,
                    DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,
-                   stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,
-                   formulaDelta=~1)
+                   stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0)
 {
   
   #####################
@@ -636,13 +663,13 @@ fitHMM <- function(data,nbStates,dist,
       if(!nbCovsDelta){
         if(length(fixPar$delta)!=nbStates) stop("fixPar$delta must be of length ",nbStates)
       } else if(length(fixPar$delta)!=length(delta0)) stop("fixPar$delta must be of length ",length(delta0))
-      tmp <- which(!is.na(fixPar$delta))
-      if(length(tmp)){
-        delta0[tmp] <- fixPar$delta[tmp]
+      if(any(!is.na(fixPar$delta))){
+        tmp <- which(!is.na(fixPar$delta))
         if(!nbCovsDelta){
+          delta0 <- fixPar$delta
           if(length(tmp)!=length(delta0) | sum(delta0)!=1) stop("fixPar$delta must sum to 1")
           wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0)+1:(length(delta0)-1))
-          delta0 <- matrix(delta0,nbCovsDelta+1,nbStates)
+          delta0 <- matrix(delta0,1,nbStates)
           delta0 <- log(delta0[-1]/delta0[1])
           fixPar$delta <- as.vector(delta0)
         } else {
