@@ -22,9 +22,9 @@
 #' \item{delta}{Initial distribution of the HMM. Only returned if \code{stateNames} has the same membership as the state names for \code{model}}.
 #' 
 #' All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{cons}, \code{userBounds}, \code{workcons}, etc.) and \code{data} are assumed to be the same 
-#' for \code{model} and the new model (as specified by  \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{DM}, and \code{stateNames}).
+#' for \code{model} and the new model (as specified by  \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{formulaDelta}, \code{DM}, and \code{stateNames}).
 #'
-#' @seealso \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
+#' @seealso \code{\link{getPar}}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 #' 
 #' @examples 
 #' # model is a momentuHMM object, automatically loaded with the package
@@ -254,7 +254,9 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
       } else {
         deltaNames <- colnames(model.matrix(formulaDelta,model$data))
         if(all(deltaNames=="(Intercept)")){
-          tmp<-c(0,model$CIbeta$delta$est[1,])
+          tmp <- rep(0,nbStates)
+          if(deltaNames %in% rownames(model$CIbeta$delta$est))
+            tmp<-c(0,model$CIbeta$delta$est[which(rownames(model$CIbeta$delta$est) %in% deltaNames),])
           deltaXB <- model$covsDelta[,1,drop=FALSE]%*%matrix(tmp,nrow=1)
           expdelta <- exp(deltaXB)
           delta <- (expdelta/rowSums(expdelta))[1,,drop=FALSE]

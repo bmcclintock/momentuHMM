@@ -21,3 +21,6 @@ m <- example$m
 Par <- getPar(m)
 
 }
+\seealso{
+\code{\link{getPar0}}, \code{\link{getParDM}}
+}
