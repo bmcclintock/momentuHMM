@@ -32,7 +32,7 @@ dev.off()
 for(plt in seq(1,17)[-c(1,2,9,10,12,13,15,16,17)])
   unlink(paste0("plot_elephantResults0",ifelse(plt>9,"","0"),plt,".pdf"))
 
-png(filename="elephant_plotSat.png",width=6,height=6,units="in",res=90)
+png(filename="elephant_plotSat.png",width=5,height=5,units="in",res=90)
 plotSat(data.frame(x=rawData$lon,y=rawData$lat),zoom=8,location=c(median(rawData$lon),median(rawData$lat)),ask=FALSE)
 dev.off()
 
