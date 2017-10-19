@@ -147,7 +147,6 @@ test_that("equivalent momentuHMM and moveHMM models match",{
   expect_equal(momentuHMM_fit2$mod$minimum,moveHMM_fit$mod$minimum)
   
   #zeroInflation
-  setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=5)
   nbAnimals <- 2
   nbStates <- 2
   nbCovs <- 2
