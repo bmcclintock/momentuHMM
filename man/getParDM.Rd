@@ -116,5 +116,5 @@ mPar2 <- fitHMM(data,nbStates=2,dist=list(step=stepDist,angle=angleDist),
 
 }
 \seealso{
-\code{\link{getPar0}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
+\code{\link{getPar}}, \code{\link{getPar0}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 }

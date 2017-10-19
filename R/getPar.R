@@ -4,6 +4,8 @@
 #'
 #' @return A list of parameter values (Par, beta, delta) that can be used as starting values in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
 #'
+#' @seealso \code{\link{getPar0}}, \code{\link{getParDM}}
+#'
 #' @examples
 #' # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
 #' m <- example$m
@@ -16,6 +18,8 @@ getPar<-function(m){
     stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
   
   if(is.miHMM(m)) m <- m$miSum
+  
+  m <- delta_bc(m)
   
   nbStates <- length(m$stateNames)
   dist <- m$conditions$dist
@@ -33,7 +37,11 @@ getPar<-function(m){
       Par[[i]] <- c(t(unname(m$mle[[i]])))
     }
     beta <- unname(m$Par$beta$beta$est)
-    delta <- unname(m$Par$real$delta$est)
+    if(!length(attr(terms.formula(m$conditions$formulaDelta),"term.labels"))){
+      delta <- unname(m$Par$real$delta$est[1,])
+    } else {
+      delta <- unname(m$Par$beta$delta$est)
+    }
   } else {
     for(i in distnames){
       if(is.null(DM[[i]])){
@@ -45,8 +53,11 @@ getPar<-function(m){
       Par[[i]] <- par
     }
     beta <- unname(m$mle$beta)
-    delta <- unname(m$mle$delta)
+    if(!length(attr(terms.formula(m$conditions$formulaDelta),"term.labels"))){
+      delta <- unname(m$mle$delta[1,])
+    } else {
+      delta <- unname(m$CIbeta$delta$est)
+    }
   }
-  
   list(Par=Par,beta=beta,delta=delta)
 }

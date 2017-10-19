@@ -65,6 +65,11 @@ print.momentuHMM <- function(x,...)
     cat("\n")
     cat("Initial distribution:\n")
     cat("---------------------\n")
-    print(m$mle$delta)
+    m <- delta_bc(m)
+    if(!length(attr(terms.formula(m$conditions$formulaDelta),"term.labels"))){
+      tmp <- m$mle$delta[1,]
+      rownames(tmp)<-NULL
+      print(tmp)
+    } else print(m$mle$delta)
   }
 }

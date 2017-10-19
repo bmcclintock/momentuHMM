@@ -5,7 +5,7 @@ test_that("Output has the right format",{
   m <- example$m
   c <- CIbeta(m)
 
-  expect_equal(length(c),3)
+  expect_equal(length(c),4)
   expect_equal(length(c$step$est),length(m$mle$step))
   expect_equal(length(c$step$se),length(m$mle$step))
   expect_equal(length(c$step$lower),length(m$mle$step))

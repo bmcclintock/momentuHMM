@@ -5,12 +5,13 @@
 \title{Simulation tool}
 \usage{
 simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
-  formula = ~1, covs = NULL, nbCovs = 0, spatialCovs = NULL,
-  zeroInflation = NULL, oneInflation = NULL, circularAngleMean = NULL,
-  centers = NULL, obsPerAnimal = c(500, 1500), initialPosition = c(0, 0),
-  DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL,
-  stateNames = NULL, model = NULL, states = FALSE, retrySims = 0,
-  lambda = NULL, errorEllipse = NULL)
+  delta = NULL, formula = ~1, formulaDelta = ~1, covs = NULL,
+  nbCovs = 0, spatialCovs = NULL, zeroInflation = NULL,
+  oneInflation = NULL, circularAngleMean = NULL, centers = NULL,
+  obsPerAnimal = c(500, 1500), initialPosition = c(0, 0), DM = NULL,
+  cons = NULL, userBounds = NULL, workcons = NULL, stateNames = NULL,
+  model = NULL, states = FALSE, retrySims = 0, lambda = NULL,
+  errorEllipse = NULL)
 }
 \arguments{
 \item{nbAnimals}{Number of observed individuals to simulate.}
@@ -34,11 +35,16 @@ of columns in the design matrix. See details below.}
 \item{beta}{Matrix of regression parameters for the transition probabilities (more information
 in "Details").}
 
+\item{delta}{Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}. If \code{formulaDelta} includes covariates, then \code{delta} must be specified
+as a k x (\code{nbStates}-1) matrix, where k is the number of covariates and the columns correspond to states 2:\code{nbStates}. See details below.}
+
 \item{formula}{Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effect). In addition to allowing standard functions in R formulas
 (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
 and state- or parameter-specific formulas (see details).
 Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.}
+
+\item{formulaDelta}{Regression formula for the initial distribution. Default: \code{~1} (no covariate effect). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).}
 
 \item{covs}{Covariate values to include in the simulated data, as a dataframe. The names of any covariates specified by \code{covs} can
 be included in \code{formula} and/or \code{DM}. Covariates can also be simulated according to a standard normal distribution, by setting
@@ -186,10 +192,17 @@ as a data frame suitable for analysis using \code{\link{crawlWrap}}.
 \item The matrix \code{beta} of regression coefficients for the transition probabilities has
 one row for the intercept, plus one row for each covariate, and one column for
 each non-diagonal element of the transition probability matrix. For example, in a 3-state
-HMM with 2 covariates, the matrix \code{beta} has three rows (intercept + two covariates)
-and six columns (six non-diagonal elements in the 3x3 transition probability matrix - filled in
-row-wise).
+HMM with 2 \code{formula} covariates, the matrix \code{beta} has three rows (intercept + two covariates)
+and six columns (six non-diagonal elements in the 3x3 transition probability matrix -
+filled in row-wise).
 In a covariate-free model (default), \code{beta} has one row, for the intercept.
+
+\item When covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=~1}), then \code{delta} is specified as a vector of length \code{nbStates} that 
+sums to 1.  When covariates are included in \code{formulaDelta}, then \code{delta} must be specified
+as a k x (\code{nbStates}-1) matrix of working parameters, where k is the number of regression coefficients and the columns correspond to states 2:\code{nbStates}. For example, in a 3-state
+HMM with \code{formulaDelta=~cov1+cov2}, the matrix \code{delta} has three rows (intercept + two covariates)
+and 2 columns (corresponding to states 2 and 3). The initial distribution working parameters are transformed to the real scale as \code{exp(covsDelta*Delta)/rowSums(exp(covsDelta*Delta))}, where \code{covsDelta} is the N x k design matrix, \code{Delta=cbind(rep(0,k),delta)} is a k x \code{nbStates} matrix of working parameters,
+and \code{N=length(unique(data$ID))}.
 
 \item State-specific formulas can be specified in \code{DM} using special formula functions. These special functions can take
 the names \code{paste0("state",1:nbStates)} (where the integer indicates the state-specific formula).  For example, 
@@ -313,7 +326,22 @@ angleDM <- list(mean=~1,concentration=~bSpline(time,df=3,degree=0))
 DM <- list(step=stepDM,angle=angleDM)
 Par <- list(step=c(log(1000),1,-1,log(100)),angle=c(0,log(10),2,-5))
 
-data.spline<-simData(obsPerAnimal=nObs,nbStates=1,dist=dist,Par=Par,DM=DM,covs=cov)              
+data.spline<-simData(obsPerAnimal=nObs,nbStates=1,dist=dist,Par=Par,DM=DM,covs=cov)        
+
+# 9. Initial state (delta) based on covariate
+nObs <- 100
+dist <- list(step="gamma",angle="vm")
+Par <- list(step=c(100,1000,50,100),angle=c(0,0,0.01,0.75))
+
+# create sex covariate
+cov <- data.frame(sex=factor(rep(c("F","M"),each=nObs))) # sex covariate
+formulaDelta <- ~ sex + 0
+
+# Female begins in state 1, male begins in state 2
+delta <- matrix(c(-100,100),2,1,dimnames=list(c("sexF","sexM"),"state 2")) 
+
+data.delta<-simData(nbAnimals=2,obsPerAnimal=nObs,nbStates=2,dist=dist,Par=Par,
+                    delta=delta,formulaDelta=formulaDelta,covs=cov)        
                 
 }
 \references{

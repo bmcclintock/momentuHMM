@@ -9,6 +9,7 @@
 #' @param circularAngleMean Named list indicating whether circular-linear (FALSE) or circular-circular (TRUE) 
 #' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model. If \code{circularAngleMean=NULL} (the default), then \code{circularAngleMean=model$conditions$circularAngleMean}
 #' @param formula Regression formula for the transition probability covariates of the new model (see \code{\link{fitHMM}}).  If \code{formula=NULL} (the default), then \code{formula=model$conditions$formula}.
+#' @param formulaDelta Regression formula for the initial distribution covariates of the new model (see \code{\link{fitHMM}}).  If \code{formulaDelta=NULL} (the default), then \code{formulaDelta=model$conditions$formulaDelta}.
 #' @param DM Named list indicating the design matrices to be used for the probability distribution parameters of each data stream in the new model (see \code{\link{fitHMM}}). Only parameters with design matrix column names that match those in model$conditions$fullDM are extracted, so care must be taken in naming columns if any elements of \code{DM}
 #' are specified as matrices instead of formulas. If \code{DM=NULL} (the default), then \code{DM=model$conditions$DM}.
 #' @param stateNames Character vector of length \code{nbStates} indicating the names and order of the states in the new model. If \code{stateNames=NULL} (the default), then \code{stateNames=model$stateNames[1:nbStates]}.
@@ -21,9 +22,9 @@
 #' \item{delta}{Initial distribution of the HMM. Only returned if \code{stateNames} has the same membership as the state names for \code{model}}.
 #' 
 #' All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{cons}, \code{userBounds}, \code{workcons}, etc.) and \code{data} are assumed to be the same 
-#' for \code{model} and the new model (as specified by  \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{DM}, and \code{stateNames}).
+#' for \code{model} and the new model (as specified by  \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{formulaDelta}, \code{DM}, and \code{stateNames}).
 #'
-#' @seealso \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
+#' @seealso \code{\link{getPar}}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 #' 
 #' @examples 
 #' # model is a momentuHMM object, automatically loaded with the package
@@ -80,12 +81,14 @@
 #' }
 #' 
 #' @export
-getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=NULL,DM=NULL,stateNames=NULL){
+getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=NULL,formulaDelta=NULL,DM=NULL,stateNames=NULL){
   
   if(!is.momentuHMM(model) & !is.miHMM(model) & !is.miSum(model))
     stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
   
   if(is.miHMM(model)) model <- model$miSum
+  
+  model <- delta_bc(model)
   
   if(is.miSum(model)){
     model$mle <- lapply(model$Par$real,function(x) x$est)
@@ -105,6 +108,7 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
   if(is.null(estAngleMean)) estAngleMean<-model$conditions$estAngleMean
   if(is.null(circularAngleMean)) circularAngleMean<-model$conditions$circularAngleMean
   if(is.null(formula)) formula<-model$conditions$formula
+  if(is.null(formulaDelta)) formulaDelta <- model$conditions$formulaDelta
   if(is.null(DM)) DM<-model$conditions$DM
   if(!is.null(stateNames)){
     if(length(stateNames)!=nbStates) stop("stateNames must be of length ",nbStates)
@@ -244,8 +248,30 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
       if(length(noBeta)) tmpPar[noBeta,state] <- 0
     }
     Par$beta<-tmpPar
-    if(setequal(names(model$mle$delta),stateNames)) {
-      Par$delta<-model$mle$delta[match(names(model$mle$delta),stateNames)]
+    if(setequal(colnames(model$mle$delta),stateNames) & nbStates>1) {
+      if(!length(attr(terms.formula(model$conditions$formulaDelta),"term.labels")) & model$conditions$formulaDelta==formulaDelta){
+        Par$delta<-model$mle$delta[1,][match(colnames(model$mle$delta),stateNames)]
+      } else {
+        deltaNames <- colnames(model.matrix(formulaDelta,model$data))
+        if(all(deltaNames=="(Intercept)")){
+          tmp <- rep(0,nbStates)
+          if(deltaNames %in% rownames(model$CIbeta$delta$est))
+            tmp<-c(0,model$CIbeta$delta$est[which(rownames(model$CIbeta$delta$est) %in% deltaNames),])
+          deltaXB <- model$covsDelta[,1,drop=FALSE]%*%matrix(tmp,nrow=1)
+          expdelta <- exp(deltaXB)
+          delta <- (expdelta/rowSums(expdelta))[1,,drop=FALSE]
+          for(i in which(!is.finite(rowSums(delta)))){
+            tmp <- exp(Brobdingnag::as.brob(deltaXB[i,]))
+            delta[i,] <- as.numeric(tmp/Brobdingnag::sum(tmp))
+          }
+          delta <- as.vector(delta)
+          names(delta) <- stateNames
+        } else {
+          delta <- matrix(0,nrow=length(deltaNames),ncol=nbStates-1,dimnames = list(deltaNames,stateNames[-1]))
+          delta[deltaNames %in% rownames(model$CIbeta$delta$est)] <- model$CIbeta$delta$est[rownames(model$CIbeta$delta$est) %in% deltaNames,]
+        }
+        Par$delta <- delta
+      }
     } else {
       Par$delta<-NULL
     }

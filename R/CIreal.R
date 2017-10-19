@@ -51,6 +51,8 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   dist <- m$conditions$dist
   distnames <- names(dist)
   DMind <- m$conditions$DMind
+  
+  m <- delta_bc(m)
 
   # identify covariates
   if(is.null(covs)){
@@ -146,7 +148,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   
   for(i in distnames){
     if(!m$conditions$DMind[[i]]){
-      par <- c(w2n(m$mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,fullDM,m$conditions$DMind,m$conditions$workcons,1,dist[i],m$conditions$Bndind,nc,meanind)[[i]])
+      par <- c(w2n(m$mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,fullDM,m$conditions$DMind,m$conditions$workcons,1,dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta)[[i]])
     } else {
       par <- as.vector(t(m$mle[[i]]))
     }
@@ -186,28 +188,36 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
 
   
     wpar<-m$mod$estimate
-    foo <- length(wpar)-nbStates+2
+    nbCovsDelta <- ncol(m$covsDelta)-1
+    foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)+1
+    delta <- matrix(wpar[foo:length(wpar)],nrow=nbCovsDelta+1)
     quantSup <- qnorm(1-(1-alpha)/2)
-    lower<-upper<-se<-rep(NA,nbStates)
-    for(i in 1:nbStates){
-      dN<-numDeriv::grad(get_delta,wpar[foo:length(wpar)],i=i)
-      se[i]<-suppressWarnings(sqrt(dN%*%Sigma[foo:length(wpar),foo:length(wpar)]%*%dN))
-      lower[i]<-1/(1+exp(-(log(m$mle$delta[i]/(1-m$mle$delta[i]))-quantSup*(1/(m$mle$delta[i]-m$mle$delta[i]^2))*se[i])))#m$mle$delta[i]-quantSup*se[i]
-      upper[i]<-1/(1+exp(-(log(m$mle$delta[i]/(1-m$mle$delta[i]))+quantSup*(1/(m$mle$delta[i]-m$mle$delta[i]^2))*se[i])))#m$mle$delta[i]+quantSup*se[i]
+    lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsDelta),ncol=nbStates)
+    for(j in 1:nrow(m$covsDelta)){
+      for(i in 1:nbStates){
+        dN<-numDeriv::grad(get_delta,delta,covsDelta=m$covsDelta[j,,drop=FALSE],i=i)
+        se[j,i]<-suppressWarnings(sqrt(dN%*%Sigma[foo:length(wpar),foo:length(wpar)]%*%dN))
+        lower[j,i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))-quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[j,i])))#m$mle$delta[j,i]-quantSup*se[i]
+        upper[j,i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))+quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[j,i])))#m$mle$delta[j,i]+quantSup*se[i]
+      }
     }
-    est<-matrix(m$mle$delta,nrow=1,ncol=nbStates,byrow=TRUE)
-    lower<-matrix(lower,nrow=1,ncol=nbStates,byrow=TRUE)
-    upper<-matrix(upper,nrow=1,ncol=nbStates,byrow=TRUE)  
-    se<-matrix(se,nrow=1,ncol=nbStates,byrow=TRUE)
+    est<-matrix(m$mle$delta,nrow=nrow(m$covsDelta),ncol=nbStates)
+    #lower<-matrix(lower,nrow=nrow(m$covsDelta),ncol=nbStates)
+    #upper<-matrix(upper,nrow=nrow(m$covsDelta),ncol=nbStates)  
+    #se<-matrix(se,nrow=nrow(m$covsDelta),ncol=nbStates)
     Par$delta <- list(est=est,se=se,lower=lower,upper=upper)  
   } else {
-    Par$delta <- list(est=matrix(1),se=matrix(NA),lower=matrix(NA),upper=matrix(NA))
+    Par$delta <- list(est=matrix(1,nrow(m$covsDelta)),se=matrix(NA,nrow(m$covsDelta)),lower=matrix(NA,nrow(m$covsDelta)),upper=matrix(NA,nrow(m$covsDelta)))
   }
   colnames(Par$delta$est) <- m$stateNames
   colnames(Par$delta$se) <- m$stateNames
   colnames(Par$delta$lower) <- m$stateNames
   colnames(Par$delta$upper) <- m$stateNames
-
+  rownames(Par$delta$est) <- paste0("ID:",unique(m$data$ID))
+  rownames(Par$delta$se) <- paste0("ID:",unique(m$data$ID))
+  rownames(Par$delta$lower) <- paste0("ID:",unique(m$data$ID))
+  rownames(Par$delta$upper) <- paste0("ID:",unique(m$data$ID))
+  
   return(Par)
 }
 
@@ -216,11 +226,14 @@ get_gamma <- function(beta,covs,nbStates,i,j){
   gamma[i,j]
 }
 
-get_delta <- function(delta,i){
-  expdelta <- exp(c(0,delta))
+get_delta <- function(delta,covsDelta,i){
+  nbCovsDelta <- ncol(covsDelta)-1
+  delta <- c(rep(0,nbCovsDelta+1),delta)
+  deltaXB <- covsDelta%*%matrix(delta,nrow=nbCovsDelta+1)
+  expdelta <- exp(deltaXB)
   if(!is.finite(sum(expdelta))){
-    delta <- exp(Brobdingnag::as.brob(c(0,delta)))
-    delta <- as.numeric(delta/Brobdingnag::sum(delta))
+    tmp <- exp(Brobdingnag::as.brob(deltaXB))
+    delta <- as.numeric(tmp/Brobdingnag::sum(tmp))
   } else {
     delta <- expdelta/sum(expdelta)
   }

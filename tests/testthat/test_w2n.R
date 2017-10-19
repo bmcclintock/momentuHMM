@@ -20,13 +20,13 @@ test_that("The output is in the right format",{
     if(m$conditions$circularAngleMean[[i]]) meanind[[i]] <- which((apply(m$conditions$fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
   }
   
-  wpar <- n2w(par,bounds,beta,delta,nbStates,m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
-  p <-   w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,nc,meanind)
+  wpar <- n2w(par,bounds,beta,log(delta[-1]/delta[1]),nbStates,m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+  p <-   w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,nc,meanind,m$covsDelta)
   
   expect_equal(length(p$step),parSize$step*nbStates)
   expect_equal(length(p$angle),parSize$angle*nbStates)
   expect_equal(dim(p$beta),dim(beta))
-  expect_equal(length(p$delta),length(delta))
+  expect_equal(length(p$delta[1,]),length(delta))
 })
 
 test_that("w2n and n2w are inverse",{
@@ -47,12 +47,12 @@ test_that("w2n and n2w are inverse",{
     if(m$conditions$circularAngleMean[[i]]) meanind[[i]] <- which((apply(m$conditions$fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
   }
   
-  wpar <- n2w(par,bounds,beta,delta,nbStates,m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
-  p <-   w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,nc,meanind)
+  wpar <- n2w(par,bounds,beta,log(delta[-1]/delta[1]),nbStates,m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+  p <-   w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,nc,meanind,m$covsDelta)
   
 
   expect_equal(p$step[,1],par$step,tolerance=1e-10)
   expect_equal(p$angle[,1],par$angle,tolerance=1e-10)
   expect_equal(p$beta,beta,tolerance=1e-10)
-  expect_equal(p$delta,delta,tolerance=1e-10)
+  expect_equal(p$delta[1,],delta,tolerance=1e-10)
 })

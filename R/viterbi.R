@@ -27,6 +27,8 @@ viterbi <- function(m)
   if(!is.momentuHMM(m))
     stop("'m' must be a momentuHMM object (as output by fitHMM)")
 
+  m <- delta_bc(m)
+  
   data <- m$data
   nbStates <- length(m$stateNames)
   beta <- m$mle$beta
@@ -83,7 +85,7 @@ viterbi <- function(m)
     }
 
     xi <- matrix(NA,nbObs,nbStates)
-    foo <- (delta%*%tm[,,1])*p[1,]
+    foo <- (delta[zoo,]%*%tm[,,1])*p[1,]
     xi[1,] <- foo/sum(foo)
     for(i in 2:nbObs) {
       foo <- apply(xi[i-1,]*tm[,,i],2,max)*p[i,]

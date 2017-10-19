@@ -5,7 +5,8 @@
 \title{Scaling function: working to natural parameters}
 \usage{
 w2n(wpar, bounds, parSize, nbStates, nbCovs, estAngleMean, circularAngleMean,
-  stationary, cons, fullDM, DMind, workcons, nbObs, dist, Bndind, nc, meanind)
+  stationary, cons, fullDM, DMind, workcons, nbObs, dist, Bndind, nc, meanind,
+  covsDelta)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}
@@ -17,7 +18,7 @@ distribution parameters for each data stream.}
 
 \item{nbStates}{The number of states of the HMM.}
 
-\item{nbCovs}{The number of covariates.}
+\item{nbCovs}{The number of beta covariates.}
 
 \item{estAngleMean}{Named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy').}
@@ -48,6 +49,8 @@ each data stream.}
 \item{nc}{indicator for zeros in fullDM}
 
 \item{meanind}{index for circular-circular regression mean angles with at least one non-zero entry in fullDM}
+
+\item{covsDelta}{data frame containing the delta model covariates (if any)}
 }
 \value{
 A list of:
@@ -71,13 +74,14 @@ beta <- matrix(rnorm(6),ncol=2,nrow=3)
 delta <- c(0.6,0.4)
 
 #working parameters
-wpar <- momentuHMM:::n2w(par,bounds,beta,delta,nbStates,m$conditions$estAngleMean,NULL,
-m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+wpar <- momentuHMM:::n2w(par,bounds,beta,log(delta[-1]/delta[1]),nbStates,
+m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
 
 #natural parameter
 p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
 m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
-m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind)
+m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,
+matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta)
 }
 
 

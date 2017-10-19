@@ -70,14 +70,14 @@ test_that("NULL, list, and matrix DM are the same",{
   matrixDM<-list(step=matrix(diag(2*nbStates),nrow=2*nbStates,byrow=TRUE,dimnames = list(c(paste0("mean_",1:nbStates),paste0("sd_",1:nbStates)),c(paste0("mean_",1:nbStates,":(Intercept)"),paste0("sd_",1:nbStates,":(Intercept)")))))
   
   nullmod<-fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
-                  Par0=list(step=stepPar,angle=anglePar),beta0=example$m$mle$beta,delta0=example$m$mle$delta,
+                  Par0=list(step=stepPar,angle=anglePar),beta0=example$m$mle$beta,delta0=example$m$mle$delta[1,],
                   formula=formula,fit=FALSE)
   
   listPar0 <- getParDM(data,nbStates,list(step=stepDist,angle=angleDist),
                        Par=list(step=stepPar,angle=anglePar),
                        DM=listDM)
   listmod<-fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
-                  Par0=listPar0,beta0=example$m$mle$beta,delta0=example$m$mle$delta,
+                  Par0=listPar0,beta0=example$m$mle$beta,delta0=example$m$mle$delta[1,],
                   formula=formula,
                   DM=listDM,fit=FALSE)
   
@@ -85,7 +85,7 @@ test_that("NULL, list, and matrix DM are the same",{
                          Par=list(step=stepPar,angle=anglePar),
                          DM=matrixDM)
   matrixmod<-fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
-                    Par0=matrixPar0,beta0=example$m$mle$beta,delta0=example$m$mle$delta,
+                    Par0=matrixPar0,beta0=example$m$mle$beta,delta0=example$m$mle$delta[1,],
                     formula=formula,
                     DM=matrixDM,fit=FALSE)
   

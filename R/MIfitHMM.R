@@ -38,6 +38,7 @@
 #' @param circularAngleMean An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
 #' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. See \code{\link{fitHMM}}.
 #' @param formula Regression formula for the transition probability covariates. See \code{\link{fitHMM}}.
+#' @param formulaDelta Regression formula for the initial distribution. See \code{\link{fitHMM}}.
 #' @param stationary \code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. See \code{\link{fitHMM}}.
 #' @param verbose Determines the print level of the \code{fitHMM} optimizer. The default value of 0 means that no
@@ -171,7 +172,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
                    nbStates, dist, 
                    Par0, beta0 = NULL, delta0 = NULL,
                    estAngleMean = NULL, circularAngleMean = NULL,
-                   formula = ~1, stationary = FALSE, 
+                   formula = ~1, formulaDelta = ~1, stationary = FALSE, 
                    verbose = 0, nlmPar = NULL, fit = TRUE, 
                    DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL, 
                    stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
@@ -290,7 +291,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   
   #check HMM inputs and print model message
   test<-fitHMM(miData[[ind[1]]],nbStates, dist, Par0[[ind[1]]], beta0[[ind[1]]], delta0[[ind[1]]],
-         estAngleMean, circularAngleMean, formula, stationary, verbose,
+         estAngleMean, circularAngleMean, formula, formulaDelta, stationary, verbose,
          nlmPar, fit = FALSE, DM, cons,
          userBounds, workcons, stateNames, knownStates[[ind[1]]], fixPar, retryFits)
   
@@ -301,7 +302,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
 
       if(nSims>1) cat("\rImputation ",j,"...",sep="")
       tmpFit<-suppressMessages(fitHMM(miData[[j]],nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
-                              estAngleMean, circularAngleMean, formula, stationary, verbose,
+                              estAngleMean, circularAngleMean, formula, formulaDelta, stationary, verbose,
                               nlmPar, fit, DM, cons,
                               userBounds, workcons, stateNames, knownStates[[j]], fixPar, retryFits))
       if(retryFits>=1) cat("\n")

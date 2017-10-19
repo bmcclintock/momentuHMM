@@ -182,7 +182,7 @@ fixPar.sex<-list(step=c(rep(NA,nbStates*2*2),NA,NA,boot::logit(1.e-100),NA,NA),
                  omega=c(rep(NA,4*2),NA,boot::logit(c(1.e-100,1.e-100)),NA))
 
 bfPar<-getPar0(bestFit)
-Par0.sex<-getPar0(bestFit,formula=~sex,DM=list(step=stepDM.sex,angle=angleDM.sex,omega=omegaDM.sex))
+Par0.sex<-getPar0(bestFit,formula=~sex,formulaDelta=~sex,DM=list(step=stepDM.sex,angle=angleDM.sex,omega=omegaDM.sex))
 Par0.sex$Par$step[c("shape_1:sexF","shape_2:sexF","shape_3:sexF","shape_1:sexM","shape_2:sexM","shape_3:sexM")]<-bfPar$Par$step[c("shape_1:(Intercept)","shape_2:(Intercept)","shape_3:(Intercept)")]
 Par0.sex$Par$step[c("scale_1:sexF","scale_2:sexF","scale_3:sexF","scale_1:sexM","scale_2:sexM","scale_3:sexM")]<-bfPar$Par$step[c("scale:(Intercept)","scale_2","scale_3")]
 
@@ -190,7 +190,7 @@ Par0.sex$Par$angle[c("concentration_1:sexF", "concentration_23:sexF",  "concentr
 Par0.sex$Par$omega[c("shape_1:sexF", "shape2_1:sexF","shape_2:sexF", "shape1_2:sexF","zeromass_1:sexF")]<-bfPar$Par$omega[c("shape_1:(Intercept)","shape2_1","shape_2:(Intercept)","shape1_2", "zeromass_1:(Intercept)" )]
 Par0.sex$Par$omega[c("shape_1:sexM", "shape2_1:sexM","shape_2:sexM", "shape1_2:sexM","zeromass_1:sexM")]<-bfPar$Par$omega[c("shape_1:(Intercept)","shape2_1","shape_2:(Intercept)","shape1_2", "zeromass_1:(Intercept)" )]
 
-bestFit.sex<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=Par0.sex$Par,beta0=Par0.sex$beta,delta0=Par0.sex$delta,formula=~sex,DM=list(step=stepDM.sex,angle=angleDM.sex,omega=omegaDM.sex),cons=list(step=stepcons.sex,angle=anglecons.sex,omega=omegacons.sex),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),workcons=list(angle=angleworkcons.sex),fixPar=fixPar.sex,stateNames=stateNames)
+bestFit.sex<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=Par0.sex$Par,beta0=Par0.sex$beta,delta0=Par0.sex$delta,formula=~sex,formulaDelta=~sex,DM=list(step=stepDM.sex,angle=angleDM.sex,omega=omegaDM.sex),cons=list(step=stepcons.sex,angle=anglecons.sex,omega=omegacons.sex),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),workcons=list(angle=angleworkcons.sex),fixPar=fixPar.sex,stateNames=stateNames)
 
 ### Model 3: individual-level effects
 
@@ -231,7 +231,7 @@ omegaworkcons.ind<-c(rep(0,N*2*(nbStates-1)),rep(-boot::logit(1.e-100),length(om
 fixPar.ind<-list(step=c(rep(NA,N*nbStates*2),rep(NA,length(stepzm)*(nbStates-1)),boot::logit(1.e-100)),
                  omega=c(rep(NA,N*2*(nbStates-1)),rep(NA,length(omegazm)),boot::logit(1.e-100)))
 
-Par0.ind<-getPar0(bestFit,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),formula=~ID+0)
+Par0.ind<-getPar0(bestFit,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),formula=~ID+0,formulaDelta=~ID+0)
 
 # fit each track individually to get initial values for full model
 registerDoParallel(cores=ncores) 
@@ -261,8 +261,9 @@ for(i in 1:N){
   Par0.ind$Par$angle[match(paste0(colnames(angleDM),"ID",i),names(Par0.ind$Par$angle),nomatch=0)]<-bfPar$Par$angle[match(names(Par0.ind$Par$angle),paste0(colnames(angleDM),"ID",i),nomatch=0)]
   Par0.ind$Par$omega[match(paste0(colnames(omegaDM),"ID",i),names(Par0.ind$Par$omega),nomatch=0)]<-bfPar$Par$omega[match(names(Par0.ind$Par$omega),paste0(colnames(omegaDM),"ID",i),nomatch=0)]
   Par0.ind$beta[paste0("ID",i),]<-bfPar$beta
+  Par0.ind$delta[paste0("ID",i),]<-log(bfPar$delta[-1]/bfPar$delta[1])
 }  
-bestFit.ind<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),formula=~ID+0,Par0=Par0.ind$Par,beta0=Par0.ind$beta,delta0=Par0.ind$delta,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),cons=list(step=stepcons.ind,angle=anglecons.ind,omega=omegacons.ind),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),workcons=list(step=stepworkcons.ind,angle=angleworkcons.ind,omega=omegaworkcons.ind),fixPar=fixPar.ind,stateNames=stateNames)
+bestFit.ind<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),formula=~ID+0,formulaDelta=~ID+0,Par0=Par0.ind$Par,beta0=Par0.ind$beta,delta0=Par0.ind$delta,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),cons=list(step=stepcons.ind,angle=anglecons.ind,omega=omegacons.ind),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),workcons=list(step=stepworkcons.ind,angle=angleworkcons.ind,omega=omegaworkcons.ind),fixPar=fixPar.ind,stateNames=stateNames)
 
 #################################################################################################################################
 ## compare models using AIC
@@ -300,7 +301,7 @@ stopImplicitCluster()
 
 miSum.all<-lapply(miBestFit.all,MIpool)
 
-tmpPar0.ind<-getPar0(bestFit.ind,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),formula=~ID+0)
+tmpPar0.ind<-getPar0(bestFit.ind,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),formula=~ID+0,formulaDelt=~ID+0)
 
 #specify initial values for full model based on individual model fits
 for(i in 1:N){
@@ -309,6 +310,7 @@ for(i in 1:N){
   tmpPar0.ind$Par$angle[match(paste0(colnames(angleDM),"ID",i),names(Par0.ind$Par$angle),nomatch=0)]<-bfPar$Par$angle[match(names(Par0.ind$Par$angle),paste0(colnames(angleDM),"ID",i),nomatch=0)]
   tmpPar0.ind$Par$omega[match(paste0(colnames(omegaDM),"ID",i),names(Par0.ind$Par$omega),nomatch=0)]<-bfPar$Par$omega[match(names(Par0.ind$Par$omega),paste0(colnames(omegaDM),"ID",i),nomatch=0)]
   tmpPar0.ind$beta[paste0("ID",i),]<-bfPar$beta
+  tmpPar0.ind$delta[paste0("ID",i),]<-log(bfPar$delta[-1]/bfPar$delta[1])
 }  
 tmpstepDM.ind<-stepDM.ind[1:(2*nbStates),1:(N*2*nbStates)]
 tmpstepcons.ind<-stepcons.ind[1:(N*2*nbStates)]
@@ -319,7 +321,7 @@ tmpfixPar.ind$step<-NULL
 
 #Fit multiple imputations (warning -- this takes a looooooong time!)
 miBestFit.ind<-MIfitHMM(crwOut,nSims=nSims,ncores=ncores,poolEstimates=FALSE,
-                        nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),formula=~ID+0,Par0=tmpPar0.ind$Par,beta0=tmpPar0.ind$beta,delta0=tmpPar0.ind$delta,DM=list(step=tmpstepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),cons=list(step=tmpstepcons.ind,angle=anglecons.ind,omega=omegacons.ind),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),workcons=list(angle=angleworkcons.ind,omega=omegaworkcons.ind),fixPar=tmpfixPar.ind,stateNames=stateNames,
+                        nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),formula=~ID+0,formulaDelta=~ID+0,Par0=tmpPar0.ind$Par,beta0=tmpPar0.ind$beta,delta0=tmpPar0.ind$delta,DM=list(step=tmpstepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),cons=list(step=tmpstepcons.ind,angle=anglecons.ind,omega=omegacons.ind),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),workcons=list(angle=angleworkcons.ind,omega=omegaworkcons.ind),fixPar=tmpfixPar.ind,stateNames=stateNames,
                         covNames=c("sex","negCons"))
 
 miSum.ind<-MIpool(miBestFit.ind,ncores=ncores)

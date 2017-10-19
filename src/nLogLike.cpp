@@ -10,7 +10,7 @@
 //' @param dataNames Character vector containing the names of the data streams,
 //' @param dist Named list indicating the probability distributions of the data streams. 
 //' @param Par Named list containing the state-dependent parameters of the data streams, matrix of regression coefficients 
-//' for the transition probabilities ('beta'), and stationary distribution ('delta').
+//' for the transition probabilities ('beta'), and initial distribution ('delta').
 //' @param aInd Vector of indices of the rows at which the data switches to another animal
 //' @param zeroInflation Named list of logicals indicating whether the probability distributions of the data streams are zero-inflated.
 //' @param oneInflation Named list of logicals indicating whether the probability distributions of the data streams are one-inflated.
@@ -42,7 +42,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   arma::mat g(nbObs,nbStates*(nbStates-1));
   
   arma::mat beta = Par["beta"];
-  arma::rowvec delta = Par["delta"];
+  //arma::mat delta = Par["delta"];
   NumericVector genData(nbObs);
   arma::mat genPar;
   std::string genDist;
@@ -75,6 +75,59 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         for(int j=0;j<nbStates;j++)
           trMat(i,j,k) = trMat(i,j,k)/rowSums(i,k);
   }
+  
+  //=======================================================//
+  // 1. Computation of initial distribution(s)             //
+  //=======================================================//
+  unsigned int nbAnimals = aInd.size();
+  arma::mat delta(nbAnimals,nbStates);
+  
+  if(nbStates==1)
+    delta.ones(); // no distribution if only one state
+  else if(stationary) {
+    // compute stationary distribution delta
+    
+    arma::mat diag(nbStates,nbStates);
+    diag.eye(); // diagonal of ones
+    arma::mat Gamma = trMat.slice(0).t(); // all slices are identical if stationary
+    arma::colvec v(nbStates);
+    v.ones(); // vector of ones
+    arma::rowvec deltatmp(nbStates);
+    try {
+      deltatmp = arma::solve(diag-Gamma+1,v).t();
+    }
+    catch(...) {
+      throw std::runtime_error("A problem occurred in the calculation of "
+                                 "the stationary distribution. You may want to "
+                                 "try different initial values and/or the option "
+                                 "stationary=FALSE");
+    }
+    for(unsigned int k=0; k<nbAnimals; k++){
+      delta.row(k) = deltatmp;
+    }
+  } else {
+    arma::mat init = Par["delta"];
+    delta = init;
+    //arma::mat d(nbAnimals,nbStates);
+    //arma::rowvec drowSums(nbAnimals);
+    //drowSums.zeros();
+    
+    //d = covsDelta*init;
+    
+    //for(unsigned int k=0;k<nbAnimals;k++) {
+    //  for(int i=0;i<nbStates;i++) {
+    //    delta(k,i) = exp(d(k,i));
+          
+    //    // keep track of row sums, to normalize in the end
+    //    drowSums(k) = drowSums(k) + delta(k,i);
+    //  }
+    //}
+    
+    //// normalization
+    //for(unsigned int k=0;k<nbAnimals;k++) 
+    //  for(int i=0;i<nbStates;i++) 
+    //    delta(k,i) = delta(k,i)/drowSums(k);
+  }
 
   //==========================================================//
   // 2. Computation of matrix of joint probabilities allProbs //
@@ -93,27 +146,6 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   funMap["vm"] = dvm_rcpp;
   funMap["weibull"] = dweibull_rcpp;
   funMap["wrpcauchy"] = dwrpcauchy_rcpp;
-
-  if(nbStates==1)
-    delta = 1; // no distribution if only one state
-  else if(stationary) {
-    // compute stationary distribution delta
-
-    arma::mat diag(nbStates,nbStates);
-    diag.eye(); // diagonal of ones
-    arma::mat Gamma = trMat.slice(0).t(); // all slices are identical if stationary
-    arma::colvec v(nbStates);
-    v.ones(); // vector of ones
-    try {
-      delta = arma::solve(diag-Gamma+1,v).t();
-    }
-    catch(...) {
-      throw std::runtime_error("A problem occurred in the calculation of "
-                                 "the stationary distribution. You may want to "
-                                 "try different initial values and/or the option "
-                                 "stationary=FALSE");
-    }
-  }
 
   arma::mat allProbs(nbObs,nbStates);
   allProbs.ones();
@@ -260,9 +292,9 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
 
   arma::mat Gamma(nbStates,nbStates); // transition probability matrix
   double lscale = 0; // scaled log-likelihood
-  int k=0; // animal index
+  unsigned int k=0; // animal index
   arma::rowvec alpha(nbStates);
-
+  arma::rowvec delt(nbStates);
   for(unsigned int i=0;i<allProbs.n_rows;i++) {
     
     if(nbStates>1)
@@ -272,8 +304,9 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
     
     if(k<aInd.size() && i==(unsigned)(aInd(k)-1)) {
       // if 'i' is the 'k'-th element of 'aInd', switch to the next animal
+      delt = delta.row(k);
+      alpha = (delt * Gamma) % allProbs.row(i);
       k++;
-      alpha = (delta * Gamma) % allProbs.row(i);
     } else {
       alpha = (alpha * Gamma) % allProbs.row(i);
     }

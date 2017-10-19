@@ -1,7 +1,7 @@
 
 #' Scaling function: natural to working parameters.
 #'
-#' Scales each parameter from its natural interval to the set of real numbers, to allow for
+#' Scales each data stream probability distribution parameter from its natural interval to the set of real numbers, to allow for
 #' unconstrained optimization. Used during the optimization of the log-likelihood. Parameters of
 #' any data streams for which a design matrix is specified are ignored.
 #'
@@ -35,13 +35,14 @@
 #' delta <- c(0.6,0.4)
 #' 
 #' #working parameters
-#' wpar <- momentuHMM:::n2w(par,bounds,beta,delta,nbStates,m$conditions$estAngleMean,NULL,
-#' m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+#' wpar <- momentuHMM:::n2w(par,bounds,beta,log(delta[-1]/delta[1]),nbStates,
+#' m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
 #' 
 #' #natural parameter
 #' p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
 #' m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
-#' m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind)
+#' m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,
+#' matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta)
 #' }
 #'
 #' @importFrom boot logit
@@ -84,7 +85,7 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcon
   }
 
   wbeta <- as.vector(beta) # if beta is NULL, wbeta is NULL as well
-  wdelta <- log(delta[-1]/delta[1]) # if delta is NULL, wdelta is NULL as well
+  wdelta <- as.vector(delta)#log(delta[,-1,drop=FALSE]/delta[,1,drop=FALSE]) # if delta is NULL, wdelta is NULL as well
   return(c(wpar,wbeta,wdelta))
 }
 

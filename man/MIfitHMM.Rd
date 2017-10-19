@@ -6,14 +6,14 @@
 \usage{
 MIfitHMM(miData, nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   nbStates, dist, Par0, beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
-  circularAngleMean = NULL, formula = ~1, stationary = FALSE,
-  verbose = 0, nlmPar = NULL, fit = TRUE, DM = NULL, cons = NULL,
-  userBounds = NULL, workcons = NULL, stateNames = NULL,
-  knownStates = NULL, fixPar = NULL, retryFits = 0, covNames = NULL,
-  spatialCovs = NULL, centers = NULL, angleCovs = NULL, method = "IS",
-  parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
-  force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
-  thetaSamp = NULL)
+  circularAngleMean = NULL, formula = ~1, formulaDelta = ~1,
+  stationary = FALSE, verbose = 0, nlmPar = NULL, fit = TRUE,
+  DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL,
+  stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
+  covNames = NULL, spatialCovs = NULL, centers = NULL, angleCovs = NULL,
+  method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5,
+  scaleSim = 1, force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf,
+  scalePostIS = 1, thetaSamp = NULL)
 }
 \arguments{
 \item{miData}{A \code{\link{crwData}} object, a \code{\link{crwSim}} object, or a list of \code{\link{momentuHMMData}} objects.}
@@ -48,6 +48,8 @@ distributions ('vm' and 'wrpcauchy'). See \code{\link{fitHMM}}.}
 regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. See \code{\link{fitHMM}}.}
 
 \item{formula}{Regression formula for the transition probability covariates. See \code{\link{fitHMM}}.}
+
+\item{formulaDelta}{Regression formula for the initial distribution. See \code{\link{fitHMM}}.}
 
 \item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. See \code{\link{fitHMM}}.}

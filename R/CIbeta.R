@@ -54,6 +54,8 @@ CIbeta <- function(m,alpha=0.95)
   dist <- m$conditions$dist
   distnames <- names(dist)
   fullDM <- m$conditions$fullDM
+  
+  m <- delta_bc(m)
 
   # identify covariates
   formula<-m$conditions$formula
@@ -146,7 +148,40 @@ CIbeta <- function(m,alpha=0.95)
     colnames(Par$beta$lower) <- colnames(m$mle$beta)
     colnames(Par$beta$upper) <- colnames(m$mle$beta)
   }
-
+  
+  # group CIs for initial distribution
+  if(nbStates>1 & !m$conditions$stationary){
+    nbCovsDelta <- ncol(m$covsDelta)-1
+    foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)+1
+    est <- wpar[foo:length(wpar)]
+    var <- diag(Sigma)[foo:length(wpar)]
+    
+    # if negative variance, replace by NA
+    var[which(var<0)] <- NA
+    
+    wse <- sqrt(var)
+    wlower <- est-quantSup*wse
+    wupper <- est+quantSup*wse
+    Par$delta <- list(est=matrix(est,nrow=1+nbCovsDelta,ncol=nbStates-1),se=matrix(wse,nrow=1+nbCovsDelta,ncol=nbStates-1),lower=matrix(wlower,nrow=1+nbCovsDelta,ncol=nbStates-1),upper=matrix(wupper,nrow=1+nbCovsDelta,ncol=nbStates-1))
+    rownames(Par$delta$est) <- colnames(m$covsDelta)
+    rownames(Par$delta$se) <- colnames(m$covsDelta)
+    rownames(Par$delta$lower) <- colnames(m$covsDelta)
+    rownames(Par$delta$upper) <- colnames(m$covsDelta)  
+    colnames(Par$delta$est) <- m$stateNames[-1]
+    colnames(Par$delta$se) <- m$stateNames[-1]
+    colnames(Par$delta$lower) <- m$stateNames[-1]
+    colnames(Par$delta$upper) <- m$stateNames[-1]  
+  } #else if(nbStates==1) {
+  #  Par$delta <- list(est=matrix(0,1+nbCovsDelta,ncol=nbStates),se=matrix(NA,1+nbCovsDelta,ncol=nbStates),lower=matrix(NA,1+nbCovsDelta,ncol=nbStates),upper=matrix(NA,1+nbCovsDelta,ncol=nbStates))
+  #  rownames(Par$delta$est) <- colnames(m$covsDelta)
+  #  rownames(Par$delta$se) <- colnames(m$covsDelta)
+  #  rownames(Par$delta$lower) <- colnames(m$covsDelta)
+  #  rownames(Par$delta$upper) <- colnames(m$covsDelta)  
+  #  colnames(Par$delta$est) <- m$stateNames
+  #  colnames(Par$delta$se) <- m$stateNames
+  #  colnames(Par$delta$lower) <- m$stateNames
+  #  colnames(Par$delta$upper) <- m$stateNames
+  #}
   return(Par)
 }
 

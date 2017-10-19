@@ -9,7 +9,7 @@
 #' distribution parameters for each data stream.
 #' @param parSize Named list indicating the number of natural parameters of the data stream probability distributions
 #' @param nbStates The number of states of the HMM.
-#' @param nbCovs The number of covariates.
+#' @param nbCovs The number of beta covariates.
 #' @param estAngleMean Named list indicating whether or not to estimate the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy').
 #' @param circularAngleMean Named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
@@ -28,7 +28,8 @@
 #' @param Bndind Named list indicating whether \code{DM} is NULL with default parameter bounds for each data stream.
 #' @param nc indicator for zeros in fullDM
 #' @param meanind index for circular-circular regression mean angles with at least one non-zero entry in fullDM
-#'
+#' @param covsDelta data frame containing the delta model covariates (if any)
+#' 
 #' @return A list of:
 #' \item{...}{Matrices containing the natural parameters for each data stream (e.g., 'step', 'angle', etc.)}
 #' \item{beta}{Matrix of regression coefficients of the transition probabilities}
@@ -46,32 +47,35 @@
 #' delta <- c(0.6,0.4)
 #' 
 #' #working parameters
-#' wpar <- momentuHMM:::n2w(par,bounds,beta,delta,nbStates,m$conditions$estAngleMean,NULL,
-#' m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+#' wpar <- momentuHMM:::n2w(par,bounds,beta,log(delta[-1]/delta[1]),nbStates,
+#' m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
 #' 
 #' #natural parameter
 #' p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
 #' m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
-#' m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind)
+#' m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,
+#' matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta)
 #' }
 #'
 #'
 #' @importFrom boot inv.logit
 #' @importFrom Brobdingnag as.brob sum
 
-w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind,nc,meanind)
+w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind,nc,meanind,covsDelta)
 {
 
   # identify initial distribution parameters
-  if(!stationary & nbStates>1) {
-    foo <- length(wpar)-nbStates+2
-    delta <- wpar[foo:length(wpar)]
-    expdelta <- exp(c(0,delta))
-    if(!is.finite(sum(expdelta))){
-      delta <- exp(Brobdingnag::as.brob(c(0,delta)))
-      delta <- as.numeric(delta/Brobdingnag::sum(delta))
-    } else {
-      delta <- expdelta/sum(expdelta)
+  if(!stationary & nbStates>1){
+    nbCovsDelta <- ncol(covsDelta)-1 # substract intercept column
+    
+    foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)+1
+    delta <- c(rep(0,nbCovsDelta+1),wpar[foo:length(wpar)])
+    deltaXB <- covsDelta%*%matrix(delta,nrow=nbCovsDelta+1)
+    expdelta <- exp(deltaXB)
+    delta <- expdelta/rowSums(expdelta)
+    for(i in which(!is.finite(rowSums(delta)))){
+      tmp <- exp(Brobdingnag::as.brob(deltaXB[i,]))
+      delta[i,] <- as.numeric(tmp/Brobdingnag::sum(tmp))
     }
     wpar <- wpar[-(foo:length(wpar))]
   }

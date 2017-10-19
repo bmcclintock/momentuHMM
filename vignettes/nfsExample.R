@@ -7,7 +7,7 @@ nSims <- 100 # number of imputatons
 retryFits <- 30 # number attempt to re-fit based on random perturbation
 ncores <- 7 # number of CPU cores
 
-predTimes <- seq(as.POSIXct("2007-10-07 17:49:25",tz="UTC"),as.POSIXlt("2007-10-17 04:49:25",tz="UTC"),"hour")
+predTimes <- seq(as.POSIXct("2007-10-07 17:49:25",tz="GMT"),as.POSIXlt("2007-10-17 04:49:25",tz="GMT"),"hour")
 
 inits<-list(a=c(nfsData$x[1],0,nfsData$y[1],0),P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 5000 ^ 2, 10 * 3600 ^ 2)))
 

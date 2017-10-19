@@ -55,34 +55,42 @@ print.miSum <- function(x,...)
     }
   }
   
-  if(!is.null(m$Par$beta$beta)) {
-    cat("\n")
-    cat("Regression coeffs for the transition probabilities:\n")
-    cat("---------------------------------------------------\n")
-    print(m$Par$beta$beta$est)
-  }
+  if(nbStates>1){
   
-  cat("\n")
-  if(!length(attr(terms.formula(m$conditions$formula),"term.labels"))) {
-    cat("Transition probability matrix:\n")
-    cat("------------------------------\n")
-  } else {
-    cat("Transition probability matrix (based on mean or specified covariate values):\n")
-    cat("----------------------------------------------------------------------------\n")
-  }
-  print(m$Par$real$gamma$est)
-  
-  if(!is.null(m$Par$real$delta)){
+    if(!is.null(m$Par$beta$beta)) {
+      cat("\n")
+      cat("Regression coeffs for the transition probabilities:\n")
+      cat("---------------------------------------------------\n")
+      print(m$Par$beta$beta$est)
+    }
+    
     cat("\n")
-    cat("Initial distribution:\n")
-    cat("---------------------\n")
-    print(m$Par$real$delta$est)
-  }
+    if(!length(attr(terms.formula(m$conditions$formula),"term.labels"))) {
+      cat("Transition probability matrix:\n")
+      cat("------------------------------\n")
+    } else {
+      cat("Transition probability matrix (based on mean or specified covariate values):\n")
+      cat("----------------------------------------------------------------------------\n")
+    }
+    print(m$Par$real$gamma$est)
+    
+    if(!is.null(m$Par$real$delta)){
+      cat("\n")
+      cat("Initial distribution:\n")
+      cat("---------------------\n")
+      m <- delta_bc(m)
+      if(!length(attr(terms.formula(m$conditions$formulaDelta),"term.labels"))){
+        tmp <- m$Par$real$delta$est[1,]
+        rownames(tmp)<-NULL
+        print(tmp)
+      } else print(m$Par$real$delta$est)
+    }
   
-  if(nbStates>1 & !is.null(m$Par$timeInStates)){
-    cat("\n")
-    cat("Proportion of time steps spent in each state:\n")
-    cat("---------------------------------------------\n")
-    print(m$Par$timeInStates$est)   
+    if(!is.null(m$Par$timeInStates)){
+      cat("\n")
+      cat("Proportion of time steps spent in each state:\n")
+      cat("---------------------------------------------\n")
+      print(m$Par$timeInStates$est)   
+    }
   }
 }

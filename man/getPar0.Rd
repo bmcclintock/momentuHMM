@@ -5,8 +5,8 @@
 \title{Get starting values for new model from existing \code{momentuHMM} model fit}
 \usage{
 getPar0(model, nbStates = NULL, estAngleMean = NULL,
-  circularAngleMean = NULL, formula = NULL, DM = NULL,
-  stateNames = NULL)
+  circularAngleMean = NULL, formula = NULL, formulaDelta = NULL,
+  DM = NULL, stateNames = NULL)
 }
 \arguments{
 \item{model}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})}
@@ -21,6 +21,8 @@ regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turn
 
 \item{formula}{Regression formula for the transition probability covariates of the new model (see \code{\link{fitHMM}}).  If \code{formula=NULL} (the default), then \code{formula=model$conditions$formula}.}
 
+\item{formulaDelta}{Regression formula for the initial distribution covariates of the new model (see \code{\link{fitHMM}}).  If \code{formulaDelta=NULL} (the default), then \code{formulaDelta=model$conditions$formulaDelta}.}
+
 \item{DM}{Named list indicating the design matrices to be used for the probability distribution parameters of each data stream in the new model (see \code{\link{fitHMM}}). Only parameters with design matrix column names that match those in model$conditions$fullDM are extracted, so care must be taken in naming columns if any elements of \code{DM}
 are specified as matrices instead of formulas. If \code{DM=NULL} (the default), then \code{DM=model$conditions$DM}.}
 
@@ -34,7 +36,7 @@ each data stream specified in \code{model$conditions$dist}}
 \item{delta}{Initial distribution of the HMM. Only returned if \code{stateNames} has the same membership as the state names for \code{model}}.
 
 All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{cons}, \code{userBounds}, \code{workcons}, etc.) and \code{data} are assumed to be the same 
-for \code{model} and the new model (as specified by  \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{DM}, and \code{stateNames}).
+for \code{model} and the new model (as specified by  \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{formulaDelta}, \code{DM}, and \code{stateNames}).
 }
 \description{
 For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}) from an existing \code{\link{momentuHMM}} model fit based on the provided arguments for the new model. Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
@@ -95,5 +97,5 @@ newModel2 <- fitHMM(model$data,dist=dist,nbStates=nbStates,
 
 }
 \seealso{
-\code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
+\code{\link{getPar}}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 }
