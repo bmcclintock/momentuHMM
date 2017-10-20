@@ -1,5 +1,8 @@
 momentuHMM 1.2.1 2017-10-20
 -----------------
+CHANGES
+
+* bug fix when in MIpool when covariates are included on initial distribution
 
 
 momentuHMM 1.2.0 2017-10-19

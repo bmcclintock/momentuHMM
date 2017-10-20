@@ -124,7 +124,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,covs=NULL){
   xmat <- xbar <- xvar <- W_m <- B_m <- MI_se <- lower <- upper <- list()
   parmcols <- lapply(m$conditions$fullDM,ncol)#
   parmcols$beta <- ncol(m$mle$beta)
-  parmcols$delta <- ncol(m$covsDelta)*(nbStates-1)
+  parmcols$delta <- nbStates-1
   parmcols <- unlist(parmcols[parms])
   
   parindex <- c(0,cumsum(c(unlist(lapply(m$conditions$fullDM,ncol)),length(m$mle$beta),ncol(m$covsDelta)*(nbStates-1))))
