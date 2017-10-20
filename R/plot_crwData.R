@@ -91,10 +91,10 @@ plot.crwData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,plotEllipse=TRUE,
     }
   }
   
-  if(length(animalsInd)>7) {
+  if(nbAnimals>7) {
     # to make sure that all colours are distinct (emulate ggplot default palette)
-    hues <- seq(15, 375, length = length(animalsInd) + 1)
-    colors <- hcl(h = hues, l = 65, c = 100)[1:length(animalsInd)]
+    hues <- seq(15, 375, length = nbAnimals + 1)
+    colors <- hcl(h = hues, l = 65, c = 100)[1:nbAnimals]
   } else
     colors <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
   
@@ -206,7 +206,7 @@ plot.crwData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,plotEllipse=TRUE,
         legendlty<-c(legendlty,1)
         legendlwd<-c(legendlwd,3)
       }
-      legendtxt<-c(legendtxt,unique(data$ID))
+      legendtxt<-c(legendtxt,unique(data$ID)[animalsInd])
       legendcol<-c(legendcol,colors[animalsInd])
       legendpch<-c(legendpch,rep(NA,length(animalsInd)))
       legendlty<-c(legendlty,rep(1,length(animalsInd)))
