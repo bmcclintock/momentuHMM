@@ -388,7 +388,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
   model_fits <- model_fits[convFits]
   
-  if(inherits(obsData[[Time.name]],"POSIXct")){
+  if(inherits(obsData[[Time.name]],"POSIXct") & length(predTime[[1]])>1){
     td <- utils::capture.output(difftime(predTime[[1]][2],predTime[[1]][1],units="auto"))
     cat('Predicting locations (and uncertainty) at',substr(td,20,nchar(td)),'time steps for',length(convFits),'track(s) using crawl::crwPredict...')
   } else cat('Predicting locations (and uncertainty) for',length(convFits),'track(s) using crawl::crwPredict...')
@@ -397,7 +397,11 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   predData <- 
     foreach(i = convFits, .export="crwPredict", .combine = rbind, .errorhandling="remove") %dopar% {
       pD<-crawl::crwPredict(model_fits[[i]], predTime=predTime[[i]])
-      pD[[Time.name]][which(pD$locType=="p")]<-predTime[[i]][predTime[[i]]>=min(model_fits[[i]]$data[[Time.name]])]
+      if(length(predTime[[i]])>1){
+        pD[[Time.name]][which(pD$locType=="p")]<-predTime[[i]][predTime[[i]]>=min(model_fits[[i]]$data[[Time.name]])]
+      } else if(inherits(obsData[[Time.name]],"POSIXct")){
+        pD[[Time.name]] <- as.POSIXct(pD$TimeNum,origin="1970-01-01 00:00:00",tz=attributes(pD[[Time.name]])$tzone)
+      }
       if(!fillCols){
         for(j in names(pD)[names(pD) %in% names(ind_data[[i]])]){
           if(!(j %in% c(Time.name,"ID",coord))){

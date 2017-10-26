@@ -1,6 +1,8 @@
-momentuHMM 1.2.1 2017-10-20
+momentuHMM 1.2.1 2017-10-26
 -----------------
 CHANGES
+
+* bug fix in crawlWrap when predTime is of length one
 
 * bug fix in MIpool when initial distribution includes covariates
 
