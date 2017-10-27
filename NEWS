@@ -2,6 +2,8 @@ momentuHMM 1.2.1 2017-10-26
 -----------------
 CHANGES
 
+* bug fix in CIreal when natural scale delta estimates are near boundary
+
 * bug fix in crawlWrap when predTime is of length one
 
 * bug fix in MIpool when initial distribution includes covariates

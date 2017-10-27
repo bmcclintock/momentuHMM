@@ -232,7 +232,7 @@ get_delta <- function(delta,covsDelta,i){
   deltaXB <- covsDelta%*%matrix(delta,nrow=nbCovsDelta+1)
   expdelta <- exp(deltaXB)
   if(!is.finite(sum(expdelta))){
-    tmp <- exp(Brobdingnag::as.brob(deltaXB))
+    tmp <- exp(Brobdingnag::as.brob(as.vector(deltaXB)))
     delta <- as.numeric(tmp/Brobdingnag::sum(tmp))
   } else {
     delta <- expdelta/sum(expdelta)
