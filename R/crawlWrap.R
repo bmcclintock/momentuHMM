@@ -388,10 +388,19 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
   convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
   model_fits <- model_fits[convFits]
   
-  if(inherits(obsData[[Time.name]],"POSIXct") & length(predTime[[1]])>1){
-    td <- utils::capture.output(difftime(predTime[[1]][2],predTime[[1]][1],units="auto"))
-    cat('Predicting locations (and uncertainty) at',substr(td,20,nchar(td)),'time steps for',length(convFits),'track(s) using crawl::crwPredict...')
-  } else cat('Predicting locations (and uncertainty) for',length(convFits),'track(s) using crawl::crwPredict...')
+  txt <- NULL
+  if(inherits(obsData[[Time.name]],"POSIXct")){
+    td <- list()
+    for(i in convFits){
+      td[[i]] <- predTime[[i]]
+      if(length(predTime[[i]])>1){
+        td[[i]] <- utils::capture.output(difftime(predTime[[i]][2],predTime[[i]][1],units="auto"))
+        td[[i]] <- substr(td[[i]],20,nchar(td[[i]]))
+      }
+    }
+    if(length(unique(td))==1) txt <- paste('at',td[[1]],'time steps')
+  }
+  cat('Predicting locations (and uncertainty)',txt,'for',length(convFits),'track(s) using crawl::crwPredict...')
   
   registerDoParallel(cores=ncores)
   predData <- 
