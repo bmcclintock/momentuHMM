@@ -1,6 +1,4 @@
 #' @importFrom qdapRegex rm_between
-#' @importFrom splines bs ns
-#' @importFrom splines2 bSpline cSpline iSpline mSpline
 getSplineDM<-function(distnames,DM,m,covs){
   splineInd<-list()
   splineCovs<-list()

@@ -1,4 +1,4 @@
-momentuHMM 1.2.1 2017-10-30
+momentuHMM 1.2.1 2017-11-01
 -----------------
 CHANGES
 
@@ -7,6 +7,8 @@ CHANGES
 * bug fix in crawlWrap when predTime is of length one
 
 * bug fix in MIpool when initial distribution includes covariates
+
+* splines and splines2 package dependencies changed to Suggests in DESCRIPTION file
 
 
 momentuHMM 1.2.0 2017-10-19

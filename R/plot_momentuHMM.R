@@ -50,7 +50,6 @@
 #' @importFrom grDevices adjustcolor gray hcl
 #' @importFrom stats as.formula
 #' @importFrom CircStats circ.mean
-#' @importFrom splines bs ns
 
 plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
                          sepStates=FALSE,col=NULL,cumul=TRUE,plotTracks=TRUE,plotCI=FALSE,alpha=0.95,...)
