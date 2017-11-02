@@ -13,6 +13,7 @@
 \usepackage{epsfig}
 \usepackage{psfrag}
 \usepackage{booktabs}
+\usepackage{lineno}
 \usepackage{url}
 
 % \usepackage{lineno}
@@ -97,6 +98,8 @@ concordance=TRUE
 
 % set margin to 3cm for main text
 \newgeometry{margin=3cm}
+
+\linenumbers
 
 \noindent \textbf{Summary}\\
 \textbf{1.} Discrete-time hidden Markov models (HMMs) have become an immensely popular tool for inferring latent animal behaviours from telemetry data. While movement HMMs typically rely solely on location data (e.g.\ step length and turning angle), auxiliary biotelemetry and environmental data are powerful and readily-available resources for incorporating much more ecological and behavioural realism. However, complex movement or observation process models often necessitate custom and computationally-demanding HMM model-fitting techniques that are impractical for most practitioners, and there is a paucity of generalized user-friendly software available for implementing multivariate HMMs of animal movement.\\
