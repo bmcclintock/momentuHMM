@@ -10,7 +10,7 @@ ncores <- 7 # number of CPU cores
 
 inits<-list(a=c(coordinates(turtleData)[1,1],0,
                 coordinates(turtleData)[1,2],0),
-            P=diag(c(10000^2,54000^2,10000^2,5400^2)))
+            P=diag(c(100^2,100^2,100^2,100^2)))
 
 fixPar<-c(log(1000*c(0.290,0.452,0.534,NA,NA,NA)),log(1000*c(0.122,0.239,0.301,NA,NA,NA)),NA,NA)
 
