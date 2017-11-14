@@ -2,8 +2,8 @@ citHeader("To cite momentuHMM in a publication use:")
 
 citEntry(
 	entry="Article",
-	title="momentuHMM: R package for generalized hidden {M}arkov models of animal movement",
-	author=personList(as.person("Brett T. McClintock"), as.person("Theo Michelot")),
+	title="momentu{HMM}: {R} package for generalized hidden {M}arkov models of animal movement",
+	author=personList(as.person("Brett T. McClintock"), as.person("Th{\'e}o Michelot")),
 	journal="arXiv:1710.03786",
 	year=2017,
 	textVersion="McClintock, B.T. and Michelot, T. (2017) momentuHMM: R package for generalized hidden Markov models of animal movement. arXiv:1710.03786."
