@@ -298,6 +298,28 @@ for(plt in seq(1,38)[-c(21)])
 
 rm(list=ls()[-which(ls()=="example_wd")])
 
+###################################################
+### group dynamic example
+###################################################
+#source(paste0(getwd(),"/groupExample.R"))
+load(paste0(example_wd,"groupExample.RData"))
+pdf(file=paste0(getwd(),"/plot_groupExampleCentroid%03d.pdf"),onefile=FALSE)
+plot(centroidData,ask=FALSE)
+dev.off()
+unlink(paste0("plot_groupExampleCentroid002.pdf"))
 
+pdf(file=paste0(getwd(),"/plot_groupExample%03d.pdf"),onefile=FALSE)
+plot(groupData,compact=TRUE,ask=FALSE)
+dev.off()
 
+for(plt in seq(1,nbAnimals+1)[-1])
+  unlink(paste0("plot_groupExample0",ifelse(plt>9,"","0"),plt,".pdf"))
 
+pdf(file=paste0(getwd(),"/plot_groupExampleResults%03d.pdf"),onefile=FALSE)
+plot(groupFit,ask=FALSE)
+dev.off()
+
+for(plt in seq(1,nbAnimals+3)[-c(7,8)])
+  unlink(paste0("plot_groupExampleResults0",ifelse(plt>9,"","0"),plt,".pdf"))
+
+rm(list=ls()[-which(ls()=="example_wd")])
