@@ -290,7 +290,7 @@ prepData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
         if(!is.matrix(centroids[[j]])) stop("each element of centroids must be a matrix")
         if(dim(centroids[[j]])[1]<max(table(ID)) | dim(centroids[[j]])[2]!=2) stop("each element of centroids must be a matrix consisting of at least",max(table(ID)),"rows (i.e., the maximum number of observations per animal) and 2 columns (i.e., x- and y-coordinates)")
         if(any(is.na(centroids[[j]]))) stop("centroids cannot contain missing values")
-        if(is.null(names(centroids[j]))) centroidNames<-paste0("centroid",rep(centroidInd,each=2),".",c("dist","angle"))
+        if(is.null(names(centroids[j]))) centroidNames <- c(centroidNames,paste0("centroid",rep(j,each=2),".",c("dist","angle")))
         else centroidNames <- c(centroidNames,paste0(rep(names(centroids[j]),each=2),".",c("dist","angle")))
       }
       centroidCovs <- data.frame(matrix(NA,nrow=nrow(data),ncol=length(centroidNames),dimnames=list(NULL,centroidNames)))
@@ -299,7 +299,7 @@ prepData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
         nbObs <- length(which(ID==unique(ID)[zoo]))
         i1 <- which(ID==unique(ID)[zoo])[1]
         i2 <- i1+nbObs-1
-        for(j in 1:length(centroidInd)){
+        for(j in 1:centroidInd){
           centroidCovs[i1,centroidNames[(j-1)*2+1:2]]<-distAngle(c(x[i1],y[i1]),c(x[i1],y[i1]),centroids[[j]][1,],type)
           timeInd <- 2
           for(i in (i1+1):i2) {

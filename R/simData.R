@@ -695,7 +695,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       #centroidInd <- which(!apply(centroids[[j]],1,function(x) any(is.na(x))))
       #if(length(centroidInd)){
       if(any(is.na(centroids[[j]]))) stop("centroids cannot contain missing values")
-      if(is.null(names(centroids[j]))) centroidNames<-paste0("centroid",rep(centroidInd,each=2),".",c("dist","angle"))
+      if(is.null(names(centroids[j]))) centroidNames <- c(centroidNames,paste0("centroid",rep(j,each=2),".",c("dist","angle")))
       else centroidNames <- c(centroidNames,paste0(rep(names(centroids[j]),each=2),".",c("dist","angle")))
     }
     centroidCovs <- data.frame(matrix(NA,nrow=sum(allNbObs),ncol=length(centroidNames),dimnames=list(NULL,centroidNames)))
@@ -831,7 +831,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
   }
   if(length(centroidInd)){
-    for(j in 1:length(centroidInd)){
+    for(j in 1:centroidInd){
       tmpDistAngle <- distAngle(initialPosition[[1]],initialPosition[[1]],centroids[[j]][1,])
       tmpCovs[[centroidNames[(j-1)*2+1]]]<- tmpDistAngle[1]
       tmpCovs[[centroidNames[(j-1)*2+2]]]<- tmpDistAngle[2]
@@ -956,7 +956,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         }
         
         if(length(centroidInd)){
-          for(j in 1:length(centroidInd)){
+          for(j in 1:centroidInd){
             subCovs[1,centroidNames[(j-1)*2+1:2]]<-distAngle(X[1,],X[1,],centroids[[j]][1,])
           }
         }
@@ -1067,7 +1067,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             }
           }
           if(length(centroidInd)){
-            for(j in 1:length(centroidInd)){
+            for(j in 1:centroidInd){
               subCovs[k+1,centroidNames[(j-1)*2+1:2]]<-distAngle(X[k,],X[k+1,],centroids[[j]][k+1,])
             }
           }
