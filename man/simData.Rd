@@ -93,7 +93,9 @@ the numbers of obervations generated for each animal are uniformously picked fro
 a list of length \code{nbAnimals} with each element providing the number of observations (if single value) or the bounds (if vector of two values) for each individual.
 Default: \code{c(500,1500)}.}
 
-\item{initialPosition}{2-vector providing the x- and y-coordinates of the initial position for all animals. Default: \code{c(0,0)}.}
+\item{initialPosition}{2-vector providing the x- and y-coordinates of the initial position for all animals. Alternatively, \code{initialPosition} can be specified as
+a list of length \code{nbAnimals} with each element a 2-vector providing the x- and y-coordinates of the initial position for each individual.
+Default: \code{c(0,0)}.}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream. Each element of \code{DM} can either be a named list of regression formulas or a ``pseudo'' design matrix.  For example, for a 2-state 
@@ -129,7 +131,7 @@ through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{work
 \item{model}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. This option can be used to simulate from a fitted model.  Default: NULL.
 Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
 \code{obsPerAnimal}, \code{states}, \code{initialPosition}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
-\code{covs}, \code{spatialCovs}, and \code{centers}.}
+\code{covs}, \code{spatialCovs}, \code{centers}, and \code{centroids}.}
 
 \item{states}{\code{TRUE} if the simulated states should be returned, \code{FALSE} otherwise (default).}
 

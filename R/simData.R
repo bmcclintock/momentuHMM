@@ -65,7 +65,9 @@
 #' the numbers of obervations generated for each animal are uniformously picked from this interval. Alternatively, \code{obsPerAnimal} can be specified as
 #' a list of length \code{nbAnimals} with each element providing the number of observations (if single value) or the bounds (if vector of two values) for each individual.
 #' Default: \code{c(500,1500)}.
-#' @param initialPosition 2-vector providing the x- and y-coordinates of the initial position for all animals. Default: \code{c(0,0)}.
+#' @param initialPosition 2-vector providing the x- and y-coordinates of the initial position for all animals. Alternatively, \code{initialPosition} can be specified as
+#' a list of length \code{nbAnimals} with each element a 2-vector providing the x- and y-coordinates of the initial position for each individual.
+#' Default: \code{c(0,0)}.
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 #' stream. Each element of \code{DM} can either be a named list of regression formulas or a ``pseudo'' design matrix.  For example, for a 2-state 
 #' model using the gamma distribution for a data stream named 'step', \code{DM=list(step=list(mean=~cov1, sd=~1))} specifies the mean 
@@ -468,7 +470,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
     Par <- Par[distnames]
     
-    mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & is.null(centers) & is.null(centroids) & ("step" %in% names(dist)) & all(initialPosition==c(0,0)) & is.null(lambda) & is.null(errorEllipse) & !is.list(obsPerAnimal) & is.null(covs) & !nbCovs & !length(attr(terms.formula(formula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & is.null(delta)) # indicator for moveHMM::simData
+    mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & is.null(centers) & is.null(centroids) & ("step" %in% names(dist)) & all(unlist(initialPosition)==c(0,0)) & is.null(lambda) & is.null(errorEllipse) & !is.list(obsPerAnimal) & is.null(covs) & !nbCovs & !length(attr(terms.formula(formula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & is.null(delta)) # indicator for moveHMM::simData
     if(all(names(dist) %in% c("step","angle")) & mHind){
       zi <- FALSE
       if(!is.null(zeroInflation$step)) zi <- zeroInflation$step
@@ -568,6 +570,20 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     obsPerAnimal<-vector('list',nbAnimals)
     for(i in 1:nbAnimals){
       obsPerAnimal[[i]]<-tmpObs
+    }
+  }
+  
+  if(is.list(initialPosition)){
+    if(length(initialPosition)!=nbAnimals) stop("initialPosition must be a list of length ",nbAnimals)
+    for(i in 1:nbAnimals){
+      if(length(initialPosition[[i]])!=2 | !is.numeric(initialPosition[[i]])) stop("each element of initialPosition must be a numeric vector of length 2")
+    }
+  } else {
+    if(length(initialPosition)!=2 | !is.numeric(initialPosition)) stop("initialPosition must be a numeric vector of length 2")
+    tmpPos<-initialPosition
+    initialPosition<-vector('list',nbAnimals)
+    for(i in 1:nbAnimals){
+      initialPosition[[i]]<-tmpPos
     }
   }
 
@@ -802,21 +818,21 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     tmpCovs <- cbind(tmpCovs,allCovs[1,,drop=FALSE])
   if(nbSpatialCovs){
     for(j in 1:nbSpatialCovs){
-      getCell<-raster::cellFromXY(spatialCovs[[j]],initialPosition)
+      getCell<-raster::cellFromXY(spatialCovs[[j]],initialPosition[[1]])
       if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
       tmpCovs[[spatialcovnames[j]]]<-spatialCovs[[j]][getCell]
     }
   }
   if(length(centerInd)){
     for(j in 1:length(centerInd)){
-      tmpDistAngle <- distAngle(initialPosition,initialPosition,centers[centerInd[j],])
+      tmpDistAngle <- distAngle(initialPosition[[1]],initialPosition[[1]],centers[centerInd[j],])
       tmpCovs[[centerNames[(j-1)*2+1]]]<- tmpDistAngle[1]
       tmpCovs[[centerNames[(j-1)*2+2]]]<- tmpDistAngle[2]
     }
   }
   if(length(centroidInd)){
     for(j in 1:length(centroidInd)){
-      tmpDistAngle <- distAngle(initialPosition,initialPosition,centroids[[j]][1,])
+      tmpDistAngle <- distAngle(initialPosition[[1]],initialPosition[[1]],centroids[[j]][1,])
       tmpCovs[[centroidNames[(j-1)*2+1]]]<- tmpDistAngle[1]
       tmpCovs[[centroidNames[(j-1)*2+2]]]<- tmpDistAngle[2]
     }
@@ -838,7 +854,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(length(noBeta)) beta[noBeta,state] <- 0
     }
   }
-  if(length(initialPosition)!=2 | !is.numeric(initialPosition)) stop("initialPosition must be a numeric vector of length 2")
   
   covsDelta <- model.matrix(formulaDelta,tmpCovs)
   nbCovsDelta <- ncol(covsDelta)-1
@@ -887,7 +902,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       colnames(subSpatialcovs)<-spatialcovnames
   
       X <- matrix(0,nrow=nbObs,ncol=2)
-      X[1,] <- initialPosition # initial position of animal
+      X[1,] <- initialPosition[[zoo]] # initial position of animal
   
       phi <- 0
       

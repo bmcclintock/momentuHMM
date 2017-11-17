@@ -4,6 +4,8 @@ NEW FEATURES
 
 * Dynamic activity centers (i.e., those with coordinates that can change over time) can now be handled via the centroids argument in prepData and simData
 
+* initialPosition argument in simData can now be specified as a list indicating the initial position for each individual
+
 CHANGES
 
 * bug fix in CIreal when natural scale delta estimates are near boundary
