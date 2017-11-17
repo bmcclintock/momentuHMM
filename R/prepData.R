@@ -27,6 +27,12 @@
 #' of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. As with covariates identified in \code{angleCovs}, note that the angle covariates for each activity center are calculated relative to 
 #' the previous movement direction (instead of standard direction relative to the x-axis); this is to allow mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
 #' or \code{\link{MIfitHMM}}.
+#' @param centroids List where each element is a \code{max(unlist(obsPerAnimal))} x 2 matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for centroids (i.e., dynamic activity centers where the coordinates can change for each time step)
+#' from which distance and angle covariates will be calculated based on the simulated location data. If no list names are provided, then generic names are generated 
+#' for the distance and angle covariates (e.g., 'centroid1.dist', 'centroid1.angle', 'centroid2.dist', 'centroid2.angle'); otherwise the covariate names are derived from the list names
+#' of \code{centroids} as \code{paste0(rep(names(centroids),each=2),c(".dist",".angle"))}. As with covariates identified in \code{angleCovs}, note that the angle covariates for each centroid are calculated relative to 
+#' the previous movement direction (instead of standard directions relative to the x-axis); this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
+#' or \code{\link{MIfitHMM}}.
 #' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{data} or \code{spatialCovs} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 #' using \code{\link{circAngles}}.
 
@@ -66,6 +72,11 @@
 #' d <- prepData(data,coordNames=c("coord1","coord2"),covNames="cov1",
 #'               centers=matrix(c(0,10,0,10),2,2,dimnames=list(c("c1","c2"),NULL)))
 #'               
+#' # include centroid
+#' data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1)
+#' d <- prepData(data,coordNames=c("coord1","coord2"),covNames="cov1",
+#'               centroid=list(centroid=cbind(coord1+rnorm(10),coord2+rnorm(10))))
+#'               
 #' # Include angle covariate that needs conversion to 
 #' # turning angle relative to previous movement direction
 #' u <- rnorm(10) # horizontal component
@@ -79,7 +90,7 @@
 #' @importFrom sp spDistsN1
 #' @importFrom raster cellFromXY getValues getZ
 
-prepData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NULL,spatialCovs=NULL,centers=NULL,angleCovs=NULL)
+prepData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NULL,spatialCovs=NULL,centers=NULL,centroids=NULL,angleCovs=NULL)
 {
   if(is.crwData(data)){
     predData <- data$crwPredict
@@ -251,6 +262,7 @@ prepData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
       else covs<-cbind(covs,spCovs)
     }
     if(!is.null(centers)){
+      if(!is.matrix(centers)) stop("centers must be a matrix")
       if(dim(centers)[2]!=2) stop("centers must be a matrix consisting of 2 columns (i.e., x- and y-coordinates)")
       centerInd <- which(!apply(centers,1,function(x) any(is.na(x))))
       if(length(centerInd)){
@@ -270,6 +282,31 @@ prepData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
         }
         dataHMM<-cbind(dataHMM,centerCovs)
       }  
+    }
+    if(!is.null(centroids)){
+      if(!is.list(centroids)) stop("centroids must be a named list")
+      centroidNames <- character()
+      for(j in 1:length(centroids)){
+        if(!is.matrix(centroids[[j]])) stop("each element of centroids must be a matrix")
+        if(dim(centroids[[j]])[1]<max(table(ID)) | dim(centroids[[j]])[2]!=2) stop("each element of centroids must be a matrix consisting of at least",max(table(ID)),"rows (i.e., the maximum number of observations per animal) and 2 columns (i.e., x- and y-coordinates)")
+        if(any(is.na(centroids[[j]]))) stop("centroids cannot contain missing values")
+        if(is.null(names(centroids[j]))) centroidNames<-paste0("centroid",rep(centroidInd,each=2),".",c("dist","angle"))
+        else centroidNames <- c(centroidNames,paste0(rep(names(centroids[j]),each=2),".",c("dist","angle")))
+      }
+      centroidCovs <- data.frame(matrix(NA,nrow=nrow(data),ncol=length(centroidNames),dimnames=list(NULL,centroidNames)))
+      centroidInd <- length(centroidNames)/2
+      for(zoo in 1:nbAnimals) {
+        nbObs <- length(which(ID==unique(ID)[zoo]))
+        i1 <- which(ID==unique(ID)[zoo])[1]
+        i2 <- i1+nbObs-1
+        for(j in 1:length(centroidInd)){
+          centroidCovs[i1,centroidNames[(j-1)*2+1:2]]<-distAngle(c(x[i1],y[i1]),c(x[i1],y[i1]),centroids[[j]][i1,],type)
+          for(i in (i1+1):i2) {
+            centroidCovs[i,centroidNames[(j-1)*2+1:2]]<-distAngle(c(x[i-1],y[i-1]),c(x[i],y[i]),centroids[[j]][i,],type)
+          }
+        }
+      }
+      dataHMM<-cbind(dataHMM,centroidCovs)
     }
     if(!is.null(angleCovs)){
       if(!all(angleCovs %in% colnames(covs))) stop('angleCovs not found in data or spatialCovs')

@@ -1,5 +1,9 @@
-momentuHMM 1.2.1 2017-11-01
+momentuHMM 1.3.0 2017-11-16
 -----------------
+NEW FEATURES
+
+* Dynamic activity centers (i.e., those with coordinates that can change over time) can now be handled via the centroids argument in prepData and simData
+
 CHANGES
 
 * bug fix in CIreal when natural scale delta estimates are near boundary

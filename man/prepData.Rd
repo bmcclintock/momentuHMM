@@ -5,7 +5,8 @@
 \title{Preprocessing of the data streams and covariates}
 \usage{
 prepData(data, type = c("UTM", "LL"), coordNames = c("x", "y"),
-  covNames = NULL, spatialCovs = NULL, centers = NULL, angleCovs = NULL)
+  covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL,
+  angleCovs = NULL)
 }
 \arguments{
 \item{data}{Either a data frame of data streams or a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}). If \code{data} is a data frame, it can optionally include a field \code{ID}
@@ -35,6 +36,13 @@ centers of attraction or repulsion) from which distance and angle covariates wil
 for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'center2.dist', 'center2.angle'); otherwise the covariate names are derived from the row names
 of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. As with covariates identified in \code{angleCovs}, note that the angle covariates for each activity center are calculated relative to 
 the previous movement direction (instead of standard direction relative to the x-axis); this is to allow mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
+or \code{\link{MIfitHMM}}.}
+
+\item{centroids}{List where each element is a \code{max(unlist(obsPerAnimal))} x 2 matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for centroids (i.e., dynamic activity centers where the coordinates can change for each time step)
+from which distance and angle covariates will be calculated based on the simulated location data. If no list names are provided, then generic names are generated 
+for the distance and angle covariates (e.g., 'centroid1.dist', 'centroid1.angle', 'centroid2.dist', 'centroid2.angle'); otherwise the covariate names are derived from the list names
+of \code{centroids} as \code{paste0(rep(names(centroids),each=2),c(".dist",".angle"))}. As with covariates identified in \code{angleCovs}, note that the angle covariates for each centroid are calculated relative to 
+the previous movement direction (instead of standard directions relative to the x-axis); this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
 or \code{\link{MIfitHMM}}.}
 
 \item{angleCovs}{Character vector indicating the names of any circular-circular regression angular covariates in \code{data} or \code{spatialCovs} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
@@ -78,6 +86,11 @@ d <- prepData(data,coordNames=c("coord1","coord2"),spatialCovs=spatialCov)
 data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1)
 d <- prepData(data,coordNames=c("coord1","coord2"),covNames="cov1",
               centers=matrix(c(0,10,0,10),2,2,dimnames=list(c("c1","c2"),NULL)))
+              
+# include centroid
+data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1)
+d <- prepData(data,coordNames=c("coord1","coord2"),covNames="cov1",
+              centroid=list(centroid=cbind(coord1+rnorm(10),coord2+rnorm(10))))
               
 # Include angle covariate that needs conversion to 
 # turning angle relative to previous movement direction
