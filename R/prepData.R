@@ -300,9 +300,11 @@ prepData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
         i1 <- which(ID==unique(ID)[zoo])[1]
         i2 <- i1+nbObs-1
         for(j in 1:length(centroidInd)){
-          centroidCovs[i1,centroidNames[(j-1)*2+1:2]]<-distAngle(c(x[i1],y[i1]),c(x[i1],y[i1]),centroids[[j]][i1,],type)
+          centroidCovs[i1,centroidNames[(j-1)*2+1:2]]<-distAngle(c(x[i1],y[i1]),c(x[i1],y[i1]),centroids[[j]][1,],type)
+          timeInd <- 2
           for(i in (i1+1):i2) {
-            centroidCovs[i,centroidNames[(j-1)*2+1:2]]<-distAngle(c(x[i-1],y[i-1]),c(x[i],y[i]),centroids[[j]][i,],type)
+            centroidCovs[i,centroidNames[(j-1)*2+1:2]]<-distAngle(c(x[i-1],y[i-1]),c(x[i],y[i]),centroids[[j]][timeInd,],type)
+            timeInd <- timeInd + 1
           }
         }
       }
