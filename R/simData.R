@@ -55,7 +55,7 @@
 #' for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'center2.dist', 'center2.angle'); otherwise the covariate names are derived from the row names
 #' of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. Note that the angle covariates for each activity center are calculated relative to 
 #' the previous movement direction instead of standard directions relative to the x-axis; this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression.
-#' @param centroids List where each element is a \code{max(unlist(obsPerAnimal))} x 2 matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for centroids (i.e., dynamic activity centers where the coordinates can change for each time step)
+#' @param centroids List where each element is a data frame consisting of at least \code{max(unlist(obsPerAnimal))} rows that provides the x-coordinates ('x') and y-coordinates ('y) for centroids (i.e., dynamic activity centers where the coordinates can change for each time step)
 #' from which distance and angle covariates will be calculated based on the simulated location data. These distance and angle 
 #' covariates can be included in \code{formula} and \code{DM} using the names of \code{centroids}.  If no list names are provided, then generic names are generated 
 #' for the distance and angle covariates (e.g., 'centroid1.dist', 'centroid1.angle', 'centroid2.dist', 'centroid2.angle'); otherwise the covariate names are derived from the list names
@@ -690,8 +690,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(!is.list(centroids)) stop("centroids must be a named list")
     centroidNames <- character()
     for(j in 1:length(centroids)){
-      if(!is.matrix(centroids[[j]])) stop("each element of centroids must be a matrix")
-      if(dim(centroids[[j]])[1]<max(unlist(obsPerAnimal)) | dim(centroids[[j]])[2]!=2) stop("each element of centroids must be a matrix consisting of at least",max(unlist(obsPerAnimal)),"rows (i.e., the maximum number of observations per animal) and 2 columns (i.e., x- and y-coordinates)")
+      if(!is.data.frame(centroids[[j]])) stop("each element of centroids must be a data frame")
+      if(dim(centroids[[j]])[1]<max(unlist(obsPerAnimal)) | dim(centroids[[j]])[2]!=2) stop("each element of centroids must be a data frame consisting of at least ",max(unlist(obsPerAnimal))," rows (i.e., the maximum number of observations per animal) and 2 columns (i.e., x- and y-coordinates)")
+      if(!all(c("x","y") %in% colnames(centroids[[j]]))) stop("centroids columns must be named 'x' (x-coordinate) and 'y' (y-coordinate)")
       #centroidInd <- which(!apply(centroids[[j]],1,function(x) any(is.na(x))))
       #if(length(centroidInd)){
       if(any(is.na(centroids[[j]]))) stop("centroids cannot contain missing values")
@@ -832,7 +833,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   }
   if(length(centroidInd)){
     for(j in 1:centroidInd){
-      tmpDistAngle <- distAngle(initialPosition[[1]],initialPosition[[1]],centroids[[j]][1,])
+      tmpDistAngle <- distAngle(initialPosition[[1]],initialPosition[[1]],as.numeric(centroids[[j]][1,]))
       tmpCovs[[centroidNames[(j-1)*2+1]]]<- tmpDistAngle[1]
       tmpCovs[[centroidNames[(j-1)*2+2]]]<- tmpDistAngle[2]
     }
@@ -957,7 +958,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         
         if(length(centroidInd)){
           for(j in 1:centroidInd){
-            subCovs[1,centroidNames[(j-1)*2+1:2]]<-distAngle(X[1,],X[1,],centroids[[j]][1,])
+            subCovs[1,centroidNames[(j-1)*2+1:2]]<-distAngle(X[1,],X[1,],as.numeric(centroids[[j]][1,]))
           }
         }
         g <- model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% beta
@@ -1068,7 +1069,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           }
           if(length(centroidInd)){
             for(j in 1:centroidInd){
-              subCovs[k+1,centroidNames[(j-1)*2+1:2]]<-distAngle(X[k,],X[k+1,],centroids[[j]][k+1,])
+              subCovs[k+1,centroidNames[(j-1)*2+1:2]]<-distAngle(X[k,],X[k+1,],as.numeric(centroids[[j]][k+1,]))
             }
           }
           g <- model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% beta

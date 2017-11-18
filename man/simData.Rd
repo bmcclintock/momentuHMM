@@ -81,7 +81,7 @@ for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'c
 of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. Note that the angle covariates for each activity center are calculated relative to 
 the previous movement direction instead of standard directions relative to the x-axis; this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression.}
 
-\item{centroids}{List where each element is a \code{max(unlist(obsPerAnimal))} x 2 matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for centroids (i.e., dynamic activity centers where the coordinates can change for each time step)
+\item{centroids}{List where each element is a data frame consisting of at least \code{max(unlist(obsPerAnimal))} rows that provides the x-coordinates ('x') and y-coordinates ('y) for centroids (i.e., dynamic activity centers where the coordinates can change for each time step)
 from which distance and angle covariates will be calculated based on the simulated location data. These distance and angle 
 covariates can be included in \code{formula} and \code{DM} using the names of \code{centroids}.  If no list names are provided, then generic names are generated 
 for the distance and angle covariates (e.g., 'centroid1.dist', 'centroid1.angle', 'centroid2.dist', 'centroid2.angle'); otherwise the covariate names are derived from the list names

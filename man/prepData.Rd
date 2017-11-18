@@ -38,8 +38,9 @@ of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angl
 the previous movement direction (instead of standard direction relative to the x-axis); this is to allow mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
 or \code{\link{MIfitHMM}}.}
 
-\item{centroids}{List where each element is a \code{max(unlist(obsPerAnimal))} x 2 matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for centroids (i.e., dynamic activity centers where the coordinates can change for each time step)
-from which distance and angle covariates will be calculated based on the simulated location data. If no list names are provided, then generic names are generated 
+\item{centroids}{List where each element is a data frame containing the x-coordinates ('x'), y-coordinates ('y'), and times (with user-specified name, e.g., `time') for centroids (i.e., dynamic activity centers where the coordinates can change over time)
+from which distance and angle covariates will be calculated based on the location data. If any centroids are specified, then \code{data} must include a column indicating the time of each observation, and this column name must match the corresponding user-specified 
+name of the time column in \code{centroids} (e.g. `time'). If no list names are provided, then generic names are generated 
 for the distance and angle covariates (e.g., 'centroid1.dist', 'centroid1.angle', 'centroid2.dist', 'centroid2.angle'); otherwise the covariate names are derived from the list names
 of \code{centroids} as \code{paste0(rep(names(centroids),each=2),c(".dist",".angle"))}. As with covariates identified in \code{angleCovs}, note that the angle covariates for each centroid are calculated relative to 
 the previous movement direction (instead of standard directions relative to the x-axis); this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
@@ -88,9 +89,11 @@ d <- prepData(data,coordNames=c("coord1","coord2"),covNames="cov1",
               centers=matrix(c(0,10,0,10),2,2,dimnames=list(c("c1","c2"),NULL)))
               
 # include centroid
-data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1)
+data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1,time=1:10)
 d <- prepData(data,coordNames=c("coord1","coord2"),covNames="cov1",
-              centroid=list(centroid=cbind(coord1+rnorm(10),coord2+rnorm(10))))
+              centroid=list(centroid=data.frame(x=coord1+rnorm(10),
+                                                y=coord2+rnorm(10),
+                                                time=1:10)))
               
 # Include angle covariate that needs conversion to 
 # turning angle relative to previous movement direction

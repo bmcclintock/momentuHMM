@@ -27,8 +27,9 @@
 #' of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. As with covariates identified in \code{angleCovs}, note that the angle covariates for each activity center are calculated relative to 
 #' the previous movement direction (instead of standard direction relative to the x-axis); this is to allow mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
 #' or \code{\link{MIfitHMM}}.
-#' @param centroids List where each element is a \code{max(unlist(obsPerAnimal))} x 2 matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for centroids (i.e., dynamic activity centers where the coordinates can change for each time step)
-#' from which distance and angle covariates will be calculated based on the simulated location data. If no list names are provided, then generic names are generated 
+#' @param centroids List where each element is a data frame containing the x-coordinates ('x'), y-coordinates ('y'), and times (with user-specified name, e.g., `time') for centroids (i.e., dynamic activity centers where the coordinates can change over time)
+#' from which distance and angle covariates will be calculated based on the location data. If any centroids are specified, then \code{data} must include a column indicating the time of each observation, and this column name must match the corresponding user-specified 
+#' name of the time column in \code{centroids} (e.g. `time'). If no list names are provided, then generic names are generated 
 #' for the distance and angle covariates (e.g., 'centroid1.dist', 'centroid1.angle', 'centroid2.dist', 'centroid2.angle'); otherwise the covariate names are derived from the list names
 #' of \code{centroids} as \code{paste0(rep(names(centroids),each=2),c(".dist",".angle"))}. As with covariates identified in \code{angleCovs}, note that the angle covariates for each centroid are calculated relative to 
 #' the previous movement direction (instead of standard directions relative to the x-axis); this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
@@ -73,9 +74,11 @@
 #'               centers=matrix(c(0,10,0,10),2,2,dimnames=list(c("c1","c2"),NULL)))
 #'               
 #' # include centroid
-#' data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1)
+#' data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1,time=1:10)
 #' d <- prepData(data,coordNames=c("coord1","coord2"),covNames="cov1",
-#'               centroid=list(centroid=cbind(coord1+rnorm(10),coord2+rnorm(10))))
+#'               centroid=list(centroid=data.frame(x=coord1+rnorm(10),
+#'                                                 y=coord2+rnorm(10),
+#'                                                 time=1:10)))
 #'               
 #' # Include angle covariate that needs conversion to 
 #' # turning angle relative to previous movement direction
@@ -287,9 +290,13 @@ prepData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
       if(!is.list(centroids)) stop("centroids must be a named list")
       centroidNames <- character()
       for(j in 1:length(centroids)){
-        if(!is.matrix(centroids[[j]])) stop("each element of centroids must be a matrix")
-        if(dim(centroids[[j]])[1]<max(table(ID)) | dim(centroids[[j]])[2]!=2) stop("each element of centroids must be a matrix consisting of at least",max(table(ID)),"rows (i.e., the maximum number of observations per animal) and 2 columns (i.e., x- and y-coordinates)")
+        if(!is.data.frame(centroids[[j]])) stop("each element of centroids must be a data frame")
+        if(dim(centroids[[j]])[2]!=3) stop("each element of centroids must be a data frame consisting of 3 columns (i.e., x-coordinate, y-coordinate, and time)")
+        if(!all(c("x","y") %in% colnames(centroids[[j]]))) stop("centroids must include 'x' (x-coordinate) and 'y' (y-coordinate) columns")
         if(any(is.na(centroids[[j]]))) stop("centroids cannot contain missing values")
+        timeName <- colnames(centroids[[j]])[which(!(colnames(centroids[[j]]) %in% c("x","y")))]
+        if(!(timeName %in% names(data))) stop("when centroids is specified data must include ",timeName)
+        if(!all(data[,timeName] %in% centroids[[j]][,timeName])) stop("centroids ",timeName," does not span data; each observation time must have a corresponding entry in centroids")
         if(is.null(names(centroids[j]))) centroidNames <- c(centroidNames,paste0("centroid",rep(j,each=2),".",c("dist","angle")))
         else centroidNames <- c(centroidNames,paste0(rep(names(centroids[j]),each=2),".",c("dist","angle")))
       }
@@ -300,11 +307,9 @@ prepData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
         i1 <- which(ID==unique(ID)[zoo])[1]
         i2 <- i1+nbObs-1
         for(j in 1:centroidInd){
-          centroidCovs[i1,centroidNames[(j-1)*2+1:2]]<-distAngle(c(x[i1],y[i1]),c(x[i1],y[i1]),centroids[[j]][1,],type)
-          timeInd <- 2
+          centroidCovs[i1,centroidNames[(j-1)*2+1:2]]<-distAngle(c(x[i1],y[i1]),c(x[i1],y[i1]),as.numeric(centroids[[j]][match(data[i1,timeName],centroids[[j]][,timeName]),c("x","y")]),type)
           for(i in (i1+1):i2) {
-            centroidCovs[i,centroidNames[(j-1)*2+1:2]]<-distAngle(c(x[i-1],y[i-1]),c(x[i],y[i]),centroids[[j]][timeInd,],type)
-            timeInd <- timeInd + 1
+            centroidCovs[i,centroidNames[(j-1)*2+1:2]]<-distAngle(c(x[i-1],y[i-1]),c(x[i],y[i]),as.numeric(centroids[[j]][match(data[i,timeName],centroids[[j]][,timeName]),c("x","y")]),type)
           }
         }
       }
