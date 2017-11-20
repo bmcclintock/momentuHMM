@@ -256,11 +256,11 @@ Our results were very similar to those of the discrete-time Bayesian model of \c
 
 \subsection{Loggerhead turtle}
 \label{sec:turtle}
-Using hitherto unpublished loggerhead turtle ({\it Caretta caretta}) data for a captive-raised juvenile released on the coast of North Carolina, USA, we will demonstrate how movement direction and step length can be easily modelled as a function of angular covariates in \verb|momentuHMM|. The data consist of %165 
+Using hitherto unpublished loggerhead turtle ({\it Caretta caretta}) data for a captive-raised juvenile released on the coast of North Carolina, USA, we now demonstrate how movement direction and step length can be easily modelled as a function of angular covariates in \verb|momentuHMM|. The data consist of %165 
 temporally-irregular Argos locations and rasters of daily ocean surface currents collected between 20 November and 19 December 2012. Assuming a gamma distribution for step length %$(l_t)$ 
 and a wrapped Cauchy distribution for turning angle%$(\phi_t)$
 , we modelled the mean step length parameter %$(\mu^l_t)$ 
-as a function of ocean surface current speed $(w_t)$ and direction $(r_t)$ relative to the bearing of movement $(b_t)$%:
+as a function of ocean surface current speed $(w_t)$ and direction $(r_t)$ relative to the bearing of movement $(b_t)$ at time $t$%:
 %\begin{equation}
 %  \mu^l_t=\exp(\beta^l_0+\beta^l_1 w_t \cos(b_t-r_t)),
 %  \label{eq:turtleMeanStep}
@@ -273,23 +273,24 @@ as a trade-off between short-term directional persistence and bias in the direct
 %\end{equation}
 %where $d_t=\text{atan2}(\sin(r_t-b_{t-1}),\cos(r_t-b_{t-1}))$.
 
-We fit a 2-state HMM to the turtle data, with a ``foraging'' state unaffected by currents and a ``transit'' state potentially influenced by ocean surface currents% as in Eqs. \ref{eq:turtleMeanStep} and \ref{eq:turtleMeanAngle}. We first used \verb|crawlWrap| to predict $T=350$ temporally-regular locations at 2 h time steps assuming a bivariate normal measurement error model that accounts for the Argos location quality class of each observation. We then used multiple imputation to account for location uncertainty by repeatedly fitting the HMM to $m=100$ realizations of the position process using \verb|MIfitHMM|
-. After preparing the data, this rather complicated HMM can be specified, fitted, and visualized in only a few lines of code:
-<<fit-turtle-2, echo=TRUE, eval=FALSE>>=
-nbStates <- 2
-dist <- list(step = "gamma", angle = "wrpcauchy")
-DM <- list(step = list(mean = ~state2(w:angle_osc), sd = ~1),
-           angle = list(mean = ~state2(d), concentration= ~1))
-turtleFits <- MIfitHMM(miData, nbStates = nbStates, dist = dist, 
-                       Par0 = Par0, DM = DM, 
-                       estAngleMean = list(angle = TRUE),
-                       circularAngleMean = list(angle = TRUE))
-plot(turtleFits, plotCI = TRUE, covs = data.frame(angle_osc = cos(0)))
-@
-\noindent where \verb|angle_osc| $=\cos(b_t-r_t)$ and \verb|d| $=\text{atan2}(\sin(r_t-b_{t-1}),\cos(r_t-b_{t-1}))$.%Note that the \verb|state2| special function in \verb|DM| indicates the covariate formulas are specific to state 2 (``transit''), $\text{angle\_osc} = \cos(b_t-r_t)$, and the \verb|circularAngleMean| argument indicates that the circular-circular regression link function is to be used on the mean turning angle parameter as in Eq.\ \ref{eq:turtleMeanAngle}. Complete syntax details and reproducible code for this example can be found in the package vignette and supporting materials.
-
+Using multiple imputation, we fit a 2-state HMM including a ``foraging'' state unaffected by currents and a ``transit'' state potentially influenced by ocean surface currents% as in Eqs. \ref{eq:turtleMeanStep} and \ref{eq:turtleMeanAngle}. We first used \verb|crawlWrap| to predict $T=350$ temporally-regular locations at 2 h time steps assuming a bivariate normal measurement error model that accounts for the Argos location quality class of each observation. We then used multiple imputation to account for location uncertainty by repeatedly fitting the HMM to $m=100$ realizations of the position process using \verb|MIfitHMM|
+. After preparing the data, this rather complicated HMM can be specified, fitted, and visualized in only a few lines of code (see package vignette for complete details). %:
+%<<fit-turtle-2, echo=TRUE, eval=FALSE>>=
+%nbStates <- 2
+%dist <- list(step = "gamma", angle = "wrpcauchy")
+%DM <- list(step = list(mean = ~state2(w:angle_osc), sd = ~1),
+%           angle = list(mean = ~state2(d), concentration= ~1))
+%turtleFits <- MIfitHMM(miData, nbStates = nbStates, dist = dist, 
+%                       Par0 = Par0, DM = DM, 
+%                       estAngleMean = list(angle = TRUE),
+%                       circularAngleMean = list(angle = TRUE))
+%plot(turtleFits, plotCI = TRUE, covs = data.frame(angle_osc = cos(0)))
+%@
+%\noindent where \verb|angle_osc| $=\cos(b_t-r_t)$ and \verb|d| $=\text{atan2}(\sin(r_t-b_{t-1}),\cos(r_t-b_{t-1}))$.%Note that the \verb|state2| special function in \verb|DM| indicates the covariate formulas are specific to state 2 (``transit''), $\text{angle\_osc} = \cos(b_t-r_t)$, and the \verb|circularAngleMean| argument indicates that the circular-circular regression link function is to be used on the mean turning angle parameter as in Eq.\ \ref{eq:turtleMeanAngle}. Complete syntax details and reproducible code for this example can be found in the package vignette and supporting materials.
 For the ``transit'' state, pooled parameter estimates indicated step lengths increased with ocean surface current speed and as the bearing of movement aligned with ocean surface current direction (%$\beta^l_1=\Sexpr{round(as.numeric(turtle_miSum$Par$beta$step$est[,"mean_2:w:angle_osc"]),2)}, \text{95\% CI: } \Sexpr{round(as.numeric(turtle_miSum$Par$beta$step$lower[,"mean_2:w:angle_osc"]),2)}-\Sexpr{round(as.numeric(turtle_miSum$Par$beta$step$upper[,"mean_2:w:angle_osc"]),2)}$; 
-Fig.\ \ref{fig:turtleResults}). The estimated wrapped Cauchy distribution for turning angle had mean angles $(\mu^\phi_t)$ biased towards the direction of ocean surface currents for each time step $(\beta^\phi=\Sexpr{round(as.numeric(turtle_miSum$Par$beta$angle$est[,"mean_2:d"]),2)}, \text{95\% CI: } \Sexpr{round(as.numeric(turtle_miSum$Par$beta$angle$lower[,"mean_2:d"]),2)}-\Sexpr{round(as.numeric(turtle_miSum$Par$beta$angle$upper[,"mean_2:d"]),2)})$, with concentration parameter $\rho^\phi_2=\Sexpr{round(as.numeric(turtle_miSum$Par$real$angle$est["concentration","state 2"]),2)}$ (95\% CI: \Sexpr{round(as.numeric(turtle_miSum$Par$real$angle$lower["concentration","state 2"]),2)}$-$\Sexpr{round(as.numeric(turtle_miSum$Par$real$angle$upper["concentration","state 2"]),2)}) indicating turning angles were concentrated at $\mu^\phi_t$. Thus movement during the ``transit'' state appears to strongly follow ocean surface currents% (mean $\text{angle\_osc}=\Sexpr{round(mean(turtle_miSum$data$angle_osc[which(turtle_miSum$Par$states==2)]),2)},\text{SD}=\Sexpr{round(sd(turtle_miSum$data$angle_osc[which(turtle_miSum$Par$states==2)]),2)}$), 
+Fig.\ \ref{fig:turtleResults}). The estimated wrapped Cauchy distribution for turning angle had mean angles $(\mu_t)$ 
+biased towards the direction of ocean surface currents for each time step%$(\beta^\phi=\Sexpr{round(as.numeric(turtle_miSum$Par$beta$angle$est[,"mean_2:d"]),2)}, \text{95\% CI: } \Sexpr{round(as.numeric(turtle_miSum$Par$beta$angle$lower[,"mean_2:d"]),2)}-\Sexpr{round(as.numeric(turtle_miSum$Par$beta$angle$upper[,"mean_2:d"]),2)})$
+, with concentration parameter $\rho=\Sexpr{round(as.numeric(turtle_miSum$Par$real$angle$est["concentration","state 2"]),2)}$ (95\% CI: \Sexpr{round(as.numeric(turtle_miSum$Par$real$angle$lower["concentration","state 2"]),2)}$-$\Sexpr{round(as.numeric(turtle_miSum$Par$real$angle$upper["concentration","state 2"]),2)}) indicating turning angles were highly concentrated around $\mu_t$. Thus movement during the ``transit'' state appears to strongly follow ocean surface currents% (mean $\text{angle\_osc}=\Sexpr{round(mean(turtle_miSum$data$angle_osc[which(turtle_miSum$Par$states==2)]),2)},\text{SD}=\Sexpr{round(sd(turtle_miSum$data$angle_osc[which(turtle_miSum$Par$states==2)]),2)}$), 
 , while movement during the ``foraging'' state exhibited shorter step lengths %$(\mu^l_1=\Sexpr{round(as.numeric(turtle_miSum$Par$real$step$est["mean","state 1"]),0)}{\text m}, \text{95\% CI: } \Sexpr{round(as.numeric(turtle_miSum$Par$real$step$lower["mean","state 1"]),0)}-\Sexpr{round(as.numeric(turtle_miSum$Par$real$step$upper["mean","state 1"]),0)})$ 
 perpendicular to ocean surface currents %(mean $\text{angle\_osc}=\Sexpr{round(mean(turtle_miSum$data$angle_osc[which(turtle_miSum$Par$states==1)]),2)},\text{SD}=\Sexpr{round(sd(turtle_miSum$data$angle_osc[which(turtle_miSum$Par$states==1)]),2)}$)
 with no directional persistence% $(\rho^\phi_1=\Sexpr{round(as.numeric(turtle_miSum$Par$real$angle$est["concentration","state 1"]),2)})$
