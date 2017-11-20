@@ -29,7 +29,7 @@
 #' or \code{\link{MIfitHMM}}.
 #' @param centroids List where each element is a data frame containing the x-coordinates ('x'), y-coordinates ('y'), and times (with user-specified name, e.g., `time') for centroids (i.e., dynamic activity centers where the coordinates can change over time)
 #' from which distance and angle covariates will be calculated based on the location data. If any centroids are specified, then \code{data} must include a column indicating the time of each observation, and this column name must match the corresponding user-specified 
-#' name of the time column in \code{centroids} (e.g. `time'). If no list names are provided, then generic names are generated 
+#' name of the time column in \code{centroids} (e.g. `time'). Times can be numeric or POSIXt.  If no list names are provided, then generic names are generated 
 #' for the distance and angle covariates (e.g., 'centroid1.dist', 'centroid1.angle', 'centroid2.dist', 'centroid2.angle'); otherwise the covariate names are derived from the list names
 #' of \code{centroids} as \code{paste0(rep(names(centroids),each=2),c(".dist",".angle"))}. As with covariates identified in \code{angleCovs}, note that the angle covariates for each centroid are calculated relative to 
 #' the previous movement direction (instead of standard directions relative to the x-axis); this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
@@ -295,7 +295,7 @@ prepData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
         if(!all(c("x","y") %in% colnames(centroids[[j]]))) stop("centroids must include 'x' (x-coordinate) and 'y' (y-coordinate) columns")
         if(any(is.na(centroids[[j]]))) stop("centroids cannot contain missing values")
         timeName <- colnames(centroids[[j]])[which(!(colnames(centroids[[j]]) %in% c("x","y")))]
-        if(!(timeName %in% names(data))) stop("when centroids is specified data must include ",timeName)
+        if(!(timeName %in% names(data))) stop("data must include '",timeName,"' column")
         if(!all(data[,timeName] %in% centroids[[j]][,timeName])) stop("centroids ",timeName," does not span data; each observation time must have a corresponding entry in centroids")
         if(is.null(names(centroids[j]))) centroidNames <- c(centroidNames,paste0("centroid",rep(j,each=2),".",c("dist","angle")))
         else centroidNames <- c(centroidNames,paste0(rep(names(centroids[j]),each=2),".",c("dist","angle")))
