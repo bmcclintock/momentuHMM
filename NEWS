@@ -1,8 +1,8 @@
-momentuHMM 1.3.0 2017-11-16
+momentuHMM 1.3.0 2017-11-20
 -----------------
 NEW FEATURES
 
-* Dynamic activity centers (i.e., those with coordinates that can change over time) can now be handled via the centroids argument in prepData and simData
+* Dynamic activity centers (i.e., those with coordinates that can change over time) can now be handled via the centroids argument in prepData and simData. An example based on the group dynamic model of Langrock et al. (2014) has been added to the vignette.
 
 * initialPosition argument in simData can now be specified as a list indicating the initial position for each individual
 
