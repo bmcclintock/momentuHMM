@@ -7,7 +7,6 @@
 \usepackage{setspace}
 \usepackage{natbib}
 \setcitestyle{aysep={}}
-\usepackage{adjustbox}
 \usepackage[labelfont=bf,labelsep=period,font={small,sl}]{caption}
 \usepackage{amsthm}
 \usepackage{epsfig}
@@ -109,7 +108,7 @@ concordance=TRUE
 \textbf{3.} %After providing a brief introduction to HMMs for telemetry data, 
 After providing an overview of the main features of the package, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples. These include models for cyclical movement patterns of African elephants, foraging trips of northern fur seals and southern elephant seals, loggerhead turtle movements relative to ocean surface currents, and grey seal movements among three activity centres.
 \\
-\textbf{4.} \verb|momentuHMM| considerably extends the capabilities of existing HMM software while accounting for common challenges associated with telemetery data. It therefore facilitates more realistic hypothesis-driven animal movement analyses that have hitherto been largely inaccessible to non-statisticians.  While motivated by telemetry data, the package can be used for analyzing any type of data that is amenable to HMMs. Practitioners interested in additional features are encouraged to contact the authors. %This article describes \verb|momentuHMM| version \Sexpr{installed.packages()["momentuHMM","Version"]}.
+\textbf{4.} \verb|momentuHMM| considerably extends the capabilities of existing HMM software while accounting for common challenges associated with telemetry data. It therefore facilitates more realistic hypothesis-driven animal movement analyses that have hitherto been largely inaccessible to non-statisticians.  While motivated by telemetry data, the package can be used for analyzing any type of data that is amenable to HMMs. Practitioners interested in additional features are encouraged to contact the authors. %This article describes \verb|momentuHMM| version \Sexpr{installed.packages()["momentuHMM","Version"]}.
 \\
 
 \noindent \textbf{Key-words} biologging, biotelemetry, \verb|crawl|, \verb|moveHMM|, state-space model, state-switching
