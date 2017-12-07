@@ -169,11 +169,11 @@ pseudoRes <- function(m)
           if(zeroInflation & !oneInflation){
             pgenMat[genInd,state] <- ifelse(data[[j]][genInd]==0,
                                       zeromass, # if gen==0
-                                      (1-zeromass)*do.call(Fun[[j]],genArgs)) # if gen != 0
+                                      zeromass + (1-zeromass)*do.call(Fun[[j]],genArgs)) # if gen != 0
           } else if(oneInflation & !zeroInflation){
             pgenMat[genInd,state] <- ifelse(data[[j]][genInd]==1,
-                                      onemass, # if gen==0
-                                      (1-onemass)*do.call(Fun[[j]],genArgs)) # if gen != 1          
+                                      onemass, # if gen==1
+                                      onemass + (1-onemass)*do.call(Fun[[j]],genArgs)) # if gen != 1           
           } else {
             pgenMat[genInd,state][data[[j]][genInd]==0] <- zeromass[data[[j]][genInd]==0]
             pgenMat[genInd,state][data[[j]][genInd]==1] <- (1.-zeromass[data[[j]][genInd]==1]) * onemass[data[[j]][genInd]==1]
