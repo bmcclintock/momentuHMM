@@ -76,6 +76,14 @@ plotPR <- function(m, lag.max = NULL)
       segments(x,rep(limInf-5,length(ind)),x,y,col="red")
     }
     
+    # add segments for one inflation
+    if(m$conditions$oneInflation[[i]]) {
+      ind <- which(m$data[[i]]==1)
+      x <- q$x[ind]
+      y <- q$y[ind]
+      segments(x,rep(limInf-5,length(ind)),x,y,col="red")
+    }
+    
     abline(0,1,lwd=2)
     
     # ACF functions
