@@ -801,7 +801,7 @@ The three fitted model can be compared with \verb|AIC(m1,m2,m3)|, which overwhel
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=\textwidth]{plot_sesResults2}
+  \includegraphics[width=\textwidth]{plot_sesResults2.png}
   \caption{The 15 elephant seal tracks, colored by the most likely state sequence.}
   \label{fig:sesTracks}
 \end{figure}

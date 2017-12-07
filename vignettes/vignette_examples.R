@@ -23,7 +23,7 @@ save(activityBudgets,file=paste0(getwd(),"/vignette_inputs.RData"))
 #satPlotStates<-plotSat(as.data.frame(latlongDat),zoom=8,location=c(median(rawData$lon),median(rawData$lat)),ask=FALSE,return=TRUE,states=viterbi(m3),col=c("#009E73", "#F0E442"),stateNames=c("encamped","exploratory"))
 
 acfLag<-24*14
-pdf(file=paste0(getwd(),"/plot_elephantResults%03d.pdf"),onefile=FALSE)
+pdf(file=paste0(getwd(),"/plot_elephantResults%03d.pdf"),onefile=FALSE,width=5,height=5)
 plot(m3,ask=FALSE,plotCI=TRUE,covs=data.frame(hour=12))
 acf(pr[["stepRes"]], lag.max = acfLag, na.action = na.pass, xlab="Lag (hours)", main = "")
 acf(elephantData$step,na.action=na.pass,lag=acfLag,main="",xlab="Lag (hours)")
@@ -32,7 +32,7 @@ dev.off()
 for(plt in seq(1,17)[-c(1,2,9,10,12,13,15,16,17)])
   unlink(paste0("plot_elephantResults0",ifelse(plt>9,"","0"),plt,".pdf"))
 
-png(filename="elephant_plotSat.png",width=5,height=5,units="in",res=90)
+png(filename="elephant_plotSat.png",width=5,height=5,units="in",res=80)
 plotSat(data.frame(x=rawData$lon,y=rawData$lat),zoom=8,location=c(median(rawData$lon),median(rawData$lat)),ask=FALSE)
 dev.off()
 
@@ -48,7 +48,7 @@ nfsTimeInStates<-nfsFits$miSum$Par$timeInStates
 
 append.RData(nfsTimeInStates,file=paste0(getwd(),"/vignette_inputs.RData"))
 
-pdf(file=paste0(getwd(),"/plot_nfsResults.pdf"))
+pdf(file=paste0(getwd(),"/plot_nfsResults.pdf"),width=5,height=5)
 plot(nfsFits,ask=FALSE)
 dev.off()
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
@@ -200,7 +200,7 @@ library(maps) # for map plots
 library(mapdata) # for map plots
 library(marmap) # to plot bathymetry
 library(sp) # for degAxis
-pdf(file=paste0(getwd(),"/plot_sesResults2.pdf"),width=12,height=6)
+png(file=paste0(getwd(),"/plot_sesResults2.png"),width=12,height=6,units="in",res=80)
 plot(data$x, data$y, axes=FALSE, xlab="longitude", ylab="latitude", col="white")
 degAxis(1)
 degAxis(2)
