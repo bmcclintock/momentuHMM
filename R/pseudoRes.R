@@ -175,9 +175,9 @@ pseudoRes <- function(m)
                                       onemass, # if gen==1
                                       onemass + (1-onemass)*do.call(Fun[[j]],genArgs)) # if gen != 1           
           } else {
-            pgenMat[genInd,state][data[[j]][genInd]==0] <- zeromass[data[[j]][genInd]==0]
-            pgenMat[genInd,state][data[[j]][genInd]==1] <- (1.-zeromass[data[[j]][genInd]==1]) * onemass[data[[j]][genInd]==1]
-            pgenMat[genInd,state][data[[j]][genInd]>0 & data[[j]][genInd]<1] <- (1.-zeromass[data[[j]][genInd]>0 & data[[j]][genInd]<1]) * (1.-onemass[data[[j]][genInd]>0 & data[[j]][genInd]<1]) * do.call(Fun[[j]],genArgs)[data[[j]][genInd]>0 & data[[j]][genInd]<1] # if gen !=0 and gen!=1
+            pgenMat[genInd,state][data[[j]][genInd]==0] <- zeromass[data[[j]][genInd]==0] # if gen==0
+            pgenMat[genInd,state][data[[j]][genInd]==1] <- onemass[data[[j]][genInd]==1]  # if gen==1
+            pgenMat[genInd,state][data[[j]][genInd]>0 & data[[j]][genInd]<1] <- zeromass[data[[j]][genInd]>0 & data[[j]][genInd]<1] + onemass[data[[j]][genInd]>0 & data[[j]][genInd]<1] + (1.-zeromass[data[[j]][genInd]>0 & data[[j]][genInd]<1]-onemass[data[[j]][genInd]>0 & data[[j]][genInd]<1]) * do.call(Fun[[j]],genArgs)[data[[j]][genInd]>0 & data[[j]][genInd]<1] # if gen !=0 and gen!=1
           }
         }
         else {

@@ -131,22 +131,41 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,nbSta
   a<-bounds[,1]
   b<-bounds[,2]
   
+  zeroInflation <- any(grepl("zeromass",rownames(bounds)))
+  oneInflation <- any(grepl("onemass",rownames(bounds)))
+  
   piInd<-(abs(a- -pi)<1.e-6 & abs(b - pi)<1.e-6)
   ind1<-which(piInd)
-  ind2<-which(!piInd)
+  zoInd <- as.logical((grepl("zeromass",rownames(bounds)) | grepl("onemass",rownames(bounds)))*(zeroInflation*oneInflation))
+  ind2<-which(zoInd)
+  ind3<-which(!piInd & !zoInd)
   
   XB <- p <- getXB(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,nbStates,nc,meanind)
   
   if(length(ind1) & !circularAngleMean)
     p[ind1,] <- (2*atan(XB[ind1,]))
   
-  ind21<-ind2[which(is.finite(a[ind2]) & is.infinite(b[ind2]))]
-  ind22<-ind2[which(is.finite(a[ind2]) & is.finite(b[ind2]))]
-  ind23<-ind2[which(is.infinite(a[ind2]) & is.finite(b[ind2]))]
+  if(length(ind2)){
+    for(j in 1:nbStates){
+      zoParInd <- which(grepl(paste0("zeromass_",j),rownames(bounds)) | grepl(paste0("onemass_",j),rownames(bounds)))
+      zoPar <- rbind(XB[zoParInd,,drop=FALSE],rep(0,ncol(XB)))
+      expzo <- exp(zoPar)
+      zo <- expzo/rep(colSums(expzo),each=3)
+      for(i in which(!is.finite(colSums(zo)))){
+        tmp <- exp(Brobdingnag::as.brob(zoPar[,i]))
+        zo[,i] <- as.numeric(tmp/Brobdingnag::sum(tmp))
+      }
+      p[zoParInd,] <- zo[-3,]
+    }
+  }
   
-  p[ind21,] <- (exp(XB[ind21,,drop=FALSE])+a[ind21])
-  p[ind22,] <- ((b[ind22]-a[ind22])*boot::inv.logit(XB[ind22,,drop=FALSE])+a[ind22])
-  p[ind23,] <- -(exp(-XB[ind23,,drop=FALSE]) - b[ind23])
+  ind31<-ind3[which(is.finite(a[ind3]) & is.infinite(b[ind3]))]
+  ind32<-ind3[which(is.finite(a[ind3]) & is.finite(b[ind3]))]
+  ind33<-ind3[which(is.infinite(a[ind3]) & is.finite(b[ind3]))]
+  
+  p[ind31,] <- (exp(XB[ind31,,drop=FALSE])+a[ind31])
+  p[ind32,] <- ((b[ind32]-a[ind32])*boot::inv.logit(XB[ind32,,drop=FALSE])+a[ind32])
+  p[ind33,] <- -(exp(-XB[ind33,,drop=FALSE]) - b[ind33])
   
   if(any(p<a | p>b))
     stop("Scaling error. Check initial values and bounds.")
@@ -154,7 +173,7 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,nbSta
   if(k) {
     p <- p[k]
   } else if(DMind) {
-    p <- matrix(p,length(ind1)+length(ind2),nbObs)
+    p <- matrix(p,length(ind1)+length(ind2)+length(ind3),nbObs)
   }
   return(p)
 }   

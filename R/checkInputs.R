@@ -1,4 +1,4 @@
-checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames)
+checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames,checkInflation=FALSE)
 {
   distnames<-names(dist)
   
@@ -59,6 +59,14 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
       if(zeroInflation[[i]]) error<-paste0(error," -- zero-mass parameters should be included")
       if(oneInflation[[i]]) error<-paste0(error," -- one-mass parameters should be included")
       stop(error)
+    }
+    if(checkInflation & zeroInflation[[i]] & oneInflation[[i]]){
+      ztmp <- p$bounds[[i]][(parSize[[i]] * nbStates)-nbStates*oneInflation[[i]]-nbStates:1+1,,drop=FALSE]
+      if(any(ztmp[,1]!=0 | ztmp[,2]!=1)) warning("when both zero- and one-inflation are included, then userBounds for zeromass parameters are ignored")
+      otmp <- p$bounds[[i]][(parSize[[i]] * nbStates)-nbStates:1+1,,drop=FALSE]
+      if(any(otmp[,1]!=0 | otmp[,2]!=1)) warning("when both zero- and one-inflation are included, then userBounds for onemass parameters are ignored")
+      p$bounds[[i]][(parSize[[i]] * nbStates)-nbStates*oneInflation[[i]]-nbStates:1+1,1] <- p$bounds[[i]][(parSize[[i]] * nbStates)-nbStates:1+1,1] <- 0
+      p$bounds[[i]][(parSize[[i]] * nbStates)-nbStates*oneInflation[[i]]-nbStates:1+1,2] <- p$bounds[[i]][(parSize[[i]] * nbStates)-nbStates:1+1,2] <- 1
     }
     #if(!is.null(DM[[i]]) !is.null(userBounds[[i]])) stop("either userBounds$",i," or DM$",i," must be NULL")
   }

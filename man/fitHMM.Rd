@@ -174,7 +174,8 @@ the global optimum of the likelihood function if the initial parameters are poor
 \item If \code{DM} is specified for a particular data stream, then the initial values are specified on 
 the working (i.e., beta) scale of the parameters. The working scale of each parameter is determined by the link function used.
 If a parameter P is bound by (0,Inf) then the working scale is the log(P) scale.  If the parameter bounds are (-pi,pi) then the working 
-scale is tan(P/2) unless circular-circular regression is used. Otherwise if the parameter bounds are finite then logit(P) is the working scale.  
+scale is tan(P/2) unless circular-circular regression is used. Otherwise if the parameter bounds are finite then logit(P) is the working scale. However, when both 
+zero- and one-inflation are included, then a multinomial logit link is used because the sum of the zeromass and onemass probability parameters cannot exceed 1.
 The function \code{\link{getParDM}} is intended to help with obtaining initial values on the working scale when specifying a design matrix and other 
 parameter constraints (see example below). When circular-circular regression is specified using \code{circularAngleMean}, the working scale 
 for the mean turning angle is not as easily interpretable, but the 
