@@ -524,7 +524,7 @@ fitHMM <- function(data,nbStates,dist,
     if(is.null(DM[[i]])){
       if(zeroInflation[[i]]){
         # check that zero-mass is in the open interval (0,1)
-        zm0 <- Par0[[i]][(length(Par0[[i]])-nbStates+1):length(Par0[[i]])]
+        zm0 <- Par0[[i]][(length(Par0[[i]])-nbStates*oneInflation[[i]]-nbStates+1):(length(Par0[[i]])-nbStates*oneInflation[[i]])]
         zm0[which(zm0==0)] <- 1e-8
         zm0[which(zm0==1)] <- 1-1e-8
         Par0[[i]][(length(Par0[[i]])-nbStates*oneInflation[[i]]-nbStates+1):(length(Par0[[i]])-nbStates*oneInflation[[i]])] <- zm0
