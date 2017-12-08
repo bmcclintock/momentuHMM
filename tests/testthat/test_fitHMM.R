@@ -233,7 +233,7 @@ test_that("equivalent models with and without dummy covariate match",{
   momentuHMM_nocov<-fitHMM(data=data,nbStates=nbStates,Par=Par0,
                            beta0=par0$beta0[1,,drop=FALSE],delta0=par0$delta0,DM=DM,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
   DM1<-list(step=list(mean=~cov2,sd=~cov2),angle=list(mean=~cov2,concentration=~cov2))
-  Par0_1<-getParDM(data.frame(cov2=0),nbStates,simPar$dist,par0$Par,DM=DM1,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
+  Par0_1<-getParDM(data.frame(cov2=pi/2),nbStates,simPar$dist,par0$Par,DM=DM1,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
   momentuHMM_cov1<-fitHMM(data=data,nbStates=nbStates,Par=Par0_1,formula=~cov2,
                           beta0=rbind(par0$beta0[1,,drop=FALSE],c(0,0)),delta0=par0$delta0,DM=DM1,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
   DM2<-list(step=matrix(c(1,"cov2",0,0,0,0,0,0,
@@ -244,7 +244,7 @@ test_that("equivalent models with and without dummy covariate match",{
                            0,"cov2",0,0,0,0,
                            0,0,1,"cov2",0,0,
                            0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE))
-  Par0_2<-getParDM(data.frame(cov2=0),nbStates,simPar$dist,par0$Par,DM=DM2,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
+  Par0_2<-getParDM(data.frame(cov2=pi/2),nbStates,simPar$dist,par0$Par,DM=DM2,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
   momentuHMM_cov2<-fitHMM(data=data,nbStates=nbStates,Par=Par0_2,formula=~cov2,
                           beta0=rbind(par0$beta0[1,,drop=FALSE],c(0,0)),delta0=par0$delta0,DM=DM2,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
   

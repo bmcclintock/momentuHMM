@@ -189,6 +189,20 @@ getParDM<-function(data=data.frame(),nbStates,dist,
   }
   inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames=NULL)
   
+  for(i in distnames){
+    if(inputs$circularAngleMean[[i]]){
+      for(j in names(tempCovs)){
+        if(tempCovs[[j]]==0){
+          if(is.list(inputs$DM[[i]])){
+            if(any(grepl(j,inputs$DM[[i]]$mean))) stop("covariates for angle mean parameters cannot be exactly zero")
+          } else {
+            if(any(grepl(j,inputs$DM[[i]][1:nbStates,,drop=FALSE]))) stop("covariates for angle mean parameters cannot be exactly zero")
+          }
+        }
+      }
+    }
+  }
+  
   DMinputs<-getDM(tempCovs,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)
   fullDM <- DMinputs$fullDM
   if(length(data))
@@ -196,6 +210,20 @@ getParDM<-function(data=data.frame(),nbStates,dist,
   else DMind <- DMinputs$DMind
     cons <- DMinputs$cons
   workcons <- DMinputs$workcons
+  
+  nc <- meanind <- vector('list',length(distnames))
+  names(nc) <- names(meanind) <- distnames
+  for(i in distnames){
+    nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
+    if(inputs$circularAngleMean[[i]]) meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+  }
+  
+  parCount<- lapply(fullDM,ncol)
+  for(i in distnames[unlist(inputs$circularAngleMean)]){
+    parCount[[i]] <- parCount[[i]] - sum(colSums(nc[[i]][meanind[[i]],,drop=FALSE])>0)/2
+  }
+  #parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
+  #names(parindex) <- distnames
   
   wpar <- Par
   for(i in distnames){
@@ -259,10 +287,11 @@ getParDM<-function(data=data.frame(),nbStates,dist,
         if(length(ind1)){
           if(inputs$estAngleMean[[i]]){
             
-            p<-numeric(ncol(fullDM[[i]]))
-            meanind<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
+            p<-numeric(parCount[[i]])
             
             if(!inputs$circularAngleMean[[i]]) {
+              
+              meanind<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
               
               asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind1,meanind,drop=FALSE])
               adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
@@ -290,42 +319,36 @@ getParDM<-function(data=data.frame(),nbStates,dist,
               
               meanind1<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
               meanind2<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
+              #if(length(meanind2)) meanind2 <- sort(c(meanind2,meanind2-1))
               xmat <- fullDM[[i]][gbInd,,drop=FALSE][meanind1,meanind2,drop=FALSE]
-              nc<-apply(xmat,1:2,function(x) !all(unlist(x)==0))
+              #nc<-apply(xmat,1:2,function(x) !all(unlist(x)==0))
               
-              solveatan2<-function(x,theta,covs,cons,workcons){
-                Xvec <- x^cons+workcons
-                XB<-rep(0,length(meanind1))
-                XB1<-XB2<-rep(0,length(meanind1))
-                for(i in 1:length(meanind1)){
-                  ncind <- which(nc[meanind1[i],])
-                  XB1[i]<-sin(covs[i,ncind])%*%Xvec[ncind]
-                  XB2[i]<-cos(covs[i,ncind])%*%Xvec[ncind]
-                  XB[i] <- atan2(XB1[i],1+XB2[i])
-                }
-                c(abs(theta - XB),rep(0,length(x)-length(theta)))
+              solveatan2<-function(x,theta,covs,cons,workcons,nbStates,nc,meanind,oparms){
+                #Xvec <- x^cons+workcons
+                XB<-getXB(covs,1,c(x,rep(1,oparms)),cons,workcons,TRUE,TRUE,nbStates,nc,meanind)[meanind,]
+                abs(theta - XB)
               }
 
-              if(length(meanind1)) p[meanind2] <- nleqslv::nleqslv(x=rep(1,ncol(xmat)),fn=solveatan2,theta=par[meanind1],covs=xmat,cons=cons[[i]][meanind2],workcons=workcons[[i]][meanind2],control=list(allowSingular=TRUE))$x
+              if(length(meanind1)) p[1:(length(meanind2)/2)] <- nleqslv::nleqslv(x=rep(1,length(meanind2)/2),fn=solveatan2,theta=par[meanind1],covs=fullDM[[i]],cons=cons[[i]],workcons=workcons[[i]],nbStates=nbStates,nc=nc[[i]],meanind=meanind[[i]],oparms=parCount[[i]]-length(meanind2)/2,control=list(allowSingular=TRUE))$x[1:(length(meanind2)/2)]
               
               meanind<-which((apply(fullDM[[i]][nbStates+1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
               
               if(length(ind21)){
                 asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind21,meanind,drop=FALSE])
                 adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-                p[meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% log(par[ind21]-a[ind21]))-workcons[[i]][meanind])^(1/cons[[i]][meanind])
+                p[meanind-length(meanind2)/2] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% log(par[ind21]-a[ind21]))-workcons[[i]][meanind-length(meanind2)/2])^(1/cons[[i]][meanind-length(meanind2)/2])
               }
               
               if(length(ind22)){
                 asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind22,meanind,drop=FALSE])
                 adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-                p[meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][meanind])^(1/cons[[i]][meanind])
+                p[meanind-length(meanind2)/2] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][meanind-length(meanind2)/2])^(1/cons[[i]][meanind-length(meanind2)/2])
               }
               
               if(length(ind23)){
                 asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind23,meanind,drop=FALSE])
                 adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-                p[meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23])))-workcons[[i]][meanind])^(1/cons[[i]][meanind])
+                p[meanind-length(meanind2)/2] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23])))-workcons[[i]][meanind-length(meanind2)/2])^(1/cons[[i]][meanind-length(meanind2)/2])
               }
             
             }
