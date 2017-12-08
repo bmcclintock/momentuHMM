@@ -100,7 +100,19 @@ CIbeta <- function(m,alpha=0.95)
   #  }
   #}
   
-  parindex <- c(0,cumsum(unlist(lapply(fullDM,ncol)))[-length(fullDM)])
+  nc <- meanind <- vector('list',length(distnames))
+  names(nc) <- names(meanind) <- distnames
+  for(i in distnames){
+    nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
+    if(m$conditions$circularAngleMean[[i]]) meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+  }
+  
+  tmPar <- lapply(m$mle[distnames],function(x) c(t(x)))
+  parCount<- lapply(fullDM,ncol)
+  for(i in distnames[unlist(m$conditions$circularAngleMean)]){
+    parCount[[i]] <- parCount[[i]] - sum(colSums(nc[[i]][meanind[[i]],,drop=FALSE])>0)/2
+  }
+  parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
   names(parindex) <- distnames
   
   # define appropriate quantile
@@ -110,8 +122,8 @@ CIbeta <- function(m,alpha=0.95)
   
   Par <- list()
   for(i in distnames){
-    est <- wpar[parindex[[i]]+1:ncol(fullDM[[i]])]^m$conditions$cons[[i]]+m$conditions$workcons[[i]]
-    var <- ((m$conditions$cons[[i]]*(wpar[parindex[[i]]+1:ncol(fullDM[[i]])]^(m$conditions$cons[[i]]-1)))^2)*(diag(Sigma)[parindex[[i]]+1:ncol(fullDM[[i]])])
+    est <- wpar[parindex[[i]]+1:parCount[[i]]]^m$conditions$cons[[i]]+m$conditions$workcons[[i]]
+    var <- ((m$conditions$cons[[i]]*(wpar[parindex[[i]]+1:parCount[[i]]]^(m$conditions$cons[[i]]-1)))^2)*(diag(Sigma)[parindex[[i]]+1:parCount[[i]]])
     # if negative variance, replace by NA
     var[which(var<0)] <- NA
     
@@ -120,14 +132,16 @@ CIbeta <- function(m,alpha=0.95)
     wlower <- est-quantSup*wse
     wupper <- est+quantSup*wse
     
-    Par[[i]]<-beta_parm_list(matrix(est,ncol=length(est),byrow=T),matrix(wse,ncol=length(est),byrow=T),matrix(wlower,ncol=length(est),byrow=T),matrix(wupper,ncol=length(est),byrow=T),m$conditions$fullDM[[i]])
+    pnames <- colnames(fullDM[[i]])
+    if(m$conditions$circularAngleMean[[i]]) pnames <- unique(gsub("cos","",gsub("sin","",pnames)))
+    Par[[i]]<-beta_parm_list(matrix(est,ncol=length(est),byrow=T),matrix(wse,ncol=length(est),byrow=T),matrix(wlower,ncol=length(est),byrow=T),matrix(wupper,ncol=length(est),byrow=T),pnames)
 
   }
 
   # group CIs for t.p. coefficients
   if(nbStates>1){
-    est <- wpar[tail(cumsum(unlist(lapply(fullDM,ncol))),1)+1:((nbCovs+1)*nbStates*(nbStates-1))]
-    var <- diag(Sigma)[tail(cumsum(unlist(lapply(fullDM,ncol))),1)+1:((nbCovs+1)*nbStates*(nbStates-1))]
+    est <- wpar[tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1))]
+    var <- diag(Sigma)[tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1))]
     
     # if negative variance, replace by NA
     var[which(var<0)] <- NA
@@ -188,9 +202,9 @@ CIbeta <- function(m,alpha=0.95)
 beta_parm_list<-function(est,se,lower,upper,m){
   Par <- list(est=est,se=se,lower=lower,upper=upper)
   rownames(Par$est) <- rownames(Par$se) <- rownames(Par$lower) <- rownames(Par$upper) <- "[1,]"
-  colnames(Par$est) <- colnames(m)
-  colnames(Par$se) <- colnames(m)
-  colnames(Par$lower) <- colnames(m)
-  colnames(Par$upper) <- colnames(m)
+  colnames(Par$est) <- m
+  colnames(Par$se) <- m
+  colnames(Par$lower) <- m
+  colnames(Par$upper) <- m
   Par
 }

@@ -110,13 +110,27 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   # inverse of Hessian
   Sigma <- ginv(m$mod$hessian)
   
+  nc <- meanind <- vector('list',length(distnames))
+  names(nc) <- names(meanind) <- distnames
+  for(i in distnames){
+    nc[[i]] <- apply(m$conditions$fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
+    if(m$conditions$circularAngleMean[[i]]) meanind[[i]] <- which((apply(m$conditions$fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+  }
+  
   tmPar <- lapply(m$mle[distnames],function(x) c(t(x)))
-  parindex <- c(0,cumsum(unlist(lapply(m$conditions$fullDM,ncol)))[-length(m$conditions$fullDM)])
+  parCount<- lapply(m$conditions$fullDM,ncol)
+  for(i in distnames[unlist(m$conditions$circularAngleMean)]){
+    parCount[[i]] <- parCount[[i]] - sum(colSums(nc[[i]][meanind[[i]],,drop=FALSE])>0)/2
+  }
+  parindex <- c(0,cumsum(unlist(parCount))[-length(m$conditions$fullDM)])
   names(parindex) <- distnames
+  
   for(i in distnames){
     if(!is.null(m$conditions$DM[[i]])){# & m$conditions$DMind[[i]]){
-      tmPar[[i]] <- m$mod$estimate[parindex[[i]]+1:ncol(m$conditions$fullDM[[i]])]
-      names(tmPar[[i]])<-colnames(m$conditions$fullDM[[i]])
+      tmPar[[i]] <- m$mod$estimate[parindex[[i]]+1:parCount[[i]]]
+      if(m$conditions$circularAngleMean[[i]]){
+        names(tmPar[[i]]) <- unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]]))))
+      } else names(tmPar[[i]])<-colnames(m$conditions$fullDM[[i]])
     } else{
       if(m$conditions$dist[[i]] %in% angledists)
         if(!m$conditions$estAngleMean[[i]])
@@ -139,27 +153,20 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   #DMinputs<-getDM(tempCovs,inputs$DM,m$conditions$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
   #fullDM<-DMinputs$fullDM
   
-  nc <- meanind <- vector('list',length(distnames))
-  names(nc) <- names(meanind) <- distnames
-  for(i in distnames){
-    nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(m$conditions$circularAngleMean[[i]]) meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
-  }
-  
   for(i in distnames){
     if(!m$conditions$DMind[[i]]){
-      par <- c(w2n(m$mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,fullDM,m$conditions$DMind,m$conditions$workcons,1,dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta)[[i]])
+      par <- c(w2n(m$mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean[i],m$conditions$stationary,m$conditions$cons,fullDM,m$conditions$DMind,m$conditions$workcons,1,dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta)[[i]])
     } else {
       par <- as.vector(t(m$mle[[i]]))
     }
     if(!(dist[[i]] %in% angledists) | (dist[[i]] %in% angledists & m$conditions$estAngleMean[[i]] & !m$conditions$Bndind[[i]])) {
-      Par[[i]] <- get_CI(m$mod$estimate,par,m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,m$conditions$circularAngleMean[[i]],nbStates,alpha,p$parNames[[i]],m$stateNames,nc[[i]],meanind[[i]])
+      Par[[i]] <- get_CI(m$mod$estimate,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,m$conditions$circularAngleMean[[i]],nbStates,alpha,p$parNames[[i]],m$stateNames,nc[[i]],meanind[[i]])
     } else {
       if(!m$conditions$estAngleMean[[i]])
-        Par[[i]] <- get_CI(m$mod$estimate,par[-c(1:nbStates)],m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,m$conditions$circularAngleMean[[i]],nbStates,alpha,p$parNames[[i]],m$stateNames,nc[[i]],meanind[[i]])
+        Par[[i]] <- get_CI(m$mod$estimate,par[-c(1:nbStates)],m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,m$conditions$circularAngleMean[[i]],nbStates,alpha,p$parNames[[i]],m$stateNames,nc[[i]],meanind[[i]])
       else {
         if(m$conditions$Bndind[[i]]){
-          Par[[i]] <- CI_angle(m$mod$estimate,par,m,parindex[[i]]+1:ncol(fullDM[[i]]),fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,m$conditions$circularAngleMean[[i]],nbStates,alpha,p$parNames[[i]],m$stateNames,nc[[i]],meanind[[i]])
+          Par[[i]] <- CI_angle(m$mod$estimate,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,m$conditions$circularAngleMean[[i]],nbStates,alpha,p$parNames[[i]],m$stateNames,nc[[i]],meanind[[i]])
         }
       }
     }
@@ -167,7 +174,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
 
   if(nbStates>1) {
     # identify parameters of interest
-    i2 <- tail(cumsum(unlist(lapply(fullDM,ncol))),1)+1
+    i2 <- tail(cumsum(unlist(parCount)),1)+1
     i3 <- i2+nbStates*(nbStates-1)*(nbCovs+1)-1
     wpar <- m$mle$beta
     quantSup <- qnorm(1-(1-alpha)/2)

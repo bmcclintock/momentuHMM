@@ -33,30 +33,36 @@ arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned 
   XB2.zeros();
   
   unsigned int nrindex = rindex.size();
+  unsigned int incr = (circularAngleMean) ? 2 : 1;
+  
+  NumericVector DMelem2;
+  unsigned int Xcount = 0;
   
   for(i=0; i<nrindex; i++){
-    for(j=0; j<nc; j++){
+    for(j=0; j<nc; j+=incr){
       if(cindex(rindex[i],j)){
         NumericVector DMelem = DM[j*nr+rindex[i]];
+        if(circularAngleMean) DMelem2 = DM[(j+1)*nr+rindex[i]];
         int DMsize = DMelem.size();
         for(k=0; k<nbObs; k++){
           if(DMsize>1){
             if(!circularAngleMean){
               XB(rindex[i],k) += DMelem[k] * Xvec[j];
             } else {
-              XB1(rindex[i],k) += sin(DMelem[k])*Xvec[j];
-              XB2(rindex[i],k) += cos(DMelem[k])*Xvec[j];
+              XB1(rindex[i],k) += DMelem[k]*Xvec[Xcount];
+              XB2(rindex[i],k) += DMelem2[k]*Xvec[Xcount];
             }
           } else {
             if(!circularAngleMean){
               XB(rindex[i],k) += DMelem[0] * Xvec[j];
             } else {
-              XB1(rindex[i],k) += sin(DMelem[0])*Xvec[j];
-              XB2(rindex[i],k) += cos(DMelem[0])*Xvec[j];
+              XB1(rindex[i],k) += DMelem[0]*Xvec[Xcount];
+              XB2(rindex[i],k) += DMelem2[0]*Xvec[Xcount];
             }
           }
         }
       }
+      Xcount += Xcount;
     }
   }
   if(circularAngleMean){

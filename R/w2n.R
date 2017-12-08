@@ -91,13 +91,17 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   else beta <- NULL
   
   distnames <- names(dist)
-  parindex <- c(0,cumsum(unlist(lapply(fullDM,ncol)))[-length(fullDM)])
+  parCount<- lapply(fullDM,ncol)
+  for(i in distnames[unlist(circularAngleMean)]){
+    parCount[[i]] <- parCount[[i]] - sum(colSums(nc[[i]][meanind[[i]],,drop=FALSE])>0)/2
+  }
+  parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
   names(parindex) <- names(fullDM)
 
   parlist<-list()
   
   for(i in distnames){
-    tmpwpar<-wpar[parindex[[i]]+1:ncol(fullDM[[i]])]
+    tmpwpar<-wpar[parindex[[i]]+1:parCount[[i]]]
     if(estAngleMean[[i]] & Bndind[[i]]){ 
       bounds[[i]][,1] <- -Inf
       bounds[[i]][which(bounds[[i]][,2]!=1),2] <- Inf

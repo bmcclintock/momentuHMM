@@ -166,14 +166,16 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
   
   for(i in distnames){
     #if(!is.null(DM[[i]])) {
-      tmpPar <- rep(0,ncol(DMinputs[[i]]))
       parmNames<-colnames(model$conditions$fullDM[[i]])
+      if(model$conditions$circularAngleMean[[i]]) parmNames <- unique(gsub("cos","",gsub("sin","",parmNames)))
       for(j in 1:length(model$stateNames)){
         for(k in p$parNames[[i]]){
           parmNames<-gsub(paste0(k,"_",j),paste0(k,"_",model$stateNames[j]),parmNames)
         }
       }
       newparmNames<-colnames(DMinputs[[i]])
+      if(circularAngleMean[[i]]) newparmNames <- unique(gsub("cos","",gsub("sin","",newparmNames)))
+      tmpPar <- rep(0,length(newparmNames))
       for(j in 1:length(stateNames)){
         for(k in p$parNames[[i]]){
           newparmNames<-gsub(paste0(k,"_",j),paste0(k,"_",stateNames[j]),newparmNames)
@@ -181,7 +183,8 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
       }
       if(any(newparmNames %in% parmNames))
         tmpPar[match(parmNames,newparmNames,nomatch=0)] <- ((model$CIbeta[[i]]$est-model$conditions$workcons[[i]])^(1/model$conditions$cons[[i]]))[parmNames %in% newparmNames]#model$CIbeta[[i]]$est[parmNames %in% newparmNames]
-      names(tmpPar)<-colnames(DMinputs[[i]])
+      if(circularAngleMean[[i]]) names(tmpPar) <- unique(gsub("cos","",gsub("sin","",colnames(DMinputs[[i]]))))
+      else names(tmpPar) <- colnames(DMinputs[[i]])
       Par[[i]] <- tmpPar
     #}
     if(is.null(DM[[i]])){
