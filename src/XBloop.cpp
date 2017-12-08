@@ -62,7 +62,7 @@ arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned 
           }
         }
       }
-      Xcount += Xcount;
+      Xcount += 1;
     }
   }
   if(circularAngleMean){
