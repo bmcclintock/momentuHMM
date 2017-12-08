@@ -810,7 +810,11 @@ fitHMM <- function(data,nbStates,dist,
   }
   
   # name columns and rows of MLEs
-  parindex <- c(0,cumsum(unlist(lapply(fullDM,ncol)))[-length(fullDM)])
+  parCount<- lapply(fullDM,ncol)
+  for(i in distnames[unlist(inputs$circularAngleMean)]){
+    parCount[[i]] <- parCount[[i]] - sum(colSums(nc[[i]][meanind[[i]],,drop=FALSE])>0)/2
+  }
+  parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
   names(parindex) <- distnames
   for(i in distnames){
     if(dist[[i]] %in% angledists)
@@ -822,9 +826,11 @@ fitHMM <- function(data,nbStates,dist,
       rownames(mle[[i]]) <- p$parNames[[i]]
       colnames(mle[[i]]) <- stateNames
     } else {
-      mle[[i]]<-matrix(wpar[parindex[[i]]+1:ncol(fullDM[[i]])],1)
+      mle[[i]]<-matrix(wpar[parindex[[i]]+1:parCount[[i]]],1)
       rownames(mle[[i]])<-"[1,]"
-      colnames(mle[[i]])<-colnames(fullDM[[i]])
+      if(inputs$circularAngleMean[[i]]){
+        colnames(mle[[i]]) <- unique(gsub(":cos","",gsub(":sin","",colnames(fullDM[[i]]))))
+      } else colnames(mle[[i]])<-colnames(fullDM[[i]])
       #if(is.null(names(mle[[i]]))) warning("No names for the regression coeffs were provided in DM$",i)
     }
   }
