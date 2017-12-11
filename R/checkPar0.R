@@ -1,5 +1,5 @@
 
-#' Check parameter length and order of a \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model
+#' Check parameter length and order for a \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model
 #' 
 #' Verify initial parameters (\code{Par0}, \code{beta0}, and \code{delta0}) are of correct length and print the parameters with labels based on \code{DM}, \code{formula}, and/or \code{formulaDelta}.  See \code{\link{fitHMM}} for 
 #' further argument details.
@@ -38,11 +38,11 @@ checkPar0 <- function(data,nbStates,dist,Par0,beta0=NULL,delta0=NULL,estAngleMea
 {
   
   m<-suppressMessages(fitHMM(data=data,nbStates=nbStates,dist=dist,
-                     Par0=Par0,beta0=beta0,delta0=delta0,
-                     estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
-                     formula=formula,formulaDelta=formulaDelta,stationary=stationary,
-                     DM=DM,cons=cons,userBounds=userBounds,workcons=workcons,fit=FALSE,
-                     stateNames=stateNames,fixPar=fixPar))
+                             Par0=Par0,beta0=beta0,delta0=delta0,
+                             estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
+                             formula=formula,formulaDelta=formulaDelta,stationary=stationary,
+                             DM=DM,cons=cons,userBounds=userBounds,workcons=workcons,fit=FALSE,
+                             stateNames=stateNames,fixPar=fixPar))
   
   inputs <- checkInputs(nbStates,dist,Par0,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,stateNames,checkInflation = TRUE)
   p <- inputs$p
@@ -103,14 +103,16 @@ checkPar0 <- function(data,nbStates,dist,Par0,beta0=NULL,delta0=NULL,estAngleMea
     
     if(!stationary){
       cat("\n")
-      cat("Initial distribution:\n")
-      cat("---------------------\n")
       m <- delta_bc(m)
       if(!length(attr(terms.formula(m$conditions$formulaDelta),"term.labels"))){
         tmp <- m$mle$delta[1,]
         rownames(tmp)<-NULL
+        cat("Initial distribution:\n")
+        cat("---------------------\n")
         print(tmp)
       } else {
+        cat("Regression coeffs for the initial distribution:\n")
+        cat("---------------------------------------------------\n")
         print(m$CIbeta$delta$est)
       }
     }

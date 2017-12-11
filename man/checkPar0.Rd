@@ -2,7 +2,7 @@
 % Please edit documentation in R/checkPar0.R
 \name{checkPar0}
 \alias{checkPar0}
-\title{Check parameter length and order of a \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model}
+\title{Check parameter length and order for a \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model}
 \usage{
 checkPar0(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
