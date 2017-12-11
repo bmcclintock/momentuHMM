@@ -174,10 +174,10 @@ One of the key features of \verb|momentuHMM| is the ability to specify an unlimi
 The state transition probabilities $({\mathbf \Gamma}^{(t)})$ and initial distribution $({\boldsymbol \delta}^{(0)})$ can also be modelled as functions of covariates, using a multinomial logit link, as described e.g.\ by \cite{MichelotEtAl2016}. Permissable R classes for covariates include \verb|numeric|, \verb|integer|, or \verb|factor|. Factors can be particularly useful for specifying models with individual- or group-level (e.g. sex or age class) effects on state transition and probability distribution parameters. Spatio-temporal covariates can also be of classes \verb|rasterLayer|, \verb|rasterStack|, or \verb|rasterBrick| \citep{Hijmans2016}, in which case \verb|momentuHMM| automatically extracts the appropriate covariate values from the raster based on the time and location of each observation (see example in section \ref{sec:turtle}).
 
 \begin{table}
-  \caption{\label{tab:pdfs} Data stream $(z)$ probability distributions, natural parameters, and default link functions for covariate modelling. Probability distributions with positive support can be zero-inflated (with additional zero-mass parameters), while the beta distribution can be zero- and one-inflated (with additional one-mass parameters). If user-specified bounds are provided, then custom link functions are used instead of the defaults (see package documentation for further details). If circular-circular regression is specified for the mean of angular distributions (``vm'' and ``wrpcauchy''), then the link function described in \cite{DuchesneEtAl2015} is used. Users seeking additional probability distributions are encouraged to contact the authors.}
+  \caption{\label{tab:pdfs} Data stream $(z)$ probability distributions, natural parameters, and default link functions for covariate modelling. Probability distributions with positive support can be zero-inflated (with additional zero-mass parameters), while the beta distribution can be zero- and/or one-inflated (with additional one-mass parameters). If user-specified bounds are provided, then custom link functions are used instead of the defaults (see package documentation for further details). If both zero- and one-inflation are included, then a multinomial logit link is used because these probabilities must sum to less than one (in this case, any user-specified bounds for the zero- and one-inflation parameters are ignored). If circular-circular regression is specified for the mean of angular distributions (``vm'' and ``wrpcauchy''), then the link function described in \cite{DuchesneEtAl2015} is used. Users seeking additional probability distributions are encouraged to contact the authors.}
   \begin{tabular}{llll}
   \toprule
-  Distribution & Support & Parameters & Link function \tabularnewline
+  Distribution & Support & Parameters & Link function\footnotemark \tabularnewline
   \midrule
   Bernoulli (``\verb|bern|'')          & $z_t\in\{0,1\}$          & $\verb|prob|\in(0,1)$            &  $\text{logit}$ \tabularnewline  
   Beta (``\verb|beta|'')               & $z_t\in(0,1)$            & $\verb|shape1|>0$                &  $\log$ \tabularnewline  
@@ -204,6 +204,7 @@ The state transition probabilities $({\mathbf \Gamma}^{(t)})$ and initial distri
                                        &                          & $\verb|concentration|\in(0,1)$ &  $\text{logit}$ \tabularnewline 
   \bottomrule
   \end{tabular}
+  \footnotesize{$^1$Link functions $(g)$ relate natural scale parameters $({\boldsymbol \theta})$ to a $T \times k$ design matrix $({\mathbf X})$ and $k-$vector of working scale parameters $(\boldsymbol{\beta}\in \mathbb{R}^k)$ such that $g({\boldsymbol \theta})={\mathbf X}\boldsymbol{\beta}$.}
 \end{table}
 
 %\subsection{Workflow}
@@ -800,7 +801,7 @@ The three fitted model can be compared with \verb|AIC(m1,m2,m3)|, which overwhel
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=\textwidth]{plot_sesResults2}
+  \includegraphics[width=\textwidth]{plot_sesResults2.png}
   \caption{The 15 elephant seal tracks, colored by the most likely state sequence.}
   \label{fig:sesTracks}
 \end{figure}

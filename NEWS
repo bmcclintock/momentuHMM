@@ -1,4 +1,4 @@
-momentuHMM 1.3.0 2017-11-20
+momentuHMM 1.3.0 2017-12-06
 -----------------
 NEW FEATURES
 
@@ -7,6 +7,10 @@ NEW FEATURES
 * initialPosition argument in simData can now be specified as a list indicating the initial position for each individual
 
 CHANGES
+
+* multinomial logit link now used on zeroInflation and oneInflation parameters
+
+* bug fix in calculation of pseudo-residuals (pseudoRes) with zeroInflation and/or oneInflation
 
 * bug fix in CIreal when natural scale delta estimates are near boundary
 

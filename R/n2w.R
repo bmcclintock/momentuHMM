@@ -46,6 +46,7 @@
 #' }
 #'
 #' @importFrom boot logit
+#' @importFrom stats dunif
 
 n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcons,Bndind)
 {
@@ -69,7 +70,7 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcon
         bounds[[i]][,1] <- -Inf
         bounds[[i]][which(bounds[[i]][,2]!=1),2] <- Inf
         
-        p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],cons[[i]],workcons[[i]])
+        p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],cons[[i]],workcons[[i]],nbStates)
         
         foo <- length(p) - nbStates + 1
         angleMean <- p[(foo - nbStates):(foo - 1)]
@@ -79,7 +80,7 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcon
         p[(foo - nbStates):(foo - 1)] <- x
         p[foo:length(p)] <- y
       }
-      else p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],cons[[i]],workcons[[i]])
+      else p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],cons[[i]],workcons[[i]],nbStates)
     }
     wpar <- c(wpar,p)
   }
@@ -89,28 +90,41 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcon
   return(c(wpar,wbeta,wdelta))
 }
 
-n2wDM<-function(bounds,DM,par,cons,workcons){
+n2wDM<-function(bounds,DM,par,cons,workcons,nbStates){
   
   a<-bounds[,1]
   b<-bounds[,2]
   
+  zeroInflation <- any(grepl("zeromass",rownames(bounds)))
+  oneInflation <- any(grepl("onemass",rownames(bounds)))
+  
   piInd<-(abs(a- -pi)<1.e-6 & abs(b - pi)<1.e-6)
   ind1<-which(piInd)
-  ind2<-which(!piInd)
-  
+  zoInd <- as.logical((grepl("zeromass",rownames(bounds)) | grepl("onemass",rownames(bounds)))*(zeroInflation*oneInflation))
+  ind2<-which(zoInd)
+  ind3<-which(!piInd & !zoInd)
+
   p<-numeric(nrow(DM))
   
   if(length(ind1)) p[ind1] <- (tan(par[ind1]/2)-workcons[ind1])^(1/cons[ind1])
+  if(length(ind2)){
+    for(j in 1:nbStates){
+      zoParInd <- which(grepl(paste0("zeromass_",j),rownames(bounds)) | grepl(paste0("onemass_",j),rownames(bounds)))
+      zoPar <- c(par[zoParInd],1.-sum(par[zoParInd]))
+      if(any(!stats::dunif(zoPar)) | zoPar[3]==0) stop("the sum of zero-mass and one-mass parameters cannot be >=1")
+      p[zoParInd] <- log(zoPar[-3]/zoPar[3])
+    }
+  }
   
-  p[ind2] <- par[ind2]
+  p[ind3] <- par[ind3]
   
-  ind21<-ind2[which(is.finite(a[ind2]) & is.infinite(b[ind2]))]
-  ind22<-ind2[which(is.finite(a[ind2]) & is.finite(b[ind2]))]
-  ind23<-ind2[which(is.infinite(a[ind2]) & is.finite(b[ind2]))]
+  ind31<-ind3[which(is.finite(a[ind3]) & is.infinite(b[ind3]))]
+  ind32<-ind3[which(is.finite(a[ind3]) & is.finite(b[ind3]))]
+  ind33<-ind3[which(is.infinite(a[ind3]) & is.finite(b[ind3]))]
   
-  p[ind21]<-(log(par[ind21]-a[ind21])-workcons[ind21])^(1/cons[ind21])
-  p[ind22]<-(logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22]))-workcons[ind22])^(1/cons[ind22])
-  p[ind23]<-(-log(-par[ind23]+b[ind23])-workcons[ind23])^(1/cons[ind23])
+  p[ind31]<-(log(par[ind31]-a[ind31])-workcons[ind31])^(1/cons[ind31])
+  p[ind32]<-(logit((par[ind32]-a[ind32])/(b[ind32]-a[ind32]))-workcons[ind32])^(1/cons[ind32])
+  p[ind33]<-(-log(-par[ind33]+b[ind33])-workcons[ind33])^(1/cons[ind33])
   
   p
 }     

@@ -252,13 +252,13 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         onem = onemass.row(state);
         
         // compute probability of non-zero and non-one observations
-        genProb.elem(noZerosOnes) = (1. - zerom.elem(noZerosOnes)) % (1. - onem.elem(noZerosOnes)) % funMap[genDist](genData[(genData>0) & (genData<1)],genArgs1.elem(noZerosOnes),genArgs2.elem(noZerosOnes));
+        genProb.elem(noZerosOnes) = (1. - zerom.elem(noZerosOnes) - onem.elem(noZerosOnes)) % funMap[genDist](genData[(genData>0) & (genData<1)],genArgs1.elem(noZerosOnes),genArgs2.elem(noZerosOnes));
         
         // compute probability of zero observations
         genProb.elem(nbZeros) = zerom.elem(nbZeros);
         
         // compute probability of one observations
-        genProb.elem(nbOnes) = onem.elem(nbOnes) % (1. - zerom.elem(nbOnes));
+        genProb.elem(nbOnes) = onem.elem(nbOnes);
         
       } else {
         

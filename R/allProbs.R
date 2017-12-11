@@ -110,8 +110,8 @@ allProbs <- function(m,nbStates)
                                     (1-onemass)*do.call(genFun,genArgs)) # if gen != 1          
         } else {
           genProb[genInd][data[[i]][genInd]==0] <- zeromass[data[[i]][genInd]==0]
-          genProb[genInd][data[[i]][genInd]==1] <- (1.-zeromass[data[[i]][genInd]==1]) * onemass[data[[i]][genInd]==1]
-          genProb[genInd][data[[i]][genInd]>0 & data[[i]][genInd]<1] <- (1.-zeromass[data[[i]][genInd]>0 & data[[i]][genInd]<1]) * (1.-onemass[data[[i]][genInd]>0 & data[[i]][genInd]<1]) * do.call(genFun,genArgs)[data[[i]][genInd]>0 & data[[i]][genInd]<1] # if gen !=0 and gen!=1
+          genProb[genInd][data[[i]][genInd]==1] <- onemass[data[[i]][genInd]==1]
+          genProb[genInd][data[[i]][genInd]>0 & data[[i]][genInd]<1] <- (1.-zeromass[data[[i]][genInd]>0 & data[[i]][genInd]<1]-onemass[data[[i]][genInd]>0 & data[[i]][genInd]<1]) * do.call(genFun,genArgs)[data[[i]][genInd]>0 & data[[i]][genInd]<1] # if gen !=0 and gen!=1
         }
       }
       else genProb[genInd] <- do.call(genFun,genArgs)

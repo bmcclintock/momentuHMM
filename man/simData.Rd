@@ -279,7 +279,8 @@ data <- simData(nbAnimals=1,nbStates=2,dist=list(step=stepDist,angle=angleDist),
                 Par=list(step=c(100,1000,50,100),angle=c(0,0,0.1,5)),
                 beta=matrix(c(5,-10,-25,50),nrow=2,ncol=2,byrow=TRUE),
                 formula=~forest,spatialCovs=spatialCov,
-                obsPerAnimal=250,states=TRUE)
+                obsPerAnimal=250,states=TRUE,
+                retrySims=10)
                 
 # 5. Specify design matrix for 'omega' data stream
 # natural scale parameters for step and angle

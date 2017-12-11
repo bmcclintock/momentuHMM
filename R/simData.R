@@ -239,7 +239,8 @@
 #'                 Par=list(step=c(100,1000,50,100),angle=c(0,0,0.1,5)),
 #'                 beta=matrix(c(5,-10,-25,50),nrow=2,ncol=2,byrow=TRUE),
 #'                 formula=~forest,spatialCovs=spatialCov,
-#'                 obsPerAnimal=250,states=TRUE)
+#'                 obsPerAnimal=250,states=TRUE,
+#'                 retrySims=10)
 #'                 
 #' # 5. Specify design matrix for 'omega' data stream
 #' # natural scale parameters for step and angle
@@ -530,7 +531,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     else estAngleMean[[i]]<-FALSE
   }
   
-  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames)
+  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames,checkInflation = TRUE)
   p <- inputs$p
   parSize <- p$parSize
   bounds <- p$bounds
@@ -1040,7 +1041,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
               genArgs[[i]][[3]] <- 1/scale # rgamma expects rate=1/scale
             }
       
-            rU <- which(rmultinom(1,1,prob=c(((1.-zeroMass[[i]][Z[k]])*(1.-oneMass[[i]][Z[k]])),zeroMass[[i]][Z[k]],(1.-zeroMass[[i]][Z[k]])*oneMass[[i]][Z[k]]))==1)
+            probs <- c(1.-zeroMass[[i]][Z[k]]-oneMass[[i]][Z[k]],zeroMass[[i]][Z[k]],oneMass[[i]][Z[k]])
+            rU <- which(rmultinom(1,1,prob=probs)==1)
             if(rU==1)
               genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
             else if(rU==2)
