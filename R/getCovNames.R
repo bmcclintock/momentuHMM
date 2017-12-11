@@ -35,7 +35,7 @@ getCovNames<-function(m,p,distname){
       m$conditions$DM[[distname]]<-m$conditions$DM[[distname]][p$parNames[[distname]]]
       for(j in 1:length(p$parNames[[distname]])){
         DMparterms[[p$parNames[[distname]][j]]] <- vector('list',nbStates)
-        formulaStates<- stateFormulas(m$conditions$DM[[distname]][[j]],nbStates,angleMean=ifelse(p$parNames[[distname]][j]=="mean" & m$conditions$circularAngleMean[[i]],TRUE,FALSE))
+        formulaStates<- stateFormulas(m$conditions$DM[[distname]][[j]],nbStates,angleMean=ifelse(p$parNames[[distname]][j]=="mean" & m$conditions$circularAngleMean[[distname]],TRUE,FALSE))
         for(jj in 1:nbStates){
           tmpparnames<-all.vars(formulaStates[[jj]])
           if(length(tmpparnames)) DMparterms[[p$parNames[[distname]][j]]][[jj]]<-tmpparnames
