@@ -93,7 +93,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   distnames <- names(dist)
   parCount<- lapply(fullDM,ncol)
   for(i in distnames[unlist(circularAngleMean)]){
-    parCount[[i]] <- parCount[[i]] - sum(colSums(nc[[i]][meanind[[i]],,drop=FALSE])>0)/2
+    parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]])))))
   }
   parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
   names(parindex) <- names(fullDM)

@@ -813,7 +813,7 @@ fitHMM <- function(data,nbStates,dist,
   # name columns and rows of MLEs
   parCount<- lapply(fullDM,ncol)
   for(i in distnames[unlist(inputs$circularAngleMean)]){
-    parCount[[i]] <- parCount[[i]] - sum(colSums(nc[[i]][meanind[[i]],,drop=FALSE])>0)/2
+    parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]])))))
   }
   parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
   names(parindex) <- distnames

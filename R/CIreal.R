@@ -120,7 +120,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   tmPar <- lapply(m$mle[distnames],function(x) c(t(x)))
   parCount<- lapply(m$conditions$fullDM,ncol)
   for(i in distnames[unlist(m$conditions$circularAngleMean)]){
-    parCount[[i]] <- parCount[[i]] - sum(colSums(nc[[i]][meanind[[i]],,drop=FALSE])>0)/2
+    parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]])))))
   }
   parindex <- c(0,cumsum(unlist(parCount))[-length(m$conditions$fullDM)])
   names(parindex) <- distnames

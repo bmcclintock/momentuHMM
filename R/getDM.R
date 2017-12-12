@@ -132,17 +132,9 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
   }
   simpDM<-simpDM[distnames]
   
-
-  nc <- meanind <- vector('list',length(distnames))
-  names(nc) <- names(meanind) <- distnames
-  for(i in distnames){
-    nc[[i]] <- apply(simpDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(circularAngleMean[[i]]) meanind[[i]] <- which((apply(simpDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
-  }
-  
   parCount<- lapply(simpDM,ncol)
   for(i in distnames[unlist(circularAngleMean)]){
-    parCount[[i]] <- parCount[[i]] - sum(colSums(nc[[i]][meanind[[i]],,drop=FALSE])>0)/2
+    parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(simpDM[[i]])))))
   }
 
   for(i in distnames){

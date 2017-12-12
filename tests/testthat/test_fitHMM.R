@@ -227,13 +227,13 @@ test_that("equivalent models with and without dummy covariate match",{
   expect_equal(abs(momentuHMM_cov2$mod$minimum-momentuHMM_cov1$mod$minimum)<1.e-6,TRUE)
   
   # circular-circular regression
-  data$cov2<-rep(1,nrow(data)) # dummy covariate
+  data$cov2<-rep(0,nrow(data)) # dummy covariate
   DM=list(angle=list(mean=~1,concentration=~1))
   Par0<-getParDM(data,nbStates,simPar$dist,par0$Par,DM=DM,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
   momentuHMM_nocov<-fitHMM(data=data,nbStates=nbStates,Par=Par0,
                            beta0=par0$beta0[1,,drop=FALSE],delta0=par0$delta0,DM=DM,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
   DM1<-list(step=list(mean=~cov2,sd=~cov2),angle=list(mean=~cov2,concentration=~cov2))
-  Par0_1<-getParDM(data.frame(cov2=pi/2),nbStates,simPar$dist,par0$Par,DM=DM1,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
+  Par0_1<-getParDM(data.frame(cov2=0),nbStates,simPar$dist,par0$Par,DM=DM1,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
   momentuHMM_cov1<-fitHMM(data=data,nbStates=nbStates,Par=Par0_1,formula=~cov2,
                           beta0=rbind(par0$beta0[1,,drop=FALSE],c(0,0)),delta0=par0$delta0,DM=DM1,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
   DM2<-list(step=matrix(c(1,"cov2",0,0,0,0,0,0,
@@ -245,12 +245,12 @@ test_that("equivalent models with and without dummy covariate match",{
                            0,0,1,"cov2",0,0,
                            0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE,dimnames=list(c(paste0("mean_",1:nbStates),paste0("concentration_",1:nbStates)),
                                                                              c(paste0("mean_",1:nbStates,":cov2"),paste0("concentration_",rep(1:nbStates,each=2),rep(c(":(Intercept)",":cov2"),2))))))
-  Par0_2<-getParDM(data.frame(cov2=pi/2),nbStates,simPar$dist,par0$Par,DM=DM2,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
+  Par0_2<-getParDM(data.frame(cov2=0),nbStates,simPar$dist,par0$Par,DM=DM2,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
   momentuHMM_cov2<-fitHMM(data=data,nbStates=nbStates,Par=Par0_2,formula=~cov2,
                           beta0=rbind(par0$beta0[1,,drop=FALSE],c(0,0)),delta0=par0$delta0,DM=DM2,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
   
-  #expect_equal(abs(unlist(lapply(momentuHMM_nocov$CIreal,function(x) x$est),use.names=FALSE)-unlist(lapply(momentuHMM_cov1$CIreal,function(x) x$est),use.names=FALSE))<1.e-3,rep(TRUE,length(unlist(lapply(momentuHMM_nocov$CIreal,function(x) x$est),use.names=FALSE))))
-  #expect_equal(abs(momentuHMM_nocov$mod$minimum-momentuHMM_cov1$mod$minimum)<1.e-6,TRUE)
+  expect_equal(abs(unlist(lapply(momentuHMM_nocov$CIreal,function(x) x$est),use.names=FALSE)-unlist(lapply(momentuHMM_cov1$CIreal,function(x) x$est),use.names=FALSE))<1.e-3,rep(TRUE,length(unlist(lapply(momentuHMM_nocov$CIreal,function(x) x$est),use.names=FALSE))))
+  expect_equal(abs(momentuHMM_nocov$mod$minimum-momentuHMM_cov1$mod$minimum)<1.e-6,TRUE)
   expect_equal(abs(unlist(lapply(momentuHMM_cov2$CIreal,function(x) x$est),use.names=FALSE)-unlist(lapply(momentuHMM_cov1$CIreal,function(x) x$est),use.names=FALSE))<1.e-3,rep(TRUE,length(unlist(lapply(momentuHMM_nocov$CIreal,function(x) x$est),use.names=FALSE))))
   expect_equal(abs(momentuHMM_cov2$mod$minimum-momentuHMM_cov1$mod$minimum)<1.e-6,TRUE)
   setRNG::setRNG(oldRNG)

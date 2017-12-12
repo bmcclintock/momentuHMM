@@ -189,19 +189,19 @@ getParDM<-function(data=data.frame(),nbStates,dist,
   }
   inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames=NULL,checkInflation = TRUE)
   
-  for(i in distnames){
-    if(inputs$circularAngleMean[[i]]){
-      for(j in names(tempCovs)){
-        if(tempCovs[[j]]==0){
-          if(is.list(inputs$DM[[i]])){
-            if(any(grepl(j,inputs$DM[[i]]$mean))) stop("covariates for angle mean parameters cannot be exactly zero")
-          } else {
-            if(any(grepl(j,inputs$DM[[i]][1:nbStates,,drop=FALSE]))) stop("covariates for angle mean parameters cannot be exactly zero")
-          }
-        }
-      }
-    }
-  }
+  #for(i in distnames){
+  #  if(inputs$circularAngleMean[[i]]){
+  #    for(j in names(tempCovs)){
+  #      if(tempCovs[[j]]==0){
+  #        if(is.list(inputs$DM[[i]])){
+  #          if(any(grepl(j,inputs$DM[[i]]$mean))) stop("covariates for angle mean parameters cannot be exactly zero")
+  #        } else {
+  #          if(any(grepl(j,inputs$DM[[i]][1:nbStates,,drop=FALSE]))) stop("covariates for angle mean parameters cannot be exactly zero")
+  #        }
+  #      }
+  #    }
+  #  }
+  #}
   
   DMinputs<-getDM(tempCovs,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)
   fullDM <- DMinputs$fullDM
@@ -220,7 +220,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
   
   parCount<- lapply(fullDM,ncol)
   for(i in distnames[unlist(inputs$circularAngleMean)]){
-    parCount[[i]] <- parCount[[i]] - sum(colSums(nc[[i]][meanind[[i]],,drop=FALSE])>0)/2
+    parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]])))))
   }
   #parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
   #names(parindex) <- distnames
@@ -318,7 +318,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
             } else {
               
               meanind1<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
-              meanind2<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
+              meanind2<-which(match(gsub("cos","",gsub("sin","",colnames(fullDM[[i]]))),gsub("cos","",names(which((apply(fullDM[[i]][meanind1,,drop=FALSE],2,function(x) !all(unlist(x)==0)))))),nomatch=0)>0)
               #if(length(meanind2)) meanind2 <- sort(c(meanind2,meanind2-1))
               xmat <- fullDM[[i]][gbInd,,drop=FALSE][meanind1,meanind2,drop=FALSE]
               #nc<-apply(xmat,1:2,function(x) !all(unlist(x)==0))
