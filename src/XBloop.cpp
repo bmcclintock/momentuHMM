@@ -36,10 +36,12 @@ arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned 
   unsigned int incr = (circularAngleMean) ? 2 : 1;
   
   NumericVector DMelem2;
-  unsigned int Xcount = 0;
+  unsigned int Xcount;
   
   for(i=0; i<nrindex; i++){
+    Xcount = 0;
     for(j=0; j<nc; j+=incr){
+      //Rprintf("i %d j %d Xcount %d \n",i,j,Xcount);
       if(cindex(rindex[i],j)){
         NumericVector DMelem = DM[j*nr+rindex[i]];
         if(circularAngleMean) DMelem2 = DM[(j+1)*nr+rindex[i]];
@@ -58,6 +60,7 @@ arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned 
             } else {
               XB1(rindex[i],k) += DMelem[0]*Xvec[Xcount];
               XB2(rindex[i],k) += DMelem2[0]*Xvec[Xcount];
+              //Rprintf("i %d j %d rindex %d cindex %f Xcount %d DMelem %f DMelem2 %f Xvec %f XB1 %f XB2 %f \n",i,j,rindex[i],cindex(rindex[i],j),Xcount,DMelem[0],DMelem2[0],Xvec[Xcount],XB1(rindex[i],k),XB2(rindex[i],k));
             }
           }
         }

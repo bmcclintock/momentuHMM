@@ -326,7 +326,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
               solveatan2<-function(x,theta,covs,cons,workcons,nbStates,nc,meanind,oparms){
                 #Xvec <- x^cons+workcons
                 XB<-getXB(covs,1,c(x,rep(1,oparms)),cons,workcons,TRUE,TRUE,nbStates,nc,meanind)[meanind,]
-                abs(theta - XB)
+                c(abs(theta - XB),rep(0,max(0,length(x)-length(theta))))
               }
 
               if(length(meanind1)) p[1:(length(meanind2)/2)] <- nleqslv::nleqslv(x=rep(1,length(meanind2)/2),fn=solveatan2,theta=par[meanind1],covs=fullDM[[i]],cons=cons[[i]],workcons=workcons[[i]],nbStates=nbStates,nc=nc[[i]],meanind=meanind[[i]],oparms=parCount[[i]]-length(meanind2)/2,control=list(allowSingular=TRUE))$x[1:(length(meanind2)/2)]
