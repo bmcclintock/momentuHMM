@@ -64,10 +64,37 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       #if(parCount[[i]]!=length(Par[[i]]) & ParChecks) stop("Based on DM$",i,", Par$",i," must be of length ",ncol(tmpDM))
     } else {
       if(is.null(dim(DM[[i]]))) stop("DM for ",i," is not specified correctly")
-      tmpDM<-suppressWarnings(array(as.numeric(DM[[i]]),dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs)))
       DMnames<-colnames(DM[[i]])
       if(is.null(DMnames)) DMnames<-paste0(i,"Beta",1:ncol(DM[[i]]))
       DMterms<-unique(DM[[i]][suppressWarnings(which(is.na(as.numeric(DM[[i]]))))])
+      if(!circularAngleMean[[i]]){
+        tmpDM<-suppressWarnings(array(as.numeric(DM[[i]]),dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs)))
+        newDM <- DM[[i]]
+      } else {
+        meanind<-which(!apply(DM[[i]][1:nbStates,,drop=FALSE],2,function(x) all(x==0)))
+        if(length(meanind)){
+          sdind<-which(!apply(DM[[i]][1:nbStates+nbStates,,drop=FALSE],2,function(x) all(x==0)))
+          newDM <- matrix(0,nrow(DM[[i]]),ncol=length(meanind)*2+length(sdind))
+          newDM[,length(meanind)*2+1:length(sdind)]<-DM[[i]][,sdind]
+          colnames(newDM)[length(meanind)*2+1:length(sdind)] <- DMnames[sdind]
+          colnames(newDM)[seq(1,length(meanind)*2-1,2)] <- DMnames[meanind]
+          for(j in meanind){
+            tmpcolname <- colnames(newDM)[seq(1,length(meanind)*2-1,2)[j]]
+            for(jj in 1:nbStates){
+              if(DM[[i]][jj,j]!=0){
+                terms <- sort(attr(terms(stateFormulas(formula(paste0("~",DM[[i]][jj,j])),nbStates,angleMean=TRUE)[[jj]]),"term.labels"),decreasing=TRUE)
+                newDM[jj,seq(1,length(meanind)*2-1,2)[j]]<-terms[1]
+                colnames(newDM)[seq(1,length(meanind)*2-1,2)[j]]<-paste0(tmpcolname,"sin")
+                newDM[jj,seq(1,length(meanind)*2-1,2)[j]+1]<-terms[2]
+                colnames(newDM)[seq(1,length(meanind)*2-1,2)[j]+1]<-paste0(tmpcolname,"cos")
+              }
+            }
+          }
+          tmpDM<-suppressWarnings(array(as.numeric(newDM),dim=c(nrow(newDM),ncol(newDM),nbObs)))
+          DMnames<-colnames(newDM)
+          DMterms<-unique(newDM[suppressWarnings(which(is.na(as.numeric(newDM))))])
+        }
+      }
       factorterms<-names(data)[unlist(lapply(data,is.factor))]
       factorcovs<-paste0(rep(factorterms,times=unlist(lapply(data[factorterms],nlevels))),unlist(lapply(data[factorterms],levels)))
       covs<-numeric()
@@ -88,7 +115,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
         }
         if(length(tmpcovs)!=nbObs) stop("covariates cannot contain missing values")
       }
-      if(length(DMterms)) tmpDM<-getDM_rcpp(tmpDM,covs,c(DM[[i]]),nrow(tmpDM),ncol(tmpDM),DMterms,nbObs)
+      if(length(DMterms)) tmpDM<-getDM_rcpp(tmpDM,covs,c(newDM),nrow(tmpDM),ncol(tmpDM),DMterms,nbObs)
       #parCount[[i]] <- ncol(tmpDM)
     }
     colnames(tmpDM)<-DMnames

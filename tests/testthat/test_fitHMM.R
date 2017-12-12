@@ -240,11 +240,11 @@ test_that("equivalent models with and without dummy covariate match",{
                           0,0,1,"cov2",0,0,0,0,
                           0,0,0,0,1,"cov2",0,0,
                           0,0,0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE),
-            angle=matrix(c("sin(cov2)","cos(cov2)",0,0,0,0,0,0,
-                           0,0,"sin(cov2)","cos(cov2)",0,0,0,0,
-                           0,0,0,0,1,"cov2",0,0,
-                           0,0,0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE,dimnames=list(c(paste0("mean_",1:nbStates),paste0("concentration_",1:nbStates)),
-                                                                                 colnames(momentuHMM_cov1$conditions$fullDM$angle))))
+            angle=matrix(c("cov2",0,0,0,0,0,
+                           0,"cov2",0,0,0,0,
+                           0,0,1,"cov2",0,0,
+                           0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE,dimnames=list(c(paste0("mean_",1:nbStates),paste0("concentration_",1:nbStates)),
+                                                                             c(paste0("mean_",1:nbStates,":cov2"),paste0("concentration_",rep(1:nbStates,each=2),rep(c(":(Intercept)",":cov2"),2))))))
   Par0_2<-getParDM(data.frame(cov2=pi/2),nbStates,simPar$dist,par0$Par,DM=DM2,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
   momentuHMM_cov2<-fitHMM(data=data,nbStates=nbStates,Par=Par0_2,formula=~cov2,
                           beta0=rbind(par0$beta0[1,,drop=FALSE],c(0,0)),delta0=par0$delta0,DM=DM2,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
