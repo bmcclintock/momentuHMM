@@ -30,7 +30,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       formulaStates <- vector('list',length(parNames[[i]]))
       names(formulaStates) <- parNames[[i]]
       for(j in parNames[[i]])
-        formulaStates[[j]]<- stateFormulas(DM[[i]][[j]],nbStates,angleMean=ifelse(j=="mean" & circularAngleMean[[i]],TRUE,FALSE))
+        formulaStates[[j]]<- stateFormulas(DM[[i]][[j]],nbStates,angleMean=(j=="mean" & circularAngleMean[[i]]))
       
       #if(circularAngleMean[[i]]){
       tmpCov <- vector('list',length(parNames[[i]]))

@@ -42,8 +42,10 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE){
     for(j in varnames[cosInd])
       mainpart<-c(mainpart,paste0(gsub("cosinor","cosinorCos",j)),paste0(gsub("cosinor","cosinorSin",j)))
     if(length(angInd)){
-      stmp <- prodlim::strip.terms(Terms[attr(Terms,"specials")$angleStrength],specials="angleStrength",arguments=list(angleStrength=list("strength"=1)))
+      stmp <- prodlim::strip.terms(Terms[attr(Terms,"specials")$angleStrength],specials="angleStrength",arguments=list(angleStrength=list("strength"=NULL)))
       for(jj in attr(stmp,"term.labels")){
+        if(is.null(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength)) stop("angleStrength is missing strength argument")
+        else if(!is.na(suppressWarnings(as.numeric((attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength))))) stop("angleStrength has invalid strength argument")
         mainpart<-c(mainpart,paste0(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength,":",c("sin","cos"),"(",jj,")"))
       }
     }
@@ -73,8 +75,10 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE){
           for(i in tmpnames[cosInd])
             mp<-c(mp,paste0(gsub("cosinor","cosinorCos",i)),paste0(gsub("cosinor","cosinorSin",i)))
           if(length(angInd)){
-            stmp <- prodlim::strip.terms(tmp[attr(tmp,"specials")$angleStrength],specials="angleStrength",arguments=list(angleStrength=list("strength"=1)))
+            stmp <- prodlim::strip.terms(tmp[attr(tmp,"specials")$angleStrength],specials="angleStrength",arguments=list(angleStrength=list("strength"=NULL)))
             for(jj in attr(stmp,"term.labels")){
+              if(is.null(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength)) stop("angleStrength is missing strength argument")
+              else if(!is.na(suppressWarnings(as.numeric((attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength))))) stop("angleStrength has invalid strength argument")
               mp<-c(mp,paste0(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength,":",c("sin","cos"),"(",jj,")"))
             }
           }
