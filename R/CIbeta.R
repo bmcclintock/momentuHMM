@@ -110,7 +110,7 @@ CIbeta <- function(m,alpha=0.95)
   tmPar <- lapply(m$mle[distnames],function(x) c(t(x)))
   parCount<- lapply(fullDM,ncol)
   for(i in distnames[unlist(m$conditions$circularAngleMean)]){
-    parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]])))))
+    parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]])))))
   }
   parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
   names(parindex) <- distnames

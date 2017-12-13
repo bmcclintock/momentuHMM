@@ -383,12 +383,18 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     formulaDelta <- model$condition$formulaDelta
   
     Par <- model$mle[distnames]
-    parindex <- c(0,cumsum(unlist(lapply(model$conditions$fullDM,ncol)))[-length(model$conditions$fullDM)])
+    parCount<- lapply(model$conditions$fullDM,ncol)
+    for(i in distnames[unlist(circularAngleMean)]){
+      parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(model$conditions$fullDM[[i]])))))
+    }
+    parindex <- c(0,cumsum(unlist(parCount))[-length(model$conditions$fullDM)])
     names(parindex) <- distnames
     for(i in distnames){
       if(!is.null(DM[[i]])){
-        Par[[i]] <- model$mod$estimate[parindex[[i]]+1:ncol(model$conditions$fullDM[[i]])]
-        names(Par[[i]])<-colnames(model$conditions$fullDM[[i]])
+        Par[[i]] <- model$mod$estimate[parindex[[i]]+1:parCount[[i]]]
+        if(circularAngleMean[[i]]){
+          names(Par[[i]]) <- unique(gsub("cos","",gsub("sin","",colnames(model$conditions$fullDM[[i]]))))
+        } else names(Par[[i]])<-colnames(model$conditions$fullDM[[i]])
         cons[[i]]<-rep(1,length(cons[[i]]))
         workcons[[i]]<-rep(0,length(workcons[[i]]))
       }
