@@ -10,7 +10,7 @@ getXB<-function(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,nbStates,nc,
     }
   } else {
     if(length(meanind)) {
-      XB<-XBloop_rcpp(DM,Xvec,nbObs,nrw,length(Xvec),circularAngleMean,meanind-1,nc)
+      XB<-XBloop_rcpp(DM,Xvec,nbObs,nrw,ncl,circularAngleMean,meanind-1,nc)
     } else XB <- matrix(0,nrw,nbObs)
     cInd <- which(colSums(nc[nbStates+1:nbStates,,drop=FALSE])>0)
     Xvec2 <- Xvec[cInd - (ncl-length(Xvec))]
