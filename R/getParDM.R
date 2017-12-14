@@ -215,7 +215,16 @@ getParDM<-function(data=data.frame(),nbStates,dist,
   names(nc) <- names(meanind) <- distnames
   for(i in distnames){
     nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(inputs$circularAngleMean[[i]]) meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+    if(inputs$circularAngleMean[[i]]) {
+      meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+      # deal with angular covariates that are exactly zero
+      if(length(meanind[[i]])){
+        angInd <- which(is.na(match(gsub("cos","",gsub("sin","",colnames(nc[[i]]))),colnames(nc[[i]]),nomatch=NA)))
+        sinInd <- colnames(nc[[i]])[which(grepl("sin",colnames(nc[[i]])[angInd]))]
+        nc[[i]][meanind[[i]],sinInd]<-ifelse(nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)])
+        nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)]<-ifelse(nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],sinInd])
+      }
+    }
   }
   
   parCount<- lapply(fullDM,ncol)
@@ -318,7 +327,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
             } else {
               
               meanind1<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
-              meanind2<-which(match(gsub("cos","",gsub("sin","",colnames(fullDM[[i]]))),gsub("cos","",names(which((apply(fullDM[[i]][meanind1,,drop=FALSE],2,function(x) !all(unlist(x)==0)))))),nomatch=0)>0)
+              meanind2<-which(colSums(nc[[i]][1:nbStates,,drop=FALSE])>0)#which(match(gsub("cos","",gsub("sin","",colnames(fullDM[[i]]))),gsub("cos","",names(which((apply(fullDM[[i]][meanind1,,drop=FALSE],2,function(x) !all(unlist(x)==0)))))),nomatch=0)>0)
               #if(length(meanind2)) meanind2 <- sort(c(meanind2,meanind2-1))
               xmat <- fullDM[[i]][gbInd,,drop=FALSE][meanind1,meanind2,drop=FALSE]
               #nc<-apply(xmat,1:2,function(x) !all(unlist(x)==0))
