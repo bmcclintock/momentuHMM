@@ -40,7 +40,7 @@ anglePar0 <- c(15,5,2,15)
 fixbeta <- matrix(c(NA,-100,-100,-100,NA,NA,-100,NA,-100,-100,-100,-100),nrow=1)
 
 m1 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"), Par0=list(step=stepPar0, angle=anglePar0),
-             fixPar=list(beta=fixbeta), stateNames = stateNames, verbose=2)
+             fixPar=list(beta=fixbeta), stateNames = stateNames)
 #############################################################################################
 
 
@@ -68,7 +68,7 @@ Par0 <- getPar0(model=m1, nbStates=4, DM=list(angle=list(mean=angleFormula, conc
 
 m2 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"), Par0=list(step=Par0$Par$step, angle=Par0$Par$angle),
              beta0=Par0$beta, fixPar=fixPar, formula=formula, DM=list(angle=list(mean=angleFormula, concentration=~1)), 
-             estAngleMean=list(angle=TRUE), circularAngleMean=list(angle=TRUE), stateNames = stateNames, verbose=2)
+             estAngleMean=list(angle=TRUE), circularAngleMean=list(angle=TRUE), stateNames = stateNames)
 #############################################################################################
 
 
@@ -83,11 +83,11 @@ fixPar <- list(beta=fixbeta)
 
 Par0 <- getPar0(model=m2, nbStates=4, DM = list(step=stepDM, angle=angleDM), estAngleMean=list(angle=TRUE), 
                 circularAngleMean=list(angle=TRUE), formula=formula)
-Par0$Par$angle[c("mean_1:colony.angle","mean_4:colony.angle")] <- 0
+Par0$Par$angle[c("mean_1:(colony.angle)","mean_4:(colony.angle)")] <- 0
 
 m3 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"), Par0=list(step=Par0$Par$step, angle=Par0$Par$angle),
              beta0=Par0$beta, fixPar=fixPar, formula=formula, DM = list(step=stepDM, angle=angleDM), 
-             estAngleMean=list(angle=TRUE), circularAngleMean=list(angle=TRUE), stateNames = stateNames, verbose=2)
+             estAngleMean=list(angle=TRUE), circularAngleMean=list(angle=TRUE), stateNames = stateNames)
 #############################################################################################
 
 AIC(m1,m2,m3)

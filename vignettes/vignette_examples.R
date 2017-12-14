@@ -206,6 +206,8 @@ degAxis(1)
 degAxis(2)
 map('worldHires', add=TRUE, fill=TRUE, col='white')
 
+pal <- c("#78c679","#F0E442","#E31A1C","#88419d")
+
 for(id in unique(data$ID)) {
   ind <- which(data$ID==id)
   segments(x0 = data$x[ind[-length(ind)]], y0 = data$y[ind[-length(ind)]], x1 = data$x[ind[-1]], y1 = data$y[ind[-1]], 

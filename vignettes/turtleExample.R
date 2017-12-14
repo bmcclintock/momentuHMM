@@ -5,7 +5,7 @@ library(sp)
 load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/turtleData.RData"))
 
 nSims <- 100 # number of imputatons
-retryFits <- 30 # number attempt to re-fit based on random perturbation
+retryFits <- 250 # number attempt to re-fit based on random perturbation
 ncores <- 7 # number of CPU cores
 
 inits<-list(a=c(coordinates(turtleData)[1,1],0,
