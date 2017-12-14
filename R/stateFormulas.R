@@ -15,6 +15,9 @@ cosinorSin<-function(x,period){
 stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE){
   
   Terms <- terms(formula, specials = c(paste0(spec,1:nbStates),"cosinor","angleStrength"))
+  if(any(attr(Terms,"order")>1)){
+    if(grepl("angleStrength\\(",attr(Terms,"term.labels")[attr(Terms,"order")>1])) stop("interactions with angleFormula are not allowed")
+  }
   
   stateFormula<-list()
   if(length(unlist(attr(Terms,"specials"))) | angleMean){
@@ -56,6 +59,9 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE){
         tmp<- terms(as.formula(paste("~",substr(tmplabs,nchar(paste0(spec,j))+1,nchar(tmplabs)),collapse="+")),specials=c("cosinor","angleStrength"))
       
         tmpnames<-attr(tmp,"term.labels")
+        if(any(attr(tmp,"order")>1)){
+          if(grepl("angleStrength\\(",tmpnames[attr(tmp,"order")>1])) stop("interactions with angleFormula are not allowed")
+        }
         mp<-tmpnames
         if(!is.null(unlist(attr(tmp,"specials"))) | angleMean){
           cosInd <- survival::untangle.specials(tmp,"cosinor",order=1:10)$terms
