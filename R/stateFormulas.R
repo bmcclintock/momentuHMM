@@ -38,6 +38,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE){
     if(angleMean & length(mainpart)){
       tmpmainpart <- mainpart
       mainpart <- character()
+      if(any(grepl("cos",tmpmainpart)) | any(grepl("sin",tmpmainpart))) stop("sorry, the strings 'cos' and 'sin' are reserved and cannot appear in mean angle formulas and/or covariate names")
       for(j in 1:length(tmpmainpart)){
         mainpart <- c(mainpart,paste0(c("sin","cos"),"(",tmpmainpart[j],")"))
       }
@@ -46,6 +47,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE){
       mainpart<-c(mainpart,paste0(gsub("cosinor","cosinorCos",j)),paste0(gsub("cosinor","cosinorSin",j)))
     if(length(angInd)){
       stmp <- prodlim::strip.terms(Terms[attr(Terms,"specials")$angleStrength],specials="angleStrength",arguments=list(angleStrength=list("strength"=NULL)))
+      if(any(grepl("cos",attr(stmp,"term.labels"))) | any(grepl("sin",attr(stmp,"term.labels")))) stop("sorry, the strings 'cos' and 'sin' are reserved and cannot appear in mean angle formulas and/or covariate names")
       for(jj in attr(stmp,"term.labels")){
         if(is.null(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength)) stop("angleStrength is missing strength argument")
         else if(!is.na(suppressWarnings(as.numeric((attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength))))) stop("angleStrength has invalid strength argument")
@@ -74,6 +76,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE){
           if(angleMean & length(mp)){
             tmpmp <- mp
             mp <- character()
+            if(any(grepl("cos",tmpmp)) | any(grepl("sin",tmpmp))) stop("sorry, the strings 'cos' and 'sin' are reserved and cannot appear in mean angle formulas and/or covariate names")
             for(jj in 1:length(tmpmp)){
               mp <- c(mp,paste0(c("sin","cos"),"(",tmpmp[jj],")"))
             }
@@ -82,6 +85,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE){
             mp<-c(mp,paste0(gsub("cosinor","cosinorCos",i)),paste0(gsub("cosinor","cosinorSin",i)))
           if(length(angInd)){
             stmp <- prodlim::strip.terms(tmp[attr(tmp,"specials")$angleStrength],specials="angleStrength",arguments=list(angleStrength=list("strength"=NULL)))
+            if(any(grepl("cos",attr(stmp,"term.labels"))) | any(grepl("sin",attr(stmp,"term.labels")))) stop("sorry, the strings 'cos' and 'sin' are reserved and cannot appear in mean angle formulas and/or covariate names")
             for(jj in attr(stmp,"term.labels")){
               if(is.null(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength)) stop("angleStrength is missing strength argument")
               else if(!is.na(suppressWarnings(as.numeric((attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength))))) stop("angleStrength has invalid strength argument")
