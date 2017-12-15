@@ -4,24 +4,24 @@
 \alias{checkPar0}
 \title{Check parameter length and order for a \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model}
 \usage{
-checkPar0(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
+checkPar0(data, nbStates, dist, Par0 = NULL, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
   formulaDelta = ~1, stationary = FALSE, DM = NULL, cons = NULL,
   userBounds = NULL, workcons = NULL, stateNames = NULL, fixPar = NULL)
 }
 \arguments{
-\item{data}{An object \code{momentuHMMData}.}
+\item{data}{\code{\link{momentuHMMData}} object or a data frame containing the data stream and covariate values}
 
 \item{nbStates}{Number of states of the HMM.}
 
 \item{dist}{A named list indicating the probability distributions of the data streams.}
 
-\item{Par0}{A named list containing vectors of initial state-dependent probability distribution parameters for 
-each data stream specified in \code{dist}.}
+\item{Par0}{Optional named list containing vectors of state-dependent probability distribution parameters for 
+each data stream specified in \code{dist}.  If \code{Par0} is not provided, then ordered parameter indices are returned.}
 
-\item{beta0}{Initial matrix of regression coefficients for the transition probabilities.}
+\item{beta0}{Optional matrix of regression coefficients for the transition probabilities. If \code{beta0} is not provided, then ordered parameter indices are returned.}
 
-\item{delta0}{Initial value for the initial distribution of the HMM.}
+\item{delta0}{Optional values or regression coefficients for the initial distribution of the HMM. If \code{delta0} is not provided, then ordered parameter indices are returned.}
 
 \item{estAngleMean}{An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy').}
@@ -55,6 +55,42 @@ each data stream.}
 \description{
 Verify initial parameters (\code{Par0}, \code{beta0}, and \code{delta0}) are of correct length and print the parameters with labels based on \code{DM}, \code{formula}, and/or \code{formulaDelta}.  See \code{\link{fitHMM}} for 
 further argument details.
+}
+\examples{
+m <- example$m
+checkPar0(data=m$data, nbStates=2, dist=m$conditions$dist,
+          estAngleMean = m$conditions$estAngleMean,
+          formula = m$conditions$formula)
+
+par <- getPar(m)
+checkPar0(data=m$data, nbStates=2, dist=m$conditions$dist,
+          estAngleMean = m$conditions$estAngleMean,
+          formula = m$conditions$formula,
+          Par0=par$Par, beta0=par$beta, delta0=par$delta)
+
+\dontrun{
+simDat <- simData(nbStates=2, dist=m$conditions$dist, Par = par$Par,
+                  spatialCovs = list(forest=forest),
+                  centers = matrix(0,1,2),
+                  nbCovs = 2)
+checkPar0(data = simDat, nbStates=2, dist=m$conditions$dist,
+          formula = ~forest,
+          DM = list(step=list(mean=~cov1, sd=~cov2),
+                    angle=list(mean=~center1.angle,concentration=~1)),
+          estAngleMean=list(angle=TRUE),
+          circularAngleMean=list(angle=TRUE))
+          
+par <- list(step=rnorm(8),angle=rnorm(4))
+beta0 <- matrix(rnorm(4),2,2)
+delta0 <- c(0.5,0.5)
+checkPar0(data = simDat, nbStates=2, dist=m$conditions$dist,
+          Par0 = par, beta0 = beta0, delta0 = delta0,
+          formula = ~forest,
+          DM = list(step=list(mean=~cov1, sd=~cov2),
+                    angle=list(mean=~center1.angle,concentration=~1)),
+          estAngleMean=list(angle=TRUE),
+          circularAngleMean=list(angle=TRUE))                
+}
 }
 \seealso{
 \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
