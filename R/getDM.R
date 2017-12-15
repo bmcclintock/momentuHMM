@@ -40,7 +40,12 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
         for(state in 1:nbStates){
           tmpCov[[j]][[state]]<-model.matrix(formulaStates[[j]][[state]],data)
           if(circularAngleMean[[i]]){
-            if(j=="mean" & attr(terms.formula(formulaStates[[j]][[state]]),"intercept")) tmpCov[[j]][[state]] <- tmpCov[[j]][[state]][,-1,drop=FALSE]
+            if(j=="mean"){
+              if(attr(terms.formula(formulaStates[[j]][[state]]),"intercept")) tmpCov[[j]][[state]] <- tmpCov[[j]][[state]][,-1,drop=FALSE]
+              cnames <- colnames(tmpCov[[j]][[state]])
+              # make sure columns are arranged in sin/cos pairs
+              tmpCov[[j]][[state]] <- tmpCov[[j]][[state]][,cnames[order(match(gsub("cos","",gsub("sin","",cnames)),unique(gsub("cos","",gsub("sin","",cnames)))))],drop=FALSE]
+            }
             #if(!length(tmpCov[[j]][[state]])) stop("invalid circular-circular regression formula for ",i," ",j)
           }
         }
