@@ -104,9 +104,9 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       factorcovs<-paste0(rep(factorterms,times=unlist(lapply(data[factorterms],nlevels))),unlist(lapply(data[factorterms],levels)))
       covs<-numeric()
       for(cov in DMterms){
-        if(is.factor(data[[cov]])) stop('factor levels must be specified individually when using pseudo-design matrices')
         form<-formula(paste("~",cov))
         varform<-all.vars(form)
+        if(any(unlist(lapply(data[varform[!(varform %in% factorcovs)]],function(x) inherits(x,"factor"))))) stop('factor levels must be specified individually when using pseudo-design matrices')
         if(any(varform %in% factorcovs)){
           factorvar<-factorcovs %in% varform
           tmpcov<-rep(factorterms,times=unlist(lapply(data[factorterms],nlevels)))[which(factorvar)]
