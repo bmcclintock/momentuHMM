@@ -67,6 +67,11 @@ checkPar0(data=m$data, nbStates=2, dist=m$conditions$dist,
           estAngleMean = m$conditions$estAngleMean,
           formula = m$conditions$formula,
           Par0=par$Par, beta0=par$beta, delta0=par$delta)
+          
+dummyDat <- data.frame(step=0,angle=0,cov1=0,cov2=0)
+checkPar0(data=dummyDat, nbStates=2, dist=m$conditions$dist,
+          estAngleMean = m$conditions$estAngleMean,
+          formula = m$conditions$formula)
 
 \dontrun{
 simDat <- simData(nbStates=2, dist=m$conditions$dist, Par = par$Par,

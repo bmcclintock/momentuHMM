@@ -43,6 +43,11 @@
 #'           estAngleMean = m$conditions$estAngleMean,
 #'           formula = m$conditions$formula,
 #'           Par0=par$Par, beta0=par$beta, delta0=par$delta)
+#'           
+#' dummyDat <- data.frame(step=0,angle=0,cov1=0,cov2=0)
+#' checkPar0(data=dummyDat, nbStates=2, dist=m$conditions$dist,
+#'           estAngleMean = m$conditions$estAngleMean,
+#'           formula = m$conditions$formula)
 #'
 #' \dontrun{
 #' simDat <- simData(nbStates=2, dist=m$conditions$dist, Par = par$Par,
@@ -86,6 +91,7 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
     if(any(is.na(match(distnames,names(data))))) stop(paste0(distnames[is.na(match(distnames,names(data)))],collapse=", ")," not found in data")
     for(i in distnames){
       dist[[i]]<-match.arg(dist[[i]],momentuHMMdists)
+      if(!is.null(fixPar[[i]])) stop("fixPar$",i," cannot be specified unless Par0 is specified")
     }
     
     if(is.null(estAngleMean)){
@@ -156,6 +162,7 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
   beta <- beta0
   if(is.null(beta0) & nbStates>1) {
     beta <- m$mle$beta
+    if(!is.null(fixPar$beta)) stop("fixPar$beta cannot be specified unless beta0 is specified")
   }
   
   delta <- delta0
@@ -164,12 +171,14 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
     delta <- NULL
   else if(!nbCovsDelta){
     if(is.null(delta0)){
+      if(!is.null(fixPar$delta)) stop("fixPar$delta cannot be specified unless delta0 is specified")
       delta <- matrix(1/nbStates,nbCovsDelta+1,nbStates)
     } else {
       delta <- matrix(delta,nbCovsDelta+1,nbStates)
     }
     delta <- log(delta[-1]/delta[1])
   } else if(is.null(delta0)){
+    if(!is.null(fixPar$delta)) stop("fixPar$delta cannot be specified unless delta0 is specified")
     delta <- matrix(0,nrow=nbCovsDelta+1,ncol=nbStates-1)
   }
   
