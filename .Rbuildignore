@@ -6,4 +6,6 @@ vignettes/turtleData.RData
 vignettes/greySealData_TPM.RData
 vignettes/coastUTM.RData
 vignettes/sesData.csv
+tests/testthat/Rplots.pdf
+tests/testthat/test_examples.R
 ^manuscript$
