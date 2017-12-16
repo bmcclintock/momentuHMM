@@ -45,7 +45,7 @@
 #' nbStates <- length(m$stateNames)
 #' 
 #' inputs <- momentuHMM:::checkInputs(nbStates,m$conditions$dist,Par$Par,m$conditions$estAngleMean,
-#'           m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,
+#'           m$conditions$circularAngleMean,m$conditions$consensus,m$conditions$zeroInflation,m$conditions$oneInflation,
 #'           m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,
 #'           m$stateNames)
 #' 
@@ -55,7 +55,7 @@
 #' 
 #' l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,
 #'      inputs$p$parSize,data,m$conditions$dist,model.matrix(m$conditions$formula,data),
-#'                    m$conditions$estAngleMean,m$conditions$circularAngleMean,
+#'                    m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$consensus,
 #'                    m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$stationary,
 #'                    m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
 #'                    m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),
@@ -64,7 +64,7 @@
 #'
 
 nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
-                     estAngleMean,circularAngleMean,zeroInflation,oneInflation,
+                     estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,
                      stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta)
 {
   # check arguments
@@ -75,7 +75,7 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
   
   # convert the parameters back to their natural scale
   if(length(wparIndex)) wpar[wparIndex] <- fixPar[wparIndex]
-  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta)
+  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta)
 
   nbAnimals <- length(unique(data$ID))
 

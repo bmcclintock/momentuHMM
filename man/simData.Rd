@@ -7,11 +7,11 @@
 simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
   delta = NULL, formula = ~1, formulaDelta = ~1, covs = NULL,
   nbCovs = 0, spatialCovs = NULL, zeroInflation = NULL,
-  oneInflation = NULL, circularAngleMean = NULL, centers = NULL,
-  centroids = NULL, obsPerAnimal = c(500, 1500), initialPosition = c(0,
-  0), DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL,
-  stateNames = NULL, model = NULL, states = FALSE, retrySims = 0,
-  lambda = NULL, errorEllipse = NULL)
+  oneInflation = NULL, circularAngleMean = NULL, consensus = NULL,
+  centers = NULL, centroids = NULL, obsPerAnimal = c(500, 1500),
+  initialPosition = c(0, 0), DM = NULL, cons = NULL, userBounds = NULL,
+  workcons = NULL, stateNames = NULL, model = NULL, states = FALSE,
+  retrySims = 0, lambda = NULL, errorEllipse = NULL)
 }
 \arguments{
 \item{nbAnimals}{Number of observed individuals to simulate.}

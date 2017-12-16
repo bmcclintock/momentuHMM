@@ -202,7 +202,7 @@ trMatrix_rcpp <- function(nbStates, beta, covs) {
 #' @param cindex column index for design matrix
 #'
 #' @return XB matrix
-XBloop_rcpp <- function(DM, Xvec, nbObs, nr, nc, circularAngleMean, rindex, cindex) {
-    .Call('_momentuHMM_XBloop_rcpp', PACKAGE = 'momentuHMM', DM, Xvec, nbObs, nr, nc, circularAngleMean, rindex, cindex)
+XBloop_rcpp <- function(DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex, cindex, nbStates) {
+    .Call('_momentuHMM_XBloop_rcpp', PACKAGE = 'momentuHMM', DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex, cindex, nbStates)
 }
 

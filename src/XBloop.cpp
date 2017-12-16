@@ -19,7 +19,7 @@ using namespace std;
 //'
 //' @return XB matrix
 // [[Rcpp::export]]
-arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned int nr, unsigned int nc, bool circularAngleMean, IntegerVector rindex, arma::mat cindex)
+arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned int nr, unsigned int nc, bool circularAngleMean, bool consensus, IntegerVector rindex, arma::mat cindex, int nbStates)
 {
   unsigned int i;
   unsigned int j;
@@ -37,14 +37,19 @@ arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned 
   
   NumericVector DMelem2;
   unsigned int Xcount;
+  double Xsum;
   
   for(i=0; i<nrindex; i++){
     Xcount = 0;
+    Xsum = 1.;
     for(j=0; j<nc; j+=incr){
       //Rprintf("i %d j %d Xcount %d \n",i,j,Xcount);
       if(cindex(rindex[i],j)){
         NumericVector DMelem = DM[j*nr+rindex[i]];
-        if(circularAngleMean) DMelem2 = DM[(j+1)*nr+rindex[i]];
+        if(circularAngleMean) {
+          DMelem2 = DM[(j+1)*nr+rindex[i]];
+          Xsum += abs(Xvec[Xcount]);
+        }
         int DMsize = DMelem.size();
         for(k=0; k<nbObs; k++){
           if(DMsize>1){
@@ -67,9 +72,10 @@ arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned 
       }
       Xcount += 1;
     }
-  }
-  if(circularAngleMean){
-    XB = atan2(XB1,1.+XB2);
+    if(circularAngleMean){
+      XB.row(rindex[i]) = atan2(XB1.row(rindex[i]),1.+XB2.row(rindex[i]));
+      if(consensus) XB.row(rindex[i]+nbStates) = sqrt(pow(XB1.row(rindex[i]),2.)+pow(1.+XB2.row(rindex[i]),2.)) / Xsum;
+    }
   }
   return XB;
 }

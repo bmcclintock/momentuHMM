@@ -188,8 +188,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // XBloop_rcpp
-arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned int nr, unsigned int nc, bool circularAngleMean, IntegerVector rindex, arma::mat cindex);
-RcppExport SEXP _momentuHMM_XBloop_rcpp(SEXP DMSEXP, SEXP XvecSEXP, SEXP nbObsSEXP, SEXP nrSEXP, SEXP ncSEXP, SEXP circularAngleMeanSEXP, SEXP rindexSEXP, SEXP cindexSEXP) {
+arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned int nr, unsigned int nc, bool circularAngleMean, bool consensus, IntegerVector rindex, arma::mat cindex, int nbStates);
+RcppExport SEXP _momentuHMM_XBloop_rcpp(SEXP DMSEXP, SEXP XvecSEXP, SEXP nbObsSEXP, SEXP nrSEXP, SEXP ncSEXP, SEXP circularAngleMeanSEXP, SEXP consensusSEXP, SEXP rindexSEXP, SEXP cindexSEXP, SEXP nbStatesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -199,9 +199,11 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< unsigned int >::type nr(nrSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type nc(ncSEXP);
     Rcpp::traits::input_parameter< bool >::type circularAngleMean(circularAngleMeanSEXP);
+    Rcpp::traits::input_parameter< bool >::type consensus(consensusSEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type rindex(rindexSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type cindex(cindexSEXP);
-    rcpp_result_gen = Rcpp::wrap(XBloop_rcpp(DM, Xvec, nbObs, nr, nc, circularAngleMean, rindex, cindex));
+    Rcpp::traits::input_parameter< int >::type nbStates(nbStatesSEXP);
+    rcpp_result_gen = Rcpp::wrap(XBloop_rcpp(DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex, cindex, nbStates));
     return rcpp_result_gen;
 END_RCPP
 }

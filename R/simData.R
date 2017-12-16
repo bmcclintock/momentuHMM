@@ -337,6 +337,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     zeroInflation=NULL,
                     oneInflation=NULL,
                     circularAngleMean=NULL,
+                    consensus=NULL,
                     centers=NULL,
                     centroids=NULL,
                     obsPerAnimal=c(500,1500),
@@ -374,6 +375,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     stateNames<-model$stateNames
     estAngleMean<-model$conditions$estAngleMean
     circularAngleMean<-model$conditions$circularAngleMean
+    consensus<-model$conditions$consensus
     DM <- model$conditions$DM
     cons <- model$conditions$cons
     workcons <- model$conditions$workcons
@@ -537,7 +539,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     else estAngleMean[[i]]<-FALSE
   }
   
-  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames,checkInflation = TRUE)
+  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames,checkInflation = TRUE)
   p <- inputs$p
   parSize <- p$parSize
   bounds <- p$bounds
@@ -777,8 +779,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   message("-----------------------------------------------------------------------\n")
   for(i in distnames){
     pNames<-p$parNames[[i]]
-    if(inputs$circularAngleMean[[i]]) 
+    if(inputs$circularAngleMean[[i]]){ 
       pNames[1]<-paste0("circular ",pNames[1])
+      if(inputs$consensus[[i]]) pNames[2]<-paste0("consensus ",pNames[2])
+    }
     if(is.null(DM[[i]])){
       message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,"=~1",collapse=", "),")")
     } else if(is.list(DM[[i]])){
@@ -953,7 +957,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           }
         }
         covsDelta <- model.matrix(formulaDelta,subCovs[1,,drop=FALSE])
-        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,dist,p$Bndind,nc,meanind,covsDelta)
+        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,dist,p$Bndind,nc,meanind,covsDelta)
         g <- gFull[1,,drop=FALSE]
         delta <- fullsubPar$delta
       } else {
@@ -1021,7 +1025,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
               }
             }
           }
-          subPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist,p$Bndind,nc,meanind,covsDelta)
+          subPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist,p$Bndind,nc,meanind,covsDelta)
         } else {
           subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
         }
@@ -1184,6 +1188,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                           zeroInflation,
                           oneInflation,
                           circularAngleMean,
+                          consensus,
                           centers,
                           centroids,
                           obsPerAnimal,

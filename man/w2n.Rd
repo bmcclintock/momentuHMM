@@ -5,8 +5,8 @@
 \title{Scaling function: working to natural parameters}
 \usage{
 w2n(wpar, bounds, parSize, nbStates, nbCovs, estAngleMean, circularAngleMean,
-  stationary, cons, fullDM, DMind, workcons, nbObs, dist, Bndind, nc, meanind,
-  covsDelta)
+  consensus, stationary, cons, fullDM, DMind, workcons, nbObs, dist, Bndind, nc,
+  meanind, covsDelta)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}
@@ -79,7 +79,7 @@ m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditi
 
 #natural parameter
 p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
-m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
+m$conditions$circularAngleMean,m$conditions$consensus,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
 m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,
 matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta)
 }

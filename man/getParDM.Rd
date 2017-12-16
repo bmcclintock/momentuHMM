@@ -6,7 +6,8 @@
 \usage{
 getParDM(data = data.frame(), nbStates, dist, Par, zeroInflation = NULL,
   oneInflation = NULL, estAngleMean = NULL, circularAngleMean = NULL,
-  DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL)
+  consensus = NULL, DM = NULL, cons = NULL, userBounds = NULL,
+  workcons = NULL)
 }
 \arguments{
 \item{data}{Optional \code{\link{momentuHMMData}} object or a data frame containing the covariate values. 

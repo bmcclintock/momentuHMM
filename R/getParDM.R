@@ -102,6 +102,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
                  oneInflation=NULL,
                  estAngleMean=NULL,
                  circularAngleMean=NULL,
+                 consensus=NULL,
                  DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL){
   
   ## check that the data is a momentuHMMData object or valid data frame
@@ -187,7 +188,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
       else tempCovs[[j]]<-mean(data[[j]],na.rm=TRUE)
     }
   }
-  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames=NULL,checkInflation = TRUE)
+  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames=NULL,checkInflation = TRUE)
   
   #for(i in distnames){
   #  if(inputs$circularAngleMean[[i]]){
@@ -334,7 +335,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
               
               solveatan2<-function(x,theta,covs,cons,workcons,nbStates,nc,meanind,oparms){
                 #Xvec <- x^cons+workcons
-                XB<-getXB(covs,1,c(x,rep(1,oparms)),cons,workcons,TRUE,TRUE,nbStates,nc,meanind)[meanind,]
+                XB<-getXB(covs,1,c(x,rep(1,oparms)),cons,workcons,TRUE,TRUE,FALSE,nbStates,nc,meanind)[meanind,]
                 c(abs(theta - XB),rep(0,max(0,length(x)-length(theta))))
               }
 

@@ -52,7 +52,7 @@
 #' 
 #' #natural parameter
 #' p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
-#' m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
+#' m$conditions$circularAngleMean,m$conditions$consensus,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
 #' m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,
 #' matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta)
 #' }
@@ -61,7 +61,7 @@
 #' @importFrom boot inv.logit
 #' @importFrom Brobdingnag as.brob sum
 
-w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind,nc,meanind,covsDelta)
+w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind,nc,meanind,covsDelta)
 {
 
   # identify initial distribution parameters
@@ -114,7 +114,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
       tmpwpar[(foo - nbStates):(foo - 1)] <- angleMean
       tmpwpar[foo:length(tmpwpar)] <- kappa
     }
-    parlist[[i]]<-w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],workcons[[i]],nbObs,circularAngleMean[[i]],nbStates,0,nc[[i]],meanind[[i]])
+    parlist[[i]]<-w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],workcons[[i]],nbObs,circularAngleMean[[i]],consensus[[i]],nbStates,0,nc[[i]],meanind[[i]])
 
     if((dist[[i]] %in% angledists) & !estAngleMean[[i]]){
       tmp<-matrix(0,nrow=(parSize[[i]]+1)*nbStates,ncol=nbObs)
@@ -130,7 +130,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   return(parlist)
 }
 
-w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,nbStates,k=0,nc,meanind){
+w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,consensus,nbStates,k=0,nc,meanind){
   
   a<-bounds[,1]
   b<-bounds[,2]
@@ -144,7 +144,14 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,nbSta
   ind2<-which(zoInd)
   ind3<-which(!piInd & !zoInd)
   
-  XB <- p <- getXB(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,nbStates,nc,meanind)
+  if(!consensus){
+    XB <- p <- getXB(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,consensus,nbStates,nc,meanind)
+    l_t <- matrix(1,nrow(XB),ncol(XB))
+  } else {
+    tmpXB <- getXB(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,consensus,nbStates,nc,meanind)
+    XB <- p <- tmpXB$XB
+    l_t <- matrix(tmpXB$l_t,nrow(XB),ncol(XB))
+  }
   
   if(length(ind1) & !circularAngleMean)
     p[ind1,] <- (2*atan(XB[ind1,]))
@@ -167,8 +174,8 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,nbSta
   ind32<-ind3[which(is.finite(a[ind3]) & is.finite(b[ind3]))]
   ind33<-ind3[which(is.infinite(a[ind3]) & is.finite(b[ind3]))]
   
-  p[ind31,] <- (exp(XB[ind31,,drop=FALSE])+a[ind31])
-  p[ind32,] <- ((b[ind32]-a[ind32])*boot::inv.logit(XB[ind32,,drop=FALSE])+a[ind32])
+  p[ind31,] <- (l_t[ind31,,drop=FALSE] * exp(XB[ind31,,drop=FALSE])+a[ind31])
+  p[ind32,] <- ((b[ind32]-a[ind32])*(l_t[ind32,,drop=FALSE] * boot::inv.logit(XB[ind32,,drop=FALSE]))+a[ind32])
   p[ind33,] <- -(exp(-XB[ind33,,drop=FALSE]) - b[ind33])
   
   if(any(p<a | p>b))

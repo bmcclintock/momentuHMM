@@ -5,11 +5,11 @@
 \title{Fit a multivariate HMM to the data}
 \usage{
 fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
-  estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
-  formulaDelta = ~1, stationary = FALSE, verbose = 0, nlmPar = NULL,
-  fit = TRUE, DM = NULL, cons = NULL, userBounds = NULL,
-  workcons = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL,
-  retryFits = 0)
+  estAngleMean = NULL, circularAngleMean = NULL, consensus = NULL,
+  formula = ~1, formulaDelta = ~1, stationary = FALSE, verbose = 0,
+  nlmPar = NULL, fit = TRUE, DM = NULL, cons = NULL,
+  userBounds = NULL, workcons = NULL, stateNames = NULL,
+  knownStates = NULL, fixPar = NULL, retryFits = 0)
 }
 \arguments{
 \item{data}{An object \code{momentuHMMData}.}

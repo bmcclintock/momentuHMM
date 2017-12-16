@@ -5,7 +5,7 @@
 \title{Negative log-likelihood function}
 \usage{
 nLogLike(wpar, nbStates, formula, bounds, parSize, data, dist, covs,
-  estAngleMean, circularAngleMean, zeroInflation, oneInflation,
+  estAngleMean, circularAngleMean, consensus, zeroInflation, oneInflation,
   stationary = FALSE, cons, fullDM, DMind, workcons, Bndind, knownStates,
   fixPar, wparIndex, nc, meanind, covsDelta)
 }
@@ -81,7 +81,7 @@ Par <- getPar(m)
 nbStates <- length(m$stateNames)
 
 inputs <- momentuHMM:::checkInputs(nbStates,m$conditions$dist,Par$Par,m$conditions$estAngleMean,
-          m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,
+          m$conditions$circularAngleMean,m$conditions$consensus,m$conditions$zeroInflation,m$conditions$oneInflation,
           m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,
           m$stateNames)
 
@@ -91,7 +91,7 @@ wpar <- momentuHMM:::n2w(Par$Par,m$conditions$bounds,Par$beta,log(Par$delta[-1]/
 
 l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,
      inputs$p$parSize,data,m$conditions$dist,model.matrix(m$conditions$formula,data),
-                   m$conditions$estAngleMean,m$conditions$circularAngleMean,
+                   m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$consensus,
                    m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$stationary,
                    m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
                    m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),
