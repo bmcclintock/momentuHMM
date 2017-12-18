@@ -15,7 +15,10 @@ getXB<-function(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,consensus,nb
         l_t <- matrix(1,nrow(XB),ncol(XB))
         l_t[nbStates+meanind,] <- XB[nbStates+meanind,]
       }
-    } else XB <- matrix(0,nrw,nbObs)
+    } else {
+      XB <- matrix(0,nrw,nbObs)
+      if(consensus) l_t <- matrix(1,nrow(XB),ncol(XB))
+    }
     cInd <- which(colSums(nc[nbStates+1:nbStates,,drop=FALSE])>0)
     Xvec2 <- Xvec[cInd - (ncl-length(Xvec))]
     XB[nbStates+1:nbStates,]<-XBloop_rcpp(DM[nbStates+1:nbStates,cInd,drop=FALSE],Xvec2,nbObs,nbStates,length(Xvec2),FALSE,FALSE,1:nbStates-1,nc[nbStates+1:nbStates,cInd,drop=FALSE],nbStates)
