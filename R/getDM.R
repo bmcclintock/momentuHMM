@@ -30,7 +30,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       formulaStates <- vector('list',length(parNames[[i]]))
       names(formulaStates) <- parNames[[i]]
       for(j in parNames[[i]])
-        formulaStates[[j]]<- stateFormulas(DM[[i]][[j]],nbStates,angleMean=(j=="mean" & circularAngleMean[[i]]))
+        formulaStates[[j]]<- stateFormulas(DM[[i]][[j]],nbStates,angleMean=(j=="mean" & circularAngleMean[[i]]),data=data)
       
       #if(circularAngleMean[[i]]){
       tmpCov <- vector('list',length(parNames[[i]]))
@@ -69,6 +69,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       #if(parCount[[i]]!=length(Par[[i]]) & ParChecks) stop("Based on DM$",i,", Par$",i," must be of length ",ncol(tmpDM))
     } else {
       if(is.null(dim(DM[[i]]))) stop("DM for ",i," is not specified correctly")
+      if(nrow(DM[[i]])!=parSize[[i]]*nbStates) stop("DM$",i," should consist of ",parSize[[i]]*nbStates," rows")
       DMnames<-colnames(DM[[i]])
       if(is.null(DMnames)) DMnames<-paste0(i,"Beta",1:ncol(DM[[i]]))
       DMterms<-unique(DM[[i]][suppressWarnings(which(is.na(as.numeric(DM[[i]]))))])
@@ -87,7 +88,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
             tmpcolname <- colnames(newDM)[seq(1,length(meanind)*2-1,2)[j]]
             for(jj in 1:nbStates){
               if(DM[[i]][jj,j]!=0){
-                terms <- sort(attr(terms(stateFormulas(formula(paste0("~",DM[[i]][jj,j])),nbStates,angleMean=TRUE)[[jj]]),"term.labels"),decreasing=TRUE)
+                terms <- sort(attr(terms(stateFormulas(formula(paste0("~",DM[[i]][jj,j])),nbStates,angleMean=TRUE,data=data)[[jj]]),"term.labels"),decreasing=TRUE)
                 newDM[jj,seq(1,length(meanind)*2-1,2)[j]]<-terms[1]
                 colnames(newDM)[seq(1,length(meanind)*2-1,2)[j]]<-paste0(tmpcolname,"sin")
                 newDM[jj,seq(1,length(meanind)*2-1,2)[j]+1]<-terms[2]
