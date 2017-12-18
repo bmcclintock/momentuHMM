@@ -34,12 +34,13 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
   consensus <- vector('list',length(distnames))
   names(consensus) <- distnames
   
+  ndist <- dist
   for(i in distnames){
     if(dist[[i]]=="vmConsensus"){
       consensus[[i]] <- TRUE
       estAngleMean[[i]] <- circularAngleMean[[i]] <- TRUE
       if(is.null(DM[[i]])) stop("DM$",i," must be specified when dist$",i,"=vmConsensus")
-      dist[[i]] <- gsub("Consensus","",dist[[i]])
+      ndist[[i]] <- gsub("Consensus","",dist[[i]])
     } else consensus[[i]] <- FALSE
     if(is.null(circularAngleMean[[i]]) | !estAngleMean[[i]]) circularAngleMean[[i]] <- FALSE
     if(!is.logical(circularAngleMean[[i]])) stop("circularAngleMean$",i," must be logical")
@@ -82,5 +83,5 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
     #if(!is.null(DM[[i]]) !is.null(userBounds[[i]])) stop("either userBounds$",i," or DM$",i," must be NULL")
   }
 
-  return(list(p=p,dist=dist,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,consensus=consensus,DM=DM,cons=cons,workcons=workcons))
+  return(list(p=p,dist=ndist,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,consensus=consensus,DM=DM,cons=cons,workcons=workcons))
 }

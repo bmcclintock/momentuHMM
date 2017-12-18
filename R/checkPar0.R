@@ -84,8 +84,6 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
     data <- momentuHMMData(data)
   }
   
-  odist <- dist
-  
   if(is.null(Par0)){
     
     if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
@@ -125,7 +123,7 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
         consensus[[i]] <- TRUE
         estAngleMean[[i]] <- circularAngleMean[[i]] <- TRUE
         if(is.null(DM[[i]])) stop("DM$",i," must be specified when dist$",i,"=vmConsensus")
-        dist[[i]] <- gsub("Consensus","",dist[[i]])
+        #dist[[i]] <- gsub("Consensus","",dist[[i]])
       } else consensus[[i]] <- FALSE
       if(is.null(circularAngleMean[[i]]) | !estAngleMean[[i]]) circularAngleMean[[i]] <- FALSE
       if(!is.logical(circularAngleMean[[i]])) stop("circularAngleMean$",i," must be logical")
@@ -157,17 +155,17 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
     }
     p <- parDef(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds)
     nPar <- lapply(p$bounds,function(x) runif(nrow(x),ifelse(is.finite(x[,1]),x[,1],0),ifelse(is.finite(x[,2]),x[,2],max(x[,1]+1,1.e+6))))
-    par <- getParDM(data,nbStates,odist,nPar,zeroInflation,oneInflation,estAngleMean,circularAngleMean,DM,cons,userBounds,workcons)
+    par <- getParDM(data,nbStates,dist,nPar,zeroInflation,oneInflation,estAngleMean,circularAngleMean,DM,cons,userBounds,workcons)
     
   } else par <- Par0
-  m<-suppressMessages(fitHMM(data=data,nbStates=nbStates,dist=odist,
+  m<-suppressMessages(fitHMM(data=data,nbStates=nbStates,dist=dist,
                              Par0=par,beta0=beta0,delta0=delta0,
                              estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
                              formula=formula,formulaDelta=formulaDelta,stationary=stationary,
                              DM=DM,cons=cons,userBounds=userBounds,workcons=workcons,fit=FALSE,
                              stateNames=stateNames,fixPar=fixPar))
   
-  inputs <- checkInputs(nbStates,odist,par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,stateNames,checkInflation = TRUE)
+  inputs <- checkInputs(nbStates,dist,par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,stateNames,checkInflation = TRUE)
   p <- inputs$p
   DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,par,inputs$cons,inputs$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,inputs$circularAngleMean)
   

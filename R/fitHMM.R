@@ -707,15 +707,15 @@ fitHMM <- function(data,nbStates,dist,
   message("-----------------------------------------------------------------------\n")
   for(i in distnames){
     pNames<-p$parNames[[i]]
-    if(inputs$circularAngleMean[[i]]){ 
-      pNames[1]<-paste0("circular ",pNames[1])
-      if(inputs$consensus[[i]]) pNames[2]<-paste0("consensus ",pNames[2])
-    }
+    #if(inputs$circularAngleMean[[i]]){ 
+      #pNames[1]<-paste0("circular ",pNames[1])
+      #if(inputs$consensus[[i]]) pNames[2]<-paste0("consensus ",pNames[2])
+    #}
     if(is.null(DM[[i]])){
-      message(" ",i," ~ ",inputs$dist[[i]],"(",paste0(pNames,"=~1",collapse=", "),")")
+      message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,"=~1",collapse=", "),")")
     } else if(is.list(DM[[i]])){
-      message(" ",i," ~ ",inputs$dist[[i]],"(",paste0(pNames,"=",DM[[i]],collapse=", "),")")
-    } else message(" ",i," ~ ",inputs$dist[[i]],"(",paste0(pNames,": custom",collapse=", "),")")
+      message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,"=",DM[[i]],collapse=", "),")")
+    } else message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,": custom",collapse=", "),")")
   }
   message("\n Transition probability matrix formula: ",paste0(formula,collapse=""))
   message("\n Initial distribution formula: ",paste0(formulaDelta,collapse=""))
