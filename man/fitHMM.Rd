@@ -5,11 +5,11 @@
 \title{Fit a multivariate HMM to the data}
 \usage{
 fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
-  estAngleMean = NULL, circularAngleMean = NULL, consensus = NULL,
-  formula = ~1, formulaDelta = ~1, stationary = FALSE, verbose = 0,
-  nlmPar = NULL, fit = TRUE, DM = NULL, cons = NULL,
-  userBounds = NULL, workcons = NULL, stateNames = NULL,
-  knownStates = NULL, fixPar = NULL, retryFits = 0)
+  estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
+  formulaDelta = ~1, stationary = FALSE, verbose = 0, nlmPar = NULL,
+  fit = TRUE, DM = NULL, cons = NULL, userBounds = NULL,
+  workcons = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL,
+  retryFits = 0)
 }
 \arguments{
 \item{data}{An object \code{momentuHMMData}.}
@@ -17,7 +17,7 @@ fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
 \item{nbStates}{Number of states of the HMM.}
 
 \item{dist}{A named list indicating the probability distributions of the data streams. Currently
-supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'weibull', and 'wrpcauchy'. For example,
+supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
 \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
 and their respective probability distributions ('gamma', 'vm', and 'pois').  The names of the data streams 
 (e.g., 'step', 'angle', 'dives') must match component names in \code{data}.}
@@ -47,7 +47,8 @@ as a k x (\code{nbStates}-1) matrix, where k is the number of covariates and the
 \item{estAngleMean}{An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy'). For example, \code{estAngleMean=list(angle=TRUE)} indicates the angle mean is to be 
 estimated for 'angle'.  Default is \code{NULL}, which assumes any angle means are fixed to zero and are not to be estimated. 
-Any \code{estAngleMean} elements corresponding to data streams that do not have angular distributions are ignored.}
+Any \code{estAngleMean} elements corresponding to data streams that do not have angular distributions are ignored.
+\code{estAngleMean} is also ignored for any 'vmConsensus' data streams (because the angle mean must be estimated in consensus models).}
 
 \item{circularAngleMean}{An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
 regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.  For example, 
@@ -59,7 +60,7 @@ direction of movement (instead of standard directions relative to the x-axis; se
 using previous movement direction as the reference angle. Default is \code{NULL}, which assumes circular-linear regression is 
 used for any angular distributions for which the mean angle is to be estimated. \code{circularAngleMean} elements corresponding to angular data 
 streams are ignored unless the corresponding element of \code{estAngleMean} is \code{TRUE}. Any \code{circularAngleMean} elements 
-corresponding to data streams that do not have angular distributions are ignored.}
+corresponding to data streams that do not have angular distributions are ignored. \code{circularAngleMean} is also ignored for any 'vmConsensus' data streams (because the consensus model is a circular-circular regression model).}
 
 \item{formula}{Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effect). In addition to allowing standard functions in R formulas
 (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 

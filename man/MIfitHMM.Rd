@@ -6,14 +6,14 @@
 \usage{
 MIfitHMM(miData, nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   nbStates, dist, Par0, beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
-  circularAngleMean = NULL, consensus = NULL, formula = ~1,
-  formulaDelta = ~1, stationary = FALSE, verbose = 0, nlmPar = NULL,
-  fit = TRUE, DM = NULL, cons = NULL, userBounds = NULL,
-  workcons = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL,
-  retryFits = 0, covNames = NULL, spatialCovs = NULL, centers = NULL,
-  angleCovs = NULL, method = "IS", parIS = 1000, dfSim = Inf,
-  grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad = TRUE,
-  fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1, thetaSamp = NULL)
+  circularAngleMean = NULL, formula = ~1, formulaDelta = ~1,
+  stationary = FALSE, verbose = 0, nlmPar = NULL, fit = TRUE,
+  DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL,
+  stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
+  covNames = NULL, spatialCovs = NULL, centers = NULL, angleCovs = NULL,
+  method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5,
+  scaleSim = 1, force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf,
+  scalePostIS = 1, thetaSamp = NULL)
 }
 \arguments{
 \item{miData}{A \code{\link{crwData}} object, a \code{\link{crwSim}} object, or a list of \code{\link{momentuHMMData}} objects.}

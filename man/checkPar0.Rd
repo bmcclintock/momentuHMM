@@ -5,10 +5,9 @@
 \title{Check parameter length and order for a \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model}
 \usage{
 checkPar0(data, nbStates, dist, Par0 = NULL, beta0 = NULL, delta0 = NULL,
-  estAngleMean = NULL, circularAngleMean = NULL, consensus = NULL,
-  formula = ~1, formulaDelta = ~1, stationary = FALSE, DM = NULL,
-  cons = NULL, userBounds = NULL, workcons = NULL, stateNames = NULL,
-  fixPar = NULL)
+  estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
+  formulaDelta = ~1, stationary = FALSE, DM = NULL, cons = NULL,
+  userBounds = NULL, workcons = NULL, stateNames = NULL, fixPar = NULL)
 }
 \arguments{
 \item{data}{\code{\link{momentuHMMData}} object or a data frame containing the data stream and covariate values}

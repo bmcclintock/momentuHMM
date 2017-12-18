@@ -1,8 +1,10 @@
-momentuHMM 1.4.0 2017-12-11
+momentuHMM 1.4.0 2017-12-18
 -----------------
 NEW FEATURES
 
-* angleStrength function can now be used in circular-circular regression models. This allows each angular covariate (e.g. wind direction) to be weighted by an additional real-valued covariate (e.g. wind speed) as in Rivest et al. (2016).
+* von Mises consensus distribution of Rivest et al. (2016) can now be specified for angular data streams
+
+* angleStrength function can now be used in circular-circular regression models. This allows each angular covariate (e.g. wind direction) to be weighted by an additional positive real covariate (e.g. wind speed) as in Rivest et al. (2016).
 
 
 momentuHMM 1.3.0 2017-12-06

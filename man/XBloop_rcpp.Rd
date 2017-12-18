@@ -20,9 +20,13 @@ XBloop_rcpp(DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex,
 
 \item{circularAngleMean}{indicator for whether or not circular-circular regression model}
 
+\item{consensus}{indicator for whether or not circular-circular regression consensus model}
+
 \item{rindex}{row index for design matrix}
 
 \item{cindex}{column index for design matrix}
+
+\item{nbStates}{number of states}
 }
 \value{
 XB matrix

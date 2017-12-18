@@ -102,7 +102,6 @@ getParDM<-function(data=data.frame(),nbStates,dist,
                  oneInflation=NULL,
                  estAngleMean=NULL,
                  circularAngleMean=NULL,
-                 consensus=NULL,
                  DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL){
   
   ## check that the data is a momentuHMMData object or valid data frame
@@ -188,8 +187,8 @@ getParDM<-function(data=data.frame(),nbStates,dist,
       else tempCovs[[j]]<-mean(data[[j]],na.rm=TRUE)
     }
   }
-  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames=NULL,checkInflation = TRUE)
-  
+  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames=NULL,checkInflation = TRUE)
+
   #for(i in distnames){
   #  if(inputs$circularAngleMean[[i]]){
   #    for(j in names(tempCovs)){
@@ -204,10 +203,10 @@ getParDM<-function(data=data.frame(),nbStates,dist,
   #  }
   #}
   
-  DMinputs<-getDM(tempCovs,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)
+  DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)
   fullDM <- DMinputs$fullDM
   if(length(data))
-    DMind <- getDM(data,inputs$DM,dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)$DMind
+    DMind <- getDM(data,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)$DMind
   else DMind <- DMinputs$DMind
     cons <- DMinputs$cons
   workcons <- DMinputs$workcons

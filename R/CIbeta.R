@@ -90,7 +90,7 @@ CIbeta <- function(m,alpha=0.95)
   # inverse of Hessian
   Sigma <- ginv(m$mod$hessian)
 
-  p <- parDef(dist,nbStates,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds)
+  p <- parDef(lapply(dist,function(x) gsub("Consensus","",x)),nbStates,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds)
   bounds <- p$bounds
   #if(!all(unlist(lapply(p$bounds,is.numeric)))){
   #  for(i in distnames){

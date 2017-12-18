@@ -7,11 +7,11 @@
 simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
   delta = NULL, formula = ~1, formulaDelta = ~1, covs = NULL,
   nbCovs = 0, spatialCovs = NULL, zeroInflation = NULL,
-  oneInflation = NULL, circularAngleMean = NULL, consensus = NULL,
-  centers = NULL, centroids = NULL, obsPerAnimal = c(500, 1500),
-  initialPosition = c(0, 0), DM = NULL, cons = NULL, userBounds = NULL,
-  workcons = NULL, stateNames = NULL, model = NULL, states = FALSE,
-  retrySims = 0, lambda = NULL, errorEllipse = NULL)
+  oneInflation = NULL, circularAngleMean = NULL, centers = NULL,
+  centroids = NULL, obsPerAnimal = c(500, 1500), initialPosition = c(0,
+  0), DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL,
+  stateNames = NULL, model = NULL, states = FALSE, retrySims = 0,
+  lambda = NULL, errorEllipse = NULL)
 }
 \arguments{
 \item{nbAnimals}{Number of observed individuals to simulate.}
@@ -19,7 +19,7 @@ simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
 \item{nbStates}{Number of behavioural states to simulate.}
 
 \item{dist}{A named list indicating the probability distributions of the data streams. Currently
-supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'weibull', and 'wrpcauchy'. For example,
+supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
 \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
 and their respective probability distributions ('gamma', 'vm', and 'pois').}
 
@@ -72,7 +72,8 @@ regression.  Whenever circular-circular regression is used for an angular data s
 must be specified for the data stream, and the previous movement direction (i.e., a turning angle of zero) is automatically used 
 as the reference angle (i.e., the intercept). Default is \code{NULL}, which assumes circular-linear regression is 
 used for any angular distributions. Any \code{circularAngleMean} elements 
-corresponding to data streams that do not have angular distributions are ignored.}
+corresponding to data streams that do not have angular distributions are ignored.
+\code{circularAngleMean} is also ignored for any 'vmConsensus' data streams (because the consensus model is a circular-circular regression model).}
 
 \item{centers}{2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the simulated location data. These distance and angle 

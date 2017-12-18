@@ -144,7 +144,7 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
   if(!is.null(stateNames) & length(stateNames)!=nbStates)
     stop("stateNames must have length ",nbStates)
   
-  p <- parDef(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds=NULL)
+  p <- parDef(lapply(dist,function(x) gsub("Consensus","",x)),nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds=NULL)
   parSize <- p$parSize
   
   bounds <- p$bounds

@@ -33,6 +33,8 @@ distributions ('vm' and 'wrpcauchy').}
 \item{circularAngleMean}{Named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
 regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.}
 
+\item{consensus}{Named list indicating whether to use the circular-circular regression consensus model}
+
 \item{zeroInflation}{Named list of logicals indicating whether the probability distributions of the data streams are zero-inflated.}
 
 \item{oneInflation}{Named list of logicals indicating whether the probability distributions of the data streams are one-inflated.}
@@ -81,7 +83,7 @@ Par <- getPar(m)
 nbStates <- length(m$stateNames)
 
 inputs <- momentuHMM:::checkInputs(nbStates,m$conditions$dist,Par$Par,m$conditions$estAngleMean,
-          m$conditions$circularAngleMean,m$conditions$consensus,m$conditions$zeroInflation,m$conditions$oneInflation,
+          m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,
           m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,
           m$stateNames)
 
@@ -90,12 +92,12 @@ wpar <- momentuHMM:::n2w(Par$Par,m$conditions$bounds,Par$beta,log(Par$delta[-1]/
         m$conditions$Bndind)
 
 l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,
-     inputs$p$parSize,data,m$conditions$dist,model.matrix(m$conditions$formula,data),
-                   m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$consensus,
-                   m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$stationary,
-                   m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
-                   m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),
-                   m$conditions$wparIndex,covsDelta=m$covsDelta)
+     inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
+     m$conditions$estAngleMean,m$conditions$circularAngleMean,inputs$consensus,
+     m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$stationary,
+     m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
+     m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),
+     m$conditions$wparIndex,covsDelta=m$covsDelta)
 }
 
 }

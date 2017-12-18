@@ -171,7 +171,7 @@
 MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
                    nbStates, dist, 
                    Par0, beta0 = NULL, delta0 = NULL,
-                   estAngleMean = NULL, circularAngleMean = NULL, consensus = NULL,
+                   estAngleMean = NULL, circularAngleMean = NULL,
                    formula = ~1, formulaDelta = ~1, stationary = FALSE, 
                    verbose = 0, nlmPar = NULL, fit = TRUE, 
                    DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL, 
@@ -291,7 +291,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   
   #check HMM inputs and print model message
   test<-fitHMM(miData[[ind[1]]],nbStates, dist, Par0[[ind[1]]], beta0[[ind[1]]], delta0[[ind[1]]],
-         estAngleMean, circularAngleMean, consensus, formula, formulaDelta, stationary, verbose,
+         estAngleMean, circularAngleMean, formula, formulaDelta, stationary, verbose,
          nlmPar, fit = FALSE, DM, cons,
          userBounds, workcons, stateNames, knownStates[[ind[1]]], fixPar, retryFits)
   
@@ -302,7 +302,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
 
       if(nSims>1) cat("\rImputation ",j,"...",sep="")
       tmpFit<-suppressMessages(fitHMM(miData[[j]],nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
-                              estAngleMean, circularAngleMean, consensus, formula, formulaDelta, stationary, verbose,
+                              estAngleMean, circularAngleMean, formula, formulaDelta, stationary, verbose,
                               nlmPar, fit, DM, cons,
                               userBounds, workcons, stateNames, knownStates[[j]], fixPar, retryFits))
       if(retryFits>=1) cat("\n")

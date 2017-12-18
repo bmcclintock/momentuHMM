@@ -6,7 +6,7 @@
 #' @param nbAnimals Number of observed individuals to simulate.
 #' @param nbStates Number of behavioural states to simulate.
 #' @param dist A named list indicating the probability distributions of the data streams. Currently
-#' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'weibull', and 'wrpcauchy'. For example,
+#' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
 #' \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
 #' and their respective probability distributions ('gamma', 'vm', and 'pois').
 #' @param Par A named list containing vectors of initial state-dependent probability distribution parameters for 
@@ -49,6 +49,7 @@
 #' as the reference angle (i.e., the intercept). Default is \code{NULL}, which assumes circular-linear regression is 
 #' used for any angular distributions. Any \code{circularAngleMean} elements 
 #' corresponding to data streams that do not have angular distributions are ignored.
+#' \code{circularAngleMean} is also ignored for any 'vmConsensus' data streams (because the consensus model is a circular-circular regression model).
 #' @param centers 2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 #' centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the simulated location data. These distance and angle 
 #' covariates can be included in \code{formula} and \code{DM} using the row names of \code{centers}.  If no row names are provided, then generic names are generated 
@@ -337,7 +338,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     zeroInflation=NULL,
                     oneInflation=NULL,
                     circularAngleMean=NULL,
-                    consensus=NULL,
                     centers=NULL,
                     centroids=NULL,
                     obsPerAnimal=c(500,1500),
@@ -375,7 +375,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     stateNames<-model$stateNames
     estAngleMean<-model$conditions$estAngleMean
     circularAngleMean<-model$conditions$circularAngleMean
-    consensus<-model$conditions$consensus
     DM <- model$conditions$DM
     cons <- model$conditions$cons
     workcons <- model$conditions$workcons
@@ -440,7 +439,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(states) model$data$states <- NULL
 
     if(is.null(covs)) {
-      p<-parDef(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds)
+      p<-parDef(lapply(dist,function(x) gsub("Consensus","",x)),nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds)
       covNames<-character()
       for(i in distnames){
         covNames<-c(covNames,getCovNames(model,p,i)$DMterms)
@@ -480,7 +479,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     Par <- Par[distnames]
     
     mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & is.null(centers) & is.null(centroids) & ("step" %in% names(dist)) & all(unlist(initialPosition)==c(0,0)) & is.null(lambda) & is.null(errorEllipse) & !is.list(obsPerAnimal) & is.null(covs) & !nbCovs & !length(attr(terms.formula(formula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & is.null(delta)) # indicator for moveHMM::simData
-    if(all(names(dist) %in% c("step","angle")) & mHind){
+    if(all(names(dist) %in% c("step","angle")) & all(unlist(dist) %in% moveHMMdists) & mHind){
       zi <- FALSE
       if(!is.null(zeroInflation$step)) zi <- zeroInflation$step
       if(is.null(dist$angle)) dist$angle<-"none"
@@ -490,8 +489,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       return(momentuHMMData(data))
     }
   }
-  
-  Fun <- lapply(dist,function(x) paste("r",x,sep=""))
 
   if(nbAnimals<1)
     stop("nbAnimals should be at least 1.")
@@ -539,10 +536,12 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     else estAngleMean[[i]]<-FALSE
   }
   
-  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames,checkInflation = TRUE)
+  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames,checkInflation = TRUE)
   p <- inputs$p
   parSize <- p$parSize
   bounds <- p$bounds
+  
+  Fun <- lapply(inputs$dist,function(x) paste("r",x,sep=""))
 
   spatialcovnames<-NULL
   if(!is.null(spatialCovs)){
@@ -551,7 +550,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(is.null(spatialcovnames)) stop('spatialCovs must be a named list')
     nbSpatialCovs<-length(spatialcovnames)
     if(!("step" %in% distnames)) stop("spatialCovs can only be included when 'step' distribution is specified") 
-    else if(!(dist[["step"]] %in% stepdists)) stop("spatialCovs can only be included when valid 'step' distributions are specified") 
+    else if(!(inputs$dist[["step"]] %in% stepdists)) stop("spatialCovs can only be included when valid 'step' distributions are specified") 
     for(j in 1:nbSpatialCovs){
       if(class(spatialCovs[[j]])!="RasterLayer") stop("spatialCovs$",spatialcovnames[j]," must be of class 'RasterLayer'")
       if(any(is.na(raster::getValues(spatialCovs[[j]])))) stop("missing values are not permitted in spatialCovs")
@@ -740,7 +739,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   # initial state distribution
   if(is.null(delta)) delta <- rep(1,nbStates)/nbStates
 
-  zeroMass<-oneMass<-vector('list',length(dist))
+  zeroMass<-oneMass<-vector('list',length(inputs$dist))
   names(zeroMass)<-names(oneMass)<-distnames
 
   allStates <- NULL
@@ -757,13 +756,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     data[[i]]<-numeric()
   }
   if("angle" %in% distnames){ 
-    if(dist[["angle"]] %in% angledists & ("step" %in% distnames))
-      if(dist[["step"]] %in% stepdists){
+    if(inputs$dist[["angle"]] %in% angledists & ("step" %in% distnames))
+      if(inputs$dist[["step"]] %in% stepdists){
         data$x<-numeric()
         data$y<-numeric()
       }
   } else if("step" %in% distnames){
-      if(dist[["step"]] %in% stepdists){
+      if(inputs$dist[["step"]] %in% stepdists){
         data$x<-numeric()
         data$y<-numeric()
       }    
@@ -784,10 +783,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(inputs$consensus[[i]]) pNames[2]<-paste0("consensus ",pNames[2])
     }
     if(is.null(DM[[i]])){
-      message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,"=~1",collapse=", "),")")
+      message(" ",i," ~ ",inputs$dist[[i]],"(",paste0(pNames,"=~1",collapse=", "),")")
     } else if(is.list(DM[[i]])){
-      message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,"=",DM[[i]],collapse=", "),")")
-    } else message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,": custom",collapse=", "),")")
+      message(" ",i," ~ ",inputs$dist[[i]],"(",paste0(pNames,"=",DM[[i]],collapse=", "),")")
+    } else message(" ",i," ~ ",inputs$dist[[i]],"(",paste0(pNames,": custom",collapse=", "),")")
   }
   message("\n Transition probability matrix formula: ",paste0(formula,collapse=""))
   message("\n Initial distribution formula: ",paste0(formulaDelta,collapse=""))
@@ -937,7 +936,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         gFull <-  DMcov %*% beta
         
         # format parameters
-        DMinputs<-getDM(subCovs,inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
+        DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
         wpar <- n2w(Par,bounds,beta,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
@@ -957,7 +956,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           }
         }
         covsDelta <- model.matrix(formulaDelta,subCovs[1,,drop=FALSE])
-        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,dist,p$Bndind,nc,meanind,covsDelta)
+        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta)
         g <- gFull[1,,drop=FALSE]
         delta <- fullsubPar$delta
       } else {
@@ -1006,7 +1005,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         
         if(nbSpatialCovs |  length(centerInd) | length(centroidInd)){
           # format parameters
-          DMinputs<-getDM(cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE]),inputs$DM,dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
+          DMinputs<-getDM(cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
           fullDM <- DMinputs$fullDM
           DMind <- DMinputs$DMind
           wpar <- n2w(Par,bounds,beta,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
@@ -1025,7 +1024,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
               }
             }
           }
-          subPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,dist,p$Bndind,nc,meanind,covsDelta)
+          subPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist,p$Bndind,nc,meanind,covsDelta)
         } else {
           subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
         }
@@ -1043,14 +1042,14 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           for(j in 1:(parSize[[i]]-zeroInflation[[i]]-oneInflation[[i]]))
             genArgs[[i]][[j+1]] <- subPar[[i]][(j-1)*nbStates+Z[k]]
           
-          if(dist[[i]] %in% angledists){
+          if(inputs$dist[[i]] %in% angledists){
             
             genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
             if(genData[[i]][k] >  pi) genData[[i]][k] <- genData[[i]][k]-2*pi
             if(genData[[i]][k] < -pi) genData[[i]][k] <- genData[[i]][k]+2*pi
   
             if(i=="angle" & ("step" %in% distnames)){
-              if(dist[["step"]] %in% stepdists) {
+              if(inputs$dist[["step"]] %in% stepdists) {
                 if(genData$step[k]>0){
                   phi <- phi + genData[[i]][k]
                 } #else if(genData$step[k]==0) {
@@ -1062,7 +1061,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             }
           } else {
             
-            if(dist[[i]]=="gamma") {
+            if(inputs$dist[[i]]=="gamma") {
               shape <- genArgs[[i]][[2]]^2/genArgs[[i]][[3]]^2
               scale <- genArgs[[i]][[3]]^2/genArgs[[i]][[2]]
               genArgs[[i]][[2]] <- shape
@@ -1117,8 +1116,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       }
       
       if("angle" %in% distnames){ 
-        if(dist[["angle"]] %in% angledists & ("step" %in% distnames))
-          if(dist[["step"]] %in% stepdists){
+        if(inputs$dist[["angle"]] %in% angledists & ("step" %in% distnames))
+          if(inputs$dist[["step"]] %in% stepdists){
             d$angle[1] <- NA # the first angle value is arbitrary
             step0 <- which(d$step==0)
             d$angle[c(step0,step0+1)] <- NA
@@ -1127,7 +1126,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             d$y=X[,2]
           }
       } else if("step" %in% distnames){
-        if(dist[["step"]] %in% stepdists){
+        if(inputs$dist[["step"]] %in% stepdists){
           d$x=c(0,cumsum(d$step)[-nrow(d)])
           d$y=X[,2]
         }    
@@ -1166,7 +1165,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       data <- cbind(data,states=allStates)
     
     for(i in distnames){
-      if(dist[[i]] %in% angledists)
+      if(inputs$dist[[i]] %in% angledists)
         class(data[[i]]) <- c(class(data[[i]]), "angle")
     }
     
@@ -1188,7 +1187,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                           zeroInflation,
                           oneInflation,
                           circularAngleMean,
-                          consensus,
                           centers,
                           centroids,
                           obsPerAnimal,

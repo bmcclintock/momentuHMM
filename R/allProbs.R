@@ -70,7 +70,14 @@ allProbs <- function(m,nbStates)
     }
   }
   
-  par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$consensus,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta)
+  consensus <- vector('list',length(distnames))
+  names(consensus) <- distnames
+  for(i in distnames){
+    consensus[[i]] <- (dist[[i]]=="vmConsensus")
+  }
+  dist <- lapply(dist,function(x) gsub("Consensus","",x))
+
+  par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta)
   
   Fun <- lapply(dist,function(x) paste("d",x,sep=""))
   

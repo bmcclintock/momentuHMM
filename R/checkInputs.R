@@ -1,4 +1,4 @@
-checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames,checkInflation=FALSE)
+checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames,checkInflation=FALSE)
 {
   distnames<-names(dist)
   
@@ -30,18 +30,20 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,consensus
   } else {
     if(!is.list(circularAngleMean) | is.null(names(circularAngleMean))) stop("'circularAngleMean' must be a named list")
   }
-  if(is.null(consensus)){
-    consensus <- vector('list',length(distnames))
-    names(consensus) <- distnames
-  } else {
-    if(!is.list(consensus) | is.null(names(consensus))) stop("'consensus' must be a named list")
-  }
+
+  consensus <- vector('list',length(distnames))
+  names(consensus) <- distnames
+  
   for(i in distnames){
+    if(dist[[i]]=="vmConsensus"){
+      consensus[[i]] <- TRUE
+      estAngleMean[[i]] <- circularAngleMean[[i]] <- TRUE
+      if(is.null(DM[[i]])) stop("DM$",i," must be specified when dist$",i,"=vmConsensus")
+      dist[[i]] <- gsub("Consensus","",dist[[i]])
+    } else consensus[[i]] <- FALSE
     if(is.null(circularAngleMean[[i]]) | !estAngleMean[[i]]) circularAngleMean[[i]] <- FALSE
-    if(is.null(consensus[[i]]) | !circularAngleMean[[i]]) consensus[[i]] <- FALSE
     if(!is.logical(circularAngleMean[[i]])) stop("circularAngleMean$",i," must be logical")
     if(circularAngleMean[[i]] & is.null(DM[[i]])) stop("DM$",i," must be specified when circularAngleMean$",i,"=TRUE")
-    if(!is.logical(consensus[[i]])) stop("consensus$",i," must be logical")
   }
   circularAngleMean<-circularAngleMean[distnames]
   consensus<-consensus[distnames]
@@ -80,5 +82,5 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,consensus
     #if(!is.null(DM[[i]]) !is.null(userBounds[[i]])) stop("either userBounds$",i," or DM$",i," must be NULL")
   }
 
-  return(list(p=p,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,consensus=consensus,DM=DM,cons=cons,workcons=workcons))
+  return(list(p=p,dist=dist,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,consensus=consensus,DM=DM,cons=cons,workcons=workcons))
 }

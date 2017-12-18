@@ -14,6 +14,7 @@
 #' distributions ('vm' and 'wrpcauchy').
 #' @param circularAngleMean Named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
 #' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.  
+#' @param consensus Named list indicating whether to use the circular-circular regression consensus model
 #' @param stationary \code{FALSE} if there are covariates. If TRUE, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param cons Named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
@@ -52,7 +53,8 @@
 #' 
 #' #natural parameter
 #' p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
-#' m$conditions$circularAngleMean,m$conditions$consensus,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
+#' m$conditions$circularAngleMean,lapply(m$conditions$dist,function(x) x=="vmConsensus"),
+#' m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
 #' m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,
 #' matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta)
 #' }
