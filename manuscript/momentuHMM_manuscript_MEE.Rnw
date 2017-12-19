@@ -451,7 +451,7 @@ It is straightforward to add additional data stream probability distributions, a
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=\textwidth]{plot_sesResults2}
+  \includegraphics[width=\textwidth]{plot_sesResults1}
   \caption{Selected results from a 4-state southern elephant seal analysis originally presented by \cite{MichelotEtAl2017} that was replicated using momentuHMM. The 15 southern elephant seal tracks are colored by the most likely state sequence (green = ``outbound'', yellow = ``search'', red = ``forage'', purple = ``inbound'') during foraging trips from the colony on Kerguelen Island. Further details can be found in the package vignette.}
   \label{fig:sesTracks}
 \end{figure}
