@@ -220,6 +220,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
                                   df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, force.quad = force.quad)
       }
       stopImplicitCluster()
+      names(crwSim) <- ids
       
       registerDoParallel(cores=ncores)
       miData<-
