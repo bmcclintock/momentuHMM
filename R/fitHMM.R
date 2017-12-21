@@ -75,7 +75,7 @@
 #' Design matrices specified using formulas allow standard functions in R formulas
 #' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).  Special formula functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 #' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
-#' and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.
+#' \code{angleFormula(cov,strength)} for the angle mean of circular-circular regression models, and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.
 #' @param cons An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
 #' for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
 #' \code{cons=list(step=c(1,2,1,1))} raises the second parameter to the second power. Default=NULL, which simply raises all parameters to 
@@ -151,10 +151,14 @@
 #' In other words, the mean turning angle is zero when the coefficient(s) B=0.
 #' 
 #' \item Circular-circular regression in \code{momentuHMM} is designed for turning angles (not bearings) as computed by \code{\link{simData}} and \code{\link{prepData}}. 
-#' Any circular-circular regression covariates for time step t should therefore be relative to the previous 
+#' Any circular-circular regression angle covariates for time step t should therefore be relative to the previous 
 #' direction of movement for time step t-1.  In other words, circular-circular regression covariates for time step t should be the turning angle
 #' between the direction of movement for time step t-1 and the standard direction of the covariate relative to the x-axis for time step t.  If provided standard directions in radians relative to the x-axis 
 #' (where 0 = east, pi/2 = north, pi = west, and -pi/2 = south), \code{\link{circAngles}} or \code{\link{prepData}} can perform this calculation for you.  
+#'
+#' When the circular-circular regression model is used, the special function \code{angleStrength(cov,strength)} can be used in \code{DM} for the mean of angular distributions (i.e. 'vm', 'vmConsensus', and 'wrpcauchy'),
+#' where \code{cov} is an angle covariate (e.g. wind direction) and \code{strength} is a positive real covariate (e.g. wind speed). This allows angle covariates to be weighted based on their `strength' at time step t as in
+#' Rivest et al. (2016).  In this case, the link function for the mean angle is atan2(Z*sin(X)*B,1+Z*cos(X)*B), where X are the angle covariates (\code{cov}), Z the strength covariates (\code{strength}), and B the angle coefficients (see Rivest et al. 2016).
 #' 
 #' \item State-specific formulas can be specified in \code{DM} using special formula functions. These special functions can take
 #' the names \code{paste0("state",1:nbStates)} (where the integer indicates the state-specific formula).  For example, 
@@ -370,6 +374,9 @@
 #' Patterson T.A., Basson M., Bravington M.V., Gunn J.S. 2009.
 #' Classifying movement behaviour in relation to environmental conditions using hidden Markov models.
 #' Journal of Animal Ecology, 78 (6), 1113-1123.
+#' 
+#' Rivest, LP, Duchesne, T, Nicosia, A, Fortin, D, 2016. A general angular regression model for the analysis of data on animal movement in ecology. 
+#' Journal of the Royal Statistical Society: Series C (Applied Statistics), 65(3):445-463.
 #' 
 #' @export
 #' @importFrom Rcpp evalCpp

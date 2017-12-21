@@ -81,7 +81,7 @@
 #' Design matrices specified using formulas allow standard functions in R formulas
 #' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).  Special formula functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 #' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
-#' and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.
+#' \code{angleFormula(cov,strength)} for the angle mean of circular-circular regression models, and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.
 #' @param cons An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
 #' for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
 #' \code{cons=list(step=c(1,2,1,1))} raises the second parameter to the second power. Default=NULL, which simply raises all parameters to 
@@ -191,6 +191,10 @@
 #' \code{cosinorCos(x)=cos(2*pi*x/period)} and \code{consinorSin(x)=sin(2*pi*x/period} for inclusion in the model (i.e., 2 additional parameters per state). The amplitude of the sine wave
 #' is thus \code{sqrt(B_cos^2 + B_sin^2)}, where \code{B_cos} and \code{B_sin} are the working parameters correponding to \code{cosinorCos(x)} and \code{cosinorSin(x)}, respectively (e.g., see Cornelissen 2014).
 #'
+#' When the circular-circular regression model is used, the special function \code{angleStrength(cov,strength)} can be used in \code{DM} for the mean of angular distributions (i.e. 'vm', 'vmConsensus', and 'wrpcauchy'),
+#' where \code{cov} is an angle covariate (e.g. wind direction) and \code{strength} is a positive real covariate (e.g. wind speed). This allows angle covariates to be weighted based on their `strength' at time step t as in
+#' Rivest et al. (2016).
+#' 
 #' \item If the length of covariate values passed (either through 'covs', or 'model') is not the same
 #' as the number of observations suggested by 'nbAnimals' and 'obsPerAnimal', then the series of
 #' covariates is either shortened (removing last values - if too long) or extended (starting
@@ -321,6 +325,9 @@
 #'
 #' McClintock BT, London JM, Cameron MF, Boveng PL. 2015. Modelling animal movement using the Argos satellite telemetry location error ellipse. 
 #' Methods in Ecology and Evolution 6(3):266-277.
+#' 
+#' Rivest, LP, Duchesne, T, Nicosia, A, Fortin, D, 2016. A general angular regression model for the analysis of data on animal movement in ecology. 
+#' Journal of the Royal Statistical Society: Series C (Applied Statistics), 65(3):445-463.
 #'
 #' @export
 #' @importFrom stats rnorm runif rmultinom step terms.formula
