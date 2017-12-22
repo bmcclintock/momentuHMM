@@ -174,37 +174,40 @@ One of the key features of \verb|momentuHMM| is the ability to specify an unlimi
 The state transition probabilities $({\mathbf \Gamma}^{(t)})$ and initial distribution $({\boldsymbol \delta}^{(0)})$ can also be modelled as functions of covariates, using a multinomial logit link, as described e.g.\ by \cite{MichelotEtAl2016}. Permissable R classes for covariates include \verb|numeric|, \verb|integer|, or \verb|factor|. Factors can be particularly useful for specifying models with individual- or group-level (e.g. sex or age class) effects on state transition and probability distribution parameters. Spatio-temporal covariates can also be of classes \verb|rasterLayer|, \verb|rasterStack|, or \verb|rasterBrick| \citep{Hijmans2016}, in which case \verb|momentuHMM| automatically extracts the appropriate covariate values from the raster based on the time and location of each observation (see example in section \ref{sec:turtle}).
 
 \begin{table}
-  \caption{\label{tab:pdfs} Data stream $(z)$ probability distributions, natural parameters, and default link functions for covariate modelling. Probability distributions with positive support can be zero-inflated (with additional zero-mass parameters), while the beta distribution can be zero- and/or one-inflated (with additional one-mass parameters). If user-specified bounds are provided, then custom link functions are used instead of the defaults (see package documentation for further details). If both zero- and one-inflation are included, then a multinomial logit link is used because these probabilities must sum to less than one (in this case, any user-specified bounds for the zero- and one-inflation parameters are ignored). If circular-circular regression is specified for the mean of angular distributions (``vm'' and ``wrpcauchy''), then the link function described in \cite{DuchesneEtAl2015} is used. Users seeking additional probability distributions are encouraged to contact the authors.}
+  \caption{\label{tab:pdfs} Data stream $(z)$ probability distributions, natural parameters, and default link functions for covariate modelling. Probability distributions with positive support can be zero-inflated (with additional zero-mass parameters), while the beta distribution can be zero- and/or one-inflated (with additional one-mass parameters). If user-specified bounds are provided, then custom link functions are used instead of the defaults (see package documentation for further details). If both zero- and one-inflation are included, then a multinomial logit link is used because these probabilities must sum to less than one (in this case, any user-specified bounds for the zero- and one-inflation parameters are ignored). If circular-circular regression is specified for the mean of angular distributions (``vm'' and ``wrpcauchy''), then the link function described in \cite{RivestEtAl2016} is used. The von Mises consensus distribution (``vmConsensus'') is a special case of the von Mises circular-circular regression model where the concentration parameter depends on the level of agreement among short-term directional persistence and angular covariates. Users seeking additional probability distributions are encouraged to contact the authors.}
   \begin{tabular}{llll}
   \toprule
   Distribution & Support & Parameters & Link function\footnotemark \tabularnewline
   \midrule
-  Bernoulli (``\verb|bern|'')          & $z_t\in\{0,1\}$          & $\verb|prob|\in(0,1)$            &  $\text{logit}$ \tabularnewline  
-  Beta (``\verb|beta|'')               & $z_t\in(0,1)$            & $\verb|shape1|>0$                &  $\log$ \tabularnewline  
-                                       &                          & $\verb|shape2|>0$                &  $\log$ \tabularnewline
-                                       &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
-                                       &                          & $\verb|one-mass|\in(0,1)$        &  $\text{logit}$ \tabularnewline 
-  Exponential (``\verb|exp|'')         & $z_t>0$                  & $\verb|rate|>0$                  &  $\log$ \tabularnewline  
-                                       &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
-  Gamma (``\verb|gamma|'')             & $z_t>0$                  & $\verb|mean|>0$                  &  $\log$ \tabularnewline  
-                                       &                          & $\verb|sd|>0$                    &  $\log$ \tabularnewline  
-                                       &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
-  Log normal (``\verb|lnorm|'')        & $z_t>0$                  & $\verb|location|\in{\rm I\!R}$   &  identity \tabularnewline  
-                                       &                          & $\verb|scale|>0$                 &  $\log$ \tabularnewline  
-                                       &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
-  Normal (``\verb|norm|'')             & $z_t\in{\rm I\!R}$       & $\verb|mean|\in{\rm I\!R}$       &  identity \tabularnewline  
-                                       &                          & $\verb|sd|>0$                    &  $\log$ \tabularnewline 
-  Poisson (``\verb|pois|'')            & $z_t\in\{0,1,\ldots\}$   & $\verb|lambda|>0$                &  $\log$ \tabularnewline  
-  Von Mises (``\verb|vm|'')            & $z_t\in(-\pi,\pi]$       & $\verb|mean|\in(-\pi,\pi]$       &  $\tan(\verb|mean|/2)$ \tabularnewline  
-                                       &                          & $\verb|concentration|>0$         &  $\log$ \tabularnewline 
-  Weibull (``\verb|weibull|'')         & $z_t>0$                  & $\verb|shape|>0$                 &  $\log$ \tabularnewline  
-                                       &                          & $\verb|scale|>0$                 &  $\log$ \tabularnewline  
-                                       &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
-  Wrapped Cauchy (``\verb|wrpcauchy|'')& $z_t\in(-\pi,\pi]$       & $\verb|mean|\in(-\pi,\pi]$       &  $\tan(\verb|mean|/2)$ \tabularnewline  
-                                       &                          & $\verb|concentration|\in(0,1)$ &  $\text{logit}$ \tabularnewline 
+  Bernoulli (``\verb|bern|'')                 & $z_t\in\{0,1\}$          & $\verb|prob|\in(0,1)$            &  $\text{logit}$ \tabularnewline  
+  Beta (``\verb|beta|'')                      & $z_t\in(0,1)$            & $\verb|shape1|>0$                &  $\log$ \tabularnewline  
+                                              &                          & $\verb|shape2|>0$                &  $\log$ \tabularnewline
+                                              &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
+                                              &                          & $\verb|one-mass|\in(0,1)$        &  $\text{logit}$ \tabularnewline 
+  Exponential (``\verb|exp|'')                & $z_t>0$                  & $\verb|rate|>0$                  &  $\log$ \tabularnewline  
+                                              &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
+  Gamma (``\verb|gamma|'')                    & $z_t>0$                  & $\verb|mean|>0$                  &  $\log$ \tabularnewline  
+                                              &                          & $\verb|sd|>0$                    &  $\log$ \tabularnewline  
+                                              &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
+  Log normal (``\verb|lnorm|'')               & $z_t>0$                  & $\verb|location|\in{\rm I\!R}$   &  identity \tabularnewline  
+                                              &                          & $\verb|scale|>0$                 &  $\log$ \tabularnewline  
+                                              &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
+  Normal (``\verb|norm|'')                    & $z_t\in{\rm I\!R}$       & $\verb|mean|\in{\rm I\!R}$       &  identity \tabularnewline  
+                                              &                          & $\verb|sd|>0$                    &  $\log$ \tabularnewline 
+  Poisson (``\verb|pois|'')                   & $z_t\in\{0,1,\ldots\}$   & $\verb|lambda|>0$                &  $\log$ \tabularnewline  
+  Von Mises (``\verb|vm|'')                   & $z_t\in(-\pi,\pi]$       & $\verb|mean|\in(-\pi,\pi]$       &  $\tan(\verb|mean|/2)$ \tabularnewline  
+                                              &                          & $\verb|concentration|>0$         &  $\log$ \tabularnewline 
+  Von Mises (``\verb|vmConsensus|'')          & $z_t\in(-\pi,\pi]$       & $\verb|mean|\in(-\pi,\pi]$       &  \cite{RivestEtAl2016} \tabularnewline  
+                                              &                          & $\verb|kappa|>0$                 &  $\log$ \tabularnewline 
+  Weibull (``\verb|weibull|'')                & $z_t>0$                  & $\verb|shape|>0$                 &  $\log$ \tabularnewline  
+                                              &                          & $\verb|scale|>0$                 &  $\log$ \tabularnewline  
+                                              &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
+  Wrapped Cauchy (``\verb|wrpcauchy|'')       & $z_t\in(-\pi,\pi]$       & $\verb|mean|\in(-\pi,\pi]$       &  $\tan(\verb|mean|/2)$ \tabularnewline  
+                                              &                          & $\verb|concentration|\in(0,1)$   &  $\text{logit}$ \tabularnewline 
   \bottomrule
   \end{tabular}
-  \footnotesize{$^1$Link functions $(g)$ relate natural scale parameters $({\boldsymbol \theta})$ to a $T \times k$ design matrix $({\mathbf X})$ and $k-$vector of working scale parameters $(\boldsymbol{\beta}\in \mathbb{R}^k)$ such that $g({\boldsymbol \theta})={\mathbf X}\boldsymbol{\beta}$.}
+  \footnotesize{$^1$Link functions $(g)$ relate natural scale parameters $({\boldsymbol \theta})$ to a $T \times K$ design matrix $({\mathbf X})$ and $K-$vector of working scale parameters $(\boldsymbol{\beta}\in \mathbb{R}^k)$ such that $g({\boldsymbol \theta})={\mathbf X}\boldsymbol{\beta}$. %In circular-circular regression models for the mean of angular distributions, we have $\theta_t = {\text atan2}( \sum_{k=1}^K z_{t,k} \sin(x_{t,k} \beta_k),1+\sum_{k=1}^K z_{t,k} \cos(x_{t,k} \beta_k))$, where $Z$ is a $T \times K$ matrix of positive real covariates (e.g. wind speed) and $X$ is a $T \times K$ matrix composed of angular covariates (e.g. wind direction).
+}
 \end{table}
 
 %\subsection{Workflow}
@@ -293,7 +296,7 @@ fitHaggisDMp <- fitHMM(data = processedHaggis, nbStates = 2,
 @
 (note that column and rownames for pseudo-design matrices are not required but can be useful). Pseudo-design matrices allow for the sharing of common working parameters (such as intercept terms) among natural scale parameters, and this can be used to constrain natural scale parameters (e.g., $\mu_1 \le \mu_2$) when used in tandem with the \verb|cons| argument.  This is particularly useful for preventing state label switching when repeatedly fitting the same HMM using multiple imputation methods (see section \ref{sec:mi}).
 
-Another noteworthy \verb|fitHMM| argument, \verb|circularAngleMean|, is a list argument that enables users to specify circular-circular regression models for the mean $(\mu)$ parameter of angular distributions, such as the wrapped Cauchy and von Mises, instead of circular-linear models based on the tangent link function (Table \ref{tab:pdfs}). When \verb|circularAngleMean| is specified as \verb|TRUE| for any given angular data stream (e.g. turning angle), then a special link function based on \cite{DuchesneEtAl2015} is used:
+Another noteworthy \verb|fitHMM| argument, \verb|circularAngleMean|, is a list argument that enables users to specify circular-circular regression models for the mean $(\mu)$ parameter of angular distributions, such as the wrapped Cauchy and von Mises, instead of circular-linear models based on the tangent link function (Table \ref{tab:pdfs}). When \verb|circularAngleMean| is specified as \verb|TRUE| for any given angular data stream (e.g. turning angle), then a special link function based on \cite{RivestEtAl2016} is used:
 \begin{equation}
   {\boldsymbol \mu}=\text{atan2}(\sin({\mathbf X}_\mu){\boldsymbol \beta}_\mu,1+\cos({\mathbf X}_\mu){\boldsymbol \beta}_\mu),
   \label{eq:circ}
