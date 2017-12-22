@@ -191,7 +191,7 @@ between the direction of movement for time step t-1 and the standard direction o
 (where 0 = east, pi/2 = north, pi = west, and -pi/2 = south), \code{\link{circAngles}} or \code{\link{prepData}} can perform this calculation for you.  
 
 When the circular-circular regression model is used, the special function \code{angleStrength(cov,strength)} can be used in \code{DM} for the mean of angular distributions (i.e. 'vm', 'vmConsensus', and 'wrpcauchy'),
-where \code{cov} is an angle covariate (e.g. wind direction) and \code{strength} is a positive real covariate (e.g. wind speed). This allows angle covariates to be weighted based on their `strength' at time step t as in
+where \code{cov} is an angle covariate (e.g. wind direction) and \code{strength} is a positive real covariate (e.g. wind speed). This allows angle covariates to be weighted based on their relative strength or importance at time step t as in
 Rivest et al. (2016).  In this case, the link function for the mean angle is atan2(Z*sin(X)*B,1+Z*cos(X)*B), where X are the angle covariates (\code{cov}), Z the strength covariates (\code{strength}), and B the angle coefficients (see Rivest et al. 2016).
 
 \item State-specific formulas can be specified in \code{DM} using special formula functions. These special functions can take
