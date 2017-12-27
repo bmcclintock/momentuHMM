@@ -294,7 +294,7 @@ fitHaggisDMp <- fitHMM(data = processedHaggis, nbStates = 2,
                        formula = ~ slope + I(slope^2),
                        estAngleMean = list(angle=TRUE))
 @
-(note that column and rownames for pseudo-design matrices are not required but can be useful). Pseudo-design matrices allow for the sharing of common working parameters (such as intercept terms) among natural scale parameters, and this can be used to constrain natural scale parameters (e.g., $\mu_1 \le \mu_2$) when used in tandem with the \verb|cons| argument.  This is particularly useful for preventing state label switching when repeatedly fitting the same HMM using multiple imputation methods (see section \ref{sec:mi}).
+\noindent (note that column and rownames for pseudo-design matrices are not required but can be useful). Pseudo-design matrices allow for the sharing of common working parameters (such as intercept terms) among natural scale parameters, and this can be used to constrain natural scale parameters (e.g., $\mu_1 \le \mu_2$) when used in tandem with the \verb|cons| argument.  This is particularly useful for preventing state label switching when repeatedly fitting the same HMM using multiple imputation methods (see section \ref{sec:mi}).
 
 Another noteworthy \verb|fitHMM| argument, \verb|circularAngleMean|, is a list argument that enables users to specify circular-circular regression models for the mean $(\mu)$ parameter of angular distributions, such as the wrapped Cauchy and von Mises, instead of circular-linear models based on the tangent link function (Table \ref{tab:pdfs}). When \verb|circularAngleMean| is specified as \verb|TRUE| for any given angular data stream (e.g. turning angle), then a special link function based on \cite{RivestEtAl2016} is used:
 \begin{equation}
@@ -617,6 +617,29 @@ For the ``transit'' state, pooled parameter estimates indicated step lengths inc
   \caption{Selected results from the loggerhead turtle example. Top panels include estimates and 95\% confidence intervals for the mean step length parameter as a function of ocean surface current speed $(w)$ when ocean surface current direction $(r_t)$ is the same as the bearing $(b_t)$ of movement (i.e. ${\text angle\_osc}=\cos(b_t-r_t)=1$; top-left panel), mean step length parameter as a function of ${\text angle\_osc}$ at the mean ocean surface current speed ($w=0.46$ m/s; top-middle panel), and mean turning angle parameter as a function of $d_t=\text{atan2}(\sin(r_t-b_{t-1}),\cos(r_t-b_{t-1}))$ (top-right panel). Bottom panel plots the pooled track, 95\% error ellipse confidence bands, and state (orange = ``foraging'', blue = ``transit'') estimates based on multiple imputations of the position process relative to ocean surface current speed (m/s) and direction on 2 December 2012.}
   \label{fig:turtleResults}
 \end{figure}
+
+It may often make more sense to weight angular covariates (such as ocean surface current direction) by their relative strength or importance. For example, weak ocean surface currents may be less likely to influence movement direction than strong ocean surface currents. This could easily be included in our turtle model using the \verb|angleStrength| function in \verb|DM|:
+<<fit-turtle-3, echo=TRUE, eval=FALSE>>=
+DM$angle = list(mean = ~state2(angleStrength(d, strength = w)), 
+                concentration= ~1))
+@
+\noindent which would yield the following model for the ``transit'' state mean angle parameter:
+\begin{equation}
+  \mu^\phi_t=\text{atan2}(w_t \sin(d_t) \beta^\phi,1+w_t \cos(d_t)\beta^\phi).
+    \label{eq:turtleMeanAngle2}
+\end{equation}
+
+Still another option would be to use the von Mises consensus model, where the concentration parameter would now depend on the level of agreement between short-term directional persistence (i.e. going forward) and ocean surface currents: 
+<<fit-turtle-4, echo=TRUE, eval=FALSE>>=
+dist$angle = "vmConsensus"
+DM$angle = list(mean = ~state2(angleStrength(d, strength = w)), 
+                kappa = ~1)
+@
+\noindent which would yield the following model for the ``transit'' state concentration parameter:
+\begin{equation}
+  \rho^\phi_t = \kappa \sqrt{[w_t \sin(d_t) \beta^\phi]^2+[1+w_t \cos(d_t)\beta^\phi]^2}.
+    \label{eq:turtleMeanAngle3}
+\end{equation}
 
 \subsection{Grey seal}
 \label{sec:greySeal}

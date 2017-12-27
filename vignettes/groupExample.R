@@ -19,7 +19,7 @@ plot(centroidData,ask=FALSE)
 #########################################################################
 
 #########################################################################
-## Simulate individual paths with state1 as BRW relative to centroid ####
+## Simulate individual paths with state 1 as BRW relative to centroid ###
 #########################################################################
 nbAnimals <- 20
 nbStates<-2
@@ -54,9 +54,12 @@ groupFit <- fitHMM(groupData,nbStates=nbStates,dist=dist,Par=Par0,DM=DM,stationa
 plot(groupFit,ask=FALSE)
 #########################################################################
 
+
+
+
 #########################################################################
-## Simulate individual paths with state1 as BCRW relative to centroid ###
-## using angleStrength and vmConsensus                                ###
+## Simulate individual paths with state 1 as BCRW relative to centroid ##
+## using angleStrength and vmConsensus                                 ##
 #########################################################################
 dist2 <- list(step="gamma", angle="vmConsensus")
 
