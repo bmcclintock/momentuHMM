@@ -51,11 +51,6 @@ Par0<-list(step=c(9.132130, 9.200282, 0, 8.579123, 8.640819),
 turtleFits<-MIfitHMM(miTurtleData$miData,ncores=ncores,
                      nbStates=nbStates,dist=dist,Par0=Par0,DM=DM,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,retryFits=retryFits)
 
-#for pooling remove any imputations where angle coeff strayed along boundary, i.e., keep those with -15 < 'mean_2:d' < 15
-ind<-which(dunif(unlist(lapply(turtleFits$HMMfits,function(x) x$CIbeta$angle$est[1])),-15,15)>0)
-turtleFits$HMMfits<-turtleFits$HMMfits[seq(1,nSims)[ind]]
-turtleFits$miSum<-MIpool(turtleFits$HMMfits,ncores=ncores)
-
 plot(turtleFits,plotCI=TRUE,covs=data.frame(angle_osc=1),ask=FALSE)
 
 save.image("turtleExample.RData")

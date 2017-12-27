@@ -60,7 +60,7 @@ plot(groupFit,ask=FALSE)
 #########################################################################
 dist2 <- list(step="gamma", angle="vmConsensus")
 
-# using these parameter values, minimum and maximum concentrations for state 1 are (1+min(centroid.dist)*0.01)*0.5 and (1+max(centroid.dist)*0.01)*0.5, respectively
+# using these parameter values, minimum and maximum concentrations for state 1 are abs(1-min(centroid.dist)*0.01)*0.5 and (1+max(centroid.dist)*0.01)*0.5, respectively
 Par2 <- list(step=c(30,50,15,25), angle = c(0.01,log(0.5),log(5)))
 DM2 <- list(angle=list(mean=~state1(angleStrength(centroid.angle,strength=centroid.dist)),kappa=~1))
 
