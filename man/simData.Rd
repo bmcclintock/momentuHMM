@@ -233,7 +233,7 @@ The \code{cosinor(x,period)} function converts \code{x} to 2 covariates
 \code{cosinorCos(x)=cos(2*pi*x/period)} and \code{consinorSin(x)=sin(2*pi*x/period} for inclusion in the model (i.e., 2 additional parameters per state). The amplitude of the sine wave
 is thus \code{sqrt(B_cos^2 + B_sin^2)}, where \code{B_cos} and \code{B_sin} are the working parameters correponding to \code{cosinorCos(x)} and \code{cosinorSin(x)}, respectively (e.g., see Cornelissen 2014).
 
-\item When the circular-circular regression model is used, the special function \code{angleStrength(cov,strength)} can be used in \code{DM} for the mean of angular distributions (i.e. 'vm', 'vmConsensus', and 'wrpcauchy'),
+When the circular-circular regression model is used, the special function \code{angleStrength(cov,strength)} can be used in \code{DM} for the mean of angular distributions (i.e. 'vm', 'vmConsensus', and 'wrpcauchy'),
 where \code{cov} is an angle covariate (e.g. wind direction) and \code{strength} is a positive real covariate (e.g. wind speed). This allows angle covariates to be weighted based on their strength or importance at time step t as in
 Rivest et al. (2016).
 
