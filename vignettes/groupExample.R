@@ -54,27 +54,4 @@ groupFit <- fitHMM(groupData,nbStates=nbStates,dist=dist,Par=Par0,DM=DM,stationa
 plot(groupFit,ask=FALSE)
 #########################################################################
 
-
-
-
-#########################################################################
-## Simulate individual paths with state 1 as BCRW relative to centroid ##
-## using angleStrength and vmConsensus                                 ##
-#########################################################################
-dist2 <- list(step="gamma", angle="vmConsensus")
-
-# using these parameter values, minimum and maximum concentrations for state 1 are abs(1-min(centroid.dist)*0.01)*0.5 and (1+max(centroid.dist)*0.01)*0.5, respectively
-Par2 <- list(step=c(30,50,15,25), angle = c(0.01,log(0.5),log(5)))
-DM2 <- list(angle=list(mean=~state1(angleStrength(centroid.angle,strength=centroid.dist)),kappa=~1))
-
-groupData2 <- simData(nbAnimals=nbAnimals,nbStates=nbStates,dist=dist2,Par=Par2,beta=beta,delta=delta,DM=DM2,circularAngleMean=list(angle=TRUE),centroids=list(centroid=data.frame(x=centroidData$x,y=centroidData$y)),obsPerAnimal=nbObs,initialPosition=initialPositions,states=TRUE,stateNames=stateNames)
-plot(groupData2,compact=TRUE,ask=FALSE)
-#########################################################################
-
-#########################################################################
-## Fit group dynamic model to simulated paths ###########################
-groupFit2 <- fitHMM(groupData2,nbStates=nbStates,dist=dist2,Par=Par0,DM=DM2,stationary=TRUE,estAngleMean=list(angle=TRUE),circularAngleMean=list(angle=TRUE),stateNames=stateNames)
-plot(groupFit2,plotCI=TRUE,covs=data.frame(centroid.angle=0),ask=FALSE)
-#########################################################################
-
 setRNG::setRNG(oldRNG)
