@@ -170,9 +170,12 @@ bestFit2<-fitHMM(bestData,nbStates=nbStates,Par=Par0,DM=centersDM2,estAngleMean=
 if(!all.equal(bestFit$mod$minimum,bestFit2$mod$minimum)) stop("bestFit and bestFit2 minimum do not match")
 if(!all.equal(bestFit$mod$estimate,bestFit2$mod$estimate)) stop("bestFit and bestFit2 estimate do not match")
 
-newExample <- mget(ls())
+tmp <- mget(c(paste0("mod",1:7),"miFits","bestFit","bestFit2"))
 
-#example <- newExample
-#save(example,file="extraExamples.RData")
+newExample <- lapply(tmp[c(paste0("mod",1:7),"bestFit","bestFit2")],function(x) x$mod$minimum)
+newExample$miFits <- lapply(tmp$miFits$HMMfits,function(x) x$mod$minimum)
+
+#oldExample <- newExample
+#save(oldExample,file="extraExamples.RData")
 
 setRNG::setRNG(oldRNG)
