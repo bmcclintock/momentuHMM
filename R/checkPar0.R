@@ -1,7 +1,7 @@
 
 #' Check parameter length and order for a \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model
 #' 
-#' Verify initial parameters (\code{Par0}, \code{beta0}, and \code{delta0}) are of correct length and print the parameters with labels based on \code{DM}, \code{formula}, and/or \code{formulaDelta}.  See \code{\link{fitHMM}} for 
+#' Prints parameters with labels based on \code{DM}, \code{formula}, and/or \code{formulaDelta}.  See \code{\link{fitHMM}} for 
 #' further argument details.
 #' 
 #' @param data \code{\link{momentuHMMData}} object or a data frame containing the data stream and covariate values
