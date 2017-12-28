@@ -8,4 +8,7 @@ vignettes/coastUTM.RData
 vignettes/sesData.csv
 tests/testthat/Rplots.pdf
 tests/testthat/test_examples.R
+tests/testthat/test_extraExamples.R
+tests/testthat/extraExamples.R
+tests/testthat/extraExamples.RData
 ^manuscript$
