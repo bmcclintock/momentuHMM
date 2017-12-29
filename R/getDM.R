@@ -73,6 +73,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       DMnames<-colnames(DM[[i]])
       if(is.null(DMnames)) DMnames<-paste0(i,"Beta",1:ncol(DM[[i]]))
       DMterms<-unique(DM[[i]][suppressWarnings(which(is.na(as.numeric(DM[[i]]))))])
+      meanind <- NULL
       if(!circularAngleMean[[i]]){
         tmpDM<-suppressWarnings(array(as.numeric(DM[[i]]),dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs)))
         newDM <- DM[[i]]
@@ -81,6 +82,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
         if(length(meanind)){
           sdind<-which(!apply(DM[[i]][1:nbStates+nbStates,,drop=FALSE],2,function(x) all(x==0)))
           newDM <- matrix(0,nrow(DM[[i]]),ncol=length(meanind)*2+length(sdind))
+          if(any(grepl("angleStrength",DM[[i]][,sdind]))) stop("angleStrength function only applies to angle mean")
           newDM[,length(meanind)*2+1:length(sdind)]<-DM[[i]][,sdind]
           colnames(newDM)[length(meanind)*2+1:length(sdind)] <- DMnames[sdind]
           colnames(newDM)[seq(1,length(meanind)*2-1,2)] <- DMnames[meanind]
@@ -101,6 +103,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
           DMterms<-unique(newDM[suppressWarnings(which(is.na(as.numeric(newDM))))])
         }
       }
+      if(!length(meanind) & any(grepl("angleStrength",DMterms))) stop("angleStrength function only applies to circular-circular regression model for angle mean")
       factorterms<-names(data)[unlist(lapply(data,is.factor))]
       factorcovs<-paste0(rep(factorterms,times=unlist(lapply(data[factorterms],nlevels))),unlist(lapply(data[factorterms],levels)))
       covs<-numeric()
