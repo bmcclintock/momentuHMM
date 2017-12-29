@@ -249,10 +249,24 @@ test_that("equivalent models with and without dummy covariate match",{
   momentuHMM_cov2<-fitHMM(data=data,nbStates=nbStates,Par=Par0_2,formula=~cov2,
                           beta0=rbind(par0$beta0[1,,drop=FALSE],c(0,0)),delta0=par0$delta0,DM=DM2,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
   
+  DM3<-list(step=matrix(c(1,"cov2",0,0,0,0,0,0,
+                          0,0,1,"cov2",0,0,0,0,
+                          0,0,0,0,1,"cov2",0,0,
+                          0,0,0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE),
+            angle=matrix(c("angleStrength(cov2,cov1)",0,0,0,0,0,
+                           0,"angleStrength(cov2,cov1)",0,0,0,0,
+                           0,0,1,"cov2",0,0,
+                           0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE,dimnames=list(c(paste0("mean_",1:nbStates),paste0("concentration_",1:nbStates)),
+                                                                             c(paste0("mean_",1:nbStates,":cov2"),paste0("concentration_",rep(1:nbStates,each=2),rep(c(":(Intercept)",":cov2"),2))))))
+  momentuHMM_cov3<-fitHMM(data=data,nbStates=nbStates,Par=Par0_2,formula=~cov2,
+                          beta0=rbind(par0$beta0[1,,drop=FALSE],c(0,0)),delta0=par0$delta0,DM=DM3,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
+  
   expect_equal(abs(unlist(lapply(momentuHMM_nocov$CIreal,function(x) x$est),use.names=FALSE)-unlist(lapply(momentuHMM_cov1$CIreal,function(x) x$est),use.names=FALSE))<1.e-3,rep(TRUE,length(unlist(lapply(momentuHMM_nocov$CIreal,function(x) x$est),use.names=FALSE))))
   expect_equal(abs(momentuHMM_nocov$mod$minimum-momentuHMM_cov1$mod$minimum)<1.e-6,TRUE)
   expect_equal(abs(unlist(lapply(momentuHMM_cov2$CIreal,function(x) x$est),use.names=FALSE)-unlist(lapply(momentuHMM_cov1$CIreal,function(x) x$est),use.names=FALSE))<1.e-3,rep(TRUE,length(unlist(lapply(momentuHMM_nocov$CIreal,function(x) x$est),use.names=FALSE))))
   expect_equal(abs(momentuHMM_cov2$mod$minimum-momentuHMM_cov1$mod$minimum)<1.e-6,TRUE)
+  expect_equal(abs(unlist(lapply(momentuHMM_cov3$CIreal,function(x) x$est),use.names=FALSE)-unlist(lapply(momentuHMM_cov1$CIreal,function(x) x$est),use.names=FALSE))<1.e-3,rep(TRUE,length(unlist(lapply(momentuHMM_nocov$CIreal,function(x) x$est),use.names=FALSE))))
+  expect_equal(abs(momentuHMM_cov3$mod$minimum-momentuHMM_cov1$mod$minimum)<1.e-6,TRUE)
   setRNG::setRNG(oldRNG)
   
 })
