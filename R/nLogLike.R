@@ -14,6 +14,7 @@
 #' distributions ('vm' and 'wrpcauchy').
 #' @param circularAngleMean Named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
 #' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.  
+#' @param consensus Named list indicating whether to use the circular-circular regression consensus model
 #' @param zeroInflation Named list of logicals indicating whether the probability distributions of the data streams are zero-inflated.
 #' @param oneInflation Named list of logicals indicating whether the probability distributions of the data streams are one-inflated.
 #' @param stationary \code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
@@ -54,17 +55,17 @@
 #'         m$conditions$Bndind)
 #' 
 #' l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,
-#'      inputs$p$parSize,data,m$conditions$dist,model.matrix(m$conditions$formula,data),
-#'                    m$conditions$estAngleMean,m$conditions$circularAngleMean,
-#'                    m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$stationary,
-#'                    m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
-#'                    m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),
-#'                    m$conditions$wparIndex,covsDelta=m$covsDelta)
+#'      inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
+#'      m$conditions$estAngleMean,m$conditions$circularAngleMean,inputs$consensus,
+#'      m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$stationary,
+#'      m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
+#'      m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),
+#'      m$conditions$wparIndex,covsDelta=m$covsDelta)
 #' }
 #'
 
 nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
-                     estAngleMean,circularAngleMean,zeroInflation,oneInflation,
+                     estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,
                      stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta)
 {
   # check arguments
@@ -75,7 +76,7 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
   
   # convert the parameters back to their natural scale
   if(length(wparIndex)) wpar[wparIndex] <- fixPar[wparIndex]
-  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta)
+  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta)
 
   nbAnimals <- length(unique(data$ID))
 

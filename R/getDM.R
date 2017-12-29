@@ -8,6 +8,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
   names(fullbounds) <- distnames
   nbObs<-nrow(data)
   parSize<-lapply(parNames,length)
+  #parCount <- vector('list',length(dist))
   
   for(i in distnames){
     if(is.null(DM[[i]])){
@@ -29,7 +30,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       formulaStates <- vector('list',length(parNames[[i]]))
       names(formulaStates) <- parNames[[i]]
       for(j in parNames[[i]])
-        formulaStates[[j]]<- stateFormulas(DM[[i]][[j]],nbStates)
+        formulaStates[[j]]<- stateFormulas(DM[[i]][[j]],nbStates,angleMean=(j=="mean" & circularAngleMean[[i]]),data=data)
       
       #if(circularAngleMean[[i]]){
       tmpCov <- vector('list',length(parNames[[i]]))
@@ -39,7 +40,12 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
         for(state in 1:nbStates){
           tmpCov[[j]][[state]]<-model.matrix(formulaStates[[j]][[state]],data)
           if(circularAngleMean[[i]]){
-            if(j=="mean" & attr(terms.formula(formulaStates[[j]][[state]]),"intercept")) tmpCov[[j]][[state]] <- tmpCov[[j]][[state]][,-1,drop=FALSE]
+            if(j=="mean"){
+              if(attr(terms.formula(formulaStates[[j]][[state]]),"intercept")) tmpCov[[j]][[state]] <- tmpCov[[j]][[state]][,-1,drop=FALSE]
+              cnames <- colnames(tmpCov[[j]][[state]])
+              # make sure columns are arranged in sin/cos pairs
+              tmpCov[[j]][[state]] <- tmpCov[[j]][[state]][,cnames[order(match(gsub("cos","",gsub("sin","",cnames)),unique(gsub("cos","",gsub("sin","",cnames)))))],drop=FALSE]
+            }
             #if(!length(tmpCov[[j]][[state]])) stop("invalid circular-circular regression formula for ",i," ",j)
           }
         }
@@ -58,20 +64,50 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
           parInd<-sum(parSizeDM[1:((j-1)*nbStates+state)])
         }
       }
-      if(ncol(tmpDM)!=length(Par[[i]]) & ParChecks) stop("Based on DM$",i,", Par$",i," must be of length ",ncol(tmpDM))
+      #parCount[[i]]<-ncol(tmpDM)
+      #if(circularAngleMean[[i]]) parCount[[i]] <- parCount[[i]] - sum(parSizeDM[grepl("mean",names(parSizeDM))])/2
+      #if(parCount[[i]]!=length(Par[[i]]) & ParChecks) stop("Based on DM$",i,", Par$",i," must be of length ",ncol(tmpDM))
     } else {
       if(is.null(dim(DM[[i]]))) stop("DM for ",i," is not specified correctly")
-      tmpDM<-suppressWarnings(array(as.numeric(DM[[i]]),dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs)))
+      if(nrow(DM[[i]])!=parSize[[i]]*nbStates) stop("DM$",i," should consist of ",parSize[[i]]*nbStates," rows")
       DMnames<-colnames(DM[[i]])
       if(is.null(DMnames)) DMnames<-paste0(i,"Beta",1:ncol(DM[[i]]))
       DMterms<-unique(DM[[i]][suppressWarnings(which(is.na(as.numeric(DM[[i]]))))])
+      if(!circularAngleMean[[i]]){
+        tmpDM<-suppressWarnings(array(as.numeric(DM[[i]]),dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs)))
+        newDM <- DM[[i]]
+      } else {
+        meanind<-which(!apply(DM[[i]][1:nbStates,,drop=FALSE],2,function(x) all(x==0)))
+        if(length(meanind)){
+          sdind<-which(!apply(DM[[i]][1:nbStates+nbStates,,drop=FALSE],2,function(x) all(x==0)))
+          newDM <- matrix(0,nrow(DM[[i]]),ncol=length(meanind)*2+length(sdind))
+          newDM[,length(meanind)*2+1:length(sdind)]<-DM[[i]][,sdind]
+          colnames(newDM)[length(meanind)*2+1:length(sdind)] <- DMnames[sdind]
+          colnames(newDM)[seq(1,length(meanind)*2-1,2)] <- DMnames[meanind]
+          for(j in meanind){
+            tmpcolname <- colnames(newDM)[seq(1,length(meanind)*2-1,2)[j]]
+            for(jj in 1:nbStates){
+              if(DM[[i]][jj,j]!=0){
+                terms <- sort(attr(terms(stateFormulas(formula(paste0("~",DM[[i]][jj,j])),nbStates,angleMean=TRUE,data=data)[[jj]]),"term.labels"),decreasing=TRUE)
+                newDM[jj,seq(1,length(meanind)*2-1,2)[j]]<-terms[1]
+                colnames(newDM)[seq(1,length(meanind)*2-1,2)[j]]<-paste0(tmpcolname,"sin")
+                newDM[jj,seq(1,length(meanind)*2-1,2)[j]+1]<-terms[2]
+                colnames(newDM)[seq(1,length(meanind)*2-1,2)[j]+1]<-paste0(tmpcolname,"cos")
+              }
+            }
+          }
+          tmpDM<-suppressWarnings(array(as.numeric(newDM),dim=c(nrow(newDM),ncol(newDM),nbObs)))
+          DMnames<-colnames(newDM)
+          DMterms<-unique(newDM[suppressWarnings(which(is.na(as.numeric(newDM))))])
+        }
+      }
       factorterms<-names(data)[unlist(lapply(data,is.factor))]
       factorcovs<-paste0(rep(factorterms,times=unlist(lapply(data[factorterms],nlevels))),unlist(lapply(data[factorterms],levels)))
       covs<-numeric()
       for(cov in DMterms){
-        if(is.factor(data[[cov]])) stop('factor levels must be specified individually when using pseudo-design matrices')
         form<-formula(paste("~",cov))
         varform<-all.vars(form)
+        if(any(unlist(lapply(data[varform[!(varform %in% factorcovs)]],function(x) inherits(x,"factor"))))) stop('factor levels must be specified individually when using pseudo-design matrices')
         if(any(varform %in% factorcovs)){
           factorvar<-factorcovs %in% varform
           tmpcov<-rep(factorterms,times=unlist(lapply(data[factorterms],nlevels)))[which(factorvar)]
@@ -85,7 +121,8 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
         }
         if(length(tmpcovs)!=nbObs) stop("covariates cannot contain missing values")
       }
-      if(length(DMterms)) tmpDM<-getDM_rcpp(tmpDM,covs,c(DM[[i]]),nrow(tmpDM),ncol(tmpDM),DMterms,nbObs)
+      if(length(DMterms)) tmpDM<-getDM_rcpp(tmpDM,covs,c(newDM),nrow(tmpDM),ncol(tmpDM),DMterms,nbObs)
+      #parCount[[i]] <- ncol(tmpDM)
     }
     colnames(tmpDM)<-DMnames
     fullDM[[i]]<-tmpDM
@@ -101,6 +138,11 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
   }
   simpDM<-simpDM[distnames]
   
+  parCount<- lapply(simpDM,ncol)
+  for(i in distnames[unlist(circularAngleMean)]){
+    parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(simpDM[[i]])))))
+  }
+
   for(i in distnames){
     if(nrow(simpDM[[i]])!=(parSize[[i]]*nbStates)){
       error<- paste0("DM for ",i," should have ",(parSize[[i]]*nbStates)," rows")
@@ -110,13 +152,15 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
         stop(paste0(error,". Should one inflation parameters be included?"))
       else stop(error)
     }
+    #if(!circularAngleMean[[i]]) parCount[[i]] <- ncol(simpDM[[i]])
   }
+  parCount <- parCount[distnames]
   
   if(ParChecks){
-    if(any(unlist(lapply(Par,length))!=unlist(lapply(simpDM,ncol))))
-      stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(lapply(simpDM,ncol)))),collapse=", "))
+    if(any(unlist(lapply(Par,length))!=unlist(parCount)))
+      stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(parCount))),collapse=", "))
     
-    if(sum((unlist(parSize)>0)*unlist(lapply(simpDM,ncol)))!=length(unlist(Par))) {
+    if(sum((unlist(parSize)>0)*unlist(parCount))!=length(unlist(Par))) {
       error <- "Wrong number of initial parameters"
       stop(error)
     }
@@ -129,15 +173,15 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
     if(!is.list(cons) | is.null(names(cons))) stop("'cons' must be a named list")
   }
   for(i in distnames){
-    if(is.null(cons[[i]])) cons[[i]] <- rep(1,ncol(simpDM[[i]]))
+    if(is.null(cons[[i]])) cons[[i]] <- rep(1,parCount[[i]])
   }
   cons<-cons[distnames]
   if(ParChecks){
     if(any(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))) 
       stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
   } else {
-    if(any(unlist(lapply(cons,length))!=unlist(lapply(simpDM,ncol)))) 
-      stop("Length mismatch between DM and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(simpDM,ncol)))),collapse=", "))    
+    if(any(unlist(lapply(cons,length))!=unlist(parCount))) 
+      stop("Length mismatch between DM and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(parCount))),collapse=", "))    
   }
   if(is.null(workcons)){
     workcons <- vector('list',length(distnames))
@@ -146,7 +190,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
     if(!is.list(workcons) | is.null(names(workcons))) stop("'workcons' must be a named list")
   }
   for(i in distnames){
-    if(is.null(workcons[[i]])) workcons[[i]] <- rep(0,ncol(simpDM[[i]]))
+    if(is.null(workcons[[i]])) workcons[[i]] <- rep(0,parCount[[i]])
   }
   #for(i in which(!(dist %in% "wrpcauchy"))){
   #  workcons[[distnames[i]]]<-rep(0,ncol(simpDM[[distnames[i]]]))
@@ -156,8 +200,8 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
     if(any(unlist(lapply(workcons,length))!=unlist(lapply(Par,length)))) 
       stop("Length mismatch between Par and workcons for: ",paste(names(which(unlist(lapply(workcons,length))!=unlist(lapply(Par,length)))),collapse=", "))
   } else {
-    if(any(unlist(lapply(workcons,length))!=unlist(lapply(simpDM,ncol)))) 
-      stop("Length mismatch between DM and workcons for: ",paste(names(which(unlist(lapply(workcons,length))!=unlist(lapply(simpDM,ncol)))),collapse=", "))      
+    if(any(unlist(lapply(workcons,length))!=unlist(parCount))) 
+      stop("Length mismatch between DM and workcons for: ",paste(names(which(unlist(lapply(workcons,length))!=unlist(parCount))),collapse=", "))      
   }
   DMind <- lapply(simpDM,function(x) all(unlist(apply(x,1,function(y) lapply(y,length)))==1))
   

@@ -14,6 +14,7 @@
 #' distributions ('vm' and 'wrpcauchy').
 #' @param circularAngleMean Named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
 #' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.  
+#' @param consensus Named list indicating whether to use the circular-circular regression consensus model
 #' @param stationary \code{FALSE} if there are covariates. If TRUE, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param cons Named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
@@ -52,7 +53,8 @@
 #' 
 #' #natural parameter
 #' p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
-#' m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
+#' m$conditions$circularAngleMean,lapply(m$conditions$dist,function(x) x=="vmConsensus"),
+#' m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
 #' m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,
 #' matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta)
 #' }
@@ -61,7 +63,7 @@
 #' @importFrom boot inv.logit
 #' @importFrom Brobdingnag as.brob sum
 
-w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind,nc,meanind,covsDelta)
+w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind,nc,meanind,covsDelta)
 {
 
   # identify initial distribution parameters
@@ -91,13 +93,17 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   else beta <- NULL
   
   distnames <- names(dist)
-  parindex <- c(0,cumsum(unlist(lapply(fullDM,ncol)))[-length(fullDM)])
+  parCount<- lapply(fullDM,ncol)
+  for(i in distnames[unlist(circularAngleMean)]){
+    parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]])))))
+  }
+  parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
   names(parindex) <- names(fullDM)
 
   parlist<-list()
   
   for(i in distnames){
-    tmpwpar<-wpar[parindex[[i]]+1:ncol(fullDM[[i]])]
+    tmpwpar<-wpar[parindex[[i]]+1:parCount[[i]]]
     if(estAngleMean[[i]] & Bndind[[i]]){ 
       bounds[[i]][,1] <- -Inf
       bounds[[i]][which(bounds[[i]][,2]!=1),2] <- Inf
@@ -110,7 +116,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
       tmpwpar[(foo - nbStates):(foo - 1)] <- angleMean
       tmpwpar[foo:length(tmpwpar)] <- kappa
     }
-    parlist[[i]]<-w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],workcons[[i]],nbObs,circularAngleMean[[i]],nbStates,0,nc[[i]],meanind[[i]])
+    parlist[[i]]<-w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],workcons[[i]],nbObs,circularAngleMean[[i]],consensus[[i]],nbStates,0,nc[[i]],meanind[[i]])
 
     if((dist[[i]] %in% angledists) & !estAngleMean[[i]]){
       tmp<-matrix(0,nrow=(parSize[[i]]+1)*nbStates,ncol=nbObs)
@@ -126,7 +132,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   return(parlist)
 }
 
-w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,nbStates,k=0,nc,meanind){
+w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,consensus,nbStates,k=0,nc,meanind){
   
   a<-bounds[,1]
   b<-bounds[,2]
@@ -140,7 +146,14 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,nbSta
   ind2<-which(zoInd)
   ind3<-which(!piInd & !zoInd)
   
-  XB <- p <- getXB(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,nbStates,nc,meanind)
+  if(!consensus){
+    XB <- p <- getXB(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,consensus,nbStates,nc,meanind)
+    l_t <- matrix(1,nrow(XB),ncol(XB))
+  } else {
+    tmpXB <- getXB(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,consensus,nbStates,nc,meanind)
+    XB <- p <- tmpXB$XB
+    l_t <- matrix(tmpXB$l_t,nrow(XB),ncol(XB))
+  }
   
   if(length(ind1) & !circularAngleMean)
     p[ind1,] <- (2*atan(XB[ind1,]))
@@ -163,8 +176,8 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,nbSta
   ind32<-ind3[which(is.finite(a[ind3]) & is.finite(b[ind3]))]
   ind33<-ind3[which(is.infinite(a[ind3]) & is.finite(b[ind3]))]
   
-  p[ind31,] <- (exp(XB[ind31,,drop=FALSE])+a[ind31])
-  p[ind32,] <- ((b[ind32]-a[ind32])*boot::inv.logit(XB[ind32,,drop=FALSE])+a[ind32])
+  p[ind31,] <- (l_t[ind31,,drop=FALSE] * exp(XB[ind31,,drop=FALSE])+a[ind31])
+  p[ind32,] <- ((b[ind32]-a[ind32])*(l_t[ind32,,drop=FALSE] * boot::inv.logit(XB[ind32,,drop=FALSE]))+a[ind32])
   p[ind33,] <- -(exp(-XB[ind33,,drop=FALSE]) - b[ind33])
   
   if(any(p<a | p>b))

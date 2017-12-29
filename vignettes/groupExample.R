@@ -19,7 +19,7 @@ plot(centroidData,ask=FALSE)
 #########################################################################
 
 #########################################################################
-## Simulate individual paths with state1 as BRW relative to centroid ####
+## Simulate individual paths with state 1 as BRW relative to centroid ###
 #########################################################################
 nbAnimals <- 20
 nbStates<-2

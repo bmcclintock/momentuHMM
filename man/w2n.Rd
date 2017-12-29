@@ -5,8 +5,8 @@
 \title{Scaling function: working to natural parameters}
 \usage{
 w2n(wpar, bounds, parSize, nbStates, nbCovs, estAngleMean, circularAngleMean,
-  stationary, cons, fullDM, DMind, workcons, nbObs, dist, Bndind, nc, meanind,
-  covsDelta)
+  consensus, stationary, cons, fullDM, DMind, workcons, nbObs, dist, Bndind, nc,
+  meanind, covsDelta)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}
@@ -25,6 +25,8 @@ distributions ('vm' and 'wrpcauchy').}
 
 \item{circularAngleMean}{Named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
 regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.}
+
+\item{consensus}{Named list indicating whether to use the circular-circular regression consensus model}
 
 \item{stationary}{\code{FALSE} if there are covariates. If TRUE, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
@@ -79,7 +81,8 @@ m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditi
 
 #natural parameter
 p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
-m$conditions$circularAngleMean,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
+m$conditions$circularAngleMean,lapply(m$conditions$dist,function(x) x=="vmConsensus"),
+m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
 m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,
 matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta)
 }

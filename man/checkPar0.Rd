@@ -53,7 +53,7 @@ each data stream.}
 \item{fixPar}{An optional list of vectors indicating parameters which are assumed known prior to fitting the model.}
 }
 \description{
-Verify initial parameters (\code{Par0}, \code{beta0}, and \code{delta0}) are of correct length and print the parameters with labels based on \code{DM}, \code{formula}, and/or \code{formulaDelta}.  See \code{\link{fitHMM}} for 
+Prints parameters with labels based on \code{DM}, \code{formula}, and/or \code{formulaDelta}.  See \code{\link{fitHMM}} for 
 further argument details.
 }
 \examples{

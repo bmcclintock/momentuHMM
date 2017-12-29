@@ -52,7 +52,7 @@
 #' @importFrom CircStats circ.mean
 
 plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
-                         sepStates=FALSE,col=NULL,cumul=TRUE,plotTracks=TRUE,plotCI=FALSE,alpha=0.95,...)
+                            sepStates=FALSE,col=NULL,cumul=TRUE,plotTracks=TRUE,plotCI=FALSE,alpha=0.95,...)
 {
   m <- x # the name "x" is for compatibility with the generic method
   m <- delta_bc(m)
@@ -61,9 +61,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   nbStates <- length(m$stateNames)
   
   distnames <- names(m$conditions$dist)
-
-  Fun <- lapply(m$conditions$dist,function(x) paste("d",x,sep=""))
-
+  
   if(is.null(hist.ylim)){
     hist.ylim<-vector('list',length(distnames))
     names(hist.ylim)<-distnames
@@ -75,7 +73,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   
   # prepare colors for the states (used in the maps and for the densities)
   if (!is.null(col) & length(col) >= nbStates)
-      col <- col[1:nbStates]
+    col <- col[1:nbStates]
   if(!is.null(col) & length(col)<nbStates) {
     warning("Length of 'col' should be at least number of states - argument ignored")
     if(nbStates<8) {
@@ -105,6 +103,12 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   if(inherits(x,"miSum")) plotEllipse <- m$plotEllipse
   else plotEllipse <- FALSE
   
+  # this function is used to muffle the warning "zero-length arrow is of indeterminate angle and so skipped" when plotCI=TRUE
+  muffWarn <- function(w) {
+    if(any(grepl("zero-length arrow is of indeterminate angle and so skipped",w)))
+      invokeRestart("muffleWarning")
+  }
+  
   ######################
   ## Prepare the data ##
   ######################
@@ -117,35 +121,35 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       for(zoo in 1:length(animals)) {
         if(length(which(unique(m$data$ID)==animals[zoo]))==0) # ID not found
           stop("Check 'animals' argument, ID not found")
-
+        
         animalsInd <- c(animalsInd,which(unique(m$data$ID)==animals[zoo]))
       }
     }
-
+    
     if(is.numeric(animals)) { # animals' indices provided
       if(length(which(animals<1))>0 | length(which(animals>nbAnimals))>0) # index out of bounds
         stop("Check 'animals' argument, index out of bounds")
-
+      
       animalsInd <- animals
     }
   }
-
+  
   nbAnimals <- length(animalsInd)
   ID <- unique(m$data$ID)[animalsInd]
-
+  
   ##################################
   ## States decoding with Viterbi ##
   ##################################
   if(nbStates>1) {
     if(inherits(x,"miSum")) states <- m$Par$states
     else {
-      cat("Decoding states sequence... ")
+      cat("Decoding state sequence... ")
       states <- viterbi(m)
       cat("DONE\n")
     }
   } else
     states <- rep(1,nrow(m$data))
-
+  
   if(sepStates | nbStates==1)
     w <- rep(1,nbStates)
   else {
@@ -215,14 +219,38 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     }
   }
   nbCovs <- ncol(model.matrix(newformula,m$data))-1 # substract intercept column
- 
+  
   Par <- m$mle[distnames]
-  parindex <- c(0,cumsum(unlist(lapply(m$conditions$fullDM,ncol)))[-length(m$conditions$fullDM)])
+  nc <- meanind <- vector('list',length(distnames))
+  names(nc) <- names(meanind) <- distnames
+  for(i in distnames){
+    nc[[i]] <- apply(m$conditions$fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
+    if(m$conditions$circularAngleMean[[i]]) {
+      meanind[[i]] <- which((apply(m$conditions$fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+      # deal with angular covariates that are exactly zero
+      if(length(meanind[[i]])){
+        angInd <- which(is.na(match(gsub("cos","",gsub("sin","",colnames(nc[[i]]))),colnames(nc[[i]]),nomatch=NA)))
+        sinInd <- colnames(nc[[i]])[which(grepl("sin",colnames(nc[[i]])[angInd]))]
+        nc[[i]][meanind[[i]],sinInd]<-ifelse(nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)])
+        nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)]<-ifelse(nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],sinInd])
+      }
+    }
+  }
+  
+  tmPar <- lapply(Par,function(x) c(t(x)))
+  parCount<- lapply(m$conditions$fullDM,ncol)
+  for(i in distnames[unlist(m$conditions$circularAngleMean)]){
+    parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]])))))
+  }
+  parindex <- c(0,cumsum(unlist(parCount))[-length(m$conditions$fullDM)])
   names(parindex) <- distnames
+  
   for(i in distnames){
     if(!is.null(m$conditions$DM[[i]])){# & m$conditions$DMind[[i]]){
-      Par[[i]] <- m$mod$estimate[parindex[[i]]+1:ncol(m$conditions$fullDM[[i]])]
-      names(Par[[i]])<-colnames(m$conditions$fullDM[[i]])
+      Par[[i]] <- m$mod$estimate[parindex[[i]]+1:parCount[[i]]]
+      if(m$conditions$circularAngleMean[[i]]){
+        names(Par[[i]]) <- unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]]))))
+      } else names(Par[[i]])<-colnames(m$conditions$fullDM[[i]])
     }
   }
   Par<-lapply(Par,function(x) c(t(x)))
@@ -262,7 +290,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   
   splineInputs<-getSplineDM(distnames,tmpInputs$DM,m,covs)
   covs<-splineInputs$covs
-  DMinputs<-getDM(covs,splineInputs$DM,tmpConditions$dist,nbStates,tmpp$parNames,tmpp$bounds,tmpPar,tmpConditions$cons,tmpConditions$workcons,tmpConditions$zeroInflation,tmpConditions$oneInflation,tmpConditions$circularAngleMean)
+  DMinputs<-getDM(covs,splineInputs$DM,tmpInputs$dist,nbStates,tmpp$parNames,tmpp$bounds,tmpPar,tmpConditions$cons,tmpConditions$workcons,tmpConditions$zeroInflation,tmpConditions$oneInflation,tmpConditions$circularAngleMean)
   fullDM <- DMinputs$fullDM
   DMind <- DMinputs$DMind
   wpar <- n2w(tmpPar,tmpp$bounds,beta,delta,nbStates,tmpInputs$estAngleMean,tmpInputs$DM,DMinputs$cons,DMinputs$workcons,tmpp$Bndind)
@@ -273,15 +301,26 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   names(nc) <- names(meanind) <- distnames
   for(i in distnames){
     nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(tmpInputs$circularAngleMean[[i]]) meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+    if(tmpInputs$circularAngleMean[[i]]) {
+      meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+      # deal with angular covariates that are exactly zero
+      if(length(meanind[[i]])){
+        angInd <- which(is.na(match(gsub("cos","",gsub("sin","",colnames(nc[[i]]))),colnames(nc[[i]]),nomatch=NA)))
+        sinInd <- colnames(nc[[i]])[which(grepl("sin",colnames(nc[[i]])[angInd]))]
+        nc[[i]][meanind[[i]],sinInd]<-ifelse(nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)])
+        nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)]<-ifelse(nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],sinInd])
+      }
+    }
   }
   
-  par <- w2n(wpar,tmpp$bounds,tmpp$parSize,nbStates,nbCovs,tmpInputs$estAngleMean,tmpInputs$circularAngleMean,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,tmpConditions$dist,tmpp$Bndind,nc,meanind,m$covsDelta)
+  par <- w2n(wpar,tmpp$bounds,tmpp$parSize,nbStates,nbCovs,tmpInputs$estAngleMean,tmpInputs$circularAngleMean,tmpInputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,tmpInputs$dist,tmpp$Bndind,nc,meanind,m$covsDelta)
   
   inputs <- checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
   p <- inputs$p
   
-  zeroMass<-oneMass<-vector('list',length(m$conditions$dist))
+  Fun <- lapply(inputs$dist,function(x) paste("d",x,sep=""))
+  
+  zeroMass<-oneMass<-vector('list',length(inputs$dist))
   names(zeroMass)<-names(oneMass)<-distnames
   
   # text for legends
@@ -313,7 +352,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   par(ask=ask)
   
   for(i in distnames){
-  
+    
     # split data by animals if necessary
     if(sepAnimals) {
       genData <- list()
@@ -335,9 +374,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     }
     
     infInd <- FALSE
-    if(m$conditions$dist[[i]] %in% angledists)
+    if(inputs$dist[[i]] %in% angledists)
       if(i=="angle" & ("step" %in% distnames))
-        if(m$conditions$dist$step %in% stepdists & m$conditions$zeroInflation$step)
+        if(inputs$dist$step %in% stepdists & m$conditions$zeroInflation$step)
           if(all(c("x","y") %in% names(m$data)))
             infInd <- TRUE
     
@@ -345,6 +384,12 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     covNames <- getCovNames(m,p,i)
     DMterms<-covNames$DMterms
     DMparterms<-covNames$DMparterms
+    
+    if(inputs$consensus[[i]]){
+      for(jj in 1:nbStates){
+        if(!is.null(DMparterms$mean[[jj]])) DMparterms$kappa[[jj]] <- c(DMparterms$mean[[jj]],DMparterms$kappa[[jj]])
+      }
+    }
     
     factorterms<-names(m$data)[unlist(lapply(m$data,is.factor))]
     factorcovs<-paste0(rep(factorterms,times=unlist(lapply(m$data[factorterms],nlevels))),unlist(lapply(m$data[factorterms],levels)))
@@ -381,17 +426,17 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       }
     }
     covmess <- ifelse(!m$conditions$DMind[[i]],paste0(": ",paste0(DMterms," = ",tmpcovs[DMterms],collapse=", ")),"")
-  
+    
     ###########################################
     ## Compute estimated densities on a grid ##
     ###########################################
     genDensities <- list()
     genFun <- Fun[[i]]
-    if(m$conditions$dist[[i]] %in% angledists) {
+    if(inputs$dist[[i]] %in% angledists) {
       grid <- seq(-pi,pi,length=1000)
-    } else if(m$conditions$dist[[i]] %in% integerdists){
+    } else if(inputs$dist[[i]] %in% integerdists){
       grid <- seq(0,max(m$data[[i]],na.rm=TRUE))
-    } else if(m$conditions$dist[[i]] %in% stepdists){
+    } else if(inputs$dist[[i]] %in% stepdists){
       grid <- seq(0,max(m$data[[i]],na.rm=TRUE),length=10000)
     } else {
       grid <- seq(min(m$data[[i]],na.rm=TRUE),max(m$data[[i]],na.rm=TRUE),length=10000)
@@ -399,12 +444,12 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     
     for(state in 1:nbStates) {
       genArgs <- list(grid)
-  
+      
       for(j in 1:(nrow(par[[i]])/nbStates))
         genArgs[[j+1]] <- par[[i]][(j-1)*nbStates+state,]
-  
+      
       # conversion between mean/sd and shape/scale if necessary
-      if(m$conditions$dist[[i]]=="gamma") {
+      if(inputs$dist[[i]]=="gamma") {
         shape <- genArgs[[2]]^2/genArgs[[3]]^2
         scale <- genArgs[[3]]^2/genArgs[[2]]
         genArgs[[2]] <- shape
@@ -420,7 +465,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       }
       
       for(j in p$parNames[[i]]){
-      
+        
         for(jj in DMparterms[[j]][[state]]){
           
           if(!is.factor(m$data[,jj])){
@@ -454,86 +499,92 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           
           tmpSplineInputs<-getSplineDM(i,inputs$DM,m,tempCovs)
           tempCovs<-tmpSplineInputs$covs
-          DMinputs<-getDM(tempCovs,tmpSplineInputs$DM[i],m$conditions$dist[i],nbStates,p$parNames[i],p$bounds[i],Par[i],m$conditions$cons[i],m$conditions$workcons[i],m$conditions$zeroInflation[i],m$conditions$oneInflation[i],m$conditions$circularAngleMean[i])
-
+          DMinputs<-getDM(tempCovs,tmpSplineInputs$DM[i],inputs$dist[i],nbStates,p$parNames[i],p$bounds[i],Par[i],m$conditions$cons[i],m$conditions$workcons[i],m$conditions$zeroInflation[i],m$conditions$oneInflation[i],m$conditions$circularAngleMean[i])
+          
           fullDM <- DMinputs$fullDM
           DMind <- DMinputs$DMind
           
           nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-          if(inputs$circularAngleMean[[i]]) meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
-          
-          gradfun<-function(wpar,k) {
-            w2n(wpar,p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,m$conditions$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta)[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,k]
+          if(inputs$circularAngleMean[[i]]) {
+            meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+            # deal with angular covariates that are exactly zero
+            if(length(meanind[[i]])){
+              angInd <- which(is.na(match(gsub("cos","",gsub("sin","",colnames(nc[[i]]))),colnames(nc[[i]]),nomatch=NA)))
+              sinInd <- colnames(nc[[i]])[which(grepl("sin",colnames(nc[[i]])[angInd]))]
+              nc[[i]][meanind[[i]],sinInd]<-ifelse(nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)])
+              nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)]<-ifelse(nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],sinInd])
+            }
           }
-          est<-w2n(c(m$mod$estimate[parindex[[i]]+1:ncol(fullDM[[i]])],beta),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,m$conditions$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta)[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,]
+          gradfun<-function(wpar,k) {
+            w2n(wpar,p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,inputs$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta)[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,k]
+          }
+          est<-w2n(c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,inputs$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta)[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,]
           if(plotCI){
-            dN<-t(mapply(function(x) tryCatch(numDeriv::grad(gradfun,c(m$mod$estimate[parindex[[i]]+1:ncol(fullDM[[i]])],beta),k=x),error=function(e) NA),1:gridLength))
-            se<-t(apply(dN[,1:ncol(fullDM[[i]])],1,function(x) tryCatch(suppressWarnings(sqrt(x%*%Sigma[parindex[[i]]+1:ncol(fullDM[[i]]),parindex[[i]]+1:ncol(fullDM[[i]])]%*%x)),error=function(e) NA)))
+            dN<-t(mapply(function(x) tryCatch(numDeriv::grad(gradfun,c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta),k=x),error=function(e) NA),1:gridLength))
+            se<-t(apply(dN[,1:parCount[[i]]],1,function(x) tryCatch(suppressWarnings(sqrt(x%*%Sigma[parindex[[i]]+1:parCount[[i]],parindex[[i]]+1:parCount[[i]]]%*%x)),error=function(e) NA)))
             uci<-est+qnorm(1-(1-alpha)/2)*se
             lci<-est-qnorm(1-(1-alpha)/2)*se
-            plot(tempCovs[,jj],est,ylim=range(c(lci,est,uci),na.rm=TRUE),xaxt="n",xlab=jj,ylab=paste(i,j,'parameter'),main=paste0(stateNames[state],ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]],collapse=", ")),"")),type="l")
+            plot(tempCovs[,jj],est,ylim=range(c(lci,est,uci),na.rm=TRUE),xaxt="n",xlab=jj,ylab=paste(i,ifelse(j=="kappa","concentration",j),'parameter'),main=paste0(stateNames[state],ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]],collapse=", ")),"")),type="l")
             if(!all(is.na(se))){
               ciInd <- which(!is.na(se))
               
-              options(warn = -1) # to muffle "zero-length arrow is of indeterminate angle and so skipped" warning
-              arrows(as.numeric(tempCovs[ciInd,jj]), lci[ciInd], as.numeric(tempCovs[ciInd,jj]),
-                     uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5))
-              options(warn = 1)
+              withCallingHandlers(arrows(as.numeric(tempCovs[ciInd,jj]), lci[ciInd], as.numeric(tempCovs[ciInd,jj]),
+                                         uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5)),warning=muffWarn)
               
             }
-          } else plot(tempCovs[,jj],est,xaxt="n",xlab=jj,ylab=paste(i,j,'parameter'),main=paste0(stateNames[state],ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]],collapse=", ")),"")),type="l") 
+          } else plot(tempCovs[,jj],est,xaxt="n",xlab=jj,ylab=paste(i,ifelse(j=="kappa","concentration",j),'parameter'),main=paste0(stateNames[state],ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]],collapse=", ")),"")),type="l") 
           if(is.factor(tempCovs[,jj])) axis(1,at=tempCovs[,jj],labels=tempCovs[,jj])
           else axis(1)
           
         }
       }
     }
-  
+    
     #########################
     ## Plot the histograms ##
     #########################
     if(sepAnimals) {
-  
+      
       # loop over the animals
       for(zoo in 1:nbAnimals) {
         if(sepStates) {
-  
+          
           # loop over the states
           for(state in 1:nbStates) {
             gen <- genData[[zoo]][which(states[which(m$data$ID==ID[zoo])]==state)]
             message <- paste0("Animal ID ",ID[zoo]," - ",stateNames[state],covmess)
-  
+            
             # the function plotHist is defined below
-            plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,state,hist.ylim[[i]],col,legText, cumul = cumul)
+            plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,state,hist.ylim[[i]],col,legText, cumul = cumul)
           }
-  
+          
         } else { # if !sepStates
           gen <- genData[[zoo]]
           message <- paste0("Animal ID ",ID[zoo],covmess)
-  
-          plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul)
+          
+          plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul)
         }
       }
     } else { # if !sepAnimals
       if(sepStates) {
-  
+        
         # loop over the states
         for(state in 1:nbStates) {
           gen <- genData[which(states==state)]
           message <- paste0("All animals - ",stateNames[state],covmess)
-  
-          plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,state,hist.ylim[[i]],col,legText, cumul = cumul)
+          
+          plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,state,hist.ylim[[i]],col,legText, cumul = cumul)
         }
-  
+        
       } else { # if !sepStates
         gen <- genData
         message <- paste0("All animals",covmess)
-  
-        plotHist(gen,genDensities,m$conditions$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul)
+        
+        plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul)
       }
     }
   }
-
+  
   ##################################################
   ## Plot the t.p. as functions of the covariates ##
   ##################################################
@@ -595,11 +646,11 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         }
         
         tmpSplineInputs<-getSplineFormula(newformula,m$data,tempCovs)
-          
+        
         desMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
         
         trMat <- trMatrix_rcpp(nbStates,beta,desMat)
-          
+        
         for(i in 1:nbStates){
           for(j in 1:nbStates){
             plot(tempCovs[,cov],trMat[i,j,],type="l",ylim=c(0,1),xlab=names(rawCovs)[cov],ylab=paste(i,"->",j))
@@ -612,10 +663,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
                 
                 ciInd <- which(!is.na(se))
                 
-                options(warn = -1) # to muffle "zero-length arrow is of indeterminate angle and so skipped" warning
-                arrows(as.numeric(tempCovs[ciInd,cov]), lci[ciInd], as.numeric(tempCovs[ciInd,cov]), 
-                       uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5))
-                options(warn = 1)
+                withCallingHandlers(arrows(as.numeric(tempCovs[ciInd,cov]), lci[ciInd], as.numeric(tempCovs[ciInd,cov]), 
+                                           uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5)),warning=muffWarn)
               }
             }
           }
@@ -626,7 +675,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       }
     }
   }
-
+  
   #################################
   ## Plot maps colored by states ##
   #################################
@@ -635,14 +684,14 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     if(nbStates>1) { # no need to plot the map if only one state
       par(mfrow=c(1,1))
       par(mar=c(5,4,4,2)-c(0,0,2,1)) # bottom, left, top, right
-  
+      
       for(zoo in 1:nbAnimals) {
         # states for animal 'zoo'
         subStates <- states[which(m$data$ID==ID[zoo])]
-  
+        
         # plot trajectory
         plot(x[[zoo]],y[[zoo]],pch=16,xlab="x",ylab="y",col=col[subStates],cex=0.6,asp=1)
-
+        
         segments(x0=x[[zoo]][-length(x[[zoo]])],y0=y[[zoo]][-length(x[[zoo]])],x1=x[[zoo]][-1],y1=y[[zoo]][-1],
                  col=col[subStates[-length(subStates)]],lwd=1.3)
         
@@ -692,7 +741,7 @@ plotHist <- function (gen,genDensities,dist,message,
     ymin <- 0
     ymax <- NA
   }
-
+  
   if(!sepStates) {
     nbStates <- length(genDensities)
     lty <- rep(1, nbStates)
@@ -702,7 +751,7 @@ plotHist <- function (gen,genDensities,dist,message,
       lty <- c(lty, 2)
     }
   }
-
+  
   distname <- names(dist)
   
   if(dist %in% angledists){
@@ -734,15 +783,15 @@ plotHist <- function (gen,genDensities,dist,message,
         }
       }
     }
-
+    
     # plot gen histogram
     hist(gen,prob=T,main="",ylim=c(0,ymax),xlab=paste0(distname," (radians)"),
          col="grey",border="white",breaks=breaks,xaxt="n")
     axis(1, at = c(-pi, -pi/2, 0, pi/2, pi),
          labels = expression(-pi, -pi/2, 0, pi/2, pi))
-
+    
     mtext(message,side=3,outer=TRUE,padj=2)
-
+    
     # plot gen density over the histogram
     if(sepStates)
       lines(genDensities[[state]],col=col[state],lwd=2)
@@ -761,13 +810,13 @@ plotHist <- function (gen,genDensities,dist,message,
     if(is.null(hist.ylim)) { # default
       h <- hist(gen,plot=F,breaks=breaks)
       ymax <- 1.3*max(h$density)
-  
+      
       # find the maximum of the gen densit-y-ies, and take it as ymax if necessary
       if(sepStates) {
         maxdens <- max(genDensities[[state]][,2])
         if(maxdens>ymax & maxdens<2*max(h$density))
           ymax <- maxdens
-  
+        
       } else {
         maxdens <- max(genDensities[[1]][,2])
         if(nbStates>1) {
@@ -783,13 +832,13 @@ plotHist <- function (gen,genDensities,dist,message,
         }
       }
     }
-  
+    
     # plot gen histogram
     hist(gen,prob=T,main="",ylim=c(ymin,ymax),xlab=distname,
          col="grey",border="white",breaks=breaks)
-  
+    
     mtext(message,side=3,outer=TRUE,padj=2)
-  
+    
     # plot gen density over the histogram
     if(sepStates)
       lines(genDensities[[state]],col=col[state],lwd=2)
@@ -804,5 +853,5 @@ plotHist <- function (gen,genDensities,dist,message,
       legend("topright",legText,lwd=rep(2,nbStates),col=col,bty="n")
     }
   }
-
+  
 }

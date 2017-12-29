@@ -80,7 +80,7 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
                  dm <- DM[[i]]
                  meanind<-unique(unlist(apply(dm[1:nbStates,,drop=FALSE],1,function(x) which(x!=0))))
                  sdind<-unique(unlist(apply(dm[nbStates+1:nbStates,,drop=FALSE],1,function(x) which(x!=0))))
-                 if(any(intersect(meanind,sdind))) stop("'DM' for ",i," cannot have parameters in common for mean and sd")
+                 if(any(intersect(meanind,sdind))) stop("'DM' for ",i," cannot have parameters in common for mean and concentration")
                }
                tmpbounds <- rbind(matrix(rep(c(-pi,pi),nbStates),ncol=2,byrow=TRUE),matrix(rep(c(0,Inf),nbStates),ncol=2,byrow=TRUE))
                parNames[[i]] <- c("mean","concentration") 
@@ -90,6 +90,17 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
                tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
                parNames[[i]] <- c("concentration")
              }
+           },
+           "vmConsensus"={
+             parSize[[i]] <- 2
+             if(is.matrix(DM[[i]])){
+               dm <- DM[[i]]
+               meanind<-unique(unlist(apply(dm[1:nbStates,,drop=FALSE],1,function(x) which(x!=0))))
+               sdind<-unique(unlist(apply(dm[nbStates+1:nbStates,,drop=FALSE],1,function(x) which(x!=0))))
+               if(any(intersect(meanind,sdind))) stop("'DM' for ",i," cannot have parameters in common for mean and kappa")
+             }
+             tmpbounds <- rbind(matrix(rep(c(-pi,pi),nbStates),ncol=2,byrow=TRUE),matrix(rep(c(0,Inf),nbStates),ncol=2,byrow=TRUE))
+             parNames[[i]] <- c("mean","kappa") 
            },
            "weibull"={
              parSize[[i]] <- 2 + zeroInflation[[i]]

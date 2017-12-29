@@ -19,7 +19,7 @@ simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
 \item{nbStates}{Number of behavioural states to simulate.}
 
 \item{dist}{A named list indicating the probability distributions of the data streams. Currently
-supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'weibull', and 'wrpcauchy'. For example,
+supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
 \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
 and their respective probability distributions ('gamma', 'vm', and 'pois').}
 
@@ -72,7 +72,8 @@ regression.  Whenever circular-circular regression is used for an angular data s
 must be specified for the data stream, and the previous movement direction (i.e., a turning angle of zero) is automatically used 
 as the reference angle (i.e., the intercept). Default is \code{NULL}, which assumes circular-linear regression is 
 used for any angular distributions. Any \code{circularAngleMean} elements 
-corresponding to data streams that do not have angular distributions are ignored.}
+corresponding to data streams that do not have angular distributions are ignored.
+\code{circularAngleMean} is also ignored for any 'vmConsensus' data streams (because the consensus model is a circular-circular regression model).}
 
 \item{centers}{2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the simulated location data. These distance and angle 
@@ -109,7 +110,7 @@ coefficients.
 Design matrices specified using formulas allow standard functions in R formulas
 (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).  Special formula functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
-and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.}
+\code{angleFormula(cov,strength)} for the angle mean of circular-circular regression models, and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.}
 
 \item{cons}{An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
 for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
@@ -231,6 +232,10 @@ of integers \code{0,1,...,23,0,1,...,23,0,1,...} (note that \code{simData} will 
 The \code{cosinor(x,period)} function converts \code{x} to 2 covariates
 \code{cosinorCos(x)=cos(2*pi*x/period)} and \code{consinorSin(x)=sin(2*pi*x/period} for inclusion in the model (i.e., 2 additional parameters per state). The amplitude of the sine wave
 is thus \code{sqrt(B_cos^2 + B_sin^2)}, where \code{B_cos} and \code{B_sin} are the working parameters correponding to \code{cosinorCos(x)} and \code{cosinorSin(x)}, respectively (e.g., see Cornelissen 2014).
+
+When the circular-circular regression model is used, the special function \code{angleStrength(cov,strength)} can be used in \code{DM} for the mean of angular distributions (i.e. 'vm', 'vmConsensus', and 'wrpcauchy'),
+where \code{cov} is an angle covariate (e.g. wind direction) and \code{strength} is a positive real covariate (e.g. wind speed). This allows angle covariates to be weighted based on their strength or importance at time step t as in
+Rivest et al. (2016).
 
 \item If the length of covariate values passed (either through 'covs', or 'model') is not the same
 as the number of observations suggested by 'nbAnimals' and 'obsPerAnimal', then the series of
@@ -360,6 +365,9 @@ Cornelissen, G. 2014. Cosinor-based rhythmometry. Theoretical Biology and Medica
 
 McClintock BT, London JM, Cameron MF, Boveng PL. 2015. Modelling animal movement using the Argos satellite telemetry location error ellipse. 
 Methods in Ecology and Evolution 6(3):266-277.
+
+Rivest, LP, Duchesne, T, Nicosia, A, Fortin, D, 2016. A general angular regression model for the analysis of data on animal movement in ecology. 
+Journal of the Royal Statistical Society: Series C (Applied Statistics), 65(3):445-463.
 }
 \seealso{
 \code{\link{prepData}}, \code{\link{simObsData}}

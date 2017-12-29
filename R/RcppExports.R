@@ -198,11 +198,13 @@ trMatrix_rcpp <- function(nbStates, beta, covs) {
 #' @param nr number of rows in design matrix
 #' @param nc number of column in design matrix
 #' @param circularAngleMean indicator for whether or not circular-circular regression model
+#' @param consensus indicator for whether or not circular-circular regression consensus model
 #' @param rindex row index for design matrix
 #' @param cindex column index for design matrix
+#' @param nbStates number of states
 #'
 #' @return XB matrix
-XBloop_rcpp <- function(DM, Xvec, nbObs, nr, nc, circularAngleMean, rindex, cindex) {
-    .Call('_momentuHMM_XBloop_rcpp', PACKAGE = 'momentuHMM', DM, Xvec, nbObs, nr, nc, circularAngleMean, rindex, cindex)
+XBloop_rcpp <- function(DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex, cindex, nbStates) {
+    .Call('_momentuHMM_XBloop_rcpp', PACKAGE = 'momentuHMM', DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex, cindex, nbStates)
 }
 

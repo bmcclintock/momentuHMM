@@ -1,4 +1,5 @@
 #' @importFrom survival untangle.specials
+#' @importFrom prodlim strip.terms
 cosinorCos<-function(x,period){
   cos(2*pi*x/period)
 }
@@ -6,41 +7,115 @@ cosinorSin<-function(x,period){
   sin(2*pi*x/period)
 }
 
-stateFormulas<-function(formula,nbStates,spec="state"){
+#angleStrength<-function(angle,strength){
+#  tt <- terms(f,specials=c("angleStrength"))
+#  st <- strip.terms(tt,specials=c("angleStrength"),arguments=list(angleStrength=list("strength"=1)))
+#}
+
+stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL){
   
-  Terms <- terms(formula, specials = c(paste0(spec,1:nbStates),"cosinor"))
+  Terms <- terms(formula, specials = c(paste0(spec,1:nbStates),"cosinor","angleStrength"))
+  if(any(attr(Terms,"order")>1)){
+    if(grepl("angleStrength\\(",attr(Terms,"term.labels")[attr(Terms,"order")>1])) stop("interactions with angleFormula are not allowed")
+  }
   
   stateFormula<-list()
-  if(length(unlist(attr(Terms,"specials")))){
+  if(length(unlist(attr(Terms,"specials"))) | angleMean){
     varnames <- attr(Terms,"term.labels")
     mainpart <- varnames
-    if(!is.null(unlist(attr(Terms, "specials")))){
-      cosInd <- survival::untangle.specials(Terms,"cosinor",order=1:10)$terms
-      stateInd <- numeric()
-      for(j in 1:nbStates){
-        tmpInd <- survival::untangle.specials(Terms,paste0(spec,j),order=1)$terms
-        if(length(tmpInd)) stateInd<-c(stateInd,tmpInd)
+    cosInd <- survival::untangle.specials(Terms,"cosinor",order=1:10)$terms
+    if(length(cosInd) & angleMean) stop("cosinor models are not supported for angle means")
+    angInd <- survival::untangle.specials(Terms,"angleStrength",order=1:10)$terms
+    if(length(angInd) & !angleMean) stop("angleStrength models are only allowed for angle means")
+    stateInd <- numeric()
+    for(j in 1:nbStates){
+      tmpInd <- survival::untangle.specials(Terms,paste0(spec,j),order=1)$terms
+      if(length(tmpInd)) stateInd<-c(stateInd,tmpInd)
+    }
+    if(length(cosInd) | length(angInd) | length(stateInd)){
+      mainpart <- varnames[-c(cosInd,angInd,stateInd)]
+    }
+    if(angleMean & length(mainpart)){
+      tmpmainpart <- mainpart
+      mainpart <- character()
+      if(any(grepl("cos",tmpmainpart)) | any(grepl("sin",tmpmainpart))) stop("sorry, the strings 'cos' and 'sin' are reserved and cannot appear in mean angle formulas and/or covariate names")
+      for(j in 1:length(tmpmainpart)){
+        mainpart <- c(mainpart,paste0(c("sin","cos"),"(",tmpmainpart[j],")"))
       }
-      if(length(cosInd) | length(stateInd)){
-        mainpart <- varnames[-c(cosInd,stateInd)]
+    }
+    for(j in varnames[cosInd])
+      mainpart<-c(mainpart,paste0(gsub("cosinor","cosinorCos",j)),paste0(gsub("cosinor","cosinorSin",j)))
+    if(length(angInd)){
+      stmp <- prodlim::strip.terms(Terms[attr(Terms,"specials")$angleStrength],specials="angleStrength",arguments=list(angleStrength=list("strength"=NULL)))
+      if(any(grepl("cos",attr(stmp,"term.labels"))) | any(grepl("sin",attr(stmp,"term.labels")))) stop("sorry, the strings 'cos' and 'sin' are reserved and cannot appear in mean angle formulas and/or covariate names")
+      for(jj in attr(stmp,"term.labels")){
+        if(is.null(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength)) stop("angleStrength is missing strength argument")
+        else if(!is.na(suppressWarnings(as.numeric((attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength))))) stop("angleStrength has invalid strength argument")
+        tmpForm <- as.formula(paste0("~-1+",attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength))
+        if(any(attr(terms(tmpForm),"order")>1)) stop("angleFormula strength argument for ",jj," cannot include term interactions")
+        if(!is.null(data)){
+          DMterms <- attr(terms(tmpForm),"term.labels")
+          factorterms<-names(data)[unlist(lapply(data,is.factor))]
+          factorcovs<-paste0(rep(factorterms,times=unlist(lapply(data[factorterms],nlevels))),unlist(lapply(data[factorterms],levels)))
+          covs<-numeric()
+          for(cov in DMterms){
+            form<-formula(paste("~",cov))
+            varform<-all.vars(form)
+            if(any(varform %in% factorcovs)){
+              factorvar<-factorcovs %in% varform
+              tmpcov<-rep(factorterms,times=unlist(lapply(data[factorterms],nlevels)))[which(factorvar)]
+              tmpcov<-gsub(factorcovs[factorvar],tmpcov,cov)
+              form <- formula(paste("~ 0 + ",tmpcov))
+            }
+            if(any(model.matrix(form,data)<0)) stop(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength," must be >=0 in order to be used in angleStrength")
+          }
+        }
+        mainpart<-c(mainpart,paste0(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength,":",c("sin","cos"),"(",jj,")"))
       }
-      for(j in varnames[cosInd])
-        mainpart<-c(mainpart,paste0(gsub("cosinor","cosinorCos",j)),paste0(gsub("cosinor","cosinorSin",j)))
     }
     
-  
     for(j in 1:nbStates){
       tmplabs<-attr(Terms,"term.labels")[attr(Terms,"specials")[[paste0(spec,j)]]]
       if(length(tmplabs)){
-        tmp<- terms(as.formula(paste("~",substr(tmplabs,nchar(paste0(spec,j))+1,nchar(tmplabs)),collapse="+")),specials="cosinor")
+        tmp<- terms(as.formula(paste("~",substr(tmplabs,nchar(paste0(spec,j))+1,nchar(tmplabs)),collapse="+")),specials=c("cosinor","angleStrength"))
       
         tmpnames<-attr(tmp,"term.labels")
+        if(any(attr(tmp,"order")>1)){
+          if(grepl("angleStrength\\(",tmpnames[attr(tmp,"order")>1])) stop("interactions with angleFormula are not allowed")
+        }
         mp<-tmpnames
-        if(!is.null(unlist(attr(tmp,"specials")))){
+        if(!is.null(unlist(attr(tmp,"specials"))) | angleMean){
           cosInd <- survival::untangle.specials(tmp,"cosinor",order=1:10)$terms
-          mp <- c(tmpnames[-cosInd])
+          if(length(cosInd) & angleMean) stop("cosinor models are not supported for angle means")
+          angInd <- survival::untangle.specials(tmp,"angleStrength",order=1:10)$terms
+          if(length(angInd) & !angleMean) stop("angleStrength models are only allowed for angle means")
+          if(length(cosInd) | length(angInd)){
+            mp <- c(tmpnames[-c(cosInd,angInd)])
+          }
+          if(angleMean & length(mp)){
+            tmpmp <- mp
+            mp <- character()
+            if(any(grepl("cos",tmpmp)) | any(grepl("sin",tmpmp))) stop("sorry, the strings 'cos' and 'sin' are reserved and cannot appear in mean angle formulas and/or covariate names")
+            for(jj in 1:length(tmpmp)){
+              mp <- c(mp,paste0(c("sin","cos"),"(",tmpmp[jj],")"))
+            }
+          }
           for(i in tmpnames[cosInd])
             mp<-c(mp,paste0(gsub("cosinor","cosinorCos",i)),paste0(gsub("cosinor","cosinorSin",i)))
+          if(length(angInd)){
+            stmp <- prodlim::strip.terms(tmp[attr(tmp,"specials")$angleStrength],specials="angleStrength",arguments=list(angleStrength=list("strength"=NULL)))
+            if(any(grepl("cos",attr(stmp,"term.labels"))) | any(grepl("sin",attr(stmp,"term.labels")))) stop("sorry, the strings 'cos' and 'sin' are reserved and cannot appear in mean angle formulas and/or covariate names")
+            for(jj in attr(stmp,"term.labels")){
+              if(is.null(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength)) stop("angleStrength is missing strength argument")
+              else if(!is.na(suppressWarnings(as.numeric((attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength))))) stop("angleStrength has invalid strength argument")
+              tmpForm <- as.formula(paste0("~-1+",attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength))
+              if(any(attr(terms(tmpForm),"order")>1)) stop("angleFormula strength argument for ",jj," cannot include term interactions")
+              if(!is.null(data)){
+                if(any(model.matrix(tmpForm,data)<0)) stop(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength," must be >=0 in order to be used in angleStrength")
+              }
+              mp<-c(mp,paste0(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength,":",c("sin","cos"),"(",jj,")"))
+            }
+          }
         }
       } else {
         tmp <- Terms
