@@ -71,6 +71,8 @@
 #' @param centers 2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 #' centers of attraction or repulsion) from which distance and angle covariates will be calculated based on realizations of the position process. 
 #' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' @param centroids List where each element is a data frame containing the x-coordinates ('x'), y-coordinates ('y'), and times (with user-specified name, e.g., `time') for centroids (i.e., dynamic activity centers where the coordinates can change over time)
+#' from which distance and angle covariates will be calculated based on the location data. See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{miData$crwPredict} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 #' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param method Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
@@ -176,10 +178,10 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
                    verbose = 0, nlmPar = NULL, fit = TRUE, 
                    DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL, 
                    stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
-                   covNames=NULL,spatialCovs=NULL,centers=NULL,angleCovs=NULL,
+                   covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL,
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad = TRUE,
-                   fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL
-                   ){
+                   fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL)
+{
 
   j <- NULL #gets rid of no visible binding for global variable 'j' NOTE in R cmd check
   
@@ -236,7 +238,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
             }
           }
           df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
-          prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,angleCovs=angleCovs)
+          prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs)
         }
       stopImplicitCluster()
       cat("DONE\n")
