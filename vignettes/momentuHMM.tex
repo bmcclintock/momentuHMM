@@ -377,10 +377,11 @@ Also based on \cite{RivestEtAl2016}, the von Mises consensus distribution is a s
   {\boldsymbol \rho}=\kappa \sqrt{\left[({\mathbf Z}_\mu \circ \sin({\mathbf X}_\mu)){\boldsymbol \beta}_\mu\right]^2+\left[1+({\mathbf Z}_\mu \circ \cos({\mathbf X}_\mu)){\boldsymbol \beta}_\mu\right]^2}.
   \label{eq:consensus}
 \end{equation}
-Note that the von Mises consensus distribution is parameterized in terms of $\mu$ and $\kappa$ (see Table \ref{tab:pdfs}), but \verb|momentuHMM| returns and plots real parameter estimates in terms of $\mu$ and $\rho$. When all ${\boldsymbol \beta}_\mu$ are non-negative, then the minimum and maximum values for $\rho$ are $\kappa \lvert 1-\min({\mathbf Z}_\mu {\boldsymbol \beta}_\mu) \rvert$ and $\kappa \left[1+\max({\mathbf Z}_\mu {\boldsymbol \beta}_\mu)\right]$, respectively.  In the consensus model, $\kappa$ can be interpreted as the concentration towards a turning angle of zero (i.e. moving forward) when the angular covariate components perfectly cancel out.  %For example, when $z_1=z_2$, $x_1 = -x_2$, and $\beta_1=\beta_2$:
+Note that the von Mises consensus distribution is parameterized in terms of $\mu$ and $\kappa$ (see Table \ref{tab:pdfs}), but \verb|momentuHMM| returns and plots real parameter estimates in terms of $\mu$ and $\rho$. When all ${\boldsymbol \beta}_\mu$ are non-negative, then the minimum and maximum values for $\rho$ are $\kappa \lvert 1-\min({\mathbf Z}_\mu {\boldsymbol \beta}_\mu) \rvert$ and $\kappa \left[1+\max({\mathbf Z}_\mu {\boldsymbol \beta}_\mu)\right]$, respectively.  In the consensus model, $\kappa$ can be interpreted as the concentration towards a turning angle of zero (i.e. moving forward) when the angular covariate components perfectly cancel out. %For example, when $z_1=z_2$, $x_1 = -x_2$, and $\beta_1=\beta_2$:
 %\begin{equation*}
 %\rho = \kappa \sqrt{\left[z_1\sin(x_1)\beta_1 + z_2\sin(x_2)\beta_2\right]^2+\left[1+z_1\cos(x_1)\beta_1 + z_2\cos(x_2)\beta_2\right]^2} = \kappa.
 %\end{equation*}
+See section \ref{sec:turtle} for example code using \verb|angleStrength| and the von Mises consensus (``vmConsensus'') distribution.
 
 \subsection{Multiple imputation}
 \label{sec:mi}
