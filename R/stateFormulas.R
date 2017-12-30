@@ -16,7 +16,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
   
   Terms <- terms(formula, specials = c(paste0(spec,1:nbStates),"cosinor","angleStrength"))
   if(any(attr(Terms,"order")>1)){
-    if(grepl("angleStrength\\(",attr(Terms,"term.labels")[attr(Terms,"order")>1])) stop("interactions with angleFormula are not allowed; use the 'by' argument")
+    if(grepl("angleStrength\\(",attr(Terms,"term.labels")[attr(Terms,"order")>1])) stop("interactions with angleFormula are not allowed")
   }
   
   stateFormula<-list()
@@ -69,6 +69,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
               form <- formula(paste("~ 0 + ",tmpcov))
             }
             if(any(model.matrix(form,data)<0)) stop(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength," must be >=0 in order to be used in angleStrength")
+            if(inherits(data[[attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength]],"factor")) stop("angleFormula strength argument cannot be a factor; use the 'by' argument for factors")
           }
           if(!is.null(group)){
             form<-formula(paste("~",group))
@@ -98,7 +99,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
       
         tmpnames<-attr(tmp,"term.labels")
         if(any(attr(tmp,"order")>1)){
-          if(grepl("angleStrength\\(",tmpnames[attr(tmp,"order")>1])) stop("interactions with angleFormula are not allowed; use the 'by' argument")
+          if(grepl("angleStrength\\(",tmpnames[attr(tmp,"order")>1])) stop("interactions with angleFormula are not allowed")
         }
         mp<-tmpnames
         if(!is.null(unlist(attr(tmp,"specials"))) | angleMean){
@@ -126,10 +127,11 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
               if(is.null(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength)) stop("angleStrength is missing strength argument")
               else if(!is.na(suppressWarnings(as.numeric((attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength))))) stop("angleStrength has invalid strength argument")
               tmpForm <- as.formula(paste0("~-1+",attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength))
-              if(any(attr(terms(tmpForm),"order")>1)) stop("angleFormula strength argument for ",jj," cannot include term interactions; use the 'by' argument")
+              if(any(attr(terms(tmpForm),"order")>1)) stop("angleFormula strength argument cannot include term interactions; use the 'by' argument")
               group <- attr(stmp,"stripped.arguments")$angleStrength[[jj]]$by
               if(!is.null(data)){
                 if(any(model.matrix(tmpForm,data)<0)) stop(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength," must be >=0 in order to be used in angleStrength")
+                if(inherits(data[[attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength]],"factor")) stop("angleFormula strength argument cannot be a factor; use the 'by' argument for factors")
                 if(!is.null(group)){
                   if(!(group %in% names(data))) stop("angleStrength 'by' argument ",group," not found in data")
                   else if(!inherits(data[[group]],"factor")) stop("angleStrength 'by' argument must be of class factor")
