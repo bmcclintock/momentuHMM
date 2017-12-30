@@ -202,13 +202,15 @@ getParDM<-function(data=data.frame(),nbStates,dist,
   for(i in distnames){
     nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
     # deal with factors
-    for(j in names(which(unlist(lapply(tempCovs,function(x) inherits(x,"factor")))))){
-      if(any(grepl(j,inputs$DM[[i]]))){
-        tmpCov <- tempCovs
-        for(jj in levels(tempCovs[[j]])){
-          tmpCov[[j]] <- factor(jj,levels=levels(tempCovs[[j]]))
-          tmpgDM<-getDM(tmpCov,inputs$DM[i],inputs$dist[i],nbStates,inputs$p$parNames[i],inputs$p$bounds[i],Par[i],inputs$cons[i],inputs$workcons[i],zeroInflation[i],oneInflation[i],inputs$circularAngleMean[i],FALSE)$fullDM[[i]]
-          nc[[i]] <- nc[[i]] + apply(tmpgDM,1:2,function(x) !all(unlist(x)==0))
+    if(length(tempCovs)){
+      for(j in names(which(unlist(lapply(tempCovs,function(x) inherits(x,"factor")))))){
+        if(any(grepl(j,inputs$DM[[i]]))){
+          tmpCov <- tempCovs
+          for(jj in levels(tempCovs[[j]])){
+            tmpCov[[j]] <- factor(jj,levels=levels(tempCovs[[j]]))
+            tmpgDM<-getDM(tmpCov,inputs$DM[i],inputs$dist[i],nbStates,inputs$p$parNames[i],inputs$p$bounds[i],Par[i],inputs$cons[i],inputs$workcons[i],zeroInflation[i],oneInflation[i],inputs$circularAngleMean[i],FALSE)$fullDM[[i]]
+            nc[[i]] <- nc[[i]] + apply(tmpgDM,1:2,function(x) !all(unlist(x)==0))
+          }
         }
       }
     }
