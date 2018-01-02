@@ -244,7 +244,7 @@ test_that("equivalent models with and without dummy covariate match",{
                            0,"cov2",0,0,0,0,
                            0,0,1,"cov2",0,0,
                            0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE,dimnames=list(c(paste0("mean_",1:nbStates),paste0("concentration_",1:nbStates)),
-                                                                             c(paste0("mean_",1:nbStates,":cov2"),paste0("concentration_",rep(1:nbStates,each=2),rep(c(":(Intercept)",":cov2"),2))))))
+                                                                             c(paste0("mean_",1:nbStates,":(cov2)"),paste0("concentration_",rep(1:nbStates,each=2),rep(c(":(Intercept)",":cov2"),2))))))
   Par0_2<-getParDM(data.frame(cov2=0),nbStates,simPar$dist,par0$Par,DM=DM2,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
   momentuHMM_cov2<-fitHMM(data=data,nbStates=nbStates,Par=Par0_2,formula=~cov2,
                           beta0=rbind(par0$beta0[1,,drop=FALSE],c(0,0)),delta0=par0$delta0,DM=DM2,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
@@ -257,16 +257,57 @@ test_that("equivalent models with and without dummy covariate match",{
                            0,"angleStrength(cov2,cov1)",0,0,0,0,
                            0,0,1,"cov2",0,0,
                            0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE,dimnames=list(c(paste0("mean_",1:nbStates),paste0("concentration_",1:nbStates)),
-                                                                             c(paste0("mean_",1:nbStates,":cov2"),paste0("concentration_",rep(1:nbStates,each=2),rep(c(":(Intercept)",":cov2"),2))))))
+                                                                             c(paste0("mean_",1:nbStates,":cov1:(cov2)"),paste0("concentration_",rep(1:nbStates,each=2),rep(c(":(Intercept)",":cov2"),2))))))
   momentuHMM_cov3<-fitHMM(data=data,nbStates=nbStates,Par=Par0_2,formula=~cov2,
                           beta0=rbind(par0$beta0[1,,drop=FALSE],c(0,0)),delta0=par0$delta0,DM=DM3,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
+
+  DM4<-list(step=matrix(c(1,"cov2",0,0,0,0,0,0,
+                          0,0,1,"cov2",0,0,0,0,
+                          0,0,0,0,1,"cov2",0,0,
+                          0,0,0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE),
+            angle=list(mean=~angleStrength(cov2,cov1),concentration=~cov2))
   
+  momentuHMM_cov4<-fitHMM(data=data,nbStates=nbStates,Par=Par0_2,formula=~cov2,
+                          beta0=rbind(par0$beta0[1,,drop=FALSE],c(0,0)),delta0=par0$delta0,DM=DM4,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
+
+  DM5<-list(step=matrix(c(1,"cov2",0,0,0,0,0,0,
+                        0,0,1,"cov2",0,0,0,0,
+                        0,0,0,0,1,"cov2",0,0,
+                        0,0,0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE),
+          angle=list(mean=~angleStrength(cov2,cov1,by=ID),concentration=~cov2))
+    
+  Par0_5 <- Par0_2
+  Par0_5$angle <- c(1,1,1,1,0,0,0,0)
+  
+  momentuHMM_cov5<-fitHMM(data=data,nbStates=nbStates,Par=Par0_5,formula=~cov2,
+                          beta0=rbind(par0$beta0[1,,drop=FALSE],c(0,0)),delta0=par0$delta0,DM=DM5,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
+    
+  DM6<-list(step=matrix(c(1,"cov2",0,0,0,0,0,0,
+                            0,0,1,"cov2",0,0,0,0,
+                            0,0,0,0,1,"cov2",0,0,
+                            0,0,0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE),
+              angle=matrix(c("angleStrength(cov2,cov1,by=ID1)","angleStrength(cov2,cov1,by=ID2)",0,0,0,0,0,0,
+                             0,0,"angleStrength(cov2,cov1,by=ID1)","angleStrength(cov2,cov1,by=ID2)",0,0,0,0,
+                             0,0,0,0,1,"cov2",0,0,
+                             0,0,0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE,dimnames=list(c(paste0("mean_",1:nbStates),paste0("concentration_",1:nbStates)),
+                                                                               c(paste0("mean_",rep(1:nbStates,each=2),":ID",rep(1:2,2),":cov1:(cov2)"),paste0("concentration_",rep(1:nbStates,each=2),rep(c(":(Intercept)",":cov2"),2))))))
+  
+  momentuHMM_cov6<-fitHMM(data=data,nbStates=nbStates,Par=Par0_5,formula=~cov2,
+                          beta0=rbind(par0$beta0[1,,drop=FALSE],c(0,0)),delta0=par0$delta0,DM=DM6,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
+
   expect_equal(abs(unlist(lapply(momentuHMM_nocov$CIreal,function(x) x$est),use.names=FALSE)-unlist(lapply(momentuHMM_cov1$CIreal,function(x) x$est),use.names=FALSE))<1.e-3,rep(TRUE,length(unlist(lapply(momentuHMM_nocov$CIreal,function(x) x$est),use.names=FALSE))))
   expect_equal(abs(momentuHMM_nocov$mod$minimum-momentuHMM_cov1$mod$minimum)<1.e-6,TRUE)
   expect_equal(abs(unlist(lapply(momentuHMM_cov2$CIreal,function(x) x$est),use.names=FALSE)-unlist(lapply(momentuHMM_cov1$CIreal,function(x) x$est),use.names=FALSE))<1.e-3,rep(TRUE,length(unlist(lapply(momentuHMM_nocov$CIreal,function(x) x$est),use.names=FALSE))))
   expect_equal(abs(momentuHMM_cov2$mod$minimum-momentuHMM_cov1$mod$minimum)<1.e-6,TRUE)
   expect_equal(abs(unlist(lapply(momentuHMM_cov3$CIreal,function(x) x$est),use.names=FALSE)-unlist(lapply(momentuHMM_cov1$CIreal,function(x) x$est),use.names=FALSE))<1.e-3,rep(TRUE,length(unlist(lapply(momentuHMM_nocov$CIreal,function(x) x$est),use.names=FALSE))))
   expect_equal(abs(momentuHMM_cov3$mod$minimum-momentuHMM_cov1$mod$minimum)<1.e-6,TRUE)
+  expect_equal(abs(unlist(lapply(momentuHMM_cov4$CIreal,function(x) x$est),use.names=FALSE)-unlist(lapply(momentuHMM_cov1$CIreal,function(x) x$est),use.names=FALSE))<1.e-3,rep(TRUE,length(unlist(lapply(momentuHMM_nocov$CIreal,function(x) x$est),use.names=FALSE))))
+  expect_equal(abs(momentuHMM_cov4$mod$minimum-momentuHMM_cov1$mod$minimum)<1.e-6,TRUE)
+  expect_equal(abs(unlist(lapply(momentuHMM_cov5$CIreal,function(x) x$est),use.names=FALSE)-unlist(lapply(momentuHMM_cov1$CIreal,function(x) x$est),use.names=FALSE))<1.e-3,rep(TRUE,length(unlist(lapply(momentuHMM_nocov$CIreal,function(x) x$est),use.names=FALSE))))
+  expect_equal(abs(momentuHMM_cov5$mod$minimum-momentuHMM_cov1$mod$minimum)<1.e-6,TRUE)
+  expect_equal(abs(unlist(lapply(momentuHMM_cov6$CIreal,function(x) x$est),use.names=FALSE)-unlist(lapply(momentuHMM_cov1$CIreal,function(x) x$est),use.names=FALSE))<1.e-3,rep(TRUE,length(unlist(lapply(momentuHMM_nocov$CIreal,function(x) x$est),use.names=FALSE))))
+  expect_equal(abs(momentuHMM_cov6$mod$minimum-momentuHMM_cov1$mod$minimum)<1.e-6,TRUE)
+  
   setRNG::setRNG(oldRNG)
   
 })
