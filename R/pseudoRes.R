@@ -3,9 +3,10 @@
 #'
 #' The pseudo-residuals of momentuHMM models, as described in Zucchini and McDonad (2009).
 #'
-#' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.
+#' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. Alternatively, \code{m} can also be a list of \code{\link{momentuHMM}} objects.
 #'
-#' @return A list of psuedo-residuals for each data stream (e.g., 'stepRes', 'angleRes')
+#' @return If \code{m} is a \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object, a list of pseudo-residuals for each data stream (e.g., 'stepRes', 'angleRes') is returned. 
+#' If \code{m} is a list of \code{\link{momentuHMM}} objects, then a list of length \code{length(m)} is returned where each element is a list of pseudo-residuals for each data stream.
 #'
 #' @details If some turning angles in the data are equal to pi, the corresponding pseudo-residuals
 #' will not be included. Indeed, given that the turning angles are defined on (-pi,pi], an angle of pi
@@ -16,8 +17,9 @@
 #' the data are near the boundary (e.g. 0 for ``pois''; 0 and 1 for ``bern''), then the pseudo residuals can
 #' be a poor indicator of lack of fit.
 #' 
-#' Note that pseudo-residuals for multiple imputation analyses are based on pooled parameter 
-#' estimates and the means of the data values across all imputations.
+#' For multiple imputation analyses, if \code{m} is a \code{\link{miHMM}} object or a list of \code{\link{momentuHMM}} objects, then
+#' the pseudo-residuals are individually calculated for each model fit. Note that pseudo-residuals for \code{\link{miSum}} objects (as returned by \code{\link{MIpool}}) are based on pooled parameter 
+#' estimates and the means of the data values across all imputations (and therefore may not be particularly meaningful).
 #'
 #' @examples
 #' # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
@@ -39,10 +41,18 @@
 
 pseudoRes <- function(m)
 {
-  if(!is.momentuHMM(m) & !is.miHMM(m) & !is.miSum(m))
-    stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
-  
-  if(is.miHMM(m)) m <- m$miSum
+  if(!is.momentuHMM(m) & !is.miSum(m)){
+    if(!is.miHMM(m) & !all(unlist(lapply(m,is.momentuHMM)))) stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
+    else {
+      if(is.miHMM(m)) m <- m$HMMfits
+      genRes <- list()
+      for(i in 1:length(m)){
+        genRes[[i]] <- pseudoRes(m[[i]])
+      }
+      return(genRes)
+    }
+  }
+
   m <- delta_bc(m)
 
   data <- m$data

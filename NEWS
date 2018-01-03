@@ -1,4 +1,4 @@
-momentuHMM 1.4.0 2017-12-29
+momentuHMM 1.4.0 2018-01-03
 -----------------
 NEW FEATURES
 
@@ -9,6 +9,10 @@ NEW FEATURES
 * checkPar0 function added to aid users with initial parameter (e.g. Par0, beta0, delta0) specification
 
 * centroids argument added to MIfitHMM
+
+CHANGES
+
+* For multiple imputation analyses, pseudoRes (and plotPR) now calculate (and plot) pseudo-residuals individually for each model fit
 
 
 momentuHMM 1.3.0 2017-12-06

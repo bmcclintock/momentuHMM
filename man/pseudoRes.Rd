@@ -7,10 +7,11 @@
 pseudoRes(m)
 }
 \arguments{
-\item{m}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.}
+\item{m}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. Alternatively, \code{m} can also be a list of \code{\link{momentuHMM}} objects.}
 }
 \value{
-A list of psuedo-residuals for each data stream (e.g., 'stepRes', 'angleRes')
+If \code{m} is a \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object, a list of pseudo-residuals for each data stream (e.g., 'stepRes', 'angleRes') is returned. 
+If \code{m} is a list of \code{\link{momentuHMM}} objects, then a list of length \code{length(m)} is returned where each element is a list of pseudo-residuals for each data stream.
 }
 \description{
 The pseudo-residuals of momentuHMM models, as described in Zucchini and McDonad (2009).
@@ -25,8 +26,9 @@ A continuity adjustment (adapted from Harte 2017) is made for discrete probabili
 the data are near the boundary (e.g. 0 for ``pois''; 0 and 1 for ``bern''), then the pseudo residuals can
 be a poor indicator of lack of fit.
 
-Note that pseudo-residuals for multiple imputation analyses are based on pooled parameter 
-estimates and the means of the data values across all imputations.
+For multiple imputation analyses, if \code{m} is a \code{\link{miHMM}} object or a list of \code{\link{momentuHMM}} objects, then
+the pseudo-residuals are individually calculated for each model fit. Note that pseudo-residuals for \code{\link{miSum}} objects (as returned by \code{\link{MIpool}}) are based on pooled parameter 
+estimates and the means of the data values across all imputations (and therefore may not be particularly meaningful).
 }
 \examples{
 # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package

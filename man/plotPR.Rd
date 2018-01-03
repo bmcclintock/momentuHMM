@@ -7,7 +7,7 @@
 plotPR(m, lag.max = NULL)
 }
 \arguments{
-\item{m}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.}
+\item{m}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. Alternatively, \code{m} can also be a list of \code{\link{momentuHMM}} objects.}
 
 \item{lag.max}{maximum lag at which to calculate the acf.  See \code{\link[stats]{acf}}.}
 }
@@ -21,11 +21,12 @@ ACF functions of the pseudo-residuals for each data stream
 will not be included. Indeed, given that the turning angles are defined on (-pi,pi], an angle of pi
 results in a pseudo-residual of +Inf (check Section 6.2 of reference for more information on the
 computation of pseudo-residuals).
-\item If some data streams are zero-inflated, the corresponding pseudo-
+\item If some data streams are zero-inflated and/or one-inflated, the corresponding pseudo-
 residuals are shown as segments, because pseudo-residuals for discrete data are defined as
 segments (see Zucchini and MacDonald, 2009, Section 6.2).
-\item Note that pseudo-residuals for multiple imputation analyses are based on pooled parameter 
-estimates and the means of the data values across all imputations.
+\item For multiple imputation analyses, if \code{m} is a \code{\link{miHMM}} object or a list of \code{\link{momentuHMM}} objects, then
+the pseudo-residuals are individually calculated and plotted for each model fit. Note that pseudo-residuals for \code{\link{miSum}} objects (as returned by \code{\link{MIpool}}) are based on pooled parameter 
+estimates and the means of the data values across all imputations (and therefore may not be particularly meaningful).
 }
 }
 \examples{
