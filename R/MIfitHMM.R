@@ -246,7 +246,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
         warning('prepData failed for imputation ',i,"; ",miData[[i]])
       }
       ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))
-      if(fit) cat('Fitting',length(ind),'realizations of the position process using fitHMM... ')
+      if(fit) cat('Fitting',length(ind),'realizations of the position process using fitHMM... \n')
       else return(crwSim(list(miData=miData,crwSimulator=crwSim)))
     } else stop("nSims must be >0")
     
@@ -258,7 +258,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
     if(missing(nSims)) nSims <- length(miData)
     if(nSims>length(miData)) stop("nSims is greater than the length of miData. nSims must be <=",length(miData))
     if(nSims<1) stop("nSims must be >0")
-    cat('Fitting',min(nSims,length(ind)),'imputation(s) using fitHMM... ')
+    cat('Fitting',min(nSims,length(ind)),'imputation(s) using fitHMM... \n')
   }
   
   if(!is.list(knownStates)){

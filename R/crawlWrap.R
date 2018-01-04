@@ -288,7 +288,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
     predTime <- predTime[ids]
   } else names(predTime) <- ids
   
-  cat('Fitting',length(ids),'track(s) using crawl::crwMLE...')
+  cat('Fitting',length(ids),'track(s) using crawl::crwMLE...',ifelse(ncores>1,"","\n"))
   registerDoParallel(cores=ncores) 
   model_fits <- 
     foreach(i = ids) %dopar% {
