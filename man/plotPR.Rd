@@ -4,12 +4,14 @@
 \alias{plotPR}
 \title{Plot pseudo-residuals}
 \usage{
-plotPR(m, lag.max = NULL)
+plotPR(m, lag.max = NULL, ncores = 1)
 }
 \arguments{
 \item{m}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. Alternatively, \code{m} can also be a list of \code{\link{momentuHMM}} objects.}
 
 \item{lag.max}{maximum lag at which to calculate the acf.  See \code{\link[stats]{acf}}.}
+
+\item{ncores}{number of cores to use for parallel processing}
 }
 \description{
 Plots time series, qq-plots (against the standard normal distribution), and sample

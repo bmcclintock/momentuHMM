@@ -4,10 +4,12 @@
 \alias{pseudoRes}
 \title{Pseudo-residuals}
 \usage{
-pseudoRes(m)
+pseudoRes(m, ncores = 1)
 }
 \arguments{
 \item{m}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. Alternatively, \code{m} can also be a list of \code{\link{momentuHMM}} objects.}
+
+\item{ncores}{number of cores to use for parallel processing}
 }
 \value{
 If \code{m} is a \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object, a list of pseudo-residuals for each data stream (e.g., 'stepRes', 'angleRes') is returned. 

@@ -6,6 +6,7 @@
 #'
 #' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. Alternatively, \code{m} can also be a list of \code{\link{momentuHMM}} objects.
 #' @param lag.max maximum lag at which to calculate the acf.  See \code{\link[stats]{acf}}.
+#' @param ncores number of cores to use for parallel processing
 #'
 #' @details \itemize{
 #' \item If some turning angles in the data are equal to pi, the corresponding pseudo-residuals
@@ -34,7 +35,7 @@
 #' @export
 #' @importFrom stats acf na.pass qqnorm
 
-plotPR <- function(m, lag.max = NULL)
+plotPR <- function(m, lag.max = NULL, ncores = 1)
 {
   nSims <- 1
   if(!is.momentuHMM(m) & !is.miSum(m)){
@@ -47,15 +48,16 @@ plotPR <- function(m, lag.max = NULL)
   } else distnames <- names(m$conditions$dist)
 
   cat("Computing pseudo-residuals",ifelse(nSims>1,paste0(" for ",nSims," model fits... "),"... "),sep="")
-  pr <- pseudoRes(m)
+  pr <- pseudoRes(m, ncores = ncores)
   cat("DONE\n")
   
   if(nSims==1){
     pr <- list(pr)
     m <- list(m)
+    col <- "red"
   } else {
     hues <- seq(15, 375, length = nSims + 1)
-    col <- hcl(h = hues, l = 65, c = 100)[1:nSims]
+    col <- c("red",hcl(h = hues, l = 65, c = 100)[1:nSims])
   }
   par(mfrow=c(length(distnames),3))
 
@@ -89,7 +91,7 @@ plotPR <- function(m, lag.max = NULL)
           ind <- which(m[[j]]$data[[i]]==0)
           x <- qq[[j]]$x[ind]
           y <- qq[[j]]$y[ind]
-          segments(x,rep(limInf-5,length(ind)),x,y,col="red")
+          segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
         }
         
         # add segments for one inflation
@@ -97,7 +99,7 @@ plotPR <- function(m, lag.max = NULL)
           ind <- which(m[[j]]$data[[i]]==1)
           x <- qq[[j]]$x[ind]
           y <- qq[[j]]$y[ind]
-          segments(x,rep(limInf-5,length(ind)),x,y,col="red")
+          segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
         }
       }
       abline(0,1,lwd=2)

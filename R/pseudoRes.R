@@ -4,6 +4,7 @@
 #' The pseudo-residuals of momentuHMM models, as described in Zucchini and McDonad (2009).
 #'
 #' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. Alternatively, \code{m} can also be a list of \code{\link{momentuHMM}} objects.
+#' @param ncores number of cores to use for parallel processing
 #'
 #' @return If \code{m} is a \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object, a list of pseudo-residuals for each data stream (e.g., 'stepRes', 'angleRes') is returned. 
 #' If \code{m} is a list of \code{\link{momentuHMM}} objects, then a list of length \code{length(m)} is returned where each element is a list of pseudo-residuals for each data stream.
@@ -38,17 +39,20 @@
 #' @export
 #' @importFrom stats integrate qnorm
 #' @importFrom LaplacesDemon pbern
+#' @importFrom doParallel registerDoParallel stopImplicitCluster
+#' @importFrom foreach foreach %dopar%
 
-pseudoRes <- function(m)
+pseudoRes <- function(m, ncores = 1)
 {
   if(!is.momentuHMM(m) & !is.miSum(m)){
     if(!is.miHMM(m) & !all(unlist(lapply(m,is.momentuHMM)))) stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
     else {
       if(is.miHMM(m)) m <- m$HMMfits
-      genRes <- list()
-      for(i in 1:length(m)){
-        genRes[[i]] <- pseudoRes(m[[i]])
+      registerDoParallel(cores=ncores)
+      genRes <- foreach(i=1:length(m)) %dopar% {
+        pseudoRes(m[[i]])
       }
+      stopImplicitCluster()
       return(genRes)
     }
   }
