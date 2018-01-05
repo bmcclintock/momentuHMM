@@ -910,7 +910,7 @@ fitHMM <- function(data,nbStates,dist,
   
   mh <- list(data=data,mle=mle,CIreal=CIreal,CIbeta=CIbeta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta)
   
-  if(fit) message("DONE")
+  if(fit) message(ifelse(retryFits>=1,"\n",""),"DONE")
   
   return(momentuHMM(mh))
 }
