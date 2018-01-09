@@ -153,8 +153,7 @@ miFits <- miHMM(miFits)
 miFits
 #plot pooled estimates
 plot(miFits,plotCI=TRUE,ask=FALSE)
-# "pseudo-pseudo" residuals based on pooled esimates and means of the imputed data
-withCallingHandlers(plotPR(miFits),warning=function(w){if(any(grepl("pseudo-residuals are based on pooled parameter estimates and mean data values across multiple imputations...",w))) invokeRestart("muffleWarning")})
+plotPR(miFits)
 
 ### 9. Exact same model as 8) but using state-dependent formulas
 
