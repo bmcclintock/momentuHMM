@@ -39,39 +39,25 @@ arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned 
   
   NumericVector DMelem2;
   unsigned int Xcount;
-  //double Xsum;
   
   for(i=0; i<nrindex; i++){
     Xcount = 0;
-    //Xsum = 1.;
     for(j=0; j<nc; j+=incr){
-      //Rprintf("i %d j %d Xcount %d \n",i,j,Xcount);
       if(cindex(rindex[i],j)){
         NumericVector DMelem = DM[j*nr+rindex[i]];
-        int DMsize1 = DMelem.size();
-        int DMsize2 = DMsize1;
+        bool DMsize1 = (DMelem.size()>1);
+        bool DMsize2 = DMsize1;
         if(circularAngleMean) {
           DMelem2 = DM[(j+1)*nr+rindex[i]];
-          DMsize2 = DMelem2.size();
-          //Xsum += max(abs(DMelem/sin(atan(DMelem/DMelem2))*Xvec[Xcount]));
+          DMsize2 = (DMelem2.size()>1);
         }
-        int DMsize = max(DMsize1,DMsize2);
+        bool DMsize = (DMsize1 || DMsize2);
         for(k=0; k<nbObs; k++){
-          if(DMsize>1){
-            if(!circularAngleMean){
-              XB(rindex[i],k) += DMelem[k] * Xvec[j];
-            } else {
-              XB1(rindex[i],k) += DMelem[k*(DMsize1>1)]*Xvec[Xcount];
-              XB2(rindex[i],k) += DMelem2[k*(DMsize2>1)]*Xvec[Xcount];
-            }
+          if(!circularAngleMean){
+            XB(rindex[i],k) += DMelem[k*DMsize] * Xvec[j];
           } else {
-            if(!circularAngleMean){
-              XB(rindex[i],k) += DMelem[0] * Xvec[j];
-            } else {
-              XB1(rindex[i],k) += DMelem[0]*Xvec[Xcount];
-              XB2(rindex[i],k) += DMelem2[0]*Xvec[Xcount];
-              //Rprintf("i %d j %d rindex %d cindex %f Xcount %d DMelem %f DMelem2 %f Xvec %f XB1 %f XB2 %f \n",i,j,rindex[i],cindex(rindex[i],j),Xcount,DMelem[0],DMelem2[0],Xvec[Xcount],XB1(rindex[i],k),XB2(rindex[i],k));
-            }
+            XB1(rindex[i],k) += DMelem[k*DMsize1]*Xvec[Xcount];
+            XB2(rindex[i],k) += DMelem2[k*DMsize2]*Xvec[Xcount];
           }
         }
       }
@@ -79,7 +65,7 @@ arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned 
     }
     if(circularAngleMean){
       XB.row(rindex[i]) = atan2(XB1.row(rindex[i]),1.+XB2.row(rindex[i]));
-      if(consensus) XB.row(rindex[i]+nbStates) = sqrt(pow(XB1.row(rindex[i]),2.)+pow(1.+XB2.row(rindex[i]),2.));// / Xsum;
+      if(consensus) XB.row(rindex[i]+nbStates) = sqrt(pow(XB1.row(rindex[i]),2.)+pow(1.+XB2.row(rindex[i]),2.));
     }
   }
   return XB;
