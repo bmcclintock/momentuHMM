@@ -318,10 +318,10 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
     warning('Fit #',i,' failed; ',fits[[i]])
   }
   
-  if(nSims==1) out<-fits[[1]]
-  else {
-    if(poolEstimates) out<-miHMM(list(miSum=MIpool(fits,alpha=alpha,ncores=ncores),HMMfits=fits))
+  fits <- HMMfits(fits)
+  
+  if(poolEstimates & nSims>1) out <- miHMM(list(miSum=MIpool(fits,alpha=alpha,ncores=ncores),HMMfits=fits))
     else out <- fits
-  }
+  
   out
 }

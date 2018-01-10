@@ -4,7 +4,7 @@
 \alias{AIC.momentuHMM}
 \title{AIC}
 \usage{
-\method{AIC}{momentuHMM}(object, ..., k = 2)
+\method{AIC}{momentuHMM}(object, ..., k = 2, n = NULL)
 }
 \arguments{
 \item{object}{A \code{momentuHMM} object.}
@@ -12,6 +12,8 @@
 \item{...}{Optional additional \code{momentuHMM} objects, to compare AICs of the different models.}
 
 \item{k}{Penalty per parameter. Default: 2 ; for classical AIC.}
+
+\item{n}{Optional sample size. If specified, the small sample correction AIC is used (i.e., \code{AICc = AIC + kp(p+1)/(n-p-1)} where p is the number of parameters).}
 }
 \value{
 The AIC of the model(s) provided. If several models are provided, the AICs are output
