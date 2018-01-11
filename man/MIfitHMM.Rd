@@ -8,12 +8,13 @@ MIfitHMM(miData, nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   nbStates, dist, Par0, beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
   circularAngleMean = NULL, formula = ~1, formulaDelta = ~1,
   stationary = FALSE, verbose = 0, nlmPar = NULL, fit = TRUE,
-  DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL,
-  stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
-  covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL,
-  angleCovs = NULL, method = "IS", parIS = 1000, dfSim = Inf,
-  grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad = TRUE,
-  fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1, thetaSamp = NULL)
+  useInitial = FALSE, DM = NULL, cons = NULL, userBounds = NULL,
+  workcons = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL,
+  retryFits = 0, covNames = NULL, spatialCovs = NULL, centers = NULL,
+  centroids = NULL, angleCovs = NULL, method = "IS", parIS = 1000,
+  dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
+  force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
+  thetaSamp = NULL)
 }
 \arguments{
 \item{miData}{A \code{\link{crwData}} object, a \code{\link{crwSim}} object, or a list of \code{\link{momentuHMMData}} objects.}
@@ -33,7 +34,7 @@ objects, \code{nSims} cannot exceed the length of \code{miData}.}
 
 \item{Par0}{A named list containing vectors of initial state-dependent probability distribution parameters for 
 each data stream specified in \code{dist}. See \code{\link{fitHMM}}.  \code{Par0} may also be a list of length \code{nSims}, where each element is a named list containing vectors
-of initial state-dependent probability distribution parameters for each imputation.}
+of initial state-dependent probability distribution parameters for each imputation. Note that if \code{useInitial=TRUE} then \code{Par0} is ignored after the first imputation.}
 
 \item{beta0}{Initial matrix of regression coefficients for the transition probabilities. See \code{\link{fitHMM}}. \code{beta0} may also be a list of length \code{nSims}, where each element 
 is an initial matrix of regression coefficients for the transition probabilities for each imputation.}
@@ -64,6 +65,10 @@ for more detail)}
 
 \item{fit}{\code{TRUE} if the HMM should be fitted to the data, \code{FALSE} otherwise. See \code{\link{fitHMM}}. If \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}}
 object, then \code{MIfitHMM} returns a list containing a \code{\link{momentuHMMData}} object (if \code{nSims=1}) or, if \code{nSims>1}, a \code{\link{crwSim}} object.}
+
+\item{useInitial}{Logical indicating whether or not to use parameter estimates for the first model fit as initial values for all subsequent model fits.
+If \code{ncores>1} then the first model is fit on a single core and then used as the initial values for all subsequent model fits on each core 
+(in this case, the progress of the initial model fit can be followed using the \code{verbose} argument). Default: FALSE.}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream. See \code{\link{fitHMM}}.}

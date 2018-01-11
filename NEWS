@@ -1,4 +1,4 @@
-momentuHMM 1.4.0 2018-01-03
+momentuHMM 1.4.0 2018-01-10
 -----------------
 NEW FEATURES
 
@@ -9,6 +9,8 @@ NEW FEATURES
 * checkPar0 function added to aid users with initial parameter (e.g. Par0, beta0, delta0) specification
 
 * centroids argument added to MIfitHMM
+
+* useInitial argument added to MIfitHMM for using parameter estimates of first model fit as initial values for all subsequent model fits
 
 CHANGES
 

@@ -28,7 +28,7 @@
 #' @param dist A named list indicating the probability distributions of the data streams. See \code{\link{fitHMM}}.
 #' @param Par0 A named list containing vectors of initial state-dependent probability distribution parameters for 
 #' each data stream specified in \code{dist}. See \code{\link{fitHMM}}.  \code{Par0} may also be a list of length \code{nSims}, where each element is a named list containing vectors
-#' of initial state-dependent probability distribution parameters for each imputation.
+#' of initial state-dependent probability distribution parameters for each imputation. Note that if \code{useInitial=TRUE} then \code{Par0} is ignored after the first imputation.
 #' @param beta0 Initial matrix of regression coefficients for the transition probabilities. See \code{\link{fitHMM}}. \code{beta0} may also be a list of length \code{nSims}, where each element 
 #' is an initial matrix of regression coefficients for the transition probabilities for each imputation.
 #' @param delta0 Initial values for the initial distribution of the HMM. See \code{\link{fitHMM}}. \code{delta0} may also be a list of length \code{nSims}, where each element 
@@ -49,6 +49,9 @@
 #' for more detail)
 #' @param fit \code{TRUE} if the HMM should be fitted to the data, \code{FALSE} otherwise. See \code{\link{fitHMM}}. If \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}}
 #' object, then \code{MIfitHMM} returns a list containing a \code{\link{momentuHMMData}} object (if \code{nSims=1}) or, if \code{nSims>1}, a \code{\link{crwSim}} object.
+#' @param useInitial Logical indicating whether or not to use parameter estimates for the first model fit as initial values for all subsequent model fits.  
+#' If \code{ncores>1} then the first model is fit on a single core and then used as the initial values for all subsequent model fits on each core 
+#' (in this case, the progress of the initial model fit can be followed using the \code{verbose} argument). Default: FALSE.
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 #' stream. See \code{\link{fitHMM}}.
 #' @param cons An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
@@ -175,7 +178,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
                    Par0, beta0 = NULL, delta0 = NULL,
                    estAngleMean = NULL, circularAngleMean = NULL,
                    formula = ~1, formulaDelta = ~1, stationary = FALSE, 
-                   verbose = 0, nlmPar = NULL, fit = TRUE, 
+                   verbose = 0, nlmPar = NULL, fit = TRUE, useInitial = FALSE,
                    DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL, 
                    stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
                    covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL,
@@ -265,49 +268,67 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
     tmpStates<-knownStates
     knownStates<-vector('list',nSims)
     if(!is.null(tmpStates))
-      for(i in 1:nSims)
-        knownStates[[i]]<-tmpStates
+      knownStates[1:nSims]<-list(tmpStates)
   } else if(length(knownStates)<nSims) stop("knownStates must be a list of length >=",nSims)
   
   if(all(names(dist) %in% names(Par0))){
     tmpPar0<-Par0
     Par0<-vector('list',nSims)
-    for(i in 1:nSims)
-      Par0[[i]]<-tmpPar0
+    Par0[1:nSims]<-list(tmpPar0)
   } else if(length(Par0)<nSims) stop("Par0 must be a list of length >=",nSims)
   
   if(!is.list(beta0)){
     tmpbeta0<-beta0
     beta0<-vector('list',nSims)
     if(!is.null(tmpbeta0))
-      for(i in 1:nSims)
-        beta0[[i]]<-tmpbeta0
+        beta0[1:nSims]<-list(tmpbeta0)
   } else if(length(beta0)<nSims) stop("beta0 must be a list of length >=",nSims)
   
   if(!is.list(delta0)){
     tmpdelta0<-delta0
     delta0<-vector('list',nSims)
     if(!is.null(tmpdelta0))
-      for(i in 1:nSims)
-        delta0[[i]]<-tmpdelta0
+      delta0[1:nSims]<-list(tmpdelta0)
   } else if(length(delta0)!=nSims) stop("delta0 must be a list of length ",nSims)
   
   #check HMM inputs and print model message
   test<-fitHMM(miData[[ind[1]]],nbStates, dist, Par0[[ind[1]]], beta0[[ind[1]]], delta0[[ind[1]]],
-         estAngleMean, circularAngleMean, formula, formulaDelta, stationary, verbose,
-         nlmPar, fit = FALSE, DM, cons,
-         userBounds, workcons, stateNames, knownStates[[ind[1]]], fixPar, retryFits)
+           estAngleMean, circularAngleMean, formula, formulaDelta, stationary, verbose,
+           nlmPar, fit = FALSE, DM, cons,
+           userBounds, workcons, stateNames, knownStates[[ind[1]]], fixPar, retryFits)
   
   # fit HMM(s)
+  fits <- list()
+  parallelStart <- 1
+  if(useInitial){
+    parallelStart <- 2
+    if(nSims>1){
+      cat("\rImputation ",1,"... ",sep="")
+    }
+    fits[[1]]<-suppressMessages(fitHMM(miData[[1]],nbStates, dist, Par0[[1]], beta0[[1]], delta0[[1]],
+                                    estAngleMean, circularAngleMean, formula, formulaDelta, stationary, verbose,
+                                    nlmPar, fit, DM, cons,
+                                    userBounds, workcons, stateNames, knownStates[[1]], fixPar, retryFits))
+    if(retryFits>=1){
+      cat("\n")
+    }
+    if(nSims>1){
+      cat("DONE\nFitting remaining imputations... \n")
+    }
+    tmpPar <- getPar0(fits[[1]])
+    Par0[parallelStart:nSims] <- list(tmpPar$Par)
+    beta0[parallelStart:nSims] <- list(tmpPar$beta)
+    delta0[parallelStart:nSims] <- list(tmpPar$delta)
+  }
   registerDoParallel(cores=ncores)
-  fits <-
-    foreach(j = 1:nSims, .export=c("fitHMM"), .errorhandling="pass") %dopar% {
-
-      if(nSims>1) cat("\rImputation ",j,"...",sep="")
+  fits[parallelStart:nSims] <-
+    foreach(j = parallelStart:nSims, .export=c("fitHMM"), .errorhandling="pass") %dopar% {
+      
+      if(nSims>1) cat("     \rImputation ",j,"... ",sep="")
       tmpFit<-suppressMessages(fitHMM(miData[[j]],nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
-                              estAngleMean, circularAngleMean, formula, formulaDelta, stationary, verbose,
-                              nlmPar, fit, DM, cons,
-                              userBounds, workcons, stateNames, knownStates[[j]], fixPar, retryFits))
+                                      estAngleMean, circularAngleMean, formula, formulaDelta, stationary, verbose,
+                                      nlmPar, fit, DM, cons,
+                                      userBounds, workcons, stateNames, knownStates[[j]], fixPar, retryFits))
       if(retryFits>=1) cat("\n")
       tmpFit
     }  
