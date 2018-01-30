@@ -9,12 +9,12 @@ MIfitHMM(miData, nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   circularAngleMean = NULL, formula = ~1, formulaDelta = ~1,
   stationary = FALSE, verbose = 0, nlmPar = NULL, fit = TRUE,
   useInitial = FALSE, DM = NULL, cons = NULL, userBounds = NULL,
-  workcons = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL,
-  retryFits = 0, covNames = NULL, spatialCovs = NULL, centers = NULL,
-  centroids = NULL, angleCovs = NULL, method = "IS", parIS = 1000,
-  dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
-  force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
-  thetaSamp = NULL)
+  workBounds = NULL, workcons = NULL, stateNames = NULL,
+  knownStates = NULL, fixPar = NULL, retryFits = 0, covNames = NULL,
+  spatialCovs = NULL, centers = NULL, centroids = NULL,
+  angleCovs = NULL, method = "IS", parIS = 1000, dfSim = Inf,
+  grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad = TRUE,
+  fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1, thetaSamp = NULL)
 }
 \arguments{
 \item{miData}{A \code{\link{crwData}} object, a \code{\link{crwSim}} object, or a list of \code{\link{momentuHMMData}} objects.}
@@ -73,13 +73,15 @@ If \code{ncores>1} then the first model is fit on a single core and then used as
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream. See \code{\link{fitHMM}}.}
 
-\item{cons}{An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
+\item{cons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
 for each data stream. See \code{\link{fitHMM}}.}
 
 \item{userBounds}{An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 distribution parameters for each data stream. See \code{\link{fitHMM}}.}
 
-\item{workcons}{An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
+\item{workBounds}{An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. See \code{\link{fitHMM}}.}
+
+\item{workcons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 each data stream. See \code{\link{fitHMM}}.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
