@@ -30,6 +30,7 @@
 #' @param nc indicator for zeros in fullDM
 #' @param meanind index for circular-circular regression mean angles with at least one non-zero entry in fullDM
 #' @param covsDelta data frame containing the delta model covariates (if any)
+#' @param wBounds list with elements 'lower' and 'upper' indicating the working scale parameter (\code{wpar}) lower and upper bounds, respectively
 #' 
 #' @return A list of:
 #' \item{...}{Matrices containing the natural parameters for each data stream (e.g., 'step', 'angle', etc.)}
@@ -63,7 +64,7 @@
 #' @importFrom boot inv.logit
 #' @importFrom Brobdingnag as.brob sum
 
-w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind,nc,meanind,covsDelta)
+w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind,nc,meanind,covsDelta,wBounds)
 {
 
   # identify initial distribution parameters
@@ -71,7 +72,18 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
     nbCovsDelta <- ncol(covsDelta)-1 # substract intercept column
     
     foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)+1
-    delta <- c(rep(0,nbCovsDelta+1),wpar[foo:length(wpar)])
+    
+    tmpwpar <- wpar[foo:length(wpar)]
+    
+    ind1<-which(is.finite(wBounds$lower[foo:length(wpar)]) & is.infinite(wBounds$upper[foo:length(wpar)]))
+    ind2<-which(is.finite(wBounds$lower[foo:length(wpar)]) & is.finite(wBounds$upper[foo:length(wpar)]))
+    ind3<-which(is.infinite(wBounds$lower[foo:length(wpar)]) & is.finite(wBounds$upper[foo:length(wpar)]))
+    
+    tmpwpar[ind1] <- exp(tmpwpar[ind1])+wBounds$lower[foo-1+ind1]
+    tmpwpar[ind2] <- (wBounds$upper[foo-1+ind2]-wBounds$lower[foo-1+ind2]) * boot::inv.logit(tmpwpar[ind2])+wBounds$lower[foo-1+ind2]
+    tmpwpar[ind3] <- -(exp(-tmpwpar[ind3]) - wBounds$upper[foo-1+ind3])
+    
+    delta <- c(rep(0,nbCovsDelta+1),tmpwpar)
     deltaXB <- covsDelta%*%matrix(delta,nrow=nbCovsDelta+1)
     expdelta <- exp(deltaXB)
     delta <- expdelta/rowSums(expdelta)
@@ -86,7 +98,18 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   # identify regression coefficients for the transition probabilities
   if(nbStates>1) {
     foo <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)+1
-    beta <- wpar[foo:length(wpar)]
+    
+    tmpwpar <- wpar[foo:length(wpar)]
+    
+    ind1<-which(is.finite(wBounds$lower[foo:length(wpar)]) & is.infinite(wBounds$upper[foo:length(wpar)]))
+    ind2<-which(is.finite(wBounds$lower[foo:length(wpar)]) & is.finite(wBounds$upper[foo:length(wpar)]))
+    ind3<-which(is.infinite(wBounds$lower[foo:length(wpar)]) & is.finite(wBounds$upper[foo:length(wpar)]))
+    
+    tmpwpar[ind1] <- exp(tmpwpar[ind1])+wBounds$lower[foo-1+ind1]
+    tmpwpar[ind2] <- (wBounds$upper[foo-1+ind2]-wBounds$lower[foo-1+ind2]) * boot::inv.logit(tmpwpar[ind2])+wBounds$lower[foo-1+ind2]
+    tmpwpar[ind3] <- -(exp(-tmpwpar[ind3]) - wBounds$upper[foo-1+ind3])
+    
+    beta <- tmpwpar
     beta <- matrix(beta,nrow=nbCovs+1)
     wpar <- wpar[-(foo:length(wpar))]
   }
@@ -104,6 +127,15 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   
   for(i in distnames){
     tmpwpar<-wpar[parindex[[i]]+1:parCount[[i]]]
+    
+    ind1<-which(is.finite(wBounds$lower[parindex[[i]]+1:parCount[[i]]]) & is.infinite(wBounds$upper[parindex[[i]]+1:parCount[[i]]]))
+    ind2<-which(is.finite(wBounds$lower[parindex[[i]]+1:parCount[[i]]]) & is.finite(wBounds$upper[parindex[[i]]+1:parCount[[i]]]))
+    ind3<-which(is.infinite(wBounds$lower[parindex[[i]]+1:parCount[[i]]]) & is.finite(wBounds$upper[parindex[[i]]+1:parCount[[i]]]))
+    
+    tmpwpar[ind1] <- exp(tmpwpar[ind1])+wBounds$lower[parindex[[i]]+ind1]
+    tmpwpar[ind2] <- (wBounds$upper[parindex[[i]]+ind2]-wBounds$lower[parindex[[i]]+ind2]) * boot::inv.logit(tmpwpar[ind2])+wBounds$lower[parindex[[i]]+ind2]
+    tmpwpar[ind3] <- -(exp(-tmpwpar[ind3]) - wBounds$upper[parindex[[i]]+ind3])
+    
     if(estAngleMean[[i]] & Bndind[[i]]){ 
       bounds[[i]][,1] <- -Inf
       bounds[[i]][which(bounds[[i]][,2]!=1),2] <- Inf

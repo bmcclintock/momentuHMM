@@ -34,6 +34,7 @@
 #' @param nc indicator for zeros in fullDM
 #' @param meanind index for circular-circular regression mean angles with at least one non-zero entry in fullDM
 #' @param covsDelta data frame containing the delta model covariates (if any)
+#' @param wBounds list with elements 'lower' and 'upper' indicating the working scale parameter (\code{wpar}) lower and upper bounds, respectively
 #'
 #' @return The negative log-likelihood of the parameters given the data.
 #'
@@ -66,8 +67,12 @@
 
 nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,
-                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta)
+                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,wBounds)
 {
+  
+  # for backwards compatibility with momentuHMM < 1.4.0
+  if(missing(wBounds)) wBounds <- list(lower=rep(-Inf,length(wpar)),upper=rep(Inf,length(wpar)))
+  
   # check arguments
   distnames<-names(dist)
 
@@ -76,7 +81,7 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
   
   # convert the parameters back to their natural scale
   if(length(wparIndex)) wpar[wparIndex] <- fixPar[wparIndex]
-  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta)
+  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta,wBounds)
 
   nbAnimals <- length(unique(data$ID))
 

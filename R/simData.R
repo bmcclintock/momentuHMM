@@ -82,7 +82,7 @@
 #' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).  Special formula functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 #' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
 #' \code{angleFormula(cov,strength)} for the angle mean of circular-circular regression models, and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.
-#' @param cons An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
+#' @param cons Deprecated. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
 #' for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
 #' \code{cons=list(step=c(1,2,1,1))} raises the second parameter to the second power. Default=NULL, which simply raises all parameters to 
 #' the power of 1. \code{cons} is ignored for any given data stream unless \code{DM} is specified.
@@ -91,7 +91,11 @@
 #' a data stream named 'angle' with \code{estAngleMean$angle=TRUE)}, \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2,dimnames=list(c("mean_1",
 #' "mean_2","concentration_1","concentration_2"))))} 
 #' specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.
-#' @param workcons An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
+#' @param workBounds An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. For each matrix, the first column pertains to the lower bound and the second column the upper bound.
+#' For data streams, each element of \code{workBounds} should be a k x 2 matrix with the same name of the corresponding element of 
+#' \code{Par0}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta0)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta0)}.
+#' \code{workBounds} is ignored for any given data stream unless \code{DM} is also specified.
+#' @param workcons Deprecated. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 #' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
 #' through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.
 #' @param stateNames Optional character vector of length nbStates indicating state names.
@@ -349,12 +353,16 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     centroids=NULL,
                     obsPerAnimal=c(500,1500),
                     initialPosition=c(0,0),
-                    DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,stateNames=NULL,
+                    DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,stateNames=NULL,
                     model=NULL,states=FALSE,
                     retrySims=0,
                     lambda=NULL,
                     errorEllipse=NULL)
 {
+  
+  if(!is.null(cons)) warning("cons argument is deprecated in momentuHMM >= 1.4.0.")
+  if(!is.null(workcons)) warning("workcons argument is deprecated in momentuHMM >= 1.4.0.")
+  
   ##############################
   ## Check if !is.null(model) ##
   ##############################
@@ -963,7 +971,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           }
         }
         covsDelta <- model.matrix(formulaDelta,subCovs[1,,drop=FALSE])
-        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta)
+        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
         g <- gFull[1,,drop=FALSE]
         delta <- fullsubPar$delta
       } else {
@@ -1031,7 +1039,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
               }
             }
           }
-          subPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist,p$Bndind,nc,meanind,covsDelta)
+          subPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
         } else {
           subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
         }

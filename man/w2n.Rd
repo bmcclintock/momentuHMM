@@ -6,7 +6,7 @@
 \usage{
 w2n(wpar, bounds, parSize, nbStates, nbCovs, estAngleMean, circularAngleMean,
   consensus, stationary, cons, fullDM, DMind, workcons, nbObs, dist, Bndind, nc,
-  meanind, covsDelta)
+  meanind, covsDelta, wBounds)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}
@@ -53,6 +53,8 @@ each data stream.}
 \item{meanind}{index for circular-circular regression mean angles with at least one non-zero entry in fullDM}
 
 \item{covsDelta}{data frame containing the delta model covariates (if any)}
+
+\item{wBounds}{list with elements 'lower' and 'upper' indicating the working scale parameter (\code{wpar}) lower and upper bounds, respectively}
 }
 \value{
 A list of:

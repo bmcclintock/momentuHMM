@@ -18,6 +18,7 @@ allProbs <- function(m,nbStates)
 {
   
   m <- delta_bc(m)
+  if(is.null(m$conditions$workBounds)) m$conditions$workBounds <- list(lower=rep(-Inf,length(wpar)),upper=rep(Inf,length(wpar)))
   
   data <- m$data
   nbStates <- length(m$stateNames)
@@ -77,7 +78,7 @@ allProbs <- function(m,nbStates)
   }
   dist <- lapply(dist,function(x) gsub("Consensus","",x))
 
-  par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta)
+  par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds)
   
   Fun <- lapply(dist,function(x) paste("d",x,sep=""))
   

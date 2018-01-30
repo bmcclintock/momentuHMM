@@ -7,7 +7,7 @@
 nLogLike(wpar, nbStates, formula, bounds, parSize, data, dist, covs,
   estAngleMean, circularAngleMean, consensus, zeroInflation, oneInflation,
   stationary = FALSE, cons, fullDM, DMind, workcons, Bndind, knownStates,
-  fixPar, wparIndex, nc, meanind, covsDelta)
+  fixPar, wparIndex, nc, meanind, covsDelta, wBounds)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}
@@ -67,6 +67,8 @@ model (if any).}
 \item{meanind}{index for circular-circular regression mean angles with at least one non-zero entry in fullDM}
 
 \item{covsDelta}{data frame containing the delta model covariates (if any)}
+
+\item{wBounds}{list with elements 'lower' and 'upper' indicating the working scale parameter (\code{wpar}) lower and upper bounds, respectively}
 }
 \value{
 The negative log-likelihood of the parameters given the data.
