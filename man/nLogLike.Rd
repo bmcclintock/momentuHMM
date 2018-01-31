@@ -99,7 +99,7 @@ l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bound
      m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$stationary,
      m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
      m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),
-     m$conditions$wparIndex,covsDelta=m$covsDelta)
+     m$conditions$wparIndex,covsDelta=m$covsDelta,workBounds=m$conditions$workBounds)
 }
 
 }

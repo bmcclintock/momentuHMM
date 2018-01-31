@@ -109,6 +109,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
   
   if(!is.null(cons)) warning("cons argument is deprecated in momentuHMM >= 1.4.0.  Please use workBounds instead.")
   if(!is.null(workcons)) warning("workcons argument is deprecated in momentuHMM >= 1.4.0.  Please use workBounds instead.")
+  if(!is.null(workBounds) & (!is.null(cons) | !is.null(workcons))) stop("workBounds cannot be specified when using deprecated arguments cons or workcons; either workBounds or both cons and workcons must be NULL")
   
   ## check that the data is a momentuHMMData object or valid data frame
   if(!is.momentuHMMData(data))
@@ -399,7 +400,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
       }
       if(any(!is.finite(p))) stop(i," working scale parameters are not finite. Check natural parameter values, bounds, and constraints.")
       
-      workBounds <- getWorkBounds(workBounds[i],i,p,parindex[i],parCount,inputs$DM)
+      workBounds[i] <- getWorkBounds(workBounds[i],i,p,parindex[i]-parindex[[i]],parCount,inputs$DM)
       
       ind1 <- which(is.finite(workBounds[[i]][,1]) & is.infinite(workBounds[[i]][,2]))
       ind2 <- which(is.finite(workBounds[[i]][,1]) & is.finite(workBounds[[i]][,2]))
@@ -409,6 +410,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
       p[ind2]<-(logit((p[ind2]-workBounds[[i]][ind2,1])/(workBounds[[i]][ind2,2]-workBounds[[i]][ind2,1]))-workcons[[i]][ind2])^(1/cons[[i]][ind2])
       p[ind3]<-(-log(-p[ind3]+workBounds[[i]][ind3,2])-workcons[[i]][ind3])^(1/cons[[i]][ind3])
       
+      if(any(!is.finite(p))) stop("could not find valid working scale parameters for ",i," that satisfy workBounds")
       if(any(p<workBounds[[i]][,1]) | any(p>workBounds[[i]][,2])) stop("could not find valid working scale parameters for ",i," that satisfy workBounds")
       
       wpar[[i]]<-c(p)      

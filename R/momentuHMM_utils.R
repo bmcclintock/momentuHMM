@@ -33,7 +33,7 @@ delta_bc <- function(m){
     
     parCount<- lapply(m$conditions$fullDM,ncol)
     for(i in distnames[unlist(m$conditions$circularAngleMean)]){
-      parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]])))))
+      parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]])))))
     }
     parindex <- c(0,cumsum(unlist(parCount))[-length(m$conditions$fullDM)])
     names(parindex) <- distnames

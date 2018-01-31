@@ -54,7 +54,7 @@ plotPR(mod4)
 
 ### 5. constrain step mean_1 <= mean_2
 stepDM<-matrix(c(1,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1),4,4,dimnames=list(NULL,c("mean:(Intercept)","mean_2","sd_1:(Intercept)","sd_2:(Intercept)")))
-stepcons <- matrix(c(-Inf,0,-Inf,-Inf,rep(Inf,4)),4,2) # raises "mean_2" working parameter to second power (i.e., constrain it to be positive)
+stepcons <- matrix(c(-Inf,0,-Inf,-Inf,rep(Inf,4)),4,2) # constrains "mean_2" working parameter to be positive
 Par0 <- getParDM(data1,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par=list(step=stepPar,angle=anglePar),DM=list(step=stepDM),workBounds=list(step=stepcons),estAngleMean=list(angle=TRUE))
 data5<-simData(nbAnimals=4,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par=Par0,beta=beta,DM=list(step=stepDM),workBounds=list(step=stepcons))
 mod5<-fitHMM(data5,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par0=Par0,DM=list(step=stepDM),workBounds=list(step=stepcons),estAngleMean=list(angle=TRUE))
@@ -63,6 +63,8 @@ mod5<-fitHMM(data5,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Pa
 stepDM<-matrix(c(1,1,0,0,-1,0,0,0,0,0,1,0,0,0,0,1),4,4,dimnames=list(NULL,c("mean:(Intercept)","mean_1","sd_1:(Intercept)","sd_2:(Intercept)")))
 Par0 <- getParDM(data1,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par=list(step=stepPar,angle=anglePar),DM=list(step=stepDM),workBounds=list(step=stepcons),estAngleMean=list(angle=TRUE))
 mod5b<-fitHMM(data5,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par0=Par0,DM=list(step=stepDM),workBounds=list(step=stepcons),estAngleMean=list(angle=TRUE))
+
+if(abs(mod5$mod$minimum-mod5b$mod$minimum)>1.e-5) stop("mod5 and mod5b minimum do not match")
 
 
 ###### More advanced stuff
