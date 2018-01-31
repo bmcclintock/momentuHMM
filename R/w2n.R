@@ -74,15 +74,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
     
     foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)+1
     
-    tmpwpar <- wpar[foo:length(wpar)]
-    
-    ind1<-which(is.finite(workBounds$delta[,1]) & is.infinite(workBounds$delta[,2]))
-    ind2<-which(is.finite(workBounds$delta[,1]) & is.finite(workBounds$delta[,2]))
-    ind3<-which(is.infinite(workBounds$delta[,1]) & is.finite(workBounds$delta[,2]))
-    
-    tmpwpar[ind1] <- exp(tmpwpar[ind1])+workBounds$delta[ind1,1]
-    tmpwpar[ind2] <- (workBounds$delta[ind2,2]-workBounds$delta[ind2,1]) * boot::inv.logit(tmpwpar[ind2])+workBounds$delta[ind2,1]
-    tmpwpar[ind3] <- -(exp(-tmpwpar[ind3]) - workBounds$delta[ind3,2])
+    tmpwpar <- w2w(wpar[foo:length(wpar)],workBounds$delta)
     
     delta <- c(rep(0,nbCovsDelta+1),tmpwpar)
     deltaXB <- covsDelta%*%matrix(delta,nrow=nbCovsDelta+1)
@@ -100,15 +92,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   if(nbStates>1) {
     foo <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)+1
     
-    tmpwpar <- wpar[foo:length(wpar)]
-    
-    ind1<-which(is.finite(workBounds$beta[,1]) & is.infinite(workBounds$beta[,2]))
-    ind2<-which(is.finite(workBounds$beta[,1]) & is.finite(workBounds$beta[,2]))
-    ind3<-which(is.infinite(workBounds$beta[,1]) & is.finite(workBounds$beta[,2]))
-    
-    tmpwpar[ind1] <- exp(tmpwpar[ind1])+workBounds$beta[ind1,1]
-    tmpwpar[ind2] <- (workBounds$beta[ind2,2]-workBounds$beta[ind2,1]) * boot::inv.logit(tmpwpar[ind2])+workBounds$beta[ind2,1]
-    tmpwpar[ind3] <- -(exp(-tmpwpar[ind3]) - workBounds$beta[ind3,2])
+    tmpwpar <- w2w(wpar[foo:length(wpar)],workBounds$beta)
     
     beta <- tmpwpar
     beta <- matrix(beta,nrow=nbCovs+1)
@@ -158,7 +142,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   return(parlist)
 }
 
-w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,consensus,nbStates,k=0,nc,meanind,workBounds){
+w2w <- function(wpar,workBounds,k=0){
   
   ind1<-which(is.finite(workBounds[,1]) & is.infinite(workBounds[,2]))
   ind2<-which(is.finite(workBounds[,1]) & is.finite(workBounds[,2]))
@@ -168,6 +152,14 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,conse
   wpar[ind2] <- (workBounds[ind2,2]-workBounds[ind2,1]) * boot::inv.logit(wpar[ind2])+workBounds[ind2,1]
   wpar[ind3] <- -(exp(-wpar[ind3]) - workBounds[ind3,2])
   
+  if(k) wpar <- wpar[k]
+  return(wpar)
+}
+
+w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,consensus,nbStates,k=0,nc,meanind,workBounds){
+  
+  wpar <- w2w(wpar,workBounds)
+
   a<-bounds[,1]
   b<-bounds[,2]
   
