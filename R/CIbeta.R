@@ -131,7 +131,7 @@ CIbeta <- function(m,alpha=0.95)
   
   Par <- list()
   for(i in distnames){
-    est <- w2w(wpar[parindex[[i]]+1:parCount[[i]]]^m$conditions$cons[[i]]+m$conditions$workcons[[i]],m$conditions$workBounds[[i]])
+    est <- w2wn(wpar[parindex[[i]]+1:parCount[[i]]]^m$conditions$cons[[i]]+m$conditions$workcons[[i]],m$conditions$workBounds[[i]])
     
     pnames <- colnames(fullDM[[i]])
     if(m$conditions$circularAngleMean[[i]]) pnames <- unique(gsub("cos","",gsub("sin","",pnames)))
@@ -141,7 +141,7 @@ CIbeta <- function(m,alpha=0.95)
 
   # group CIs for t.p. coefficients
   if(nbStates>1){
-    est <- w2w(wpar[tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1))],m$conditions$workBounds$beta)
+    est <- w2wn(wpar[tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1))],m$conditions$workBounds$beta)
     
     Par$beta <- get_CIwb(wpar[tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1))],est,tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1)),Sigma,alpha,m$conditions$workBounds$beta,rnames=rownames(m$mle$beta),cnames=colnames(m$mle$beta),cons=rep(1,length(est)))
   }
@@ -151,7 +151,7 @@ CIbeta <- function(m,alpha=0.95)
     nbCovsDelta <- ncol(m$covsDelta)-1
     foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)+1
     
-    est <- w2w(wpar[foo:length(wpar)],m$conditions$workBounds$delta)
+    est <- w2wn(wpar[foo:length(wpar)],m$conditions$workBounds$delta)
     
     Par$delta <- get_CIwb(wpar[foo:length(wpar)],est,foo:length(wpar),Sigma,alpha,m$conditions$workBounds$delta,rnames=colnames(m$covsDelta),cnames=m$stateNames[-1],cons=rep(1,length(est)))
 
