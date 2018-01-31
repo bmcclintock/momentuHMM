@@ -703,6 +703,19 @@ fitHMM <- function(data,nbStates,dist,
   fixPar <- fixPar[c(distnames,"beta","delta")]
   ofixPar <- ofixPar[c(distnames,"beta","delta")]
   
+  parCount<- lapply(fullDM,ncol)
+  for(i in distnames[unlist(inputs$circularAngleMean)]){
+    parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]])))))
+  }
+  parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
+  names(parindex) <- distnames
+  
+  if(is.null(workBounds)) {
+    workBounds <- vector('list',length(distnames))
+    names(workBounds) <- distnames
+  }
+  workBounds <- getWorkBounds(workBounds,distnames,Par0,parindex,parCount,inputs$DM,beta0,delta0)
+  
   wpar <- n2w(Par0,p$bounds,beta0,delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
   if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
 
@@ -751,19 +764,6 @@ fitHMM <- function(data,nbStates,dist,
       }
     }
   }
-  
-  parCount<- lapply(fullDM,ncol)
-  for(i in distnames[unlist(inputs$circularAngleMean)]){
-    parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]])))))
-  }
-  parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
-  names(parindex) <- distnames
-  
-  if(is.null(workBounds)) {
-    workBounds <- vector('list',length(distnames))
-    names(workBounds) <- distnames
-  }
-  workBounds <- getWorkBounds(workBounds,distnames,wpar,parindex,parCount,inputs$DM,beta0,delta0)
 
   if(fit) {
     
