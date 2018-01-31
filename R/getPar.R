@@ -31,16 +31,16 @@ getPar<-function(m){
     m$mle<-lapply(m$Par$real[distnames],function(x) x$est)
     for(i in distnames){
       if(!is.null(DM[[i]]))
-        m$mle[[i]]<-(m$Par$beta[[i]]$est-m$conditions$workcons[[i]])^(1/m$conditions$cons[[i]])
+        m$mle[[i]]<-nw2w((m$Par$beta[[i]]$est-m$conditions$workcons[[i]])^(1/m$conditions$cons[[i]]),m$conditions$workBounds[[i]])
       else if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]])
         m$mle[[i]]<-m$mle[[i]][-1,]
       Par[[i]] <- c(t(unname(m$mle[[i]])))
     }
-    beta <- unname(m$Par$beta$beta$est)
+    beta <- unname(nw2w(m$Par$beta$beta$est,m$conditions$workBounds$beta))
     if(!length(attr(terms.formula(m$conditions$formulaDelta),"term.labels"))){
       delta <- unname(m$Par$real$delta$est[1,])
     } else {
-      delta <- unname(m$Par$beta$delta$est)
+      delta <- unname(nw2w(m$Par$beta$delta$est,m$conditions$workBounds$delta))
     }
   } else {
     for(i in distnames){
@@ -49,14 +49,14 @@ getPar<-function(m){
         if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]]) 
           par <- par[-1,]
         par <- c(t(par))
-      } else par <- unname((m$CIbeta[[i]]$est-m$conditions$workcons[[i]])^(1/m$conditions$cons[[i]]))
+      } else par <- unname(nw2w((m$CIbeta[[i]]$est-m$conditions$workcons[[i]])^(1/m$conditions$cons[[i]]),m$conditions$workBounds[[i]]))
       Par[[i]] <- par
     }
-    beta <- unname(m$mle$beta)
+    beta <- unname(nw2w(m$mle$beta,m$conditions$workBounds$beta))
     if(!length(attr(terms.formula(m$conditions$formulaDelta),"term.labels"))){
       delta <- unname(m$mle$delta[1,])
     } else {
-      delta <- unname(m$CIbeta$delta$est)
+      delta <- unname(nw2w(m$CIbeta$delta$est,m$conditions$workBounds$delta))
     }
   }
   list(Par=Par,beta=beta,delta=delta)

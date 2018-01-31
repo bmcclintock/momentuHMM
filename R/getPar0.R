@@ -182,7 +182,7 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
         }
       }
       if(any(newparmNames %in% parmNames))
-        tmpPar[match(parmNames,newparmNames,nomatch=0)] <- ((model$CIbeta[[i]]$est-model$conditions$workcons[[i]])^(1/model$conditions$cons[[i]]))[parmNames %in% newparmNames]#model$CIbeta[[i]]$est[parmNames %in% newparmNames]
+        tmpPar[match(parmNames,newparmNames,nomatch=0)] <- nw2w((model$CIbeta[[i]]$est-model$conditions$workcons[[i]])^(1/model$conditions$cons[[i]]),model$conditions$workBounds[[i]])[parmNames %in% newparmNames]#model$CIbeta[[i]]$est[parmNames %in% newparmNames]
       if(circularAngleMean[[i]]) names(tmpPar) <- unique(gsub("cos","",gsub("sin","",colnames(DMinputs[[i]]))))
       else names(tmpPar) <- colnames(DMinputs[[i]])
       Par[[i]] <- tmpPar
@@ -242,7 +242,7 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
       for(i in match(model$stateNames,stateNames,nomatch=0)){#which(model$stateNames %in% stateNames)){
         for(j in match(model$stateNames,stateNames,nomatch=0)){#which(model$stateNames %in% stateNames)) {
           if(i!=j & i>0 & j>0)
-           tmpPar[betaNames %in% rownames(model$mle$beta),paste(i,"->",j)]<-model$mle$beta[rownames(model$mle$beta) %in% betaNames,paste(match(stateNames[i],model$stateNames),"->",match(stateNames[j],model$stateNames))]
+           tmpPar[betaNames %in% rownames(model$mle$beta),paste(i,"->",j)]<-nw2w(model$mle$beta,model$conditions$workBounds$beta)[rownames(model$mle$beta) %in% betaNames,paste(match(stateNames[i],model$stateNames),"->",match(stateNames[j],model$stateNames))]
         }
       }
     }
@@ -271,7 +271,7 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
           names(delta) <- stateNames
         } else {
           delta <- matrix(0,nrow=length(deltaNames),ncol=nbStates-1,dimnames = list(deltaNames,stateNames[-1]))
-          delta[deltaNames %in% rownames(model$CIbeta$delta$est)] <- model$CIbeta$delta$est[rownames(model$CIbeta$delta$est) %in% deltaNames,]
+          delta[deltaNames %in% rownames(model$CIbeta$delta$est)] <- nw2w(model$CIbeta$delta$est,model$conditions$workBounds$delta)[rownames(model$CIbeta$delta$est) %in% deltaNames,]
         }
         Par$delta <- delta
       }

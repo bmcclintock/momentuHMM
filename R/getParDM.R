@@ -403,13 +403,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
       workBounds[i] <- getWorkBounds(workBounds[i],i,p,parindex[i]-parindex[[i]],parCount,inputs$DM)
       if(any(p<workBounds[[i]][,1]) | any(p>workBounds[[i]][,2])) stop("could not find valid working scale parameters for ",i," that satisfy workBounds")
       
-      ind1 <- which(is.finite(workBounds[[i]][,1]) & is.infinite(workBounds[[i]][,2]))
-      ind2 <- which(is.finite(workBounds[[i]][,1]) & is.finite(workBounds[[i]][,2]))
-      ind3 <- which(is.infinite(workBounds[[i]][,1]) & is.finite(workBounds[[i]][,2]))
-      
-      p[ind1]<-(log(p[ind1]-workBounds[[i]][ind1,1])-workcons[[i]][ind1])^(1/cons[[i]][ind1])
-      p[ind2]<-(boot::logit((p[ind2]-workBounds[[i]][ind2,1])/(workBounds[[i]][ind2,2]-workBounds[[i]][ind2,1]))-workcons[[i]][ind2])^(1/cons[[i]][ind2])
-      p[ind3]<-(-log(-p[ind3]+workBounds[[i]][ind3,2])-workcons[[i]][ind3])^(1/cons[[i]][ind3])
+      p <- nw2w(p,workBounds[[i]])
       
       if(any(!is.finite(p))) stop("could not find valid working scale parameters for ",i," that satisfy workBounds")
       

@@ -92,6 +92,20 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcon
   return(c(wpar,wbeta,wdelta))
 }
 
+nw2w <-function(wpar,workBounds){
+  
+  ind1<-which(is.finite(workBounds[,1]) & is.infinite(workBounds[,2]))
+  ind2<-which(is.finite(workBounds[,1]) & is.finite(workBounds[,2]))
+  ind3<-which(is.infinite(workBounds[,1]) & is.finite(workBounds[,2]))
+  
+  wpar[ind1] <- log(wpar[ind1]-workBounds[ind1,1])
+  wpar[ind2] <- boot::logit((wpar[ind2]-workBounds[ind2,1])/(workBounds[ind2,2]-workBounds[ind2,1]))
+  wpar[ind3] <- -log(-wpar[ind3] + workBounds[ind3,2])
+  
+  wpar
+  
+}
+
 n2wDM<-function(bounds,DM,par,cons,workcons,nbStates){
   
   a<-bounds[,1]
