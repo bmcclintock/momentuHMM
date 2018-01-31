@@ -21,11 +21,12 @@
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 #' stream.
-#' @param cons An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
+#' @param cons Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
 #' for each data stream. 
 #' @param userBounds An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 #' distribution parameters for each data stream. 
-#' @param workcons An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
+#' @param workBounds An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. 
+#' @param workcons Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 #' each data stream. 
 #' @param stateNames Optional character vector of length nbStates indicating state names.
 #' @param fixPar An optional list of vectors indicating parameters which are assumed known prior to fitting the model. 
@@ -74,7 +75,7 @@
 #' }
 #' @export
 
-checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=~1,stationary=FALSE,DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,stateNames=NULL,fixPar=NULL)
+checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=~1,stationary=FALSE,DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,stateNames=NULL,fixPar=NULL)
 {
   
   ## check that the data is a momentuHMMData object or valid data frame
@@ -155,14 +156,14 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
     }
     p <- parDef(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds)
     nPar <- lapply(p$bounds,function(x) runif(nrow(x),ifelse(is.finite(x[,1]),x[,1],0),ifelse(is.finite(x[,2]),x[,2],max(x[,1]+1,1.e+6))))
-    par <- getParDM(data,nbStates,dist,nPar,zeroInflation,oneInflation,estAngleMean,circularAngleMean,DM,cons,userBounds,workcons)
+    par <- getParDM(data,nbStates,dist,nPar,zeroInflation,oneInflation,estAngleMean,circularAngleMean,DM,cons,userBounds,workBounds,workcons)
     
   } else par <- Par0
   m<-suppressMessages(fitHMM(data=data,nbStates=nbStates,dist=dist,
                              Par0=par,beta0=beta0,delta0=delta0,
                              estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
                              formula=formula,formulaDelta=formulaDelta,stationary=stationary,
-                             DM=DM,cons=cons,userBounds=userBounds,workcons=workcons,fit=FALSE,
+                             DM=DM,cons=cons,userBounds=userBounds,workBounds=workBounds,workcons=workcons,fit=FALSE,
                              stateNames=stateNames,fixPar=fixPar))
   
   inputs <- checkInputs(nbStates,dist,par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,stateNames,checkInflation = TRUE)

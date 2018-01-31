@@ -35,7 +35,7 @@ each data stream specified in \code{model$conditions$dist}}
 \item{beta}{Matrix of regression coefficients for the transition probabilities}
 \item{delta}{Initial distribution of the HMM. Only returned if \code{stateNames} has the same membership as the state names for \code{model}}.
 
-All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{cons}, \code{userBounds}, \code{workcons}, etc.) and \code{data} are assumed to be the same 
+All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{userBounds}, \code{workBounds}, etc.) and \code{data} are assumed to be the same 
 for \code{model} and the new model (as specified by  \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{formulaDelta}, \code{DM}, and \code{stateNames}).
 }
 \description{

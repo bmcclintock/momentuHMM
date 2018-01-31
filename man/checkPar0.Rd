@@ -7,7 +7,8 @@
 checkPar0(data, nbStates, dist, Par0 = NULL, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
   formulaDelta = ~1, stationary = FALSE, DM = NULL, cons = NULL,
-  userBounds = NULL, workcons = NULL, stateNames = NULL, fixPar = NULL)
+  userBounds = NULL, workBounds = NULL, workcons = NULL,
+  stateNames = NULL, fixPar = NULL)
 }
 \arguments{
 \item{data}{\code{\link{momentuHMMData}} object or a data frame containing the data stream and covariate values}
@@ -39,13 +40,15 @@ equal to the stationary distribution. Default: \code{FALSE}.}
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream.}
 
-\item{cons}{An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
+\item{cons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
 for each data stream.}
 
 \item{userBounds}{An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 distribution parameters for each data stream.}
 
-\item{workcons}{An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
+\item{workBounds}{An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters.}
+
+\item{workcons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 each data stream.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
