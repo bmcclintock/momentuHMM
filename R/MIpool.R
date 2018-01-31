@@ -142,7 +142,9 @@ MIpool<-function(HMMfits,alpha=0.95,ncores,covs=NULL){
   tempworkcons<-rep(0,length(m$mod$estimate))
   tempcons[1:length(unlist(m$conditions$cons))]<-unlist(m$conditions$cons)
   tempworkcons[1:length(unlist(m$conditions$workcons))]<-unlist(m$conditions$workcons)
-  miBeta <- mitools::MIcombine(results=lapply(im,function(x) x$mod$estimate^tempcons+tempworkcons),variances=lapply(im,function(x) diag(tempcons*(x$mod$estimate^(tempcons-1)))%*%ginv(x$mod$hessian)%*%t(diag(tempcons*(x$mod$estimate^(tempcons-1))))))
+  
+  wBounds <- cbind(unlist(lapply(m$conditions$workBounds,function(x) x[,1])),unlist(lapply(m$conditions$workBounds,function(x) x[,2])))
+  miBeta <- mitools::MIcombine(results=lapply(im,function(x) w2w(x$mod$estimate^tempcons+tempworkcons,wBounds)),variances=lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%ginv(x$mod$hessian)%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons))))
   
   for(parm in 1:nparms){
     
