@@ -6,7 +6,8 @@
 \usage{
 getParDM(data = data.frame(), nbStates, dist, Par, zeroInflation = NULL,
   oneInflation = NULL, estAngleMean = NULL, circularAngleMean = NULL,
-  DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL)
+  DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL,
+  workcons = NULL)
 }
 \arguments{
 \item{data}{Optional \code{\link{momentuHMMData}} object or a data frame containing the covariate values. 
@@ -48,7 +49,7 @@ character strings for the covariate:
 where the 4 rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the 6 columns correspond to the regression 
 coefficients.}
 
-\item{cons}{An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
+\item{cons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
 for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
 \code{cons=list(step=c(1,2,1,1))} raises the second parameter to the second power. Default=NULL, which simply raises all parameters to 
 the power of 1. \code{cons} is ignored for any given data stream unless \code{DM} is specified.}
@@ -57,6 +58,10 @@ the power of 1. \code{cons} is ignored for any given data stream unless \code{DM
 distribution parameters for each data stream. For example, for a 2-state model using the wrapped Cauchy ('wrpcauchy') distribution for 
 a data stream named 'angle' with \code{estAngleMean$angle=TRUE)}, \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2))} 
 specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.}
+
+\item{workBounds}{An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. For each matrix, the first column pertains to the lower bound and the second column the upper bound.
+For data streams, each element of \code{workBounds} should be a k x 2 matrix with the same name of the corresponding element of 
+\code{Par0}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta0)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta0)}.}
 
 \item{workcons}{An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 

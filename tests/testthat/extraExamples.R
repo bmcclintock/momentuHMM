@@ -54,15 +54,15 @@ plotPR(mod4)
 
 ### 5. constrain step mean_1 <= mean_2
 stepDM<-matrix(c(1,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1),4,4,dimnames=list(NULL,c("mean:(Intercept)","mean_2","sd_1:(Intercept)","sd_2:(Intercept)")))
-stepcons <- c(1,2,1,1) # raises "mean_2" working parameter to second power (i.e., constrain it to be positive)
-Par0 <- getParDM(data1,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par=list(step=stepPar,angle=anglePar),DM=list(step=stepDM),cons=list(step=stepcons),estAngleMean=list(angle=TRUE))
-data5<-simData(nbAnimals=4,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par=Par0,beta=beta,DM=list(step=stepDM),cons=list(step=stepcons))
-mod5<-fitHMM(data5,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par0=Par0,DM=list(step=stepDM),cons=list(step=stepcons),estAngleMean=list(angle=TRUE))
+stepcons <- matrix(c(-Inf,0,-Inf,-Inf,rep(Inf,4)),4,2) # raises "mean_2" working parameter to second power (i.e., constrain it to be positive)
+Par0 <- getParDM(data1,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par=list(step=stepPar,angle=anglePar),DM=list(step=stepDM),workBounds=list(step=stepcons),estAngleMean=list(angle=TRUE))
+data5<-simData(nbAnimals=4,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par=Par0,beta=beta,DM=list(step=stepDM),workBounds=list(step=stepcons))
+mod5<-fitHMM(data5,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par0=Par0,DM=list(step=stepDM),workBounds=list(step=stepcons),estAngleMean=list(angle=TRUE))
 
 # same constraint, different DM
 stepDM<-matrix(c(1,1,0,0,-1,0,0,0,0,0,1,0,0,0,0,1),4,4,dimnames=list(NULL,c("mean:(Intercept)","mean_1","sd_1:(Intercept)","sd_2:(Intercept)")))
-Par0 <- getParDM(data1,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par=list(step=stepPar,angle=anglePar),DM=list(step=stepDM),cons=list(step=stepcons),estAngleMean=list(angle=TRUE))
-mod5b<-fitHMM(data5,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par0=Par0,DM=list(step=stepDM),cons=list(step=stepcons),estAngleMean=list(angle=TRUE))
+Par0 <- getParDM(data1,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par=list(step=stepPar,angle=anglePar),DM=list(step=stepDM),workBounds=list(step=stepcons),estAngleMean=list(angle=TRUE))
+mod5b<-fitHMM(data5,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par0=Par0,DM=list(step=stepDM),workBounds=list(step=stepcons),estAngleMean=list(angle=TRUE))
 
 
 ###### More advanced stuff
