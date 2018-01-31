@@ -898,7 +898,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     deltaB <- delta
   }
   
-  parCount<- lapply(Par,length)
+  parCount<- lapply(Par[distnames],length)
   parindex <- c(0,cumsum(unlist(parCount))[-length(distnames)])
   names(parindex) <- distnames
   
@@ -906,7 +906,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     workBounds <- vector('list',length(distnames))
     names(workBounds) <- distnames
   }
-  workBounds <- getWorkBounds(workBounds,distnames,unlist(Par),parindex,parCount,inputs$DM,beta,deltaB)
+  workBounds <- getWorkBounds(workBounds,distnames,unlist(Par[distnames]),parindex,parCount,inputs$DM,beta,deltaB)
   
   if(!nbSpatialCovs | !retrySims){
   
