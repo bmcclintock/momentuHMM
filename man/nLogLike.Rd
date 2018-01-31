@@ -7,7 +7,7 @@
 nLogLike(wpar, nbStates, formula, bounds, parSize, data, dist, covs,
   estAngleMean, circularAngleMean, consensus, zeroInflation, oneInflation,
   stationary = FALSE, cons, fullDM, DMind, workcons, Bndind, knownStates,
-  fixPar, wparIndex, nc, meanind, covsDelta, wBounds)
+  fixPar, wparIndex, nc, meanind, covsDelta, workBounds)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}
@@ -68,7 +68,7 @@ model (if any).}
 
 \item{covsDelta}{data frame containing the delta model covariates (if any)}
 
-\item{wBounds}{list with elements 'lower' and 'upper' indicating the working scale parameter (\code{wpar}) lower and upper bounds, respectively}
+\item{workBounds}{named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters}
 }
 \value{
 The negative log-likelihood of the parameters given the data.

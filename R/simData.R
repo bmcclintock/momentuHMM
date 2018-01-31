@@ -387,6 +387,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     dist<-model$conditions$dist
     distnames<-names(dist)
     userBounds <- model$conditions$bounds
+    workBounds <- model$conditions$workBounds
     stateNames<-model$stateNames
     estAngleMean<-model$conditions$estAngleMean
     circularAngleMean<-model$conditions$circularAngleMean
@@ -493,7 +494,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
     Par <- Par[distnames]
     
-    mHind <- (is.null(DM) & is.null(userBounds) & is.null(spatialCovs) & is.null(centers) & is.null(centroids) & ("step" %in% names(dist)) & all(unlist(initialPosition)==c(0,0)) & is.null(lambda) & is.null(errorEllipse) & !is.list(obsPerAnimal) & is.null(covs) & !nbCovs & !length(attr(terms.formula(formula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & is.null(delta)) # indicator for moveHMM::simData
+    mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & is.null(spatialCovs) & is.null(centers) & is.null(centroids) & ("step" %in% names(dist)) & all(unlist(initialPosition)==c(0,0)) & is.null(lambda) & is.null(errorEllipse) & !is.list(obsPerAnimal) & is.null(covs) & !nbCovs & !length(attr(terms.formula(formula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & is.null(delta)) # indicator for moveHMM::simData
     if(all(names(dist) %in% c("step","angle")) & all(unlist(dist) %in% moveHMMdists) & mHind){
       zi <- FALSE
       if(!is.null(zeroInflation$step)) zi <- zeroInflation$step
@@ -896,6 +897,16 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                  nbStates-1,"columns."))
     deltaB <- delta
   }
+  
+  parCount<- lapply(Par,length)
+  parindex <- c(0,cumsum(unlist(parCount))[-length(distnames)])
+  names(parindex) <- distnames
+  
+  if(is.null(workBounds)) {
+    workBounds <- vector('list',length(distnames))
+    names(workBounds) <- distnames
+  }
+  workBounds <- getWorkBounds(workBounds,distnames,Par,parindex,parCount,inputs$DM,beta,deltaB)
   
   if(!nbSpatialCovs | !retrySims){
   

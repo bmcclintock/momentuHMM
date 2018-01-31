@@ -18,7 +18,6 @@ allProbs <- function(m,nbStates)
 {
   
   m <- delta_bc(m)
-  if(is.null(m$conditions$workBounds)) m$conditions$workBounds <- list(lower=rep(-Inf,length(wpar)),upper=rep(Inf,length(wpar)))
   
   data <- m$data
   nbStates <- length(m$stateNames)

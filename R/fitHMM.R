@@ -758,24 +758,11 @@ fitHMM <- function(data,nbStates,dist,
   parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
   names(parindex) <- distnames
   
-  if(is.null(workBounds)){
-    wBounds <- list()
-    wBounds$lower <- rep(-Inf,length(wpar))
-    wBounds$upper <- rep(Inf,length(wpar))
-    #if(any(unlist(DMinputs$cons)==2)){
-    #  wBounds$lower[which(unlist(DMinputs$cons)==2)] <- unlist(DMinputs$workcons)[which(unlist(DMinputs$cons)==2)]
-    #  wpar[which(unlist(DMinputs$cons)==2)] <- wpar[which(unlist(DMinputs$cons)==2)]^2 + unlist(DMinputs$workcons)[which(unlist(DMinputs$cons)==2)]
-    #  for(i in distnames){
-    #    DMinputs$workcons[[i]][which(DMinputs$cons[[i]]==2)] <- 0
-    #    DMinputs$cons[[i]][which(DMinputs$cons[[i]]==2)] <- 1
-    #  }
-    #}
-  } else {
-    wBounds <- getWorkBounds(workBounds,distnames,wpar,parindex,parCount,inputs$DM,beta0,delta0)
-    #for(i in distnames){
-    #  if(!all(wBounds$lower[parindex[[i]]+1:parCount[[i]]] == -Inf & wBounds$upper[parindex[[i]]+1:parCount[[i]]] == Inf)) p$Bndind[[i]] <- FALSE
-    #}
+  if(is.null(workBounds)) {
+    workBounds <- vector('list',length(distnames))
+    names(workBounds) <- distnames
   }
+  workBounds <- getWorkBounds(workBounds,distnames,wpar,parindex,parCount,inputs$DM,beta0,delta0)
 
   if(fit) {
     
@@ -813,7 +800,7 @@ fitHMM <- function(data,nbStates,dist,
         withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,wpar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
-                                               nc,meanind,covsDelta,wBounds,
+                                               nc,meanind,covsDelta,workBounds,
                                                print.level=verbose,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
                                                iterlim=iterlim,hessian=TRUE),error=function(e) e),warning=h)
@@ -847,11 +834,11 @@ fitHMM <- function(data,nbStates,dist,
     
     # convert the parameters back to their natural scale
     wpar <- mod$estimate
-    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,wBounds)
+    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
   }
   else {
     mod <- NA
-    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,wBounds)
+    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
   }
 
   ####################
@@ -925,7 +912,7 @@ fitHMM <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
-                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=wBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=ofixPar,wparIndex=wparIndex,formulaDelta=formulaDelta)
+                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=ofixPar,wparIndex=wparIndex,formulaDelta=formulaDelta)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta)
   

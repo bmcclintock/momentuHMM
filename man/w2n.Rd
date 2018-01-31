@@ -6,7 +6,7 @@
 \usage{
 w2n(wpar, bounds, parSize, nbStates, nbCovs, estAngleMean, circularAngleMean,
   consensus, stationary, cons, fullDM, DMind, workcons, nbObs, dist, Bndind, nc,
-  meanind, covsDelta, wBounds)
+  meanind, covsDelta, workBounds)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}
@@ -54,7 +54,7 @@ each data stream.}
 
 \item{covsDelta}{data frame containing the delta model covariates (if any)}
 
-\item{wBounds}{list with elements 'lower' and 'upper' indicating the working scale parameter (\code{wpar}) lower and upper bounds, respectively}
+\item{workBounds}{named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters}
 }
 \value{
 A list of:

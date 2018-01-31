@@ -11,7 +11,7 @@ splineList<-c("bs","ns","bSpline","mSpline","cSpline","iSpline")
 meansList<-c("numeric","integer","logical","Date","POSIXlt","POSIXct","difftime")
 meansListNoTime<-c("numeric","integer","logical")
 
-# this function maintains backwards compatibility with momentuHMM versions <1.1.2
+# this function maintains backwards compatibility with momentuHMM versions <1.1.2 (formulaDelta) and <1.4.0 (workBounds)
 delta_bc <- function(m){
   if(is.null(m$conditions$formulaDelta)) {
     m$conditions$formulaDelta <- ~1
@@ -27,6 +27,20 @@ delta_bc <- function(m){
       #m$CIreal <- CIreal(m)
       m$CIbeta <- CIbeta(m)
     }
+  }
+  if(is.null(m$conditions$workBounds)){
+    distnames <- names(m$conditions$dist)
+    
+    parCount<- lapply(m$conditions$fullDM,ncol)
+    for(i in distnames[unlist(m$conditions$circularAngleMean)]){
+      parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]])))))
+    }
+    parindex <- c(0,cumsum(unlist(parCount))[-length(m$conditions$fullDM)])
+    names(parindex) <- distnames
+    
+    workBounds <- vector('list',length(distnames))
+    names(workBounds) <- distnames
+    m$conditions$workBounds <- getWorkBounds(workBounds,distnames,m$mod$estimate,parindex,parCount,m$conditions$DM,m$CIbeta$beta$est,m$CIbeta$beta$delta)
   }
   m
 }

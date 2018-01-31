@@ -30,7 +30,7 @@
 #' @param nc indicator for zeros in fullDM
 #' @param meanind index for circular-circular regression mean angles with at least one non-zero entry in fullDM
 #' @param covsDelta data frame containing the delta model covariates (if any)
-#' @param wBounds list with elements 'lower' and 'upper' indicating the working scale parameter (\code{wpar}) lower and upper bounds, respectively
+#' @param workBounds named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters
 #' 
 #' @return A list of:
 #' \item{...}{Matrices containing the natural parameters for each data stream (e.g., 'step', 'angle', etc.)}
@@ -64,7 +64,7 @@
 #' @importFrom boot inv.logit
 #' @importFrom Brobdingnag as.brob sum
 
-w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind,nc,meanind,covsDelta,wBounds)
+w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind,nc,meanind,covsDelta,workBounds)
 {
 
   # identify initial distribution parameters
@@ -75,13 +75,13 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
     
     tmpwpar <- wpar[foo:length(wpar)]
     
-    ind1<-which(is.finite(wBounds$lower[foo:length(wpar)]) & is.infinite(wBounds$upper[foo:length(wpar)]))
-    ind2<-which(is.finite(wBounds$lower[foo:length(wpar)]) & is.finite(wBounds$upper[foo:length(wpar)]))
-    ind3<-which(is.infinite(wBounds$lower[foo:length(wpar)]) & is.finite(wBounds$upper[foo:length(wpar)]))
+    ind1<-which(is.finite(workBounds$delta[,1]) & is.infinite(workBounds$delta[,2]))
+    ind2<-which(is.finite(workBounds$delta[,1]) & is.finite(workBounds$delta[,2]))
+    ind3<-which(is.infinite(workBounds$delta[,1]) & is.finite(workBounds$delta[,2]))
     
-    tmpwpar[ind1] <- exp(tmpwpar[ind1])+wBounds$lower[foo-1+ind1]
-    tmpwpar[ind2] <- (wBounds$upper[foo-1+ind2]-wBounds$lower[foo-1+ind2]) * boot::inv.logit(tmpwpar[ind2])+wBounds$lower[foo-1+ind2]
-    tmpwpar[ind3] <- -(exp(-tmpwpar[ind3]) - wBounds$upper[foo-1+ind3])
+    tmpwpar[ind1] <- exp(tmpwpar[ind1])+workBounds$delta[ind1,1]
+    tmpwpar[ind2] <- (workBounds$delta[ind2,2]-workBounds$delta[ind2,1]) * boot::inv.logit(tmpwpar[ind2])+workBounds$delta[ind2,1]
+    tmpwpar[ind3] <- -(exp(-tmpwpar[ind3]) - workBounds$delta[ind3,2])
     
     delta <- c(rep(0,nbCovsDelta+1),tmpwpar)
     deltaXB <- covsDelta%*%matrix(delta,nrow=nbCovsDelta+1)
@@ -101,13 +101,13 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
     
     tmpwpar <- wpar[foo:length(wpar)]
     
-    ind1<-which(is.finite(wBounds$lower[foo:length(wpar)]) & is.infinite(wBounds$upper[foo:length(wpar)]))
-    ind2<-which(is.finite(wBounds$lower[foo:length(wpar)]) & is.finite(wBounds$upper[foo:length(wpar)]))
-    ind3<-which(is.infinite(wBounds$lower[foo:length(wpar)]) & is.finite(wBounds$upper[foo:length(wpar)]))
+    ind1<-which(is.finite(workBounds$beta[,1]) & is.infinite(workBounds$beta[,2]))
+    ind2<-which(is.finite(workBounds$beta[,1]) & is.finite(workBounds$beta[,2]))
+    ind3<-which(is.infinite(workBounds$beta[,1]) & is.finite(workBounds$beta[,2]))
     
-    tmpwpar[ind1] <- exp(tmpwpar[ind1])+wBounds$lower[foo-1+ind1]
-    tmpwpar[ind2] <- (wBounds$upper[foo-1+ind2]-wBounds$lower[foo-1+ind2]) * boot::inv.logit(tmpwpar[ind2])+wBounds$lower[foo-1+ind2]
-    tmpwpar[ind3] <- -(exp(-tmpwpar[ind3]) - wBounds$upper[foo-1+ind3])
+    tmpwpar[ind1] <- exp(tmpwpar[ind1])+workBounds$beta[ind1,1]
+    tmpwpar[ind2] <- (workBounds$beta[ind2,2]-workBounds$beta[ind2,1]) * boot::inv.logit(tmpwpar[ind2])+workBounds$beta[ind2,1]
+    tmpwpar[ind3] <- -(exp(-tmpwpar[ind3]) - workBounds$beta[ind3,2])
     
     beta <- tmpwpar
     beta <- matrix(beta,nrow=nbCovs+1)
@@ -128,13 +128,13 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   for(i in distnames){
     tmpwpar<-wpar[parindex[[i]]+1:parCount[[i]]]
     
-    ind1<-which(is.finite(wBounds$lower[parindex[[i]]+1:parCount[[i]]]) & is.infinite(wBounds$upper[parindex[[i]]+1:parCount[[i]]]))
-    ind2<-which(is.finite(wBounds$lower[parindex[[i]]+1:parCount[[i]]]) & is.finite(wBounds$upper[parindex[[i]]+1:parCount[[i]]]))
-    ind3<-which(is.infinite(wBounds$lower[parindex[[i]]+1:parCount[[i]]]) & is.finite(wBounds$upper[parindex[[i]]+1:parCount[[i]]]))
+    ind1<-which(is.finite(workBounds[[i]][,1]) & is.infinite(workBounds[[i]][,2]))
+    ind2<-which(is.finite(workBounds[[i]][,1]) & is.finite(workBounds[[i]][,2]))
+    ind3<-which(is.infinite(workBounds[[i]][,1]) & is.finite(workBounds[[i]][,2]))
     
-    tmpwpar[ind1] <- exp(tmpwpar[ind1])+wBounds$lower[parindex[[i]]+ind1]
-    tmpwpar[ind2] <- (wBounds$upper[parindex[[i]]+ind2]-wBounds$lower[parindex[[i]]+ind2]) * boot::inv.logit(tmpwpar[ind2])+wBounds$lower[parindex[[i]]+ind2]
-    tmpwpar[ind3] <- -(exp(-tmpwpar[ind3]) - wBounds$upper[parindex[[i]]+ind3])
+    tmpwpar[ind1] <- exp(tmpwpar[ind1])+workBounds[[i]][ind1,1]
+    tmpwpar[ind2] <- (workBounds[[i]][ind2,2]-workBounds[[i]][ind2,1]) * boot::inv.logit(tmpwpar[ind2])+workBounds[[i]][ind2,1]
+    tmpwpar[ind3] <- -(exp(-tmpwpar[ind3]) - workBounds[[i]][ind3,2])
     
     if(estAngleMean[[i]] & Bndind[[i]]){ 
       bounds[[i]][,1] <- -Inf
