@@ -135,7 +135,7 @@ CIbeta <- function(m,alpha=0.95)
     
     pnames <- colnames(fullDM[[i]])
     if(m$conditions$circularAngleMean[[i]]) pnames <- unique(gsub("cos","",gsub("sin","",pnames)))
-    Par[[i]] <- get_CIwb(wpar[parindex[[i]]+1:parCount[[i]]]^m$conditions$cons[[i]]+m$conditions$workcons[[i]],est,parindex[[i]]+1:parCount[[i]],Sigma,alpha,m$conditions$workBounds[[i]],cnames=pnames)
+    Par[[i]] <- get_CIwb(wpar[parindex[[i]]+1:parCount[[i]]],est,parindex[[i]]+1:parCount[[i]],Sigma,alpha,m$conditions$workBounds[[i]],cnames=pnames,cons=m$conditions$cons[[i]])
 
   }
 
@@ -143,7 +143,7 @@ CIbeta <- function(m,alpha=0.95)
   if(nbStates>1){
     est <- w2w(wpar[tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1))],m$conditions$workBounds$beta)
     
-    Par$beta <- get_CIwb(wpar[tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1))],est,tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1)),Sigma,alpha,m$conditions$workBounds$beta,rnames=rownames(m$mle$beta),cnames=colnames(m$mle$beta))
+    Par$beta <- get_CIwb(wpar[tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1))],est,tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1)),Sigma,alpha,m$conditions$workBounds$beta,rnames=rownames(m$mle$beta),cnames=colnames(m$mle$beta),cons=rep(1,length(est)))
   }
   
   # group CIs for initial distribution
@@ -153,23 +153,36 @@ CIbeta <- function(m,alpha=0.95)
     
     est <- w2w(wpar[foo:length(wpar)],m$conditions$workBounds$delta)
     
-    Par$delta <- get_CIwb(wpar[foo:length(wpar)],est,foo:length(wpar),Sigma,alpha,m$conditions$workBounds$delta,rnames=colnames(m$covsDelta),cnames=m$stateNames[-1])
+    Par$delta <- get_CIwb(wpar[foo:length(wpar)],est,foo:length(wpar),Sigma,alpha,m$conditions$workBounds$delta,rnames=colnames(m$covsDelta),cnames=m$stateNames[-1],cons=rep(1,length(est)))
 
   }
   return(Par)
 }
 
-get_CIwb<-function(wpar,Par,ind,Sigma,alpha,workBounds,rnames="[1,]",cnames){
+get_gradwb<-function(wpar,workBounds,cons){
+  ind1<-which(is.finite(workBounds[,1]) & is.infinite(workBounds[,2]))
+  ind2<-which(is.finite(workBounds[,1]) & is.finite(workBounds[,2]))
+  ind3<-which(is.infinite(workBounds[,1]) & is.finite(workBounds[,2]))
+  
+  dN <- diag(cons*(wpar^(cons-1)))
+  dN[cbind(ind1,ind1)] <- exp(wpar[ind1])
+  dN[cbind(ind2,ind2)] <- (workBounds[ind2,2]-workBounds[ind2,1])*exp(wpar[ind2])/(1+exp(wpar[ind2]))^2 
+  dN[cbind(ind3,ind3)] <- exp(-wpar[ind3])
+  dN
+}
+
+get_CIwb<-function(wpar,Par,ind,Sigma,alpha,workBounds,rnames="[1,]",cnames,cons){
   
   npar <- length(wpar)
   bRow <- (rnames=="[1,]")
   lower<-upper<-se<-numeric(npar)
-  for(k in 1:npar){
-    dN<-numDeriv::grad(w2w,wpar,workBounds=workBounds,k=k)
-    se[k]<-suppressWarnings(sqrt(dN%*%Sigma[ind,ind]%*%dN))
-    lower[k] <- Par[k] - qnorm(1-(1-alpha)/2) * se[k]
-    upper[k] <- Par[k] + qnorm(1-(1-alpha)/2) * se[k]
-  }
+  
+  dN <- get_gradwb(wpar,workBounds,cons)
+  
+  se <- suppressWarnings(sqrt(diag(dN%*%Sigma[ind,ind]%*%t(dN))))
+  lower <- Par - qnorm(1-(1-alpha)/2) * se
+  upper <- Par + qnorm(1-(1-alpha)/2) * se
+    
   est<-matrix(Par,ncol=length(cnames),byrow=bRow)
   l<-matrix(lower,ncol=length(cnames),byrow=bRow)
   u<-matrix(upper,ncol=length(cnames),byrow=bRow)  

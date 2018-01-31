@@ -66,6 +66,14 @@ mod5b<-fitHMM(data5,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),P
 
 if(abs(mod5$mod$minimum-mod5b$mod$minimum)>1.e-5) stop("mod5 and mod5b minimum do not match")
 
+# same constraint, different DM
+stepDM<-matrix(c(1,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1),4,4,dimnames=list(NULL,c("mean:(Intercept)","mean_1","sd_1:(Intercept)","sd_2:(Intercept)")))
+stepcons <- matrix(c(-Inf,-Inf,-Inf,-Inf,Inf,0,Inf,Inf),4,2) # constrains "mean_2" working parameter to be positive
+Par0 <- getParDM(data1,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par=list(step=stepPar,angle=anglePar),DM=list(step=stepDM),workBounds=list(step=stepcons),estAngleMean=list(angle=TRUE))
+mod5c<-fitHMM(data5,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par0=Par0,DM=list(step=stepDM),workBounds=list(step=stepcons),estAngleMean=list(angle=TRUE))
+
+if(abs(mod5c$mod$minimum-mod5b$mod$minimum)>1.e-5) stop("mod5b and mod5c minimum do not match")
+
 
 ###### More advanced stuff
 

@@ -125,7 +125,7 @@ n2wDM<-function(bounds,DM,par,cons,workcons,nbStates){
   ind33<-ind3[which(is.infinite(a[ind3]) & is.finite(b[ind3]))]
   
   p[ind31]<-(log(par[ind31]-a[ind31])-workcons[ind31])^(1/cons[ind31])
-  p[ind32]<-(logit((par[ind32]-a[ind32])/(b[ind32]-a[ind32]))-workcons[ind32])^(1/cons[ind32])
+  p[ind32]<-(boot::logit((par[ind32]-a[ind32])/(b[ind32]-a[ind32]))-workcons[ind32])^(1/cons[ind32])
   p[ind33]<-(-log(-par[ind33]+b[ind33])-workcons[ind33])^(1/cons[ind33])
   
   p
