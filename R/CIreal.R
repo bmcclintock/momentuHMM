@@ -166,18 +166,18 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     tmpParNames <- p$parNames[[i]]
     tmpParNames[which(p$parNames[[i]]=="kappa")] <- "concentration"
     if(!m$conditions$DMind[[i]]){
-      par <- c(w2n(m$mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean[i],inputs$consensus[i],m$conditions$stationary,m$conditions$cons,fullDM,m$conditions$DMind,m$conditions$workcons,1,inputs$dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta)[[i]])
+      par <- c(w2n(m$mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean[i],inputs$consensus[i],m$conditions$stationary,m$conditions$cons,fullDM,m$conditions$DMind,m$conditions$workcons,1,inputs$dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds)[[i]])
     } else {
       par <- as.vector(t(m$mle[[i]]))
     }
     if(!(inputs$dist[[i]] %in% angledists) | (inputs$dist[[i]] %in% angledists & m$conditions$estAngleMean[[i]] & !m$conditions$Bndind[[i]])) {
-      Par[[i]] <- get_CI(m$mod$estimate,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]])
+      Par[[i]] <- get_CI(m$mod$estimate,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],m$conditions$workBounds[[i]])
     } else {
       if(!m$conditions$estAngleMean[[i]])
-        Par[[i]] <- get_CI(m$mod$estimate,par[-c(1:nbStates)],m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]])
+        Par[[i]] <- get_CI(m$mod$estimate,par[-c(1:nbStates)],m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],m$conditions$workBounds[[i]])
       else {
         if(m$conditions$Bndind[[i]]){
-          Par[[i]] <- CI_angle(m$mod$estimate,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]])
+          Par[[i]] <- CI_angle(m$mod$estimate,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],m$conditions$cons[[i]],m$conditions$workcons[[i]],Sigma,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],m$conditions$workBounds[[i]])
         }
       }
     }
@@ -271,12 +271,12 @@ parm_list<-function(est,se,lower,upper,rnames,cnames){
   Par
 }
 
-get_CI<-function(wpar,Par,m,ind,DM,DMind,Bounds,cons,workcons,Sigma,circularAngleMean,consensus,nbStates,alpha,rnames,cnames,nc,meanind){
+get_CI<-function(wpar,Par,m,ind,DM,DMind,Bounds,cons,workcons,Sigma,circularAngleMean,consensus,nbStates,alpha,rnames,cnames,nc,meanind,workBounds){
 
   w<-wpar[ind]
   lower<-upper<-se<-numeric(nrow(DM))
   for(k in 1:nrow(DM)){
-    dN<-numDeriv::grad(w2nDM,w,bounds=Bounds,DM=DM,DMind=DMind,cons=cons,workcons=workcons,nbObs=1,circularAngleMean=circularAngleMean,consensus=consensus,nbStates=nbStates,k=k,nc=nc,meanind=meanind)
+    dN<-numDeriv::grad(w2nDM,w,bounds=Bounds,DM=DM,DMind=DMind,cons=cons,workcons=workcons,nbObs=1,circularAngleMean=circularAngleMean,consensus=consensus,nbStates=nbStates,k=k,nc=nc,meanind=meanind,workBounds=workBounds)
     se[k]<-suppressWarnings(sqrt(dN%*%Sigma[ind,ind]%*%dN))
     lower[k] <- Par[k] - qnorm(1-(1-alpha)/2) * se[k]
     upper[k] <- Par[k] + qnorm(1-(1-alpha)/2) * se[k]
@@ -292,12 +292,12 @@ get_CI<-function(wpar,Par,m,ind,DM,DMind,Bounds,cons,workcons,Sigma,circularAngl
   out
 }
 
-CI_angle<-function(wpar,Par,m,ind,DM,DMind,Bounds,cons,workcons,Sigma,circularAngleMean,consensus,nbStates,alpha,rnames,cnames,nc,meanind){
+CI_angle<-function(wpar,Par,m,ind,DM,DMind,Bounds,cons,workcons,Sigma,circularAngleMean,consensus,nbStates,alpha,rnames,cnames,nc,meanind,workBounds){
   
   w<-wpar[ind]
   lower<-upper<-se<-numeric(nrow(DM))
   for(k in 1:nrow(DM)){
-    dN<-numDeriv::grad(w2nDMangle,w,bounds=Bounds,DM=DM,DMind=DMind,cons=cons,workcons=workcons,nbObs=1,circularAngleMean=circularAngleMean,consensus=consensus,nbStates=nbStates,k=k,nc=nc,meanind=meanind)
+    dN<-numDeriv::grad(w2nDMangle,w,bounds=Bounds,DM=DM,DMind=DMind,cons=cons,workcons=workcons,nbObs=1,circularAngleMean=circularAngleMean,consensus=consensus,nbStates=nbStates,k=k,nc=nc,meanind=meanind,workBounds=workBounds)
     se[k]<-suppressWarnings(sqrt(dN%*%Sigma[ind,ind]%*%dN))
     lower[k] <- Par[k] - qnorm(1-(1-alpha)/2) * se[k]
     upper[k] <- Par[k] + qnorm(1-(1-alpha)/2) * se[k]
@@ -313,7 +313,7 @@ CI_angle<-function(wpar,Par,m,ind,DM,DMind,Bounds,cons,workcons,Sigma,circularAn
   out
 }
   
-w2nDMangle<-function(w,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,consensus,nbStates,k,nc,meanind){
+w2nDMangle<-function(w,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,consensus,nbStates,k,nc,meanind,workBounds){
   
   bounds[,1] <- -Inf
   bounds[which(bounds[,2]!=1),2] <- Inf
@@ -326,5 +326,5 @@ w2nDMangle<-function(w,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,con
   w[(foo - nbStates):(foo - 1)] <- angleMean
   w[foo:length(w)] <- kappa
   
-  w2nDM(w,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,consensus,nbStates,k,nc,meanind)
+  w2nDM(w,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,consensus,nbStates,k,nc,meanind,workBounds)
 }
