@@ -206,8 +206,11 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,conse
   p[ind32,] <- ((b[ind32]-a[ind32])*(l_t[ind32,,drop=FALSE] * boot::inv.logit(XB[ind32,,drop=FALSE]))+a[ind32])
   p[ind33,] <- -(exp(-XB[ind33,,drop=FALSE]) - b[ind33])
   
-  if(any(p<a | p>b))
-    stop("Scaling error. Check initial values and bounds.")
+  if(!any(is.na(p))){ 
+    if(any(p<a | p>b)){
+      stop("Scaling error. Check initial values and bounds.")
+    }
+  }
   
   if(k) {
     p <- p[k]
