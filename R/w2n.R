@@ -126,15 +126,8 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   parlist<-list()
   
   for(i in distnames){
+    
     tmpwpar<-wpar[parindex[[i]]+1:parCount[[i]]]
-    
-    ind1<-which(is.finite(workBounds[[i]][,1]) & is.infinite(workBounds[[i]][,2]))
-    ind2<-which(is.finite(workBounds[[i]][,1]) & is.finite(workBounds[[i]][,2]))
-    ind3<-which(is.infinite(workBounds[[i]][,1]) & is.finite(workBounds[[i]][,2]))
-    
-    tmpwpar[ind1] <- exp(tmpwpar[ind1])+workBounds[[i]][ind1,1]
-    tmpwpar[ind2] <- (workBounds[[i]][ind2,2]-workBounds[[i]][ind2,1]) * boot::inv.logit(tmpwpar[ind2])+workBounds[[i]][ind2,1]
-    tmpwpar[ind3] <- -(exp(-tmpwpar[ind3]) - workBounds[[i]][ind3,2])
     
     if(estAngleMean[[i]] & Bndind[[i]]){ 
       bounds[[i]][,1] <- -Inf
@@ -148,7 +141,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
       tmpwpar[(foo - nbStates):(foo - 1)] <- angleMean
       tmpwpar[foo:length(tmpwpar)] <- kappa
     }
-    parlist[[i]]<-w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],workcons[[i]],nbObs,circularAngleMean[[i]],consensus[[i]],nbStates,0,nc[[i]],meanind[[i]])
+    parlist[[i]]<-w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],workcons[[i]],nbObs,circularAngleMean[[i]],consensus[[i]],nbStates,0,nc[[i]],meanind[[i]],workBounds[[i]])
 
     if((dist[[i]] %in% angledists) & !estAngleMean[[i]]){
       tmp<-matrix(0,nrow=(parSize[[i]]+1)*nbStates,ncol=nbObs)
@@ -164,7 +157,15 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   return(parlist)
 }
 
-w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,consensus,nbStates,k=0,nc,meanind){
+w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,consensus,nbStates,k=0,nc,meanind,workBounds){
+  
+  ind1<-which(is.finite(workBounds[,1]) & is.infinite(workBounds[,2]))
+  ind2<-which(is.finite(workBounds[,1]) & is.finite(workBounds[,2]))
+  ind3<-which(is.infinite(workBounds[,1]) & is.finite(workBounds[,2]))
+  
+  wpar[ind1] <- exp(wpar[ind1])+workBounds[ind1,1]
+  wpar[ind2] <- (workBounds[ind2,2]-workBounds[ind2,1]) * boot::inv.logit(wpar[ind2])+workBounds[ind2,1]
+  wpar[ind3] <- -(exp(-wpar[ind3]) - workBounds[ind3,2])
   
   a<-bounds[,1]
   b<-bounds[,2]

@@ -61,7 +61,7 @@ p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngl
 m$conditions$circularAngleMean,lapply(m$conditions$dist,function(x) x=="vmConsensus"),
 m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
 m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,
-matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta)
+matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta,workBounds=m$conditions$workBounds)
 }
 
 }

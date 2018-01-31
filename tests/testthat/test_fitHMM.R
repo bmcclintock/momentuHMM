@@ -61,15 +61,14 @@ test_that("Exceptions are thrown",{
                      beta0=par0$beta0,delta0=par0$delta0,formula=par0$formula,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,
                      DM=list(step=diag(3))))
   
-  # invalid cons
+  # invalid workBounds
   expect_error(fitHMM(data=data,nbStates=simPar$nbStates,Par=list(step=log(par0$Par$step),angle=par0$Par$angle),
                      beta0=par0$beta0,delta0=par0$delta0,formula=par0$formula,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,
-                     DM=list(step=diag(4)),cons=list(step=c(1,1,1))))
+                     DM=list(step=diag(4)),workBounds=list(step=c(1,1,1))))
   
-  # invalid workcons
   expect_error(fitHMM(data=data,nbStates=simPar$nbStates,Par=list(step=log(par0$Par$step),angle=par0$Par$angle),
                      beta0=par0$beta0,delta0=par0$delta0,formula=par0$formula,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,
-                     DM=list(step=diag(4)),workcons=list(step=c(0,0,0))))
+                     DM=list(step=diag(4)),workBounds=list(step=matrix(c(0,0,0,0,0,0),3,2))))
 
 })
 

@@ -772,7 +772,7 @@ fitHMM <- function(data,nbStates,dist,
       
       # just use moveHMM if simpler models are specified
       if(all(distnames %in% c("step","angle")) & all(unlist(dist) %in% moveHMMdists) & mHind){
-        fullPar<-w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind,nc,meanind,covsDelta)
+        fullPar<-w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind,nc,meanind,covsDelta,workBounds)
         Par<-lapply(fullPar[distnames],function(x) x[,1])
         for(i in distnames){
           if(dist[[i]] %in% angledists & !inputs$estAngleMean[[i]])

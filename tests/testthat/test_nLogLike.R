@@ -30,7 +30,7 @@ test_that("Exceptions are thrown",{
 
   expect_error(nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
                        m$conditions$estAngleMean,m$conditions$circularAngleMean,inputs$consensus,m$conditions$zeroInflation,m$conditions$oneInflation,
-                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta),NA)
+                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds),NA)
 
 })
 
@@ -69,7 +69,7 @@ test_that("logAlpha, logBeta, and nLogLike are consistent",{
   # all data
   nll<-nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
                        m$conditions$estAngleMean,m$conditions$circularAngleMean,inputs$consensus,m$conditions$zeroInflation,m$conditions$oneInflation,
-                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta)
+                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds)
   la<-logAlpha(m)
   lb<-logBeta(m)
   ll<-0
@@ -88,7 +88,7 @@ test_that("logAlpha, logBeta, and nLogLike are consistent",{
     data<-data[aInd,]
     nll<-nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
                        m$conditions$estAngleMean,m$conditions$circularAngleMean,inputs$consensus,m$conditions$zeroInflation,m$conditions$oneInflation,
-                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta)
+                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds)
   
     samp<-sample(aInd,1)
     c <- max(la[samp,]+lb[samp,]) # cancels below ; prevents numerical errors
@@ -138,7 +138,7 @@ test_that("logAlpha, logBeta, and nLogLike are consistent with zero and one infl
   # all data
   nll<-nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
                 m$conditions$estAngleMean,m$conditions$circularAngleMean,inputs$consensus,m$conditions$zeroInflation,m$conditions$oneInflation,
-                m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta)
+                m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds)
   la<-logAlpha(m)
   lb<-logBeta(m)
   ll<-0
@@ -186,5 +186,5 @@ test_that("angleDist=NULL and zeroInflation=TRUE work",{
   
   expect_error(nLogLike(wpar,nbStates,m$conditions$formula,inputs$p$bounds,inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
                        inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
-                       m$conditions$stationary,DMinputs$cons,DMinputs$fullDM,m$conditions$DMind,DMinputs$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta),NA)
+                       m$conditions$stationary,DMinputs$cons,DMinputs$fullDM,m$conditions$DMind,DMinputs$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds),NA)
 })
