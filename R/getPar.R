@@ -59,11 +59,11 @@ getPar<-function(m){
       } else par <- unname(m$mod$estimate[parindex[[i]]+1:parCount[[i]]])#unname(nw2w((m$CIbeta[[i]]$est-m$conditions$workcons[[i]])^(1/m$conditions$cons[[i]]),m$conditions$workBounds[[i]]))
       Par[[i]] <- par
     }
-    beta <- unname(m$mod$estimate[parindex[["beta"]]+1:length(m$mle$beta)])#unname(nw2w(m$mle$beta,m$conditions$workBounds$beta))
+    beta <- unname(matrix(m$mod$estimate[parindex[["beta"]]+1:length(m$mle$beta)],nrow(m$mle$beta),ncol(m$mle$beta)))#unname(nw2w(m$mle$beta,m$conditions$workBounds$beta))
     if(!length(attr(terms.formula(m$conditions$formulaDelta),"term.labels"))){
       delta <- unname(m$mle$delta[1,])
     } else {
-      delta <- unname(m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+1:length(m$CIbeta$delta$est)])#unname(nw2w(m$CIbeta$delta$est,m$conditions$workBounds$delta))
+      delta <- unname(matrix(m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+1:length(m$CIbeta$delta$est)],nrow(m$CIbeta$delta$est),ncol(m$CIbeta$delta$est)))#unname(nw2w(m$CIbeta$delta$est,m$conditions$workBounds$delta))
     }
   }
   list(Par=Par,beta=beta,delta=delta)
