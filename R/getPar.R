@@ -26,6 +26,13 @@ getPar<-function(m){
   distnames <- names(dist)
   DM <- m$conditions$DM
   
+  parCount<- lapply(m$conditions$fullDM,ncol)
+  for(i in distnames[unlist(m$conditions$circularAngleMean)]){
+    parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]])))))
+  }
+  parindex <- c(0,cumsum(unlist(parCount)))
+  names(parindex) <- c(distnames,"beta")
+  
   Par <- list()
   if(is.miSum(m)){
     m$mle<-lapply(m$Par$real[distnames],function(x) x$est)
@@ -49,14 +56,14 @@ getPar<-function(m){
         if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]]) 
           par <- par[-1,]
         par <- c(t(par))
-      } else par <- unname(nw2w((m$CIbeta[[i]]$est-m$conditions$workcons[[i]])^(1/m$conditions$cons[[i]]),m$conditions$workBounds[[i]]))
+      } else par <- unname(m$mod$estimate[parindex[[i]]+1:parCount[[i]]])#unname(nw2w((m$CIbeta[[i]]$est-m$conditions$workcons[[i]])^(1/m$conditions$cons[[i]]),m$conditions$workBounds[[i]]))
       Par[[i]] <- par
     }
-    beta <- unname(nw2w(m$mle$beta,m$conditions$workBounds$beta))
+    beta <- unname(m$mod$estimate[parindex[["beta"]]+1:length(m$mle$beta)])#unname(nw2w(m$mle$beta,m$conditions$workBounds$beta))
     if(!length(attr(terms.formula(m$conditions$formulaDelta),"term.labels"))){
       delta <- unname(m$mle$delta[1,])
     } else {
-      delta <- unname(nw2w(m$CIbeta$delta$est,m$conditions$workBounds$delta))
+      delta <- unname(m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+1:length(m$CIbeta$delta$est)])#unname(nw2w(m$CIbeta$delta$est,m$conditions$workBounds$delta))
     }
   }
   list(Par=Par,beta=beta,delta=delta)

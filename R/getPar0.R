@@ -164,6 +164,13 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
   
   DMinputs<-getDM(model$data,DM,dist,nbStates,p$parNames,p$bounds,Par,cons=NULL,workcons=NULL,zeroInflation,oneInflation,circularAngleMean,FALSE)$fullDM
   
+  parCount<- lapply(model$conditions$fullDM,ncol)
+  for(i in distnames[unlist(model$conditions$circularAngleMean)]){
+    parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(model$conditions$fullDM[[i]])))))
+  }
+  parindex <- c(0,cumsum(unlist(parCount)))
+  names(parindex) <- c(distnames,"beta")
+  
   for(i in distnames){
     #if(!is.null(DM[[i]])) {
       parmNames<-colnames(model$conditions$fullDM[[i]])
@@ -181,8 +188,12 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
           newparmNames<-gsub(paste0(k,"_",j),paste0(k,"_",stateNames[j]),newparmNames)
         }
       }
-      if(any(newparmNames %in% parmNames))
-        tmpPar[match(parmNames,newparmNames,nomatch=0)] <- nw2w((model$CIbeta[[i]]$est-model$conditions$workcons[[i]])^(1/model$conditions$cons[[i]]),model$conditions$workBounds[[i]])[parmNames %in% newparmNames]#model$CIbeta[[i]]$est[parmNames %in% newparmNames]
+      if(any(newparmNames %in% parmNames)){
+        if(is.miSum(model))
+          tmpPar[match(parmNames,newparmNames,nomatch=0)] <- nw2w((model$CIbeta[[i]]$est-model$conditions$workcons[[i]])^(1/model$conditions$cons[[i]]),model$conditions$workBounds[[i]])[parmNames %in% newparmNames]#model$CIbeta[[i]]$est[parmNames %in% newparmNames]
+        else
+          tmpPar[match(parmNames,newparmNames,nomatch=0)] <- model$mod$estimate[parindex[[i]]+1:parCount[[i]]][parmNames %in% newparmNames]
+      }
       if(circularAngleMean[[i]]) names(tmpPar) <- unique(gsub("cos","",gsub("sin","",colnames(DMinputs[[i]]))))
       else names(tmpPar) <- colnames(DMinputs[[i]])
       Par[[i]] <- tmpPar
@@ -241,8 +252,12 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
     if(length(which(model$stateNames %in% stateNames))>1){
       for(i in match(model$stateNames,stateNames,nomatch=0)){#which(model$stateNames %in% stateNames)){
         for(j in match(model$stateNames,stateNames,nomatch=0)){#which(model$stateNames %in% stateNames)) {
-          if(i!=j & i>0 & j>0)
-           tmpPar[betaNames %in% rownames(model$mle$beta),paste(i,"->",j)]<-nw2w(model$mle$beta,model$conditions$workBounds$beta)[rownames(model$mle$beta) %in% betaNames,paste(match(stateNames[i],model$stateNames),"->",match(stateNames[j],model$stateNames))]
+          if(i!=j & i>0 & j>0){
+            if(is.miSum(model))
+              tmpPar[betaNames %in% rownames(model$mle$beta),paste(i,"->",j)]<-nw2w(model$mle$beta,model$conditions$workBounds$beta)[rownames(model$mle$beta) %in% betaNames,paste(match(stateNames[i],model$stateNames),"->",match(stateNames[j],model$stateNames))]
+            else 
+              tmpPar[betaNames %in% rownames(model$mle$beta),paste(i,"->",j)]<-matrix(model$mod$estimate[parindex[["beta"]]+1:length(model$mle$beta)],nrow(model$mle$beta),ncol(model$mle$beta),dimnames = dimnames(model$mle$beta))[rownames(model$mle$beta) %in% betaNames,paste(match(stateNames[i],model$stateNames),"->",match(stateNames[j],model$stateNames))]
+          }
         }
       }
     }
@@ -271,7 +286,10 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
           names(delta) <- stateNames
         } else {
           delta <- matrix(0,nrow=length(deltaNames),ncol=nbStates-1,dimnames = list(deltaNames,stateNames[-1]))
-          delta[deltaNames %in% rownames(model$CIbeta$delta$est)] <- nw2w(model$CIbeta$delta$est,model$conditions$workBounds$delta)[rownames(model$CIbeta$delta$est) %in% deltaNames,]
+          if(is.miSum(model))
+            delta[deltaNames %in% rownames(model$CIbeta$delta$est)] <- nw2w(model$CIbeta$delta$est,model$conditions$workBounds$delta)[rownames(model$CIbeta$delta$est) %in% deltaNames,]
+          else
+            delta[deltaNames %in% rownames(model$CIbeta$delta$est)] <- matrix(model$mod$estimate[parindex[["beta"]]+length(model$mle$beta)+1:length(model$CIbeta$delta$est)],nrow(model$CIbeta$delta$est),ncol(model$CIbeta$delta$est),dimnames=dimnames(model$CIbeta$delta$est))[rownames(model$CIbeta$delta$est) %in% deltaNames,]
         }
         Par$delta <- delta
       }
