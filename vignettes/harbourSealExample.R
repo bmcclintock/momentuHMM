@@ -231,7 +231,7 @@ registerDoParallel(cores=ncores)
 bestFit.all<-foreach(i=1:N) %dopar% {
   data.ind<-subset(hsData,ID==i)
   if(!all(data.ind$step>0,na.rm=TRUE)){
-    fit<-fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=Par0,DM=list(step=stepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=stepcons,angle=anglecons,omega=omegacons),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar,stateNames=stateNames)
+    fit<-fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=Par0,DM=list(step=stepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=stepcons,angle=anglecons,omega=omegacons),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar,stateNames=stateNames,retryFits=10)
   }
   else {
     tmpstepDM<-stepDM[1:(2*nbStates),1:(2*nbStates)]
@@ -241,7 +241,7 @@ bestFit.all<-foreach(i=1:N) %dopar% {
     tmpPar0$step<-tmpPar0$step[1:(2*nbStates)]
     tmpfixPar<-fixPar
     tmpfixPar$step<-NULL
-    fit<-fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepcons,angle=anglecons,omega=omegacons),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames)
+    fit<-fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepcons,angle=anglecons,omega=omegacons),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,retryFits=10)
   }
   fit
 }
@@ -294,21 +294,23 @@ stopImplicitCluster()
 
 miSum.all<-lapply(miBestFit.all,MIpool)
 
-tmpPar0.ind<-getPar0(bestFit.ind,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),formula=~ID+0,formulaDelt=~ID+0)
-
 #specify initial values for full model based on individual model fits
-for(i in 1:N){
-  bfPar<-getPar0(miSum.all[[i]])
-  tmpPar0.ind$Par$step[match(paste0(colnames(stepDM),"ID",i),names(Par0.ind$Par$step),nomatch=0)]<-bfPar$Par$step[match(names(Par0.ind$Par$step),paste0(colnames(stepDM),"ID",i),nomatch=0)]
-  tmpPar0.ind$Par$angle[match(paste0(colnames(angleDM),"ID",i),names(Par0.ind$Par$angle),nomatch=0)]<-bfPar$Par$angle[match(names(Par0.ind$Par$angle),paste0(colnames(angleDM),"ID",i),nomatch=0)]
-  tmpPar0.ind$Par$omega[match(paste0(colnames(omegaDM),"ID",i),names(Par0.ind$Par$omega),nomatch=0)]<-bfPar$Par$omega[match(names(Par0.ind$Par$omega),paste0(colnames(omegaDM),"ID",i),nomatch=0)]
-  tmpPar0.ind$beta[paste0("ID",i),]<-bfPar$beta
-  tmpPar0.ind$delta[paste0("ID",i),]<-log(bfPar$delta[-1]/bfPar$delta[1])
-}  
+tmpPar0.ind <- list()
+for(j in 1:nSims){
+  tmpPar0.ind[[j]] <- getPar0(bestFit.ind,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),formula=~ID+0,formulaDelt=~ID+0)
+  for(i in 1:N){
+    bfPar<-getPar0(miBestFit.all[[i]][[j]])
+    tmpPar0.ind[[j]]$Par$step[match(paste0(colnames(stepDM),"ID",i),names(Par0.ind$Par$step),nomatch=0)]<-bfPar$Par$step[match(names(Par0.ind$Par$step),paste0(colnames(stepDM),"ID",i),nomatch=0)]
+    tmpPar0.ind[[j]]$Par$angle[match(paste0(colnames(angleDM),"ID",i),names(Par0.ind$Par$angle),nomatch=0)]<-bfPar$Par$angle[match(names(Par0.ind$Par$angle),paste0(colnames(angleDM),"ID",i),nomatch=0)]
+    tmpPar0.ind[[j]]$Par$omega[match(paste0(colnames(omegaDM),"ID",i),names(Par0.ind$Par$omega),nomatch=0)]<-bfPar$Par$omega[match(names(Par0.ind$Par$omega),paste0(colnames(omegaDM),"ID",i),nomatch=0)]
+    tmpPar0.ind[[j]]$beta[paste0("ID",i),]<-bfPar$beta
+    tmpPar0.ind[[j]]$delta[paste0("ID",i),]<-miBestFit.all[[i]][[j]]$CIbeta$delta$est
+  }  
+  tmpPar0.ind[[j]]$Par$step<-tmpPar0.ind[[j]]$Par$step[1:(N*2*nbStates)]
+}
 tmpstepDM.ind<-stepDM.ind[1:(2*nbStates),1:(N*2*nbStates)]
 tmpstepcons.ind<-stepcons.ind[1:(N*2*nbStates),]
 tmpstepBounds<-stepBounds[1:(2*nbStates),]
-tmpPar0.ind$Par$step<-tmpPar0.ind$Par$step[1:(N*2*nbStates)]
 tmpfixPar.ind<-fixPar.ind
 tmpfixPar.ind$step<-NULL
 
