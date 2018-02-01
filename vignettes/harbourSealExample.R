@@ -67,12 +67,11 @@ sex[sex==1]<-"F"
 sex<-factor(sex)
 
 # merge location and dive activity data
-# 'negCons' is dummy covariate used to enforce turning angle constraints in the individual- and sex-level effects model
-omega_sex<-data.frame(ID=factor(rep(1:N,times=T_n),levels=1:N),time=unlist(predTimes),omega=omega_t,sex=sex,negCons=rep(-1,length(sex)))
+omega_sex<-data.frame(ID=factor(rep(1:N,times=T_n),levels=1:N),time=unlist(predTimes),omega=omega_t,sex=sex)
 crwOut<-crawlMerge(crwOut,omega_sex,Time.name="time")
 
 # prepare HMM data
-hsData<-prepData(crwOut,covNames=c("sex","negCons"))
+hsData<-prepData(crwOut,covNames=c("sex"))
 
 nbStates <- 3
 stateNames <- c("resting","foraging","transit")
@@ -95,7 +94,7 @@ stepDM<-matrix(c(1,0,0,0,0,0,0,0,0,
                  0,0,0,0,0,0,1,0,0,
                  0,0,0,0,0,0,0,1,0,
                  0,0,0,0,0,0,0,0,1),nrow=3*nbStates,byrow=TRUE,dimnames=list(c(paste0("shape_",1:nbStates),paste0("scale_",1:nbStates),paste0("zeromass_",1:nbStates)),c(paste0("shape_",1:nbStates,":(Intercept)"),"scale:(Intercept)","scale_2","scale_3",paste0("zeromass_",1:nbStates,":(Intercept)"))))
-stepcons<-c(1,1,1,1,2,2,1,1,1)
+stepcons<-matrix(c(rep(-Inf,4),0,0,rep(-Inf,3),rep(Inf,ncol(stepDM))),ncol(stepDM),2)
 stepBounds<-matrix(c(0,5,
                      0,5,
                      0,5,
@@ -107,13 +106,12 @@ stepBounds<-matrix(c(0,5,
                      0,1),nrow=3*nbStates,byrow=TRUE,dimnames=list(c(paste0("shape_",1:nbStates),paste0("scale_",1:nbStates),paste0("zeromass_",1:nbStates))))
 
 angleDM<-matrix(c(1,0,0,
-                  0,1,-1,
+                  0,1,1,
                   0,1,0),nrow=nbStates,byrow=TRUE,dimnames=list(paste0("concentration_",1:nbStates),c("concentration_1:(Intercept)","concentration_23:(Intercept)","concentration_2")))
 angleBounds<-matrix(c(0,0.95,
                       0,0.95,
                       0,0.95),nrow=nbStates,byrow=TRUE,dimnames=list(paste0("concentration_",1:nbStates)))
-anglecons<-c(1,2,2)
-angleworkcons<-c(0,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),0)
+anglecons <- matrix(c(-Inf,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf,rep(Inf,2),0),ncol(angleDM),2)
 
 omegaDM<-matrix(c(1,0,0,0,0,0,0,
                   0,0,1,1,0,0,0,
@@ -124,7 +122,7 @@ omegaDM<-matrix(c(1,0,0,0,0,0,0,
                   0,0,0,0,1,0,0,
                   0,0,0,0,0,1,0,
                   0,0,0,0,0,0,1),nrow=nbStates*3,byrow=TRUE,dimnames=list(c(paste0("shape1_",1:nbStates),paste0("shape2_",1:nbStates),paste0("zeromass_",1:nbStates)),c("shape_1:(Intercept)","shape2_1","shape_2:(Intercept)","shape1_2",paste0("zeromass_",1:nbStates,":(Intercept)"))))
-omegacons<-c(1,2,1,2,1,1,1)
+omegacons <- matrix(c(-Inf,0,-Inf,0,rep(-Inf,3),rep(Inf,ncol(omegaDM))),ncol(omegaDM),2)
 omegaBounds<-matrix(c(1,10,
                       1,10,
                       1,10,
@@ -140,12 +138,12 @@ stepPar0<-c(2,2,2,1000,3000,8000,0.001,0.001,1.e-100)
 anglePar0<-c(0.01,0.2,0.76)
 omegaPar0<-c(1.1,9.9,9.9,9.9,1.1,1.1,c(0.5,1.e-100,1.e-100))
 
-Par0<-getParDM(data=hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par=list(step=stepPar0,angle=anglePar0,omega=omegaPar0),DM=list(step=stepDM,angle=angleDM,omega=omegaDM),cons=list(step=stepcons,angle=anglecons,omega=omegacons),workcons=list(angle=angleworkcons),userBounds = list(step=stepBounds,angle=angleBounds,omega=omegaBounds))
+Par0<-getParDM(data=hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par=list(step=stepPar0,angle=anglePar0,omega=omegaPar0),DM=list(step=stepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=stepcons,angle=anglecons,omega=omegacons),userBounds = list(step=stepBounds,angle=angleBounds,omega=omegaBounds))
 
 fixPar<-list(step=c(rep(NA,nbStates*2),NA,NA,boot::logit(1.e-100)),
              omega=c(rep(NA,4),NA,boot::logit(c(1.e-100,1.e-100))))
 
-bestFit<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=Par0,DM=list(step=stepDM,angle=angleDM,omega=omegaDM),cons=list(step=stepcons,angle=anglecons,omega=omegacons),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),workcons=list(angle=angleworkcons),fixPar=fixPar,stateNames=stateNames)
+bestFit<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=Par0,DM=list(step=stepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=stepcons,angle=anglecons,omega=omegacons),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar,stateNames=stateNames)
 
 ### Model 2: sex-level effects
 # Note that factor-level covariates must be individually specified (e.g., 'sexF', 'sexM') when using pseudo-design matrix
@@ -159,13 +157,11 @@ stepDM.sex<-matrix(c("sexF",0,0,"sexM",0,0,0,0,0,0,0,0,0,0,0,0,0,
                      0,0,0,0,0,0,0,0,0,0,0,0,"sexF",0,0,"sexM",0,
                      0,0,0,0,0,0,0,0,0,0,0,0,0,"sexF",0,0,"sexM",
                      0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0),nrow=3*nbStates,byrow=TRUE,dimnames=list(c(paste0("shape_",1:nbStates),paste0("scale_",1:nbStates),paste0("zeromass_",1:nbStates)),c("shape_1:sexF","shape_2:sexF","shape_3:sexF","shape_1:sexM","shape_2:sexM","shape_3:sexM","scale_1:sexF","scale_2:sexF","scale_3:sexF","scale_1:sexM","scale_2:sexM","scale_3:sexM","zeromass_1:sexF","zeromass_2:sexF","zeromass_3:(Intercept)","zeromass_1:sexM","zeromass_2:sexM")))
-stepcons.sex<-c(1,1,1,1,1,1,1,2,2,1,2,2,1,1,1,1,1)
-
+stepcons.sex<-matrix(c(rep(-Inf,7),0,0,-Inf,0,0,rep(-Inf,5),rep(Inf,ncol(stepDM.sex))),ncol(stepDM.sex),2)
 angleDM.sex<-matrix(c("sexF",0,0,"sexM",0,0,
-                      0,"sexF","sexF:negCons",0,"sexM","sexM:negCons",
+                      0,"sexF","sexF",0,"sexM","sexM",
                       0,"sexF",0,0,"sexM",0),nrow=nbStates,byrow=TRUE,dimnames=list(paste0("concentration_",1:nbStates),c("concentration_1:sexF","concentration_23:sexF","concentration_2:sexF","concentration_1:sexM","concentration_23:sexM","concentration_2:sexM")))
-anglecons.sex<-c(1,2,2,1,2,2)
-angleworkcons.sex<-c(0,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),0,0,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),0)
+anglecons.sex<-matrix(c(-Inf,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf,-Inf,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf,Inf,Inf,0,Inf,Inf,0),ncol(angleDM.sex),2)
 
 omegaDM.sex<-matrix(c("sexF",0,"sexM",0,0,0,0,0,0,0,0,0,
                       0,0,0,0,"sexF","sexF","sexM","sexM",0,0,0,0,
@@ -176,7 +172,7 @@ omegaDM.sex<-matrix(c("sexF",0,"sexM",0,0,0,0,0,0,0,0,0,
                       0,0,0,0,0,0,0,0,"sexF",0,0,"sexM",
                       0,0,0,0,0,0,0,0,0,1,0,0,
                       0,0,0,0,0,0,0,0,0,0,1,0),nrow=nbStates*3,byrow=TRUE,dimnames=list(c(paste0("shape1_",1:nbStates),paste0("shape2_",1:nbStates),paste0("zeromass_",1:nbStates)),c("shape_1:sexF","shape2_1:sexF","shape_1:sexM","shape2_1:sexM","shape_2:sexF","shape1_2:sexF","shape_2:sexM","shape1_2:sexM","zeromass_1:sexF",paste0("zeromass_",2:nbStates,":(Intercept)"),"zeromass_1:sexM")))
-omegacons.sex<-c(1,2,1,2,1,2,1,2,1,1,1,1)
+omegacons.sex<-matrix(c(rep(c(-Inf,0),4),rep(-Inf,4),rep(Inf,ncol(omegaDM.sex))),ncol(omegaDM.sex),2)
 
 fixPar.sex<-list(step=c(rep(NA,nbStates*2*2),NA,NA,boot::logit(1.e-100),NA,NA),
                  omega=c(rep(NA,4*2),NA,boot::logit(c(1.e-100,1.e-100)),NA))
@@ -190,7 +186,7 @@ Par0.sex$Par$angle[c("concentration_1:sexF", "concentration_23:sexF",  "concentr
 Par0.sex$Par$omega[c("shape_1:sexF", "shape2_1:sexF","shape_2:sexF", "shape1_2:sexF","zeromass_1:sexF")]<-bfPar$Par$omega[c("shape_1:(Intercept)","shape2_1","shape_2:(Intercept)","shape1_2", "zeromass_1:(Intercept)" )]
 Par0.sex$Par$omega[c("shape_1:sexM", "shape2_1:sexM","shape_2:sexM", "shape1_2:sexM","zeromass_1:sexM")]<-bfPar$Par$omega[c("shape_1:(Intercept)","shape2_1","shape_2:(Intercept)","shape1_2", "zeromass_1:(Intercept)" )]
 
-bestFit.sex<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=Par0.sex$Par,beta0=Par0.sex$beta,delta0=Par0.sex$delta,formula=~sex,formulaDelta=~sex,DM=list(step=stepDM.sex,angle=angleDM.sex,omega=omegaDM.sex),cons=list(step=stepcons.sex,angle=anglecons.sex,omega=omegacons.sex),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),workcons=list(angle=angleworkcons.sex),fixPar=fixPar.sex,stateNames=stateNames)
+bestFit.sex<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=Par0.sex$Par,beta0=Par0.sex$beta,delta0=Par0.sex$delta,formula=~sex,formulaDelta=~sex,DM=list(step=stepDM.sex,angle=angleDM.sex,omega=omegaDM.sex),workBounds=list(step=stepcons.sex,angle=anglecons.sex,omega=omegacons.sex),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar.sex,stateNames=stateNames)
 
 ### Model 3: individual-level effects
 
@@ -206,16 +202,14 @@ stepDM.ind[7,6*N+1:length(stepzm)]<-paste0("ID",stepzm)
 stepDM.ind[8,6*N+length(stepzm)+1:length(stepzm)]<-paste0("ID",stepzm)
 stepDM.ind[7:9,ncol(stepDM.ind)]<-1
 
-stepcons.ind<-c(rep(1,3*N),rep(1,N),rep(2,2*N),rep(1,length(stepzm)*(nbStates-1)+1))
-stepworkcons.ind<-c(rep(0,N*nbStates*2),rep(-boot::logit(1.e-100),length(stepzm)*(nbStates-1)),0)
+stepcons.ind<-matrix(c(rep(-Inf,3*N),rep(-Inf,N),rep(0,2*N),rep(-boot::logit(1.e-100),length(stepzm)*(nbStates-1)),-Inf,rep(Inf,3*N),rep(Inf,N),rep(Inf,2*N),rep(Inf,length(stepzm)*(nbStates-1)+1)),ncol=2)
 
 angleDM.ind<-matrix(0,nrow=nbStates,ncol=N*nbStates,dimnames=list(c(paste0("concentration_",1:nbStates)),c(paste0("concentration_1:(Intercept)ID",1:N),paste0("concentration_23:(Intercept)ID",1:N),paste0("concentration_2ID",1:N))))
 angleDM.ind[1,1:N]<-paste0("ID",1:N)
 angleDM.ind[2,N+1:N]<-angleDM.ind[3,N+1:N]<-paste0("ID",1:N)
-angleDM.ind[2,2*N+1:N]<-paste0("ID",1:N,":negCons")
+angleDM.ind[2,2*N+1:N]<-paste0("ID",1:N)
 
-anglecons.ind<-rep(c(1,2,2),each=N)
-angleworkcons.ind<-rep(c(0,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),0),each=N)
+anglecons.ind<-matrix(c(rep(c(-Inf,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf),each=N),rep(Inf,2*N),rep(0,N)),ncol=2)
 
 omegazm<-unique(hsData$ID[which(hsData$omega==0)])
 omegaDM.ind<-matrix(0,nrow=nbStates*3,ncol=N*2*(nbStates-1)+length(omegazm)+1,dimnames=list(c(paste0("shape1_",1:nbStates),paste0("shape2_",1:nbStates),paste0("zeromass_",1:nbStates)),c(paste0("shape_1:(Intercept)ID",1:N),paste0("shape2_1ID",1:N),paste0("shape_2:(Intercept)ID",1:N),paste0("shape1_2ID",1:N),paste0("zeromass_1:(Intercept)ID",omegazm),paste0("zeromass_23:(Intercept)"))))
@@ -225,8 +219,7 @@ omegaDM.ind[2,2*N+1:N]<-omegaDM.ind[3,2*N+1:N]<-omegaDM.ind[5,2*N+1:N]<-omegaDM.
 omegaDM.ind[2,3*N+1:N]<-omegaDM.ind[3,3*N+1:N]<-paste0("ID",1:N)
 omegaDM.ind[7,4*N+1:length(omegazm)]<-paste0("ID",omegazm)
 omegaDM.ind[7:9,ncol(omegaDM.ind)]<-1
-omegacons.ind<-c(rep(c(1,2,1,2),each=N),rep(1,length(omegazm)),1)
-omegaworkcons.ind<-c(rep(0,N*2*(nbStates-1)),rep(-boot::logit(1.e-100),length(omegazm)),0)
+omegacons.ind<-matrix(c(rep(c(-Inf,0,-Inf,0),each=N),rep(-boot::logit(1.e-100),length(omegazm)),-Inf,rep(c(Inf,Inf,Inf,Inf),each=N),rep(Inf,length(omegazm)),Inf),ncol=2)
 
 fixPar.ind<-list(step=c(rep(NA,N*nbStates*2),rep(NA,length(stepzm)*(nbStates-1)),boot::logit(1.e-100)),
                  omega=c(rep(NA,N*2*(nbStates-1)),rep(NA,length(omegazm)),boot::logit(1.e-100)))
@@ -238,17 +231,17 @@ registerDoParallel(cores=ncores)
 bestFit.all<-foreach(i=1:N) %dopar% {
   data.ind<-subset(hsData,ID==i)
   if(!all(data.ind$step>0,na.rm=TRUE)){
-    fit<-fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=Par0,DM=list(step=stepDM,angle=angleDM,omega=omegaDM),cons=list(step=stepcons,angle=anglecons,omega=omegacons),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),workcons=list(angle=angleworkcons),fixPar=fixPar,stateNames=stateNames)
+    fit<-fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=Par0,DM=list(step=stepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=stepcons,angle=anglecons,omega=omegacons),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar,stateNames=stateNames)
   }
   else {
     tmpstepDM<-stepDM[1:(2*nbStates),1:(2*nbStates)]
-    tmpstepcons<-stepcons[1:(2*nbStates)]
+    tmpstepcons<-stepcons[1:(2*nbStates),]
     tmpstepBounds<-stepBounds[1:(2*nbStates),]
     tmpPar0<-Par0
     tmpPar0$step<-tmpPar0$step[1:(2*nbStates)]
     tmpfixPar<-fixPar
     tmpfixPar$step<-NULL
-    fit<-fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),cons=list(step=tmpstepcons,angle=anglecons,omega=omegacons),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),workcons=list(angle=angleworkcons),fixPar=tmpfixPar,stateNames=stateNames)
+    fit<-fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepcons,angle=anglecons,omega=omegacons),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames)
   }
   fit
 }
@@ -263,7 +256,7 @@ for(i in 1:N){
   Par0.ind$beta[paste0("ID",i),]<-bfPar$beta
   Par0.ind$delta[paste0("ID",i),]<-log(bfPar$delta[-1]/bfPar$delta[1])
 }  
-bestFit.ind<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),formula=~ID+0,formulaDelta=~ID+0,Par0=Par0.ind$Par,beta0=Par0.ind$beta,delta0=Par0.ind$delta,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),cons=list(step=stepcons.ind,angle=anglecons.ind,omega=omegacons.ind),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),workcons=list(step=stepworkcons.ind,angle=angleworkcons.ind,omega=omegaworkcons.ind),fixPar=fixPar.ind,stateNames=stateNames)
+bestFit.ind<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),formula=~ID+0,formulaDelta=~ID+0,Par0=Par0.ind$Par,beta0=Par0.ind$beta,delta0=Par0.ind$delta,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),workBounds=list(step=stepcons.ind,angle=anglecons.ind,omega=omegacons.ind),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar.ind,stateNames=stateNames)
 
 #################################################################################################################################
 ## compare models using AIC
@@ -286,7 +279,7 @@ miBestFit.all<-foreach(i=1:N) %dopar% {
   class(data.ind)<-c("crwData",class(data.ind))
   
   tmpstepDM<-stepDM[1:(2*nbStates),1:(2*nbStates)]
-  tmpstepcons<-stepcons[1:(2*nbStates)]
+  tmpstepcons<-stepcons[1:(2*nbStates),]
   tmpstepBounds<-stepBounds[1:(2*nbStates),]
   tmpPar0<-getPar0(bestFit.all[[i]])
   tmpPar0$Par$step<-tmpPar0$Par$step[1:(2*nbStates)]
@@ -294,8 +287,8 @@ miBestFit.all<-foreach(i=1:N) %dopar% {
   tmpfixPar$step<-NULL
   
   fit<-MIfitHMM(data.ind,nSims=nSims,ncores=1,poolEstimates=FALSE,
-                nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0$Par,beta0=tmpPar0$beta,delta0=tmpPar0$delta,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),cons=list(step=tmpstepcons,angle=anglecons,omega=omegacons),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),workcons=list(angle=angleworkcons),fixPar=tmpfixPar,stateNames=stateNames,
-                covNames=c("sex","negCons"))
+                nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0$Par,beta0=tmpPar0$beta,delta0=tmpPar0$delta,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepcons,angle=anglecons,omega=omegacons),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,
+                covNames=c("sex"))
 }
 stopImplicitCluster()
 
@@ -313,7 +306,7 @@ for(i in 1:N){
   tmpPar0.ind$delta[paste0("ID",i),]<-log(bfPar$delta[-1]/bfPar$delta[1])
 }  
 tmpstepDM.ind<-stepDM.ind[1:(2*nbStates),1:(N*2*nbStates)]
-tmpstepcons.ind<-stepcons.ind[1:(N*2*nbStates)]
+tmpstepcons.ind<-stepcons.ind[1:(N*2*nbStates),]
 tmpstepBounds<-stepBounds[1:(2*nbStates),]
 tmpPar0.ind$Par$step<-tmpPar0.ind$Par$step[1:(N*2*nbStates)]
 tmpfixPar.ind<-fixPar.ind
@@ -321,8 +314,8 @@ tmpfixPar.ind$step<-NULL
 
 #Fit multiple imputations (warning -- this takes a looooooong time!)
 miBestFit.ind<-MIfitHMM(crwOut,nSims=nSims,ncores=ncores,poolEstimates=FALSE,
-                        nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),formula=~ID+0,formulaDelta=~ID+0,Par0=tmpPar0.ind$Par,beta0=tmpPar0.ind$beta,delta0=tmpPar0.ind$delta,DM=list(step=tmpstepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),cons=list(step=tmpstepcons.ind,angle=anglecons.ind,omega=omegacons.ind),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),workcons=list(angle=angleworkcons.ind,omega=omegaworkcons.ind),fixPar=tmpfixPar.ind,stateNames=stateNames,
-                        covNames=c("sex","negCons"))
+                        nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),formula=~ID+0,formulaDelta=~ID+0,Par0=tmpPar0.ind$Par,beta0=tmpPar0.ind$beta,delta0=tmpPar0.ind$delta,DM=list(step=tmpstepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),workBounds=list(step=tmpstepcons.ind,angle=anglecons.ind,omega=omegacons.ind),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar.ind,stateNames=stateNames,
+                        covNames=c("sex"))
 
 miSum.ind<-MIpool(miBestFit.ind,ncores=ncores)
 
