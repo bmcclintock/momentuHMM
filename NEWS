@@ -1,4 +1,4 @@
-momentuHMM 1.4.0 2018-01-10
+momentuHMM 1.4.0 2018-01-31
 -----------------
 NEW FEATURES
 
@@ -11,6 +11,10 @@ NEW FEATURES
 * centroids argument added to MIfitHMM
 
 * useInitial argument added to MIfitHMM for using parameter estimates of first model fit as initial values for all subsequent model fits
+
+* AICweights function added for calculating AIC weights across a set of candidate models
+
+* sample size (n) argument added to AIC.momentuHMM for calculating small sample corrected AIC (i.e. AICc)
 
 CHANGES
 
