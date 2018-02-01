@@ -282,6 +282,11 @@ miBestFit.all<-foreach(i=1:N) %dopar% {
   tmpstepcons<-stepcons[1:(2*nbStates),]
   tmpstepBounds<-stepBounds[1:(2*nbStates),]
   tmpPar0<-getPar0(bestFit.all[[i]])
+  if(any(tmpPar0$delta==0)){
+    tmpPar0$delta[which(tmpPar0$delta==0)]<-1.e-100
+    tmpPar0$delta<-log(tmpPar0$delta[-1]/tmpPar0$delta[1])
+    tmpPar0$delta<-exp(c(0,tmpPar0$delta))/sum(exp(c(0,tmpPar0$delta)))
+  }
   tmpPar0$Par$step<-tmpPar0$Par$step[1:(2*nbStates)]
   tmpfixPar<-fixPar
   tmpfixPar$step<-NULL
