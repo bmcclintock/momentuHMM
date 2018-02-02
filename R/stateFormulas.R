@@ -16,7 +16,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
   
   Terms <- terms(formula, specials = c(paste0(spec,1:nbStates),"cosinor","angleStrength"))
   if(any(attr(Terms,"order")>1)){
-    if(grepl("angleStrength\\(",attr(Terms,"term.labels")[attr(Terms,"order")>1])) stop("interactions with angleFormula are not allowed")
+    if(any(grepl("angleStrength\\(",attr(Terms,"term.labels")[attr(Terms,"order")>1]))) stop("interactions with angleFormula are not allowed")
   }
   
   stateFormula<-list()
@@ -99,7 +99,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
       
         tmpnames<-attr(tmp,"term.labels")
         if(any(attr(tmp,"order")>1)){
-          if(grepl("angleStrength\\(",tmpnames[attr(tmp,"order")>1])) stop("interactions with angleFormula are not allowed")
+          if(any(grepl("angleStrength\\(",tmpnames[attr(tmp,"order")>1]))) stop("interactions with angleFormula are not allowed")
         }
         mp<-tmpnames
         if(!is.null(unlist(attr(tmp,"specials"))) | angleMean){
