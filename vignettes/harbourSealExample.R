@@ -91,10 +91,10 @@ stepDM<-matrix(c(1,0,0,0,0,0,0,0,0,
                  0,0,0,1,0,0,0,0,0,
                  0,0,0,1,1,0,0,0,0,
                  0,0,0,1,1,1,0,0,0,
-                 0,0,0,0,0,0,1,0,0,
-                 0,0,0,0,0,0,0,1,0,
+                 0,0,0,0,0,0,1,0,1,
+                 0,0,0,0,0,0,0,1,1,
                  0,0,0,0,0,0,0,0,1),nrow=3*nbStates,byrow=TRUE,dimnames=list(c(paste0("shape_",1:nbStates),paste0("scale_",1:nbStates),paste0("zeromass_",1:nbStates)),c(paste0("shape_",1:nbStates,":(Intercept)"),"scale:(Intercept)","scale_2","scale_3",paste0("zeromass_",1:nbStates,":(Intercept)"))))
-stepcons<-matrix(c(rep(-Inf,4),0,0,rep(boot::logit(1.e-100),2),-Inf,rep(Inf,ncol(stepDM))),ncol(stepDM),2)
+stepcons<-matrix(c(rep(-Inf,4),0,0,rep(0,2),-Inf,rep(Inf,ncol(stepDM))),ncol(stepDM),2)
 stepBounds<-matrix(c(0,5,
                      0,5,
                      0,5,
@@ -119,10 +119,10 @@ omegaDM<-matrix(c(1,0,0,0,0,0,
                   1,1,0,0,0,0,
                   0,0,1,0,0,0,
                   0,0,1,0,0,0,
-                  0,0,0,0,1,0,
+                  0,0,0,0,1,1,
                   0,0,0,0,0,1,
                   0,0,0,0,0,1),nrow=nbStates*3,byrow=TRUE,dimnames=list(c(paste0("shape1_",1:nbStates),paste0("shape2_",1:nbStates),paste0("zeromass_",1:nbStates)),c("shape_1:(Intercept)","shape2_1","shape_2:(Intercept)","shape1_2","zeromass_1:(Intercept)","zeromass_23:(Intercept)")))
-omegacons <- matrix(c(-Inf,0,-Inf,0,boot::logit(1.e-100),-Inf,rep(Inf,ncol(omegaDM))),ncol(omegaDM),2)
+omegacons <- matrix(c(-Inf,0,-Inf,0,0,-Inf,rep(Inf,ncol(omegaDM))),ncol(omegaDM),2)
 omegaBounds<-matrix(c(1,10,
                       1,10,
                       1,10,
@@ -156,10 +156,10 @@ stepDM.sex<-matrix(c("sexF",0,0,"sexM",0,0,0,0,0,0,0,0,0,0,0,0,0,
                      0,0,0,0,0,0,"sexF",0,0,"sexM",0,0,0,0,0,0,0,
                      0,0,0,0,0,0,"sexF","sexF",0,"sexM","sexM",0,0,0,0,0,0,
                      0,0,0,0,0,0,"sexF","sexF","sexF","sexM","sexM","sexM",0,0,0,0,0,
-                     0,0,0,0,0,0,0,0,0,0,0,0,"sexF",0,0,"sexM",0,
-                     0,0,0,0,0,0,0,0,0,0,0,0,0,"sexF",0,0,"sexM",
+                     0,0,0,0,0,0,0,0,0,0,0,0,"sexF",0,1,"sexM",0,
+                     0,0,0,0,0,0,0,0,0,0,0,0,0,"sexF",1,0,"sexM",
                      0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0),nrow=3*nbStates,byrow=TRUE,dimnames=list(c(paste0("shape_",1:nbStates),paste0("scale_",1:nbStates),paste0("zeromass_",1:nbStates)),c("shape_1:sexF","shape_2:sexF","shape_3:sexF","shape_1:sexM","shape_2:sexM","shape_3:sexM","scale_1:sexF","scale_2:sexF","scale_3:sexF","scale_1:sexM","scale_2:sexM","scale_3:sexM","zeromass_1:sexF","zeromass_2:sexF","zeromass_3:(Intercept)","zeromass_1:sexM","zeromass_2:sexM")))
-stepcons.sex<-matrix(c(rep(-Inf,7),0,0,-Inf,0,0,rep(boot::logit(1.e-100),2),-Inf,rep(boot::logit(1.e-100),2),rep(Inf,ncol(stepDM.sex))),ncol(stepDM.sex),2)
+stepcons.sex<-matrix(c(rep(-Inf,7),0,0,-Inf,0,0,rep(0,2),-Inf,rep(0,2),rep(Inf,ncol(stepDM.sex))),ncol(stepDM.sex),2)
 angleDM.sex<-matrix(c("sexF",0,0,"sexM",0,0,
                       0,"sexF","sexF",0,"sexM","sexM",
                       0,"sexF",0,0,"sexM",0),nrow=nbStates,byrow=TRUE,dimnames=list(paste0("concentration_",1:nbStates),c("concentration_1:sexF","concentration_23:sexF","concentration_2:sexF","concentration_1:sexM","concentration_23:sexM","concentration_2:sexM")))
@@ -171,10 +171,10 @@ omegaDM.sex<-matrix(c("sexF",0,"sexM",0,0,0,0,0,0,0,0,
                       "sexF","sexF","sexM","sexM",0,0,0,0,0,0,0,
                       0,0,0,0,"sexF",0,"sexM",0,0,0,0,
                       0,0,0,0,"sexF",0,"sexM",0,0,0,0,
-                      0,0,0,0,0,0,0,0,"sexF",0,"sexM",
+                      0,0,0,0,0,0,0,0,"sexF",1,"sexM",
                       0,0,0,0,0,0,0,0,0,1,0,
                       0,0,0,0,0,0,0,0,0,1,0),nrow=nbStates*3,byrow=TRUE,dimnames=list(c(paste0("shape1_",1:nbStates),paste0("shape2_",1:nbStates),paste0("zeromass_",1:nbStates)),c("shape_1:sexF","shape2_1:sexF","shape_1:sexM","shape2_1:sexM","shape_2:sexF","shape1_2:sexF","shape_2:sexM","shape1_2:sexM","zeromass_1:sexF","zeromass_23:(Intercept)","zeromass_1:sexM")))
-omegacons.sex<-matrix(c(rep(c(-Inf,0),4),boot::logit(1.e-100),-Inf,boot::logit(1.e-100),rep(Inf,ncol(omegaDM.sex))),ncol(omegaDM.sex),2)
+omegacons.sex<-matrix(c(rep(c(-Inf,0),4),0,-Inf,0,rep(Inf,ncol(omegaDM.sex))),ncol(omegaDM.sex),2)
 
 fixPar.sex<-list(step=c(rep(NA,nbStates*2*2),NA,NA,boot::logit(1.e-100),NA,NA),
                  omega=c(rep(NA,4*2),NA,boot::logit(1.e-100),NA))
@@ -202,9 +202,9 @@ stepDM.ind[5,4*N+1:N]<-stepDM.ind[6,4*N+1:N]<-paste0("ID",1:N)
 stepDM.ind[6,5*N+1:N]<-paste0("ID",1:N)
 stepDM.ind[7,6*N+1:length(stepzm)]<-paste0("ID",stepzm)
 stepDM.ind[8,6*N+length(stepzm)+1:length(stepzm)]<-paste0("ID",stepzm)
-stepDM.ind[9,ncol(stepDM.ind)]<-1
+stepDM.ind[7:9,ncol(stepDM.ind)]<-1
 
-stepcons.ind<-matrix(c(rep(-Inf,3*N),rep(-Inf,N),rep(0,2*N),rep(boot::logit(1.e-100),length(stepzm)*(nbStates-1)),-Inf,rep(Inf,3*N),rep(Inf,N),rep(Inf,2*N),rep(Inf,length(stepzm)*(nbStates-1)+1)),ncol=2)
+stepcons.ind<-matrix(c(rep(-Inf,3*N),rep(-Inf,N),rep(0,2*N),rep(0,length(stepzm)*(nbStates-1)),-Inf,rep(Inf,3*N),rep(Inf,N),rep(Inf,2*N),rep(Inf,length(stepzm)*(nbStates-1)+1)),ncol=2)
 
 angleDM.ind<-matrix(0,nrow=nbStates,ncol=N*nbStates,dimnames=list(c(paste0("concentration_",1:nbStates)),c(paste0("concentration_1:(Intercept)ID",1:N),paste0("concentration_23:(Intercept)ID",1:N),paste0("concentration_2ID",1:N))))
 angleDM.ind[1,1:N]<-paste0("ID",1:N)
@@ -220,8 +220,8 @@ omegaDM.ind[4,N+1:N]<-paste0("ID",1:N)
 omegaDM.ind[2,2*N+1:N]<-omegaDM.ind[3,2*N+1:N]<-omegaDM.ind[5,2*N+1:N]<-omegaDM.ind[6,2*N+1:N]<-paste0("ID",1:N)
 omegaDM.ind[2,3*N+1:N]<-omegaDM.ind[3,3*N+1:N]<-paste0("ID",1:N)
 omegaDM.ind[7,4*N+1:length(omegazm)]<-paste0("ID",omegazm)
-omegaDM.ind[8:9,ncol(omegaDM.ind)]<-1
-omegacons.ind<-matrix(c(rep(c(-Inf,0,-Inf,0),each=N),rep(boot::logit(1.e-100),length(omegazm)),-Inf,rep(c(Inf,Inf,Inf,Inf),each=N),rep(Inf,length(omegazm)),Inf),ncol=2)
+omegaDM.ind[7:9,ncol(omegaDM.ind)]<-1
+omegacons.ind<-matrix(c(rep(c(-Inf,0,-Inf,0),each=N),rep(0,length(omegazm)),-Inf,rep(c(Inf,Inf,Inf,Inf),each=N),rep(Inf,length(omegazm)),Inf),ncol=2)
 
 fixPar.ind<-list(step=c(rep(NA,N*nbStates*2),rep(NA,length(stepzm)*(nbStates-1)),boot::logit(1.e-100)),
                  omega=c(rep(NA,N*2*(nbStates-1)),rep(NA,length(omegazm)),boot::logit(1.e-100)))
@@ -234,7 +234,7 @@ bestFit.all<-foreach(i=1:N) %dopar% {
   data.ind<-subset(hsData,ID==i)
   tmpPar0 <- getPar0(bestFit)
   if(!all(data.ind$step>0,na.rm=TRUE)){
-    fit<-fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=Par0,DM=list(step=stepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=stepcons,angle=anglecons,omega=omegacons),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar,stateNames=stateNames,retryFits=10,nlmPar=list(steptol=1.e-8))
+    fit<-fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0$Par,beta0=tmpPar0$beta,DM=list(step=stepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=stepcons,angle=anglecons,omega=omegacons),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar,stateNames=stateNames,retryFits=10,nlmPar=list(steptol=1.e-8))
   }
   else {
     tmpstepDM<-stepDM[1:(2*nbStates),1:(2*nbStates)]
