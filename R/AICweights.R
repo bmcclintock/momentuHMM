@@ -46,7 +46,7 @@
 #' 
 
 AICweights <- function (..., k=2, n=NULL) {
-	UseMethod("AICweights")
+  UseMethod("AICweights")
 }
 
 #' @method AICweights momentuHMM
@@ -54,9 +54,9 @@ AICweights <- function (..., k=2, n=NULL) {
 AICweights.momentuHMM <- function(..., k=2, n=NULL)
 {
   models <- list(...)
-
+  
   modNames <- all.vars(match.call()) # store the names of the models given as arguments
-
+  
   if(any(!unlist(lapply(models,is.momentuHMM)))) stop("all model objects must be of the same class")
   
   if(length(models)<2) stop("at least 2 momentuHMM objects must be provided")
@@ -67,16 +67,16 @@ AICweights.momentuHMM <- function(..., k=2, n=NULL)
   
   # compute AICs of models
   aic <- rep(NA,length(models))
-
+  
   for(i in 1:length(models)) {
     aic[i] <- AIC.momentuHMM(models[[i]],k=k,n=n)
   }
-
+  
   ord <- order(aic) # order models by increasing AIC
   weight <- exp(-0.5*(aic-min(aic)))/sum(exp(-0.5*(aic-min(aic))))
   
   return(data.frame(Model=modNames[ord],weight=weight[ord]))
-
+  
 }
 
 #' @method AICweights miHMM
@@ -84,9 +84,9 @@ AICweights.momentuHMM <- function(..., k=2, n=NULL)
 AICweights.miHMM <- function(...,k=2, n=NULL)
 {
   models <- list(...)
-
+  
   modNames <- all.vars(match.call()) # store the names of the models given as arguments
-
+  
   if(any(!unlist(lapply(models,is.miHMM)) & !unlist(lapply(models,is.HMMfits)))) stop("all model objects must be of class miHMM or HMMfits")
   
   for(i in which(unlist(lapply(models,is.miHMM)))){
@@ -95,28 +95,45 @@ AICweights.miHMM <- function(...,k=2, n=NULL)
   if(length(models)<2) stop("at least 2 model objects must be provided")
   
   nSims <- unique(unlist(lapply(models,length)))
-  if(length(nSims)>1) stop("model objects must contain the same number of fits")
+  if(length(nSims)>1){
+    nSims <- min(nSims)
+    warning("HMMfits objects are of different lengths; calculating AIC weights based on first ",nSims," fits for each model")
+  }
   
+  momObs <- which(!unlist(lapply(models[[1]][1:nSims],is.momentuHMM)))
   for(i in 2:length(models)) {
     for(j in 1:nSims){
-      if(!isTRUE(all.equal(models[[i]][[j]]$data,models[[1]][[j]]$data))) stop("Imputed data must be the same for each model object")
+      if(!(j %in% momObs)){
+        if(is.momentuHMM(models[[i]][[j]])){
+          datNames1 <- colnames(models[[1]][[j]]$data)[colnames(models[[1]][[j]]$data) %in% colnames(models[[i]][[j]]$data)]
+          datNames2 <- colnames(models[[i]][[j]]$data)[colnames(models[[i]][[j]]$data) %in% colnames(models[[1]][[j]]$data)]
+          if(!isTRUE(all.equal(models[[i]][[j]]$data[,datNames2],models[[1]][[j]]$data[,datNames1]))) stop("Imputed data must be the same for each model object")
+        } else {
+          momObs <- c(momObs,j)
+        }
+      }
     }
   }
+  
+  if(length(momObs)) {
+    momObs <- sort(momObs)
+    iSims <- (1:nSims)[-momObs]
+    warning("Some model fits are not momentuHMM objects. Imputations ",paste(momObs,collapse=", ")," will be ignored")
+  } else iSims <- 1:nSims
   
   # compute AICs of models
   aic <- matrix(NA,length(models),nSims)
-
+  
   for(i in 1:length(models)) {
-    mods <- models[[i]]
-    for(j in 1:nSims){
-      aic[i,j] <- AIC.momentuHMM(mods[[j]],k=k,n=n)
+    for(j in iSims){
+      aic[i,j] <- AIC.momentuHMM(models[[i]][[j]],k=k,n=n)
     }
   }
-
+  
   weights <- apply(aic,2,function(x) exp(-0.5*(x-min(x)))/sum(exp(-0.5*(x-min(x)))))
-  weight <- apply(weights,1,mean)
+  weight <- apply(weights,1,mean,na.rm=TRUE)
   #se <- sqrt((nSims+1)/(nSims*(nSims-1))*rowSums((weights-weight)^2))
-  sd <- apply(weights,1,sd)
+  sd <- apply(weights,1,sd,na.rm=TRUE)
   ord <- order(weight,decreasing = TRUE) # order models by increasing AIC
   
   return(data.frame(Model=modNames[ord],weight=weight[ord],sd=sd[ord]))
