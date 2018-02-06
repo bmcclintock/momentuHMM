@@ -306,17 +306,12 @@ tmpPar0.ind <- list()
 for(j in 1:nSims){
   tmpPar0.ind[[j]] <- getPar0(bestFit.ind,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),formula=~ID+0,formulaDelt=~ID+0)
   for(i in 1:N){
-    if(momentuHMM:::is.momentuHMM(miBestFit.all[[i]][[j]])) bfPar<-getPar0(miBestFit.all[[i]][[j]])
-    else bfPar <- getPar0(miSum.all[[i]])
+    bfPar <- getPar0(miSum.all[[i]])
     tmpPar0.ind[[j]]$Par$step[match(paste0(colnames(stepDM),"ID",i),names(Par0.ind$Par$step),nomatch=0)]<-bfPar$Par$step[match(names(Par0.ind$Par$step),paste0(colnames(stepDM),"ID",i),nomatch=0)]
     tmpPar0.ind[[j]]$Par$angle[match(paste0(colnames(angleDM),"ID",i),names(Par0.ind$Par$angle),nomatch=0)]<-bfPar$Par$angle[match(names(Par0.ind$Par$angle),paste0(colnames(angleDM),"ID",i),nomatch=0)]
     tmpPar0.ind[[j]]$Par$omega[match(paste0(colnames(omegaDM),"ID",i),names(Par0.ind$Par$omega),nomatch=0)]<-bfPar$Par$omega[match(names(Par0.ind$Par$omega),paste0(colnames(omegaDM),"ID",i),nomatch=0)]
     tmpPar0.ind[[j]]$beta[paste0("ID",i),]<-bfPar$beta
-    if(momentuHMM:::is.momentuHMM(miBestFit.all[[i]][[j]])){
-       tmpPar0.ind[[j]]$delta[paste0("ID",i),]<-miBestFit.all[[i]][[j]]$CIbeta$delta$est
-    } else {
-       tmpPar0.ind[[j]]$delta[paste0("ID",i),]<-miSum.all[[i]]$Par$beta$delta$est
-    }
+    tmpPar0.ind[[j]]$delta[paste0("ID",i),]<-miBestFit.all[[i]][[j]]$CIbeta$delta$est
   }  
   tmpPar0.ind[[j]]$Par$step<-tmpPar0.ind[[j]]$Par$step[1:(N*2*nbStates)]
 }
