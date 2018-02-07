@@ -54,12 +54,12 @@
 #' @param formulaDelta Regression formula for the initial distribution. Default: \code{~1} (no covariate effect). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).
 #' @param stationary \code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
-#' @param verbose Determines the print level of the optimizer. The default value of 0 means that no
+#' @param verbose Deprecated: please use \code{print.level} in \code{nlmPar} argument. Determines the print level of the \code{nlm} optimizer. The default value of 0 means that no
 #' printing occurs, a value of 1 means that the first and last iterations of the optimization are
-#' detailed, and a value of 2 means that each iteration of the optimization is detailed.
-#' @param nlmPar List of parameters to pass to the optimization function \code{nlm} (which should be either
-#' '\code{gradtol}', '\code{stepmax}', '\code{steptol}', or '\code{iterlim}' -- see \code{nlm}'s documentation
-#' for more detail)
+#' detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.
+#' @param nlmPar List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
+#' \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, or \code{iterlim} -- see \code{nlm}'s documentation
+#' for more detail). Ignored unless \code{optMethod="nlm"}.
 #' @param fit \code{TRUE} if an HMM should be fitted to the data, \code{FALSE} otherwise.
 #' If fit=\code{FALSE}, a model is returned with the MLE replaced by the initial parameters given in
 #' input. This option can be used to assess the initial parameters, parameter bounds, etc. Default: \code{TRUE}.
@@ -109,6 +109,8 @@
 #' For transition probability parameters, the corresponding element of \code{retrySD} must be named ``beta'' and have the same dimensions as \code{beta0}. 
 #' For initial distribution parameters, the corresponding element of \code{retrySD} must be named ``delta'' and have the same dimensions as \code{delta0} (if \code{delta0} is on the working scale) or be of length \code{nbStates-1} (if \code{delta0} is on the natural scale).
 #' Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \code{retrySD}=10 for initial distribution and state transition probabilities). Ignored unless \code{retryFits>0}.
+#' @param optMethod The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).
+#' @param control A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).
 #'
 #' @return A \code{\link{momentuHMM}} object, i.e. a list of:
 #' \item{mle}{A named list of the maximum likelihood estimates of the parameters of the model (if the numerical algorithm
@@ -119,7 +121,7 @@
 #' \item{CIreal}{Standard errors and 95\% confidence intervals on the real (i.e., natural) scale of parameters}
 #' \item{CIbeta}{Standard errors and 95\% confidence intervals on the beta (i.e., working) scale of parameters}
 #' \item{data}{The momentuHMMData object}
-#' \item{mod}{The object returned by the numerical optimizer \code{nlm}}
+#' \item{mod}{The object returned by the numerical optimizer \code{nlm} or \code{optim}}
 #' \item{conditions}{Conditions used to fit the model, e.g., \code{bounds} (parameter bounds), distributions, \code{zeroInflation},
 #' \code{estAngleMean}, \code{stationary}, \code{formula}, \code{DM}, \code{fullDM} (full design matrix), etc.}
 #' \item{rawCovs}{Raw covariate values for transition probabilities, as found in the data (if any). Used in \code{\link{plot.momentuHMM}}.}
@@ -389,7 +391,7 @@
 #' 
 #' @export
 #' @importFrom Rcpp evalCpp
-#' @importFrom stats model.matrix get_all_vars nlm terms terms.formula
+#' @importFrom stats model.matrix get_all_vars nlm optim terms terms.formula
 #' @importFrom CircStats dwrpcauchy dvm pvm
 #'
 #' @useDynLib momentuHMM
@@ -398,9 +400,9 @@ fitHMM <- function(data,nbStates,dist,
                    Par0,beta0=NULL,delta0=NULL,
                    estAngleMean=NULL,circularAngleMean=NULL,
                    formula=~1,formulaDelta=~1,stationary=FALSE,
-                   verbose=0,nlmPar=NULL,fit=TRUE,
+                   verbose=NULL,nlmPar=list(),fit=TRUE,
                    DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,
-                   stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL)
+                   stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list())
 {
   
   #####################
@@ -410,6 +412,15 @@ fitHMM <- function(data,nbStates,dist,
   if(!is.null(cons)) warning("cons argument is deprecated in momentuHMM >= 1.4.0.  Please use workBounds instead.")
   if(!is.null(workcons)) warning("workcons argument is deprecated in momentuHMM >= 1.4.0.  Please use workBounds instead.")
   if(!is.null(workBounds) & (!is.null(cons) | !is.null(workcons))) stop("workBounds cannot be specified when using deprecated arguments cons or workcons; either workBounds or both cons and workcons must be NULL")
+  if(!is.null(verbose)) {
+    warning("verbose argument is deprecated in momentuHMM >= 1.4.0. Please use print.level in nlmPar argument instead")
+    if(is.null(nlmPar$print.level)){
+      nlmPar$print.level <- verbose
+    } else stop("nlmPar$print.level cannot be specified when using deprecated argument verbose")
+  } else verbose <- 0
+  if(is.null(nlmPar$print.level)){
+    nlmPar$print.level <- verbose
+  } 
   
   # check that the data is a momentuHMMData object
   if(!is.momentuHMMData(data))
@@ -438,6 +449,8 @@ fitHMM <- function(data,nbStates,dist,
   if(any(is.na(match(distnames,names(data))))) stop(paste0(distnames[is.na(match(distnames,names(data)))],collapse=", ")," not found in data")
   if(!all(distnames %in% names(Par0))) stop(paste0(distnames[which(!(distnames %in% names(Par0)))],collapse=", ")," missing in 'Par0'")
   Par0 <- Par0[distnames]
+  
+  match.arg(optMethod,fitMethods)
   
   stateForms<- terms(formula, specials = paste0("state",1:nbStates))
   newformula<-formula
@@ -561,7 +574,7 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
 
-  mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(newformula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & stationary) # indicator for moveHMMwrap below
+  mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(newformula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & stationary & optMethod=="nlm") # indicator for moveHMMwrap below
   
   inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames,checkInflation = TRUE)
   p <- inputs$p
@@ -592,16 +605,13 @@ fitHMM <- function(data,nbStates,dist,
                      nbStates-1,"columns."))
     }
   }
-  
-  # check that verbose is in {0,1,2}
-  if(!(verbose %in% c(0,1,2)))
-    stop("verbose must be in {0,1,2}")
 
   # check elements of nlmPar
-  lsPars <- c("gradtol","stepmax","steptol","iterlim")
+  lsPars <- c("print.level","gradtol","stepmax","steptol","iterlim")
   if(length(which(!(names(nlmPar) %in% lsPars)))>0)
-    stop("Check the names of the element of 'nlmPar'; they should be in
-         ('gradtol','stepmax','steptol','iterlim')")
+    stop("Check the names of the elements of 'nlmPar'; they should be in
+         ('print.level','gradtol','stepmax','steptol','iterlim')")
+
 
   ####################################
   ## Prepare initial values for nlm ##
@@ -831,15 +841,16 @@ fitHMM <- function(data,nbStates,dist,
             Par[[i]]<-Par[[i]][-(1:nbStates)]
         }
         startTime <- proc.time()
-        withCallingHandlers(curmod<-tryCatch(moveHMMwrap(data,nbStates,dist,Par,fullPar$beta,fullPar$delta[1,],inputs$estAngleMean,newformula,stationary,verbose,nlmPar,fit,nbAnimals)$mod,error=function(e) e),warning=h)
+        withCallingHandlers(curmod<-tryCatch(moveHMMwrap(data,nbStates,dist,Par,fullPar$beta,fullPar$delta[1,],inputs$estAngleMean,newformula,stationary,nlmPar,fit,nbAnimals)$mod,error=function(e) e),warning=h)
         endTime <- proc.time()-startTime
         #curmod<-out$mod
         #mle<-out$mle
       } else {
 
         # check additional parameters for nlm
+        print.level <- ifelse(is.null(nlmPar$print.level),0,nlmPar$print.level)
         gradtol <- ifelse(is.null(nlmPar$gradtol),1e-6,nlmPar$gradtol)
-        typsize = rep(1, length(wpar))
+        typsize <- rep(1, length(wpar))
         defStepmax <- max(1000 * sqrt(sum((wpar/typsize)^2)),1000)
         stepmax <- ifelse(is.null(nlmPar$stepmax),defStepmax,nlmPar$stepmax)
         steptol <- ifelse(is.null(nlmPar$steptol),1e-6,nlmPar$steptol)
@@ -849,20 +860,29 @@ fitHMM <- function(data,nbStates,dist,
         startTime <- proc.time()
   
         # call to optimizer nlm
-        withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,wpar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
+        if(optMethod=="nlm"){
+          withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,wpar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
                                                nc,meanind,covsDelta,workBounds,
-                                               print.level=verbose,gradtol=gradtol,
+                                               print.level=print.level,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
                                                iterlim=iterlim,hessian=TRUE),error=function(e) e),warning=h)
-    
+        } else {
+          withCallingHandlers(curmod <- tryCatch(optim(wpar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
+                                                     inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
+                                                     stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
+                                                     nc,meanind,covsDelta,workBounds,
+                                                     method=optMethod,control=control,hessian=TRUE),error=function(e) e),warning=h)
+        }
         endTime <- proc.time()-startTime
       }
       
       if(fitCount==0){
         if(inherits(curmod,"error")) stop(curmod)
         else {
+          names(curmod)[which(names(curmod)=="par")] <- "estimate"
+          names(curmod)[which(names(curmod)=="value")] <- "minimum"
           curmod$elapsedTime <- endTime[3]
           mod <- curmod
           if(retryFits>=1) cat("Attempting to improve fit using random perturbation. Press 'esc' to force exit from 'fitHMM'\n")
@@ -872,6 +892,8 @@ fitHMM <- function(data,nbStates,dist,
       if((fitCount+1)<=retryFits){
         cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,"         ",sep="")
         if(!inherits(curmod,"error")){
+          names(curmod)[which(names(curmod)=="par")] <- "estimate"
+          names(curmod)[which(names(curmod)=="value")] <- "minimum"
           curmod$elapsedTime <- endTime[3]
           if(curmod$minimum < mod$minimum) mod <- curmod
         }

@@ -10,6 +10,7 @@ integerdists<-sort(c('bern','pois'))
 splineList<-c("bs","ns","bSpline","mSpline","cSpline","iSpline")
 meansList<-c("numeric","integer","logical","Date","POSIXlt","POSIXct","difftime")
 meansListNoTime<-c("numeric","integer","logical")
+fitMethods<-c("nlm","Nelder-Mead","SANN")
 
 # this function maintains backwards compatibility with momentuHMM versions <1.1.2 (formulaDelta) and <1.4.0 (workBounds)
 delta_bc <- function(m){

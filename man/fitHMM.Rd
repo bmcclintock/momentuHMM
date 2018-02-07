@@ -6,10 +6,11 @@
 \usage{
 fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
-  formulaDelta = ~1, stationary = FALSE, verbose = 0, nlmPar = NULL,
-  fit = TRUE, DM = NULL, cons = NULL, userBounds = NULL,
-  workBounds = NULL, workcons = NULL, stateNames = NULL,
-  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL)
+  formulaDelta = ~1, stationary = FALSE, verbose = NULL,
+  nlmPar = list(), fit = TRUE, DM = NULL, cons = NULL,
+  userBounds = NULL, workBounds = NULL, workcons = NULL,
+  stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
+  retrySD = NULL, optMethod = "nlm", control = list())
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} object.}
@@ -73,13 +74,13 @@ Any formula terms that are not state- or parameter-specific are included on all 
 \item{stationary}{\code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
 
-\item{verbose}{Determines the print level of the optimizer. The default value of 0 means that no
+\item{verbose}{Deprecated: please use \code{print.level} in \code{nlmPar} argument. Determines the print level of the \code{nlm} optimizer. The default value of 0 means that no
 printing occurs, a value of 1 means that the first and last iterations of the optimization are
-detailed, and a value of 2 means that each iteration of the optimization is detailed.}
+detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.}
 
-\item{nlmPar}{List of parameters to pass to the optimization function \code{nlm} (which should be either
-'\code{gradtol}', '\code{stepmax}', '\code{steptol}', or '\code{iterlim}' -- see \code{nlm}'s documentation
-for more detail)}
+\item{nlmPar}{List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
+\code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, or \code{iterlim} -- see \code{nlm}'s documentation
+for more detail). Ignored unless \code{optMethod="nlm"}.}
 
 \item{fit}{\code{TRUE} if an HMM should be fitted to the data, \code{FALSE} otherwise.
 If fit=\code{FALSE}, a model is returned with the MLE replaced by the initial parameters given in
@@ -140,6 +141,10 @@ value is returned. Ignored if \code{fit=FALSE}.}
 For transition probability parameters, the corresponding element of \code{retrySD} must be named ``beta'' and have the same dimensions as \code{beta0}. 
 For initial distribution parameters, the corresponding element of \code{retrySD} must be named ``delta'' and have the same dimensions as \code{delta0} (if \code{delta0} is on the working scale) or be of length \code{nbStates-1} (if \code{delta0} is on the natural scale).
 Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \code{retrySD}=10 for initial distribution and state transition probabilities). Ignored unless \code{retryFits>0}.}
+
+\item{optMethod}{The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).}
+
+\item{control}{A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).}
 }
 \value{
 A \code{\link{momentuHMM}} object, i.e. a list of:
@@ -151,7 +156,7 @@ includes covariates), and \code{delta} (initial distribution).}
 \item{CIreal}{Standard errors and 95\% confidence intervals on the real (i.e., natural) scale of parameters}
 \item{CIbeta}{Standard errors and 95\% confidence intervals on the beta (i.e., working) scale of parameters}
 \item{data}{The momentuHMMData object}
-\item{mod}{The object returned by the numerical optimizer \code{nlm}}
+\item{mod}{The object returned by the numerical optimizer \code{nlm} or \code{optim}}
 \item{conditions}{Conditions used to fit the model, e.g., \code{bounds} (parameter bounds), distributions, \code{zeroInflation},
 \code{estAngleMean}, \code{stationary}, \code{formula}, \code{DM}, \code{fullDM} (full design matrix), etc.}
 \item{rawCovs}{Raw covariate values for transition probabilities, as found in the data (if any). Used in \code{\link{plot.momentuHMM}}.}

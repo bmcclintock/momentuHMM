@@ -1,8 +1,12 @@
 # wrapper for calling moveHMM::fitHMM when appropriate models are specified
 #' @importFrom moveHMM fitHMM
-moveHMMwrap<-function(data,nbStates,dist,Par,beta0,delta0,estAngleMean,formula,stationary,verbose,nlmPar,fit,nbAnimals){
+moveHMMwrap<-function(data,nbStates,dist,Par,beta0,delta0,estAngleMean,formula,stationary,nlmPar,fit,nbAnimals){
   data <- moveData(data)
   distnames<-names(dist)
+  
+  verbose <- ifelse(is.null(nlmPar$print.level),0,nlmPar$print.level)
+  nlmPar$print.level <- NULL
+  
   if(any(distnames %in% "angle")){
     
     angleMean<-rep(0,nbStates)

@@ -12,18 +12,21 @@ NEW FEATURES
 
 * useInitial argument added to MIfitHMM for using parameter estimates of first model fit as initial values for all subsequent model fits
 
+* retrySD argument added to fitHMM and MIfitHMM for specifying standard deviation of random normal perturbations when using retryFits
+
+* alternative optimization methods (``Nelder-Mead'' and ``SANN'') can now be specified in fitHMM and MIfitHMM using the optMethod and control arguments
+
 * AICweights function added for calculating AIC weights across a set of candidate models
 
 * sample size (n) argument added to AIC.momentuHMM for calculating small sample corrected AIC (i.e. AICc)
 
-<<<<<<< HEAD
-=======
-* retrySD argument added to fitHMM and MIfitHMM for specifying standard deviation of random normal perturbations when using retryFits
-
->>>>>>> develop
 CHANGES
 
 * For multiple imputation analyses, pseudoRes (and plotPR) now calculate (and plot) pseudo-residuals individually for each model fit
+
+* cons and workcons arguments are now deprecated; please use workBounds instead
+
+* verbose argument is now deprecated; please use nlmPar instead
 
 
 momentuHMM 1.3.0 2017-12-06
