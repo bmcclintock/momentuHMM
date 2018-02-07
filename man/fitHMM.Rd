@@ -9,10 +9,10 @@ fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
   formulaDelta = ~1, stationary = FALSE, verbose = 0, nlmPar = NULL,
   fit = TRUE, DM = NULL, cons = NULL, userBounds = NULL,
   workcons = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL,
-  retryFits = 0)
+  retryFits = 0, retrySD = NULL)
 }
 \arguments{
-\item{data}{An object \code{momentuHMMData}.}
+\item{data}{A \code{\link{momentuHMMData}} object.}
 
 \item{nbStates}{Number of states of the HMM.}
 
@@ -122,13 +122,19 @@ of rows of 'data'; each element should either be an integer (the value of the kn
 the state is not known.}
 
 \item{fixPar}{An optional list of vectors indicating parameters which are assumed known prior to fitting the model. Default: NULL 
-(no parameters are fixed). For data streams, each element of \code{fixPar} should be a vector of the same name and length as the corresponding element of 
-\code{Par0}. For transition probability parameters, the corresponding element of \code{fixPar} must be named ``beta'' and have the same dimensions as \code{beta0}. For initial distribution parameters, the corresponding element of \code{fixPar} must be named ``delta'' and have the same dimensions as \code{delta0}. Each parameter should either be numeric (the fixed value of the parameter) or NA if the parameter is to be estimated. For each data stream, \code{fixPar} parameters must be on the same scale as \code{Par0} (e.g. if \code{DM} is specified for a given data stream, any fixed parameters for this data stream must be on the working scale).  Any fixed values for the transition probabilities (\code{beta}) must be on the working scale (i.e. the same scale as \code{beta0}). Any fixed values for the initial distribution (\code{delta}) must be on the natural scale (i.e. the same scale as \code{delta0}).}
+(no parameters are fixed). For data streams, each element of \code{fixPar} should be a vector of the same name and length as the corresponding element of \code{Par0}. 
+For transition probability parameters, the corresponding element of \code{fixPar} must be named ``beta'' and have the same dimensions as \code{beta0}. 
+For initial distribution parameters, the corresponding element of \code{fixPar} must be named ``delta'' and have the same dimensions as \code{delta0}. 
+Each parameter should either be numeric (the fixed value of the parameter) or NA if the parameter is to be estimated. Corresponding \code{fixPar} parameters must be on the same scale as \code{Par0} (e.g. if \code{DM} is specified for a given data stream, any fixed parameters for this data stream must be on the working scale), \code{beta0}, and \code{delta0}.}
 
 \item{retryFits}{Non-negative integer indicating the number of times to attempt to iteratively fit the model using random perturbations of the current parameter estimates as the 
-initial values for likelihood optimization. Standard normal perturbations are used on the working scale probability distribution parameters, while
-Normal(0,10^2) pertubations are used for working scale transition probability parameters. Default: 0.  When \code{retryFits>0}, the model with the largest log likelihood 
-value is returned.  Ignored if \code{fit=FALSE}.}
+initial values for likelihood optimization. Normal(0,\code{retrySD}^2) perturbations are used on the working scale parameters. Default: 0.  When \code{retryFits>0}, the model with the largest log likelihood 
+value is returned. Ignored if \code{fit=FALSE}.}
+
+\item{retrySD}{An optional list of scalars or vectors indicating the standard deviation to use for normal perturbations of each working scale parameter when \code{retryFits>0}. For data streams, each element of \code{retrySD} should be a vector of the same name and length as the corresponding element of \code{Par0} (if a scalar is provided, then this value will be used for all working parameters of the data stream). 
+For transition probability parameters, the corresponding element of \code{retrySD} must be named ``beta'' and have the same dimensions as \code{beta0}. 
+For initial distribution parameters, the corresponding element of \code{retrySD} must be named ``delta'' and have the same dimensions as \code{delta0} (if \code{delta0} is on the working scale) or be of length \code{nbStates-1} (if \code{delta0} is on the natural scale).
+Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \code{retrySD}=10 for initial distribution and state transition probabilities). Ignored unless \code{retryFits>0}.}
 }
 \value{
 A \code{\link{momentuHMM}} object, i.e. a list of:

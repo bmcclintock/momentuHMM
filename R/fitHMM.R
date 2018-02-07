@@ -4,7 +4,7 @@
 #' Fit a (multivariate) hidden Markov model to the data provided, using numerical optimization of the log-likelihood
 #' function.
 #'
-#' @param data An object \code{momentuHMMData}.
+#' @param data A \code{\link{momentuHMMData}} object.
 #' @param nbStates Number of states of the HMM.
 #' @param dist A named list indicating the probability distributions of the data streams. Currently
 #' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
@@ -94,12 +94,17 @@
 #' of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
 #' the state is not known.
 #' @param fixPar An optional list of vectors indicating parameters which are assumed known prior to fitting the model. Default: NULL 
-#' (no parameters are fixed). For data streams, each element of \code{fixPar} should be a vector of the same name and length as the corresponding element of 
-#' \code{Par0}. For transition probability parameters, the corresponding element of \code{fixPar} must be named ``beta'' and have the same dimensions as \code{beta0}. For initial distribution parameters, the corresponding element of \code{fixPar} must be named ``delta'' and have the same dimensions as \code{delta0}. Each parameter should either be numeric (the fixed value of the parameter) or NA if the parameter is to be estimated. For each data stream, \code{fixPar} parameters must be on the same scale as \code{Par0} (e.g. if \code{DM} is specified for a given data stream, any fixed parameters for this data stream must be on the working scale).  Any fixed values for the transition probabilities (\code{beta}) must be on the working scale (i.e. the same scale as \code{beta0}). Any fixed values for the initial distribution (\code{delta}) must be on the natural scale (i.e. the same scale as \code{delta0}).
+#' (no parameters are fixed). For data streams, each element of \code{fixPar} should be a vector of the same name and length as the corresponding element of \code{Par0}. 
+#' For transition probability parameters, the corresponding element of \code{fixPar} must be named ``beta'' and have the same dimensions as \code{beta0}. 
+#' For initial distribution parameters, the corresponding element of \code{fixPar} must be named ``delta'' and have the same dimensions as \code{delta0}. 
+#' Each parameter should either be numeric (the fixed value of the parameter) or NA if the parameter is to be estimated. Corresponding \code{fixPar} parameters must be on the same scale as \code{Par0} (e.g. if \code{DM} is specified for a given data stream, any fixed parameters for this data stream must be on the working scale), \code{beta0}, and \code{delta0}.
 #' @param retryFits Non-negative integer indicating the number of times to attempt to iteratively fit the model using random perturbations of the current parameter estimates as the 
-#' initial values for likelihood optimization. Standard normal perturbations are used on the working scale probability distribution parameters, while
-#' Normal(0,10^2) pertubations are used for working scale transition probability parameters. Default: 0.  When \code{retryFits>0}, the model with the largest log likelihood 
-#' value is returned.  Ignored if \code{fit=FALSE}.
+#' initial values for likelihood optimization. Normal(0,\code{retrySD}^2) perturbations are used on the working scale parameters. Default: 0.  When \code{retryFits>0}, the model with the largest log likelihood 
+#' value is returned. Ignored if \code{fit=FALSE}.
+#' @param retrySD An optional list of scalars or vectors indicating the standard deviation to use for normal perturbations of each working scale parameter when \code{retryFits>0}. For data streams, each element of \code{retrySD} should be a vector of the same name and length as the corresponding element of \code{Par0} (if a scalar is provided, then this value will be used for all working parameters of the data stream). 
+#' For transition probability parameters, the corresponding element of \code{retrySD} must be named ``beta'' and have the same dimensions as \code{beta0}. 
+#' For initial distribution parameters, the corresponding element of \code{retrySD} must be named ``delta'' and have the same dimensions as \code{delta0} (if \code{delta0} is on the working scale) or be of length \code{nbStates-1} (if \code{delta0} is on the natural scale).
+#' Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \code{retrySD}=10 for initial distribution and state transition probabilities). Ignored unless \code{retryFits>0}.
 #'
 #' @return A \code{\link{momentuHMM}} object, i.e. a list of:
 #' \item{mle}{A named list of the maximum likelihood estimates of the parameters of the model (if the numerical algorithm
@@ -391,7 +396,7 @@ fitHMM <- function(data,nbStates,dist,
                    formula=~1,formulaDelta=~1,stationary=FALSE,
                    verbose=0,nlmPar=NULL,fit=TRUE,
                    DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,
-                   stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0)
+                   stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL)
 {
   
   #####################
@@ -699,6 +704,52 @@ fitHMM <- function(data,nbStates,dist,
   if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
 
   if(retryFits<0) stop("retryFits must be non-negative")
+  if(retryFits>=1){
+    parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)-ncol(covsDelta)*(nbStates-1)*(!stationary)
+    if(is.null(retrySD)){
+      retrySD <- rep(10,length(wpar))
+      retrySD[1:parmInd] <- 1
+    } else {
+      for(i in distnames){
+        if(is.null(retrySD[[i]])){
+          retrySD[[i]] <- rep(1,parCount[[i]])
+        } else {
+          if(any(!is.numeric(retrySD[[i]]))) stop("retrySD$",i," must be numeric")
+          if(any(retrySD[[i]]<0)) stop("retrySD$",i," must be non-negative")
+          if(length(retrySD[[i]])==1){
+            retrySD[[i]] <- rep(retrySD[[i]],parCount[[i]])
+          } else if(length(retrySD[[i]])!=parCount[[i]]){
+            stop("retrySD$",i," must be of length 1 or ",parCount[[i]])
+          }
+        }
+      }
+      if(nbStates>1){
+        if(is.null(retrySD$beta)){
+          retrySD$beta <- rep(10,length(beta0))
+        } else {
+          if(any(!is.numeric(retrySD$beta))) stop("retrySD$beta must be numeric")
+          if(any(retrySD$beta<0)) stop("retrySD$beta must be non-negative")
+          if(length(retrySD$beta)==1){
+            retrySD$beta <- rep(retrySD$beta,length(beta0))
+          } else if(length(retrySD$beta)!=length(beta0)){
+            stop("retrySD$beta must be of length 1 or ",length(beta0))
+          }
+        }
+        if(is.null(retrySD$delta)){
+          retrySD$delta <- rep(10,length(delta0))
+        } else {
+          if(any(!is.numeric(retrySD$delta))) stop("retrySD$delta must be numeric")
+          if(any(retrySD$delta<0)) stop("retrySD$delta must be non-negative")
+          if(length(retrySD$delta)==1){
+            retrySD$delta <- rep(retrySD$delta,length(delta0))
+          } else if(length(retrySD$delta)!=length(delta0)){
+            stop("retrySD$delta must be of length 1 or ",length(delta0))
+          }
+        }
+      }
+      retrySD <- unlist(retrySD[c(distnames,"beta","delta")])
+    }
+  }
   
   ##################
   ## Optimization ##
@@ -803,10 +854,9 @@ fitHMM <- function(data,nbStates,dist,
           curmod$elapsedTime <- endTime[3]
           if(curmod$minimum < mod$minimum) mod <- curmod
         }
-        parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)-ncol(covsDelta)*(nbStates-1)*(!stationary)
-        wpar[1:parmInd] <- mod$estimate[1:parmInd]+rnorm(parmInd)
+        wpar[1:parmInd] <- mod$estimate[1:parmInd]+rnorm(parmInd,0,retrySD[1:parmInd])
         if(nbStates>1)
-          wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary))] <- mod$estimate[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary))]+rnorm((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary),0,10)
+          wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary))] <- mod$estimate[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary))]+rnorm((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary),0,retrySD[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary))])
         if(length(wparIndex)) wpar[wparIndex] <- unlist(fixPar)[wparIndex]
       }
       fitCount<-fitCount+1

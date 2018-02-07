@@ -10,9 +10,9 @@ MIfitHMM(miData, nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   stationary = FALSE, verbose = 0, nlmPar = NULL, fit = TRUE,
   useInitial = FALSE, DM = NULL, cons = NULL, userBounds = NULL,
   workcons = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL,
-  retryFits = 0, covNames = NULL, spatialCovs = NULL, centers = NULL,
-  centroids = NULL, angleCovs = NULL, method = "IS", parIS = 1000,
-  dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
+  retryFits = 0, retrySD = NULL, covNames = NULL, spatialCovs = NULL,
+  centers = NULL, centroids = NULL, angleCovs = NULL, method = "IS",
+  parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
   force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
   thetaSamp = NULL)
 }
@@ -92,6 +92,8 @@ be a list of vectors containing the known values for the state process for each 
 
 \item{retryFits}{Non-negative integer indicating the number of times to attempt to iteratively fit the model using random perturbations of the current parameter estimates as the 
 initial values for likelihood optimization.  See \code{\link{fitHMM}}.}
+
+\item{retrySD}{An optional list of scalars or vectors indicating the standard deviation to use for normal perturbations of each working scale parameter when \code{retryFits>0}. See \code{\link{fitHMM}}.}
 
 \item{covNames}{Names of any covariates in \code{miData$crwPredict} (if \code{miData} is a \code{\link{crwData}} object; otherwise 
 \code{covNames} is ignored). See \code{\link{prepData}}.}
