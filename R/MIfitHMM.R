@@ -181,7 +181,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
                    estAngleMean = NULL, circularAngleMean = NULL,
                    formula = ~1, formulaDelta = ~1, stationary = FALSE, 
                    verbose = 0, nlmPar = NULL, fit = TRUE, useInitial = FALSE,
-                   DM = NULL, cons = NULL, userBounds = NULL, workcons = NULL, 
+                   DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL, workcons = NULL, 
                    stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
                    covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL,
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad = TRUE,
@@ -297,7 +297,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   test<-fitHMM(miData[[ind[1]]],nbStates, dist, Par0[[ind[1]]], beta0[[ind[1]]], delta0[[ind[1]]],
            estAngleMean, circularAngleMean, formula, formulaDelta, stationary, verbose,
            nlmPar, fit = FALSE, DM, cons,
-           userBounds, workcons, stateNames, knownStates[[ind[1]]], fixPar, retryFits, retrySD)
+           userBounds, workBounds, workcons, stateNames, knownStates[[ind[1]]], fixPar, retryFits, retrySD)
   
   # fit HMM(s)
   fits <- list()
@@ -310,7 +310,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
     fits[[1]]<-suppressMessages(fitHMM(miData[[1]],nbStates, dist, Par0[[1]], beta0[[1]], delta0[[1]],
                                     estAngleMean, circularAngleMean, formula, formulaDelta, stationary, verbose,
                                     nlmPar, fit, DM, cons,
-                                    userBounds, workcons, stateNames, knownStates[[1]], fixPar, retryFits, retrySD))
+                                    userBounds, workBounds, workcons, stateNames, knownStates[[1]], fixPar, retryFits, retrySD))
     if(retryFits>=1){
       cat("\n")
     }
@@ -330,7 +330,7 @@ MIfitHMM<-function(miData,nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
       tmpFit<-suppressMessages(fitHMM(miData[[j]],nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
                                       estAngleMean, circularAngleMean, formula, formulaDelta, stationary, verbose,
                                       nlmPar, fit, DM, cons,
-                                      userBounds, workcons, stateNames, knownStates[[j]], fixPar, retryFits, retrySD))
+                                      userBounds, workBounds, workcons, stateNames, knownStates[[j]], fixPar, retryFits, retrySD))
       if(retryFits>=1) cat("\n")
       tmpFit
     }  

@@ -399,7 +399,7 @@ fitHMM <- function(data,nbStates,dist,
                    estAngleMean=NULL,circularAngleMean=NULL,
                    formula=~1,formulaDelta=~1,stationary=FALSE,
                    verbose=0,nlmPar=NULL,fit=TRUE,
-                   DM=NULL,cons=NULL,userBounds=NULL,workcons=NULL,
+                   DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,
                    stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL)
 {
   

@@ -9,12 +9,12 @@ MIfitHMM(miData, nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
   circularAngleMean = NULL, formula = ~1, formulaDelta = ~1,
   stationary = FALSE, verbose = 0, nlmPar = NULL, fit = TRUE,
   useInitial = FALSE, DM = NULL, cons = NULL, userBounds = NULL,
-  workcons = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL,
-  retryFits = 0, retrySD = NULL, covNames = NULL, spatialCovs = NULL,
-  centers = NULL, centroids = NULL, angleCovs = NULL, method = "IS",
-  parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
-  force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
-  thetaSamp = NULL)
+  workBounds = NULL, workcons = NULL, stateNames = NULL,
+  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
+  covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL,
+  angleCovs = NULL, method = "IS", parIS = 1000, dfSim = Inf,
+  grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad = TRUE,
+  fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1, thetaSamp = NULL)
 }
 \arguments{
 \item{miData}{A \code{\link{crwData}} object, a \code{\link{crwSim}} object, or a list of \code{\link{momentuHMMData}} objects.}
@@ -79,6 +79,8 @@ for each data stream. See \code{\link{fitHMM}}.}
 \item{userBounds}{An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 distribution parameters for each data stream. See \code{\link{fitHMM}}.}
 
+\item{workBounds}{An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. See \code{\link{fitHMM}}.}
+
 \item{workcons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 each data stream. See \code{\link{fitHMM}}.}
 
@@ -137,8 +139,6 @@ of the quadrature method for large parameter vectors. See \code{\link[crawl]{crw
 \item{thetaSamp}{If multiple parameter samples are available in \code{\link[crawl]{crwSimulator}} objects,
 setting \code{thetaSamp=n} will use the nth sample. Defaults to the last. See \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}}. 
 Ignored unless \code{miData} is a \code{\link{crwData}} object.}
-
-\item{workBounds}{An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. See \code{\link{fitHMM}}.}
 }
 \value{
 If \code{nSims>1}, \code{poolEstimates=TRUE}, and \code{fit=TRUE}, a \code{\link{miHMM}} object, i.e., a list consisting of:

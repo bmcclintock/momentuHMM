@@ -8,8 +8,8 @@ fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
   formulaDelta = ~1, stationary = FALSE, verbose = 0, nlmPar = NULL,
   fit = TRUE, DM = NULL, cons = NULL, userBounds = NULL,
-  workcons = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL,
-  retryFits = 0, retrySD = NULL)
+  workBounds = NULL, workcons = NULL, stateNames = NULL,
+  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL)
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} object.}
@@ -110,6 +110,11 @@ a data stream named 'angle' with \code{estAngleMean$angle=TRUE)}, \code{userBoun
 "mean_2","concentration_1","concentration_2"))))} 
 specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.}
 
+\item{workBounds}{An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. For each matrix, the first column pertains to the lower bound and the second column the upper bound.
+For data streams, each element of \code{workBounds} should be a k x 2 matrix with the same name of the corresponding element of 
+\code{Par0}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta0)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta0)}.
+\code{workBounds} is ignored for any given data stream unless \code{DM} is also specified.}
+
 \item{workcons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
 through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.}
@@ -135,11 +140,6 @@ value is returned. Ignored if \code{fit=FALSE}.}
 For transition probability parameters, the corresponding element of \code{retrySD} must be named ``beta'' and have the same dimensions as \code{beta0}. 
 For initial distribution parameters, the corresponding element of \code{retrySD} must be named ``delta'' and have the same dimensions as \code{delta0} (if \code{delta0} is on the working scale) or be of length \code{nbStates-1} (if \code{delta0} is on the natural scale).
 Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \code{retrySD}=10 for initial distribution and state transition probabilities). Ignored unless \code{retryFits>0}.}
-
-\item{workBounds}{An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. For each matrix, the first column pertains to the lower bound and the second column the upper bound.
-For data streams, each element of \code{workBounds} should be a k x 2 matrix with the same name of the corresponding element of 
-\code{Par0}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta0)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta0)}.
-\code{workBounds} is ignored for any given data stream unless \code{DM} is also specified.}
 }
 \value{
 A \code{\link{momentuHMM}} object, i.e. a list of:
