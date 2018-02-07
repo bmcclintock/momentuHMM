@@ -27,25 +27,25 @@ dist <- list(step = "gamma", angle = "wrpcauchy", dive = "pois")
 ### construct pseudo-design matrix constraining parameters (to avoid label switching across imputations)
 # constrain step length mean parameters: transit > resting
 stepDM<-matrix(c(1,0,1,0,0,0,-1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1),nrow=2*nbStates)
-stepcons <- matrix(c(-Inf,0,-Inf,-Inf,-Inf,-Inf,rep(Inf,6)),6,2)
+stepworkBounds <- matrix(c(-Inf,0,-Inf,-Inf,-Inf,-Inf,rep(Inf,6)),6,2)
 # constrain turning angle concentration parameters: transit > resting
 angleDM<-matrix(c(1,0,1,-1,0,0,0,1,0),nrow=nbStates)
-anglecons <- matrix(c(-Inf,0,-Inf,rep(Inf,3)),3,2)
+angleworkBounds <- matrix(c(-Inf,0,-Inf,rep(Inf,3)),3,2)
 # constrain dive lambda parameters: foraging > transit
 diveDM<-matrix(c(1,0,0,0,1,1,0,0,-1),nrow=nbStates)
-divecons <- matrix(c(-Inf,-Inf,0,rep(Inf,3)),3,2)
+diveworkBounds <- matrix(c(-Inf,-Inf,0,rep(Inf,3)),3,2)
 
 DM<-list(step=stepDM,angle=angleDM,dive=diveDM)
-cons<-list(step=stepcons,angle=anglecons,dive=divecons)
+workBounds<-list(step=stepworkBounds,angle=angleworkBounds,dive=diveworkBounds)
 
 Par0 <- getParDM(nbStates = nbStates, dist = dist,
-                 Par = Par, DM = DM, workBounds = cons,
+                 Par = Par, DM = DM, workBounds = workBounds,
                  estAngleMean = list(angle = FALSE))
 
 fixPar <- list(dive = c(-100, NA, NA))
 
 nfsFits <- MIfitHMM(crwOut, nSims = nSims, ncores = ncores, nbStates = nbStates, dist = dist,
-                    Par0 = Par0, DM = DM, workBounds = cons,
+                    Par0 = Par0, DM = DM, workBounds = workBounds,
                     estAngleMean = list(angle = FALSE), 
                     fixPar = fixPar, retryFits = retryFits,
                     stateNames=stateNames)

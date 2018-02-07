@@ -294,7 +294,7 @@ fitHaggisDMp <- fitHMM(data = processedHaggis, nbStates = 2,
                        formula = ~ slope + I(slope^2),
                        estAngleMean = list(angle=TRUE))
 @
-\noindent (note that column and rownames for pseudo-design matrices are not required but can be useful). Pseudo-design matrices allow for the sharing of common working parameters (such as intercept terms) among natural scale parameters, and this can be used to constrain natural scale parameters (e.g., $\mu_1 \le \mu_2$) when used in tandem with the \verb|cons| argument.  This is particularly useful for preventing state label switching when repeatedly fitting the same HMM using multiple imputation methods (see section \ref{sec:mi}).
+\noindent (note that column and rownames for pseudo-design matrices are not required but can be useful). Pseudo-design matrices allow for the sharing of common working parameters (such as intercept terms) among natural scale parameters, and this can be used to constrain natural scale parameters (e.g., $\mu_1 \le \mu_2$) when used in tandem with the \verb|workBounds| argument (see section \ref{sec:harbourSeal}).  This is particularly useful for preventing state label switching when repeatedly fitting the same HMM using multiple imputation methods (see section \ref{sec:mi}).
 
 \subsection{Circular-circular regression model for the angle mean}
 \label{sec:circ}
@@ -539,17 +539,17 @@ nbStates <- 3
 stateNames <- c("resting", "foraging", "transit")
 dist <- list(step = "gamma", angle = "wrpcauchy", dive = "pois")
 Par0 <- getParDM(nbStates = nbStates, dist = dist,
-                 Par = Par, DM = DM, cons = cons,
+                 Par = Par, DM = DM, workBounds = workBounds,
                  estAngleMean = list(angle = FALSE))
 Fixpar <- list(dive = c(-100, NA, NA))
 nfsFits <- MIfitHMM(crwOut, nSims = 100, nbStates = nbStates, dist = dist,
-                    Par0 = Par0, DM = DM, cons = cons,
+                    Par0 = Par0, DM = DM, workBounds = workBounds,
                     estAngleMean = list(angle = FALSE), 
                     fixPar = fixPar, retryFits = 30,
                     stateNames=stateNames)
 plot(nfsFits)
 @
-Here we specified a gamma distribution for step length (`step'), wrapped Cauchy distribution for turning angle (`angle'), and Poisson distribution for the number of foraging dives (`dive'). The function \verb|getParDM| was used to organize the starting values for the data stream working parameters (\verb|Par0|) in the correct format based on \verb|DM|, \verb|cons|, and estimates of the natural parameters (\verb|Par|) from \cite{McClintockEtAl2014b}. The \verb|DM| and \verb|cons| arguments were specified to avoid label switching among the \verb|nSims| imputed data model fits and enforce similar state-dependent probability distribution constraints as \cite{McClintockEtAl2014b}; for example, constraining the Poisson rate parameters such that the ``foraging'' state tends to have higher numbers of foraging dives than the ``transit'' state ($\lambda_2 > \lambda_3$; see Eq. \ref{eq:link} in section \ref{sec:harbourSeal} for more details on parameter constraints using \verb|DM| in conjunction with the \verb|userBounds|, \verb|cons|, and \verb|workcons| arguments). To prohibit foraging dives for the ``resting'' state, we used the \verb|fixPar| argument to effectively fix the Poisson rate parameter to zero on the natural scale (i.e. $\lambda_1 \approx 0$).  To help deal with the problem of convergence to local maxima, the \verb|retryFits| argument allows users to specify the number of times to attempt to re-fit each model using random perturbations of the parameter estimates as the starting values for optimization.
+Here we specified a gamma distribution for step length (`step'), wrapped Cauchy distribution for turning angle (`angle'), and Poisson distribution for the number of foraging dives (`dive'). The function \verb|getParDM| was used to organize the starting values for the data stream working parameters (\verb|Par0|) in the correct format based on \verb|DM|, \verb|workBounds|, and estimates of the natural parameters (\verb|Par|) from \cite{McClintockEtAl2014b}. The \verb|DM| and \verb|workBounds| arguments were specified to avoid label switching among the \verb|nSims| imputed data model fits and enforce similar state-dependent probability distribution constraints as \cite{McClintockEtAl2014b}; for example, constraining the Poisson rate parameters such that the ``foraging'' state tends to have higher numbers of foraging dives than the ``transit'' state ($\lambda_2 > \lambda_3$; see Eq. \ref{eq:link} in section \ref{sec:harbourSeal} for more details on parameter constraints using \verb|DM| in conjunction with the \verb|userBounds| and \verb|workBounds| arguments). To prohibit foraging dives for the ``resting'' state, we used the \verb|fixPar| argument to effectively fix the Poisson rate parameter to zero on the natural scale (i.e. $\lambda_1 \approx 0$).  To help deal with the problem of convergence to local maxima, the \verb|retryFits| argument allows users to specify the number of times to attempt to re-fit each model using random perturbations of the parameter estimates as the starting values for optimization.
 
 The results are very similar to those of the discrete-time model of \cite{McClintockEtAl2014b}, with periods of foraging often followed by resting (Figure \ref{fig:nfsResults}).  The ``activity budgets'' (i.e. the proportion of time steps allocated to each state) calculated by \verb|MIpool| based on the estimated state sequences for each imputation were \Sexpr{round(as.numeric(nfsTimeInStates$est["resting"]),2)} (95\% CI: \Sexpr{round(as.numeric(nfsTimeInStates$lower["resting"]),2)}$-$\Sexpr{round(as.numeric(nfsTimeInStates$upper["resting"]),2)}) for ``resting'', \Sexpr{round(as.numeric(nfsTimeInStates$est["foraging"]),2)} (95\% CI: \Sexpr{round(as.numeric(nfsTimeInStates$lower["foraging"]),2)}$-$\Sexpr{round(as.numeric(nfsTimeInStates$upper["foraging"]),2)}) for ``foraging'', and \Sexpr{round(as.numeric(nfsTimeInStates$est["transit"]),2)} (95\% CI: \Sexpr{round(as.numeric(nfsTimeInStates$lower["transit"]),2)}$-$\Sexpr{round(as.numeric(nfsTimeInStates$upper["transit"]),2)}) for ``transit''.
 
@@ -864,28 +864,41 @@ The three fitted model can be compared with \verb|AIC(m1,m2,m3)|, which overwhel
 
 \subsection{Harbour seals}
 \label{sec:harbourSeal}
-Here we demonstrate how more complicated parameter constraints can be implemented using the \verb|userBounds|, \verb|cons|, and \verb|workcons| arguments in \verb|fitHMM| and \verb|MIfitHMM|. This example is based on the harbour seal analysis of \cite{McClintockEtAl2013c}. Using individual-level random effects on probability distribution parameters, \cite{McClintockEtAl2013c} performed a Bayesian analysis of population-level activity budgets for 3-states (``resting'', ``foraging'', and ``transit''). While \verb|momentuHMM| cannot be used to replicate this analysis exactly, we can perform a similar analysis in the absence of individual-level random effects. Here we will focus on several specific parameter constraints, but the full example code can be found in the ``vignettes'' source directory. 
+Here we demonstrate how more complicated parameter constraints can be implemented using the \verb|userBounds| and \verb|workBounds| arguments in \verb|fitHMM| and \verb|MIfitHMM|. This example is based on the harbour seal analysis of \cite{McClintockEtAl2013c}. Using individual-level random effects on probability distribution parameters, \cite{McClintockEtAl2013c} performed a Bayesian analysis of population-level activity budgets for 3-states (``resting'', ``foraging'', and ``transit''). While \verb|momentuHMM| cannot be used to replicate this analysis exactly, we can perform a similar analysis in the absence of individual-level random effects. Here we will focus on several specific parameter constraints, but the full example code can be found in the ``vignettes'' source directory. 
 
 The harbour seal data consist of 17 individuals (10 male, 7 female) and, as in the northern fur example in section \ref{sec:nfs}, both location and dive activity data. The location data were obtained at temporally-irregular intervals, while the dive activity data were obtained at regular 2-hour time steps. We therefore first used \verb|crawlWrap| to fit and predict locations for all 17 tracks at 2-hour time steps and then used \verb|crawlMerge| to merge the predicted locations with the dive activity data. We then fitted several different models assuming: 1) no individual- or sex-level effects on all parameters (i.e., the ``null'' model); 2) sex-level effects on all parameters; and 3) individual-level effects on all parameters.  Based on \verb|fitHMM| fits for the best predicted tracks, AIC overwhelmingly supported the model including individual-level effects on all parameters, but for simplicity we will use the model including no individual- or sex-level effects to demonstrate how the constraints of \cite{McClintockEtAl2013c} can be implemented in \verb|momentuHMM|.  In addition to the lack of individual-level random effects in our example, we also depart from \cite{McClintockEtAl2013c} in our use of zero-inflation parameters to account for steps of length zero (i.e., $l_t=0$) and time steps with no dive activity (i.e., $\omega_t=0$). Unlike \cite{McClintockEtAl2013c}, note that our model 3 also includes individual-level fixed effects on the state transition probabilities.
 
 \cite{McClintockEtAl2013c} fit their 3-state model using more complicated constraints on the probability distribution parameters than any of our previous vignette examples. In addition to relational constraints among the ``resting'', ``foraging'', and ``transit'' states similar to those used in the northern fur seal example (section \ref{sec:nfs}), these constraints included upper bounds for the shape and scale parameters of the Weibull distribution for step length, a minimum value for the ``transit'' concentration parameter of the wrapped Cauchy distribution for turning angle, and bounds on the shape parameters of the beta distribution for dive activity specifically chosen to prevent any ``bathtub'' shaped distributions for the proportion of each time step spent diving below 1.5m. 
 
-Before we can demonstrate how to implement these constraints, we should first provide more detail on exactly how the \verb|DM|, \verb|userBounds|, \verb|cons|, and \verb|workcons| arguments work together in \verb|momentuHMM|. While the \verb|DM| argument should now be familiar, we have thus far spent little time discussing the latter three arguments. The \verb|userBounds| argument specifies the lower and upper bounds for the natural scale parameters as a 2-column matrix.  The \verb|workcons| argument can be used to add some constant to working scale parameters and, in conjunction with the \verb|cons| argument, impose more complicated constraints on the natural scale parameters than could be achieved using \verb|userBounds| or \verb|cons| alone. Specifically, \verb|momentuHMM| calculates natural scale parameters with finite bounds as
+Before we can demonstrate how to implement these constraints, we should first provide more detail on exactly how the \verb|DM|, \verb|userBounds|, and \verb|workBounds| arguments work together in \verb|momentuHMM|. While the \verb|DM| argument should now be familiar, we have thus far spent little time discussing the latter two arguments. The \verb|userBounds| argument specifies the lower and upper bounds for the natural scale parameters as a 2-column matrix.  By default all working scale parameters $({\boldsymbol \beta}_\theta)$ are bounded on the real line, but the \verb|workBounds| argument can be used to specify the lower and upper bounds for the working scale parameters as a 2-column matrix.  Specifically, \verb|momentuHMM| calculates natural scale parameters with finite bounds as
 \begin{eqnarray}
 \label{eq:link}
-{\boldsymbol \theta} &=&  \left({\mathbf U}_\theta - {\mathbf L}_\theta \right) g^{-1} \left( {\mathbf X}_\theta  {\boldsymbol \beta}_\theta^* \right) + {\mathbf L}_\theta \nonumber \\ 
-{\boldsymbol \beta}_\theta^* &=& {\mathbf W}_\theta + {\boldsymbol \beta}_\theta^{\circ {\mathbf C}_\theta}
+{\boldsymbol \theta} &=&  \left({\mathbf U}_\theta - {\mathbf L}_\theta \right) g^{-1} \left( {\mathbf X}_\theta  {\boldsymbol \beta}_\theta^* \right) + {\mathbf L}_\theta, \nonumber
 %A^{\circ\frac12}
 \end{eqnarray}
-where ${\mathbf W}_\theta$ is a $K$-vector of \verb|workcons| values, ${\mathbf C}_\theta$ is a $K$-vector of \verb|cons| values specifying the element-wise power to which to raise each of the working scale parameters $({\boldsymbol \beta}_\theta)$, ${\mathbf L}_\theta$ is the lower bound on the natural scale, and ${\mathbf U}_\theta$ is the upper bound on the natural scale.  Note that ${\boldsymbol \beta}_\theta^*={\boldsymbol \beta}_\theta$ under the default values for \verb|cons| (a $K$-vector of ones) and \verb|workcons| (a $K$-vector of zeros). For natural scale parameters with finite lower bounds and infinite upper bounds, we have
+where %${\mathbf W}_\theta$ is a $K$-vector of \verb|workcons| values, ${\mathbf C}_\theta$ is a $K$-vector of \verb|cons| values specifying the element-wise power to which to raise each of the working scale parameters $({\boldsymbol \beta}_\theta)$, 
+${\mathbf L}_\theta$ is the lower bound on the natural scale and ${\mathbf U}_\theta$ is the upper bound on the natural scale.  Note that ${\boldsymbol \beta}_\theta^*={\boldsymbol \beta}_\theta$ under the default values for \verb|workBounds|. For natural scale parameters with finite lower bounds and infinite upper bounds, we have
 \begin{eqnarray*}
 {\boldsymbol \theta} =  g^{-1} \left( {\mathbf X}_\theta  {\boldsymbol \beta}_\theta^* \right) + {\mathbf L}_\theta.
 %A^{\circ\frac12}
 \end{eqnarray*}
-Although optimization within \verb|fitHMM| and \verb|MIfitHMM| is performed on ${\boldsymbol \beta}_\theta$, note that ${\boldsymbol \beta}_\theta^*$ (and a delta method approximation for the variance of this transformation) is returned by \verb|CIbeta| and \verb|print| function calls.  
 
-For the Weibull distribution parameters for step length, \cite{McClintockEtAl2013c} constrained the shape parameter $a_s<5$ (to prevent too ``peaked'' distributions) and the scale parameter less than the maximum distance a harbour seal could travel in 2 hours at 2 m/s (i.e., $b_s<14400$m) for $s \in \{1=\text{``resting''},2=\text{``foraging''},3=\text{``transit''} \}$. They also constrained $b_3\ge b_2 \ge b_1$.  This is easily accomplished in \verb|momentuHMM| using the \verb|DM|, \verb|cons|, and \verb|userBounds| arguments:
-<<spec-hsStep, echo=TRUE, eval=FALSE>>=
+When \verb|workBounds| is specified, then additional link functions are used on the working scale parameters.  For example, for working scale parameters with finite bounds, we have
+\begin{eqnarray*}
+{\boldsymbol \beta}_\theta^* &=&  \left({\mathbf U}_{\beta_\theta} - {\mathbf L}_{\beta_\theta} \right) \text{logit}^{-1} \left( {\boldsymbol \beta}_\theta \right) + {\mathbf L}_{\beta_\theta},
+\end{eqnarray*}
+where ${\mathbf L}_{\beta_\theta}$ is the lower bound on the working scale and ${\mathbf U}_{\beta_\theta}$ is the upper bound on the working scale. When constraining working parameters with finite lower bounds (e.g. zero) and infinite upper bounds, we have
+\begin{eqnarray*}
+{\boldsymbol \beta}_\theta^* =  \exp \left( {\boldsymbol \beta}_\theta \right) + {\mathbf L}_{\beta_\theta}.
+\end{eqnarray*}
+When constraining working parameters with infinite lower bounds and finite upper bounds (e.g. zero), we have
+\begin{eqnarray*}
+{\boldsymbol \beta}_\theta^* =  - \left( \exp \left( -{\boldsymbol \beta}_\theta \right) - {\mathbf U}_{\beta_\theta} \right).
+\end{eqnarray*}
+Although optimization within \verb|fitHMM| and \verb|MIfitHMM| is always performed on ${\boldsymbol \beta}_\theta$, note that ${\boldsymbol \beta}_\theta^*$ (and a delta method approximation for the variance of this transformation) is returned by \verb|CIbeta| and \verb|print| function calls.  
+
+For the Weibull distribution parameters for step length, \cite{McClintockEtAl2013c} constrained the shape parameter $a_s<5$ (to prevent too ``peaked'' distributions) and the scale parameter less than the maximum distance a harbour seal could travel in 2 hours at 2 m/s (i.e., $b_s<14400$m) for $s \in \{1=\text{``resting''},2=\text{``foraging''},3=\text{``transit''} \}$. They also constrained $b_3\ge b_2 \ge b_1$.  This is easily accomplished in \verb|momentuHMM| using the \verb|DM|, \verb|userBounds|, and \verb|workBounds| arguments:
+<<spec-hsStep, echo=TRUE, eval=TRUE>>=
 nbStates <- 3
 stateNames <- c("resting", "foraging", "transit")
 dist <- list(step = "weibull", angle = "wrpcauchy", dive = "beta")
@@ -904,7 +917,8 @@ stepDM<-matrix(c(1,0,0,0,0,0,0,0,0,
                       c(paste0("shape_",1:nbStates,":(Intercept)"),
                         "scale:(Intercept)","scale_2","scale_3",
                         paste0("zeromass_",1:nbStates,":(Intercept)"))))
-stepcons<-c(1,1,1,1,2,2,1,1,1)
+stepworkBounds<-matrix(c(rep(-Inf,4),0,0,rep(-Inf,3),
+                   rep(Inf,ncol(stepDM))),ncol(stepDM),2)
 stepBounds<-matrix(c(0,5,
                      0,5,
                      0,5,
@@ -918,11 +932,17 @@ stepBounds<-matrix(c(0,5,
                                     paste0("scale_",1:nbStates),
                                     paste0("zeromass_",1:nbStates))))
 @
+When included in \verb|workBounds| and \verb|userBounds| for the step length data stream, `stepworkBounds' and `stepBounds' above constrain the parameters $\beta^*_{l,5}>0$ and $\beta^*_{l,6}>0$ such that $14400 \ge b_3 \ge b_2 \ge b_1 \ge 0$:
+\begin{eqnarray*}
+b_1 &=& \left(14400-0\right) \text{logit}^{-1} \left( \beta_{l,4} \right) + 0 \\
+b_2 &=& \left(14400-0\right) \text{logit}^{-1} \left( \beta_{l,4} + \exp(\beta_{l,5}) + 0 \right) + 0 \\
+b_3 &=& \left(14400-0\right) \text{logit}^{-1} \left( \beta_{l,4} + \exp(\beta_{l,5}) + 0 + \exp(\beta_{l,6}) + 0\right) + 0.
+\end{eqnarray*}
 
-In order to force the ``transit'' state to have strong directional persistence, \cite{McClintockEtAl2013c} constrained the concentration parameter $\rho_3>0.75$. In the absence of relational constraints, \verb|userBounds| could be used to constrain $\rho_3>0.75$.  However, because we also wish to constrain  $\rho_2 \le \rho_3$, we must make use of the \verb|workcons| argument.  We can constrain $\rho_3 \ge 0.75$, $\rho_2 \le \rho_3$, and $\rho_s \le 0.95$ $(s \in \{ 1,2,3 \})$ using the following combination of \verb|DM|, \verb|userBounds|, \verb|cons|, and \verb|workcons| arguments:
-<<spec-hsAngle, echo=TRUE, eval=FALSE>>=
+In order to force the ``transit'' state to have strong directional persistence, \cite{McClintockEtAl2013c} constrained the concentration parameter $\rho_3>0.75$. In the absence of relational constraints, \verb|userBounds| could be used to constrain $\rho_3>0.75$.  However, because we also wish to constrain  $\rho_2 \le \rho_3$, we must make use of the \verb|workBounds| argument.  We can constrain $\rho_3 \ge 0.75$, $\rho_2 \le \rho_3$, and $\rho_s \le 0.95$ $(s \in \{ 1,2,3 \})$ using the following combination of \verb|DM|, \verb|userBounds|, and \verb|workBounds| arguments:
+<<spec-hsAngle, echo=TRUE, eval=TRUE>>=
 angleDM <- matrix(c(1,0,0,
-                    0,1,-1,
+                    0,1,1,
                     0,1,0),nrow=nbStates,byrow=TRUE,
                   dimnames=list(paste0("concentration_",1:nbStates),
                                 c("concentration_1:(Intercept)",
@@ -932,36 +952,44 @@ angleBounds <- matrix(c(0,0.95,
                         0,0.95,
                         0,0.95),nrow=nbStates,byrow=TRUE,
                       dimnames=list(paste0("concentration_",1:nbStates)))
-anglecons <- c(1,2,2)
 transitcons <- boot::logit((0.75 - angleBounds[3,1])
                            /(angleBounds[3,2] - angleBounds[3,1]))
-angleworkcons <- c(0,transitcons,0)
+angleworkBounds <- matrix(c(-Inf,transitcons,-Inf,
+                            rep(Inf,2),0),ncol(angleDM),2)
 @
-Here we constrained $\rho_s \le 0.95$ to avoid numerical convergence issues that can arise with sparse data sets as $\rho_s \rightarrow 1$. Also note that when using \verb|workcons| to enforce a specific constraint on the natural scale, \verb|userBounds| should not also include the corresponding natural parameter constraint(s). For example, because we are constraining $\rho_3 \ge 0.75$ with the \verb|workcons| argument, we did not also include a $0.75$ lower bound for $\rho_3$ in `angleBounds' above.
+\noindent When `angleworkBounds' and `angleBounds' are respectively included in \verb|workBounds| and \verb|userBounds| for the turning angle data stream, this yields
+\begin{eqnarray*}
+\rho_1 &=& \left(0.95-0\right) \text{logit}^{-1} \left( \beta_{\phi,1} \right) + 0 \\
+\rho_2 &=& \left(0.95-0\right) \text{logit}^{-1} \left( \exp(\beta_{\phi,2}) + \Sexpr{round(transitcons,2)} - \left( \exp(-\beta_{\phi,3} ) - 0 \right) \right) + 0 \\
+\rho_3 &=& \left(0.95-0\right) \text{logit}^{-1} \left( \exp(\beta_{\phi,2}) + \Sexpr{round(transitcons,2)} \right) + 0.
+\end{eqnarray*}
+Here we constrained $\rho_s \le 0.95$ to avoid numerical convergence issues that can arise with sparse data sets as $\rho_s \rightarrow 1$. Also note that when using \verb|workBounds| to enforce a specific constraint on the natural scale, \verb|userBounds| should not also include the corresponding natural parameter constraint(s). For example, because we are constraining $\rho_3 \ge 0.75$ with the \verb|workBounds| argument, we did not also include a $0.75$ lower bound for $\rho_3$ in `angleBounds' above.
 
 For the beta distribution of the dive activity data, \cite{McClintockEtAl2013c} constrained the shape1 $(\upsilon_s)$ and shape2 $(\delta_s)$ parameters as follows:
 \begin{eqnarray*}
 1 \le \upsilon_1 \le \delta_1 \le 10 \\
 1 \le \delta_2 \le \upsilon_2 \le 10
 \end{eqnarray*}
-where $\upsilon_2=\upsilon_3$ and $\delta_2=\delta_3$. These constraints can be imposed using the following combination of \verb|DM|, \verb|userBounds|, and \verb|cons| arguments:
+where $\upsilon_2=\upsilon_3$ and $\delta_2=\delta_3$. These constraints can be imposed using the following combination of \verb|DM|, \verb|userBounds|, and \verb|workBounds| arguments:
 <<spec-hsDive, echo=TRUE, eval=FALSE>>=
-omegaDM <- matrix(c(1,0,0,0,0,0,0,
-                    0,0,1,1,0,0,0,
-                    0,0,1,1,0,0,0,
-                    1,1,0,0,0,0,0,
-                    0,0,1,0,0,0,0,
-                    0,0,1,0,0,0,0,
-                    0,0,0,0,1,0,0,
-                    0,0,0,0,0,1,0,
-                    0,0,0,0,0,0,1),nrow=nbStates*3,byrow=TRUE,
+omegaDM <- matrix(c(1,0,0,0,0,0,
+                    0,0,1,1,0,0,
+                    0,0,1,1,0,0,
+                    1,1,0,0,0,0,
+                    0,0,1,0,0,0,
+                    0,0,1,0,0,0,
+                    0,0,0,0,1,0,
+                    0,0,0,0,0,1,
+                    0,0,0,0,0,1),nrow=nbStates*3,byrow=TRUE,
                 dimnames=list(c(paste0("shape1_",1:nbStates),
                                 paste0("shape2_",1:nbStates),
                                 paste0("zeromass_",1:nbStates)),
                               c("shape_1:(Intercept)","shape2_1",
                                 "shape_2:(Intercept)","shape1_2",
-                                paste0("zeromass_",1:nbStates,":(Intercept)"))))
-omegacons <- c(1,2,1,2,1,1,1)
+                                "zeromass_1:(Intercept)",
+                                "zeromass_23:(Intercept)")))
+omegaworkBounds <- matrix(c(-Inf,0,-Inf,0,-Inf,-Inf,
+                            rep(Inf,ncol(omegaDM))),ncol(omegaDM),2)
 omegaBounds <- matrix(c(1,10,
                         1,10,
                         1,10,
@@ -978,18 +1006,17 @@ omegaBounds <- matrix(c(1,10,
 Lastly, we wish to impose some biologically-meaningful constraints on the zero-inflation parameters using the \verb|fixPar| argument. Because we would never expect a harbour seal in the ``transit'' state to exhibit a step length of zero, it makes sense to constrain the zero-mass step length parameter for the ``transit'' state to (effectively) zero.  Similarly, we would not expect a harbour seal in the ``foraging'' or ``transit'' states to exhibit no dive activity, and it therefore also makes sense to constrain the zero-mass dive activity parameters for these states to zero.  We can accomplish this using the following \verb|fixPar| argument:
 <<spec-hsFixPar, echo=TRUE, eval=FALSE>>=
 fixPar <- list(step=c(rep(NA,nbStates*2),NA,NA,boot::logit(1.e-100)),
-             omega=c(rep(NA,(nbStates-1)*2),NA,rep(boot::logit(1.e-100),2)))
+             omega=c(rep(NA,4),NA,boot::logit(1.e-100)))
 @
 Putting it all together, we can fit our constrained model assuming no individual- or sex-level effects using \verb|MIfitHMM|:
 <<fit-hs, echo=TRUE, eval=FALSE>>=
 DM <- list(step = stepDM, angle = angleDM, omega = omegaDM)
-cons <- list(step = stepcons, angle = anglecons, omega = omegacons)
 userBounds <- list(step = stepBounds, angle = angleBounds, omega = omegaBounds)
-workcons <- list(angle = angleworkcons)
+workBounds <- list(step = stepworkBounds, angle = angleworkBounds, omega = omegaworkBounds)
 hsFits <- MIfitHMM(crwOut, nSims = 30,
                    nbStates = nbStates, dist = dist, Par0 = Par0,
-                   DM = DM, cons = cons, 
-                   userBounds = userBounds, workcons = workcons,
+                   DM = DM, workBounds = workBounds, 
+                   userBounds = userBounds, workBounds = workBounds,
                    fixPar = fixPar, stateNames = stateNames)
 @
 
