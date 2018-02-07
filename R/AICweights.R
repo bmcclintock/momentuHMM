@@ -46,7 +46,7 @@
 #' 
 
 AICweights <- function (..., k=2, n=NULL) {
-	UseMethod("AICweights")
+  UseMethod("AICweights")
 }
 
 #' @method AICweights momentuHMM
@@ -54,9 +54,9 @@ AICweights <- function (..., k=2, n=NULL) {
 AICweights.momentuHMM <- function(..., k=2, n=NULL)
 {
   models <- list(...)
-
+  
   modNames <- all.vars(match.call()) # store the names of the models given as arguments
-
+  
   if(any(!unlist(lapply(models,is.momentuHMM)))) stop("all model objects must be of the same class")
   
   if(length(models)<2) stop("at least 2 momentuHMM objects must be provided")
@@ -67,16 +67,16 @@ AICweights.momentuHMM <- function(..., k=2, n=NULL)
   
   # compute AICs of models
   aic <- rep(NA,length(models))
-
+  
   for(i in 1:length(models)) {
     aic[i] <- AIC.momentuHMM(models[[i]],k=k,n=n)
   }
-
+  
   ord <- order(aic) # order models by increasing AIC
   weight <- exp(-0.5*(aic-min(aic)))/sum(exp(-0.5*(aic-min(aic))))
   
   return(data.frame(Model=modNames[ord],weight=weight[ord]))
-
+  
 }
 
 #' @method AICweights miHMM
@@ -84,9 +84,9 @@ AICweights.momentuHMM <- function(..., k=2, n=NULL)
 AICweights.miHMM <- function(...,k=2, n=NULL)
 {
   models <- list(...)
-
+  
   modNames <- all.vars(match.call()) # store the names of the models given as arguments
-
+  
   if(any(!unlist(lapply(models,is.miHMM)) & !unlist(lapply(models,is.HMMfits)))) stop("all model objects must be of class miHMM or HMMfits")
   
   for(i in which(unlist(lapply(models,is.miHMM)))){
@@ -123,13 +123,13 @@ AICweights.miHMM <- function(...,k=2, n=NULL)
   
   # compute AICs of models
   aic <- matrix(NA,length(models),nSims)
-
+  
   for(i in 1:length(models)) {
     for(j in iSims){
       aic[i,j] <- AIC.momentuHMM(models[[i]][[j]],k=k,n=n)
     }
   }
-
+  
   weights <- apply(aic,2,function(x) exp(-0.5*(x-min(x)))/sum(exp(-0.5*(x-min(x)))))
   weight <- apply(weights,1,mean,na.rm=TRUE)
   #se <- sqrt((nSims+1)/(nSims*(nSims-1))*rowSums((weights-weight)^2))

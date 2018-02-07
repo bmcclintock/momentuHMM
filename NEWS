@@ -1,4 +1,4 @@
-momentuHMM 1.4.0 2018-01-31
+momentuHMM 1.4.0 2018-02-07
 -----------------
 NEW FEATURES
 
@@ -16,6 +16,11 @@ NEW FEATURES
 
 * sample size (n) argument added to AIC.momentuHMM for calculating small sample corrected AIC (i.e. AICc)
 
+<<<<<<< HEAD
+=======
+* retrySD argument added to fitHMM and MIfitHMM for specifying standard deviation of random normal perturbations when using retryFits
+
+>>>>>>> develop
 CHANGES
 
 * For multiple imputation analyses, pseudoRes (and plotPR) now calculate (and plot) pseudo-residuals individually for each model fit
