@@ -4,7 +4,7 @@
 \alias{MIpool}
 \title{Calculate pooled parameter estimates and states across multiple imputations}
 \usage{
-MIpool(HMMfits, alpha = 0.95, ncores, covs = NULL)
+MIpool(HMMfits, alpha = 0.95, ncores = 1, covs = NULL)
 }
 \arguments{
 \item{HMMfits}{List comprised of \code{\link{momentuHMM}} objects}

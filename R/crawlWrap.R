@@ -101,7 +101,7 @@
 #' @importFrom sp coordinates
 #' @importFrom utils capture.output
 
-crawlWrap<-function(obsData, timeStep=1, ncores, retryFits = 0,
+crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0,
                     mov.model = ~1, err.model = NULL, activity = NULL, drift = NULL, 
                     coord = c("x", "y"), Time.name = "time", initial.state, theta, fixPar, 
                     method = "L-BFGS-B", control = NULL, constr = NULL, 

@@ -4,7 +4,7 @@
 \alias{MIfitHMM}
 \title{Fit HMMs to multiple imputation data}
 \usage{
-MIfitHMM(miData, nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
+MIfitHMM(miData, nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
   nbStates, dist, Par0, beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
   circularAngleMean = NULL, formula = ~1, formulaDelta = ~1,
   stationary = FALSE, verbose = 0, nlmPar = NULL, fit = TRUE,
