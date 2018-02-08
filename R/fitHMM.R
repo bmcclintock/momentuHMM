@@ -479,6 +479,9 @@ fitHMM <- function(data,nbStates,dist,
   
   # build design matrix for t.p.m.
   covsCol <- get_all_vars(newformula,data)#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+  if(!all(names(covsCol) %in% names(data))){
+    covsCol <- covsCol[,names(covsCol) %in% names(data),drop=FALSE]
+  }
   covs <- model.matrix(newformula,data)
   if(nrow(covs)!=nrow(data)) stop("covariates cannot contain missing values")
   nbCovs <- ncol(covs)-1 # substract intercept column

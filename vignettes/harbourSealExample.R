@@ -240,7 +240,8 @@ Par0.ind<-getPar0(bestFit,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaD
 registerDoParallel(cores=ncores) 
 bestFit.all<-foreach(i=1:N) %dopar% {
   data.ind<-subset(hsData,ID==i)
-  tmpPar0 <- Par0
+  tmpPar1 <- Par0
+  tmpPar2 <- getPar0(bestFit)
   if(!all(data.ind$step>0,na.rm=TRUE)){
     tmpstepDM<-stepDM
     tmpstepworkBounds<-stepworkBounds
@@ -250,16 +251,22 @@ bestFit.all<-foreach(i=1:N) %dopar% {
     tmpstepDM<-stepDM[1:(2*nbStates),1:(2*nbStates)]
     tmpstepworkBounds<-stepworkBounds[1:(2*nbStates),]
     tmpstepBounds<-stepBounds[1:(2*nbStates),]
-    tmpPar0$step<-tmpPar0$step[1:(2*nbStates)]
+    tmpPar1$step<-tmpPar1$step[1:(2*nbStates)]
+    tmpPar2$Par$step<-tmpPar2$Par$step[1:(2*nbStates)]
     tmpfixPar<-fixPar
     tmpfixPar$step<-NULL
   }
-  fit<-tryCatch(fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,nlmPar=list(steptol=1.e-9)),error=function(e) e)
-  if(inherits(fit,"error")){
-    tmpPar0 <- getPar0(bestFit)
-    tmpPar0$Par$step<-tmpPar0$Par$step[1:(2*nbStates)]
-    fit<-fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0$Par,beta0=tmpPar0$beta,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,nlmPar=list(steptol=1.e-9))
-  }
+  tryFits <- list()
+  tryFits[[1]]<-tryCatch(fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar1,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,nlmPar=list(steptol=1.e-9)),error=function(e) e)
+  tryFits[[2]]<-tryCatch(fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar2$Par,beta0=tmpPar2$beta,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,nlmPar=list(steptol=1.e-9)),error=function(e) e)
+  
+  if(inherits(tryFits[[1]],"error") & inherits(tryFits[[2]],"error")) stop("both sets of starting values failed for individual ",i)
+  
+  if(inherits(tryFits[[1]],"error")){
+    fit <- tryFits[[2]]
+  } else if(inherits(tryFits[[2]],"error")){
+    fit <- tryFits[[1]]
+  } else fit <- tryFits[[which.min(c(tryFits[[1]]$mod$minimum,tryFits[[2]]$mod$minimum))]]
   
   # double check optimization with "Nelder-Mead" method
   tmpPar0 <- getPar0(fit)
