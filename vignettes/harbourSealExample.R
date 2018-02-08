@@ -254,7 +254,12 @@ bestFit.all<-foreach(i=1:N) %dopar% {
     tmpfixPar<-fixPar
     tmpfixPar$step<-NULL
   }
-  fit<-fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,nlmPar=list(steptol=1.e-9))
+  fit<-tryCatch(fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,nlmPar=list(steptol=1.e-9)),error=function(e) e)
+  if(inherits(fit,"error")){
+    tmpPar0 <- getPar0(bestFit)
+    tmpPar0$Par$step<-tmpPar0$Par$step[1:(2*nbStates)]
+    fit<-fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0$Par,beta0=tmpPar0$beta,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,nlmPar=list(steptol=1.e-9))
+  }
   
   # double check optimization with "Nelder-Mead" method
   tmpPar0 <- getPar0(fit)
@@ -351,4 +356,4 @@ plot(miSum.ind,plotCI=TRUE,ask=FALSE)
 
 save.image("harbourSealExample.RData")
 
-setRNG::setRNG(oldRNG)
+setRNG(oldRNG)
