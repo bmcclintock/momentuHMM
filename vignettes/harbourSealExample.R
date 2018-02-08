@@ -312,7 +312,7 @@ miBestFit.all<-foreach(i=1:N) %dopar% {
   tmpfixPar<-fixPar
   tmpfixPar$step<-NULL
   
-  fit<-MIfitHMM(data.ind,ncores=1,poolEstimates=FALSE,
+  fit<-MIfitHMM(data.ind,poolEstimates=FALSE,
                 nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0$Par,beta0=tmpPar0$beta,delta0=tmpPar0$delta,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,
                 covNames=c("sex"),retryFits=5,nlmPar=list(steptol=1.e-8))
 }

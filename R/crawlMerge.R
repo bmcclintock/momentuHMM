@@ -26,7 +26,7 @@
 #'
 #' # Fit crwMLE models to obsData and predict locations 
 #' # at default intervals for both individuals
-#' crwOut <- crawlWrap(obsData=obsData,ncores=1,
+#' crwOut <- crawlWrap(obsData=obsData,
 #'          theta=c(4,0),fixPar=c(1,1,NA,NA),
 #'          initial.state=inits,
 #'          err.model=err.model,attempts=100)

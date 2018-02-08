@@ -63,12 +63,12 @@ inits <- miExample$inits
 err.model <- miExample$err.model
 
 # Fit crawl to obsData
-crwOut <- crawlWrap(obsData,ncores=1,theta=c(4,0),fixPar=c(1,1,NA,NA),
+crwOut <- crawlWrap(obsData,theta=c(4,0),fixPar=c(1,1,NA,NA),
                     initial.state=inits,err.model=err.model)
                     
 # Fit four imputations
 bPar <- miExample$bPar
-HMMfits <- MIfitHMM(crwOut,nSims=4,ncores=1,poolEstimates=FALSE,
+HMMfits <- MIfitHMM(crwOut,nSims=4,poolEstimates=FALSE,
                    nbStates=2,dist=list(step="gamma",angle="vm"),
                    Par0=bPar$Par,beta0=bPar$beta,delta0=bPar$delta,
                    formula=~cov1+cos(cov2),
@@ -76,7 +76,7 @@ HMMfits <- MIfitHMM(crwOut,nSims=4,ncores=1,poolEstimates=FALSE,
                    covNames=c("cov1","cov2"))
                    
 # Pool estimates
-miSum <- MIpool(HMMfits,ncores=1)
+miSum <- MIpool(HMMfits)
 plot(miSum)
 }
 }

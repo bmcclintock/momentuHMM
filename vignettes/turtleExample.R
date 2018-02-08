@@ -21,7 +21,7 @@ constr=list(lower=c(rep(log(1000*0.534),3),rep(log(1000*0.301),3),rep(-Inf,2)),#
 
 predTimes <- seq(as.POSIXlt("2012-11-20 02:00:00 UTC",tz="UTC"),as.POSIXlt("2012-12-19 04:00:00 UTC",tz="UTC"),"2 hours")
 
-crwOut<-crawlWrap(turtleData,ncores=1,retryFits=retryFits,Time.name="time",
+crwOut<-crawlWrap(turtleData,retryFits=retryFits,Time.name="time",
                   err.model=err.model,initial.state=inits,
                   theta=c(7.730711, 8.216563, 8.505832, 7.103412, 7.245771, 7.935648, 5.371427, -10.677923),fixPar = fixPar, constr=constr,
                   predTime=predTimes) 

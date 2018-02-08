@@ -292,7 +292,7 @@ miBestFit.all<-foreach(i=1:N) %dopar% {
   tmpfixPar<-fixPar
   tmpfixPar$step<-NULL
   
-  fit<-MIfitHMM(data.ind,nSims=nSims,ncores=1,poolEstimates=FALSE,
+  fit<-MIfitHMM(data.ind,nSims=nSims,poolEstimates=FALSE,
                 nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0$Par,beta0=tmpPar0$beta,delta0=tmpPar0$delta,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),cons=list(step=tmpstepcons,angle=anglecons,omega=omegacons),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),workcons=list(angle=angleworkcons),fixPar=tmpfixPar,stateNames=stateNames,
                 covNames=c("sex","negCons"))
 }

@@ -43,7 +43,7 @@ inits <- miExample$inits # initial state
 err.model <- miExample$err.model # error ellipse model
 
 # create crwData object
-crwOut <- crawlWrap(obsData=obsData,ncores=1,
+crwOut <- crawlWrap(obsData=obsData,
          theta=c(4,0),fixPar=c(1,1,NA,NA),
          initial.state=inits,
          err.model=err.model)

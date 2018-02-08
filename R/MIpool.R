@@ -3,7 +3,7 @@
 #' 
 #' @param HMMfits List comprised of \code{\link{momentuHMM}} objects
 #' @param alpha Significance level for calculating confidence intervals of pooled estimates (including location error ellipses). Default: 0.95.
-#' @param ncores Number of cores to use for parallel processing.
+#' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param covs Data frame consisting of a single row indicating the covariate values to be used in the calculation of pooled natural parameters. 
 #' For any covariates that are not specified using \code{covs}, the means of the covariate(s) across the imputations are used 
 #' (unless the covariate is a factor, in which case the first factor in the data is used). By default, no covariates are specified.
@@ -33,12 +33,12 @@
 #' err.model <- miExample$err.model
 #' 
 #' # Fit crawl to obsData
-#' crwOut <- crawlWrap(obsData,ncores=1,theta=c(4,0),fixPar=c(1,1,NA,NA),
+#' crwOut <- crawlWrap(obsData,theta=c(4,0),fixPar=c(1,1,NA,NA),
 #'                     initial.state=inits,err.model=err.model)
 #'                     
 #' # Fit four imputations
 #' bPar <- miExample$bPar
-#' HMMfits <- MIfitHMM(crwOut,nSims=4,ncores=1,poolEstimates=FALSE,
+#' HMMfits <- MIfitHMM(crwOut,nSims=4,poolEstimates=FALSE,
 #'                    nbStates=2,dist=list(step="gamma",angle="vm"),
 #'                    Par0=bPar$Par,beta0=bPar$beta,delta0=bPar$delta,
 #'                    formula=~cov1+cos(cov2),
@@ -46,7 +46,7 @@
 #'                    covNames=c("cov1","cov2"))
 #'                    
 #' # Pool estimates
-#' miSum <- MIpool(HMMfits,ncores=1)
+#' miSum <- MIpool(HMMfits)
 #' print(miSum)
 #' }
 #' @export
@@ -58,7 +58,7 @@
 #' @importFrom car dataEllipse
 #' @importFrom mitools MIcombine
 #' @importFrom MASS ginv
-MIpool<-function(HMMfits,alpha=0.95,ncores,covs=NULL){
+MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   im <- HMMfits
   simind <- which((unlist(lapply(im,is.momentuHMM))))

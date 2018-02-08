@@ -4,7 +4,7 @@
 \alias{MIfitHMM}
 \title{Fit HMMs to multiple imputation data}
 \usage{
-MIfitHMM(miData, nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
+MIfitHMM(miData, nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
   nbStates, dist, Par0, beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
   circularAngleMean = NULL, formula = ~1, formulaDelta = ~1,
   stationary = FALSE, verbose = NULL, nlmPar = NULL, fit = TRUE,
@@ -23,7 +23,7 @@ MIfitHMM(miData, nSims, ncores, poolEstimates = TRUE, alpha = 0.95,
 \item{nSims}{Number of imputations in which to fit the HMM using \code{\link{fitHMM}}. If \code{miData} is a list of \code{momentuHMMData} 
 objects, \code{nSims} cannot exceed the length of \code{miData}.}
 
-\item{ncores}{Number of cores to use for parallel processing.}
+\item{ncores}{Number of cores to use for parallel processing. Default: 1 (no parallel processing).}
 
 \item{poolEstimates}{Logical indicating whether or not to calculate pooled parameter estimates across the \code{nSims} imputations using \code{\link{MIpool}}. Default: \code{TRUE}.}
 
@@ -187,7 +187,7 @@ err.model <- miExample$err.model # error ellipse model
 
 # create crwData object by fitting crwMLE models to obsData and predict locations 
 # at default intervals for both individuals
-crwOut <- crawlWrap(obsData=obsData,ncores=1,
+crwOut <- crawlWrap(obsData=obsData,
          theta=c(4,0),fixPar=c(1,1,NA,NA),
          initial.state=inits,
          err.model=err.model)
@@ -219,7 +219,7 @@ print(bestFit)
 bPar0 <- getPar(bestFit)
 
 # Fit nSims=5 imputations of the position process
-miFits<-MIfitHMM(miData=crwOut,nSims=5,ncores=1,
+miFits<-MIfitHMM(miData=crwOut,nSims=5,
                   nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
                   Par0=bPar0$Par,beta0=bPar0$beta,delta0=bPar0$delta,
                   formula=formula,estAngleMean=list(angle=TRUE),

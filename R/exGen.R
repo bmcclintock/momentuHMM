@@ -61,7 +61,7 @@ exGen <- function()
   
   obsData<-simObsData(data,lambda=2,errorEllipse=list(M=c(0,50),m=c(0,50),r=0))
   
-  crwOut <- crawlWrap(obsData,ncores=1,theta=c(4,0),fixPar=c(1,1,NA,NA),
+  crwOut <- crawlWrap(obsData,theta=c(4,0),fixPar=c(1,1,NA,NA),
    initial.state=inits,
    err.model=err.model)
   
@@ -71,7 +71,7 @@ exGen <- function()
   
   bPar<-getPar(bestFit)
   
-  miFits<-MIfitHMM(crwOut,nSims=4,ncores=1,nbStates=nbStates,Par0=bPar$Par,beta0=bPar$beta,
+  miFits<-MIfitHMM(crwOut,nSims=4,nbStates=nbStates,Par0=bPar$Par,beta0=bPar$beta,
                     delta0=bPar$delta,formula=formula,dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE),
                     covNames=c("cov1","cov2"))
   

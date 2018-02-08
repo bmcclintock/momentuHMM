@@ -8,7 +8,7 @@ nSims <- 400 # number of imputatons
 ncores <- 7 # number of CPU cores
 
 # fit crawl functions
-crwOut<-crawlWrap(greySealData,ncores=1,err.model=list(x=~ln.sd.x-1,y=~ln.sd.y-1,rho=~error.corr),
+crwOut<-crawlWrap(greySealData,err.model=list(x=~ln.sd.x-1,y=~ln.sd.y-1,rho=~error.corr),
                   initial.state=list(a=c(greySealData$x[1],0,greySealData$y[1],0),P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 5000 ^ 2, 10 * 3600 ^ 2))),
                   theta=c(4.269033, -9.230745),fixPar=c(1,1,NA,NA),attempts=100,
                   timeStep="2 hours")

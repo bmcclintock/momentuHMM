@@ -4,12 +4,12 @@
 \alias{crawlWrap}
 \title{Fit and predict tracks for using crawl}
 \usage{
-crawlWrap(obsData, timeStep = 1, ncores, retryFits = 0, mov.model = ~1,
-  err.model = NULL, activity = NULL, drift = NULL, coord = c("x", "y"),
-  Time.name = "time", initial.state, theta, fixPar, method = "L-BFGS-B",
-  control = NULL, constr = NULL, prior = NULL, need.hess = TRUE,
-  initialSANN = list(maxit = 200), attempts = 1, predTime = NULL,
-  fillCols = FALSE)
+crawlWrap(obsData, timeStep = 1, ncores = 1, retryFits = 0,
+  mov.model = ~1, err.model = NULL, activity = NULL, drift = NULL,
+  coord = c("x", "y"), Time.name = "time", initial.state, theta, fixPar,
+  method = "L-BFGS-B", control = NULL, constr = NULL, prior = NULL,
+  need.hess = TRUE, initialSANN = list(maxit = 200), attempts = 1,
+  predTime = NULL, fillCols = FALSE)
 }
 \arguments{
 \item{obsData}{data.frame object containing fields for animal ID ('ID'), time of observation (identified by \code{Time.name}, must be numeric or POSIXct), 
@@ -23,7 +23,7 @@ is \code{seq(a_i,b_i,timeStep)} where a_i and b_i are the times of the first and
 whether \code{obsData[[Time.name]]} is numeric or POSIXct) or a character string (if \code{obsData[[Time.name]]} is of class POSIXct) containing one of "sec", "min", "hour", "day", "DSTday", "week", "month", "quarter" or "year". 
 This can optionally be preceded by a positive integer and a space, or followed by "s" (e.g., ``2 hours''; see \code{\link[base]{seq.POSIXt}}). \code{timeStep} is not used for individuals for which \code{predTime} is specified.}
 
-\item{ncores}{Number of cores to use for parallel processing.}
+\item{ncores}{Number of cores to use for parallel processing. Default: 1 (no parallel processing).}
 
 \item{retryFits}{Number of times to attempt to achieve convergence and valid (i.e., not NaN) variance estimates after the initial model fit. \code{retryFits} differs
 from \code{attempts} because \code{retryFits} iteratively uses random perturbations of the current parameter estimates as the initial values for likelihood optimization, while 
@@ -111,14 +111,14 @@ err.model <- miExample$err.model # error ellipse model
 
 # Fit crwMLE models to obsData and predict locations 
 # at default intervals for both individuals
-crwOut1 <- crawlWrap(obsData=obsData,ncores=1,
+crwOut1 <- crawlWrap(obsData=obsData,
          theta=c(4,0),fixPar=c(1,1,NA,NA),
          initial.state=inits,
          err.model=err.model,attempts=100)
 
 # Fit the same crwMLE models and predict locations 
 # at same intervals but specify for each individual using lists
-crwOut2 <- crawlWrap(obsData=obsData,ncores=1,
+crwOut2 <- crawlWrap(obsData=obsData,
          theta=list(c(4,0),c(4,0)), fixPar=list(c(1,1,NA,NA),c(1,1,NA,NA)),
          initial.state=list(inits,inits),
          err.model=list(err.model,err.model),

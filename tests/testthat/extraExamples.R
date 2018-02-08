@@ -138,7 +138,7 @@ data8<-simObsData(data7,lambda,errorEllipse) # alternatively, lambda and errorEl
 # fit crawl::crwMLE and predict locations at regular intervals using crawl::crwPredict
 err.model <- list(x=~ln.sd.x-1, y=~ln.sd.y-1, rho=~error.corr) # error ellipse model
 inits <- list(a=c(0,0,0,0),P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 5000 ^ 2, 10 * 3600 ^ 2))) # initial state
-crwOut<-crawlWrap(data8,ncores=1,retryFits=2,err.model=err.model,initial.state=inits,theta=c(4,0),fixPar=c(1,1,NA,NA),attempts=100)
+crwOut<-crawlWrap(data8,retryFits=2,err.model=err.model,initial.state=inits,theta=c(4,0),fixPar=c(1,1,NA,NA),attempts=100)
 plot(crwOut,ask=FALSE)
 
 # fit best predicted locations
@@ -149,14 +149,14 @@ plot(bestFit,plotCI=TRUE,ask=FALSE)
 plotStates(bestFit,ask=FALSE)
 
 # fit 4 realizations of the position process using multiple imputation
-miSims <- MIfitHMM(crwOut,nSims=4,ncores=1,fit=FALSE)
+miSims <- MIfitHMM(crwOut,nSims=4,fit=FALSE)
 
 miFits <- list()
 miFits$HMMfits <- MIfitHMM(miSims$miData,nSims=4,ncores=4,poolEstimates=FALSE,
                            nbStates=nbStates,Par=Par0,DM=list(step=stepDM,angle=angleDM),estAngleMean=list(angle=TRUE),circularAngleMean=list(angle=TRUE),dist=list(step="gamma",angle="wrpcauchy"),
                            centers=activityCenters,
                            parIS=0,fullPost=FALSE)
-withCallingHandlers(miFits$miSum <-  MIpool(miFits$HMMfits,ncores=1),warning=function(w){if(any(grepl("NaNs produced",w)) | any(grepl("Hessian is singular",w))) invokeRestart("muffleWarning")})
+withCallingHandlers(miFits$miSum <-  MIpool(miFits$HMMfits),warning=function(w){if(any(grepl("NaNs produced",w)) | any(grepl("Hessian is singular",w))) invokeRestart("muffleWarning")})
 miFits <- miHMM(miFits)
 
 # print pooled estimates
