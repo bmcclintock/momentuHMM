@@ -219,12 +219,12 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
         distnames <- names(predData)[which(!(names(predData) %in% c("ID","x","y",covNames,znames)))]
       }
       
-      if(all(unlist(lapply(model_fits,function(x) is.null(x$err.model))))) stop("Multiple realizations of the position process cannot be drawn if there is no location measurement error")
+      #if(all(unlist(lapply(model_fits,function(x) is.null(x$err.model))))) stop("Multiple realizations of the position process cannot be drawn if there is no location measurement error")
       cat('Drawing',nSims,'realizations from the position process using crawl::crwPostIS... ')
       
       registerDoParallel(cores=ncores)
       crwSim <- foreach(i = 1:length(ids), .export="crwSimulator") %dopar% {
-        if(!is.null(model_fits[[i]]$err.model))
+        #if(!is.null(model_fits[[i]]$err.model))
           crawl::crwSimulator(model_fits[[i]],predTime=predData[[Time.name]][which(predData$ID==ids[i] & predData$locType=="p")], method = method, parIS = parIS,
                                   df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, force.quad = force.quad)
       }
@@ -236,13 +236,13 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
         foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass") %dopar% {
           locs<-data.frame()
           for(i in 1:length(ids)){
-            if(!is.null(model_fits[[i]]$err.model)){
+            #if(!is.null(model_fits[[i]]$err.model)){
               tmp<-tryCatch({crawl::crwPostIS(crwSim[[i]], fullPost = fullPost, df = dfPostIS, scale = scalePostIS, thetaSamp = thetaSamp)},error=function(e) e)
               if(!all(class(tmp) %in% c("crwIS","list"))) stop('crawl::crwPostIS error for individual ',ids[i],'; ',tmp,'  Check crwPostIS arguments, crawl::crwMLE model fits, and/or consult crawl documentation.')
               locs<-rbind(locs,tmp$alpha.sim[,c("mu.x","mu.y")])
-            } else {
-              locs<-rbind(locs,predData[which(predData$ID==ids[i]),c("mu.x","mu.y")])
-            }
+            #} else {
+            #  locs<-rbind(locs,predData[which(predData$ID==ids[i]),c("mu.x","mu.y")])
+            #}
           }
           df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
           prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs)
