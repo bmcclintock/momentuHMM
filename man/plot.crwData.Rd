@@ -5,7 +5,7 @@
 \title{Plot \code{crwData}}
 \usage{
 \method{plot}{crwData}(x, animals = NULL, compact = FALSE, ask = TRUE,
-  plotEllipse = TRUE, ...)
+  plotEllipse = TRUE, crawlPlot = FALSE, ...)
 }
 \arguments{
 \item{x}{An object \code{crwData} (as returned by \code{\link{crawlWrap}}).}
@@ -14,16 +14,18 @@
 Default: \code{NULL} ; all animals are plotted.}
 
 \item{compact}{\code{TRUE} for a compact plot (all individuals at once), \code{FALSE} otherwise
-(default -- one individual at a time).}
+(default -- one individual at a time). Ignored unless \code{crwPredictPlot=FALSE}.}
 
 \item{ask}{If \code{TRUE}, the execution pauses between each plot.}
 
-\item{plotEllipse}{If \code{TRUE} (the default) then error ellipses are plotted (if applicable)}
+\item{plotEllipse}{If \code{TRUE} (the default) then error ellipses are plotted (if applicable). Ignored unless \code{crwPredictPlot=FALSE}.}
 
-\item{...}{Currently unused. For compatibility with generic method.}
+\item{crawlPlot}{Logical indicating whether or not to create individual plots using \code{\link[crawl]{crwPredictPlot}}. See \code{\link[crawl]{crwPredictPlot}} for details.}
+
+\item{...}{Further arguments for passing to \code{\link[crawl]{crwPredictPlot}}}
 }
 \description{
-Plot observed locations, predicted locations, and error ellipses (if applicable) from \code{\link{crwData}} object.
+Plot observed locations, error ellipses (if applicable), predicted locations, and prediction intervals from \code{\link{crwData}} object.
 }
 \details{
 In order for error ellipses to be plotted, the names for the semi-major axis, semi-minor axis, and 
@@ -51,4 +53,7 @@ crwOut <- crawlWrap(obsData=obsData,
 plot(crwOut,compact=TRUE,ask=FALSE,plotEllipse=FALSE)
 }
 
+}
+\seealso{
+\code{\link[crawl]{crwPredictPlot}}
 }

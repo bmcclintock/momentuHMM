@@ -20,6 +20,8 @@ NEW FEATURES
 
 * sample size (n) argument added to AIC.momentuHMM for calculating small sample corrected AIC (i.e. AICc)
 
+* crawlPlot argument added to plot.crwData as a wrapper for crawl::crwPredictPlot
+
 CHANGES
 
 * For multiple imputation analyses, pseudoRes (and plotPR) now calculate (and plot) pseudo-residuals individually for each model fit
