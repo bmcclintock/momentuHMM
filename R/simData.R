@@ -421,6 +421,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(!estAngleMean[[i]]){
         estAngleMean[[i]]<-TRUE
         userBounds[[i]]<-rbind(matrix(rep(c(-pi,pi),nbStates),nbStates,2,byrow=TRUE),userBounds[[i]])
+        workBounds[[i]]<-rbind(matrix(rep(c(-Inf,Inf),nbStates),nbStates,2,byrow=TRUE),workBounds[[i]])
         cons[[i]] <- c(rep(1,nbStates),cons[[i]])
         workcons[[i]] <- c(rep(0,nbStates),workcons[[i]])
         if(!is.null(DM[[i]])){
@@ -436,6 +437,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         }
         model$conditions$estAngleMean[[i]]<-estAngleMean[[i]]
         model$conditions$userBounds[[i]]<-userBounds[[i]]
+        model$conditions$workBounds[[i]]<-workBounds[[i]]
         model$conditions$cons[[i]]<-cons[[i]]
         model$conditions$workcons[[i]]<-workcons[[i]]
         model$conditions$DM[[i]]<-DM[[i]]
