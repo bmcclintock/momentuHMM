@@ -280,7 +280,7 @@ bestFit.all<-foreach(i=1:N) %dopar% {
 }
 stopImplicitCluster()
 
-#specify initial values for full model based on individual model fits (note this is identical to fitting each track individually but much slower to fit)
+#specify initial values for full model based on individual model fits (note this is identical to fitting each track individually but is much slower to fit)
 for(i in 1:N){
   bfPar<-getPar0(bestFit.all[[i]])
   Par0.ind$Par$step[match(paste0(colnames(stepDM),"ID",i),names(Par0.ind$Par$step),nomatch=0)]<-bfPar$Par$step[match(names(Par0.ind$Par$step),paste0(colnames(stepDM),"ID",i),nomatch=0)]
@@ -289,7 +289,7 @@ for(i in 1:N){
   Par0.ind$beta[paste0("ID",i),]<-bfPar$beta
   Par0.ind$delta[paste0("ID",i),]<-bestFit.all[[i]]$CIbeta$delta$est
 }  
-bestFit.ind<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),formula=~ID+0,formulaDelta=~ID+0,Par0=Par0.ind$Par,beta0=Par0.ind$beta,delta0=Par0.ind$delta,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),workBounds=list(step=stepworkBounds.ind,angle=angleworkBounds.ind,omega=omegaworkBounds.ind),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar.ind,stateNames=stateNames,nlmPar=list(steptol=1.e-9))
+bestFit.ind<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),formula=~ID+0,formulaDelta=~ID+0,Par0=Par0.ind$Par,beta0=Par0.ind$beta,delta0=Par0.ind$delta,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),workBounds=list(step=stepworkBounds.ind,angle=angleworkBounds.ind,omega=omegaworkBounds.ind),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar.ind,stateNames=stateNames,optMethod="Nelder-Mead",control=list(maxit=100000,abstol=1.e-9))
 
 #################################################################################################################################
 ## compare models using AIC
