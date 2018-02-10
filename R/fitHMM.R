@@ -912,6 +912,7 @@ fitHMM <- function(data,nbStates,dist,
     wpar <- mod$estimate
     if(length(wparIndex)) wpar[wparIndex] <- unlist(fixPar)[wparIndex]
     mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
+    
   }
   else {
     mod <- NA
