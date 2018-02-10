@@ -457,7 +457,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       }
       # (weighted by the proportion of each state in the Viterbi states sequence)
       if(m$conditions$zeroInflation[[i]] | m$conditions$oneInflation[[i]]){
-        genDensities[[state]] <- cbind(grid,(1-zeroMass[[i]][state])*(1-oneMass[[i]][state])*w[state]*do.call(genFun,genArgs))
+        genDensities[[state]] <- cbind(grid,(1-zeroMass[[i]][state]-oneMass[[i]][state])*w[state]*do.call(genFun,genArgs))
       } else if(infInd) {
         genDensities[[state]] <- cbind(grid,(1-zeroMass$step[state])*w[state]*do.call(genFun,genArgs))
       } else {
