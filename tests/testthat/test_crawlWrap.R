@@ -25,14 +25,20 @@ test_that("Exceptions are thrown",{
                P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 
                           5000 ^ 2, 10 * 3600 ^ 2)))
   fixPar<-c(1,1,NA,NA)
-  expect_error(crawlWrap(obsData,initial.state=init,err.model=err.model,theta=theta,fixPar=fixPar,attempts=100,retryFits=0),NA)
+
+  expect_error(crwOut<-crawlWrap(obsData,ncores=1,initial.state=init,err.model=err.model,theta=theta,fixPar=fixPar,attempts=100,retryFits=0),NA)
+  expect_error(plot(crwOut,ask=FALSE),NA)
+  expect_error(plot(crwOut,ask=FALSE,crawlPlot=TRUE),NA)
   
   # temporally irregular data with measurement error
   obsData <- miExample$obsData
   init <- miExample$inits
   
   fixPar<-c(1,1,NA,NA)
-  expect_error(crawlWrap(obsData,initial.state=init,err.model=err.model,theta=theta,fixPar=fixPar,attempts=100,retryFits=0),NA)
+
+  expect_error(crwOut<-crawlWrap(obsData,ncores=1,initial.state=init,err.model=err.model,theta=theta,fixPar=fixPar,attempts=100,retryFits=0),NA)
+  expect_error(plot(crwOut,ask=FALSE),NA)
+  expect_error(plot(crwOut,ask=FALSE,crawlPlot=TRUE),NA)
   
   # temporally regular data without measurement error data
   obsData <- simData(model=example$m)
