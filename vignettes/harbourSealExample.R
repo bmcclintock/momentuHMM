@@ -311,22 +311,54 @@ registerDoParallel(cores=ncores)
 miBestFit.all<-foreach(i=1:N) %dopar% {
   data.ind<- lapply(miData$miData,function(x) subset(x,ID==i))
   
-  tmpstepDM<-stepDM[1:(2*nbStates),1:(2*nbStates)]
-  tmpstepworkBounds<-stepworkBounds[1:(2*nbStates),]
-  tmpstepBounds<-stepBounds[1:(2*nbStates),]
-  tmpPar0<-getPar0(bestFit.all[[i]])
-  if(any(tmpPar0$delta==0)){
-    tmpPar0$delta[which(tmpPar0$delta==0)]<-1.e-100
-    tmpPar0$delta<-log(tmpPar0$delta[-1]/tmpPar0$delta[1])
-    tmpPar0$delta<-exp(c(0,tmpPar0$delta))/sum(exp(c(0,tmpPar0$delta)))
+  tmpPar1 <- Par0
+  tmpPar2 <- getPar0(bestFit.all[[i]])
+  if(!all(data.ind$step>0,na.rm=TRUE)){
+    tmpstepDM<-stepDM
+    tmpstepworkBounds<-stepworkBounds
+    tmpstepBounds<-stepBounds
+  } else {
+    tmpstepDM<-stepDM[1:(2*nbStates),1:(2*nbStates)]
+    tmpstepworkBounds<-stepworkBounds[1:(2*nbStates),]
+    tmpstepBounds<-stepBounds[1:(2*nbStates),]
+    tmpPar1$step<-tmpPar1$step[1:(2*nbStates)]
+    tmpPar2$Par$step<-tmpPar2$Par$step[1:(2*nbStates)]
   }
-  tmpPar0$Par$step<-tmpPar0$Par$step[1:(2*nbStates)]
   tmpfixPar<-fixPar
   tmpfixPar$step<-NULL
   
-  fit<-MIfitHMM(data.ind,poolEstimates=FALSE,
-                nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0$Par,beta0=tmpPar0$beta,delta0=tmpPar0$delta,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,
-                covNames=c("sex"),retryFits=5,nlmPar=list(steptol=1.e-8))
+  tryFits <- list()
+  tryFits[[1]]<-MIfitHMM(data.ind,poolEstimates=FALSE,
+                nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar1,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,
+                covNames=c("sex"),retryFits=5,nlmPar=list(steptol=1.e-9))
+  tryFits[[2]]<-MIfitHMM(data.ind,poolEstimates=FALSE,
+                           nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar2$Par,beta0=tmpPar2$beta,delta0=tmpPar2$delta,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,
+                           covNames=c("sex"),retryFits=5,nlmPar=list(steptol=1.e-9))
+  
+  fit <- list()
+  for(j in 1:nSims){
+    if(inherits(tryFits[[1]][[j]],"error") & inherits(tryFits[[2]][[j]],"error")) stop("both sets of starting values failed for individual ",i)
+    
+    if(inherits(tryFits[[1]][[j]],"error")){
+      fit[[j]] <- tryFits[[2]][[j]]
+    } else if(inherits(tryFits[[2]][[j]],"error")){
+      fit[[j]] <- tryFits[[1]][[j]]
+    } else fit[[j]] <- tryFits[[which.min(c(tryFits[[1]][[j]]$mod$minimum,tryFits[[2]][[j]]$mod$minimum))]][[j]]
+  }
+  
+  # double check optimization with "Nelder-Mead" method
+  tmpPar0 <- lapply(fit,function(x) {
+    tmp<-getPar0(x);
+    if(any(tmp$delta==1)){
+      del0 <- rep(1.e-100,nbStates)
+      del0[which(tmp$delta==1)] <- 1-1.e-100*(nbStates-1)
+    } else del0 <- tmp$delta
+    tmp})
+  
+  MIfitHMM(data.ind,poolEstimates=FALSE,
+                nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=lapply(tmpPar0,function(x) x$Par),beta0=lapply(tmpPar0,function(x) x$beta),delta0=lapply(tmpPar0,function(x) x$delta),DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,
+                covNames=c("sex"),optMethod="Nelder-Mead",control=list(maxit=100000,abstol=1.e-9))
+  
 }
 stopImplicitCluster()
 
