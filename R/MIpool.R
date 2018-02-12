@@ -461,7 +461,10 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
       cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
       registerDoParallel(cores=ncores)
       errorEllipse<-foreach(i = 1:nrow(mh$data)) %dopar% {
-        car::dataEllipse(cbind(unlist(lapply(im,function(x) x$data$x[i])),unlist(lapply(im,function(x) x$data$y[i]))),levels=alpha,draw=FALSE,segments=100)
+        tmp <- cbind(unlist(lapply(im,function(x) x$data$x[i])),unlist(lapply(im,function(x) x$data$y[i])))
+        if(length(unique(tmp[,1]))>1 | length(unique(tmp[,2]))>1)
+          ellip <- car::dataEllipse(tmp,levels=alpha,draw=FALSE,segments=100)
+        else ellip <- matrix(tmp[1,],101,2,byrow=TRUE)
       }
       stopImplicitCluster()
       cat("DONE\n")
