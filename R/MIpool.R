@@ -61,6 +61,7 @@
 MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   im <- HMMfits
+  goodIndex <- 1:length(im)
   simind <- which((unlist(lapply(im,is.momentuHMM))))
   nsims <- length(simind)
   if(nsims<1) stop("'HMMfits' must be a list comprised of momentuHMM objects")
@@ -69,6 +70,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   if(length(checkmove)) {
     im[checkmove]<-NULL
     warning("The following imputations are not momentuHMM objects and will be ignored: ",paste(checkmove,collapse=", "))
+    goodIndex <- goodIndex[-checkmove]
   }
   checksims <- lapply(im,function(x) x[match("conditions",names(x))])
   ident <- !unlist(lapply(checksims,function(x) isTRUE(all.equal(x,checksims[[1]]))))
@@ -81,19 +83,51 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   tmpDet <- which(unlist(lapply(im,function(x) det(x$mod$hessian)))==0)
   if(length(tmpDet)){
-    warning("Hessian is singular for HMM fit(s): ",paste0(tmpDet,collapse=", "))
+    warning("Hessian is singular for HMM fit(s): ",paste0(goodIndex[tmpDet],collapse=", "))
   }
   
   tmpVar <- which(unlist(lapply(im,function(x) any(class(tryCatch(ginv(x$mod$hessian),error=function(e) e)) %in% "error"))))
   if(length(tmpVar)){
-    warning("ginv of the hessian failed for HMM fit(s): ",paste0(tmpVar,collapse=", "))
+    warning("ginv of the hessian failed for HMM fit(s): ",paste0(goodIndex[tmpVar],collapse=", "))
     im[tmpVar] <- NULL
     nsims <- length(im)
+    goodIndex <- goodIndex[-tmpVar]
   }
   
   im <- lapply(im,delta_bc)
-  
   m <- im[[1]]
+  
+  tempcons<-rep(1,length(m$mod$estimate))
+  tempworkcons<-rep(0,length(m$mod$estimate))
+  tempcons[1:length(unlist(m$conditions$cons))]<-unlist(m$conditions$cons)
+  tempworkcons[1:length(unlist(m$conditions$workcons))]<-unlist(m$conditions$workcons)
+  
+  wBounds <- cbind(unlist(lapply(m$conditions$workBounds,function(x) x[,1])),unlist(lapply(m$conditions$workBounds,function(x) x[,2])))
+  
+  # check for finite coefficients and standard errors
+  betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%ginv(x$mod$hessian)%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
+  betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
+  tmpVar1 <- which(unlist(lapply(betaCoeff,function(x) any(!is.finite(x)))))
+  if(length(tmpVar1)){
+    warning("working parameter estimates are not finite for HMM fits ",paste0(goodIndex[tmpVar1],collapse=", ")," and will not be included in pooling")
+    im[tmpVar1] <- NULL
+    m <- im[[1]]
+    nsims <- length(im)
+    betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%ginv(x$mod$hessian)%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
+    betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
+    goodIndex <- goodIndex[-tmpVar1]
+  }
+  tmpVar2 <- which(unlist(lapply(betaVar,function(x) any(!is.finite(x)))))
+  if(length(tmpVar2)){
+    warning("working parameter standard errors are not finite for HMM fits ",paste0(goodIndex[tmpVar2],collapse=", ")," and will not be included in pooling")
+    im[tmpVar2] <- NULL
+    m <- im[[1]]
+    nsims <- length(im)
+    betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
+    betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%ginv(x$mod$hessian)%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
+    goodIndex <- goodIndex[-tmpVar2]
+  }
+  
   data <- m$data
   nbStates <- length(m$stateNames)
   dist <- m$conditions$dist
@@ -138,13 +172,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     names(parindex)[length(parindex)-1] <- "delta"
   }
   
-  tempcons<-rep(1,length(m$mod$estimate))
-  tempworkcons<-rep(0,length(m$mod$estimate))
-  tempcons[1:length(unlist(m$conditions$cons))]<-unlist(m$conditions$cons)
-  tempworkcons[1:length(unlist(m$conditions$workcons))]<-unlist(m$conditions$workcons)
-  
-  wBounds <- cbind(unlist(lapply(m$conditions$workBounds,function(x) x[,1])),unlist(lapply(m$conditions$workBounds,function(x) x[,2])))
-  miBeta <- mitools::MIcombine(results=lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds)),variances=lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%ginv(x$mod$hessian)%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons))))
+  miBeta <- mitools::MIcombine(results=betaCoeff,variances=betaVar)
   
   for(parm in 1:nparms){
     
