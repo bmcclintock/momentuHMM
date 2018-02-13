@@ -44,12 +44,14 @@
 
 pseudoRes <- function(m, ncores = 1)
 {
+  m <- delta_bc(m)
+  
   if(!is.momentuHMM(m) & !is.miSum(m)){
-    if(!is.miHMM(m) & !all(unlist(lapply(m,is.momentuHMM)))) stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
+    if(!is.miHMM(m) & !is.HMMfits(m)) stop("'m' must be a momentuHMM, HMMfits, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
     else {
       if(is.miHMM(m)) m <- m$HMMfits
       registerDoParallel(cores=ncores)
-      genRes <- foreach(i=1:length(m)) %dopar% {
+      genRes <- foreach(i=which(unlist(lapply(m,is.momentuHMM)))) %dopar% {
         pseudoRes(m[[i]])
       }
       stopImplicitCluster()
@@ -73,6 +75,9 @@ pseudoRes <- function(m, ncores = 1)
         Par[[i]] <- m$Par$beta[[i]]$est
       else if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]])
         Par[[i]] <- Par[[i]][-1,]
+      
+      m$conditions$cons[[i]]<-rep(1,length(m$conditions$cons[[i]]))
+      m$conditions$workcons[[i]]<-rep(0,length(m$conditions$workcons[[i]]))
     }
     Par<-lapply(Par,function(x) c(t(x)))
     Par<-Par[distnames]
