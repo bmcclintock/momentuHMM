@@ -37,11 +37,17 @@
 
 plotPR <- function(m, lag.max = NULL, ncores = 1)
 {
+  
+  m <- delta_bc(m)
+  
   nSims <- 1
   if(!is.momentuHMM(m) & !is.miSum(m)){
-    if(!is.miHMM(m) & !all(unlist(lapply(m,is.momentuHMM)))) stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
+    if(!is.miHMM(m) & !is.HMMfits(m)) stop("'m' must be a momentuHMM, HMMfits, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
     else {
       if(is.miHMM(m)) m <- m$HMMfits
+      goodIndex <- which(unlist(lapply(m,is.momentuHMM)))
+      if(length(goodIndex) < length(m))  warning("The following imputations are not momentuHMM objects and will be ignored: ",paste((1:length(m))[-goodIndex],collapse=", "))
+      m <- m[goodIndex]
       distnames <- names(m[[1]]$conditions$dist)
       nSims <- length(m)
     }

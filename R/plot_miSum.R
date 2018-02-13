@@ -70,10 +70,14 @@ plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.y
   for(i in names(m$conditions$dist)){
     m$conditions$cons[[i]]<-rep(1,length(m$conditions$cons[[i]]))
     m$conditions$workcons[[i]]<-rep(0,length(m$conditions$workcons[[i]]))
+    m$conditions$workBounds[[i]]<-matrix(c(-Inf,Inf),nrow(m$conditions$workBounds[[i]]),2,byrow=TRUE)
   }
+  if(!is.null(m$mle$beta)) m$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(m$mle$beta),2,byrow=TRUE)
+  if(!is.null(m$Par$beta$delta$est)) m$conditions$workBoundsdelta<-matrix(c(-Inf,Inf),length(m$Par$beta$delta$est),2,byrow=TRUE)
+  
   m$plotEllipse <- plotEllipse
   
-  class(m) <- append("momentuHMM",class(m))
+  m <- momentuHMM(m)
   
   plot.momentuHMM(m,animals,covs,ask,breaks,hist.ylim,sepAnimals,
                   sepStates,col,cumul,plotTracks,plotCI,alpha,...)
