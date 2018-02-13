@@ -3,7 +3,7 @@
 #'
 #' Used in functions \code{\link{viterbi}}, \code{\link{logAlpha}}, \code{\link{logBeta}}.
 #'
-#' @param m Object \code{momentuHMM}.
+#' @param m Object \code{\link{momentuHMM}} or \code{\link{miSum}}.
 #' @param nbStates Number of states of the HMM.
 #'
 #' @return Matrix of all probabilities.
@@ -16,6 +16,9 @@
 
 allProbs <- function(m,nbStates)
 {
+  
+  if(!is.momentuHMM(m) & !is.miSum(m))
+    stop("'m' must be a momentuHMM object (as output by fitHMM) or miSum object (as returned by MIpool)")
   
   m <- delta_bc(m)
   

@@ -7,7 +7,7 @@
 allProbs(m, nbStates)
 }
 \arguments{
-\item{m}{Object \code{momentuHMM}.}
+\item{m}{Object \code{\link{momentuHMM}} or \code{\link{miSum}}.}
 
 \item{nbStates}{Number of states of the HMM.}
 }
