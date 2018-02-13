@@ -73,7 +73,7 @@ plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.y
   }
   m$plotEllipse <- plotEllipse
   
-  class(m) <- append("momentuHMM",class(m))
+  m <- momentuHMM(m)
   
   plot.momentuHMM(m,animals,covs,ask,breaks,hist.ylim,sepAnimals,
                   sepStates,col,cumul,plotTracks,plotCI,alpha,...)
