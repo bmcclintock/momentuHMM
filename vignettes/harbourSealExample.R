@@ -384,7 +384,7 @@ stopImplicitCluster()
 
 registerDoParallel(cores=ncores) 
 miSum.all<-foreach(i=1:N) %dopar% {
-  MIpool(miBestFit.all[[i]],ncores=ncores)
+  MIpool(miBestFit.all[[i]])
 }
 stopImplicitCluster()
 
