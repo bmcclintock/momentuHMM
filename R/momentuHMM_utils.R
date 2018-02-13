@@ -30,7 +30,7 @@ delta_bc <- function(m){
         m$CIbeta <- CIbeta(m)
       }
     }
-  } else if(!is.miHMM(m)){
+  } else if(!is.miHMM(m) & any(unlist(lapply(m,is.momentuHMM)))){
     m <- HMMfits(m)
   }
   m
