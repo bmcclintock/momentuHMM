@@ -44,7 +44,7 @@
 
 pseudoRes <- function(m, ncores = 1)
 {
-  
+
   m <- delta_bc(m)
   
   if(!is.momentuHMM(m) & !is.miSum(m)){

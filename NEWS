@@ -24,7 +24,7 @@ NEW FEATURES
 
 CHANGES
 
-* For multiple imputation analyses, pseudoRes (and plotPR) now calculate (and plot) pseudo-residuals individually for each model fit
+* For multiple imputation analyses, pseudoRes (and plotPR) can now calculate (and plot) pseudo-residuals individually for each model fit
 
 * cons and workcons arguments are now deprecated; please use workBounds instead
 
