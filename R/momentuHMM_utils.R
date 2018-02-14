@@ -43,7 +43,14 @@ delta_bc <- function(m){
       
       workBounds <- vector('list',length(distnames))
       names(workBounds) <- distnames
-      m$conditions$workBounds <- getWorkBounds(workBounds,distnames,m$mod$estimate,parindex,parCount,m$conditions$DM,m$CIbeta$beta$est,m$CIbeta$beta$delta)
+      if(is.miSum(m)){
+        beta <- m$Par$beta$beta$est
+        delta <- m$Par$beta$delta$est
+      } else {
+        beta <- m$CIbeta$beta$est
+        delta <- m$CIbeta$delta$est
+      }
+      m$conditions$workBounds <- getWorkBounds(workBounds,distnames,m$mod$estimate,parindex,parCount,m$conditions$DM,beta,delta)
     }
 
   } else if(!is.miHMM(m) & any(unlist(lapply(m,is.momentuHMM)))){
