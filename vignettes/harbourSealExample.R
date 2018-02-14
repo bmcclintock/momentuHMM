@@ -289,7 +289,7 @@ for(i in 1:N){
   Par0.ind$beta[paste0("ID",i),]<-bfPar$beta
   Par0.ind$delta[paste0("ID",i),]<-bestFit.all[[i]]$CIbeta$delta$est
 }  
-bestFit.ind<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),formula=~ID+0,formulaDelta=~ID+0,Par0=Par0.ind$Par,beta0=Par0.ind$beta,delta0=Par0.ind$delta,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),workBounds=list(step=stepworkBounds.ind,angle=angleworkBounds.ind,omega=omegaworkBounds.ind),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar.ind,stateNames=stateNames,optMethod="Nelder-Mead",control=list(maxit=100000,abstol=1.e-9))
+bestFit.ind<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),formula=~ID+0,formulaDelta=~ID+0,Par0=Par0.ind$Par,beta0=Par0.ind$beta,delta0=Par0.ind$delta,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),workBounds=list(step=stepworkBounds.ind,angle=angleworkBounds.ind,omega=omegaworkBounds.ind),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar.ind,stateNames=stateNames,optMethod="Nelder-Mead",control=list(maxit=100000,hessian=FALSE,abstol=1.e-9))
 
 #################################################################################################################################
 ## compare models using AIC
@@ -297,7 +297,7 @@ bestFit.ind<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angle
 AIC(bestFit,bestFit.sex,bestFit.ind)
 
 # plot individual-level model
-plot(bestFit.ind,plotCI=TRUE,ask=FALSE)
+plot(bestFit.ind,ask=FALSE)
 
 #################################################################################################################################
 ## Fit individual-level effects model using MIfitHMM

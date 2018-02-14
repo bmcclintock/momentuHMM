@@ -61,7 +61,7 @@ printing occurs, a value of 1 means that the first and last iterations of the op
 detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.}
 
 \item{nlmPar}{List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
-\code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, or \code{iterlim} -- see \code{nlm}'s documentation
+\code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
 for more detail). Ignored unless \code{optMethod="nlm"}.}
 
 \item{fit}{\code{TRUE} if the HMM should be fitted to the data, \code{FALSE} otherwise. See \code{\link{fitHMM}}. If \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}}

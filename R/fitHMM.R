@@ -58,7 +58,7 @@
 #' printing occurs, a value of 1 means that the first and last iterations of the optimization are
 #' detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.
 #' @param nlmPar List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
-#' \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, or \code{iterlim} -- see \code{nlm}'s documentation
+#' \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
 #' for more detail). Ignored unless \code{optMethod="nlm"}.
 #' @param fit \code{TRUE} if an HMM should be fitted to the data, \code{FALSE} otherwise.
 #' If fit=\code{FALSE}, a model is returned with the MLE replaced by the initial parameters given in
@@ -610,10 +610,10 @@ fitHMM <- function(data,nbStates,dist,
   }
 
   # check elements of nlmPar
-  lsPars <- c("print.level","gradtol","stepmax","steptol","iterlim")
+  lsPars <- c("print.level","gradtol","stepmax","steptol","iterlim",'hessian')
   if(length(which(!(names(nlmPar) %in% lsPars)))>0)
     stop("Check the names of the elements of 'nlmPar'; they should be in
-         ('print.level','gradtol','stepmax','steptol','iterlim')")
+         ('print.level','gradtol','stepmax','steptol','iterlim','hessian')")
 
 
   ####################################
@@ -831,6 +831,12 @@ fitHMM <- function(data,nbStates,dist,
 
   if(fit) {
     
+    hessian <- TRUE
+    if(!is.null(control$hessian)){
+      hessian <- control$hessian
+      control$hessian <- NULL
+    }
+    
     fitCount<-0
     
     while(fitCount<=retryFits){
@@ -870,13 +876,13 @@ fitHMM <- function(data,nbStates,dist,
                                                nc,meanind,covsDelta,workBounds,
                                                print.level=print.level,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
-                                               iterlim=iterlim,hessian=TRUE),error=function(e) e),warning=h)
+                                               iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)),error=function(e) e),warning=h)
         } else {
           withCallingHandlers(curmod <- tryCatch(optim(wpar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                      inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                      stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
                                                      nc,meanind,covsDelta,workBounds,
-                                                     method=optMethod,control=control,hessian=TRUE),error=function(e) e),warning=h)
+                                                     method=optMethod,control=control,hessian=hessian),error=function(e) e),warning=h)
         }
         endTime <- proc.time()-startTime
       }

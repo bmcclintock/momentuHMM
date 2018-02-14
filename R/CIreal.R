@@ -108,7 +108,8 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   nbCovs <- ncol(covs)-1 # substract intercept column
 
   # inverse of Hessian
-  Sigma <- ginv(m$mod$hessian)
+  if(!is.null(m$mod$hessian)) Sigma <- ginv(m$mod$hessian)
+  else Sigma <- NULL
   
   nc <- meanind <- vector('list',length(distnames))
   names(nc) <- names(meanind) <- distnames
@@ -193,12 +194,14 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
     est <- get_gamma(wpar,tempCovMat,nbStates)
     lower<-upper<-se<-matrix(NA,nbStates,nbStates)
-    for(i in 1:nbStates){
-      for(j in 1:nbStates){
-        dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j)
-        se[i,j]<-suppressWarnings(sqrt(dN%*%Sigma[i2:i3,i2:i3]%*%dN))
-        lower[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))-quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]-quantSup*se[i,j]
-        upper[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))+quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#m$mle$gamma[i,j]+quantSup*se[i,j]
+    if(!is.null(Sigma)){
+      for(i in 1:nbStates){
+        for(j in 1:nbStates){
+          dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j)
+          se[i,j]<-suppressWarnings(sqrt(dN%*%Sigma[i2:i3,i2:i3]%*%dN))
+          lower[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))-quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]-quantSup*se[i,j]
+          upper[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))+quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#m$mle$gamma[i,j]+quantSup*se[i,j]
+        }
       }
     }
     Par$gamma <- list(est=est,se=se,lower=lower,upper=upper)
@@ -211,12 +214,14 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     delta <- matrix(wpar[foo:length(wpar)],nrow=nbCovsDelta+1)
     quantSup <- qnorm(1-(1-alpha)/2)
     lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsDelta),ncol=nbStates)
-    for(j in 1:nrow(m$covsDelta)){
-      for(i in 1:nbStates){
-        dN<-numDeriv::grad(get_delta,delta,covsDelta=m$covsDelta[j,,drop=FALSE],i=i)
-        se[j,i]<-suppressWarnings(sqrt(dN%*%Sigma[foo:length(wpar),foo:length(wpar)]%*%dN))
-        lower[j,i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))-quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[j,i])))#m$mle$delta[j,i]-quantSup*se[i]
-        upper[j,i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))+quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[j,i])))#m$mle$delta[j,i]+quantSup*se[i]
+    if(!is.null(Sigma)){
+      for(j in 1:nrow(m$covsDelta)){
+        for(i in 1:nbStates){
+          dN<-numDeriv::grad(get_delta,delta,covsDelta=m$covsDelta[j,,drop=FALSE],i=i)
+          se[j,i]<-suppressWarnings(sqrt(dN%*%Sigma[foo:length(wpar),foo:length(wpar)]%*%dN))
+          lower[j,i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))-quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[j,i])))#m$mle$delta[j,i]-quantSup*se[i]
+          upper[j,i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))+quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[j,i])))#m$mle$delta[j,i]+quantSup*se[i]
+        }
       }
     }
     est<-matrix(m$mle$delta,nrow=nrow(m$covsDelta),ncol=nbStates)
@@ -274,15 +279,17 @@ parm_list<-function(est,se,lower,upper,rnames,cnames){
 get_CI<-function(wpar,Par,m,ind,DM,DMind,Bounds,cons,workcons,Sigma,circularAngleMean,consensus,nbStates,alpha,rnames,cnames,nc,meanind,workBounds){
 
   w<-wpar[ind]
-  lower<-upper<-se<-numeric(nrow(DM))
-  for(k in 1:nrow(DM)){
-    dN<-numDeriv::grad(w2nDM,w,bounds=Bounds,DM=DM,DMind=DMind,cons=cons,workcons=workcons,nbObs=1,circularAngleMean=circularAngleMean,consensus=consensus,nbStates=nbStates,k=k,nc=nc,meanind=meanind,workBounds=workBounds)
-    se[k]<-suppressWarnings(sqrt(dN%*%Sigma[ind,ind]%*%dN))
-    lower[k] <- Par[k] - qnorm(1-(1-alpha)/2) * se[k]
-    upper[k] <- Par[k] + qnorm(1-(1-alpha)/2) * se[k]
-    #cn<-exp(qnorm(1-(1-alpha)/2)*sqrt(log(1+(se[k]/Par[k])^2)))
-    #lower[k]<-Par[k]/cn
-    #upper[k]<-Par[k]*cn
+  lower<-upper<-se<-rep(NA,nrow(DM))
+  if(!is.null(Sigma)){
+    for(k in 1:nrow(DM)){
+      dN<-numDeriv::grad(w2nDM,w,bounds=Bounds,DM=DM,DMind=DMind,cons=cons,workcons=workcons,nbObs=1,circularAngleMean=circularAngleMean,consensus=consensus,nbStates=nbStates,k=k,nc=nc,meanind=meanind,workBounds=workBounds)
+      se[k]<-suppressWarnings(sqrt(dN%*%Sigma[ind,ind]%*%dN))
+      lower[k] <- Par[k] - qnorm(1-(1-alpha)/2) * se[k]
+      upper[k] <- Par[k] + qnorm(1-(1-alpha)/2) * se[k]
+      #cn<-exp(qnorm(1-(1-alpha)/2)*sqrt(log(1+(se[k]/Par[k])^2)))
+      #lower[k]<-Par[k]/cn
+      #upper[k]<-Par[k]*cn
+    }
   }
   est<-matrix(Par,ncol=nbStates,byrow=TRUE)
   l<-matrix(lower,ncol=nbStates,byrow=TRUE)
@@ -295,15 +302,17 @@ get_CI<-function(wpar,Par,m,ind,DM,DMind,Bounds,cons,workcons,Sigma,circularAngl
 CI_angle<-function(wpar,Par,m,ind,DM,DMind,Bounds,cons,workcons,Sigma,circularAngleMean,consensus,nbStates,alpha,rnames,cnames,nc,meanind,workBounds){
   
   w<-wpar[ind]
-  lower<-upper<-se<-numeric(nrow(DM))
-  for(k in 1:nrow(DM)){
-    dN<-numDeriv::grad(w2nDMangle,w,bounds=Bounds,DM=DM,DMind=DMind,cons=cons,workcons=workcons,nbObs=1,circularAngleMean=circularAngleMean,consensus=consensus,nbStates=nbStates,k=k,nc=nc,meanind=meanind,workBounds=workBounds)
-    se[k]<-suppressWarnings(sqrt(dN%*%Sigma[ind,ind]%*%dN))
-    lower[k] <- Par[k] - qnorm(1-(1-alpha)/2) * se[k]
-    upper[k] <- Par[k] + qnorm(1-(1-alpha)/2) * se[k]
-    #cn<-exp(qnorm(1-(1-alpha)/2)*sqrt(log(1+(se[k]/Par[k])^2)))
-    #lower[k]<-Par[k]/cn
-    #upper[k]<-Par[k]*cn
+  lower<-upper<-se<-rep(NA,nrow(DM))
+  if(!is.null(Sigma)){
+    for(k in 1:nrow(DM)){
+      dN<-numDeriv::grad(w2nDMangle,w,bounds=Bounds,DM=DM,DMind=DMind,cons=cons,workcons=workcons,nbObs=1,circularAngleMean=circularAngleMean,consensus=consensus,nbStates=nbStates,k=k,nc=nc,meanind=meanind,workBounds=workBounds)
+      se[k]<-suppressWarnings(sqrt(dN%*%Sigma[ind,ind]%*%dN))
+      lower[k] <- Par[k] - qnorm(1-(1-alpha)/2) * se[k]
+      upper[k] <- Par[k] + qnorm(1-(1-alpha)/2) * se[k]
+      #cn<-exp(qnorm(1-(1-alpha)/2)*sqrt(log(1+(se[k]/Par[k])^2)))
+      #lower[k]<-Par[k]/cn
+      #upper[k]<-Par[k]*cn
+    }
   }
   est<-matrix(Par,ncol=nbStates,byrow=TRUE)
   l<-matrix(lower,ncol=nbStates,byrow=TRUE)

@@ -45,7 +45,7 @@
 #' printing occurs, a value of 1 means that the first and last iterations of the optimization are
 #' detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.
 #' @param nlmPar List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
-#' \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, or \code{iterlim} -- see \code{nlm}'s documentation
+#' \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
 #' for more detail). Ignored unless \code{optMethod="nlm"}.
 #' @param fit \code{TRUE} if the HMM should be fitted to the data, \code{FALSE} otherwise. See \code{\link{fitHMM}}. If \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}}
 #' object, then \code{MIfitHMM} returns a list containing a \code{\link{momentuHMMData}} object (if \code{nSims=1}) or, if \code{nSims>1}, a \code{\link{crwSim}} object.
@@ -191,6 +191,14 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
 {
 
   j <- NULL #gets rid of no visible binding for global variable 'j' NOTE in R cmd check
+  
+  if(poolEstimates){
+    if(optMethod=="nlm" & !is.null(nlmPar$hessian)){
+      if(!nlmPar$hessian) stop("estimates cannot be pooled unless hessian is calculated")
+    } else if(optMethod %in% fitMethods[-1] & !is.null(control$hessian)){
+      if(!control$hessian) stop("estimates cannot be pooled unless hessian is calculated")
+    }
+  }
   
   if(is.crwData(miData)){
     
