@@ -62,6 +62,8 @@ plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.y
                         sepStates=FALSE,col=NULL,cumul=TRUE,plotTracks=TRUE,plotCI=FALSE,alpha=0.95,plotEllipse=TRUE,...)
 {
   m <- x # the name "x" is for compatibility with the generic method
+  m <- delta_bc(m)
+  
   m$mle <- lapply(x$Par$real,function(x) x$est)
   m$mle$beta <- x$Par$beta$beta$est
   m$mle$delta <- x$Par$real$delta$est
