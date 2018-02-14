@@ -282,7 +282,11 @@ get_CI<-function(wpar,Par,m,ind,DM,DMind,Bounds,cons,workcons,Sigma,circularAngl
   lower<-upper<-se<-rep(NA,nrow(DM))
   if(!is.null(Sigma)){
     for(k in 1:nrow(DM)){
-      dN<-numDeriv::grad(w2nDM,w,bounds=Bounds,DM=DM,DMind=DMind,cons=cons,workcons=workcons,nbObs=1,circularAngleMean=circularAngleMean,consensus=consensus,nbStates=nbStates,k=k,nc=nc,meanind=meanind,workBounds=workBounds)
+      dN<-tryCatch(numDeriv::grad(w2nDM,w,bounds=Bounds,DM=DM,DMind=DMind,cons=cons,workcons=workcons,nbObs=1,circularAngleMean=circularAngleMean,consensus=consensus,nbStates=nbStates,k=k,nc=nc,meanind=meanind,workBounds=workBounds),error=function(e) e)
+      if(inherits(dN,"error")){
+        warning(dN)
+        dN <- rep(NaN,length(w))
+      }
       se[k]<-suppressWarnings(sqrt(dN%*%Sigma[ind,ind]%*%dN))
       lower[k] <- Par[k] - qnorm(1-(1-alpha)/2) * se[k]
       upper[k] <- Par[k] + qnorm(1-(1-alpha)/2) * se[k]
