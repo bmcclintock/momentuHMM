@@ -11,7 +11,7 @@ MIfitHMM(miData, nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
   useInitial = FALSE, DM = NULL, cons = NULL, userBounds = NULL,
   workBounds = NULL, workcons = NULL, stateNames = NULL,
   knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
-  optMethod = "nlm", control = list(), covNames = NULL,
+  optMethod = "nlm", control = list(), prior = NULL, covNames = NULL,
   spatialCovs = NULL, centers = NULL, centroids = NULL,
   angleCovs = NULL, method = "IS", parIS = 1000, dfSim = Inf,
   grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad = TRUE,
@@ -101,6 +101,8 @@ initial values for likelihood optimization.  See \code{\link{fitHMM}}.}
 \item{optMethod}{The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).}
 
 \item{control}{A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).}
+
+\item{prior}{A function that returns the log-density of the working scale parameter prior distribution(s).  See \code{\link{fitHMM}}.}
 
 \item{covNames}{Names of any covariates in \code{miData$crwPredict} (if \code{miData} is a \code{\link{crwData}} object; otherwise 
 \code{covNames} is ignored). See \code{\link{prepData}}.}

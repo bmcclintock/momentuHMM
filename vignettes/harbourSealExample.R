@@ -150,7 +150,12 @@ Par0<-getParDM(data=hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angle
 fixPar<-list(step=c(rep(NA,nbStates*2),NA,NA,boot::logit(1.e-100)),
              omega=c(rep(NA,4),NA,boot::logit(1.e-100)))
 
-bestFit<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=Par0,beta0=beta0,delta0=delta0,DM=list(step=stepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=stepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar,stateNames=stateNames,nlmPar=list(steptol=1.e-8))
+# define prior function to help prevent working parameters from straying too far along boundaries
+prior <- function(par){
+  sum(dnorm(par,0,100,log=TRUE))
+}
+
+bestFit<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=Par0,beta0=beta0,delta0=delta0,DM=list(step=stepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=stepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar,stateNames=stateNames,nlmPar=list(steptol=1.e-8),prior=prior)
 
 
 ### Model 2: sex-level effects
@@ -195,7 +200,7 @@ Par0.sex$Par$angle[c("concentration_1:sexF", "concentration_23:sexF",  "concentr
 Par0.sex$Par$omega[c("shape_1:sexF", "shape2_1:sexF","shape_2:sexF", "shape1_2:sexF","zeromass_1:sexF")]<-bfPar$Par$omega[c("shape_1:(Intercept)","shape2_1","shape_2:(Intercept)","shape1_2", "zeromass_1:(Intercept)" )]
 Par0.sex$Par$omega[c("shape_1:sexM", "shape2_1:sexM","shape_2:sexM", "shape1_2:sexM","zeromass_1:sexM")]<-bfPar$Par$omega[c("shape_1:(Intercept)","shape2_1","shape_2:(Intercept)","shape1_2", "zeromass_1:(Intercept)" )]
 
-bestFit.sex<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=Par0.sex$Par,beta0=Par0.sex$beta,delta0=Par0.sex$delta,formula=~sex,formulaDelta=~sex,DM=list(step=stepDM.sex,angle=angleDM.sex,omega=omegaDM.sex),workBounds=list(step=stepworkBounds.sex,angle=angleworkBounds.sex,omega=omegaworkBounds.sex),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar.sex,stateNames=stateNames,nlmPar=list(steptol=1.e-8))
+bestFit.sex<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=Par0.sex$Par,beta0=Par0.sex$beta,delta0=Par0.sex$delta,formula=~sex,formulaDelta=~sex,DM=list(step=stepDM.sex,angle=angleDM.sex,omega=omegaDM.sex),workBounds=list(step=stepworkBounds.sex,angle=angleworkBounds.sex,omega=omegaworkBounds.sex),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar.sex,stateNames=stateNames,nlmPar=list(steptol=1.e-8),prior=prior)
 
 
 ### Model 3: individual-level effects
@@ -257,8 +262,8 @@ bestFit.all<-foreach(i=1:N) %dopar% {
     tmpfixPar$step<-NULL
   }
   tryFits <- list()
-  tryFits[[1]]<-tryCatch(fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar1,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,nlmPar=list(steptol=1.e-9)),error=function(e) e)
-  tryFits[[2]]<-tryCatch(fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar2$Par,beta0=tmpPar2$beta,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,nlmPar=list(steptol=1.e-9)),error=function(e) e)
+  tryFits[[1]]<-tryCatch(fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar1,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,nlmPar=list(steptol=1.e-9),prior=prior),error=function(e) e)
+  tryFits[[2]]<-tryCatch(fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar2$Par,beta0=tmpPar2$beta,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,nlmPar=list(steptol=1.e-9),prior=prior),error=function(e) e)
   
   if(inherits(tryFits[[1]],"error") & inherits(tryFits[[2]],"error")) stop("both sets of starting values failed for individual ",i)
   
@@ -275,7 +280,7 @@ bestFit.all<-foreach(i=1:N) %dopar% {
     del0[which(tmpPar0$delta==1)] <- 1-1.e-100*(nbStates-1)
   } else del0 <- tmpPar0$delta
   
-  fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0$Par,beta0=tmpPar0$beta,delta0=del0,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,optMethod="Nelder-Mead",control=list(maxit=100000,abstol=1.e-9))
+  fitHMM(data.ind,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar0$Par,beta0=tmpPar0$beta,delta0=del0,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,optMethod="Nelder-Mead",control=list(maxit=100000,abstol=1.e-9,prior=prior))
 
 }
 stopImplicitCluster()
@@ -289,7 +294,7 @@ for(i in 1:N){
   Par0.ind$beta[paste0("ID",i),]<-bfPar$beta
   Par0.ind$delta[paste0("ID",i),]<-bestFit.all[[i]]$CIbeta$delta$est
 }  
-bestFit.ind<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),formula=~ID+0,formulaDelta=~ID+0,Par0=Par0.ind$Par,beta0=Par0.ind$beta,delta0=Par0.ind$delta,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),workBounds=list(step=stepworkBounds.ind,angle=angleworkBounds.ind,omega=omegaworkBounds.ind),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar.ind,stateNames=stateNames,optMethod="Nelder-Mead",control=list(maxit=100000,hessian=FALSE,abstol=1.e-9))
+bestFit.ind<-fitHMM(hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),formula=~ID+0,formulaDelta=~ID+0,Par0=Par0.ind$Par,beta0=Par0.ind$beta,delta0=Par0.ind$delta,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),workBounds=list(step=stepworkBounds.ind,angle=angleworkBounds.ind,omega=omegaworkBounds.ind),userBounds=list(step=stepBounds,angle=angleBounds,omega=omegaBounds),fixPar=fixPar.ind,stateNames=stateNames,optMethod="Nelder-Mead",control=list(maxit=100000,hessian=FALSE,abstol=1.e-9),prior=prior)
 
 #################################################################################################################################
 ## compare models using AIC
@@ -330,31 +335,31 @@ miBestFit.all<-foreach(i=1:N) %dopar% {
   tryFits <- list()
   tryFits[[1]]<-MIfitHMM(data.ind,poolEstimates=FALSE,
                          nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar1,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,
-                         retryFits=5)
+                         retryFits=5,nlmPar=list(steptol=1.e-9),prior=prior)
   tryFits[[2]]<-MIfitHMM(data.ind,poolEstimates=FALSE,
                          nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar2$Par,beta0=tmpPar2$beta,delta0=tmpPar2$delta,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,
-                         retryFits=5)
+                         retryFits=5,nlmPar=list(steptol=1.e-9),prior=prior)
   
   fit <- list()
   for(j in 1:nSims){
     if(inherits(tryFits[[1]][[j]],"error") & inherits(tryFits[[2]][[j]],"error")) {
       tryFits[[1]][[j]]<-fitHMM(data.ind[[j]],
                              nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar1,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,
-                             optMethod="Nelder-Mead",control=list(maxit=100000))
+                             optMethod="Nelder-Mead",control=list(maxit=100000,abstol=1.e-9),prior=prior)
       if(!inherits(tryFits[[1]][[j]],"error")){
         tmpPar1<-getPar0(tryFits[[1]][[j]])
         tryFits[[1]][[j]]<-fitHMM(data.ind[[j]],
                              nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar1$Par,beta0=tmpPar1$beta,delta0=tmpPar1$delta,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,
-                             retryFits=5)
+                             retryFits=5,nlmPar=list(steptol=1.e-9),prior=prior)
       }
       tryFits[[2]][[j]]<-fitHMM(data.ind[[j]],
                              nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar2$Par,beta0=tmpPar2$beta,delta0=tmpPar2$delta,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,
-                             optMethod="Nelder-Mead",control=list(maxit=100000))
+                             optMethod="Nelder-Mead",control=list(maxit=100000,abstol=1.e-9),prior=prior)
       if(!inherits(tryFits[[2]][[j]],"error")){
         tmpPar2<-getPar0(tryFits[[2]][[j]])
         tryFits[[2]][[j]]<-fitHMM(data.ind[[j]],
                              nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=tmpPar2$Par,beta0=tmpPar2$beta,delta0=tmpPar2$delta,DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,
-                             retryFits=5)
+                             retryFits=5,nlmPar=list(steptol=1.e-9),prior=prior)
       }
     }  
     if(inherits(tryFits[[1]][[j]],"error") & inherits(tryFits[[2]][[j]],"error")) stop("both sets of starting values failed for individual ",i)
@@ -377,7 +382,7 @@ miBestFit.all<-foreach(i=1:N) %dopar% {
   
   MIfitHMM(data.ind,poolEstimates=FALSE,
                 nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=lapply(tmpPar0,function(x) x$Par),beta0=lapply(tmpPar0,function(x) x$beta),delta0=lapply(tmpPar0,function(x) x$delta),DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,
-                optMethod="Nelder-Mead",control=list(maxit=100000))
+                optMethod="Nelder-Mead",control=list(maxit=100000,abstol=1.e-9),prior=prior)
   
 }
 stopImplicitCluster()
@@ -411,7 +416,7 @@ tmpfixPar.ind$step<-NULL
 #Fit multiple imputations (warning -- this takes a looooooong time!)
 miBestFit.ind<-MIfitHMM(miData$miData,nSims=nSims,ncores=ncores,poolEstimates=FALSE,
                         nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),formula=~ID+0,formulaDelta=~ID+0,Par0=lapply(tmpPar0.ind,function(x) x$Par),beta0=lapply(tmpPar0.ind,function(x) x$beta),delta0=lapply(tmpPar0.ind,function(x) x$delta),DM=list(step=tmpstepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),workBounds=list(step=tmpstepworkBounds.ind,angle=angleworkBounds.ind,omega=omegaworkBounds.ind),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar.ind,stateNames=stateNames,
-                        nlmPar=list(steptol=1.e-8))
+                        nlmPar=list(steptol=1.e-8),prior=prior)
 
 miSum.ind<-MIpool(miBestFit.ind,ncores=ncores)
 

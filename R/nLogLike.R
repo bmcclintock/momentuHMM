@@ -35,6 +35,7 @@
 #' @param meanind index for circular-circular regression mean angles with at least one non-zero entry in fullDM
 #' @param covsDelta data frame containing the delta model covariates (if any)
 #' @param workBounds named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters
+#' @param prior A function that returns the log-density of the working scale parameter prior distribution(s)
 #'
 #' @return The negative log-likelihood of the parameters given the data.
 #'
@@ -67,7 +68,7 @@
 
 nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,
-                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds)
+                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL)
 {
   
   # check arguments
@@ -107,5 +108,7 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
                         par,
                         aInd,zeroInflation,oneInflation,stationary,knownStates)
 
+  if(!is.null(prior)) nllk <- nllk - prior(wpar)
+  
   return(nllk)
 }
