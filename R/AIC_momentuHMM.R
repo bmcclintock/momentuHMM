@@ -33,6 +33,14 @@ AIC.momentuHMM <- function(object,...,k=2,n=NULL)
     for(i in 1:length(models))
       modcopy[[i+1]] <- models[[i]]
     models <- modcopy
+    
+    if(any(!unlist(lapply(models,is.momentuHMM)))) stop("all models must be momentuHMM objects")
+    
+    for(i in 2:length(models)) {
+      datNames1 <- colnames(models[[1]]$data)[colnames(models[[1]]$data) %in% colnames(models[[i]]$data)]
+      datNames2 <- colnames(models[[i]]$data)[colnames(models[[i]]$data) %in% colnames(models[[1]]$data)]
+      if(!isTRUE(all.equal(models[[i]]$data[,datNames2],models[[1]]$data[,datNames1]))) stop("data must be the same for each momentuHMM object")
+    }
 
     # compute AICs of models
     aic <- rep(NA,length(models))

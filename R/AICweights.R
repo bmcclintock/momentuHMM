@@ -57,12 +57,14 @@ AICweights.momentuHMM <- function(..., k=2, n=NULL)
   
   modNames <- all.vars(match.call()) # store the names of the models given as arguments
   
-  if(any(!unlist(lapply(models,is.momentuHMM)))) stop("all model objects must be of the same class")
+  if(any(!unlist(lapply(models,is.momentuHMM)))) stop("all models must be momentuHMM objects")
   
   if(length(models)<2) stop("at least 2 momentuHMM objects must be provided")
   
   for(i in 2:length(models)) {
-    if(!isTRUE(all.equal(models[[i]]$data,models[[1]]$data))) stop("data must be the same for each momentuHMM object")
+    datNames1 <- colnames(models[[1]]$data)[colnames(models[[1]]$data) %in% colnames(models[[i]]$data)]
+    datNames2 <- colnames(models[[i]]$data)[colnames(models[[i]]$data) %in% colnames(models[[1]]$data)]
+    if(!isTRUE(all.equal(models[[i]]$data[,datNames2],models[[1]]$data[,datNames1]))) stop("data must be the same for each momentuHMM object")
   }
   
   # compute AICs of models
