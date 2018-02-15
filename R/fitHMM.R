@@ -866,7 +866,7 @@ fitHMM <- function(data,nbStates,dist,
     }
     
     # convert the parameters back to their natural scale
-    if(length(wparIndex)) m$mod$estimate[wparIndex] <- unlist(fixPar)[wparIndex]
+    if(length(wparIndex)) mod$estimate[wparIndex] <- unlist(fixPar)[wparIndex]
     wpar <- mod$estimate
     mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta)
   }
