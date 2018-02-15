@@ -1,4 +1,4 @@
-momentuHMM 1.4.0 2018-02-07
+momentuHMM 1.4.0 2018-02-14
 -----------------
 NEW FEATURES
 
@@ -15,6 +15,8 @@ NEW FEATURES
 * retrySD argument added to fitHMM and MIfitHMM for specifying standard deviation of random normal perturbations when using retryFits
 
 * alternative optimization methods (``Nelder-Mead'' and ``SANN'') can now be specified in fitHMM and MIfitHMM using the optMethod and control arguments
+
+* prior argument added to fitHMM and MIfitHMM for specifying prior distributions on working parameters
 
 * AICweights function added for calculating AIC weights across a set of candidate models
 

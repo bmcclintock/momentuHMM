@@ -10,7 +10,7 @@ fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
   nlmPar = list(), fit = TRUE, DM = NULL, cons = NULL,
   userBounds = NULL, workBounds = NULL, workcons = NULL,
   stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
-  retrySD = NULL, optMethod = "nlm", control = list())
+  retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL)
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} object.}
@@ -79,7 +79,7 @@ printing occurs, a value of 1 means that the first and last iterations of the op
 detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.}
 
 \item{nlmPar}{List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
-\code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, or \code{iterlim} -- see \code{nlm}'s documentation
+\code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
 for more detail). Ignored unless \code{optMethod="nlm"}.}
 
 \item{fit}{\code{TRUE} if an HMM should be fitted to the data, \code{FALSE} otherwise.
@@ -145,6 +145,8 @@ Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \co
 \item{optMethod}{The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).}
 
 \item{control}{A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).}
+
+\item{prior}{A function that returns the log-density of the working scale parameter prior distribution(s). See 'Details'.}
 }
 \value{
 A \code{\link{momentuHMM}} object, i.e. a list of:
@@ -227,6 +229,12 @@ the data are hourly, a 24-hour cycle can be modeled using \code{~cosinor(cov1,24
 of integers indicating the hour of day (\code{0,1,...,23,0,1,...,23,0,1,...}) (note that \code{fitHMM} will not do this for you, the appropriate covariate must be included in \code{data}; see example below). 
 The \code{cosinor(x,period)} function converts \code{x} to 2 covariates \code{cosinorCos(x)=cos(2*pi*x/period)} and \code{cosinorSin(x)=sin(2*pi*x/period} for inclusion in the model (i.e., 2 additional parameters per state). The amplitude of the sine wave
 is thus \code{sqrt(B_cos^2 + B_sin^2)}, where \code{B_cos} and \code{B_sin} are the working parameters correponding to \code{cosinorCos(x)} and \code{cosinorSin(x)}, respectively (e.g., see Cornelissen 2014).
+
+\item Similar to that used in \code{\link{crawlWrap}}, the \code{prior} argument is a user-specified function that returns the log-density of the working scale parameter prior distribution(s). In addition to including prior information about parameters, one area where priors can be particularly useful is for handling numerical issues that can arise when parameters are near a boundary. 
+When parameters are near boundaries, they can wander into the ``nether regions'' of the parameter space during optimization. For example, setting \code{prior=function(par) {sum(dnorm(par,0,sd,log=TRUE))}} with a reasonably large \code{sd} (e.g. 100 or 1000) can help prevent working parameters 
+from straying too far along the real line.  Here \code{par} is the vector of working scale parameters (as returned by \code{fitHMM}, e.g., see \code{example$m$mod$estimate}). Instead of specifying the same prior on all parameters, different priors could be specified on different parameters (and not all parameters must have priors).  For example,
+\code{prior=function(par){dnorm(par[3],0,100,log=TRUE)}} would only specify a prior for the third working parameter. Note that the \code{prior} function must return a scalar on the log scale. See 'harbourSealExample.R' in the ``vignettes'' source directory for an example using the \code{prior} argument.
+
 }
 }
 \examples{

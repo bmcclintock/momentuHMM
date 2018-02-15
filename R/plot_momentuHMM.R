@@ -186,10 +186,10 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       if(inherits(m$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(m$data[[j]]))
       if(is.na(covs[[j]])) stop("check value for ",j)
     }
-    for(j in names(m$data)[which(!(names(m$data) %in% names(covs)) & unlist(lapply(m$data,function(x) any(class(x) %in% meansList))))]){
+    for(j in names(m$data)[which(!(names(m$data) %in% names(covs)))]){
       if(inherits(m$data[[j]],"factor")) covs[[j]] <- m$data[[j]][which(m$data$ID %in% ID)][1]
       else if(inherits(m$data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(m$data[[j]][which(m$data$ID %in% ID)][!is.na(m$data[[j]][which(m$data$ID %in% ID)])])
-      else covs[[j]]<-mean(m$data[[j]][which(m$data$ID %in% ID)],na.rm=TRUE)
+      else if(any(class(m$data[[j]]) %in% meansList)) covs[[j]]<-mean(m$data[[j]][which(m$data$ID %in% ID)],na.rm=TRUE)
     }
   }
   
@@ -343,8 +343,11 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   
   if(inherits(m,"miSum")){
     Sigma <- m$MIcombine$variance
-  } else {
+  } else if(!is.null(m$mod$hessian)){
     Sigma <- ginv(m$mod$hessian)
+  } else {
+    Sigma <- NULL
+    plotCI <- FALSE
   }
   
   # set graphical parameters

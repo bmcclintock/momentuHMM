@@ -58,7 +58,7 @@
 #' printing occurs, a value of 1 means that the first and last iterations of the optimization are
 #' detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.
 #' @param nlmPar List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
-#' \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, or \code{iterlim} -- see \code{nlm}'s documentation
+#' \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
 #' for more detail). Ignored unless \code{optMethod="nlm"}.
 #' @param fit \code{TRUE} if an HMM should be fitted to the data, \code{FALSE} otherwise.
 #' If fit=\code{FALSE}, a model is returned with the MLE replaced by the initial parameters given in
@@ -111,6 +111,7 @@
 #' Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \code{retrySD}=10 for initial distribution and state transition probabilities). Ignored unless \code{retryFits>0}.
 #' @param optMethod The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).
 #' @param control A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).
+#' @param prior A function that returns the log-density of the working scale parameter prior distribution(s). See 'Details'.
 #'
 #' @return A \code{\link{momentuHMM}} object, i.e. a list of:
 #' \item{mle}{A named list of the maximum likelihood estimates of the parameters of the model (if the numerical algorithm
@@ -188,6 +189,12 @@
 #' of integers indicating the hour of day (\code{0,1,...,23,0,1,...,23,0,1,...}) (note that \code{fitHMM} will not do this for you, the appropriate covariate must be included in \code{data}; see example below). 
 #' The \code{cosinor(x,period)} function converts \code{x} to 2 covariates \code{cosinorCos(x)=cos(2*pi*x/period)} and \code{cosinorSin(x)=sin(2*pi*x/period} for inclusion in the model (i.e., 2 additional parameters per state). The amplitude of the sine wave
 #' is thus \code{sqrt(B_cos^2 + B_sin^2)}, where \code{B_cos} and \code{B_sin} are the working parameters correponding to \code{cosinorCos(x)} and \code{cosinorSin(x)}, respectively (e.g., see Cornelissen 2014).
+#' 
+#' \item Similar to that used in \code{\link{crawlWrap}}, the \code{prior} argument is a user-specified function that returns the log-density of the working scale parameter prior distribution(s). In addition to including prior information about parameters, one area where priors can be particularly useful is for handling numerical issues that can arise when parameters are near a boundary. 
+#' When parameters are near boundaries, they can wander into the ``nether regions'' of the parameter space during optimization. For example, setting \code{prior=function(par) {sum(dnorm(par,0,sd,log=TRUE))}} with a reasonably large \code{sd} (e.g. 100 or 1000) can help prevent working parameters 
+#' from straying too far along the real line.  Here \code{par} is the vector of working scale parameters (as returned by \code{fitHMM}, e.g., see \code{example$m$mod$estimate}). Instead of specifying the same prior on all parameters, different priors could be specified on different parameters (and not all parameters must have priors).  For example,
+#' \code{prior=function(par){dnorm(par[3],0,100,log=TRUE)}} would only specify a prior for the third working parameter. Note that the \code{prior} function must return a scalar on the log scale. See 'harbourSealExample.R' in the ``vignettes'' source directory for an example using the \code{prior} argument.
+#' 
 #' }
 #' 
 #' @seealso \code{\link{getParDM}}, \code{\link{prepData}}, \code{\link{simData}}
@@ -402,7 +409,7 @@ fitHMM <- function(data,nbStates,dist,
                    formula=~1,formulaDelta=~1,stationary=FALSE,
                    verbose=NULL,nlmPar=list(),fit=TRUE,
                    DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,
-                   stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list())
+                   stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL)
 {
   
   #####################
@@ -577,7 +584,7 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
 
-  mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(newformula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & stationary & optMethod=="nlm") # indicator for moveHMMwrap below
+  mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(newformula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior)) # indicator for moveHMMwrap below
   
   inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames,checkInflation = TRUE)
   p <- inputs$p
@@ -610,10 +617,10 @@ fitHMM <- function(data,nbStates,dist,
   }
 
   # check elements of nlmPar
-  lsPars <- c("print.level","gradtol","stepmax","steptol","iterlim")
+  lsPars <- c("print.level","gradtol","stepmax","steptol","iterlim",'hessian')
   if(length(which(!(names(nlmPar) %in% lsPars)))>0)
     stop("Check the names of the elements of 'nlmPar'; they should be in
-         ('print.level','gradtol','stepmax','steptol','iterlim')")
+         ('print.level','gradtol','stepmax','steptol','iterlim','hessian')")
 
 
   ####################################
@@ -785,6 +792,17 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
   
+  if(!is.null(prior)){
+    if(!is.function(prior)) stop("prior must be a function")
+    pr <- tryCatch(prior(wpar),error=function(e) e)
+    if(inherits(pr,"error")){
+      stop("Invalid prior: ",pr)
+    } else {
+      if(length(pr)>1) stop("prior function must return a scalar")
+      if(!is.finite(pr)) stop("prior is not finite")
+    }
+  }
+  
   ##################
   ## Optimization ##
   ##################
@@ -831,6 +849,12 @@ fitHMM <- function(data,nbStates,dist,
 
   if(fit) {
     
+    hessian <- TRUE
+    if(!is.null(control$hessian)){
+      hessian <- control$hessian
+      control$hessian <- NULL
+    }
+    
     fitCount<-0
     
     while(fitCount<=retryFits){
@@ -867,16 +891,16 @@ fitHMM <- function(data,nbStates,dist,
           withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,wpar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
-                                               nc,meanind,covsDelta,workBounds,
+                                               nc,meanind,covsDelta,workBounds,prior,
                                                print.level=print.level,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
-                                               iterlim=iterlim,hessian=TRUE),error=function(e) e),warning=h)
+                                               iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)),error=function(e) e),warning=h)
         } else {
           withCallingHandlers(curmod <- tryCatch(optim(wpar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                      inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                      stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
-                                                     nc,meanind,covsDelta,workBounds,
-                                                     method=optMethod,control=control,hessian=TRUE),error=function(e) e),warning=h)
+                                                     nc,meanind,covsDelta,workBounds,prior,
+                                                     method=optMethod,control=control,hessian=hessian),error=function(e) e),warning=h)
         }
         endTime <- proc.time()-startTime
       }
@@ -909,10 +933,9 @@ fitHMM <- function(data,nbStates,dist,
     }
     
     # convert the parameters back to their natural scale
+    if(length(wparIndex)) mod$estimate[wparIndex] <- unlist(fixPar)[wparIndex]
     wpar <- mod$estimate
-    if(length(wparIndex)) wpar[wparIndex] <- unlist(fixPar)[wparIndex]
     mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
-    
   }
   else {
     mod <- NA
@@ -992,7 +1015,7 @@ fitHMM <- function(data,nbStates,dist,
   conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
                      estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=ofixPar,wparIndex=wparIndex,formulaDelta=formulaDelta)
 
-  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta)
+  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior)
   
   #compute SEs and CIs on natural and working scale
   CIreal<-tryCatch(CIreal(momentuHMM(mh)),error=function(e) e)
@@ -1000,7 +1023,7 @@ fitHMM <- function(data,nbStates,dist,
   CIbeta<-tryCatch(CIbeta(momentuHMM(mh)),error=function(e) e)
   if(inherits(CIbeta,"error") & fit==TRUE) warning("Failed to compute SEs confidence intervals on the working scale -- ",CIbeta)
   
-  mh <- list(data=data,mle=mle,CIreal=CIreal,CIbeta=CIbeta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta)
+  mh <- list(data=data,mle=mle,CIreal=CIreal,CIbeta=CIbeta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior)
   
   if(fit) message(ifelse(retryFits>=1,"\n",""),"DONE")
   

@@ -88,7 +88,8 @@ CIbeta <- function(m,alpha=0.95)
 
 
   # inverse of Hessian
-  Sigma <- ginv(m$mod$hessian)
+  if(!is.null(m$mod$hessian)) Sigma <- ginv(m$mod$hessian)
+  else Sigma <- NULL
 
   p <- parDef(dist,nbStates,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds)
   bounds <- p$bounds
@@ -175,14 +176,16 @@ get_CIwb<-function(wpar,Par,ind,Sigma,alpha,workBounds,rnames="[1,]",cnames,cons
   
   npar <- length(wpar)
   bRow <- (rnames=="[1,]")
-  lower<-upper<-se<-numeric(npar)
+  lower<-upper<-se<-rep(NA,npar)
   
-  dN <- get_gradwb(wpar,workBounds,cons)
-  
-  se <- suppressWarnings(sqrt(diag(dN%*%Sigma[ind,ind]%*%t(dN))))
-  lower <- Par - qnorm(1-(1-alpha)/2) * se
-  upper <- Par + qnorm(1-(1-alpha)/2) * se
+  if(!is.null(Sigma)){
+    dN <- get_gradwb(wpar,workBounds,cons)
     
+    se <- suppressWarnings(sqrt(diag(dN%*%Sigma[ind,ind]%*%t(dN))))
+    lower <- Par - qnorm(1-(1-alpha)/2) * se
+    upper <- Par + qnorm(1-(1-alpha)/2) * se
+  }  
+  
   est<-matrix(Par,ncol=length(cnames),byrow=bRow)
   l<-matrix(lower,ncol=length(cnames),byrow=bRow)
   u<-matrix(upper,ncol=length(cnames),byrow=bRow)  

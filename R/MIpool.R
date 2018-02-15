@@ -81,6 +81,8 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     if(any(ident2)) stop("Model conditions for each imputation must be identical. Imputations that do not match the first: ",paste(which(ident),collapse=", "))
   }
   
+  if(any(unlist(lapply(im,function(x) is.null(x$mod$hessian))))) stop("Estimates cannot be pooled unless Hessian is calculated. Hessian is missing for imputations ",paste0(which(unlist(lapply(im,function(x) is.null(x$mod$hessian)))),collapse=", "))
+  
   tmpDet <- which(unlist(lapply(im,function(x) det(x$mod$hessian)))==0)
   if(length(tmpDet)){
     warning("Hessian is singular for HMM fit(s): ",paste0(goodIndex[tmpDet],collapse=", "))
