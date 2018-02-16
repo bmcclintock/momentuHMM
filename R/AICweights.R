@@ -57,13 +57,18 @@ AICweights.momentuHMM <- function(..., k=2, n=NULL)
   
   modNames <- all.vars(match.call()) # store the names of the models given as arguments
   
-  if(any(!unlist(lapply(models,is.momentuHMM)))) stop("all model objects must be of the same class")
+  if(any(!unlist(lapply(models,is.momentuHMM)))) stop("all models must be momentuHMM objects")
   
   if(length(models)<2) stop("at least 2 momentuHMM objects must be provided")
   
+  pr <- is.null(models[[1]]$prior)
   for(i in 2:length(models)) {
-    if(!isTRUE(all.equal(models[[i]]$data,models[[1]]$data))) stop("data must be the same for each momentuHMM object")
+    datNames1 <- colnames(models[[1]]$data)[colnames(models[[1]]$data) %in% colnames(models[[i]]$data)]
+    datNames2 <- colnames(models[[i]]$data)[colnames(models[[i]]$data) %in% colnames(models[[1]]$data)]
+    if(!isTRUE(all.equal(models[[i]]$data[,datNames2],models[[1]]$data[,datNames1]))) stop("data must be the same for each momentuHMM object")
+    if(pr!=is.null(models[[i]]$prior)) stop("AIC is not valid for comparing models with and without priors")
   }
+  if(!is.null(pr)) warning("Please be careful when using AIC to compare models with priors!")
   
   # compute AICs of models
   aic <- rep(NA,length(models))
@@ -101,19 +106,23 @@ AICweights.miHMM <- function(...,k=2, n=NULL)
   }
   
   momObs <- which(!unlist(lapply(models[[1]][1:nSims],is.momentuHMM)))
+  pr <- logical(nSims)
   for(i in 2:length(models)) {
     for(j in 1:nSims){
+      pr[j] <- (!is.null(models[[1]][[j]]$prior))
       if(!(j %in% momObs)){
         if(is.momentuHMM(models[[i]][[j]])){
           datNames1 <- colnames(models[[1]][[j]]$data)[colnames(models[[1]][[j]]$data) %in% colnames(models[[i]][[j]]$data)]
           datNames2 <- colnames(models[[i]][[j]]$data)[colnames(models[[i]][[j]]$data) %in% colnames(models[[1]][[j]]$data)]
           if(!isTRUE(all.equal(models[[i]][[j]]$data[,datNames2],models[[1]][[j]]$data[,datNames1]))) stop("Imputed data must be the same for each model object")
+          if(pr[j]!=(!is.null(models[[i]][[j]]$prior))) stop("AIC is not valid for comparing models with and without priors")
         } else {
           momObs <- c(momObs,j)
         }
       }
     }
   }
+  if(any(pr)) warning("Please be careful when using AIC to compare models with priors!")
   
   if(length(momObs)) {
     momObs <- sort(momObs)
