@@ -1,4 +1,4 @@
-momentuHMM 1.4.0 2018-02-07
+momentuHMM 1.4.0 2018-02-21
 -----------------
 NEW FEATURES
 
@@ -19,6 +19,8 @@ NEW FEATURES
 * retrySD argument added to fitHMM and MIfitHMM for specifying standard deviation of random normal perturbations when using retryFits
 
 * crawlPlot argument added to plot.crwData as a wrapper for crawl::crwPredictPlot
+
+* various graphical parameters added to plot.momentuHMM for plot customization
 
 CHANGES
 

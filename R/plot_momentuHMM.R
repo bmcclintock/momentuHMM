@@ -24,7 +24,7 @@
 #' @param plotTracks If TRUE, the Viterbi-decoded tracks are plotted (default).
 #' @param plotCI Logical indicating whether to include confidence intervals in natural parameter plots (default: FALSE)
 #' @param alpha Significance level of the confidence intervals (if \code{plotCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).
-#' @param ... Currently unused. For compatibility with generic method.
+#' @param ... Additional arguments passed to \code{\link[graphics]{plot}} and \code{\link[graphics]{hist}} functions. These can currently include \code{cex}, \code{cex.main}, \code{cex.lab}, \code{cex.axis}, \code{cex.legend}, \code{lwd}, and \code{asp}. See \code{\link[graphics]{par}}. Note that \code{cex} and \code{asp} only apply to plots of animal tracks. 
 #'
 #' @details The state-dependent densities are weighted by the frequency of each state in the most
 #' probable state sequence (decoded with the function \code{\link{viterbi}}). For example, if the
@@ -351,6 +351,35 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   par(mar=c(5,4,4,2)-c(0,0,2,1)) # bottom, left, top, right
   par(ask=ask)
   
+  if(!missing(...)){
+    arg <- list(...)
+    if(any(!(names(arg) %in% plotArgs))) stop("additional graphical parameters are currently limited to: ",paste0(plotArgs,collapse=", "))
+    if(!is.null(arg$cex.main)) cex.main <- arg$cex.main
+    else cex.main <- 1
+    arg$cex.main <- NULL
+    if(!is.null(arg$cex.legend)) cex.legend <- arg$cex.legend
+    else cex.legend <- 1
+    arg$cex.legend <- NULL 
+    if(!is.null(arg[["cex"]])) cex <- arg[["cex"]]
+    else cex <- 0.6
+    arg$cex <- NULL
+    if(!is.null(arg$asp)) asp <- arg$asp
+    else asp <- 1
+    arg$asp <- NULL
+    if(!is.null(arg$lwd)) lwd <- arg$lwd
+    else lwd <- 1.3
+    arg$lwd <- NULL
+  } else {
+    cex <- 0.6
+    asp <- 1
+    lwd <- 1.3
+    cex.main <- 1
+    cex.legend <- 1
+    arg <- NULL
+  }
+  marg <- arg
+  marg$cex <- NULL
+  
   for(i in distnames){
     
     # split data by animals if necessary
@@ -524,17 +553,17 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             se<-t(apply(dN[,1:parCount[[i]]],1,function(x) tryCatch(suppressWarnings(sqrt(x%*%Sigma[parindex[[i]]+1:parCount[[i]],parindex[[i]]+1:parCount[[i]]]%*%x)),error=function(e) NA)))
             uci<-est+qnorm(1-(1-alpha)/2)*se
             lci<-est-qnorm(1-(1-alpha)/2)*se
-            plot(tempCovs[,jj],est,ylim=range(c(lci,est,uci),na.rm=TRUE),xaxt="n",xlab=jj,ylab=paste(i,ifelse(j=="kappa","concentration",j),'parameter'),main=paste0(stateNames[state],ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]],collapse=", ")),"")),type="l")
+            do.call(plot,c(list(tempCovs[,jj],est,ylim=range(c(lci,est,uci),na.rm=TRUE),xaxt="n",xlab=jj,ylab=paste(i,ifelse(j=="kappa","concentration",j),'parameter'),main=paste0(stateNames[state],ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]],collapse=", ")),"")),type="l",lwd=lwd,cex.main=cex.main),arg))            
             if(!all(is.na(se))){
               ciInd <- which(!is.na(se))
               
-              withCallingHandlers(arrows(as.numeric(tempCovs[ciInd,jj]), lci[ciInd], as.numeric(tempCovs[ciInd,jj]),
-                                         uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5)),warning=muffWarn)
+              withCallingHandlers(do.call(arrows,c(list(as.numeric(tempCovs[ciInd,jj]), lci[ciInd], as.numeric(tempCovs[ciInd,jj]),
+                                         uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5), lwd=lwd),arg)),warning=muffWarn)
               
             }
-          } else plot(tempCovs[,jj],est,xaxt="n",xlab=jj,ylab=paste(i,ifelse(j=="kappa","concentration",j),'parameter'),main=paste0(stateNames[state],ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]],collapse=", ")),"")),type="l") 
-          if(is.factor(tempCovs[,jj])) axis(1,at=tempCovs[,jj],labels=tempCovs[,jj])
-          else axis(1)
+          } else do.call(plot,c(list(tempCovs[,jj],est,xaxt="n",xlab=jj,ylab=paste(i,ifelse(j=="kappa","concentration",j),'parameter'),main=paste0(stateNames[state],ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]],collapse=", ")),"")),type="l",lwd=lwd,cex.main=cex.main),arg)) 
+          if(is.factor(tempCovs[,jj])) do.call(axis,c(list(1,at=tempCovs[,jj],labels=tempCovs[,jj]),arg))
+          else do.call(axis,c(list(1),arg))
           
         }
       }
@@ -555,14 +584,14 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             message <- paste0("Animal ID ",ID[zoo]," - ",stateNames[state],covmess)
             
             # the function plotHist is defined below
-            plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,state,hist.ylim[[i]],col,legText, cumul = cumul)
+            plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,state,hist.ylim[[i]],col,legText, cumul = cumul, ...)
           }
           
         } else { # if !sepStates
           gen <- genData[[zoo]]
           message <- paste0("Animal ID ",ID[zoo],covmess)
           
-          plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul)
+          plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul, ...)
         }
       }
     } else { # if !sepAnimals
@@ -574,7 +603,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           if(nbAnimals>1) message <- paste0("All animals - ",stateNames[state],covmess)
           else message <- paste0("Animal ID ",ID," - ",stateNames[state],covmess)
           
-          plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,state,hist.ylim[[i]],col,legText, cumul = cumul)
+          plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,state,hist.ylim[[i]],col,legText, cumul = cumul, ...)
         }
         
       } else { # if !sepStates
@@ -582,7 +611,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         if(nbAnimals>1) message <- paste0("All animals",covmess)
         else message <- paste0("Animal ID ",ID,covmess)
         
-        plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul)
+        plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul, ...)
       }
     }
   }
@@ -655,7 +684,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         
         for(i in 1:nbStates){
           for(j in 1:nbStates){
-            plot(tempCovs[,cov],trMat[i,j,],type="l",ylim=c(0,1),xlab=names(rawCovs)[cov],ylab=paste(i,"->",j))
+            do.call(plot,c(list(tempCovs[,cov],trMat[i,j,],type="l",ylim=c(0,1),xlab=names(rawCovs)[cov],ylab=paste(i,"->",j),lwd=lwd),arg))
             if(plotCI){
               dN<-t(apply(desMat,1,function(x) tryCatch(numDeriv::grad(get_gamma,beta,covs=matrix(x,nrow=1),nbStates=nbStates,i=i,j=j),error=function(e) NA)))
               se<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%Sigma[gamInd,gamInd]%*%x)),error=function(e) NA)))
@@ -665,14 +694,14 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
                 
                 ciInd <- which(!is.na(se))
                 
-                withCallingHandlers(arrows(as.numeric(tempCovs[ciInd,cov]), lci[ciInd], as.numeric(tempCovs[ciInd,cov]), 
-                                           uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5)),warning=muffWarn)
+                withCallingHandlers(do.call(arrows,c(list(as.numeric(tempCovs[ciInd,cov]), lci[ciInd], as.numeric(tempCovs[ciInd,cov]), 
+                                           uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5), lwd=lwd),arg)),warning=muffWarn)
               }
             }
           }
         }
-        if(ncol(rawCovs)>1) mtext(paste("Transition probabilities:",paste(names(rawCovs)[-cov],"=",tmpcovs[-cov],collapse=", ")),side=3,outer=TRUE,padj=2)
-        else mtext("Transition probabilities:",side=3,outer=TRUE,padj=2)
+        if(ncol(rawCovs)>1) do.call(mtext,c(list(paste("Transition probabilities:",paste(names(rawCovs)[-cov],"=",tmpcovs[-cov],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+        else do.call(mtext,c(list("Transition probabilities:",side=3,outer=TRUE,padj=2,cex=cex.main),marg))
         
       }
     }
@@ -692,18 +721,18 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         subStates <- states[which(m$data$ID==ID[zoo])]
         
         # plot trajectory
-        plot(x[[zoo]],y[[zoo]],pch=16,xlab="x",ylab="y",col=col[subStates],cex=0.6,asp=1)
+        do.call(plot,c(list(x=x[[zoo]],y=y[[zoo]],pch=16,xlab="x",ylab="y",col=col[subStates],cex=cex,asp=asp),arg))
         
-        segments(x0=x[[zoo]][-length(x[[zoo]])],y0=y[[zoo]][-length(x[[zoo]])],x1=x[[zoo]][-1],y1=y[[zoo]][-1],
-                 col=col[subStates[-length(subStates)]],lwd=1.3)
+        do.call(segments,c(list(x0=x[[zoo]][-length(x[[zoo]])],y0=y[[zoo]][-length(x[[zoo]])],x1=x[[zoo]][-1],y1=y[[zoo]][-1],
+                 col=col[subStates[-length(subStates)]],lwd=lwd),arg))
         
         if(plotEllipse) {
           for(i in 1:length(x[[zoo]]))
-            lines(errorEllipse[[zoo]][[i]],col=adjustcolor(col[subStates[i]],alpha.f=0.25),cex=0.6)
+            do.call(lines,c(list(errorEllipse[[zoo]][[i]],col=adjustcolor(col[subStates[i]],alpha.f=0.25),cex=cex),arg))
         }
         
-        mtext(paste("Animal ID:",ID[zoo]),side=3,outer=TRUE,padj=2)
-        legend("topleft",legText,lwd=rep(2,nbStates),col=col,bty="n")
+        do.call(mtext,c(list(paste("Animal ID:",ID[zoo]),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+        legend("topleft",legText,lwd=rep(lwd,nbStates),col=col,bty="n",cex=cex.legend)
       }
     }
   }
@@ -720,20 +749,19 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
 # used in the function plot.momentuHMM.
 #
 # Parameters:
-#  - step: list of series of steps if several animals, or series of steps otherwise.
-#    (e.g. step[[1]][3] is the 3rd step of the first animal)
-#  - angle: same as step, but for angles
-#  - stepDensities: list of matrices of values of the fitted densities. Each matrix has
+#  - gen: list of data streams (if several animals), or otherwise a data stream.
+#    (e.g. gen[[1]][3] is the 3rd observation of the first animal)
+#  - genDensities: list of matrices of values of the fitted densities. Each matrix has
 #    two columns, the first being the grid of values on which the density is estimated,
 #    and the second the values of the density.
-#  - angleDensities: same as stepDensities, but for angles.
+#  - dist: named list indicating the probability distribution for the data stream (e.g. list(step=``gamma''), list(angle=``vm''))
 #  - message: message to print above the histograms
 #  - sepStates, breaks, hist.ylim: see arguments of plot.momentuHMM.
 #  - state: if sepStates, this function needs to know which state needs to be plotted.
 #  - col: colors of the state-dependent density lines
 
 plotHist <- function (gen,genDensities,dist,message,
-                      sepStates,breaks="Sturges",state=NULL,hist.ylim=NULL,col=NULL,legText, cumul=TRUE)
+                      sepStates,breaks="Sturges",state=NULL,hist.ylim=NULL,col=NULL,legText, cumul=TRUE, ...)
 {
   # vertical limits
   if(!is.null(hist.ylim)) {
@@ -755,6 +783,34 @@ plotHist <- function (gen,genDensities,dist,message,
   }
   
   distname <- names(dist)
+  
+  if(!missing(...)){
+    arg <- list(...)
+    if(!is.null(arg$cex)) cex <- arg$cex
+    else cex <- 0.6
+    arg$cex <- NULL
+    if(!is.null(arg$asp)) asp <- arg$asp
+    else asp <- 1
+    arg$asp <- NULL
+    if(!is.null(arg$lwd)) lwd <- arg$lwd
+    else lwd <- 2
+    arg$lwd <- NULL
+    if(!is.null(arg$cex.main)) cex.main <- arg$cex.main
+    else cex.main <- NA
+    arg$cex.main <- NULL
+    if(!is.null(arg$cex.legend)) cex.legend <- arg$cex.legend
+    else cex.legend <- 1
+    arg$cex.legend <- NULL 
+  } else {
+    cex <- 0.6
+    asp <- 1
+    lwd <- 2
+    cex.main <- NA
+    cex.legend <- 1
+    arg <- NULL
+  }
+  marg <- arg
+  marg$cex <- NULL
   
   if(dist %in% angledists){
     h <- hist(gen,plot=F,breaks=breaks) # to determine 'breaks'
@@ -787,25 +843,25 @@ plotHist <- function (gen,genDensities,dist,message,
     }
     
     # plot gen histogram
-    hist(gen,prob=T,main="",ylim=c(0,ymax),xlab=paste0(distname," (radians)"),
-         col="grey",border="white",breaks=breaks,xaxt="n")
-    axis(1, at = c(-pi, -pi/2, 0, pi/2, pi),
-         labels = expression(-pi, -pi/2, 0, pi/2, pi))
+    do.call(hist,c(list(gen,prob=T,main="",ylim=c(0,ymax),xlab=paste0(distname," (radians)"),
+         col="grey",border="white",breaks=breaks,xaxt="n"),arg))
+    do.call(axis,c(list(1, at = c(-pi, -pi/2, 0, pi/2, pi),
+         labels = expression(-pi, -pi/2, 0, pi/2, pi)),arg))
     
-    mtext(message,side=3,outer=TRUE,padj=2)
+    do.call(mtext,c(list(message,side=3,outer=TRUE,padj=2,cex=cex.main),marg))
     
     # plot gen density over the histogram
     if(sepStates)
-      lines(genDensities[[state]],col=col[state],lwd=2)
+      lines(genDensities[[state]],col=col[state],lwd=lwd)
     else {
       for(s in 1:nbStates)
-        lines(genDensities[[s]],col=col[s],lwd=2)
+        lines(genDensities[[s]],col=col[s],lwd=lwd)
       if(cumul){
         total <- genDensities[[1]]
         for (s in 2:nbStates) total[, 2] <- total[, 2] + genDensities[[s]][, 2]
-        lines(total, lwd = 2, lty = 2)
+        lines(total, lwd = lwd, lty = 2)
       }
-      legend("topright",legText,lwd=rep(2,nbStates),col=col,bty="n")
+      legend("topright",legText,lwd=rep(lwd,nbStates),col=col,bty="n",cex=cex.legend)
     }  
   } else {
     # determine ylim
@@ -836,23 +892,23 @@ plotHist <- function (gen,genDensities,dist,message,
     }
     
     # plot gen histogram
-    hist(gen,prob=T,main="",ylim=c(ymin,ymax),xlab=distname,
-         col="grey",border="white",breaks=breaks)
+    do.call(hist,c(list(gen,prob=T,main="",ylim=c(ymin,ymax),xlab=distname,
+         col="grey",border="white",breaks=breaks),arg))
     
-    mtext(message,side=3,outer=TRUE,padj=2)
+    do.call(mtext,c(list(message,side=3,outer=TRUE,padj=2,cex=cex.main),marg))
     
     # plot gen density over the histogram
     if(sepStates)
-      lines(genDensities[[state]],col=col[state],lwd=2)
+      lines(genDensities[[state]],col=col[state],lwd=lwd)
     else {
       for(s in 1:nbStates)
-        lines(genDensities[[s]],col=col[s],lwd=2)
+        lines(genDensities[[s]],col=col[s],lwd=lwd)
       if(cumul){
         total <- genDensities[[1]]
         for (s in 2:nbStates) total[, 2] <- total[, 2] + genDensities[[s]][, 2]
-        lines(total, lwd = 2, lty = 2)
+        lines(total, lwd = lwd, lty = 2)
       }
-      legend("topright",legText,lwd=rep(2,nbStates),col=col,bty="n")
+      legend("topright",legText,lwd=rep(lwd,nbStates),col=col,bty="n",cex=cex.legend)
     }
   }
   

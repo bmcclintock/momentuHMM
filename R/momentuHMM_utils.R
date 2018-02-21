@@ -10,6 +10,7 @@ integerdists<-sort(c('bern','pois'))
 splineList<-c("bs","ns","bSpline","mSpline","cSpline","iSpline")
 meansList<-c("numeric","integer","logical","Date","POSIXlt","POSIXct","difftime")
 meansListNoTime<-c("numeric","integer","logical")
+plotArgs <- c("cex","cex.main","cex.lab","cex.axis","cex.legend","lwd","asp")
 
 # this function maintains backwards compatibility with momentuHMM versions <1.1.2
 delta_bc <- function(m){

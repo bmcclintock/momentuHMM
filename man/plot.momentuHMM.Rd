@@ -41,7 +41,7 @@ Default: \code{FALSE}.}
 
 \item{alpha}{Significance level of the confidence intervals (if \code{plotCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).}
 
-\item{...}{Currently unused. For compatibility with generic method.}
+\item{...}{Additional arguments passed to \code{\link[graphics]{plot}} and \code{\link[graphics]{hist}} functions. These can currently include \code{cex}, \code{cex.main}, \code{cex.lab}, \code{cex.axis}, \code{cex.legend}, \code{lwd}, and \code{asp}. See \code{\link[graphics]{par}}. Note that \code{cex} and \code{asp} only apply to plots of animal tracks.}
 }
 \description{
 Plot the fitted step and angle densities over histograms of the data, transition probabilities
