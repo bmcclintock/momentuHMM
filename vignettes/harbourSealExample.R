@@ -399,7 +399,7 @@ miBestFit.all<-foreach(i=1:N) %dopar% {
     tmp})
   fit <- MIfitHMM(data.ind,poolEstimates=FALSE,
                   nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par0=lapply(tmpPar0,function(x) x$Par),beta0=lapply(tmpPar0,function(x) x$beta),delta0=lapply(tmpPar0,function(x) x$delta),DM=list(step=tmpstepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=tmpstepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar,stateNames=stateNames,
-                  list(steptol=1.e-9,hessian=FALSE))  
+                  nlmPar=list(steptol=1.e-9,hessian=FALSE))  
   
   # double check optimization with "Nelder-Mead" method
   tmpPar0 <- lapply(fit,function(x) {
