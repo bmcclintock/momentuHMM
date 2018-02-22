@@ -428,7 +428,7 @@ tmpPar0.ind <- list()
 for(j in 1:nSims){
   tmpPar0.ind[[j]] <- getPar0(bestFit.ind,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),formula=~ID+0,formulaDelt=~ID+0)
   for(i in 1:N){
-    bfPar <- getPar0(miSum.all[[i]])
+    bfPar <- getPar0(miBestFit.all[[i]][[j]])
     tmpPar0.ind[[j]]$Par$step[match(paste0(colnames(stepDM),"ID",i),names(Par0.ind$Par$step),nomatch=0)]<-bfPar$Par$step[match(names(Par0.ind$Par$step),paste0(colnames(stepDM),"ID",i),nomatch=0)]
     tmpPar0.ind[[j]]$Par$angle[match(paste0(colnames(angleDM),"ID",i),names(Par0.ind$Par$angle),nomatch=0)]<-bfPar$Par$angle[match(names(Par0.ind$Par$angle),paste0(colnames(angleDM),"ID",i),nomatch=0)]
     tmpPar0.ind[[j]]$Par$omega[match(paste0(colnames(omegaDM),"ID",i),names(Par0.ind$Par$omega),nomatch=0)]<-bfPar$Par$omega[match(names(Par0.ind$Par$omega),paste0(colnames(omegaDM),"ID",i),nomatch=0)]
@@ -446,7 +446,7 @@ tmpfixPar.ind$step<-NULL
 #Fit multiple imputations (warning -- this takes a looooooong time!)
 miBestFit.ind<-MIfitHMM(miData$miData,nSims=nSims,ncores=ncores,poolEstimates=FALSE,
                         nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),formula=~ID+0,formulaDelta=~ID+0,Par0=lapply(tmpPar0.ind,function(x) x$Par),beta0=lapply(tmpPar0.ind,function(x) x$beta),delta0=lapply(tmpPar0.ind,function(x) x$delta),DM=list(step=tmpstepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),workBounds=list(step=tmpstepworkBounds.ind,angle=angleworkBounds.ind,omega=omegaworkBounds.ind),userBounds=list(step=tmpstepBounds,angle=angleBounds,omega=omegaBounds),fixPar=tmpfixPar.ind,stateNames=stateNames,
-                        nlmPar=list(steptol=1.e-8),prior=prior)
+                        optMethod="Nelder-Mead",control=list(maxit=100000,abstol=1.e-9))
 
 miSum.ind<-MIpool(miBestFit.ind,ncores=ncores)
 
