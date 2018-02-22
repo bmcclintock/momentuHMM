@@ -43,7 +43,7 @@ AIC.momentuHMM <- function(object,...,k=2,n=NULL)
       if(!isTRUE(all.equal(models[[i]]$data[,datNames2],models[[1]]$data[,datNames1]))) stop("data must be the same for each momentuHMM object")
       if(pr!=is.null(models[[i]]$prior)) stop("AIC is not valid for comparing models with and without priors")
     }
-    if(!is.null(pr)) warning("Please be careful when using AIC to compare models with priors!")
+    if(!pr) warning("Please be careful when using AIC to compare models with priors!")
 
     # compute AICs of models
     aic <- rep(NA,length(models))
