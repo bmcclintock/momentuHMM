@@ -98,8 +98,6 @@ concordance=TRUE
 % set margin to 3cm for main text
 \newgeometry{margin=3cm}
 
-\linenumbers
-
 \noindent \textbf{Summary}\\
 \textbf{1.} Discrete-time hidden Markov models (HMMs) have become an immensely popular tool for inferring latent animal behaviours from telemetry data. While movement HMMs typically rely solely on location data (e.g.\ step length and turning angle), auxiliary biotelemetry and environmental data are powerful and readily-available resources for incorporating much more ecological and behavioural realism. However, complex movement or observation process models often necessitate custom and computationally-demanding HMM model-fitting techniques that are impractical for most practitioners, and there is a paucity of generalized user-friendly software available for implementing multivariate HMMs of animal movement.\\
 \textbf{2.} Here we introduce an open-source R package, \verb|momentuHMM|, that addresses many of the deficiencies in existing HMM software.  Features include: 1) data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behaviour states; 3) biased and correlated random walk movement models, including dynamic ``activity centres'' associated with attractive or repulsive forces; 4) user-specified design matrices and constraints for covariate modelling of parameters using formulas familiar to most R users; 5) multiple imputation methods that account for measurement error and temporally-irregular or missing data; 6) seamless integration of spatio-temporal covariate raster data; 7) cosinor and spline models for cyclical and other complicated patterns; 8) model checking and selection; and 9) simulation.\\
@@ -138,10 +136,84 @@ Step-by-step tutorials, help files, examples, and code can be found in the packa
 %We first provide an overview of the main features and functions of \verb|momentuHMM|.  
 The workflow for \verb|momentuHMM| analyses consists of several steps (Fig.\ \ref{fig:workflow}). These include data preparation, data visualization, model specification and fitting, results visualization, and model checking. The workhorse functions of the package are listed in Table \ref{tab:functions}. Usage of several of these functions is deliberately similar to equivalent functions in \verb|moveHMM| \citep{MichelotEtAl2016}, but the \verb|momentuHMM| arguments have been generalized and expanded to accommodate a much more flexible framework for data pre-processing, model specification, parameterization, visualization, and simulation. R users already familiar with \verb|moveHMM| will therefore likely find it easy to immediately begin using \verb|momentuHMM|. %While the \verb|momentuHMM| syntax is therefore more complicated, any \verb|moveHMM| model can be implemented in \verb|momentuHMM|.
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{workflow_simData_rev1.pdf}
+  \caption{Schematic representing the typical momentuHMM workflow. White boxes indicate package functions and black boxes indicate object classes returned by functions. The simData function can be used to simulate multivariate HMM data from scratch or from a fitted model. When telemetry data are subject to location measurement error or temporal irregularity (dotted arrows), these sources of uncertainty can be incorporated into HMMs using single or multiple imputation of the position process via the crawlWrap function.}
+  \label{fig:workflow}
+\end{figure}
+
+\begin{table}
+  \caption{\label{tab:functions} Workhorse functions for the R package momentuHMM.}
+  \begin{tabular}{ll}
+  \toprule
+  Function & Description \tabularnewline
+  \midrule
+  %\verb|AIC.momentuHMM| & AIC for one or several \verb|momentuHMM| models  \tabularnewline
+  %\verb|CIbeta| & Confidence intervals for working (beta) parameters  \tabularnewline
+  %\verb|CIreal| & Confidence intervals for natural (real) parameters  \tabularnewline
+  \verb|crawlMerge| & Merge \verb|crawlWrap| output with additional data streams or covariates  \tabularnewline 
+  \verb|crawlWrap| & Fit continuous-time correlated random walk (CTCRW) models and \\ &predict temporally-regular locations using the \verb|crawl| package \tabularnewline  
+  \verb|fitHMM| & Fit a (multivariate) HMM to the data \tabularnewline  
+  \verb|MIfitHMM| & Fit (multivariate) HMMs to multiple imputation data  \tabularnewline  
+  \verb|MIpool| & Pool \verb|momentuHMM| model results across multiple imputations  \tabularnewline 
+  \verb|plot.crwData| & Plot \verb|crawlWrap| output \tabularnewline 
+  \verb|plot.miSum| & Plot summaries of multiple imputation \verb|momentuHMM| models  \tabularnewline 
+  \verb|plot.momentuHMM| & Plot summaries of \verb|momentuHMM| models  \tabularnewline 
+  \verb|plot.momentuHMMData| & Plot summaries of selected data streams and covariates  \tabularnewline 
+  \verb|plotPR| & Plot time series, qq-plots and sample ACFs of pseudo-residuals \tabularnewline 
+  \verb|plotSat| & Plot locations on satellite image \tabularnewline   
+  \verb|plotSpatialCov| & Plot locations on raster image \tabularnewline   
+  \verb|plotStates| & Plot the (Viterbi-)decoded states and state probabilities \tabularnewline 
+  \verb|prepData| & Pre-process data streams and covariates \tabularnewline 
+  \verb|pseudoRes| & Calculate pseudo-residuals for \verb|momentuHMM| models \tabularnewline 
+  \verb|simData| & Simulate data from a (multivariate) HMM \tabularnewline 
+  \verb|stateProbs| & State probabilities for each time step \tabularnewline 
+  \verb|viterbi| & Most likely state sequence (using the Viterbi algorithm)  \tabularnewline  
+  \bottomrule
+  \end{tabular}
+\end{table}
+
 A key feature of \verb|momentuHMM| is the ability to include an unlimited number of HMM data streams (e.g.\ step length, turning angle, dive activity, heart rate) arising from a broad range of commonly used probability distributions (e.g.\ beta, gamma, normal, Poisson, von Mises, Weibull). Using model formulas familiar to most R users, any of the data stream probability distribution parameters can be modelled as functions of environmental and individual covariates via link functions \citep[e.g.][and see Table \ref{tab:pdfs}]{McCullaghNelder1989}. %For any given ``natural scale'' (or ``real scale'') probability distribution parameter $\theta$, all of the link functions $(g)$ in \verb|momentuHMM| are of the general form $g({\boldsymbol \theta}) =  {\mathbf X}_\theta{\boldsymbol \beta}_\theta$, where ${\mathbf X}_\theta$ is the $T \times k$ design matrix (composed of $k$ covariates) and ${\boldsymbol \beta}_\theta$ is the correponding $k$-vector of ``working scale'' (or ``beta scale'') parameters for $\theta$. For example, suppose step length is assumed to have a gamma distribution, $l_t\mid S_t=s \sim \text{gamma}(\mu_s,\sigma_s)$. In \verb|momentuHMM|, the natural scale parameters for the gamma distribution are the (state-dependent) step length mean $(\mu_s>0)$ and standard deviation $(\sigma_s>0)$.  Because both of these parameters must be positive, the log link function is a natural choice for modelling these parameters as a function of covariates, e.g.\ $\log({\boldsymbol \mu}) =  {\mathbf X}_\mu  {\boldsymbol \beta}_\mu$.  
 The initial distribution $({\boldsymbol \delta}^{(0)})$ and state transition probabilities $(\gamma_{ij}^{(t)})$ can also be modelled as functions of covariates% using a multinomial logit link
 . Permissable R classes for covariates include \verb|numeric|, \verb|integer|, or \verb|factor|. %Factors can be particularly useful for specifying models with individual- or group-level (e.g.\ sex or age class) effects on state transition and probability distribution parameters. 
 Spatio-temporal covariates (e.g.\ wind velocity, forest cover, sea ice concentration) can also be \verb|raster| classes \citep{Hijmans2016}, in which case \verb|momentuHMM| extracts the appropriate values based on the time and location of each observation (see section \ref{sec:turtle}).
+
+\begin{table}
+  \caption{\label{tab:pdfs} Data stream $(z)$ probability distributions, natural parameters, and default link functions for covariate modelling. Probability distributions with positive support can be zero-inflated (with additional zero-mass parameters), while the beta distribution can be zero- and one-inflated (with additional one-mass parameters). If user-specified bounds are provided, then custom link functions are used instead of the defaults (see momentuHMM package documentation for further details). If circular-circular regression is specified for the mean of angular distributions (``vm'' and ``wrpcauchy''), then a link function based on \cite{RivestEtAl2016} is used. The von Mises consensus distribution (``vmConsensus'') is a von Mises circular-circular regression model where the concentration parameter depends on the level of agreement among short-term directional persistence and angular covariates. Users seeking additional data stream probability distributions are encouraged to contact the authors.}
+  \begin{tabular}{llll}
+  \toprule
+  Distribution & Support & Parameters & Link function\footnotemark \tabularnewline
+  \midrule
+  Bernoulli (``\verb|bern|'')          & $z_t\in\{0,1\}$          & $\verb|prob|\in(0,1)$            &  $\text{logit}$ \tabularnewline  
+  Beta (``\verb|beta|'')               & $z_t\in(0,1)$            & $\verb|shape1|>0$                &  $\log$ \tabularnewline  
+                                       &                          & $\verb|shape2|>0$                &  $\log$ \tabularnewline
+                                       &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
+                                       &                          & $\verb|one-mass|\in(0,1)$        &  $\text{logit}$ \tabularnewline 
+  Exponential (``\verb|exp|'')         & $z_t>0$                  & $\verb|rate|>0$                  &  $\log$ \tabularnewline  
+                                       &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
+  Gamma (``\verb|gamma|'')             & $z_t>0$                  & $\verb|mean|>0$                  &  $\log$ \tabularnewline  
+                                       &                          & $\verb|sd|>0$                    &  $\log$ \tabularnewline  
+                                       &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
+  Log normal (``\verb|lnorm|'')        & $z_t>0$                  & $\verb|location|\in{\rm I\!R}$   &  identity \tabularnewline  
+                                       &                          & $\verb|scale|>0$                 &  $\log$ \tabularnewline  
+                                       &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
+  Normal (``\verb|norm|'')             & $z_t\in{\rm I\!R}$       & $\verb|mean|\in{\rm I\!R}$       &  identity \tabularnewline  
+                                       &                          & $\verb|sd|>0$                    &  $\log$ \tabularnewline 
+  Poisson (``\verb|pois|'')            & $z_t\in\{0,1,\ldots\}$   & $\verb|lambda|>0$                &  $\log$ \tabularnewline  
+  Von Mises (``\verb|vm|'')            & $z_t\in(-\pi,\pi]$       & $\verb|mean|\in(-\pi,\pi]$       &  $\tan(\verb|mean|/2)$ \tabularnewline  
+                                       &                          & $\verb|concentration|>0$         &  $\log$ \tabularnewline 
+  Von Mises (``\verb|vmConsensus|'')   & $z_t\in(-\pi,\pi]$       & $\verb|mean|\in(-\pi,\pi]$       &  \cite{RivestEtAl2016} \tabularnewline  
+                                       &                          & $\verb|kappa|>0$                 &  $\log$ \tabularnewline 
+  Weibull (``\verb|weibull|'')         & $z_t>0$                  & $\verb|shape|>0$                 &  $\log$ \tabularnewline  
+                                       &                          & $\verb|scale|>0$                 &  $\log$ \tabularnewline  
+                                       &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
+  Wrapped Cauchy (``\verb|wrpcauchy|'')& $z_t\in(-\pi,\pi]$       & $\verb|mean|\in(-\pi,\pi]$       &  $\tan(\verb|mean|/2)$ \tabularnewline  
+                                       &                          & $\verb|concentration|\in(0,1)$ &  $\text{logit}$ \tabularnewline 
+  \bottomrule
+  \end{tabular}
+  \footnotesize{$^1$Link functions $(g)$ relate natural scale parameters $({\boldsymbol \theta})$ to a $T \times k$ design matrix $({\mathbf X})$ and $k-$vector of working scale parameters $(\boldsymbol{\beta}\in \mathbb{R}^k)$ such that $g({\boldsymbol \theta})={\mathbf X}\boldsymbol{\beta}$.}
+\end{table}
 
 \subsection{Data preparation and visualization}
 For temporally-regular location data with negligible measurement error, the \verb|prepData| function returns a \verb|momentuHMMData| object (i.e. a data frame of class \verb|momentuHMMData|) that can be used for data visualization and further analysis. Summary plots of \verb|momentuHMMData| objects can be created for any data stream or covariate using the generic \verb|plot| function. If location data are temporally-irregular or subject to measurement error, then a 2-stage multiple imputation approach can be performed \citep{HootenEtAl2017,McClintock2017}. We discuss this pragmatic approach to incorporating location uncertainty into HMMs of animal movement in section \ref{sec:mi}.
@@ -226,8 +298,30 @@ As our first example, we use an African elephant ({\it Loxodonta africana}) bull
 . In addition to hourly locations, the tag collected external temperature data. %Location measurement error is negligible for these terrestrial GPS data, although about 1\% of the hourly observations collected between 22 March 2008 and 30 September 2010 are missing. Instead of simply ignoring these missing data, we employed \verb|crawlWrap| to predict the missing hourly locations prior to fitting a 2-state HMM assuming a wrapped Cauchy distribution for turning angle and a gamma distribution for step length. 
 Using \verb|fitHMM|, we fitted a 2-state HMM assuming a wrapped Cauchy distribution for turning angle and a gamma distribution for step length. Autocorrelation function estimates suggest there are 24 h cycles in the step length data (Fig.\ \ref{fig:elephantResults1}), and this presents an opportunity to demonstrate the cosinor model for incorporating cyclical behaviour in model parameters. We therefore specified temperature effects on the turning angle concentration parameters and cycling temperature effects (with a 24 h periodicity) on the step length and state transition probability parameters using the \verb|DM| and \verb|formula| arguments. 
 
+\begin{figure}[htbp]
+  \includegraphics[width=0.49\textwidth]{elephant_plotSat.png}
+  \includegraphics[width=0.49\textwidth]{plot_elephantResults017.pdf}
+  \includegraphics[width=0.49\textwidth]{plot_elephantResults015.pdf}
+  \includegraphics[width=0.49\textwidth]{plot_elephantResults016.pdf}
+  \caption{Selected plots for the 2-state (``encamped'' and ``exploratory'') African elephant example% generated using the generic 'plot' and 'acf' functions
+. About \Sexpr{round(as.numeric(activityBudgets[1]),2)*100}\% and \Sexpr{round(as.numeric(activityBudgets[2]),2)*100}\% of the 1 h time steps were attributed to the ``encamped'' and ``exploratory'' states, respectively. Top-left panel is a plot of the elephant track produced using the `plotSat' function, top-right panel presents the autocorrelation function (ACF) plot of the step length data, bottom-left panel is a plot of the Viterbi-decoded track (orange = ``encamped'', blue = ``exploratory'') generated from the fitted model using the generic `plot' function, and bottom-right panel presents the step length pseudo-residual ACF plot using the `plotPR' function.}
+  \label{fig:elephantResults1}
+\end{figure}
+
 The model identifed a state of slow undirected movement (``encamped''), and a state of faster and more directed movement (``exploratory'') (Fig.\ \ref{fig:elephantResults1}). %About \Sexpr{round(as.numeric(activityBudgets[1]),2)*100}\% of the steps were attributed to the ``encamped'' state, and \Sexpr{round(as.numeric(activityBudgets[2]),2)*100}\% were attributed to the ``exploratory'' state. 
 Interestingly, this model suggests step lengths and directional persistence for the ``encamped'' state decreased as temperature increased, step lengths for both states tended to decrease in the late evening and early morning, and transition probabilities from the ``encamped'' to ``exploratory'' state decreased as temperature increased (Fig.\ \ref{fig:elephantResults2}). This model was overwhelmingly supported by AIC when compared to alternative models with fewer covariates, but model fit can be further assessed using pseudo-residuals.  In this case, the pseudo-residuals indicate the model explained much of the periodicity in step length, although there does still appear to be some room for improvement (Fig.\ \ref{fig:elephantResults1}).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.35\textwidth]{plot_elephantResults009.pdf}
+  \includegraphics[width=0.35\textwidth]{plot_elephantResults012.pdf} \\
+  \includegraphics[width=0.35\textwidth]{plot_elephantResults001.pdf} 
+  \includegraphics[width=0.35\textwidth]{plot_elephantResults002.pdf} \\
+  \includegraphics[width=0.35\textwidth]{plot_elephantResults010.pdf}
+  \includegraphics[width=0.35\textwidth]{plot_elephantResults013.pdf} \\
+  \caption{Estimated probability distribution and parameter plots for the 2-state (``encamped'' and ``exploratory'') African elephant example generated using the generic 'plot' function. Top panels present histograms of the step length (top-left) and turning angle (top-right) data along with the estimated state-dependent probability distributions based on the mean temperature (temp = 29.7 degrees celsius) at 12:00 GMT (hour = 12). Middle panels present estimates (and 95\% confidence intervals) for the step length mean parameter of the ``encamped'' state as a function of temperature and hour of day.  Bottom-left panel presents estimates for the turning angle concentration parameter of the ``encamped'' state as a function of temperature.  Bottom-right panel presents estimated state transition probabilities (1 = ``encamped'', 2 = ``exploratory'') as a function of temperature at 12:00 GMT.}
+  \label{fig:elephantResults2}
+\end{figure}
 
 \subsection{Northern fur seal}
 \label{sec:nfs}
@@ -235,6 +329,15 @@ We use the northern fur seal ({\it Callorhinus ursinus}) example from \cite{McCl
 We then used multiple imputation to account for location uncertainty by repeatedly fitting the 3-state HMM to $m=100$ realizations of the position process using \verb|MIfitHMM|. We specified a gamma distribution for step length, wrapped Cauchy distribution for turning angle, and Poisson distribution for the number of foraging dives. %We used several arguments in \verb|MIfitHMM| to avoid label switching among the 100 imputed data model fits and enforce similar state-dependent probability distribution constraints as \cite{McClintockEtAl2014b}, e.g.\ constraining the Poisson rate parameters such that the ``foraging'' state tends to have more foraging dives than the ``transit'' state ($\lambda_2 > \lambda_3$). %To prohibit foraging dives for the ``resting'' state, we used the \verb|fixPar| argument to effectively fix the Poisson rate parameter to zero on the natural scale (i.e.\ $\lambda_1 \approx 0$).
 
 Our results were very similar to those of the discrete-time Bayesian model of \cite{McClintockEtAl2014b}, with periods of ``foraging'' often followed by ``resting'' at sea (Fig.\ \ref{fig:nfsResults}).  Activity budgets based on the estimated state sequences for each imputation were \Sexpr{round(as.numeric(nfsTimeInStates$est["resting"]),2)} (95\% CI: \Sexpr{round(as.numeric(nfsTimeInStates$lower["resting"]),2)}$-$\Sexpr{round(as.numeric(nfsTimeInStates$upper["resting"]),2)}) for ``resting'', \Sexpr{round(as.numeric(nfsTimeInStates$est["foraging"]),2)} (95\% CI: \Sexpr{round(as.numeric(nfsTimeInStates$lower["foraging"]),2)}$-$\Sexpr{round(as.numeric(nfsTimeInStates$upper["foraging"]),2)}) for ``foraging'', and \Sexpr{round(as.numeric(nfsTimeInStates$est["transit"]),2)} (95\% CI: \Sexpr{round(as.numeric(nfsTimeInStates$lower["transit"]),2)}$-$\Sexpr{round(as.numeric(nfsTimeInStates$upper["transit"]),2)}) for ``transit''.
+
+\begin{figure}[htbp]
+  \includegraphics[width=0.49\textwidth,page=1]{plot_nfsResults}
+  \includegraphics[width=0.49\textwidth,page=2]{plot_nfsResults}
+  \includegraphics[width=0.49\textwidth,page=3]{plot_nfsResults}
+  \includegraphics[width=0.49\textwidth,page=4]{plot_nfsResults}
+  \caption{Plots of the northern fur seal example results generated using the generic `plot' function. The estimated probability distributions for step length (top-left panel), turning angle (top-right panel), and number of foraging dives (bottom-left panel) for the 3-state (``resting'', ``foraging'', and ``transit'') model are plotted along with histograms of these data streams. The temporally-regular predicted locations, 95\% ellipsoidal confidence bands, and estimated states are plotted in the bottom-right panel. All estimates are pooled across multiple imputations of the position process and thus reflect uncertainty attributable to location measurement error and temporally-irregular observations.}
+  \label{fig:nfsResults}
+\end{figure}
 
 \subsection{Loggerhead turtle}
 \label{sec:turtle}
@@ -278,6 +381,18 @@ perpendicular to ocean surface currents %(mean $\text{angle\_osc}=\Sexpr{round(m
 with no directional persistence% $(\rho^\phi_1=\Sexpr{round(as.numeric(turtle_miSum$Par$real$angle$est["concentration","state 1"]),2)})$
 . %The turtle spent \Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$est["state 1"]),2)} (95\% CI: \Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$lower["state 1"]),2)}$-$\Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$upper["state 1"]),2)}) of the 2 h time steps in the ``foraging'' state and \Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$est["state 2"]),2)} (95\% CI: \Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$lower["state 2"]),2)}$-$\Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$upper["state 2"]),2)}) of time steps in the ``transit'' state as it travelled northeast along a predominant current until it (presumably) found an attractive foraging patch (Fig.\ \ref{fig:turtleResults}).
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.32\textwidth]{plot_turtleResults001.pdf}
+  \includegraphics[width=0.32\textwidth]{plot_turtleResults002.pdf}
+  \includegraphics[width=0.32\textwidth]{plot_turtleResults004.pdf}
+  %\begin{adjustbox}{trim=0cm 0.25cm 0cm 1.5cm}
+    \includegraphics[width=\textwidth]{plot_turtleResults2.pdf}
+  %\end{adjustbox}
+  \caption{Selected results from the loggerhead turtle example. Top panels include estimates and 95\% confidence intervals for the mean step length parameter as a function of ocean surface current speed $(w)$ when ocean surface current direction $(r_t)$ is the same as the bearing $(b_t)$ of movement (i.e.\ ${\text angle\_osc}=\cos(b_t-r_t)=1$; top-left panel), mean step length parameter as a function of ${\text angle\_osc}$ at the mean ocean surface current speed ($w=0.46$ m/s; top-middle panel), and mean turning angle parameter as a function of $d_t=\text{atan2}(\sin(r_t-b_{t-1}),\cos(r_t-b_{t-1}))$ (top-right panel). Bottom panel plots the pooled track, 95\% error ellipse confidence band, and state (orange = ``foraging'', blue = ``transit'') estimates based on multiple imputations of the position process relative to ocean surface current speed (m/s) and direction on 2 December 2012. Estimates therefore reflect uncertainty attributable to location measurement error and temporally-irregular observations. The turtle spent \Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$est["state 1"]),2)} (95\% CI: \Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$lower["state 1"]),2)}$-$\Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$upper["state 1"]),2)}) of the 2 h time steps in the ``foraging'' state and \Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$est["state 2"]),2)} (95\% CI: \Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$lower["state 2"]),2)}$-$\Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$upper["state 2"]),2)}) of time steps in the ``transit'' state as it travelled northeast along a predominant current until it (presumably) found an attractive foraging patch.}
+  \label{fig:turtleResults}
+\end{figure}
+
 \subsection{Grey seal}
 \label{sec:greySeal}
 We now revisit an analysis of a grey seal ({\it Halichoerus grypus}) track that was originally conducted by \cite{McClintockEtAl2012} using Bayesian methods and computationally-intensive Markov chain Monte Carlo. This seal tended to move in a clockwise fashion between two terrestrial ``haul-out'' sites and a foraging area in the North Sea. %The data consist of 1045 temporally-irregular Fastloc GPS locations collected in the North Sea between 9 April and 11 August 2008. 
@@ -287,6 +402,16 @@ that were unassociated with an activity centre. After using \verb|crawlWrap| to 
 
 %As in \cite{McClintockEtAl2012}, we assumed a Weibull distribution for step length where both the shape and scale parameters depended on the distance from the location at time $t$ to each activity centre. For the activity centres on land (``Abertay'' and ``Farne''), we allowed the (state-dependent) step length parameters to change when the seal was beyond 2500m of the haulout. For the ``Dogger'' activity centre, we allowed the parameters to change when the seal was beyond 15000m of this (presumably) foraging area. We thus allowed the movement behaviour to change within these activity centre states upon entering or leaving the vicinity of these sites.  We assumed a wrapped Cauchy distribution for turning angle with (state-dependent) mean angle derived from the direction to each activity centre at time $t$, and the concentration parameter was modelled similarly to the step length parameters. For the two ``exploratory'' states, we assumed they were simple random walks unaffected by proximity to activity centres. The state transition probabilities were also allowed to change as a function of distance to activity centres. To complete our model specification, we used the \verb|knownStates| argument to assign the seal to the corresponding activity centre state whenever it was within the 2500m (haulout area) or 15000m (foraging area) thresholds for each imputed data set, and the \verb|fixPar| argument was used to remove short-term directional persistence (and thus formulate the model as a mixture of biased and simple random walks). 
 Each model fit required about 4 min on a standard desktop computer (macOS El Capitan, 16 GB RAM, 2.8 GHz Intel Core i7). Estimated activity budgets for the 5 states of this multiple-imputation HMM were \Sexpr{round(greySealTimeInStates$est["Abertay"],2)} $(\Sexpr{round(greySealTimeInStates$lower["Abertay"],2)}-\Sexpr{round(greySealTimeInStates$upper["Abertay"],2)})$ for the ``Abertay'' haul-out state, \Sexpr{round(greySealTimeInStates$est["Farne"],2)} $(\Sexpr{round(greySealTimeInStates$lower["Farne"],2)}-\Sexpr{round(greySealTimeInStates$upper["Farne"],2)})$ for the ``Farne Islands'' haul-out state, \Sexpr{round(greySealTimeInStates$est["Dogger"],2)} $(\Sexpr{round(greySealTimeInStates$lower["Dogger"],2)}-\Sexpr{round(greySealTimeInStates$upper["Dogger"],2)})$ for the ``Dogger Bank'' foraging state, \Sexpr{round(greySealTimeInStates$est["low"],2)} $(\Sexpr{round(greySealTimeInStates$lower["low"],2)}-\Sexpr{round(greySealTimeInStates$upper["low"],2)})$ for a low-speed ``exploratory'' state, and \Sexpr{round(greySealTimeInStates$est["high"],2)} $(\Sexpr{round(greySealTimeInStates$lower["high"],2)}-\Sexpr{round(greySealTimeInStates$upper["high"],2)})$ for a high-speed ``exploratory'' state. All three activity centre states exhibited shorter step lengths and less biased movements when within the vicinity of these targets. Results from this analysis were thus very similar to \cite{McClintockEtAl2012}, but this implementation required far less computation time and no custom model-fitting algorithms. A simulated track generated using \verb|simData| is presented along with the fitted track in Fig.\ \ref{fig:greySealStateSims}.% While potentially useful for study design, power analysis, and prediction, the \verb|simData| function can also be helpful in assessing goodness of fit by repeatedly drawing simulated data sets from a fitted model and comparing them to observed properties of the data \citep[e.g.][]{MoralesEtAl2004}.
+
+\begin{figure}[htbp]
+  \centering
+  %\begin{adjustbox}{trim=0cm 0.25cm 0cm 1.5cm}
+    \includegraphics[width=0.8\textwidth]{plot_greySealResults1.png}\\
+    \includegraphics[width=0.8\textwidth]{plot_greySealResults2.png}
+  %\end{adjustbox}
+  \caption{Fitted and simulated tracks from the grey seal example. This seal tended to move in a clockwise fashion between two haul-out locations (``Abertay'' and ``Farne Islands'') and a foraging area (``Dogger Bank'') in the North Sea. Top panel plots the pooled track, 95\% error ellipse confidence bands, and state estimates based on the 5-state HMM fitted to multiple imputations of the position process. Red points indicate the locations of the three activity centres. Black points indicate the (temporally-irregular) observed locations. Bottom panel presents the locations and states for a track simulated from the fitted model using the `simData' function.}
+  \label{fig:greySealStateSims}
+\end{figure}
 
 \section{Discussion}
 \label{sec:discuss}
@@ -316,157 +441,5 @@ All code mentioned here is available in the \verb|momentuHMM| package for R  hos
 
 \bibliographystyle{mee}
 \bibliography{master}
-
-\clearpage
-
-\begin{table}
-  \caption{\label{tab:functions} Workhorse functions for the R package momentuHMM.}
-  \begin{tabular}{ll}
-  \toprule
-  Function & Description \tabularnewline
-  \midrule
-  %\verb|AIC.momentuHMM| & AIC for one or several \verb|momentuHMM| models  \tabularnewline
-  %\verb|CIbeta| & Confidence intervals for working (beta) parameters  \tabularnewline
-  %\verb|CIreal| & Confidence intervals for natural (real) parameters  \tabularnewline
-  \verb|crawlMerge| & Merge \verb|crawlWrap| output with additional data streams or covariates  \tabularnewline 
-  \verb|crawlWrap| & Fit continuous-time correlated random walk (CTCRW) models and \\ &predict temporally-regular locations using the \verb|crawl| package \tabularnewline  
-  \verb|fitHMM| & Fit a (multivariate) HMM to the data \tabularnewline  
-  \verb|MIfitHMM| & Fit (multivariate) HMMs to multiple imputation data  \tabularnewline  
-  \verb|MIpool| & Pool \verb|momentuHMM| model results across multiple imputations  \tabularnewline 
-  \verb|plot.crwData| & Plot \verb|crawlWrap| output \tabularnewline 
-  \verb|plot.miSum| & Plot summaries of multiple imputation \verb|momentuHMM| models  \tabularnewline 
-  \verb|plot.momentuHMM| & Plot summaries of \verb|momentuHMM| models  \tabularnewline 
-  \verb|plot.momentuHMMData| & Plot summaries of selected data streams and covariates  \tabularnewline 
-  \verb|plotPR| & Plot time series, qq-plots and sample ACFs of pseudo-residuals \tabularnewline 
-  \verb|plotSat| & Plot locations on satellite image \tabularnewline   
-  \verb|plotSpatialCov| & Plot locations on raster image \tabularnewline   
-  \verb|plotStates| & Plot the (Viterbi-)decoded states and state probabilities \tabularnewline 
-  \verb|prepData| & Pre-process data streams and covariates \tabularnewline 
-  \verb|pseudoRes| & Calculate pseudo-residuals for \verb|momentuHMM| models \tabularnewline 
-  \verb|simData| & Simulate data from a (multivariate) HMM \tabularnewline 
-  \verb|stateProbs| & State probabilities for each time step \tabularnewline 
-  \verb|viterbi| & Most likely state sequence (using the Viterbi algorithm)  \tabularnewline  
-  \bottomrule
-  \end{tabular}
-\end{table}
-
-\begin{table}
-  \caption{\label{tab:pdfs} Data stream $(z)$ probability distributions, natural parameters, and default link functions for covariate modelling. Probability distributions with positive support can be zero-inflated (with additional zero-mass parameters), while the beta distribution can be zero- and one-inflated (with additional one-mass parameters). If user-specified bounds are provided, then custom link functions are used instead of the defaults (see momentuHMM package documentation for further details). If circular-circular regression is specified for the mean of angular distributions (``vm'' and ``wrpcauchy''), then a link function based on \cite{RivestEtAl2016} is used. The von Mises consensus distribution (``vmConsensus'') is a von Mises circular-circular regression model where the concentration parameter depends on the level of agreement among short-term directional persistence and angular covariates. Users seeking additional data stream probability distributions are encouraged to contact the authors.}
-  \begin{tabular}{llll}
-  \toprule
-  Distribution & Support & Parameters & Link function\footnotemark \tabularnewline
-  \midrule
-  Bernoulli (``\verb|bern|'')          & $z_t\in\{0,1\}$          & $\verb|prob|\in(0,1)$            &  $\text{logit}$ \tabularnewline  
-  Beta (``\verb|beta|'')               & $z_t\in(0,1)$            & $\verb|shape1|>0$                &  $\log$ \tabularnewline  
-                                       &                          & $\verb|shape2|>0$                &  $\log$ \tabularnewline
-                                       &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
-                                       &                          & $\verb|one-mass|\in(0,1)$        &  $\text{logit}$ \tabularnewline 
-  Exponential (``\verb|exp|'')         & $z_t>0$                  & $\verb|rate|>0$                  &  $\log$ \tabularnewline  
-                                       &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
-  Gamma (``\verb|gamma|'')             & $z_t>0$                  & $\verb|mean|>0$                  &  $\log$ \tabularnewline  
-                                       &                          & $\verb|sd|>0$                    &  $\log$ \tabularnewline  
-                                       &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
-  Log normal (``\verb|lnorm|'')        & $z_t>0$                  & $\verb|location|\in{\rm I\!R}$   &  identity \tabularnewline  
-                                       &                          & $\verb|scale|>0$                 &  $\log$ \tabularnewline  
-                                       &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
-  Normal (``\verb|norm|'')             & $z_t\in{\rm I\!R}$       & $\verb|mean|\in{\rm I\!R}$       &  identity \tabularnewline  
-                                       &                          & $\verb|sd|>0$                    &  $\log$ \tabularnewline 
-  Poisson (``\verb|pois|'')            & $z_t\in\{0,1,\ldots\}$   & $\verb|lambda|>0$                &  $\log$ \tabularnewline  
-  Von Mises (``\verb|vm|'')            & $z_t\in(-\pi,\pi]$       & $\verb|mean|\in(-\pi,\pi]$       &  $\tan(\verb|mean|/2)$ \tabularnewline  
-                                       &                          & $\verb|concentration|>0$         &  $\log$ \tabularnewline 
-  Von Mises (``\verb|vmConsensus|'')   & $z_t\in(-\pi,\pi]$       & $\verb|mean|\in(-\pi,\pi]$       &  \cite{RivestEtAl2016} \tabularnewline  
-                                       &                          & $\verb|kappa|>0$                 &  $\log$ \tabularnewline 
-  Weibull (``\verb|weibull|'')         & $z_t>0$                  & $\verb|shape|>0$                 &  $\log$ \tabularnewline  
-                                       &                          & $\verb|scale|>0$                 &  $\log$ \tabularnewline  
-                                       &                          & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
-  Wrapped Cauchy (``\verb|wrpcauchy|'')& $z_t\in(-\pi,\pi]$       & $\verb|mean|\in(-\pi,\pi]$       &  $\tan(\verb|mean|/2)$ \tabularnewline  
-                                       &                          & $\verb|concentration|\in(0,1)$ &  $\text{logit}$ \tabularnewline 
-  \bottomrule
-  \end{tabular}
-  \footnotesize{$^1$Link functions $(g)$ relate natural scale parameters $({\boldsymbol \theta})$ to a $T \times k$ design matrix $({\mathbf X})$ and $k-$vector of working scale parameters $(\boldsymbol{\beta}\in \mathbb{R}^k)$ such that $g({\boldsymbol \theta})={\mathbf X}\boldsymbol{\beta}$.}
-\end{table}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\textwidth]{workflow_simData_rev1.pdf}
-  \caption{Schematic representing the typical momentuHMM workflow. White boxes indicate package functions and black boxes indicate object classes returned by functions. The simData function can be used to simulate multivariate HMM data from scratch or from a fitted model. When telemetry data are subject to location measurement error or temporal irregularity (dotted arrows), these sources of uncertainty can be incorporated into HMMs using single or multiple imputation of the position process via the crawlWrap function.}
-  \label{fig:workflow}
-\end{figure}
-
-\begin{figure}[htbp]
-  \includegraphics[width=0.49\textwidth]{elephant_plotSat.png}
-  \includegraphics[width=0.49\textwidth]{plot_elephantResults017.pdf}
-  \includegraphics[width=0.49\textwidth]{plot_elephantResults015.pdf}
-  \includegraphics[width=0.49\textwidth]{plot_elephantResults016.pdf}
-  \caption{Selected plots for the 2-state (``encamped'' and ``exploratory'') African elephant example% generated using the generic 'plot' and 'acf' functions
-. About \Sexpr{round(as.numeric(activityBudgets[1]),2)*100}\% and \Sexpr{round(as.numeric(activityBudgets[2]),2)*100}\% of the 1 h time steps were attributed to the ``encamped'' and ``exploratory'' states, respectively. Top-left panel is a plot of the elephant track produced using the `plotSat' function, top-right panel presents the autocorrelation function (ACF) plot of the step length data, bottom-left panel is a plot of the Viterbi-decoded track (orange = ``encamped'', blue = ``exploratory'') generated from the fitted model using the generic `plot' function, and bottom-right panel presents the step length pseudo-residual ACF plot using the `plotPR' function.}
-  \label{fig:elephantResults1}
-\end{figure}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.35\textwidth]{plot_elephantResults009.pdf}
-  \includegraphics[width=0.35\textwidth]{plot_elephantResults012.pdf} \\
-  \includegraphics[width=0.35\textwidth]{plot_elephantResults001.pdf} 
-  \includegraphics[width=0.35\textwidth]{plot_elephantResults002.pdf} \\
-  \includegraphics[width=0.35\textwidth]{plot_elephantResults010.pdf}
-  \includegraphics[width=0.35\textwidth]{plot_elephantResults013.pdf} \\
-  \caption{Estimated probability distribution and parameter plots for the 2-state (``encamped'' and ``exploratory'') African elephant example generated using the generic 'plot' function. Top panels present histograms of the step length (top-left) and turning angle (top-right) data along with the estimated state-dependent probability distributions based on the mean temperature (temp = 29.7 degrees celsius) at 12:00 GMT (hour = 12). Middle panels present estimates (and 95\% confidence intervals) for the step length mean parameter of the ``encamped'' state as a function of temperature and hour of day.  Bottom-left panel presents estimates for the turning angle concentration parameter of the ``encamped'' state as a function of temperature.  Bottom-right panel presents estimated state transition probabilities (1 = ``encamped'', 2 = ``exploratory'') as a function of temperature at 12:00 GMT.}
-  \label{fig:elephantResults2}
-\end{figure}
-
-%\begin{figure}[htbp]
-%  \centering
-%  \includegraphics[width=0.32\textwidth]{plot_elephantResults015.pdf}
-%  \includegraphics[width=0.32\textwidth]{plot_elephantResults009.pdf}
-%  \includegraphics[width=0.32\textwidth]{plot_elephantResults012.pdf} \\
-%  \includegraphics[width=0.32\textwidth]{plot_elephantResults001.pdf} 
-%  \includegraphics[width=0.32\textwidth]{plot_elephantResults002.pdf}
-%  \includegraphics[width=0.32\textwidth]{plot_elephantResults010.pdf} \\
-%  \includegraphics[width=0.32\textwidth]{plot_elephantResults013.pdf}
-%  \includegraphics[width=0.32\textwidth]{plot_elephantResults017.pdf}
-%  \includegraphics[width=0.32\textwidth]{plot_elephantResults016.pdf} \\
-%  \caption{Selected plots for the 2-state (``encamped'' and ``exploratory'') African elephant example% generated using the generic 'plot' and 'acf' functions
-%. About \Sexpr{round(as.numeric(activityBudgets[1]),2)*100}\% and \Sexpr{round(as.numeric(activityBudgets[2]),2)*100}\% of the 1 h time steps were attributed to the ``encamped'' and ``exploratory'' states, respectively. Top-left panel presents the Viterbi-decoded track (orange = ``encamped'', blue = ``exploratory''), top-centre and top-right panels respectively present histograms of the step length and turning angle data along with the estimated state-dependent probability distributions based on the mean temperature (temp = 29.7 degrees celsius) at 12:00 GMT (hour = 12).  Middle panels present estimates (and 95\% confidence intervals) for the step length mean parameter of the ``encamped'' state as a function of temperature (middle-left), the step length mean parameter of the ``encamped'' state as a function of hour of day (middle-centre), and the turning angle concentration parameter of the ``encamped'' state as a function of temperature (middle-right).  Bottom-left panel presents estimated state transition probabilities (1 = ``encamped'', 2 = ``exploratory'') as a function of temperature at 12:00 GMT, bottom-centre panel presents the autocorrelation function (ACF) plot of the step length data, and bottom-right panel presents the step length pseudo-residual ACF plot using the `plotPR' function.}
-%  \label{fig:elephantResults}
-%\end{figure}
-
-\begin{figure}[htbp]
-  \includegraphics[width=0.49\textwidth,page=1]{plot_nfsResults}
-  \includegraphics[width=0.49\textwidth,page=2]{plot_nfsResults}
-  \includegraphics[width=0.49\textwidth,page=3]{plot_nfsResults}
-  \includegraphics[width=0.49\textwidth,page=4]{plot_nfsResults}
-  \caption{Plots of the northern fur seal example results generated using the generic `plot' function. The estimated probability distributions for step length (top-left panel), turning angle (top-right panel), and number of foraging dives (bottom-left panel) for the 3-state (``resting'', ``foraging'', and ``transit'') model are plotted along with histograms of these data streams. The temporally-regular predicted locations, 95\% ellipsoidal confidence bands, and estimated states are plotted in the bottom-right panel. All estimates are pooled across multiple imputations of the position process and thus reflect uncertainty attributable to location measurement error and temporally-irregular observations.}
-  \label{fig:nfsResults}
-\end{figure}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.32\textwidth]{plot_turtleResults001.pdf}
-  \includegraphics[width=0.32\textwidth]{plot_turtleResults002.pdf}
-  \includegraphics[width=0.32\textwidth]{plot_turtleResults004.pdf}
-  %\begin{adjustbox}{trim=0cm 0.25cm 0cm 1.5cm}
-    \includegraphics[width=\textwidth]{plot_turtleResults2.pdf}
-  %\end{adjustbox}
-  \caption{Selected results from the loggerhead turtle example. Top panels include estimates and 95\% confidence intervals for the mean step length parameter as a function of ocean surface current speed $(w)$ when ocean surface current direction $(r_t)$ is the same as the bearing $(b_t)$ of movement (i.e.\ ${\text angle\_osc}=\cos(b_t-r_t)=1$; top-left panel), mean step length parameter as a function of ${\text angle\_osc}$ at the mean ocean surface current speed ($w=0.46$ m/s; top-middle panel), and mean turning angle parameter as a function of $d_t=\text{atan2}(\sin(r_t-b_{t-1}),\cos(r_t-b_{t-1}))$ (top-right panel). Bottom panel plots the pooled track, 95\% error ellipse confidence band, and state (orange = ``foraging'', blue = ``transit'') estimates based on multiple imputations of the position process relative to ocean surface current speed (m/s) and direction on 2 December 2012. Estimates therefore reflect uncertainty attributable to location measurement error and temporally-irregular observations. The turtle spent \Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$est["state 1"]),2)} (95\% CI: \Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$lower["state 1"]),2)}$-$\Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$upper["state 1"]),2)}) of the 2 h time steps in the ``foraging'' state and \Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$est["state 2"]),2)} (95\% CI: \Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$lower["state 2"]),2)}$-$\Sexpr{round(as.numeric(turtle_miSum$Par$timeInStates$upper["state 2"]),2)}) of time steps in the ``transit'' state as it travelled northeast along a predominant current until it (presumably) found an attractive foraging patch.}
-  \label{fig:turtleResults}
-\end{figure}
-
-\begin{figure}[htbp]
-  \centering
-  %\begin{adjustbox}{trim=0cm 0.25cm 0cm 1.5cm}
-    \includegraphics[width=0.8\textwidth]{plot_greySealResults1.png}\\
-    \includegraphics[width=0.8\textwidth]{plot_greySealResults2.png}
-  %\end{adjustbox}
-  \caption{Fitted and simulated tracks from the grey seal example. This seal tended to move in a clockwise fashion between two haul-out locations (``Abertay'' and ``Farne Islands'') and a foraging area (``Dogger Bank'') in the North Sea. Top panel plots the pooled track, 95\% error ellipse confidence bands, and state estimates based on the 5-state HMM fitted to multiple imputations of the position process. Red points indicate the locations of the three activity centres. Black points indicate the (temporally-irregular) observed locations. Bottom panel presents the locations and states for a track simulated from the fitted model using the `simData' function.}
-  \label{fig:greySealStateSims}
-\end{figure}
-
-%\begin{figure}[htbp]
-%  \centering
-%  \includegraphics[width=\textwidth]{plot_sesResults1}
-%  \caption{Selected results from a 4-state southern elephant seal analysis originally presented by \cite{MichelotEtAl2017} that was replicated using momentuHMM. The 15 southern elephant seal tracks are colored by the most likely state sequence (green = ``outbound'', yellow = ``search'', red = ``forage'', purple = ``inbound'') during foraging trips from the colony on Kerguelen Island. Further details can be found in the package vignette.}
-%  \label{fig:sesTracks}
-%\end{figure}
 
 \end{document}
