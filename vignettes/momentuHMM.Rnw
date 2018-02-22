@@ -862,6 +862,86 @@ The three fitted model can be compared with \verb|AIC(m1,m2,m3)|, which overwhel
   \label{fig:sesResults}
 \end{figure}
 
+\subsection{Group dynamic animal movement}
+\label{sec:groupModel}
+Here we demonstrate how \verb|momentuHMM| can be used to simulate and fit the group dynamic animal movement model of \cite{LangrockEtAl2014}. In group dynamic models, groups (e.g., herds, packs, schools) are allowed to influence the movement of social individuals. One way to accomplish this is to model individual movements as being attracted to a group ``centroid''. Depending on the system, the centroid could simply be the location of the group center (e.g., the mathematical centroid of the group) or group leader (e.g., alpha wolf) at times $t=1,\dots,T$.  In this sense, the centroid can be considered a dynamic activity center that changes position over time, and these models are not necessarily limited to groups.  For example, the centroid could instead refer to predators, competitors, or human activity (in which case the centroid might be repulsive rather than attractive!). 
+
+Dynamic activity centers can be simulated in \verb|simData| using the \verb|centroids| argument.  Following simulation scenario A of \cite{LangrockEtAl2014}, we first simulate a group centroid as a single-state (i.e. $N=1$) biased correlated random walk relative to the origin:
+<<groupModel-centroid, echo=TRUE, eval=FALSE>>=
+dist <- list(step="gamma", angle="vm")
+nbObs <- 250
+
+Parc <- list(step = c(15,10), 
+             angle = c(0.15,log(1)))
+
+DMc <- list(angle=list(mean = ~center1.angle,
+                       concentration=~1))
+
+centroidData <- simData(nbStates=1, dist=dist, Par=Parc, DM=DMc,
+                        circularAngleMean = list(angle = TRUE),
+                        centers = matrix(0,1,2),
+                        obsPerAnimal = nbObs)
+@
+\begin{figure}[htbp]
+  \includegraphics[width=0.49\textwidth]{plot_groupExampleCentroid001.pdf}
+  \includegraphics[width=0.49\textwidth]{plot_groupExample001.pdf}\\
+  \includegraphics[width=0.49\textwidth]{plot_groupExampleResults007.pdf}
+  \includegraphics[width=0.49\textwidth]{plot_groupExampleResults008.pdf}\\
+  \caption{Selected results from the group dynamic animal movement example. Panels include the simulated centroid path (top-left panel), the simulated paths of 20 individuals where state 1 (``group'') includes biased movements towards the centroid and state 2 (``solitary'') is a correlated random walk independent of the group centroid (top-right panel), and two fitted tracks that are colored by the most likely state sequence (bottom panels).}
+  \label{fig:groupResults}
+\end{figure}
+Now we can use the simulated centroid track (Fig. \ref{fig:groupResults}) as a dynamic activity center and simulate the movement of a group of 20 individuals as a 2-state mixture of a biased random walk (relative to the centroid) and a correlated random walk (independent of the centroid):
+<<groupModel-groupData, echo=TRUE, eval=FALSE>>=
+nbAnimals <- 20
+nbStates <- 2
+stateNames <- c("group","solitary")
+
+Par <- list(step = c(30,50,15,25), 
+            angle = c(1.e+7,log(2.5),log(5)))
+
+beta <- matrix(c(-2.944439,-1.734601),1,nbStates)
+
+DM <- list(angle=list(mean = ~state1(centroid.angle),
+                      concentration = ~1))
+
+# calculate stationary distribution
+gamma <- diag(nbStates)
+gamma[!gamma] <- exp(beta)
+gamma <- t(gamma)
+gamma <- gamma/apply(gamma,1,sum)
+delta <- solve(diag(nbStates) - t(gamma) + 1, rep(1, nbStates))
+
+# draw random initial locations for each individual
+initialPositions <- vector("list")
+for (i in 1:nbAnimals) {
+  initialPositions[[i]] <- runif(2, -10, 10)
+}
+
+# create centroid data frame
+cD <- data.frame(x = centroidData$x, y = centroidData$y)
+
+groupData <- simData(nbAnimals=nbAnimals, nbStates=nbStates, dist=dist,
+                     Par = Par, beta = beta, delta = delta, DM = DM,
+                     circularAngleMean = list(angle = TRUE),
+                     centroids = list(centroid = cD),
+                     obsPerAnimal = nbObs,
+                     initialPosition = initialPositions,
+                     states = TRUE, stateNames = stateNames)
+@
+\noindent Here state 1 (``group'') has biased movements toward the centroid and state 2 (``solitary'') is simply a correlated random walk independent of the group centroid (Fig. \ref{fig:groupResults}).  Note that despite this being a 2-state HMM, the working scale parameters for turning angle (\verb|Par$angle|) only includes 3 parameters (1 for the angle mean and 2 for the concentration parameters).  This is because under the circular-circular regression model, no working parameter is specified\footnote{More accurately, the working parameter for the reference angle is automatically fixed to $\beta_0=1$.} for the reference turning angle of zero (i.e., the component for short-term directional persistence; see Eq. \ref{eq:circ}) and no angular covariates were specified in the model for state 2 (``solitary''). Thus the first parameter corresponds to the working scale parameter of the \verb|centroid.angle| covariate for state 1 (``group''), while the second and third parameters are the working scale parameters for the concentration parameters for states 1 and 2, respectively.  In this case, the angle mean parameter for state 1 was set at a large value (1.e+7) so as to enforce a biased random walk (instead of a biased correlated random walk). In other words, the large value for the biased random walk component ``swamps'' the correlated random walk component in Eq. \ref{eq:circ}.
+
+Finally, we can fit the group dynamic model using \verb|fitHMM|:
+<<groupModel-fit, echo=TRUE, eval=FALSE>>=
+Par0 <- list(step = c(30,50,15,25), 
+             angle = c(0,log(2.5),log(5)))
+
+groupFit <- fitHMM(groupData, nbStates=nbStates, dist=dist, Par=Par0,
+                   DM = DM, stationary = TRUE,
+                   estAngleMean = list(angle = TRUE),
+                   circularAngleMean = list(angle = TRUE),
+                   stateNames = stateNames)
+@
+
 \subsection{Harbour seals}
 \label{sec:harbourSeal}
 Here we demonstrate how more complicated parameter constraints can be implemented using the \verb|userBounds| and \verb|workBounds| arguments in \verb|fitHMM| and \verb|MIfitHMM|. This example is based on the harbour seal analysis of \cite{McClintockEtAl2013c}. Using individual-level random effects on probability distribution parameters, \cite{McClintockEtAl2013c} performed a Bayesian analysis of population-level activity budgets for 3-states (``resting'', ``foraging'', and ``transit''). While \verb|momentuHMM| cannot be used to replicate this analysis exactly, we can perform a similar analysis in the absence of individual-level random effects. Here we will focus on several specific parameter constraints, but the full example code can be found in the ``vignettes'' source directory. 
@@ -1033,86 +1113,6 @@ As was mentioned earlier, we found overwhelming AIC support for the individual-l
   \caption{Estimated individual-level state transition probabilities for the harbour seal example.}
   \label{fig:hsTPM}
 \end{figure}
-
-\subsection{Group dynamic animal movement}
-\label{sec:groupModel}
-Here we demonstrate how \verb|momentuHMM| can be used to simulate and fit the group dynamic animal movement model of \cite{LangrockEtAl2014}. In group dynamic models, groups (e.g., herds, packs, schools) are allowed to influence the movement of social individuals. One way to accomplish this is to model individual movements as being attracted to a group ``centroid''. Depending on the system, the centroid could simply be the location of the group center (e.g., the mathematical centroid of the group) or group leader (e.g., alpha wolf) at times $t=1,\dots,T$.  In this sense, the centroid can be considered a dynamic activity center that changes position over time, and these models are not necessarily limited to groups.  For example, the centroid could instead refer to predators, competitors, or human activity (in which case the centroid might be repulsive rather than attractive!). 
-
-Dynamic activity centers can be simulated in \verb|simData| using the \verb|centroids| argument.  Following simulation scenario A of \cite{LangrockEtAl2014}, we first simulate a group centroid as a single-state (i.e. $N=1$) biased correlated random walk relative to the origin:
-<<groupModel-centroid, echo=TRUE, eval=FALSE>>=
-dist <- list(step="gamma", angle="vm")
-nbObs <- 250
-
-Parc <- list(step = c(15,10), 
-             angle = c(0.15,log(1)))
-
-DMc <- list(angle=list(mean = ~center1.angle,
-                       concentration=~1))
-
-centroidData <- simData(nbStates=1, dist=dist, Par=Parc, DM=DMc,
-                        circularAngleMean = list(angle = TRUE),
-                        centers = matrix(0,1,2),
-                        obsPerAnimal = nbObs)
-@
-\begin{figure}[htbp]
-  \includegraphics[width=0.49\textwidth]{plot_groupExampleCentroid001.pdf}
-  \includegraphics[width=0.49\textwidth]{plot_groupExample001.pdf}\\
-  \includegraphics[width=0.49\textwidth]{plot_groupExampleResults007.pdf}
-  \includegraphics[width=0.49\textwidth]{plot_groupExampleResults008.pdf}\\
-  \caption{Selected results from the group dynamic animal movement example. Panels include the simulated centroid path (top-left panel), the simulated paths of 20 individuals where state 1 (``group'') includes biased movements towards the centroid and state 2 (``solitary'') is a correlated random walk independent of the group centroid (top-right panel), and two fitted tracks that are colored by the most likely state sequence (bottom panels).}
-  \label{fig:groupResults}
-\end{figure}
-Now we can use the simulated centroid track (Fig. \ref{fig:groupResults}) as a dynamic activity center and simulate the movement of a group of 20 individuals as a 2-state mixture of a biased random walk (relative to the centroid) and a correlated random walk (independent of the centroid):
-<<groupModel-groupData, echo=TRUE, eval=FALSE>>=
-nbAnimals <- 20
-nbStates <- 2
-stateNames <- c("group","solitary")
-
-Par <- list(step = c(30,50,15,25), 
-            angle = c(1.e+7,log(2.5),log(5)))
-
-beta <- matrix(c(-2.944439,-1.734601),1,nbStates)
-
-DM <- list(angle=list(mean = ~state1(centroid.angle),
-                      concentration = ~1))
-
-# calculate stationary distribution
-gamma <- diag(nbStates)
-gamma[!gamma] <- exp(beta)
-gamma <- t(gamma)
-gamma <- gamma/apply(gamma,1,sum)
-delta <- solve(diag(nbStates) - t(gamma) + 1, rep(1, nbStates))
-
-# draw random initial locations for each individual
-initialPositions <- vector("list")
-for (i in 1:nbAnimals) {
-  initialPositions[[i]] <- runif(2, -10, 10)
-}
-
-# create centroid data frame
-cD <- data.frame(x = centroidData$x, y = centroidData$y)
-
-groupData <- simData(nbAnimals=nbAnimals, nbStates=nbStates, dist=dist,
-                     Par = Par, beta = beta, delta = delta, DM = DM,
-                     circularAngleMean = list(angle = TRUE),
-                     centroids = list(centroid = cD),
-                     obsPerAnimal = nbObs,
-                     initialPosition = initialPositions,
-                     states = TRUE, stateNames = stateNames)
-@
-\noindent Here state 1 (``group'') has biased movements toward the centroid and state 2 (``solitary'') is simply a correlated random walk independent of the group centroid (Fig. \ref{fig:groupResults}).  Note that despite this being a 2-state HMM, the working scale parameters for turning angle (\verb|Par$angle|) only includes 3 parameters (1 for the angle mean and 2 for the concentration parameters).  This is because under the circular-circular regression model, no working parameter is specified\footnote{More accurately, the working parameter for the reference angle is automatically fixed to $\beta_0=1$.} for the reference turning angle of zero (i.e., the component for short-term directional persistence; see Eq. \ref{eq:circ}) and no angular covariates were specified in the model for state 2 (``solitary''). Thus the first parameter corresponds to the working scale parameter of the \verb|centroid.angle| covariate for state 1 (``group''), while the second and third parameters are the working scale parameters for the concentration parameters for states 1 and 2, respectively.  In this case, the angle mean parameter for state 1 was set at a large value (1.e+7) so as to enforce a biased random walk (instead of a biased correlated random walk). In other words, the large value for the biased random walk component ``swamps'' the correlated random walk component in Eq. \ref{eq:circ}.
-
-Finally, we can fit the group dynamic model using \verb|fitHMM|:
-<<groupModel-fit, echo=TRUE, eval=FALSE>>=
-Par0 <- list(step = c(30,50,15,25), 
-             angle = c(0,log(2.5),log(5)))
-
-groupFit <- fitHMM(groupData, nbStates=nbStates, dist=dist, Par=Par0,
-                   DM = DM, stationary = TRUE,
-                   estAngleMean = list(angle = TRUE),
-                   circularAngleMean = list(angle = TRUE),
-                   stateNames = stateNames)
-@
 
 \section{Discussion}
 Here we have introduced version \Sexpr{installed.packages()["momentuHMM","Version"]} of the R package \verb|momentuHMM| and demonstrated some of its capabilities for conducting multivariate HMM analyses with animal location, auxiliary biotelemetry, and environmental data. The package allows for fitting (and simulating from) a suite of biased and correlated random walk movement process models \citep[e.g.][]{McClintockEtAl2012}, can be used for an unlimited number of data streams and latent behavior states, includes multiple imputation methods to account for measurement error, temporal irregularity, and other forms of missing data that would otherwise be prohibitive to maximum likelihood analysis, and integrates seamlessly with rasters to facilitate spatio-temporal covariate modelling. Because the package incorporates biased random walks, it can also be used to implement group dynamic models \cite[e.g.][]{LangrockEtAl2014}. The package therefore greatly expands on available software and facilitates the incorporation of more ecological and behavioral realism for hypothesis-driven analyses of animal movement that account for many of the challenges commonly associated with telemetry data. While many of the features of \verb|momentuHMM| were motivated by animal movement data, we note that the package is not limited to location data and can be used for analyzing any type of data that is amenable to (multivariate) HMMs.
