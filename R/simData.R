@@ -422,8 +422,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         if(circularAngleMean[[i]]){
           names(Par[[i]]) <- unique(gsub("cos","",gsub("sin","",colnames(model$conditions$fullDM[[i]]))))
         } else names(Par[[i]])<-colnames(model$conditions$fullDM[[i]])
-        cons[[i]]<-rep(1,length(cons[[i]]))
-        workcons[[i]]<-rep(0,length(workcons[[i]]))
+        #cons[[i]]<-rep(1,length(cons[[i]]))
+        #workcons[[i]]<-rep(0,length(workcons[[i]]))
       }
     }
     for(i in distnames[which(dist %in% angledists)]){
