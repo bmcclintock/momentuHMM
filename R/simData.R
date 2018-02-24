@@ -375,18 +375,27 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     
     model <- delta_bc(model)
     
+    # extract simulation parameters from model
+    nbStates <- length(model$stateNames)
+    dist<-model$conditions$dist
+    distnames<-names(dist)
+    
     if(is.miSum(model)){
       model$mle <- lapply(model$Par$real,function(x) x$est)
       model$mle$beta <- model$Par$beta$beta$est
       model$mle$delta <- model$Par$real$delta$est
       model$mod <- list()
       model$mod$estimate <- model$MIcombine$coefficients
+      for(i in distnames){
+        model$conditions$cons[[i]]<-rep(1,length(model$conditions$cons[[i]]))
+        model$conditions$workcons[[i]]<-rep(0,length(model$conditions$workcons[[i]]))
+        model$conditions$workBounds[[i]]<-matrix(c(-Inf,Inf),nrow(model$conditions$workBounds[[i]]),2,byrow=TRUE)
+      }
+      if(!is.null(model$mle$beta)) model$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(model$mle$beta),2,byrow=TRUE)
+      if(!is.null(model$Par$beta$delta$est)) model$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(model$Par$beta$delta$est),2,byrow=TRUE)
+      
     }
     
-    # extract simulation parameters from model
-    nbStates <- length(model$stateNames)
-    dist<-model$conditions$dist
-    distnames<-names(dist)
     userBounds <- model$conditions$bounds
     workBounds <- model$conditions$workBounds
     stateNames<-model$stateNames
