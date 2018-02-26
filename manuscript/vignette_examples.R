@@ -1,6 +1,8 @@
 library(sp)
 library(doParallel)
 
+example_wd <- ("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/vignette examples/")
+
 append.RData <- function(x, file) {
   old.objects <- load(file)
   save(list = c(old.objects, deparse(substitute(x))), file = file)
@@ -111,13 +113,6 @@ greySealTimeInStates<-greySealPool$Par$timeInStates
 
 append.RData(greySealTimeInStates,file=paste0(getwd(),"/vignette_inputs.RData"))
 
-pdf(file=paste0(getwd(),"/plot_greySealResults%03d.pdf"),onefile=FALSE)
-plot(greySealPool,plotCI=TRUE,ask=FALSE)
-dev.off()
-
-for(plt in seq(1,18)[-c(2,6,9,13)])
-  unlink(paste0("plot_greySealResults0",ifelse(plt>9,"","0"),plt,".pdf"))
-
 load(paste0(getwd(),"/greySealData_TPM.RData"))
 load(paste0(getwd(),"/coastUTM.RData"))
 
@@ -176,127 +171,6 @@ lines(coastUTM$Easting, coastUTM$Northing)
 points(centers,col="#D55E00",pch=20,cex=1.6)
 dev.off()
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
-
-###################################################
-### Elephant seal example
-###################################################
-#source(paste0(getwd(),"/sesExample.R"))
-load(paste0(example_wd,"sesExample.RData"))
-
-sesCIbeta<-m3$CIbeta
-
-append.RData(tracks,file=paste0(getwd(),"/vignette_inputs.RData"))
-append.RData(sesCIbeta,file=paste0(getwd(),"/vignette_inputs.RData"))
-
-pdf(file=paste0(getwd(),"/plot_sesResults%03d.pdf"),onefile=FALSE)
-plot(m3,plotCI=TRUE,ask=FALSE)
-dev.off()
-
-for(plt in seq(1,27)[-c(1,3,7,9)])
-  unlink(paste0("plot_sesResults0",ifelse(plt>9,"","0"),plt,".pdf"))
-
-
-library(maps) # for map plots
-library(mapdata) # for map plots
-library(marmap) # to plot bathymetry
-library(sp) # for degAxis
-pdf(file=paste0(getwd(),"/plot_sesResults2.pdf"),width=12,height=6)
-plot(data$x, data$y, axes=FALSE, xlab="longitude", ylab="latitude", col="white")
-degAxis(1)
-degAxis(2)
-map('worldHires', add=TRUE, fill=TRUE, col='white')
-
-pal <- c("#78c679","#F0E442","#E31A1C","#88419d")
-
-for(id in unique(data$ID)) {
-  ind <- which(data$ID==id)
-  segments(x0 = data$x[ind[-length(ind)]], y0 = data$y[ind[-length(ind)]], x1 = data$x[ind[-1]], y1 = data$y[ind[-1]], 
-           col = pal[states[ind[-length(ind)]]], lwd=2)
-}
-
-legend("topleft", legend = stateNames,
-       col = pal, lwd=2, bg="white")
-dev.off()
-rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
-
-###################################################
-### harbour seal example
-###################################################
-#source(paste0(getwd(),"/harbourSealExample.R"))
-load(paste0(example_wd,"harbourSealExample.RData"))
-
-alpha<-0.95
-im_states <- foreach(i = 1:nSims, .combine = rbind) %dopar% {momentuHMM::viterbi(miBestFit.ind[[i]])}
-
-hsActivityBudgets<-list()
-
-for(i in c("M","F")){
-
-  xmat <- t(apply(im_states[,which(hsData$sex==i)],1,function(x) {counts<-hist(x,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts;counts/sum(counts)}))
-  xvar <- matrix(0 , ncol=nbStates, nrow=nSims, byrow=TRUE) # don't have se's; might be a way to get these but probably quite complicated
-  n <- apply(!(is.na(xmat)+is.na(xvar)),2,sum)
-  
-  if(any(n<2)) warning("need at least 2 simulations with valid point and variance estimates for timeInStates")
-  
-  est <- apply(xmat,2,mean,na.rm=TRUE)
-  B_m <- apply(xmat,2,var,na.rm=TRUE)
-  
-  W_m <- apply(xvar,2,mean,na.rm=TRUE)
-  se <- sqrt(W_m + (n+1)/n * B_m)
-  
-  dfs<-(n-1)*(1+1/(n+1)*W_m/B_m)^2
-  quantSup<-qt(1-(1-alpha)/2,df=dfs)
-  
-  lower <- momentuHMM:::probCI(est,se,quantSup,"lower")
-  upper <- momentuHMM:::probCI(est,se,quantSup,"upper")
-  
-  hsActivityBudgets[[i]] <- cbind(est,se,lower,upper)
-  rownames(hsActivityBudgets[[i]])<-stateNames
-}
-
-append.RData(hsActivityBudgets,file=paste0(getwd(),"/vignette_inputs.RData"))
-
-options(scipen=10)
-cx=0.9
-tmpData<-as.data.frame(hsData)
-coordinates(tmpData)<-c("x","y")
-proj4string(tmpData)<-CRS("+init=epsg:27700 +units=m")
-tmpData<-spTransform(tmpData,CRS="+proj=longlat +ellps=WGS84")
-
-for(id in c(1,8)){
-  freqs<-miSum.ind$Par$states[hsData$ID==id]
-  x<-tmpData$x[which(hsData$ID==id)]
-  y<-tmpData$y[which(hsData$ID==id)]
-  errorEllipse<-miSum.ind$errorEllipse[which(hsData$ID==id)]
-  errorEllipse<-lapply(errorEllipse,function(x){x<-as.data.frame(x);
-                                                coordinates(x)<-c("x","y");
-                                                proj4string(x)<-CRS("+init=epsg:27700 +units=m");
-                                                x<-spTransform(x,CRS="+proj=longlat +ellps=WGS84");
-                                                as.data.frame(x)})
-  
-  png(file=paste0(getwd(),"/plot_harbourSeal",id,".png"),width=5,height=7.25,units="in",res=90)
-  plot(x,y,type="o",pch=20,cex=.5,xlab="longitude",ylab="latitude")
-  points(x_ti[which(data$ID==id)],y_ti[which(data$ID==id)],pch=20,type="o",cex=0.5,col=gray(.5))
-  map('worldHires', c('UK', 'Ireland', 'Isle of Man','Isle of Wight'), col=gray(0.85),fill=T,add=T)
-  map.axes()
-  points(x,y,type="o",pch=20,col=c("#E69F00", "#56B4E9", "#009E73")[freqs],cex=.5)
-  segments(x0=x[-length(x)],y0=y[-length(y)],x1=x[-1],y1=y[-1],
-           col=c("#E69F00", "#56B4E9", "#009E73")[freqs][-length(freqs)],lwd=1.3)
-  #points(coordinates(turtleData)/1000,cex=0.15)
-  for(i in 1:length(errorEllipse))
-    lines(errorEllipse[[i]],col=adjustcolor(c("#E69F00", "#56B4E9", "#009E73")[freqs][i],alpha.f=0.25),cex=0.6)
-  legend("topright",c(stateNames,"observed"),col=c("#E69F00", "#56B4E9", "#009E73",gray(.5)),pch=20)
-  dev.off()
-}
-
-pdf(file=paste0(getwd(),"/plot_harbourSealResults%03d.pdf"),onefile=FALSE)
-plot(miSum.ind,plotCI=TRUE,ask=FALSE)
-dev.off()
-
-for(plt in seq(1,38)[-c(21)])
-  unlink(paste0("plot_harbourSealResults0",ifelse(plt>9,"","0"),plt,".pdf"))
-
-rm(list=ls()[-which(ls()=="example_wd")])
 
 
 
