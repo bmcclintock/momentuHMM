@@ -400,7 +400,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
       }
       if(any(!is.finite(p))) stop(i," working scale parameters are not finite. Check natural parameter values, bounds, and constraints.")
       
-      workBounds[i] <- getWorkBounds(workBounds[i],i,p,parindex[i]-parindex[[i]],parCount,inputs$DM)
+      workBounds[i] <- getWorkBounds(workBounds[i],i,p,parindex[i]-parindex[[i]],parCount,inputs$DM)[i]
       if(any(p<workBounds[[i]][,1]) | any(p>workBounds[[i]][,2])) stop("could not find valid working scale parameters for ",i," that satisfy workBounds")
       
       p <- nw2w(p,workBounds[[i]])
