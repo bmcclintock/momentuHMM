@@ -295,7 +295,7 @@ pdf(file=paste0(getwd(),"/plot_harbourSealResults%03d.pdf"),onefile=FALSE)
 plot(miSum.ind,plotCI=TRUE,ask=FALSE)
 dev.off()
 
-for(plt in seq(1,38)[-c(21)])
+for(plt in seq(1,37)[-c(20)])
   unlink(paste0("plot_harbourSealResults0",ifelse(plt>9,"","0"),plt,".pdf"))
 
 rm(list=ls()[-which(ls()=="example_wd")])
