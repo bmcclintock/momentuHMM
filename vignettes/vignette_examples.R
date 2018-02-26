@@ -1,6 +1,8 @@
 library(sp)
 library(doParallel)
 
+example_wd <- ("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/vignette examples/")
+
 append.RData <- function(x, file) {
   old.objects <- load(file)
   save(list = c(old.objects, deparse(substitute(x))), file = file)
