@@ -1,4 +1,9 @@
 library(momentuHMM)
+library(setRNG)
+
+# set seed
+oldRNG<-setRNG()
+setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=1)
 
 # load nfs data from github
 load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/nfsData.RData"))
@@ -26,14 +31,14 @@ dist <- list(step = "gamma", angle = "wrpcauchy", dive = "pois")
 
 ### construct pseudo-design matrix constraining parameters (to avoid label switching across imputations)
 # constrain step length mean parameters: transit > resting
-stepDM<-matrix(c(1,0,1,0,0,0,-1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1),nrow=2*nbStates)
-stepworkBounds <- matrix(c(-Inf,0,-Inf,-Inf,-Inf,-Inf,rep(Inf,6)),6,2)
+stepDM<-matrix(c(1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1),nrow=2*nbStates)
+stepworkBounds <- matrix(c(-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,Inf,0,rep(Inf,4)),6,2)
 # constrain turning angle concentration parameters: transit > resting
-angleDM<-matrix(c(1,0,1,-1,0,0,0,1,0),nrow=nbStates)
-angleworkBounds <- matrix(c(-Inf,0,-Inf,rep(Inf,3)),3,2)
+angleDM<-matrix(c(1,0,1,1,0,0,0,1,0),nrow=nbStates)
+angleworkBounds <- matrix(c(-Inf,-Inf,-Inf,Inf,0,Inf),3,2)
 # constrain dive lambda parameters: foraging > transit
-diveDM<-matrix(c(1,0,0,0,1,1,0,0,-1),nrow=nbStates)
-diveworkBounds <- matrix(c(-Inf,-Inf,0,rep(Inf,3)),3,2)
+diveDM<-matrix(c(1,0,0,0,1,1,0,0,1),nrow=nbStates)
+diveworkBounds <- matrix(c(-Inf,-Inf,-Inf,rep(Inf,2),0),3,2)
 
 DM<-list(step=stepDM,angle=angleDM,dive=diveDM)
 workBounds<-list(step=stepworkBounds,angle=angleworkBounds,dive=diveworkBounds)
@@ -44,11 +49,17 @@ Par0 <- getParDM(nbStates = nbStates, dist = dist,
 
 fixPar <- list(dive = c(-100, NA, NA))
 
+# set prior to help prevent working parameters from straying along boundary
+prior <- function(par){sum(dnorm(par,0,10,log=TRUE))}
+
 nfsFits <- MIfitHMM(crwOut, nSims = nSims, ncores = ncores, nbStates = nbStates, dist = dist,
                     Par0 = Par0, DM = DM, workBounds = workBounds,
                     estAngleMean = list(angle = FALSE), 
                     fixPar = fixPar, retryFits = retryFits,
+                    prior = prior,
                     stateNames=stateNames)
 plot(nfsFits)
 
 save.image("nfsExample.RData")
+
+setRNG(oldRNG)
