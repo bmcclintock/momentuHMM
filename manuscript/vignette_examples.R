@@ -26,9 +26,9 @@ save(activityBudgets,file=paste0(getwd(),"/vignette_inputs.RData"))
 
 acfLag<-24*14
 pdf(file=paste0(getwd(),"/plot_elephantResults%03d.pdf"),onefile=FALSE)
-plot(m3,ask=FALSE,plotCI=TRUE,covs=data.frame(hour=12))
-acf(pr[["stepRes"]], lag.max = acfLag, na.action = na.pass, xlab="Lag (hours)", main = "")
-acf(elephantData$step,na.action=na.pass,lag=acfLag,main="",xlab="Lag (hours)")
+plot(m3,ask=FALSE,plotCI=TRUE,covs=data.frame(hour=12),cex.main=1.4,cex.lab=1.4,cex.axis=1.4,cex.legend=1.4)
+acf(pr[["stepRes"]], lag.max = acfLag, na.action = na.pass, xlab="Lag (hours)", main = "",cex.lab=1.4,cex.axis=1.4)
+acf(elephantData$step,na.action=na.pass,lag=acfLag,main="",xlab="Lag (hours)",cex.lab=1.4,cex.axis=1.4)
 dev.off()
 
 for(plt in seq(1,17)[-c(1,2,9,10,12,13,15,16,17)])
@@ -51,7 +51,7 @@ nfsTimeInStates<-nfsFits$miSum$Par$timeInStates
 append.RData(nfsTimeInStates,file=paste0(getwd(),"/vignette_inputs.RData"))
 
 pdf(file=paste0(getwd(),"/plot_nfsResults.pdf"))
-plot(nfsFits,ask=FALSE)
+plot(nfsFits,ask=FALSE,legend.pos="topright",cex.main=1.3,cex.lab=1.3,cex.axis=1.3,cex.legend=1.3)
 dev.off()
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
@@ -83,7 +83,8 @@ x<-turtleFits$miSum$data$x/1000
 y<-turtleFits$miSum$data$y/1000
 
 pdf(file=paste0(getwd(),"/plot_turtleResults%03d.pdf"),onefile=FALSE)
-plot(turtleFits,plotCI=TRUE,covs=data.frame(angle_osc=1),ask=FALSE)
+turtleFits$miSum$stateNames<-c("foraging","transit")
+plot(turtleFits,plotCI=TRUE,covs=data.frame(angle_osc=1),ask=FALSE,cex.main=2,cex.lab=1.7,cex.axis=1.65)
 dev.off()
 
 for(plt in seq(1,6)[-c(1,2,4)])
