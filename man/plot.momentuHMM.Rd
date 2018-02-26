@@ -41,7 +41,7 @@ Default: \code{FALSE}.}
 
 \item{alpha}{Significance level of the confidence intervals (if \code{plotCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).}
 
-\item{...}{Additional arguments passed to \code{\link[graphics]{plot}} and \code{\link[graphics]{hist}} functions. These can currently include \code{cex}, \code{cex.main}, \code{cex.lab}, \code{cex.axis}, \code{cex.legend}, \code{lwd}, and \code{asp}. See \code{\link[graphics]{par}}. Note that \code{cex} and \code{asp} only apply to plots of animal tracks.}
+\item{...}{Additional arguments passed to \code{\link[graphics]{plot}} and \code{\link[graphics]{hist}} functions. These can currently include \code{asp}, \code{cex}, \code{cex.axis}, \code{cex.lab}, \code{cex.legend}, \code{cex.main}, \code{legend.pos}, and \code{lwd}. See \code{\link[graphics]{par}}. \code{legend.pos} can be a single keyword from the list ``bottomright'', ``bottom'', ``bottomleft'', ``left'', ``topleft'', ``top'', ``topright'', ``right'', and ``center''. Note that \code{asp} and \code{cex} only apply to plots of animal tracks.}
 }
 \description{
 Plot the fitted step and angle densities over histograms of the data, transition probabilities

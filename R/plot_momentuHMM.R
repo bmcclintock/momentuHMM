@@ -24,7 +24,7 @@
 #' @param plotTracks If TRUE, the Viterbi-decoded tracks are plotted (default).
 #' @param plotCI Logical indicating whether to include confidence intervals in natural parameter plots (default: FALSE)
 #' @param alpha Significance level of the confidence intervals (if \code{plotCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).
-#' @param ... Additional arguments passed to \code{\link[graphics]{plot}} and \code{\link[graphics]{hist}} functions. These can currently include \code{cex}, \code{cex.main}, \code{cex.lab}, \code{cex.axis}, \code{cex.legend}, \code{lwd}, and \code{asp}. See \code{\link[graphics]{par}}. Note that \code{cex} and \code{asp} only apply to plots of animal tracks. 
+#' @param ... Additional arguments passed to \code{\link[graphics]{plot}} and \code{\link[graphics]{hist}} functions. These can currently include \code{asp}, \code{cex}, \code{cex.axis}, \code{cex.lab}, \code{cex.legend}, \code{cex.main}, \code{legend.pos}, and \code{lwd}. See \code{\link[graphics]{par}}. \code{legend.pos} can be a single keyword from the list ``bottomright'', ``bottom'', ``bottomleft'', ``left'', ``topleft'', ``top'', ``topright'', ``right'', and ``center''. Note that \code{asp} and \code{cex} only apply to plots of animal tracks. 
 #'
 #' @details The state-dependent densities are weighted by the frequency of each state in the most
 #' probable state sequence (decoded with the function \code{\link{viterbi}}). For example, if the
@@ -373,12 +373,20 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     if(!is.null(arg$lwd)) lwd <- arg$lwd
     else lwd <- 1.3
     arg$lwd <- NULL
+    if(!is.null(arg$legend.pos)) {
+      if(!(arg$legend.pos %in% c("bottomright", "bottom", "bottomleft", "left", "topleft", "top", "topright", "right", "center"))) 
+        stop('legend.pos must be a single keyword from the list "bottomright", "bottom", "bottomleft", "left", "topleft", "top", "topright", "right" and "center"')
+      legend.pos <- arg$legend.pos
+    }
+    else legend.pos <- NULL
+    arg$legend.pos <- NULL
   } else {
     cex <- 0.6
     asp <- 1
     lwd <- 1.3
     cex.main <- 1
     cex.legend <- 1
+    legend.pos <- NULL
     arg <- NULL
   }
   marg <- arg
@@ -736,7 +744,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         }
         
         do.call(mtext,c(list(paste("ID",ID[zoo]),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
-        legend("topleft",legText,lwd=rep(lwd,nbStates),col=col,bty="n",cex=cex.legend)
+        legend(ifelse(is.null(legend.pos),"topleft",legend.pos),legText,lwd=rep(lwd,nbStates),col=col,bty="n",cex=cex.legend)
       }
     }
   }
@@ -805,12 +813,16 @@ plotHist <- function (gen,genDensities,dist,message,
     if(!is.null(arg$cex.legend)) cex.legend <- arg$cex.legend
     else cex.legend <- 1
     arg$cex.legend <- NULL 
+    if(!is.null(arg$legend.pos)) legend.pos <- arg$legend.pos
+    else legend.pos <- NULL
+    arg$legend.pos <- NULL
   } else {
     cex <- 0.6
     asp <- 1
     lwd <- 2
     cex.main <- NA
     cex.legend <- 1
+    legend.pos <- NULL
     arg <- NULL
   }
   marg <- arg
@@ -865,7 +877,7 @@ plotHist <- function (gen,genDensities,dist,message,
         for (s in 2:nbStates) total[, 2] <- total[, 2] + genDensities[[s]][, 2]
         lines(total, lwd = lwd, lty = 2)
       }
-      legend("topright",legText,lwd=rep(lwd,nbStates),col=col,bty="n",cex=cex.legend)
+      legend(ifelse(is.null(legend.pos),"topright",legend.pos),legText,lwd=rep(lwd,nbStates),col=col,bty="n",cex=cex.legend)
     }  
   } else {
     # determine ylim
@@ -912,7 +924,7 @@ plotHist <- function (gen,genDensities,dist,message,
         for (s in 2:nbStates) total[, 2] <- total[, 2] + genDensities[[s]][, 2]
         lines(total, lwd = lwd, lty = 2)
       }
-      legend("topright",legText,lwd=rep(lwd,nbStates),col=col,bty="n",cex=cex.legend)
+      legend(ifelse(is.null(legend.pos),"topright",legend.pos),legText,lwd=rep(lwd,nbStates),col=col,bty="n",cex=cex.legend)
     }
   }
   
