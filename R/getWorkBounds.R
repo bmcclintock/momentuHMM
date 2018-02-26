@@ -11,7 +11,7 @@ getWorkBounds <- function(workBounds,distnames,wpar,parindex,parCount,DM,beta=NU
     #if(any(tmpwpar<workBounds[[i]][,1] | tmpwpar>workBounds[[i]][,2])) stop("starting values for ",i," data stream do not satisfy workBounds")
   }
   
-  if(!is.null(beta)){
+  if(length(beta)){
     if(is.null(workBounds$beta)){
       workBounds$beta <- matrix(c(-Inf,Inf),length(beta),2,byrow=TRUE)
     } else {
@@ -22,7 +22,7 @@ getWorkBounds <- function(workBounds,distnames,wpar,parindex,parCount,DM,beta=NU
     #if(any(beta<workBounds$beta[,1] | beta>workBounds$beta[,2])) stop("beta0 do not satisfy workBounds")
   }
 
-  if(!is.null(delta)){
+  if(length(delta)){
     if(is.null(workBounds$delta)){
       workBounds$delta <- matrix(c(-Inf,Inf),length(delta),2,byrow=TRUE)
     } else {
