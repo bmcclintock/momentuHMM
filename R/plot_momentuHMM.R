@@ -585,7 +585,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           # loop over the states
           for(state in 1:nbStates) {
             gen <- genData[[zoo]][which(states[which(m$data$ID==ID[zoo])]==state)]
-            message <- paste0("Animal ID ",ID[zoo]," - ",stateNames[state],covmess)
+            message <- paste0("ID ",ID[zoo]," - ",stateNames[state],covmess)
             
             # the function plotHist is defined below
             plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,state,hist.ylim[[i]],col,legText, cumul = cumul, ...)
@@ -593,7 +593,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           
         } else { # if !sepStates
           gen <- genData[[zoo]]
-          message <- paste0("Animal ID ",ID[zoo],covmess)
+          message <- paste0("ID ",ID[zoo],covmess)
           
           plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul, ...)
         }
@@ -605,7 +605,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         for(state in 1:nbStates) {
           gen <- genData[which(states==state)]
           if(nbAnimals>1) message <- paste0("All animals - ",stateNames[state],covmess)
-          else message <- paste0("Animal ID ",ID," - ",stateNames[state],covmess)
+          else message <- paste0("ID ",ID," - ",stateNames[state],covmess)
           
           plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,state,hist.ylim[[i]],col,legText, cumul = cumul, ...)
         }
@@ -613,7 +613,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       } else { # if !sepStates
         gen <- genData
         if(nbAnimals>1) message <- paste0("All animals",covmess)
-        else message <- paste0("Animal ID ",ID,covmess)
+        else message <- paste0("ID ",ID,covmess)
         
         plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul, ...)
       }
@@ -735,7 +735,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             do.call(lines,c(list(errorEllipse[[zoo]][[i]],col=adjustcolor(col[subStates[i]],alpha.f=0.25),cex=cex),arg))
         }
         
-        do.call(mtext,c(list(paste("Animal ID:",ID[zoo]),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+        do.call(mtext,c(list(paste("ID",ID[zoo]),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
         legend("topleft",legText,lwd=rep(lwd,nbStates),col=col,bty="n",cex=cex.legend)
       }
     }

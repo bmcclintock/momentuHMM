@@ -294,7 +294,7 @@ plot.crwData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,plotEllipse=TRUE,
         }
         points(x[!is.na(x)],y[!is.na(x)],pch=20,cex=0.5)
 
-        mtext(paste("Animal ID:",ID),side=3,outer=TRUE,padj=2)
+        mtext(paste("ID",ID),side=3,outer=TRUE,padj=2)
         legendtxt<-c(legendtxt,"predicted")
         legendcol<-c(legendcol,colors[zoo])
         legendpch<-c(legendpch,NA)
@@ -307,7 +307,7 @@ plot.crwData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,plotEllipse=TRUE,
         if(!missing(...)) {
           if("main" %in% names(list(...))) titleInd <- FALSE
         }
-        if(titleInd) title(main=paste("Animal ID:",ID))
+        if(titleInd) title(main=paste("ID",ID))
       }
     }      
   }

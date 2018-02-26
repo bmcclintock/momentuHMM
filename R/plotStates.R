@@ -71,7 +71,7 @@ plotStates <- function(m,animals=NULL,ask=TRUE)
     
     # plot the states
     par(mar=c(5,4,4,2)-c(2,0,0,0))
-    plot(states[ind],main=paste("Animal ID: ",unique(m$data$ID)[zoo],sep=""),ylim=c(0.5,nbStates+0.5),
+    plot(states[ind],main=paste("ID ",unique(m$data$ID)[zoo],sep=""),ylim=c(0.5,nbStates+0.5),
          yaxt="n",xlab="",ylab="State")
     axis(side=2,at=1:nbStates,labels=as.character(1:nbStates))
     

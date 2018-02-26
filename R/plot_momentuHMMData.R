@@ -126,7 +126,7 @@ plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compa
         par(mfrow=c(1,1))
         # map of the animal's track
         plot(x,y,type="o",lwd=1.3,xlab="x",ylab="y",pch=20,asp=1)
-        mtext(paste("Animal ID:",ID),side=3,outer=TRUE,padj=2)
+        mtext(paste("ID",ID),side=3,outer=TRUE,padj=2)
       }
 
       ##################################
@@ -153,7 +153,7 @@ plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compa
       axis(1, at = c(-pi, -pi/2, 0, pi/2, pi),
            labels = expression(-pi, -pi/2, 0, pi/2, pi))
 
-      mtext(paste("Animal ID:",ID),side=3,outer=TRUE,padj=2)
+      mtext(paste("ID",ID),side=3,outer=TRUE,padj=2)
     }
     dataNames<-dataNames[-which(dataNames %in% c("step","angle"))]
     
@@ -167,7 +167,7 @@ plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compa
           ID <- unique(data$ID)[zoo]
           x <- data$x[which(data$ID==ID)]
           plot(x, type="o",lwd=1.3, xlab="time", ylab="x", pch=20)
-          mtext(paste("Animal ID:",ID),side=3,outer=TRUE,padj=2)
+          mtext(paste("ID",ID),side=3,outer=TRUE,padj=2)
           
           ##########################################
           ## Plot steps time series and histogram ##
@@ -179,7 +179,7 @@ plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compa
                ylim=c(0,max(step,na.rm=T)))
           # step length histogram
           hist(step,xlab="step length",main="",col="grey",border="white",breaks=breaks)
-          mtext(paste("Animal ID:",ID),side=3,outer=TRUE,padj=2)
+          mtext(paste("ID",ID),side=3,outer=TRUE,padj=2)
       }
       dataNames<-dataNames[-which(dataNames %in% "step")]
     }
@@ -199,7 +199,7 @@ plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compa
            ylim=range(genData,na.rm=TRUE))
       # step length histogram
       hist(genData,xlab=i,main="",col="grey",border="white",breaks=breaks)
-      mtext(paste("Animal ID:",ID),side=3,outer=TRUE,padj=2)
+      mtext(paste("ID",ID),side=3,outer=TRUE,padj=2)
     }
   }
 
