@@ -1,5 +1,10 @@
 library(momentuHMM)
 library(dtwclust)
+library(setRNG)
+
+# set seed
+oldRNG<-setRNG()
+setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=1)
 
 # load grey seal data from github
 load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/greySealData_TPM.RData"))
@@ -75,7 +80,7 @@ for(i in 1:nSims){
   }
 }
 
-# specify pseudo-design matrices with step length constraints (to avoid label switching between exploratory states across multiple imputations)
+# specify pseudo-design matrices with step length constraints (to help avoid label switching between exploratory states across multiple imputations)
 MIstepDM<-matrix(c(1,0,0,0,0,0,0,0,0,0,
                  paste0("I(",paste0("Abertay.dist>",delta[1],")")),0,0,0,0,0,0,0,0,0,
                  0,1,0,0,0,0,0,0,0,0,
@@ -96,27 +101,26 @@ colnames(MIstepDM)<-colnames(bestmod$CIbeta$step$est)
 colnames(MIstepDM)[c(7,8,15,16)]<-c("shape:(Intercept)","shape_5","scale:(Intercept)","scale_5")
 
 # step length parameter constraints
-stepcons<-c(1,1,1,1,1,1,1,2,1,1,1,1,1,1,1,2)
+stepworkBounds <- matrix(c(rep(-Inf,7),0,rep(-Inf,7),0,rep(Inf,ncol(MIstepDM))),nrow=ncol(MIstepDM),ncol=2)
 
-#extract parameter estimates from bestmod and adjust for MIstepDM and stepcons
+#extract parameter estimates from bestmod and adjust for MIstepDM and stepworkBounds
 bestPar<-getPar(bestmod)
-bestPar$Par$step[c(7,8,15,16)]<-c(bestPar$Par$step[7],(bestPar$Par$step[8]-bestPar$Par$step[7])^(1/stepcons[8]),bestPar$Par$step[15],(bestPar$Par$step[16]-bestPar$Par$step[15])^(1/stepcons[16]))
+bestPar$Par$step[c(7,8,15,16)]<-c(bestPar$Par$step[7],log(bestPar$Par$step[8]-bestPar$Par$step[7]),bestPar$Par$step[15],log(bestPar$Par$step[16]-bestPar$Par$step[15]))
 
 startTime<-proc.time()
 greySealFits<-MIfitHMM(miData,nSims=nSims,ncores=ncores,poolEstimates=FALSE,nbStates=nbStates,dist=dist,
-                       Par0=bestPar$Par,beta0=bestPar$beta0,delta0=bestPar$delta,fixPar=fixPar,
+                       Par0=bestPar$Par,beta0=bestPar$beta,delta0=bestPar$delta,fixPar=fixPar,
                        estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
-                       DM=list(step=MIstepDM,angle=angleDM),cons=list(step=stepcons),formula=distFormula,
+                       DM=list(step=MIstepDM,angle=angleDM),workBounds=list(step=stepworkBounds),formula=distFormula,
                        stateNames=stateNames,knownStates=knownStates)
 endTime<-proc.time()-startTime
 
 greySealPool<-MIpool(greySealFits,ncores=ncores)
 plot(greySealPool,plotCI=TRUE,ask=FALSE)
 
-oldRNG<-setRNG::setRNG()
 setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=374)#seed=7)
 greySealSim<-simData(model=greySealPool,centers=centers,initialPosition = centers[1,],obsPerAnimal = 1515,states=TRUE)
-setRNG::setRNG(oldRNG)
+setRNG(oldRNG)
 
 save.image("greySealExample_TPM.RData")
 save(greySealPool,greySealSim,file="greySealResults_TPM.RData")

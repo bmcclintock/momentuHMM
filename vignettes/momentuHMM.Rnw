@@ -1109,7 +1109,7 @@ As was mentioned earlier, we found overwhelming AIC support for the individual-l
 \end{figure}
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=\textwidth]{plot_harbourSealResults021}
+  \includegraphics[width=\textwidth]{plot_harbourSealResults020}
   \caption{Estimated individual-level state transition probabilities for the harbour seal example.}
   \label{fig:hsTPM}
 \end{figure}
