@@ -74,7 +74,7 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
     data <- cbind(data,col=as.factor(states))
     colname <- "state"
     
-  } else if(compact) {
+  } else if(compact & !is.null(data$ID)) {
     # color by "ID"
     
     if(!is.null(animals))
@@ -87,9 +87,12 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   } else {
     # no colors needed
     
+    if(is.null(data$ID)) data$ID <- rep(1,nrow(data))
+    
     nbCol <- 1
-    data <- cbind(data,col=as.factor(1))
+    data <- cbind(data,col=as.factor(data$ID))
     colname <- ""
+    
   }
   
   # prepare palette
