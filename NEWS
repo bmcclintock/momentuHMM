@@ -1,3 +1,12 @@
+momentuHMM 1.4.1 2018-03-08
+-----------------
+CHANGES
+
+* check and print package version upon loading
+
+* updated citation info
+
+
 momentuHMM 1.4.0 2018-02-27
 -----------------
 NEW FEATURES
@@ -64,7 +73,7 @@ NEW FEATURES
 
 * Regression formulas can now be specified for the initial distributions of HMMs using the formulaDelta argument in fitHMM, MIfitHMM, and simData. These changes are backwards compatible with previous versions, but note that the number and order of arguments has been changed in fitHMM, MIfitHMM, and simData.
 
-Changes
+CHANGES
 
 * If step length is zero at time t or t+1, simData and prepData now return NA for turning angle at time step t 
 

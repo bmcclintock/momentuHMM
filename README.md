@@ -26,7 +26,7 @@ install_github("bmcclintock/momentuHMM", ref="develop")
 ```
 
 ## References
-McClintock, B.T., Michelot, T. (2017) [momentuHMM: R package for generalized hidden Markov models of animal movement](https://arxiv.org/abs/1710.03786). *arXiv:1710.03786*.
+McClintock, B.T., Michelot, T. (2018) [momentuHMM: R package for generalized hidden Markov models of animal movement](http://dx.doi.org/10.1111/2041-210X.12995). *Methods in Ecology and Evolution*. doi:10.1111/2041-210X.12995.
 
 McClintock, B.T., King R., Thomas L., Matthiopoulos J., McConnell B.J., Morales J.M. (2012) [A general discrete-time modeling framework for animal movement using multistate random walks](http://onlinelibrary.wiley.com/doi/10.1890/11-0326.1/full). *Ecological Monographs*, 82(3), 335-349.
 
