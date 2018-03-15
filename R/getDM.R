@@ -117,8 +117,11 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
         if(any(varform %in% factorcovs)){
           factorvar<-factorcovs %in% varform
           tmpcov<-rep(factorterms,times=unlist(lapply(data[factorterms],nlevels)))[which(factorvar)]
-          tmpcov<-gsub(factorcovs[factorvar],tmpcov,cov)
-          tmpcovs<-model.matrix(formula(paste("~ 0 + ",tmpcov)),data)
+          tmpcovj <- cov
+          for(j in 1:length(tmpcov)){
+            tmpcovj <- gsub(factorcovs[factorvar][j],tmpcov[j],tmpcovj)
+          }
+          tmpcovs<-model.matrix(formula(paste("~ 0 + ",tmpcovj)),data)
           tmpcovs<-tmpcovs[,which(gsub(" ","",colnames(tmpcovs)) %in% gsub(" ","",cov))]
           covs<-cbind(covs,tmpcovs)
         } else {
