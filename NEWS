@@ -1,5 +1,9 @@
-momentuHMM 1.4.1 2018-03-08
+momentuHMM 1.4.1 2018-03-14
 -----------------
+NEW FEATURES
+
+* timeInStates function added for calculating activity budgets
+
 CHANGES
 
 * check and print package version upon loading
