@@ -4,7 +4,7 @@
 #' Plots time series, qq-plots (against the standard normal distribution), and sample
 #' ACF functions of the pseudo-residuals for each data stream
 #'
-#' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. Alternatively, \code{m} can also be a list of \code{\link{momentuHMM}} objects.
+#' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, \code{\link{HMMfits}}, or \code{\link{miSum}} object.
 #' @param lag.max maximum lag at which to calculate the acf.  See \code{\link[stats]{acf}}.
 #' @param ncores number of cores to use for parallel processing
 #'

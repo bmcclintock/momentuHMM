@@ -7,7 +7,7 @@
 pseudoRes(m, ncores = 1)
 }
 \arguments{
-\item{m}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. Alternatively, \code{m} can also be a list of \code{\link{momentuHMM}} objects.}
+\item{m}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, \code{\link{HMMfits}}, or \code{\link{miSum}} object.}
 
 \item{ncores}{number of cores to use for parallel processing}
 }
