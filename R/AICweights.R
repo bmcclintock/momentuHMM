@@ -77,6 +77,10 @@ AICweights.momentuHMM <- function(..., k=2, n=NULL)
     aic[i] <- AIC.momentuHMM(models[[i]],k=k,n=n)
   }
   
+  for(i in 1:length(models)){
+    if(!is.null(models[[i]]$modelName)) modNames[i] <- models[[i]]$modelName
+  }
+  
   ord <- order(aic) # order models by increasing AIC
   weight <- exp(-0.5*(aic-min(aic)))/sum(exp(-0.5*(aic-min(aic))))
   
@@ -134,9 +138,13 @@ AICweights.miHMM <- function(...,k=2, n=NULL)
   aic <- matrix(NA,length(models),nSims)
   
   for(i in 1:length(models)) {
+    # check modelName
+    checkNames <- lapply(models[[i]],function(x) x[match("modelName",names(x))])
+    if(any(!unlist(lapply(checkNames,function(x) isTRUE(all.equal(x,checkNames[[1]],use.names=FALSE)))))) stop("'modelName' must be identical for fitted models within each miHMM or HMMfits object")
     for(j in iSims){
       aic[i,j] <- AIC.momentuHMM(models[[i]][[j]],k=k,n=n)
     }
+    if(!is.null(models[[i]][[1]]$modelName)) modNames[i] <- models[[i]][[1]]$modelName
   }
   
   weights <- apply(aic,2,function(x) exp(-0.5*(x-min(x)))/sum(exp(-0.5*(x-min(x)))))

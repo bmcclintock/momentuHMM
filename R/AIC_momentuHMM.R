@@ -34,6 +34,10 @@ AIC.momentuHMM <- function(object,...,k=2,n=NULL)
       modcopy[[i+1]] <- models[[i]]
     models <- modcopy
     
+    for(i in 1:length(models)){
+      if(!is.null(models[[i]]$modelName)) modNames[i] <- models[[i]]$modelName
+    }
+    
     if(any(!unlist(lapply(models,is.momentuHMM)))) stop("all models must be momentuHMM objects")
     
     pr <- is.null(models[[1]]$prior)

@@ -1,8 +1,10 @@
-momentuHMM 1.4.1 2018-03-15
+momentuHMM 1.4.1 2018-03-16
 -----------------
 NEW FEATURES
 
 * timeInStates function added for calculating activity budgets
+
+* modelName argument added to fitHMM and MIfitHMM
 
 CHANGES
 
