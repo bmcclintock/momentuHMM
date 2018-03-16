@@ -6,6 +6,8 @@ NEW FEATURES
 
 * modelName argument added to fitHMM and MIfitHMM
 
+* added setModelName and setStateNames functions
+
 CHANGES
 
 * bug fix when a pseudo-design matrix formula includes interactions with >1 factor variable
