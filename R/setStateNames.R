@@ -20,7 +20,8 @@ setStateNames <- function (model, stateNames) {
 #' @export
 setStateNames.momentuHMM <- function(model, stateNames)
 {
-  if(!is.character(stateNames) | (length(stateNames)!=length(model$stateNames))) stop("stateNames must be a character vector of length ",length(model$stateNames))
+  oldStateNames <- model$stateNames
+  if(!is.character(stateNames) | (length(stateNames)!=length(oldStateNames))) stop("stateNames must be a character vector of length ",length(oldStateNames))
   model$stateNames <- stateNames
   
   # rename columns and rows of MLEs
@@ -34,8 +35,23 @@ setStateNames.momentuHMM <- function(model, stateNames)
     colnames(mle$gamma)<-stateNames
     rownames(mle$gamma)<-stateNames
   }
-  model$CIreal <- CIreal(model)
-  model$CIbeta <- CIbeta(model)
+  
+  if(!is.null(model$CIbeta$delta)){
+    for(k in names(model$CIbeta$delta)){
+      for(l in 1:length(stateNames)){
+        colnames(model$CIbeta$delta[[k]]) <- gsub(oldStateNames[l],stateNames[l],colnames(model$CIbeta$delta[[k]]))
+      }
+    }
+  }
+  
+  for(j in names(model$CIreal)){
+    for(k in names(model$CIreal[[j]])){
+      for(l in 1:length(stateNames)){
+        rownames(model$CIreal[[j]][[k]]) <- gsub(oldStateNames[l],stateNames[l],rownames(model$CIreal[[j]][[k]]))
+        colnames(model$CIreal[[j]][[k]]) <- gsub(oldStateNames[l],stateNames[l],colnames(model$CIreal[[j]][[k]]))
+      }
+    }
+  }
   model
 }
 
@@ -79,16 +95,23 @@ setStateNames.miSum <- function(model, stateNames)
   if(!is.character(stateNames) | (length(stateNames)!=length(oldStateNames))) stop("stateNames must be a character vector of length ",length(oldStateNames))
   model$stateNames <- stateNames
   
-  for(i in c("beta","real")){
-    for(j in names(model$Par[[i]])){
-      for(k in names(model$Par[[i]][[j]])){
-        for(l in 1:length(stateNames)){
-          rownames(model$Par[[i]][[j]][[k]]) <- gsub(oldStateNames[l],stateNames[l],rownames(model$Par[[i]][[j]][[k]]))
-          colnames(model$Par[[i]][[j]][[k]]) <- gsub(oldStateNames[l],stateNames[l],colnames(model$Par[[i]][[j]][[k]]))
-        }
+  if(!is.null(model$Par$beta$delta)){
+    for(k in names(model$Par$beta$delta)){
+      for(l in 1:length(stateNames)){
+        colnames(model$Par$beta$delta[[k]]) <- gsub(oldStateNames[l],stateNames[l],colnames(model$Par$beta$delta[[k]]))
       }
     }
   }
+
+  for(j in names(model$Par$real)){
+    for(k in names(model$Par$real[[j]])){
+      for(l in 1:length(stateNames)){
+        rownames(model$Par$real[[j]][[k]]) <- gsub(oldStateNames[l],stateNames[l],rownames(model$Par$real[[j]][[k]]))
+        colnames(model$Par$real[[j]][[k]]) <- gsub(oldStateNames[l],stateNames[l],colnames(model$Par$real[[j]][[k]]))
+      }
+    }
+  }
+
   for(j in names(model$Par[["timeInStates"]])){
     for(l in 1:length(stateNames)){
       names(model$Par[["timeInStates"]][[j]]) <- gsub(oldStateNames[l],stateNames[l],names(model$Par[["timeInStates"]][[j]]))
