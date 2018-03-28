@@ -7,7 +7,7 @@
 setStateNames(model, stateNames)
 }
 \arguments{
-\item{model}{\code{\link{momentuHMM}}, \code{miHMM}, \code{\link{HMMfits}}, or \code{\link{miSum}} object}
+\item{model}{\code{\link{momentuHMM}}, \code{\link{miHMM}}, \code{\link{HMMfits}}, or \code{\link{miSum}} object}
 
 \item{stateNames}{Character string providing state names for the model. See \code{\link{fitHMM}} and \code{\link{MIfitHMM}}.}
 }

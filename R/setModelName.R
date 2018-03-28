@@ -1,7 +1,7 @@
 
 #' Set \code{modelName} for a \code{momentuHMM}, \code{miHMM}, \code{HMMfits}, or \code{miSum} object
 
-#' @param model \code{\link{momentuHMM}}, \code{miHMM}, \code{\link{HMMfits}}, or \code{\link{miSum}} object
+#' @param model \code{\link{momentuHMM}}, \code{\link{miHMM}}, \code{\link{HMMfits}}, or \code{\link{miSum}} object
 #' @param modelName Character string providing a name for the model. See \code{\link{fitHMM}} and \code{\link{MIfitHMM}}.
 #' 
 #' @return \code{model} object with new \code{modelName} field

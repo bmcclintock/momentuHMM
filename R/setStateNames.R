@@ -1,7 +1,7 @@
 
 #' Set \code{stateNames} for a \code{momentuHMM}, \code{miHMM}, \code{HMMfits}, or \code{miSum} object
 
-#' @param model \code{\link{momentuHMM}}, \code{miHMM}, \code{\link{HMMfits}}, or \code{\link{miSum}} object
+#' @param model \code{\link{momentuHMM}}, \code{\link{miHMM}}, \code{\link{HMMfits}}, or \code{\link{miSum}} object
 #' @param stateNames Character string providing state names for the model. See \code{\link{fitHMM}} and \code{\link{MIfitHMM}}.
 #' 
 #' @return \code{model} object with new \code{stateNames} field
