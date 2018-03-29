@@ -1,4 +1,4 @@
-momentuHMM 1.4.1 2018-03-16
+momentuHMM 1.4.1 2018-03-28
 -----------------
 NEW FEATURES
 
@@ -7,6 +7,12 @@ NEW FEATURES
 * modelName argument added to fitHMM and MIfitHMM
 
 * added setModelName and setStateNames functions
+
+* added stationary and plotStationary functions for calculating and visualizing stationary state probabilities as a function of covariates
+
+* plotStationary argument added to plot.momentuHMM, plot.miHMM, and plot.miSum
+
+* added summary.momentuHMMData function
 
 CHANGES
 
