@@ -18,7 +18,14 @@ print.momentuHMM <- function(x,...)
   m <- x
   distnames <- names(m$conditions$dist)
   DMind <- m$conditions$DMind
-
+  
+  if(!is.null(m$modelName)) {
+    mess <- paste("Model:",m$modelName)
+    cat(rep("-",nchar(mess)),"------------\n",sep="")
+    cat(mess,"\n")
+    cat(rep("-",nchar(mess)),"------------\n\n",sep="")
+  }
+  
   if(length(m$mod)>1)
     cat("Value of the maximum log-likelihood:",-m$mod$minimum,"\n\n")
   

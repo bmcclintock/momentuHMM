@@ -38,6 +38,13 @@ print.miSum <- function(x,...)
   nbStates <- length(m$stateNames)
   DMind <- m$conditions$DMind
   
+  if(!is.null(m$modelName)) {
+    mess <- paste("Model:",m$modelName)
+    cat(rep("-",nchar(mess)),"------------\n",sep="")
+    cat(mess,"\n")
+    cat(rep("-",nchar(mess)),"------------\n",sep="")
+  }
+  
   for(i in distnames){
     cat("\n")
     if(DMind[[i]]) {

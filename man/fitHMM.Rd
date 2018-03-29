@@ -10,7 +10,8 @@ fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
   nlmPar = list(), fit = TRUE, DM = NULL, cons = NULL,
   userBounds = NULL, workBounds = NULL, workcons = NULL,
   stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
-  retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL)
+  retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL,
+  modelName = NULL)
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} object.}
@@ -147,6 +148,8 @@ Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \co
 \item{control}{A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).}
 
 \item{prior}{A function that returns the log-density of the working scale parameter prior distribution(s). See 'Details'.}
+
+\item{modelName}{An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions.}
 }
 \value{
 A \code{\link{momentuHMM}} object, i.e. a list of:

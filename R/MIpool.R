@@ -72,6 +72,11 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     warning("The following imputations are not momentuHMM objects and will be ignored: ",paste(checkmove,collapse=", "))
     goodIndex <- goodIndex[-checkmove]
   }
+  
+  # check modelName
+  checkNames <- lapply(im,function(x) x[match("modelName",names(x))])
+  if(any(!unlist(lapply(checkNames,function(x) isTRUE(all.equal(x,checkNames[[1]],use.names=FALSE)))))) stop("'modelName' must be identical for each fitted model")
+  
   checksims <- lapply(im,function(x) x[match("conditions",names(x))])
   ident <- !unlist(lapply(checksims,function(x) isTRUE(all.equal(x,checksims[[1]]))))
   if(any(ident)){

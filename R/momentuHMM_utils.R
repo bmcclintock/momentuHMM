@@ -18,9 +18,11 @@ fitMethods<-c("nlm","Nelder-Mead","SANN")
 print.momentuHMM.version <- function()
 { version <- utils::packageVersion("momentuHMM")
   hello <- paste("Loading momentuHMM ",version,sep="")
-  curVersion <- utils::available.packages(repos = "http://cran.us.r-project.org")["momentuHMM","Version"]
+  curVersion <- tryCatch(suppressWarnings(utils::available.packages(repos = "http://cran.us.r-project.org")["momentuHMM","Version"]),error=function(e) e)
   packageStartupMessage(hello)
-  if(version<curVersion) warning("  A newer version (",curVersion,") is available from CRAN")
+  if(!inherits(curVersion,"error")){
+    if(version<curVersion) warning("  A newer version (",curVersion,") is available from CRAN")
+  }
 }
 
 .onAttach <- function(...) { 

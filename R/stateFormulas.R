@@ -58,32 +58,30 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
           DMterms <- attr(terms(tmpForm),"term.labels")
           factorterms<-names(data)[unlist(lapply(data,is.factor))]
           factorcovs<-paste0(rep(factorterms,times=unlist(lapply(data[factorterms],nlevels))),unlist(lapply(data[factorterms],levels)))
-          covs<-numeric()
           for(cov in DMterms){
             form<-formula(paste("~",cov))
             varform<-all.vars(form)
             if(any(varform %in% factorcovs)){
               factorvar<-factorcovs %in% varform
               tmpcov<-rep(factorterms,times=unlist(lapply(data[factorterms],nlevels)))[which(factorvar)]
-              tmpcov<-gsub(factorcovs[factorvar],tmpcov,cov)
-              form <- formula(paste("~ 0 + ",tmpcov))
+              tmpcovj <- cov
+              for(j in 1:length(tmpcov)){
+                tmpcovj <- gsub(factorcovs[factorvar][j],tmpcov[j],tmpcovj)
+              }
+              form <- formula(paste("~ 0 + ",tmpcovj))
             }
             if(any(model.matrix(form,data)<0)) stop(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength," must be >=0 in order to be used in angleStrength")
-            if(inherits(data[[attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength]],"factor")) stop("angleFormula strength argument cannot be a factor; use the 'by' argument for factors")
+            if(any(unlist(lapply(data[all.vars(form)],function(x) inherits(x,"factor"))))) stop("angleFormula strength argument cannot be a factor; use the 'by' argument for factors")
           }
           if(!is.null(group)){
             form<-formula(paste("~",group))
             varform<-all.vars(form)
             if(any(varform %in% factorcovs)){
               factorvar<-factorcovs %in% varform
-              tmpcov<-rep(factorterms,times=unlist(lapply(data[factorterms],nlevels)))[which(factorvar)]
-              tmpcov<-gsub(factorcovs[factorvar],tmpcov,group)
-              if(!(tmpcov %in% names(data))) stop("angleStrength 'by' argument ",group," not found in data")
-              else if(!inherits(data[[tmpcov]],"factor")) stop("angleStrength 'by' argument must be of class factor")
-            } else {
-              if(!(group %in% names(data))) stop("angleStrength 'by' argument ",group," not found in data")
-              else if(!inherits(data[[group]],"factor")) stop("angleStrength 'by' argument must be of class factor")
+              varform<-rep(factorterms,times=unlist(lapply(data[factorterms],nlevels)))[which(factorvar)]
             }
+            if(any(!(varform %in% names(data)))) stop("angleStrength 'by' argument ",varform[which(!(varform %in% names(data)))]," not found in data")
+            if(any(!unlist(lapply(data[varform],function(x) inherits(x,"factor"))))) stop("angleStrength 'by' argument must be of class factor")
           }
         }
 
@@ -133,8 +131,9 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
                 if(any(model.matrix(tmpForm,data)<0)) stop(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength," must be >=0 in order to be used in angleStrength")
                 if(inherits(data[[attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength]],"factor")) stop("angleFormula strength argument cannot be a factor; use the 'by' argument for factors")
                 if(!is.null(group)){
-                  if(!(group %in% names(data))) stop("angleStrength 'by' argument ",group," not found in data")
-                  else if(!inherits(data[[group]],"factor")) stop("angleStrength 'by' argument must be of class factor")
+                  varform <- all.vars(as.formula(paste0("~",group)))
+                  if(any(!(varform %in% names(data)))) stop("angleStrength 'by' argument ",varform[which(!(varform %in% names(data)))]," not found in data")
+                  if(any(!unlist(lapply(data[varform],function(x) inherits(x,"factor"))))) stop("angleStrength 'by' argument must be of class factor")
                 }
               }
               if(!is.null(group)) group <- paste0(group,":")

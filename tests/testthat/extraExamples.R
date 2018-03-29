@@ -27,7 +27,7 @@ print(mod2)
 mod2$CIreal$gamma
 # gamma estimates for individual 2
 CIreal(mod2,covs=data.frame(ID=2))$gamma
-plot(mod2,plotCI=TRUE,ask=FALSE)
+plot(mod2,plotCI=TRUE,ask=FALSE,plotStationary=TRUE)
 
 ### 3. covariate effect on step parameters
 wstepPar <- c(log(stepPar[1]),0.1,log(stepPar[2]),-0.1,log(stepPar[3]),0.1,log(stepPar[4]),-0.1) # must be on working (log) scale when specifying DM
@@ -86,7 +86,7 @@ data6<-simData(nbAnimals=4,nbStates=nbStates,formula=~forest,dist=list(step=step
 plotSpatialCov(data6,forest,states=data6$states,ask=FALSE)
 
 mod6<-fitHMM(data6,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),Par0=list(step=stepPar,angle=anglePar[3:4]),beta0=betaForest,formula=~forest)
-plot(mod6,plotCI=TRUE,ask=FALSE)
+plot(mod6,plotCI=TRUE,ask=FALSE,plotStationary=TRUE)
 
 ### 7. activity centers
 setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=10)

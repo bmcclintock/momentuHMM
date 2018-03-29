@@ -100,6 +100,11 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
     model$CIreal <- model$Par$real
   }
   
+  if(!is.null(model$mod$hessian) & inherits(model$CIbeta,"error")){
+    model$mod$hessian <- NULL
+    model$CIbeta <- tryCatch(CIbeta(model),error=function(e) e)
+  }
+  
   dist<-model$conditions$dist
   Par<-model$mle
   zeroInflation<-model$conditions$zeroInflation

@@ -31,6 +31,7 @@ Plot \code{momentuHMMData}
 # data is a momentuHMMData object (as returned by prepData), automatically loaded with the package
 data <- example$m$data
 
-plot(data,compact=TRUE,breaks=20,ask=FALSE)
+plot(data,dataNames=c("step","angle","cov1","cov2"),
+     compact=TRUE,breaks=20,ask=FALSE)
 
 }
