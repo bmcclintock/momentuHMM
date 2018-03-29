@@ -7,7 +7,7 @@
 \method{plot}{momentuHMM}(x, animals = NULL, covs = NULL, ask = TRUE,
   breaks = "Sturges", hist.ylim = NULL, sepAnimals = FALSE,
   sepStates = FALSE, col = NULL, cumul = TRUE, plotTracks = TRUE,
-  plotCI = FALSE, alpha = 0.95, ...)
+  plotCI = FALSE, alpha = 0.95, plotStationary = FALSE, ...)
 }
 \arguments{
 \item{x}{Object \code{momentuHMM}}
@@ -40,6 +40,8 @@ Default: \code{FALSE}.}
 \item{plotCI}{Logical indicating whether to include confidence intervals in natural parameter plots (default: FALSE)}
 
 \item{alpha}{Significance level of the confidence intervals (if \code{plotCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).}
+
+\item{plotStationary}{Logical indicating whether to plot the stationary state probabilities as a function of any covariates (default: FALSE). Ignored unless covariate are included in \code{formula}.}
 
 \item{...}{Additional arguments passed to \code{\link[graphics]{plot}} and \code{\link[graphics]{hist}} functions. These can currently include \code{asp}, \code{cex}, \code{cex.axis}, \code{cex.lab}, \code{cex.legend}, \code{cex.main}, \code{legend.pos}, and \code{lwd}. See \code{\link[graphics]{par}}. \code{legend.pos} can be a single keyword from the list ``bottomright'', ``bottom'', ``bottomleft'', ``left'', ``topleft'', ``top'', ``topright'', ``right'', and ``center''. Note that \code{asp} and \code{cex} only apply to plots of animal tracks.}
 }
