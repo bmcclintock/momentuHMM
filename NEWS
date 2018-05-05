@@ -1,6 +1,8 @@
-momentuHMM 1.4.1 2018-03-28
+momentuHMM 1.4.1 2018-05-04
 -----------------
 NEW FEATURES
+
+* special function 'toState' can now be used in formula argument for modelling transitions to specific states
 
 * timeInStates function added for calculating activity budgets
 

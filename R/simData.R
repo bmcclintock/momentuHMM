@@ -183,9 +183,11 @@
 #'
 #' \item State- and parameter-specific formulas can be specified for transition probabilities in \code{formula} using special formula functions.
 #' These special functions can take the names \code{paste0("state",1:nbStates)} (where the integer indicates the current state from which transitions occur),
+#' \code{paste0("toState",1:nbStates)} (where the integer indicates the state to which transitions occur),
 #' or \code{paste0("betaCol",nbStates*(nbStates-1))} (where the integer indicates the column of the \code{beta} matrix).  For example with \code{nbStates=3},
-#' \code{formula=~cov1+betaCol1(cov2)+state3(cov3)} includes \code{cov1} on all transition probability parameters, \code{cov2} on the \code{beta} column corresponding
-#' to the transition from state 1->2, and \code{cov3} on transition probabilities from state 3 (i.e., \code{beta} columns corresponding to state transitions 3->1 and 3->2).
+#' \code{formula=~cov1+betaCol1(cov2)+state3(cov3)+toState1(cov4)} includes \code{cov1} on all transition probability parameters, \code{cov2} on the \code{beta} column corresponding
+#' to the transition from state 1->2, \code{cov3} on transition probabilities from state 3 (i.e., \code{beta} columns corresponding to state transitions 3->1 and 3->2),
+#' and \code{cov4} on transition probabilities to state 1 (i.e., \code{beta} columns corresponding to state transitions 2->1 and 3->1).
 #' 
 #' \item Cyclical relationships (e.g., hourly, monthly) may be simulated using the \code{consinor(x,period)} special formula function for covariate \code{x}
 #' and sine curve period of time length \code{period}. For example, if 
@@ -828,30 +830,11 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       stop("'formulaDelta' covariate(s) not found")
   if(("ID" %in% all.vars(formula) | "ID" %in% all.vars(formulaDelta)) & nbAnimals<2) stop("ID cannot be a covariate when nbAnimals=1")
   
-  stateForms<- terms(formula, specials = paste0("state",1:nbStates))
-  newformula<-formula
-  if(nbStates>1){
-    if(length(unlist(attr(stateForms,"specials")))){
-      newForm<-attr(stateForms,"term.labels")[-unlist(attr(stateForms,"specials"))]
-      for(i in 1:nbStates){
-        if(!is.null(attr(stateForms,"specials")[[paste0("state",i)]])){
-          for(j in 1:(nbStates-1)){
-            newForm<-c(newForm,gsub(paste0("state",i),paste0("betaCol",(i-1)*(nbStates-1)+j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("state",i)]]]))
-          }
-        }
-      }
-      newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
-    }
-    formulaStates<-stateFormulas(newformula,nbStates*(nbStates-1),spec="betaCol")
-    if(length(unlist(attr(terms(newformula, specials = c(paste0("betaCol",1:(nbStates*(nbStates-1))),"cosinor")),"specials")))){
-      allTerms<-unlist(lapply(formulaStates,function(x) attr(terms(x),"term.labels")))
-      newformula<-as.formula(paste("~",paste(allTerms,collapse="+")))
-      formterms<-attr(terms.formula(newformula),"term.labels")
-    } else {
-      formterms<-attr(terms.formula(newformula),"term.labels")
-      newformula<-formula
-    }
-  }
+  newForm <- newFormulas(formula,nbStates)
+  formulaStates <- newForm$formulaStates
+  formterms <- newForm$formterms
+  newformula <- newForm$newformula
+  
   tmpCovs <- data.frame(ID=factor(1,levels=1:nbAnimals))
   if(!is.null(allCovs))
     tmpCovs <- cbind(tmpCovs,allCovs[1,,drop=FALSE])
