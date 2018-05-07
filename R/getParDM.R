@@ -348,10 +348,13 @@ getParDM<-function(data=data.frame(),nbStates,dist,
             } else {
               
               meanind1<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+              if(!is.list(inputs$DM[[i]])){
+                meanind1<-meanind1[!duplicated(inputs$DM[[i]][meanind1,])]
+              }
               meanind2<-which(colSums(nc[[i]][1:nbStates,,drop=FALSE])>0)#which(match(gsub("cos","",gsub("sin","",colnames(fullDM[[i]]))),gsub("cos","",names(which((apply(fullDM[[i]][meanind1,,drop=FALSE],2,function(x) !all(unlist(x)==0)))))),nomatch=0)>0)
-              #if(length(meanind2)) meanind2 <- sort(c(meanind2,meanind2-1))
-              xmat <- fullDM[[i]][gbInd,,drop=FALSE][meanind1,meanind2,drop=FALSE]
-              #nc<-apply(xmat,1:2,function(x) !all(unlist(x)==0))
+              ##if(length(meanind2)) meanind2 <- sort(c(meanind2,meanind2-1))
+              #xmat <- fullDM[[i]][gbInd,,drop=FALSE][meanind1,meanind2,drop=FALSE]
+              ##nc<-apply(xmat,1:2,function(x) !all(unlist(x)==0))
               
               solveatan2<-function(x,theta,covs,cons,workcons,nbStates,nc,meanind,oparms){
                 #Xvec <- x^cons+workcons
@@ -359,7 +362,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
                 c(abs(theta - XB),rep(0,max(0,length(x)-length(theta))))
               }
 
-              if(length(meanind1)) p[1:(length(meanind2)/2)] <- nleqslv::nleqslv(x=rep(1,length(meanind2)/2),fn=solveatan2,theta=par[meanind1],covs=fullDM[[i]],cons=cons[[i]],workcons=workcons[[i]],nbStates=nbStates,nc=nc[[i]],meanind=meanind[[i]],oparms=parCount[[i]]-length(meanind2)/2,control=list(allowSingular=TRUE))$x[1:(length(meanind2)/2)]
+              if(length(meanind1)) p[1:(length(meanind2)/2)] <- nleqslv::nleqslv(x=rep(1,length(meanind2)/2),fn=solveatan2,theta=par[meanind1],covs=fullDM[[i]],cons=cons[[i]],workcons=workcons[[i]],nbStates=nbStates,nc=nc[[i]],meanind=meanind1,oparms=parCount[[i]]-length(meanind2)/2,control=list(allowSingular=TRUE))$x[1:(length(meanind2)/2)]
               
               meanind<-which((apply(fullDM[[i]][nbStates+1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
               
