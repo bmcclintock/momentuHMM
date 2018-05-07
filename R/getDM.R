@@ -101,6 +101,9 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
           tmpDM<-suppressWarnings(array(as.numeric(newDM),dim=c(nrow(newDM),ncol(newDM),nbObs)))
           DMnames<-colnames(newDM)
           DMterms<-unique(newDM[suppressWarnings(which(is.na(as.numeric(newDM))))])
+        } else {
+          tmpDM<-suppressWarnings(array(as.numeric(DM[[i]]),dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs)))
+          newDM <- DM[[i]]
         }
       }
       if(!length(meanind) & any(grepl("angleStrength",DMterms))) stop("angleStrength function only applies to circular-circular regression model for angle mean")
