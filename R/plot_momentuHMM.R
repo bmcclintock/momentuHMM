@@ -500,20 +500,20 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             
             # set all covariates to their mean, except for "cov"
             # (which takes a grid of values from inf to sup)
-            tempCovs <- data.frame(matrix(covs[DMparterms[[j]][[state]]][[1]],nrow=gridLength,ncol=1))
+            tempCovs <- data.frame(matrix(covs[jj][[1]],nrow=gridLength,ncol=1))
             if(length(DMterms)>1)
-              for(ii in 2:length(DMterms))
-                tempCovs <- cbind(tempCovs,rep(covs[[DMterms[[ii]]]],gridLength))
-            names(tempCovs) <- DMterms
+              for(ii in DMterms[which(!(DMterms %in% jj))])
+                tempCovs <- cbind(tempCovs,rep(covs[[ii]],gridLength))
+            names(tempCovs) <- c(jj,DMterms[which(!(DMterms %in% jj))])
             tempCovs[,jj] <- seq(inf,sup,length=gridLength)
           } else {
             gridLength<- nlevels(m$data[,jj])
             # set all covariates to their mean, except for "cov"
-            tempCovs <- data.frame(matrix(covs[DMparterms[[j]][[state]]][[1]],nrow=gridLength,ncol=1))
+            tempCovs <- data.frame(matrix(covs[jj][[1]],nrow=gridLength,ncol=1))
             if(length(DMterms)>1)
-              for(ii in 2:length(DMterms))
-                tempCovs <- cbind(tempCovs,rep(covs[[DMterms[[ii]]]],gridLength))
-            names(tempCovs) <- DMterms
+              for(ii in DMterms[which(!(DMterms %in% jj))])
+                tempCovs <- cbind(tempCovs,rep(covs[[ii]],gridLength))
+            names(tempCovs) <- c(jj,DMterms[which(!(DMterms %in% jj))])
             tempCovs[,jj] <- as.factor(levels(m$data[,jj]))
           }
           
