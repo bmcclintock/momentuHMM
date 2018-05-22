@@ -8,7 +8,7 @@ zeroInflationdists<-sort(c('gamma','weibull','exp','lnorm','beta'))
 oneInflationdists<-sort(c('beta'))
 integerdists<-sort(c('bern','pois'))
 splineList<-c("bs","ns","bSpline","mSpline","cSpline","iSpline")
-meansList<-c("numeric","integer","logical","Date","POSIXlt","POSIXct","difftime")
+meansList<-c("matrix","numeric","integer","logical","Date","POSIXlt","POSIXct","difftime")
 meansListNoTime<-c("numeric","integer","logical")
 plotArgs <- c("cex","cex.main","cex.lab","cex.axis","cex.legend","lwd","asp","legend.pos")
 fitMethods<-c("nlm","Nelder-Mead","SANN")
@@ -18,9 +18,11 @@ fitMethods<-c("nlm","Nelder-Mead","SANN")
 print.momentuHMM.version <- function()
 { version <- utils::packageVersion("momentuHMM")
   hello <- paste("Loading momentuHMM ",version,sep="")
-  curVersion <- utils::available.packages(repos = "http://cran.us.r-project.org")["momentuHMM","Version"]
+  curVersion <- tryCatch(suppressWarnings(utils::available.packages(repos = "http://cran.us.r-project.org")["momentuHMM","Version"]),error=function(e) e)
   packageStartupMessage(hello)
-  if(version<curVersion) warning("  A newer version (",curVersion,") is available from CRAN")
+  if(!inherits(curVersion,"error")){
+    if(version<curVersion) warning("  A newer version (",curVersion,") is available from CRAN")
+  }
 }
 
 .onAttach <- function(...) { 

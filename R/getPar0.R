@@ -100,6 +100,11 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
     model$CIreal <- model$Par$real
   }
   
+  if(!is.null(model$mod$hessian) & inherits(model$CIbeta,"error")){
+    model$mod$hessian <- NULL
+    model$CIbeta <- tryCatch(CIbeta(model),error=function(e) e)
+  }
+  
   dist<-model$conditions$dist
   Par<-model$mle
   zeroInflation<-model$conditions$zeroInflation
@@ -210,29 +215,11 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
     }
   }
   
-  stateForms<- terms(formula, specials = paste0("state",1:nbStates))
-  newformula<-formula
   if(nbStates>1){
-    if(length(unlist(attr(stateForms,"specials")))){
-      newForm<-attr(stateForms,"term.labels")[-unlist(attr(stateForms,"specials"))]
-      for(i in 1:nbStates){
-        if(!is.null(attr(stateForms,"specials")[[paste0("state",i)]])){
-          for(j in 1:(nbStates-1)){
-            newForm<-c(newForm,gsub(paste0("state",i),paste0("betaCol",(i-1)*(nbStates-1)+j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("state",i)]]]))
-          }
-        }
-      }
-      newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
-    }
-    formulaStates<-stateFormulas(newformula,nbStates*(nbStates-1),spec="betaCol")
-    if(length(unlist(attr(terms(newformula, specials = c(paste0("betaCol",1:(nbStates*(nbStates-1))),"cosinor")),"specials")))){
-      allTerms<-unlist(lapply(formulaStates,function(x) attr(terms(x),"term.labels")))
-      newformula<-as.formula(paste("~",paste(allTerms,collapse="+")))
-      formterms<-attr(terms.formula(newformula),"term.labels")
-    } else {
-      formterms<-attr(terms.formula(newformula),"term.labels")
-      newformula<-formula
-    }
+    newForm <- newFormulas(formula,nbStates)
+    formulaStates <- newForm$formulaStates
+    formterms <- newForm$formterms
+    newformula <- newForm$newformula
     
     betaNames <- colnames(model.matrix(newformula,model$data))
     tmpPar <- matrix(0,length(betaNames),nbStates*(nbStates-1))

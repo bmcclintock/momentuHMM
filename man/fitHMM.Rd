@@ -10,7 +10,8 @@ fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
   nlmPar = list(), fit = TRUE, DM = NULL, cons = NULL,
   userBounds = NULL, workBounds = NULL, workcons = NULL,
   stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
-  retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL)
+  retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL,
+  modelName = NULL)
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} object.}
@@ -147,6 +148,8 @@ Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \co
 \item{control}{A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).}
 
 \item{prior}{A function that returns the log-density of the working scale parameter prior distribution(s). See 'Details'.}
+
+\item{modelName}{An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions.}
 }
 \value{
 A \code{\link{momentuHMM}} object, i.e. a list of:
@@ -219,9 +222,11 @@ on the mean parameter for state 1, \code{cov2} on the sd parameter for all state
 
 \item State- and parameter-specific formulas can be specified for transition probabilities in \code{formula} using special formula functions.
 These special functions can take the names \code{paste0("state",1:nbStates)} (where the integer indicates the current state from which transitions occur),
+\code{paste0("toState",1:nbStates)} (where the integer indicates the state to which transitions occur),
 or \code{paste0("betaCol",nbStates*(nbStates-1))} (where the integer indicates the column of the \code{beta} matrix).  For example with \code{nbStates=3},
-\code{formula=~cov1+betaCol1(cov2)+state3(cov3)} includes \code{cov1} on all transition probability parameters, \code{cov2} on the \code{beta} column corresponding
-to the transition from state 1->2, and \code{cov3} on transition probabilities from state 3 (i.e., \code{beta} columns corresponding to state transitions 3->1 and 3->2).
+\code{formula=~cov1+betaCol1(cov2)+state3(cov3)+toState1(cov4)} includes \code{cov1} on all transition probability parameters, \code{cov2} on the \code{beta} column corresponding
+to the transition from state 1->2, \code{cov3} on transition probabilities from state 3 (i.e., \code{beta} columns corresponding to state transitions 3->1 and 3->2),
+and \code{cov4} on transition probabilities to state 1 (i.e., \code{beta} columns corresponding to state transitions 2->1 and 3->1).
 
 \item Cyclical relationships (e.g., hourly, monthly) may be modeled in \code{DM} or \code{formula} using the \code{cosinor(x,period)} special formula function for covariate \code{x}
 and sine curve period of time length \code{period}. For example, if 

@@ -112,6 +112,7 @@
 #' @param optMethod The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).
 #' @param control A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).
 #' @param prior A function that returns the log-density of the working scale parameter prior distribution(s). See 'Details'.
+#' @param modelName An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions. 
 #'
 #' @return A \code{\link{momentuHMM}} object, i.e. a list of:
 #' \item{mle}{A named list of the maximum likelihood estimates of the parameters of the model (if the numerical algorithm
@@ -179,9 +180,11 @@
 #'
 #' \item State- and parameter-specific formulas can be specified for transition probabilities in \code{formula} using special formula functions.
 #' These special functions can take the names \code{paste0("state",1:nbStates)} (where the integer indicates the current state from which transitions occur),
+#' \code{paste0("toState",1:nbStates)} (where the integer indicates the state to which transitions occur),
 #' or \code{paste0("betaCol",nbStates*(nbStates-1))} (where the integer indicates the column of the \code{beta} matrix).  For example with \code{nbStates=3},
-#' \code{formula=~cov1+betaCol1(cov2)+state3(cov3)} includes \code{cov1} on all transition probability parameters, \code{cov2} on the \code{beta} column corresponding
-#' to the transition from state 1->2, and \code{cov3} on transition probabilities from state 3 (i.e., \code{beta} columns corresponding to state transitions 3->1 and 3->2).
+#' \code{formula=~cov1+betaCol1(cov2)+state3(cov3)+toState1(cov4)} includes \code{cov1} on all transition probability parameters, \code{cov2} on the \code{beta} column corresponding
+#' to the transition from state 1->2, \code{cov3} on transition probabilities from state 3 (i.e., \code{beta} columns corresponding to state transitions 3->1 and 3->2),
+#' and \code{cov4} on transition probabilities to state 1 (i.e., \code{beta} columns corresponding to state transitions 2->1 and 3->1).
 #' 
 #' \item Cyclical relationships (e.g., hourly, monthly) may be modeled in \code{DM} or \code{formula} using the \code{cosinor(x,period)} special formula function for covariate \code{x}
 #' and sine curve period of time length \code{period}. For example, if 
@@ -409,7 +412,7 @@ fitHMM <- function(data,nbStates,dist,
                    formula=~1,formulaDelta=~1,stationary=FALSE,
                    verbose=NULL,nlmPar=list(),fit=TRUE,
                    DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,
-                   stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL)
+                   stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL)
 {
   
   #####################
@@ -459,30 +462,10 @@ fitHMM <- function(data,nbStates,dist,
   
   match.arg(optMethod,fitMethods)
   
-  stateForms<- terms(formula, specials = paste0("state",1:nbStates))
-  newformula<-formula
-  if(nbStates>1){
-    if(length(unlist(attr(stateForms,"specials")))){
-      newForm<-attr(stateForms,"term.labels")[-unlist(attr(stateForms,"specials"))]
-      for(i in 1:nbStates){
-        if(!is.null(attr(stateForms,"specials")[[paste0("state",i)]])){
-          for(j in 1:(nbStates-1)){
-            newForm<-c(newForm,gsub(paste0("state",i),paste0("betaCol",(i-1)*(nbStates-1)+j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("state",i)]]]))
-          }
-        }
-      }
-      newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
-    }
-    formulaStates<-stateFormulas(newformula,nbStates*(nbStates-1),spec="betaCol")
-    if(length(unlist(attr(terms(newformula, specials = c(paste0("betaCol",1:(nbStates*(nbStates-1))),"cosinor")),"specials")))){
-      allTerms<-unlist(lapply(formulaStates,function(x) attr(terms(x),"term.labels")))
-      newformula<-as.formula(paste("~",paste(allTerms,collapse="+")))
-      formterms<-attr(terms.formula(newformula),"term.labels")
-    } else {
-      formterms<-attr(terms.formula(newformula),"term.labels")
-      newformula<-formula
-    }
-  }
+  newForm <- newFormulas(formula,nbStates)
+  formulaStates <- newForm$formulaStates
+  formterms <- newForm$formterms
+  newformula <- newForm$newformula
   
   # build design matrix for t.p.m.
   covsCol <- get_all_vars(newformula,data)#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
@@ -1015,7 +998,7 @@ fitHMM <- function(data,nbStates,dist,
   conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
                      estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=ofixPar,wparIndex=wparIndex,formulaDelta=formulaDelta)
 
-  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior)
+  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName)
   
   #compute SEs and CIs on natural and working scale
   CIreal<-tryCatch(CIreal(momentuHMM(mh)),error=function(e) e)
@@ -1023,7 +1006,7 @@ fitHMM <- function(data,nbStates,dist,
   CIbeta<-tryCatch(CIbeta(momentuHMM(mh)),error=function(e) e)
   if(inherits(CIbeta,"error") & fit==TRUE) warning("Failed to compute SEs confidence intervals on the working scale -- ",CIbeta)
   
-  mh <- list(data=data,mle=mle,CIreal=CIreal,CIbeta=CIbeta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior)
+  mh <- list(data=data,mle=mle,CIreal=CIreal,CIbeta=CIbeta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName)
   
   if(fit) message(ifelse(retryFits>=1,"\n",""),"DONE")
   

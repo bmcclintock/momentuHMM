@@ -21,6 +21,11 @@ getPar<-function(m){
   
   m <- delta_bc(m)
   
+  if(!is.null(m$mod$hessian) & inherits(m$CIbeta,"error")){
+    m$mod$hessian <- NULL
+    m$CIbeta <- tryCatch(CIbeta(m),error=function(e) e)
+  }
+  
   nbStates <- length(m$stateNames)
   dist <- m$conditions$dist
   distnames <- names(dist)

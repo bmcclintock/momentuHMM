@@ -72,6 +72,11 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     warning("The following imputations are not momentuHMM objects and will be ignored: ",paste(checkmove,collapse=", "))
     goodIndex <- goodIndex[-checkmove]
   }
+  
+  # check modelName
+  checkNames <- lapply(im,function(x) x[match("modelName",names(x))])
+  if(any(!unlist(lapply(checkNames,function(x) isTRUE(all.equal(x,checkNames[[1]],use.names=FALSE)))))) stop("'modelName' must be identical for each fitted model")
+  
   checksims <- lapply(im,function(x) x[match("conditions",names(x))])
   ident <- !unlist(lapply(checksims,function(x) isTRUE(all.equal(x,checksims[[1]]))))
   if(any(ident)){
@@ -279,30 +284,11 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   #fullDM<-DMinputs$fullDM
   
   formula<-m$conditions$formula
-  stateForms<- terms(formula, specials = paste0("state",1:nbStates))
-  newformula<-formula
-  if(nbStates>1){
-    if(length(unlist(attr(stateForms,"specials")))){
-      newForm<-attr(stateForms,"term.labels")[-unlist(attr(stateForms,"specials"))]
-      for(i in 1:nbStates){
-        if(!is.null(attr(stateForms,"specials")[[paste0("state",i)]])){
-          for(j in 1:(nbStates-1)){
-            newForm<-c(newForm,gsub(paste0("state",i),paste0("betaCol",(i-1)*(nbStates-1)+j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("state",i)]]]))
-          }
-        }
-      }
-      newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
-    }
-    formulaStates<-stateFormulas(newformula,nbStates*(nbStates-1),spec="betaCol")
-    if(length(unlist(attr(terms(newformula, specials = c(paste0("betaCol",1:(nbStates*(nbStates-1))),"cosinor")),"specials")))){
-      allTerms<-unlist(lapply(formulaStates,function(x) attr(terms(x),"term.labels")))
-      newformula<-as.formula(paste("~",paste(allTerms,collapse="+")))
-      formterms<-attr(terms.formula(newformula),"term.labels")
-    } else {
-      formterms<-attr(terms.formula(newformula),"term.labels")
-      newformula<-formula
-    }
-  }
+  newForm <- newFormulas(formula,nbStates)
+  formulaStates <- newForm$formulaStates
+  formterms <- newForm$formterms
+  newformula <- newForm$newformula
+  
   nbCovs <- ncol(model.matrix(newformula,m$data))-1 # substract intercept column
   
   #miBeta <- mitools::MIcombine(results=lapply(im,function(x) x$mod$estimate),variances=lapply(im,function(x) ginv(x$mod$hessian)))

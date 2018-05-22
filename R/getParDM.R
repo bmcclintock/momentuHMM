@@ -271,11 +271,13 @@ getParDM<-function(data=data.frame(),nbStates,dist,
         ind21<-ind2[which(is.finite(a[ind2]) & is.infinite(b[ind2]))]
         ind22<-ind2[which(is.finite(a[ind2]) & is.finite(b[ind2]))]
         ind23<-ind2[which(is.infinite(a[ind2]) & is.finite(b[ind2]))]
+        ind24<-ind2[which(is.infinite(a[ind2]) & is.infinite(b[ind2]))]
         
         if(length(ind21)) p[ind21]<-(solve(unique(fullDM[[i]])[ind21,ind21],log(par[ind21]-a[ind21]))-workcons[[i]][ind21])^(1/cons[[i]][ind21])
         if(length(ind22)) p[ind22]<-(solve(unique(fullDM[[i]])[ind22,ind22],logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][ind22])^(1/cons[[i]][ind22])
         if(length(ind23)) p[ind23]<-(solve(unique(fullDM[[i]])[ind23,ind23],-log(-par[ind23]+b[ind23]))-workcons[[i]][ind23])^(1/cons[[i]][ind23])
-        
+        if(length(ind24)) p[ind24]<-(solve(unique(fullDM[[i]])[ind24,ind24],par[ind24])-workcons[[i]][ind24])^(1/cons[[i]][ind24])
+ 
       } else {
         
         if(length(wpar[[i]])!=nrow(fullDM[[i]])) stop('Par$',i,' should be of length ',nrow(fullDM[[i]]))
@@ -304,7 +306,8 @@ getParDM<-function(data=data.frame(),nbStates,dist,
         ind21<-ind2[which(is.finite(a[ind2]) & is.infinite(b[ind2]))]
         ind22<-ind2[which(is.finite(a[ind2]) & is.finite(b[ind2]))]
         ind23<-ind2[which(is.infinite(a[ind2]) & is.finite(b[ind2]))]
-        
+        ind24<-ind2[which(is.infinite(a[ind2]) & is.infinite(b[ind2]))]
+         
         if(length(ind1)){
           if(inputs$estAngleMean[[i]]){
             
@@ -336,13 +339,22 @@ getParDM<-function(data=data.frame(),nbStates,dist,
                 adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
                 p[-meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23])))-workcons[[i]][-meanind])^(1/cons[[i]][-meanind])
               }
+              
+              if(length(ind24)){
+                asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind24,-meanind,drop=FALSE])
+                adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
+                p[-meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (par[ind24]))-workcons[[i]][-meanind])^(1/cons[[i]][-meanind])
+              }
             } else {
               
               meanind1<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+              if(!is.list(inputs$DM[[i]])){
+                meanind1<-meanind1[!duplicated(inputs$DM[[i]][meanind1,])]
+              }
               meanind2<-which(colSums(nc[[i]][1:nbStates,,drop=FALSE])>0)#which(match(gsub("cos","",gsub("sin","",colnames(fullDM[[i]]))),gsub("cos","",names(which((apply(fullDM[[i]][meanind1,,drop=FALSE],2,function(x) !all(unlist(x)==0)))))),nomatch=0)>0)
-              #if(length(meanind2)) meanind2 <- sort(c(meanind2,meanind2-1))
-              xmat <- fullDM[[i]][gbInd,,drop=FALSE][meanind1,meanind2,drop=FALSE]
-              #nc<-apply(xmat,1:2,function(x) !all(unlist(x)==0))
+              ##if(length(meanind2)) meanind2 <- sort(c(meanind2,meanind2-1))
+              #xmat <- fullDM[[i]][gbInd,,drop=FALSE][meanind1,meanind2,drop=FALSE]
+              ##nc<-apply(xmat,1:2,function(x) !all(unlist(x)==0))
               
               solveatan2<-function(x,theta,covs,cons,workcons,nbStates,nc,meanind,oparms){
                 #Xvec <- x^cons+workcons
@@ -350,7 +362,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
                 c(abs(theta - XB),rep(0,max(0,length(x)-length(theta))))
               }
 
-              if(length(meanind1)) p[1:(length(meanind2)/2)] <- nleqslv::nleqslv(x=rep(1,length(meanind2)/2),fn=solveatan2,theta=par[meanind1],covs=fullDM[[i]],cons=cons[[i]],workcons=workcons[[i]],nbStates=nbStates,nc=nc[[i]],meanind=meanind[[i]],oparms=parCount[[i]]-length(meanind2)/2,control=list(allowSingular=TRUE))$x[1:(length(meanind2)/2)]
+              if(length(meanind1)) p[1:(length(meanind2)/2)] <- nleqslv::nleqslv(x=rep(1,length(meanind2)/2),fn=solveatan2,theta=par[meanind1],covs=fullDM[[i]],cons=cons[[i]],workcons=workcons[[i]],nbStates=nbStates,nc=nc[[i]],meanind=meanind1,oparms=parCount[[i]]-length(meanind2)/2,control=list(allowSingular=TRUE))$x[1:(length(meanind2)/2)]
               
               meanind<-which((apply(fullDM[[i]][nbStates+1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
               
@@ -370,6 +382,12 @@ getParDM<-function(data=data.frame(),nbStates,dist,
                 asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind23,meanind,drop=FALSE])
                 adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
                 p[meanind-length(meanind2)/2] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23])))-workcons[[i]][meanind-length(meanind2)/2])^(1/cons[[i]][meanind-length(meanind2)/2])
+              }
+              
+              if(length(ind24)){
+                asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind24,meanind,drop=FALSE])
+                adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
+                p[meanind-length(meanind2)/2] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (par[ind24]))-workcons[[i]][meanind-length(meanind2)/2])^(1/cons[[i]][meanind-length(meanind2)/2])
               }
             
             }
@@ -395,6 +413,12 @@ getParDM<-function(data=data.frame(),nbStates,dist,
             asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind23,,drop=FALSE])
             adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
             p <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23])))-workcons[[i]])^(1/cons[[i]])
+          }
+
+          if(length(ind24)){
+            asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind24,,drop=FALSE])
+            adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
+            p <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (par[ind24]))-workcons[[i]])^(1/cons[[i]])
           }
         }
       }

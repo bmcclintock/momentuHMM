@@ -58,32 +58,30 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
           DMterms <- attr(terms(tmpForm),"term.labels")
           factorterms<-names(data)[unlist(lapply(data,is.factor))]
           factorcovs<-paste0(rep(factorterms,times=unlist(lapply(data[factorterms],nlevels))),unlist(lapply(data[factorterms],levels)))
-          covs<-numeric()
           for(cov in DMterms){
             form<-formula(paste("~",cov))
             varform<-all.vars(form)
             if(any(varform %in% factorcovs)){
               factorvar<-factorcovs %in% varform
               tmpcov<-rep(factorterms,times=unlist(lapply(data[factorterms],nlevels)))[which(factorvar)]
-              tmpcov<-gsub(factorcovs[factorvar],tmpcov,cov)
-              form <- formula(paste("~ 0 + ",tmpcov))
+              tmpcovj <- cov
+              for(j in 1:length(tmpcov)){
+                tmpcovj <- gsub(factorcovs[factorvar][j],tmpcov[j],tmpcovj)
+              }
+              form <- formula(paste("~ 0 + ",tmpcovj))
             }
             if(any(model.matrix(form,data)<0)) stop(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength," must be >=0 in order to be used in angleStrength")
-            if(inherits(data[[attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength]],"factor")) stop("angleFormula strength argument cannot be a factor; use the 'by' argument for factors")
+            if(any(unlist(lapply(data[all.vars(form)],function(x) inherits(x,"factor"))))) stop("angleFormula strength argument cannot be a factor; use the 'by' argument for factors")
           }
           if(!is.null(group)){
             form<-formula(paste("~",group))
             varform<-all.vars(form)
             if(any(varform %in% factorcovs)){
               factorvar<-factorcovs %in% varform
-              tmpcov<-rep(factorterms,times=unlist(lapply(data[factorterms],nlevels)))[which(factorvar)]
-              tmpcov<-gsub(factorcovs[factorvar],tmpcov,group)
-              if(!(tmpcov %in% names(data))) stop("angleStrength 'by' argument ",group," not found in data")
-              else if(!inherits(data[[tmpcov]],"factor")) stop("angleStrength 'by' argument must be of class factor")
-            } else {
-              if(!(group %in% names(data))) stop("angleStrength 'by' argument ",group," not found in data")
-              else if(!inherits(data[[group]],"factor")) stop("angleStrength 'by' argument must be of class factor")
+              varform<-rep(factorterms,times=unlist(lapply(data[factorterms],nlevels)))[which(factorvar)]
             }
+            if(any(!(varform %in% names(data)))) stop("angleStrength 'by' argument ",varform[which(!(varform %in% names(data)))]," not found in data")
+            if(any(!unlist(lapply(data[varform],function(x) inherits(x,"factor"))))) stop("angleStrength 'by' argument must be of class factor")
           }
         }
 
@@ -133,8 +131,9 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
                 if(any(model.matrix(tmpForm,data)<0)) stop(attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength," must be >=0 in order to be used in angleStrength")
                 if(inherits(data[[attr(stmp,"stripped.arguments")$angleStrength[[jj]]$strength]],"factor")) stop("angleFormula strength argument cannot be a factor; use the 'by' argument for factors")
                 if(!is.null(group)){
-                  if(!(group %in% names(data))) stop("angleStrength 'by' argument ",group," not found in data")
-                  else if(!inherits(data[[group]],"factor")) stop("angleStrength 'by' argument must be of class factor")
+                  varform <- all.vars(as.formula(paste0("~",group)))
+                  if(any(!(varform %in% names(data)))) stop("angleStrength 'by' argument ",varform[which(!(varform %in% names(data)))]," not found in data")
+                  if(any(!unlist(lapply(data[varform],function(x) inherits(x,"factor"))))) stop("angleStrength 'by' argument must be of class factor")
                 }
               }
               if(!is.null(group)) group <- paste0(group,":")
@@ -154,4 +153,47 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
     }
   }
   stateFormula
+}
+
+newFormulas<-function(formula,nbStates)
+{
+  stateForms<- terms(formula, specials = paste0(rep(c("state","toState"),each=nbStates),1:nbStates))
+  newformula<-formula
+  formulaStates <- vector('list',nbStates*(nbStates-1))
+  formulaStates[1:(nbStates*(nbStates-1))] <- list(newformula)
+  formterms<-attr(terms.formula(newformula),"term.labels")
+  
+  if(nbStates>1){
+    if(length(unlist(attr(stateForms,"specials")))){
+      newForm<-attr(stateForms,"term.labels")[-unlist(attr(stateForms,"specials"))]
+      for(i in 1:nbStates){
+        if(!is.null(attr(stateForms,"specials")[[paste0("state",i)]])){
+          for(j in 1:(nbStates-1)){
+            newForm<-c(newForm,gsub(paste0("state",i),paste0("betaCol",(i-1)*(nbStates-1)+j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("state",i)]]]))
+          }
+        }
+        if(!is.null(attr(stateForms,"specials")[[paste0("toState",i)]])){
+          betaInd<-matrix(0,nbStates,nbStates,byrow=TRUE)
+          diag(betaInd)<-NA
+          betaInd[!is.na(betaInd)] <- seq(1:(nbStates*(nbStates-1)))
+          betaInd<-t(betaInd)[,i]
+          betaInd<-betaInd[!is.na(betaInd)]
+          for(j in betaInd){
+            newForm<-c(newForm,gsub(paste0("toState",i),paste0("betaCol",j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("toState",i)]]]))
+          }
+        }
+      }
+      newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
+    }
+    formulaStates<-stateFormulas(newformula,nbStates*(nbStates-1),spec="betaCol")
+    if(length(unlist(attr(terms(newformula, specials = c(paste0("betaCol",1:(nbStates*(nbStates-1))),"cosinor")),"specials")))){
+      allTerms<-unlist(lapply(formulaStates,function(x) attr(terms(x),"term.labels")))
+      newformula<-as.formula(paste("~",paste(allTerms,collapse="+")))
+      formterms<-attr(terms.formula(newformula),"term.labels")
+    } else {
+      formterms<-attr(terms.formula(newformula),"term.labels")
+      newformula<-formula
+    }
+  }  
+  return(list(formulaStates=formulaStates,formterms=formterms,newformula=newformula))
 }

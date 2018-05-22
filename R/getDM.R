@@ -101,6 +101,9 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
           tmpDM<-suppressWarnings(array(as.numeric(newDM),dim=c(nrow(newDM),ncol(newDM),nbObs)))
           DMnames<-colnames(newDM)
           DMterms<-unique(newDM[suppressWarnings(which(is.na(as.numeric(newDM))))])
+        } else {
+          tmpDM<-suppressWarnings(array(as.numeric(DM[[i]]),dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs)))
+          newDM <- DM[[i]]
         }
       }
       if(!length(meanind) & any(grepl("angleStrength",DMterms))) stop("angleStrength function only applies to circular-circular regression model for angle mean")
@@ -117,8 +120,11 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
         if(any(varform %in% factorcovs)){
           factorvar<-factorcovs %in% varform
           tmpcov<-rep(factorterms,times=unlist(lapply(data[factorterms],nlevels)))[which(factorvar)]
-          tmpcov<-gsub(factorcovs[factorvar],tmpcov,cov)
-          tmpcovs<-model.matrix(formula(paste("~ 0 + ",tmpcov)),data)
+          tmpcovj <- cov
+          for(j in 1:length(tmpcov)){
+            tmpcovj <- gsub(factorcovs[factorvar][j],tmpcov[j],tmpcovj)
+          }
+          tmpcovs<-model.matrix(formula(paste("~ 0 + ",tmpcovj)),data)
           tmpcovs<-tmpcovs[,which(gsub(" ","",colnames(tmpcovs)) %in% gsub(" ","",cov))]
           covs<-cbind(covs,tmpcovs)
         } else {

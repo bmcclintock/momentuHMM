@@ -24,6 +24,7 @@
 #' @param plotTracks If TRUE, the Viterbi-decoded tracks are plotted (default).
 #' @param plotCI Logical indicating whether to include confidence intervals in natural parameter plots (default: FALSE)
 #' @param alpha Significance level of the confidence intervals (if \code{plotCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).
+#' @param plotStationary Logical indicating whether to plot the stationary state probabilities as a function of any covariates (default: FALSE). Ignored unless covariate are included in \code{formula}.
 #' @param ... Additional arguments passed to \code{\link[graphics]{plot}} and \code{\link[graphics]{hist}} functions. These can currently include \code{asp}, \code{cex}, \code{cex.axis}, \code{cex.lab}, \code{cex.legend}, \code{cex.main}, \code{legend.pos}, and \code{lwd}. See \code{\link[graphics]{par}}. \code{legend.pos} can be a single keyword from the list ``bottomright'', ``bottom'', ``bottomleft'', ``left'', ``topleft'', ``top'', ``topright'', ``right'', and ``center''. Note that \code{asp} and \code{cex} only apply to plots of animal tracks. 
 #'
 #' @details The state-dependent densities are weighted by the frequency of each state in the most
@@ -52,7 +53,7 @@
 #' @importFrom CircStats circ.mean
 
 plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
-                            sepStates=FALSE,col=NULL,cumul=TRUE,plotTracks=TRUE,plotCI=FALSE,alpha=0.95,...)
+                            sepStates=FALSE,col=NULL,cumul=TRUE,plotTracks=TRUE,plotCI=FALSE,alpha=0.95,plotStationary=FALSE,...)
 {
   m <- x # the name "x" is for compatibility with the generic method
   m <- delta_bc(m)
@@ -194,30 +195,11 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   }
   
   formula<-m$conditions$formula
-  stateForms<- terms(formula, specials = paste0("state",1:nbStates))
-  newformula<-formula
-  if(nbStates>1){
-    if(length(unlist(attr(stateForms,"specials")))){
-      newForm<-attr(stateForms,"term.labels")[-unlist(attr(stateForms,"specials"))]
-      for(i in 1:nbStates){
-        if(!is.null(attr(stateForms,"specials")[[paste0("state",i)]])){
-          for(j in 1:(nbStates-1)){
-            newForm<-c(newForm,gsub(paste0("state",i),paste0("betaCol",(i-1)*(nbStates-1)+j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("state",i)]]]))
-          }
-        }
-      }
-      newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
-    }
-    formulaStates<-stateFormulas(newformula,nbStates*(nbStates-1),spec="betaCol")
-    if(length(unlist(attr(terms(newformula, specials = c(paste0("betaCol",1:(nbStates*(nbStates-1))),"cosinor")),"specials")))){
-      allTerms<-unlist(lapply(formulaStates,function(x) attr(terms(x),"term.labels")))
-      newformula<-as.formula(paste("~",paste(allTerms,collapse="+")))
-      formterms<-attr(terms.formula(newformula),"term.labels")
-    } else {
-      formterms<-attr(terms.formula(newformula),"term.labels")
-      newformula<-formula
-    }
-  }
+  newForm <- newFormulas(formula,nbStates)
+  formulaStates <- newForm$formulaStates
+  formterms <- newForm$formterms
+  newformula <- newForm$newformula
+  
   nbCovs <- ncol(model.matrix(newformula,m$data))-1 # substract intercept column
   
   Par <- m$mle[distnames]
@@ -518,20 +500,20 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             
             # set all covariates to their mean, except for "cov"
             # (which takes a grid of values from inf to sup)
-            tempCovs <- data.frame(matrix(covs[DMparterms[[j]][[state]]][[1]],nrow=gridLength,ncol=1))
+            tempCovs <- data.frame(matrix(covs[jj][[1]],nrow=gridLength,ncol=1))
             if(length(DMterms)>1)
-              for(ii in 2:length(DMterms))
-                tempCovs <- cbind(tempCovs,rep(covs[[DMterms[[ii]]]],gridLength))
-            names(tempCovs) <- DMterms
+              for(ii in DMterms[which(!(DMterms %in% jj))])
+                tempCovs <- cbind(tempCovs,rep(covs[[ii]],gridLength))
+            names(tempCovs) <- c(jj,DMterms[which(!(DMterms %in% jj))])
             tempCovs[,jj] <- seq(inf,sup,length=gridLength)
           } else {
             gridLength<- nlevels(m$data[,jj])
             # set all covariates to their mean, except for "cov"
-            tempCovs <- data.frame(matrix(covs[DMparterms[[j]][[state]]][[1]],nrow=gridLength,ncol=1))
+            tempCovs <- data.frame(matrix(covs[jj][[1]],nrow=gridLength,ncol=1))
             if(length(DMterms)>1)
-              for(ii in 2:length(DMterms))
-                tempCovs <- cbind(tempCovs,rep(covs[[DMterms[[ii]]]],gridLength))
-            names(tempCovs) <- DMterms
+              for(ii in DMterms[which(!(DMterms %in% jj))])
+                tempCovs <- cbind(tempCovs,rep(covs[[ii]],gridLength))
+            names(tempCovs) <- c(jj,DMterms[which(!(DMterms %in% jj))])
             tempCovs[,jj] <- as.factor(levels(m$data[,jj]))
           }
           
@@ -632,7 +614,6 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   ## Plot the t.p. as functions of the covariates ##
   ##################################################
   if(nbStates>1) {
-    par(mfrow=c(nbStates,nbStates))
     par(mar=c(5,4,4,2)-c(0,0,1.5,1)) # bottom, left, top, right
     
     gamInd<-(length(m$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(m$mod$estimate))-ncol(m$covsDelta)*(nbStates-1)*(!m$conditions$stationary)
@@ -651,6 +632,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       #}
       
       for(cov in 1:ncol(rawCovs)) {
+        
+        par(mfrow=c(nbStates,nbStates))
         
         if(!is.factor(rawCovs[,cov])){
           
@@ -713,8 +696,12 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           }
         }
         if(ncol(rawCovs)>1) do.call(mtext,c(list(paste("Transition probabilities:",paste(names(rawCovs)[-cov],"=",tmpcovs[-cov],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
-        else do.call(mtext,c(list("Transition probabilities:",side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+        else do.call(mtext,c(list("Transition probabilities",side=3,outer=TRUE,padj=2,cex=cex.main),marg))
         
+        if(plotStationary) {
+          par(mfrow=c(1,1))
+          statPlot(m,beta,Sigma,nbStates,desMat,tempCovs,tmpcovs,cov,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
+        }
       }
     }
   }
