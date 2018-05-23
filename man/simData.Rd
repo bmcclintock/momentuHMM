@@ -110,7 +110,7 @@ coefficients.
 Design matrices specified using formulas allow standard functions in R formulas
 (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).  Special formula functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
-\code{angleFormula(cov,strength)} for the angle mean of circular-circular regression models, and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.}
+\code{angleStrength(cov,strength,by)} for the angle mean of circular-circular regression models, and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.}
 
 \item{cons}{Deprecated. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
 for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
