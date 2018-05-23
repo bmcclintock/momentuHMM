@@ -372,7 +372,7 @@ The special function \verb|angleStrength| can be included in \verb|DM| formulas 
   {\boldsymbol \mu}=\text{atan2}(({\mathbf Z}_\mu \circ \sin({\mathbf X}_\mu)){\boldsymbol \beta}_\mu,1+({\mathbf Z}_\mu \circ \cos({\mathbf X}_\mu)){\boldsymbol \beta}_\mu),
   \label{eq:circ2}
 \end{equation}
-where ${\mathbf Z}_\mu$ is a $T \times K$ matrix of positive real covariates (e.g. wind speed, sea surface current speed) and $\circ$ is the Hadamard (i.e. element-wise) product.
+where ${\mathbf Z}_\mu$ is a $T \times K$ matrix of positive real covariates (e.g. wind speed, sea surface current speed) and $\circ$ is the Hadamard (i.e. element-wise) product.  The special function \verb|angleStrength| can also be used to specify group- or individual-level effects on the circular-circular regression angle mean coefficients $({\boldsymbol \beta}_\mu)$.
 
 Also based on \cite{RivestEtAl2016}, the von Mises consensus distribution is a special von Mises circular-circular regression model where the concentration parameter $(\rho)$ depends on the level of agreement among short-term directional persistence (i.e. moving forward) and the angular covariates:
 \begin{equation}
@@ -744,7 +744,7 @@ For the ``transit'' state, pooled parameter estimates indicated step lengths inc
   \label{fig:turtleResults}
 \end{figure}
 
-It may often make more sense to weight angular covariates (such as ocean surface current direction) by their relative strength or importance. For example, weak ocean surface currents may be less likely to influence movement direction than strong ocean surface currents. This could easily be included in our turtle model using the \verb|angleStrength| function in \verb|DM|:
+It may often make more sense to weight angular covariates (such as ocean surface current direction) by their relative strength or importance. For example, weak ocean surface currents may be less likely to influence movement direction than strong ocean surface currents. This could easily be included in our turtle model using the \verb|angleStrength(cov, strength, by)| special function in \verb|DM|, where \verb|cov| is an angle covariate (e.g. wind direction), \verb|strength| is an optional positive real covariate (e.g. wind speed), and \verb|by| is an optional factor variable for individual- or group-level effects (e.g. ID, sex):
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -774,6 +774,8 @@ Still another option would be to use the von Mises consensus model, where the co
   \rho^\phi_t = \kappa \sqrt{[w_t \sin(d_t) \beta^\phi]^2+[1+w_t \cos(d_t)\beta^\phi]^2}.
     \label{eq:turtleMeanAngle3}
 \end{equation}
+If there were multiple turtles in this dataset, then individual-level effects could be included on $\mu^\phi$ by simply specifying \verb|angleStrength(d, strength = w, by = ID)| or \verb|angleStrength(d, by = ID)| (with no strength effects).
+
 
 \subsection{Grey seal}
 \label{sec:greySeal}
