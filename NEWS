@@ -1,6 +1,8 @@
-momentuHMM 1.4.1 2018-03-28
+momentuHMM 1.4.1 2018-05-22
 -----------------
 NEW FEATURES
+
+* special function 'toState' can now be used in formula argument for modelling transitions to specific states
 
 * timeInStates function added for calculating activity budgets
 
@@ -19,6 +21,8 @@ CHANGES
 * bug fix when a pseudo-design matrix formula includes interactions with >1 factor variable
 
 * check and print package version upon loading
+
+* unit tests no longer included in CRAN build because they were taking too long
 
 * updated citation info
 
