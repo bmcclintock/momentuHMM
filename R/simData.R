@@ -81,7 +81,7 @@
 #' Design matrices specified using formulas allow standard functions in R formulas
 #' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).  Special formula functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 #' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
-#' \code{angleStrength(cov,strength,by)} for the angle mean of circular-circular regression models, and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.
+#' \code{angleFormula(cov,strength,by)} for the angle mean of circular-circular regression models, and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.
 #' @param cons Deprecated. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
 #' for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
 #' \code{cons=list(step=c(1,2,1,1))} raises the second parameter to the second power. Default=NULL, which simply raises all parameters to 
@@ -197,7 +197,7 @@
 #' \code{cosinorCos(x)=cos(2*pi*x/period)} and \code{consinorSin(x)=sin(2*pi*x/period} for inclusion in the model (i.e., 2 additional parameters per state). The amplitude of the sine wave
 #' is thus \code{sqrt(B_cos^2 + B_sin^2)}, where \code{B_cos} and \code{B_sin} are the working parameters correponding to \code{cosinorCos(x)} and \code{cosinorSin(x)}, respectively (e.g., see Cornelissen 2014).
 #'
-#' When the circular-circular regression model is used, the special function \code{angleStrength(cov,strength,by)} can be used in \code{DM} for the mean of angular distributions (i.e. 'vm', 'vmConsensus', and 'wrpcauchy'),
+#' When the circular-circular regression model is used, the special function \code{angleFormula(cov,strength,by)} can be used in \code{DM} for the mean of angular distributions (i.e. 'vm', 'vmConsensus', and 'wrpcauchy'),
 #' where \code{cov} is an angle covariate (e.g. wind direction), \code{strength} is a positive real covariate (e.g. wind speed), and \code{by} is an optional factor variable for individual- or group-level effects (e.g. ID, sex). This allows angle covariates to be weighted based on their strength or importance at time step t as in
 #' Rivest et al. (2016).
 #' 

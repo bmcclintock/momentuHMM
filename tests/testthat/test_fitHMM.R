@@ -252,8 +252,8 @@ test_that("equivalent models with and without dummy covariate match",{
                           0,0,1,"cov2",0,0,0,0,
                           0,0,0,0,1,"cov2",0,0,
                           0,0,0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE),
-            angle=matrix(c("angleStrength(cov2,cov1)",0,0,0,0,0,
-                           0,"angleStrength(cov2,cov1)",0,0,0,0,
+            angle=matrix(c("angleFormula(cov2,cov1)",0,0,0,0,0,
+                           0,"angleFormula(cov2,cov1)",0,0,0,0,
                            0,0,1,"cov2",0,0,
                            0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE,dimnames=list(c(paste0("mean_",1:nbStates),paste0("concentration_",1:nbStates)),
                                                                              c(paste0("mean_",1:nbStates,":cov1:(cov2)"),paste0("concentration_",rep(1:nbStates,each=2),rep(c(":(Intercept)",":cov2"),2))))))
@@ -264,7 +264,7 @@ test_that("equivalent models with and without dummy covariate match",{
                           0,0,1,"cov2",0,0,0,0,
                           0,0,0,0,1,"cov2",0,0,
                           0,0,0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE),
-            angle=list(mean=~angleStrength(cov2,cov1),concentration=~cov2))
+            angle=list(mean=~angleFormula(cov2,cov1),concentration=~cov2))
   
   momentuHMM_cov4<-fitHMM(data=data,nbStates=nbStates,Par=Par0_2,formula=~cov2,
                           beta0=rbind(par0$beta0[1,,drop=FALSE],c(0,0)),delta0=par0$delta0,DM=DM4,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,circularAngleMean = list(angle=TRUE))
@@ -273,7 +273,7 @@ test_that("equivalent models with and without dummy covariate match",{
                         0,0,1,"cov2",0,0,0,0,
                         0,0,0,0,1,"cov2",0,0,
                         0,0,0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE),
-          angle=list(mean=~angleStrength(cov2,cov1,by=ID),concentration=~cov2))
+          angle=list(mean=~angleFormula(cov2,cov1,by=ID),concentration=~cov2))
     
   Par0_5 <- Par0_2
   Par0_5$angle <- c(1,1,1,1,0,0,0,0)
@@ -285,8 +285,8 @@ test_that("equivalent models with and without dummy covariate match",{
                             0,0,1,"cov2",0,0,0,0,
                             0,0,0,0,1,"cov2",0,0,
                             0,0,0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE),
-              angle=matrix(c("angleStrength(cov2,cov1,by=ID1)","angleStrength(cov2,cov1,by=ID2)",0,0,0,0,0,0,
-                             0,0,"angleStrength(cov2,cov1,by=ID1)","angleStrength(cov2,cov1,by=ID2)",0,0,0,0,
+              angle=matrix(c("angleFormula(cov2,cov1,by=ID1)","angleFormula(cov2,cov1,by=ID2)",0,0,0,0,0,0,
+                             0,0,"angleFormula(cov2,cov1,by=ID1)","angleFormula(cov2,cov1,by=ID2)",0,0,0,0,
                              0,0,0,0,1,"cov2",0,0,
                              0,0,0,0,0,0,1,"cov2"),nrow=4,byrow=TRUE,dimnames=list(c(paste0("mean_",1:nbStates),paste0("concentration_",1:nbStates)),
                                                                                c(paste0("mean_",rep(1:nbStates,each=2),":ID",rep(1:2,2),":cov1:(cov2)"),paste0("concentration_",rep(1:nbStates,each=2),rep(c(":(Intercept)",":cov2"),2))))))
