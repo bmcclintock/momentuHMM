@@ -1,10 +1,12 @@
-momentuHMM 1.4.2 2018-05-23
+momentuHMM 1.4.2 2018-06-04
 -----------------
 CHANGES
 
 * 'angleStrength' special function name changed to 'angleFormula'
 
 * strength argument in 'angleFormula' special function is now optional
+
+* when theta and/or fixPar arguments are missing in crawlWrap, crawl::crwMLE default values are now used
 
 
 momentuHMM 1.4.1 2018-05-21

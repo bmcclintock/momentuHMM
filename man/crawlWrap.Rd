@@ -50,10 +50,10 @@ for each individual.}
 for each individual.}
 
 \item{theta}{List of theta objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one theta is provided, then the same starting values are used
-for each individual.}
+for each individual. If theta is not specified, then \code{\link[crawl]{crwMLE}} default values are used (i.e. each parameter is started at zero).}
 
 \item{fixPar}{List of fixPar objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one fixPar is provided, then the same parameters are held fixed to the given value
-for each individual.}
+for each individual. If fixPar is not specified, then no parameters are fixed.}
 
 \item{method}{Optimization method that is passed to \code{\link{optim}}.}
 

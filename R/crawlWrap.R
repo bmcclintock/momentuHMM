@@ -30,9 +30,9 @@
 #' @param initial.state List of initial.state objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one initial state is provided, then the same initial states are used
 #' for each individual.
 #' @param theta List of theta objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one theta is provided, then the same starting values are used
-#' for each individual.
+#' for each individual. If theta is not specified, then \code{\link[crawl]{crwMLE}} default values are used (i.e. each parameter is started at zero).
 #' @param fixPar List of fixPar objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one fixPar is provided, then the same parameters are held fixed to the given value
-#' for each individual.
+#' for each individual. If fixPar is not specified, then no parameters are fixed.
 #' @param method Optimization method that is passed to \code{\link{optim}}.
 #' @param control Control list which is passed to \code{\link{optim}}.
 #' @param constr List of constr objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one constr is provided, then the same box constraints for the parameters are used
@@ -94,7 +94,7 @@
 #' }
 #' 
 #' @export
-#' @importFrom crawl crwMLE crwPredict
+#' @importFrom crawl crwMLE crwPredict displayPar
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom stats formula
@@ -207,29 +207,53 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0,
     initial.state <- initial.state[ids]
   } else names(initial.state) <- ids
   
-  if(!is.list(theta)){
-    tmptheta<-theta
-    theta<-list()
+  if(!missing(fixPar)){
+    if(!is.list(fixPar)){
+      tmpfixPar<-fixPar
+      fixPar<-list()
+      for(i in ids){
+        fixPar[[i]] <- tmpfixPar
+      } 
+    }
+    if(!is.null(names(fixPar))) {
+      if(!all(names(fixPar) %in% ids)) stop("fixPar names must match obsData$ID")
+      fixPar <- fixPar[ids]
+      for(i in ids){
+        if(is.null(fixPar[[i]])){
+          fixPar[[i]] <- crawl::displayPar(mov.model =  mov.model[[i]], err.model = err.model[[i]], activity = activity[[i]], drift = drift[[i]], data = ind_data[[i]], Time.name = Time.name)$fixPar
+        }
+      }
+    } else names(fixPar) <- ids
+  } else {
+    fixPar <- list()
     for(i in ids){
-      theta[[i]] <- tmptheta
+      fixPar[[i]] <- crawl::displayPar(mov.model =  mov.model[[i]], err.model = err.model[[i]], activity = activity[[i]], drift = drift[[i]], data = ind_data[[i]], Time.name = Time.name)$fixPar
     } 
   }
-  if(!is.null(names(theta))) {
-    if(!all(names(theta) %in% ids)) stop("theta names must match obsData$ID")
-    theta <- theta[ids]
-  } else names(theta) <- ids
   
-  if(!is.list(fixPar)){
-    tmpfixPar<-fixPar
-    fixPar<-list()
+  if(!missing(theta)){
+    if(!is.list(theta)){
+      tmptheta<-theta
+      theta<-list()
+      for(i in ids){
+        theta[[i]] <- tmptheta
+      } 
+    }
+    if(!is.null(names(theta))) {
+      if(!all(names(theta) %in% ids)) stop("theta names must match obsData$ID")
+      theta <- theta[ids]
+      for(i in ids){
+        if(is.null(theta[[i]])){
+          theta[[i]] <- rep(0,sum(is.na(fixPar[[i]])))
+        }
+      }
+    } else names(theta) <- ids
+  } else {
+    theta <- list()
     for(i in ids){
-      fixPar[[i]] <- tmpfixPar
-    } 
+      theta[[i]] <- rep(0,sum(is.na(fixPar[[i]])))
+    }     
   }
-  if(!is.null(names(fixPar))) {
-    if(!all(names(fixPar) %in% ids)) stop("fixPar names must match obsData$ID")
-    fixPar <- fixPar[ids]
-  } else names(fixPar) <- ids
   
   if(is.null(constr)){
     constr<-list()
