@@ -14,14 +14,14 @@ plotArgs <- c("cex","cex.main","cex.lab","cex.axis","cex.legend","lwd","asp","le
 fitMethods<-c("nlm","Nelder-Mead","SANN")
 
 # startup message
-#' @importFrom utils packageVersion available.packages
+#' @importFrom utils packageDescription available.packages
 print.momentuHMM.version <- function()
-{ version <- utils::packageVersion("momentuHMM")
-  hello <- paste("Loading momentuHMM ",version,sep="")
+{ pkgDescr <- utils::packageDescription("momentuHMM")
+  hello <- paste("momentuHMM ",pkgDescr$Version," (",pkgDescr$Date,")",sep="")
   curVersion <- tryCatch(suppressWarnings(utils::available.packages(repos = "http://cran.us.r-project.org")["momentuHMM","Version"]),error=function(e) e)
   packageStartupMessage(hello)
   if(!inherits(curVersion,"error")){
-    if(version<curVersion) warning("  A newer version (",curVersion,") is available from CRAN")
+    if(pkgDescr$Version<curVersion) warning("  A newer version (",curVersion,") is available from CRAN")
   }
 }
 
