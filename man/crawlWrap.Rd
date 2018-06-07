@@ -4,7 +4,7 @@
 \alias{crawlWrap}
 \title{Fit and predict tracks for using crawl}
 \usage{
-crawlWrap(obsData, timeStep = 1, ncores = 1, retryFits = 0,
+crawlWrap(obsData, timeStep = 1, ncores = 1, retryFits = 0, retrySD = 1,
   mov.model = ~1, err.model = NULL, activity = NULL, drift = NULL,
   coord = c("x", "y"), Time.name = "time", initial.state, theta, fixPar,
   method = "L-BFGS-B", control = NULL, constr = NULL, prior = NULL,
@@ -29,6 +29,11 @@ This can optionally be preceded by a positive integer and a space, or followed b
 from \code{attempts} because \code{retryFits} iteratively uses random perturbations of the current parameter estimates as the initial values for likelihood optimization, while 
 \code{attempts} uses the same initial values (\code{theta}) for each attempt.}
 
+\item{retrySD}{An optional list of scalars or vectors for each individual indicating the standard deviation to use for normal perturbations of \code{theta} when \code{retryFits>0}. 
+Instead of a list object, \code{retrySD} can also be a scalar or a vector, in which case the same values are used for each each individual.
+If a scalar is provided, then the same value is used for each parameter. If a vector is provided, it must be of length \code{length(theta)} for the corresponding individual(s). Default: 1, i.e., a standard deviation of 1 is used
+for all parameters of all individuals. Ignored unless \code{retryFits>0}.}
+
 \item{mov.model}{List of mov.model objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one movement model is provided, then the same movement model is used
 for each individual.}
 
@@ -50,10 +55,10 @@ for each individual.}
 for each individual.}
 
 \item{theta}{List of theta objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one theta is provided, then the same starting values are used
-for each individual.}
+for each individual. If theta is not specified, then \code{\link[crawl]{crwMLE}} default values are used (i.e. each parameter is started at zero).}
 
 \item{fixPar}{List of fixPar objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one fixPar is provided, then the same parameters are held fixed to the given value
-for each individual.}
+for each individual. If fixPar is not specified, then no parameters are fixed.}
 
 \item{method}{Optimization method that is passed to \code{\link{optim}}.}
 

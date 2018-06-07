@@ -3,7 +3,7 @@ library(setRNG)
 
 # set seed
 oldRNG<-setRNG()
-setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=1)
+setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=6)
 
 # load nfs data from github
 load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/nfsData.RData"))
@@ -12,15 +12,15 @@ nSims <- 100 # number of imputatons
 retryFits <- 30 # number attempt to re-fit based on random perturbation
 ncores <- 7 # number of CPU cores
 
-predTimes <- seq(as.POSIXct("2007-10-07 17:49:25",tz="GMT"),as.POSIXlt("2007-10-17 04:49:25",tz="GMT"),"hour")
+# set time steps based on overlapping time period of location and dive data
+predTimes <- seq(max(foragedives$time[1],nfsData$time[1]),min(foragedives$time[nrow(foragedives)],nfsData$time[nrow(nfsData)])+60*60,"hour")
 
 inits<-list(a=c(nfsData$x[1],0,nfsData$y[1],0),P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 5000 ^ 2, 10 * 3600 ^ 2)))
 
-crwOut<-crawlWrap(nfsData,ncores=ncores,retryFits=retryFits,err.model=list(x=~ln.sd.x-1,y=~ln.sd.y-1,rho=~error.corr),
-                  initial.state=inits,
-                  theta=c(4.422616, -7.938689),fixPar=c(1,1,NA,NA),
-                  attempts=100,
-                  predTime=predTimes)
+# use default starting values (theta) and explore likelihood surface using retryFits
+crwOut<-crawlWrap(nfsData,ncores=ncores,retryFits=20,err.model=list(x=~ln.sd.x-1,y=~ln.sd.y-1,rho=~error.corr),
+                  initial.state=inits,fixPar=c(1,1,NA,NA),
+                  attempts=100,predTime=predTimes)
 plot(crwOut)
 
 crwOut <- crawlMerge(crwOut,foragedives,"time")
