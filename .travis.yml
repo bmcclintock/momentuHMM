@@ -1,10 +1,14 @@
 language: r
+r:
+ - release
+ - devel
 cache: packages
 cran: https://cran.rstudio.com/
 
 before_install:
  - tlmgr install psfrag
  - echo "options(repos = c(CRAN='https://cran.rstudio.com'))" >> ~/.Rprofile
+ - sudo apt-get --yes --force-yes update -qq
  
 r_build_args: --compact-vignettes="gs+qpdf"
 
