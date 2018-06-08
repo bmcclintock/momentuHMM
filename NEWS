@@ -1,8 +1,14 @@
-momentuHMM 1.4.2 2018-06-06
+momentuHMM 1.4.2 2018-06-07
 -----------------
 NEW FEATURES
 
 * retrySD argument added to crawlWrap for additional flexibility when exploring the likelihood surface using retryFits
+
+* shape argument added to plotSat function
+
+* projargs argument added to plotSat function (for handling projected data coordinates)
+
+* data argument of plotSat function can now be a data frame or a momentuHMMData object
 
 -----------------
 CHANGES
