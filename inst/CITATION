@@ -6,9 +6,12 @@ citEntry(
 	author=personList(as.person("Brett T. McClintock"), as.person("Th{\'e}o Michelot")),
 	journal="Methods in Ecology and Evolution",
 	year=2018,
+	volume=9,
+	number=6,
+	pages = {"1518-1530"},
   url = "http://dx.doi.org/10.1111/2041-210X.12995",
   doi = "10.1111/2041-210X.12995",
-	textVersion="McClintock, B.T. and Michelot, T. (2018) momentuHMM: R package for generalized hidden Markov models of animal movement. Methods in Ecology and Evolution. doi:10.1111/2041-210X.12995."
+	textVersion="McClintock, B.T. and Michelot, T. (2018) momentuHMM: R package for generalized hidden Markov models of animal movement. Methods in Ecology and Evolution 9(6): 1518-1530."
 )
 
 citFooter("Additions and modifications to momentuHMM are frequent, to help with reproducibility of output please cite its version number. Find it with 'help(package=momentuHMM)'.")
