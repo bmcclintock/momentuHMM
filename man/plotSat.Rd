@@ -10,7 +10,8 @@ plotSat(data, zoom = NULL, location = NULL, segments = TRUE,
   stateNames = NULL, projargs = NULL)
 }
 \arguments{
-\item{data}{Data frame or \code{\link{momentuHMMData}} object, with necessary fields 'x' and 'y'.}
+\item{data}{Data frame or \code{\link{momentuHMMData}} object, with necessary fields 'x' and 'y'.  A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object is also permitted, from which the data will be extracted.
+If \code{states=NULL} and a \code{momentuHMM}, \code{miHMM}, or \code{miSum} object is provided, the decoded states are automatically plotted.}
 
 \item{zoom}{The zoom level, as defined for \code{\link{get_map}}. Integer value between
 3 (continent) and 21 (building).}

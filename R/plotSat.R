@@ -5,7 +5,8 @@
 #' to fetch a satellite image from Google. An Internet connection is required to use
 #' this function.
 #'
-#' @param data Data frame or \code{\link{momentuHMMData}} object, with necessary fields 'x' and 'y'.
+#' @param data Data frame or \code{\link{momentuHMMData}} object, with necessary fields 'x' and 'y'.  A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object is also permitted, from which the data will be extracted.
+#' If \code{states=NULL} and a \code{momentuHMM}, \code{miHMM}, or \code{miSum} object is provided, the decoded states are automatically plotted.
 #' @param zoom The zoom level, as defined for \code{\link{get_map}}. Integer value between
 #' 3 (continent) and 21 (building).
 #' @param location Location of the center of the map to be plotted (this must be in the same coordinate reference system as \code{data}).
@@ -48,8 +49,19 @@ plotSat <- function(data,zoom=NULL,location=NULL,segments=TRUE,compact=TRUE,col=
   ## Check arguments ##
   #####################
   
-  if(inherits(data,"momentuHMMData")) data <- as.data.frame(data)
+  if(is.null(states) & inherits(data,c("momentuHMM","miHMM","miSum"))){
+    if(inherits(data,"momentuHMM")) states <- viterbi(data)
+    else if(inherits(data,"miHMM")) states <- data$miSum$Par$states
+    else states <- data$Par$states
+  }
   
+  if(inherits(data,"momentuHMM")) data <- data$data
+  else if(inherits(data,"miHMM")) data <- data$miSum$data
+  else if(inherits(data,"miSum")) data <- data$data
+  else if(inherits(data,"HMMfits")) stop("data must be a data frame, momentuHMMData, momentuHMM, miHMM, or miSum object")
+  
+  if(inherits(data,"momentuHMMData")) data <- as.data.frame(data)
+
   if(is.null(data$x) | is.null(data$y))
     stop("Data should have fields data$x and data$y.")
   
