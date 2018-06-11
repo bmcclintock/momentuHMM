@@ -4,11 +4,15 @@ NEW FEATURES
 
 * retrySD argument added to crawlWrap for additional flexibility when exploring the likelihood surface using retryFits
 
-* shape argument added to plotSat function
+* shape argument added to plotSat and plotSpatialCov functions
 
 * projargs argument added to plotSat function (for handling projected data coordinates)
 
+* stateNames argument added to plotSpatialCov function
+
 * data argument of plotSat function can now be a data frame, momentuHMMData, momentuHMM, miHMM, or miSum object
+
+* data argument of plotSpatialCov function can now be a data frame, momentuHMMData, momentuHMM, miHMM, or miSum object
 
 
 CHANGES
