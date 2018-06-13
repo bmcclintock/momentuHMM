@@ -41,6 +41,9 @@ for(j in 1:nSims){
   miTurtleData$miData[[j]]$angle_osc[is.na(miTurtleData$miData[[j]]$angle_osc)] <- 0
 }
 
+###################################################################################
+## Fit 2-state HMM using multiple imputation
+###################################################################################
 nbStates<-2
 dist<-list(step="gamma",angle="wrpcauchy")
 estAngleMean<-list(angle=TRUE)
@@ -53,7 +56,10 @@ Par0<-list(step=c(9.132130, 9.200282, 0, 8.579123, 8.640819),
            angle=c(0, -16.0417715, -0.4749668))
 
 turtleFits<-MIfitHMM(miTurtleData$miData,ncores=ncores,
-                     nbStates=nbStates,dist=dist,Par0=Par0,DM=DM,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,retryFits=retryFits)
+                     nbStates=nbStates,dist=dist,Par0=Par0,DM=DM,
+                     estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
+                     retryFits=retryFits)
+###################################################################################
 
 plot(turtleFits,plotCI=TRUE,covs=data.frame(angle_osc=1),ask=FALSE)
 
