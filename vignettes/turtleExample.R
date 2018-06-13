@@ -63,4 +63,7 @@ turtleFits<-MIfitHMM(miTurtleData$miData,ncores=ncores,
 
 plot(turtleFits,plotCI=TRUE,covs=data.frame(angle_osc=1),ask=FALSE)
 
+# plot relative to ocean surface current speed on 2 December 2012
+plotSpatialCov(turtleFits,spatialCov=speedBrick$X2012.12.02)
+
 save.image("turtleExample.RData")
