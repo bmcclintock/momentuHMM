@@ -341,8 +341,8 @@
 #' nObs <- 1000 # length of simulated track
 #' cov <- data.frame(time=1:nObs) # time covariate for splines
 #' dist <- list(step="gamma",angle="vm")
-#' stepDM <- list(mean=~bSpline(time,df=3,degree=0),sd=~1)
-#' angleDM <- list(mean=~1,concentration=~bSpline(time,df=3,degree=0))
+#' stepDM <- list(mean=~bSpline(time,df=2,degree=0),sd=~1)
+#' angleDM <- list(mean=~1,concentration=~bSpline(time,df=2,degree=0))
 #' DM <- list(step=stepDM,angle=angleDM)
 #' Par <- list(step=c(log(1000),1,-1,log(100)),angle=c(0,log(10),2,-5))
 #'
@@ -351,7 +351,7 @@
 #' Par0 <- list(step=Par$step,angle=Par$angle[-1])
 #' m.spline<-fitHMM(data.spline,nbStates=1,dist=dist,Par0=Par0,
 #'                  DM=list(step=stepDM,
-#'                          angle=list(concentration=~bSpline(time,df=3,degree=0))))  
+#'                          angle=angleDM["concentration"]))  
 #'   
 #' ### 10. Initial state (delta) based on covariate                       
 #' nObs <- 100
