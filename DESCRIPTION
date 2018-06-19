@@ -45,7 +45,7 @@ Suggests:
     setRNG,
     knitr,
     splines, 
-    splines2
+    splines2 (>= 0.2.8)
 RoxygenNote: 6.0.1
 NeedsCompilation: yes
 VignetteBuilder: knitr
