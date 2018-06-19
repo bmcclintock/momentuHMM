@@ -1,6 +1,8 @@
-momentuHMM 1.4.2 2018-06-15
+momentuHMM 1.4.2 2018-06-19
 -----------------
 NEW FEATURES
+
+* Northern fulmar example of Pirotta et al (2018) added to vignette
 
 * retrySD argument added to crawlWrap for additional flexibility when exploring the likelihood surface using retryFits
 
