@@ -5,12 +5,12 @@
 \title{Plot observations on raster image}
 \usage{
 plotSpatialCov(data, spatialCov, segments = TRUE, compact = TRUE,
-  col = NULL, alpha = 1, size = 1, states = NULL, animals = NULL,
-  ask = TRUE, return = FALSE)
+  col = NULL, alpha = 1, size = 1, shape = 16, states = NULL,
+  animals = NULL, ask = TRUE, return = FALSE, stateNames = NULL)
 }
 \arguments{
-\item{data}{Data frame of the location data, with necessary fields 'x' (longitudinal direction) and
-'y' (latitudinal direction).}
+\item{data}{Data frame or \code{\link{momentuHMMData}} object, with necessary fields 'x' (longitudinal direction) and 'y' (latitudinal direction).  A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object is also permitted, from which the data will be extracted.
+If \code{states=NULL} and a \code{momentuHMM}, \code{miHMM}, or \code{miSum} object is provided, the decoded states are automatically plotted.}
 
 \item{spatialCov}{\code{\link[raster]{RasterLayer-class}} object on which to plot the location data}
 
@@ -26,6 +26,9 @@ otherwise (default).}
 
 \item{size}{Size argument for \code{\link{geom_point}}.}
 
+\item{shape}{Shape argument for \code{\link{geom_point}}. If \code{states} is provided, then \code{shape} must either be a scalar or a vector of length \code{length(unique(states))}.
+If \code{states=NULL}, then \code{shape} must either be a scalar or a vector consisting of a value for each individual to be plotted.}
+
 \item{states}{A sequence of integers, corresponding to the decoded states for these data. If
 specified, the observations are colored by states.}
 
@@ -36,6 +39,8 @@ Default: \code{NULL}; all animals are plotted.}
 
 \item{return}{If \code{TRUE}, the function returns a ggplot object (which can be edited and
 plotted manually). If \code{FALSE}, the function automatically plots the map (default).}
+
+\item{stateNames}{Optional character vector of length \code{max(states)} indicating state names. Ignored unless \code{states} is provided.}
 }
 \description{
 Plot tracking data over a raster layer.

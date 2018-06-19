@@ -1,3 +1,34 @@
+momentuHMM 1.4.2 2018-06-19
+-----------------
+NEW FEATURES
+
+* Northern fulmar example of Pirotta et al (2018) added to vignette
+
+* retrySD argument added to crawlWrap for additional flexibility when exploring the likelihood surface using retryFits
+
+* shape argument added to plotSat and plotSpatialCov functions
+
+* projargs argument added to plotSat function (for handling projected data coordinates)
+
+* stateNames argument added to plotSpatialCov function
+
+* data argument of plotSat function can now be a data frame, momentuHMMData, momentuHMM, miHMM, or miSum object
+
+* data argument of plotSpatialCov function can now be a data frame, momentuHMMData, momentuHMM, miHMM, or miSum object
+
+CHANGES
+
+* 'angleStrength' special function name changed to 'angleFormula'
+
+* strength argument in 'angleFormula' special function is now optional
+
+* when theta and/or fixPar arguments are missing in crawlWrap, crawl::crwMLE default values are now used
+
+* bug fix in crawlWrap when retryFits>0 and control argument is NULL. This bug caused additional model fitting attempts to fail
+
+* modified B-spline examples in fitHMM and simData to accommodate bug fixes in splines2 (>= 0.2.8)
+
+
 momentuHMM 1.4.1 2018-05-21
 -----------------
 NEW FEATURES

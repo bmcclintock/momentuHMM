@@ -16,6 +16,10 @@
 #' @param retryFits Number of times to attempt to achieve convergence and valid (i.e., not NaN) variance estimates after the initial model fit. \code{retryFits} differs
 #' from \code{attempts} because \code{retryFits} iteratively uses random perturbations of the current parameter estimates as the initial values for likelihood optimization, while 
 #' \code{attempts} uses the same initial values (\code{theta}) for each attempt. 
+#' @param retrySD An optional list of scalars or vectors for each individual indicating the standard deviation to use for normal perturbations of \code{theta} when \code{retryFits>0}. 
+#' Instead of a list object, \code{retrySD} can also be a scalar or a vector, in which case the same values are used for each each individual.
+#' If a scalar is provided, then the same value is used for each parameter. If a vector is provided, it must be of length \code{length(theta)} for the corresponding individual(s). Default: 1, i.e., a standard deviation of 1 is used
+#' for all parameters of all individuals. Ignored unless \code{retryFits>0}.
 #' @param mov.model List of mov.model objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one movement model is provided, then the same movement model is used
 #' for each individual.
 #' @param err.model List of err.model objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one error model is provided, then the same error model is used
@@ -30,9 +34,9 @@
 #' @param initial.state List of initial.state objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one initial state is provided, then the same initial states are used
 #' for each individual.
 #' @param theta List of theta objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one theta is provided, then the same starting values are used
-#' for each individual.
+#' for each individual. If theta is not specified, then \code{\link[crawl]{crwMLE}} default values are used (i.e. each parameter is started at zero).
 #' @param fixPar List of fixPar objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one fixPar is provided, then the same parameters are held fixed to the given value
-#' for each individual.
+#' for each individual. If fixPar is not specified, then no parameters are fixed.
 #' @param method Optimization method that is passed to \code{\link{optim}}.
 #' @param control Control list which is passed to \code{\link{optim}}.
 #' @param constr List of constr objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one constr is provided, then the same box constraints for the parameters are used
@@ -94,14 +98,14 @@
 #' }
 #' 
 #' @export
-#' @importFrom crawl crwMLE crwPredict
+#' @importFrom crawl crwMLE crwPredict displayPar
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom stats formula
 #' @importFrom sp coordinates
 #' @importFrom utils capture.output
 
-crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0,
+crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
                     mov.model = ~1, err.model = NULL, activity = NULL, drift = NULL, 
                     coord = c("x", "y"), Time.name = "time", initial.state, theta, fixPar, 
                     method = "L-BFGS-B", control = NULL, constr = NULL, 
@@ -207,29 +211,89 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0,
     initial.state <- initial.state[ids]
   } else names(initial.state) <- ids
   
-  if(!is.list(theta)){
-    tmptheta<-theta
-    theta<-list()
+  if(!missing(fixPar)){
+    if(!is.list(fixPar)){
+      tmpfixPar<-fixPar
+      fixPar<-list()
+      for(i in ids){
+        fixPar[[i]] <- tmpfixPar
+      } 
+    }
+    if(!is.null(names(fixPar))) {
+      if(!all(names(fixPar) %in% ids)) stop("fixPar names must match obsData$ID")
+      fixPar <- fixPar[ids]
+      for(i in ids){
+        if(is.null(fixPar[[i]])){
+          fixPar[[i]] <- crawl::displayPar(mov.model =  mov.model[[i]], err.model = err.model[[i]], activity = activity[[i]], drift = drift[[i]], data = ind_data[[i]], Time.name = Time.name)$fixPar
+        }
+      }
+    } else names(fixPar) <- ids
+  } else {
+    fixPar <- list()
     for(i in ids){
-      theta[[i]] <- tmptheta
+      fixPar[[i]] <- crawl::displayPar(mov.model =  mov.model[[i]], err.model = err.model[[i]], activity = activity[[i]], drift = drift[[i]], data = ind_data[[i]], Time.name = Time.name)$fixPar
     } 
   }
-  if(!is.null(names(theta))) {
-    if(!all(names(theta) %in% ids)) stop("theta names must match obsData$ID")
-    theta <- theta[ids]
-  } else names(theta) <- ids
   
-  if(!is.list(fixPar)){
-    tmpfixPar<-fixPar
-    fixPar<-list()
+  if(!missing(theta)){
+    if(!is.list(theta)){
+      tmptheta<-theta
+      theta<-list()
+      for(i in ids){
+        theta[[i]] <- tmptheta
+      } 
+    }
+    if(!is.null(names(theta))) {
+      if(!all(names(theta) %in% ids)) stop("theta names must match obsData$ID")
+      theta <- theta[ids]
+      for(i in ids){
+        if(is.null(theta[[i]])){
+          theta[[i]] <- rep(0,sum(is.na(fixPar[[i]])))
+        }
+      }
+    } else names(theta) <- ids
+  } else {
+    theta <- list()
     for(i in ids){
-      fixPar[[i]] <- tmpfixPar
-    } 
+      theta[[i]] <- rep(0,sum(is.na(fixPar[[i]])))
+    }     
   }
-  if(!is.null(names(fixPar))) {
-    if(!all(names(fixPar) %in% ids)) stop("fixPar names must match obsData$ID")
-    fixPar <- fixPar[ids]
-  } else names(fixPar) <- ids
+  
+  if(retryFits>0){
+    if(!is.list(retrySD)){
+      tmpretrySD <- retrySD
+      retrySD<-list()
+      for(i in ids){
+        if(length(tmpretrySD)>1){
+          if(length(theta[[i]])!=length(tmpretrySD)) stop("retrySD is not the correct length for individual ",i)
+          retrySD[[i]] <- tmpretrySD
+        } else {
+          retrySD[[i]] <- rep(tmpretrySD,length(theta[[i]]))
+        }
+      }
+    } else {
+      if(!is.null(names(retrySD))) {
+        if(!all(names(retrySD) %in% ids)) stop("retrySD names must match obsData$ID")
+        retrySD <- retrySD[ids]
+      } else {
+        if(length(retrySD)!=length(ids)) stop('when no list object names are provided, retrySD must be a list of length ',length(ids))
+        names(retrySD) <- ids
+      }
+      for(i in ids){
+        if(is.null(retrySD[[i]])){
+          retrySD[[i]] <- rep(1,length(theta[[i]]))
+        } else {
+          tmpretrySD <- retrySD[[i]]
+          if(length(tmpretrySD)>1){
+            if(length(theta[[i]])!=length(tmpretrySD)) stop("retrySD is not the correct length for individual ",i)
+          } else {
+            retrySD[[i]] <- rep(tmpretrySD,length(theta[[i]]))
+          }
+        }
+      }
+    }
+    retrySD <- retrySD[ids]
+  }
   
   if(is.null(constr)){
     constr<-list()
@@ -349,14 +413,14 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0,
               coord = coord,
               Time.name = Time.name,
               initial.state = initial.state[[i]],
-              theta = fit$estPar + rnorm(length(fit$estPar),0,0.5),
+              theta = fit$estPar + rnorm(length(fit$estPar),0,retrySD[[i]]),
               fixPar = fixPar[[i]],
               method = method,
-              control = list(maxit = control$maxit),
+              control = control,
               constr = constr[[i]],
               prior = prior[[i]],
               need.hess = need.hess,
-              initialSANN = list(maxit = initialSANN$maxit),
+              initialSANN = initialSANN,
               attempts = 1
             ))),error=function(e) e)
             if(inherits(tmp,"crwFit")){
