@@ -1,6 +1,8 @@
-momentuHMM 1.4.2 2018-06-15
+momentuHMM 1.4.2 2018-06-19
 -----------------
 NEW FEATURES
+
+* Northern fulmar example of Pirotta et al (2018) added to vignette
 
 * retrySD argument added to crawlWrap for additional flexibility when exploring the likelihood surface using retryFits
 
@@ -24,7 +26,7 @@ CHANGES
 
 * bug fix in crawlWrap when retryFits>0 and control argument is NULL. This bug caused additional model fitting attempts to fail
 
-* modified B-spline examples in fitHMM and simData to accommodate bug fixes in splines2 >=0.2.8
+* modified B-spline examples in fitHMM and simData to accommodate bug fixes in splines2 (>= 0.2.8)
 
 
 momentuHMM 1.4.1 2018-05-21

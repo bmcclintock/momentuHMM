@@ -31,14 +31,16 @@ coordinates(colony) <- c("x","y")
 proj4string(colony) <- oldProj
 colony <- as.matrix(as.data.frame(spTransform(colony,newProj)))
 rownames(colony) <- "colony"
-colony_dist <- prepData(raw_data,coordNames=c("Longitude","Latitude"),centers=colony)[,c("ID","x","y","colony.dist")]
+colony_dist <- prepData(raw_data,coordNames=c("Longitude","Latitude"),centers=colony)
 
 # calculate at sea covariate
 sea.angle <- NULL
 for(id in unique(colony_dist$ID)) {
   idat <- subset(colony_dist,ID==id)
   nbSubObs <- length(which(colony_dist$ID==id))
-  sea.angle <- c(sea.angle,rep(momentuHMM:::distAngle(colony,colony,as.numeric(idat[which.max(idat$colony.dist),c("x","y")]))[2],nbSubObs))
+  max_dist <- as.numeric(idat[which.max(idat$colony.dist),c("x","y")])
+  max_angle <- momentuHMM:::distAngle(colony,colony,max_dist)[2]
+  sea.angle <- c(sea.angle, rep(max_angle,nbSubObs))
 }
 raw_data$sea.angle<-sea.angle
 
@@ -164,6 +166,9 @@ plot(m2,covs=data.frame(sea.angle=0,boat.angle=0,colony.angle=0),ask=FALSE)
 #activity budgets
 #Pirotta et al report 0.277 (seaARS), 0.203 (seaTr), 0.182 (boatARS), 0.06 (boatTr), 0.115 (colonyARS), and 0.163 (colonyTr)
 timeInStates(m2)
+
+#activity budgets by individual bird
+timeInStates(m2, by="birdID")
 
 plotSat(m2,zoom=7,shape=c(17,1,17,1,17,1),size=2,col=rep(c("#E69F00", "#56B4E9", "#009E73"),each=2),stateNames=c("sea ARS","sea Transit","boat ARS","boat Transit","colony ARS","colony Transit"),projargs=newProj,ask=FALSE)
 

@@ -300,7 +300,25 @@ dev.off()
 for(plt in seq(1,37)[-c(20)])
   unlink(paste0("plot_harbourSealResults0",ifelse(plt>9,"","0"),plt,".pdf"))
 
-rm(list=ls()[-which(ls()=="example_wd")])
+rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
+
+###################################################
+### northern fulmar example
+###################################################
+load(paste0(example_wd,"northernFulmarExample.RData"))
+fulmarElapsedTime <- round(m2$mod$elapsedTime/60,0)
+timeIn1 <- timeInStates(m2)
+timeIn2 <- timeInStates(m2,by="birdID")
+append.RData(fulmarElapsedTime,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(timeIn1,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(timeIn2,file=paste0(getwd(),"/vignette_inputs.RData"))
+#append.RData(m2,file=paste0(getwd(),"/vignette_inputs.RData"))
+#append.RData(newProj,file=paste0(getwd(),"/vignette_inputs.RData"))
+png(file=paste0(getwd(),"/plot_northernFulmarExample.png"),width=7.25,height=5,units="in",res=80)
+plotSat(m2,zoom=7,shape=c(17,1,17,1,17,1),size=2,col=rep(c("#E69F00", "#56B4E9", "#009E73"),each=2),stateNames=c("sea ARS","sea Transit","boat ARS","boat Transit","colony ARS","colony Transit"),projargs=newProj,ask=FALSE)
+dev.off()
+
+rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
 ###################################################
 ### group dynamic example
