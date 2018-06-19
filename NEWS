@@ -26,7 +26,7 @@ CHANGES
 
 * bug fix in crawlWrap when retryFits>0 and control argument is NULL. This bug caused additional model fitting attempts to fail
 
-* modified B-spline examples in fitHMM and simData to accommodate bug fixes in splines2 >=0.2.8
+* modified B-spline examples in fitHMM and simData to accommodate bug fixes in splines2 (>= 0.2.8)
 
 
 momentuHMM 1.4.1 2018-05-21
