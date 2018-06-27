@@ -29,7 +29,7 @@ print.momentuHMM.version <- function()
   print.momentuHMM.version()
 }
 
-# this function maintains backwards compatibility with momentuHMM versions <1.1.2 (formulaDelta) and <1.4.0 (workBounds)
+# this function maintains backwards compatibility with momentuHMM versions <1.1.2 (formulaDelta), <1.4.0 (workBounds), and <1.4.3 (betaCons)
 delta_bc <- function(m){
   
   if(is.momentuHMM(m) | is.miSum(m)){
@@ -69,6 +69,7 @@ delta_bc <- function(m){
       }
       m$conditions$workBounds <- getWorkBounds(workBounds,distnames,m$mod$estimate,parindex,parCount,m$conditions$DM,beta,delta)
     }
+    if(is.null(m$conditions$betaCons) & !is.null(m$mle$beta)) m$conditions$betaCons <- matrix(1:length(m$mle$beta),nrow(m$mle$beta),ncol(m$mle$beta))
 
   } else if(!is.miHMM(m) & any(unlist(lapply(m,is.momentuHMM)))){
     m <- HMMfits(m)

@@ -180,6 +180,9 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   }
   
   miBeta <- mitools::MIcombine(results=betaCoeff,variances=betaVar)
+  # account for betaCons
+  miBeta$variance[(parindex[["beta"]]+1:length(m$mle$beta))[duplicated(c(m$conditions$betaCons))],] <- 0
+  miBeta$variance[,(parindex[["beta"]]+1:length(m$mle$beta))[duplicated(c(m$conditions$betaCons))]] <- 0
   
   for(parm in 1:nparms){
     
@@ -214,6 +217,8 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   for(i in parms){
     Par$beta[[i]] <- mi_parm_list(xbar[[i]],MI_se[[i]],lower[[i]],upper[[i]],m$CIbeta[[i]]$est)
   }
+  # fill in t.p.m. constraints based on betaCons
+  Par$beta$beta <- lapply(Par$beta$beta,function(x) matrix(x[c(m$conditions$betaCons)],dim(x),dimnames=list(rownames(x),colnames(x))))
   
   #average all numeric variables in imputed data
   mhdata<-m$data
@@ -347,7 +352,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     for(i in 1:nrow(est)){
       for(j in 1:ncol(est)){
         dN<-numDeriv::grad(get_gamma,matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),covs=model.matrix(newformula,mhdata),nbStates=nbStates,i=i,j=j)
-        se[i,j]<-suppressWarnings(sqrt(dN%*%miBeta$variance[gamInd,gamInd]%*%dN))
+        se[i,j]<-suppressWarnings(sqrt(dN%*%miBeta$variance[gamInd[m$conditions$betaCons],gamInd[m$conditions$betaCons]]%*%dN))
         lower[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))-quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]-quantSup*se[i,j]
         upper[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))+quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]+quantSup*se[i,j]
       }

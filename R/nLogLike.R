@@ -36,6 +36,7 @@
 #' @param covsDelta data frame containing the delta model covariates (if any)
 #' @param workBounds named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters
 #' @param prior A function that returns the log-density of the working scale parameter prior distribution(s)
+#' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters.
 #'
 #' @return The negative log-likelihood of the parameters given the data.
 #'
@@ -68,7 +69,7 @@
 
 nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,
-                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL)
+                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL)
 {
   
   # check arguments
@@ -79,6 +80,10 @@ nLogLike <- function(wpar,nbStates,formula,bounds,parSize,data,dist,covs,
   
   # convert the parameters back to their natural scale
   if(length(wparIndex)) wpar[wparIndex] <- fixPar[wparIndex]
+  if(!is.null(betaCons) & nbStates>1){
+    foo <- length(wpar)-ncol(covsDelta)*(nbStates-1)*(!stationary)-((nbCovs+1)*nbStates*(nbStates-1)-1):0
+    wpar[foo] <- wpar[foo][betaCons]
+  }
   par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta,workBounds)
 
   nbAnimals <- length(unique(data$ID))
