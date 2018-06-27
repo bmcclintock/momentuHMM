@@ -179,7 +179,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
       for(i in 1:nbStates){
         for(j in 1:nbStates){
           dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j)
-          se[i,j]<-suppressWarnings(sqrt(dN%*%Sigma[i2:i3,i2:i3]%*%dN))
+          se[i,j]<-suppressWarnings(sqrt(dN%*%Sigma[(i2:i3)[m$conditions$betaCons],(i2:i3)[m$conditions$betaCons]]%*%dN))
           lower[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))-quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]-quantSup*se[i,j]
           upper[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))+quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#m$mle$gamma[i,j]+quantSup*se[i,j]
         }

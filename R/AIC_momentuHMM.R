@@ -66,7 +66,7 @@ AIC.momentuHMM <- function(object,...,k=2,n=NULL)
 }
 
 getAIC <- function(m, k=2, n=NULL){
-    nbPar <- length(m$mod$estimate)-sum(!is.na(unlist(m$conditions$fixPar)))
+    nbPar <- length(m$mod$estimate)-sum(!is.na(unlist(m$conditions$fixPar)))-(length(m$conditions$betaCons[is.na(m$conditions$fixPar$beta)])-length(unique(m$conditions$betaCons[is.na(m$conditions$fixPar$beta)])))
     maxLogLike <- -m$mod$minimum
     aic <- -2*maxLogLike+k*nbPar
     if(!is.null(n)) aic <- aic + k*nbPar*(nbPar+1)/(n-nbPar-1)

@@ -9,13 +9,14 @@ MIfitHMM(miData, nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
   circularAngleMean = NULL, formula = ~1, formulaDelta = ~1,
   stationary = FALSE, verbose = NULL, nlmPar = NULL, fit = TRUE,
   useInitial = FALSE, DM = NULL, cons = NULL, userBounds = NULL,
-  workBounds = NULL, workcons = NULL, stateNames = NULL,
-  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
-  optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
-  covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL,
-  angleCovs = NULL, method = "IS", parIS = 1000, dfSim = Inf,
-  grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad = TRUE,
-  fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1, thetaSamp = NULL)
+  workBounds = NULL, workcons = NULL, betaCons = NULL,
+  stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
+  retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL,
+  modelName = NULL, covNames = NULL, spatialCovs = NULL, centers = NULL,
+  centroids = NULL, angleCovs = NULL, method = "IS", parIS = 1000,
+  dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
+  force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
+  thetaSamp = NULL)
 }
 \arguments{
 \item{miData}{A \code{\link{crwData}} object, a \code{\link{crwSim}} object, or a list of \code{\link{momentuHMMData}} objects.}
@@ -84,6 +85,8 @@ distribution parameters for each data stream. See \code{\link{fitHMM}}.}
 
 \item{workcons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 each data stream. See \code{\link{fitHMM}}.}
+
+\item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See details.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 

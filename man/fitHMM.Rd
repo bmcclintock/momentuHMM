@@ -9,9 +9,9 @@ fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
   formulaDelta = ~1, stationary = FALSE, verbose = NULL,
   nlmPar = list(), fit = TRUE, DM = NULL, cons = NULL,
   userBounds = NULL, workBounds = NULL, workcons = NULL,
-  stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
-  retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL,
-  modelName = NULL)
+  betaCons = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL,
+  retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(),
+  prior = NULL, modelName = NULL)
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} object.}
@@ -121,6 +121,8 @@ For data streams, each element of \code{workBounds} should be a k x 2 matrix wit
 each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
 through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.}
 
+\item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See details.}
+
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
 \item{knownStates}{Vector of values of the state process which are known prior to fitting the
@@ -227,6 +229,13 @@ or \code{paste0("betaCol",nbStates*(nbStates-1))} (where the integer indicates t
 \code{formula=~cov1+betaCol1(cov2)+state3(cov3)+toState1(cov4)} includes \code{cov1} on all transition probability parameters, \code{cov2} on the \code{beta} column corresponding
 to the transition from state 1->2, \code{cov3} on transition probabilities from state 3 (i.e., \code{beta} columns corresponding to state transitions 3->1 and 3->2),
 and \code{cov4} on transition probabilities to state 1 (i.e., \code{beta} columns corresponding to state transitions 2->1 and 3->1).
+
+\item \code{betaCons} can be used to impose equality constraints among the t.p.m. parameters.  It must be a matrix of the same dimension as \code{beta0} and be composed of integers (beginning with ``1'' and increasing in a column-wise fashion).
+Use of \code{betaCons} is perhaps best demonstrated by example.  If no constraints are composed (the default), then \code{betaCons=matrix(1:length(beta0),nrow(beta0),ncol(beta0))} such that
+each beta parameter is identified by a unique integer.  Suppose we wish to fit a model with \code{nbStates=3} states and a covariate (`cov1') on the t.p.m. With no constraints on the t.p.m., we would have
+\code{betaCons=matrix(1:(2*(nbStates*(nbStates-1))),nrow=2,ncol=nbStates*(nbStates-1),dimnames=list(c("(Intercept)","cov1"),c("1 -> 2","1 -> 3","2 -> 1","2 -> 3","3 -> 1","3 -> 2")))}.  If we then wanted to constrain the t.p.m. such that the covariate effect is identical for transitions from state 1 to states 2 and 3 (and vice versa), we have
+\code{betaCons=matrix(c(1,2,3,2,5,6,7,8,9,6,11,12),nrow=2,ncol=nbStates*(nbStates-1),dimnames=list(c("(Intercept)","cov1"),c("1 -> 2","1 -> 3","2 -> 1","2 -> 3","3 -> 1","3 -> 2")))}; this results in 10 estimated beta parameters (instead of 12), the ``cov1'' effects indexed by a ``2'' (``1 -> 2'' and ``1 -> 3'') constrained to be equal, and 
+the ``cov1'' effects indexed by a ``6'' (``2 -> 1'' and ``3 -> 1'') constrained to be equal.
 
 \item Cyclical relationships (e.g., hourly, monthly) may be modeled in \code{DM} or \code{formula} using the \code{cosinor(x,period)} special formula function for covariate \code{x}
 and sine curve period of time length \code{period}. For example, if 

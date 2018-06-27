@@ -1123,9 +1123,9 @@ As was mentioned earlier, we found overwhelming AIC support for the individual-l
 
 \subsection{Northern fulmars}
 \label{sec:northernFulmar}
-Using Bayesian analysis methods, \cite{PirottaEtAl2018} fit a 6-state biased random walk model to northern fulmar ({\it Fulmarus glacialis}) tracks in northern Scotland, UK.  These states included biased movements relative to a colony in Eynhallow ($59.12^\circ$ N, $3.1^\circ$ W) and fishing vessels that frequently work in the area.  \cite{PirottaEtAl2018} framed their model as having two latent state process.  Under the first state process, the direction of movement could be biased away from the colony (``sea''), towards the nearest fishing vessel (``boat''), or towards the colony (``colony''). Under the second state process, movement could either be fast and directionally-persistent (``transit'') or area-restricted search (``ARS'').  Thus the six states are ``sea ARS'', ``sea transit'', ``boat ARS'', ``boat transit'', ``colony ARS'' and ``colony transit''. \cite{PirottaEtAl2018} also allowed the distance to the nearest fishing vessel and time since leaving the colony to affect state transitions to the ``boat'' and ``colony'' states.  Here we demonstrate how a very similar (but not identical) model can be implemented in \verb|momentuHMM|.
+Using Bayesian analysis methods, \cite{PirottaEtAl2018} fit a 6-state biased random walk model to northern fulmar ({\it Fulmarus glacialis}) tracks in northern Scotland, UK.  These states included biased movements relative to a colony in Eynhallow ($59.12^\circ$ N, $3.1^\circ$ W) and fishing vessels that frequently work in the area.  \cite{PirottaEtAl2018} framed their model as having two latent state process.  Under the first state process, the direction of movement could be biased away from the colony (``sea''), towards the nearest fishing vessel (``boat''), or towards the colony (``colony''). Under the second state process, the movement mode could either be fast and directionally-persistent (``transit'') or area-restricted search (``ARS'').  Thus the six states are ``sea ARS'', ``sea transit'', ``boat ARS'', ``boat transit'', ``colony ARS'' and ``colony transit''. \cite{PirottaEtAl2018} also allowed the distance to the nearest fishing vessel and time since leaving the colony to affect state transitions to the ``boat'' and ``colony'' states.  Here we demonstrate how a very similar (but not identical) model can be implemented in \verb|momentuHMM|.
 
-The data are provided in a Dryad repository, but these will require some additional formatting and preparation.  We first load the raw data, create the required ``ID'' column based on individual trips, convert time stamps to class \verb|POSIXct|, and project the northern fulmar (``Longitude'', ``Latitude'') and nearest fishing vessel (``Boat\_Longitude'', ``Boat\_Latitidude'') locations using the \verb|sp| package:
+The data are provided in a Dryad repository, but these will require some additional formatting and preparation.  We first load the raw data, create the required ``ID'' column based on individual trips, convert time stamps to class \verb|POSIXct|, and project the northern fulmar (``Longitude'', ``Latitude'') and nearest fishing vessel (``Boat\_Longitude'', ``Boat\_Latitude'') locations using the \verb|sp| package:
 <<prep-fulmar-1, echo=TRUE, eval=FALSE>>=
 library(sp)
 
@@ -1249,9 +1249,8 @@ stepworkBounds <- matrix(c(-Inf,Inf,
                            -Inf,Inf,
                            0,Inf),ncol(stepDM),2,byrow=TRUE)
 
-
+# include trip-level effects on angle mean concentration parameter
 nbTrips <- length(unique(fulmar_data$ID))
-
 angleDM <- matrix(c("sea.angle",0,0,0,0,rep(0,2*nbTrips),
                     "sea.angle",0,0,0,0,rep(0,2*nbTrips),
                     0,"boat.angle",0,0,0,rep(0,2*nbTrips),
@@ -1303,7 +1302,7 @@ dworkBounds <- matrix(c(-Inf,Inf,
                         -Inf,Inf,
                         0,Inf),ncol(dDM),2,byrow=TRUE)
 
-DM<-list(step = stepDM, angle = angleDM, d = dDM)
+DM <- list(step = stepDM, angle = angleDM, d = dDM)
 
 workBounds <- list(step = stepworkBounds, 
                    angle = angleworkBounds, 
