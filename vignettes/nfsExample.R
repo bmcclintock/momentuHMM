@@ -23,6 +23,7 @@ crwOut<-crawlWrap(nfsData,ncores=ncores,retryFits=20,err.model=list(x=~ln.sd.x-1
                   attempts=100,predTime=predTimes)
 plot(crwOut)
 
+# merge crwData object with forage dive data
 crwOut <- crawlMerge(crwOut,foragedives,"time")
 
 nbStates <- 3
@@ -58,7 +59,7 @@ nfsFits <- MIfitHMM(crwOut, nSims = nSims, ncores = ncores, nbStates = nbStates,
                     fixPar = fixPar, retryFits = retryFits,
                     prior = prior,
                     stateNames=stateNames)
-plot(nfsFits)
+plot(nfsFits,legend.pos="topright")
 
 save.image("nfsExample.RData")
 
