@@ -137,17 +137,19 @@ workBounds <- list(step=stepworkBounds,angle=angleworkBounds,d=dworkBounds)
 formula <- ~ toState3(boat.dist) + toState4(boat.dist) + toState5(time) + toState6(time)
 
 # use betaCons to constrain: 1) ARS and Tr intercepts; and 2) boat and time effects to be the same for each sea, boat, and colony state
-betaCons <- matrix(1:(3*nbStates*(nbStates-1)),3,nbStates*(nbStates-1))
-betaCons[1,c(1,3,5,12,13,15,22,24,25)] <- 1 # constrain ARS -> Tr intercept
-betaCons[1,c(2,4,11,14,21,23)] <- 4 # constrain ARS -> ARS intercept
-betaCons[1,c(6,7,9,16,18,19,26,28,30)] <- 16 # constrain Tr -> ARS intercept
-betaCons[1,c(8,10,17,20,27,29)] <- 22 # constrain Tr -> Tr intercept
-betaCons[2,c(2,3,7,8)] <- 5 # constrain boat.dist 1 -> 3 = 1 -> 4 = 2 -> 3 = 2 -> 4
-betaCons[2,c(13,18)] <- 38 # constrain boat.dist 3 -> 4 = 4 -> 3
-betaCons[2,c(23,24,28,29)] <- 68 # constrain boat.dist 5 -> 3 = 5 -> 4 = 6 -> 3 = 6 -> 4
-betaCons[3,c(4,5,9,10)] <- 12 # constrain time 1 -> 5 = 1 -> 6 = 2 -> 5 = 2 -> 6
-betaCons[3,c(14,15,19,20)] <- 42 # constrain time 3 -> 5 = 3 -> 6 = 4 -> 5 = 4 -> 6
-betaCons[3,c(25,30)] <- 75 # constrain time 5 -> 6 = 6 -> 5
+betaCons <- matrix(1:(3*nbStates*(nbStates-1)),3,nbStates*(nbStates-1),
+                   dimnames=list(c("(Intercept)","boat.dist","time"),
+                                 paste(rep(1:nbStates,each=nbStates),"->",rep(1:nbStates,nbStates))[(1:(nbStates*nbStates))[-diag(matrix(1:(nbStates*nbStates),nbStates,nbStates))]]))
+betaCons["(Intercept)",c("1 -> 4","1 -> 6","3 -> 2","3 -> 4","3 -> 6","5 -> 2","5 -> 4","5 -> 6")] <- betaCons["(Intercept)","1 -> 2"] # constrain ARS -> Tr intercept
+betaCons["(Intercept)",c("1 -> 5","3 -> 1","3 -> 5","5 -> 1","5 -> 3")] <- betaCons["(Intercept)","1 -> 3"] # constrain ARS -> ARS intercept
+betaCons["(Intercept)",c("2 -> 3","2 -> 5","4 -> 1","4 -> 3","4 -> 5","6 -> 1","6 -> 3","6 -> 5")] <- betaCons["(Intercept)","2 -> 1"] # constrain Tr -> ARS intercept
+betaCons["(Intercept)",c("2 -> 6","4 -> 2","4 -> 6","6 -> 2","6 -> 4")] <- betaCons["(Intercept)","2 -> 4"] # constrain Tr -> Tr intercept
+betaCons["boat.dist",c("1 -> 4","2 -> 3","2 -> 4")] <- betaCons["boat.dist","1 -> 3"] # constrain boat.dist 1 -> 3 = 1 -> 4 = 2 -> 3 = 2 -> 4
+betaCons["boat.dist","4 -> 3"] <- betaCons["boat.dist","3 -> 4"] # constrain boat.dist 3 -> 4 = 4 -> 3
+betaCons["boat.dist",c("5 -> 4","6 -> 3","6 -> 4")] <- betaCons["boat.dist","5 -> 3"] # constrain boat.dist 5 -> 3 = 5 -> 4 = 6 -> 3 = 6 -> 4
+betaCons["time",c("1 -> 6","2 -> 5","2 -> 6")] <- betaCons["time","1 -> 5"] # constrain time 1 -> 5 = 1 -> 6 = 2 -> 5 = 2 -> 6
+betaCons["time",c("3 -> 6", "4 -> 5", "4 -> 6")] <- betaCons["time","3 -> 5"] # constrain time 3 -> 5 = 3 -> 6 = 4 -> 5 = 4 -> 6
+betaCons["time","6 -> 5"] <- betaCons["time","5 -> 6"] # constrain time 5 -> 6 = 6 -> 5
 
 # specify knownStates
 knownStates <- rep(NA,nrow(fulmar_data))
