@@ -32,14 +32,23 @@ dist <- list(step = "gamma", angle = "wrpcauchy", dive = "pois")
 
 ### construct pseudo-design matrix constraining parameters (to avoid label switching across imputations)
 # constrain step length mean parameters: transit > resting
-stepDM<-matrix(c(1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1),nrow=2*nbStates)
-stepworkBounds <- matrix(c(-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,Inf,0,rep(Inf,4)),6,2)
+stepDM<-matrix(c(1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1),nrow=2*nbStates,
+               dimnames=list(c(paste0("mean_",1:nbStates),paste0("sd_",1:nbStates)),
+                             c("mean_13:(Intercept)","mean_1","mean_2:(Intercept)",
+                               paste0("sd_",1:nbStates,":(Intercept)"))))
+stepworkBounds <- matrix(c(-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,Inf,0,rep(Inf,4)),6,2,
+                         dimnames=list(colnames(stepDM),c("lower","upper")))
 # constrain turning angle concentration parameters: transit > resting
-angleDM<-matrix(c(1,0,1,1,0,0,0,1,0),nrow=nbStates)
-angleworkBounds <- matrix(c(-Inf,-Inf,-Inf,Inf,0,Inf),3,2)
+angleDM<-matrix(c(1,0,1,1,0,0,0,1,0),nrow=nbStates,
+                dimnames=list(paste0("concentration_",1:nbStates),
+                              c("concentration_13:(Intercept)","concentration_1","concentration_2:(Intercept)")))
+angleworkBounds <- matrix(c(-Inf,-Inf,-Inf,Inf,0,Inf),3,2,dimnames=list(colnames(angleDM),c("lower","upper")))
 # constrain dive lambda parameters: foraging > transit
-diveDM<-matrix(c(1,0,0,0,1,1,0,0,1),nrow=nbStates)
-diveworkBounds <- matrix(c(-Inf,-Inf,-Inf,rep(Inf,2),0),3,2)
+diveDM<-matrix(c(1,0,0,0,1,1,0,0,1),nrow=nbStates,
+               dimnames=list(paste0("lambda_",1:nbStates),
+                             c("lambda_1:(Intercept)","lambda_23:(Intercept)","lambda_3")))
+diveworkBounds <- matrix(c(-Inf,-Inf,-Inf,rep(Inf,2),0),3,2,
+                         dimnames=list(colnames(diveDM),c("lower","upper")))
 
 DM<-list(step=stepDM,angle=angleDM,dive=diveDM)
 workBounds<-list(step=stepworkBounds,angle=angleworkBounds,dive=diveworkBounds)
