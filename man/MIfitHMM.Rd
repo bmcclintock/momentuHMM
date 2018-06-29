@@ -86,7 +86,7 @@ distribution parameters for each data stream. See \code{\link{fitHMM}}.}
 \item{workcons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 each data stream. See \code{\link{fitHMM}}.}
 
-\item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See details.}
+\item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See \code{\link{fitHMM}}.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
