@@ -83,7 +83,8 @@ stepDM <- matrix(c(1,0,0,0,
 stepworkBounds <- matrix(c(-Inf,Inf,
                            -Inf,Inf,
                            -Inf,Inf,
-                           0,Inf),ncol(stepDM),2,byrow=TRUE)
+                           0,Inf),ncol(stepDM),2,byrow=TRUE,
+                         dimnames=list(colnames(stepDM),c("lower","upper")))
 
 
 nbTrips <- length(unique(fulmar_data$ID))
@@ -108,7 +109,8 @@ angleworkBounds <- matrix(c(-Inf,Inf,
                             -Inf,Inf,
                             0,Inf,
                             rep(c(-Inf,Inf),nbTrips),
-                            rep(c(0,Inf),nbTrips)),ncol(angleDM),2,byrow=TRUE)
+                            rep(c(0,Inf),nbTrips)),ncol(angleDM),2,byrow=TRUE,
+                          dimnames=list(colnames(angleDM),c("lower","upper")))
 
 dDM <- matrix(c(1,1,0,0,
                 1,1,0,0,
@@ -128,7 +130,8 @@ dDM <- matrix(c(1,1,0,0,
 dworkBounds <- matrix(c(-Inf,Inf,
                         0,Inf,
                         -Inf,Inf,
-                        0,Inf),ncol(dDM),2,byrow=TRUE)
+                        0,Inf),ncol(dDM),2,byrow=TRUE,
+                      dimnames=list(colnames(dDM),c("lower","upper")))
 
 DM<-list(step=stepDM,angle=angleDM,d=dDM)
 workBounds <- list(step=stepworkBounds,angle=angleworkBounds,d=dworkBounds)

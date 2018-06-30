@@ -99,7 +99,7 @@ stepDM<-matrix(c(1,0,0,0,0,0,0,0,0,
                  0,0,0,0,0,0,1,0,1,
                  0,0,0,0,0,0,0,1,1,
                  0,0,0,0,0,0,0,0,1),nrow=3*nbStates,byrow=TRUE,dimnames=list(c(paste0("shape_",1:nbStates),paste0("scale_",1:nbStates),paste0("zeromass_",1:nbStates)),c(paste0("shape_",1:nbStates,":(Intercept)"),"scale:(Intercept)","scale_2","scale_3",paste0("zeromass_",1:nbStates,":(Intercept)"))))
-stepworkBounds<-matrix(c(rep(-Inf,4),0,0,rep(-Inf,2),-Inf,rep(Inf,ncol(stepDM))),ncol(stepDM),2)
+stepworkBounds<-matrix(c(rep(-Inf,4),0,0,rep(-Inf,2),-Inf,rep(Inf,ncol(stepDM))),ncol(stepDM),2,dimnames=list(colnames(stepDM),c("lower","upper")))
 stepBounds<-matrix(c(0,5,
                      0,5,
                      0,5,
@@ -108,15 +108,15 @@ stepBounds<-matrix(c(0,5,
                      0,14400,
                      0,1,
                      0,1,
-                     0,1),nrow=3*nbStates,byrow=TRUE,dimnames=list(c(paste0("shape_",1:nbStates),paste0("scale_",1:nbStates),paste0("zeromass_",1:nbStates))))
+                     0,1),nrow=3*nbStates,byrow=TRUE,dimnames=list(rownames(stepDM),c("lower","upper")))
 
 angleDM<-matrix(c(1,0,0,
                   0,1,1,
                   0,1,0),nrow=nbStates,byrow=TRUE,dimnames=list(paste0("concentration_",1:nbStates),c("concentration_1:(Intercept)","concentration_23:(Intercept)","concentration_2")))
 angleBounds<-matrix(c(0,0.95,
                       0,0.95,
-                      0,0.95),nrow=nbStates,byrow=TRUE,dimnames=list(paste0("concentration_",1:nbStates)))
-angleworkBounds <- matrix(c(-Inf,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf,rep(Inf,2),0),ncol(angleDM),2)
+                      0,0.95),nrow=nbStates,byrow=TRUE,dimnames=list(rownames(angleDM),c("lower","upper")))
+angleworkBounds <- matrix(c(-Inf,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf,rep(Inf,2),0),ncol(angleDM),2,dimnames=list(colnames(angleDM),c("lower","upper")))
 
 omegaDM<-matrix(c(1,0,0,0,0,0,
                   0,0,1,1,0,0,
@@ -127,7 +127,7 @@ omegaDM<-matrix(c(1,0,0,0,0,0,
                   0,0,0,0,1,1,
                   0,0,0,0,0,1,
                   0,0,0,0,0,1),nrow=nbStates*3,byrow=TRUE,dimnames=list(c(paste0("shape1_",1:nbStates),paste0("shape2_",1:nbStates),paste0("zeromass_",1:nbStates)),c("shape_1:(Intercept)","shape2_1","shape_2:(Intercept)","shape1_2","zeromass_1:(Intercept)","zeromass_23:(Intercept)")))
-omegaworkBounds <- matrix(c(-Inf,0,-Inf,0,-Inf,-Inf,rep(Inf,ncol(omegaDM))),ncol(omegaDM),2)
+omegaworkBounds <- matrix(c(-Inf,0,-Inf,0,-Inf,-Inf,rep(Inf,ncol(omegaDM))),ncol(omegaDM),2,dimnames=list(colnames(omegaDM),c("lower","upper")))
 omegaBounds<-matrix(c(1,10,
                       1,10,
                       1,10,
@@ -136,7 +136,7 @@ omegaBounds<-matrix(c(1,10,
                       1,10,
                       0,1,
                       0,1,
-                      0,1),nrow=nbStates*3,byrow=TRUE,dimnames=list(c(paste0("shape1_",1:nbStates),paste0("shape2_",1:nbStates),paste0("zeromass_",1:nbStates))))
+                      0,1),nrow=nbStates*3,byrow=TRUE,dimnames=list(rownames(omegaDM),c("lower","upper")))
 
 
 stepPar0<-c(0.7,1.1,2.3,700,1200,5500,1.e-3,1.e-6,1.e-100)
@@ -176,11 +176,11 @@ stepDM.sex<-matrix(c("sexF",0,0,"sexM",0,0,0,0,0,0,0,0,0,0,0,0,0,
                      0,0,0,0,0,0,0,0,0,0,0,0,"sexF",0,1,"sexM",0,
                      0,0,0,0,0,0,0,0,0,0,0,0,0,"sexF",1,0,"sexM",
                      0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0),nrow=3*nbStates,byrow=TRUE,dimnames=list(c(paste0("shape_",1:nbStates),paste0("scale_",1:nbStates),paste0("zeromass_",1:nbStates)),c("shape_1:sexF","shape_2:sexF","shape_3:sexF","shape_1:sexM","shape_2:sexM","shape_3:sexM","scale_1:sexF","scale_2:sexF","scale_3:sexF","scale_1:sexM","scale_2:sexM","scale_3:sexM","zeromass_1:sexF","zeromass_2:sexF","zeromass_3:(Intercept)","zeromass_1:sexM","zeromass_2:sexM")))
-stepworkBounds.sex<-matrix(c(rep(-Inf,7),0,0,-Inf,0,0,rep(-Inf,2),-Inf,rep(-Inf,2),rep(Inf,ncol(stepDM.sex))),ncol(stepDM.sex),2)
+stepworkBounds.sex<-matrix(c(rep(-Inf,7),0,0,-Inf,0,0,rep(-Inf,2),-Inf,rep(-Inf,2),rep(Inf,ncol(stepDM.sex))),ncol(stepDM.sex),2,dimnames=list(colnames(stepDM.sex),c("lower","upper")))
 angleDM.sex<-matrix(c("sexF",0,0,"sexM",0,0,
                       0,"sexF","sexF",0,"sexM","sexM",
                       0,"sexF",0,0,"sexM",0),nrow=nbStates,byrow=TRUE,dimnames=list(paste0("concentration_",1:nbStates),c("concentration_1:sexF","concentration_23:sexF","concentration_2:sexF","concentration_1:sexM","concentration_23:sexM","concentration_2:sexM")))
-angleworkBounds.sex<-matrix(c(-Inf,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf,-Inf,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf,Inf,Inf,0,Inf,Inf,0),ncol(angleDM.sex),2)
+angleworkBounds.sex<-matrix(c(-Inf,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf,-Inf,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf,Inf,Inf,0,Inf,Inf,0),ncol(angleDM.sex),2,dimnames=list(colnames(angleDM.sex),c("lower","upper")))
 
 omegaDM.sex<-matrix(c("sexF",0,"sexM",0,0,0,0,0,0,0,0,
                       0,0,0,0,"sexF","sexF","sexM","sexM",0,0,0,
@@ -191,7 +191,7 @@ omegaDM.sex<-matrix(c("sexF",0,"sexM",0,0,0,0,0,0,0,0,
                       0,0,0,0,0,0,0,0,"sexF",1,"sexM",
                       0,0,0,0,0,0,0,0,0,1,0,
                       0,0,0,0,0,0,0,0,0,1,0),nrow=nbStates*3,byrow=TRUE,dimnames=list(c(paste0("shape1_",1:nbStates),paste0("shape2_",1:nbStates),paste0("zeromass_",1:nbStates)),c("shape_1:sexF","shape2_1:sexF","shape_1:sexM","shape2_1:sexM","shape_2:sexF","shape1_2:sexF","shape_2:sexM","shape1_2:sexM","zeromass_1:sexF","zeromass_23:(Intercept)","zeromass_1:sexM")))
-omegaworkBounds.sex<-matrix(c(rep(c(-Inf,0),4),-Inf,-Inf,-Inf,rep(Inf,ncol(omegaDM.sex))),ncol(omegaDM.sex),2)
+omegaworkBounds.sex<-matrix(c(rep(c(-Inf,0),4),-Inf,-Inf,-Inf,rep(Inf,ncol(omegaDM.sex))),ncol(omegaDM.sex),2,dimnames=list(colnames(omegaDM.sex),c("lower","upper")))
 
 fixPar.sex<-list(step=c(rep(NA,nbStates*2*2),NA,NA,boot::logit(1.e-100),NA,NA),
                  omega=c(rep(NA,4*2),NA,boot::logit(1.e-100),NA))
@@ -228,14 +228,14 @@ stepDM.ind[7,6*N+1:length(stepzm)]<-paste0("ID",stepzm)
 stepDM.ind[8,6*N+length(stepzm)+1:length(stepzm)]<-paste0("ID",stepzm)
 stepDM.ind[7:9,ncol(stepDM.ind)]<-1
 
-stepworkBounds.ind<-matrix(c(rep(-Inf,3*N),rep(-Inf,N),rep(0,2*N),rep(-Inf,length(stepzm)*(nbStates-1)),-Inf,rep(Inf,3*N),rep(Inf,N),rep(Inf,2*N),rep(Inf,length(stepzm)*(nbStates-1)+1)),ncol=2)
+stepworkBounds.ind<-matrix(c(rep(-Inf,3*N),rep(-Inf,N),rep(0,2*N),rep(-Inf,length(stepzm)*(nbStates-1)),-Inf,rep(Inf,3*N),rep(Inf,N),rep(Inf,2*N),rep(Inf,length(stepzm)*(nbStates-1)+1)),ncol=2,dimnames=list(colnames(stepDM.ind),c("lower","upper")))
 
 angleDM.ind<-matrix(0,nrow=nbStates,ncol=N*nbStates,dimnames=list(c(paste0("concentration_",1:nbStates)),c(paste0("concentration_1:(Intercept)ID",1:N),paste0("concentration_23:(Intercept)ID",1:N),paste0("concentration_2ID",1:N))))
 angleDM.ind[1,1:N]<-paste0("ID",1:N)
 angleDM.ind[2,N+1:N]<-angleDM.ind[3,N+1:N]<-paste0("ID",1:N)
 angleDM.ind[2,2*N+1:N]<-paste0("ID",1:N)
 
-angleworkBounds.ind<-matrix(c(rep(c(-Inf,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf),each=N),rep(Inf,2*N),rep(0,N)),ncol=2)
+angleworkBounds.ind<-matrix(c(rep(c(-Inf,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf),each=N),rep(Inf,2*N),rep(0,N)),ncol=2,dimnames=list(colnames(angleDM.ind),c("lower","upper")))
 
 omegazm<-unique(hsData$ID[which(hsData$omega==0)])
 omegaDM.ind<-matrix(0,nrow=nbStates*3,ncol=N*2*(nbStates-1)+length(omegazm)+1,dimnames=list(c(paste0("shape1_",1:nbStates),paste0("shape2_",1:nbStates),paste0("zeromass_",1:nbStates)),c(paste0("shape_1:(Intercept)ID",1:N),paste0("shape2_1ID",1:N),paste0("shape_2:(Intercept)ID",1:N),paste0("shape1_2ID",1:N),paste0("zeromass_1:(Intercept)ID",omegazm),paste0("zeromass_23:(Intercept)"))))
@@ -245,7 +245,7 @@ omegaDM.ind[2,2*N+1:N]<-omegaDM.ind[3,2*N+1:N]<-omegaDM.ind[5,2*N+1:N]<-omegaDM.
 omegaDM.ind[2,3*N+1:N]<-omegaDM.ind[3,3*N+1:N]<-paste0("ID",1:N)
 omegaDM.ind[7,4*N+1:length(omegazm)]<-paste0("ID",omegazm)
 omegaDM.ind[7:9,ncol(omegaDM.ind)]<-1
-omegaworkBounds.ind<-matrix(c(rep(c(-Inf,0,-Inf,0),each=N),rep(-Inf,length(omegazm)),-Inf,rep(c(Inf,Inf,Inf,Inf),each=N),rep(Inf,length(omegazm)),Inf),ncol=2)
+omegaworkBounds.ind<-matrix(c(rep(c(-Inf,0,-Inf,0),each=N),rep(-Inf,length(omegazm)),-Inf,rep(c(Inf,Inf,Inf,Inf),each=N),rep(Inf,length(omegazm)),Inf),ncol=2,dimnames=list(colnames(omegaDM.ind),c("lower","upper")))
 
 fixPar.ind<-list(step=c(rep(NA,N*nbStates*2),rep(NA,length(stepzm)*(nbStates-1)),boot::logit(1.e-100)),
                  omega=c(rep(NA,N*2*(nbStates-1)),rep(NA,length(omegazm)),boot::logit(1.e-100)))
