@@ -145,7 +145,7 @@
 
 \noindent \textbf{Summary}\\
 \textbf{1.} Discrete-time hidden Markov models (HMMs) have become an immensely popular tool for inferring latent animal behaviors from telemetry data, largely because they are relatively fast and easy to implement when data streams are observed without error and at regular time intervals. While movement HMMs typically rely solely on location data, auxiliary biotelemetry and environmental data are powerful and readily-available resources for incorporating much more behavioral realism and inferring ecological relationships that would otherwise be difficult or impossible to infer from location data alone.  However, there is a paucity of generalized user-friendly software available for implementing (multivariate) HMMs of animal movement. Furthermore, location measurement error, temporal irregularity, and other forms of missing data are often pervasive in telemetry studies (particularly in marine systems).\\ %and the incorporation of uncertainty attributable to location measurement error or missing data typically requires fitting HMMs using custom and computationally-demanding model fitting techniques, such as Markov chain Monte Carlo.\\ 
-\textbf{2.} Here we provide a guide to using an open-source R package, \verb|momentuHMM| version 1.4.2%(Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models)
+\textbf{2.} Here we provide a guide to using an open-source R package, \verb|momentuHMM| version 1.4.3%(Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models)
 , that addresses many of the deficiencies in existing software.  Features for multivariate HMMs in \verb|momentuHMM| include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states, such as those based on location (e.g., step length, turning angle) and auxiliary biotelemetry data (e.g., from pressure, conductivity, heart rate, or motion sensors); 3) biased and correlated random walk movement models, including ``activity centers'' associated with attractive or repulsive forces; 4) user-specified design matrices and constraints for covariate modelling of initial distribution, state transition probability, and probability distribution parameters using linear model formulas familiar to most R users; 5) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data; 6) seamless integration of spatio-temporal covariate raster data; 7) cosinor and spline regression formulas for cyclical (e.g., daily, seasonal) and other complicated patterns; 8) model checking and selection; and 9) data simulation capabilities for study design, power analyses and assessing model performance, including simulation of location data subject to temporal irregularity and/or measurement error.\\ 
 \textbf{3.} After providing a brief introduction to (multivariate) HMMs for telemetry data, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics.\\
 \textbf{4.} While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs. Practitioners interested in additional features for \verb|momentuHMM| are encouraged to contact the authors.\\
@@ -178,7 +178,7 @@ While statisticians have been applying HMMs to telemetry data for decades, R \ci
 
 To address these deficiencies in existing software, we introduce a new user-friendly R package, \verb|momentuHMM| (Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models), intended for practitioners wishing to implement more flexible and realistic (multivariate) HMM analyses of animal movement while accounting for common challenges associated with telemetry data. Features for multivariate HMM analyses in \verb|momentuHMM| include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states; 3) biased and correlated random walk movement models, including ``activity centers'' associated with attractive or repulsive forces \citep[e.g.][]{McClintockEtAl2012}; 4) user-specified design matrices and constraints for covariate modelling of state transition probability and probability distribution parameters using linear model formulas familiar to most R users; 5) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data \citep{HootenEtAl2017,McClintock2017}; 6) seamless integration of spatio-temporal environmental covariate data (e.g., wind direction, forest cover, sea ice concentration) using the \verb|raster| package \citep{Hijmans2016}; 7) cosinor \citep[e.g.][]{Cornelissen2014} and spline regression formulas for cyclical and other complicated behavioral patterns; 8) model checking and selection; and 9) data simulation capabilities for study design, power analyses and assessing model performance, including simulation of location data subject to temporal irregularity and/or measurement error 
 
-In the following tutorial, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples, including an example of periodic cycles in African elephant movement, a 3-state (``resting'', ``foraging'', ``transit'') northern fur seal example incorporating auxiliary dive activity data \citep{McClintockEtAl2014b}, a loggerhead turtle example relating ``foraging'' and ``transit'' movements to ocean surface currents, a 5-state grey seal example incorporating biased movements toward haul-out and foraging locations \citep{McClintockEtAl2012}, a 4-state (``outbound'', ``searching'', ``foraging'', ``inbound'') southern elephant seal example with biased movements toward and away from a colony \citep{MichelotEtAl2017}, a 3-state (``resting'', ``foraging'', ``transit'') harbour seal example using population-level constraints on movement parameters \citep{McClintockEtAl2013c}, and a 6-state northern fulmar example incorporating biased movements relative to both static (i.e. colony) and dynamic (i.e. fishing vessels) activity centers \citep{PirottaEtAl2018}. Using simulated data, we also demonstrate how the group dynamic model of \cite{LangrockEtAl2014} can be implemented using \verb|momentuHMM|. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics. While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs.  Additional information, including help files, data, examples, and package usage is available by downloading the \verb|momentuHMM| package from CRAN (\url{cran.r-project.org}) or Github (\url{github.com/bmcclintock/momentuHMM}). This article describes \verb|momentuHMM| version 1.4.2.
+In the following tutorial, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples, including an example of periodic cycles in African elephant movement, a 3-state (``resting'', ``foraging'', ``transit'') northern fur seal example incorporating auxiliary dive activity data \citep{McClintockEtAl2014b}, a loggerhead turtle example relating ``foraging'' and ``transit'' movements to ocean surface currents, a 5-state grey seal example incorporating biased movements toward haul-out and foraging locations \citep{McClintockEtAl2012}, a 4-state (``outbound'', ``searching'', ``foraging'', ``inbound'') southern elephant seal example with biased movements toward and away from a colony \citep{MichelotEtAl2017}, a 3-state (``resting'', ``foraging'', ``transit'') harbour seal example using population-level constraints on movement parameters \citep{McClintockEtAl2013c}, and a 6-state northern fulmar example incorporating biased movements relative to both static (i.e. colony) and dynamic (i.e. fishing vessels) activity centers \citep{PirottaEtAl2018}. Using simulated data, we also demonstrate how the group dynamic model of \cite{LangrockEtAl2014} can be implemented using \verb|momentuHMM|. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics. While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs.  Additional information, including help files, data, examples, and package usage is available by downloading the \verb|momentuHMM| package from CRAN (\url{cran.r-project.org}) or Github (\url{github.com/bmcclintock/momentuHMM}). This article describes \verb|momentuHMM| version 1.4.3.
 
 \section{momentuHMM overview}
 %Given the deliberately similar syntax between the two packages, 
@@ -310,7 +310,7 @@ These seven arguments are all that are needed in order to fit the HMMs currently
 \end{knitrout}
 Note that many of the arguments in \verb|fitHMM| are lists, with each element of the list corresponding to a data stream.  The list names provided in \verb|dist|, \verb|Par0|, and \verb|estAngleMean| (e.g. `step' and `angle') must therefore have a corresponding column in \verb|data| with the same name.  Additional data streams can be added to the model by simply adding the additional elements to these list arguments (see examples in sections \ref{sec:nfs} and \ref{sec:northernFulmar}).  
 
-As seen above, the \verb|formula| argument can include many of the functions and operators commonly used to construct terms in R linear model formulas (e.g. \verb|a*b|, \verb|a:b|, \verb|cos(a)|). The \verb|formulaDelta| argument can be similarly used to specify covariate models for the initial distribution.  Unique to \verb|momentuHMM|, the \verb|formula| argument can also be used to specify transition probability matrix models that incorporate cyclical patterns (using the \verb|cosinor| special function; see example in section \ref{sec:elephant}), splines for explaining other more complicated patterns (e.g., \verb|bs| and \verb|ns| functions in the R base package \verb|splines|), and factor variables (e.g., \verb|formula=~ID| for individual-level effects).  By default the \verb|formula| argument applies to all state transition probabilities, but the special functions \verb|state|, \verb|toState|, and \verb|betaCol| allow for state- and parameter-specific formulas to be specified (see examples in sections \ref{sec:greySeal} and \ref{sec:northernFulmar}). While \verb|betaCol| allows a formula to be specified for a specific transition (e.g. state $3 \rightarrow 1$), \verb|state| and \verb|toState| allow a formula to be specified for all transitions from (e.g. $3 \rightarrow 1$, $3 \rightarrow 2$) and to (e.g. state $1 \rightarrow 3$, $2 \rightarrow 3$) specific states, respectively. Specific state transition probabilities can also be fixed to zero (or any other value) using the \verb|fixPar| argument, which can be useful for incorporating more behavioral realism.  For example, \verb|fixPar| can be used to prohibit or enforce switching from one particular state to another (possibly as a function of spatio-temporal covariates). 
+As seen above, the \verb|formula| argument can include many of the functions and operators commonly used to construct terms in R linear model formulas (e.g. \verb|a*b|, \verb|a:b|, \verb|cos(a)|). The \verb|formulaDelta| argument can be similarly used to specify covariate models for the initial distribution.  Unique to \verb|momentuHMM|, the \verb|formula| argument can also be used to specify transition probability matrix models that incorporate cyclical patterns (using the \verb|cosinor| special function; see example in section \ref{sec:elephant}), splines for explaining other more complicated patterns (e.g., \verb|bs| and \verb|ns| functions in the R base package \verb|splines|), and factor variables (e.g., \verb|formula=~ID| for individual-level effects).  By default the \verb|formula| argument applies to all state transition probabilities, but the special functions \verb|state|, \verb|toState|, and \verb|betaCol| allow for state- and parameter-specific formulas to be specified (see examples in sections \ref{sec:greySeal} and \ref{sec:northernFulmar}). While \verb|betaCol| allows a formula to be specified for a specific transition (e.g. state $3 \rightarrow 1$), \verb|state| and \verb|toState| allow a formula to be specified for all transitions from (e.g. $3 \rightarrow 1$, $3 \rightarrow 2$) and to (e.g. state $1 \rightarrow 3$, $2 \rightarrow 3$) specific states, respectively. The \verb|betaCons| argument allows for equality constraints among any of the transition probability parameters (e.g. $\gamma^{(t)}_{12}=\gamma^{(t)}_{21}$; see example in section \ref{sec:northernFulmar}). Specific state transition probabilities can also be fixed to zero (or any other value) using the \verb|fixPar| argument, which can be useful for incorporating more behavioral realism.  For example, \verb|fixPar| can be used to prohibit or enforce switching from one particular state to another (possibly as a function of spatio-temporal covariates). 
 
 Similar to the \verb|formula| argument for state transition probability modelling, it is through the \verb|DM| argument of \verb|fitHMM| that models are specified for the state-dependent probability distribution parameters for each data stream.  \verb|DM| is a list argument containing an element for each data stream, but each element itself is also a list specifying the design matrix formulas for each parameter. For example, the following fits the exact same wild haggis model as above, but employs a user-specified (intercept-only) design matrix for the step length data stream:
 \begin{knitrout}
@@ -1215,7 +1215,8 @@ For the Weibull distribution parameters for step length, \cite{McClintockEtAl201
                         \hlstr{"scale:(Intercept)"}\hlstd{,}\hlstr{"scale_2"}\hlstd{,}\hlstr{"scale_3"}\hlstd{,}
                         \hlkwd{paste0}\hlstd{(}\hlstr{"zeromass_"}\hlstd{,}\hlnum{1}\hlopt{:}\hlstd{nbStates,}\hlstr{":(Intercept)"}\hlstd{))))}
 \hlstd{stepworkBounds}\hlkwb{<-}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlopt{-}\hlnum{Inf}\hlstd{,}\hlnum{4}\hlstd{),}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlkwd{rep}\hlstd{(}\hlopt{-}\hlnum{Inf}\hlstd{,}\hlnum{3}\hlstd{),}
-                   \hlkwd{rep}\hlstd{(}\hlnum{Inf}\hlstd{,}\hlkwd{ncol}\hlstd{(stepDM))),}\hlkwd{ncol}\hlstd{(stepDM),}\hlnum{2}\hlstd{)}
+                   \hlkwd{rep}\hlstd{(}\hlnum{Inf}\hlstd{,}\hlkwd{ncol}\hlstd{(stepDM))),}\hlkwd{ncol}\hlstd{(stepDM),}\hlnum{2}\hlstd{,}
+                   \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{colnames}\hlstd{(stepDM),}\hlkwd{c}\hlstd{(}\hlstr{"lower"}\hlstd{,}\hlstr{"upper"}\hlstd{)))}
 \hlstd{stepBounds}\hlkwb{<-}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{5}\hlstd{,}
                      \hlnum{0}\hlstd{,}\hlnum{5}\hlstd{,}
                      \hlnum{0}\hlstd{,}\hlnum{5}\hlstd{,}
@@ -1225,9 +1226,7 @@ For the Weibull distribution parameters for step length, \cite{McClintockEtAl201
                      \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}
                      \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}
                      \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{),}\hlkwc{nrow}\hlstd{=}\hlnum{3}\hlopt{*}\hlstd{nbStates,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
-                    \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{c}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"shape_"}\hlstd{,}\hlnum{1}\hlopt{:}\hlstd{nbStates),}
-                                    \hlkwd{paste0}\hlstd{(}\hlstr{"scale_"}\hlstd{,}\hlnum{1}\hlopt{:}\hlstd{nbStates),}
-                                    \hlkwd{paste0}\hlstd{(}\hlstr{"zeromass_"}\hlstd{,}\hlnum{1}\hlopt{:}\hlstd{nbStates))))}
+                    \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{rownames}\hlstd{(stepDM),}\hlkwd{c}\hlstd{(}\hlstr{"lower"}\hlstd{,}\hlstr{"upper"}\hlstd{)))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -1252,11 +1251,12 @@ In order to force the ``transit'' state to have strong directional persistence, 
 \hlstd{angleBounds} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{0.95}\hlstd{,}
                         \hlnum{0}\hlstd{,}\hlnum{0.95}\hlstd{,}
                         \hlnum{0}\hlstd{,}\hlnum{0.95}\hlstd{),}\hlkwc{nrow}\hlstd{=nbStates,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
-                      \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"concentration_"}\hlstd{,}\hlnum{1}\hlopt{:}\hlstd{nbStates)))}
+                      \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{rownames}\hlstd{(angleDM),}\hlkwd{c}\hlstd{(}\hlstr{"lower"}\hlstd{,}\hlstr{"upper"}\hlstd{)))}
 \hlstd{transitcons} \hlkwb{<-} \hlstd{boot}\hlopt{::}\hlkwd{logit}\hlstd{((}\hlnum{0.75} \hlopt{-} \hlstd{angleBounds[}\hlnum{3}\hlstd{,}\hlnum{1}\hlstd{])}
                            \hlopt{/}\hlstd{(angleBounds[}\hlnum{3}\hlstd{,}\hlnum{2}\hlstd{]} \hlopt{-} \hlstd{angleBounds[}\hlnum{3}\hlstd{,}\hlnum{1}\hlstd{]))}
 \hlstd{angleworkBounds} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{Inf}\hlstd{,transitcons,}\hlopt{-}\hlnum{Inf}\hlstd{,}
-                            \hlkwd{rep}\hlstd{(}\hlnum{Inf}\hlstd{,}\hlnum{2}\hlstd{),}\hlnum{0}\hlstd{),}\hlkwd{ncol}\hlstd{(angleDM),}\hlnum{2}\hlstd{)}
+                            \hlkwd{rep}\hlstd{(}\hlnum{Inf}\hlstd{,}\hlnum{2}\hlstd{),}\hlnum{0}\hlstd{),}\hlkwd{ncol}\hlstd{(angleDM),}\hlnum{2}\hlstd{,}
+                          \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{colnames}\hlstd{(angleDM),}\hlkwd{c}\hlstd{(}\hlstr{"lower"}\hlstd{,}\hlstr{"upper"}\hlstd{)))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -1294,7 +1294,8 @@ where $\upsilon_2=\upsilon_3$ and $\delta_2=\delta_3$. These constraints can be 
                                 \hlstr{"zeromass_1:(Intercept)"}\hlstd{,}
                                 \hlstr{"zeromass_23:(Intercept)"}\hlstd{)))}
 \hlstd{omegaworkBounds} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{Inf}\hlstd{,}\hlnum{0}\hlstd{,}\hlopt{-}\hlnum{Inf}\hlstd{,}\hlnum{0}\hlstd{,}\hlopt{-}\hlnum{Inf}\hlstd{,}\hlopt{-}\hlnum{Inf}\hlstd{,}
-                            \hlkwd{rep}\hlstd{(}\hlnum{Inf}\hlstd{,}\hlkwd{ncol}\hlstd{(omegaDM))),}\hlkwd{ncol}\hlstd{(omegaDM),}\hlnum{2}\hlstd{)}
+                            \hlkwd{rep}\hlstd{(}\hlnum{Inf}\hlstd{,}\hlkwd{ncol}\hlstd{(omegaDM))),}\hlkwd{ncol}\hlstd{(omegaDM),}\hlnum{2}\hlstd{,}
+                          \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{colnames}\hlstd{(omegaDM),}\hlkwd{c}\hlstd{(}\hlstr{"lower"}\hlstd{,}\hlstr{"upper"}\hlstd{)))}
 \hlstd{omegaBounds} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{10}\hlstd{,}
                         \hlnum{1}\hlstd{,}\hlnum{10}\hlstd{,}
                         \hlnum{1}\hlstd{,}\hlnum{10}\hlstd{,}
@@ -1304,9 +1305,7 @@ where $\upsilon_2=\upsilon_3$ and $\delta_2=\delta_3$. These constraints can be 
                         \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}
                         \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}
                         \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{),}\hlkwc{nrow}\hlstd{=nbStates}\hlopt{*}\hlnum{3}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
-                    \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{c}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"shape1_"}\hlstd{,}\hlnum{1}\hlopt{:}\hlstd{nbStates),}
-                                    \hlkwd{paste0}\hlstd{(}\hlstr{"shape2_"}\hlstd{,}\hlnum{1}\hlopt{:}\hlstd{nbStates),}
-                                    \hlkwd{paste0}\hlstd{(}\hlstr{"zeromass_"}\hlstd{,}\hlnum{1}\hlopt{:}\hlstd{nbStates))))}
+                      \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{rownames}\hlstd{(omegaDM),}\hlkwd{c}\hlstd{(}\hlstr{"lower"}\hlstd{,}\hlstr{"upper"}\hlstd{)))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -1500,7 +1499,8 @@ Similar to the harbour seal example (section \ref{sec:harbourSeal}), \cite{Pirot
 \hlstd{stepworkBounds} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{Inf}\hlstd{,}\hlnum{Inf}\hlstd{,}
                            \hlopt{-}\hlnum{Inf}\hlstd{,}\hlnum{Inf}\hlstd{,}
                            \hlopt{-}\hlnum{Inf}\hlstd{,}\hlnum{Inf}\hlstd{,}
-                           \hlnum{0}\hlstd{,}\hlnum{Inf}\hlstd{),}\hlkwd{ncol}\hlstd{(stepDM),}\hlnum{2}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{)}
+                           \hlnum{0}\hlstd{,}\hlnum{Inf}\hlstd{),}\hlkwd{ncol}\hlstd{(stepDM),}\hlnum{2}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
+                         \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{colnames}\hlstd{(stepDM),}\hlkwd{c}\hlstd{(}\hlstr{"lower"}\hlstd{,}\hlstr{"upper"}\hlstd{)))}
 
 \hlcom{# include trip-level effects on angle mean concentration parameter}
 \hlstd{nbTrips} \hlkwb{<-} \hlkwd{length}\hlstd{(}\hlkwd{unique}\hlstd{(fulmar_data}\hlopt{$}\hlstd{ID))}
@@ -1530,7 +1530,8 @@ Similar to the harbour seal example (section \ref{sec:harbourSeal}), \cite{Pirot
                             \hlopt{-}\hlnum{Inf}\hlstd{,}\hlnum{Inf}\hlstd{,}
                             \hlnum{0}\hlstd{,}\hlnum{Inf}\hlstd{,}
                             \hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{Inf}\hlstd{,}\hlnum{Inf}\hlstd{),nbTrips),}
-                            \hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{Inf}\hlstd{),nbTrips)),}\hlkwd{ncol}\hlstd{(angleDM),}\hlnum{2}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{)}
+                            \hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{Inf}\hlstd{),nbTrips)),}\hlkwd{ncol}\hlstd{(angleDM),}\hlnum{2}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
+                         \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{colnames}\hlstd{(angleDM),}\hlkwd{c}\hlstd{(}\hlstr{"lower"}\hlstd{,}\hlstr{"upper"}\hlstd{)))}
 
 \hlstd{dDM} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
                 \hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
@@ -1553,7 +1554,8 @@ Similar to the harbour seal example (section \ref{sec:harbourSeal}), \cite{Pirot
 \hlstd{dworkBounds} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{Inf}\hlstd{,}\hlnum{Inf}\hlstd{,}
                         \hlnum{0}\hlstd{,}\hlnum{Inf}\hlstd{,}
                         \hlopt{-}\hlnum{Inf}\hlstd{,}\hlnum{Inf}\hlstd{,}
-                        \hlnum{0}\hlstd{,}\hlnum{Inf}\hlstd{),}\hlkwd{ncol}\hlstd{(dDM),}\hlnum{2}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{)}
+                        \hlnum{0}\hlstd{,}\hlnum{Inf}\hlstd{),}\hlkwd{ncol}\hlstd{(dDM),}\hlnum{2}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
+                      \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{colnames}\hlstd{(dDM),}\hlkwd{c}\hlstd{(}\hlstr{"lower"}\hlstd{,}\hlstr{"upper"}\hlstd{)))}
 
 \hlstd{DM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{= stepDM,} \hlkwc{angle} \hlstd{= angleDM,} \hlkwc{d} \hlstd{= dDM)}
 
@@ -1584,26 +1586,51 @@ To complete our model specification, we use the \verb|toState| special function 
 \end{alltt}
 \end{kframe}
 \end{knitrout}
+\noindent Lastly, we used the \verb|betaCons| argument to impose similar constraints as \cite{PirottaEtAl2018} for the transition probability parameters. We accomplish this by using \verb|betaCons| to set the transition probability working parameter intercept terms equal among the three ``ARS'' states and the three ``transit'' states. We also use \verb|betaCons| to constrain the effects of `boat.dist' and `time' to be identical for each of the two movement modes (``ARS'' and ``transit'') within each of the three biased movement states (``sea'', ``boat'', and ``colony''). \verb|betaCons| must be a matrix of the same dimension as \verb|beta0| and be composed of integers, where each beta working parameter is sequentially indexed in a column-wise fashion. Equality constraints can then be incorporated by having parameters share the same index. In this example we have:
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{betaCons}
+\end{alltt}
+\begin{verbatim}
+##             1 -> 2 1 -> 3 1 -> 4 1 -> 5 1 -> 6 2 -> 1 2 -> 3 2 -> 4 2 -> 5
+## (Intercept)      1      4      1      4      1     16     16     22     16
+## boat.dist        2      5      5     11     14     17      5      5     26
+## time             3      6      9     12     12     18     21     24     12
+##             2 -> 6 3 -> 1 3 -> 2 3 -> 4 3 -> 5 3 -> 6 4 -> 1 4 -> 2 4 -> 3
+## (Intercept)     22      4      1      1      4      1     16     22     16
+## boat.dist       29     32     35     38     41     44     47     50     38
+## time            12     33     36     39     42     42     48     51     54
+##             4 -> 5 4 -> 6 5 -> 1 5 -> 2 5 -> 3 5 -> 4 5 -> 6 6 -> 1 6 -> 2
+## (Intercept)     16     22      4      1      4      1      1     16     22
+## boat.dist       56     59     62     65     68     68     74     77     80
+## time            42     42     63     66     69     72     75     78     81
+##             6 -> 3 6 -> 4 6 -> 5
+## (Intercept)     16     22     16
+## boat.dist       68     68     89
+## time            84     87     75
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\noindent Again, \verb|betaCons| constrains any of the transition probability matrix working parameters with the same index to be equal to one another. For example, all of the intercept terms indexed by a `1' ($1 \rightarrow 2$, $1 \rightarrow 4$, $1 \rightarrow 6$, $3 \rightarrow 2$, $3 \rightarrow 4$, $3 \rightarrow 6$, $5 \rightarrow 2$, $5 \rightarrow 4$, and $5 \rightarrow 6$) are equal, and these terms correspond to the transitions from the ``ARS'' movement mode (states 1, 3, and 5) to the ``transit'' movement mode (states 2, 4, and 6). Similarly, all of the intercept terms indexed by a `16' are equal and correspond to the transitions from the ``transit'' movement mode to the ``ARS'' movement mode. For further details on the \verb|betaCons| argument, see the \verb|fitHMM| help file and the northern fulmar example code in the ``vignettes'' source directory.
 
 Now we are ready to fit our 6-state HMM:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{prior} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{par}\hlstd{) \{}\hlkwd{sum}\hlstd{(}\hlkwd{dnorm}\hlstd{(par[}\hlnum{27}\hlopt{+}\hlnum{1}\hlopt{:}\hlnum{90}\hlstd{],}\hlnum{0}\hlstd{,}\hlnum{100}\hlstd{,}\hlkwc{log}\hlstd{=}\hlnum{TRUE}\hlstd{))\}}
-
 \hlstd{m2} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(fulmar_data, nbStates, dist,}
              \hlkwc{Par0} \hlstd{= Par0}\hlopt{$}\hlstd{Par,} \hlkwc{beta0} \hlstd{= Par0}\hlopt{$}\hlstd{beta0,}
              \hlkwc{formula} \hlstd{= formula,}
              \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle} \hlstd{=} \hlnum{TRUE}\hlstd{),}
              \hlkwc{circularAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle} \hlstd{=} \hlnum{TRUE}\hlstd{),}
-             \hlkwc{DM} \hlstd{= DM,} \hlkwc{workBounds} \hlstd{= workBounds,}
+             \hlkwc{DM} \hlstd{= DM,} \hlkwc{workBounds} \hlstd{= workBounds,} \hlkwc{betaCons} \hlstd{= betaCons,}
              \hlkwc{fixPar} \hlstd{= fixPar,} \hlkwc{knownStates} \hlstd{= knownStates,}
-             \hlkwc{stateNames} \hlstd{= stateNames,}
-             \hlkwc{prior} \hlstd{= prior)}
+             \hlkwc{stateNames} \hlstd{= stateNames)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-\noindent Note that we use the \verb|prior| argument here to help prevent numerical issues with the transition probability matrix parameters (which correspond to elements 28 - 117 of the working parameter vector). With decent starting values, this model required about 5 min to fit on a standard desktop computer (macOS El Capitan, 2.8 GHz Intel Core i7, 16 GB RAM). For comparison, \cite{PirottaEtAl2018} required about 18 hr to fit their Bayesian model using MCMC (2.9 GHz Intel Core i7, 16 GB RAM). 
+\noindent With decent starting values, this model required about 2 min to fit on a standard desktop computer (macOS El Capitan, 2.8 GHz Intel Core i7, 16 GB RAM). For comparison, \cite{PirottaEtAl2018} required about 18 hr to fit their Bayesian model using MCMC (2.9 GHz Intel Core i7, 16 GB RAM). 
 
 We can compare the estimated activity budgets with those of \cite{PirottaEtAl2018} using the \verb|timeInStates| function:
 \begin{knitrout}
@@ -1617,7 +1644,7 @@ We can compare the estimated activity budgets with those of \cite{PirottaEtAl201
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{verbatim}
 ##      seaARS     seaTr   boatARS     boatTr colonyARS  colonyTr
-## 1 0.2931197 0.1762488 0.1687088 0.05937795  0.128181 0.1743638
+## 1 0.2582469 0.1687088 0.1705938 0.06503299 0.1677663 0.1696513
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -1634,13 +1661,20 @@ We can also examine activity budgets by individual bird (which are indexed in th
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{verbatim}
-##   birdID     seaARS      seaTr    boatARS     boatTr  colonyARS   colonyTr
-## 1      1 0.38493724 0.13807531 0.21757322 0.09205021 0.06694561 0.10041841
-## 2      2 0.22435897 0.14102564 0.27564103 0.10256410 0.17307692 0.08333333
-## 3      3 0.07843137 0.26960784 0.35294118 0.05882353 0.04411765 0.19607843
-## 4      4 0.39215686 0.20915033 0.00000000 0.03921569 0.15686275 0.20261438
-## 5      5 0.81967213 0.01639344 0.00000000 0.00000000 0.07377049 0.09016393
-## 6      6 0.04278075 0.22994652 0.06417112 0.03743316 0.27272727 0.35294118
+##   birdID     seaARS       seaTr    boatARS     boatTr  colonyARS
+## 1      1 0.35564854 0.117154812 0.22594142 0.11297071 0.09623431
+## 2      2 0.14102564 0.134615385 0.28205128 0.10256410 0.25641026
+## 3      3 0.08333333 0.269607843 0.35294118 0.06862745 0.04411765
+## 4      4 0.49019608 0.196078431 0.00000000 0.04575163 0.05882353
+## 5      5 0.61475410 0.008196721 0.00000000 0.00000000 0.30327869
+## 6      6 0.00000000 0.235294118 0.05882353 0.02673797 0.32085561
+##     colonyTr
+## 1 0.09205021
+## 2 0.08333333
+## 3 0.18137255
+## 4 0.20915033
+## 5 0.07377049
+## 6 0.35828877
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -1666,7 +1700,7 @@ Finally, we can create a plot similar to \cite{PirottaEtAl2018} using the \verb|
 \end{figure}
 
 \section{Discussion}
-Here we have introduced version 1.4.2 of the R package \verb|momentuHMM| and demonstrated some of its capabilities for conducting multivariate HMM analyses with animal location, auxiliary biotelemetry, and environmental data. The package allows for fitting (and simulating from) a suite of biased and correlated random walk movement process models \citep[e.g.][]{McClintockEtAl2012}, can be used for an unlimited number of data streams and latent behavior states, includes multiple imputation methods to account for measurement error, temporal irregularity, and other forms of missing data that would otherwise be prohibitive to maximum likelihood analysis, and integrates seamlessly with rasters to facilitate spatio-temporal covariate modelling. Because the package incorporates biased random walks, it can also be used to implement group dynamic models \cite[e.g.][]{LangrockEtAl2014}. The package therefore greatly expands on available software and facilitates the incorporation of more ecological and behavioral realism for hypothesis-driven analyses of animal movement that account for many of the challenges commonly associated with telemetry data. While many of the features of \verb|momentuHMM| were motivated by animal movement data, we note that the package is not limited to location data and can be used for analyzing any type of data that is amenable to (multivariate) HMMs.
+Here we have introduced version 1.4.3 of the R package \verb|momentuHMM| and demonstrated some of its capabilities for conducting multivariate HMM analyses with animal location, auxiliary biotelemetry, and environmental data. The package allows for fitting (and simulating from) a suite of biased and correlated random walk movement process models \citep[e.g.][]{McClintockEtAl2012}, can be used for an unlimited number of data streams and latent behavior states, includes multiple imputation methods to account for measurement error, temporal irregularity, and other forms of missing data that would otherwise be prohibitive to maximum likelihood analysis, and integrates seamlessly with rasters to facilitate spatio-temporal covariate modelling. Because the package incorporates biased random walks, it can also be used to implement group dynamic models \cite[e.g.][]{LangrockEtAl2014}. The package therefore greatly expands on available software and facilitates the incorporation of more ecological and behavioral realism for hypothesis-driven analyses of animal movement that account for many of the challenges commonly associated with telemetry data. While many of the features of \verb|momentuHMM| were motivated by animal movement data, we note that the package is not limited to location data and can be used for analyzing any type of data that is amenable to (multivariate) HMMs.
 
 Model fitting in \verb|momentuHMM| is relatively fast because the forward algorithm (Eq. \ref{eq:HMMlike}) is coded in C++. Because multiple imputations are completely parallelizable, with sufficient processing power computation times for analyses that account for measurement error, temporal irregularity, or other forms of missing data need not be longer than that required to fit a single HMM.  However, computation times will necessarily be longer as the number of states and/or parameters increase. For example, \verb|momentuHMM| required about 1 hr to fit a single HMM with $N=6$ states, seven data streams, and $T=7414$ time steps \citep{McClintock2017}. 
 

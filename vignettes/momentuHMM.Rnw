@@ -261,7 +261,7 @@ fitHaggis <- fitHMM(data = processedHaggis, nbStates = 2,
 @
 Note that many of the arguments in \verb|fitHMM| are lists, with each element of the list corresponding to a data stream.  The list names provided in \verb|dist|, \verb|Par0|, and \verb|estAngleMean| (e.g. `step' and `angle') must therefore have a corresponding column in \verb|data| with the same name.  Additional data streams can be added to the model by simply adding the additional elements to these list arguments (see examples in sections \ref{sec:nfs} and \ref{sec:northernFulmar}).  
 
-As seen above, the \verb|formula| argument can include many of the functions and operators commonly used to construct terms in R linear model formulas (e.g. \verb|a*b|, \verb|a:b|, \verb|cos(a)|). The \verb|formulaDelta| argument can be similarly used to specify covariate models for the initial distribution.  Unique to \verb|momentuHMM|, the \verb|formula| argument can also be used to specify transition probability matrix models that incorporate cyclical patterns (using the \verb|cosinor| special function; see example in section \ref{sec:elephant}), splines for explaining other more complicated patterns (e.g., \verb|bs| and \verb|ns| functions in the R base package \verb|splines|), and factor variables (e.g., \verb|formula=~ID| for individual-level effects).  By default the \verb|formula| argument applies to all state transition probabilities, but the special functions \verb|state|, \verb|toState|, and \verb|betaCol| allow for state- and parameter-specific formulas to be specified (see examples in sections \ref{sec:greySeal} and \ref{sec:northernFulmar}). While \verb|betaCol| allows a formula to be specified for a specific transition (e.g. state $3 \rightarrow 1$), \verb|state| and \verb|toState| allow a formula to be specified for all transitions from (e.g. $3 \rightarrow 1$, $3 \rightarrow 2$) and to (e.g. state $1 \rightarrow 3$, $2 \rightarrow 3$) specific states, respectively. Specific state transition probabilities can also be fixed to zero (or any other value) using the \verb|fixPar| argument, which can be useful for incorporating more behavioral realism.  For example, \verb|fixPar| can be used to prohibit or enforce switching from one particular state to another (possibly as a function of spatio-temporal covariates). 
+As seen above, the \verb|formula| argument can include many of the functions and operators commonly used to construct terms in R linear model formulas (e.g. \verb|a*b|, \verb|a:b|, \verb|cos(a)|). The \verb|formulaDelta| argument can be similarly used to specify covariate models for the initial distribution.  Unique to \verb|momentuHMM|, the \verb|formula| argument can also be used to specify transition probability matrix models that incorporate cyclical patterns (using the \verb|cosinor| special function; see example in section \ref{sec:elephant}), splines for explaining other more complicated patterns (e.g., \verb|bs| and \verb|ns| functions in the R base package \verb|splines|), and factor variables (e.g., \verb|formula=~ID| for individual-level effects).  By default the \verb|formula| argument applies to all state transition probabilities, but the special functions \verb|state|, \verb|toState|, and \verb|betaCol| allow for state- and parameter-specific formulas to be specified (see examples in sections \ref{sec:greySeal} and \ref{sec:northernFulmar}). While \verb|betaCol| allows a formula to be specified for a specific transition (e.g. state $3 \rightarrow 1$), \verb|state| and \verb|toState| allow a formula to be specified for all transitions from (e.g. $3 \rightarrow 1$, $3 \rightarrow 2$) and to (e.g. state $1 \rightarrow 3$, $2 \rightarrow 3$) specific states, respectively. The \verb|betaCons| argument allows for equality constraints among any of the transition probability parameters (e.g. $\gamma^{(t)}_{12}=\gamma^{(t)}_{21}$; see example in section \ref{sec:northernFulmar}). Specific state transition probabilities can also be fixed to zero (or any other value) using the \verb|fixPar| argument, which can be useful for incorporating more behavioral realism.  For example, \verb|fixPar| can be used to prohibit or enforce switching from one particular state to another (possibly as a function of spatio-temporal covariates). 
 
 Similar to the \verb|formula| argument for state transition probability modelling, it is through the \verb|DM| argument of \verb|fitHMM| that models are specified for the state-dependent probability distribution parameters for each data stream.  \verb|DM| is a list argument containing an element for each data stream, but each element itself is also a list specifying the design matrix formulas for each parameter. For example, the following fits the exact same wild haggis model as above, but employs a user-specified (intercept-only) design matrix for the step length data stream:
 <<fit-haggis, echo=TRUE, eval=FALSE>>=
@@ -1001,7 +1001,8 @@ stepDM<-matrix(c(1,0,0,0,0,0,0,0,0,
                         "scale:(Intercept)","scale_2","scale_3",
                         paste0("zeromass_",1:nbStates,":(Intercept)"))))
 stepworkBounds<-matrix(c(rep(-Inf,4),0,0,rep(-Inf,3),
-                   rep(Inf,ncol(stepDM))),ncol(stepDM),2)
+                   rep(Inf,ncol(stepDM))),ncol(stepDM),2,
+                   dimnames=list(colnames(stepDM),c("lower","upper")))
 stepBounds<-matrix(c(0,5,
                      0,5,
                      0,5,
@@ -1011,9 +1012,7 @@ stepBounds<-matrix(c(0,5,
                      0,1,
                      0,1,
                      0,1),nrow=3*nbStates,byrow=TRUE,
-                    dimnames=list(c(paste0("shape_",1:nbStates),
-                                    paste0("scale_",1:nbStates),
-                                    paste0("zeromass_",1:nbStates))))
+                    dimnames=list(rownames(stepDM),c("lower","upper")))
 @
 When included in \verb|workBounds| and \verb|userBounds| for the step length data stream, `stepworkBounds' and `stepBounds' above constrain the parameters $\beta^*_{l,5}>0$ and $\beta^*_{l,6}>0$ such that $14400 \ge b_3 \ge b_2 \ge b_1 \ge 0$:
 \begin{eqnarray*}
@@ -1034,11 +1033,12 @@ angleDM <- matrix(c(1,0,0,
 angleBounds <- matrix(c(0,0.95,
                         0,0.95,
                         0,0.95),nrow=nbStates,byrow=TRUE,
-                      dimnames=list(paste0("concentration_",1:nbStates)))
+                      dimnames=list(rownames(angleDM),c("lower","upper")))
 transitcons <- boot::logit((0.75 - angleBounds[3,1])
                            /(angleBounds[3,2] - angleBounds[3,1]))
 angleworkBounds <- matrix(c(-Inf,transitcons,-Inf,
-                            rep(Inf,2),0),ncol(angleDM),2)
+                            rep(Inf,2),0),ncol(angleDM),2,
+                          dimnames=list(colnames(angleDM),c("lower","upper")))
 @
 \noindent When `angleworkBounds' and `angleBounds' are respectively included in \verb|workBounds| and \verb|userBounds| for the turning angle data stream, this yields
 \begin{eqnarray*}
@@ -1072,7 +1072,8 @@ omegaDM <- matrix(c(1,0,0,0,0,0,
                                 "zeromass_1:(Intercept)",
                                 "zeromass_23:(Intercept)")))
 omegaworkBounds <- matrix(c(-Inf,0,-Inf,0,-Inf,-Inf,
-                            rep(Inf,ncol(omegaDM))),ncol(omegaDM),2)
+                            rep(Inf,ncol(omegaDM))),ncol(omegaDM),2,
+                          dimnames=list(colnames(omegaDM),c("lower","upper")))
 omegaBounds <- matrix(c(1,10,
                         1,10,
                         1,10,
@@ -1082,9 +1083,7 @@ omegaBounds <- matrix(c(1,10,
                         0,1,
                         0,1,
                         0,1),nrow=nbStates*3,byrow=TRUE,
-                    dimnames=list(c(paste0("shape1_",1:nbStates),
-                                    paste0("shape2_",1:nbStates),
-                                    paste0("zeromass_",1:nbStates))))
+                      dimnames=list(rownames(omegaDM),c("lower","upper")))
 @
 Lastly, we wish to impose some biologically-meaningful constraints on the zero-inflation parameters using the \verb|fixPar| argument. Because we would never expect a harbour seal in the ``transit'' state to exhibit a step length of zero, it makes sense to constrain the zero-mass step length parameter for the ``transit'' state to (effectively) zero.  Similarly, we would not expect a harbour seal in the ``foraging'' or ``transit'' states to exhibit no dive activity, and it therefore also makes sense to constrain the zero-mass dive activity parameters for these states to zero.  We can accomplish this using the following \verb|fixPar| argument:
 <<spec-hsFixPar, echo=TRUE, eval=FALSE>>=
@@ -1247,7 +1246,8 @@ stepDM <- matrix(c(1,0,0,0,
 stepworkBounds <- matrix(c(-Inf,Inf,
                            -Inf,Inf,
                            -Inf,Inf,
-                           0,Inf),ncol(stepDM),2,byrow=TRUE)
+                           0,Inf),ncol(stepDM),2,byrow=TRUE,
+                         dimnames=list(colnames(stepDM),c("lower","upper")))
 
 # include trip-level effects on angle mean concentration parameter
 nbTrips <- length(unique(fulmar_data$ID))
@@ -1277,7 +1277,8 @@ angleworkBounds <- matrix(c(-Inf,Inf,
                             -Inf,Inf,
                             0,Inf,
                             rep(c(-Inf,Inf),nbTrips),
-                            rep(c(0,Inf),nbTrips)),ncol(angleDM),2,byrow=TRUE)
+                            rep(c(0,Inf),nbTrips)),ncol(angleDM),2,byrow=TRUE,
+                         dimnames=list(colnames(angleDM),c("lower","upper")))
 
 dDM <- matrix(c(1,1,0,0,
                 1,1,0,0,
@@ -1300,7 +1301,8 @@ dDM <- matrix(c(1,1,0,0,
 dworkBounds <- matrix(c(-Inf,Inf,
                         0,Inf,
                         -Inf,Inf,
-                        0,Inf),ncol(dDM),2,byrow=TRUE)
+                        0,Inf),ncol(dDM),2,byrow=TRUE,
+                      dimnames=list(colnames(dDM),c("lower","upper")))
 
 DM <- list(step = stepDM, angle = angleDM, d = dDM)
 
@@ -1325,22 +1327,41 @@ fixPar$delta <- exp(c(0,fixPar$delta))/sum(exp(c(0,fixPar$delta)))
 # Constrain model to BRW (instead of BCRW)
 fixPar$angle <- c(rep(1.e+7, 3), rep(NA, 2+2*nbTrips)) 
 @
+\noindent Lastly, we used the \verb|betaCons| argument to impose similar constraints as \cite{PirottaEtAl2018} for the transition probability parameters. We accomplish this by using \verb|betaCons| to set the transition probability working parameter intercept terms equal among the three ``ARS'' states and the three ``transit'' states. We also use \verb|betaCons| to constrain the effects of `boat.dist' and `time' to be identical for each of the two movement modes (``ARS'' and ``transit'') within each of the three biased movement states (``sea'', ``boat'', and ``colony''). \verb|betaCons| must be a matrix of the same dimension as \verb|beta0| and be composed of integers, where each beta working parameter is sequentially indexed in a column-wise fashion. Equality constraints can then be incorporated by having parameters share the same index. In this example we have:
+<<spec-fulmar-4, echo=FALSE, eval=TRUE>>=
+nbStates <- 6
+betaCons <- matrix(1:(3*nbStates*(nbStates-1)),3,nbStates*(nbStates-1),
+                   dimnames=list(c("(Intercept)","boat.dist","time"),
+                                 paste(rep(1:nbStates,each=nbStates),"->",rep(1:nbStates,nbStates))[(1:(nbStates*nbStates))[-diag(matrix(1:(nbStates*nbStates),nbStates,nbStates))]]))
+betaCons["(Intercept)",c("1 -> 4","1 -> 6","3 -> 2","3 -> 4","3 -> 6","5 -> 2","5 -> 4","5 -> 6")] <- betaCons["(Intercept)","1 -> 2"] # constrain ARS -> Tr intercept
+betaCons["(Intercept)",c("1 -> 5","3 -> 1","3 -> 5","5 -> 1","5 -> 3")] <- betaCons["(Intercept)","1 -> 3"] # constrain ARS -> ARS intercept
+betaCons["(Intercept)",c("2 -> 3","2 -> 5","4 -> 1","4 -> 3","4 -> 5","6 -> 1","6 -> 3","6 -> 5")] <- betaCons["(Intercept)","2 -> 1"] # constrain Tr -> ARS intercept
+betaCons["(Intercept)",c("2 -> 6","4 -> 2","4 -> 6","6 -> 2","6 -> 4")] <- betaCons["(Intercept)","2 -> 4"] # constrain Tr -> Tr intercept
+betaCons["boat.dist",c("1 -> 4","2 -> 3","2 -> 4")] <- betaCons["boat.dist","1 -> 3"] # constrain boat.dist 1 -> 3 = 1 -> 4 = 2 -> 3 = 2 -> 4
+betaCons["boat.dist","4 -> 3"] <- betaCons["boat.dist","3 -> 4"] # constrain boat.dist 3 -> 4 = 4 -> 3
+betaCons["boat.dist",c("5 -> 4","6 -> 3","6 -> 4")] <- betaCons["boat.dist","5 -> 3"] # constrain boat.dist 5 -> 3 = 5 -> 4 = 6 -> 3 = 6 -> 4
+betaCons["time",c("1 -> 6","2 -> 5","2 -> 6")] <- betaCons["time","1 -> 5"] # constrain time 1 -> 5 = 1 -> 6 = 2 -> 5 = 2 -> 6
+betaCons["time",c("3 -> 6", "4 -> 5", "4 -> 6")] <- betaCons["time","3 -> 5"] # constrain time 3 -> 5 = 3 -> 6 = 4 -> 5 = 4 -> 6
+betaCons["time","6 -> 5"] <- betaCons["time","5 -> 6"] # constrain time 5 -> 6 = 6 -> 5
+
+@
+<<spec-fulmar-5, echo=TRUE, eval=TRUE, size='small'>>=
+betaCons
+@
+\noindent Again, \verb|betaCons| constrains any of the transition probability matrix working parameters with the same index to be equal to one another. For example, all of the intercept terms indexed by a `1' ($1 \rightarrow 2$, $1 \rightarrow 4$, $1 \rightarrow 6$, $3 \rightarrow 2$, $3 \rightarrow 4$, $3 \rightarrow 6$, $5 \rightarrow 2$, $5 \rightarrow 4$, and $5 \rightarrow 6$) are equal, and these terms correspond to the transitions from the ``ARS'' movement mode (states 1, 3, and 5) to the ``transit'' movement mode (states 2, 4, and 6). Similarly, all of the intercept terms indexed by a `16' are equal and correspond to the transitions from the ``transit'' movement mode to the ``ARS'' movement mode. For further details on the \verb|betaCons| argument, see the \verb|fitHMM| help file and the northern fulmar example code in the ``vignettes'' source directory.
 
 Now we are ready to fit our 6-state HMM:
 <<fit-fulmar-1, echo=TRUE, eval=FALSE>>=
-prior <- function(par) {sum(dnorm(par[27+1:90],0,100,log=TRUE))}
-
 m2 <- fitHMM(fulmar_data, nbStates, dist,
              Par0 = Par0$Par, beta0 = Par0$beta0,
              formula = formula,
              estAngleMean = list(angle = TRUE), 
              circularAngleMean = list(angle = TRUE),
-             DM = DM, workBounds = workBounds,
+             DM = DM, workBounds = workBounds, betaCons = betaCons,
              fixPar = fixPar, knownStates = knownStates,
-             stateNames = stateNames,
-             prior = prior) 
+             stateNames = stateNames) 
 @
-\noindent Note that we use the \verb|prior| argument here to help prevent numerical issues with the transition probability matrix parameters (which correspond to elements 28 - 117 of the working parameter vector). With decent starting values, this model required about \Sexpr{fulmarElapsedTime} min to fit on a standard desktop computer (macOS El Capitan, 2.8 GHz Intel Core i7, 16 GB RAM). For comparison, \cite{PirottaEtAl2018} required about 18 hr to fit their Bayesian model using MCMC (2.9 GHz Intel Core i7, 16 GB RAM). 
+\noindent With decent starting values, this model required about \Sexpr{fulmarElapsedTime} min to fit on a standard desktop computer (macOS El Capitan, 2.8 GHz Intel Core i7, 16 GB RAM). For comparison, \cite{PirottaEtAl2018} required about 18 hr to fit their Bayesian model using MCMC (2.9 GHz Intel Core i7, 16 GB RAM). 
 
 We can compare the estimated activity budgets with those of \cite{PirottaEtAl2018} using the \verb|timeInStates| function:
 <<results-fulmar-1a, echo=TRUE, eval=FALSE>>=
