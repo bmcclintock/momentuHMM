@@ -1,8 +1,12 @@
-momentuHMM 1.4.3 2018-06-26
+momentuHMM 1.4.3 2018-07-09
 -----------------
 NEW FEATURES
 
 * betaCons argument added to fitHMM and MIfitHMM for specifying equality constraints on transition probability matrix parameters
+
+CHANGES
+
+* changed how fixPar and betaCons are handled when optimizing the likelihood; this should make optimization faster and more stable when these parameter constraints are used
 
 
 momentuHMM 1.4.2 2018-06-19

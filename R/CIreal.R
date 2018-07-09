@@ -29,7 +29,6 @@
 #' all.equal(ci1,ci2)
 #'
 #' @export
-#' @importFrom MASS ginv
 #' @importFrom numDeriv grad
 #' @importFrom utils tail
 #' @importFrom Brobdingnag as.brob sum
@@ -89,7 +88,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   nbCovs <- ncol(covs)-1 # substract intercept column
 
   # inverse of Hessian
-  if(!is.null(m$mod$hessian)) Sigma <- ginv(m$mod$hessian)
+  if(!is.null(m$mod$hessian)) Sigma <- m$mod$Sigma
   else Sigma <- NULL
   
   nc <- meanind <- vector('list',length(distnames))

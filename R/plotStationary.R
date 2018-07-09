@@ -55,7 +55,7 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
     if(inherits(model,"miSum") & plotCI){
         Sigma <- model$MIcombine$variance
     } else if(!is.null(model$mod$hessian) & plotCI){
-        Sigma <- ginv(model$mod$hessian)
+        Sigma <- model$mod$Sigma
     } else {
         Sigma <- NULL
         plotCI <- FALSE

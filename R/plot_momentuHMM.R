@@ -326,7 +326,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   if(inherits(m,"miSum")){
     Sigma <- m$MIcombine$variance
   } else if(!is.null(m$mod$hessian)){
-    Sigma <- ginv(m$mod$hessian)
+    Sigma <- m$mod$Sigma
   } else {
     Sigma <- NULL
     plotCI <- FALSE

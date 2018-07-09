@@ -29,6 +29,7 @@ print.momentuHMM.version <- function()
   print.momentuHMM.version()
 }
 
+#' @importFrom MASS ginv
 # this function maintains backwards compatibility with momentuHMM versions <1.1.2 (formulaDelta), <1.4.0 (workBounds), and <1.4.3 (betaCons)
 delta_bc <- function(m){
   
@@ -42,10 +43,14 @@ delta_bc <- function(m){
       m$covsDelta <- model.matrix(m$conditions$formulaDelta,m$data[aInd,,drop=FALSE]) 
       if(is.miSum(m)){
         m$Par$real$delta$est <- matrix(m$Par$real$delta$est,nrow=nrow(m$covsDelta),ncol=length(m$stateNames),byrow=TRUE,dimnames = list(paste0("ID:",unique(m$data$ID)),m$stateNames))
+        if(is.null(m$conditions$betaCons) & !is.null(m$Par$beta$beta)) m$conditions$betaCons <- matrix(1:length(m$Par$beta$beta$est),nrow(m$Par$beta$beta$est),ncol(m$Par$beta$beta$est))
       } else {
         m$mle$delta <- matrix(m$mle$delta,nrow=nrow(m$covsDelta),ncol=length(m$stateNames),byrow=TRUE,dimnames = list(paste0("ID:",unique(m$data$ID)),m$stateNames))
         #m$CIreal <- CIreal(m)
         m$CIbeta <- CIbeta(m)
+        if(is.null(m$conditions$betaCons) & !is.null(m$mle$beta)) m$conditions$betaCons <- matrix(1:length(m$mle$beta),nrow(m$mle$beta),ncol(m$mle$beta))
+        if(is.null(m$mod$wpar)) m$mod$wpar <- m$mod$estimate
+        if(is.null(m$mod$Sigma)) m$mod$Sigma <- MASS::ginv(m$mod$hessian)
       }
     }
     if(is.null(m$conditions$workBounds)){
@@ -69,8 +74,6 @@ delta_bc <- function(m){
       }
       m$conditions$workBounds <- getWorkBounds(workBounds,distnames,m$mod$estimate,parindex,parCount,m$conditions$DM,beta,delta)
     }
-    if(is.null(m$conditions$betaCons) & !is.null(m$mle$beta)) m$conditions$betaCons <- matrix(1:length(m$mle$beta),nrow(m$mle$beta),ncol(m$mle$beta))
-
   } else if(!is.miHMM(m) & any(unlist(lapply(m,is.momentuHMM)))){
     m <- HMMfits(m)
   }

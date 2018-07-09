@@ -124,7 +124,9 @@
 #' \item{CIreal}{Standard errors and 95\% confidence intervals on the real (i.e., natural) scale of parameters}
 #' \item{CIbeta}{Standard errors and 95\% confidence intervals on the beta (i.e., working) scale of parameters}
 #' \item{data}{The momentuHMMData object}
-#' \item{mod}{The object returned by the numerical optimizer \code{nlm} or \code{optim}}
+#' \item{mod}{List object returned by the numerical optimizer \code{nlm} or \code{optim}. Items in \code{mod} include the best set of free working parameters found (\code{wpar}), 
+#' the best full set of working parameters including any fixed parameters (\code{estimate}), the value of the likelihood at \code{estimate} (\code{minimum}), 
+#' the estimated variance-covariance matrix at \code{estimate} (\code{Sigma}), and the elapsed time in seconds for the optimization (\code{elapsedTime}).}
 #' \item{conditions}{Conditions used to fit the model, e.g., \code{bounds} (parameter bounds), distributions, \code{zeroInflation},
 #' \code{estAngleMean}, \code{stationary}, \code{formula}, \code{DM}, \code{fullDM} (full design matrix), etc.}
 #' \item{rawCovs}{Raw covariate values for transition probabilities, as found in the data (if any). Used in \code{\link{plot.momentuHMM}}.}
@@ -414,6 +416,7 @@
 #' @importFrom Rcpp evalCpp
 #' @importFrom stats model.matrix get_all_vars nlm optim terms terms.formula
 #' @importFrom CircStats dwrpcauchy dvm pvm
+#' @importFrom MASS ginv
 #'
 #' @useDynLib momentuHMM
 
@@ -853,6 +856,8 @@ fitHMM <- function(data,nbStates,dist,
       }
     }
   }
+  
+  optInd <- sort(c(wparIndex,parmInd+which(duplicated(c(betaCons)))))
 
   if(fit) {
     
@@ -877,8 +882,7 @@ fitHMM <- function(data,nbStates,dist,
         startTime <- proc.time()
         withCallingHandlers(curmod<-tryCatch(moveHMMwrap(data,nbStates,dist,Par,fullPar$beta,fullPar$delta[1,],inputs$estAngleMean,newformula,stationary,nlmPar,fit,nbAnimals)$mod,error=function(e) e),warning=h)
         endTime <- proc.time()-startTime
-        #curmod<-out$mod
-        #mle<-out$mle
+        curmod$wpar <- curmod$estimate
       } else {
 
         # check additional parameters for nlm
@@ -890,26 +894,34 @@ fitHMM <- function(data,nbStates,dist,
         steptol <- ifelse(is.null(nlmPar$steptol),1e-6,nlmPar$steptol)
         iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
   
-  
+        optPar <- wpar
+        optInd <- sort(c(wparIndex,parmInd+which(duplicated(c(betaCons)))))
+        if(length(optInd)){
+          optPar <- wpar[-optInd]
+        }
+        
         startTime <- proc.time()
   
         # call to optimizer nlm
         if(optMethod=="nlm"){
-          withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,wpar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
+          withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
                                                nc,meanind,covsDelta,workBounds,prior,betaCons,
                                                print.level=print.level,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
-                                               iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)),error=function(e) e),warning=h)
+                                               iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian),optInd=optInd),error=function(e) e),warning=h)
         } else {
-          withCallingHandlers(curmod <- tryCatch(optim(wpar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
+          withCallingHandlers(curmod <- tryCatch(optim(optPar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                      inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                      stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
                                                      nc,meanind,covsDelta,workBounds,prior,betaCons,
-                                                     method=optMethod,control=control,hessian=hessian),error=function(e) e),warning=h)
+                                                     method=optMethod,control=control,hessian=hessian,optInd=optInd),error=function(e) e),warning=h)
         }
         endTime <- proc.time()-startTime
+        
+        curmod$wpar <- curmod$estimate
+        curmod$estimate <- expandPar(curmod$estimate,optInd,unlist(fixPar),wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs)
       }
       
       if(fitCount==0){
@@ -943,17 +955,27 @@ fitHMM <- function(data,nbStates,dist,
     }
     
     # convert the parameters back to their natural scale
-    if(length(wparIndex)) mod$estimate[wparIndex] <- unlist(fixPar)[wparIndex]
-    if(!is.null(betaCons) & nbStates>1){
-      mod$estimate[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1))] <- mod$estimate[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1))][betaCons]
-    }
     wpar <- mod$estimate
     mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
+    
+    if(!is.null(mod$hessian)){
+      Sigma <- tryCatch(MASS::ginv(mod$hessian),error=function(e) e)
+      mod$Sigma <- Sigma
+      if(!inherits(Sigma,"error")){
+        if(length(optInd)){
+          mod$Sigma <- matrix(0,length(mod$estimate),length(mod$estimate))
+          mod$Sigma[(1:length(mod$estimate))[-optInd],(1:length(mod$estimate))[-optInd]] <- Sigma
+        }
+      } else {
+        warning("ginv of the hessian failed -- ",Sigma)
+      }
+    }
   }
   else {
     mod <- NA
     mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
   }
+  
 
   ####################
   ## Prepare output ##
@@ -1028,7 +1050,7 @@ fitHMM <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
-                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=ofixPar,wparIndex=wparIndex,formulaDelta=formulaDelta,betaCons=betaCons)
+                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=ofixPar,wparIndex=wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,optInd=optInd)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName)
   

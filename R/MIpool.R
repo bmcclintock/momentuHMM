@@ -57,7 +57,6 @@
 #' @importFrom CircStats circ.mean
 #' @importFrom car dataEllipse
 #' @importFrom mitools MIcombine
-#' @importFrom MASS ginv
 MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   im <- HMMfits
@@ -93,7 +92,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     warning("Hessian is singular for HMM fit(s): ",paste0(goodIndex[tmpDet],collapse=", "))
   }
   
-  tmpVar <- which(unlist(lapply(im,function(x) any(class(tryCatch(ginv(x$mod$hessian),error=function(e) e)) %in% "error"))))
+  tmpVar <- which(unlist(lapply(im,function(x) inherits(x$mod$Sigma,"error"))))
   if(length(tmpVar)){
     warning("ginv of the hessian failed for HMM fit(s): ",paste0(goodIndex[tmpVar],collapse=", "))
     im[tmpVar] <- NULL
@@ -112,7 +111,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   wBounds <- cbind(unlist(lapply(m$conditions$workBounds,function(x) x[,1])),unlist(lapply(m$conditions$workBounds,function(x) x[,2])))
   
   # check for finite coefficients and standard errors
-  betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%ginv(x$mod$hessian)%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
+  betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
   betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
   tmpVar1 <- which(unlist(lapply(betaCoeff,function(x) any(!is.finite(x)))))
   if(length(tmpVar1)){
@@ -120,7 +119,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     im[tmpVar1] <- NULL
     m <- im[[1]]
     nsims <- length(im)
-    betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%ginv(x$mod$hessian)%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
+    betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
     betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
     goodIndex <- goodIndex[-tmpVar1]
   }
@@ -131,7 +130,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     m <- im[[1]]
     nsims <- length(im)
     betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
-    betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%ginv(x$mod$hessian)%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
+    betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
     goodIndex <- goodIndex[-tmpVar2]
   }
   
@@ -179,10 +178,14 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     names(parindex)[length(parindex)-1] <- "delta"
   }
   
-  miBeta <- mitools::MIcombine(results=betaCoeff,variances=betaVar)
+  miBeta <- miCombo <- mitools::MIcombine(results=betaCoeff,variances=betaVar)
   # account for betaCons
   miBeta$variance[(parindex[["beta"]]+1:length(m$mle$beta))[duplicated(c(m$conditions$betaCons))],] <- 0
   miBeta$variance[,(parindex[["beta"]]+1:length(m$mle$beta))[duplicated(c(m$conditions$betaCons))]] <- 0
+  
+  # multiple imputation results for working parameters
+  if(length(m$conditions$optInd))
+    miCombo <- mitools::MIcombine(results=lapply(im,function(x) x$mod$wpar),variances=lapply(im,function(x) x$mod$Sigma[-m$conditions$optInd,-m$conditions$optInd]))
   
   for(parm in 1:nparms){
     
@@ -296,7 +299,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   nbCovs <- ncol(model.matrix(newformula,m$data))-1 # substract intercept column
   
-  #miBeta <- mitools::MIcombine(results=lapply(im,function(x) x$mod$estimate),variances=lapply(im,function(x) ginv(x$mod$hessian)))
+  #miBeta <- mitools::MIcombine(results=lapply(im,function(x) x$mod$estimate),variances=lapply(im,function(x) x$mod$Sigma))
   
   nc <- meanind <- vector('list',length(distnames))
   names(nc) <- names(meanind) <- distnames
@@ -493,7 +496,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   }
   mh$errorEllipse <- errorEllipse
   mh$Par <- Par
-  mh$MIcombine <- miBeta
+  mh$MIcombine <- miCombo
   
   return(miSum(mh))
 }
