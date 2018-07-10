@@ -1,7 +1,6 @@
 library(momentuHMM)
 library(sp)
 library(doParallel)
-library(doRNG)
 library(setRNG)
 
 nSims<-30 # number of imputations
@@ -255,7 +254,7 @@ Par0.ind<-getPar0(bestFit,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaD
 
 # fit each track individually to get initial values for full model
 registerDoParallel(cores=ncores) 
-bestFit.all<-foreach(i=1:N) %dorng% {
+bestFit.all<-foreach(i=1:N) %dopar% {
   data.ind<-subset(hsData,ID==i)
   tmpPar1 <- Par0
   tmpPar2 <- getPar0(bestFit)
@@ -332,7 +331,7 @@ miData <- MIfitHMM(crwOut,nSims=nSims,ncores=ncores,covNames=c("sex"),fit=FALSE)
 
 # fit MIfitHMM to each track individually
 registerDoParallel(cores=ncores) 
-miBestFit.all<-foreach(i=1:N) %dorng% {
+miBestFit.all<-foreach(i=1:N) %dopar% {
   data.ind<- lapply(miData$miData,function(x) subset(x,ID==i))
   
   tmpPar1 <- Par0
@@ -419,7 +418,7 @@ miBestFit.all<-foreach(i=1:N) %dorng% {
 stopImplicitCluster()
 
 registerDoParallel(cores=ncores) 
-miSum.all<-foreach(i=1:N) %dorng% {
+miSum.all<-foreach(i=1:N) %dopar% {
   MIpool(miBestFit.all[[i]])
 }
 stopImplicitCluster()
