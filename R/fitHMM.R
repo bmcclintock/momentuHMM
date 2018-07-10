@@ -919,9 +919,6 @@ fitHMM <- function(data,nbStates,dist,
                                                      method=optMethod,control=control,hessian=hessian,optInd=optInd),error=function(e) e),warning=h)
         }
         endTime <- proc.time()-startTime
-        
-        curmod$wpar <- curmod$estimate
-        curmod$estimate <- expandPar(curmod$estimate,optInd,unlist(fixPar),wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs)
       }
       
       if(fitCount==0){
@@ -935,6 +932,8 @@ fitHMM <- function(data,nbStates,dist,
         }
       }
       
+      wpar <- expandPar(mod$estimate,optInd,unlist(fixPar),wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs)
+      
       if((fitCount+1)<=retryFits){
         cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,"         ",sep="")
         if(!inherits(curmod,"error")){
@@ -942,10 +941,11 @@ fitHMM <- function(data,nbStates,dist,
           names(curmod)[which(names(curmod)=="value")] <- "minimum"
           curmod$elapsedTime <- endTime[3]
           if(curmod$minimum < mod$minimum) mod <- curmod
+          wpar <- expandPar(mod$estimate,optInd,unlist(fixPar),wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs)
         }
-        wpar[1:parmInd] <- mod$estimate[1:parmInd]+rnorm(parmInd,0,retrySD[1:parmInd])
+        wpar[1:parmInd] <- wpar[1:parmInd]+rnorm(parmInd,0,retrySD[1:parmInd])
         if(nbStates>1)
-          wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary))] <- mod$estimate[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary))]+rnorm((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary),0,retrySD[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary))])
+          wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary))] <- wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary))]+rnorm((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary),0,retrySD[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)+ncol(covsDelta)*(nbStates-1)*(!stationary))])
         if(length(wparIndex)) wpar[wparIndex] <- unlist(fixPar)[wparIndex]
         if(!is.null(betaCons) & nbStates>1){
           wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1))] <- wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1))][betaCons]
@@ -955,7 +955,8 @@ fitHMM <- function(data,nbStates,dist,
     }
     
     # convert the parameters back to their natural scale
-    wpar <- mod$estimate
+    mod$wpar <- mod$estimate
+    wpar <- mod$estimate <- expandPar(mod$wpar,optInd,unlist(fixPar),wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs)
     mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
     
     if(!is.null(mod$hessian)){
