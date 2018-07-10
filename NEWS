@@ -1,4 +1,4 @@
-momentuHMM 1.4.3 2018-07-09
+momentuHMM 1.4.3 2018-07-10
 -----------------
 NEW FEATURES
 
@@ -7,6 +7,8 @@ NEW FEATURES
 CHANGES
 
 * changed how fixPar and betaCons are handled when optimizing the likelihood; this should make optimization faster and more stable when these parameter constraints are used
+
+* %dorng% now used instead of %dopar%, thereby allowing for reproducible foreach loops when using parallel processing
 
 
 momentuHMM 1.4.2 2018-06-19

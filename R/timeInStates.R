@@ -39,6 +39,8 @@ timeInStates.momentuHMM <- function(m, by = NULL, alpha = 0.95, ncores = 1){
 #' @rdname timeInStates
 #' @importFrom magrittr %>%
 #' @importFrom dplyr funs group_by_at summarise_at
+#' @importFrom foreach foreach %dopar%
+#' @importFrom doRNG %dorng%
 timeInStates.HMMfits <- function(m, by = NULL, alpha = 0.95, ncores = 1){
   
   i <- . <- NULL #gets rid of no visible binding for global variable 'i' and '.' NOTE in R cmd check
@@ -59,12 +61,12 @@ timeInStates.HMMfits <- function(m, by = NULL, alpha = 0.95, ncores = 1){
   
   cat("Decoding state sequences and probabilities for each imputation... ")
   registerDoParallel(cores=ncores)
-  im_states <- foreach(i = 1:nsims) %dopar% {momentuHMM::viterbi(m[[i]])}
+  im_states <- foreach(i = 1:nsims) %dorng% {momentuHMM::viterbi(m[[i]])}
   stopImplicitCluster()
   cat("DONE\n")
   
   registerDoParallel(cores=ncores)
-  xmat <- foreach(i = 1:nsims, .combine = rbind) %dopar% {
+  xmat <- foreach(i = 1:nsims, .combine = rbind) %dorng% {
     get_combins(m[[i]],im_states[[i]],by)
   }
   stopImplicitCluster()

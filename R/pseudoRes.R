@@ -41,6 +41,7 @@
 #' @importFrom LaplacesDemon pbern
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
+#' @importFrom doRNG %dorng%
 
 pseudoRes <- function(m, ncores = 1)
 {
@@ -52,7 +53,7 @@ pseudoRes <- function(m, ncores = 1)
     else {
       if(is.miHMM(m)) m <- m$HMMfits
       registerDoParallel(cores=ncores)
-      genRes <- foreach(i=which(unlist(lapply(m,is.momentuHMM)))) %dopar% {
+      genRes <- foreach(i=which(unlist(lapply(m,is.momentuHMM)))) %dorng% {
         pseudoRes(m[[i]])
       }
       stopImplicitCluster()

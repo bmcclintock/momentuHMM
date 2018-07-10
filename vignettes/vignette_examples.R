@@ -228,7 +228,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 load(paste0(example_wd,"harbourSealExample.RData"))
 
 alpha<-0.95
-im_states <- foreach(i = 1:nSims, .combine = rbind) %dopar% {momentuHMM::viterbi(miBestFit.ind[[i]])}
+im_states <- foreach(i = 1:nSims, .combine = rbind) %dorng% {momentuHMM::viterbi(miBestFit.ind[[i]])}
 
 hsActivityBudgets<-list()
 

@@ -101,6 +101,7 @@
 #' @importFrom crawl crwMLE crwPredict displayPar
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
+#' @importFrom doRNG %dorng%
 #' @importFrom stats formula
 #' @importFrom sp coordinates
 #' @importFrom utils capture.output
@@ -355,7 +356,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   cat('Fitting',length(ids),'track(s) using crawl::crwMLE...',ifelse(ncores>1,"","\n"))
   registerDoParallel(cores=ncores) 
   model_fits <- 
-    foreach(i = ids) %dopar% {
+    foreach(i = ids) %dorng% {
       
       fit <- crawl::crwMLE(
         mov.model =  mov.model[[i]],
@@ -468,7 +469,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   
   registerDoParallel(cores=ncores)
   predData <- 
-    foreach(i = convFits, .export="crwPredict", .combine = rbind, .errorhandling="remove") %dopar% {
+    foreach(i = convFits, .export="crwPredict", .combine = rbind, .errorhandling="remove") %dorng% {
       pD<-crawl::crwPredict(model_fits[[i]], predTime=predTime[[i]])
       if(length(predTime[[i]])>1){
         pD[[Time.name]][which(pD$locType=="p")]<-predTime[[i]][predTime[[i]]>=min(model_fits[[i]]$data[[Time.name]])]

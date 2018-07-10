@@ -138,7 +138,8 @@ data8<-simObsData(data7,lambda,errorEllipse) # alternatively, lambda and errorEl
 # fit crawl::crwMLE and predict locations at regular intervals using crawl::crwPredict
 err.model <- list(x=~ln.sd.x-1, y=~ln.sd.y-1, rho=~error.corr) # error ellipse model
 inits <- list(a=c(0,0,0,0),P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 5000 ^ 2, 10 * 3600 ^ 2))) # initial state
-crwOut<-crawlWrap(data8,retryFits=2,err.model=err.model,initial.state=inits,theta=c(4,0),fixPar=c(1,1,NA,NA),attempts=100)
+setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=10)
+crwOut<-crawlWrap(data8,ncores=4,retryFits=2,err.model=err.model,initial.state=inits,theta=c(4,0),fixPar=c(1,1,NA,NA),attempts=100)
 plot(crwOut,ask=FALSE)
 
 # fit best predicted locations

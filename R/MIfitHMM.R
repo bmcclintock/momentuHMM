@@ -179,6 +179,7 @@
 #' @importFrom crawl crwPostIS crwSimulator
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
+#' @importFrom doRNG %dorng%
 #' @importFrom raster getZ
 MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
                    nbStates, dist, 
@@ -234,7 +235,7 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
       cat('Drawing',nSims,'realizations from the position process using crawl::crwPostIS... ')
       
       registerDoParallel(cores=ncores)
-      crwSim <- foreach(i = 1:length(ids), .export="crwSimulator") %dopar% {
+      crwSim <- foreach(i = 1:length(ids), .export="crwSimulator") %dorng% {
         if(!is.null(model_fits[[i]]$err.model))
           crawl::crwSimulator(model_fits[[i]],predTime=predData[[Time.name]][which(predData$ID==ids[i] & predData$locType=="p")], method = method, parIS = parIS,
                                   df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, force.quad = force.quad)
@@ -244,7 +245,7 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
       
       registerDoParallel(cores=ncores)
       miData<-
-        foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass") %dopar% {
+        foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass") %dorng% {
           locs<-data.frame()
           for(i in 1:length(ids)){
             if(!is.null(model_fits[[i]]$err.model)){
@@ -337,7 +338,7 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
   }
   registerDoParallel(cores=ncores)
   fits[parallelStart:nSims] <-
-    foreach(j = parallelStart:nSims, .export=c("fitHMM"), .errorhandling="pass") %dopar% {
+    foreach(j = parallelStart:nSims, .export=c("fitHMM"), .errorhandling="pass") %dorng% {
       
       if(nSims>1) cat("     \rImputation ",j,"... ",sep="")
       tmpFit<-suppressMessages(fitHMM(miData[[j]],nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
