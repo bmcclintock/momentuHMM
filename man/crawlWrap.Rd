@@ -5,11 +5,12 @@
 \title{Fit and predict tracks for using crawl}
 \usage{
 crawlWrap(obsData, timeStep = 1, ncores = 1, retryFits = 0, retrySD = 1,
-  mov.model = ~1, err.model = NULL, activity = NULL, drift = NULL,
-  coord = c("x", "y"), Time.name = "time", initial.state, theta, fixPar,
-  method = "L-BFGS-B", control = NULL, constr = NULL, prior = NULL,
-  need.hess = TRUE, initialSANN = list(maxit = 200), attempts = 1,
-  predTime = NULL, fillCols = FALSE)
+  retryParallel = FALSE, mov.model = ~1, err.model = NULL,
+  activity = NULL, drift = NULL, coord = c("x", "y"),
+  Time.name = "time", initial.state, theta, fixPar, method = "L-BFGS-B",
+  control = NULL, constr = NULL, prior = NULL, need.hess = TRUE,
+  initialSANN = list(maxit = 200), attempts = 1, predTime = NULL,
+  fillCols = FALSE)
 }
 \arguments{
 \item{obsData}{data.frame object containing fields for animal ID ('ID'), time of observation (identified by \code{Time.name}, must be numeric or POSIXct), 
@@ -33,6 +34,9 @@ from \code{attempts} because \code{retryFits} iteratively uses random perturbati
 Instead of a list object, \code{retrySD} can also be a scalar or a vector, in which case the same values are used for each each individual.
 If a scalar is provided, then the same value is used for each parameter. If a vector is provided, it must be of length \code{length(theta)} for the corresponding individual(s). Default: 1, i.e., a standard deviation of 1 is used
 for all parameters of all individuals. Ignored unless \code{retryFits>0}.}
+
+\item{retryParallel}{Logical indicating whether or not to perform \code{retryFits} attempts for each individual in parallel. Default: FALSE. Ignored unless \code{retryFits>0}.
+Note that when attempts are done in parallel (i.e. \code{retryParallel=TRUE}), the current value for the log-likelihood of each individual and warnings about convergence are not printed to the console.}
 
 \item{mov.model}{List of mov.model objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one movement model is provided, then the same movement model is used
 for each individual.}
