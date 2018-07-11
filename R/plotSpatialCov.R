@@ -79,6 +79,9 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   if(!inherits(spatialCov,"RasterLayer")) 
     stop("spatialCov should be of class 'RasterLayer'")
   
+  if(is.null(data$ID))
+    data$ID <- rep("Animal1",nrow(data)) # default ID if none provided
+  
   x <- y <- NULL #gets rid of no visible binding for global variable 'x' and 'y' NOTE in R cmd check
   ID <- NULL # same for ID
   
