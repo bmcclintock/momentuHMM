@@ -3,7 +3,7 @@ library(setRNG)
 
 # set seed
 oldRNG<-setRNG()
-setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=6)
+setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=30)
 
 # load nfs data from github
 load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/nfsData.RData"))
@@ -32,19 +32,30 @@ dist <- list(step = "gamma", angle = "wrpcauchy", dive = "pois")
 
 ### construct pseudo-design matrix constraining parameters (to avoid label switching across imputations)
 # constrain step length mean parameters: transit > resting
-stepDM<-matrix(c(1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1),nrow=2*nbStates,
+stepDM<-matrix(c(1,1,0,0,0,0,
+                 0,0,1,0,0,0,
+                 1,0,0,0,0,0,
+                 0,0,0,1,0,0,
+                 0,0,0,0,1,0,
+                 0,0,0,0,0,1),2*nbStates,6,byrow=TRUE,
                dimnames=list(c(paste0("mean_",1:nbStates),paste0("sd_",1:nbStates)),
                              c("mean_13:(Intercept)","mean_1","mean_2:(Intercept)",
                                paste0("sd_",1:nbStates,":(Intercept)"))))
 stepworkBounds <- matrix(c(-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,Inf,0,rep(Inf,4)),6,2,
                          dimnames=list(colnames(stepDM),c("lower","upper")))
+
 # constrain turning angle concentration parameters: transit > resting
-angleDM<-matrix(c(1,0,1,1,0,0,0,1,0),nrow=nbStates,
+angleDM<-matrix(c(1,1,0,
+                  0,0,1,
+                  1,0,0),nbStates,3,byrow=TRUE,
                 dimnames=list(paste0("concentration_",1:nbStates),
                               c("concentration_13:(Intercept)","concentration_1","concentration_2:(Intercept)")))
 angleworkBounds <- matrix(c(-Inf,-Inf,-Inf,Inf,0,Inf),3,2,dimnames=list(colnames(angleDM),c("lower","upper")))
+
 # constrain dive lambda parameters: foraging > transit
-diveDM<-matrix(c(1,0,0,0,1,1,0,0,1),nrow=nbStates,
+diveDM<-matrix(c(1,0,0,
+                 0,1,0,
+                 0,1,1),nbStates,3,byrow=TRUE,
                dimnames=list(paste0("lambda_",1:nbStates),
                              c("lambda_1:(Intercept)","lambda_23:(Intercept)","lambda_3")))
 diveworkBounds <- matrix(c(-Inf,-Inf,-Inf,rep(Inf,2),0),3,2,

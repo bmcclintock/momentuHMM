@@ -4,7 +4,7 @@ library(setRNG)
 
 # set seed
 oldRNG<-setRNG()
-setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=1)
+setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=10)
 
 # load grey seal data from github
 load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/greySealData_TPM.RData"))
@@ -15,7 +15,7 @@ ncores <- 7 # number of CPU cores
 # fit crawl functions
 crwOut<-crawlWrap(greySealData,err.model=list(x=~ln.sd.x-1,y=~ln.sd.y-1,rho=~error.corr),
                   initial.state=list(a=c(greySealData$x[1],0,greySealData$y[1],0),P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 5000 ^ 2, 10 * 3600 ^ 2))),
-                  theta=c(4.269033, -9.230745),fixPar=c(1,1,NA,NA),attempts=100,
+                  fixPar=c(1,1,NA,NA),attempts=100,retryFits=20,
                   timeStep="2 hours")
 plot(crwOut,ask=FALSE)
 
@@ -81,27 +81,20 @@ for(i in 1:nSims){
 }
 
 # specify pseudo-design matrices with step length constraints (to help avoid label switching between exploratory states across multiple imputations)
-MIstepDM<-matrix(c(1,0,0,0,0,0,0,0,0,0,
-                 paste0("I(",paste0("Abertay.dist>",delta[1],")")),0,0,0,0,0,0,0,0,0,
-                 0,1,0,0,0,0,0,0,0,0,
-                 0,paste0("I(",paste0("Farne.dist>",delta[2],")")),0,0,0,0,0,0,0,0,
-                 0,0,1,0,0,0,0,0,0,0,
-                 0,0,paste0("I(",paste0("Dogger.dist>",delta[3],")")),0,0,0,0,0,0,0,
-                 0,0,0,1,1,0,0,0,0,0,
-                 0,0,0,0,1,0,0,0,0,0,
-                 0,0,0,0,0,1,0,0,0,0,
-                 0,0,0,0,0,paste0("I(",paste0("Abertay.dist>",delta[1],")")),0,0,0,0,
-                 0,0,0,0,0,0,1,0,0,0,
-                 0,0,0,0,0,0,paste0("I(",paste0("Farne.dist>",delta[2],")")),0,0,0,
-                 0,0,0,0,0,0,0,1,0,0,
-                 0,0,0,0,0,0,0,paste0("I(",paste0("Dogger.dist>",delta[3],")")),0,0,
-                 0,0,0,0,0,0,0,0,1,1,
-                 0,0,0,0,0,0,0,0,0,1),nrow=nbStates*2)
-colnames(MIstepDM)<-colnames(bestmod$CIbeta$step$est)
-colnames(MIstepDM)[c(7,8,15,16)]<-c("shape:(Intercept)","shape_5","scale:(Intercept)","scale_5")
+MIstepDM<-matrix(c(1,paste0("I(",paste0("Abertay.dist>",delta[1],")")),0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                   0,0,1,paste0("I(",paste0("Farne.dist>",delta[2],")")),  0,0,0,0,0,0,0,0,0,0,0,0,
+                   0,0,0,0,1,paste0("I(",paste0("Dogger.dist>",delta[3],")")), 0,0,0,0,0,0,0,0,0,0,
+                   0,0,0,0,0,0,                                                1,0,0,0,0,0,0,0,0,0,
+                   0,0,0,0,0,0,                                                1,1,0,0,0,0,0,0,0,0,
+                   0,0,0,0,0,0,0,0,1,paste0("I(",paste0("Abertay.dist>",delta[1],")")),0,0,0,0,0,0,
+                   0,0,0,0,0,0,0,0,0,0,1,paste0("I(",paste0("Farne.dist>",delta[2],")")),  0,0,0,0,
+                   0,0,0,0,0,0,0,0,0,0,0,0,1,paste0("I(",paste0("Dogger.dist>",delta[3],")")), 0,0,
+                   0,0,0,0,0,0,                                                0,0,0,0,0,0,0,0,1,0,
+                   0,0,0,0,0,0,                                                0,0,0,0,0,0,0,0,1,1),nbStates*2,16,byrow=TRUE,dimnames=list(c(paste0("shape_",1:nbStates),paste0("scale_",1:nbStates)),colnames(bestmod$CIbeta$step$est)))
+colnames(MIstepDM)[c(7,8,15,16)]<-c("shape_45:(Intercept)","shape_5","scale_45:(Intercept)","scale_5")
 
 # step length parameter constraints
-stepworkBounds <- matrix(c(rep(-Inf,7),0,rep(-Inf,7),0,rep(Inf,ncol(MIstepDM))),nrow=ncol(MIstepDM),ncol=2)
+stepworkBounds <- matrix(c(rep(-Inf,7),0,rep(-Inf,7),0,rep(Inf,ncol(MIstepDM))),nrow=ncol(MIstepDM),ncol=2,dimnames=list(colnames(MIstepDM),c("lower","upper")))
 
 #extract parameter estimates from bestmod and adjust for MIstepDM and stepworkBounds
 bestPar<-getPar(bestmod)

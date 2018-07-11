@@ -10,7 +10,7 @@ timeStep <- 2 # time step (hours)
 
 # set seed
 oldRNG<-setRNG()
-setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=1)
+setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=1)
 
 #################################################################################################################################
 ## Prepare data
