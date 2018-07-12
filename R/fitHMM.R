@@ -109,6 +109,7 @@
 #' @param retrySD An optional list of scalars or vectors indicating the standard deviation to use for normal perturbations of each working scale parameter when \code{retryFits>0}. For data streams, each element of \code{retrySD} should be a vector of the same name and length as the corresponding element of \code{Par0} (if a scalar is provided, then this value will be used for all working parameters of the data stream). 
 #' For transition probability parameters, the corresponding element of \code{retrySD} must be named ``beta'' and have the same dimensions as \code{beta0}. 
 #' For initial distribution parameters, the corresponding element of \code{retrySD} must be named ``delta'' and have the same dimensions as \code{delta0} (if \code{delta0} is on the working scale) or be of length \code{nbStates-1} (if \code{delta0} is on the natural scale).
+#' Alternatively \code{retrySD} can be a scalar, in which case this value is used for all parameters.
 #' Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \code{retrySD}=10 for initial distribution and state transition probabilities). Ignored unless \code{retryFits>0}.
 #' @param optMethod The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).
 #' @param control A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).
@@ -760,6 +761,9 @@ fitHMM <- function(data,nbStates,dist,
     if(is.null(retrySD)){
       retrySD <- rep(10,length(wpar))
       retrySD[1:parmInd] <- 1
+    } else if(!is.list(retrySD)){
+      if(length(retrySD)>1) stop('retrySD must be a scalar or list')
+      retrySD <- rep(retrySD,length(wpar))
     } else {
       for(i in distnames){
         if(is.null(retrySD[[i]])){
@@ -801,6 +805,8 @@ fitHMM <- function(data,nbStates,dist,
       retrySD <- unlist(retrySD[c(distnames,"beta","delta")])
     }
   }
+  
+  optInd <- sort(c(wparIndex,parmInd+which(duplicated(c(betaCons)))))
   
   if(!is.null(prior)){
     if(!is.function(prior)) stop("prior must be a function")
@@ -856,8 +862,6 @@ fitHMM <- function(data,nbStates,dist,
       }
     }
   }
-  
-  optInd <- sort(c(wparIndex,parmInd+which(duplicated(c(betaCons)))))
 
   if(fit) {
     
