@@ -1,16 +1,17 @@
 library(momentuHMM)
 library(sp)
+library(doRNG)
 library(doParallel)
 library(setRNG)
 
-nSims<-30 # number of imputations
-ncores<-7 # number of cores to use in parallel
+# set seed
+oldRNG <- setRNG::setRNG()
+setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=4)
+
+nSims <- 30 # number of imputations
+ncores <- 7 # number of cores to use in parallel
 
 timeStep <- 2 # time step (hours)
-
-# set seed
-oldRNG<-setRNG()
-setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=1)
 
 #################################################################################################################################
 ## Prepare data
@@ -49,16 +50,20 @@ data$ln.sd.x<-rep(3.565449,nrow(data))
 data$ln.sd.y<-rep(3.565449,nrow(data))
 data$error.corr<-rep(0,nrow(data))
 
-# fit crawl model to all tracks
-init<-theta<-fixPar<-list()
+# crawl initial states and parameters
+init<-theta<-fixPar<-ln.prior<-list()
 for(i in unique(data$ID)){
   init[[i]]<-list(a=c(subset(data,ID==i)$x[1],0,subset(data,ID==i)$y[1],0),P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 5000 ^ 2, 10 * 3600 ^ 2)))
   theta[[i]]<-c(3.454, -7.945)
   fixPar[[i]]<-c(1,1,NA,NA)
+  ln.prior[[i]] <- function(theta){-abs(theta[2]+3)/0.5} # laplace prior with location = -3 and scale = 0.5 
 }
-crwOut<-crawlWrap(data,ncores=ncores,err.model=list(x=~ln.sd.x-1,y=~ln.sd.y-1,rho=~error.corr),
+
+# fit crawl model to all tracks
+crwOut<-crawlWrap(data,ncores=ncores,retryParallel=TRUE,
+                  err.model=list(x=~ln.sd.x-1,y=~ln.sd.y-1,rho=~error.corr),
                   initial.state=init,
-                  theta=theta,fixPar=fixPar,attempts=100,
+                  theta=theta,fixPar=fixPar,prior=ln.prior,attempts=100,
                   predTime=predTimes,retryFits = 10)
 plot(crwOut,ask=FALSE)
 
@@ -254,7 +259,7 @@ Par0.ind<-getPar0(bestFit,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaD
 
 # fit each track individually to get initial values for full model
 registerDoParallel(cores=ncores) 
-bestFit.all<-foreach(i=1:N) %dopar% {
+bestFit.all<-foreach(i=1:N) %dorng% {
   data.ind<-subset(hsData,ID==i)
   tmpPar1 <- Par0
   tmpPar2 <- getPar0(bestFit)
@@ -331,7 +336,7 @@ miData <- MIfitHMM(crwOut,nSims=nSims,ncores=ncores,covNames=c("sex"),fit=FALSE)
 
 # fit MIfitHMM to each track individually
 registerDoParallel(cores=ncores) 
-miBestFit.all<-foreach(i=1:N) %dopar% {
+miBestFit.all<-foreach(i=1:N) %dorng% {
   data.ind<- lapply(miData$miData,function(x) subset(x,ID==i))
   
   tmpPar1 <- Par0
@@ -418,7 +423,7 @@ miBestFit.all<-foreach(i=1:N) %dopar% {
 stopImplicitCluster()
 
 registerDoParallel(cores=ncores) 
-miSum.all<-foreach(i=1:N) %dopar% {
+miSum.all<-foreach(i=1:N) %dorng% {
   MIpool(miBestFit.all[[i]])
 }
 stopImplicitCluster()
@@ -454,4 +459,4 @@ plot(miSum.ind,plotCI=TRUE,ask=FALSE)
 
 save.image("harbourSealExample.RData")
 
-setRNG(oldRNG)
+setRNG::setRNG(oldRNG)

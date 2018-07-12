@@ -3,8 +3,8 @@ library(dtwclust)
 library(setRNG)
 
 # set seed
-oldRNG<-setRNG()
-setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=10)
+oldRNG<-setRNG::setRNG()
+setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=10)
 
 # load grey seal data from github
 load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/greySealData_TPM.RData"))
@@ -113,7 +113,7 @@ plot(greySealPool,plotCI=TRUE,ask=FALSE)
 
 setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=374)#seed=7)
 greySealSim<-simData(model=greySealPool,centers=centers,initialPosition = centers[1,],obsPerAnimal = 1515,states=TRUE)
-setRNG(oldRNG)
+setRNG::setRNG(oldRNG)
 
 save.image("greySealExample_TPM.RData")
 save(greySealPool,greySealSim,file="greySealResults_TPM.RData")

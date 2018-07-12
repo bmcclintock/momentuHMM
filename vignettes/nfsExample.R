@@ -2,8 +2,8 @@ library(momentuHMM)
 library(setRNG)
 
 # set seed
-oldRNG<-setRNG()
-setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=30)
+oldRNG<-setRNG::setRNG()
+setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=30)
 
 # load nfs data from github
 load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/nfsData.RData"))
@@ -83,4 +83,4 @@ plot(nfsFits,legend.pos="topright")
 
 save.image("nfsExample.RData")
 
-setRNG(oldRNG)
+setRNG::setRNG(oldRNG)
