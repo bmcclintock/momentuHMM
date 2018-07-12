@@ -810,6 +810,7 @@ fitHMM <- function(data,nbStates,dist,
   
   if(!is.null(prior)){
     if(!is.function(prior)) stop("prior must be a function")
+    environment(prior) <- environment()
     pr <- tryCatch(prior(wpar),error=function(e) e)
     if(inherits(pr,"error")){
       stop("Invalid prior: ",pr)
