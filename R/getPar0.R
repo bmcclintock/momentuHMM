@@ -88,14 +88,16 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
   
   if(is.miHMM(model)) model <- model$miSum
   
+  model$conditions$optInd <- numeric() # extra hack needed for bc
   model <- delta_bc(model)
+  model$conditions$optInd <- NULL # extra hack needed for bc
   
   if(is.miSum(model)){
     model$mle <- lapply(model$Par$real,function(x) x$est)
     model$mle$beta <- model$Par$beta$beta$est
     model$mle$delta <- model$Par$real$delta$est
     model$mod <- list()
-    model$mod$estimate <- model$MIcombine$coefficients
+    model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,length(model$stateNames),model$covsDelta,model$conditions$stationary,nrow(model$Par$beta$beta$est)-1)
     model$CIbeta <- model$Par$beta
     model$CIreal <- model$Par$real
   }

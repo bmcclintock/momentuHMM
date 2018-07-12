@@ -53,7 +53,12 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
     rawCovs <- model$rawCovs
 
     if(inherits(model,"miSum") & plotCI){
+      if(length(model$conditions$optInd)){
+        Sigma <- matrix(0,length(model$mod$estimate),length(model$mod$estimate))
+        Sigma[(1:length(model$mod$estimate))[-model$conditions$optInd],(1:length(model$mod$estimate))[-model$conditions$optInd]] <- model$MIcombine$variance
+      } else {
         Sigma <- model$MIcombine$variance
+      }
     } else if(!is.null(model$mod$hessian) & plotCI){
         Sigma <- model$mod$Sigma
     } else {
@@ -240,7 +245,7 @@ plotStationary.miSum <- function(model, covs = NULL, col=NULL, plotCI=FALSE, alp
   model$mle$beta <- model$Par$beta$beta$est
   model$mle$delta <- model$Par$real$delta$est
   model$mod <- list()
-  model$mod$estimate <- model$MIcombine$coefficients
+  model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,nbStates,model$covsDelta,model$conditions$stationary,nrow(model$Par$beta$beta$est)-1)
   plotStationary(momentuHMM(model),covs,col,plotCI,alpha,...)
 }
 

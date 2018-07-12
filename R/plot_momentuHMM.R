@@ -324,7 +324,12 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   }
   
   if(inherits(m,"miSum")){
-    Sigma <- m$MIcombine$variance
+    if(length(m$conditions$optInd)){
+      Sigma <- matrix(0,length(m$mod$estimate),length(m$mod$estimate))
+      Sigma[(1:length(m$mod$estimate))[-m$conditions$optInd],(1:length(m$mod$estimate))[-m$conditions$optInd]] <- m$MIcombine$variance
+    } else {
+      Sigma <- m$MIcombine$variance
+    }
   } else if(!is.null(m$mod$hessian)){
     Sigma <- m$mod$Sigma
   } else {
