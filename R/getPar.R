@@ -19,7 +19,9 @@ getPar<-function(m){
   
   if(is.miHMM(m)) m <- m$miSum
   
+  m$conditions$optInd <- numeric() # extra hack needed for bc
   m <- delta_bc(m)
+  m$conditions$optInd <- NULL # extra hack needed for bc
   
   if(!is.null(m$mod$hessian) & inherits(m$CIbeta,"error")){
     m$mod$hessian <- NULL

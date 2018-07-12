@@ -43,14 +43,10 @@ delta_bc <- function(m){
       m$covsDelta <- model.matrix(m$conditions$formulaDelta,m$data[aInd,,drop=FALSE]) 
       if(is.miSum(m)){
         m$Par$real$delta$est <- matrix(m$Par$real$delta$est,nrow=nrow(m$covsDelta),ncol=length(m$stateNames),byrow=TRUE,dimnames = list(paste0("ID:",unique(m$data$ID)),m$stateNames))
-        if(is.null(m$conditions$betaCons) & !is.null(m$Par$beta$beta)) m$conditions$betaCons <- matrix(1:length(m$Par$beta$beta$est),nrow(m$Par$beta$beta$est),ncol(m$Par$beta$beta$est))
       } else {
         m$mle$delta <- matrix(m$mle$delta,nrow=nrow(m$covsDelta),ncol=length(m$stateNames),byrow=TRUE,dimnames = list(paste0("ID:",unique(m$data$ID)),m$stateNames))
         #m$CIreal <- CIreal(m)
         m$CIbeta <- CIbeta(m)
-        if(is.null(m$conditions$betaCons) & !is.null(m$mle$beta)) m$conditions$betaCons <- matrix(1:length(m$mle$beta),nrow(m$mle$beta),ncol(m$mle$beta))
-        if(is.null(m$mod$wpar)) m$mod$wpar <- m$mod$estimate
-        if(is.null(m$mod$Sigma)) m$mod$Sigma <- MASS::ginv(m$mod$hessian)
       }
     }
     if(is.null(m$conditions$workBounds)){
@@ -73,6 +69,24 @@ delta_bc <- function(m){
         delta <- m$CIbeta$delta$est
       }
       m$conditions$workBounds <- getWorkBounds(workBounds,distnames,m$mod$estimate,parindex,parCount,m$conditions$DM,beta,delta)
+    }
+    if(is.null(m$conditions$betaCons)){
+      if(is.miSum(m) & !is.null(m$Par$beta$beta)) m$conditions$betaCons <- matrix(1:length(m$Par$beta$beta$est),nrow(m$Par$beta$beta$est),ncol(m$Par$beta$beta$est))
+      else if(is.momentuHMM(m) & !is.null(m$mle$beta)) m$conditions$betaCons <- matrix(1:length(m$mle$beta),nrow(m$mle$beta),ncol(m$mle$beta))
+    }
+    if(is.momentuHMM(m)){
+      if(is.null(m$mod$wpar)) m$mod$wpar <- m$mod$estimate
+      if(is.null(m$mod$Sigma) & !is.null(m$mod$hessian)) m$mod$Sigma <- MASS::ginv(m$mod$hessian)
+    } else {
+      ####### compatability hack for change to MIcombine in momentuHMM >= 1.4.3 ######
+      if(is.null(m$conditions$optInd)){
+        for(i in names(m$conditions$dist)){
+          m$conditions$cons[[i]]<-rep(1,length(m$conditions$cons[[i]]))
+          m$conditions$workcons[[i]]<-rep(0,length(m$conditions$workcons[[i]]))
+          m$conditions$workBounds[[i]]<-matrix(c(-Inf,Inf),nrow(m$conditions$workBounds[[i]]),2,byrow=TRUE)
+        }
+      }
+      ################################################################################
     }
   } else if(!is.miHMM(m) & any(unlist(lapply(m,is.momentuHMM)))){
     m <- HMMfits(m)
