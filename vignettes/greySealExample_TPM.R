@@ -60,10 +60,14 @@ for(j in 1:nCenters){
   knownStates[which(centerInd==0)]<-j
 }
 
+## use prior on unconstrained t.p.m. parameters
+# note that objects in the fitHMM environment (e.g. nbStates, optInd) can be used in prior function
+ln.prior <- function(par) sum(dnorm(par[-c(27+80+1:(nbStates-1))][-optInd[-(1:5)]][-(1:27)],0,10,log=TRUE))
+
 bestmod<-fitHMM(bestDat,nbStates=nbStates,dist=dist,Par0=Par0$Par,beta0=Par0$beta,delta0=Par0$delta,fixPar=fixPar,
                 estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
                 DM=list(step=stepDM,angle=angleDM),formula=distFormula,
-                stateNames=stateNames,knownStates=knownStates)
+                stateNames=stateNames,knownStates=knownStates,prior=ln.prior)
 plot(bestmod,plotCI=TRUE,ask=FALSE)
 
 # draw nSims imputed data sets
@@ -105,15 +109,15 @@ greySealFits<-MIfitHMM(miData,nSims=nSims,ncores=ncores,poolEstimates=FALSE,nbSt
                        Par0=bestPar$Par,beta0=bestPar$beta,delta0=bestPar$delta,fixPar=fixPar,
                        estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
                        DM=list(step=MIstepDM,angle=angleDM),workBounds=list(step=stepworkBounds),formula=distFormula,
-                       stateNames=stateNames,knownStates=knownStates)
+                       stateNames=stateNames,knownStates=knownStates,prior=ln.prior)
 endTime<-proc.time()-startTime
 
 greySealPool<-MIpool(greySealFits,ncores=ncores)
 plot(greySealPool,plotCI=TRUE,ask=FALSE)
 
-setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=374)#seed=7)
+setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=28)
 greySealSim<-simData(model=greySealPool,centers=centers,initialPosition = centers[1,],obsPerAnimal = 1515,states=TRUE)
 setRNG::setRNG(oldRNG)
 
-save.image("greySealExample_TPM.RData")
-save(greySealPool,greySealSim,file="greySealResults_TPM.RData")
+save.image("greySealExample_TPM_new.RData")
+save(greySealPool,greySealSim,file="greySealResults_TPM_new.RData")
