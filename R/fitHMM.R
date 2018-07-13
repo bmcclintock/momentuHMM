@@ -190,7 +190,7 @@
 #' to the transition from state 1->2, \code{cov3} on transition probabilities from state 3 (i.e., \code{beta} columns corresponding to state transitions 3->1 and 3->2),
 #' and \code{cov4} on transition probabilities to state 1 (i.e., \code{beta} columns corresponding to state transitions 2->1 and 3->1).
 #' 
-#' \item \code{betaCons} can be used to impose equality constraints among the t.p.m. parameters.  It must be a matrix of the same dimension as \code{beta0} and be composed of integers, where each beta parameter is sequentially indexed in a column-wise fashion. Parameter indices in \code{betaCons} must therefore be integers between \code{1} and \code{nbStates*(nbStates-1)}. 
+#' \item \code{betaCons} can be used to impose equality constraints among the t.p.m. parameters.  It must be a matrix of the same dimension as \code{beta0} and be composed of integers, where each beta parameter is sequentially indexed in a column-wise fashion (see \code{\link{checkPar0}}). Parameter indices in \code{betaCons} must therefore be integers between \code{1} and \code{nbStates*(nbStates-1)}. 
 #' 
 #' Use of \code{betaCons} is perhaps best demonstrated by example.  If no constraints are imposed (the default), then \code{betaCons=matrix(1:length(beta0),nrow(beta0),ncol(beta0))} such that
 #' each beta parameter is (column-wise) sequentially identified by a unique integer.  Suppose we wish to fit a model with \code{nbStates=3} states and a covariate (`cov1') on the t.p.m. With no constraints on the t.p.m., we would have

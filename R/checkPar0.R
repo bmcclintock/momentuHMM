@@ -157,6 +157,43 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
     }
     p <- parDef(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds)
     nPar <- lapply(p$bounds,function(x) runif(nrow(x),ifelse(is.finite(x[,1]),x[,1],0),ifelse(is.finite(x[,2]),x[,2],max(x[,1]+1,1.e+6))))
+    inputs <- checkInputs(nbStates,dist,nPar,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames=NULL,checkInflation = TRUE)
+    tempCovs <- data[1,]
+    DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,nPar,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)
+    fullDM <- DMinputs$fullDM
+    nc <- meanind <- vector('list',length(distnames))
+    names(nc) <- names(meanind) <- distnames
+    for(i in distnames){
+      nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
+      # deal with factors
+      if(length(tempCovs)){
+        for(j in names(which(unlist(lapply(tempCovs,function(x) inherits(x,"factor")))))){
+          if(any(grepl(j,inputs$DM[[i]]))){
+            tmpCov <- tempCovs
+            for(jj in levels(tempCovs[[j]])){
+              tmpCov[[j]] <- factor(jj,levels=levels(tempCovs[[j]]))
+              tmpgDM<-getDM(tmpCov,inputs$DM[i],inputs$dist[i],nbStates,inputs$p$parNames[i],inputs$p$bounds[i],Par[i],inputs$cons[i],inputs$workcons[i],zeroInflation[i],oneInflation[i],inputs$circularAngleMean[i],FALSE)$fullDM[[i]]
+              nc[[i]] <- nc[[i]] + apply(tmpgDM,1:2,function(x) !all(unlist(x)==0))
+            }
+          }
+        }
+      }
+      nc[[i]] <- nc[[i]]>0
+      if(inputs$circularAngleMean[[i]]) {
+        meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+        # deal with angular covariates that are exactly zero
+        if(length(meanind[[i]])){
+          angInd <- which(is.na(match(gsub("cos","",gsub("sin","",colnames(nc[[i]]))),colnames(nc[[i]]),nomatch=NA)))
+          sinInd <- colnames(nc[[i]])[which(grepl("sin",colnames(nc[[i]])[angInd]))]
+          nc[[i]][meanind[[i]],sinInd]<-ifelse(nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)])
+          nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)]<-ifelse(nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],sinInd])
+        }
+      }
+    }
+    for(i in distnames){
+      bInd <- getboundInd(nc[[i]])
+      nPar[[i]] <- nPar[[i]][which(!duplicated(bInd))[bInd]]
+    }
     par <- getParDM(data,nbStates,dist,nPar,zeroInflation,oneInflation,estAngleMean,circularAngleMean,DM,cons,userBounds,workBounds,workcons)
     
   } else par <- Par0
