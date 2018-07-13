@@ -8,7 +8,7 @@ checkPar0(data, nbStates, dist, Par0 = NULL, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
   formulaDelta = ~1, stationary = FALSE, DM = NULL, cons = NULL,
   userBounds = NULL, workBounds = NULL, workcons = NULL,
-  stateNames = NULL, fixPar = NULL)
+  betaCons = NULL, stateNames = NULL, fixPar = NULL)
 }
 \arguments{
 \item{data}{\code{\link{momentuHMMData}} object or a data frame containing the data stream and covariate values}
@@ -50,6 +50,8 @@ distribution parameters for each data stream.}
 
 \item{workcons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 each data stream.}
+
+\item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 

@@ -28,6 +28,7 @@
 #' @param workBounds An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. 
 #' @param workcons Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 #' each data stream. 
+#' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters.
 #' @param stateNames Optional character vector of length nbStates indicating state names.
 #' @param fixPar An optional list of vectors indicating parameters which are assumed known prior to fitting the model. 
 #' 
@@ -75,7 +76,7 @@
 #' }
 #' @export
 
-checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=~1,stationary=FALSE,DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,stateNames=NULL,fixPar=NULL)
+checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=~1,stationary=FALSE,DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,stateNames=NULL,fixPar=NULL)
 {
   
   ## check that the data is a momentuHMMData object or valid data frame
@@ -163,7 +164,7 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
                              Par0=par,beta0=beta0,delta0=delta0,
                              estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
                              formula=formula,formulaDelta=formulaDelta,stationary=stationary,
-                             DM=DM,cons=cons,userBounds=userBounds,workBounds=workBounds,workcons=workcons,fit=FALSE,
+                             DM=DM,cons=cons,userBounds=userBounds,workBounds=workBounds,workcons=workcons,betaCons=betaCons,fit=FALSE,
                              stateNames=stateNames,fixPar=fixPar))
   
   inputs <- checkInputs(nbStates,dist,par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,stateNames,checkInflation = TRUE)
@@ -233,6 +234,8 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
     tmpPar <- m$mle$beta
     if(is.null(beta0))
       tmpPar <- matrix(1:length(tmpPar),nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
+    if(!is.null(betaCons))
+      tmpPar <- matrix(tmpPar[c(betaCons)],nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
     print(tmpPar)
     #}
     
