@@ -305,7 +305,7 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
     delta0<-vector('list',nSims)
     if(!is.null(tmpdelta0))
       delta0[1:nSims]<-list(tmpdelta0)
-  } else if(length(delta0)!=nSims) stop("delta0 must be a list of length ",nSims)
+  } else if(length(delta0)<nSims) stop("delta0 must be a list of length >=",nSims)
   
   #check HMM inputs and print model message
   test<-fitHMM(miData[[ind[1]]],nbStates, dist, Par0[[ind[1]]], beta0[[ind[1]]], delta0[[ind[1]]],
