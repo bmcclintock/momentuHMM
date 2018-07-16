@@ -1,4 +1,4 @@
-momentuHMM 1.4.3 2018-07-11
+momentuHMM 1.4.3 2018-07-16
 -----------------
 NEW FEATURES
 
@@ -13,6 +13,8 @@ CHANGES
 * %dorng% now used instead of %dopar%, thereby allowing for reproducible foreach loops when using parallel processing
 
 * cleaned up crawlWrap printing when retryFits>0 and retryParallel=FALSE
+
+* retrySD argument in fitHMM and MIfitHMM can now be a scalar
 
 
 momentuHMM 1.4.2 2018-06-19
