@@ -457,6 +457,9 @@ miSum.ind<-MIpool(miBestFit.ind,ncores=ncores)
 
 plot(miSum.ind,plotCI=TRUE,ask=FALSE)
 
+hsActivityBudgets<-timeInStates(miBestFit.ind,by="sex",ncores=ncores)
+hsActivityBudgets
+
 save.image("harbourSealExample.RData")
 
 setRNG::setRNG(oldRNG)
