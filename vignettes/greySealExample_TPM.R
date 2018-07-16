@@ -115,7 +115,7 @@ endTime<-proc.time()-startTime
 greySealPool<-MIpool(greySealFits,ncores=ncores)
 plot(greySealPool,plotCI=TRUE,ask=FALSE)
 
-setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=28)
+setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=4957)
 greySealSim<-simData(model=greySealPool,centers=centers,initialPosition = centers[1,],obsPerAnimal = 1515,states=TRUE)
 setRNG::setRNG(oldRNG)
 
