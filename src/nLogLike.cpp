@@ -20,13 +20,14 @@
 //' model (if any). Default: NULL (states are not known). This should be a vector with length the number
 //' of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
 //' the state is not known.
+//' @param betaRef Indices of reference elements for t.p.m. multinomial logit link.
 //' 
 //' @return Negative log-likelihood
 // [[Rcpp::export]]
 double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist,
                      List Par,
                      IntegerVector aInd, List zeroInflation, List oneInflation,
-                     bool stationary, IntegerVector knownStates)
+                     bool stationary, IntegerVector knownStates, IntegerVector betaRef)
 {
   int nbObs = data.nrows();
 
@@ -55,8 +56,8 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       int cpt=0; // counter for diagonal elements
       for(int i=0;i<nbStates;i++) {
         for(int j=0;j<nbStates;j++) {
-          if(i==j) {
-            // if diagonal element, set to one and increment counter
+          if(j==(betaRef(i)-1)) {
+            // if reference element, set to one and increment counter
             trMat(i,j,k)=1;
             cpt++;
           }

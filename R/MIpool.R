@@ -351,11 +351,11 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     gamInd<-(length(miBeta$coefficients)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(miBeta$coefficients))-ncol(m$covsDelta)*(nbStates-1)*(1-m$conditions$stationary)
     tmpSplineInputs<-getSplineFormula(newformula,mhdata,tempCovs)
     tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
-    est <- get_gamma(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),tempCovMat,nbStates,1:nbStates,1:nbStates)
+    est <- get_gamma(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),tempCovMat,nbStates,1:nbStates,1:nbStates,m$conditions$betaRef)
     lower<-upper<-se<-matrix(0,nrow(est),ncol(est))
     for(i in 1:nrow(est)){
       for(j in 1:ncol(est)){
-        dN<-numDeriv::grad(get_gamma,matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),covs=model.matrix(newformula,mhdata),nbStates=nbStates,i=i,j=j)
+        dN<-numDeriv::grad(get_gamma,matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),covs=model.matrix(newformula,mhdata),nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef)
         se[i,j]<-suppressWarnings(sqrt(dN%*%miBeta$variance[gamInd[m$conditions$betaCons],gamInd[m$conditions$betaCons]]%*%dN))
         lower[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))-quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]-quantSup*se[i,j]
         upper[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))+quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]+quantSup*se[i,j]
@@ -384,7 +384,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     if(nbStates>1){
       covs<-model.matrix(newformula,tempCovs)
       statFun<-function(beta,nbStates,covs,i){
-        gamma <- trMatrix_rcpp(nbStates,beta,covs)[,,1]
+        gamma <- trMatrix_rcpp(nbStates,beta,covs,m$conditions$betaRef)[,,1]
         tryCatch(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i],error = function(e) {
           "A problem occurred in the calculation of the stationary distribution."})
       }

@@ -9,9 +9,9 @@ fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
   formulaDelta = ~1, stationary = FALSE, verbose = NULL,
   nlmPar = list(), fit = TRUE, DM = NULL, cons = NULL,
   userBounds = NULL, workBounds = NULL, workcons = NULL,
-  betaCons = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL,
-  retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(),
-  prior = NULL, modelName = NULL)
+  betaCons = NULL, betaRef = NULL, stateNames = NULL,
+  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
+  optMethod = "nlm", control = list(), prior = NULL, modelName = NULL)
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} object.}
@@ -123,6 +123,9 @@ through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{work
 
 \item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See details.}
 
+\item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
+the diagonal elements of the t.p.m. are the reference. See details.}
+
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
 \item{knownStates}{Vector of values of the state process which are known prior to fitting the
@@ -180,13 +183,15 @@ function.
 }
 \details{
 \itemize{
-\item The matrix \code{beta0} of regression coefficients for the transition probabilities has
+\item By default the matrix \code{beta0} of regression coefficients for the transition probabilities has
 one row for the intercept, plus one row for each covariate, and one column for
 each non-diagonal element of the transition probability matrix. For example, in a 3-state
 HMM with 2 \code{formula} covariates, the matrix \code{beta} has three rows (intercept + two covariates)
 and six columns (six non-diagonal elements in the 3x3 transition probability matrix -
 filled in row-wise).
-In a covariate-free model (default), \code{beta0} has one row, for the intercept.
+In a covariate-free model (default), \code{beta0} has one row, for the intercept. While the diagonal elements are by default the reference elements, other elements can serve as the reference
+using the \code{betaRef} argument. For example, in a 3-state model, setting \code{betaRef=c(3,2,3)} changes the reference elements to state transition 1 -> 3 for state 1 (instead of 1 -> 1), state
+transition 2 -> 2 for state 2 (same as default), and state transition 3 -> 3 for state 3 (same as default).
 
 \item When covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=~1}), then \code{delta0} (and \code{fixPar$delta}) are specified as a vector of length \code{nbStates} that 
 sums to 1.  When covariates are included in \code{formulaDelta}, then \code{delta0}  (and \code{fixPar$delta}) must be specified

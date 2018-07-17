@@ -47,7 +47,7 @@ viterbi <- function(m)
   covs <- model.matrix(newformula,data)
 
   probs <- allProbs(m)
-  trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs))
+  trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs),m$conditions$betaRef)
 
   nbAnimals <- length(unique(data$ID))
   aInd <- NULL

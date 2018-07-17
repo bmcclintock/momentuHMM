@@ -146,8 +146,8 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
 }
 
 # for differentiation in delta method
-get_stat <- function(beta,covs,nbStates,i) {
-    gamma <- trMatrix_rcpp(nbStates,beta,covs)[,,1]
+get_stat <- function(beta,covs,nbStates,i,betaRef) {
+    gamma <- trMatrix_rcpp(nbStates,beta,covs,betaRef)[,,1]
     solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i]
 }
 
@@ -214,7 +214,7 @@ statPlot<-function(model,beta,Sigma,nbStates,desMat,tempCovs,tmpcovs,cov,alpha,g
 
         for(state in 1:nbStates) {
             dN <- t(apply(desMat, 1, function(x)
-                numDeriv::grad(get_stat,beta,covs=matrix(x,nrow=1),nbStates=nbStates,i=state)))
+                numDeriv::grad(get_stat,beta,covs=matrix(x,nrow=1),nbStates=nbStates,i=state,betaRef=model$conditions$betaRef)))
 
             se <- t(apply(dN, 1, function(x)
                 suppressWarnings(sqrt(x%*%Sigma[gamInd,gamInd]%*%x))))

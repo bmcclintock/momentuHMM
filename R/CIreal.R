@@ -172,12 +172,12 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     quantSup <- qnorm(1-(1-alpha)/2)
     tmpSplineInputs<-getSplineFormula(newformula,m$data,tempCovs)
     tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
-    est <- get_gamma(wpar,tempCovMat,nbStates)
+    est <- get_gamma(wpar,tempCovMat,nbStates,betaRef=m$conditions$betaRef)
     lower<-upper<-se<-matrix(NA,nbStates,nbStates)
     if(!is.null(Sigma)){
       for(i in 1:nbStates){
         for(j in 1:nbStates){
-          dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j)
+          dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef)
           se[i,j]<-suppressWarnings(sqrt(dN%*%Sigma[(i2:i3)[m$conditions$betaCons],(i2:i3)[m$conditions$betaCons]]%*%dN))
           lower[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))-quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]-quantSup*se[i,j]
           upper[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))+quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#m$mle$gamma[i,j]+quantSup*se[i,j]
@@ -224,8 +224,8 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   return(Par)
 }
 
-get_gamma <- function(beta,covs,nbStates,i,j){
-  gamma <- trMatrix_rcpp(nbStates,beta,covs)[,,1]
+get_gamma <- function(beta,covs,nbStates,i,j,betaRef){
+  gamma <- trMatrix_rcpp(nbStates,beta,covs,betaRef)[,,1]
   gamma[i,j]
 }
 

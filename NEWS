@@ -4,6 +4,8 @@ NEW FEATURES
 
 * betaCons argument added to fitHMM and MIfitHMM for specifying equality constraints on transition probability matrix parameters
 
+* betaRef argument added to fitHMM and MIfitHMM for specifying the reference states for t.p.m. multinomial logit link
+
 * retryParallel argument added to crawlWrap
 
 CHANGES

@@ -12,11 +12,12 @@ using namespace std;
 //' @param nbStates Number of states
 //' @param beta Matrix of regression parameters
 //' @param covs Matrix of covariate values
+//' @param betaRef Indices of reference elements for t.p.m. multinomial logit link.
 //'
 //' @return Three dimensional array \code{trMat}, such that \code{trMat[,,t]} is the transition matrix at
 //' time t.
 // [[Rcpp::export]]
-arma::cube trMatrix_rcpp(int nbStates, arma::mat beta, arma::mat covs)
+arma::cube trMatrix_rcpp(int nbStates, arma::mat beta, arma::mat covs, IntegerVector betaRef)
 {
   int nbObs = covs.n_rows;
   arma::cube trMat(nbStates,nbStates,nbObs);
@@ -31,7 +32,7 @@ arma::cube trMatrix_rcpp(int nbStates, arma::mat beta, arma::mat covs)
     int cpt=0;
     for(int i=0;i<nbStates;i++) {
       for(int j=0;j<nbStates;j++) {
-        if(i==j) {
+        if(j==(betaRef(i)-1)) {
           trMat(i,j,k)=1;
           cpt++;
         }

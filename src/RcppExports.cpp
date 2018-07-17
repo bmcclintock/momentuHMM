@@ -154,8 +154,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // nLogLike_rcpp
-double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist, List Par, IntegerVector aInd, List zeroInflation, List oneInflation, bool stationary, IntegerVector knownStates);
-RcppExport SEXP _momentuHMM_nLogLike_rcpp(SEXP nbStatesSEXP, SEXP covsSEXP, SEXP dataSEXP, SEXP dataNamesSEXP, SEXP distSEXP, SEXP ParSEXP, SEXP aIndSEXP, SEXP zeroInflationSEXP, SEXP oneInflationSEXP, SEXP stationarySEXP, SEXP knownStatesSEXP) {
+double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist, List Par, IntegerVector aInd, List zeroInflation, List oneInflation, bool stationary, IntegerVector knownStates, IntegerVector betaRef);
+RcppExport SEXP _momentuHMM_nLogLike_rcpp(SEXP nbStatesSEXP, SEXP covsSEXP, SEXP dataSEXP, SEXP dataNamesSEXP, SEXP distSEXP, SEXP ParSEXP, SEXP aIndSEXP, SEXP zeroInflationSEXP, SEXP oneInflationSEXP, SEXP stationarySEXP, SEXP knownStatesSEXP, SEXP betaRefSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -170,20 +170,22 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< List >::type oneInflation(oneInflationSEXP);
     Rcpp::traits::input_parameter< bool >::type stationary(stationarySEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type knownStates(knownStatesSEXP);
-    rcpp_result_gen = Rcpp::wrap(nLogLike_rcpp(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates));
+    Rcpp::traits::input_parameter< IntegerVector >::type betaRef(betaRefSEXP);
+    rcpp_result_gen = Rcpp::wrap(nLogLike_rcpp(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef));
     return rcpp_result_gen;
 END_RCPP
 }
 // trMatrix_rcpp
-arma::cube trMatrix_rcpp(int nbStates, arma::mat beta, arma::mat covs);
-RcppExport SEXP _momentuHMM_trMatrix_rcpp(SEXP nbStatesSEXP, SEXP betaSEXP, SEXP covsSEXP) {
+arma::cube trMatrix_rcpp(int nbStates, arma::mat beta, arma::mat covs, IntegerVector betaRef);
+RcppExport SEXP _momentuHMM_trMatrix_rcpp(SEXP nbStatesSEXP, SEXP betaSEXP, SEXP covsSEXP, SEXP betaRefSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< int >::type nbStates(nbStatesSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type beta(betaSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type covs(covsSEXP);
-    rcpp_result_gen = Rcpp::wrap(trMatrix_rcpp(nbStates, beta, covs));
+    Rcpp::traits::input_parameter< IntegerVector >::type betaRef(betaRefSEXP);
+    rcpp_result_gen = Rcpp::wrap(trMatrix_rcpp(nbStates, beta, covs, betaRef));
     return rcpp_result_gen;
 END_RCPP
 }

@@ -5,7 +5,7 @@
 \title{Negative log-likelihood}
 \usage{
 nLogLike_rcpp(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation,
-  oneInflation, stationary, knownStates)
+  oneInflation, stationary, knownStates, betaRef)
 }
 \arguments{
 \item{nbStates}{Number of states,}
@@ -34,6 +34,8 @@ equal to the stationary distribution. Default: \code{false}.}
 model (if any). Default: NULL (states are not known). This should be a vector with length the number
 of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
 the state is not known.}
+
+\item{betaRef}{Indices of reference elements for t.p.m. multinomial logit link.}
 }
 \value{
 Negative log-likelihood

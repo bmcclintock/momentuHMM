@@ -93,6 +93,8 @@
 #' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
 #' through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.
 #' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See details.
+#' @param betaRef Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
+#' the diagonal elements of the t.p.m. are the reference. See details.
 #' @param stateNames Optional character vector of length nbStates indicating state names.
 #' @param knownStates Vector of values of the state process which are known prior to fitting the
 #' model (if any). Default: NULL (states are not known). This should be a vector with length the number
@@ -137,13 +139,15 @@
 #'
 #' @details
 #' \itemize{
-#' \item The matrix \code{beta0} of regression coefficients for the transition probabilities has
+#' \item By default the matrix \code{beta0} of regression coefficients for the transition probabilities has
 #' one row for the intercept, plus one row for each covariate, and one column for
 #' each non-diagonal element of the transition probability matrix. For example, in a 3-state
 #' HMM with 2 \code{formula} covariates, the matrix \code{beta} has three rows (intercept + two covariates)
 #' and six columns (six non-diagonal elements in the 3x3 transition probability matrix -
 #' filled in row-wise).
-#' In a covariate-free model (default), \code{beta0} has one row, for the intercept.
+#' In a covariate-free model (default), \code{beta0} has one row, for the intercept. While the diagonal elements are by default the reference elements, other elements can serve as the reference
+#' using the \code{betaRef} argument. For example, in a 3-state model, setting \code{betaRef=c(3,2,3)} changes the reference elements to state transition 1 -> 3 for state 1 (instead of 1 -> 1), state
+#' transition 2 -> 2 for state 2 (same as default), and state transition 3 -> 3 for state 3 (same as default).
 #' 
 #' \item When covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=~1}), then \code{delta0} (and \code{fixPar$delta}) are specified as a vector of length \code{nbStates} that 
 #' sums to 1.  When covariates are included in \code{formulaDelta}, then \code{delta0}  (and \code{fixPar$delta}) must be specified
@@ -426,7 +430,7 @@ fitHMM <- function(data,nbStates,dist,
                    estAngleMean=NULL,circularAngleMean=NULL,
                    formula=~1,formulaDelta=~1,stationary=FALSE,
                    verbose=NULL,nlmPar=list(),fit=TRUE,
-                   DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,
+                   DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,
                    stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL)
 {
   
@@ -582,7 +586,7 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
 
-  mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(newformula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior) & is.null(betaCons)) # indicator for moveHMMwrap below
+  mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(newformula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior) & is.null(betaCons) & is.null(betaRef)) # indicator for moveHMMwrap below
   
   inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames,checkInflation = TRUE)
   p <- inputs$p
@@ -597,6 +601,15 @@ fitHMM <- function(data,nbStates,dist,
     if(any(abs(as.integer(betaCons)-betaCons)!=0)) stop("betaCons must be a matrix composed of integers")
     if(min(betaCons)<1 | max(betaCons)>(nbCovs+1)*(nbStates*(nbStates-1))) stop("betaCons must be composed of integers between 1 and ",(nbCovs+1)*(nbStates*(nbStates-1)))
   }
+  
+  if(!is.null(betaRef)){
+    if(length(betaRef)!=nbStates) stop("betaRef must be a vector of length ",nbStates)
+    if(!is.numeric(betaRef)) stop("betaRef must be a numeric vector")
+    if(min(betaRef)<1 | max(betaRef)>nbStates) stop("betaRef elements must be between 1 and ",nbStates)
+  } else {
+    betaRef <- 1:nbStates
+  }
+  betaRef <- as.integer(betaRef)
   
   if(!is.null(beta0)) {
     if(is.null(dim(beta0)))
@@ -613,6 +626,11 @@ fitHMM <- function(data,nbStates,dist,
     if(nbStates>1){
        beta0 <- matrix(c(rep(-1.5,nbStates*(nbStates-1)),rep(0,nbStates*(nbStates-1)*nbCovs)),
                     nrow=nbCovs+1,byrow=TRUE)
+       for(i in 1:nbStates){
+         if(betaRef[i]!=i){
+           beta0[1,(i-1)*(nbStates-1)+i-(betaRef[i]<i)] <- 1.5
+         }
+       }
        if(!is.null(betaCons)) beta0 <- matrix(beta0[c(betaCons)],nrow(beta0),ncol(beta0))
     }
   }
@@ -912,7 +930,7 @@ fitHMM <- function(data,nbStates,dist,
           withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
-                                               nc,meanind,covsDelta,workBounds,prior,betaCons,
+                                               nc,meanind,covsDelta,workBounds,prior,betaCons,betaRef,
                                                print.level=print.level,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
                                                iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian),optInd=optInd),error=function(e) e),warning=h)
@@ -920,7 +938,7 @@ fitHMM <- function(data,nbStates,dist,
           withCallingHandlers(curmod <- tryCatch(optim(optPar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                      inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                      stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
-                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,
+                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,betaRef,
                                                      method=optMethod,control=control,hessian=hessian,optInd=optInd),error=function(e) e),warning=h)
         }
         endTime <- proc.time()-startTime
@@ -1016,9 +1034,9 @@ fitHMM <- function(data,nbStates,dist,
     columns <- NULL
     for(i in 1:nbStates)
       for(j in 1:nbStates) {
-        if(i<j)
+        if(betaRef[i]<j)
           columns[(i-1)*nbStates+j-i] <- paste(i,"->",j)
-        if(j<i)
+        if(j<betaRef[i])
             columns[(i-1)*(nbStates-1)+j] <- paste(i,"->",j)
       }
     colnames(mle$beta) <- columns
@@ -1026,7 +1044,7 @@ fitHMM <- function(data,nbStates,dist,
 
   # compute stationary distribution
   if(stationary) {
-    gamma <- trMatrix_rcpp(nbStates,mle$beta,covs)[,,1]
+    gamma <- trMatrix_rcpp(nbStates,mle$beta,covs,betaRef)[,,1]
 
     # error if singular system
     tryCatch(
@@ -1046,7 +1064,7 @@ fitHMM <- function(data,nbStates,dist,
   
   # compute t.p.m. if no covariates
   if(nbCovs==0 & nbStates>1) {
-    trMat <- trMatrix_rcpp(nbStates,mle$beta,covs)
+    trMat <- trMatrix_rcpp(nbStates,mle$beta,covs,betaRef)
     mle$gamma <- trMat[,,1]
     colnames(mle$gamma)<-stateNames
     rownames(mle$gamma)<-stateNames
@@ -1056,7 +1074,7 @@ fitHMM <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
-                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=ofixPar,wparIndex=wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,optInd=optInd)
+                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=ofixPar,wparIndex=wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=betaRef,optInd=optInd)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName)
   
