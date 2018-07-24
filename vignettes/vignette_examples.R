@@ -51,7 +51,7 @@ nfsTimeInStates<-nfsFits$miSum$Par$timeInStates
 append.RData(nfsTimeInStates,file=paste0(getwd(),"/vignette_inputs.RData"))
 
 pdf(file=paste0(getwd(),"/plot_nfsResults.pdf"),width=5,height=5)
-plot(nfsFits,ask=FALSE)
+plot(nfsFits,ask=FALSE,legend.pos="topright")
 dev.off()
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
