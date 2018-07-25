@@ -150,11 +150,11 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   if(nbStates>1) {
     cat("Decoding state sequences and probabilities for each imputation... ")
     registerDoParallel(cores=ncores)
-    im_states <- foreach(i = 1:nsims, .combine = rbind) %dorng% {momentuHMM::viterbi(im[[i]])}
+    withCallingHandlers(im_states <- foreach(i = 1:nsims, .combine = rbind) %dorng% {momentuHMM::viterbi(im[[i]])},warning=muffleRNGwarning)
     stopImplicitCluster()
     states <- apply(im_states,2,function(x) which.max(hist(x,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts))
     registerDoParallel(cores=ncores)
-    im_stateProbs <- foreach(i = 1:nsims) %dorng% {momentuHMM::stateProbs(im[[i]])}
+    withCallingHandlers(im_stateProbs <- foreach(i = 1:nsims) %dorng% {momentuHMM::stateProbs(im[[i]])},warning=muffleRNGwarning)
     stopImplicitCluster()
     cat("DONE\n")
   } else states <- rep(1,nrow(data))
@@ -485,12 +485,12 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
       # calculate location alpha% error ellipses
       cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
       registerDoParallel(cores=ncores)
-      errorEllipse<-foreach(i = 1:nrow(mh$data)) %dorng% {
+      withCallingHandlers(errorEllipse<-foreach(i = 1:nrow(mh$data)) %dorng% {
         tmp <- cbind(unlist(lapply(im,function(x) x$data$x[i])),unlist(lapply(im,function(x) x$data$y[i])))
         if(length(unique(tmp[,1]))>1 | length(unique(tmp[,2]))>1)
           ellip <- car::dataEllipse(tmp,levels=alpha,draw=FALSE,segments=100)
         else ellip <- matrix(tmp[1,],101,2,byrow=TRUE)
-      }
+      },warning=muffleRNGwarning)
       stopImplicitCluster()
       cat("DONE\n")
     }

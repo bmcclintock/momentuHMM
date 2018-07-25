@@ -61,14 +61,14 @@ timeInStates.HMMfits <- function(m, by = NULL, alpha = 0.95, ncores = 1){
   
   cat("Decoding state sequences and probabilities for each imputation... ")
   registerDoParallel(cores=ncores)
-  im_states <- foreach(i = 1:nsims) %dorng% {momentuHMM::viterbi(m[[i]])}
+  withCallingHandlers(im_states <- foreach(i = 1:nsims) %dorng% {momentuHMM::viterbi(m[[i]])},warning=muffleRNGwarning)
   stopImplicitCluster()
   cat("DONE\n")
   
   registerDoParallel(cores=ncores)
-  xmat <- foreach(i = 1:nsims, .combine = rbind) %dorng% {
+  withCallingHandlers(xmat <- foreach(i = 1:nsims, .combine = rbind) %dorng% {
     get_combins(m[[i]],im_states[[i]],by)
-  }
+  },warning=muffleRNGwarning)
   stopImplicitCluster()
   
   if(!is.null(by)){

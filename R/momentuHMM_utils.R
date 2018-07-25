@@ -29,6 +29,12 @@ print.momentuHMM.version <- function()
   print.momentuHMM.version()
 }
 
+# suppress RNG warning when using %dorng%
+muffleRNGwarning <- function(w) {
+  if(any(grepl("Foreach loop had changed the current RNG type: RNG was restored to same type, next state",w)))
+    invokeRestart("muffleWarning")
+}
+
 #' @importFrom MASS ginv
 # this function maintains backwards compatibility with momentuHMM versions <1.1.2 (formulaDelta), <1.4.0 (workBounds), and <1.4.3 (betaCons)
 delta_bc <- function(m){

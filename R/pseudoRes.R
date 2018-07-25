@@ -53,9 +53,9 @@ pseudoRes <- function(m, ncores = 1)
     else {
       if(is.miHMM(m)) m <- m$HMMfits
       registerDoParallel(cores=ncores)
-      genRes <- foreach(i=which(unlist(lapply(m,is.momentuHMM)))) %dorng% {
+      withCallingHandlers(genRes <- foreach(i=which(unlist(lapply(m,is.momentuHMM)))) %dorng% {
         pseudoRes(m[[i]])
-      }
+      },warning=muffleRNGwarning)
       stopImplicitCluster()
       return(genRes)
     }
