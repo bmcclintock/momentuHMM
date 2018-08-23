@@ -50,8 +50,6 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
         col <- hcl(h = hues, l = 65, c = 100)[1:nbStates]
     }
 
-    rawCovs <- model$rawCovs
-
     if(inherits(model,"miSum") & plotCI){
       if(length(model$conditions$optInd)){
         Sigma <- matrix(0,length(model$mod$estimate),length(model$mod$estimate))
@@ -72,10 +70,34 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
     formulaStates <- newForm$formulaStates
     formterms <- newForm$formterms
     newformula <- newForm$newformula
+    recharge <- newForm$recharge
+    
+    if(!is.null(recharge)){
+      recovs <- model.matrix(recharge,model$data)
+      nbRecovs <- ncol(recovs)-1
+      g0 <- model$mle$g0
+      theta <- model$mle$theta
+      model$data$recharge <- cumsum(c(g0,theta%*%t(recovs[-nrow(recovs),])))
+      #recovs <- model.matrix(recharge,covs)
+      #covs$recharge <- g0 + theta%*%t(recovs)
+      #nbCovs <- nbCovs + 1
+      newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
+      covsCol <- get_all_vars(newformula,model$data)#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+      if(!all(names(covsCol) %in% names(model$data))){
+        covsCol <- covsCol[,names(covsCol) %in% names(model$data),drop=FALSE]
+      }
+      model$rawCovs <- covsCol
+    } else {
+      nbRecovs <- 0
+      recovs <- NULL
+    }
     
     nbCovs <- ncol(model.matrix(newformula,model$data))-1 # substract intercept column
-    gamInd<-(length(model$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(model$mod$estimate))-ncol(model$covsDelta)*(nbStates-1)*(!model$conditions$stationary)
-
+    gamInd<-(length(model$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(model$mod$estimate))-ifelse(nbRecovs,(nbRecovs+1)+1,0)-ncol(model$covsDelta)*(nbStates-1)*(!model$conditions$stationary)
+    gamInd <- gamInd[model$conditions$betaCons]
+    
+    rawCovs <- model$rawCovs
+    
     if(is.null(covs)){
         covs <- model$data[1,]
         for(j in names(model$data)[which(unlist(lapply(model$data,function(x) any(class(x) %in% meansList))))]){
@@ -97,7 +119,12 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
           else if(any(class(model$data[[j]]) %in% meansList)) covs[[j]]<-mean(model$data[[j]],na.rm=TRUE)
         }
     }
-
+    
+    if(!is.null(recharge)){
+      recovs <- model.matrix(recharge,covs)
+      covs$recharge <- g0 + theta%*%t(recovs)
+    }
+    
     # loop over covariates
     for(cov in 1:ncol(rawCovs)) {
 
@@ -141,17 +168,23 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
 
         desMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
 
-        statPlot(model,beta,Sigma,nbStates,desMat,tempCovs,tmpcovs,cov,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
+        statPlot(model,list(beta=beta,g0=g0,theta=theta),Sigma,nbStates,desMat,tempCovs,tmpcovs,cov,recovs,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
     }
 }
 
 # for differentiation in delta method
-get_stat <- function(beta,covs,nbStates,i,betaRef) {
-    gamma <- trMatrix_rcpp(nbStates,beta,covs,betaRef)[,,1]
-    solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i]
+get_stat <- function(beta,covs,recovs,nbStates,i,betaRef,workBounds=matrix(c(-Inf,Inf),length(beta),2,byrow=TRUE)) {
+  beta <- w2wn(beta,workBounds)
+  if(!is.null(recovs)){
+    covs[["recharge"]] <- beta[length(beta)-ncol(recovs)]+beta[length(beta)-(ncol(recovs)-1):0]%*%t(recovs)
+    covs <- matrix(covs,1)
+  }
+  beta <- matrix(beta[1:(nbStates*(nbStates-1)*ncol(covs))],ncol(covs))
+  gamma <- trMatrix_rcpp(nbStates,beta,covs,betaRef)[,,1]
+  solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i]
 }
 
-statPlot<-function(model,beta,Sigma,nbStates,desMat,tempCovs,tmpcovs,cov,alpha,gridLength,gamInd,covnames,col,plotCI,...){
+statPlot<-function(model,beta,Sigma,nbStates,desMat,tempCovs,tmpcovs,cov,recovs,alpha,gridLength,gamInd,covnames,col,plotCI,...){
 
     if(!missing(...)){
         arg <- list(...)
@@ -214,10 +247,16 @@ statPlot<-function(model,beta,Sigma,nbStates,desMat,tempCovs,tmpcovs,cov,alpha,g
 
         for(state in 1:nbStates) {
             dN <- t(apply(desMat, 1, function(x)
-                numDeriv::grad(get_stat,beta,covs=matrix(x,nrow=1),nbStates=nbStates,i=state,betaRef=model$conditions$betaRef)))
+                numDeriv::grad(get_stat,c(model$mle$beta,model$mle$g0,model$mle$theta),covs=x,recovs=recovs,nbStates=nbStates,i=state,betaRef=model$conditions$betaRef,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$g0,model$conditions$workBounds$theta))))
 
+            tmpSig <- Sigma[gamInd,gamInd]
+            if(!is.null(recovs)){
+              nbRecovs <- ncol(recovs)-1
+              tmpSig <- Sigma[c(gamInd,length(model$mod$estimate)-(nbRecovs+1):0),c(gamInd,length(model$mod$estimate)-(nbRecovs+1):0)]
+            }
+            
             se <- t(apply(dN, 1, function(x)
-                suppressWarnings(sqrt(x%*%Sigma[gamInd,gamInd]%*%x))))
+                suppressWarnings(sqrt(x%*%tmpSig%*%x))))
 
             lci[,state] <- 1/(1 + exp(-(log(probs[,state]/(1-probs[,state])) -
                                             qnorm(1-(1-alpha)/2) * (1/(probs[,state]-probs[,state]^2)) * se)))

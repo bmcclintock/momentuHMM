@@ -11,26 +11,41 @@ getWorkBounds <- function(workBounds,distnames,wpar,parindex,parCount,DM,beta=NU
     #if(any(tmpwpar<workBounds[[i]][,1] | tmpwpar>workBounds[[i]][,2])) stop("starting values for ",i," data stream do not satisfy workBounds")
   }
   
-  if(length(beta)){
+  if(length(beta$beta)){
     if(is.null(workBounds$beta)){
-      workBounds$beta <- matrix(c(-Inf,Inf),length(beta),2,byrow=TRUE)
+      workBounds$beta <- matrix(c(-Inf,Inf),length(beta$beta),2,byrow=TRUE)
     } else {
       if(!is.matrix(workBounds$beta)) stop("workBounds$beta must be a matrix")
-      if(!all(dim(workBounds$beta)==c(length(beta),2))) stop("workBounds$",i," must be a 2 x ",length(beta)," matrix")
+      if(!all(dim(workBounds$beta)==c(length(beta$beta),2))) stop("workBounds$beta must be a 2 x ",length(beta$beta)," matrix")
     }
     #beta <- w2wn(c(beta),workBounds$beta)
     #if(any(beta<workBounds$beta[,1] | beta>workBounds$beta[,2])) stop("beta0 do not satisfy workBounds")
   }
-
   if(length(delta)){
     if(is.null(workBounds$delta)){
       workBounds$delta <- matrix(c(-Inf,Inf),length(delta),2,byrow=TRUE)
     } else {
       if(!is.matrix(workBounds$delta)) stop("workBounds$delta must be a matrix")
-      if(!all(dim(workBounds$delta)==c(length(delta),2))) stop("workBounds$",i," must be a 2 x ",length(delta)," matrix")
+      if(!all(dim(workBounds$delta)==c(length(delta),2))) stop("workBounds$delta must be a 2 x ",length(delta)," matrix")
     }
     #delta <- w2wn(c(delta),workBounds$delta)
     #if(any(delta<workBounds$delta[,1] | delta>workBounds$delta[,2])) stop("delta0 do not satisfy workBounds")
+  }
+  if(length(beta$g0)){
+    if(is.null(workBounds$g0)){
+      workBounds$g0 <- matrix(c(-Inf,Inf),length(beta$g0),2,byrow=TRUE)
+    } else {
+      if(!is.matrix(workBounds$g0)) stop("workBounds$g0 must be a matrix")
+      if(!all(dim(workBounds$g0)==c(length(beta$g0),2))) stop("workBounds$g0 must be a 2 x ",length(beta$g0)," matrix")
+    }
+  }
+  if(length(beta$theta)){
+    if(is.null(workBounds$theta)){
+      workBounds$theta <- matrix(c(-Inf,Inf),length(beta$theta),2,byrow=TRUE)
+    } else {
+      if(!is.matrix(workBounds$theta)) stop("workBounds$theta must be a matrix")
+      if(!all(dim(workBounds$theta)==c(length(beta$theta),2))) stop("workBounds$theta must be a 2 x ",length(beta$theta)," matrix")
+    }
   }
   workBounds
 }

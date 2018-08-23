@@ -26,7 +26,7 @@ test_that("Exceptions are thrown",{
     }
   }
   
-  wpar <- n2w(Par,m$conditions$bounds,m$mle$beta,log(m$mle$delta[-1]/m$mle$delta[1]),nbStates,m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+  wpar <- n2w(Par,m$conditions$bounds,list(beta=m$mle$beta),log(m$mle$delta[-1]/m$mle$delta[1]),nbStates,m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
 
   expect_error(nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
                        m$conditions$estAngleMean,m$conditions$circularAngleMean,inputs$consensus,m$conditions$zeroInflation,m$conditions$oneInflation,
@@ -64,7 +64,7 @@ test_that("logAlpha, logBeta, and nLogLike are consistent",{
   foo <- length(m$mod$estimate)-(nbCovsDelta+1)*(nbStates-1)+1
   delta<- m$mod$estimate[foo:length(m$mod$estimate)]
   
-  wpar <- n2w(Par,m$conditions$bounds,m$mle$beta,delta,nbStates,m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+  wpar <- n2w(Par,m$conditions$bounds,list(beta=m$mle$beta),delta,nbStates,m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
 
   # all data
   nll<-nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
@@ -133,7 +133,7 @@ test_that("logAlpha, logBeta, and nLogLike are consistent with zero and one infl
   foo <- length(m$mod$estimate)-(nbCovsDelta+1)*(nbStates-1)+1
   delta<- m$mod$estimate[foo:length(m$mod$estimate)]
   
-  wpar <- n2w(Par,m$conditions$bounds,m$mle$beta,delta,nbStates,m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+  wpar <- n2w(Par,m$conditions$bounds,list(beta=m$mle$beta),delta,nbStates,m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
   
   # all data
   nll<-nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
@@ -182,7 +182,7 @@ test_that("angleDist=NULL and zeroInflation=TRUE work",{
     }
   }
 
-  wpar <- n2w(Par,inputs$p$bounds,m$mle$beta,m$mle$delta,nbStates,inputs$estAngleMean,m$conditions$DM,DMinputs$cons,DMinputs$workcons,m$conditions$Bndind)
+  wpar <- n2w(Par,inputs$p$bounds,list(beta=m$mle$beta),m$mle$delta,nbStates,inputs$estAngleMean,m$conditions$DM,DMinputs$cons,DMinputs$workcons,m$conditions$Bndind)
   
   expect_error(nLogLike(wpar,nbStates,m$conditions$formula,inputs$p$bounds,inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
                        inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,

@@ -14,7 +14,7 @@ cosinorSin<-function(x,period){
 
 stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL){
   
-  Terms <- terms(formula, specials = c(paste0(spec,1:nbStates),"cosinor","angleFormula"))
+  Terms <- terms(formula, specials = c(paste0(spec,1:nbStates),"cosinor","angleFormula","recharge"))
   if(any(grepl("angleStrength\\(",attr(Terms,"term.labels")))) stop("'angleStrength' is defunct in momentuHMM >=1.4.2. Please use 'angleFormula' instead")
   if(any(attr(Terms,"order")>1)){
     if(any(grepl("angleFormula\\(",attr(Terms,"term.labels")[attr(Terms,"order")>1]))) stop("interactions with angleFormula are not allowed")
@@ -28,13 +28,15 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
     if(length(cosInd) & angleMean) stop("cosinor models are not supported for angle means")
     angInd <- survival::untangle.specials(Terms,"angleFormula",order=1:10)$terms
     if(length(angInd) & !angleMean) stop("angleFormula models are only allowed for angle means")
+    recInd <- survival::untangle.specials(Terms,"recharge",order=1:10)$terms
+    if(length(recInd)>1) stop("only a single recharge model is permitted")
     stateInd <- numeric()
     for(j in 1:nbStates){
       tmpInd <- survival::untangle.specials(Terms,paste0(spec,j),order=1)$terms
       if(length(tmpInd)) stateInd<-c(stateInd,tmpInd)
     }
-    if(length(cosInd) | length(angInd) | length(stateInd)){
-      mainpart <- varnames[-c(cosInd,angInd,stateInd)]
+    if(length(cosInd) | length(angInd) | length(recInd) | length(stateInd)){
+      mainpart <- varnames[-c(cosInd,angInd,recInd,stateInd)]
     }
     if(angleMean & length(mainpart)){
       tmpmainpart <- mainpart
@@ -46,6 +48,8 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
     }
     for(j in varnames[cosInd])
       mainpart<-c(mainpart,paste0(gsub("cosinor","cosinorCos",j)),paste0(gsub("cosinor","cosinorSin",j)))
+    for(j in varnames[recInd])
+      mainpart<-c(mainpart,paste0(gsub(")\\s*$","",gsub("recharge\\(","",j))))
     if(length(angInd)){
       stmp <- prodlim::strip.terms(Terms[attr(Terms,"specials")$angleFormula],specials="angleFormula",arguments=list(angleFormula=list("strength"=NULL,"by"=NULL)))
       if(any(grepl("cos",attr(stmp,"term.labels"))) | any(grepl("sin",attr(stmp,"term.labels")))) stop("sorry, the strings 'cos' and 'sin' are reserved and cannot appear in mean angle formulas and/or covariate names")
@@ -102,7 +106,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
     for(j in 1:nbStates){
       tmplabs<-attr(Terms,"term.labels")[attr(Terms,"specials")[[paste0(spec,j)]]]
       if(length(tmplabs)){
-        tmp<- terms(as.formula(paste("~",substr(tmplabs,nchar(paste0(spec,j))+1,nchar(tmplabs)),collapse="+")),specials=c("cosinor","angleFormula"))
+        tmp<- terms(as.formula(paste("~",substr(tmplabs,nchar(paste0(spec,j))+1,nchar(tmplabs)),collapse="+")),specials=c("cosinor","angleFormula","recharge"))
       
         tmpnames<-attr(tmp,"term.labels")
         if(any(grepl("angleStrength\\(",tmpnames))) stop("'angleStrength' is defunct in momentuHMM >=1.4.2. Please use 'angleFormula' instead")
@@ -115,6 +119,8 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
           if(length(cosInd) & angleMean) stop("cosinor models are not supported for angle means")
           angInd <- survival::untangle.specials(tmp,"angleFormula",order=1:10)$terms
           if(length(angInd) & !angleMean) stop("angleFormula models are only allowed for angle means")
+          recInd <- survival::untangle.specials(tmp,"recharge",order=1:10)$terms
+          if(length(recInd)) stop("recharge models cannot be state-dependent")
           if(length(cosInd) | length(angInd)){
             mp <- c(tmpnames[-c(cosInd,angInd)])
           }
@@ -128,6 +134,8 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
           }
           for(i in tmpnames[cosInd])
             mp<-c(mp,paste0(gsub("cosinor","cosinorCos",i)),paste0(gsub("cosinor","cosinorSin",i)))
+          for(i in tmpnames[recInd])
+            mp<-c(mp,paste0(gsub(")\\s*$","",gsub("recharge\\(","",i))))
           if(length(angInd)){
             stmp <- prodlim::strip.terms(tmp[attr(tmp,"specials")$angleFormula],specials="angleFormula",arguments=list(angleFormula=list("strength"=NULL,"by"=NULL)))
             if(any(grepl("cos",attr(stmp,"term.labels"))) | any(grepl("sin",attr(stmp,"term.labels")))) stop("sorry, the strings 'cos' and 'sin' are reserved and cannot appear in mean angle formulas and/or covariate names")
@@ -175,11 +183,12 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
 
 newFormulas<-function(formula,nbStates)
 {
-  stateForms<- terms(formula, specials = paste0(rep(c("state","toState"),each=nbStates),1:nbStates))
+  stateForms<- terms(formula, specials = c(paste0(rep(c("state","toState"),each=nbStates),1:nbStates),"recharge"))
   newformula<-formula
   formulaStates <- vector('list',nbStates*(nbStates-1))
   formulaStates[1:(nbStates*(nbStates-1))] <- list(newformula)
   formterms<-attr(terms.formula(newformula),"term.labels")
+  recharge <- NULL
   
   if(nbStates>1){
     if(length(unlist(attr(stateForms,"specials")))){
@@ -201,17 +210,30 @@ newFormulas<-function(formula,nbStates)
           }
         }
       }
-      newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
+      if(!is.null(attr(stateForms,"specials")$recharge)){
+        #recharge <- as.formula(paste("~",paste(attr(stateForms,"term.labels")[which(grepl("recharge",attr(stateForms,"term.labels")))])))
+        #rechargeStates <- stateFormulas(recharge,nbStates)
+        recharge <- stateFormulas(as.formula(paste("~",paste(attr(stateForms,"term.labels")[which(grepl("recharge",attr(stateForms,"term.labels")))]))),1)[[1]]
+        if(length(newForm)){
+          newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
+        } else {
+          newformula <- ~1
+        }
+      } else {
+        newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
+      }
     }
     formulaStates<-stateFormulas(newformula,nbStates*(nbStates-1),spec="betaCol")
     if(length(unlist(attr(terms(newformula, specials = c(paste0("betaCol",1:(nbStates*(nbStates-1))),"cosinor")),"specials")))){
       allTerms<-unlist(lapply(formulaStates,function(x) attr(terms(x),"term.labels")))
       newformula<-as.formula(paste("~",paste(allTerms,collapse="+")))
       formterms<-attr(terms.formula(newformula),"term.labels")
-    } else {
+    } else if(is.null(recharge)) {
       formterms<-attr(terms.formula(newformula),"term.labels")
       newformula<-formula
+    } else {
+      formterms<-attr(terms.formula(newformula),"term.labels")
     }
   }  
-  return(list(formulaStates=formulaStates,formterms=formterms,newformula=newformula))
+  return(list(formulaStates=formulaStates,formterms=formterms,newformula=newformula,recharge=recharge))
 }

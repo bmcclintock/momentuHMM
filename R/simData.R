@@ -93,7 +93,7 @@
 #' specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.
 #' @param workBounds An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. For each matrix, the first column pertains to the lower bound and the second column the upper bound.
 #' For data streams, each element of \code{workBounds} should be a k x 2 matrix with the same name of the corresponding element of 
-#' \code{Par0}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta0)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta0)}.
+#' \code{Par0}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta0)}.
 #' \code{workBounds} is ignored for any given data stream unless \code{DM} is also specified.
 #' @param workcons Deprecated. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 #' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
@@ -448,7 +448,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         model$conditions$DM[[i]]<-DM[[i]]
       }
     }
+    g0 <- model$mle$g0
+    theta <- model$mle$theta
     beta <- model$mle$beta
+    beta <- list(beta=beta,g0=g0,theta=theta)
     delta <- model$mle$delta
     if(!length(attr(terms.formula(formulaDelta),"term.labels"))){
       delta <- delta[1,]
@@ -828,6 +831,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   formulaStates <- newForm$formulaStates
   formterms <- newForm$formterms
   newformula <- newForm$newformula
+  recharge <- newForm$recharge
   
   tmpCovs <- data.frame(ID=factor(1,levels=1:nbAnimals))
   if(!is.null(allCovs))
@@ -853,12 +857,37 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       tmpCovs[[centroidNames[(j-1)*2+2]]]<- tmpDistAngle[2]
     }
   }
-  nbBetaCovs <- ncol(model.matrix(newformula,tmpCovs))
+  
+  # build design matrix for recharge model
+  if(!is.null(recharge)){
+    recovs <- model.matrix(recharge,tmpCovs)
+    nbRecovs <- ncol(recovs)-1
+    if(!nbRecovs) stop("invalid recharge model -- it must include an intercept and at least 1 covariate")
+    #tmpcovs <- cbind(covs,rep(0,nrow(tmpCovs)))
+    #colnames(tmpcovs) <- c(colnames(covs),"recharge")
+    #covs <- tmpcovs
+    nbBetaCovs <- 1
+    if(!is.null(beta)){
+      if(!is.list(beta)) stop("beta must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
+    }
+  } else {
+    nbBetaCovs <- 0
+    nbRecovs <- 0
+    if(is.null(model)) beta <- list(beta=beta)
+    recovs <- NULL
+  }
+  
+  nbBetaCovs <- nbBetaCovs + ncol(model.matrix(newformula,tmpCovs))
 
-  if(is.null(beta))
-    beta <- matrix(rnorm(nbStates*(nbStates-1)*nbBetaCovs),nrow=nbBetaCovs)
+  if(is.null(beta$beta))
+    beta$beta <- matrix(rnorm(nbStates*(nbStates-1)*nbBetaCovs),nrow=nbBetaCovs)
+  if(nbRecovs){
+    if(is.null(beta$g0) | is.null(beta$theta)) stop("beta$g0 and beta$theta must be specified for recharge model")
+    if(length(beta$g0)>1 | any(!is.numeric(beta$g0))) stop("beta$g0 must be a numeric scalar")
+    if(length(beta$theta)!=(nbRecovs+1) | any(!is.numeric(beta$theta))) stop("beta$theta must be a numeric vector of length ",nbRecovs+1)
+  }
   else {
-    if(ncol(beta)!=nbStates*(nbStates-1) | nrow(beta)!=nbBetaCovs) {
+    if(ncol(beta$beta)!=nbStates*(nbStates-1) | nrow(beta$beta)!=nbBetaCovs) {
       error <- paste("beta has wrong dimensions: it should have",nbBetaCovs,"rows and",
                      nbStates*(nbStates-1),"columns.")
       stop(error)
@@ -867,7 +896,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   if(nbStates>1){
     for(state in 1:(nbStates*(nbStates-1))){
       noBeta<-which(match(colnames(model.matrix(newformula,tmpCovs)),colnames(model.matrix(formulaStates[[state]],tmpCovs)),nomatch=0)==0)
-      if(length(noBeta)) beta[noBeta,state] <- 0
+      if(length(noBeta)) beta$beta[noBeta,state] <- 0
     }
   }
   
@@ -948,7 +977,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       
       if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd)) {
         DMcov <- model.matrix(newformula,subCovs)
-        gFull <-  DMcov %*% beta
+        gFull <-  DMcov %*% beta$beta
         
         # format parameters
         DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
@@ -995,7 +1024,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             subCovs[1,centroidNames[(j-1)*2+1:2]]<-distAngle(X[1,],X[1,],as.numeric(centroids[[j]][1,]))
           }
         }
-        g <- model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% beta
+        g <- model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% beta$beta
         covsDelta <- model.matrix(formulaDelta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
         delta <- c(rep(0,nbCovsDelta+1),deltaB)
         deltaXB <- covsDelta %*% matrix(delta,nrow=nbCovsDelta+1)
@@ -1116,7 +1145,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
               subCovs[k+1,centroidNames[(j-1)*2+1:2]]<-distAngle(X[k,],X[k+1,],as.numeric(centroids[[j]][k+1,]))
             }
           }
-          g <- model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% beta
+          g <- model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% beta$beta
         } else {
           g <- gFull[k+1,,drop=FALSE]
         }

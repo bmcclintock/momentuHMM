@@ -62,6 +62,23 @@ CIbeta <- function(m,alpha=0.95)
   formulaStates <- newForm$formulaStates
   formterms <- newForm$formterms
   newformula <- newForm$newformula
+  recharge <- newForm$recharge
+  
+  if(!is.null(recharge)){
+    recovs <- model.matrix(recharge,m$data)
+    nbRecovs <- ncol(recovs)-1
+    g0 <- m$mle$g0
+    theta <- m$mle$theta
+    m$data$recharge <- cumsum(c(g0,theta%*%t(recovs[-nrow(recovs),])))
+    for(j in 1:nbStates){
+      formulaStates[[j]] <- as.formula(paste0(Reduce( paste, deparse(formulaStates[[j]]) ),"+recharge"))
+    }
+    formterms <- c(formterms,"recharge")
+    newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
+  } else {
+    nbRecovs <- 0
+    recovs <- NULL
+  }
   
   covs <- model.matrix(newformula,m$data)
   nbCovs <- ncol(covs)-1 # substract intercept column
@@ -133,11 +150,12 @@ CIbeta <- function(m,alpha=0.95)
   # group CIs for initial distribution
   if(nbStates>1 & !m$conditions$stationary){
     nbCovsDelta <- ncol(m$covsDelta)-1
-    foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)+1
+    dInd <- length(wpar)-ifelse(nbRecovs,(nbRecovs+1)+1,0)
+    foo <- dInd -(nbCovsDelta+1)*(nbStates-1)+1
     
-    est <- w2wn(wpar[foo:length(wpar)],m$conditions$workBounds$delta)
+    est <- w2wn(wpar[foo:dInd],m$conditions$workBounds$delta)
     
-    Par$delta <- get_CIwb(wpar[foo:length(wpar)],est,foo:length(wpar),Sigma,alpha,m$conditions$workBounds$delta,rnames=colnames(m$covsDelta),cnames=m$stateNames[-1],cons=rep(1,length(est)))
+    Par$delta <- get_CIwb(wpar[foo:dInd],est,foo:dInd,Sigma,alpha,m$conditions$workBounds$delta,rnames=colnames(m$covsDelta),cnames=m$stateNames[-1],cons=rep(1,length(est)))
 
   }
   return(Par)

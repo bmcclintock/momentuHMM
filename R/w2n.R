@@ -67,6 +67,21 @@
 
 w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind,nc,meanind,covsDelta,workBounds)
 {
+  
+  # identify recharge parameters
+  if(nbStates>1 & !is.null(workBounds$theta)) {
+    foo <- length(wpar)-nrow(workBounds$theta) + 1
+    theta <- w2wn(wpar[foo:length(wpar)],workBounds$theta)
+    wpar <- wpar[-(foo:length(wpar))]
+  }
+  else theta <- NULL
+  
+  if(nbStates>1 & !is.null(workBounds$g0)) {
+    foo <- length(wpar)-nrow(workBounds$g0) + 1
+    g0 <- w2wn(wpar[foo:length(wpar)],workBounds$g0)
+    wpar <- wpar[-(foo:length(wpar))]
+  }
+  else g0 <- NULL
 
   # identify initial distribution parameters
   if(!stationary & nbStates>1){
@@ -138,6 +153,8 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
 
   parlist[["beta"]]<-beta
   parlist[["delta"]]<-delta
+  parlist[["g0"]]<-g0
+  parlist[["theta"]]<-theta
 
   return(parlist)
 }

@@ -50,6 +50,14 @@ print.momentuHMM <- function(x,...)
   }
   
   if(length(m$stateNames)>1){
+    
+    if(!is.null(m$conditions$recharge)){
+      cat("\n")
+      cat("Recharge parameters for the transition probabilities:\n")
+      cat("-----------------------------------------------------\n")
+      g0theta <- matrix(c(m$mle$g0,m$mle$theta),nrow=1,dimnames=list("",c("g0",colnames(m$recovs))))
+      print(g0theta)      
+    }
     #if(!is.null(m$mle$beta)) {
       cat("\n")
       cat("Regression coeffs for the transition probabilities:\n")

@@ -52,7 +52,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   DMind <- m$conditions$DMind
   
   m <- delta_bc(m)
-
+  
   # identify covariates
   if(is.null(covs)){
     tempCovs <- m$data[1,]
@@ -60,6 +60,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
       if(inherits(m$data[[j]],"angle")) tempCovs[[j]] <- CircStats::circ.mean(m$data[[j]][!is.na(m$data[[j]])])
       else tempCovs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
     }
+    covs <- tempCovs
   } else {
     if(!is.data.frame(covs)) stop('covs must be a data frame')
     if(nrow(covs)>1) stop('covs must consist of a single row')
@@ -83,9 +84,32 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   formulaStates <- newForm$formulaStates
   formterms <- newForm$formterms
   newformula <- newForm$newformula
+  recharge <- newForm$recharge
   
-  covs <- model.matrix(newformula,m$data)
-  nbCovs <- ncol(covs)-1 # substract intercept column
+  nbCovs <- ncol(model.matrix(newformula,m$data))-1 # substract intercept column
+  
+  if(!is.null(recharge)){
+    recovs <- model.matrix(recharge,m$data)
+    nbRecovs <- ncol(recovs)-1
+    g0 <- m$mle$g0
+    theta <- m$mle$theta
+    m$data$recharge <- cumsum(c(g0,theta%*%t(recovs[-nrow(recovs),])))
+    nbCovs <- nbCovs + 1
+  } else {
+    nbRecovs <- 0
+    recovs <- NULL
+  }
+  
+
+  
+  if(!is.null(recharge)){
+  #  tmpcovs <- cbind(covs,m$data$recharge)
+  #  colnames(tmpcovs) <- c(colnames(covs),"recharge")
+  #  covs <- as.data.frame(tmpcovs)
+  #  tempCovs <- covs[1,]
+    recovs <- model.matrix(recharge,tempCovs)
+  #  #nbCovs <- nbCovs + 1
+  }
 
   # inverse of Hessian
   if(!is.null(m$mod$hessian)) Sigma <- m$mod$Sigma
@@ -168,17 +192,26 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     # identify parameters of interest
     i2 <- tail(cumsum(unlist(parCount)),1)+1
     i3 <- i2+nbStates*(nbStates-1)*(nbCovs+1)-1
-    wpar <- m$mle$beta
+    tmpSig <- Sigma[(i2:i3)[m$conditions$betaCons],(i2:i3)[m$conditions$betaCons]]
+    if(!is.null(recharge)){
+      tmpSig <- Sigma[c((i2:i3)[m$conditions$betaCons],length(m$mod$estimate)-(nbRecovs+1):0),c((i2:i3)[m$conditions$betaCons],length(m$mod$estimate)-(nbRecovs+1):0)]
+    }
+    wpar <- c(m$mle$beta,m$mle$g0,m$mle$theta)
     quantSup <- qnorm(1-(1-alpha)/2)
     tmpSplineInputs<-getSplineFormula(newformula,m$data,tempCovs)
     tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
-    est <- get_gamma(wpar,tempCovMat,nbStates,betaRef=m$conditions$betaRef)
+    #if(nbRecovs){
+    #  tmptempCovMat <- cbind(tempCovMat,tempCovs$g0)
+    #  colnames(tmptempCovMat) <- c(colnames(tempCovMat),"recharge")
+    #  tempCovMat <- tmptempCovMat
+    #}
+    est <- get_gamma(wpar,tempCovMat,recovs,nbStates,betaRef=m$conditions$betaRef,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$g0,m$conditions$workBounds$theta))
     lower<-upper<-se<-matrix(NA,nbStates,nbStates)
     if(!is.null(Sigma)){
       for(i in 1:nbStates){
         for(j in 1:nbStates){
-          dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef)
-          se[i,j]<-suppressWarnings(sqrt(dN%*%Sigma[(i2:i3)[m$conditions$betaCons],(i2:i3)[m$conditions$betaCons]]%*%dN))
+          dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,recovs=recovs,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$g0,m$conditions$workBounds$theta))
+          se[i,j]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
           lower[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))-quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]-quantSup*se[i,j]
           upper[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))+quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#m$mle$gamma[i,j]+quantSup*se[i,j]
         }
@@ -190,14 +223,14 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   
     wpar<-m$mod$estimate
     nbCovsDelta <- ncol(m$covsDelta)-1
-    foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)+1
+    foo <- length(wpar)-ifelse(nbRecovs,(nbRecovs+1)+1,0)-(nbCovsDelta+1)*(nbStates-1)+1
     delta <- matrix(wpar[foo:length(wpar)],nrow=nbCovsDelta+1)
     quantSup <- qnorm(1-(1-alpha)/2)
     lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsDelta),ncol=nbStates)
     if(!is.null(Sigma)){
       for(j in 1:nrow(m$covsDelta)){
         for(i in 1:nbStates){
-          dN<-numDeriv::grad(get_delta,delta,covsDelta=m$covsDelta[j,,drop=FALSE],i=i)
+          dN<-numDeriv::grad(get_delta,delta,covsDelta=m$covsDelta[j,,drop=FALSE],i=i,workBounds=m$conditions$workBounds$delta)
           se[j,i]<-suppressWarnings(sqrt(dN%*%Sigma[foo:length(wpar),foo:length(wpar)]%*%dN))
           lower[j,i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))-quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[j,i])))#m$mle$delta[j,i]-quantSup*se[i]
           upper[j,i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))+quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[j,i])))#m$mle$delta[j,i]+quantSup*se[i]
@@ -224,12 +257,19 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   return(Par)
 }
 
-get_gamma <- function(beta,covs,nbStates,i,j,betaRef){
+get_gamma <- function(beta,covs,recovs,nbStates,i,j,betaRef,workBounds=matrix(c(-Inf,Inf),length(beta),2,byrow=TRUE)){
+  beta <- w2wn(beta,workBounds)
+  if(!is.null(recovs)){
+    covs[["recharge"]] <- beta[length(beta)-ncol(recovs)]+beta[length(beta)-(ncol(recovs)-1):0]%*%t(recovs)
+    covs <- matrix(covs,1)
+  }
+  beta <- matrix(beta[1:(nbStates*(nbStates-1)*ncol(covs))],ncol(covs))
   gamma <- trMatrix_rcpp(nbStates,beta,covs,betaRef)[,,1]
   gamma[i,j]
 }
 
-get_delta <- function(delta,covsDelta,i){
+get_delta <- function(delta,covsDelta,i,workBounds=matrix(c(-Inf,Inf),length(delta),2,byrow=TRUE)){
+  delta <- w2wn(delta,workBounds)
   nbCovsDelta <- ncol(covsDelta)-1
   delta <- c(rep(0,nbCovsDelta+1),delta)
   deltaXB <- covsDelta%*%matrix(delta,nrow=nbCovsDelta+1)

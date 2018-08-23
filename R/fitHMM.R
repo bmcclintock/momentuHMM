@@ -485,6 +485,7 @@ fitHMM <- function(data,nbStates,dist,
   formulaStates <- newForm$formulaStates
   formterms <- newForm$formterms
   newformula <- newForm$newformula
+  recharge <- newForm$recharge
   
   # build design matrix for t.p.m.
   covsCol <- get_all_vars(newformula,data)#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
@@ -494,6 +495,24 @@ fitHMM <- function(data,nbStates,dist,
   covs <- model.matrix(newformula,data)
   if(nrow(covs)!=nrow(data)) stop("covariates cannot contain missing values")
   nbCovs <- ncol(covs)-1 # substract intercept column
+  
+  # build design matrix for recharge model
+  if(!is.null(recharge)){
+    recovs <- model.matrix(recharge,data)
+    nbRecovs <- ncol(recovs)-1
+    if(!nbRecovs) stop("invalid recharge model -- it must include an intercept and at least 1 covariate")
+    tmpcovs <- cbind(covs,rep(0,nrow(data)))
+    colnames(tmpcovs) <- c(colnames(covs),"recharge")
+    covs <- tmpcovs
+    nbCovs <- nbCovs + 1
+    if(!is.null(beta0)){
+      if(!is.list(beta0)) stop("beta0 must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
+    }
+  } else {
+    beta0 <- list(beta=beta0)
+    nbRecovs <- 0
+    recovs <- NULL
+  }
   
   # build design matrix for initial distribution
   # aInd = list of indices of first observation for each animal
@@ -611,28 +630,34 @@ fitHMM <- function(data,nbStates,dist,
   }
   betaRef <- as.integer(betaRef)
   
-  if(!is.null(beta0)) {
-    if(is.null(dim(beta0)))
-      stop(paste("beta0 has wrong dimensions: it should have",nbCovs+1,"rows and",
+  if(!is.null(beta0$beta)) {
+    if(is.null(dim(beta0$beta)))
+      stop(paste(paste0("beta",ifelse(is.null(recharge),"0","0$beta"))," has wrong dimensions: it should have",nbCovs+1,"rows and",
                      nbStates*(nbStates-1),"columns."))
-    if(ncol(beta0)!=nbStates*(nbStates-1) | nrow(beta0)!=nbCovs+1)
-      stop(paste("beta0 has wrong dimensions: it should have",nbCovs+1,"rows and",
+    if(ncol(beta0$beta)!=nbStates*(nbStates-1) | nrow(beta0$beta)!=nbCovs+1)
+      stop(paste(paste0("beta",ifelse(is.null(recharge),"0","0$beta"))," has wrong dimensions: it should have",nbCovs+1,"rows and",
                      nbStates*(nbStates-1),"columns."))
     if(!is.null(betaCons)) {
-      if(!all(beta0 == beta0[c(betaCons)])) warning("beta0 is not consistent with betaCons; values for beta0 will be assigned based on the first duplicated element(s) in betaCons")
-      beta0 <- matrix(beta0[c(betaCons)],nrow(beta0),ncol(beta0))
+      if(!all(beta0$beta == beta0$beta[c(betaCons)])) warning(paste0("beta",ifelse(is.null(recharge),"0","0$beta"))," is not consistent with betaCons; values for ",paste0("beta",ifelse(is.null(recharge),"0","0$beta"))," will be assigned based on the first duplicated element(s) in betaCons")
+      beta0$beta <- matrix(beta0$beta[c(betaCons)],nrow(beta0$beta),ncol(beta0$beta))
     }
   } else {
     if(nbStates>1){
-       beta0 <- matrix(c(rep(-1.5,nbStates*(nbStates-1)),rep(0,nbStates*(nbStates-1)*nbCovs)),
+       beta0$beta <- matrix(c(rep(-1.5,nbStates*(nbStates-1)),rep(0,nbStates*(nbStates-1)*nbCovs)),
                     nrow=nbCovs+1,byrow=TRUE)
        for(i in 1:nbStates){
          if(betaRef[i]!=i){
-           beta0[1,(i-1)*(nbStates-1)+i-(betaRef[i]<i)] <- 1.5
+           beta0$beta[1,(i-1)*(nbStates-1)+i-(betaRef[i]<i)] <- 1.5
          }
        }
-       if(!is.null(betaCons)) beta0 <- matrix(beta0[c(betaCons)],nrow(beta0),ncol(beta0))
+       if(!is.null(betaCons)) beta0$beta <- matrix(beta0$beta[c(betaCons)],nrow(beta0$beta),ncol(beta0$beta))
     }
+  }
+  if(!is.null(recharge)){
+    if(is.null(beta0$g0)) beta0$g0 <- 0
+    else if(length(beta0$g0)>1 | any(!is.numeric(beta0$g0))) stop("beta0$g0 must be a numeric scalar")
+    if(is.null(beta0$theta)) beta0$theta <- c(-1,rep(1,nbRecovs))
+    else if(length(beta0$theta)!=(nbRecovs+1) | any(!is.numeric(beta0$theta))) stop("beta0$theta must be a numeric vector of length ",nbRecovs+1)
   }
 
   if(!is.null(delta0)){
@@ -685,14 +710,24 @@ fitHMM <- function(data,nbStates,dist,
   }
   
   if(is.null(fixPar$beta)) {
-    fixPar$beta <- rep(NA,length(beta0))
+    fixPar$beta <- rep(NA,length(beta0$beta))
+  }
+  if(!is.null(recharge)){
+    if(is.null(fixPar$g0)) {
+      fixPar$g0 <- NA
+    } else if(length(fixPar$g0)>1) stop("fixPar$g0 must be a scalar")
+    if(is.null(fixPar$theta)){
+      fixPar$theta <- rep(NA,nbRecovs+1)
+    } else if(length(fixPar$theta)!=(nbRecovs+1)) stop("fixPar$theta must be a vector of length ",nbRecovs+1)
+  } else {
+    fixPar$g0 <- fixPar$theta <- NULL
   }
   
   if(nbStates>1){
     for(state in 1:(nbStates*(nbStates-1))){
       noBeta<-which(match(colnames(model.matrix(newformula,data)),colnames(model.matrix(formulaStates[[state]],data)),nomatch=0)==0)
       if(length(noBeta)) {
-        beta0[noBeta,state] <- NA
+        beta0$beta[noBeta,state] <- NA
         fixPar$beta[noBeta+(state-1)*(nbCovs+1)] <- 0
       }
     }
@@ -718,12 +753,12 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
   if(nbStates>1){
-      beta0[which(is.na(beta0))] <- 0
+      beta0$beta[which(is.na(beta0$beta))] <- 0
     #if(!is.null(fixPar$beta)){
-      if(length(fixPar$beta)!=length(beta0)) stop("fixPar$beta must be of length ",length(beta0))
+      if(length(fixPar$beta)!=length(beta0$beta)) stop("fixPar$beta must be of length ",length(beta0$beta))
       tmp <- which(!is.na(fixPar$beta))
       if(!all(fixPar$beta == fixPar$beta[betaCons],na.rm=TRUE)) stop("fixPar$beta not consistent with betaCons")
-      beta0[tmp]<-fixPar$beta[tmp]
+      beta0$beta[tmp]<-fixPar$beta[tmp]
       wparIndex <- c(wparIndex,parindex[["beta"]]+tmp)
     #} else {
     #  fixPar$beta <- rep(NA,length(beta0))
@@ -740,12 +775,12 @@ fitHMM <- function(data,nbStates,dist,
         if(!nbCovsDelta){
           delta0 <- fixPar$delta
           if(length(tmp)!=length(delta0) | sum(delta0)!=1) stop("fixPar$delta must sum to 1")
-          wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0)+1:(length(delta0)-1))
+          wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0$beta)+1:(length(delta0)-1))
           delta0 <- matrix(delta0,1,nbStates)
           delta0 <- log(delta0[-1]/delta0[1])
           fixPar$delta <- as.vector(delta0)
         } else {
-          wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0)+tmp)
+          wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0$beta)+tmp)
         }
       }
     }
@@ -753,9 +788,18 @@ fitHMM <- function(data,nbStates,dist,
     if(!nbCovsDelta) fixPar$delta <- ofixPar$delta <- rep(NA,ifelse(!length(delta0),0,nbStates-1))
     else fixPar$delta <- ofixPar$delta <- rep(NA,length(delta0))
   }
+  if(!is.null(recharge)){
+    tmp <- which(!is.na(fixPar$g0))
+    beta0$g0[tmp] <- fixPar$g0[tmp]
+    wparIndex <- c(wparIndex,length(wparIndex)+tmp)
+    tmp <- which(!is.na(fixPar$theta))
+    beta0$theta[tmp] <- fixPar$theta[tmp]
+    wparIndex <- c(wparIndex,length(wparIndex)+tmp)
+  }
 
-  fixPar <- fixPar[c(distnames,"beta","delta")]
-  ofixPar <- ofixPar[c(distnames,"beta","delta")]
+  if(any(!(names(fixPar) %in% c(distnames,"beta","delta","g0","theta")))) stop("fixPar names can only include ",paste0(c(distnames,"beta","delta","g0"),sep=", "),"or theta")
+  fixPar <- fixPar[c(distnames,"beta","delta","g0","theta")]
+  ofixPar <- ofixPar[c(distnames,"beta","delta","g0","theta")]
   
   parCount<- lapply(fullDM,ncol)
   for(i in distnames[unlist(inputs$circularAngleMean)]){
@@ -773,7 +817,7 @@ fitHMM <- function(data,nbStates,dist,
   wpar <- n2w(Par0,p$bounds,beta0,delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
   if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
 
-  parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)-ncol(covsDelta)*(nbStates-1)*(!stationary)
+  parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)-ncol(covsDelta)*(nbStates-1)*(!stationary)-ifelse(is.null(recharge),0,(nbRecovs+1)+1)
   if(retryFits<0) stop("retryFits must be non-negative")
   if(retryFits>=1){
     if(is.null(retrySD)){
@@ -798,14 +842,29 @@ fitHMM <- function(data,nbStates,dist,
       }
       if(nbStates>1){
         if(is.null(retrySD$beta)){
-          retrySD$beta <- rep(10,length(beta0))
+          retrySD$beta <- rep(10,length(beta0$beta))
         } else {
           if(any(!is.numeric(retrySD$beta))) stop("retrySD$beta must be numeric")
           if(any(retrySD$beta<0)) stop("retrySD$beta must be non-negative")
           if(length(retrySD$beta)==1){
-            retrySD$beta <- rep(retrySD$beta,length(beta0))
-          } else if(length(retrySD$beta)!=length(beta0)){
-            stop("retrySD$beta must be of length 1 or ",length(beta0))
+            retrySD$beta <- rep(retrySD$beta,length(beta0$beta))
+          } else if(length(retrySD$beta)!=length(beta0$beta)){
+            stop("retrySD$beta must be of length 1 or ",length(beta0$beta))
+          }
+        }
+        if(!is.null(recharge)){
+          for(j in c("g0","theta")){
+            if(is.null(retrySD[[j]])) {
+              retrySD[[j]] <- rep(10,length(beta0[[j]]))
+            } else {
+              if(any(!is.numeric(retrySD[[j]]))) stop("retrySD$",j," must be numeric")
+              if(any(retrySD[[j]]<0)) stop("retrySD$",j," must be non-negative")
+              if(length(retrySD[[j]])==1){
+                retrySD[[j]] <- rep(retrySD[[j]],length(beta0[[j]]))
+              } else if(length(retrySD[[j]])!=length(beta0[[j]])){
+                stop("retrySD$",j," must be of length 1 or ",length(beta0[[j]]))
+              }              
+            }
           }
         }
         if(is.null(retrySD$delta)){
@@ -820,7 +879,7 @@ fitHMM <- function(data,nbStates,dist,
           }
         }
       }
-      retrySD <- unlist(retrySD[c(distnames,"beta","delta")])
+      retrySD <- unlist(retrySD[c(distnames,"beta","delta","g0","theta")])
     }
   }
   
@@ -933,13 +992,13 @@ fitHMM <- function(data,nbStates,dist,
                                                nc,meanind,covsDelta,workBounds,prior,betaCons,betaRef,
                                                print.level=print.level,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
-                                               iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian),optInd=optInd),error=function(e) e),warning=h)
+                                               iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian),optInd=optInd,recovs=recovs),error=function(e) e),warning=h)
         } else {
           withCallingHandlers(curmod <- tryCatch(optim(optPar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                      inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                      stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
                                                      nc,meanind,covsDelta,workBounds,prior,betaCons,betaRef,
-                                                     method=optMethod,control=control,hessian=hessian,optInd=optInd),error=function(e) e),warning=h)
+                                                     method=optMethod,control=control,hessian=hessian,optInd=optInd,recovs=recovs),error=function(e) e),warning=h)
         }
         endTime <- proc.time()-startTime
       }
@@ -955,7 +1014,7 @@ fitHMM <- function(data,nbStates,dist,
         }
       }
       
-      wpar <- expandPar(mod$estimate,optInd,unlist(fixPar),wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs)
+      wpar <- expandPar(mod$estimate,optInd,unlist(fixPar),wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs)
       
       if((fitCount+1)<=retryFits){
         cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,"         ",sep="")
@@ -964,7 +1023,7 @@ fitHMM <- function(data,nbStates,dist,
           names(curmod)[which(names(curmod)=="value")] <- "minimum"
           curmod$elapsedTime <- endTime[3]
           if(curmod$minimum < mod$minimum) mod <- curmod
-          wpar <- expandPar(mod$estimate,optInd,unlist(fixPar),wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs)
+          wpar <- expandPar(mod$estimate,optInd,unlist(fixPar),wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs)
         }
         wpar[1:parmInd] <- wpar[1:parmInd]+rnorm(parmInd,0,retrySD[1:parmInd])
         if(nbStates>1)
@@ -979,7 +1038,7 @@ fitHMM <- function(data,nbStates,dist,
     
     # convert the parameters back to their natural scale
     mod$wpar <- mod$estimate
-    wpar <- mod$estimate <- expandPar(mod$wpar,optInd,unlist(fixPar),wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs)
+    wpar <- mod$estimate <- expandPar(mod$wpar,optInd,unlist(fixPar),wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs)
     mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
     
     if(!is.null(mod$hessian)){
@@ -1074,7 +1133,7 @@ fitHMM <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
-                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=ofixPar,wparIndex=wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=betaRef,optInd=optInd)
+                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=ofixPar,wparIndex=wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=betaRef,optInd=optInd,recharge=recharge)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName)
   
@@ -1084,7 +1143,7 @@ fitHMM <- function(data,nbStates,dist,
   CIbeta<-tryCatch(CIbeta(momentuHMM(mh)),error=function(e) e)
   if(inherits(CIbeta,"error") & fit==TRUE) warning("Failed to compute SEs confidence intervals on the working scale -- ",CIbeta)
   
-  mh <- list(data=data,mle=mle,CIreal=CIreal,CIbeta=CIbeta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName)
+  mh <- list(data=data,mle=mle,CIreal=CIreal,CIbeta=CIbeta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName,recovs=recovs)
   
   if(fit) message(ifelse(retryFits>=1,"\n",""),"DONE")
   

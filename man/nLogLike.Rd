@@ -8,7 +8,7 @@ nLogLike(optPar, nbStates, formula, bounds, parSize, data, dist, covs,
   estAngleMean, circularAngleMean, consensus, zeroInflation, oneInflation,
   stationary = FALSE, cons, fullDM, DMind, workcons, Bndind, knownStates,
   fixPar, wparIndex, nc, meanind, covsDelta, workBounds, prior = NULL,
-  betaCons = NULL, betaRef, optInd = NULL)
+  betaCons = NULL, betaRef, optInd = NULL, recovs = NULL)
 }
 \arguments{
 \item{optPar}{Vector of working parameters.}
@@ -78,6 +78,8 @@ model (if any).}
 \item{betaRef}{Indices of reference elements for t.p.m. multinomial logit link.}
 
 \item{optInd}{indices of constrained parameters}
+
+\item{recovs}{data frame containing the recharge model covariates (if any)}
 }
 \value{
 The negative log-likelihood of the parameters given the data.

@@ -87,9 +87,11 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcon
     wpar <- c(wpar,p)
   }
 
-  wbeta <- as.vector(beta) # if beta is NULL, wbeta is NULL as well
+  wbeta <- as.vector(beta$beta) # if beta is NULL, wbeta is NULL as well
+  wg0 <- as.vector(beta$g0)
+  wtheta <- as.vector(beta$theta)
   wdelta <- as.vector(delta)#log(delta[,-1,drop=FALSE]/delta[,1,drop=FALSE]) # if delta is NULL, wdelta is NULL as well
-  return(c(wpar,wbeta,wdelta))
+  return(c(wpar,wbeta,wdelta,wg0,wtheta))
 }
 
 nw2w <-function(wpar,workBounds){

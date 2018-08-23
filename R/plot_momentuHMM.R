@@ -199,8 +199,30 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   formulaStates <- newForm$formulaStates
   formterms <- newForm$formterms
   newformula <- newForm$newformula
+  recharge <- newForm$recharge
   
   nbCovs <- ncol(model.matrix(newformula,m$data))-1 # substract intercept column
+  
+  if(!is.null(recharge)){
+    recovs <- model.matrix(recharge,m$data)
+    nbRecovs <- ncol(recovs)-1
+    g0 <- m$mle$g0
+    theta <- m$mle$theta
+    m$data$recharge <- cumsum(c(g0,theta%*%t(recovs[-nrow(recovs),])))
+    recovs <- model.matrix(recharge,covs)
+    covs$recharge <- g0 + theta%*%t(recovs)
+    nbCovs <- nbCovs + 1
+    newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
+    covsCol <- get_all_vars(newformula,m$data)#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+    if(!all(names(covsCol) %in% names(m$data))){
+      covsCol <- covsCol[,names(covsCol) %in% names(m$data),drop=FALSE]
+    }
+    m$rawCovs <- covsCol
+  } else {
+    nbRecovs <- 0
+    recovs <- NULL
+  }
+  
   
   Par <- m$mle[distnames]
   nc <- meanind <- vector('list',length(distnames))
@@ -236,10 +258,14 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     }
   }
   Par<-lapply(Par,function(x) c(t(x)))
-  beta <- m$mle$beta
+  beta <- list(beta=m$mle$beta)
+  if(!is.null(m$conditions$recharge)){
+    beta$g0 <- m$mle$g0
+    beta$theta <- m$mle$theta
+  }
   nbCovsDelta <- ncol(m$covsDelta)-1
-  foo <- length(m$mod$estimate)-(nbCovsDelta+1)*(nbStates-1)+1
-  delta <- m$mod$estimate[foo:length(m$mod$estimate)]
+  foo <- length(m$mod$estimate)-ifelse(nbRecovs,(nbRecovs+1)+1,0)-(nbCovsDelta+1)*(nbStates-1)+1
+  delta <- m$mod$estimate[foo:(length(m$mod$estimate)-ifelse(nbRecovs,(nbRecovs+1)+1,0))]
   
   tmpPar <- Par
   tmpConditions <- m$conditions
@@ -546,9 +572,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           gradfun<-function(wpar,k) {
             w2n(wpar,p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,inputs$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta,m$conditions$workBounds[i])[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,k]
           }
-          est<-w2n(c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,inputs$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta,m$conditions$workBounds[i])[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,]
+          est<-w2n(c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta$beta),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,inputs$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta,m$conditions$workBounds[i])[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,]
           if(plotCI){
-            dN<-t(mapply(function(x) tryCatch(numDeriv::grad(gradfun,c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta),k=x),error=function(e) NA),1:gridLength))
+            dN<-t(mapply(function(x) tryCatch(numDeriv::grad(gradfun,c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta$beta),k=x),error=function(e) NA),1:gridLength))
             se<-t(apply(dN[,1:parCount[[i]]],1,function(x) tryCatch(suppressWarnings(sqrt(x%*%Sigma[parindex[[i]]+1:parCount[[i]],parindex[[i]]+1:parCount[[i]]]%*%x)),error=function(e) NA)))
             uci<-est+qnorm(1-(1-alpha)/2)*se
             lci<-est-qnorm(1-(1-alpha)/2)*se
@@ -621,10 +647,10 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   if(nbStates>1) {
     par(mar=c(5,4,4,2)-c(0,0,1.5,1)) # bottom, left, top, right
     
-    gamInd<-(length(m$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(m$mod$estimate))-ncol(m$covsDelta)*(nbStates-1)*(!m$conditions$stationary)
+    gamInd<-(length(m$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(m$mod$estimate))-ifelse(nbRecovs,(nbRecovs+1)+1,0)-ncol(m$covsDelta)*(nbStates-1)*(!m$conditions$stationary)
     quantSup<-qnorm(1-(1-alpha)/2)
     
-    if(nrow(beta)>1) {
+    if(nrow(beta$beta)>1) {
       
       # values of each covariate
       rawCovs <- m$rawCovs[which(m$data$ID %in% ID),,drop=FALSE]
@@ -680,14 +706,18 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         
         desMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
         
-        trMat <- trMatrix_rcpp(nbStates,beta,desMat,m$conditions$betaRef)
+        trMat <- trMatrix_rcpp(nbStates,beta$beta,desMat,m$conditions$betaRef)
         
         for(i in 1:nbStates){
           for(j in 1:nbStates){
             do.call(plot,c(list(tempCovs[,cov],trMat[i,j,],type="l",ylim=c(0,1),xlab=names(rawCovs)[cov],ylab=paste(i,"->",j),lwd=lwd),arg))
             if(plotCI){
-              dN<-t(apply(desMat,1,function(x) tryCatch(numDeriv::grad(get_gamma,beta,covs=matrix(x,nrow=1),nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef),error=function(e) NA)))
-              se<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%Sigma[gamInd[m$conditions$betaCons],gamInd[m$conditions$betaCons]]%*%x)),error=function(e) NA)))
+              tmpSig <- Sigma[gamInd[m$conditions$betaCons],gamInd[m$conditions$betaCons]]
+              if(!is.null(recharge)){
+                tmpSig <- Sigma[c(gamInd[m$conditions$betaCons],length(m$mod$estimate)-(nbRecovs+1):0),c(gamInd[m$conditions$betaCons],length(m$mod$estimate)-(nbRecovs+1):0)]
+              }
+              dN<-t(apply(desMat,1,function(x) tryCatch(numDeriv::grad(get_gamma,c(m$mle$beta,m$mle$g0,m$mle$theta),covs=x,recovs=recovs,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$g0,m$conditions$workBounds$theta)),error=function(e) NA)))
+              se<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%tmpSig%*%x)),error=function(e) NA)))
               if(!all(is.na(se))) {
                 lci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))-quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]-quantSup*se[i,j]
                 uci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))+quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]+quantSup*se[i,j]
@@ -700,12 +730,16 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             }
           }
         }
-        if(ncol(rawCovs)>1) do.call(mtext,c(list(paste("Transition probabilities:",paste(names(rawCovs)[-cov],"=",tmpcovs[-cov],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+        txt <- paste(names(rawCovs)[-cov],"=",tmpcovs[-cov],collapse=", ")
+        if(nbRecovs & names(rawCovs)[cov]=="recharge"){
+          txt <- paste(c(names(rawCovs)[-cov],colnames(recovs)[-1]),"=",c(tmpcovs[-cov],recovs[-1]),collapse=", ")
+        }
+        if(ncol(rawCovs)>1 | nbRecovs) do.call(mtext,c(list(paste("Transition probabilities:",txt),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
         else do.call(mtext,c(list("Transition probabilities",side=3,outer=TRUE,padj=2,cex=cex.main),marg))
         
         if(plotStationary) {
           par(mfrow=c(1,1))
-          statPlot(m,beta,Sigma,nbStates,desMat,tempCovs,tmpcovs,cov,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
+          statPlot(m,beta$beta,Sigma,nbStates,desMat,tempCovs,tmpcovs,cov,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
         }
       }
     }
@@ -714,7 +748,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   #################################
   ## Plot maps colored by states ##
   #################################
-  if(all(c("x","y") %in% names(m$data)) & plotTracks){
+  if(all(c("x","y") %in% names(m$data))){
     
     if(nbStates>1) { # no need to plot the map if only one state
       par(mfrow=c(1,1))
@@ -724,19 +758,34 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         # states for animal 'zoo'
         subStates <- states[which(m$data$ID==ID[zoo])]
         
-        # plot trajectory
-        do.call(plot,c(list(x=x[[zoo]],y=y[[zoo]],pch=16,xlab="x",ylab="y",col=col[subStates],cex=cex,asp=asp),arg))
-        
-        do.call(segments,c(list(x0=x[[zoo]][-length(x[[zoo]])],y0=y[[zoo]][-length(x[[zoo]])],x1=x[[zoo]][-1],y1=y[[zoo]][-1],
-                 col=col[subStates[-length(subStates)]],lwd=lwd),arg))
-        
-        if(plotEllipse) {
-          for(i in 1:length(x[[zoo]]))
-            do.call(lines,c(list(errorEllipse[[zoo]][[i]],col=adjustcolor(col[subStates[i]],alpha.f=0.25),cex=cex),arg))
+        if(plotTracks){
+          # plot trajectory
+          do.call(plot,c(list(x=x[[zoo]],y=y[[zoo]],pch=16,xlab="x",ylab="y",col=col[subStates],cex=cex,asp=asp),arg))
+          
+          do.call(segments,c(list(x0=x[[zoo]][-length(x[[zoo]])],y0=y[[zoo]][-length(x[[zoo]])],x1=x[[zoo]][-1],y1=y[[zoo]][-1],
+                   col=col[subStates[-length(subStates)]],lwd=lwd),arg))
+          
+          if(plotEllipse) {
+            for(i in 1:length(x[[zoo]]))
+              do.call(lines,c(list(errorEllipse[[zoo]][[i]],col=adjustcolor(col[subStates[i]],alpha.f=0.25),cex=cex),arg))
+          }
+          
+          do.call(mtext,c(list(paste("ID",ID[zoo]),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+          legend(ifelse(is.null(legend.pos),"topleft",legend.pos),legText,lwd=rep(lwd,nbStates),col=col,bty="n",cex=cex.legend)
         }
         
-        do.call(mtext,c(list(paste("ID",ID[zoo]),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
-        legend(ifelse(is.null(legend.pos),"topleft",legend.pos),legText,lwd=rep(lwd,nbStates),col=col,bty="n",cex=cex.legend)
+        if(nbRecovs){
+          #par(mfrow=c(1,1))
+          ind <- which(m$data$ID==ID[zoo])
+          do.call(plot,c(list(x=1:length(ind),y=m$data$recharge[ind],pch=16,xlab="t",ylab="g(t)",col=col[subStates],cex=cex),arg))
+          #plot(m$data$recharge[ind],xlab="t",ylab="g(t)",main=paste("ID",ID[zoo],"recharge function"),type="o",pch=20,col=col[subStates])
+          #segments(x0=m$data$recharge[ind][-length(ind)],y0=1:(length(ind)-1),x1=m$data$recharge[ind][-1],y1=2:length(ind),col=col[subStates][-length(ind)])
+          do.call(segments,c(list(y0=m$data$recharge[ind][-length(ind)],x0=1:(length(ind)-1),y1=m$data$recharge[ind][-1],x1=2:length(ind),
+                                  col=col[subStates[-length(subStates)]],lwd=lwd),arg))
+          do.call(mtext,c(list(paste("ID",ID[zoo],"recharge function"),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+          legend(ifelse(is.null(legend.pos),"topleft",legend.pos),legText,lwd=rep(lwd,nbStates),col=col,bty="n",cex=cex.legend)
+          abline(h=0,lty=2)
+        }
       }
     }
   }

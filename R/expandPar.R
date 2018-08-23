@@ -10,6 +10,7 @@
 #' @param stationary \code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param nbCovs Number of t.p.m. covariates
+#' @param nbRecovs Number of recharge covariates
 #' 
 #' @return A vector of all working parameters including any fixed parameters
 #' 
@@ -44,13 +45,13 @@
 #'
 #' all(est==m$mod$estimate)
 #' }
-expandPar <- function(optPar,optInd,fixPar,wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs){
+expandPar <- function(optPar,optInd,fixPar,wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs=0){
   if(length(optInd)){
     wpar <- numeric(length(fixPar))
     wpar[-optInd] <- optPar
     if(length(wparIndex)) wpar[wparIndex] <- fixPar[wparIndex]
     if(!is.null(betaCons) & nbStates>1){
-      foo <- length(wpar)-ncol(covsDelta)*(nbStates-1)*(!stationary)-((nbCovs+1)*nbStates*(nbStates-1)-1):0
+      foo <- length(wpar)-ncol(covsDelta)*(nbStates-1)*(!stationary)-ifelse(nbRecovs,(nbRecovs+1)+1,0)-((nbCovs+1)*nbStates*(nbStates-1)-1):0
       wpar[foo] <- wpar[foo][betaCons]
     }
   } else {

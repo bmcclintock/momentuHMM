@@ -38,33 +38,53 @@ stationary.momentuHMM <- function(model, covs)
     if(nbStates==1)
         stop("No state probabilities (1-state model).")
 
-    formula<-model$conditions$formula
-    newForm <- newFormulas(formula,nbStates)
+    newForm <- newFormulas(model$conditions$formula,nbStates)
     formulaStates <- newForm$formulaStates
     formterms <- newForm$formterms
     newformula <- newForm$newformula
-
+    recharge <- newForm$recharge
+    
+    if(!is.null(recharge)){
+      recovs <- model.matrix(recharge,model$data)
+      #nbRecovs <- ncol(recovs)-1
+      g0 <- model$mle$g0
+      theta <- model$mle$theta
+      model$data$recharge <- cumsum(c(g0,theta%*%t(recovs[-nrow(recovs),])))
+      #recovs <- model.matrix(recharge,covs)
+      #covs$recharge <- g0 + theta%*%t(recovs)
+      #nbCovs <- nbCovs + 1
+      newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
+      covsCol <- get_all_vars(newformula,model$data)#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+      if(!all(names(covsCol) %in% names(model$data))){
+        covsCol <- covsCol[,names(covsCol) %in% names(model$data),drop=FALSE]
+      }
+      model$rawCovs <- covsCol
+    } #else {
+    #  nbRecovs <- 0
+    #  recovs <- NULL
+    #}
+    
     if(missing(covs)){
-        covs <- model$rawCovs
-        if(length(covs)){
-            tmpSplineInputs<-getSplineFormula(newformula,model$data,covs)
-        } else {
-            tmpSplineInputs<-getSplineFormula(newformula,model$data,model$data[1,])
-        }
-        covMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
-    } else if(is.data.frame(covs)){
-        if(!all(names(covs) %in% names(model$data))) stop('invalid covs specified')
-        if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(model$data$ID))
-        for(j in names(model$data)[which(names(model$data) %in% names(covs))]){
-          if(inherits(model$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(model$data[[j]]))
-          if(any(is.na(covs[[j]]))) stop("check value(s) for ",j)
-        }
-
+      covs <- model$rawCovs
+      if(length(covs)){
         tmpSplineInputs<-getSplineFormula(newformula,model$data,covs)
-
-        covMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+      } else {
+        tmpSplineInputs<-getSplineFormula(newformula,model$data,model$data[1,])
+      }
+      covMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+    } else if(is.data.frame(covs)){
+      if(!all(names(covs) %in% names(model$data))) stop('invalid covs specified')
+      if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(model$data$ID))
+      for(j in names(model$data)[which(names(model$data) %in% names(covs))]){
+        if(inherits(model$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(model$data[[j]]))
+        if(any(is.na(covs[[j]]))) stop("check value(s) for ",j)
+      }
+      
+      tmpSplineInputs<-getSplineFormula(newformula,model$data,covs)
+      
+      covMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
     } else if(is.matrix(covs)){
-        covMat <- covs
+      covMat <- covs
     } else stop("covs must either be a data frame or a matrix")
 
     # all transition matrices

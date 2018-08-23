@@ -43,6 +43,23 @@ logAlpha <- function(m)
   formulaStates <- newForm$formulaStates
   formterms <- newForm$formterms
   newformula <- newForm$newformula
+  recharge <- newForm$recharge
+  
+  if(!is.null(recharge)){
+    recovs <- model.matrix(recharge,m$data)
+    nbRecovs <- ncol(recovs)-1
+    g0 <- m$mle$g0
+    theta <- m$mle$theta
+    m$data$recharge <- cumsum(c(g0,theta%*%t(recovs[-nrow(recovs),])))
+    for(j in 1:nbStates){
+      formulaStates[[j]] <- as.formula(paste0(Reduce( paste, deparse(formulaStates[[j]]) ),"+recharge"))
+    }
+    formterms <- c(formterms,"recharge")
+    newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
+  } else {
+    nbRecovs <- 0
+    recovs <- NULL
+  }
   
   covs <- model.matrix(newformula,m$data)
   nbCovs <- ncol(covs)-1 # substract intercept column

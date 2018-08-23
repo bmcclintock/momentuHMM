@@ -74,6 +74,7 @@ delta_bc <- function(m){
         beta <- m$CIbeta$beta$est
         delta <- m$CIbeta$delta$est
       }
+      beta <- list(beta=beta,g0=m$mle$g0,theta=m$mle$theta)
       m$conditions$workBounds <- getWorkBounds(workBounds,distnames,m$mod$estimate,parindex,parCount,m$conditions$DM,beta,delta)
     }
     if(is.null(m$conditions$betaCons)){
