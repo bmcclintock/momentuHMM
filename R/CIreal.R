@@ -168,16 +168,16 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     # identify parameters of interest
     i2 <- tail(cumsum(unlist(parCount)),1)+1
     i3 <- i2+nbStates*(nbStates-1)*(nbCovs+1)-1
-    wpar <- m$mle$beta
+    wpar <- matrix(m$mod$estimate[(i2:i3)],nrow(m$mle$beta),ncol(m$mle$beta))
     quantSup <- qnorm(1-(1-alpha)/2)
     tmpSplineInputs<-getSplineFormula(newformula,m$data,tempCovs)
     tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
-    est <- get_gamma(wpar,tempCovMat,nbStates,betaRef=m$conditions$betaRef)
+    est <- get_gamma(wpar,tempCovMat,nbStates,betaRef=m$conditions$betaRef,workBounds=m$conditions$workBounds$beta)
     lower<-upper<-se<-matrix(NA,nbStates,nbStates)
     if(!is.null(Sigma)){
       for(i in 1:nbStates){
         for(j in 1:nbStates){
-          dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef)
+          dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,workBounds=m$conditions$workBounds$beta)
           se[i,j]<-suppressWarnings(sqrt(dN%*%Sigma[(i2:i3)[m$conditions$betaCons],(i2:i3)[m$conditions$betaCons]]%*%dN))
           lower[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))-quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]-quantSup*se[i,j]
           upper[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))+quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#m$mle$gamma[i,j]+quantSup*se[i,j]
@@ -197,7 +197,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     if(!is.null(Sigma)){
       for(j in 1:nrow(m$covsDelta)){
         for(i in 1:nbStates){
-          dN<-numDeriv::grad(get_delta,delta,covsDelta=m$covsDelta[j,,drop=FALSE],i=i)
+          dN<-numDeriv::grad(get_delta,delta,covsDelta=m$covsDelta[j,,drop=FALSE],i=i,workBounds=m$conditions$workBounds$delta)
           se[j,i]<-suppressWarnings(sqrt(dN%*%Sigma[foo:length(wpar),foo:length(wpar)]%*%dN))
           lower[j,i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))-quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[j,i])))#m$mle$delta[j,i]-quantSup*se[i]
           upper[j,i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))+quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[j,i])))#m$mle$delta[j,i]+quantSup*se[i]
@@ -224,12 +224,14 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   return(Par)
 }
 
-get_gamma <- function(beta,covs,nbStates,i,j,betaRef){
+get_gamma <- function(beta,covs,nbStates,i,j,betaRef,workBounds=matrix(c(-Inf,Inf),length(beta),2,byrow=TRUE)){
+  beta <- w2wn(beta,workBounds)
   gamma <- trMatrix_rcpp(nbStates,beta,covs,betaRef)[,,1]
   gamma[i,j]
 }
 
-get_delta <- function(delta,covsDelta,i){
+get_delta <- function(delta,covsDelta,i,workBounds=matrix(c(-Inf,Inf),length(delta),2,byrow=TRUE)){
+  delta <- w2wn(delta,workBounds)
   nbCovsDelta <- ncol(covsDelta)-1
   delta <- c(rep(0,nbCovsDelta+1),delta)
   deltaXB <- covsDelta%*%matrix(delta,nrow=nbCovsDelta+1)

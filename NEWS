@@ -18,6 +18,8 @@ CHANGES
 
 * retrySD argument in fitHMM and MIfitHMM can now be a scalar
 
+* bug fix in calculation of standard errors (and confidence intervals) for transition probability and initial distribution parameters when workBounds$beta or workBounds$delta are specified other than the default (-Inf,Inf)
+
 
 momentuHMM 1.4.2 2018-06-19
 -----------------

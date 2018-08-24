@@ -686,7 +686,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           for(j in 1:nbStates){
             do.call(plot,c(list(tempCovs[,cov],trMat[i,j,],type="l",ylim=c(0,1),xlab=names(rawCovs)[cov],ylab=paste(i,"->",j),lwd=lwd),arg))
             if(plotCI){
-              dN<-t(apply(desMat,1,function(x) tryCatch(numDeriv::grad(get_gamma,beta,covs=matrix(x,nrow=1),nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef),error=function(e) NA)))
+              dN<-t(apply(desMat,1,function(x) tryCatch(numDeriv::grad(get_gamma,matrix(m$mod$estimate[gamInd],nrow(m$mle$beta),ncol(m$mle$beta)),covs=matrix(x,nrow=1),nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,workBounds=m$conditions$workBounds$beta),error=function(e) NA)))
               se<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%Sigma[gamInd[m$conditions$betaCons],gamInd[m$conditions$betaCons]]%*%x)),error=function(e) NA)))
               if(!all(is.na(se))) {
                 lci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))-quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]-quantSup*se[i,j]
