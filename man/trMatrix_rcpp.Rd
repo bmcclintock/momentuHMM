@@ -4,7 +4,7 @@
 \alias{trMatrix_rcpp}
 \title{Transition probability matrix}
 \usage{
-trMatrix_rcpp(nbStates, beta, covs)
+trMatrix_rcpp(nbStates, beta, covs, betaRef)
 }
 \arguments{
 \item{nbStates}{Number of states}
@@ -12,6 +12,8 @@ trMatrix_rcpp(nbStates, beta, covs)
 \item{beta}{Matrix of regression parameters}
 
 \item{covs}{Matrix of covariate values}
+
+\item{betaRef}{Indices of reference elements for t.p.m. multinomial logit link.}
 }
 \value{
 Three dimensional array \code{trMat}, such that \code{trMat[,,t]} is the transition matrix at

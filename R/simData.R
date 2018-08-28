@@ -387,15 +387,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       model$mle$beta <- model$Par$beta$beta$est
       model$mle$delta <- model$Par$real$delta$est
       model$mod <- list()
-      model$mod$estimate <- model$MIcombine$coefficients
-      for(i in distnames){
-        model$conditions$cons[[i]]<-rep(1,length(model$conditions$cons[[i]]))
-        model$conditions$workcons[[i]]<-rep(0,length(model$conditions$workcons[[i]]))
-        model$conditions$workBounds[[i]]<-matrix(c(-Inf,Inf),nrow(model$conditions$workBounds[[i]]),2,byrow=TRUE)
-      }
+      model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,nbStates,model$covsDelta,model$conditions$stationary,nrow(model$Par$beta$beta$est)-1)
       if(!is.null(model$mle$beta)) model$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(model$mle$beta),2,byrow=TRUE)
       if(!is.null(model$Par$beta$delta$est)) model$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(model$Par$beta$delta$est),2,byrow=TRUE)
-      
     }
     
     userBounds <- model$conditions$bounds

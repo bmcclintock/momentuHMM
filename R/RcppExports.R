@@ -167,10 +167,11 @@ getDM_rcpp <- function(X, covs, DM, nr, nc, cov, nbObs) {
 #' model (if any). Default: NULL (states are not known). This should be a vector with length the number
 #' of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
 #' the state is not known.
+#' @param betaRef Indices of reference elements for t.p.m. multinomial logit link.
 #' 
 #' @return Negative log-likelihood
-nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates) {
-    .Call('_momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates)
+nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef) {
+    .Call('_momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef)
 }
 
 #' Transition probability matrix
@@ -181,11 +182,12 @@ nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zero
 #' @param nbStates Number of states
 #' @param beta Matrix of regression parameters
 #' @param covs Matrix of covariate values
+#' @param betaRef Indices of reference elements for t.p.m. multinomial logit link.
 #'
 #' @return Three dimensional array \code{trMat}, such that \code{trMat[,,t]} is the transition matrix at
 #' time t.
-trMatrix_rcpp <- function(nbStates, beta, covs) {
-    .Call('_momentuHMM_trMatrix_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs)
+trMatrix_rcpp <- function(nbStates, beta, covs, betaRef) {
+    .Call('_momentuHMM_trMatrix_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs, betaRef)
 }
 
 #' Get XB

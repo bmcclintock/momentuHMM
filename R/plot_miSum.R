@@ -69,12 +69,7 @@ plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.y
   m$mle$beta <- x$Par$beta$beta$est
   m$mle$delta <- x$Par$real$delta$est
   m$mod <- list()
-  m$mod$estimate <- x$MIcombine$coefficients
-  for(i in names(m$conditions$dist)){
-    m$conditions$cons[[i]]<-rep(1,length(m$conditions$cons[[i]]))
-    m$conditions$workcons[[i]]<-rep(0,length(m$conditions$workcons[[i]]))
-    m$conditions$workBounds[[i]]<-matrix(c(-Inf,Inf),nrow(m$conditions$workBounds[[i]]),2,byrow=TRUE)
-  }
+  m$mod$estimate <- expandPar(m$MIcombine$coefficients,m$conditions$optInd,unlist(m$conditions$fixPar),m$conditions$wparIndex,m$conditions$betaCons,length(m$stateNames),m$covsDelta,m$conditions$stationary,nrow(m$Par$beta$beta$est)-1)
   if(!is.null(m$mle$beta)) m$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(m$mle$beta),2,byrow=TRUE)
   if(!is.null(m$Par$beta$delta$est)) m$conditions$workBoundsdelta<-matrix(c(-Inf,Inf),length(m$Par$beta$delta$est),2,byrow=TRUE)
   

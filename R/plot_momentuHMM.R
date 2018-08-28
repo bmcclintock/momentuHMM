@@ -324,9 +324,14 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   }
   
   if(inherits(m,"miSum")){
-    Sigma <- m$MIcombine$variance
+    if(length(m$conditions$optInd)){
+      Sigma <- matrix(0,length(m$mod$estimate),length(m$mod$estimate))
+      Sigma[(1:length(m$mod$estimate))[-m$conditions$optInd],(1:length(m$mod$estimate))[-m$conditions$optInd]] <- m$MIcombine$variance
+    } else {
+      Sigma <- m$MIcombine$variance
+    }
   } else if(!is.null(m$mod$hessian)){
-    Sigma <- ginv(m$mod$hessian)
+    Sigma <- m$mod$Sigma
   } else {
     Sigma <- NULL
     plotCI <- FALSE
@@ -675,14 +680,14 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         
         desMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
         
-        trMat <- trMatrix_rcpp(nbStates,beta,desMat)
+        trMat <- trMatrix_rcpp(nbStates,beta,desMat,m$conditions$betaRef)
         
         for(i in 1:nbStates){
           for(j in 1:nbStates){
             do.call(plot,c(list(tempCovs[,cov],trMat[i,j,],type="l",ylim=c(0,1),xlab=names(rawCovs)[cov],ylab=paste(i,"->",j),lwd=lwd),arg))
             if(plotCI){
-              dN<-t(apply(desMat,1,function(x) tryCatch(numDeriv::grad(get_gamma,beta,covs=matrix(x,nrow=1),nbStates=nbStates,i=i,j=j),error=function(e) NA)))
-              se<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%Sigma[gamInd[m$conditions$betaCons],gamInd[m$conditions$betaCons]]%*%x)),error=function(e) NA)))
+              dN<-t(apply(desMat,1,function(x) tryCatch(numDeriv::grad(get_gamma,m$mod$estimate[gamInd][unique(c(m$conditions$betaCons))],covs=matrix(x,nrow=1),nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta),error=function(e) NA)))
+              se<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%Sigma[gamInd[unique(c(m$conditions$betaCons))],gamInd[unique(c(m$conditions$betaCons))]]%*%x)),error=function(e) NA)))
               if(!all(is.na(se))) {
                 lci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))-quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]-quantSup*se[i,j]
                 uci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))+quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]+quantSup*se[i,j]

@@ -41,6 +41,7 @@
 #' @importFrom LaplacesDemon pbern
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
+#' @importFrom doRNG %dorng%
 
 pseudoRes <- function(m, ncores = 1)
 {
@@ -52,9 +53,9 @@ pseudoRes <- function(m, ncores = 1)
     else {
       if(is.miHMM(m)) m <- m$HMMfits
       registerDoParallel(cores=ncores)
-      genRes <- foreach(i=which(unlist(lapply(m,is.momentuHMM)))) %dopar% {
+      withCallingHandlers(genRes <- foreach(i=which(unlist(lapply(m,is.momentuHMM)))) %dorng% {
         pseudoRes(m[[i]])
-      }
+      },warning=muffleRNGwarning)
       stopImplicitCluster()
       return(genRes)
     }
@@ -149,7 +150,7 @@ pseudoRes <- function(m, ncores = 1)
   par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds)
   
   if(nbStates>1)
-    trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs))
+    trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs),m$conditions$betaRef)
   else
     trMat <- array(1,dim=c(1,1,nbObs))
 

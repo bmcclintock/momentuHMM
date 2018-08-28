@@ -22,6 +22,8 @@ logBeta <- function(m)
   
   if(is.miHMM(m)) m <- m$miSum
   
+  m <- delta_bc(m)
+  
   if(is.miSum(m)){
     beta<-m$Par$beta$beta$est
     delta<-m$Par$real$delta$est
@@ -47,7 +49,7 @@ logBeta <- function(m)
   probs <- allProbs(m,nbStates)
   
   if(nbStates>1)
-    trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs))
+    trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs),m$conditions$betaRef)
   else
     trMat <- array(1,dim=c(1,1,nbObs))
   

@@ -30,6 +30,8 @@ stationary <- function (model, covs) {
 #' @export
 stationary.momentuHMM <- function(model, covs)
 {
+    model <- delta_bc(model)
+    
     nbStates <- length(model$stateNames)
     beta <- model$mle$beta
 
@@ -66,7 +68,7 @@ stationary.momentuHMM <- function(model, covs)
     } else stop("covs must either be a data frame or a matrix")
 
     # all transition matrices
-    allMat <- trMatrix_rcpp(nbStates=nbStates, beta=beta, covs=covMat)
+    allMat <- trMatrix_rcpp(nbStates=nbStates, beta=beta, covs=covMat, betaRef=model$conditions$betaRef)
 
     tryCatch({
         # for each transition matrix, derive corresponding stationary distribution

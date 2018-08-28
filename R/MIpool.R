@@ -52,12 +52,12 @@
 #' @export
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
+#' @importFrom doRNG %dorng%
 #' @importFrom stats median var qt
 #' @importFrom boot logit inv.logit
 #' @importFrom CircStats circ.mean
 #' @importFrom car dataEllipse
 #' @importFrom mitools MIcombine
-#' @importFrom MASS ginv
 MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   im <- HMMfits
@@ -93,7 +93,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     warning("Hessian is singular for HMM fit(s): ",paste0(goodIndex[tmpDet],collapse=", "))
   }
   
-  tmpVar <- which(unlist(lapply(im,function(x) any(class(tryCatch(ginv(x$mod$hessian),error=function(e) e)) %in% "error"))))
+  tmpVar <- which(unlist(lapply(im,function(x) inherits(x$mod$Sigma,"error"))))
   if(length(tmpVar)){
     warning("ginv of the hessian failed for HMM fit(s): ",paste0(goodIndex[tmpVar],collapse=", "))
     im[tmpVar] <- NULL
@@ -112,7 +112,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   wBounds <- cbind(unlist(lapply(m$conditions$workBounds,function(x) x[,1])),unlist(lapply(m$conditions$workBounds,function(x) x[,2])))
   
   # check for finite coefficients and standard errors
-  betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%ginv(x$mod$hessian)%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
+  betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
   betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
   tmpVar1 <- which(unlist(lapply(betaCoeff,function(x) any(!is.finite(x)))))
   if(length(tmpVar1)){
@@ -120,7 +120,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     im[tmpVar1] <- NULL
     m <- im[[1]]
     nsims <- length(im)
-    betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%ginv(x$mod$hessian)%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
+    betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
     betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
     goodIndex <- goodIndex[-tmpVar1]
   }
@@ -131,7 +131,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     m <- im[[1]]
     nsims <- length(im)
     betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
-    betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%ginv(x$mod$hessian)%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
+    betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
     goodIndex <- goodIndex[-tmpVar2]
   }
   
@@ -150,11 +150,11 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   if(nbStates>1) {
     cat("Decoding state sequences and probabilities for each imputation... ")
     registerDoParallel(cores=ncores)
-    im_states <- foreach(i = 1:nsims, .combine = rbind) %dopar% {momentuHMM::viterbi(im[[i]])}
+    withCallingHandlers(im_states <- foreach(i = 1:nsims, .combine = rbind) %dorng% {momentuHMM::viterbi(im[[i]])},warning=muffleRNGwarning)
     stopImplicitCluster()
     states <- apply(im_states,2,function(x) which.max(hist(x,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts))
     registerDoParallel(cores=ncores)
-    im_stateProbs <- foreach(i = 1:nsims) %dopar% {momentuHMM::stateProbs(im[[i]])}
+    withCallingHandlers(im_stateProbs <- foreach(i = 1:nsims) %dorng% {momentuHMM::stateProbs(im[[i]])},warning=muffleRNGwarning)
     stopImplicitCluster()
     cat("DONE\n")
   } else states <- rep(1,nrow(data))
@@ -179,10 +179,14 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     names(parindex)[length(parindex)-1] <- "delta"
   }
   
-  miBeta <- mitools::MIcombine(results=betaCoeff,variances=betaVar)
+  miBeta <- miCombo <- mitools::MIcombine(results=betaCoeff,variances=betaVar)
   # account for betaCons
   miBeta$variance[(parindex[["beta"]]+1:length(m$mle$beta))[duplicated(c(m$conditions$betaCons))],] <- 0
   miBeta$variance[,(parindex[["beta"]]+1:length(m$mle$beta))[duplicated(c(m$conditions$betaCons))]] <- 0
+  
+  # multiple imputation results for working parameters
+  if(length(m$conditions$optInd))
+    miCombo <- mitools::MIcombine(results=lapply(im,function(x) x$mod$wpar),variances=lapply(im,function(x) x$mod$Sigma[-m$conditions$optInd,-m$conditions$optInd]))
   
   for(parm in 1:nparms){
     
@@ -296,7 +300,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   nbCovs <- ncol(model.matrix(newformula,m$data))-1 # substract intercept column
   
-  #miBeta <- mitools::MIcombine(results=lapply(im,function(x) x$mod$estimate),variances=lapply(im,function(x) ginv(x$mod$hessian)))
+  #miBeta <- mitools::MIcombine(results=lapply(im,function(x) x$mod$estimate),variances=lapply(im,function(x) x$mod$Sigma))
   
   nc <- meanind <- vector('list',length(distnames))
   names(nc) <- names(meanind) <- distnames
@@ -347,12 +351,12 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     gamInd<-(length(miBeta$coefficients)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(miBeta$coefficients))-ncol(m$covsDelta)*(nbStates-1)*(1-m$conditions$stationary)
     tmpSplineInputs<-getSplineFormula(newformula,mhdata,tempCovs)
     tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
-    est <- get_gamma(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),tempCovMat,nbStates,1:nbStates,1:nbStates)
+    est <- get_gamma(miBeta$coefficients[gamInd][unique(c(m$conditions$betaCons))],tempCovMat,nbStates,1:nbStates,1:nbStates,m$conditions$betaRef,m$conditions$betaCons)
     lower<-upper<-se<-matrix(0,nrow(est),ncol(est))
     for(i in 1:nrow(est)){
       for(j in 1:ncol(est)){
-        dN<-numDeriv::grad(get_gamma,matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),covs=model.matrix(newformula,mhdata),nbStates=nbStates,i=i,j=j)
-        se[i,j]<-suppressWarnings(sqrt(dN%*%miBeta$variance[gamInd[m$conditions$betaCons],gamInd[m$conditions$betaCons]]%*%dN))
+        dN<-numDeriv::grad(get_gamma,miBeta$coefficients[gamInd][unique(c(m$conditions$betaCons))],covs=model.matrix(newformula,mhdata),nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons)
+        se[i,j]<-suppressWarnings(sqrt(dN%*%miBeta$variance[gamInd[unique(c(m$conditions$betaCons))],gamInd[unique(c(m$conditions$betaCons))]]%*%dN))
         lower[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))-quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]-quantSup*se[i,j]
         upper[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))+quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]+quantSup*se[i,j]
       }
@@ -380,7 +384,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     if(nbStates>1){
       covs<-model.matrix(newformula,tempCovs)
       statFun<-function(beta,nbStates,covs,i){
-        gamma <- trMatrix_rcpp(nbStates,beta,covs)[,,1]
+        gamma <- trMatrix_rcpp(nbStates,beta,covs,m$conditions$betaRef)[,,1]
         tryCatch(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i],error = function(e) {
           "A problem occurred in the calculation of the stationary distribution."})
       }
@@ -481,19 +485,19 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
       # calculate location alpha% error ellipses
       cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
       registerDoParallel(cores=ncores)
-      errorEllipse<-foreach(i = 1:nrow(mh$data)) %dopar% {
+      withCallingHandlers(errorEllipse<-foreach(i = 1:nrow(mh$data)) %dorng% {
         tmp <- cbind(unlist(lapply(im,function(x) x$data$x[i])),unlist(lapply(im,function(x) x$data$y[i])))
         if(length(unique(tmp[,1]))>1 | length(unique(tmp[,2]))>1)
           ellip <- car::dataEllipse(tmp,levels=alpha,draw=FALSE,segments=100)
         else ellip <- matrix(tmp[1,],101,2,byrow=TRUE)
-      }
+      },warning=muffleRNGwarning)
       stopImplicitCluster()
       cat("DONE\n")
     }
   }
   mh$errorEllipse <- errorEllipse
   mh$Par <- Par
-  mh$MIcombine <- miBeta
+  mh$MIcombine <- miCombo
   
   return(miSum(mh))
 }

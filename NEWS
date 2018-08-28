@@ -1,8 +1,24 @@
-momentuHMM 1.4.3 2018-06-26
+momentuHMM 1.4.3 2018-07-25
 -----------------
 NEW FEATURES
 
 * betaCons argument added to fitHMM and MIfitHMM for specifying equality constraints on transition probability matrix parameters
+
+* betaRef argument added to fitHMM and MIfitHMM for specifying the reference states for t.p.m. multinomial logit link
+
+* retryParallel argument added to crawlWrap
+
+CHANGES
+
+* changed how fixPar and betaCons are handled when optimizing the likelihood; this should make optimization faster and more stable when these parameter constraints are used
+
+* %dorng% now used instead of %dopar%, thereby allowing for reproducible foreach loops when using parallel processing
+
+* cleaned up crawlWrap printing when retryFits>0 and retryParallel=FALSE
+
+* retrySD argument in fitHMM and MIfitHMM can now be a scalar
+
+* bug fix in calculation of standard errors (and confidence intervals) for transition probability and initial distribution parameters when workBounds$beta or workBounds$delta are specified other than the default (-Inf,Inf)
 
 
 momentuHMM 1.4.2 2018-06-19

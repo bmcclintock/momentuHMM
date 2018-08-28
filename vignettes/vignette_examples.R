@@ -51,7 +51,7 @@ nfsTimeInStates<-nfsFits$miSum$Par$timeInStates
 append.RData(nfsTimeInStates,file=paste0(getwd(),"/vignette_inputs.RData"))
 
 pdf(file=paste0(getwd(),"/plot_nfsResults.pdf"),width=5,height=5)
-plot(nfsFits,ask=FALSE)
+plot(nfsFits,ask=FALSE,legend.pos="topright")
 dev.off()
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
@@ -226,35 +226,6 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ###################################################
 #source(paste0(getwd(),"/harbourSealExample.R"))
 load(paste0(example_wd,"harbourSealExample.RData"))
-
-alpha<-0.95
-im_states <- foreach(i = 1:nSims, .combine = rbind) %dopar% {momentuHMM::viterbi(miBestFit.ind[[i]])}
-
-hsActivityBudgets<-list()
-
-for(i in c("M","F")){
-
-  xmat <- t(apply(im_states[,which(hsData$sex==i)],1,function(x) {counts<-hist(x,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts;counts/sum(counts)}))
-  xvar <- matrix(0 , ncol=nbStates, nrow=nSims, byrow=TRUE) # don't have se's; might be a way to get these but probably quite complicated
-  n <- apply(!(is.na(xmat)+is.na(xvar)),2,sum)
-  
-  if(any(n<2)) warning("need at least 2 simulations with valid point and variance estimates for timeInStates")
-  
-  est <- apply(xmat,2,mean,na.rm=TRUE)
-  B_m <- apply(xmat,2,var,na.rm=TRUE)
-  
-  W_m <- apply(xvar,2,mean,na.rm=TRUE)
-  se <- sqrt(W_m + (n+1)/n * B_m)
-  
-  dfs<-(n-1)*(1+1/(n+1)*W_m/B_m)^2
-  quantSup<-qt(1-(1-alpha)/2,df=dfs)
-  
-  lower <- momentuHMM:::probCI(est,se,quantSup,"lower")
-  upper <- momentuHMM:::probCI(est,se,quantSup,"upper")
-  
-  hsActivityBudgets[[i]] <- cbind(est,se,lower,upper)
-  rownames(hsActivityBudgets[[i]])<-stateNames
-}
 
 append.RData(hsActivityBudgets,file=paste0(getwd(),"/vignette_inputs.RData"))
 

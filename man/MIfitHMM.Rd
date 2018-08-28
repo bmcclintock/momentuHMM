@@ -9,7 +9,7 @@ MIfitHMM(miData, nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
   circularAngleMean = NULL, formula = ~1, formulaDelta = ~1,
   stationary = FALSE, verbose = NULL, nlmPar = NULL, fit = TRUE,
   useInitial = FALSE, DM = NULL, cons = NULL, userBounds = NULL,
-  workBounds = NULL, workcons = NULL, betaCons = NULL,
+  workBounds = NULL, workcons = NULL, betaCons = NULL, betaRef = NULL,
   stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
   retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL,
   modelName = NULL, covNames = NULL, spatialCovs = NULL, centers = NULL,
@@ -87,6 +87,8 @@ distribution parameters for each data stream. See \code{\link{fitHMM}}.}
 each data stream. See \code{\link{fitHMM}}.}
 
 \item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See \code{\link{fitHMM}}.}
+
+\item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. See \code{\link{fitHMM}}.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 

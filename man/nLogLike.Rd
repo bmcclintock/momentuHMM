@@ -4,14 +4,14 @@
 \alias{nLogLike}
 \title{Negative log-likelihood function}
 \usage{
-nLogLike(wpar, nbStates, formula, bounds, parSize, data, dist, covs,
+nLogLike(optPar, nbStates, formula, bounds, parSize, data, dist, covs,
   estAngleMean, circularAngleMean, consensus, zeroInflation, oneInflation,
   stationary = FALSE, cons, fullDM, DMind, workcons, Bndind, knownStates,
   fixPar, wparIndex, nc, meanind, covsDelta, workBounds, prior = NULL,
-  betaCons = NULL)
+  betaCons = NULL, betaRef, optInd = NULL)
 }
 \arguments{
-\item{wpar}{Vector of working parameters.}
+\item{optPar}{Vector of working parameters.}
 
 \item{nbStates}{Number of states of the HMM.}
 
@@ -74,6 +74,10 @@ model (if any).}
 \item{prior}{A function that returns the log-density of the working scale parameter prior distribution(s)}
 
 \item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters.}
+
+\item{betaRef}{Indices of reference elements for t.p.m. multinomial logit link.}
+
+\item{optInd}{indices of constrained parameters}
 }
 \value{
 The negative log-likelihood of the parameters given the data.
@@ -104,7 +108,8 @@ l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bound
      m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$stationary,
      m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
      m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),
-     m$conditions$wparIndex,covsDelta=m$covsDelta,workBounds=m$conditions$workBounds)
+     m$conditions$wparIndex,covsDelta=m$covsDelta,workBounds=m$conditions$workBounds,
+     betaRef=m$conditions$betaRef)
 }
 
 }

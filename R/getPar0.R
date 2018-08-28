@@ -88,14 +88,16 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
   
   if(is.miHMM(model)) model <- model$miSum
   
+  model$conditions$optInd <- numeric() # extra hack needed for bc
   model <- delta_bc(model)
+  model$conditions$optInd <- NULL # extra hack needed for bc
   
   if(is.miSum(model)){
     model$mle <- lapply(model$Par$real,function(x) x$est)
     model$mle$beta <- model$Par$beta$beta$est
     model$mle$delta <- model$Par$real$delta$est
     model$mod <- list()
-    model$mod$estimate <- model$MIcombine$coefficients
+    model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,length(model$stateNames),model$covsDelta,model$conditions$stationary,nrow(model$Par$beta$beta$est)-1)
     model$CIbeta <- model$Par$beta
     model$CIreal <- model$Par$real
   }
@@ -223,13 +225,14 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
     
     betaNames <- colnames(model.matrix(newformula,model$data))
     tmpPar <- matrix(0,length(betaNames),nbStates*(nbStates-1))
+    betaRef <- model$conditions$betaRef
     #if(length(model$stateNames)==1) tmpPar[1,] <- rep(-1.5,nbStates*(nbStates-1))
     columns <- NULL
     for(i in 1:nbStates){
       for(j in 1:nbStates) {
-        if(i<j)
+        if(betaRef[i]<j)
           columns[(i-1)*nbStates+j-i] <- paste(i,"->",j)
-        if(j<i)
+        if(j<betaRef[i])
           columns[(i-1)*(nbStates-1)+j] <- paste(i,"->",j)
       }
     }
@@ -239,7 +242,7 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
     if(length(which(model$stateNames %in% stateNames))>1){
       for(i in match(model$stateNames,stateNames,nomatch=0)){#which(model$stateNames %in% stateNames)){
         for(j in match(model$stateNames,stateNames,nomatch=0)){#which(model$stateNames %in% stateNames)) {
-          if(i!=j & i>0 & j>0){
+          if(betaRef[i]!=j & i>0 & j>0){
             if(is.miSum(model))
               tmpPar[betaNames %in% rownames(model$mle$beta),paste(i,"->",j)]<-nw2w(model$mle$beta,model$conditions$workBounds$beta)[rownames(model$mle$beta) %in% betaNames,paste(match(stateNames[i],model$stateNames),"->",match(stateNames[j],model$stateNames))]
             else 

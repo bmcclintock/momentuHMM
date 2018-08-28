@@ -3,8 +3,8 @@ library(dtwclust)
 library(setRNG)
 
 # set seed
-oldRNG<-setRNG()
-setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=1)
+oldRNG<-setRNG::setRNG()
+setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=10)
 
 # load grey seal data from github
 load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/greySealData_TPM.RData"))
@@ -15,7 +15,7 @@ ncores <- 7 # number of CPU cores
 # fit crawl functions
 crwOut<-crawlWrap(greySealData,err.model=list(x=~ln.sd.x-1,y=~ln.sd.y-1,rho=~error.corr),
                   initial.state=list(a=c(greySealData$x[1],0,greySealData$y[1],0),P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 5000 ^ 2, 10 * 3600 ^ 2))),
-                  theta=c(4.269033, -9.230745),fixPar=c(1,1,NA,NA),attempts=100,
+                  fixPar=c(1,1,NA,NA),attempts=100,retryFits=20,
                   timeStep="2 hours")
 plot(crwOut,ask=FALSE)
 
@@ -60,10 +60,14 @@ for(j in 1:nCenters){
   knownStates[which(centerInd==0)]<-j
 }
 
+## use prior on unconstrained t.p.m. parameters
+# note that objects in the fitHMM environment (e.g. nbStates, optInd) can be used in prior function
+ln.prior <- function(par) sum(dnorm(par[-c(27+80+1:(nbStates-1))][-optInd[-(1:5)]][-(1:27)],0,10,log=TRUE))
+
 bestmod<-fitHMM(bestDat,nbStates=nbStates,dist=dist,Par0=Par0$Par,beta0=Par0$beta,delta0=Par0$delta,fixPar=fixPar,
                 estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
                 DM=list(step=stepDM,angle=angleDM),formula=distFormula,
-                stateNames=stateNames,knownStates=knownStates)
+                stateNames=stateNames,knownStates=knownStates,prior=ln.prior)
 plot(bestmod,plotCI=TRUE,ask=FALSE)
 
 # draw nSims imputed data sets
@@ -81,27 +85,20 @@ for(i in 1:nSims){
 }
 
 # specify pseudo-design matrices with step length constraints (to help avoid label switching between exploratory states across multiple imputations)
-MIstepDM<-matrix(c(1,0,0,0,0,0,0,0,0,0,
-                 paste0("I(",paste0("Abertay.dist>",delta[1],")")),0,0,0,0,0,0,0,0,0,
-                 0,1,0,0,0,0,0,0,0,0,
-                 0,paste0("I(",paste0("Farne.dist>",delta[2],")")),0,0,0,0,0,0,0,0,
-                 0,0,1,0,0,0,0,0,0,0,
-                 0,0,paste0("I(",paste0("Dogger.dist>",delta[3],")")),0,0,0,0,0,0,0,
-                 0,0,0,1,1,0,0,0,0,0,
-                 0,0,0,0,1,0,0,0,0,0,
-                 0,0,0,0,0,1,0,0,0,0,
-                 0,0,0,0,0,paste0("I(",paste0("Abertay.dist>",delta[1],")")),0,0,0,0,
-                 0,0,0,0,0,0,1,0,0,0,
-                 0,0,0,0,0,0,paste0("I(",paste0("Farne.dist>",delta[2],")")),0,0,0,
-                 0,0,0,0,0,0,0,1,0,0,
-                 0,0,0,0,0,0,0,paste0("I(",paste0("Dogger.dist>",delta[3],")")),0,0,
-                 0,0,0,0,0,0,0,0,1,1,
-                 0,0,0,0,0,0,0,0,0,1),nrow=nbStates*2)
-colnames(MIstepDM)<-colnames(bestmod$CIbeta$step$est)
-colnames(MIstepDM)[c(7,8,15,16)]<-c("shape:(Intercept)","shape_5","scale:(Intercept)","scale_5")
+MIstepDM<-matrix(c(1,paste0("I(",paste0("Abertay.dist>",delta[1],")")),0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                   0,0,1,paste0("I(",paste0("Farne.dist>",delta[2],")")),  0,0,0,0,0,0,0,0,0,0,0,0,
+                   0,0,0,0,1,paste0("I(",paste0("Dogger.dist>",delta[3],")")), 0,0,0,0,0,0,0,0,0,0,
+                   0,0,0,0,0,0,                                                1,0,0,0,0,0,0,0,0,0,
+                   0,0,0,0,0,0,                                                1,1,0,0,0,0,0,0,0,0,
+                   0,0,0,0,0,0,0,0,1,paste0("I(",paste0("Abertay.dist>",delta[1],")")),0,0,0,0,0,0,
+                   0,0,0,0,0,0,0,0,0,0,1,paste0("I(",paste0("Farne.dist>",delta[2],")")),  0,0,0,0,
+                   0,0,0,0,0,0,0,0,0,0,0,0,1,paste0("I(",paste0("Dogger.dist>",delta[3],")")), 0,0,
+                   0,0,0,0,0,0,                                                0,0,0,0,0,0,0,0,1,0,
+                   0,0,0,0,0,0,                                                0,0,0,0,0,0,0,0,1,1),nbStates*2,16,byrow=TRUE,dimnames=list(c(paste0("shape_",1:nbStates),paste0("scale_",1:nbStates)),colnames(bestmod$CIbeta$step$est)))
+colnames(MIstepDM)[c(7,8,15,16)]<-c("shape_45:(Intercept)","shape_5","scale_45:(Intercept)","scale_5")
 
 # step length parameter constraints
-stepworkBounds <- matrix(c(rep(-Inf,7),0,rep(-Inf,7),0,rep(Inf,ncol(MIstepDM))),nrow=ncol(MIstepDM),ncol=2)
+stepworkBounds <- matrix(c(rep(-Inf,7),0,rep(-Inf,7),0,rep(Inf,ncol(MIstepDM))),nrow=ncol(MIstepDM),ncol=2,dimnames=list(colnames(MIstepDM),c("lower","upper")))
 
 #extract parameter estimates from bestmod and adjust for MIstepDM and stepworkBounds
 bestPar<-getPar(bestmod)
@@ -112,15 +109,15 @@ greySealFits<-MIfitHMM(miData,nSims=nSims,ncores=ncores,poolEstimates=FALSE,nbSt
                        Par0=bestPar$Par,beta0=bestPar$beta,delta0=bestPar$delta,fixPar=fixPar,
                        estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
                        DM=list(step=MIstepDM,angle=angleDM),workBounds=list(step=stepworkBounds),formula=distFormula,
-                       stateNames=stateNames,knownStates=knownStates)
+                       stateNames=stateNames,knownStates=knownStates,prior=ln.prior)
 endTime<-proc.time()-startTime
 
 greySealPool<-MIpool(greySealFits,ncores=ncores)
 plot(greySealPool,plotCI=TRUE,ask=FALSE)
 
-setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=374)#seed=7)
+setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=4957)
 greySealSim<-simData(model=greySealPool,centers=centers,initialPosition = centers[1,],obsPerAnimal = 1515,states=TRUE)
-setRNG(oldRNG)
+setRNG::setRNG(oldRNG)
 
-save.image("greySealExample_TPM.RData")
-save(greySealPool,greySealSim,file="greySealResults_TPM.RData")
+save.image("greySealExample_TPM_new.RData")
+save(greySealPool,greySealSim,file="greySealResults_TPM_new.RData")

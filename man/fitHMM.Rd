@@ -9,9 +9,9 @@ fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
   formulaDelta = ~1, stationary = FALSE, verbose = NULL,
   nlmPar = list(), fit = TRUE, DM = NULL, cons = NULL,
   userBounds = NULL, workBounds = NULL, workcons = NULL,
-  betaCons = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL,
-  retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(),
-  prior = NULL, modelName = NULL)
+  betaCons = NULL, betaRef = NULL, stateNames = NULL,
+  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
+  optMethod = "nlm", control = list(), prior = NULL, modelName = NULL)
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} object.}
@@ -123,6 +123,9 @@ through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{work
 
 \item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See details.}
 
+\item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
+the diagonal elements of the t.p.m. are the reference. See details.}
+
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
 \item{knownStates}{Vector of values of the state process which are known prior to fitting the
@@ -143,6 +146,7 @@ value is returned. Ignored if \code{fit=FALSE}.}
 \item{retrySD}{An optional list of scalars or vectors indicating the standard deviation to use for normal perturbations of each working scale parameter when \code{retryFits>0}. For data streams, each element of \code{retrySD} should be a vector of the same name and length as the corresponding element of \code{Par0} (if a scalar is provided, then this value will be used for all working parameters of the data stream). 
 For transition probability parameters, the corresponding element of \code{retrySD} must be named ``beta'' and have the same dimensions as \code{beta0}. 
 For initial distribution parameters, the corresponding element of \code{retrySD} must be named ``delta'' and have the same dimensions as \code{delta0} (if \code{delta0} is on the working scale) or be of length \code{nbStates-1} (if \code{delta0} is on the natural scale).
+Alternatively \code{retrySD} can be a scalar, in which case this value is used for all parameters.
 Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \code{retrySD}=10 for initial distribution and state transition probabilities). Ignored unless \code{retryFits>0}.}
 
 \item{optMethod}{The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).}
@@ -163,7 +167,9 @@ includes covariates), and \code{delta} (initial distribution).}
 \item{CIreal}{Standard errors and 95\% confidence intervals on the real (i.e., natural) scale of parameters}
 \item{CIbeta}{Standard errors and 95\% confidence intervals on the beta (i.e., working) scale of parameters}
 \item{data}{The momentuHMMData object}
-\item{mod}{The object returned by the numerical optimizer \code{nlm} or \code{optim}}
+\item{mod}{List object returned by the numerical optimizer \code{nlm} or \code{optim}. Items in \code{mod} include the best set of free working parameters found (\code{wpar}), 
+the best full set of working parameters including any fixed parameters (\code{estimate}), the value of the likelihood at \code{estimate} (\code{minimum}), 
+the estimated variance-covariance matrix at \code{estimate} (\code{Sigma}), and the elapsed time in seconds for the optimization (\code{elapsedTime}).}
 \item{conditions}{Conditions used to fit the model, e.g., \code{bounds} (parameter bounds), distributions, \code{zeroInflation},
 \code{estAngleMean}, \code{stationary}, \code{formula}, \code{DM}, \code{fullDM} (full design matrix), etc.}
 \item{rawCovs}{Raw covariate values for transition probabilities, as found in the data (if any). Used in \code{\link{plot.momentuHMM}}.}
@@ -177,13 +183,15 @@ function.
 }
 \details{
 \itemize{
-\item The matrix \code{beta0} of regression coefficients for the transition probabilities has
+\item By default the matrix \code{beta0} of regression coefficients for the transition probabilities has
 one row for the intercept, plus one row for each covariate, and one column for
 each non-diagonal element of the transition probability matrix. For example, in a 3-state
 HMM with 2 \code{formula} covariates, the matrix \code{beta} has three rows (intercept + two covariates)
 and six columns (six non-diagonal elements in the 3x3 transition probability matrix -
 filled in row-wise).
-In a covariate-free model (default), \code{beta0} has one row, for the intercept.
+In a covariate-free model (default), \code{beta0} has one row, for the intercept. While the diagonal elements are by default the reference elements, other elements can serve as the reference
+using the \code{betaRef} argument. For example, in a 3-state model, setting \code{betaRef=c(3,2,3)} changes the reference elements to state transition 1 -> 3 for state 1 (instead of 1 -> 1), state
+transition 2 -> 2 for state 2 (same as default), and state transition 3 -> 3 for state 3 (same as default).
 
 \item When covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=~1}), then \code{delta0} (and \code{fixPar$delta}) are specified as a vector of length \code{nbStates} that 
 sums to 1.  When covariates are included in \code{formulaDelta}, then \code{delta0}  (and \code{fixPar$delta}) must be specified
@@ -230,11 +238,15 @@ or \code{paste0("betaCol",nbStates*(nbStates-1))} (where the integer indicates t
 to the transition from state 1->2, \code{cov3} on transition probabilities from state 3 (i.e., \code{beta} columns corresponding to state transitions 3->1 and 3->2),
 and \code{cov4} on transition probabilities to state 1 (i.e., \code{beta} columns corresponding to state transitions 2->1 and 3->1).
 
-\item \code{betaCons} can be used to impose equality constraints among the t.p.m. parameters.  It must be a matrix of the same dimension as \code{beta0} and be composed of integers, where each beta parameter is sequentially indexed in a column-wise fashion. Parameter indices in \code{betaCons} must therefore be integers between \code{1} and \code{nbStates*(nbStates-1)}. Use of \code{betaCons} is perhaps best demonstrated by example.  If no constraints are imposed (the default), then \code{betaCons=matrix(1:length(beta0),nrow(beta0),ncol(beta0))} such that
+\item \code{betaCons} can be used to impose equality constraints among the t.p.m. parameters.  It must be a matrix of the same dimension as \code{beta0} and be composed of integers, where each beta parameter is sequentially indexed in a column-wise fashion (see \code{\link{checkPar0}}). Parameter indices in \code{betaCons} must therefore be integers between \code{1} and \code{nbStates*(nbStates-1)}. 
+
+Use of \code{betaCons} is perhaps best demonstrated by example.  If no constraints are imposed (the default), then \code{betaCons=matrix(1:length(beta0),nrow(beta0),ncol(beta0))} such that
 each beta parameter is (column-wise) sequentially identified by a unique integer.  Suppose we wish to fit a model with \code{nbStates=3} states and a covariate (`cov1') on the t.p.m. With no constraints on the t.p.m., we would have
 \code{betaCons=matrix(1:(2*(nbStates*(nbStates-1))),nrow=2,ncol=nbStates*(nbStates-1),dimnames=list(c("(Intercept)","cov1"),c("1 -> 2","1 -> 3","2 -> 1","2 -> 3","3 -> 1","3 -> 2")))}.  If we then wanted to constrain the t.p.m. such that the covariate effect is identical for transitions from state 1 to states 2 and 3 (and vice versa), we have
 \code{betaCons=matrix(c(1,2,3,2,5,6,7,8,9,6,11,12),nrow=2,ncol=nbStates*(nbStates-1),dimnames=list(c("(Intercept)","cov1"),c("1 -> 2","1 -> 3","2 -> 1","2 -> 3","3 -> 1","3 -> 2")))}; this results in 10 estimated beta parameters (instead of 12), the ``cov1'' effects indexed by a ``2'' (``1 -> 2'' and ``1 -> 3'') constrained to be equal, and 
-the ``cov1'' effects indexed by a ``6'' (``2 -> 1'' and ``3 -> 1'') constrained to be equal.
+the ``cov1'' effects indexed by a ``6'' (``2 -> 1'' and ``3 -> 1'') constrained to be equal. 
+
+Now suppose we instead wish to constrain these sets of state transition probabilities to be equal, i.e., Pr(1 -> 2) = Pr(1 -> 3) and Pr(2 -> 1) = Pr(3 -> 1); then we have \code{betaCons=matrix(c(1,2,1,2,5,6,7,8,5,6,11,12),nrow=2,ncol=nbStates*(nbStates-1),dimnames=list(c("(Intercept)","cov1"),c("1 -> 2","1 -> 3","2 -> 1","2 -> 3","3 -> 1","3 -> 2")))}
 
 \item Cyclical relationships (e.g., hourly, monthly) may be modeled in \code{DM} or \code{formula} using the \code{cosinor(x,period)} special formula function for covariate \code{x}
 and sine curve period of time length \code{period}. For example, if 

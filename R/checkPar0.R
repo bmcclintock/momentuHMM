@@ -28,6 +28,8 @@
 #' @param workBounds An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. 
 #' @param workcons Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 #' each data stream. 
+#' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters.
+#' @param betaRef Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link.
 #' @param stateNames Optional character vector of length nbStates indicating state names.
 #' @param fixPar An optional list of vectors indicating parameters which are assumed known prior to fitting the model. 
 #' 
@@ -75,7 +77,7 @@
 #' }
 #' @export
 
-checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=~1,stationary=FALSE,DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,stateNames=NULL,fixPar=NULL)
+checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=~1,stationary=FALSE,DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,stateNames=NULL,fixPar=NULL)
 {
   
   ## check that the data is a momentuHMMData object or valid data frame
@@ -156,6 +158,43 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
     }
     p <- parDef(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds)
     nPar <- lapply(p$bounds,function(x) runif(nrow(x),ifelse(is.finite(x[,1]),x[,1],0),ifelse(is.finite(x[,2]),x[,2],max(x[,1]+1,1.e+6))))
+    inputs <- checkInputs(nbStates,dist,nPar,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames=NULL,checkInflation = TRUE)
+    tempCovs <- data[1,]
+    DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,nPar,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)
+    fullDM <- DMinputs$fullDM
+    nc <- meanind <- vector('list',length(distnames))
+    names(nc) <- names(meanind) <- distnames
+    for(i in distnames){
+      nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
+      # deal with factors
+      if(length(tempCovs)){
+        for(j in names(which(unlist(lapply(tempCovs,function(x) inherits(x,"factor")))))){
+          if(any(grepl(j,inputs$DM[[i]]))){
+            tmpCov <- tempCovs
+            for(jj in levels(tempCovs[[j]])){
+              tmpCov[[j]] <- factor(jj,levels=levels(tempCovs[[j]]))
+              tmpgDM<-getDM(tmpCov,inputs$DM[i],inputs$dist[i],nbStates,inputs$p$parNames[i],inputs$p$bounds[i],nPar[i],inputs$cons[i],inputs$workcons[i],zeroInflation[i],oneInflation[i],inputs$circularAngleMean[i],FALSE)$fullDM[[i]]
+              nc[[i]] <- nc[[i]] + apply(tmpgDM,1:2,function(x) !all(unlist(x)==0))
+            }
+          }
+        }
+      }
+      nc[[i]] <- nc[[i]]>0
+      if(inputs$circularAngleMean[[i]]) {
+        meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+        # deal with angular covariates that are exactly zero
+        if(length(meanind[[i]])){
+          angInd <- which(is.na(match(gsub("cos","",gsub("sin","",colnames(nc[[i]]))),colnames(nc[[i]]),nomatch=NA)))
+          sinInd <- colnames(nc[[i]])[which(grepl("sin",colnames(nc[[i]])[angInd]))]
+          nc[[i]][meanind[[i]],sinInd]<-ifelse(nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)])
+          nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)]<-ifelse(nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],sinInd])
+        }
+      }
+    }
+    for(i in distnames){
+      bInd <- getboundInd(nc[[i]])
+      nPar[[i]] <- nPar[[i]][which(!duplicated(bInd))[bInd]]
+    }
     par <- getParDM(data,nbStates,dist,nPar,zeroInflation,oneInflation,estAngleMean,circularAngleMean,DM,cons,userBounds,workBounds,workcons)
     
   } else par <- Par0
@@ -163,7 +202,7 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
                              Par0=par,beta0=beta0,delta0=delta0,
                              estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
                              formula=formula,formulaDelta=formulaDelta,stationary=stationary,
-                             DM=DM,cons=cons,userBounds=userBounds,workBounds=workBounds,workcons=workcons,fit=FALSE,
+                             DM=DM,cons=cons,userBounds=userBounds,workBounds=workBounds,workcons=workcons,betaCons=betaCons,betaRef=betaRef,fit=FALSE,
                              stateNames=stateNames,fixPar=fixPar))
   
   inputs <- checkInputs(nbStates,dist,par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,stateNames,checkInflation = TRUE)
@@ -233,6 +272,8 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
     tmpPar <- m$mle$beta
     if(is.null(beta0))
       tmpPar <- matrix(1:length(tmpPar),nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
+    if(!is.null(betaCons))
+      tmpPar <- matrix(tmpPar[c(betaCons)],nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
     print(tmpPar)
     #}
     

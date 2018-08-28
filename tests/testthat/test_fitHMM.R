@@ -190,6 +190,27 @@ test_that("equivalent momentuHMM and moveHMM models match",{
   
 })
 
+test_that("equivalent betaRef models match",{
+  
+  oldRNG<-setRNG::setRNG()
+  
+  par0 <- getPar0(example$m)
+  nbStates<-length(example$m$stateNames)
+  
+  setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=1)
+  
+  data<-simData(nbAnimals=2,model=example$m)
+  momentuHMM_fit1<-fitHMM(data=data,nbStates=nbStates,Par=list(step=log(par0$Par$step),angle=par0$Par$angle),stationary=TRUE,
+                          DM=list(step=diag(4)),dist=example$m$conditions$dist,estAngleMean=example$m$conditions$estAngleMean)
+  momentuHMM_fit2<-fitHMM(data=data,nbStates=nbStates,Par=list(step=log(par0$Par$step),angle=par0$Par$angle),stationary=TRUE,
+                          DM=list(step=diag(4)),dist=example$m$conditions$dist,estAngleMean=example$m$conditions$estAngleMean,betaRef=c(2,2))
+  expect_equal(all(abs(momentuHMM_fit2$mod$estimate[-9]-momentuHMM_fit1$mod$estimate[-9])<1.e-6),TRUE)
+  expect_equal(abs(momentuHMM_fit2$mod$minimum-momentuHMM_fit1$mod$minimum)<1.e-6,TRUE)
+  
+  setRNG::setRNG(oldRNG)
+  
+})
+
 test_that("equivalent models with and without dummy covariate match",{
   
   oldRNG<-setRNG::setRNG()
