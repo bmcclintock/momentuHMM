@@ -147,7 +147,7 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
 }
 
 # for differentiation in delta method
-get_stat <- function(beta,covs,nbStates,i,betaRef,betaCons,workBounds=matrix(c(-Inf,Inf),length(beta),2,byrow=TRUE)) {
+get_stat <- function(beta,covs,nbStates,i,betaRef,betaCons,workBounds=matrix(c(-Inf,Inf),length(betaCons),2,byrow=TRUE)) {
     beta <- w2wn(matrix(beta[betaCons],nrow(betaCons),ncol(betaCons)),workBounds)
     gamma <- trMatrix_rcpp(nbStates,beta,covs,betaRef)[,,1]
     solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i]
