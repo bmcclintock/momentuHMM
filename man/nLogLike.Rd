@@ -8,7 +8,7 @@ nLogLike(optPar, nbStates, formula, bounds, parSize, data, dist, covs,
   estAngleMean, circularAngleMean, consensus, zeroInflation, oneInflation,
   stationary = FALSE, cons, fullDM, DMind, workcons, Bndind, knownStates,
   fixPar, wparIndex, nc, meanind, covsDelta, workBounds, prior = NULL,
-  betaCons = NULL, betaRef, optInd = NULL, recovs = NULL)
+  betaCons = NULL, betaRef, optInd = NULL, recovs = NULL, g0covs = NULL)
 }
 \arguments{
 \item{optPar}{Vector of working parameters.}
@@ -79,7 +79,9 @@ model (if any).}
 
 \item{optInd}{indices of constrained parameters}
 
-\item{recovs}{data frame containing the recharge model covariates (if any)}
+\item{recovs}{data frame containing the recharge model theta covariates (if any)}
+
+\item{g0covs}{data frame containing the recharge model g0 covariates (if any)}
 }
 \value{
 The negative log-likelihood of the parameters given the data.

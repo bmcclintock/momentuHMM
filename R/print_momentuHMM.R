@@ -55,7 +55,8 @@ print.momentuHMM <- function(x,...)
       cat("\n")
       cat("Recharge parameters for the transition probabilities:\n")
       cat("-----------------------------------------------------\n")
-      g0theta <- matrix(c(m$mle$g0,m$mle$theta),nrow=1,dimnames=list("",c("g0",colnames(m$recovs))))
+      g0theta <- c(m$mle$g0,m$mle$theta)
+      names(g0theta) <- c(paste0("g0:",names(m$mle$g0)),paste0("theta:",names(m$mle$theta)))
       print(g0theta)      
     }
     #if(!is.null(m$mle$beta)) {

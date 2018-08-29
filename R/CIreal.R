@@ -64,7 +64,10 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   } else {
     if(!is.data.frame(covs)) stop('covs must be a data frame')
     if(nrow(covs)>1) stop('covs must consist of a single row')
-    if(!all(names(covs) %in% names(m$data))) stop('invalid covs specified')
+    if(is.null(recharge))
+      if(!all(names(covs) %in% names(m$data))) stop('invalid covs specified')
+    else 
+      if(!all(names(covs) %in% c(names(m$data),"recharge"))) stop('invalid covs specified')
     if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(m$data$ID))
     for(j in names(m$data)[which(!(names(m$data) %in% names(covs)))]){
       if(any(class(m$data[[j]]) %in% meansList)){
@@ -88,26 +91,43 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   
   nbCovs <- ncol(model.matrix(newformula,m$data))-1 # substract intercept column
   
-  if(!is.null(recharge)){
-    recovs <- model.matrix(recharge,m$data)
-    nbRecovs <- ncol(recovs)-1
-    g0 <- m$mle$g0
-    theta <- m$mle$theta
-    m$data$recharge <- cumsum(c(g0,theta%*%t(recovs[-nrow(recovs),])))
-    nbCovs <- nbCovs + 1
-  } else {
-    nbRecovs <- 0
-    recovs <- NULL
+  aInd <- NULL
+  nbAnimals <- length(unique(m$data$ID))
+  for(i in 1:nbAnimals){
+    aInd <- c(aInd,which(m$data$ID==unique(m$data$ID)[i])[1])
   }
   
-
+  if(!is.null(recharge)){
+    g0covs <- model.matrix(recharge$g0,m$data[aInd,])
+    nbG0covs <- ncol(g0covs)-1
+    recovs <- model.matrix(recharge$theta,m$data)
+    nbRecovs <- ncol(recovs)-1
+    m$data$recharge<-rep(0,nrow(m$data))
+    for(i in 1:nbAnimals){
+      idInd <- which(m$data$ID==unique(m$data$ID)[i])
+      if(nbRecovs){
+        g0 <- m$mle$g0 %*% t(g0covs[i,,drop=FALSE])
+        theta <- m$mle$theta
+        m$data$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
+      }
+    }
+    if(is.null(tempCovs$recharge)) tempCovs$recharge <- mean(m$data$recharge)
+    newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
+    nbCovs <- nbCovs + 1
+  } else {
+    nbG0covs <- 0
+    nbRecovs <- 0
+    g0covs <- NULL
+    recovs <- NULL
+  }
   
   if(!is.null(recharge)){
   #  tmpcovs <- cbind(covs,m$data$recharge)
   #  colnames(tmpcovs) <- c(colnames(covs),"recharge")
   #  covs <- as.data.frame(tmpcovs)
   #  tempCovs <- covs[1,]
-    recovs <- model.matrix(recharge,tempCovs)
+    g0covs <- model.matrix(recharge$g0,tempCovs)
+    recovs <- model.matrix(recharge$theta,tempCovs)
   #  #nbCovs <- nbCovs + 1
   }
 
@@ -192,11 +212,11 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     # identify parameters of interest
     i2 <- tail(cumsum(unlist(parCount)),1)+1
     i3 <- i2+nbStates*(nbStates-1)*(nbCovs+1)-1
-    tmpSig <- Sigma[(i2:i3)[m$conditions$betaCons],(i2:i3)[m$conditions$betaCons]]
+    tmpSig <- Sigma[(i2:i3)[unique(c(m$conditions$betaCons))],(i2:i3)[unique(c(m$conditions$betaCons))]]
     if(!is.null(recharge)){
-      tmpSig <- Sigma[c((i2:i3)[m$conditions$betaCons],length(m$mod$estimate)-(nbRecovs+1):0),c((i2:i3)[m$conditions$betaCons],length(m$mod$estimate)-(nbRecovs+1):0)]
+      tmpSig <- Sigma[c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0),c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)]
     }
-    wpar <- c(m$mle$beta,m$mle$g0,m$mle$theta)
+    wpar <- c(m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))],m$mod$estimate[length(m$mod$estimate)-nbRecovs:0])
     quantSup <- qnorm(1-(1-alpha)/2)
     tmpSplineInputs<-getSplineFormula(newformula,m$data,tempCovs)
     tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
@@ -205,12 +225,20 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     #  colnames(tmptempCovMat) <- c(colnames(tempCovMat),"recharge")
     #  tempCovMat <- tmptempCovMat
     #}
-    est <- get_gamma(wpar,tempCovMat,recovs,nbStates,betaRef=m$conditions$betaRef,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$g0,m$conditions$workBounds$theta))
+    if(is.null(recharge)){
+      est <- get_gamma(wpar,tempCovMat,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta)
+    } else {
+      est <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,recharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta))
+    }
     lower<-upper<-se<-matrix(NA,nbStates,nbStates)
     if(!is.null(Sigma)){
       for(i in 1:nbStates){
         for(j in 1:nbStates){
-          dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,recovs=recovs,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$g0,m$conditions$workBounds$theta))
+          if(is.null(recharge)){
+            dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta)
+          } else {
+            dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta))
+          }  
           se[i,j]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
           lower[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))-quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]-quantSup*se[i,j]
           upper[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))+quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#m$mle$gamma[i,j]+quantSup*se[i,j]
@@ -257,14 +285,27 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   return(Par)
 }
 
-get_gamma <- function(beta,covs,recovs,nbStates,i,j,betaRef,workBounds=matrix(c(-Inf,Inf),length(beta),2,byrow=TRUE)){
-  beta <- w2wn(beta,workBounds)
-  if(!is.null(recovs)){
-    covs[["recharge"]] <- beta[length(beta)-ncol(recovs)]+beta[length(beta)-(ncol(recovs)-1):0]%*%t(recovs)
-    covs <- matrix(covs,1)
-  }
-  beta <- matrix(beta[1:(nbStates*(nbStates-1)*ncol(covs))],ncol(covs))
+get_gamma <- function(beta,covs,nbStates,i,j,betaRef,betaCons,workBounds=matrix(c(-Inf,Inf),length(betaCons),2,byrow=TRUE)){
+  beta <- w2wn(beta[betaCons],workBounds)
+  beta <- matrix(beta,ncol(covs))
   gamma <- trMatrix_rcpp(nbStates,beta,covs,betaRef)[,,1]
+  gamma[i,j]
+}
+
+get_gamma_recharge <- function(beta,covs,formula,recharge,nbStates,i,j,betaRef,betaCons,workBounds=matrix(c(-Inf,Inf),length(betaCons)+length(beta[(max(betaCons)+1):length(beta)]),2,byrow=TRUE)){
+  
+  recovs <- model.matrix(recharge$theta,covs)
+  
+  beta <- w2wn(c(beta[betaCons],beta[length(beta)-(ncol(recovs)-1):0]),workBounds)
+
+  #g0 <- beta[length(beta)-ncol(recovs)-(ncol(g0covs)-1):0] %*% t(g0covs)
+  theta <- beta[length(beta)-(ncol(recovs)-1):0]
+  covs[,"recharge"] <- covs[,"recharge"] + theta%*%t(recovs) # g0  + theta%*%t(recovs)
+  #covs <- matrix(covs,1)
+
+  newcovs <- model.matrix(formula,covs)
+  beta <- matrix(beta[1:(nbStates*(nbStates-1)*ncol(newcovs))],ncol(newcovs))
+  gamma <- trMatrix_rcpp(nbStates,beta,newcovs,betaRef)[,,1]
   gamma[i,j]
 }
 

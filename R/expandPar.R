@@ -51,7 +51,7 @@ expandPar <- function(optPar,optInd,fixPar,wparIndex,betaCons,nbStates,covsDelta
     wpar[-optInd] <- optPar
     if(length(wparIndex)) wpar[wparIndex] <- fixPar[wparIndex]
     if(!is.null(betaCons) & nbStates>1){
-      foo <- length(wpar)-ncol(covsDelta)*(nbStates-1)*(!stationary)-ifelse(nbRecovs,(nbRecovs+1)+1,0)-((nbCovs+1)*nbStates*(nbStates-1)-1):0
+      foo <- length(wpar)-ncol(covsDelta)*(nbStates-1)*(!stationary)-ifelse(nbRecovs,nbRecovs+2,0)-((nbCovs+1)*nbStates*(nbStates-1)-1):0
       wpar[foo] <- wpar[foo][betaCons]
     }
   } else {

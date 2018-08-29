@@ -4,12 +4,10 @@
 \alias{allProbs}
 \title{Matrix of all probabilities}
 \usage{
-allProbs(m, nbStates)
+allProbs(m)
 }
 \arguments{
 \item{m}{Object \code{\link{momentuHMM}} or \code{\link{miSum}}.}
-
-\item{nbStates}{Number of states of the HMM.}
 }
 \value{
 Matrix of all probabilities.

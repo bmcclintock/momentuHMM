@@ -12,6 +12,12 @@ cosinorSin<-function(x,period){
 #  st <- strip.terms(tt,specials=c("angleFormula"),arguments=list(angleFormula=list("strength"=1)))
 #}
 
+recharge<-function(g0=~1, theta){
+  if(!is.formula(g0)) stop("recharge function must include a formula for g0")
+  if(!is.formula(theta)) stop("recharge function must include a formula for theta")
+  return(list(g0=g0,theta=theta))
+}
+
 stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL){
   
   Terms <- terms(formula, specials = c(paste0(spec,1:nbStates),"cosinor","angleFormula","recharge"))
@@ -211,9 +217,8 @@ newFormulas<-function(formula,nbStates)
         }
       }
       if(!is.null(attr(stateForms,"specials")$recharge)){
-        #recharge <- as.formula(paste("~",paste(attr(stateForms,"term.labels")[which(grepl("recharge",attr(stateForms,"term.labels")))])))
-        #rechargeStates <- stateFormulas(recharge,nbStates)
-        recharge <- stateFormulas(as.formula(paste("~",paste(attr(stateForms,"term.labels")[which(grepl("recharge",attr(stateForms,"term.labels")))]))),1)[[1]]
+        recharge <- eval(parse(text=attr(stateForms,"term.labels")[which(grepl("recharge",attr(stateForms,"term.labels")))]))
+        #recharge <- stateFormulas(as.formula(paste("~",paste(attr(stateForms,"term.labels")[which(grepl("recharge",attr(stateForms,"term.labels")))]))),1)[[1]]
         if(length(newForm)){
           newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
         } else {

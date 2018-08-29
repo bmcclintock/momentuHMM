@@ -45,25 +45,41 @@ logBeta <- function(m)
   newformula <- newForm$newformula
   recharge <- newForm$recharge
   
+  aInd <- NULL
+  nbAnimals <- length(unique(m$data$ID))
+  for(i in 1:nbAnimals){
+    aInd <- c(aInd,which(m$data$ID==unique(m$data$ID)[i])[1])
+  }
+  
   if(!is.null(recharge)){
-    recovs <- model.matrix(recharge,m$data)
+    g0covs <- model.matrix(recharge$g0,m$data[aInd,])
+    nbG0covs <- ncol(g0covs)-1
+    recovs <- model.matrix(recharge$theta,m$data)
     nbRecovs <- ncol(recovs)-1
-    g0 <- m$mle$g0
-    theta <- m$mle$theta
-    m$data$recharge <- cumsum(c(g0,theta%*%t(recovs[-nrow(recovs),])))
+    m$data$recharge<-rep(0,nrow(m$data))
+    for(i in 1:nbAnimals){
+      idInd <- which(m$data$ID==unique(m$data$ID)[i])
+      if(nbRecovs){
+        g0 <- m$mle$g0 %*% t(g0covs[i,,drop=FALSE])
+        theta <- m$mle$theta
+        m$data$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
+      }
+    }
     for(j in 1:nbStates){
       formulaStates[[j]] <- as.formula(paste0(Reduce( paste, deparse(formulaStates[[j]]) ),"+recharge"))
     }
     formterms <- c(formterms,"recharge")
     newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
   } else {
+    nbG0covs <- 0
     nbRecovs <- 0
+    g0covs <- NULL
     recovs <- NULL
   }
   
   covs <- model.matrix(newformula,m$data)
   
-  probs <- allProbs(m,nbStates)
+  probs <- allProbs(m)
   
   if(nbStates>1)
     trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs),m$conditions$betaRef)

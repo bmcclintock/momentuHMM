@@ -64,19 +64,35 @@ CIbeta <- function(m,alpha=0.95)
   newformula <- newForm$newformula
   recharge <- newForm$recharge
   
+  aInd <- NULL
+  nbAnimals <- length(unique(m$data$ID))
+  for(i in 1:nbAnimals){
+    aInd <- c(aInd,which(m$data$ID==unique(m$data$ID)[i])[1])
+  }
+  
   if(!is.null(recharge)){
-    recovs <- model.matrix(recharge,m$data)
+    g0covs <- model.matrix(recharge$g0,m$data[aInd,])
+    nbG0covs <- ncol(g0covs)-1
+    recovs <- model.matrix(recharge$theta,m$data)
     nbRecovs <- ncol(recovs)-1
-    g0 <- m$mle$g0
-    theta <- m$mle$theta
-    m$data$recharge <- cumsum(c(g0,theta%*%t(recovs[-nrow(recovs),])))
+    m$data$recharge<-rep(0,nrow(m$data))
+    for(i in 1:nbAnimals){
+      idInd <- which(m$data$ID==unique(m$data$ID)[i])
+      if(nbRecovs){
+        g0 <- m$mle$g0 %*% t(g0covs[i,,drop=FALSE])
+        theta <- m$mle$theta
+        m$data$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
+      }
+    }
     for(j in 1:nbStates){
       formulaStates[[j]] <- as.formula(paste0(Reduce( paste, deparse(formulaStates[[j]]) ),"+recharge"))
     }
     formterms <- c(formterms,"recharge")
     newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
   } else {
+    nbG0covs <- 0
     nbRecovs <- 0
+    g0covs <- NULL
     recovs <- NULL
   }
   
@@ -145,11 +161,27 @@ CIbeta <- function(m,alpha=0.95)
     
     # fill in constraints based on betaCons
     Par$beta <- lapply(Par$beta,function(x) matrix(x[c(m$conditions$betaCons)],dim(x),dimnames=list(rownames(x),colnames(x))))
+    
+    nbCovsDelta <- ncol(m$covsDelta)-1
+    
+    if(!is.null(recharge)){
+      
+      ind <- tail(cumsum(unlist(parCount)),1)+(nbCovs+1)*nbStates*(nbStates-1)+(nbCovsDelta+1)*(nbStates-1)+1:(nbG0covs+1)
+      est <- w2wn(wpar[ind],m$conditions$workBounds$g0)
+      
+      Par$g0 <- get_CIwb(wpar[ind],est,ind,Sigma,alpha,m$conditions$workBounds$g0,rnames="[1,]",cnames=colnames(g0covs),cons=rep(1,length(est)))
+
+      ind <- tail(cumsum(unlist(parCount)),1)+(nbCovs+1)*nbStates*(nbStates-1)+(nbCovsDelta+1)*(nbStates-1)+nbG0covs+1+1:(nbRecovs+1)
+      est <- w2wn(wpar[ind],m$conditions$workBounds$theta)
+      
+      Par$theta <- get_CIwb(wpar[ind],est,ind,Sigma,alpha,m$conditions$workBounds$theta,rnames="[1,]",cnames=colnames(recovs),cons=rep(1,length(est)))
+      
+    }
   }
   
   # group CIs for initial distribution
   if(nbStates>1 & !m$conditions$stationary){
-    nbCovsDelta <- ncol(m$covsDelta)-1
+
     dInd <- length(wpar)-ifelse(nbRecovs,(nbRecovs+1)+1,0)
     foo <- dInd -(nbCovsDelta+1)*(nbStates-1)+1
     
