@@ -747,7 +747,7 @@ fitHMM <- function(data,nbStates,dist,
         } else {
           wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0)+tmp)
         }
-      }
+      } else fixPar$delta <- rep(NA,length(delta0))
     }
   } else {
     if(!nbCovsDelta) fixPar$delta <- ofixPar$delta <- rep(NA,ifelse(!length(delta0),0,nbStates-1))
