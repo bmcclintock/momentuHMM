@@ -10,8 +10,8 @@ simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
   oneInflation = NULL, circularAngleMean = NULL, centers = NULL,
   centroids = NULL, obsPerAnimal = c(500, 1500), initialPosition = c(0,
   0), DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL,
-  workcons = NULL, stateNames = NULL, model = NULL, states = FALSE,
-  retrySims = 0, lambda = NULL, errorEllipse = NULL)
+  workcons = NULL, betaRef = NULL, stateNames = NULL, model = NULL,
+  states = FALSE, retrySims = 0, lambda = NULL, errorEllipse = NULL)
 }
 \arguments{
 \item{nbAnimals}{Number of observed individuals to simulate.}
@@ -131,6 +131,9 @@ For data streams, each element of \code{workBounds} should be a k x 2 matrix wit
 \item{workcons}{Deprecated. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
 through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.}
+
+\item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
+the diagonal elements of the t.p.m. are the reference. See \code{\link{fitHMM}}.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 

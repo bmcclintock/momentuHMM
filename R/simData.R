@@ -98,6 +98,8 @@
 #' @param workcons Deprecated. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 #' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
 #' through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.
+#' @param betaRef Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
+#' the diagonal elements of the t.p.m. are the reference. See \code{\link{fitHMM}}.
 #' @param stateNames Optional character vector of length nbStates indicating state names.
 #' @param model A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. This option can be used to simulate from a fitted model.  Default: NULL.
 #' Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
@@ -355,7 +357,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     centroids=NULL,
                     obsPerAnimal=c(500,1500),
                     initialPosition=c(0,0),
-                    DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,stateNames=NULL,
+                    DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaRef=NULL,stateNames=NULL,
                     model=NULL,states=FALSE,
                     retrySims=0,
                     lambda=NULL,
@@ -400,6 +402,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     DM <- model$conditions$DM
     cons <- model$conditions$cons
     workcons <- model$conditions$workcons
+    betaRef <- model$conditions$betaRef
     zeroInflation <- model$conditions$zeroInflation
     oneInflation <- model$conditions$oneInflation
     formula <- model$conditions$formula
@@ -502,7 +505,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
     Par <- Par[distnames]
     
-    mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & is.null(spatialCovs) & is.null(centers) & is.null(centroids) & ("step" %in% names(dist)) & all(unlist(initialPosition)==c(0,0)) & is.null(lambda) & is.null(errorEllipse) & !is.list(obsPerAnimal) & is.null(covs) & !nbCovs & !length(attr(terms.formula(formula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & is.null(delta)) # indicator for moveHMM::simData
+    mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & is.null(spatialCovs) & is.null(centers) & is.null(centroids) & ("step" %in% names(dist)) & all(unlist(initialPosition)==c(0,0)) & is.null(lambda) & is.null(errorEllipse) & !is.list(obsPerAnimal) & is.null(covs) & !nbCovs & !length(attr(terms.formula(formula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & is.null(delta) & is.null(betaRef)) # indicator for moveHMM::simData
     if(all(names(dist) %in% c("step","angle")) & all(unlist(dist) %in% moveHMMdists) & mHind){
       zi <- FALSE
       if(!is.null(zeroInflation$step)) zi <- zeroInflation$step
@@ -649,6 +652,15 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       }
     }
   }
+  
+  if(!is.null(betaRef)){
+    if(length(betaRef)!=nbStates) stop("betaRef must be a vector of length ",nbStates)
+    if(!is.numeric(betaRef)) stop("betaRef must be a numeric vector")
+    if(min(betaRef)<1 | max(betaRef)>nbStates) stop("betaRef elements must be between 1 and ",nbStates)
+  } else {
+    betaRef <- 1:nbStates
+  }
+  betaRef <- as.integer(betaRef)
 
   #######################################
   ## Prepare parameters for simulation ##
@@ -944,7 +956,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         genArgs[[i]] <- list(1)  # first argument = 1 (one random draw)
       }
       
-      gamma <- diag(nbStates)
+      gamma <- matrix(0,nbStates,nbStates)
+      gamma[cbind(1:nbStates,betaRef)] <- 1
+      gamma <- t(gamma)
       
       if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd)) {
         DMcov <- model.matrix(newformula,subCovs)
@@ -1097,7 +1111,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           
         }
         # get next state
-        gamma <- diag(nbStates)
+        gamma <- matrix(0,nbStates,nbStates)
+        gamma[cbind(1:nbStates,betaRef)] <- 1
+        gamma <- t(gamma)
+        
         if(nbSpatialCovs | length(centerInd) | length(centroidInd)){
           if(nbSpatialCovs){
             for(j in 1:nbSpatialCovs){
