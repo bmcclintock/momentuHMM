@@ -8,10 +8,11 @@ simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
   delta = NULL, formula = ~1, formulaDelta = ~1, covs = NULL,
   nbCovs = 0, spatialCovs = NULL, zeroInflation = NULL,
   oneInflation = NULL, circularAngleMean = NULL, centers = NULL,
-  centroids = NULL, obsPerAnimal = c(500, 1500), initialPosition = c(0,
-  0), DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL,
-  workcons = NULL, stateNames = NULL, model = NULL, states = FALSE,
-  retrySims = 0, lambda = NULL, errorEllipse = NULL)
+  centroids = NULL, angleCovs = NULL, obsPerAnimal = c(500, 1500),
+  initialPosition = c(0, 0), DM = NULL, cons = NULL, userBounds = NULL,
+  workBounds = NULL, workcons = NULL, betaRef = NULL, stateNames = NULL,
+  model = NULL, states = FALSE, retrySims = 0, lambda = NULL,
+  errorEllipse = NULL)
 }
 \arguments{
 \item{nbAnimals}{Number of observed individuals to simulate.}
@@ -89,6 +90,9 @@ for the distance and angle covariates (e.g., 'centroid1.dist', 'centroid1.angle'
 of \code{centroids} as \code{paste0(rep(names(centroids),each=2),c(".dist",".angle"))}. Note that the angle covariates for each centroid are calculated relative to 
 the previous movement direction instead of standard directions relative to the x-axis; this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression.}
 
+\item{angleCovs}{Character vector indicating the names of any circular-circular regression angular covariates in \code{covs} or \code{spatialCovs} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
+using \code{\link{circAngles}}.}
+
 \item{obsPerAnimal}{Either the number of the number of observations per animal (if single value) or the bounds of the number of observations per animal (if vector of two values). In the latter case, 
 the numbers of obervations generated for each animal are uniformously picked from this interval. Alternatively, \code{obsPerAnimal} can be specified as
 a list of length \code{nbAnimals} with each element providing the number of observations (if single value) or the bounds (if vector of two values) for each individual.
@@ -131,6 +135,9 @@ For data streams, each element of \code{workBounds} should be a k x 2 matrix wit
 \item{workcons}{Deprecated. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
 through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.}
+
+\item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
+the diagonal elements of the t.p.m. are the reference. See \code{\link{fitHMM}}.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
