@@ -552,8 +552,14 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
 
-  if(length(covsCol)>0) {
-    rawCovs <- covsCol
+  if(length(covsCol)>0 | !is.null(recharge)) {
+    if(!is.null(recharge)){
+      covsCol <- cbind(covsCol,get_all_vars(recharge$g0,data),get_all_vars(recharge$theta,data))#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+      if(!all(names(covsCol) %in% names(data))){
+        covsCol <- covsCol[,names(covsCol) %in% names(data),drop=FALSE]
+      }
+      rawCovs <- covsCol
+    }
   }
   else {
     rawCovs <- NULL

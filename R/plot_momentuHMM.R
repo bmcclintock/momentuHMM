@@ -236,12 +236,13 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     if(!all(names(covsCol) %in% names(m$data))){
       covsCol <- covsCol[,names(covsCol) %in% names(m$data),drop=FALSE]
     }
-    m$rawCovs <- covsCol[,c(unique(colnames(covsCol))),drop=FALSE]
+    rawCovs <- covsCol[which(m$data$ID %in% ID),c(unique(colnames(covsCol))),drop=FALSE]
   } else {
     nbG0covs <- 0
     nbRecovs <- 0
     g0covs <- NULL
     recovs <- NULL
+    rawCovs <- m$rawCovs[which(m$data$ID %in% ID),,drop=FALSE]
   }
 
   Par <- m$mle[distnames]
@@ -673,7 +674,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     if(nrow(beta$beta)>1) {
       
       # values of each covariate
-      rawCovs <- m$rawCovs[which(m$data$ID %in% ID),,drop=FALSE]
+      #rawCovs <- m$rawCovs[which(m$data$ID %in% ID),,drop=FALSE]
       #if(is.null(covs)) {
       #  rawCovs <- m$rawCovs
       #  meanCovs <- colSums(rawCovs)/nrow(rawCovs)
