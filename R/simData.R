@@ -443,12 +443,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             DM[[i]] <- tmpDM
           }
         }
-        model$conditions$estAngleMean[[i]]<-estAngleMean[[i]]
-        model$conditions$userBounds[[i]]<-userBounds[[i]]
-        model$conditions$workBounds[[i]]<-workBounds[[i]]
-        model$conditions$cons[[i]]<-cons[[i]]
-        model$conditions$workcons[[i]]<-workcons[[i]]
-        model$conditions$DM[[i]]<-DM[[i]]
       }
     }
     beta <- model$mle$beta
@@ -491,9 +485,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         }
       }
       covsCol<-unique(covsCol)
+      covsCol <- covsCol[!(covsCol %in% "ID")]
       
-      
-
       if(length(covsCol)) covs <- model$data[covsCol]
     }
     # else, allow user to enter new values for covariates
@@ -622,11 +615,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
   }
 
-  if(!is.null(covs) & nbCovs>0) {
-    if(ncol(covs)!=nbCovs)
-      warning("covs and nbCovs argument conflicting - nbCovs was set to ncol(covs)")
+  if(is.null(model)){
+    if(!is.null(covs) & nbCovs>0) {
+      if(ncol(covs)!=nbCovs)
+        warning("covs and nbCovs argument conflicting - nbCovs was set to ncol(covs)")
+    }
   }
-
+  
   if(!is.null(covs)) {
     if(!is.data.frame(covs))
       stop("'covs' should be a data.frame")
