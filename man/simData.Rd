@@ -8,10 +8,11 @@ simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
   delta = NULL, formula = ~1, formulaDelta = ~1, covs = NULL,
   nbCovs = 0, spatialCovs = NULL, zeroInflation = NULL,
   oneInflation = NULL, circularAngleMean = NULL, centers = NULL,
-  centroids = NULL, obsPerAnimal = c(500, 1500), initialPosition = c(0,
-  0), DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL,
-  workcons = NULL, betaRef = NULL, stateNames = NULL, model = NULL,
-  states = FALSE, retrySims = 0, lambda = NULL, errorEllipse = NULL)
+  centroids = NULL, angleCovs = NULL, obsPerAnimal = c(500, 1500),
+  initialPosition = c(0, 0), DM = NULL, cons = NULL, userBounds = NULL,
+  workBounds = NULL, workcons = NULL, betaRef = NULL, stateNames = NULL,
+  model = NULL, states = FALSE, retrySims = 0, lambda = NULL,
+  errorEllipse = NULL)
 }
 \arguments{
 \item{nbAnimals}{Number of observed individuals to simulate.}
@@ -88,6 +89,9 @@ covariates can be included in \code{formula} and \code{DM} using the names of \c
 for the distance and angle covariates (e.g., 'centroid1.dist', 'centroid1.angle', 'centroid2.dist', 'centroid2.angle'); otherwise the covariate names are derived from the list names
 of \code{centroids} as \code{paste0(rep(names(centroids),each=2),c(".dist",".angle"))}. Note that the angle covariates for each centroid are calculated relative to 
 the previous movement direction instead of standard directions relative to the x-axis; this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression.}
+
+\item{angleCovs}{Character vector indicating the names of any circular-circular regression angular covariates in \code{covs} or \code{spatialCovs} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
+using \code{\link{circAngles}}.}
 
 \item{obsPerAnimal}{Either the number of the number of observations per animal (if single value) or the bounds of the number of observations per animal (if vector of two values). In the latter case, 
 the numbers of obervations generated for each animal are uniformously picked from this interval. Alternatively, \code{obsPerAnimal} can be specified as
