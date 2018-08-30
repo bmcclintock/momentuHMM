@@ -364,9 +364,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     errorEllipse=NULL)
 {
   
-  if(!is.null(cons)) warning("cons argument is deprecated in momentuHMM >= 1.4.0. Please use workBounds instead.")
-  if(!is.null(workcons)) warning("workcons argument is deprecated in momentuHMM >= 1.4.0. Please use workBounds instead.")
-  if(!is.null(workBounds) & (!is.null(cons) | !is.null(workcons))) stop("workBounds cannot be specified when using deprecated arguments cons or workcons; either workBounds or both cons and workcons must be NULL")
+  if(!is.null(cons) & is.null(model)) warning("cons argument is deprecated in momentuHMM >= 1.4.0. Please use workBounds instead.")
+  if(!is.null(workcons) & is.null(model)) warning("workcons argument is deprecated in momentuHMM >= 1.4.0. Please use workBounds instead.")
+  if(!is.null(workBounds) & (!is.null(cons) | !is.null(workcons)) & is.null(model)) stop("workBounds cannot be specified when using deprecated arguments cons or workcons; either workBounds or both cons and workcons must be NULL")
   
   ##############################
   ## Check if !is.null(model) ##
