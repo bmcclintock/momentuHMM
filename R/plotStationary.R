@@ -64,7 +64,6 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
         plotCI <- FALSE
     }
 
-    # indices corresponding to regression coefficients in model$mod$estimate
     formula<-model$conditions$formula
     newForm <- newFormulas(formula,nbStates)
     formulaStates <- newForm$formulaStates
@@ -72,58 +71,73 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
     newformula <- newForm$newformula
     recharge <- newForm$recharge
     
-    if(!is.null(recharge)){
-      recovs <- model.matrix(recharge,model$data)
-      nbRecovs <- ncol(recovs)-1
-      g0 <- model$mle$g0
-      theta <- model$mle$theta
-      model$data$recharge <- cumsum(c(g0,theta%*%t(recovs[-nrow(recovs),])))
-      #recovs <- model.matrix(recharge,covs)
-      #covs$recharge <- g0 + theta%*%t(recovs)
-      #nbCovs <- nbCovs + 1
-      newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
-      covsCol <- get_all_vars(newformula,model$data)#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
-      if(!all(names(covsCol) %in% names(model$data))){
-        covsCol <- covsCol[,names(covsCol) %in% names(model$data),drop=FALSE]
-      }
-      model$rawCovs <- covsCol
-    } else {
-      nbRecovs <- 0
-      recovs <- NULL
-    }
-    
-    nbCovs <- ncol(model.matrix(newformula,model$data))-1 # substract intercept column
-    gamInd<-(length(model$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(model$mod$estimate))-ifelse(nbRecovs,(nbRecovs+1)+1,0)-ncol(model$covsDelta)*(nbStates-1)*(!model$conditions$stationary)
-    gamInd <- gamInd[model$conditions$betaCons]
-    
-    rawCovs <- model$rawCovs
-    
     if(is.null(covs)){
-        covs <- model$data[1,]
-        for(j in names(model$data)[which(unlist(lapply(model$data,function(x) any(class(x) %in% meansList))))]){
-          if(inherits(model$data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(model$data[[j]][!is.na(model$data[[j]])])
-          else covs[[j]]<-mean(model$data[[j]],na.rm=TRUE)
-        }
+      covs <- data[1,]
+      for(j in names(data)[which(unlist(lapply(data,function(x) any(class(x) %in% meansList))))]){
+        if(inherits(data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(data[[j]][!is.na(data[[j]])])
+        else covs[[j]]<-mean(data[[j]],na.rm=TRUE)
+      }
     } else {
-        if(!is.data.frame(covs)) stop('covs must be a data frame')
-        if(nrow(covs)>1) stop('covs must consist of a single row')
-        if(!all(names(covs) %in% names(model$data))) stop('invalid covs specified')
-        if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(model$data$ID))
-        for(j in names(model$data)[which(names(model$data) %in% names(covs))]){
-          if(inherits(model$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(model$data[[j]]))
-          if(is.na(covs[[j]])) stop("check value for ",j)
-        }
-        for(j in names(model$data)[which(!(names(model$data) %in% names(covs)))]){
-          if(inherits(model$data[[j]],"factor")) covs[[j]] <- model$data[[j]][1]
-          else if(inherits(model$data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(model$data[[j]][!is.na(model$data[[j]])])
-          else if(any(class(model$data[[j]]) %in% meansList)) covs[[j]]<-mean(model$data[[j]],na.rm=TRUE)
-        }
+      if(!is.data.frame(covs)) stop('covs must be a data frame')
+      if(nrow(covs)>1) stop('covs must consist of a single row')
+      if(is.null(recharge))
+        if(!all(names(covs) %in% names(data))) stop('invalid covs specified')
+      else 
+        if(!all(names(covs) %in% c(names(data),"recharge"))) stop('invalid covs specified')
+      if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(data$ID))
+      for(j in names(data)[which(names(data) %in% names(covs))]){
+        if(inherits(data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(data[[j]]))
+        if(is.na(covs[[j]])) stop("check value for ",j)
+      }
+      for(j in names(data)[which(!(names(data) %in% names(covs)))]){
+        if(inherits(data[[j]],"factor")) covs[[j]] <- data[[j]][1]
+        else if(inherits(data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(data[[j]][!is.na(data[[j]])])
+        else if(any(class(data[[j]]) %in% meansList)) covs[[j]]<-mean(data[[j]],na.rm=TRUE)
+      }
+    }
+    
+    aInd <- NULL
+    nbAnimals <- length(unique(data$ID))
+    for(i in 1:nbAnimals){
+      aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
     }
     
     if(!is.null(recharge)){
-      recovs <- model.matrix(recharge,covs)
-      covs$recharge <- g0 + theta%*%t(recovs)
+      g0covs <- model.matrix(recharge$g0,data[aInd,])
+      nbG0covs <- ncol(g0covs)-1
+      recovs <- model.matrix(recharge$theta,data)
+      nbRecovs <- ncol(recovs)-1
+      data$recharge<-rep(0,nrow(data))
+      for(i in 1:nbAnimals){
+        idInd <- which(data$ID==unique(data$ID)[i])
+        if(nbRecovs){
+          g0 <- model$mle$g0 %*% t(g0covs[i,,drop=FALSE])
+          theta <- model$mle$theta
+          data$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
+        }
+      }
+      g0covs <- model.matrix(recharge$g0,covs)
+      g0 <- model$mle$g0 %*% t(g0covs)
+      recovs <- model.matrix(recharge$theta,covs)
+      if(is.null(covs$recharge)) covs$recharge <- mean(data$recharge) #g0 + theta%*%t(recovs)
+      newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
+      covsCol <- cbind(get_all_vars(newformula,data),get_all_vars(recharge$theta,data))#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+      if(!all(names(covsCol) %in% names(data))){
+        covsCol <- covsCol[,names(covsCol) %in% names(data),drop=FALSE]
+      }
+      rawCovs <- covsCol[,c(unique(colnames(covsCol))),drop=FALSE]
+    } else {
+      nbG0covs <- 0
+      nbRecovs <- 0
+      g0covs <- NULL
+      recovs <- NULL
+      rawCovs <- model$rawCovs
     }
+    
+    nbCovs <- ncol(model.matrix(newformula,data))-1 # substract intercept column
+    
+    gamInd<-(length(model$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(model$mod$estimate))-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-ncol(model$covsDelta)*(nbStates-1)*(!model$conditions$stationary)
+    #gamInd <- gamInd[model$conditions$betaCons]
     
     # loop over covariates
     for(cov in 1:ncol(rawCovs)) {
@@ -164,27 +178,38 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
           tmpcovs[i]<-round(covs[names(rawCovs)][i],2)
         }
 
-        tmpSplineInputs<-getSplineFormula(newformula,model$data,tempCovs)
+        tmpSplineInputs<-getSplineFormula(newformula,data,tempCovs)
 
-        desMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
-
-        statPlot(model,list(beta=beta,g0=g0,theta=theta),Sigma,nbStates,desMat,tempCovs,tmpcovs,cov,recovs,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
+        statPlot(model,Sigma,nbStates,tmpSplineInputs$formula,tmpSplineInputs$covs,tempCovs,tmpcovs,cov,recharge,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
     }
 }
 
 # for differentiation in delta method
-get_stat <- function(beta,covs,recovs,nbStates,i,betaRef,workBounds=matrix(c(-Inf,Inf),length(beta),2,byrow=TRUE)) {
-  beta <- w2wn(beta,workBounds)
-  if(!is.null(recovs)){
-    covs[["recharge"]] <- beta[length(beta)-ncol(recovs)]+beta[length(beta)-(ncol(recovs)-1):0]%*%t(recovs)
-    covs <- matrix(covs,1)
-  }
-  beta <- matrix(beta[1:(nbStates*(nbStates-1)*ncol(covs))],ncol(covs))
+get_stat <- function(beta,covs,nbStates,i,betaRef,betaCons,workBounds=matrix(c(-Inf,Inf),length(betaCons),2,byrow=TRUE)) {
+  beta <- w2wn(beta[betaCons],workBounds)
+  beta <- matrix(beta,ncol(covs))
   gamma <- trMatrix_rcpp(nbStates,beta,covs,betaRef)[,,1]
   solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i]
 }
 
-statPlot<-function(model,beta,Sigma,nbStates,desMat,tempCovs,tmpcovs,cov,recovs,alpha,gridLength,gamInd,covnames,col,plotCI,...){
+get_stat_recharge <- function(beta,covs,formula,recharge,nbStates,i,betaRef,betaCons,workBounds=matrix(c(-Inf,Inf),length(betaCons)+length(beta[(max(betaCons)+1):length(beta)]),2,byrow=TRUE)){
+  
+  recovs <- model.matrix(recharge$theta,covs)
+  
+  beta <- w2wn(c(beta[betaCons],beta[length(beta)-(ncol(recovs)-1):0]),workBounds)
+  
+  #g0 <- beta[length(beta)-ncol(recovs)-(ncol(g0covs)-1):0] %*% t(g0covs)
+  theta <- beta[length(beta)-(ncol(recovs)-1):0]
+  covs[,"recharge"] <- covs[,"recharge"] + theta%*%t(recovs) # g0  + theta%*%t(recovs)
+  #covs <- matrix(covs,1)
+  
+  newcovs <- model.matrix(formula,covs)
+  beta <- matrix(beta[1:(nbStates*(nbStates-1)*ncol(newcovs))],ncol(newcovs))
+  gamma <- trMatrix_rcpp(nbStates,beta,newcovs,betaRef)[,,1]
+  solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i]
+}
+
+statPlot<-function(model,Sigma,nbStates,formula,covs,tempCovs,tmpcovs,cov,recharge,alpha,gridLength,gamInd,covnames,col,plotCI,...){
 
     if(!missing(...)){
         arg <- list(...)
@@ -220,8 +245,13 @@ statPlot<-function(model,beta,Sigma,nbStates,desMat,tempCovs,tmpcovs,cov,recovs,
     }
     marg <- arg
     marg$cex <- NULL
-
-    probs <- stationary(model, covs=desMat)
+    
+    if(is.null(recharge)){
+      desMat <- model.matrix(formula,data=covs)
+      probs <- stationary(model, covs=desMat)
+    } else {
+      probs <- stationary(model, covs=covs)
+    }
 
     if(!is.factor(tempCovs[,cov])){
         do.call(plot,c(list(tempCovs[,cov],probs[,1],type="l",ylim=c(0,1),col=col[1],xlab=covnames[cov], ylab="Stationary state probabilities",lwd=lwd),arg))
@@ -246,14 +276,17 @@ statPlot<-function(model,beta,Sigma,nbStates,desMat,tempCovs,tmpcovs,cov,recovs,
         uci <- matrix(NA,gridLength,nbStates)
 
         for(state in 1:nbStates) {
+          
+          if(is.null(recharge)){
             dN <- t(apply(desMat, 1, function(x)
-                numDeriv::grad(get_stat,c(model$mle$beta,model$mle$g0,model$mle$theta),covs=x,recovs=recovs,nbStates=nbStates,i=state,betaRef=model$conditions$betaRef,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$g0,model$conditions$workBounds$theta))))
-
+                numDeriv::grad(get_stat,model$mod$estimate[gamInd[unique(c(model$conditions$betaCons))]],covs=matrix(x,1),nbStates=nbStates,i=state,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=model$conditions$workBounds$beta)))
             tmpSig <- Sigma[gamInd,gamInd]
-            if(!is.null(recovs)){
-              nbRecovs <- ncol(recovs)-1
-              tmpSig <- Sigma[c(gamInd,length(model$mod$estimate)-(nbRecovs+1):0),c(gamInd,length(model$mod$estimate)-(nbRecovs+1):0)]
-            }
+          } else {
+            recovs <- model.matrix(recharge$theta,tempCovs)
+            nbRecovs <- ncol(recovs)-1
+            tmpSig <- Sigma[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0),c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)]
+            dN<-matrix(unlist(lapply(split(covs,1:nrow(covs)),function(x) tryCatch(numDeriv::grad(get_stat_recharge,model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=formula,recharge=recharge,nbStates=nbStates,i=state,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta)),error=function(e) NA))),ncol=ncol(tmpSig),byrow=TRUE)
+          }
             
             se <- t(apply(dN, 1, function(x)
                 suppressWarnings(sqrt(x%*%tmpSig%*%x))))
