@@ -209,10 +209,32 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
   p <- inputs$p
   DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,par,inputs$cons,inputs$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,inputs$circularAngleMean)
   
-  beta <- beta0
-  if(is.null(beta0) & nbStates>1) {
-    beta <- m$mle$beta
-    if(!is.null(fixPar$beta)) stop("fixPar$beta cannot be specified unless beta0 is specified")
+  if(is.null(m$conditions$recharge)){
+    if(is.null(beta0) & nbStates>1) {
+      beta <- list(beta=m$mle$beta)
+      if(!is.null(fixPar$beta)) stop("fixPar$beta cannot be specified unless beta0 is specified")
+    } else {
+      beta <- list(beta=beta0)
+    }
+  } else {
+    if(is.null(beta0$beta) & nbStates>1) {
+      beta <- list(beta=m$mle$beta)
+      if(!is.null(fixPar$beta)) stop("fixPar$beta cannot be specified unless beta0$beta is specified")
+    } else {
+      beta <- list(beta=beta0$beta)
+    }
+    if(is.null(beta0$g0) & nbStates>1) {
+      beta$g0 <- m$mle$g0
+      if(!is.null(fixPar$g0)) stop("fixPar$g0 cannot be specified unless beta0$g0 is specified")
+    } else {
+      beta$g0 <- beta0$g0
+    }
+    if(is.null(beta0$theta) & nbStates>1) {
+      beta$theta <- m$mle$theta
+      if(!is.null(fixPar$theta)) stop("fixPar$theta cannot be specified unless beta0$theta is specified")
+    } else {
+      beta$theta <- beta0$theta
+    }
   }
   
   delta <- delta0
@@ -265,12 +287,29 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
   }
   
   if(length(m$stateNames)>1){
+    if(!is.null(m$conditions$recharge)){
+      cat("\n")
+      cat("Initial recharge parameter (g0):\n")
+      cat("--------------------------------\n")
+      tmpPar <- m$mle$g0
+      if(is.null(beta0$g0))
+        tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
+      print(tmpPar) 
+      cat("\n")
+      cat("Recharge function parameters (theta):\n")
+      cat("-------------------------------------\n")
+      tmpPar <- m$mle$theta
+      if(is.null(beta0$theta))
+        tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
+      print(tmpPar) 
+    }
+     
     #if(!is.null(m$mle$beta)) {
     cat("\n")
     cat("Regression coeffs for the transition probabilities:\n")
     cat("---------------------------------------------------\n")
     tmpPar <- m$mle$beta
-    if(is.null(beta0))
+    if(is.null(beta0) & is.null(beta0$beta))
       tmpPar <- matrix(1:length(tmpPar),nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
     if(!is.null(betaCons))
       tmpPar <- matrix(tmpPar[c(betaCons)],nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))

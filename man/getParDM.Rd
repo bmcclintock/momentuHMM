@@ -63,7 +63,7 @@ specifies (-1,1) bounds for the concentration parameters instead of the default 
 For data streams, each element of \code{workBounds} should be a k x 2 matrix with the same name of the corresponding element of 
 \code{Par0}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta0)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta0)}.}
 
-\item{workcons}{An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
+\item{workcons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
 through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.}
 }

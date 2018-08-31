@@ -222,8 +222,14 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
     formulaStates <- newForm$formulaStates
     formterms <- newForm$formterms
     newformula <- newForm$newformula
+    recharge <- newForm$recharge
     
-    betaNames <- colnames(model.matrix(newformula,model$data))
+    if(!is.null(recharge)){
+      model$data$recharge <- rep(0,nrow(model$data))
+      betaNames <- colnames(model.matrix(as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge")),model$data))
+    } else {
+      betaNames <- colnames(model.matrix(newformula,model$data))
+    }
     tmpPar <- matrix(0,length(betaNames),nbStates*(nbStates-1))
     betaRef <- model$conditions$betaRef
     #if(length(model$stateNames)==1) tmpPar[1,] <- rep(-1.5,nbStates*(nbStates-1))
@@ -285,6 +291,27 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
       }
     } else {
       Par$delta<-NULL
+    }
+    if(!is.null(recharge)){
+      parmNames <- names(model$mle$g0)
+      g0Names <- colnames(model.matrix(recharge$g0,model$data))
+      g0 <- rep(0,length(g0Names))
+      if(any(g0Names %in% parmNames)){
+        if(is.miSum(model))
+          g0[g0Names %in% parmNames]<-nw2w(model$mle$g0,model$conditions$workBounds$g0)[parmNames %in% g0Names]
+        else 
+          g0[g0Names %in% parmNames]<-model$mod$estimate[parindex[["beta"]]+length(model$mle$beta)+length(model$CIbeta$delta$est)+1:length(model$mle$g0)][parmNames %in% g0Names]
+      }
+      parmNames <- names(model$mle$theta)
+      thetaNames <- colnames(model.matrix(recharge$theta,model$data))
+      theta <- rep(0,length(thetaNames))
+      if(any(thetaNames %in% parmNames)){
+        if(is.miSum(model))
+          theta[thetaNames %in% parmNames]<-nw2w(model$mle$theta,model$conditions$workBounds$theta)[parmNames %in% thetaNames]
+        else 
+          theta[thetaNames %in% parmNames]<-model$mod$estimate[parindex[["beta"]]+length(model$mle$beta)+length(model$CIbeta$delta$est)+length(model$mle$g0)+1:length(model$mle$theta)][parmNames %in% thetaNames]
+      }
+      Par$beta <- list(beta=Par$beta,g0=g0,theta=theta)
     }
   } else {
     Par$beta<-NULL
