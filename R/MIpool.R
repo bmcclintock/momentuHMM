@@ -170,14 +170,20 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   parmcols <- parCount
   parmcols$beta <- ncol(m$mle$beta)
   parmcols$delta <- nbStates-1
-  parmcols <- unlist(parmcols[parms])
-  
+
   parindex <- c(0,cumsum(c(unlist(parCount),length(m$mle$beta),ncol(m$covsDelta)*(nbStates-1))))
   names(parindex)[1:length(distnames)] <- distnames
   if(nbStates>1) {
     names(parindex)[length(distnames)+1] <- "beta"
     names(parindex)[length(parindex)-1] <- "delta"
+    if(!is.null(m$conditions$recharge)){
+      parindex <- c(0,cumsum(c(unlist(parCount),length(m$mle$beta),ncol(m$covsDelta)*(nbStates-1),length(m$mle$g0),length(m$mle$theta))))
+      names(parindex)[1:(length(parindex)-1)] <- c(distnames,"beta","delta","g0","theta")
+      parmcols$g0 <- length(m$mle$g0)
+      parmcols$theta <- length(m$mle$theta)
+    }
   }
+  parmcols <- unlist(parmcols[parms])
   
   miBeta <- miCombo <- mitools::MIcombine(results=betaCoeff,variances=betaVar)
   # account for betaCons
@@ -229,6 +235,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   for(i in distnames){
     if(dist[[i]] %in% angledists) {
       mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,CircStats::circ.mean)
+      class(mhdata[[i]]) <- c("angle",class(mhdata[[i]]))
     } else if(dist[[i]] %in% "pois"){
       mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,median)     
     } else {
@@ -236,7 +243,10 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     }
   }
   for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansListNoTime))) & !(names(m$data) %in% distnames))]){
-    mhdata[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[j]])),ncol=length(m$data[[j]]),byrow=TRUE),2,mean)
+    if(inherits(m$data[[j]],"angle")) {
+      mhdata[[j]] <- apply(matrix(unlist(lapply(im,function(x) x$data[[j]])),ncol=length(m$data[[j]]),byrow=TRUE),2,CircStats::circ.mean)
+      class(mhdata[[j]]) <- c("angle",class(mhdata[[j]]))
+    } else mhdata[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[j]])),ncol=length(m$data[[j]]),byrow=TRUE),2,mean)
   }
   mhrawCovs<-m$rawCovs
   if(length(mhrawCovs)){
@@ -271,8 +281,8 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   }
   
   tmPar <- lapply(m$mle[distnames],function(x) c(t(x)))
-  parindex <- c(0,cumsum(unlist(parCount))[-length(m$conditions$fullDM)])
-  names(parindex) <- distnames
+  #parindex <- c(0,cumsum(unlist(parCount))[-length(m$conditions$fullDM)])
+  #names(parindex) <- distnames
   for(i in distnames){
     if(!is.null(m$conditions$DM[[i]])){# & m$conditions$DMind[[i]]){
       tmPar[[i]] <- m$mod$estimate[parindex[[i]]+1:parCount[[i]]]
@@ -297,8 +307,37 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   formulaStates <- newForm$formulaStates
   formterms <- newForm$formterms
   newformula <- newForm$newformula
+  recharge <- newForm$recharge
   
-  nbCovs <- ncol(model.matrix(newformula,m$data))-1 # substract intercept column
+  nbCovs <- ncol(model.matrix(newformula,mhdata))-1 # substract intercept column
+  
+  aInd <- NULL
+  nbAnimals <- length(unique(mhdata$ID))
+  for(i in 1:nbAnimals){
+    aInd <- c(aInd,which(mhdata$ID==unique(mhdata$ID)[i])[1])
+  }
+  
+  if(!is.null(recharge)){
+    g0covs <- model.matrix(recharge$g0,mhdata[aInd,])
+    nbG0covs <- ncol(g0covs)-1
+    recovs <- model.matrix(recharge$theta,mhdata)
+    nbRecovs <- ncol(recovs)-1
+    mhdata$recharge<-rep(0,nrow(mhdata))
+    for(i in 1:nbAnimals){
+      idInd <- which(mhdata$ID==unique(mhdata$ID)[i])
+      if(nbRecovs){
+        g0 <- m$mle$g0 %*% t(g0covs[i,,drop=FALSE])
+        theta <- m$mle$theta
+        mhdata$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
+      }
+    }
+    if(is.null(tempCovs$recharge)) tempCovs$recharge <- mean(mhdata$recharge)
+    newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
+    nbCovs <- nbCovs + 1
+  } else {
+    nbG0covs <- 0
+    nbRecovs <- 0
+  }
   
   #miBeta <- mitools::MIcombine(results=lapply(im,function(x) x$mod$estimate),variances=lapply(im,function(x) x$mod$Sigma))
   
@@ -348,15 +387,27 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     
   # pooled gamma estimates
   if(nbStates>1){
-    gamInd<-(length(miBeta$coefficients)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(miBeta$coefficients))-ncol(m$covsDelta)*(nbStates-1)*(1-m$conditions$stationary)
+    gamInd <- (parindex[["beta"]]+1:((nbCovs+1)*nbStates*(nbStates-1)))[unique(c(m$conditions$betaCons))]
     tmpSplineInputs<-getSplineFormula(newformula,mhdata,tempCovs)
     tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
-    est <- get_gamma(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),tempCovMat,nbStates,1:nbStates,1:nbStates,m$conditions$betaRef)
+    if(is.null(recharge)){
+      wpar <- miBeta$coefficients[gamInd]
+      est <- get_gamma(wpar,tempCovMat,nbStates,1:nbStates,1:nbStates,m$conditions$betaRef,m$conditions$betaCons)
+      tmpSig <- miBeta$variance[gamInd,gamInd]
+    } else {
+      wpar <- c(miBeta$coefficients[gamInd],miBeta$coefficients[length(miBeta$coefficients)-nbRecovs:0])
+      est <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,recharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons)
+      tmpSig <- miBeta$variance[c(gamInd,length(miBeta$coefficients)-nbRecovs:0),c(gamInd,length(miBeta$coefficients)-nbRecovs:0)]
+    }
     lower<-upper<-se<-matrix(0,nrow(est),ncol(est))
     for(i in 1:nrow(est)){
       for(j in 1:ncol(est)){
-        dN<-numDeriv::grad(get_gamma,matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),covs=model.matrix(newformula,mhdata),nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef)
-        se[i,j]<-suppressWarnings(sqrt(dN%*%miBeta$variance[gamInd[m$conditions$betaCons],gamInd[m$conditions$betaCons]]%*%dN))
+        if(is.null(recharge)){
+          dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons)
+        } else {
+          dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons)
+        }  
+        se[i,j]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
         lower[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))-quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]-quantSup*se[i,j]
         upper[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))+quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]+quantSup*se[i,j]
       }
@@ -368,7 +419,8 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   # pooled delta estimates
   if(!m$conditions$stationary & nbStates>1){
     nbCovsDelta <- ncol(m$covsDelta)-1
-    deltInd <- (length(miBeta$coefficients)-(nbCovsDelta+1)*(nbStates-1)+1):length(miBeta$coefficients)
+    foo <- length(miBeta$coefficients)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-(nbCovsDelta+1)*(nbStates-1)
+    deltInd <- foo+1:(nbCovsDelta+1)*(nbStates-1)
     delta <- matrix(miBeta$coefficients[deltInd],nrow=nbCovsDelta+1)
     est<-lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsDelta),ncol=nbStates)
     for(j in 1:nrow(m$covsDelta)){
@@ -476,6 +528,19 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   mh$data<-mhdata
   mh$rawCovs<-mhrawCovs
+  
+  # get fixPar$delta in working scale format so expandPar works correctly in post-analysis
+  if(!mh$conditions$stationary & nbStates>1) {
+    if(any(!is.na(mh$conditions$fixPar$delta))){
+      tmp <- which(!is.na(mh$conditions$fixPar$delta))
+      if(!nbCovsDelta){
+        delta0 <- mh$conditions$fixPar$delta
+        delta0 <- matrix(delta0,1,nbStates)
+        delta0 <- log(delta0[-1]/delta0[1])
+        mh$conditions$fixPar$delta <- as.vector(delta0)
+      }
+    } else mh$conditions$fixPar$delta <- rep(NA,length(deltInd))
+  }
 
   errorEllipse<-NULL
   if(all(c("x","y") %in% names(mh$data))){

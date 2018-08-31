@@ -80,21 +80,29 @@ pseudoRes <- function(m, ncores = 1)
       m$conditions$workcons[[i]]<-rep(0,length(m$conditions$workcons[[i]]))
       m$conditions$workBounds[[i]]<-matrix(c(-Inf,Inf),nrow(m$conditions$workBounds[[i]]),2,byrow=TRUE)
     }
-    if(!is.null(m$mle$beta)) m$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(m$mle$beta),2,byrow=TRUE)
-    if(!is.null(m$Par$beta$delta$est)) m$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(m$Par$beta$delta$est),2,byrow=TRUE)
     
     Par<-lapply(Par,function(x) c(t(x)))
     Par<-Par[distnames]
     beta <- m$Par$beta$beta$est
     delta <- m$Par$real$delta$est
+    if(!is.null(beta)) m$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(beta),2,byrow=TRUE)
+    if(!is.null(m$Par$beta$delta$est)) m$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(m$Par$beta$delta$est),2,byrow=TRUE)
+    
+    g0 <- c(m$Par$beta$g0$est)
+    theta <- c(m$Par$beta$theta$est)
+    if(!is.null(g0)) m$conditions$workBounds$g0<-matrix(c(-Inf,Inf),length(g0),2,byrow=TRUE)
+    if(!is.null(theta)) m$conditions$workBounds$theta<-matrix(c(-Inf,Inf),length(theta),2,byrow=TRUE)
+    
     inputs <- checkInputs(nbStates,dist,Par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
     p <- inputs$p
     DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
     m$conditions$fullDM <- DMinputs$fullDM
-    m$mod$estimate <- n2w(Par,p$bounds,beta,m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+    m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
   } else {
     beta <- m$mle$beta
     delta <- m$mle$delta
+    g0 <- m$mle$g0
+    theta <- m$mle$theta
   }
   
   consensus <- vector('list',length(distnames))
@@ -123,13 +131,42 @@ pseudoRes <- function(m, ncores = 1)
   formulaStates <- newForm$formulaStates
   formterms <- newForm$formterms
   newformula <- newForm$newformula
+  recharge <- newForm$recharge
+  
+  aInd <- NULL
+  nbAnimals <- length(unique(data$ID))
+  for(i in 1:nbAnimals){
+    aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
+  }
+  
+  if(!is.null(recharge)){
+    g0covs <- model.matrix(recharge$g0,data[aInd,])
+    nbG0covs <- ncol(g0covs)-1
+    recovs <- model.matrix(recharge$theta,data)
+    nbRecovs <- ncol(recovs)-1
+    data$recharge<-rep(0,nrow(data))
+    for(i in 1:nbAnimals){
+      idInd <- which(data$ID==unique(data$ID)[i])
+      if(nbRecovs){
+        g0 <- g0 %*% t(g0covs[i,,drop=FALSE])
+        theta <- theta
+        data$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
+      }
+    }
+    #for(j in 1:nbStates){
+    #  formulaStates[[j]] <- as.formula(paste0(Reduce( paste, deparse(formulaStates[[j]]) ),"+recharge"))
+    #}
+    #formterms <- c(formterms,"recharge")
+    newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
+  } else {
+    nbG0covs <- 0
+    nbRecovs <- 0
+    g0covs <- NULL
+    recovs <- NULL
+  }
   
   covs <- model.matrix(newformula,data)
   nbCovs <- ncol(covs)-1 # substract intercept column
-  
-  aInd <- NULL
-  for(i in 1:length(unique(m$data$ID)))
-    aInd <- c(aInd,which(m$data$ID==unique(m$data$ID)[i])[1])
   
   nc <- meanind <- vector('list',length(distnames))
   names(nc) <- names(meanind) <- distnames
@@ -149,10 +186,17 @@ pseudoRes <- function(m, ncores = 1)
   
   par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds)
   
-  if(nbStates>1)
-    trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs),m$conditions$betaRef)
-  else
-    trMat <- array(1,dim=c(1,1,nbObs))
+  #tmpSplineInputs<-getSplineFormula(newformula,data,covs)
+  #desMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+  
+  if(nbStates>1){
+    if(is.null(recharge)){
+      trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs),m$conditions$betaRef)
+    } else {
+      gamInd<-(length(m$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(m$mod$estimate))-ifelse(nbRecovs,nbRecovs+1+nbG0covs+1,0)-ncol(m$covsDelta)*(nbStates-1)*(!m$conditions$stationary)
+      trMat <- array(unlist(lapply(split(data,1:nrow(data)),function(x) tryCatch(get_gamma_recharge(m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)],covs=x,formula=newformula,recharge=recharge,nbStates=nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta)),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(data)))
+    }
+  } else trMat <- array(1,dim=c(1,1,nbObs))
 
   genRes <- list()
   for(j in distnames){

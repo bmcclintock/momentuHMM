@@ -29,10 +29,46 @@ allProbs <- function(m)
   oneInflation <- m$conditions$oneInflation
   nbObs <- nrow(data)
   
+  if(is.miSum(m)){
+
+    Par <- lapply(m$Par$real,function(x) x$est)
+    for(i in distnames){
+      if(!is.null(m$conditions$DM[[i]]))
+        Par[[i]] <- m$Par$beta[[i]]$est
+      else if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]])
+        Par[[i]] <- Par[[i]][-1,]
+      
+      m$conditions$cons[[i]]<-rep(1,length(m$conditions$cons[[i]]))
+      m$conditions$workcons[[i]]<-rep(0,length(m$conditions$workcons[[i]]))
+      m$conditions$workBounds[[i]]<-matrix(c(-Inf,Inf),nrow(m$conditions$workBounds[[i]]),2,byrow=TRUE)
+    }
+    
+    Par<-lapply(Par,function(x) c(t(x)))
+    Par<-Par[distnames]
+    beta <- m$Par$beta$beta$est
+    delta <- m$Par$real$delta$est
+    if(!is.null(beta)) m$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(beta),2,byrow=TRUE)
+    if(!is.null(m$Par$beta$delta$est)) m$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(m$Par$beta$delta$est),2,byrow=TRUE)
+    
+    g0 <- c(m$Par$beta$g0$est)
+    theta <- c(m$Par$beta$theta$est)
+    if(!is.null(g0)) m$conditions$workBounds$g0<-matrix(c(-Inf,Inf),length(g0),2,byrow=TRUE)
+    if(!is.null(theta)) m$conditions$workBounds$theta<-matrix(c(-Inf,Inf),length(theta),2,byrow=TRUE)
+    
+    inputs <- checkInputs(nbStates,dist,Par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
+    p <- inputs$p
+    DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+    m$conditions$fullDM <- DMinputs$fullDM
+    m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+  } else {
+    beta <- m$mle$beta
+    delta <- m$mle$delta
+    g0 <- m$mle$g0
+    theta <- m$mle$theta
+  }
+  
   formula<-m$conditions$formula
   newForm <- newFormulas(formula,nbStates)
-  formulaStates <- newForm$formulaStates
-  formterms <- newForm$formterms
   newformula <- newForm$newformula
   recharge <- newForm$recharge
   
@@ -44,28 +80,17 @@ allProbs <- function(m)
   
   if(!is.null(recharge)){
     g0covs <- model.matrix(recharge$g0,data[aInd,])
-    nbG0covs <- ncol(g0covs)-1
     recovs <- model.matrix(recharge$theta,data)
     nbRecovs <- ncol(recovs)-1
     data$recharge<-rep(0,nrow(data))
     for(i in 1:nbAnimals){
       idInd <- which(data$ID==unique(data$ID)[i])
       if(nbRecovs){
-        g0 <- m$mle$g0 %*% t(g0covs[i,,drop=FALSE])
-        theta <- m$mle$theta
+        g0 <- g0 %*% t(g0covs[i,,drop=FALSE])
         data$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
       }
     }
-    for(j in 1:nbStates){
-      formulaStates[[j]] <- as.formula(paste0(Reduce( paste, deparse(formulaStates[[j]]) ),"+recharge"))
-    }
-    formterms <- c(formterms,"recharge")
     newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
-  } else {
-    nbG0covs <- 0
-    nbRecovs <- 0
-    g0covs <- NULL
-    recovs <- NULL
   }
   
   nbCovs <- ncol(model.matrix(newformula,data))-1 # substract intercept column

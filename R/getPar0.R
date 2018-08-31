@@ -97,7 +97,14 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
     model$mle$beta <- model$Par$beta$beta$est
     model$mle$delta <- model$Par$real$delta$est
     model$mod <- list()
-    model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,length(model$stateNames),model$covsDelta,model$conditions$stationary,nrow(model$Par$beta$beta$est)-1)
+    if(!is.null(model$conditions$recharge)){
+      nbRecovs <- ncol(model$g0covs) + ncol(model$reCovs)
+      model$mle$g0 <- c(model$Par$beta$g0$est)
+      names(model$mle$g0) <- colnames(model$Par$beta$g0$est)
+      model$mle$theta <- c(model$Par$beta$theta$est)
+      names(model$mle$theta) <- colnames(model$Par$beta$theta$est)
+    } else nbRecovs <- 0
+    model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,length(model$stateNames),model$covsDelta,model$conditions$stationary,nrow(model$Par$beta$beta$est)-1,nbRecovs)
     model$CIbeta <- model$Par$beta
     model$CIreal <- model$Par$real
   }

@@ -295,13 +295,25 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
     Par0[1:nSims]<-list(tmpPar0)
   } else if(length(Par0)<nSims) stop("Par0 must be a list of length >=",nSims)
   
-  if(!is.list(beta0)){
-    tmpbeta0<-beta0
-    beta0<-vector('list',nSims)
-    if(!is.null(tmpbeta0))
-        beta0[1:nSims]<-list(tmpbeta0)
-  } else if(length(beta0)<nSims) stop("beta0 must be a list of length >=",nSims)
+  newForm <- newFormulas(formula,nbStates)
+  recharge <- newForm$recharge
   
+  if(is.null(recharge)){
+    if(!is.list(beta0)){
+      tmpbeta0<-beta0
+      beta0<-vector('list',nSims)
+      if(!is.null(tmpbeta0))
+          beta0[1:nSims]<-list(tmpbeta0)
+    } else if(length(beta0)<nSims) stop("beta0 must be a list of length >=",nSims)
+  } else {
+    if(!is.list(beta0)) stop("beta0 must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
+    if(!is.list(beta0[[1]])){
+      tmpbeta0<-beta0
+      beta0<-vector('list',nSims)
+      if(!is.null(tmpbeta0))
+        beta0[1:nSims]<-list(tmpbeta0)
+    } else if(length(beta0)<nSims) stop("beta0 must be a list of length >=",nSims)    
+  }
   if(!is.list(delta0)){
     tmpdelta0<-delta0
     delta0<-vector('list',nSims)

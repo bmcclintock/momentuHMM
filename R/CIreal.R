@@ -200,24 +200,21 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     # identify parameters of interest
     i2 <- tail(cumsum(unlist(parCount)),1)+1
     i3 <- i2+nbStates*(nbStates-1)*(nbCovs+1)-1
-    tmpSig <- Sigma[(i2:i3)[unique(c(m$conditions$betaCons))],(i2:i3)[unique(c(m$conditions$betaCons))]]
-    if(!is.null(recharge)){
-      tmpSig <- Sigma[c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0),c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)]
-    }
-    wpar <- c(m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))],m$mod$estimate[length(m$mod$estimate)-nbRecovs:0])
+    
     quantSup <- qnorm(1-(1-alpha)/2)
     tmpSplineInputs<-getSplineFormula(newformula,m$data,tempCovs)
     tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
-    #if(nbRecovs){
-    #  tmptempCovMat <- cbind(tempCovMat,tempCovs$g0)
-    #  colnames(tmptempCovMat) <- c(colnames(tempCovMat),"recharge")
-    #  tempCovMat <- tmptempCovMat
-    #}
+    
     if(is.null(recharge)){
+      wpar <- m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))]
       est <- get_gamma(wpar,tempCovMat,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta)
+      tmpSig <- Sigma[(i2:i3)[unique(c(m$conditions$betaCons))],(i2:i3)[unique(c(m$conditions$betaCons))]]
     } else {
+      wpar <- c(m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))],m$mod$estimate[length(m$mod$estimate)-nbRecovs:0])
       est <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,recharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta))
+      tmpSig <- Sigma[c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0),c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)]
     }
+
     lower<-upper<-se<-matrix(NA,nbStates,nbStates)
     if(!is.null(Sigma)){
       for(i in 1:nbStates){
@@ -273,14 +270,14 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   return(Par)
 }
 
-get_gamma <- function(beta,covs,nbStates,i,j,betaRef,betaCons,workBounds=matrix(c(-Inf,Inf),length(betaCons),2,byrow=TRUE)){
+get_gamma <- function(beta,covs,nbStates,i,j,betaRef,betaCons,workBounds=NULL){
   beta <- w2wn(beta[betaCons],workBounds)
   beta <- matrix(beta,ncol(covs))
   gamma <- trMatrix_rcpp(nbStates,beta,covs,betaRef)[,,1]
   gamma[i,j]
 }
 
-get_gamma_recharge <- function(beta,covs,formula,recharge,nbStates,i,j,betaRef,betaCons,workBounds=matrix(c(-Inf,Inf),length(betaCons)+length(beta[(max(betaCons)+1):length(beta)]),2,byrow=TRUE)){
+get_gamma_recharge <- function(beta,covs,formula,recharge,nbStates,i,j,betaRef,betaCons,workBounds=NULL){
   
   recovs <- model.matrix(recharge$theta,covs)
   

@@ -164,19 +164,6 @@ CIbeta <- function(m,alpha=0.95)
     
     nbCovsDelta <- ncol(m$covsDelta)-1
     
-    if(!is.null(recharge)){
-      
-      ind <- tail(cumsum(unlist(parCount)),1)+(nbCovs+1)*nbStates*(nbStates-1)+(nbCovsDelta+1)*(nbStates-1)+1:(nbG0covs+1)
-      est <- w2wn(wpar[ind],m$conditions$workBounds$g0)
-      
-      Par$g0 <- get_CIwb(wpar[ind],est,ind,Sigma,alpha,m$conditions$workBounds$g0,rnames="[1,]",cnames=colnames(g0covs),cons=rep(1,length(est)))
-
-      ind <- tail(cumsum(unlist(parCount)),1)+(nbCovs+1)*nbStates*(nbStates-1)+(nbCovsDelta+1)*(nbStates-1)+nbG0covs+1+1:(nbRecovs+1)
-      est <- w2wn(wpar[ind],m$conditions$workBounds$theta)
-      
-      Par$theta <- get_CIwb(wpar[ind],est,ind,Sigma,alpha,m$conditions$workBounds$theta,rnames="[1,]",cnames=colnames(recovs),cons=rep(1,length(est)))
-      
-    }
   }
   
   # group CIs for initial distribution
@@ -189,6 +176,20 @@ CIbeta <- function(m,alpha=0.95)
     
     Par$delta <- get_CIwb(wpar[foo:dInd],est,foo:dInd,Sigma,alpha,m$conditions$workBounds$delta,rnames=colnames(m$covsDelta),cnames=m$stateNames[-1],cons=rep(1,length(est)))
 
+  }
+  
+  if(!is.null(recharge)){
+    
+    ind <- tail(cumsum(unlist(parCount)),1)+(nbCovs+1)*nbStates*(nbStates-1)+(nbCovsDelta+1)*(nbStates-1)+1:(nbG0covs+1)
+    est <- w2wn(wpar[ind],m$conditions$workBounds$g0)
+    
+    Par$g0 <- get_CIwb(wpar[ind],est,ind,Sigma,alpha,m$conditions$workBounds$g0,rnames="[1,]",cnames=colnames(g0covs),cons=rep(1,length(est)))
+    
+    ind <- tail(cumsum(unlist(parCount)),1)+(nbCovs+1)*nbStates*(nbStates-1)+(nbCovsDelta+1)*(nbStates-1)+nbG0covs+1+1:(nbRecovs+1)
+    est <- w2wn(wpar[ind],m$conditions$workBounds$theta)
+    
+    Par$theta <- get_CIwb(wpar[ind],est,ind,Sigma,alpha,m$conditions$workBounds$theta,rnames="[1,]",cnames=colnames(recovs),cons=rep(1,length(est)))
+    
   }
   return(Par)
 }

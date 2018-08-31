@@ -63,6 +63,15 @@ print.miSum <- function(x,...)
   }
   
   if(nbStates>1){
+    
+    if(!is.null(m$conditions$recharge)){
+      cat("\n")
+      cat("Recharge parameters for the transition probabilities:\n")
+      cat("-----------------------------------------------------\n")
+      g0theta <- c(m$Par$beta$g0$est,m$Par$beta$theta$est)
+      names(g0theta) <- c(paste0("g0:",colnames(m$Par$beta$g0$est)),paste0("theta:",colnames(m$Par$beta$theta$est)))
+      print(g0theta)      
+    }
   
     if(!is.null(m$Par$beta$beta)) {
       cat("\n")

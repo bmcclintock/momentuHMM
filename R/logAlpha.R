@@ -27,9 +27,13 @@ logAlpha <- function(m)
   if(is.miSum(m)){
     beta<-m$Par$beta$beta$est
     delta<-m$Par$real$delta$est
+    g0<-m$Par$beta$g0$est
+    theta<-m$Par$beta$theta$est
   } else {
     beta <- m$mle$beta
     delta <- m$mle$delta
+    g0 <- m$mle$g0
+    theta <- m$mle$theta
   }
   
   nbStates <- length(m$stateNames)
@@ -59,8 +63,7 @@ logAlpha <- function(m)
     for(i in 1:nbAnimals){
       idInd <- which(m$data$ID==unique(m$data$ID)[i])
       if(nbRecovs){
-        g0 <- m$mle$g0 %*% t(g0covs[i,,drop=FALSE])
-        theta <- m$mle$theta
+        g0 <- g0 %*% t(g0covs[i,,drop=FALSE])
         m$data$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
       }
     }
