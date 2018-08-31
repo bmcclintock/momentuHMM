@@ -508,7 +508,7 @@ fitHMM <- function(data,nbStates,dist,
     nbG0covs <- ncol(g0covs)-1
     recovs <- model.matrix(recharge$theta,data)
     nbRecovs <- ncol(recovs)-1
-    if(!nbRecovs) stop("invalid recharge model -- theta must include an intercept and at least 1 covariate")
+    if(!nbRecovs | !attributes(terms(recharge$theta))$intercept) stop("invalid recharge model -- theta must include an intercept and at least 1 covariate")
     tmpcovs <- cbind(covs,rep(0,nrow(data)))
     colnames(tmpcovs) <- c(colnames(covs),"recharge")
     covs <- tmpcovs
@@ -673,9 +673,9 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
   if(!is.null(recharge)){
-    if(is.null(beta0$g0)) beta0$g0 <- rep(0,nbG0covs+1)
+    if(is.null(beta0$g0)) beta0$g0 <- nw2w(rep(0,nbG0covs+1),workBounds$g0)
     else if(length(beta0$g0)!=(nbG0covs+1) | any(!is.numeric(beta0$g0))) stop("beta0$g0 must be a numeric vector of length ",nbG0covs+1)
-    if(is.null(beta0$theta)) beta0$theta <- c(-1,rep(1,nbRecovs))
+    if(is.null(beta0$theta)) beta0$theta <- nw2w(c(-1,rep(1,nbRecovs)),workBounds$theta)
     else if(length(beta0$theta)!=(nbRecovs+1) | any(!is.numeric(beta0$theta))) stop("beta0$theta must be a numeric vector of length ",nbRecovs+1)
   }
 
