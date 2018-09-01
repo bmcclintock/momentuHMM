@@ -17,6 +17,6 @@ Used in functions \code{\link{viterbi}}, \code{\link{logAlpha}}, \code{\link{log
 }
 \examples{
 \dontrun{
-P <- momentuHMM:::allProbs(m=example$m,nbStates=2)
+P <- momentuHMM:::allProbs(m=example$m)
 }
 }

@@ -904,7 +904,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     nbG0covs <- 0
     g0covs <- NULL
     recovs <- NULL
-    if(is.null(model)) beta <- list(beta=beta)
+    if(is.null(model) & !is.list(beta)) beta <- list(beta=beta)
   }
   
   nbBetaCovs <- ncol(model.matrix(newformula,tmpCovs))

@@ -309,8 +309,11 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
     cat("Regression coeffs for the transition probabilities:\n")
     cat("---------------------------------------------------\n")
     tmpPar <- m$mle$beta
-    if(is.null(beta0) & is.null(beta0$beta))
+    if(is.null(beta0))
       tmpPar <- matrix(1:length(tmpPar),nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
+    else if(!is.null(m$conditions$recharge)){
+      if(is.null(beta0$beta)) tmpPar <- matrix(1:length(tmpPar),nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
+    }
     if(!is.null(betaCons))
       tmpPar <- matrix(tmpPar[c(betaCons)],nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
     print(tmpPar)

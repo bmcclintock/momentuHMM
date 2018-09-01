@@ -13,7 +13,7 @@ n2w(par, bounds, beta, delta = NULL, nbStates, estAngleMean, DM, cons,
 \item{bounds}{Named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 distribution parameters for each data stream.}
 
-\item{beta}{Matrix of regression coefficients for the transition probabilities.}
+\item{beta}{List of regression coefficients for the transition probabilities.}
 
 \item{delta}{Initial distribution. Default: \code{NULL} ; if the initial distribution is not estimated.}
 
@@ -53,7 +53,7 @@ beta <- matrix(rnorm(6),ncol=2,nrow=3)
 delta <- c(0.6,0.4)
 
 #working parameters
-wpar <- momentuHMM:::n2w(par,bounds,beta,log(delta[-1]/delta[1]),nbStates,
+wpar <- momentuHMM:::n2w(par,bounds,list(beta=beta),log(delta[-1]/delta[1]),nbStates,
 m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
 
 #natural parameter

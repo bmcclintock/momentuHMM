@@ -63,8 +63,8 @@ logAlpha <- function(m)
     for(i in 1:nbAnimals){
       idInd <- which(m$data$ID==unique(m$data$ID)[i])
       if(nbRecovs){
-        g0 <- g0 %*% t(g0covs[i,,drop=FALSE])
-        m$data$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
+        g <- g0 %*% t(g0covs[i,,drop=FALSE])
+        m$data$recharge[idInd] <- cumsum(c(g,theta%*%t(recovs[idInd[-length(idInd)],])))
       }
     }
     for(j in 1:nbStates){

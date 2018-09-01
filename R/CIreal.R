@@ -237,14 +237,14 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     wpar<-m$mod$estimate
     nbCovsDelta <- ncol(m$covsDelta)-1
     foo <- length(wpar)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-(nbCovsDelta+1)*(nbStates-1)
-    delta <- matrix(wpar[foo+1:(nbCovsDelta+1)*(nbStates-1)],nrow=nbCovsDelta+1)
+    delta <- matrix(wpar[foo+1:((nbCovsDelta+1)*(nbStates-1))],nrow=nbCovsDelta+1)
     quantSup <- qnorm(1-(1-alpha)/2)
     lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsDelta),ncol=nbStates)
     if(!is.null(Sigma)){
       for(j in 1:nrow(m$covsDelta)){
         for(i in 1:nbStates){
           dN<-numDeriv::grad(get_delta,delta,covsDelta=m$covsDelta[j,,drop=FALSE],i=i,workBounds=m$conditions$workBounds$delta)
-          se[j,i]<-suppressWarnings(sqrt(dN%*%Sigma[foo+1:(nbCovsDelta+1)*(nbStates-1),foo+1:(nbCovsDelta+1)*(nbStates-1)]%*%dN))
+          se[j,i]<-suppressWarnings(sqrt(dN%*%Sigma[foo+1:((nbCovsDelta+1)*(nbStates-1)),foo+1:((nbCovsDelta+1)*(nbStates-1))]%*%dN))
           lower[j,i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))-quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[j,i])))#m$mle$delta[j,i]-quantSup*se[i]
           upper[j,i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))+quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[j,i])))#m$mle$delta[j,i]+quantSup*se[i]
         }

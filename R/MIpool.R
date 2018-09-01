@@ -420,7 +420,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   if(!m$conditions$stationary & nbStates>1){
     nbCovsDelta <- ncol(m$covsDelta)-1
     foo <- length(miBeta$coefficients)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-(nbCovsDelta+1)*(nbStates-1)
-    deltInd <- foo+1:(nbCovsDelta+1)*(nbStates-1)
+    deltInd <- foo+1:((nbCovsDelta+1)*(nbStates-1))
     delta <- matrix(miBeta$coefficients[deltInd],nrow=nbCovsDelta+1)
     est<-lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsDelta),ncol=nbStates)
     for(j in 1:nrow(m$covsDelta)){

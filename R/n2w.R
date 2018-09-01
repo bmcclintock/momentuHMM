@@ -8,7 +8,7 @@
 #' @param par Named list of vectors containing the initial parameter values for each data stream.
 #' @param bounds Named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 #' distribution parameters for each data stream.
-#' @param beta Matrix of regression coefficients for the transition probabilities.
+#' @param beta List of regression coefficients for the transition probabilities.
 #' @param delta Initial distribution. Default: \code{NULL} ; if the initial distribution is not estimated.
 #' @param nbStates The number of states of the HMM.
 #' @param estAngleMean Named list indicating whether or not to estimate the angle mean for data streams with angular 
@@ -35,7 +35,7 @@
 #' delta <- c(0.6,0.4)
 #' 
 #' #working parameters
-#' wpar <- momentuHMM:::n2w(par,bounds,beta,log(delta[-1]/delta[1]),nbStates,
+#' wpar <- momentuHMM:::n2w(par,bounds,list(beta=beta),log(delta[-1]/delta[1]),nbStates,
 #' m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
 #' 
 #' #natural parameter

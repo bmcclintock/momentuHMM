@@ -148,9 +148,8 @@ pseudoRes <- function(m, ncores = 1)
     for(i in 1:nbAnimals){
       idInd <- which(data$ID==unique(data$ID)[i])
       if(nbRecovs){
-        g0 <- g0 %*% t(g0covs[i,,drop=FALSE])
-        theta <- theta
-        data$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
+        g <- g0 %*% t(g0covs[i,,drop=FALSE])
+        data$recharge[idInd] <- cumsum(c(g,theta%*%t(recovs[idInd[-length(idInd)],])))
       }
     }
     #for(j in 1:nbStates){

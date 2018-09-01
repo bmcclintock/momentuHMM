@@ -49,7 +49,7 @@
 #' delta <- c(0.6,0.4)
 #' 
 #' #working parameters
-#' wpar <- momentuHMM:::n2w(par,bounds,beta,log(delta[-1]/delta[1]),nbStates,
+#' wpar <- momentuHMM:::n2w(par,bounds,list(beta=beta),log(delta[-1]/delta[1]),nbStates,
 #' m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
 #' 
 #' #natural parameter

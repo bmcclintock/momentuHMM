@@ -207,9 +207,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   nbCovs <- ncol(model.matrix(newformula,m$data))-1 # substract intercept column
   
   aInd <- NULL
-  nbAnimals <- length(unique(m$data$ID))
   for(i in 1:nbAnimals){
-    aInd <- c(aInd,which(m$data$ID==unique(m$data$ID)[i])[1])
+    aInd <- c(aInd,which(m$data$ID==ID[i])[1])
   }
   
   if(!is.null(recharge)){
@@ -219,7 +218,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     nbRecovs <- ncol(recovs)-1
     m$data$recharge<-rep(0,nrow(m$data))
     for(i in 1:nbAnimals){
-      idInd <- which(m$data$ID==unique(m$data$ID)[i])
+      idInd <- which(m$data$ID==ID[i])#which(m$data$ID==unique(m$data$ID)[i])
       if(nbRecovs){
         g0 <- m$mle$g0 %*% t(g0covs[i,,drop=FALSE])
         theta <- m$mle$theta
@@ -775,7 +774,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         
         if(plotStationary) {
           par(mfrow=c(1,1))
-          statPlot(m,beta$beta,Sigma,nbStates,desMat,tempCovs,tmpcovs,cov,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
+          statPlot(m,Sigma,nbStates,tmpSplineInputs$formula,tmpSplineInputs$covs,tempCovs,tmpcovs,cov,recharge,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
         }
       }
     }
