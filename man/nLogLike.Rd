@@ -102,9 +102,9 @@ inputs <- momentuHMM:::checkInputs(nbStates,m$conditions$dist,Par$Par,m$conditio
           m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,
           m$stateNames)
 
-wpar <- momentuHMM:::n2w(Par$Par,m$conditions$bounds,list(beta=Par$beta),log(Par$delta[-1]/Par$delta[1]),
-        nbStates,m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,
-        m$conditions$Bndind)
+wpar <- momentuHMM:::n2w(Par$Par,m$conditions$bounds,list(beta=Par$beta),
+        log(Par$delta[-1]/Par$delta[1]),nbStates,m$conditions$estAngleMean,
+        m$conditions$DM,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
 
 l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,
      inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
