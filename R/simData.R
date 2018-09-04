@@ -457,8 +457,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         }
       }
     }
-    g0 <- nw2w(model$mle$g0,model$conditions$workBounds$g0)
-    theta <- nw2w(model$mle$theta,model$conditions$workBounds$theta)
+    if(!is.null(model$conditions$recharge)){
+      g0 <- nw2w(model$mle$g0,model$conditions$workBounds$g0)
+      theta <- nw2w(model$mle$theta,model$conditions$workBounds$theta)
+    } else g0 <- theta <- NULL
     beta <- nw2w(model$mle$beta,model$conditions$workBounds$beta)
     beta <- list(beta=beta,g0=g0,theta=theta)
     delta <- model$mle$delta
