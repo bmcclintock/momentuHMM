@@ -457,9 +457,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         }
       }
     }
-    g0 <- model$mle$g0
-    theta <- model$mle$theta
-    beta <- model$mle$beta
+    g0 <- nw2w(model$mle$g0,model$conditions$workBounds$g0)
+    theta <- nw2w(model$mle$theta,model$conditions$workBounds$theta)
+    beta <- nw2w(model$mle$beta,model$conditions$workBounds$beta)
     beta <- list(beta=beta,g0=g0,theta=theta)
     delta <- model$mle$delta
     if(!length(attr(terms.formula(formulaDelta),"term.labels"))){
@@ -954,6 +954,12 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   }
   workBounds <- getWorkBounds(workBounds,distnames,unlist(Par[distnames]),parindex,parCount,inputs$DM,beta,deltaB)
   
+  wnbeta <- w2wn(beta$beta,workBounds$beta)
+  if(!is.null(recharge)){
+    wng0 <- w2wn(beta$g0,workBounds$g0)
+    wntheta <- w2wn(beta$theta,workBounds$theta)
+  }
+  
   if(!nbSpatialCovs | !retrySims){
   
     ###########################
@@ -1009,11 +1015,11 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       
       if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd) & !length(angleCovs)) {
         if(!is.null(recharge)){
-          g0 <- model.matrix(recharge$g0,subCovs[1,,drop=FALSE]) %*% beta$g0
-          subCovs[,"recharge"] <- cumsum(c(g0,model.matrix(recharge$theta,subCovs[-nrow(subCovs),])%*%beta$theta))
+          g0 <- model.matrix(recharge$g0,subCovs[1,,drop=FALSE]) %*% wng0
+          subCovs[,"recharge"] <- cumsum(c(g0,model.matrix(recharge$theta,subCovs[-nrow(subCovs),])%*%wntheta))
         }
         DMcov <- model.matrix(newformula,subCovs)
-        gFull <-  DMcov %*% beta$beta
+        gFull <-  DMcov %*% wnbeta
         
         # format parameters
         DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
@@ -1070,10 +1076,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           }
         }
         if(!is.null(recharge)){
-          g0 <- model.matrix(recharge$g0,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% beta$g0
-          subCovs[1,"recharge"] <- g0 #+ model.matrix(recharge$theta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% beta$theta
+          g0 <- model.matrix(recharge$g0,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wng0
+          subCovs[1,"recharge"] <- g0 #+ model.matrix(recharge$theta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wntheta
         }
-        g <- model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% beta$beta
+        g <- model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wnbeta
         covsDelta <- model.matrix(formulaDelta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
         delta <- c(rep(0,nbCovsDelta+1),deltaB)
         deltaXB <- covsDelta %*% matrix(delta,nrow=nbCovsDelta+1)
@@ -1208,9 +1214,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             }
           }
           if(!is.null(recharge)){
-            subCovs[k+1,"recharge"] <- subCovs[k,"recharge"] + model.matrix(recharge$theta,cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])) %*% beta$theta
+            subCovs[k+1,"recharge"] <- subCovs[k,"recharge"] + model.matrix(recharge$theta,cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])) %*% wntheta
           }
-          g <- model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% beta$beta
+          g <- model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% wnbeta
         } else {
           g <- gFull[k+1,,drop=FALSE]
         }
