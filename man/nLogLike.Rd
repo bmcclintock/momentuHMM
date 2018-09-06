@@ -31,8 +31,8 @@ distribution parameters for each data stream.}
 \item{estAngleMean}{Named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy').}
 
-\item{circularAngleMean}{Named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
-regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.}
+\item{circularAngleMean}{Named list indicating whether to use circular-linear or circular-circular 
+regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. See \code{\link{fitHMM}}.}
 
 \item{consensus}{Named list indicating whether to use the circular-circular regression consensus model}
 

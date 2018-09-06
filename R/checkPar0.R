@@ -13,8 +13,8 @@
 #' @param delta0 Optional values or regression coefficients for the initial distribution of the HMM. If \code{delta0} is not provided, then ordered parameter indices are returned. 
 #' @param estAngleMean An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy'). 
-#' @param circularAngleMean An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
-#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.  
+#' @param circularAngleMean An optional named list indicating whether to use circular-linear or circular-circular
+#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. See \code{\link{fitHMM}}.
 #' @param formula Regression formula for the transition probability covariates. 
 #' @param formulaDelta Regression formula for the initial distribution. 
 #' @param stationary \code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
@@ -124,13 +124,14 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
     for(i in distnames){
       if(dist[[i]]=="vmConsensus"){
         consensus[[i]] <- TRUE
-        estAngleMean[[i]] <- circularAngleMean[[i]] <- TRUE
+        estAngleMean[[i]] <- TRUE
+        if(is.null(circularAngleMean[[i]]) | isFALSE(circularAngleMean[[i]])) circularAngleMean[[i]] <- TRUE
         if(is.null(DM[[i]])) stop("DM$",i," must be specified when dist$",i,"=vmConsensus")
         #dist[[i]] <- gsub("Consensus","",dist[[i]])
       } else consensus[[i]] <- FALSE
       if(is.null(circularAngleMean[[i]]) | !estAngleMean[[i]]) circularAngleMean[[i]] <- FALSE
-      if(!is.logical(circularAngleMean[[i]])) stop("circularAngleMean$",i," must be logical")
-      if(circularAngleMean[[i]] & is.null(DM[[i]])) stop("DM$",i," must be specified when circularAngleMean$",i,"=TRUE")
+      if(!is.logical(circularAngleMean[[i]]) & !is.numeric(circularAngleMean[[i]]) | length(circularAngleMean[[i]])!=1) stop("circularAngleMean$",i," must be logical or numeric")
+      if(!isFALSE(circularAngleMean[[i]]) & is.null(DM[[i]])) stop("DM$",i," must be specified when circularAngleMean$",i," = ",circularAngleMean[[i]])
     }
     circularAngleMean<-circularAngleMean[distnames]
     consensus<-consensus[distnames]
@@ -180,7 +181,7 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
         }
       }
       nc[[i]] <- nc[[i]]>0
-      if(inputs$circularAngleMean[[i]]) {
+      if(!isFALSE(inputs$circularAngleMean[[i]])) {
         meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
         # deal with angular covariates that are exactly zero
         if(length(meanind[[i]])){

@@ -35,7 +35,7 @@
 #' is the initial values for the initial distribution of the HMM for each imputation.
 #' @param estAngleMean An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy'). See \code{\link{fitHMM}}.
-#' @param circularAngleMean An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
+#' @param circularAngleMean An optional named list indicating whether to use circular-linear or circular-circular
 #' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. See \code{\link{fitHMM}}.
 #' @param formula Regression formula for the transition probability covariates. See \code{\link{fitHMM}}.
 #' @param formulaDelta Regression formula for the initial distribution. See \code{\link{fitHMM}}.

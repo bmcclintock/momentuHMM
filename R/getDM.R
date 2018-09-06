@@ -30,7 +30,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       formulaStates <- vector('list',length(parNames[[i]]))
       names(formulaStates) <- parNames[[i]]
       for(j in parNames[[i]])
-        formulaStates[[j]]<- stateFormulas(DM[[i]][[j]],nbStates,angleMean=(j=="mean" & circularAngleMean[[i]]),data=data)
+        formulaStates[[j]]<- stateFormulas(DM[[i]][[j]],nbStates,angleMean=(j=="mean" & !isFALSE(circularAngleMean[[i]])),data=data)
       
       #if(circularAngleMean[[i]]){
       tmpCov <- vector('list',length(parNames[[i]]))
@@ -39,7 +39,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
         tmpCov[[j]] <- vector('list',nbStates)
         for(state in 1:nbStates){
           tmpCov[[j]][[state]]<-model.matrix(formulaStates[[j]][[state]],data)
-          if(circularAngleMean[[i]]){
+          if(!isFALSE(circularAngleMean[[i]])){
             if(j=="mean"){
               if(attr(terms.formula(formulaStates[[j]][[state]]),"intercept")) tmpCov[[j]][[state]] <- tmpCov[[j]][[state]][,-1,drop=FALSE]
               cnames <- colnames(tmpCov[[j]][[state]])
@@ -74,7 +74,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       if(is.null(DMnames)) DMnames<-paste0(i,"Beta",1:ncol(DM[[i]]))
       DMterms<-unique(DM[[i]][suppressWarnings(which(is.na(as.numeric(DM[[i]]))))])
       meanind <- NULL
-      if(!circularAngleMean[[i]]){
+      if(isFALSE(circularAngleMean[[i]])){
         tmpDM<-suppressWarnings(array(as.numeric(DM[[i]]),dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs)))
         newDM <- DM[[i]]
       } else {
@@ -151,7 +151,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
   simpDM<-simpDM[distnames]
   
   parCount<- lapply(simpDM,ncol)
-  for(i in distnames[unlist(circularAngleMean)]){
+  for(i in distnames[!unlist(lapply(circularAngleMean,isFALSE))]){
     parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(simpDM[[i]])))))
   }
 
@@ -164,7 +164,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
         stop(paste0(error,". Should one inflation parameters be included?"))
       else stop(error)
     }
-    #if(!circularAngleMean[[i]]) parCount[[i]] <- ncol(simpDM[[i]])
+    #if(isFALSE(circularAngleMean[[i]])) parCount[[i]] <- ncol(simpDM[[i]])
   }
   parCount <- parCount[distnames]
   

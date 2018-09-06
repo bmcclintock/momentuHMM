@@ -50,6 +50,9 @@
 #' used for any angular distributions. Any \code{circularAngleMean} elements 
 #' corresponding to data streams that do not have angular distributions are ignored.
 #' \code{circularAngleMean} is also ignored for any 'vmConsensus' data streams (because the consensus model is a circular-circular regression model).
+#' 
+#' Alternatively, \code{circularAngleMean} can be specified as a numeric scalar, where the value specifies the coefficient for the reference angle (i.e., directional persistence) term in the circular-circular regression model. For example, setting \code{circularAngleMean} to \code{0} specifies a 
+#' circular-circular regression model with no directional persistence term (thus specifying a biased random walk instead of a biased correlated random walk). Setting \code{circularAngleMean} to 1 is equivalent to setting it to TRUE, i.e., a circular-circular regression model with a coefficient of 1 for the directional persistence reference angle.
 #' @param centers 2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 #' centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the simulated location data. These distance and angle 
 #' covariates can be included in \code{formula} and \code{DM} using the row names of \code{centers}.  If no row names are provided, then generic names are generated 
@@ -422,7 +425,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   
     Par <- model$mle[distnames]
     parCount<- lapply(model$conditions$fullDM,ncol)
-    for(i in distnames[unlist(circularAngleMean)]){
+    for(i in distnames[!unlist(lapply(circularAngleMean,isFALSE))]){
       parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(model$conditions$fullDM[[i]])))))
     }
     parindex <- c(0,cumsum(unlist(parCount))[-length(model$conditions$fullDM)])
@@ -430,7 +433,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     for(i in distnames){
       if(!is.null(DM[[i]])){
         Par[[i]] <- model$mod$estimate[parindex[[i]]+1:parCount[[i]]]
-        if(circularAngleMean[[i]]){
+        if(!isFALSE(circularAngleMean[[i]])){
           names(Par[[i]]) <- unique(gsub("cos","",gsub("sin","",colnames(model$conditions$fullDM[[i]]))))
         } else names(Par[[i]])<-colnames(model$conditions$fullDM[[i]])
         #cons[[i]]<-rep(1,length(cons[[i]]))
@@ -830,7 +833,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   message("-----------------------------------------------------------------------\n")
   for(i in distnames){
     pNames<-p$parNames[[i]]
-    #if(inputs$circularAngleMean[[i]]){ 
+    #if(!isFALSE(inputs$circularAngleMean[[i]])){ 
       #pNames[1]<-paste0("circular ",pNames[1])
       #if(inputs$consensus[[i]]) pNames[2]<-paste0("consensus ",pNames[2])
     #}
@@ -1032,7 +1035,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         names(nc) <- names(meanind) <- distnames
         for(i in distnames){
           nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-          if(inputs$circularAngleMean[[i]]) {
+          if(!isFALSE(inputs$circularAngleMean[[i]])) {
             meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
             # deal with angular covariates that are exactly zero
             if(length(meanind[[i]])){
@@ -1114,7 +1117,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           names(nc) <- names(meanind) <- distnames
           for(i in distnames){
             nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-            if(inputs$circularAngleMean[[i]]) {
+            if(!isFALSE(inputs$circularAngleMean[[i]])) {
               meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
               # deal with angular covariates that are exactly zero
               if(length(meanind[[i]])){

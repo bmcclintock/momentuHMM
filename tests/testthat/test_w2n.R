@@ -17,7 +17,7 @@ test_that("The output is in the right format",{
   names(nc) <- names(meanind) <- distnames
   for(i in distnames){
     nc[[i]] <- apply(m$conditions$fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(m$conditions$circularAngleMean[[i]]) {
+    if(!isFALSE(m$conditions$circularAngleMean[[i]])) {
       meanind[[i]] <- which((apply(m$conditions$fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
       # deal with angular covariates that are exactly zero
       if(length(meanind[[i]])){
@@ -53,7 +53,7 @@ test_that("w2n and n2w are inverse",{
   names(nc) <- names(meanind) <- distnames
   for(i in distnames){
     nc[[i]] <- apply(m$conditions$fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(m$conditions$circularAngleMean[[i]]) {
+    if(!isFALSE(m$conditions$circularAngleMean[[i]])) {
       meanind[[i]] <- which((apply(m$conditions$fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
       # deal with angular covariates that are exactly zero
       if(length(meanind[[i]])){

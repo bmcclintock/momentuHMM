@@ -46,6 +46,9 @@
 #' used for any angular distributions for which the mean angle is to be estimated. \code{circularAngleMean} elements corresponding to angular data 
 #' streams are ignored unless the corresponding element of \code{estAngleMean} is \code{TRUE}. Any \code{circularAngleMean} elements 
 #' corresponding to data streams that do not have angular distributions are ignored. \code{circularAngleMean} is also ignored for any 'vmConsensus' data streams (because the consensus model is a circular-circular regression model).
+#' 
+#' Alternatively, \code{circularAngleMean} can be specified as a numeric scalar, where the value specifies the coefficient for the reference angle (i.e., directional persistence) term in the circular-circular regression model. For example, setting \code{circularAngleMean} to \code{0} specifies a 
+#' circular-circular regression model with no directional persistence term (thus specifying a biased random walk instead of a biased correlated random walk). Setting \code{circularAngleMean} to 1 is equivalent to setting it to TRUE, i.e., a circular-circular regression model with a coefficient of 1 for the directional persistence reference angle.
 #' @param formula Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effect). In addition to allowing standard functions in R formulas
 #' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 #' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}),
@@ -820,7 +823,7 @@ fitHMM <- function(data,nbStates,dist,
   ofixPar <- ofixPar[c(distnames,"beta","delta","g0","theta")]
   
   parCount<- lapply(fullDM,ncol)
-  for(i in distnames[unlist(inputs$circularAngleMean)]){
+  for(i in distnames[!unlist(lapply(inputs$circularAngleMean,isFALSE))]){
     parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]])))))
   }
   parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
@@ -929,7 +932,7 @@ fitHMM <- function(data,nbStates,dist,
   message("-----------------------------------------------------------------------\n")
   for(i in distnames){
     pNames<-p$parNames[[i]]
-    #if(inputs$circularAngleMean[[i]]){ 
+    #if(!isFALSE(inputs$circularAngleMean[[i]])){ 
       #pNames[1]<-paste0("circular ",pNames[1])
       #if(inputs$consensus[[i]]) pNames[2]<-paste0("consensus ",pNames[2])
     #}
@@ -947,7 +950,7 @@ fitHMM <- function(data,nbStates,dist,
   names(nc) <- names(meanind) <- distnames
   for(i in distnames){
     nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(inputs$circularAngleMean[[i]]) {
+    if(!isFALSE(inputs$circularAngleMean[[i]])) {
       meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
       # deal with angular covariates that are exactly zero
       if(length(meanind[[i]])){
@@ -1099,7 +1102,7 @@ fitHMM <- function(data,nbStates,dist,
     } else {
       mle[[i]]<-matrix(wpar[parindex[[i]]+1:parCount[[i]]],1)
       rownames(mle[[i]])<-"[1,]"
-      if(inputs$circularAngleMean[[i]]){
+      if(!isFALSE(inputs$circularAngleMean[[i]])){
         colnames(mle[[i]]) <- unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]]))))
       } else colnames(mle[[i]])<-colnames(fullDM[[i]])
       #if(is.null(names(mle[[i]]))) warning("No names for the regression coeffs were provided in DM$",i)

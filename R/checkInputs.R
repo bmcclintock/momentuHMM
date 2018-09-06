@@ -38,13 +38,14 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
   for(i in distnames){
     if(dist[[i]]=="vmConsensus"){
       consensus[[i]] <- TRUE
-      estAngleMean[[i]] <- circularAngleMean[[i]] <- TRUE
+      estAngleMean[[i]] <- TRUE
+      if(is.null(circularAngleMean[[i]]) | isFALSE(circularAngleMean[[i]])) circularAngleMean[[i]] <- TRUE
       if(is.null(DM[[i]])) stop("DM$",i," must be specified when dist$",i,"=vmConsensus")
       ndist[[i]] <- gsub("Consensus","",dist[[i]])
     } else consensus[[i]] <- FALSE
     if(is.null(circularAngleMean[[i]]) | !estAngleMean[[i]]) circularAngleMean[[i]] <- FALSE
-    if(!is.logical(circularAngleMean[[i]])) stop("circularAngleMean$",i," must be logical")
-    if(circularAngleMean[[i]] & is.null(DM[[i]])) stop("DM$",i," must be specified when circularAngleMean$",i,"=TRUE")
+    if(!is.logical(circularAngleMean[[i]]) & !is.numeric(circularAngleMean[[i]]) | length(circularAngleMean[[i]])!=1) stop("circularAngleMean$",i," must be logical or numeric scalar")
+    if(!isFALSE(circularAngleMean[[i]]) & is.null(DM[[i]])) stop("DM$",i," must be specified when circularAngleMean$",i," = ",circularAngleMean[[i]])
   }
   circularAngleMean<-circularAngleMean[distnames]
   consensus<-consensus[distnames]

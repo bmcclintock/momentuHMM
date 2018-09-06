@@ -27,8 +27,8 @@ each data stream specified in \code{dist}.  If \code{Par0} is not provided, then
 \item{estAngleMean}{An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy').}
 
-\item{circularAngleMean}{An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
-regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.}
+\item{circularAngleMean}{An optional named list indicating whether to use circular-linear or circular-circular
+regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. See \code{\link{fitHMM}}.}
 
 \item{formula}{Regression formula for the transition probability covariates.}
 

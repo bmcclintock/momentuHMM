@@ -164,7 +164,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   nparms <- length(parms)
   xmat <- xbar <- xvar <- W_m <- B_m <- MI_se <- lower <- upper <- list()
   parCount <- lapply(m$conditions$fullDM,ncol)#
-  for(i in distnames[unlist(m$conditions$circularAngleMean)]){
+  for(i in distnames[!unlist(lapply(m$conditions$circularAngleMean,isFALSE))]){
     parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]])))))
   }
   parmcols <- parCount
@@ -286,7 +286,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   for(i in distnames){
     if(!is.null(m$conditions$DM[[i]])){# & m$conditions$DMind[[i]]){
       tmPar[[i]] <- m$mod$estimate[parindex[[i]]+1:parCount[[i]]]
-      if(m$conditions$circularAngleMean[[i]]){
+      if(!isFALSE(m$conditions$circularAngleMean[[i]])){
         names(tmPar[[i]]) <- unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]]))))
       } else names(tmPar[[i]])<-colnames(m$conditions$fullDM[[i]])
     } else if((dist[[i]] %in% angledists) & (!m$conditions$estAngleMean[[i]])){
@@ -345,7 +345,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   names(nc) <- names(meanind) <- distnames
   for(i in distnames){
     nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(m$conditions$circularAngleMean[[i]]) {
+    if(!isFALSE(m$conditions$circularAngleMean[[i]])) {
       meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
       # deal with angular covariates that are exactly zero
       if(length(meanind[[i]])){

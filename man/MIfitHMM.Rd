@@ -47,7 +47,7 @@ is the initial values for the initial distribution of the HMM for each imputatio
 \item{estAngleMean}{An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy'). See \code{\link{fitHMM}}.}
 
-\item{circularAngleMean}{An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
+\item{circularAngleMean}{An optional named list indicating whether to use circular-linear or circular-circular
 regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. See \code{\link{fitHMM}}.}
 
 \item{formula}{Regression formula for the transition probability covariates. See \code{\link{fitHMM}}.}

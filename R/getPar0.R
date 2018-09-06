@@ -6,8 +6,8 @@
 #' @param nbStates Number of states in the new model. If \code{nbStates=NULL} (the default), then \code{nbStates=length(model$stateNames)}
 #' @param estAngleMean Named list indicating whether or not the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. If \code{estAngleMean=NULL} (the default), then \code{estAngleMean=model$conditions$estAngleMean}
-#' @param circularAngleMean Named list indicating whether circular-linear (FALSE) or circular-circular (TRUE) 
-#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model. If \code{circularAngleMean=NULL} (the default), then \code{circularAngleMean=model$conditions$circularAngleMean}
+#' @param circularAngleMean Named list indicating whether circular-linear or circular-circular 
+#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model.  See \code{\link{fitHMM}}. If \code{circularAngleMean=NULL} (the default), then \code{circularAngleMean=model$conditions$circularAngleMean}
 #' @param formula Regression formula for the transition probability covariates of the new model (see \code{\link{fitHMM}}).  If \code{formula=NULL} (the default), then \code{formula=model$conditions$formula}.
 #' @param formulaDelta Regression formula for the initial distribution covariates of the new model (see \code{\link{fitHMM}}).  If \code{formulaDelta=NULL} (the default), then \code{formulaDelta=model$conditions$formulaDelta}.
 #' @param DM Named list indicating the design matrices to be used for the probability distribution parameters of each data stream in the new model (see \code{\link{fitHMM}}). Only parameters with design matrix column names that match those in model$conditions$fullDM are extracted, so care must be taken in naming columns if any elements of \code{DM}
@@ -150,8 +150,8 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
   if(!is.list(circularAngleMean) | is.null(names(circularAngleMean))) stop("'circularAngleMean' must be a named list")
   for(i in distnames){
     if(is.null(circularAngleMean[[i]]) | !estAngleMean[[i]]) circularAngleMean[[i]] <- FALSE
-    if(!is.logical(circularAngleMean[[i]])) stop("circularAngleMean$",i," must be logical")
-    if(circularAngleMean[[i]] & is.null(DM[[i]])) stop("DM$",i," must be specified when circularAngleMean$",i,"=TRUE")
+    if(!is.logical(circularAngleMean[[i]]) & !is.numeric(circularAngleMean[[i]]) | length(circularAngleMean[[i]])!=1) stop("circularAngleMean$",i," must be logical or numeric")
+    if(!isFALSE(circularAngleMean[[i]]) & is.null(DM[[i]])) stop("DM$",i," must be specified when circularAngleMean$",i," = ",circularAngleMean[[i]])
   }
   circularAngleMean<-circularAngleMean[distnames]
   
@@ -179,7 +179,7 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
   DMinputs<-getDM(model$data,DM,dist,nbStates,p$parNames,p$bounds,Par,cons=NULL,workcons=NULL,zeroInflation,oneInflation,circularAngleMean,FALSE)$fullDM
   
   parCount<- lapply(model$conditions$fullDM,ncol)
-  for(i in distnames[unlist(model$conditions$circularAngleMean)]){
+  for(i in distnames[!unlist(lapply(model$conditions$circularAngleMean,isFALSE))]){
     parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(model$conditions$fullDM[[i]])))))
   }
   parindex <- c(0,cumsum(unlist(parCount)))
@@ -188,14 +188,14 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
   for(i in distnames){
     #if(!is.null(DM[[i]])) {
       parmNames<-colnames(model$conditions$fullDM[[i]])
-      if(model$conditions$circularAngleMean[[i]]) parmNames <- unique(gsub("cos","",gsub("sin","",parmNames)))
+      if(!isFALSE(model$conditions$circularAngleMean[[i]])) parmNames <- unique(gsub("cos","",gsub("sin","",parmNames)))
       for(j in 1:length(model$stateNames)){
         for(k in p$parNames[[i]]){
           parmNames<-gsub(paste0(k,"_",j),paste0(k,"_",model$stateNames[j]),parmNames)
         }
       }
       newparmNames<-colnames(DMinputs[[i]])
-      if(circularAngleMean[[i]]) newparmNames <- unique(gsub("cos","",gsub("sin","",newparmNames)))
+      if(!isFALSE(circularAngleMean[[i]])) newparmNames <- unique(gsub("cos","",gsub("sin","",newparmNames)))
       tmpPar <- rep(0,length(newparmNames))
       for(j in 1:length(stateNames)){
         for(k in p$parNames[[i]]){
@@ -208,7 +208,7 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
         else
           tmpPar[match(parmNames,newparmNames,nomatch=0)] <- model$mod$estimate[parindex[[i]]+1:parCount[[i]]][parmNames %in% newparmNames]
       }
-      if(circularAngleMean[[i]]) names(tmpPar) <- unique(gsub("cos","",gsub("sin","",colnames(DMinputs[[i]]))))
+      if(!isFALSE(circularAngleMean[[i]])) names(tmpPar) <- unique(gsub("cos","",gsub("sin","",colnames(DMinputs[[i]]))))
       else names(tmpPar) <- colnames(DMinputs[[i]])
       Par[[i]] <- tmpPar
     #}

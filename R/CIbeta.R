@@ -118,7 +118,7 @@ CIbeta <- function(m,alpha=0.95)
   names(nc) <- names(meanind) <- distnames
   for(i in distnames){
     nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(m$conditions$circularAngleMean[[i]]) {
+    if(!isFALSE(m$conditions$circularAngleMean[[i]])) {
       meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
       # deal with angular covariates that are exactly zero
       if(length(meanind[[i]])){
@@ -132,7 +132,7 @@ CIbeta <- function(m,alpha=0.95)
   
   tmPar <- lapply(m$mle[distnames],function(x) c(t(x)))
   parCount<- lapply(fullDM,ncol)
-  for(i in distnames[unlist(m$conditions$circularAngleMean)]){
+  for(i in distnames[!unlist(lapply(m$conditions$circularAngleMean,isFALSE))]){
     parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]])))))
   }
   parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
@@ -148,7 +148,7 @@ CIbeta <- function(m,alpha=0.95)
     est <- w2wn(wpar[parindex[[i]]+1:parCount[[i]]]^m$conditions$cons[[i]]+m$conditions$workcons[[i]],m$conditions$workBounds[[i]])
     
     pnames <- colnames(fullDM[[i]])
-    if(m$conditions$circularAngleMean[[i]]) pnames <- unique(gsub("cos","",gsub("sin","",pnames)))
+    if(!isFALSE(m$conditions$circularAngleMean[[i]])) pnames <- unique(gsub("cos","",gsub("sin","",pnames)))
     Par[[i]] <- get_CIwb(wpar[parindex[[i]]+1:parCount[[i]]],est,parindex[[i]]+1:parCount[[i]],Sigma,alpha,m$conditions$workBounds[[i]],cnames=pnames,cons=m$conditions$cons[[i]])
 
   }

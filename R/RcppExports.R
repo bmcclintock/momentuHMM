@@ -204,9 +204,10 @@ trMatrix_rcpp <- function(nbStates, beta, covs, betaRef) {
 #' @param rindex row index for design matrix
 #' @param cindex column index for design matrix
 #' @param nbStates number of states
+#' @param refCoeff intercept coefficient for circular-circular regression model
 #'
 #' @return XB matrix
-XBloop_rcpp <- function(DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex, cindex, nbStates) {
-    .Call('_momentuHMM_XBloop_rcpp', PACKAGE = 'momentuHMM', DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex, cindex, nbStates)
+XBloop_rcpp <- function(DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex, cindex, nbStates, refCoeff = 1.0) {
+    .Call('_momentuHMM_XBloop_rcpp', PACKAGE = 'momentuHMM', DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex, cindex, nbStates, refCoeff)
 }
 

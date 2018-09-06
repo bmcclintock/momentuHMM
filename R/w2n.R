@@ -12,8 +12,8 @@
 #' @param nbCovs The number of beta covariates.
 #' @param estAngleMean Named list indicating whether or not to estimate the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy').
-#' @param circularAngleMean Named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
-#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.  
+#' @param circularAngleMean Named list indicating whether to use circular-linear or circular-circular
+#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. See \code{\link{fitHMM}}.  
 #' @param consensus Named list indicating whether to use the circular-circular regression consensus model
 #' @param stationary \code{FALSE} if there are covariates. If TRUE, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
@@ -117,7 +117,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   
   distnames <- names(dist)
   parCount<- lapply(fullDM,ncol)
-  for(i in distnames[unlist(circularAngleMean)]){
+  for(i in distnames[!unlist(lapply(circularAngleMean,isFALSE))]){
     parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]])))))
   }
   parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
@@ -198,7 +198,7 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,conse
     l_t <- matrix(tmpXB$l_t,nrow(XB),ncol(XB))
   }
   
-  if(length(ind1) & !circularAngleMean)
+  if(length(ind1) & isFALSE(circularAngleMean))
     p[ind1,] <- (2*atan(XB[ind1,]))
   
   if(length(ind2)){

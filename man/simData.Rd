@@ -74,7 +74,10 @@ must be specified for the data stream, and the previous movement direction (i.e.
 as the reference angle (i.e., the intercept). Default is \code{NULL}, which assumes circular-linear regression is 
 used for any angular distributions. Any \code{circularAngleMean} elements 
 corresponding to data streams that do not have angular distributions are ignored.
-\code{circularAngleMean} is also ignored for any 'vmConsensus' data streams (because the consensus model is a circular-circular regression model).}
+\code{circularAngleMean} is also ignored for any 'vmConsensus' data streams (because the consensus model is a circular-circular regression model).
+
+Alternatively, \code{circularAngleMean} can be specified as a numeric scalar, where the value specifies the coefficient for the reference angle (i.e., directional persistence) term in the circular-circular regression model. For example, setting \code{circularAngleMean} to \code{0} specifies a 
+circular-circular regression model with no directional persistence term (thus specifying a biased random walk instead of a biased correlated random walk). Setting \code{circularAngleMean} to 1 is equivalent to setting it to TRUE, i.e., a circular-circular regression model with a coefficient of 1 for the directional persistence reference angle.}
 
 \item{centers}{2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the simulated location data. These distance and angle 

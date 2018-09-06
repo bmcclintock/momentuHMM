@@ -35,8 +35,8 @@ included in the corresponding element of \code{Par}. Ignored if \code{data} is a
 \item{estAngleMean}{An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy'). Any \code{estAngleMean} elements corresponding to data streams that do not have angular distributions are ignored.}
 
-\item{circularAngleMean}{An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
-regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. \code{circularAngleMean} elements corresponding to angular data 
+\item{circularAngleMean}{An optional named list indicating whether to use circular-linear or circular-circular 
+regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.  See \code{\link{fitHMM}}. \code{circularAngleMean} elements corresponding to angular data 
 streams are ignored unless the corresponding element of \code{estAngleMean} is \code{TRUE}. Any \code{circularAngleMean} elements 
 corresponding to data streams that do not have angular distributions are ignored.}
 

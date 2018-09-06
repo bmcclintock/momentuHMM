@@ -1,3 +1,12 @@
+momentuHMM 1.5.0 2018-09-23
+-----------------
+NEW FEATURES
+
+* recharge model has been added
+
+* circularAngleMean can now alternatively be used to specify the reference angle (i.e. directional persistence) coefficient in circular-circular regression models
+
+
 momentuHMM 1.4.3 2018-07-25
 -----------------
 NEW FEATURES

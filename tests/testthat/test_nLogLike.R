@@ -14,7 +14,7 @@ test_that("Exceptions are thrown",{
   names(nc) <- names(meanind) <- distnames
   for(i in distnames){
     nc[[i]] <- apply(m$conditions$fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(m$conditions$circularAngleMean[[i]]) {
+    if(!isFALSE(m$conditions$circularAngleMean[[i]])) {
       meanind[[i]] <- which((apply(m$conditions$fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
       # deal with angular covariates that are exactly zero
       if(length(meanind[[i]])){
@@ -48,7 +48,7 @@ test_that("logAlpha, logBeta, and nLogLike are consistent",{
   names(nc) <- names(meanind) <- distnames
   for(i in distnames){
     nc[[i]] <- apply(m$conditions$fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(m$conditions$circularAngleMean[[i]]) {
+    if(!isFALSE(m$conditions$circularAngleMean[[i]])) {
       meanind[[i]] <- which((apply(m$conditions$fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
       # deal with angular covariates that are exactly zero
       if(length(meanind[[i]])){
@@ -117,7 +117,7 @@ test_that("logAlpha, logBeta, and nLogLike are consistent with zero and one infl
   names(nc) <- names(meanind) <- distnames
   for(i in distnames){
     nc[[i]] <- apply(m$conditions$fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(m$conditions$circularAngleMean[[i]]) {
+    if(!isFALSE(m$conditions$circularAngleMean[[i]])) {
       meanind[[i]] <- which((apply(m$conditions$fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
       # deal with angular covariates that are exactly zero
       if(length(meanind[[i]])){
@@ -170,7 +170,7 @@ test_that("angleDist=NULL and zeroInflation=TRUE work",{
   names(nc) <- names(meanind) <- distnames
   for(i in distnames){
     nc[[i]] <- apply(m$conditions$fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(m$conditions$circularAngleMean[[i]]) {
+    if(!isFALSE(m$conditions$circularAngleMean[[i]])) {
       meanind[[i]] <- which((apply(m$conditions$fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
       # deal with angular covariates that are exactly zero
       if(length(meanind[[i]])){

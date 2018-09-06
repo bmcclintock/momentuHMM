@@ -27,8 +27,8 @@
 #' included in the corresponding element of \code{Par}. Ignored if \code{data} is a \code{\link{momentuHMMData}} object.
 #' @param estAngleMean An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy'). Any \code{estAngleMean} elements corresponding to data streams that do not have angular distributions are ignored.
-#' @param circularAngleMean An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
-#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. \code{circularAngleMean} elements corresponding to angular data 
+#' @param circularAngleMean An optional named list indicating whether to use circular-linear or circular-circular 
+#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.  See \code{\link{fitHMM}}. \code{circularAngleMean} elements corresponding to angular data 
 #' streams are ignored unless the corresponding element of \code{estAngleMean} is \code{TRUE}. Any \code{circularAngleMean} elements 
 #' corresponding to data streams that do not have angular distributions are ignored.
 #' @param DM A named list indicating the design matrices to be used for the probability distribution parameters of each data 
@@ -222,7 +222,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
       }
     }
     nc[[i]] <- nc[[i]]>0
-    if(inputs$circularAngleMean[[i]]) {
+    if(!isFALSE(inputs$circularAngleMean[[i]])) {
       meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
       # deal with angular covariates that are exactly zero
       if(length(meanind[[i]])){
@@ -235,7 +235,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
   }
   
   parCount<- lapply(fullDM,ncol)
-  for(i in distnames[unlist(inputs$circularAngleMean)]){
+  for(i in distnames[!unlist(lapply(inputs$circularAngleMean,isFALSE))]){
     parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]])))))
   }
   parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
@@ -264,7 +264,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
         
         p<-numeric(length(bndInd))
         if(length(ind1)){
-          if(!inputs$circularAngleMean[[i]]) p[ind1] <- (solve(unique(fullDM[[i]])[ind1,ind1],tan(par[ind1]/2))-workcons[[i]][ind1])^(1/cons[[i]][ind1])
+          if(isFALSE(inputs$circularAngleMean[[i]])) p[ind1] <- (solve(unique(fullDM[[i]])[ind1,ind1],tan(par[ind1]/2))-workcons[[i]][ind1])^(1/cons[[i]][ind1])
           else stop("sorry, circular angle mean parameters are not supported by getParDM")
         }
         
@@ -284,12 +284,12 @@ getParDM<-function(data=data.frame(),nbStates,dist,
         bounds<-inputs$p$bounds[[i]]
         if(any(wpar[[i]]<=bounds[,1] | wpar[[i]]>=bounds[,2])) stop('Par$',i,' must be within parameter bounds')
         if(is.list(inputs$DM[[i]])){
-          if(!inputs$circularAngleMean[[i]])
+          if(isFALSE(inputs$circularAngleMean[[i]]))
             gbInd <- getboundInd(fullDM[[i]])
           else
             gbInd <- c(1:nbStates,getboundInd(fullDM[[i]][1:nbStates+nbStates,])+nbStates)
         } else {
-          if(!inputs$circularAngleMean[[i]])
+          if(isFALSE(inputs$circularAngleMean[[i]]))
             gbInd <- getboundInd(inputs$DM[[i]])
           else 
             gbInd <- c(1:nbStates,getboundInd(inputs$DM[[i]][1:nbStates+nbStates,])+nbStates)
@@ -313,7 +313,7 @@ getParDM<-function(data=data.frame(),nbStates,dist,
             
             p<-numeric(parCount[[i]])
             
-            if(!inputs$circularAngleMean[[i]]) {
+            if(isFALSE(inputs$circularAngleMean[[i]])) {
               
               meanind<-which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
               
@@ -356,13 +356,13 @@ getParDM<-function(data=data.frame(),nbStates,dist,
               #xmat <- fullDM[[i]][gbInd,,drop=FALSE][meanind1,meanind2,drop=FALSE]
               ##nc<-apply(xmat,1:2,function(x) !all(unlist(x)==0))
               
-              solveatan2<-function(x,theta,covs,cons,workcons,nbStates,nc,meanind,oparms){
+              solveatan2<-function(x,theta,covs,cons,workcons,nbStates,nc,meanind,oparms,circularAngleMean){
                 #Xvec <- x^cons+workcons
-                XB<-getXB(covs,1,c(x,rep(1,oparms)),cons,workcons,TRUE,TRUE,FALSE,nbStates,nc,meanind)[meanind,]
+                XB<-getXB(covs,1,c(x,rep(1,oparms)),cons,workcons,TRUE,circularAngleMean,FALSE,nbStates,nc,meanind)[meanind,]
                 c(abs(theta - XB),rep(0,max(0,length(x)-length(theta))))
               }
 
-              if(length(meanind1)) p[1:(length(meanind2)/2)] <- nleqslv::nleqslv(x=rep(1,length(meanind2)/2),fn=solveatan2,theta=par[meanind1],covs=fullDM[[i]],cons=cons[[i]],workcons=workcons[[i]],nbStates=nbStates,nc=nc[[i]],meanind=meanind1,oparms=parCount[[i]]-length(meanind2)/2,control=list(allowSingular=TRUE))$x[1:(length(meanind2)/2)]
+              if(length(meanind1)) p[1:(length(meanind2)/2)] <- nleqslv::nleqslv(x=rep(1,length(meanind2)/2),fn=solveatan2,theta=par[meanind1],covs=fullDM[[i]],cons=cons[[i]],workcons=workcons[[i]],nbStates=nbStates,nc=nc[[i]],meanind=meanind1,oparms=parCount[[i]]-length(meanind2)/2,circularAngleMean=inputs$circularAngleMean[[i]],control=list(allowSingular=TRUE))$x[1:(length(meanind2)/2)]
               
               meanind<-which((apply(fullDM[[i]][nbStates+1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
               

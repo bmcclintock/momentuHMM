@@ -16,8 +16,8 @@ getPar0(model, nbStates = NULL, estAngleMean = NULL,
 \item{estAngleMean}{Named list indicating whether or not the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. If \code{estAngleMean=NULL} (the default), then \code{estAngleMean=model$conditions$estAngleMean}}
 
-\item{circularAngleMean}{Named list indicating whether circular-linear (FALSE) or circular-circular (TRUE) 
-regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model. If \code{circularAngleMean=NULL} (the default), then \code{circularAngleMean=model$conditions$circularAngleMean}}
+\item{circularAngleMean}{Named list indicating whether circular-linear or circular-circular 
+regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model.  See \code{\link{fitHMM}}. If \code{circularAngleMean=NULL} (the default), then \code{circularAngleMean=model$conditions$circularAngleMean}}
 
 \item{formula}{Regression formula for the transition probability covariates of the new model (see \code{\link{fitHMM}}).  If \code{formula=NULL} (the default), then \code{formula=model$conditions$formula}.}
 

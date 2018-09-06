@@ -34,7 +34,7 @@ getPar<-function(m){
   DM <- m$conditions$DM
   
   parCount<- lapply(m$conditions$fullDM,ncol)
-  for(i in distnames[unlist(m$conditions$circularAngleMean)]){
+  for(i in distnames[!unlist(lapply(m$conditions$circularAngleMean,isFALSE))]){
     parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]])))))
   }
   parindex <- c(0,cumsum(unlist(parCount)))

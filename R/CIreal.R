@@ -127,7 +127,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   names(nc) <- names(meanind) <- distnames
   for(i in distnames){
     nc[[i]] <- apply(m$conditions$fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(m$conditions$circularAngleMean[[i]]) {
+    if(!isFALSE(m$conditions$circularAngleMean[[i]])) {
       meanind[[i]] <- which((apply(m$conditions$fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
       # deal with angular covariates that are exactly zero
       if(length(meanind[[i]])){
@@ -141,7 +141,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   
   tmPar <- lapply(m$mle[distnames],function(x) c(t(x)))
   parCount<- lapply(m$conditions$fullDM,ncol)
-  for(i in distnames[unlist(m$conditions$circularAngleMean)]){
+  for(i in distnames[!unlist(lapply(m$conditions$circularAngleMean,isFALSE))]){
     parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]])))))
   }
   parindex <- c(0,cumsum(unlist(parCount))[-length(m$conditions$fullDM)])
@@ -150,7 +150,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   for(i in distnames){
     if(!is.null(m$conditions$DM[[i]])){# & m$conditions$DMind[[i]]){
       tmPar[[i]] <- m$mod$estimate[parindex[[i]]+1:parCount[[i]]]
-      if(m$conditions$circularAngleMean[[i]]){
+      if(!isFALSE(m$conditions$circularAngleMean[[i]])){
         names(tmPar[[i]]) <- unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]]))))
       } else names(tmPar[[i]])<-colnames(m$conditions$fullDM[[i]])
     } else{

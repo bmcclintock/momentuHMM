@@ -249,7 +249,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   names(nc) <- names(meanind) <- distnames
   for(i in distnames){
     nc[[i]] <- apply(m$conditions$fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(m$conditions$circularAngleMean[[i]]) {
+    if(!isFALSE(m$conditions$circularAngleMean[[i]])) {
       meanind[[i]] <- which((apply(m$conditions$fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
       # deal with angular covariates that are exactly zero
       if(length(meanind[[i]])){
@@ -263,7 +263,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   
   tmPar <- lapply(Par,function(x) c(t(x)))
   parCount<- lapply(m$conditions$fullDM,ncol)
-  for(i in distnames[unlist(m$conditions$circularAngleMean)]){
+  for(i in distnames[!unlist(lapply(m$conditions$circularAngleMean,isFALSE))]){
     parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]])))))
   }
   parindex <- c(0,cumsum(unlist(parCount))[-length(m$conditions$fullDM)])
@@ -272,7 +272,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   for(i in distnames){
     if(!is.null(m$conditions$DM[[i]])){# & m$conditions$DMind[[i]]){
       Par[[i]] <- m$mod$estimate[parindex[[i]]+1:parCount[[i]]]
-      if(m$conditions$circularAngleMean[[i]]){
+      if(!isFALSE(m$conditions$circularAngleMean[[i]])){
         names(Par[[i]]) <- unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]]))))
       } else names(Par[[i]])<-colnames(m$conditions$fullDM[[i]])
     }
@@ -579,7 +579,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           DMind <- DMinputs$DMind
           
           nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-          if(inputs$circularAngleMean[[i]]) {
+          if(!isFALSE(inputs$circularAngleMean[[i]])) {
             meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
             # deal with angular covariates that are exactly zero
             if(length(meanind[[i]])){
