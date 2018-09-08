@@ -67,11 +67,16 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
   }
   
   for(i in distnames){
-    if(is.null(DM[[i]]) & length(Par[[i]])!=(parSize[[i]]*nbStates)){
-      error<-paste0("Wrong number of initial parameters -- there should be ",parSize[[i]]*nbStates," initial ",i," parameters")
-      if(zeroInflation[[i]]) error<-paste0(error," -- zero-mass parameters should be included")
-      if(oneInflation[[i]]) error<-paste0(error," -- one-mass parameters should be included")
-      stop(error)
+    if(is.null(DM[[i]])){
+      if(dist[[i]] %in% mvndists){
+        ndim <- as.numeric(gsub("mvnorm","",dist[[i]]))
+        if(length(Par[[i]])!=(ndim*nbStates+sum(lower.tri(matrix(0,ndim,ndim),diag=TRUE))*nbStates)) stop("Wrong number of initial parameters -- there should be ",ndim*nbStates + sum(lower.tri(matrix(0,ndim,ndim),diag=TRUE))*nbStates," initial ",i," parameters")
+      } else if(length(Par[[i]])!=(parSize[[i]]*nbStates)){
+        error<-paste0("Wrong number of initial parameters -- there should be ",parSize[[i]]*nbStates," initial ",i," parameters")
+        if(zeroInflation[[i]]) error<-paste0(error," -- zero-mass parameters should be included")
+        if(oneInflation[[i]]) error<-paste0(error," -- one-mass parameters should be included")
+        stop(error)
+      }
     }
     if(checkInflation & zeroInflation[[i]] & oneInflation[[i]]){
       ztmp <- p$bounds[[i]][(parSize[[i]] * nbStates)-nbStates*oneInflation[[i]]-nbStates:1+1,,drop=FALSE]

@@ -478,7 +478,19 @@ fitHMM <- function(data,nbStates,dist,
   if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
   if(!is.list(Par0) | is.null(names(Par0))) stop("'Par0' must be a named list")
   distnames<-names(dist)
-  if(any(is.na(match(distnames,names(data))))) stop(paste0(distnames[is.na(match(distnames,names(data)))],collapse=", ")," not found in data")
+  if(any(is.na(match(distnames,names(data))))){
+    tmpdistnames <- distnames
+    for(i in which(is.na(match(distnames,names(data))))){
+      if(dist[[distnames[i]]] %in% mvndists){
+        if(dist[[distnames[i]]]=="mvnorm2"){
+          tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"))
+        } else if(dist[[distnames[i]]]=="mvnorm3"){
+          tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"),paste0(distnames[i],".z"))          
+        }
+      }
+    }
+    if(any(is.na(match(tmpdistnames,names(data))))) stop(paste0(tmpdistnames[is.na(match(tmpdistnames,names(data)))],collapse=", ")," not found in data")
+  } 
   if(!all(distnames %in% names(Par0))) stop(paste0(distnames[which(!(distnames %in% names(Par0)))],collapse=", ")," missing in 'Par0'")
   Par0 <- Par0[distnames]
   

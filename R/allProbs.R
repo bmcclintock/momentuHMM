@@ -126,8 +126,17 @@ allProbs <- function(m)
   probs <- matrix(1,nrow=nbObs,ncol=nbStates)
   
   for(i in distnames){
+    
+    if(dist[[i]] %in% mvndists){
+      if(dist[[i]]=="mvnorm2")
+        genData <- c(data[[paste0(i,".x")]],data[[paste0(i,".y")]])
+      else if(dist[[i]]=="mvnorm3")
+        genData <- c(data[[paste0(i,".x")]],data[[paste0(i,".y")]],data[[paste0(i,".z")]])
+    } else {
+      genData <- data[[i]]
+    }
   
-    genInd <- which(!is.na(data[[i]]))
+    genInd <- which(!is.na(genData[1:nbObs]))
     sp <- par[[i]]
   
     for(state in 1:nbStates) {
@@ -136,7 +145,7 @@ allProbs <- function(m)
       genFun <- Fun[[i]]
       
       # Constitute the lists of state-dependent parameters for the step and angle
-      genArgs <- list(data[[i]][genInd])
+      genArgs <- list(genData[which(!is.na(genData))])
       
       zeromass <- 0
       onemass <- 0
@@ -146,9 +155,33 @@ allProbs <- function(m)
         genPar <- genPar[-(nrow(genPar)-(nbStates*(zeroInflation[[i]]+oneInflation[[i]])-1):0),]
       }
   
-      for(j in 1:(nrow(genPar)/nbStates))
-        genArgs[[j+1]] <- genPar[(j-1)*nbStates+state,genInd]
-  
+      if(dist[[i]] %in% mvndists){
+        if(dist[[i]]=="mvnorm2"){
+          genArgs[[2]] <- rbind(genPar[state,genInd],
+                                genPar[nbStates+state,genInd])
+          genArgs[[3]] <- rbind(genPar[nbStates*2+state,genInd], #x
+                                genPar[nbStates*3+state,genInd], #xy
+                                genPar[nbStates*3+state,genInd], #xy
+                                genPar[nbStates*4+state,genInd]) #y
+        } else if(dist[[i]]=="mvnorm3"){
+          genArgs[[2]] <- rbind(genPar[state,genInd],
+                                genPar[nbStates+state,genInd],
+                                genPar[2*nbStates+state,genInd])
+          genArgs[[3]] <- rbind(genPar[nbStates*3+state,genInd], #x
+                                genPar[nbStates*4+state,genInd], #xy
+                                genPar[nbStates*5+state,genInd], #xz
+                                genPar[nbStates*4+state,genInd], #xy
+                                genPar[nbStates*6+state,genInd], #y
+                                genPar[nbStates*7+state,genInd], #yz
+                                genPar[nbStates*5+state,genInd], #xz
+                                genPar[nbStates*7+state,genInd], #yz
+                                genPar[nbStates*8+state,genInd]) #z          
+        }
+      } else {
+        for(j in 1:(nrow(genPar)/nbStates))
+          genArgs[[j+1]] <- genPar[(j-1)*nbStates+state,genInd]
+      }
+      
       # conversion between mean/sd and shape/scale if necessary
       if(dist[[i]]=="gamma") {
         shape <- genArgs[[2]]^2/genArgs[[3]]^2
@@ -158,17 +191,17 @@ allProbs <- function(m)
       }
       if(zeroInflation[[i]] | oneInflation[[i]]) {
         if(zeroInflation[[i]] & !oneInflation[[i]]){
-          genProb[genInd] <- ifelse(data[[i]][genInd]==0,
+          genProb[genInd] <- ifelse(genData[genInd]==0,
                                       zeromass, # if gen==0
                                       (1-zeromass)*do.call(genFun,genArgs)) # if gen != 0
         } else if(oneInflation[[i]] & !zeroInflation[[i]]){
-          genProb[genInd] <- ifelse(data[[i]][genInd]==1,
+          genProb[genInd] <- ifelse(genData[genInd]==1,
                                     onemass, # if gen==0
                                     (1-onemass)*do.call(genFun,genArgs)) # if gen != 1          
         } else {
-          genProb[genInd][data[[i]][genInd]==0] <- zeromass[data[[i]][genInd]==0]
-          genProb[genInd][data[[i]][genInd]==1] <- onemass[data[[i]][genInd]==1]
-          genProb[genInd][data[[i]][genInd]>0 & data[[i]][genInd]<1] <- (1.-zeromass[data[[i]][genInd]>0 & data[[i]][genInd]<1]-onemass[data[[i]][genInd]>0 & data[[i]][genInd]<1]) * do.call(genFun,genArgs)[data[[i]][genInd]>0 & data[[i]][genInd]<1] # if gen !=0 and gen!=1
+          genProb[genInd][genData[genInd]==0] <- zeromass[genData[genInd]==0]
+          genProb[genInd][genData[genInd]==1] <- onemass[genData[genInd]==1]
+          genProb[genInd][genData[genInd]>0 & genData[genInd]<1] <- (1.-zeromass[genData[genInd]>0 & genData[genInd]<1]-onemass[genData[genInd]>0 & genData[genInd]<1]) * do.call(genFun,genArgs)[genData[genInd]>0 & genData[genInd]<1] # if gen !=0 and gen!=1
         }
       }
       else genProb[genInd] <- do.call(genFun,genArgs)

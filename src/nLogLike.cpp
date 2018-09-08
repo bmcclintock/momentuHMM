@@ -1,4 +1,5 @@
 #include "densities.h"
+#include "combine.h"
 
 //' Negative log-likelihood
 //'
@@ -44,7 +45,8 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   
   arma::mat beta = Par["beta"];
   //arma::mat delta = Par["delta"];
-  NumericVector genData(nbObs);
+  NumericVector genData;
+  List L;
   arma::mat genPar;
   std::string genDist;
   std::string genname;
@@ -143,6 +145,8 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   funMap["gamma"] = dgamma_rcpp;
   funMap["lnorm"] = dlnorm_rcpp;
   funMap["norm"] = dnorm_rcpp;
+  funMap["mvnorm2"] = dmvnorm_rcpp;
+  funMap["mvnorm3"] = dmvnorm_rcpp;
   funMap["pois"] = dpois_rcpp;
   funMap["vm"] = dvm_rcpp;
   funMap["weibull"] = dweibull_rcpp;
@@ -169,13 +173,26 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   double NAvalue = -99999999; // value designating NAs in data
   int zeroInd = 0;
   int oneInd = 0;
+  bool mvn = false;
   
   unsigned int nDists = dist.size();
 
   for(unsigned int k=0;k<nDists;k++){
     genname = as<std::string>(dataNames[k]);
-    genData = as<NumericVector>(data[genname]);
     genDist = as<std::string>(dist[genname]);
+    if(genDist=="mvnorm2"){
+      L = List::create(as<NumericVector>(data[genname+".x"]) ,as<NumericVector>(data[genname+".y"]));
+      //NumericVector genData = combine(L);
+      mvn = true;
+    } else if(genDist=="mvnorm3"){
+      L = List::create(as<NumericVector>(data[genname+".x"]) ,as<NumericVector>(data[genname+".y"]),as<NumericVector>(data[genname+".z"]));
+      //NumericVector genData = combine(L);
+      mvn = true;
+    } else {
+      L = List::create(as<NumericVector>(data[genname]));
+      mvn = false;
+    }
+    //genData = combine(L);
     genPar = as<arma::mat>(Par[genname]);
     genzeroInflation = as<bool>(zeroInflation[genname]);
     genoneInflation = as<bool>(oneInflation[genname]);
@@ -191,12 +208,19 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       zeroInd = 0;
     
     // remove the NAs from step (impossible to subset a vector with NAs)
-    for(int i=0;i<nbObs;i++) {
-      if(!arma::is_finite(genData(i))) {
-        genData(i) = NAvalue;
+    NumericVector tmpL;
+    for(int l=0; l<L.size(); l++){
+      tmpL = L[l];
+      for(int i=0;i<nbObs;i++) {
+        if(!arma::is_finite(tmpL(i))) {
+          //genData(i) = NAvalue;
+          tmpL(i) = NAvalue;
+        }
       }
+      L[l] = tmpL;
     }
-    arma::uvec noNAs = arma::find(as<arma::vec>(genData)!=NAvalue);
+    arma::uvec noNAs = arma::find(as<arma::vec>(tmpL)!=NAvalue);
+    genData = combine(L);
     
     // extract zero-mass and one-mass parameters if necessary
     if(genzeroInflation || genoneInflation) {
@@ -224,9 +248,24 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       
       genProb.ones();
       
-      genArgs1 = genPar.row(state); //genPar(arma::span(0),arma::span(state),arma::span());
-      genArgs2 = genPar.row(genPar.n_rows - nbStates + state); //genPar(arma::span(genPar.n_rows-1),arma::span(state),arma::span());
-    
+      if(mvn){
+        if(genDist=="mvnorm2"){
+          genArgs1 = cbindmean2(genPar.row(state),genPar.row(nbStates+state));
+          genArgs2 = cbindsigma2(genPar.row(nbStates*2+state),genPar.row(nbStates*3+state),genPar.row(nbStates*4+state));
+          //for(int i=0; i<genArgs1.n_cols; i++){
+            //for(int j=0; j<genArgs1.n_rows; j++){
+              //Rprintf("i %d (%f,%f) mean(%f,%f) sigma(%f,%f,%f,%f) noNAs %d \n",i,genData(i),genData(nbObs+i),genArgs1(0,i),genArgs1(1,i),genArgs2(0,i),genArgs2(1,i),genArgs2(2,i),genArgs2(3,i));
+            //}
+          //}
+        } else if(genDist=="mvnorm3"){
+          genArgs1 = cbindmean3(genPar.row(state),genPar.row(nbStates+state),genPar.row(nbStates*2+state));
+          genArgs2 = cbindsigma3(genPar.row(nbStates*3+state),genPar.row(nbStates*4+state),genPar.row(nbStates*5+state),genPar.row(nbStates*6+state),genPar.row(nbStates*7+state),genPar.row(nbStates*8+state));          
+        }
+      } else {
+        genArgs1 = genPar.row(state); //genPar(arma::span(0),arma::span(state),arma::span());
+        genArgs2 = genPar.row(genPar.n_rows - nbStates + state); //genPar(arma::span(genPar.n_rows-1),arma::span(state),arma::span());
+      }
+      
       if(genzeroInflation && !genoneInflation) {
         
         zerom = zeromass.row(state);
@@ -262,16 +301,22 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         genProb.elem(nbOnes) = onem.elem(nbOnes);
         
       } else {
-        
-        genProb.elem(noNAs) = funMap[genDist](genData[genData!=NAvalue],genArgs1.elem(noNAs),genArgs2.elem(noNAs));
-        
+        genProb.elem(noNAs) = funMap[genDist](genData[genData!=NAvalue],genArgs1.cols(noNAs),genArgs2.cols(noNAs));
       }
       
       allProbs.col(state) = allProbs.col(state) % genProb;
+      //for(int i=0; i<nbObs; i++){
+      //  Rprintf("allProbs state %d i %d %f \n",state,i,allProbs(i,state));
+      //}
     }
     
     // put the NAs back
-    genData[genData==NAvalue] = NA_REAL;
+    for(int l=0; l<L.size(); l++){
+      tmpL = L[l];
+      tmpL[tmpL==NAvalue] = NA_REAL;
+      L[l] = tmpL;
+    }
+    genData = combine(L);
   }
   
   // deal with states known a priori
@@ -307,13 +352,16 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       // if 'i' is the 'k'-th element of 'aInd', switch to the next animal
       delt = delta.row(k);
       alpha = (delt * Gamma) % allProbs.row(i);
+      //Rprintf("i %d alpha %f %f ",i,alpha(0),alpha(1));
       k++;
     } else {
       alpha = (alpha * Gamma) % allProbs.row(i);
+      //Rprintf("i %d alpha %f %f ",i,alpha(0),alpha(1));
     }
     
     lscale = lscale + log(sum(alpha));
     alpha = alpha/sum(alpha);
+    //Rprintf("lscale %f alpha %f %f \n",i,alpha(0),alpha(1));
   }
 
   return -lscale;

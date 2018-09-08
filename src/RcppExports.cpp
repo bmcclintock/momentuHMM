@@ -6,6 +6,71 @@
 
 using namespace Rcpp;
 
+// combine
+NumericVector combine(const List& list);
+RcppExport SEXP _momentuHMM_combine(SEXP listSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const List& >::type list(listSEXP);
+    rcpp_result_gen = Rcpp::wrap(combine(list));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cbindmean2
+arma::mat cbindmean2(arma::mat x, arma::mat y);
+RcppExport SEXP _momentuHMM_cbindmean2(SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(cbindmean2(x, y));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cbindmean3
+arma::mat cbindmean3(arma::mat x, arma::mat y, arma::mat z);
+RcppExport SEXP _momentuHMM_cbindmean3(SEXP xSEXP, SEXP ySEXP, SEXP zSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type z(zSEXP);
+    rcpp_result_gen = Rcpp::wrap(cbindmean3(x, y, z));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cbindsigma2
+arma::mat cbindsigma2(arma::mat x, arma::mat xy, arma::mat y);
+RcppExport SEXP _momentuHMM_cbindsigma2(SEXP xSEXP, SEXP xySEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type xy(xySEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(cbindsigma2(x, xy, y));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cbindsigma3
+arma::mat cbindsigma3(arma::mat x, arma::mat xy, arma::mat xz, arma::mat y, arma::mat yz, arma::mat z);
+RcppExport SEXP _momentuHMM_cbindsigma3(SEXP xSEXP, SEXP xySEXP, SEXP xzSEXP, SEXP ySEXP, SEXP yzSEXP, SEXP zSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type xy(xySEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type xz(xzSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type yz(yzSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type z(zSEXP);
+    rcpp_result_gen = Rcpp::wrap(cbindsigma3(x, xy, xz, y, yz, z));
+    return rcpp_result_gen;
+END_RCPP
+}
 // dgamma_rcpp
 arma::colvec dgamma_rcpp(NumericVector x, arma::mat mu, arma::mat sigma);
 RcppExport SEXP _momentuHMM_dgamma_rcpp(SEXP xSEXP, SEXP muSEXP, SEXP sigmaSEXP) {
@@ -133,6 +198,19 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type prob(probSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type foo(fooSEXP);
     rcpp_result_gen = Rcpp::wrap(dbern_rcpp(x, prob, foo));
+    return rcpp_result_gen;
+END_RCPP
+}
+// dmvnorm_rcpp
+arma::colvec dmvnorm_rcpp(NumericVector x, const arma::mat mean, const arma::mat varcovM);
+RcppExport SEXP _momentuHMM_dmvnorm_rcpp(SEXP xSEXP, SEXP meanSEXP, SEXP varcovMSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::mat >::type mean(meanSEXP);
+    Rcpp::traits::input_parameter< const arma::mat >::type varcovM(varcovMSEXP);
+    rcpp_result_gen = Rcpp::wrap(dmvnorm_rcpp(x, mean, varcovM));
     return rcpp_result_gen;
 END_RCPP
 }

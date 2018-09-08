@@ -261,6 +261,61 @@ arma::colvec dbern_rcpp(NumericVector x, arma::mat prob, arma::mat foo)
   return res;
 }
 
+const double log2pi2 = log(2.0 * M_PI)/2.0;
+
+//' C++ implementation of multivariate Normal probability density function for multiple inputs
+//'
+//'@param x data matrix of dimension \code{p x n}, \code{p} being the dimension of the
+//'data and n the number of data points.
+//'@param mean mean vectors matrix of dimension \code{p x n}
+//'@param varcovM list of length \code{n} of variance-covariance matrices,
+//'each of dimensions \code{p x p}.
+//'@param Log logical flag for returning the log of the probability density
+//'function. Defaults is \code{TRUE}.
+//'
+//'@return matrix of densities of dimension \code{K x n}.
+// [[Rcpp::export]]
+arma::colvec dmvnorm_rcpp(NumericVector x,
+                       const arma::mat mean,
+                       const arma::mat varcovM){
+  
+  //const bool & Log=true;
+  int p = mean.n_rows;
+  int n = mean.n_cols;
+  arma::vec xvec(p);
+  arma::vec out(n);
+  arma::mat sigma(p,p);
+  double constant = - p*log2pi2;
+  
+  for (int i=0; i < n; i++) {
+    for(int k=0; k < p; k++){
+      sigma(k,k) = varcovM(k*p+k,i);
+      for(int j=0; j < k; j++){
+        sigma(k,j) = varcovM(k*p+j,i);
+        sigma(j,k) = varcovM(k*p+j,i);
+      }
+      xvec(k) = x(k*n+i);
+    }
+    arma::mat Rinv = inv(trimatu(chol(sigma)));
+    //mat R = chol(as<arma::mat>(varcovM[i]));
+    double logSqrtDetvarcovM = sum(log(Rinv.diag()));
+    arma::colvec mtemp = mean.col(i);
+    arma::colvec x_i = xvec - mtemp;
+    arma::rowvec xRinv = trans(x_i)*Rinv;
+    //vec xRinv = solve(trimatl(R.t()), x_i);
+    double quadform = sum(xRinv%xRinv);
+    //if (!Log) {
+      out(i) = exp(-0.5*quadform + logSqrtDetvarcovM + constant);
+    //} else{
+    //  out(i) = -0.5*quadform + logSqrtDetvarcovM + constant;
+    //}
+    //Rprintf("i %d x %f y %f mean %f %f sigma %f %f %f %f out %f \n",i,xvec(0),xvec(1),mtemp(0),mtemp(1),sigma(0,0),sigma(1,0),sigma(0,1),sigma(1,1),out(i));
+  }
+  
+  return out;
+  
+}
+
 // used in nLogLike_rcpp to map the functions' names to the functions
 typedef arma::colvec (*FunPtr)(NumericVector, arma::mat, arma::mat);
 

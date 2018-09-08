@@ -1,4 +1,4 @@
-momentuHMMdists<-sort(c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm','norm','bern',"vmConsensus"))
+momentuHMMdists<-sort(c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm','norm','bern',"vmConsensus","mvnorm2","mvnorm3"))
 moveHMMdists<-sort(c('gamma','weibull','exp','lnorm','wrpcauchy','vm'))
 angledists<-sort(c('wrpcauchy','vm','vmConsensus'))
 stepdists<-sort(c('gamma','weibull','exp','lnorm'))
@@ -7,11 +7,16 @@ nonnegativedists<-sort(c('gamma','weibull','exp','lnorm','pois'))
 zeroInflationdists<-sort(c('gamma','weibull','exp','lnorm','beta'))
 oneInflationdists<-sort(c('beta'))
 integerdists<-sort(c('bern','pois'))
+mvndists <- c("mvnorm2","mvnorm3")
 splineList<-c("bs","ns","bSpline","mSpline","cSpline","iSpline")
 meansList<-c("matrix","numeric","integer","logical","Date","POSIXlt","POSIXct","difftime")
 meansListNoTime<-c("numeric","integer","logical")
 plotArgs <- c("cex","cex.main","cex.lab","cex.axis","cex.legend","lwd","asp","legend.pos")
 fitMethods<-c("nlm","Nelder-Mead","SANN")
+
+dmvnorm2 <- dmvnorm3 <- function(x,mean,sigma){
+  dmvnorm_rcpp(x,mean,sigma)
+}
 
 # startup message
 #' @importFrom utils packageDescription available.packages

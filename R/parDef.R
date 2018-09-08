@@ -68,6 +68,21 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
                                   ncol=2,byrow=TRUE)
              parNames[[i]] <- c("mean","sd")
            },
+           "mvnorm2"={
+             parSize[[i]] <- 2 + 3
+             tmpbounds <- matrix(c(rep(rep(c(-Inf,Inf),nbStates),2),rep(c(0,Inf),nbStates),rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates)),
+                                 ncol=2,byrow=TRUE)
+             parNames[[i]] <- c("mean.x","mean.y","sigma.x","sigma.xy","sigma.y")
+           },
+           "mvnorm3"={
+             parSize[[i]] <- 3 + 6
+             tmpbounds <- matrix(c(rep(rep(c(-Inf,Inf),nbStates),3),rep(c(0,Inf),nbStates),
+                                                                    rep(rep(c(-Inf,Inf),nbStates),2),
+                                                                    rep(c(0,Inf),nbStates),
+                                                                    rep(c(-Inf,Inf),nbStates),
+                                                                    rep(c(0,Inf),nbStates)),ncol=2,byrow=TRUE)
+             parNames[[i]] <- c("mean.x","mean.y","mean.z","sigma.x","sigma.xy","sigma.xz","sigma.y","sigma.yz","sigma.z")
+           },
            "pois"={
              parSize[[i]] <- 1
              tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
@@ -135,6 +150,14 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
       parNames[[i]] <- c(parNames[[i]],"onemass")
     } 
     rownames(tmpbounds) <- paste0(rep(parNames[[i]],each=nbStates),"_",1:nbStates)
+    #if(!(dist[[i]] %in% mvndists)) rownames(tmpbounds) <- paste0(rep(parNames[[i]],each=nbStates),"_",1:nbStates)
+    #else if(dist[[i]]=="mvnorm2"){
+    #  rownames(tmpbounds) <- c(paste0(rep(c("mean.x","mean.y"),each=nbStates),"_",1:nbStates),
+    #                           paste0(rep(c("sigma.x","sigma.xy","sigma.y"),each=nbStates),"_",1:nbStates))
+    #} else if(dist[[i]]=="mvnorm3"){
+    #  rownames(tmpbounds) <- c(paste0(rep(c("mean.x","mean.y","mean.z"),each=nbStates),"_",1:nbStates),
+    #                           paste0(rep(c("sigma.x","sigma.xy","sigma.xz","sigma.y","sigma.yz","sigma.z"),each=nbStates),"_",1:nbStates))
+    #}
     bounds[[i]] <- tmpbounds
   }
   
