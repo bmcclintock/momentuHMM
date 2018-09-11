@@ -18,6 +18,12 @@ dmvnorm2 <- dmvnorm3 <- function(x,mean,sigma){
   dmvnorm_rcpp(x,mean,sigma)
 }
 
+#' @importFrom mvtnorm pmvnorm
+pmvnorm2 <- pmvnorm3 <- function(q,mean,sigma){
+  sigma <- matrix(sigma,length(mean),length(m))
+  mvtnorm::pmvnorm(upper=q,mean=mean,sigma=sigma)
+}
+
 # startup message
 #' @importFrom utils packageDescription available.packages
 print.momentuHMM.version <- function()

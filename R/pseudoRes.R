@@ -42,6 +42,7 @@
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
+#' @importFrom mvtnorm qmvnorm
 
 pseudoRes <- function(m, ncores = 1)
 {
@@ -202,7 +203,17 @@ pseudoRes <- function(m, ncores = 1)
     genRes[[paste0(j,"Res")]] <- rep(NA,nbObs)
     pgenMat <- pgenMat2 <- matrix(NA,nbObs,nbStates)
     sp <- par[[j]]
-    genInd <- which(!is.na(data[[j]]))
+    
+    if(dist[[j]] %in% mvndists){
+      ndim <- as.numeric(gsub("mvnorm","",dist[[j]]))
+      if(dist[[j]]=="mvnorm2")
+        genData <- c(data[[paste0(j,".x")]],data[[paste0(j,".y")]])
+      else if(dist[[j]]=="mvnorm3")
+        genData <- c(data[[paste0(j,".x")]],data[[paste0(j,".y")]],data[[paste0(j,".z")]])
+    } else {
+      genData <- data[[j]]
+    }
+    genInd <- which(!is.na(genData[1:nbObs]))
     zeroInflation <- m$conditions$zeroInflation[[j]]
     oneInflation <- m$conditions$oneInflation[[j]]
   
@@ -212,7 +223,7 @@ pseudoRes <- function(m, ncores = 1)
       
       if(!(dist[[j]] %in% angledists)){
         
-        genArgs <- list(data[[j]][genInd])
+        genArgs <- list(genData[which(!is.na(genData))])
         
         zeromass <- 0
         onemass <- 0
@@ -221,8 +232,37 @@ pseudoRes <- function(m, ncores = 1)
           if(oneInflation) onemass <- genPar[nrow(genPar)-nbStates+state,genInd]
           genPar <- genPar[-(nrow(genPar)-(nbStates*(zeroInflation+oneInflation)-1):0),]
         }
-        for(k in 1:(nrow(genPar)/nbStates))
-          genArgs[[k+1]] <- genPar[(k-1)*nbStates+state,genInd]
+        
+        if(dist[[j]] %in% mvndists){
+          if(dist[[j]]=="mvnorm2"){
+            genArgs[[1]] <- as.list(as.data.frame(matrix(genArgs[[1]],nrow=ndim,byrow=TRUE)))
+            genArgs[[2]] <- as.list(as.data.frame(rbind(genPar[state,genInd],
+                                  genPar[nbStates+state,genInd])))
+            genArgs[[3]] <- as.list(as.data.frame(
+                                  rbind(genPar[nbStates*2+state,genInd], #x
+                                        genPar[nbStates*3+state,genInd], #xy
+                                        genPar[nbStates*3+state,genInd], #xy
+                                        genPar[nbStates*4+state,genInd]))) #y
+          } else if(dist[[j]]=="mvnorm3"){
+            genArgs[[1]] <- as.list(as.data.frame(matrix(genArgs[[1]],nrow=ndim,byrow=TRUE)))
+            genArgs[[2]] <- as.list(as.data.frame(rbind(genPar[state,genInd],
+                                  genPar[nbStates+state,genInd],
+                                  genPar[2*nbStates+state,genInd])))
+            genArgs[[3]] <- as.list(as.data.frame(
+                                  rbind(genPar[nbStates*3+state,genInd], #x
+                                        genPar[nbStates*4+state,genInd], #xy
+                                        genPar[nbStates*5+state,genInd], #xz
+                                        genPar[nbStates*4+state,genInd], #xy
+                                        genPar[nbStates*6+state,genInd], #y
+                                        genPar[nbStates*7+state,genInd], #yz
+                                        genPar[nbStates*5+state,genInd], #xz
+                                        genPar[nbStates*7+state,genInd], #yz
+                                        genPar[nbStates*8+state,genInd]))) #z          
+          }
+        } else {
+          for(k in 1:(nrow(genPar)/nbStates))
+            genArgs[[k+1]] <- genPar[(k-1)*nbStates+state,genInd]
+        }
         
         if(dist[[j]]=="gamma") {
           shape <- genArgs[[2]]^2/genArgs[[3]]^2
@@ -233,21 +273,30 @@ pseudoRes <- function(m, ncores = 1)
         
         if(zeroInflation | oneInflation) {
           if(zeroInflation & !oneInflation){
-            pgenMat[genInd,state] <- ifelse(data[[j]][genInd]==0,
+            pgenMat[genInd,state] <- ifelse(genData[genInd]==0,
                                       zeromass, # if gen==0
                                       zeromass + (1-zeromass)*do.call(Fun[[j]],genArgs)) # if gen != 0
           } else if(oneInflation & !zeroInflation){
-            pgenMat[genInd,state] <- ifelse(data[[j]][genInd]==1,
+            pgenMat[genInd,state] <- ifelse(genData[genInd]==1,
                                       onemass, # if gen==1
                                       onemass + (1-onemass)*do.call(Fun[[j]],genArgs)) # if gen != 1           
           } else {
-            pgenMat[genInd,state][data[[j]][genInd]==0] <- zeromass[data[[j]][genInd]==0] # if gen==0
-            pgenMat[genInd,state][data[[j]][genInd]==1] <- onemass[data[[j]][genInd]==1]  # if gen==1
-            pgenMat[genInd,state][data[[j]][genInd]>0 & data[[j]][genInd]<1] <- zeromass[data[[j]][genInd]>0 & data[[j]][genInd]<1] + onemass[data[[j]][genInd]>0 & data[[j]][genInd]<1] + (1.-zeromass[data[[j]][genInd]>0 & data[[j]][genInd]<1]-onemass[data[[j]][genInd]>0 & data[[j]][genInd]<1]) * do.call(Fun[[j]],genArgs)[data[[j]][genInd]>0 & data[[j]][genInd]<1] # if gen !=0 and gen!=1
+            pgenMat[genInd,state][genData[genInd]==0] <- zeromass[genData[genInd]==0] # if gen==0
+            pgenMat[genInd,state][genData[genInd]==1] <- onemass[genData[genInd]==1]  # if gen==1
+            pgenMat[genInd,state][genData[genInd]>0 & genData[genInd]<1] <- zeromass[genData[genInd]>0 & genData[genInd]<1] + onemass[genData[genInd]>0 & genData[genInd]<1] + (1.-zeromass[genData[genInd]>0 & genData[genInd]<1]-onemass[genData[genInd]>0 & genData[genInd]<1]) * do.call(Fun[[j]],genArgs)[genData[genInd]>0 & genData[genInd]<1] # if gen !=0 and gen!=1
           }
         }
         else {
-          pgenMat[genInd,state] <- do.call(Fun[[j]],genArgs)
+          if(dist[[j]] %in% mvndists){
+            names(genArgs) <- c("q","mean","sigma")
+            #pgenMat[genInd,state] <- mapply(Fun[[j]],q=genArgs$q,mean=genArgs$mean,sigma=genArgs$sigma)
+            d2<-function(q,mean,sigma){
+              sigma <- matrix(sigma,length(mean),length(mean));
+              epsilon<-q-mean;
+              return(t(epsilon)%*%solve(sigma)%*%epsilon)
+            }
+            pgenMat[genInd,state] <- mapply(d2,q=genArgs$q,mean=genArgs$mean,sigma=genArgs$sigma)
+          } else pgenMat[genInd,state] <- do.call(Fun[[j]],genArgs)
           if(dist[[j]] %in% integerdists){
             genArgs[[1]] <- genArgs[[1]] - 1
             pgenMat2[genInd,state] <- do.call(Fun[[j]],genArgs)
@@ -263,12 +312,12 @@ pseudoRes <- function(m, ncores = 1)
         #}
       } else {
         
-        genpiInd <- which(data[[j]]!=pi & !is.na(data[[j]]))
+        genpiInd <- which(genData!=pi & !is.na(genData))
         
-        genArgs <- list(Fun[[j]],-pi,data[[j]][1]) # to pass to function "integrate" below
+        genArgs <- list(Fun[[j]],-pi,genData[1]) # to pass to function "integrate" below
   
         for(i in genpiInd){
-          genArgs[[3]]<-data[[j]][i]
+          genArgs[[3]]<-genData[i]
           for(k in 1:(nrow(genPar)/nbStates))
             genArgs[[k+3]] <- genPar[(k-1)*nbStates+state,i]
           
@@ -288,12 +337,15 @@ pseudoRes <- function(m, ncores = 1)
   
     k <- 1
     for(i in 1:nbObs) {
-      if(!is.na(data[[j]][i])){
+      if(!is.na(genData[i])){
         if(any(i==aInd)){
           genRes[[paste0(j,"Res")]][i] <- (delta[k,]%*%trMat[,,i])%*%pgenMat[i,]
           if(dist[[j]] %in% integerdists)
             genRes[[paste0(j,"Res")]][i] <- (genRes[[paste0(j,"Res")]][i] + (delta[k,]%*%trMat[,,i])%*%pgenMat2[i,])/2
-          genRes[[paste0(j,"Res")]][i] <- qnorm(genRes[[paste0(j,"Res")]][i])
+          if(dist[[j]] %in% mvndists){
+            #genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] <- mvtnorm::qmvnorm(genRes[[paste0(j,"Res")]][i],mean=rep(0,ndim),sigma=diag(ndim))$quantile
+            #genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] <- qchisq(genRes[[paste0(j,"Res")]][i],df=ndim)
+          } else genRes[[paste0(j,"Res")]][i] <- qnorm(genRes[[paste0(j,"Res")]][i])
           k <- k + 1
         } else {
           gamma <- trMat[,,i]
@@ -303,7 +355,10 @@ pseudoRes <- function(m, ncores = 1)
           genRes[[paste0(j,"Res")]][i] <- t(a)%*%(gamma/sum(a))%*%pgenMat[i,]
           if(dist[[j]] %in% integerdists)
             genRes[[paste0(j,"Res")]][i] <- (genRes[[paste0(j,"Res")]][i] + t(a)%*%(gamma/sum(a))%*%pgenMat2[i,])/2
-          genRes[[paste0(j,"Res")]][i] <- qnorm(genRes[[paste0(j,"Res")]][i])
+          if(dist[[j]] %in% mvndists){
+            #genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] <- mvtnorm::qmvnorm(genRes[[paste0(j,"Res")]][i],mean=rep(0,ndim),sigma=diag(ndim))$quantile
+            #genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] <- qchisq(genRes[[paste0(j,"Res")]][i],df=ndim)
+          } else genRes[[paste0(j,"Res")]][i] <- qnorm(genRes[[paste0(j,"Res")]][i])
         }
       }
     }

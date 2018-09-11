@@ -81,31 +81,37 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
       }
       
       # qq-plot
-      qq <- lapply(pr,function(x) qqnorm(x[[paste0(i,"Res")]],plot=FALSE))
-      limInf <- min(min(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),min(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
-      limSup <- max(max(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),max(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
-      q <- qqnorm(pr[[1]][[paste0(i,"Res")]],main="",col="red",xlim=c(limInf,limSup),ylim=c(limInf,limSup))
-      if(nSims>1){
-        for(j in 2:nSims){
-          points(qq[[j]]$x,qq[[j]]$y,col=col[j])
-        }
-      }
-      
-      # add segments for zero inflation
-      for(j in 1:nSims){
-        if(m[[j]]$conditions$zeroInflation[[i]]) {
-          ind <- which(m[[j]]$data[[i]]==0)
-          x <- qq[[j]]$x[ind]
-          y <- qq[[j]]$y[ind]
-          segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
+      if(m[[1]]$conditions$dist[[i]] %in% mvndists){
+        ndim <- as.numeric(gsub("mvnorm","",m[[1]]$conditions$dist[[i]] ))
+        chi2q <- stats::qchisq((seq(1,nrow(m[[1]]$data))-0.5)/nrow(m[[1]]$data),df=ndim)
+        plot(sort(unlist(pr)),chi2q,xlab="Theoretical Quantiles",ylab="Sample Quantiles",col=2)
+      } else {
+        qq <- lapply(pr,function(x) qqnorm(x[[paste0(i,"Res")]],plot=FALSE))
+        limInf <- min(min(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),min(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
+        limSup <- max(max(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),max(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
+        q <- qqnorm(pr[[1]][[paste0(i,"Res")]],main="",col="red",xlim=c(limInf,limSup),ylim=c(limInf,limSup))
+        if(nSims>1){
+          for(j in 2:nSims){
+            points(qq[[j]]$x,qq[[j]]$y,col=col[j])
+          }
         }
         
-        # add segments for one inflation
-        if(m[[j]]$conditions$oneInflation[[i]]) {
-          ind <- which(m[[j]]$data[[i]]==1)
-          x <- qq[[j]]$x[ind]
-          y <- qq[[j]]$y[ind]
-          segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
+        # add segments for zero inflation
+        for(j in 1:nSims){
+          if(m[[j]]$conditions$zeroInflation[[i]]) {
+            ind <- which(m[[j]]$data[[i]]==0)
+            x <- qq[[j]]$x[ind]
+            y <- qq[[j]]$y[ind]
+            segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
+          }
+          
+          # add segments for one inflation
+          if(m[[j]]$conditions$oneInflation[[i]]) {
+            ind <- which(m[[j]]$data[[i]]==1)
+            x <- qq[[j]]$x[ind]
+            y <- qq[[j]]$y[ind]
+            segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
+          }
         }
       }
       abline(0,1,lwd=2)
