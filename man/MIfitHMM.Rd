@@ -15,8 +15,8 @@ MIfitHMM(miData, nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
   modelName = NULL, covNames = NULL, spatialCovs = NULL, centers = NULL,
   centroids = NULL, angleCovs = NULL, method = "IS", parIS = 1000,
   dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
-  force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
-  thetaSamp = NULL)
+  quad.ask = FALSE, force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf,
+  scalePostIS = 1, thetaSamp = NULL)
 }
 \arguments{
 \item{miData}{A \code{\link{crwData}} object, a \code{\link{crwSim}} object, or a list of \code{\link{momentuHMMData}} objects.}
@@ -140,6 +140,8 @@ See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwDat
 
 \item{scaleSim}{Scale multiplier for the covariance matrix of the t approximation. See 'scale' argument in \code{\link[crawl]{crwSimulator}}. 
 Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+
+\item{quad.ask}{Logical, for method='quadrature'. Whether or not the sampler should ask if quadrature sampling should take place. It is used to stop the sampling if the number of likelihood evaluations would be extreme. Default: FALSE. Ignored if \code{ncores>1}.}
 
 \item{force.quad}{A logical indicating whether or not to force the execution 
 of the quadrature method for large parameter vectors. See \code{\link[crawl]{crwSimulator}}. Default: TRUE. Ignored unless \code{miData} is a \code{\link{crwData}} object and \code{method=``quadrature''}.}
