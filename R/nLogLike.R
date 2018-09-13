@@ -119,10 +119,11 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
     par[distnames] <- lapply(par[distnames],as.matrix)
   }
 
-  nllk <- nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,
+  nllk <- tryCatch(nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,
                         par,
-                        aInd,zeroInflation,oneInflation,stationary,knownStates,betaRef)
-
+                        aInd,zeroInflation,oneInflation,stationary,knownStates,betaRef),error=function(e) e)
+  if(inherits(nllk,"error")) nllk <- NaN
+  
   if(!is.null(prior)) nllk <- nllk - prior(wpar)
   
   return(nllk)
