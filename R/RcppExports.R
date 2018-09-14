@@ -157,8 +157,6 @@ dbern_rcpp <- function(x, prob, foo) {
 #'@param mean mean vectors matrix of dimension \code{p x n}
 #'@param varcovM list of length \code{n} of variance-covariance matrices,
 #'each of dimensions \code{p x p}.
-#'@param Log logical flag for returning the log of the probability density
-#'function. Defaults is \code{TRUE}.
 #'
 #'@return matrix of densities of dimension \code{K x n}.
 dmvnorm_rcpp <- function(x, mean, varcovM) {

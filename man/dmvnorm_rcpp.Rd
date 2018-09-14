@@ -14,9 +14,6 @@ data and n the number of data points.}
 
 \item{varcovM}{list of length \code{n} of variance-covariance matrices,
 each of dimensions \code{p x p}.}
-
-\item{Log}{logical flag for returning the log of the probability density
-function. Defaults is \code{TRUE}.}
 }
 \value{
 matrix of densities of dimension \code{K x n}.

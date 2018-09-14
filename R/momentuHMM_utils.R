@@ -20,7 +20,7 @@ dmvnorm2 <- dmvnorm3 <- function(x,mean,sigma){
 
 #' @importFrom mvtnorm pmvnorm
 pmvnorm2 <- pmvnorm3 <- function(q,mean,sigma){
-  sigma <- matrix(sigma,length(mean),length(m))
+  sigma <- matrix(sigma,length(mean),length(mean))
   mvtnorm::pmvnorm(upper=q,mean=mean,sigma=sigma)
 }
 
