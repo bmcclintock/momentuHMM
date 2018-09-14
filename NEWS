@@ -7,7 +7,7 @@ NEW FEATURES
 * circularAngleMean can now alternatively be used to specify the reference angle (i.e. directional persistence) coefficient in circular-circular regression models
 
 
-momentuHMM 1.4.3 2018-07-25
+momentuHMM 1.4.3 2018-09-14
 -----------------
 NEW FEATURES
 
@@ -26,6 +26,12 @@ CHANGES
 * cleaned up crawlWrap printing when retryFits>0 and retryParallel=FALSE
 
 * retrySD argument in fitHMM and MIfitHMM can now be a scalar
+
+* bug fix in calculation of standard errors (and confidence intervals) for transition probability and initial distribution parameters when workBounds$beta or workBounds$delta are specified other than the default (-Inf,Inf)
+
+* bug fix in calculation of number of parameters in getAIC when formulaDelta=~1 and initial distribution is fixed using fixPar$delta
+
+* updated for compatibility with crawl (>= 2.2.1)
 
 
 momentuHMM 1.4.2 2018-06-19

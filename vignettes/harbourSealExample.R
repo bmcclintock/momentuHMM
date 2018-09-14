@@ -308,6 +308,7 @@ bestFit.all<-foreach(i=1:N) %dorng% {
 }
 stopImplicitCluster()
 
+
 #specify initial values for full model based on individual model fits (note this is identical to fitting each track individually but is much slower to fit and calculate hessian)
 for(i in 1:N){
   bfPar<-getPar0(bestFit.all[[i]])
@@ -385,6 +386,7 @@ miBestFit.all<-foreach(i=1:N) %dorng% {
                                   retryFits=5,nlmPar=list(steptol=1.e-9,hessian=FALSE),prior=prior)
       }
     }  
+
     if(inherits(tryFits[[1]][[j]],"error") & inherits(tryFits[[2]][[j]],"error")) stop("both sets of starting values failed for individual ",i)
     
     if(inherits(tryFits[[1]][[j]],"error")){

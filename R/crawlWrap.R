@@ -493,7 +493,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   registerDoParallel(cores=ncores)
   withCallingHandlers(predData <- 
     foreach(i = convFits, .export="crwPredict", .combine = rbind, .errorhandling="remove") %dorng% {
-      pD<-crawl::crwPredict(model_fits[[i]], predTime=predTime[[i]])
+      pD<-crawl::crwPredict(model_fits[[i]], predTime=predTime[[i]],return.type = "flat")
       if(length(predTime[[i]])>1){
         pD[[Time.name]][which(pD$locType=="p")]<-predTime[[i]][predTime[[i]]>=min(model_fits[[i]]$data[[Time.name]])]
       } else if(inherits(obsData[[Time.name]],"POSIXct")){

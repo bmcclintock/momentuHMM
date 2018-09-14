@@ -94,6 +94,7 @@
 #' (difference in log-likelihood). See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param scaleSim Scale multiplier for the covariance matrix of the t approximation. See 'scale' argument in \code{\link[crawl]{crwSimulator}}. 
 #' Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' @param quad.ask Logical, for method='quadrature'. Whether or not the sampler should ask if quadrature sampling should take place. It is used to stop the sampling if the number of likelihood evaluations would be extreme. Default: FALSE. Ignored if \code{ncores>1}.
 #' @param force.quad A logical indicating whether or not to force the execution 
 #' of the quadrature method for large parameter vectors. See \code{\link[crawl]{crwSimulator}}. Default: TRUE. Ignored unless \code{miData} is a \code{\link{crwData}} object and \code{method=``quadrature''}.
 #' @param fullPost Logical indicating whether to draw parameter values as well to simulate full posterior. See \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
@@ -191,7 +192,7 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
                    DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL, workcons = NULL, betaCons = NULL, betaRef = NULL,
                    stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
                    covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL,
-                   method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, force.quad = TRUE,
+                   method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
                    fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL)
 {
 
@@ -232,14 +233,14 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
         distnames <- names(predData)[which(!(names(predData) %in% c("ID","x","y",covNames,znames)))]
       }
       
-      if(all(unlist(lapply(model_fits,function(x) is.null(x$err.model))))) stop("Multiple realizations of the position process cannot be drawn if there is no location measurement error")
+      #if(all(unlist(lapply(model_fits,function(x) is.null(x$err.model))))) stop("Multiple realizations of the position process cannot be drawn if there is no location measurement error")
       cat('Drawing',nSims,'realizations from the position process using crawl::crwPostIS... ')
       
       registerDoParallel(cores=ncores)
       withCallingHandlers(crwSim <- foreach(i = 1:length(ids), .export="crwSimulator") %dorng% {
         if(!is.null(model_fits[[i]]$err.model))
           crawl::crwSimulator(model_fits[[i]],predTime=predData[[Time.name]][which(predData$ID==ids[i] & predData$locType=="p")], method = method, parIS = parIS,
-                                  df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, force.quad = force.quad)
+                                  df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, quad.ask = ifelse(ncores>1, FALSE, quad.ask), force.quad = force.quad)
       },warning=muffleRNGwarning)
       stopImplicitCluster()
       names(crwSim) <- ids
@@ -249,13 +250,13 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
         foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass") %dorng% {
           locs<-data.frame()
           for(i in 1:length(ids)){
-            if(!is.null(model_fits[[i]]$err.model)){
+            #if(!is.null(model_fits[[i]]$err.model)){
               tmp<-tryCatch({crawl::crwPostIS(crwSim[[i]], fullPost = fullPost, df = dfPostIS, scale = scalePostIS, thetaSamp = thetaSamp)},error=function(e) e)
               if(!all(class(tmp) %in% c("crwIS","list"))) stop('crawl::crwPostIS error for individual ',ids[i],'; ',tmp,'  Check crwPostIS arguments, crawl::crwMLE model fits, and/or consult crawl documentation.')
               locs<-rbind(locs,tmp$alpha.sim[,c("mu.x","mu.y")])
-            } else {
-              locs<-rbind(locs,predData[which(predData$ID==ids[i]),c("mu.x","mu.y")])
-            }
+            #} else {
+            #  locs<-rbind(locs,predData[which(predData$ID==ids[i]),c("mu.x","mu.y")])
+            #}
           }
           df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
           prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs)
