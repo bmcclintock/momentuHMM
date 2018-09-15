@@ -26,9 +26,7 @@ utmcoord <- spTransform(llcoord,CRS("+proj=utm +zone=30 ellps=WGS84"))
 rawData$x <- attr(utmcoord,"coords")[,1]
 rawData$y <- attr(utmcoord,"coords")[,2]
 
-inits<-list(a=c(rawData$x[1],0,rawData$y[1],0),P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 5000 ^ 2, 10 * 3600 ^ 2)))
-
-crwOut<-crawlWrap(rawData,timeStep="hour",initial.state=inits,theta=c(2.761119, -8.195757),fixPar=c(NA,NA))
+crwOut<-crawlWrap(rawData,timeStep="hour",theta=c(6.855, -0.007),fixPar=c(NA,NA))
 plot(crwOut,ask=FALSE)
 
 # create momentuHMMData object from crwData object
