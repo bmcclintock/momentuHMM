@@ -20,15 +20,13 @@
 #' # extract simulated obsData from example data
 #' obsData <- miExample$obsData
 #' 
-#' # extract crwMLE inputs from example data
-#' inits <- miExample$inits # initial state
-#' err.model <- miExample$err.model # error ellipse model
+#' # error ellipse model
+#' err.model <- list(x= ~ ln.sd.x - 1, y =  ~ ln.sd.y - 1, rho =  ~ error.corr)
 #'
 #' # Fit crwMLE models to obsData and predict locations 
 #' # at default intervals for both individuals
 #' crwOut <- crawlWrap(obsData=obsData,
 #'          theta=c(4,0),fixPar=c(1,1,NA,NA),
-#'          initial.state=inits,
 #'          err.model=err.model,attempts=100)
 #'          
 #' # create data frame with fake data stream

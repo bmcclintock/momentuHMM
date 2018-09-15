@@ -22,7 +22,7 @@ CHANGES
 
 * bug fix in calculation of number of parameters in getAIC when formulaDelta=~1 and initial distribution is fixed using fixPar$delta
 
-* updated for compatibility with crawl (>= 2.2.1)
+* updated for compatibility with crawl (>= 2.2.1). Notable changes include removal of the initial.state argument and addition of the time.scale argument in crawlWrap.
 
 
 momentuHMM 1.4.2 2018-06-19
