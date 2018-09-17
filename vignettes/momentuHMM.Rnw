@@ -403,16 +403,12 @@ rawData$y <- attr(utmcoord,"coords")[,2]
 
 Then, we call \verb|crawlWrap| to fit a CTCRW model and predict hourly locations:
 <<crawl, echo=TRUE, eval=FALSE>>=
-# initial parameters for crawl fit
-inits <- list(a = c(rawData$x[1],0,rawData$y[1],0),
-              P = diag(c(5000^2, 10*3600^2, 5000^2, 10*3600^2)))
-
 # fit crawl model
-crwOut <- crawlWrap(obsData=rawData, timeStep="hour", initial.state=inits,
-                    theta=c(4,-10), fixPar=c(NA,NA))
+crwOut <- crawlWrap(obsData=rawData, timeStep="hour",
+                    theta=c(6.855, -0.007), fixPar=c(NA,NA))
 @
 
-Here the desired time step is specified by the \verb|timeStep| argument, and the \verb|initial.state|, \verb|theta|, and \verb|fixPar| arguments are the same as for \verb|crawl::crwMLE| \citep{Johnson2017}. For the choice of initial parameters in \verb|crawlWrap|, we refer the reader to the documentation of the package crawl, in particular \verb|crawl::crwMLE| and \verb|crawl::crwPredict|. We now have a complete set of temporally-regular location data.
+Here the desired time step is specified by the \verb|timeStep| argument, and \verb|theta| and \verb|fixPar| arguments are the same as for \verb|crawl::crwMLE| \citep{Johnson2017}. For the choice of initial parameters in \verb|crawlWrap|, we refer the reader to the documentation of the package crawl, in particular \verb|crawl::crwMLE| and \verb|crawl::crwPredict|. We now have a complete set of temporally-regular location data.
 
 Autocorrelation function (ACF) estimates suggest there are 24-hour cycles in the step length data, and this presents an opportunity to demonstrate the use of the \verb|cosinor| function for incorporating cyclical behavior in model parameters using \verb|momentuHMM|. We create a \verb|momentuHMMData| object, and the 24-hour cosinor model covariate: 
 <<prepData, echo=TRUE, eval=FALSE>>=
