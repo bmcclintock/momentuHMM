@@ -192,15 +192,13 @@ and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[craw
 # extract simulated obsData from example data
 obsData <- miExample$obsData
 
-# extract crwMLE inputs from example data
-inits <- miExample$inits # initial state
-err.model <- miExample$err.model # error ellipse model
+# error ellipse model
+err.model <- list(x= ~ ln.sd.x - 1, y =  ~ ln.sd.y - 1, rho =  ~ error.corr)
 
 # create crwData object by fitting crwMLE models to obsData and predict locations 
 # at default intervals for both individuals
 crwOut <- crawlWrap(obsData=obsData,
          theta=c(4,0),fixPar=c(1,1,NA,NA),
-         initial.state=inits,
          err.model=err.model)
 
 # HMM specifications

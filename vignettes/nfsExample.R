@@ -15,11 +15,9 @@ ncores <- 7 # number of CPU cores
 # set time steps based on overlapping time period of location and dive data
 predTimes <- seq(max(foragedives$time[1],nfsData$time[1]),min(foragedives$time[nrow(foragedives)],nfsData$time[nrow(nfsData)])+60*60,"hour")
 
-inits<-list(a=c(nfsData$x[1],0,nfsData$y[1],0),P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 5000 ^ 2, 10 * 3600 ^ 2)))
-
 # use default starting values (theta) and explore likelihood surface using retryFits
 crwOut<-crawlWrap(nfsData,ncores=ncores,retryFits=20,err.model=list(x=~ln.sd.x-1,y=~ln.sd.y-1,rho=~error.corr),
-                  initial.state=inits,fixPar=c(1,1,NA,NA),
+                  fixPar=c(1,1,NA,NA),
                   attempts=100,predTime=predTimes)
 plot(crwOut)
 

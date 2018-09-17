@@ -8,10 +8,6 @@ nSims <- 100 # number of imputatons
 retryFits <- 250 # number attempt to re-fit based on random perturbation
 ncores <- 7 # number of CPU cores
 
-inits<-list(a=c(coordinates(turtleData)[1,1],0,
-                coordinates(turtleData)[1,2],0),
-            P=diag(c(100^2,100^2,100^2,100^2)))
-
 fixPar<-c(log(1000*c(0.290,0.452,0.534,NA,NA,NA)),log(1000*c(0.122,0.239,0.301,NA,NA,NA)),NA,NA)
 
 err.model=list(x=~lc-1,y=~lc-1)
@@ -23,8 +19,8 @@ predTimes <- seq(as.POSIXlt("2012-11-20 02:00:00 UTC",tz="UTC"),as.POSIXlt("2012
 
 # fit crawl model and predict locations at 2 hour time steps
 crwOut<-crawlWrap(turtleData,retryFits=retryFits,Time.name="time",
-                  err.model=err.model,initial.state=inits,
-                  theta=c(7.730711, 8.216563, 8.505832, 7.103412, 7.245771, 7.935648, 5.371427, -10.677923),fixPar = fixPar, constr=constr,
+                  err.model=err.model,
+                  theta=c(7.747508, 8.223732, 8.514144, 7.101799, 7.248497, 7.941228, 9.460062, -2.502675),fixPar = fixPar, constr=constr,
                   predTime=predTimes) 
 
 # add date field to crwPredict data frame to match z values of raster bricks (speedBrick and dirBrick); see ?raster::getZ

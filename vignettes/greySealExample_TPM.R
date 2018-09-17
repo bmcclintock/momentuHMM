@@ -14,7 +14,6 @@ ncores <- 7 # number of CPU cores
 
 # fit crawl functions
 crwOut<-crawlWrap(greySealData,err.model=list(x=~ln.sd.x-1,y=~ln.sd.y-1,rho=~error.corr),
-                  initial.state=list(a=c(greySealData$x[1],0,greySealData$y[1],0),P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 5000 ^ 2, 10 * 3600 ^ 2))),
                   fixPar=c(1,1,NA,NA),attempts=100,retryFits=20,
                   timeStep="2 hours")
 plot(crwOut,ask=FALSE)
@@ -119,5 +118,5 @@ setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=4957)
 greySealSim<-simData(model=greySealPool,centers=centers,initialPosition = centers[1,],obsPerAnimal = 1515,states=TRUE)
 setRNG::setRNG(oldRNG)
 
-save.image("greySealExample_TPM_new.RData")
-save(greySealPool,greySealSim,file="greySealResults_TPM_new.RData")
+save.image("greySealExample_TPM.RData")
+save(greySealPool,greySealSim,file="greySealResults_TPM.RData")

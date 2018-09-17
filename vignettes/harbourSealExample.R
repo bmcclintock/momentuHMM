@@ -21,23 +21,24 @@ timeStep <- 2 # time step (hours)
 load(url("http://www.esapubs.org/archive/ecol/E094/072/data.RData"))
 
 # back-calculate observation times from j_ti and ssidx
-time<-numeric(length(j_ti))
-ID<-factor(length(j_ti),levels=1:17)
-predTimes<-list()
+time <- numeric(length(j_ti))
+ID <- factor(length(j_ti),levels=1:17)
+predTimes <- trunPredTimes <- list()
 
 cumT<-c(0,cumsum(T_n)+1:N)
 for(i in 1:N){
   for(t in (cumT[i]+1):(cumT[i+1]-1)){
     if((ssidx[t+1])>=(ssidx[t]+1)){
       for(s in (ssidx[t]+1):(ssidx[t+1])){
-        time[s]<- (t-cumT[i]+j_ti[s])*timeStep*60*60
+        time[s]<- (t-cumT[i]+j_ti[s])*timeStep
         ID[s]<-i
       }
     }
   }
-  predTimes[[i]]<-((cumT[i]+1):(cumT[i+1]-1)-cumT[i])*timeStep*60*60
+  predTimes[[i]]<-((cumT[i]+1):(cumT[i+1]-1)-cumT[i])*timeStep
+  trunPredTimes[[i]]<-predTimes[[i]][predTimes[[i]]>=time[ssidx[(cumT[i]+1)]+1]] # to deal with bug in crawl::crwPredict when any predTimes are before first observed location
 }
-names(predTimes)<-unique(ID)
+names(predTimes)<-names(trunPredTimes)<-unique(ID)
 
 # project location data
 data<-data.frame(ID=ID,time=time,x=x_ti,y=y_ti)
@@ -51,10 +52,9 @@ data$ln.sd.y<-rep(3.565449,nrow(data))
 data$error.corr<-rep(0,nrow(data))
 
 # crawl initial states and parameters
-init<-theta<-fixPar<-ln.prior<-list()
+theta<-fixPar<-ln.prior<-list()
 for(i in unique(data$ID)){
-  init[[i]]<-list(a=c(subset(data,ID==i)$x[1],0,subset(data,ID==i)$y[1],0),P = diag(c(5000 ^ 2,10 * 3600 ^ 2, 5000 ^ 2, 10 * 3600 ^ 2)))
-  theta[[i]]<-c(3.454, -7.945)
+  theta[[i]]<-c(7, 1)
   fixPar[[i]]<-c(1,1,NA,NA)
   ln.prior[[i]] <- function(theta){-abs(theta[2]+3)/0.5} # laplace prior with location = -3 and scale = 0.5 
 }
@@ -62,9 +62,8 @@ for(i in unique(data$ID)){
 # fit crawl model to all tracks
 crwOut<-crawlWrap(data,ncores=ncores,retryParallel=TRUE,
                   err.model=list(x=~ln.sd.x-1,y=~ln.sd.y-1,rho=~error.corr),
-                  initial.state=init,
                   theta=theta,fixPar=fixPar,prior=ln.prior,attempts=100,
-                  predTime=predTimes,retryFits = 10)
+                  predTime=trunPredTimes,retryFits = 10)
 plot(crwOut,ask=FALSE)
 
 # replace missing dive activity data with NA

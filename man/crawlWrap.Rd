@@ -7,10 +7,10 @@
 crawlWrap(obsData, timeStep = 1, ncores = 1, retryFits = 0, retrySD = 1,
   retryParallel = FALSE, mov.model = ~1, err.model = NULL,
   activity = NULL, drift = NULL, coord = c("x", "y"),
-  Time.name = "time", initial.state, theta, fixPar, method = "L-BFGS-B",
-  control = NULL, constr = NULL, prior = NULL, need.hess = TRUE,
-  initialSANN = list(maxit = 200), attempts = 1, predTime = NULL,
-  fillCols = FALSE)
+  Time.name = "time", time.scale = "hours", theta, fixPar,
+  method = "L-BFGS-B", control = NULL, constr = NULL, prior = NULL,
+  need.hess = TRUE, initialSANN = list(maxit = 200), attempts = 1,
+  predTime = NULL, fillCols = FALSE, ...)
 }
 \arguments{
 \item{obsData}{data.frame object containing fields for animal ID ('ID'), time of observation (identified by \code{Time.name}, must be numeric or POSIXct), 
@@ -55,8 +55,7 @@ for each individual.}
 
 \item{Time.name}{Character indicating name of the location time column.  See \code{\link[crawl]{crwMLE}}.}
 
-\item{initial.state}{List of initial.state objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one initial state is provided, then the same initial states are used
-for each individual.}
+\item{time.scale}{character. Scale for conversion of POSIX time to numeric for modeling. Defaults to "hours".}
 
 \item{theta}{List of theta objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one theta is provided, then the same starting values are used
 for each individual. If theta is not specified, then \code{\link[crawl]{crwMLE}} default values are used (i.e. each parameter is started at zero).}
@@ -90,6 +89,8 @@ for each individual.}
 \item{fillCols}{Logical indicating whether or not to use the crawl::\code{\link[crawl]{fillCols}} function for filling in missing values in \code{obsData} for which
 there is a single unique value. Default: FALSE. If the output from \code{crawlWrap} is intended for analyses using \code{\link{fitHMM}} or \code{\link{MIfitHMM}}, 
 setting \code{fillCols=TRUE} should typically be avoided.}
+
+\item{...}{Additional arguments that are ignored.}
 }
 \value{
 A \code{\link{crwData}} object, i.e. a list of:
@@ -104,7 +105,7 @@ Wrapper function for fitting crawl::crwMLE models and predicting locations with 
 \itemize{
 \item Consult \code{\link[crawl]{crwMLE}} and \code{\link[crawl]{crwPredict}} for futher details about model fitting and prediction. 
 
-\item Note that the names of the list elements corresponding to each individual in \code{mov.model}, \code{err.model}, \code{activity}, \code{drift}, \code{initial.state},
+\item Note that the names of the list elements corresponding to each individual in \code{mov.model}, \code{err.model}, \code{activity}, \code{drift},
 \code{theta}, \code{fixPar}, \code{constr}, \code{prior}, and \code{predTime} must match the individual IDs in \code{obsData}.  If only one element is provided
 for any of these arguments, then the same element will be applied to all individuals.
 }
@@ -114,22 +115,19 @@ for any of these arguments, then the same element will be applied to all individ
 # extract simulated obsData from example data
 obsData <- miExample$obsData
 
-# extract crwMLE inputs from example data
-inits <- miExample$inits # initial state
-err.model <- miExample$err.model # error ellipse model
+# error ellipse model
+err.model <- list(x= ~ ln.sd.x - 1, y =  ~ ln.sd.y - 1, rho =  ~ error.corr)
 
 # Fit crwMLE models to obsData and predict locations 
 # at default intervals for both individuals
 crwOut1 <- crawlWrap(obsData=obsData,
          theta=c(4,0),fixPar=c(1,1,NA,NA),
-         initial.state=inits,
          err.model=err.model,attempts=100)
 
 # Fit the same crwMLE models and predict locations 
 # at same intervals but specify for each individual using lists
 crwOut2 <- crawlWrap(obsData=obsData,
          theta=list(c(4,0),c(4,0)), fixPar=list(c(1,1,NA,NA),c(1,1,NA,NA)),
-         initial.state=list(inits,inits),
          err.model=list(err.model,err.model),
          predTime=list('1'=seq(1,633),'2'=seq(1,686)))
 }

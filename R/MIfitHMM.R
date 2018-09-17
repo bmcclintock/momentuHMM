@@ -122,15 +122,13 @@
 #' # extract simulated obsData from example data
 #' obsData <- miExample$obsData
 #' 
-#' # extract crwMLE inputs from example data
-#' inits <- miExample$inits # initial state
-#' err.model <- miExample$err.model # error ellipse model
+#' # error ellipse model
+#' err.model <- list(x= ~ ln.sd.x - 1, y =  ~ ln.sd.y - 1, rho =  ~ error.corr)
 #'
 #' # create crwData object by fitting crwMLE models to obsData and predict locations 
 #' # at default intervals for both individuals
 #' crwOut <- crawlWrap(obsData=obsData,
 #'          theta=c(4,0),fixPar=c(1,1,NA,NA),
-#'          initial.state=inits,
 #'          err.model=err.model)
 #' 
 #' # HMM specifications
@@ -234,13 +232,15 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
       }
       
       #if(all(unlist(lapply(model_fits,function(x) is.null(x$err.model))))) stop("Multiple realizations of the position process cannot be drawn if there is no location measurement error")
-      cat('Drawing',nSims,'realizations from the position process using crawl::crwPostIS... ')
+      cat('Drawing',nSims,'realizations from the position process using crawl::crwPostIS...',ifelse(ncores>1 & length(ids)>1,"","\n"))
       
       registerDoParallel(cores=ncores)
       withCallingHandlers(crwSim <- foreach(i = 1:length(ids), .export="crwSimulator") %dorng% {
-        if(!is.null(model_fits[[i]]$err.model))
+        if(!is.null(model_fits[[i]]$err.model)){
+          cat("Individual",ids[i],"...\n")
           crawl::crwSimulator(model_fits[[i]],predTime=predData[[Time.name]][which(predData$ID==ids[i] & predData$locType=="p")], method = method, parIS = parIS,
                                   df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, quad.ask = ifelse(ncores>1, FALSE, quad.ask), force.quad = force.quad)
+        }
       },warning=muffleRNGwarning)
       stopImplicitCluster()
       names(crwSim) <- ids
