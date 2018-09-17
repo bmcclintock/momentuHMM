@@ -428,9 +428,9 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
             }
             if(inherits(tmp,"crwFit")){
               if(tmp$convergence==0){
-                if(tmp$loglik > model_fits[[i]]$loglik | all(!is.na(tmp$se[which(is.na(fixPar[[i]]))])))
+                if(tmp$loglik > curFit$loglik | all(!is.na(tmp$se[which(is.na(fixPar[[i]]))])))
                   fit<-tmp
-                if(tmp$loglik >= model_fits[[i]]$loglik & all(!is.na(tmp$se[which(is.na(fixPar[[i]]))])))
+                if(tmp$loglik >= curFit$loglik & all(!is.na(tmp$se[which(is.na(fixPar[[i]]))])))
                   curFit<-tmp
               }
             }
