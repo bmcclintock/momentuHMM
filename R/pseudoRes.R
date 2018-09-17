@@ -37,12 +37,11 @@
 #' Chapman & Hall (London).
 #'
 #' @export
-#' @importFrom stats integrate qnorm
+#' @importFrom stats integrate qnorm qchisq mahalanobis
 #' @importFrom LaplacesDemon pbern
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
-#' @importFrom mvtnorm qmvnorm
 
 pseudoRes <- function(m, ncores = 1)
 {
@@ -210,6 +209,12 @@ pseudoRes <- function(m, ncores = 1)
         genData <- c(data[[paste0(j,".x")]],data[[paste0(j,".y")]])
       else if(dist[[j]]=="mvnorm3")
         genData <- c(data[[paste0(j,".x")]],data[[paste0(j,".y")]],data[[paste0(j,".z")]])
+      
+      # define function for calculating chi square probs based on mahalanobis distance
+      d2<-function(q,mean,sigma){
+        stats::pchisq(stats::mahalanobis(q,mean,matrix(sigma,length(mean),length(mean))),df=ndim)
+      }
+      
     } else {
       genData <- data[[j]]
     }
@@ -290,11 +295,6 @@ pseudoRes <- function(m, ncores = 1)
           if(dist[[j]] %in% mvndists){
             names(genArgs) <- c("q","mean","sigma")
             #pgenMat[genInd,state] <- mapply(Fun[[j]],q=genArgs$q,mean=genArgs$mean,sigma=genArgs$sigma)
-            d2<-function(q,mean,sigma){
-              sigma <- matrix(sigma,length(mean),length(mean));
-              epsilon<-q-mean;
-              return(t(epsilon)%*%solve(sigma)%*%epsilon)
-            }
             pgenMat[genInd,state] <- mapply(d2,q=genArgs$q,mean=genArgs$mean,sigma=genArgs$sigma)
           } else pgenMat[genInd,state] <- do.call(Fun[[j]],genArgs)
           if(dist[[j]] %in% integerdists){
@@ -343,9 +343,8 @@ pseudoRes <- function(m, ncores = 1)
           if(dist[[j]] %in% integerdists)
             genRes[[paste0(j,"Res")]][i] <- (genRes[[paste0(j,"Res")]][i] + (delta[k,]%*%trMat[,,i])%*%pgenMat2[i,])/2
           if(dist[[j]] %in% mvndists){
-            #genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] <- mvtnorm::qmvnorm(genRes[[paste0(j,"Res")]][i],mean=rep(0,ndim),sigma=diag(ndim))$quantile
-            #genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] <- qchisq(genRes[[paste0(j,"Res")]][i],df=ndim)
-          } else genRes[[paste0(j,"Res")]][i] <- qnorm(genRes[[paste0(j,"Res")]][i])
+            genRes[[paste0(j,"Res")]][i] <- stats::qchisq(genRes[[paste0(j,"Res")]][i],df=ndim)
+          } else genRes[[paste0(j,"Res")]][i] <- stats::qnorm(genRes[[paste0(j,"Res")]][i])
           k <- k + 1
         } else {
           gamma <- trMat[,,i]
@@ -356,9 +355,8 @@ pseudoRes <- function(m, ncores = 1)
           if(dist[[j]] %in% integerdists)
             genRes[[paste0(j,"Res")]][i] <- (genRes[[paste0(j,"Res")]][i] + t(a)%*%(gamma/sum(a))%*%pgenMat2[i,])/2
           if(dist[[j]] %in% mvndists){
-            #genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] <- mvtnorm::qmvnorm(genRes[[paste0(j,"Res")]][i],mean=rep(0,ndim),sigma=diag(ndim))$quantile
-            #genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] <- qchisq(genRes[[paste0(j,"Res")]][i],df=ndim)
-          } else genRes[[paste0(j,"Res")]][i] <- qnorm(genRes[[paste0(j,"Res")]][i])
+            genRes[[paste0(j,"Res")]][i] <- stats::qchisq(genRes[[paste0(j,"Res")]][i],df=ndim)
+          } else genRes[[paste0(j,"Res")]][i] <- stats::qnorm(genRes[[paste0(j,"Res")]][i])
         }
       }
     }

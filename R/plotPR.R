@@ -34,6 +34,7 @@
 #'
 #' @export
 #' @importFrom stats acf na.pass qqnorm
+#' @importFrom car qqPlot
 
 plotPR <- function(m, lag.max = NULL, ncores = 1)
 {
@@ -82,9 +83,10 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
       
       # qq-plot
       if(m[[1]]$conditions$dist[[i]] %in% mvndists){
+        tpr <- as.matrix(pr[[1]][[paste0(i,"Res")]])
         ndim <- as.numeric(gsub("mvnorm","",m[[1]]$conditions$dist[[i]] ))
-        chi2q <- stats::qchisq((seq(1,nrow(m[[1]]$data))-0.5)/nrow(m[[1]]$data),df=ndim)
-        plot(sort(unlist(pr)),chi2q,xlab="Theoretical Quantiles",ylab="Sample Quantiles",col=2)
+        car::qqPlot(tpr, distribution = "chisq", df = ndim, 
+               lwd = 1, grid = FALSE, main = "Multi-normal Q-Q Plot", xlab = expression(chi^2 * " quantiles"), ylab = expression("Mahalanobis distances "^2))
       } else {
         qq <- lapply(pr,function(x) qqnorm(x[[paste0(i,"Res")]],plot=FALSE))
         limInf <- min(min(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),min(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
@@ -113,8 +115,9 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
             segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
           }
         }
+        abline(0,1,lwd=2)
       }
-      abline(0,1,lwd=2)
+      
       
       # ACF functions
       ACF <- lapply(pr,function(x) acf(x[[paste0(i,"Res")]],lag.max=lag.max,na.action=na.pass,plot=FALSE))
