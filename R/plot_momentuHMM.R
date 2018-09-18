@@ -427,16 +427,27 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   
   for(i in distnames){
     
+    if(dist[[i]] %in% mvndists){
+      if(dist[[i]]=="mvnorm2")
+        tmpData <- c(m$data[[paste0(i,".x")]],m$data[[paste0(i,".y")]])
+      else if(dist[[i]]=="mvnorm3")
+        tmpData <- c(m$data[[paste0(i,".x")]],m$data[[paste0(i,".y")]],m$data[[paste0(i,".z")]])
+    } else {
+      tmpData <- m$data[[i]]
+    }
+    
     # split data by animals if necessary
     if(sepAnimals) {
       genData <- list()
       for(zoo in 1:nbAnimals) {
         ind <- which(m$data$ID==ID[zoo])
-        genData[[zoo]] <- m$data[[i]][ind]
+        if(dist[[i]] %in% mvndists) genData[[zoo]] <- tmpData[c(ind,ind+nrow(m$data))]
+        else genData[[zoo]] <- tmpData[ind]
       }
     } else {
       ind <- which(m$data$ID %in% ID)
-      genData <- m$data[[i]][ind]
+      if(dist[[i]] %in% mvndists) genData <- tmpData[c(ind,ind+nrow(m$data))]
+      else genData <- tmpData[ind]
     }
     
     zeroMass[[i]] <- rep(0,nbStates)
@@ -512,6 +523,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       grid <- seq(0,max(m$data[[i]],na.rm=TRUE))
     } else if(inputs$dist[[i]] %in% stepdists){
       grid <- seq(0,max(m$data[[i]],na.rm=TRUE),length=10000)
+    } else if(inputs$dist[[i]] %in% mvndists){
+      grid <- seq(min(tmpData,na.rm=TRUE),max(tmpData,na.rm=TRUE),length=10000)
     } else {
       grid <- seq(min(m$data[[i]],na.rm=TRUE),max(m$data[[i]],na.rm=TRUE),length=10000)
     }
@@ -519,8 +532,32 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     for(state in 1:nbStates) {
       genArgs <- list(grid)
       
-      for(j in 1:(nrow(par[[i]])/nbStates))
-        genArgs[[j+1]] <- par[[i]][(j-1)*nbStates+state,]
+      if(dist[[i]] %in% mvndists){
+        if(dist[[i]]=="mvnorm2"){
+          genArgs[[2]] <- rbind(par[[i]][state,],
+                                par[[i]][nbStates+state,])
+          genArgs[[3]] <- rbind(par[[i]][nbStates*2+state,], #x
+                                par[[i]][nbStates*3+state,], #xy
+                                par[[i]][nbStates*3+state,], #xy
+                                par[[i]][nbStates*4+state,]) #y
+        } else if(dist[[i]]=="mvnorm3"){
+          genArgs[[2]] <- rbind(par[[i]][state,],
+                                par[[i]][nbStates+state,],
+                                par[[i]][2*nbStates+state,])
+          genArgs[[3]] <- rbind(par[[i]][nbStates*3+state,], #x
+                                par[[i]][nbStates*4+state,], #xy
+                                par[[i]][nbStates*5+state,], #xz
+                                par[[i]][nbStates*4+state,], #xy
+                                par[[i]][nbStates*6+state,], #y
+                                par[[i]][nbStates*7+state,], #yz
+                                par[[i]][nbStates*5+state,], #xz
+                                par[[i]][nbStates*7+state,], #yz
+                                par[[i]][nbStates*8+state,]) #z          
+        }
+      } else {
+        for(j in 1:(nrow(par[[i]])/nbStates))
+          genArgs[[j+1]] <- par[[i]][(j-1)*nbStates+state,]
+      }
       
       # conversion between mean/sd and shape/scale if necessary
       if(inputs$dist[[i]]=="gamma") {
