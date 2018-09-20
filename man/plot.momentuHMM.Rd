@@ -7,7 +7,8 @@
 \method{plot}{momentuHMM}(x, animals = NULL, covs = NULL, ask = TRUE,
   breaks = "Sturges", hist.ylim = NULL, sepAnimals = FALSE,
   sepStates = FALSE, col = NULL, cumul = TRUE, plotTracks = TRUE,
-  plotCI = FALSE, alpha = 0.95, plotStationary = FALSE, ...)
+  plotCI = FALSE, alpha = 0.95, plotStationary = FALSE,
+  mvnCoords = NULL, ...)
 }
 \arguments{
 \item{x}{Object \code{momentuHMM}}
@@ -42,6 +43,8 @@ Default: \code{FALSE}.}
 \item{alpha}{Significance level of the confidence intervals (if \code{plotCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).}
 
 \item{plotStationary}{Logical indicating whether to plot the stationary state probabilities as a function of any covariates (default: FALSE). Ignored unless covariate are included in \code{formula}.}
+
+\item{mvnCoords}{Character string indicating the name of location data that were modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, then specifying \code{plotTracks=TRUE} and \code{mvnCoords="mu"} will result in the Viterbi-decoded tracks being plotted.}
 
 \item{...}{Additional arguments passed to \code{\link[graphics]{plot}} and \code{\link[graphics]{hist}} functions. These can currently include \code{asp}, \code{cex}, \code{cex.axis}, \code{cex.lab}, \code{cex.legend}, \code{cex.main}, \code{legend.pos}, and \code{lwd}. See \code{\link[graphics]{par}}. \code{legend.pos} can be a single keyword from the list ``bottomright'', ``bottom'', ``bottomleft'', ``left'', ``topleft'', ``top'', ``topright'', ``right'', and ``center''. Note that \code{asp} and \code{cex} only apply to plots of animal tracks.}
 }

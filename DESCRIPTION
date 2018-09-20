@@ -39,7 +39,10 @@ Imports:
     prodlim,
     dplyr,
     magrittr,
-    doRNG
+    doRNG,
+    scatterplot3d,
+    RColorBrewer,
+    tmvtnorm
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,

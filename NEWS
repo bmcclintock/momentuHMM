@@ -2,7 +2,9 @@ momentuHMM 1.5.0 2018-09-23
 -----------------
 NEW FEATURES
 
-* recharge model has been added
+* discrete-time version of Hooten et al (2018; arXiv:1807.08030) recharge model has been added
+
+* mvnorm2 (bivariate normal) and mvnorm3 (trivariate normal) data stream distributions have been added
 
 * circularAngleMean can now alternatively be used to specify the reference angle (i.e. directional persistence) coefficient in circular-circular regression models
 
