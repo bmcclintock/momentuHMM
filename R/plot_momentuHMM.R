@@ -720,6 +720,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         }
       }
     } else if(inputs$dist[[i]]=="mvnorm2"){
+      
+      datNames <- paste0(i,c(".x",".y"))
+      
       if(sepAnimals) {
         
         # loop over the animals
@@ -728,7 +731,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             
             # loop over the states
             for(state in 1:nbStates) {
-              gen <- m$data[which(states==state & m$data$ID==ID[zoo]),coordNames]
+              gen <- m$data[which(states==state & m$data$ID==ID[zoo]),datNames]
               message <- paste0("ID ",ID[zoo]," - ",stateNames[state],covmess)
               
               # the function plotHistMVN is defined below
@@ -736,7 +739,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             }
             
           } else { # if !sepStates
-            gen <- m$data[which(m$data$ID==ID[zoo]),coordNames]
+            gen <- m$data[which(m$data$ID==ID[zoo]),datNames]
             message <- paste0("ID ",ID[zoo],covmess)
             
             plotHistMVN(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,col,legText, cumul=cumul, ...)
@@ -747,7 +750,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           
           # loop over the states
           for(state in 1:nbStates) {
-            gen <- m$data[which(states==state),coordNames]
+            gen <- m$data[which(states==state),datNames]
             if(nbAnimals>1) message <- paste0("All animals - ",stateNames[state],covmess)
             else message <- paste0("ID ",ID," - ",stateNames[state],covmess)
 
@@ -755,7 +758,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           }
           
         } else { # if !sepStates
-          gen <- m$data[,coordNames]
+          gen <- m$data[,datNames]
           if(nbAnimals>1) message <- paste0("All animals",covmess)
           else message <- paste0("ID ",ID,covmess)
           
@@ -768,12 +771,14 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       par(ask=ask)
     } else if(inputs$dist[[i]]=="mvnorm3"){
       
+      datNames <- paste0(i,c(".x",".y",".z"))
+      
       tmpdist <- list()
-      for(j in 1:length(coordNames)){
+      for(j in 1:length(datNames)){
         
-        tmpdist[[coordNames[j]]] <- "norm"
+        tmpdist[[datNames[j]]] <- "norm"
         
-        genArgs[[1]] <- seq(min(m$data[[coordNames[j]]],na.rm=TRUE),max(m$data[[coordNames[j]]],na.rm=TRUE),length=10000)
+        genArgs[[1]] <- seq(min(m$data[[datNames[j]]],na.rm=TRUE),max(m$data[[datNames[j]]],na.rm=TRUE),length=10000)
         genArgs[[2]] <- j
         
         for(state in 1:nbStates){
@@ -797,18 +802,18 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
               
               # loop over the states
               for(state in 1:nbStates) {
-                gen <- m$data[which(states==state & m$data$ID==ID[zoo]),coordNames[j]]
+                gen <- m$data[which(states==state & m$data$ID==ID[zoo]),datNames[j]]
                 message <- paste0("ID ",ID[zoo]," - ",stateNames[state],covmess)
 
                 # the function plotHist is defined below
-                plotHist(gen,genDensities,tmpdist[coordNames[j]],message,sepStates,breaks,state,hist.ylim[[i]],col,legText, cumul = cumul, ...)
+                plotHist(gen,genDensities,tmpdist[datNames[j]],message,sepStates,breaks,state,hist.ylim[[i]],col,legText, cumul = cumul, ...)
               }
               
             } else { # if !sepStates
-              gen <- m$data[which(m$data$ID==ID[zoo]),coordNames[j]]
+              gen <- m$data[which(m$data$ID==ID[zoo]),datNames[j]]
               message <- paste0("ID ",ID[zoo],covmess)
               
-              plotHist(gen,genDensities,tmpdist[coordNames[j]],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul, ...)
+              plotHist(gen,genDensities,tmpdist[datNames[j]],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul, ...)
             }
           }
         } else { # if !sepAnimals
@@ -816,19 +821,19 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             
             # loop over the states
             for(state in 1:nbStates) {
-              gen <- m$data[which(states==state),coordNames[j]]
+              gen <- m$data[which(states==state),datNames[j]]
               if(nbAnimals>1) message <- paste0("All animals - ",stateNames[state],covmess)
               else message <- paste0("ID ",ID," - ",stateNames[state],covmess)
               
-              plotHist(gen,genDensities,tmpdist[coordNames[j]],message,sepStates,breaks,state,hist.ylim[[i]],col,legText, cumul = cumul, ...)
+              plotHist(gen,genDensities,tmpdist[datNames[j]],message,sepStates,breaks,state,hist.ylim[[i]],col,legText, cumul = cumul, ...)
             }
             
           } else { # if !sepStates
-            gen <- m$data[,coordNames[j]]
+            gen <- m$data[,datNames[j]]
             if(nbAnimals>1) message <- paste0("All animals",covmess)
             else message <- paste0("ID ",ID,covmess)
             
-            plotHist(gen,genDensities,tmpdist[coordNames[j]],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul, ...)
+            plotHist(gen,genDensities,tmpdist[datNames[j]],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul, ...)
           }
         }
       }
