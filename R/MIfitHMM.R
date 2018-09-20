@@ -236,11 +236,11 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
       
       registerDoParallel(cores=ncores)
       withCallingHandlers(crwSim <- foreach(i = 1:length(ids), .export="crwSimulator") %dorng% {
-        if(!is.null(model_fits[[i]]$err.model)){
+        #if(!is.null(model_fits[[i]]$err.model)){
           cat("Individual",ids[i],"...\n")
           crawl::crwSimulator(model_fits[[i]],predTime=predData[[Time.name]][which(predData$ID==ids[i] & predData$locType=="p")], method = method, parIS = parIS,
                                   df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, quad.ask = ifelse(ncores>1, FALSE, quad.ask), force.quad = force.quad)
-        }
+        #}
       },warning=muffleRNGwarning)
       stopImplicitCluster()
       names(crwSim) <- ids
