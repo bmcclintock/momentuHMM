@@ -239,6 +239,11 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
       class(mhdata[[i]]) <- c("angle",class(mhdata[[i]]))
     } else if(dist[[i]] %in% "pois"){
       mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,median)     
+    } else if(dist[[i]] %in% mvndists){
+        mhdata[[paste0(i,".x")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".x")]])),ncol=length(m$data[[paste0(i,".x")]]),byrow=TRUE),2,median)
+        mhdata[[paste0(i,".y")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".y")]])),ncol=length(m$data[[paste0(i,".y")]]),byrow=TRUE),2,median)
+        if(dist[[i]]=="mvnorm3")
+          mhdata[[paste0(i,".z")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".z")]])),ncol=length(m$data[[paste0(i,".z")]]),byrow=TRUE),2,median)
     } else {
       mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,mean)
     }
@@ -327,8 +332,8 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     for(i in 1:nbAnimals){
       idInd <- which(mhdata$ID==unique(mhdata$ID)[i])
       if(nbRecovs){
-        g0 <- m$mle$g0 %*% t(g0covs[i,,drop=FALSE])
-        theta <- m$mle$theta
+        g0 <- Par$beta$g0$est %*% t(g0covs[i,,drop=FALSE])
+        theta <- Par$beta$theta$est
         mhdata$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
       }
     }
@@ -542,17 +547,25 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
       }
     } else mh$conditions$fixPar$delta <- rep(NA,length(deltInd))
   }
+  
+  coordNames <- c("x","y")
+  
+  mvnorm2Ind <- 1
+  if(!is.null(m$conditions$mvnCoords)){
+    if(m$conditions$dist[[m$conditions$mvnCoords]]=="mvnorm3") mvnorm2Ind <- 0#coordNames <- c("x","y","z")
+    coordNames <- paste0(m$conditions$mvnCoords,".",coordNames)
+  }
 
   errorEllipse<-NULL
-  if(all(c("x","y") %in% names(mh$data))){
-    checkerrs <- lapply(im,function(x) x$data[match(c("x","y"),names(x$data))])
+  if(all(coordNames %in% names(mh$data)) & mvnorm2Ind){
+    checkerrs <- lapply(im,function(x) x$data[match(coordNames,names(x$data))])
     ident <- !unlist(lapply(checkerrs,function(x) isTRUE(all.equal(x,checkerrs[[1]]))))
     if(any(ident)){
       # calculate location alpha% error ellipses
       cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
       registerDoParallel(cores=ncores)
       withCallingHandlers(errorEllipse<-foreach(i = 1:nrow(mh$data)) %dorng% {
-        tmp <- cbind(unlist(lapply(im,function(x) x$data$x[i])),unlist(lapply(im,function(x) x$data$y[i])))
+        tmp <- cbind(unlist(lapply(im,function(x) x$data[[coordNames[1]]][i])),unlist(lapply(im,function(x) x$data[[coordNames[2]]][i])))
         if(length(unique(tmp[,1]))>1 | length(unique(tmp[,2]))>1)
           ellip <- car::dataEllipse(tmp,levels=alpha,draw=FALSE,segments=100)
         else ellip <- matrix(tmp[1,],101,2,byrow=TRUE)

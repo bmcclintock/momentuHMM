@@ -25,7 +25,6 @@
 #' @param plotCI Logical indicating whether to include confidence intervals in natural parameter plots (default: FALSE)
 #' @param alpha Significance level of the confidence intervals (if \code{plotCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).
 #' @param plotStationary Logical indicating whether to plot the stationary state probabilities as a function of any covariates (default: FALSE). Ignored unless covariate are included in \code{formula}.
-#' @param mvnCoords Character string indicating the name of location data that were modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, then specifying \code{plotTracks=TRUE} and \code{mvnCoords="mu"} will result in the Viterbi-decoded tracks being plotted. 
 #' @param ... Additional arguments passed to \code{\link[graphics]{plot}} and \code{\link[graphics]{hist}} functions. These can currently include \code{asp}, \code{cex}, \code{cex.axis}, \code{cex.lab}, \code{cex.legend}, \code{cex.main}, \code{legend.pos}, and \code{lwd}. See \code{\link[graphics]{par}}. \code{legend.pos} can be a single keyword from the list ``bottomright'', ``bottom'', ``bottomleft'', ``left'', ``topleft'', ``top'', ``topright'', ``right'', and ``center''. Note that \code{asp} and \code{cex} only apply to plots of animal tracks. 
 #'
 #' @details The state-dependent densities are weighted by the frequency of each state in the most
@@ -58,7 +57,7 @@
 #' @importFrom tmvtnorm dtmvnorm.marginal
 
 plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
-                            sepStates=FALSE,col=NULL,cumul=TRUE,plotTracks=TRUE,plotCI=FALSE,alpha=0.95,plotStationary=FALSE,mvnCoords=NULL,...)
+                            sepStates=FALSE,col=NULL,cumul=TRUE,plotTracks=TRUE,plotCI=FALSE,alpha=0.95,plotStationary=FALSE,...)
 {
   m <- x # the name "x" is for compatibility with the generic method
   m <- delta_bc(m)
@@ -117,12 +116,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   
   coordNames <- c("x","y")
   
-  if(!is.null(mvnCoords)){
-    if(length(mvnCoords)>1 | !is.character(mvnCoords)) stop("mvnCoords must be a character string")
-    if(!(mvnCoords %in% distnames)) stop("mvnCoords not found. Permitted values are: ",paste0(distnames,collapse=", "))
-    if(!(m$conditions$dist[[mvnCoords]] %in% mvndists)) stop("mvnCoords must correspond to a multivariate normal data stream")
-    if(m$conditions$dist[[mvnCoords]]=="mvnorm3") coordNames <- c("x","y","z")
-    coordNames <- paste0(mvnCoords,".",coordNames)
+  if(!is.null(m$conditions$mvnCoords)){
+    if(m$conditions$dist[[m$conditions$mvnCoords]]=="mvnorm3") coordNames <- c("x","y","z")
+    coordNames <- paste0(m$conditions$mvnCoords,".",coordNames)
   }
   
   ######################
@@ -184,8 +180,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       ind <- which(m$data$ID==ID[zoo])
       x[[zoo]] <- m$data[[coordNames[1]]][ind]
       y[[zoo]] <- m$data[[coordNames[2]]][ind]
-      if(!is.null(mvnCoords)){
-        if(m$conditions$dist[[mvnCoords]]=="mvnorm3") {
+      if(!is.null(m$conditions$mvnCoords)){
+        if(m$conditions$dist[[m$conditions$mvnCoords]]=="mvnorm3") {
           z[[zoo]] <- m$data[[coordNames[3]]][ind]
           plotEllipse <- FALSE
           errorEllipse <- NULL
