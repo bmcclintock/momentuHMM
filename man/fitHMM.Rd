@@ -129,7 +129,7 @@ through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{work
 \item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
 the diagonal elements of the t.p.m. are the reference. See details.}
 
-\item{mvnCoords}{Character string indicating the name of location data that were modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCovs}}, and \code{\link{MIpool}}.}
+\item{mvnCoords}{Character string indicating the name of location data that were modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
