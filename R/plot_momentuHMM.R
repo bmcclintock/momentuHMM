@@ -477,7 +477,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       if(m$conditions$dist[[i]] %in% mvndists){
         if(m$conditions$dist[[i]]=="mvnorm2")
           genData <- tmpData[c(ind,ind+nrow(m$data))]
-        if(m$conditions$dist[[i]]=="mvnorm3")
+        else if(m$conditions$dist[[i]]=="mvnorm3")
           genData <- tmpData[c(ind,ind+nrow(m$data),ind+2*nrow(m$data))]
       } else genData <- tmpData[ind]
     }
@@ -558,7 +558,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     } else if(inputs$dist[[i]] %in% mvndists){
       if(inputs$dist[[i]]=="mvnorm2"){
         grid <- c(seq(min(m$data[[paste0(i,".x")]]), max(m$data[[paste0(i,".x")]]), length=100),
-                  seq(min(m$data[[paste0(i,".y")]]), max(m$data[[paste0(i,".x")]]), length=100))
+                  seq(min(m$data[[paste0(i,".y")]]), max(m$data[[paste0(i,".y")]]), length=100))
       }
     } else {
       grid <- seq(min(m$data[[i]],na.rm=TRUE),max(m$data[[i]],na.rm=TRUE),length=10000)
