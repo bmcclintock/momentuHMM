@@ -475,6 +475,16 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   if(retryFits>0) cat("\n")
   cat('\nPredicting locations (and uncertainty)',txt,'for',length(convFits),'track(s) using crawl::crwPredict... ')
   
+  if (time.scale %in% c("hours", "hour")) {
+    ts <- 60 * 60
+  } else if (time.scale %in% c("days", "day")) {
+    ts <- 60 * 60 * 24
+  } else if (time.scale %in% c("sec", "secs", "second","seconds")) {
+    ts <- 1
+  } else if (time.scale %in% c("min", "mins", "minute", "minutes")) {
+    ts <- 60
+  }
+  
   registerDoParallel(cores=ncores)
   withCallingHandlers(predData <- 
     foreach(i = convFits, .export="crwPredict", .combine = rbind, .errorhandling="remove") %dorng% {
@@ -482,7 +492,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
       if(length(predTime[[i]])>1){
         pD[[Time.name]][which(pD$locType=="p")]<-predTime[[i]][predTime[[i]]>=min(model_fits[[i]]$data[[Time.name]])]
       } else if(inherits(obsData[[Time.name]],"POSIXct")){
-        pD[[Time.name]] <- as.POSIXct(pD$TimeNum,origin="1970-01-01 00:00:00",tz=attributes(pD[[Time.name]])$tzone)
+        pD[[Time.name]] <- as.POSIXct(pD$TimeNum*ts,origin="1970-01-01 00:00:00",tz=attributes(pD[[Time.name]])$tzone)
       }
       if(!fillCols){
         for(j in names(pD)[names(pD) %in% names(ind_data[[i]])]){
