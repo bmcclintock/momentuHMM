@@ -1,4 +1,4 @@
-momentuHMM 1.4.3 2018-09-14
+momentuHMM 1.4.3 2018-09-26
 -----------------
 NEW FEATURES
 
@@ -21,6 +21,8 @@ CHANGES
 * bug fix in calculation of standard errors (and confidence intervals) for transition probability and initial distribution parameters when workBounds$beta or workBounds$delta are specified other than the default (-Inf,Inf)
 
 * bug fix in calculation of number of parameters in getAIC when formulaDelta=~1 and initial distribution is fixed using fixPar$delta
+
+* bug fix in MIpool when estimated standard errors are not finite for some imputations
 
 * updated for compatibility with crawl (>= 2.2.1). Notable changes include removal of the initial.state argument and addition of the time.scale argument in crawlWrap.
 
