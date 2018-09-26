@@ -125,7 +125,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
     goodIndex <- goodIndex[-tmpVar1]
   }
-  tmpVar2 <- which(unlist(lapply(betaVar,function(x) any(!is.finite(x)))))
+  tmpVar2 <- unique(c(which(unlist(lapply(betaVar,function(x) any(!is.finite(x))))),which(unlist(lapply(betaVar,function(x) any(!is.finite(sqrt(diag(x)))))))))
   if(length(tmpVar2)){
     warning("working parameter standard errors are not finite for HMM fits ",paste0(goodIndex[tmpVar2],collapse=", ")," and will not be included in pooling")
     im[tmpVar2] <- NULL
