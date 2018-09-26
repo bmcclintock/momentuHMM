@@ -125,7 +125,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
     goodIndex <- goodIndex[-tmpVar1]
   }
-  tmpVar2 <- which(unlist(lapply(betaVar,function(x) any(!is.finite(x)))))
+  tmpVar2 <- unique(c(which(unlist(lapply(betaVar,function(x) any(!is.finite(x))))),which(unlist(lapply(betaVar,function(x) any(!is.finite(sqrt(diag(x)))))))))
   if(length(tmpVar2)){
     warning("working parameter standard errors are not finite for HMM fits ",paste0(goodIndex[tmpVar2],collapse=", ")," and will not be included in pooling")
     im[tmpVar2] <- NULL
@@ -171,7 +171,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   parmcols <- parCount
   parmcols$beta <- ncol(m$mle$beta)
   parmcols$delta <- nbStates-1
-
+  
   parindex <- c(0,cumsum(c(unlist(parCount),length(m$mle$beta),ncol(m$covsDelta)*(nbStates-1))))
   names(parindex)[1:length(distnames)] <- distnames
   if(nbStates>1) {
@@ -240,10 +240,10 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     } else if(dist[[i]] %in% "pois"){
       mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,median)     
     } else if(dist[[i]] %in% mvndists){
-        mhdata[[paste0(i,".x")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".x")]])),ncol=length(m$data[[paste0(i,".x")]]),byrow=TRUE),2,median)
-        mhdata[[paste0(i,".y")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".y")]])),ncol=length(m$data[[paste0(i,".y")]]),byrow=TRUE),2,median)
-        if(dist[[i]]=="mvnorm3")
-          mhdata[[paste0(i,".z")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".z")]])),ncol=length(m$data[[paste0(i,".z")]]),byrow=TRUE),2,median)
+      mhdata[[paste0(i,".x")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".x")]])),ncol=length(m$data[[paste0(i,".x")]]),byrow=TRUE),2,median)
+      mhdata[[paste0(i,".y")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".y")]])),ncol=length(m$data[[paste0(i,".y")]]),byrow=TRUE),2,median)
+      if(dist[[i]]=="mvnorm3")
+        mhdata[[paste0(i,".z")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".z")]])),ncol=length(m$data[[paste0(i,".z")]]),byrow=TRUE),2,median)
     } else {
       mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,mean)
     }
@@ -370,7 +370,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     
     DMind[[i]] <- FALSE
     par <- c(w2n(miBeta$coefficients,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean[i],inputs$consensus[i],m$conditions$stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta,NULL)[[i]])
-
+    
     if(!(inputs$dist[[i]] %in% angledists) | (inputs$dist[[i]] %in% angledists & m$conditions$estAngleMean[[i]] & !m$conditions$Bndind[[i]])) {
       Par$real[[i]] <- get_CI(miBeta$coefficients,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],DMinputs$cons[[i]],DMinputs$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],NULL)
     } else {
@@ -390,7 +390,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   }
   
   quantSup<-qnorm(1-(1-alpha)/2)
-    
+  
   # pooled gamma estimates
   if(nbStates>1){
     gamInd <- (parindex[["beta"]]+1:((nbCovs+1)*nbStates*(nbStates-1)))[unique(c(m$conditions$betaCons))]
@@ -503,7 +503,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     lower[["timeInStates"]] <- probCI(xbar[["timeInStates"]],MI_se[["timeInStates"]],quantSup,"lower")
     upper[["timeInStates"]] <- probCI(xbar[["timeInStates"]],MI_se[["timeInStates"]],quantSup,"upper")
   }
-
+  
   if(nbStates>1) {
     Par$timeInStates <- list(est=xbar$timeInStates,se=MI_se$timeInStates,lower=lower$timeInStates,upper=upper$timeInStates)
     names(Par$timeInStates$est) <- m$stateNames
@@ -555,7 +555,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     if(m$conditions$dist[[m$conditions$mvnCoords]]=="mvnorm3") mvnorm2Ind <- 0#coordNames <- c("x","y","z")
     coordNames <- paste0(m$conditions$mvnCoords,".",coordNames)
   }
-
+  
   errorEllipse<-NULL
   if(all(coordNames %in% names(mh$data)) & mvnorm2Ind){
     checkerrs <- lapply(im,function(x) x$data[match(coordNames,names(x$data))])
