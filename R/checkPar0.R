@@ -91,7 +91,19 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
     
     if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
     distnames<-names(dist)
-    if(any(is.na(match(distnames,names(data))))) stop(paste0(distnames[is.na(match(distnames,names(data)))],collapse=", ")," not found in data")
+    if(any(is.na(match(distnames,names(data))))){
+      tmpdistnames <- distnames
+      for(i in which(is.na(match(distnames,names(data))))){
+        if(dist[[distnames[i]]] %in% mvndists){
+          if(dist[[distnames[i]]] %in% c("mvnorm2","rw_mvnorm2")){
+            tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"))
+          } else if(dist[[distnames[i]]] %in% c("mvnorm3","rw_mvnorm3")){
+            tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"),paste0(distnames[i],".z"))          
+          }
+        }
+      }
+      if(any(is.na(match(tmpdistnames,names(data))))) stop(paste0(tmpdistnames[is.na(match(tmpdistnames,names(data)))],collapse=", ")," not found in data")
+    }
     for(i in distnames){
       dist[[i]]<-match.arg(dist[[i]],momentuHMMdists)
       if(!is.null(fixPar[[i]])) stop("fixPar$",i," cannot be specified unless Par0 is specified")
@@ -160,6 +172,10 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
     p <- parDef(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds)
     nPar <- lapply(p$bounds,function(x) runif(nrow(x),ifelse(is.finite(x[,1]),x[,1],0),ifelse(is.finite(x[,2]),x[,2],max(x[,1]+1,1.e+6))))
     inputs <- checkInputs(nbStates,dist,nPar,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames=NULL,checkInflation = TRUE)
+    
+    # convert RW data
+    data <- RWdata(dist,data)
+    
     tempCovs <- data[1,]
     DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,nPar,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)
     fullDM <- DMinputs$fullDM
@@ -208,7 +224,7 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
   
   inputs <- checkInputs(nbStates,dist,par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,stateNames,checkInflation = TRUE)
   p <- inputs$p
-  DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,par,inputs$cons,inputs$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,inputs$circularAngleMean)
+  DMinputs<-getDM(m$data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,par,inputs$cons,inputs$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,inputs$circularAngleMean)
   
   if(is.null(m$conditions$recharge)){
     if(is.null(beta0) & nbStates>1) {

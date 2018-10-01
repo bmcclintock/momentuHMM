@@ -12,6 +12,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
   
   for(i in distnames){
     if(is.null(DM[[i]])){
+      if(dist[[i]] %in% rwdists) stop("DM$",i," must be specified")
       tmpDM <- diag(parSize[[i]]*nbStates)
       tmpDM <- array(tmpDM,dim=c(nrow(tmpDM),ncol(tmpDM),nbObs))
       DMnames <- paste0(rep(parNames[[i]],each=nbStates),"_",1:nbStates,":(Intercept)")
@@ -29,9 +30,17 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       
       formulaStates <- vector('list',length(parNames[[i]]))
       names(formulaStates) <- parNames[[i]]
-      for(j in parNames[[i]])
+      for(j in parNames[[i]]){
         formulaStates[[j]]<- stateFormulas(DM[[i]][[j]],nbStates,angleMean=(j=="mean" & !isFALSE(circularAngleMean[[i]])),data=data)
-      
+        if(dist[[i]] %in% rwdists){
+          #if(dist[[i]] %in% mvndists){
+          for(k in 1:nbStates){
+            formterms<-attr(terms.formula(formulaStates[[j]][[k]]),"term.labels")
+            if(grepl("mean",j)) formulaStates[[j]][[k]] <- as.formula(paste("~ + 0 + ",paste(c(paste0(i,gsub("mean","",j),"_tm1"),formterms),collapse=" + ")))
+          }
+          #}
+        }
+      }
       #if(circularAngleMean[[i]]){
       tmpCov <- vector('list',length(parNames[[i]]))
       names(tmpCov) <- parNames[[i]]

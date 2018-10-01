@@ -145,8 +145,11 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   funMap["gamma"] = dgamma_rcpp;
   funMap["lnorm"] = dlnorm_rcpp;
   funMap["norm"] = dnorm_rcpp;
+  funMap["rw_norm"] = dnorm_rcpp;
   funMap["mvnorm2"] = dmvnorm_rcpp;
+  funMap["rw_mvnorm2"] = dmvnorm_rcpp;
   funMap["mvnorm3"] = dmvnorm_rcpp;
+  funMap["rw_mvnorm3"] = dmvnorm_rcpp;
   funMap["pois"] = dpois_rcpp;
   funMap["vm"] = dvm_rcpp;
   funMap["weibull"] = dweibull_rcpp;
@@ -180,11 +183,11 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   for(unsigned int k=0;k<nDists;k++){
     genname = as<std::string>(dataNames[k]);
     genDist = as<std::string>(dist[genname]);
-    if(genDist=="mvnorm2"){
+    if(genDist=="mvnorm2" || genDist=="rw_mvnorm2"){
       L = List::create(as<NumericVector>(data[genname+".x"]) ,as<NumericVector>(data[genname+".y"]));
       //NumericVector genData = combine(L);
       mvn = true;
-    } else if(genDist=="mvnorm3"){
+    } else if(genDist=="mvnorm3" || genDist=="rw_mvnorm3"){
       L = List::create(as<NumericVector>(data[genname+".x"]) ,as<NumericVector>(data[genname+".y"]),as<NumericVector>(data[genname+".z"]));
       //NumericVector genData = combine(L);
       mvn = true;
@@ -249,7 +252,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       genProb.ones();
       
       if(mvn){
-        if(genDist=="mvnorm2"){
+        if(genDist=="mvnorm2" || genDist=="rw_mvnorm2"){
           genArgs1 = cbindmean2(genPar.row(state),genPar.row(nbStates+state));
           genArgs2 = cbindsigma2(genPar.row(nbStates*2+state),genPar.row(nbStates*3+state),genPar.row(nbStates*4+state));
           //for(int i=0; i<genArgs1.n_cols; i++){
@@ -257,7 +260,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
               //Rprintf("i %d (%f,%f) mean(%f,%f) sigma(%f,%f,%f,%f) noNAs %d \n",i,genData(i),genData(nbObs+i),genArgs1(0,i),genArgs1(1,i),genArgs2(0,i),genArgs2(1,i),genArgs2(2,i),genArgs2(3,i));
             //}
           //}
-        } else if(genDist=="mvnorm3"){
+        } else if(genDist=="mvnorm3" || genDist=="rw_mvnorm3"){
           genArgs1 = cbindmean3(genPar.row(state),genPar.row(nbStates+state),genPar.row(nbStates*2+state));
           genArgs2 = cbindsigma3(genPar.row(nbStates*3+state),genPar.row(nbStates*4+state),genPar.row(nbStates*5+state),genPar.row(nbStates*6+state),genPar.row(nbStates*7+state),genPar.row(nbStates*8+state));          
         }

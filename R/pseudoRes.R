@@ -204,11 +204,15 @@ pseudoRes <- function(m, ncores = 1)
     sp <- par[[j]]
     
     if(dist[[j]] %in% mvndists){
-      ndim <- as.numeric(gsub("mvnorm","",dist[[j]]))
-      if(dist[[j]]=="mvnorm2")
+      if(dist[[j]]=="mvnorm2" || dist[[j]]=="rw_mvnorm2"){
         genData <- c(data[[paste0(j,".x")]],data[[paste0(j,".y")]])
-      else if(dist[[j]]=="mvnorm3")
+        if(dist[[j]]=="mvnorm2") ndim <- as.numeric(gsub("mvnorm","",dist[[j]]))
+        else ndim <- as.numeric(gsub("rw_mvnorm","",dist[[j]]))
+      } else if(dist[[j]]=="mvnorm3" || dist[[j]]=="rw_mvnorm3"){
         genData <- c(data[[paste0(j,".x")]],data[[paste0(j,".y")]],data[[paste0(j,".z")]])
+        if(dist[[j]]=="mvnorm3") ndim <- as.numeric(gsub("mvnorm","",dist[[j]]))
+        else ndim <- as.numeric(gsub("rw_mvnorm","",dist[[j]]))
+      }
       
       # define function for calculating chi square probs based on mahalanobis distance
       d2<-function(q,mean,sigma){
@@ -239,7 +243,7 @@ pseudoRes <- function(m, ncores = 1)
         }
         
         if(dist[[j]] %in% mvndists){
-          if(dist[[j]]=="mvnorm2"){
+          if(dist[[j]]=="mvnorm2" || dist[[j]]=="rw_mvnorm2"){
             genArgs[[1]] <- as.list(as.data.frame(matrix(genArgs[[1]],nrow=ndim,byrow=TRUE)))
             genArgs[[2]] <- as.list(as.data.frame(rbind(genPar[state,genInd],
                                   genPar[nbStates+state,genInd])))
@@ -248,7 +252,7 @@ pseudoRes <- function(m, ncores = 1)
                                         genPar[nbStates*3+state,genInd], #xy
                                         genPar[nbStates*3+state,genInd], #xy
                                         genPar[nbStates*4+state,genInd]))) #y
-          } else if(dist[[j]]=="mvnorm3"){
+          } else if(dist[[j]]=="mvnorm3" || dist[[j]]=="rw_mvnorm3"){
             genArgs[[1]] <- as.list(as.data.frame(matrix(genArgs[[1]],nrow=ndim,byrow=TRUE)))
             genArgs[[2]] <- as.list(as.data.frame(rbind(genPar[state,genInd],
                                   genPar[nbStates+state,genInd],

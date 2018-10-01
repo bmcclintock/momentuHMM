@@ -242,7 +242,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     } else if(dist[[i]] %in% mvndists){
       mhdata[[paste0(i,".x")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".x")]])),ncol=length(m$data[[paste0(i,".x")]]),byrow=TRUE),2,median)
       mhdata[[paste0(i,".y")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".y")]])),ncol=length(m$data[[paste0(i,".y")]]),byrow=TRUE),2,median)
-      if(dist[[i]]=="mvnorm3")
+      if(dist[[i]]=="mvnorm3" || dist[[i]]=="rw_mvnorm3")
         mhdata[[paste0(i,".z")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".z")]])),ncol=length(m$data[[paste0(i,".z")]]),byrow=TRUE),2,median)
     } else {
       mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,mean)
@@ -552,7 +552,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   mvnorm2Ind <- 1
   if(!is.null(m$conditions$mvnCoords)){
-    if(m$conditions$dist[[m$conditions$mvnCoords]]=="mvnorm3") mvnorm2Ind <- 0#coordNames <- c("x","y","z")
+    if(m$conditions$dist[[m$conditions$mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) mvnorm2Ind <- 0#coordNames <- c("x","y","z")
     coordNames <- paste0(m$conditions$mvnCoords,".",coordNames)
   }
   

@@ -128,9 +128,9 @@ allProbs <- function(m)
   for(i in distnames){
     
     if(dist[[i]] %in% mvndists){
-      if(dist[[i]]=="mvnorm2")
+      if(dist[[i]]=="mvnorm2" || dist[[i]]=="rw_mvnorm2")
         genData <- c(data[[paste0(i,".x")]],data[[paste0(i,".y")]])
-      else if(dist[[i]]=="mvnorm3")
+      else if(dist[[i]]=="mvnorm3" || dist[[i]]=="rw_mvnorm3")
         genData <- c(data[[paste0(i,".x")]],data[[paste0(i,".y")]],data[[paste0(i,".z")]])
     } else {
       genData <- data[[i]]
@@ -156,14 +156,14 @@ allProbs <- function(m)
       }
   
       if(dist[[i]] %in% mvndists){
-        if(dist[[i]]=="mvnorm2"){
+        if(dist[[i]]=="mvnorm2" || dist[[i]]=="rw_mvnorm2"){
           genArgs[[2]] <- rbind(genPar[state,genInd],
                                 genPar[nbStates+state,genInd])
           genArgs[[3]] <- rbind(genPar[nbStates*2+state,genInd], #x
                                 genPar[nbStates*3+state,genInd], #xy
                                 genPar[nbStates*3+state,genInd], #xy
                                 genPar[nbStates*4+state,genInd]) #y
-        } else if(dist[[i]]=="mvnorm3"){
+        } else if(dist[[i]]=="mvnorm3" || dist[[i]]=="rw_mvnorm3"){
           genArgs[[2]] <- rbind(genPar[state,genInd],
                                 genPar[nbStates+state,genInd],
                                 genPar[2*nbStates+state,genInd])

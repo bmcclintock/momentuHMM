@@ -483,9 +483,9 @@ fitHMM <- function(data,nbStates,dist,
     tmpdistnames <- distnames
     for(i in which(is.na(match(distnames,names(data))))){
       if(dist[[distnames[i]]] %in% mvndists){
-        if(dist[[distnames[i]]]=="mvnorm2"){
+        if(dist[[distnames[i]]] %in% c("mvnorm2","rw_mvnorm2")){
           tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"))
-        } else if(dist[[distnames[i]]]=="mvnorm3"){
+        } else if(dist[[distnames[i]]] %in% c("mvnorm3","rw_mvnorm3")){
           tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"),paste0(distnames[i],".z"))          
         }
       }
@@ -645,10 +645,13 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
 
-  mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(newformula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior) & is.null(betaCons) & is.null(betaRef)) # indicator for moveHMMwrap below
+  mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(newformula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior) & is.null(betaCons) & is.null(betaRef) & is.null(mvnCoords)) # indicator for moveHMMwrap below
   
   inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames,checkInflation = TRUE)
   p <- inputs$p
+  
+  # convert RW data
+  data <- RWdata(dist,data)
   
   DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par0,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
   fullDM <- DMinputs$fullDM

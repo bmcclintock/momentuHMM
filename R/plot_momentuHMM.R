@@ -117,7 +117,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   coordNames <- c("x","y")
   
   if(!is.null(m$conditions$mvnCoords)){
-    if(m$conditions$dist[[m$conditions$mvnCoords]]=="mvnorm3") coordNames <- c("x","y","z")
+    if(m$conditions$dist[[m$conditions$mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) coordNames <- c("x","y","z")
     coordNames <- paste0(m$conditions$mvnCoords,".",coordNames)
   }
   
@@ -181,7 +181,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       x[[zoo]] <- m$data[[coordNames[1]]][ind]
       y[[zoo]] <- m$data[[coordNames[2]]][ind]
       if(!is.null(m$conditions$mvnCoords)){
-        if(m$conditions$dist[[m$conditions$mvnCoords]]=="mvnorm3") {
+        if(m$conditions$dist[[m$conditions$mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) {
           z[[zoo]] <- m$data[[coordNames[3]]][ind]
           plotEllipse <- FALSE
           errorEllipse <- NULL
@@ -447,11 +447,15 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   for(i in distnames){
     
     if(m$conditions$dist[[i]] %in% mvndists){
-      ndim <- as.numeric(gsub("mvnorm","",m$conditions$dist[[i]]))
-      if(m$conditions$dist[[i]]=="mvnorm2")
+      if(m$conditions$dist[[i]]=="mvnorm2" || m$conditions$dist[[i]]=="rw_mvnorm2"){
         tmpData <- c(m$data[[paste0(i,".x")]],m$data[[paste0(i,".y")]])
-      else if(m$conditions$dist[[i]]=="mvnorm3")
+        if(m$conditions$dist[[i]]=="mvnorm2") ndim <- as.numeric(gsub("mvnorm","",m$conditions$dist[[i]]))
+        else ndim <- as.numeric(gsub("rw_mvnorm","",m$conditions$dist[[i]]))
+      } else if(m$conditions$dist[[i]]=="mvnorm3" || m$conditions$dist[[i]]=="rw_mvnorm3"){
         tmpData <- c(m$data[[paste0(i,".x")]],m$data[[paste0(i,".y")]],m$data[[paste0(i,".z")]])
+        if(m$conditions$dist[[i]]=="mvnorm3") ndim <- as.numeric(gsub("mvnorm","",m$conditions$dist[[i]]))
+        else ndim <- as.numeric(gsub("rw_mvnorm","",m$conditions$dist[[i]]))
+      }
     } else {
       tmpData <- m$data[[i]]
     }
@@ -462,18 +466,18 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       for(zoo in 1:nbAnimals) {
         ind <- which(m$data$ID==ID[zoo])
         if(m$conditions$dist[[i]] %in% mvndists){
-          if(m$conditions$dist[[i]]=="mvnorm2")
+          if(m$conditions$dist[[i]] %in% c("mvnorm2","rw_mvnorm2"))
             genData[[zoo]] <- c(tmpData[ind],tmpData[(-(1:nrow(m$data)))][ind])
-          if(m$conditions$dist[[i]]=="mvnorm3")
+          else if(m$conditions$dist[[i]] %in% c("mvnorm3","rw_mvnorm3"))
             genData[[zoo]] <- c(tmpData[ind],tmpData[-(1:nrow(m$data))][ind],tmpData[-(1:(2*nrow(m$data)))][ind])
         } else genData[[zoo]] <- tmpData[ind]
       }
     } else {
       ind <- which(m$data$ID %in% ID)
       if(m$conditions$dist[[i]] %in% mvndists){
-        if(m$conditions$dist[[i]]=="mvnorm2")
+        if(m$conditions$dist[[i]] %in% c("mvnorm2","rw_mvnorm2"))
           genData <- tmpData[c(ind,ind+nrow(m$data))]
-        else if(m$conditions$dist[[i]]=="mvnorm3")
+        else if(m$conditions$dist[[i]] %in% c("mvnorm3","rw_mvnorm3"))
           genData <- tmpData[c(ind,ind+nrow(m$data),ind+2*nrow(m$data))]
       } else genData <- tmpData[ind]
     }
@@ -552,7 +556,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     } else if(inputs$dist[[i]] %in% stepdists){
       grid <- seq(0,max(m$data[[i]],na.rm=TRUE),length=10000)
     } else if(inputs$dist[[i]] %in% mvndists){
-      if(inputs$dist[[i]]=="mvnorm2"){
+      if(inputs$dist[[i]]=="mvnorm2" || inputs$dist[[i]]=="rw_mvnorm2"){
         grid <- c(seq(min(m$data[[paste0(i,".x")]]), max(m$data[[paste0(i,".x")]]), length=100),
                   seq(min(m$data[[paste0(i,".y")]]), max(m$data[[paste0(i,".y")]]), length=100))
       }
@@ -589,7 +593,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       } else if(infInd) {
         genDensities[[state]] <- cbind(grid,(1-zeroMass$step[state])*w[state]*do.call(genFun,genArgs))
       } else if(inputs$dist[[i]] %in% mvndists){
-        if(inputs$dist[[i]]=="mvnorm2"){
+        if(inputs$dist[[i]]=="mvnorm2" || inputs$dist[[i]]=="rw_mvnorm2"){
           dens <- outer(genArgs[[1]][1:100],genArgs[[1]][101:200], function(x,y) dmvnorm2(c(x,y),matrix(rep(genArgs[[2]],10000),2),matrix(rep(genArgs[[3]],10000),2*2)))
           genDensities[[state]] <- list(x=genArgs[[1]][1:100], y=genArgs[[1]][101:200], z=w[state]*dens)
         }
@@ -719,7 +723,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText, cumul = cumul, ...)
         }
       }
-    } else if(inputs$dist[[i]]=="mvnorm2"){
+    } else if(inputs$dist[[i]]=="mvnorm2" || inputs$dist[[i]]=="rw_mvnorm2"){
       
       datNames <- paste0(i,c(".x",".y"))
       
@@ -769,7 +773,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       par(mfrow=c(1,1))
       par(mar=c(5,4,4,2)-c(0,0,2,1)) # bottom, left, top, right
       par(ask=ask)
-    } else if(inputs$dist[[i]]=="mvnorm3"){
+    } else if(inputs$dist[[i]]=="mvnorm3" || inputs$dist[[i]]=="rw_mvnorm3"){
       
       datNames <- paste0(i,c(".x",".y",".z"))
       
@@ -1244,7 +1248,7 @@ plotHistMVN <- function(gen,genDensities,dist,message,sepStates,breaks="Sturges"
   marg <- arg
   marg$cex <- NULL
 
-  if(dist[[distname]]=="mvnorm2"){
+  if(dist[[distname]]=="mvnorm2" || dist[[distname]]=="rw_mvnorm2"){
     # plot gen histogram
     par(mar=c(4,4,1,1)) # bottom, left, top, right
     graphics::layout(matrix(c(2,4,1,3),2,2,byrow=TRUE),c(3,1), c(1,3))

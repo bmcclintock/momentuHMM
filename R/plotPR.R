@@ -84,7 +84,8 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
       # qq-plot
       if(m[[1]]$conditions$dist[[i]] %in% mvndists){
         tpr <- as.matrix(pr[[1]][[paste0(i,"Res")]])
-        ndim <- as.numeric(gsub("mvnorm","",m[[1]]$conditions$dist[[i]] ))
+        if(m[[1]]$conditions$dist[[i]]=="mvnorm2" || m[[1]]$conditions$dist[[i]]=="mvnorm3") ndim <- as.numeric(gsub("mvnorm","",m[[1]]$conditions$dist[[i]] ))
+        else ndim <- as.numeric(gsub("rw_mvnorm","",m[[1]]$conditions$dist[[i]] ))
         car::qqPlot(tpr, distribution = "chisq", df = ndim, 
                lwd = 1, grid = FALSE, main = "Multi-normal Q-Q Plot", xlab = expression(chi^2 * " quantiles"), ylab = expression("Mahalanobis distances "^2))
       } else {

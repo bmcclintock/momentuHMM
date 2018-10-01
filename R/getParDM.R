@@ -125,7 +125,19 @@ getParDM<-function(data=data.frame(),nbStates,dist,
   Par <- Par[distnames]
   
   if(is.momentuHMMData(data)){
-    if(any(is.na(match(distnames,names(data))))) stop(paste0(distnames[is.na(match(distnames,names(data)))],collapse=", ")," not found in data")
+    if(any(is.na(match(distnames,names(data))))){
+      tmpdistnames <- distnames
+      for(i in which(is.na(match(distnames,names(data))))){
+        if(dist[[distnames[i]]] %in% mvndists){
+          if(dist[[distnames[i]]] %in% c("mvnorm2","rw_mvnorm2")){
+            tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"))
+          } else if(dist[[distnames[i]]] %in% c("mvnorm3","rw_mvnorm3")){
+            tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"),paste0(distnames[i],".z"))          
+          }
+        }
+      }
+      if(any(is.na(match(tmpdistnames,names(data))))) stop(paste0(tmpdistnames[is.na(match(tmpdistnames,names(data)))],collapse=", ")," not found in data")
+    }
     
     zeroInflation <- vector('list',length(distnames))
     names(zeroInflation) <- distnames
