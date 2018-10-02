@@ -516,6 +516,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         covs[[paste0(mvnCoords,".x_tm1")]] <- NULL
         covs[[paste0(mvnCoords,".y_tm1")]] <- NULL
         if(dist[[mvnCoords]]=="rw_mvnorm3") covs[[paste0(mvnCoords,".z_tm1")]] <- NULL
+        if(!ncol(covs)) covs <- NULL
       }
     }
     # else, allow user to enter new values for covariates
@@ -655,6 +656,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(is.null(mvnCoords) || dist[[mvnCoords]] %in% c("mvnorm2","rw_mvnorm2")){
       if(length(initialPosition)!=2 | !is.numeric(initialPosition)) stop("initialPosition must be a numeric vector of length 2")
     } else if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")){
+      if(all(initialPosition==0)) initialPosition <- c(0,0,0)
       if(length(initialPosition)!=3 | !is.numeric(initialPosition)) stop("initialPosition must be a numeric vector of length 3")
     }
     tmpPos<-initialPosition
@@ -1311,7 +1313,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           for(i in distnames){
             if(dist[[i]] %in% rwdists){
               if(dist[[i]] %in% c("rw_mvnorm2")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1"))] <- X[k+1,]
-              else if(dist[[i]] %in% c("rw_mvnorm3")) subCovs[k+1,c(".x_tm1",".y_tm1",".z_tm1")] <- X[k+1,]
+              else if(dist[[i]] %in% c("rw_mvnorm3")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1",".z_tm1"))] <- X[k+1,]
             }
           }
           g <- model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% wnbeta
@@ -1343,10 +1345,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           d$x=c(0,cumsum(d$step)[-nrow(d)])
           d$y=X[,2]
         }    
-      } else if(rwInd){
+      } else if(!is.null(mvnCoords)){
         d[[paste0(mvnCoords,".x")]] <- d[[mvnCoords]][,1]
         d[[paste0(mvnCoords,".y")]] <- d[[mvnCoords]][,2]
-        if(dist[[mvnCoords]]=="rw_mvnorm3") d[[paste0(mvnCoords,".z")]] <- d[[mvnCoords]][,3]
+        if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) d[[paste0(mvnCoords,".z")]] <- d[[mvnCoords]][,3]
         d[[mvnCoords]] <- NULL
       }
       for(j in angleCovs[which(angleCovs %in% names(subCovs))])
