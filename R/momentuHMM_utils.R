@@ -19,7 +19,10 @@ dmvnorm2 <- dmvnorm3 <- drw_mvnorm2 <- drw_mvnorm3 <- function(x,mean,sigma){
   dmvnorm_rcpp(x,mean,sigma)
 }
 
+rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- mvtnorm::rmvnorm
+
 drw_norm <- stats::dnorm
+rrw_norm <- stats::rnorm
 
 RWdata <- function(dist,data){
   distnames <- names(dist)

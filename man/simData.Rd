@@ -10,9 +10,9 @@ simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
   oneInflation = NULL, circularAngleMean = NULL, centers = NULL,
   centroids = NULL, angleCovs = NULL, obsPerAnimal = c(500, 1500),
   initialPosition = c(0, 0), DM = NULL, cons = NULL, userBounds = NULL,
-  workBounds = NULL, workcons = NULL, betaRef = NULL, stateNames = NULL,
-  model = NULL, states = FALSE, retrySims = 0, lambda = NULL,
-  errorEllipse = NULL)
+  workBounds = NULL, workcons = NULL, betaRef = NULL, mvnCoords = NULL,
+  stateNames = NULL, model = NULL, states = FALSE, retrySims = 0,
+  lambda = NULL, errorEllipse = NULL)
 }
 \arguments{
 \item{nbAnimals}{Number of observed individuals to simulate.}
@@ -103,7 +103,7 @@ Default: \code{c(500,1500)}.}
 
 \item{initialPosition}{2-vector providing the x- and y-coordinates of the initial position for all animals. Alternatively, \code{initialPosition} can be specified as
 a list of length \code{nbAnimals} with each element a 2-vector providing the x- and y-coordinates of the initial position for each individual.
-Default: \code{c(0,0)}.}
+Default: \code{c(0,0)}.  If \code{mvnCoord} corresponds to a data stream with ``mvnorm3'' or ''rw_mvnorm3'' probability distributions, then \code{initialPosition} must be composed of 3-vector(s) for the x-, y-, and z-coordinates.}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream. Each element of \code{DM} can either be a named list of regression formulas or a ``pseudo'' design matrix.  For example, for a 2-state 
@@ -141,6 +141,8 @@ through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{work
 
 \item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
 the diagonal elements of the t.p.m. are the reference. See \code{\link{fitHMM}}.}
+
+\item{mvnCoords}{Character string indicating the name of location data that are to be simulated using a multivariate normal distribution. For example, if \code{mu="rw_mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are intended to be location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as such.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 

@@ -1192,6 +1192,8 @@ fitHMM <- function(data,nbStates,dist,
   
   mh <- list(data=data,mle=mle,CIreal=CIreal,CIbeta=CIbeta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName,reCovs=recovsCol,g0covs=g0covsCol)
   
+  if(!is.null(mvnCoords)) attr(mh,'coords') <- paste0(mvnCoords,c(".x",".y"))
+  
   if(fit) message(ifelse(retryFits>=1,"\n",""),"DONE")
   
   return(momentuHMM(mh))

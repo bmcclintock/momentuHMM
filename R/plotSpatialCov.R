@@ -67,8 +67,15 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   
   if(inherits(data,"momentuHMMData")) data <- as.data.frame(data)
   
-  if(is.null(data$x) | is.null(data$y))
-    stop("Data should have fields data$x and data$y.")
+  coordNames <- c("x","y")
+  if(!is.null(attr(data,'coords'))) {
+    coordNames <- attr(data,'coords')
+  }
+  if(is.null(data[[coordNames[1]]]) | is.null(data[[coordNames[2]]]))
+    stop("Data should have fields data$",coordNames[1]," and data$",coordNames[2],".")
+  
+  data$x <- data[[coordNames[1]]]
+  data$y <- data[[coordNames[2]]]
   
   if(length(alpha)!=1)
     stop("'alpha' should be of length 1")

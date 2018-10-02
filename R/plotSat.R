@@ -68,8 +68,15 @@ plotSat <- function(data,zoom=NULL,location=NULL,segments=TRUE,compact=TRUE,col=
   
   if(inherits(data,"momentuHMMData")) data <- as.data.frame(data)
 
-  if(is.null(data$x) | is.null(data$y))
-    stop("Data should have fields data$x and data$y.")
+  coordNames <- c("x","y")
+  if(!is.null(attr(data,'coords'))) {
+    coordNames <- attr(data,'coords')
+  }
+  if(is.null(data[[coordNames[1]]]) | is.null(data[[coordNames[2]]]))
+    stop("Data should have fields data$",coordNames[1]," and data$",coordNames[2],".")
+  
+  data$x <- data[[coordNames[1]]]
+  data$y <- data[[coordNames[2]]]
   
   if(is.null(data$ID))
     data$ID <- rep("Animal1",nrow(data))

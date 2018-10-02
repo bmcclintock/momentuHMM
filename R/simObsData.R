@@ -60,7 +60,10 @@ simObsData<-function(data,lambda,errorEllipse){
   
   if(!is.momentuHMMData(data)) stop("data must be a momentuHMMData object")
   
-  if(!all(c("x","y") %in% names(data)) | (is.null(lambda) & is.null(errorEllipse))){
+  coordNames <- c("x","y")
+  if(!is.null(attr(data,'coords'))) coordNames <- attr(data,'coords')
+  
+  if(!all(coordNames %in% names(data)) | (is.null(lambda) & is.null(errorEllipse))){
     out <- data
   } else {
     
@@ -80,15 +83,15 @@ simObsData<-function(data,lambda,errorEllipse){
     if(!is.null(lambda))
       if(lambda<=0) stop('lambda must be >0')
   
-    distnames<-names(data)[which(!(names(data) %in% c("ID","x","y","step","angle")))]
+    distnames<-names(data)[which(!(names(data) %in% c("ID",coordNames,"step","angle")))]
     
     #Get observed data based on sampling rate (lambda) and measurement error (M,m, and r)
     obsData<-data.frame()
     for(i in unique(data$ID)){
       idat<-data[which(data$ID==i),]
       nbObs<-nrow(idat)
-      X<-idat$x
-      Y<-idat$y
+      X<-idat[[coordNames[1]]]
+      Y<-idat[[coordNames[2]]]
       if(!is.null(lambda)){
         t<-cumsum(c(1,rexp(2*nbObs*lambda,lambda)))
         t<-t[which(t<nbObs)]
@@ -125,12 +128,15 @@ simObsData<-function(data,lambda,errorEllipse){
       xy<-t(apply(cbind(muxy,sigma2x,sigmaxy,sigma2y),1,function(x) mvtnorm::rmvnorm(1,c(x[1],x[2]),matrix(c(x[3],x[4],x[4],x[5]),2,2))))
       
       if(!is.null(errorEllipse))
-        tmpobsData<-data.frame(time=t,ID=rep(i,nobs),x=xy[,1],y=xy[,2],error_semimajor_axis=error_semimajor_axis,error_semiminor_axis=error_semiminor_axis,error_ellipse_orientation=error_ellipse_orientation,crawl::argosDiag2Cov(error_semimajor_axis,error_semiminor_axis,error_ellipse_orientation),mux=mux,muy=muy)
+        tmpobsData<-data.frame(time=t,ID=rep(i,nobs),error_semimajor_axis=error_semimajor_axis,error_semiminor_axis=error_semiminor_axis,error_ellipse_orientation=error_ellipse_orientation,crawl::argosDiag2Cov(error_semimajor_axis,error_semiminor_axis,error_ellipse_orientation),mux=mux,muy=muy)
       else
-        tmpobsData<-data.frame(time=t,ID=rep(i,nobs),x=xy[,1],y=xy[,2],mux=mux,muy=muy)
+        tmpobsData<-data.frame(time=t,ID=rep(i,nobs),mux=mux,muy=muy)
+      
+      tmpobsData[[coordNames[1]]] <- xy[,1]
+      tmpobsData[[coordNames[2]]] <- xy[,2]
       
       if(!is.null(lambda)) {
-        tmpobsData<-merge(tmpobsData,data.frame(idat[,c("ID",distnames),drop=FALSE],time=1:nbObs,mux=idat$x,muy=idat$y),all = TRUE,by=c("ID","time","mux","muy"))
+        tmpobsData<-merge(tmpobsData,data.frame(idat[,c("ID",distnames),drop=FALSE],time=1:nbObs,mux=idat[[coordNames[1]]],muy=idat[[coordNames[2]]]),all = TRUE,by=c("ID","time","mux","muy"))
       } else if(length(distnames)){
         tmpobsData<-cbind(tmpobsData,idat[,distnames,drop=FALSE])
       }
@@ -138,7 +144,7 @@ simObsData<-function(data,lambda,errorEllipse){
       obsData<-rbind(obsData,tmpobsData)
     }
     dnames <- names(obsData)
-    out <- obsData[,c("time","ID","x","y",distnames,"mux","muy",dnames[!(dnames %in% c("time","ID","x","y",distnames,"mux","muy"))])]
+    out <- obsData[,c("time","ID",coordNames,distnames,"mux","muy",dnames[!(dnames %in% c("time","ID",coordNames,distnames,"mux","muy"))])]
   }
   return(out)
 }
