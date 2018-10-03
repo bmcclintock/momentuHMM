@@ -239,9 +239,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     for(i in 1:nbAnimals){
       idInd <- which(m$data$ID==ID[i])#which(m$data$ID==unique(m$data$ID)[i])
       if(nbRecovs){
-        g0 <- m$mle$g0 %*% t(g0covs[i,,drop=FALSE])
-        theta <- m$mle$theta
-        m$data$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
+        g0theta <- m$mod$estimate[length(m$mod$estimate)-(nbRecovs+nbG0covs+1):0]
+        m$data$recharge[idInd] <- get_recharge(g0theta,g0covs[i,,drop=FALSE],recovs[idInd[-length(idInd)],],m$conditions$workBounds)
       }
     }
     g0covs <- model.matrix(recharge$g0,covs)
@@ -974,6 +973,11 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       par(mfrow=c(1,1))
       par(mar=c(5,4,4,2)-c(0,0,2,1)) # bottom, left, top, right
       
+      if(plotCI & nbRecovs){
+        g0covs <- model.matrix(recharge$g0,m$data[aInd,])
+        recovs <- model.matrix(recharge$theta,m$data)
+      }
+      
       for(zoo in 1:nbAnimals) {
         # states for animal 'zoo'
         subStates <- states[which(m$data$ID==ID[zoo])]
@@ -981,11 +985,30 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         if(nbRecovs){
           #par(mfrow=c(1,1))
           ind <- which(m$data$ID==ID[zoo])
-          do.call(plot,c(list(x=1:length(ind),y=m$data$recharge[ind],pch=16,xlab="t",ylab="g(t)",col=col[subStates],cex=cex),arg))
-          #plot(m$data$recharge[ind],xlab="t",ylab="g(t)",main=paste("ID",ID[zoo],"recharge function"),type="o",pch=20,col=col[subStates])
-          #segments(x0=m$data$recharge[ind][-length(ind)],y0=1:(length(ind)-1),x1=m$data$recharge[ind][-1],y1=2:length(ind),col=col[subStates][-length(ind)])
-          do.call(segments,c(list(y0=m$data$recharge[ind][-length(ind)],x0=1:(length(ind)-1),y1=m$data$recharge[ind][-1],x1=2:length(ind),
-                                  col=col[subStates[-length(subStates)]],lwd=lwd),arg))
+          
+          if(plotCI){
+            tmpSig <- Sigma[length(m$mod$estimate)-(nbRecovs+nbG0covs+1):0,length(m$mod$estimate)-(nbRecovs+nbG0covs+1):0]
+            dN<-t(mapply(function(x) tryCatch(numDeriv::grad(get_recharge,m$mod$estimate[length(m$mod$estimate)-(nbRecovs+nbG0covs+1):0],g0covs=g0covs[zoo,,drop=FALSE],recovs=recovs[ind[-length(ind)],],workBounds=m$conditions$workBounds,k=x),error=function(e) NA),1:length(ind)))
+            se<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%tmpSig%*%x)),error=function(e) NA)))
+            lci<-m$data$recharge[ind]-quantSup*se
+            uci<-m$data$recharge[ind]+quantSup*se
+            
+            if(!all(is.na(se))) reylim <- c(min(lci,na.rm=TRUE),max(uci,na.rm=TRUE))
+            else reylim <- NULL
+            do.call(plot,c(list(x=1:length(ind),y=m$data$recharge[ind],pch=16,xlab="t",ylab="g(t)",col=col[subStates],cex=cex,ylim=reylim),arg))
+            do.call(segments,c(list(y0=m$data$recharge[ind][-length(ind)],x0=1:(length(ind)-1),y1=m$data$recharge[ind][-1],x1=2:length(ind),
+                                    col=col[subStates[-length(subStates)]],lwd=lwd),arg))
+            if(!all(is.na(se))) {
+              ciInd <- which(!is.na(se))
+              
+              withCallingHandlers(do.call(arrows,c(list(1:length(ind)[ciInd], lci[ciInd], 1:length(ind)[ciInd], 
+                                         uci[ciInd], length=0.025, angle=90, code=3, col=col[subStates], lwd=lwd),arg)),warning=muffWarn)
+            }
+          } else {
+            do.call(plot,c(list(x=1:length(ind),y=m$data$recharge[ind],pch=16,xlab="t",ylab="g(t)",col=col[subStates],cex=cex),arg))
+            do.call(segments,c(list(y0=m$data$recharge[ind][-length(ind)],x0=1:(length(ind)-1),y1=m$data$recharge[ind][-1],x1=2:length(ind),
+                                    col=col[subStates[-length(subStates)]],lwd=lwd),arg))
+          }
           do.call(mtext,c(list(paste("ID",ID[zoo],"recharge function"),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
           legend(ifelse(is.null(legend.pos),"topleft",legend.pos),legText,lwd=rep(lwd,nbStates),col=col,bty="n",cex=cex.legend)
           abline(h=0,lty=2)

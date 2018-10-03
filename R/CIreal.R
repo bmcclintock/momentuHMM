@@ -277,6 +277,17 @@ get_gamma <- function(beta,covs,nbStates,i,j,betaRef,betaCons,workBounds=NULL){
   gamma[i,j]
 }
 
+get_recharge <- function(g0theta,g0covs,recovs,workBounds=NULL,k=0){
+  
+  g0 <- w2wn(g0theta[1:ncol(g0covs)],workBounds$g0)
+  theta <- w2wn(g0theta[-(1:ncol(g0covs))],workBounds$theta)
+  
+  g <- g0 %*% t(g0covs)
+  recharge <- cumsum(c(g,theta%*%t(recovs)))
+  if(k) recharge <- recharge[k]
+  return(recharge)
+}
+
 get_gamma_recharge <- function(beta,covs,formula,recharge,nbStates,i,j,betaRef,betaCons,workBounds=NULL){
   
   recovs <- model.matrix(recharge$theta,covs)
