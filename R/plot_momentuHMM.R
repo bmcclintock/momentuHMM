@@ -987,9 +987,10 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           ind <- which(m$data$ID==ID[zoo])
           
           if(plotCI){
-            tmpSig <- Sigma[length(m$mod$estimate)-(nbRecovs+nbG0covs+1):0,length(m$mod$estimate)-(nbRecovs+nbG0covs+1):0]
+            rechargeSigma <- Sigma[length(m$mod$estimate)-(nbRecovs+nbG0covs+1):0,length(m$mod$estimate)-(nbRecovs+nbG0covs+1):0]
             dN<-t(mapply(function(x) tryCatch(numDeriv::grad(get_recharge,m$mod$estimate[length(m$mod$estimate)-(nbRecovs+nbG0covs+1):0],g0covs=g0covs[zoo,,drop=FALSE],recovs=recovs[ind[-length(ind)],],workBounds=m$conditions$workBounds,k=x),error=function(e) NA),1:length(ind)))
-            se<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%tmpSig%*%x)),error=function(e) NA)))
+            if(any(!is.finite(sqrt(diag(rechargeSigma))))) se <-NA
+            else se<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%rechargeSigma%*%x)),error=function(e) NA)))
             lci<-m$data$recharge[ind]-quantSup*se
             uci<-m$data$recharge[ind]+quantSup*se
             
