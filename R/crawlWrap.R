@@ -116,6 +116,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   if(is.data.frame(obsData)){
     if(!is.character(coord) | length(coord)!=2) stop('coord must be character vector of length 2')
     if(any(!(c("ID",Time.name,coord) %in% names(obsData)))) stop('obsData is missing ',paste(c("ID",Time.name,coord)[!(c("ID",Time.name,coord) %in% names(obsData))],collapse=","))
+    if(any(coord %in% c("mu.x","nu.x","mu.y","nu.y","se.mu.x","se.nu.x","se.mu.y","se.nu.y","speed"))) stop("coordinates cannot include the following names: mu.x, nu.x, mu.y, nu.y, se.mu.x, se.nu.x, se.mu.y, se.nu.y, or speed \n   please choose different coord names")
   } else if(inherits(obsData,"SpatialPoints")){
     if(any(!(c("ID",Time.name) %in% names(obsData)))) stop('obsData is missing ',paste(c("ID",Time.name)[!(c("ID",Time.name) %in% names(obsData))],collapse=","))
     coord <- colnames(sp::coordinates(obsData))

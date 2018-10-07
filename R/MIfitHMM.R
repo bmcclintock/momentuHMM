@@ -63,7 +63,7 @@
 #' each data stream. See \code{\link{fitHMM}}.
 #' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See \code{\link{fitHMM}}.
 #' @param betaRef Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. See \code{\link{fitHMM}}. 
-#' @param mvnCoords Character string indicating the name of location data that were modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.
+#' @param mvnCoords Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.
 #' @param stateNames Optional character vector of length nbStates indicating state names.
 #' @param knownStates Vector of values of the state process which are known prior to fitting the
 #' model (if any). See \code{\link{fitHMM}}. If \code{miData} is a list of \code{\link{momentuHMMData}} objects, then \code{knownStates} can alternatively
@@ -226,12 +226,23 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
       
       if(fit | !missing("dist")) {
         if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
-        distnames <- names(dist)[which(!(names(dist) %in% c("step","angle")))]
-        if(any(is.na(match(distnames,names(predData))))) stop(paste0(distnames[is.na(match(distnames,names(predData)))],collapse=", ")," not found in miData")
+        distnames <- tmpdistnames <- names(dist)[which(!(names(dist) %in% c("step","angle")))]
+        if(any(is.na(match(distnames,names(predData))))){
+          for(i in which(is.na(match(distnames,names(predData))))){
+            if(dist[[distnames[i]]] %in% mvndists){
+              if(dist[[distnames[i]]] %in% c("mvnorm2","rw_mvnorm2")){
+                tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"))
+              } else if(dist[[distnames[i]]] %in% c("mvnorm3","rw_mvnorm3")){
+                tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"),paste0(distnames[i],".z"))          
+              }
+            }
+          }
+          if(any(is.na(match(tmpdistnames,names(predData))))) stop(paste0(tmpdistnames[is.na(match(tmpdistnames,names(predData)))],collapse=", ")," not found in miData")
+          tmpdistnames <- tmpdistnames[which(!(tmpdistnames %in% attr(predData,'coord')))]
+        }
       } else {
-        distnames <- names(predData)[which(!(names(predData) %in% c("ID","x","y",covNames,znames)))]
+        distnames <- tmpdistnames <- names(predData)[which(!(names(predData) %in% c("ID",attr(predData,'coord'),covNames,znames)))]
       }
-      
       #if(all(unlist(lapply(model_fits,function(x) is.null(x$err.model))))) stop("Multiple realizations of the position process cannot be drawn if there is no location measurement error")
       cat('Drawing',nSims,'realizations from the position process using crawl::crwPostIS...',ifelse(ncores>1 & length(ids)>1,"","\n"))
       
@@ -259,8 +270,13 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
             #  locs<-rbind(locs,predData[which(predData$ID==ids[i]),c("mu.x","mu.y")])
             #}
           }
-          df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
-          prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs)
+          df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
+          pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs),error=function(e) e)
+          if(inherits(pD,"momentuHMMData") & !is.null(mvnCoords)){
+            names(pD)[which(names(pD) %in% c("x","y"))] <- paste0(mvnCoords,c(".x",".y"))
+            attr(pD,'coords') <- paste0(mvnCoords,c(".x",".y"))
+          }
+          pD
         }
       ,warning=muffleRNGwarning)
       stopImplicitCluster()

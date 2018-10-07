@@ -9,8 +9,8 @@
 #' @param data A \code{\link{momentuHMMData}} object with necessary field 'x' (easting/longitudinal coordinates) and 'y' (northing/latitudinal coordinates)
 #' @param lambda Observation rate for location data. If \code{NULL}, location data are kept at temporally-regular intervals. Otherwise 
 #' \code{lambda} is the rate parameter of the exponential distribution for the waiting times between successive location observations, i.e., 
-#' \code{1/lambda} is the expected time between successive location observations. Only the 'step' and 'angle' data streams are subject to temporal irregularity;
-#' any other data streams are kept at temporally-regular intervals.  Ignored unless a valid distribution for the 'step' data stream is specified.
+#' \code{1/lambda} is the expected time between successive location observations. Only the 'step' and 'angle' data streams (or multivariate normal data streams identified by \code{mvnCoords}) are subject to temporal irregularity;
+#' any other data streams are kept at temporally-regular intervals.  Ignored unless a valid distribution for the 'step' (or 'mvnCoord') data stream has been specified.
 #' @param errorEllipse List providing the bounds for the semi-major axis (\code{M}; on scale of x- and y-coordinates), semi-minor axis (\code{m}; 
 #' on scale of x- and y-coordinates), and orientation (\code{r}; in degrees) of location error ellipses. If \code{NULL}, no location 
 #' measurement error is simulated. If \code{errorEllipse} is specified, then each observed location is subject to bivariate normal errors as described 
