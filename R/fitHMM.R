@@ -832,12 +832,16 @@ fitHMM <- function(data,nbStates,dist,
     else fixPar$delta <- ofixPar$delta <- rep(NA,length(delta0))
   }
   if(!is.null(recharge)){
-    tmp <- which(!is.na(fixPar$g0))
-    beta0$g0[tmp] <- fixPar$g0[tmp]
-    wparIndex <- c(wparIndex,length(wparIndex)+tmp)
-    tmp <- which(!is.na(fixPar$theta))
-    beta0$theta[tmp] <- fixPar$theta[tmp]
-    wparIndex <- c(wparIndex,length(wparIndex)+tmp)
+    if(any(!is.na(fixPar$g0))){
+      tmp <- which(!is.na(fixPar$g0))
+      beta0$g0[tmp] <- fixPar$g0[tmp]
+      wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0$beta)+length(delta0)+tmp)
+    }
+    if(any(!is.na(fixPar$theta))){
+      tmp <- which(!is.na(fixPar$theta))
+      beta0$theta[tmp] <- fixPar$theta[tmp]
+      wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0$beta)+length(delta0)+length(beta0$g0)+tmp)
+    }
   }
 
   if(any(!(names(fixPar) %in% c(distnames,"beta","delta","g0","theta")))) stop("fixPar names can only include ",paste0(c(distnames,"beta","delta","g0"),sep=", "),"or theta")
