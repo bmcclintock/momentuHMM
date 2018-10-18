@@ -36,16 +36,18 @@ getCovNames<-function(m,p,distname){
       for(j in 1:length(p$parNames[[distname]])){
         DMparterms[[p$parNames[[distname]][j]]] <- vector('list',nbStates)
         formulaStates<- stateFormulas(m$conditions$DM[[distname]][[j]],nbStates,angleMean=(p$parNames[[distname]][j]=="mean" & !isFALSE(m$conditions$circularAngleMean[[distname]])))
-        if(m$conditions$dist[[distname]] %in% rwdists){
-          #if(dist[[i]] %in% mvndists){
-          for(k in 1:nbStates){
-            formterms<-attr(terms.formula(formulaStates[[k]]),"term.labels")
-            if(grepl("mean",p$parNames[[distname]][[j]])) formulaStates[[k]] <- as.formula(paste("~ + 0 + ",paste(c(paste0(distname,gsub("mean","",p$parNames[[distname]][[j]]),"_tm1"),formterms),collapse=" + ")))
-            tmpparnames<-all.vars(formulaStates[[k]])
-            if(length(tmpparnames)) DMparterms[[p$parNames[[distname]][j]]][[k]]<-tmpparnames
+        #if(dist[[i]] %in% mvndists){
+        for(jj in 1:nbStates){
+          if(m$conditions$dist[[distname]] %in% rwdists){
+            formterms<-attr(terms.formula(formulaStates[[jj]]),"term.labels")
+            if(grepl("mean",p$parNames[[distname]][[j]])) formulaStates[[jj]] <- as.formula(paste("~ + 0 + ",paste(c(paste0(distname,gsub("mean","",p$parNames[[distname]][[j]]),"_tm1"),formterms),collapse=" + ")))
           }
-          #}
+          else {
+            tmpparnames<-all.vars(formulaStates[[jj]])
+            if(length(tmpparnames)) DMparterms[[p$parNames[[distname]][j]]][[jj]]<-tmpparnames
+          }
         }
+        #}
         DMterms <- c(DMterms,unlist(DMparterms[[p$parNames[[distname]][j]]]))
       }
     }
