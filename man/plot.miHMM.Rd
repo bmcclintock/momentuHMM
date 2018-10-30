@@ -74,7 +74,7 @@ crwOut <- crawlWrap(obsData,theta=c(4,0),fixPar=c(1,1,NA,NA),
 bPar <- miExample$bPar
 HMMfits <- MIfitHMM(crwOut,nSims=4,poolEstimates=FALSE,
                    nbStates=2,dist=list(step="gamma",angle="vm"),
-                   Par0=bPar$Par,beta0=bPar$beta,delta0=bPar$delta,
+                   Par0=bPar$Par,beta0=bPar$beta,
                    formula=~cov1+cos(cov2),
                    estAngleMean=list(angle=TRUE),
                    covNames=c("cov1","cov2"))

@@ -271,8 +271,9 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
 }
 
 get_gamma <- function(beta,covs,nbStates,i,j,betaRef,betaCons,workBounds=NULL){
-  beta <- w2wn(beta[betaCons],workBounds)
-  beta <- matrix(beta,ncol(covs))
+  tmpBeta <- rep(NA,length(betaCons))
+  tmpBeta[unique(c(betaCons))] <- beta
+  beta <- w2wn(matrix(tmpBeta[betaCons],nrow(betaCons),ncol(betaCons)),workBounds)
   gamma <- trMatrix_rcpp(nbStates,beta,covs,betaRef)[,,1]
   gamma[i,j]
 }
