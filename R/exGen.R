@@ -69,7 +69,7 @@ exGen <- function()
   bPar<-getPar(bestFit)
   
   miFits<-MIfitHMM(crwOut,nSims=4,nbStates=nbStates,Par0=bPar$Par,beta0=bPar$beta,
-                    delta0=bPar$delta,formula=formula,dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE),
+                    formula=formula,dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE),
                     covNames=c("cov1","cov2"))
   
   miExample <- list(obsData=obsData,bPar=bPar)
