@@ -4,29 +4,32 @@
 \alias{getPar0}
 \title{Get starting values for new model from existing \code{momentuHMM} model fit}
 \usage{
-getPar0(model, nbStates = NULL, estAngleMean = NULL,
-  circularAngleMean = NULL, formula = NULL, formulaDelta = NULL,
-  DM = NULL, stateNames = NULL)
+getPar0(model, nbStates = length(model$stateNames),
+  estAngleMean = model$conditions$estAngleMean,
+  circularAngleMean = model$conditions$circularAngleMean,
+  formula = model$conditions$formula,
+  formulaDelta = model$conditions$formulaDelta, DM = model$conditions$DM,
+  stateNames = model$stateNames)
 }
 \arguments{
 \item{model}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})}
 
-\item{nbStates}{Number of states in the new model. If \code{nbStates=NULL} (the default), then \code{nbStates=length(model$stateNames)}}
+\item{nbStates}{Number of states in the new model. Default: \code{nbStates=length(model$stateNames)}}
 
 \item{estAngleMean}{Named list indicating whether or not the angle mean for data streams with angular 
-distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. If \code{estAngleMean=NULL} (the default), then \code{estAngleMean=model$conditions$estAngleMean}}
+distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. Default: \code{estAngleMean=model$conditions$estAngleMean}}
 
 \item{circularAngleMean}{Named list indicating whether circular-linear (FALSE) or circular-circular (TRUE) 
-regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model. If \code{circularAngleMean=NULL} (the default), then \code{circularAngleMean=model$conditions$circularAngleMean}}
+regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model. Default: \code{circularAngleMean=model$conditions$circularAngleMean}}
 
-\item{formula}{Regression formula for the transition probability covariates of the new model (see \code{\link{fitHMM}}).  If \code{formula=NULL} (the default), then \code{formula=model$conditions$formula}.}
+\item{formula}{Regression formula for the transition probability covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formula=model$conditions$formula}.}
 
-\item{formulaDelta}{Regression formula for the initial distribution covariates of the new model (see \code{\link{fitHMM}}).  If \code{formulaDelta=NULL} (the default), then \code{formulaDelta=model$conditions$formulaDelta}.}
+\item{formulaDelta}{Regression formula for the initial distribution covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formulaDelta=model$conditions$formulaDelta}.}
 
 \item{DM}{Named list indicating the design matrices to be used for the probability distribution parameters of each data stream in the new model (see \code{\link{fitHMM}}). Only parameters with design matrix column names that match those in model$conditions$fullDM are extracted, so care must be taken in naming columns if any elements of \code{DM}
-are specified as matrices instead of formulas. If \code{DM=NULL} (the default), then \code{DM=model$conditions$DM}.}
+are specified as matrices instead of formulas. Default: \code{DM=model$conditions$DM}.}
 
-\item{stateNames}{Character vector of length \code{nbStates} indicating the names and order of the states in the new model. If \code{stateNames=NULL} (the default), then \code{stateNames=model$stateNames[1:nbStates]}.}
+\item{stateNames}{Character vector of length \code{nbStates} indicating the names and order of the states in the new model. Default: \code{stateNames=model$stateNames[1:nbStates]}.}
 }
 \value{
 A named list containing starting values suitable for \code{Par0} and \code{beta0} arguments in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}:

@@ -19,14 +19,14 @@
 #' of columns in the design matrix. See details below.
 #' @param beta Matrix of regression parameters for the transition probabilities (more information
 #' in "Details").
-#' @param delta Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}. If \code{formulaDelta} includes covariates, then \code{delta} must be specified
+#' @param delta Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}. If \code{formulaDelta} includes a formula, then \code{delta} must be specified
 #' as a k x (\code{nbStates}-1) matrix, where k is the number of covariates and the columns correspond to states 2:\code{nbStates}. See details below.
 #' @param formula Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effect). In addition to allowing standard functions in R formulas
 #' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 #' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
 #' and state- or parameter-specific formulas (see details).
 #' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.
-#' @param formulaDelta Regression formula for the initial distribution. Default: \code{~1} (no covariate effect). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).
+#' @param formulaDelta Regression formula for the initial distribution. Default: \code{NULL} (no covariate effects and \code{delta} is specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then \code{delta} must be specified on the working scale.
 #' @param covs Covariate values to include in the simulated data, as a dataframe. The names of any covariates specified by \code{covs} can
 #' be included in \code{formula} and/or \code{DM}. Covariates can also be simulated according to a standard normal distribution, by setting
 #' \code{covs} to \code{NULL} (the default), and specifying \code{nbCovs>0}.
@@ -173,7 +173,7 @@
 #' filled in row-wise).
 #' In a covariate-free model (default), \code{beta} has one row, for the intercept.
 #' 
-#' \item When covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=~1}), then \code{delta} is specified as a vector of length \code{nbStates} that 
+#' \item When covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=NULL}), then \code{delta} is specified as a vector of length \code{nbStates} that 
 #' sums to 1.  When covariates are included in \code{formulaDelta}, then \code{delta} must be specified
 #' as a k x (\code{nbStates}-1) matrix of working parameters, where k is the number of regression coefficients and the columns correspond to states 2:\code{nbStates}. For example, in a 3-state
 #' HMM with \code{formulaDelta=~cov1+cov2}, the matrix \code{delta} has three rows (intercept + two covariates)
@@ -349,7 +349,7 @@
 
 simData <- function(nbAnimals=1,nbStates=2,dist,
                     Par,beta=NULL,delta=NULL,
-                    formula=~1,formulaDelta=~1,
+                    formula=~1,formulaDelta=NULL,
                     covs=NULL,nbCovs=0,
                     spatialCovs=NULL,
                     zeroInflation=NULL,
@@ -409,7 +409,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     zeroInflation <- model$conditions$zeroInflation
     oneInflation <- model$conditions$oneInflation
     formula <- model$conditions$formula
-    formulaDelta <- model$condition$formulaDelta
+    if(is.null(model$condition$formulaDelta)){
+      formulaDelta <- formDelta <- ~1
+    } else formulaDelta <- formDelta <- model$condition$formulaDelta
   
     Par <- model$mle[distnames]
     parCount<- lapply(model$conditions$fullDM,ncol)
@@ -449,15 +451,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       }
     }
     beta <- model$mle$beta
-    delta <- model$mle$delta
-    if(!length(attr(terms.formula(formulaDelta),"term.labels"))){
-      delta <- delta[1,]
-      rownames(delta)<-NULL
-    } else {
-      nbCovsDelta <- ncol(model$covsDelta)-1
-      foo <- length(model$mod$estimate)-(nbCovsDelta+1)*(nbStates-1)+1
-      delta <- matrix(model$mod$estimate[foo:length(model$mod$estimate)],nrow=nbCovsDelta+1)
-    }  
+    nbCovsDelta <- ncol(model$covsDelta)-1
+    foo <- length(model$mod$estimate)-(nbCovsDelta+1)*(nbStates-1)+1
+    delta <- matrix(model$mod$estimate[foo:length(model$mod$estimate)],nrow=nbCovsDelta+1)
     Par<-lapply(Par,function(x) c(t(x)))
     
     if(states) model$data$states <- NULL
@@ -501,7 +497,11 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
     Par <- Par[distnames]
     
-    mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & is.null(spatialCovs) & is.null(centers) & is.null(centroids) & ("step" %in% names(dist)) & all(unlist(initialPosition)==c(0,0)) & is.null(lambda) & is.null(errorEllipse) & !is.list(obsPerAnimal) & is.null(covs) & !nbCovs & !length(attr(terms.formula(formula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & is.null(delta) & is.null(betaRef)) # indicator for moveHMM::simData
+    if(is.null(formulaDelta)){
+      formDelta <- ~1
+    } else formDelta <- formulaDelta
+    
+    mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & is.null(spatialCovs) & is.null(centers) & is.null(centroids) & ("step" %in% names(dist)) & all(unlist(initialPosition)==c(0,0)) & is.null(lambda) & is.null(errorEllipse) & !is.list(obsPerAnimal) & is.null(covs) & !nbCovs & !length(attr(terms.formula(formula),"term.labels")) & !length(attr(terms.formula(formDelta),"term.labels")) & is.null(delta) & is.null(betaRef)) # indicator for moveHMM::simData
     if(all(names(dist) %in% c("step","angle")) & all(unlist(dist) %in% moveHMMdists) & mHind){
       zi <- FALSE
       if(!is.null(zeroInflation$step)) zi <- zeroInflation$step
@@ -775,8 +775,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   allNbCovs <- nbCovs+nbSpatialCovs
 
   # initial state distribution
-  if(is.null(delta)) delta <- rep(1,nbStates)/nbStates
-
+  if(is.null(delta)) delta0 <- rep(1,nbStates)/nbStates
+  else delta0 <- delta
+  
   zeroMass<-oneMass<-vector('list',length(inputs$dist))
   names(zeroMass)<-names(oneMass)<-distnames
 
@@ -827,16 +828,16 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     } else message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,": custom",collapse=", "),")")
   }
   message("\n Transition probability matrix formula: ",paste0(formula,collapse=""))
-  message("\n Initial distribution formula: ",paste0(formulaDelta,collapse=""))
+  message("\n Initial distribution formula: ",paste0(formDelta,collapse=""))
   message("=======================================================================")
   
   if(length(all.vars(formula)))
     if(!all(all.vars(formula) %in% c("ID",names(allCovs),centerNames,centroidNames,spatialcovnames)))
       stop("'formula' covariate(s) not found")
-  if(length(all.vars(formulaDelta)))
-    if(!all(all.vars(formulaDelta) %in% c("ID",names(allCovs),centerNames,centroidNames,spatialcovnames)))
+  if(length(all.vars(formDelta)))
+    if(!all(all.vars(formDelta) %in% c("ID",names(allCovs),centerNames,centroidNames,spatialcovnames)))
       stop("'formulaDelta' covariate(s) not found")
-  if(("ID" %in% all.vars(formula) | "ID" %in% all.vars(formulaDelta)) & nbAnimals<2) stop("ID cannot be a covariate when nbAnimals=1")
+  if(("ID" %in% all.vars(formula) | "ID" %in% all.vars(formDelta)) & nbAnimals<2) stop("ID cannot be a covariate when nbAnimals=1")
   
   newForm <- newFormulas(formula,nbStates)
   formulaStates <- newForm$formulaStates
@@ -885,20 +886,20 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
   }
   
-  covsDelta <- model.matrix(formulaDelta,tmpCovs)
+  covsDelta <- model.matrix(formDelta,tmpCovs)
   nbCovsDelta <- ncol(covsDelta)-1
-  if(!nbCovsDelta){
-    if(length(delta) != (nbCovsDelta+1)*nbStates)
+  if(!nbCovsDelta & is.null(formulaDelta)){
+    if(length(delta0) != (nbCovsDelta+1)*nbStates)
       stop(paste("delta has the wrong length: it should have",nbStates,"elements."))
-    deltaB <- log(delta[-1]/delta[1])
+    deltaB <- log(delta0[-1]/delta0[1])
   } else {
-    if(is.null(dim(delta)))
+    if(is.null(dim(delta0)))
       stop(paste("delta has wrong dimensions: it should have",nbCovsDelta+1,"rows and",
                  nbStates-1,"columns."))
-    if(ncol(delta)!=nbStates-1 | nrow(delta)!=nbCovsDelta+1)
+    if(ncol(delta0)!=nbStates-1 | nrow(delta0)!=nbCovsDelta+1)
       stop(paste("delta has wrong dimensions: it should have",nbCovsDelta+1,"rows and",
                  nbStates-1,"columns."))
-    deltaB <- delta
+    deltaB <- delta0
   }
   
   parCount<- lapply(Par[distnames],length)
@@ -988,10 +989,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             }
           }
         }
-        covsDelta <- model.matrix(formulaDelta,subCovs[1,,drop=FALSE])
+        covsDelta <- model.matrix(formDelta,subCovs[1,,drop=FALSE])
         fullsubPar <- w2n(wpar,bounds,parSize,nbStates,length(attr(terms.formula(newformula),"term.labels")),inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
         g <- gFull[1,,drop=FALSE]
-        delta <- fullsubPar$delta
+        delta0 <- fullsubPar$delta
       } else {
         
         if(nbSpatialCovs){
@@ -1023,14 +1024,14 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           }
         }
         g <- model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% beta
-        covsDelta <- model.matrix(formulaDelta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
-        delta <- c(rep(0,nbCovsDelta+1),deltaB)
-        deltaXB <- covsDelta %*% matrix(delta,nrow=nbCovsDelta+1)
+        covsDelta <- model.matrix(formDelta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
+        delta0 <- c(rep(0,nbCovsDelta+1),deltaB)
+        deltaXB <- covsDelta %*% matrix(delta0,nrow=nbCovsDelta+1)
         expdelta <- exp(deltaXB)
-        delta <- expdelta/rowSums(expdelta)
-        for(i in which(!is.finite(rowSums(delta)))){
+        delta0 <- expdelta/rowSums(expdelta)
+        for(i in which(!is.finite(rowSums(delta0)))){
           tmp <- exp(Brobdingnag::as.brob(deltaXB[i,]))
-          delta[i,] <- as.numeric(tmp/Brobdingnag::sum(tmp))
+          delta0[i,] <- as.numeric(tmp/Brobdingnag::sum(tmp))
         }
       }
       gamma[!gamma] <- exp(g)
@@ -1039,7 +1040,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       
       if(nbStates>1) {
         Z <- rep(NA,nbObs)
-        Z[1] <- sample(1:nbStates,size=1,prob=delta%*%gamma)
+        Z[1] <- sample(1:nbStates,size=1,prob=delta0%*%gamma)
       } else
         Z <- rep(1,nbObs)
       

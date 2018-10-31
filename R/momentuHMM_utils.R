@@ -36,25 +36,10 @@ muffleRNGwarning <- function(w) {
 }
 
 #' @importFrom MASS ginv
-# this function maintains backwards compatibility with momentuHMM versions <1.1.2 (formulaDelta), <1.4.0 (workBounds), and <1.4.3 (betaCons)
+# this function maintains backwards compatibility with momentuHMM versions <1.4.0 (workBounds) and <1.4.3 (betaCons)
 delta_bc <- function(m){
   
   if(is.momentuHMM(m) | is.miSum(m)){
-    if(is.null(m$conditions$formulaDelta)) {
-      m$conditions$formulaDelta <- ~1
-      aInd <- NULL
-      nbAnimals <- length(unique(m$data$ID))
-      for(i in 1:nbAnimals)
-        aInd <- c(aInd,which(m$data$ID==unique(m$data$ID)[i])[1])
-      m$covsDelta <- model.matrix(m$conditions$formulaDelta,m$data[aInd,,drop=FALSE]) 
-      if(is.miSum(m)){
-        m$Par$real$delta$est <- matrix(m$Par$real$delta$est,nrow=nrow(m$covsDelta),ncol=length(m$stateNames),byrow=TRUE,dimnames = list(paste0("ID:",unique(m$data$ID)),m$stateNames))
-      } else {
-        m$mle$delta <- matrix(m$mle$delta,nrow=nrow(m$covsDelta),ncol=length(m$stateNames),byrow=TRUE,dimnames = list(paste0("ID:",unique(m$data$ID)),m$stateNames))
-        #m$CIreal <- CIreal(m)
-        m$CIbeta <- CIbeta(m)
-      }
-    }
     if(is.null(m$conditions$workBounds)){
       distnames <- names(m$conditions$dist)
       

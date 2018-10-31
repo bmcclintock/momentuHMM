@@ -1,4 +1,4 @@
-momentuHMM 1.4.3 2018-10-30
+momentuHMM 1.4.3 2018-10-31
 -----------------
 NEW FEATURES
 
@@ -10,7 +10,11 @@ NEW FEATURES
 
 CHANGES
 
+* updated for compatibility with crawl (>= 2.2.1); notable changes include removal of the initial.state argument and addition of the time.scale argument in crawlWrap.
+
 * changed how fixPar and betaCons are handled when optimizing the likelihood; this should make optimization faster and more stable when these parameter constraints are used
+
+* formulaDelta=NULL now default in fitHMM, MIfitHMM, and simData
 
 * %dorng% now used instead of %dopar%, thereby allowing for reproducible foreach loops when using parallel processing
 
@@ -20,11 +24,9 @@ CHANGES
 
 * bug fix in calculation of standard errors (and confidence intervals) for transition probability and initial distribution parameters when workBounds$beta or workBounds$delta are specified other than the default (-Inf,Inf)
 
-* bug fix in calculation of number of parameters in getAIC when formulaDelta=~1 and initial distribution is fixed using fixPar$delta
+* bug fix in calculation of number of parameters in getAIC when formulaDelta=NULL and initial distribution is fixed using fixPar$delta
 
 * bug fix in MIpool when estimated standard errors are not finite for some imputations
-
-* updated for compatibility with crawl (>= 2.2.1). Notable changes include removal of the initial.state argument and addition of the time.scale argument in crawlWrap.
 
 
 momentuHMM 1.4.2 2018-06-19

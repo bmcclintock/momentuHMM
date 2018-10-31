@@ -28,7 +28,7 @@
 #' information in 'Details').
 #' Default: \code{NULL}. If not specified, \code{beta0} is initialized such that the diagonal elements
 #' of the transition probability matrix are dominant.
-#' @param delta0 Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}. If \code{formulaDelta} includes covariates, then \code{delta0} must be specified
+#' @param delta0 Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}. If \code{formulaDelta} includes a formula, then \code{delta0} must be specified
 #' as a k x (\code{nbStates}-1) matrix, where k is the number of covariates and the columns correspond to states 2:\code{nbStates}. See details below.
 #' @param estAngleMean An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy'). For example, \code{estAngleMean=list(angle=TRUE)} indicates the angle mean is to be 
@@ -51,7 +51,7 @@
 #' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}),
 #'  and state- or parameter-specific formulas (see details).
 #' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.
-#' @param formulaDelta Regression formula for the initial distribution. Default: \code{~1} (no covariate effect). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).
+#' @param formulaDelta Regression formula for the initial distribution. Default: \code{NULL} (no covariate effects; both \code{delta0} and \code{fixPar$delta} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{delta0} and \code{fixPar$delta} are specified on the working scale.
 #' @param stationary \code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param verbose Deprecated: please use \code{print.level} in \code{nlmPar} argument. Determines the print level of the \code{nlm} optimizer. The default value of 0 means that no
@@ -149,7 +149,7 @@
 #' using the \code{betaRef} argument. For example, in a 3-state model, setting \code{betaRef=c(3,2,3)} changes the reference elements to state transition 1 -> 3 for state 1 (instead of 1 -> 1), state
 #' transition 2 -> 2 for state 2 (same as default), and state transition 3 -> 3 for state 3 (same as default).
 #' 
-#' \item When covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=~1}), then \code{delta0} (and \code{fixPar$delta}) are specified as a vector of length \code{nbStates} that 
+#' \item When covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=NULL}), then \code{delta0} (and \code{fixPar$delta}) are specified as a vector of length \code{nbStates} that 
 #' sums to 1.  When covariates are included in \code{formulaDelta}, then \code{delta0}  (and \code{fixPar$delta}) must be specified
 #' as a k x (\code{nbStates}-1) matrix of working parameters, where k is the number of regression coefficients and the columns correspond to states 2:\code{nbStates}. For example, in a 3-state
 #' HMM with \code{formulaDelta=~cov1+cov2}, the matrix \code{delta0} has three rows (intercept + two covariates)
@@ -428,7 +428,7 @@
 fitHMM <- function(data,nbStates,dist,
                    Par0,beta0=NULL,delta0=NULL,
                    estAngleMean=NULL,circularAngleMean=NULL,
-                   formula=~1,formulaDelta=~1,stationary=FALSE,
+                   formula=~1,formulaDelta=NULL,stationary=FALSE,
                    verbose=NULL,nlmPar=list(),fit=TRUE,
                    DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,
                    stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL)
@@ -461,16 +461,16 @@ fitHMM <- function(data,nbStates,dist,
   if(!is.formula(formula))
     stop("Check the argument 'formula'.")
   
-  if(!is.formula(formulaDelta))
+  if(!is.null(formulaDelta) && !is.formula(formulaDelta))
     stop("Check the argument 'formulaDelta'.")
   
   if(nbStates<1) stop('nbStates must be >0')
 
   # check that there is no response varibale in the formula
   if(attr(terms(formula),"response")!=0)
-    stop("The response variable should not be specified in the formula.")
-  if(attr(terms(formulaDelta),"response")!=0)
-    stop("The response variable should not be specified in the formulaDelta.")
+    stop("The response variable should not be specified in formula.")
+  if(!is.null(formulaDelta) && attr(terms(formulaDelta),"response")!=0)
+    stop("The response variable should not be specified in formulaDelta.")
   
   if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
   if(!is.list(Par0) | is.null(names(Par0))) stop("'Par0' must be a named list")
@@ -501,7 +501,10 @@ fitHMM <- function(data,nbStates,dist,
   nbAnimals <- length(unique(data$ID))
   for(i in 1:nbAnimals)
     aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
-  covsDelta <- model.matrix(formulaDelta,data[aInd,,drop=FALSE])
+  if(is.null(formulaDelta)){
+    formDelta <- ~1
+  } else formDelta <- formulaDelta
+  covsDelta <- model.matrix(formDelta,data[aInd,,drop=FALSE])
   if(nrow(covsDelta)!=nrow(data[aInd,,drop=FALSE])) stop("covariates cannot contain missing values")
   nbCovsDelta <- ncol(covsDelta)-1 # substract intercept column
   
@@ -586,7 +589,7 @@ fitHMM <- function(data,nbStates,dist,
     }
   }
 
-  mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(newformula),"term.labels")) & !length(attr(terms.formula(formulaDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior) & is.null(betaCons) & is.null(betaRef)) # indicator for moveHMMwrap below
+  mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(newformula),"term.labels")) & !length(attr(terms.formula(formDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior) & is.null(betaCons) & is.null(betaRef)) # indicator for moveHMMwrap below
   
   inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames,checkInflation = TRUE)
   p <- inputs$p
@@ -636,7 +639,7 @@ fitHMM <- function(data,nbStates,dist,
   }
 
   if(!is.null(delta0)){
-    if(!nbCovsDelta){
+    if(!nbCovsDelta & is.null(formulaDelta)){
       if(length(delta0) != (nbCovsDelta+1)*nbStates)
         stop(paste("delta0 has the wrong length: it should have",nbStates,"elements."))
     } else {
@@ -661,7 +664,7 @@ fitHMM <- function(data,nbStates,dist,
   ####################################
   if(stationary)
     delta0 <- NULL
-  else if(!nbCovsDelta){
+  else if(!nbCovsDelta & is.null(formulaDelta)){
     if(is.null(delta0)){
       delta0 <- matrix(1/nbStates,nbCovsDelta+1,nbStates)
     } else {
@@ -680,7 +683,7 @@ fitHMM <- function(data,nbStates,dist,
     for(i in distnames){
       fixPar[[i]] <- rep(NA,length(Par0[[i]]))
     }
-    #if(!nbCovsDelta) fixPar$delta <- rep(NA,ifelse(is.null(delta0),0,length(delta0)-1))
+    #if(!nbCovsDelta & is.null(formulaDelta)) fixPar$delta <- rep(NA,ifelse(is.null(delta0),0,length(delta0)-1))
     #else fixPar$delta <- rep(NA,length(delta0))
   }
   
@@ -732,12 +735,12 @@ fitHMM <- function(data,nbStates,dist,
   if(!is.null(fixPar$delta)){
     if(stationary & any(!is.na(fixPar$delta))) stop("delta cannot be fixed when stationary=TRUE")
     else if(!stationary) {
-      if(!nbCovsDelta){
+      if(!nbCovsDelta & is.null(formulaDelta)){
         if(length(fixPar$delta)!=nbStates) stop("fixPar$delta must be of length ",nbStates)
       } else if(length(fixPar$delta)!=length(delta0)) stop("fixPar$delta must be of length ",length(delta0))
       if(any(!is.na(fixPar$delta))){
         tmp <- which(!is.na(fixPar$delta))
-        if(!nbCovsDelta){
+        if(!nbCovsDelta & is.null(formulaDelta)){
           delta0 <- fixPar$delta
           if(length(tmp)!=length(delta0) | sum(delta0)!=1) stop("fixPar$delta must sum to 1")
           wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0)+1:(length(delta0)-1))
@@ -750,7 +753,7 @@ fitHMM <- function(data,nbStates,dist,
       } else fixPar$delta <- rep(NA,length(delta0))
     }
   } else {
-    if(!nbCovsDelta) fixPar$delta <- ofixPar$delta <- rep(NA,ifelse(!length(delta0),0,nbStates-1))
+    if(!nbCovsDelta & is.null(formulaDelta)) fixPar$delta <- ofixPar$delta <- rep(NA,ifelse(!length(delta0),0,nbStates-1))
     else fixPar$delta <- ofixPar$delta <- rep(NA,length(delta0))
   }
 
@@ -863,7 +866,7 @@ fitHMM <- function(data,nbStates,dist,
     } else message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,": custom",collapse=", "),")")
   }
   message("\n Transition probability matrix formula: ",paste0(formula,collapse=""))
-  message("\n Initial distribution formula: ",paste0(formulaDelta,collapse=""))
+  message("\n Initial distribution formula: ",paste0(formDelta,collapse=""))
   message("=======================================================================")
   
   nc <- meanind <- vector('list',length(distnames))

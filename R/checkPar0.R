@@ -77,7 +77,7 @@
 #' }
 #' @export
 
-checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=~1,stationary=FALSE,DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,stateNames=NULL,fixPar=NULL)
+checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=NULL,stationary=FALSE,DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,stateNames=NULL,fixPar=NULL)
 {
   
   ## check that the data is a momentuHMMData object or valid data frame
@@ -280,7 +280,10 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
     if(!stationary){
       cat("\n")
       m <- delta_bc(m)
-      if(!length(attr(terms.formula(m$conditions$formulaDelta),"term.labels"))){
+      if(is.null(m$conditions$formulaDelta)) {
+        formDelta <- ~1
+      } else formDelta <- m$conditions$formulaDelta
+      if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
         tmpPar <- m$mle$delta[1,]
         rownames(tmpPar)<-NULL
         if(is.null(delta0))

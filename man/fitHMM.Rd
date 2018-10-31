@@ -6,7 +6,7 @@
 \usage{
 fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
-  formulaDelta = ~1, stationary = FALSE, verbose = NULL,
+  formulaDelta = NULL, stationary = FALSE, verbose = NULL,
   nlmPar = list(), fit = TRUE, DM = NULL, cons = NULL,
   userBounds = NULL, workBounds = NULL, workcons = NULL,
   betaCons = NULL, betaRef = NULL, stateNames = NULL,
@@ -43,7 +43,7 @@ information in 'Details').
 Default: \code{NULL}. If not specified, \code{beta0} is initialized such that the diagonal elements
 of the transition probability matrix are dominant.}
 
-\item{delta0}{Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}. If \code{formulaDelta} includes covariates, then \code{delta0} must be specified
+\item{delta0}{Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}. If \code{formulaDelta} includes a formula, then \code{delta0} must be specified
 as a k x (\code{nbStates}-1) matrix, where k is the number of covariates and the columns correspond to states 2:\code{nbStates}. See details below.}
 
 \item{estAngleMean}{An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
@@ -70,7 +70,7 @@ corresponding to data streams that do not have angular distributions are ignored
  and state- or parameter-specific formulas (see details).
 Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.}
 
-\item{formulaDelta}{Regression formula for the initial distribution. Default: \code{~1} (no covariate effect). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).}
+\item{formulaDelta}{Regression formula for the initial distribution. Default: \code{NULL} (no covariate effects; both \code{delta0} and \code{fixPar$delta} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{delta0} and \code{fixPar$delta} are specified on the working scale.}
 
 \item{stationary}{\code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
@@ -193,7 +193,7 @@ In a covariate-free model (default), \code{beta0} has one row, for the intercept
 using the \code{betaRef} argument. For example, in a 3-state model, setting \code{betaRef=c(3,2,3)} changes the reference elements to state transition 1 -> 3 for state 1 (instead of 1 -> 1), state
 transition 2 -> 2 for state 2 (same as default), and state transition 3 -> 3 for state 3 (same as default).
 
-\item When covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=~1}), then \code{delta0} (and \code{fixPar$delta}) are specified as a vector of length \code{nbStates} that 
+\item When covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=NULL}), then \code{delta0} (and \code{fixPar$delta}) are specified as a vector of length \code{nbStates} that 
 sums to 1.  When covariates are included in \code{formulaDelta}, then \code{delta0}  (and \code{fixPar$delta}) must be specified
 as a k x (\code{nbStates}-1) matrix of working parameters, where k is the number of regression coefficients and the columns correspond to states 2:\code{nbStates}. For example, in a 3-state
 HMM with \code{formulaDelta=~cov1+cov2}, the matrix \code{delta0} has three rows (intercept + two covariates)
