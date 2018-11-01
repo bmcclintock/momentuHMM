@@ -96,7 +96,10 @@ print.miSum <- function(x,...)
       cat("Initial distribution:\n")
       cat("---------------------\n")
       m <- delta_bc(m)
-      if(!length(attr(terms.formula(m$conditions$formulaDelta),"term.labels"))){
+      if(is.null(m$conditions$formulaDelta)) {
+        formDelta <- ~1
+      } else formDelta <- m$conditions$formulaDelta
+      if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
         tmp <- m$Par$real$delta$est[1,]
         rownames(tmp)<-NULL
         print(tmp)

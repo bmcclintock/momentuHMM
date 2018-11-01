@@ -3,16 +3,16 @@
 #' For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}) from an existing \code{\link{momentuHMM}} model fit based on the provided arguments for the new model. Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
 #' 
 #' @param model A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})
-#' @param nbStates Number of states in the new model. If \code{nbStates=NULL} (the default), then \code{nbStates=length(model$stateNames)}
+#' @param nbStates Number of states in the new model. Default: \code{nbStates=length(model$stateNames)}
 #' @param estAngleMean Named list indicating whether or not the angle mean for data streams with angular 
-#' distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. If \code{estAngleMean=NULL} (the default), then \code{estAngleMean=model$conditions$estAngleMean}
+#' distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. Default: \code{estAngleMean=model$conditions$estAngleMean}
 #' @param circularAngleMean Named list indicating whether circular-linear or circular-circular 
-#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model.  See \code{\link{fitHMM}}. If \code{circularAngleMean=NULL} (the default), then \code{circularAngleMean=model$conditions$circularAngleMean}
-#' @param formula Regression formula for the transition probability covariates of the new model (see \code{\link{fitHMM}}).  If \code{formula=NULL} (the default), then \code{formula=model$conditions$formula}.
-#' @param formulaDelta Regression formula for the initial distribution covariates of the new model (see \code{\link{fitHMM}}).  If \code{formulaDelta=NULL} (the default), then \code{formulaDelta=model$conditions$formulaDelta}.
+#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model.  See \code{\link{fitHMM}}. Default: \code{circularAngleMean=model$conditions$circularAngleMean}
+#' @param formula Regression formula for the transition probability covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formula=model$conditions$formula}.
+#' @param formulaDelta Regression formula for the initial distribution covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formulaDelta=model$conditions$formulaDelta}.
 #' @param DM Named list indicating the design matrices to be used for the probability distribution parameters of each data stream in the new model (see \code{\link{fitHMM}}). Only parameters with design matrix column names that match those in model$conditions$fullDM are extracted, so care must be taken in naming columns if any elements of \code{DM}
-#' are specified as matrices instead of formulas. If \code{DM=NULL} (the default), then \code{DM=model$conditions$DM}.
-#' @param stateNames Character vector of length \code{nbStates} indicating the names and order of the states in the new model. If \code{stateNames=NULL} (the default), then \code{stateNames=model$stateNames[1:nbStates]}.
+#' are specified as matrices instead of formulas. Default: \code{DM=model$conditions$DM}.
+#' @param stateNames Character vector of length \code{nbStates} indicating the names and order of the states in the new model. Default: \code{stateNames=model$stateNames[1:nbStates]}.
 #'
 #' @return 
 #' A named list containing starting values suitable for \code{Par0} and \code{beta0} arguments in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}:
@@ -81,7 +81,7 @@
 #' }
 #' 
 #' @export
-getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=NULL,formulaDelta=NULL,DM=NULL,stateNames=NULL){
+getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,formula=model$conditions$formula,formulaDelta=model$conditions$formulaDelta,DM=model$conditions$DM,stateNames=model$stateNames){
   
   if(!is.momentuHMM(model) & !is.miHMM(model) & !is.miSum(model))
     stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
@@ -122,7 +122,9 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
   if(is.null(estAngleMean)) estAngleMean<-model$conditions$estAngleMean
   if(is.null(circularAngleMean)) circularAngleMean<-model$conditions$circularAngleMean
   if(is.null(formula)) formula<-model$conditions$formula
-  if(is.null(formulaDelta)) formulaDelta <- model$conditions$formulaDelta
+  if(is.null(formulaDelta)) {
+    formDelta <- ~1
+  } else formDelta <- formulaDelta
   if(is.null(DM)) DM<-model$conditions$DM
   if(!is.null(stateNames)){
     if(length(stateNames)!=nbStates) stop("stateNames must be of length ",nbStates)
@@ -270,11 +272,11 @@ getPar0<-function(model,nbStates=NULL,estAngleMean=NULL,circularAngleMean=NULL,f
     }
     Par$beta<-tmpPar
     if(setequal(colnames(model$mle$delta),stateNames) & nbStates>1) {
-      if(!length(attr(terms.formula(model$conditions$formulaDelta),"term.labels")) & model$conditions$formulaDelta==formulaDelta){
+      if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(model$conditions$formulaDelta) & is.null(formulaDelta)){
         Par$delta<-model$mle$delta[1,][match(colnames(model$mle$delta),stateNames)]
       } else {
-        deltaNames <- colnames(model.matrix(formulaDelta,model$data))
-        if(all(deltaNames=="(Intercept)")){
+        deltaNames <- colnames(model.matrix(formDelta,model$data))
+        if(all(deltaNames=="(Intercept)") & is.null(formulaDelta)){
           tmp <- rep(0,nbStates)
           if(deltaNames %in% rownames(model$CIbeta$delta$est))
             tmp<-c(0,model$CIbeta$delta$est[which(rownames(model$CIbeta$delta$est) %in% deltaNames),])

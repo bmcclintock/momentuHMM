@@ -6,7 +6,7 @@
 \usage{
 checkPar0(data, nbStates, dist, Par0 = NULL, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
-  formulaDelta = ~1, stationary = FALSE, DM = NULL, cons = NULL,
+  formulaDelta = NULL, stationary = FALSE, DM = NULL, cons = NULL,
   userBounds = NULL, workBounds = NULL, workcons = NULL,
   betaCons = NULL, betaRef = NULL, stateNames = NULL, fixPar = NULL)
 }

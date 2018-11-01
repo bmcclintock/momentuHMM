@@ -6,7 +6,7 @@
 \usage{
 MIfitHMM(miData, nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
   nbStates, dist, Par0, beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
-  circularAngleMean = NULL, formula = ~1, formulaDelta = ~1,
+  circularAngleMean = NULL, formula = ~1, formulaDelta = NULL,
   stationary = FALSE, verbose = NULL, nlmPar = NULL, fit = TRUE,
   useInitial = FALSE, DM = NULL, cons = NULL, userBounds = NULL,
   workBounds = NULL, workcons = NULL, betaCons = NULL, betaRef = NULL,
