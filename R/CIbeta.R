@@ -152,12 +152,15 @@ CIbeta <- function(m,alpha=0.95)
     Par[[i]] <- get_CIwb(wpar[parindex[[i]]+1:parCount[[i]]],est,parindex[[i]]+1:parCount[[i]],Sigma,alpha,m$conditions$workBounds[[i]],cnames=pnames,cons=m$conditions$cons[[i]])
 
   }
+  
+  mixtures <- m$conditions$mixtures
 
   # group CIs for t.p. coefficients
   if(nbStates>1){
-    est <- w2wn(wpar[tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1))],m$conditions$workBounds$beta)
     
-    Par$beta <- get_CIwb(wpar[tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1))],est,tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1)),Sigma,alpha,m$conditions$workBounds$beta,rnames=rownames(m$mle$beta),cnames=colnames(m$mle$beta),cons=rep(1,length(est)))
+    est <- w2wn(wpar[tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)],m$conditions$workBounds$beta)
+    
+    Par$beta <- get_CIwb(wpar[tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)],est,tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures),Sigma,alpha,m$conditions$workBounds$beta,rnames=rownames(m$mle$beta),cnames=colnames(m$mle$beta),cons=rep(1,length(est)))
     
     # fill in constraints based on betaCons
     Par$beta <- lapply(Par$beta,function(x) matrix(x[c(m$conditions$betaCons)],dim(x),dimnames=list(rownames(x),colnames(x))))
@@ -166,16 +169,27 @@ CIbeta <- function(m,alpha=0.95)
     
   }
   
+  # group CIs for pi
+  if(mixtures>1){
+    piInd <- tail(cumsum(unlist(parCount)),1) + ((nbCovs+1)*nbStates*(nbStates-1)*mixtures) + 1:(mixtures-1)
+    
+    est <- w2wn(wpar[piInd],m$conditions$workBounds$pi)
+    
+    Par$pi <- get_CIwb(wpar[piInd],est,piInd,Sigma,alpha,m$conditions$workBounds$pi,cnames=paste0("mix",2:mixtures),cons=rep(1,length(est)))
+  }
+  
   # group CIs for initial distribution
   if(nbStates>1 & !m$conditions$stationary){
 
-    dInd <- length(wpar)-ifelse(nbRecovs,(nbRecovs+1)+1,0)
-    foo <- dInd -(nbCovsDelta+1)*(nbStates-1)+1
+    dInd <- length(wpar)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)
+    foo <- dInd -(nbCovsDelta+1)*(nbStates-1)*mixtures+1
     
     est <- w2wn(wpar[foo:dInd],m$conditions$workBounds$delta)
     
-    Par$delta <- get_CIwb(wpar[foo:dInd],est,foo:dInd,Sigma,alpha,m$conditions$workBounds$delta,rnames=colnames(m$covsDelta),cnames=m$stateNames[-1],cons=rep(1,length(est)))
-
+    rnames <- rep(colnames(m$covsDelta),mixtures)
+    if(mixtures>1) rnames <- paste0(rep(colnames(m$covsDelta),mixtures),"_mix",rep(1:mixtures,each=length(colnames(m$covsDelta))))
+    Par$delta <- get_CIwb(wpar[foo:dInd],est,foo:dInd,Sigma,alpha,m$conditions$workBounds$delta,rnames=rnames,cnames=m$stateNames[-1],cons=rep(1,length(est)))
+    
   }
   
   if(!is.null(recharge)){

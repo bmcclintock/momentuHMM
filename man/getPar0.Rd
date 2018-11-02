@@ -8,8 +8,9 @@ getPar0(model, nbStates = length(model$stateNames),
   estAngleMean = model$conditions$estAngleMean,
   circularAngleMean = model$conditions$circularAngleMean,
   formula = model$conditions$formula,
-  formulaDelta = model$conditions$formulaDelta, DM = model$conditions$DM,
-  stateNames = model$stateNames)
+  formulaDelta = model$conditions$formulaDelta,
+  mixtures = model$conditions$mixtures, DM = model$conditions$DM,
+  betaRef = model$conditions$betaRef, stateNames = model$stateNames)
 }
 \arguments{
 \item{model}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})}
@@ -26,8 +27,12 @@ regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turn
 
 \item{formulaDelta}{Regression formula for the initial distribution covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formulaDelta=model$conditions$formulaDelta}.}
 
+\item{mixtures}{Number of mixtures for the state transition probabilities  (see \code{\link{fitHMM}}). Default: \code{formula=model$conditions$mixtures}.}
+
 \item{DM}{Named list indicating the design matrices to be used for the probability distribution parameters of each data stream in the new model (see \code{\link{fitHMM}}). Only parameters with design matrix column names that match those in model$conditions$fullDM are extracted, so care must be taken in naming columns if any elements of \code{DM}
 are specified as matrices instead of formulas. Default: \code{DM=model$conditions$DM}.}
+
+\item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: \code{formula=model$conditions$betaRef}.}
 
 \item{stateNames}{Character vector of length \code{nbStates} indicating the names and order of the states in the new model. Default: \code{stateNames=model$stateNames[1:nbStates]}.}
 }

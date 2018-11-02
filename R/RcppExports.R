@@ -201,10 +201,11 @@ getDM_rcpp <- function(X, covs, DM, nr, nc, cov, nbObs) {
 #' of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
 #' the state is not known.
 #' @param betaRef Indices of reference elements for t.p.m. multinomial logit link.
+#' @param mixtures Number of mixtures for the state transition probabilities
 #' 
 #' @return Negative log-likelihood
-nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef) {
-    .Call('_momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef)
+nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures) {
+    .Call('_momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures)
 }
 
 #' Transition probability matrix

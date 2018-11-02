@@ -41,6 +41,7 @@
 #' @param optInd indices of constrained parameters
 #' @param recovs data frame containing the recharge model theta covariates (if any)
 #' @param g0covs data frame containing the recharge model g0 covariates (if any)
+#' @param mixtures Number of mixtures for the state transition probabilities
 #'
 #' @return The negative log-likelihood of the parameters given the data.
 #'
@@ -74,7 +75,7 @@
 
 nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,
-                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,optInd=NULL,recovs=NULL,g0covs=NULL)
+                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1)
 {
   
   # check arguments
@@ -86,7 +87,7 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
   else nbRecovs <- 0
   
   # convert the parameters back to their natural scale
-  wpar <- expandPar(optPar,optInd,fixPar,wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs)
+  wpar <- expandPar(optPar,optInd,fixPar,wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs,mixtures)
   par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta,workBounds)
 
   nbAnimals <- length(unique(data$ID))
@@ -115,13 +116,15 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
     par$delta <- c(NA)
   if(nbStates==1) {
     par$beta <- matrix(NA)
+    #par$pi <- c(NA)
     par$delta <- c(NA)
     par[distnames] <- lapply(par[distnames],as.matrix)
   }
 
   nllk <- tryCatch(nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,
                         par,
-                        aInd,zeroInflation,oneInflation,stationary,knownStates,betaRef),error=function(e) e)
+                        aInd,zeroInflation,oneInflation,stationary,knownStates,betaRef,mixtures),error=function(e) e)
+
   if(inherits(nllk,"error")) nllk <- NaN
   
   if(!is.null(prior)) nllk <- nllk - prior(wpar)

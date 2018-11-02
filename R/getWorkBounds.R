@@ -23,6 +23,15 @@ getWorkBounds <- function(workBounds,distnames,wpar,parindex,parCount,DM,beta=NU
     #if(any(beta<workBounds$beta[,1] | beta>workBounds$beta[,2])) stop("beta0 do not satisfy workBounds")
     outBounds <- workBounds[c(distnames,"beta")]
   }
+  if(length(beta$pi)){
+    if(is.null(workBounds$pi)){
+      workBounds$pi <- matrix(c(-Inf,Inf),length(beta$pi),2,byrow=TRUE)
+    } else {
+      if(!is.matrix(workBounds$pi)) stop("workBounds$pi must be a matrix")
+      if(!all(dim(workBounds$pi)==c(length(beta$pi),2))) stop("workBounds$pi must be a 2 x ",length(beta$pi)," matrix")
+    }
+    outBounds <- workBounds[c(distnames,"beta","pi")]
+  }
   if(length(delta)){
     if(is.null(workBounds$delta)){
       workBounds$delta <- matrix(c(-Inf,Inf),length(delta),2,byrow=TRUE)
@@ -32,7 +41,7 @@ getWorkBounds <- function(workBounds,distnames,wpar,parindex,parCount,DM,beta=NU
     }
     #delta <- w2wn(c(delta),workBounds$delta)
     #if(any(delta<workBounds$delta[,1] | delta>workBounds$delta[,2])) stop("delta0 do not satisfy workBounds")
-    outBounds <- workBounds[c(distnames,"beta","delta")]
+    outBounds <- workBounds[c(distnames,"beta","pi","delta")]
   }
   if(length(beta$theta)){
     if(is.null(workBounds$g0)){
@@ -47,7 +56,7 @@ getWorkBounds <- function(workBounds,distnames,wpar,parindex,parCount,DM,beta=NU
       if(!is.matrix(workBounds$theta)) stop("workBounds$theta must be a matrix")
       if(!all(dim(workBounds$theta)==c(length(beta$theta),2))) stop("workBounds$theta must be a 2 x ",length(beta$theta)," matrix")
     }
-    outBounds <- workBounds[c(distnames,"beta","delta","g0","theta")]
+    outBounds <- workBounds[c(distnames,"beta","pi","delta","g0","theta")]
   }
   outBounds
 }

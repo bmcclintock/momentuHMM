@@ -195,86 +195,131 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
       }
     }
   }
+  
+  mixtures <- m$conditions$mixtures
 
   if(nbStates>1) {
+    
     # identify parameters of interest
     i2 <- tail(cumsum(unlist(parCount)),1)+1
-    i3 <- i2+nbStates*(nbStates-1)*(nbCovs+1)-1
+    i3 <- i2+nbStates*(nbStates-1)*(nbCovs+1)*mixtures-1
     
     quantSup <- qnorm(1-(1-alpha)/2)
     tmpSplineInputs<-getSplineFormula(newformula,m$data,tempCovs)
     tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
     
-    if(is.null(recharge)){
-      wpar <- m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))]
-      est <- get_gamma(wpar,tempCovMat,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta)
-      tmpSig <- Sigma[(i2:i3)[unique(c(m$conditions$betaCons))],(i2:i3)[unique(c(m$conditions$betaCons))]]
-    } else {
-      wpar <- c(m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))],m$mod$estimate[length(m$mod$estimate)-nbRecovs:0])
-      est <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,recharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta))
-      tmpSig <- Sigma[c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0),c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)]
-    }
-
-    lower<-upper<-se<-matrix(NA,nbStates,nbStates)
-    if(!is.null(Sigma)){
-      for(i in 1:nbStates){
-        for(j in 1:nbStates){
-          if(is.null(recharge)){
-            dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta)
-          } else {
-            dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta))
-          }  
-          se[i,j]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
-          lower[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))-quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]-quantSup*se[i,j]
-          upper[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))+quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#m$mle$gamma[i,j]+quantSup*se[i,j]
+    est<-lower<-upper<-se<-matrix(NA,nbStates*mixtures,nbStates)
+    for(mix in 1:mixtures){
+    
+      if(is.null(recharge)){
+        wpar <- m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))]
+        est[(mix-1)*nbStates+1:nbStates,] <- get_gamma(wpar,tempCovMat,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix)
+        tmpSig <- Sigma[(i2:i3)[unique(c(m$conditions$betaCons))],(i2:i3)[unique(c(m$conditions$betaCons))]]
+      } else {
+        wpar <- c(m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))],m$mod$estimate[length(m$mod$estimate)-nbRecovs:0])
+        est[(mix-1)*nbStates+1:nbStates,] <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,recharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix)
+        tmpSig <- Sigma[c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0),c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)]
+      }
+  
+      if(!is.null(Sigma)){
+        for(i in 1:nbStates){
+          for(j in 1:nbStates){
+            if(is.null(recharge)){
+              dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix)
+            } else {
+              dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix)
+            }  
+            se[(mix-1)*nbStates+i,j]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
+            lower[(mix-1)*nbStates+i,j]<-1/(1+exp(-(log(est[(mix-1)*nbStates+i,j]/(1-est[(mix-1)*nbStates+i,j]))-quantSup*(1/(est[(mix-1)*nbStates+i,j]-est[(mix-1)*nbStates+i,j]^2))*se[(mix-1)*nbStates+i,j])))#est[i,j]-quantSup*se[i,j]
+            upper[(mix-1)*nbStates+i,j]<-1/(1+exp(-(log(est[(mix-1)*nbStates+i,j]/(1-est[(mix-1)*nbStates+i,j]))+quantSup*(1/(est[(mix-1)*nbStates+i,j]-est[(mix-1)*nbStates+i,j]^2))*se[(mix-1)*nbStates+i,j])))#m$mle$gamma[i,j]+quantSup*se[i,j]
+          }
         }
       }
     }
     Par$gamma <- list(est=est,se=se,lower=lower,upper=upper)
-    dimnames(Par$gamma$est) <- dimnames(Par$gamma$se) <- dimnames(Par$gamma$lower) <- dimnames(Par$gamma$upper) <- list(m$stateNames,m$stateNames)
+    dimnames(Par$gamma$est) <- dimnames(Par$gamma$se) <- dimnames(Par$gamma$lower) <- dimnames(Par$gamma$upper) <- list(rep(m$stateNames,mixtures),m$stateNames)
+    if(mixtures>1) dimnames(Par$gamma$est) <- dimnames(Par$gamma$se) <- dimnames(Par$gamma$lower) <- dimnames(Par$gamma$upper) <- list(paste0(rep(m$stateNames,mixtures),"_mix",rep(1:mixtures,each=nbStates)),m$stateNames)
 
-  
-    wpar<-m$mod$estimate
-    nbCovsDelta <- ncol(m$covsDelta)-1
-    foo <- length(wpar)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-(nbCovsDelta+1)*(nbStates-1)
-    delta <- matrix(wpar[foo+1:((nbCovsDelta+1)*(nbStates-1))],nrow=nbCovsDelta+1)
-    quantSup <- qnorm(1-(1-alpha)/2)
-    lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsDelta),ncol=nbStates)
-    if(!is.null(Sigma)){
-      for(j in 1:nrow(m$covsDelta)){
-        for(i in 1:nbStates){
-          dN<-numDeriv::grad(get_delta,delta,covsDelta=m$covsDelta[j,,drop=FALSE],i=i,workBounds=m$conditions$workBounds$delta)
-          se[j,i]<-suppressWarnings(sqrt(dN%*%Sigma[foo+1:((nbCovsDelta+1)*(nbStates-1)),foo+1:((nbCovsDelta+1)*(nbStates-1))]%*%dN))
-          lower[j,i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))-quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[j,i])))#m$mle$delta[j,i]-quantSup*se[i]
-          upper[j,i]<-1/(1+exp(-(log(m$mle$delta[j,i]/(1-m$mle$delta[j,i]))+quantSup*(1/(m$mle$delta[j,i]-m$mle$delta[j,i]^2))*se[j,i])))#m$mle$delta[j,i]+quantSup*se[i]
+    # pi
+    if(mixtures>1){
+      wpar<-m$mod$estimate
+      pie <- matrix(wpar[i3+1:(mixtures-1)],nrow=1,ncol=mixtures-1)
+      tmpSig <- Sigma[i3+1:(mixtures-1),i3+1:(mixtures-1)]
+      quantSup <- qnorm(1-(1-alpha)/2)
+      lower<-upper<-se<-matrix(NA,nrow=1,ncol=mixtures)
+      est<-matrix(m$mle$pi,nrow=1,ncol=mixtures)
+      for(mix in 1:mixtures){
+        if(!is.null(Sigma)){
+          dN<-numDeriv::grad(get_delta,pie,covsDelta=matrix(1,1,1),i=mix,workBounds=m$conditions$workBounds$pi)
+          se[1,mix]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
+          lower[1,mix]<-1/(1+exp(-(log(est[1,mix]/(1-est[1,mix]))-quantSup*(1/(est[1,mix]-est[1,mix]^2))*se[1,mix])))#est[1,mix]-quantSup*se[i]
+          upper[1,mix]<-1/(1+exp(-(log(est[1,mix]/(1-est[1,mix]))+quantSup*(1/(est[1,mix]-est[1,mix]^2))*se[1,mix])))#est[j,i]+quantSup*se[i]
         }
       }
+      Par$pi <- list(est=est,se=se,lower=lower,upper=upper)  
+      colnames(Par$pi$est) <- colnames(Par$pi$se) <- colnames(Par$pi$lower) <- colnames(Par$pi$upper) <- paste0("mix",1:mixtures)
     }
-    est<-matrix(m$mle$delta,nrow=nrow(m$covsDelta),ncol=nbStates)
-    #lower<-matrix(lower,nrow=nrow(m$covsDelta),ncol=nbStates)
-    #upper<-matrix(upper,nrow=nrow(m$covsDelta),ncol=nbStates)  
-    #se<-matrix(se,nrow=nrow(m$covsDelta),ncol=nbStates)
+    
+    # delta
+    if(!m$conditions$stationary){
+      wpar<-m$mod$estimate
+      nbCovsDelta <- ncol(m$covsDelta)-1
+      foo <- length(wpar)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-(nbCovsDelta+1)*(nbStates-1)*mixtures
+      delta <- matrix(wpar[foo+1:((nbCovsDelta+1)*(nbStates-1)*mixtures)],nrow=(nbCovsDelta+1)*mixtures,ncol=nbStates-1)
+      tmpSig <- Sigma[foo+1:((nbCovsDelta+1)*(nbStates-1)*mixtures),foo+1:((nbCovsDelta+1)*(nbStates-1)*mixtures)]
+      quantSup <- qnorm(1-(1-alpha)/2)
+      lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsDelta)*mixtures,ncol=nbStates)
+      est<-matrix(m$mle$delta,nrow=nrow(m$covsDelta)*mixtures,ncol=nbStates)
+      for(mix in 1:mixtures){
+        if(!is.null(Sigma)){
+          for(j in 1:nrow(m$covsDelta)){
+            for(i in 1:nbStates){
+              dN<-numDeriv::grad(get_delta,delta,covsDelta=m$covsDelta[j,,drop=FALSE],i=i,workBounds=m$conditions$workBounds$delta,mixture=mix)
+              se[(mix-1)*nrow(m$covsDelta)+j,i]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
+              lower[(mix-1)*nrow(m$covsDelta)+j,i]<-1/(1+exp(-(log(est[(mix-1)*nrow(m$covsDelta)+j,i]/(1-est[(mix-1)*nrow(m$covsDelta)+j,i]))-quantSup*(1/(est[(mix-1)*nrow(m$covsDelta)+j,i]-est[(mix-1)*nrow(m$covsDelta)+j,i]^2))*se[(mix-1)*nrow(m$covsDelta)+j,i])))#est[(mix-1)*nrow(m$covsDelta)+j,i]-quantSup*se[i]
+              upper[(mix-1)*nrow(m$covsDelta)+j,i]<-1/(1+exp(-(log(est[(mix-1)*nrow(m$covsDelta)+j,i]/(1-est[(mix-1)*nrow(m$covsDelta)+j,i]))+quantSup*(1/(est[(mix-1)*nrow(m$covsDelta)+j,i]-est[(mix-1)*nrow(m$covsDelta)+j,i]^2))*se[(mix-1)*nrow(m$covsDelta)+j,i])))#est[j,i]+quantSup*se[i]
+            }
+          }
+        }
+      }
+    } else {
+      covs<-tempCovMat
+      statFun<-function(beta,nbStates,covs,i,mixture=1){
+        gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,m$conditions$betaRef)[,,1]
+        tryCatch(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i],error = function(e) {
+          "A problem occurred in the calculation of the stationary distribution."})
+      }
+      est <- lower <- upper <- se <- matrix(NA,nbAnimals*mixtures,nbStates)
+      wpar <- m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))]
+      tmpSig <- Sigma[(i2:i3)[unique(c(m$conditions$betaCons))],(i2:i3)[unique(c(m$conditions$betaCons))]]
+      
+      for(mix in 1:mixtures){
+        delta <- statFun(matrix(wpar,nrow=(nbCovs+1)*mixtures),nbStates,covs,1:nbStates,mixture=mix)
+        est[nbAnimals*(mix-1)+1:nbAnimals,] <- matrix(delta,nrow=nbAnimals,ncol=nbStates,byrow=TRUE)
+        for(k in 1:nbStates){
+          dN<-numDeriv::grad(statFun,matrix(wpar,nrow=(nbCovs+1)*mixtures),nbStates=nbStates,covs=covs,i=k,mixture=mix)
+          se[nbAnimals*(mix-1)+1:nbAnimals,k]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
+          lower[nbAnimals*(mix-1)+1:nbAnimals,k] <- probCI(est[nbAnimals*(mix-1)+1:nbAnimals,k],se[nbAnimals*(mix-1)+1:nbAnimals,k],quantSup,bound="lower")
+          upper[nbAnimals*(mix-1)+1:nbAnimals,k] <- probCI(est[nbAnimals*(mix-1)+1:nbAnimals,k],se[nbAnimals*(mix-1)+1:nbAnimals,k],quantSup,bound="upper")
+        }
+      }      
+    }
     Par$delta <- list(est=est,se=se,lower=lower,upper=upper)  
+    
   } else {
     Par$delta <- list(est=matrix(1,nrow(m$covsDelta)),se=matrix(NA,nrow(m$covsDelta)),lower=matrix(NA,nrow(m$covsDelta)),upper=matrix(NA,nrow(m$covsDelta)))
   }
-  colnames(Par$delta$est) <- m$stateNames
-  colnames(Par$delta$se) <- m$stateNames
-  colnames(Par$delta$lower) <- m$stateNames
-  colnames(Par$delta$upper) <- m$stateNames
-  rownames(Par$delta$est) <- paste0("ID:",unique(m$data$ID))
-  rownames(Par$delta$se) <- paste0("ID:",unique(m$data$ID))
-  rownames(Par$delta$lower) <- paste0("ID:",unique(m$data$ID))
-  rownames(Par$delta$upper) <- paste0("ID:",unique(m$data$ID))
-  
+  colnames(Par$delta$est) <- colnames(Par$delta$se) <- colnames(Par$delta$lower) <- colnames(Par$delta$upper) <- m$stateNames
+  rownames(Par$delta$est) <- rownames(Par$delta$se) <- rownames(Par$delta$lower) <- rownames(Par$delta$upper) <- paste0("ID:",rep(unique(m$data$ID),mixtures))
+  if(mixtures>1) rownames(Par$delta$est) <- rownames(Par$delta$se) <- rownames(Par$delta$lower) <- rownames(Par$delta$upper) <- paste0("ID:",rep(unique(m$data$ID),mixtures),"_mix",rep(1:mixtures,each=nbAnimals))
   return(Par)
 }
 
-get_gamma <- function(beta,covs,nbStates,i,j,betaRef,betaCons,workBounds=NULL){
+get_gamma <- function(beta,covs,nbStates,i,j,betaRef,betaCons,workBounds=NULL,mixture=1){
   tmpBeta <- rep(NA,length(betaCons))
   tmpBeta[unique(c(betaCons))] <- beta
   beta <- w2wn(matrix(tmpBeta[betaCons],nrow(betaCons),ncol(betaCons)),workBounds)
-  gamma <- trMatrix_rcpp(nbStates,beta,covs,betaRef)[,,1]
+  gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,betaRef)[,,1]
   gamma[i,j]
 }
 
@@ -289,7 +334,7 @@ get_recharge <- function(g0theta,g0covs,recovs,workBounds=NULL,k=0){
   return(recharge)
 }
 
-get_gamma_recharge <- function(beta,covs,formula,recharge,nbStates,i,j,betaRef,betaCons,workBounds=NULL){
+get_gamma_recharge <- function(beta,covs,formula,recharge,nbStates,i,j,betaRef,betaCons,workBounds=NULL,mixture=1){
   
   recovs <- model.matrix(recharge$theta,covs)
   
@@ -301,14 +346,15 @@ get_gamma_recharge <- function(beta,covs,formula,recharge,nbStates,i,j,betaRef,b
   #covs <- matrix(covs,1)
 
   newcovs <- model.matrix(formula,covs)
-  beta <- matrix(beta[1:(nbStates*(nbStates-1)*ncol(newcovs))],ncol(newcovs))
-  gamma <- trMatrix_rcpp(nbStates,beta,newcovs,betaRef)[,,1]
+  beta <- matrix(beta[1:(length(beta)-(ncol(recovs)))],ncol=nbStates*(nbStates-1))
+  gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(newcovs)+1:ncol(newcovs),,drop=FALSE],newcovs,betaRef)[,,1]
   gamma[i,j]
 }
 
-get_delta <- function(delta,covsDelta,i,workBounds=matrix(c(-Inf,Inf),length(delta),2,byrow=TRUE)){
+get_delta <- function(delta,covsDelta,i,workBounds=matrix(c(-Inf,Inf),length(delta),2,byrow=TRUE),mixture=1){
   delta <- w2wn(delta,workBounds)
   nbCovsDelta <- ncol(covsDelta)-1
+  delta <- delta[(mixture-1)*(nbCovsDelta+1)+1:(nbCovsDelta+1),]
   delta <- c(rep(0,nbCovsDelta+1),delta)
   deltaXB <- covsDelta%*%matrix(delta,nrow=nbCovsDelta+1)
   expdelta <- exp(deltaXB)

@@ -6,7 +6,7 @@
 \usage{
 fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
-  formulaDelta = NULL, stationary = FALSE, verbose = NULL,
+  formulaDelta = NULL, stationary = FALSE, mixtures = 1, verbose = NULL,
   nlmPar = list(), fit = TRUE, DM = NULL, cons = NULL,
   userBounds = NULL, workBounds = NULL, workcons = NULL,
   betaCons = NULL, betaRef = NULL, mvnCoords = NULL, stateNames = NULL,
@@ -77,6 +77,8 @@ Any formula terms that are not state- or parameter-specific are included on all 
 
 \item{stationary}{\code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
+
+\item{mixtures}{Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.}
 
 \item{verbose}{Deprecated: please use \code{print.level} in \code{nlmPar} argument. Determines the print level of the \code{nlm} optimizer. The default value of 0 means that no
 printing occurs, a value of 1 means that the first and last iterations of the optimization are

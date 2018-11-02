@@ -82,38 +82,53 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
     wpar <- wpar[-(foo:length(wpar))]
   }
   else g0 <- NULL
+  
+  mixtures <- nrow(workBounds$beta)/((nbCovs+1)*nbStates*(nbStates-1))
 
   # identify initial distribution parameters
   if(!stationary & nbStates>1){
     nbCovsDelta <- ncol(covsDelta)-1 # substract intercept column
+    nbAnimals <- nrow(covsDelta)
     
-    foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)+1
+    foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)*mixtures+1
     
-    tmpwpar <- w2wn(wpar[foo:length(wpar)],workBounds$delta)
+    tmpwpar <- matrix(w2wn(wpar[foo:length(wpar)],workBounds$delta),(nbCovsDelta+1)*mixtures,nbStates-1)
     
-    delta <- c(rep(0,nbCovsDelta+1),tmpwpar)
-    deltaXB <- covsDelta%*%matrix(delta,nrow=nbCovsDelta+1)
-    expdelta <- exp(deltaXB)
-    delta <- expdelta/rowSums(expdelta)
-    for(i in which(!is.finite(rowSums(delta)))){
-      tmp <- exp(Brobdingnag::as.brob(deltaXB[i,]))
-      delta[i,] <- as.numeric(tmp/Brobdingnag::sum(tmp))
+    delta <- matrix(0,nbAnimals*mixtures,nbStates)
+    for(mix in 1:mixtures){
+      tmpdelta <- c(rep(0,nbCovsDelta+1),tmpwpar[(mix-1)*(nbCovsDelta+1)+1:(nbCovsDelta+1),])
+      deltaXB <- covsDelta%*%matrix(tmpdelta,nrow=nbCovsDelta+1)
+      expdelta <- exp(deltaXB)
+      tmpdelta <- expdelta/rowSums(expdelta)
+      for(i in which(!is.finite(rowSums(tmpdelta)))){
+        tmp <- exp(Brobdingnag::as.brob(deltaXB[i,]))
+        tmpdelta[i,] <- as.numeric(tmp/Brobdingnag::sum(tmp))
+      }
+      delta[(mix-1)*nbAnimals+1:nbAnimals,] <- tmpdelta
     }
+    #rownames(delta)<-rep(rownames(tmpdelta),nbAnimals)
     wpar <- wpar[-(foo:length(wpar))]
   }
   else delta <- NULL
 
   # identify regression coefficients for the transition probabilities
+  pie <- 1
   if(nbStates>1) {
-    foo <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)+1
     
+    if(mixtures>1){
+      foo <- length(wpar)-(mixtures-1)+1
+      tmpwpar <- w2wn(wpar[foo:length(wpar)],workBounds$pi)
+      exppi <- exp(c(0,tmpwpar))
+      pie <- exppi/sum(exppi)
+      wpar <- wpar[-(foo:length(wpar))]
+    }
+    
+    foo <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures+1
     tmpwpar <- w2wn(wpar[foo:length(wpar)],workBounds$beta)
-    
     beta <- tmpwpar
-    beta <- matrix(beta,nrow=nbCovs+1)
+    beta <- matrix(beta,nrow=(nbCovs+1)*mixtures)
     wpar <- wpar[-(foo:length(wpar))]
-  }
-  else beta <- NULL
+  } else beta <- NULL
   
   distnames <- names(dist)
   parCount<- lapply(fullDM,ncol)
@@ -152,6 +167,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   }
 
   parlist[["beta"]]<-beta
+  parlist[["pi"]]<-pie
   parlist[["delta"]]<-delta
   parlist[["g0"]]<-g0
   parlist[["theta"]]<-theta

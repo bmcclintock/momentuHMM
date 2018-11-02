@@ -19,6 +19,7 @@
 #' @param formulaDelta Regression formula for the initial distribution. 
 #' @param stationary \code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
+#' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 #' stream.
 #' @param cons Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
@@ -77,7 +78,7 @@
 #' }
 #' @export
 
-checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=NULL,stationary=FALSE,DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,stateNames=NULL,fixPar=NULL)
+checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,stateNames=NULL,fixPar=NULL)
 {
   
   ## check that the data is a momentuHMMData object or valid data frame
@@ -218,7 +219,7 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
   m<-suppressMessages(fitHMM(data=data,nbStates=nbStates,dist=dist,
                              Par0=par,beta0=beta0,delta0=delta0,
                              estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
-                             formula=formula,formulaDelta=formulaDelta,stationary=stationary,
+                             formula=formula,formulaDelta=formulaDelta,stationary=stationary,mixtures=mixtures,
                              DM=DM,cons=cons,userBounds=userBounds,workBounds=workBounds,workcons=workcons,betaCons=betaCons,betaRef=betaRef,fit=FALSE,
                              stateNames=stateNames,fixPar=fixPar))
   
@@ -226,7 +227,7 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
   p <- inputs$p
   DMinputs<-getDM(m$data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,par,inputs$cons,inputs$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,inputs$circularAngleMean)
   
-  if(is.null(m$conditions$recharge)){
+  if(is.null(m$conditions$recharge) & mixtures==1){
     if(is.null(beta0) & nbStates>1) {
       beta <- list(beta=m$mle$beta)
       if(!is.null(fixPar$beta)) stop("fixPar$beta cannot be specified unless beta0 is specified")
@@ -240,17 +241,27 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
     } else {
       beta <- list(beta=beta0$beta)
     }
-    if(is.null(beta0$g0) & nbStates>1) {
-      beta$g0 <- m$mle$g0
-      if(!is.null(fixPar$g0)) stop("fixPar$g0 cannot be specified unless beta0$g0 is specified")
-    } else {
-      beta$g0 <- beta0$g0
+    if(mixtures>1){
+      if(is.null(beta0$pi) & nbStates>1){
+        beta$pi <- m$mle$pi
+        if(!is.null(fixPar$pi)) stop("fixPar$pi cannot be specified unless beta0$pi is specified")
+      } else {
+        beta$pi <- beta0$pi
+      }
     }
-    if(is.null(beta0$theta) & nbStates>1) {
-      beta$theta <- m$mle$theta
-      if(!is.null(fixPar$theta)) stop("fixPar$theta cannot be specified unless beta0$theta is specified")
-    } else {
-      beta$theta <- beta0$theta
+    if(!is.null(m$conditions$recharge)){
+      if(is.null(beta0$g0) & nbStates>1) {
+        beta$g0 <- m$mle$g0
+        if(!is.null(fixPar$g0)) stop("fixPar$g0 cannot be specified unless beta0$g0 is specified")
+      } else {
+        beta$g0 <- beta0$g0
+      }
+      if(is.null(beta0$theta) & nbStates>1) {
+        beta$theta <- m$mle$theta
+        if(!is.null(fixPar$theta)) stop("fixPar$theta cannot be specified unless beta0$theta is specified")
+      } else {
+        beta$theta <- beta0$theta
+      }
     }
   }
   
@@ -261,14 +272,14 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
   else if(!nbCovsDelta){
     if(is.null(delta0)){
       if(!is.null(fixPar$delta)) stop("fixPar$delta cannot be specified unless delta0 is specified")
-      delta <- matrix(1/nbStates,nbCovsDelta+1,nbStates)
+      delta <- matrix(1/nbStates,(nbCovsDelta+1)*mixtures,nbStates)
     } else {
-      delta <- matrix(delta,nbCovsDelta+1,nbStates)
+      delta <- matrix(delta,(nbCovsDelta+1)*mixtures,nbStates)
     }
-    delta <- log(delta[-1]/delta[1])
+    delta <- apply(delta,1,function(x) log(x[-1]/x[1]))
   } else if(is.null(delta0)){
     if(!is.null(fixPar$delta)) stop("fixPar$delta cannot be specified unless delta0 is specified")
-    delta <- matrix(0,nrow=nbCovsDelta+1,ncol=nbStates-1)
+    delta <- matrix(0,nrow=(nbCovsDelta+1)*mixtures,ncol=nbStates-1)
   }
   
   wpar <- n2w(par,p$bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
@@ -320,11 +331,21 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
         tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
       print(tmpPar) 
     }
-     
+    
+    if(mixtures>1){
+      cat("\n")
+      cat("Mixture probabilities (pi):\n")
+      cat("---------------------------\n")
+      tmpPar <- m$mle$pi
+      if(is.null(beta0$pi))
+        tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
+      print(tmpPar) 
+    }
+    
     #if(!is.null(m$mle$beta)) {
     cat("\n")
-    cat("Regression coeffs for the transition probabilities:\n")
-    cat("---------------------------------------------------\n")
+    cat("Regression coeffs for the transition probabilities (beta):\n")
+    cat("----------------------------------------------------------\n")
     tmpPar <- m$mle$beta
     if(is.null(beta0))
       tmpPar <- matrix(1:length(tmpPar),nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
@@ -343,10 +364,11 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
         formDelta <- ~1
       } else formDelta <- m$conditions$formulaDelta
       if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
-        tmpPar <- m$mle$delta[1,]
-        rownames(tmpPar)<-NULL
+        tmpPar <- m$mle$delta[1:mixtures,]
+        if(mixtures==1) rownames(tmpPar)<-NULL
+        else rownames(tmpPar) <- paste0("mix",1:mixtures)
         if(is.null(delta0))
-          tmpPar[1:nbStates] <- 1:length(tmpPar)
+          tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
         cat("Initial distribution:\n")
         cat("---------------------\n")
         print(tmpPar)

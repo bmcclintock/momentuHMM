@@ -6,8 +6,8 @@
 \usage{
 checkPar0(data, nbStates, dist, Par0 = NULL, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
-  formulaDelta = NULL, stationary = FALSE, DM = NULL, cons = NULL,
-  userBounds = NULL, workBounds = NULL, workcons = NULL,
+  formulaDelta = NULL, stationary = FALSE, mixtures = 1, DM = NULL,
+  cons = NULL, userBounds = NULL, workBounds = NULL, workcons = NULL,
   betaCons = NULL, betaRef = NULL, stateNames = NULL, fixPar = NULL)
 }
 \arguments{
@@ -36,6 +36,8 @@ regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turn
 
 \item{stationary}{\code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
+
+\item{mixtures}{Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream.}

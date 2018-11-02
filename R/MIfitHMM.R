@@ -41,6 +41,7 @@
 #' @param formulaDelta Regression formula for the initial distribution. See \code{\link{fitHMM}}.
 #' @param stationary \code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. See \code{\link{fitHMM}}.
+#' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.
 #' @param verbose Deprecated: please use \code{print.level} in \code{nlmPar} argument. Determines the print level of the \code{nlm} optimizer. The default value of 0 means that no
 #' printing occurs, a value of 1 means that the first and last iterations of the optimization are
 #' detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.
@@ -186,7 +187,7 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
                    nbStates, dist, 
                    Par0, beta0 = NULL, delta0 = NULL,
                    estAngleMean = NULL, circularAngleMean = NULL,
-                   formula = ~1, formulaDelta = NULL, stationary = FALSE, 
+                   formula = ~1, formulaDelta = NULL, stationary = FALSE, mixtures = 1,
                    verbose = NULL, nlmPar = NULL, fit = TRUE, useInitial = FALSE,
                    DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL, workcons = NULL, betaCons = NULL, betaRef = NULL,
                    mvnCoords = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
@@ -316,7 +317,7 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
   newForm <- newFormulas(formula,nbStates)
   recharge <- newForm$recharge
   
-  if(is.null(recharge)){
+  if(is.null(recharge) & mixtures==1){
     if(!is.list(beta0)){
       tmpbeta0<-beta0
       beta0<-vector('list',nSims)
@@ -324,7 +325,10 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
           beta0[1:nSims]<-list(tmpbeta0)
     } else if(length(beta0)<nSims) stop("beta0 must be a list of length >=",nSims)
   } else {
-    if(!is.list(beta0)) stop("beta0 must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
+    if(!is.null(beta0) && !is.list(beta0)){
+      if(!is.null(recharge)) stop("beta0 must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
+      if(mixtures>1) stop("beta0 must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
+    }
     if(!is.list(beta0[[1]])){
       tmpbeta0<-beta0
       beta0<-vector('list',nSims)
@@ -341,7 +345,7 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
   
   #check HMM inputs and print model message
   test<-fitHMM(miData[[ind[1]]],nbStates, dist, Par0[[ind[1]]], beta0[[ind[1]]], delta0[[ind[1]]],
-           estAngleMean, circularAngleMean, formula, formulaDelta, stationary, verbose,
+           estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, verbose,
            nlmPar, fit = FALSE, DM, cons,
            userBounds, workBounds, workcons, betaCons, betaRef, mvnCoords, stateNames, knownStates[[ind[1]]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName)
   
@@ -354,7 +358,7 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
       cat("\rImputation ",1,"... ",sep="")
     }
     fits[[1]]<-suppressMessages(fitHMM(miData[[1]],nbStates, dist, Par0[[1]], beta0[[1]], delta0[[1]],
-                                    estAngleMean, circularAngleMean, formula, formulaDelta, stationary, verbose,
+                                    estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, verbose,
                                     nlmPar, fit, DM, cons,
                                     userBounds, workBounds, workcons, betaCons, betaRef, mvnCoords, stateNames, knownStates[[1]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
     if(retryFits>=1){
@@ -374,7 +378,7 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
       
       if(nSims>1) cat("     \rImputation ",j,"... ",sep="")
       tmpFit<-suppressMessages(fitHMM(miData[[j]],nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
-                                      estAngleMean, circularAngleMean, formula, formulaDelta, stationary, verbose,
+                                      estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, verbose,
                                       nlmPar, fit, DM, cons,
                                       userBounds, workBounds, workcons, betaCons, betaRef, mvnCoords, stateNames, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
       if(retryFits>=1) cat("\n")

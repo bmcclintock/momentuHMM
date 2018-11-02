@@ -27,6 +27,7 @@
 #' and state- or parameter-specific formulas (see details).
 #' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.
 #' @param formulaDelta Regression formula for the initial distribution. Default: \code{NULL} (no covariate effects and \code{delta} is specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then \code{delta} must be specified on the working scale.
+#' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects \it{sensu} DeRuiter et al. 2017). Default: \code{mixtures=1}.
 #' @param covs Covariate values to include in the simulated data, as a dataframe. The names of any covariates specified by \code{covs} can
 #' be included in \code{formula} and/or \code{DM}. Covariates can also be simulated according to a standard normal distribution, by setting
 #' \code{covs} to \code{NULL} (the default), and specifying \code{nbCovs>0}.
@@ -354,7 +355,7 @@
 
 simData <- function(nbAnimals=1,nbStates=2,dist,
                     Par,beta=NULL,delta=NULL,
-                    formula=~1,formulaDelta=NULL,
+                    formula=~1,formulaDelta=NULL,mixtures=1,
                     covs=NULL,nbCovs=0,
                     spatialCovs=NULL,
                     zeroInflation=NULL,
@@ -404,7 +405,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         model$mle$theta <- c(model$Par$beta$theta$est)
         names(model$mle$theta) <- colnames(model$Par$beta$theta$est)
       } else nbRecovs <- 0
-      model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,nbStates,model$covsDelta,model$conditions$stationary,nrow(model$Par$beta$beta$est)-1,nbRecovs)
+      model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,nbStates,model$covsDelta,model$conditions$stationary,nrow(model$Par$beta$beta$est)-1,nbRecovs,mixtures)
       if(!is.null(model$mle$beta)) model$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(model$mle$beta),2,byrow=TRUE)
       if(!is.null(model$Par$beta$delta$est)) model$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(model$Par$beta$delta$est),2,byrow=TRUE)
       if(!is.null(model$mle$g0)) model$conditions$workBounds$g0<-matrix(c(-Inf,Inf),length(model$mle$g0),2,byrow=TRUE)

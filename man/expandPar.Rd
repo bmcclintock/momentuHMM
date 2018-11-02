@@ -5,7 +5,7 @@
 \title{Expand vector of free working parameters to vector of all working parameters including any fixed parameters (used in fitHMM.R and nLogLike.R)}
 \usage{
 expandPar(optPar, optInd, fixPar, wparIndex, betaCons, nbStates, covsDelta,
-  stationary, nbCovs, nbRecovs = 0)
+  stationary, nbCovs, nbRecovs = 0, mixtures = 1)
 }
 \arguments{
 \item{optPar}{vector of free working parameters}
@@ -28,6 +28,8 @@ equal to the stationary distribution. Default: \code{FALSE}.}
 \item{nbCovs}{Number of t.p.m. covariates}
 
 \item{nbRecovs}{Number of recharge covariates}
+
+\item{mixtures}{Number of mixtures for the state transition probabilities}
 }
 \value{
 A vector of all working parameters including any fixed parameters

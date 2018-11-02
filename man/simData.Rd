@@ -5,8 +5,8 @@
 \title{Simulation tool}
 \usage{
 simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
-  delta = NULL, formula = ~1, formulaDelta = NULL, covs = NULL,
-  nbCovs = 0, spatialCovs = NULL, zeroInflation = NULL,
+  delta = NULL, formula = ~1, formulaDelta = NULL, mixtures = 1,
+  covs = NULL, nbCovs = 0, spatialCovs = NULL, zeroInflation = NULL,
   oneInflation = NULL, circularAngleMean = NULL, centers = NULL,
   centroids = NULL, angleCovs = NULL, obsPerAnimal = c(500, 1500),
   initialPosition = c(0, 0), DM = NULL, cons = NULL, userBounds = NULL,
@@ -46,6 +46,8 @@ and state- or parameter-specific formulas (see details).
 Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.}
 
 \item{formulaDelta}{Regression formula for the initial distribution. Default: \code{NULL} (no covariate effects and \code{delta} is specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then \code{delta} must be specified on the working scale.}
+
+\item{mixtures}{Number of mixtures for the state transition probabilities  (i.e. discrete random effects \it{sensu} DeRuiter et al. 2017). Default: \code{mixtures=1}.}
 
 \item{covs}{Covariate values to include in the simulated data, as a dataframe. The names of any covariates specified by \code{covs} can
 be included in \code{formula} and/or \code{DM}. Covariates can also be simulated according to a standard normal distribution, by setting

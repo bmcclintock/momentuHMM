@@ -7,13 +7,13 @@
 MIfitHMM(miData, nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
   nbStates, dist, Par0, beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
   circularAngleMean = NULL, formula = ~1, formulaDelta = NULL,
-  stationary = FALSE, verbose = NULL, nlmPar = NULL, fit = TRUE,
-  useInitial = FALSE, DM = NULL, cons = NULL, userBounds = NULL,
-  workBounds = NULL, workcons = NULL, betaCons = NULL, betaRef = NULL,
-  mvnCoords = NULL, stateNames = NULL, knownStates = NULL,
-  fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm",
-  control = list(), prior = NULL, modelName = NULL, covNames = NULL,
-  spatialCovs = NULL, centers = NULL, centroids = NULL,
+  stationary = FALSE, mixtures = 1, verbose = NULL, nlmPar = NULL,
+  fit = TRUE, useInitial = FALSE, DM = NULL, cons = NULL,
+  userBounds = NULL, workBounds = NULL, workcons = NULL,
+  betaCons = NULL, betaRef = NULL, mvnCoords = NULL, stateNames = NULL,
+  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
+  optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
+  covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL,
   angleCovs = NULL, method = "IS", parIS = 1000, dfSim = Inf,
   grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE,
   force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
@@ -57,6 +57,8 @@ regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turn
 
 \item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. See \code{\link{fitHMM}}.}
+
+\item{mixtures}{Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.}
 
 \item{verbose}{Deprecated: please use \code{print.level} in \code{nlmPar} argument. Determines the print level of the \code{nlm} optimizer. The default value of 0 means that no
 printing occurs, a value of 1 means that the first and last iterations of the optimization are

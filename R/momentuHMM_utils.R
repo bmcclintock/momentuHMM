@@ -77,7 +77,7 @@ muffleRNGwarning <- function(w) {
 }
 
 #' @importFrom MASS ginv
-# this function maintains backwards compatibility with momentuHMM versions <1.4.0 (workBounds) and <1.4.3 (betaCons)
+# this function maintains backwards compatibility with momentuHMM versions <1.4.0 (workBounds), <1.4.3 (betaCons), and <1.5.0 (mixtures)
 delta_bc <- function(m){
   
   if(is.momentuHMM(m) | is.miSum(m)){
@@ -122,6 +122,7 @@ delta_bc <- function(m){
       }
       ################################################################################
     }
+    if(is.null(m$conditions$mixtures)) m$conditions$mixtures <- 1
   } else if(!is.miHMM(m) & any(unlist(lapply(m,is.momentuHMM)))){
     m <- HMMfits(m)
   }

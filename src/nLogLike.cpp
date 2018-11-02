@@ -22,13 +22,14 @@
 //' of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
 //' the state is not known.
 //' @param betaRef Indices of reference elements for t.p.m. multinomial logit link.
+//' @param mixtures Number of mixtures for the state transition probabilities
 //' 
 //' @return Negative log-likelihood
 // [[Rcpp::export]]
 double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist,
                      List Par,
                      IntegerVector aInd, List zeroInflation, List oneInflation,
-                     bool stationary, IntegerVector knownStates, IntegerVector betaRef)
+                     bool stationary, IntegerVector knownStates, IntegerVector betaRef, int mixtures)
 {
   int nbObs = data.nrows();
 
@@ -36,14 +37,18 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   // 1. Computation of transition probability matrix trMat //
   //=======================================================//
 
-  arma::cube trMat(nbStates,nbStates,nbObs);
-  trMat.zeros();
+  std::vector<arma::cube> trMat(mixtures);
+  for(int mix=0; mix<mixtures; mix++){
+    trMat[mix] = arma::cube(nbStates,nbStates,nbObs);
+    trMat[mix].zeros();
+  }
+
   arma::mat rowSums(nbStates,nbObs);
   rowSums.zeros();
 
   arma::mat g(nbObs,nbStates*(nbStates-1));
   
-  arma::mat beta = Par["beta"];
+  arma::mat betaMix = Par["beta"];
   //arma::mat delta = Par["delta"];
   NumericVector genData;
   List L;
@@ -52,84 +57,82 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   std::string genname;
   
   if(nbStates>1) {
-    g = covs*beta;
-
-    for(int k=0;k<nbObs;k++) {
-      int cpt=0; // counter for diagonal elements
-      for(int i=0;i<nbStates;i++) {
-        for(int j=0;j<nbStates;j++) {
-          if(j==(betaRef(i)-1)) {
-            // if reference element, set to one and increment counter
-            trMat(i,j,k)=1;
-            cpt++;
+    
+    int nbCovs = betaMix.n_rows * betaMix.n_cols / (mixtures * nbStates * (nbStates-1)) - 1;
+    arma::mat beta(nbCovs+1,nbStates*(nbStates-1));
+    
+    for(int mix=0; mix<mixtures; mix++){    
+      
+      beta = betaMix.rows(mix*(nbCovs+1)+0,mix*(nbCovs+1)+nbCovs);
+      g = covs*beta;
+  
+      for(int k=0;k<nbObs;k++) {
+        int cpt=0; // counter for diagonal elements
+        for(int i=0;i<nbStates;i++) {
+          for(int j=0;j<nbStates;j++) {
+            if(j==(betaRef(i)-1)) {
+              // if reference element, set to one and increment counter
+              trMat[mix](i,j,k)=1;
+              cpt++;
+            }
+            else
+              trMat[mix](i,j,k) = exp(g(k,i*nbStates+j-cpt));
+  
+            // keep track of row sums, to normalize in the end
+            rowSums(i,k)=rowSums(i,k)+trMat[mix](i,j,k);
           }
-          else
-            trMat(i,j,k) = exp(g(k,i*nbStates+j-cpt));
-
-          // keep track of row sums, to normalize in the end
-          rowSums(i,k)=rowSums(i,k)+trMat(i,j,k);
         }
       }
+  
+      // normalization
+      for(int k=0;k<nbObs;k++)
+        for(int i=0;i<nbStates;i++)
+          for(int j=0;j<nbStates;j++)
+            trMat[mix](i,j,k) = trMat[mix](i,j,k)/rowSums(i,k);
+      
+      rowSums.zeros();
     }
-
-    // normalization
-    for(int k=0;k<nbObs;k++)
-      for(int i=0;i<nbStates;i++)
-        for(int j=0;j<nbStates;j++)
-          trMat(i,j,k) = trMat(i,j,k)/rowSums(i,k);
   }
   
   //=======================================================//
   // 1. Computation of initial distribution(s)             //
   //=======================================================//
   unsigned int nbAnimals = aInd.size();
-  arma::mat delta(nbAnimals,nbStates);
+  std::vector<arma::mat> delta(mixtures);
+  for(int mix=0; mix<mixtures; mix++)
+    delta[mix] = arma::mat(nbAnimals,nbStates);
   
-  if(nbStates==1)
-    delta.ones(); // no distribution if only one state
-  else if(stationary) {
+  if(nbStates==1){
+    for(int mix=0; mix<mixtures; mix++)
+      delta[mix].ones(); // no distribution if only one state
+  } else if(stationary) {
     // compute stationary distribution delta
-    
+  
     arma::mat diag(nbStates,nbStates);
     diag.eye(); // diagonal of ones
-    arma::mat Gamma = trMat.slice(0).t(); // all slices are identical if stationary
+    arma::mat Gamma(nbStates,nbStates); // all slices are identical if stationary
     arma::colvec v(nbStates);
     v.ones(); // vector of ones
     arma::rowvec deltatmp(nbStates);
-    try {
-      deltatmp = arma::solve(diag-Gamma+1,v).t();
-    }
-    catch(...) {
-      throw std::runtime_error("A problem occurred in the calculation of "
-                                 "the stationary distribution. You may want to "
-                                 "try different initial values and/or the option "
-                                 "stationary=FALSE");
-    }
-    for(unsigned int k=0; k<nbAnimals; k++){
-      delta.row(k) = deltatmp;
+    for(int mix=0; mix<mixtures; mix++){
+      Gamma = trMat[mix].slice(0).t(); // all slices are identical if stationary
+      try {
+        deltatmp = arma::solve(diag-Gamma+1,v).t();
+      }
+      catch(...) {
+        throw std::runtime_error("A problem occurred in the calculation of "
+                                   "the stationary distribution. You may want to "
+                                   "try different initial values and/or the option "
+                                   "stationary=FALSE");
+      }
+      for(unsigned int k=0; k<nbAnimals; k++){
+        delta[mix].row(k) = deltatmp;
+      }
     }
   } else {
     arma::mat init = Par["delta"];
-    delta = init;
-    //arma::mat d(nbAnimals,nbStates);
-    //arma::rowvec drowSums(nbAnimals);
-    //drowSums.zeros();
-    
-    //d = covsDelta*init;
-    
-    //for(unsigned int k=0;k<nbAnimals;k++) {
-    //  for(int i=0;i<nbStates;i++) {
-    //    delta(k,i) = exp(d(k,i));
-          
-    //    // keep track of row sums, to normalize in the end
-    //    drowSums(k) = drowSums(k) + delta(k,i);
-    //  }
-    //}
-    
-    //// normalization
-    //for(unsigned int k=0;k<nbAnimals;k++) 
-    //  for(int i=0;i<nbStates;i++) 
-    //    delta(k,i) = delta(k,i)/drowSums(k);
+    for(int mix=0; mix<mixtures; mix++)
+      delta[mix] = init.rows(mix*nbAnimals,mix*nbAnimals+nbAnimals-1);
   }
 
   //==========================================================//
@@ -340,32 +343,39 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   //======================//
 
   arma::mat Gamma(nbStates,nbStates); // transition probability matrix
-  double lscale = 0; // scaled log-likelihood
+  arma::rowvec mixlscale(mixtures);
+  mixlscale.zeros();
   unsigned int k=0; // animal index
-  arma::rowvec alpha(nbStates);
+  arma::mat alpha(mixtures,nbStates);
   arma::rowvec delt(nbStates);
-  for(unsigned int i=0;i<allProbs.n_rows;i++) {
+  arma::rowvec pie = Par["pi"];
+  
+  for(int mix=0; mix<mixtures; mix++){
     
-    if(nbStates>1)
-      Gamma = trMat.slice(i);
-    else
-      Gamma = 1; // no transition if only one state
-    
-    if(k<aInd.size() && i==(unsigned)(aInd(k)-1)) {
-      // if 'i' is the 'k'-th element of 'aInd', switch to the next animal
-      delt = delta.row(k);
-      alpha = (delt * Gamma) % allProbs.row(i);
-      //Rprintf("i %d alpha %f %f ",i,alpha(0),alpha(1));
-      k++;
-    } else {
-      alpha = (alpha * Gamma) % allProbs.row(i);
-      //Rprintf("i %d alpha %f %f ",i,alpha(0),alpha(1));
+    for(unsigned int i=0;i<allProbs.n_rows;i++) {
+      
+      if(nbStates>1)
+        Gamma = trMat[mix].slice(i);
+      else
+        Gamma = 1; // no transition if only one state
+      
+      if(k<aInd.size() && i==(unsigned)(aInd(k)-1)) {
+        // if 'i' is the 'k'-th element of 'aInd', switch to the next animal
+        delt = delta[mix].row(k);
+        alpha.row(mix) = (delt * Gamma) % allProbs.row(i);
+        k++;
+      } else {
+        alpha.row(mix) = (alpha.row(mix) * Gamma) % allProbs.row(i);
+      }
+      
+      mixlscale(mix) += log(sum(alpha.row(mix)));
+      alpha.row(mix) = alpha.row(mix)/sum(alpha.row(mix));
     }
-    
-    lscale = lscale + log(sum(alpha));
-    alpha = alpha/sum(alpha);
-    //Rprintf("lscale %f alpha %f %f \n",i,alpha(0),alpha(1));
+    k = 0;
   }
+  mixlscale += log(pie) * aInd.size();
+  double A = mixlscale.max(); // cancels out below; helps prevent numerical issues
+  double lscale = A + log(sum(exp(mixlscale-A)));
 
   return -lscale;
 }
