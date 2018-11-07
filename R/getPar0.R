@@ -292,7 +292,11 @@ getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$con
     }
     if(setequal(colnames(model$mle$delta),stateNames) & nbStates>1) {
       if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(model$conditions$formulaDelta) & is.null(formulaDelta) & model$conditions$mixtures==mixtures){
-        Par$delta<-model$mle$delta[1:mixtures,][match(colnames(model$mle$delta),stateNames)]
+        Par$delta<-model$mle$delta[1,,drop=FALSE][,match(colnames(model$mle$delta),stateNames)]
+        if(mixtures>1){
+          Par$delta <- model$mle$delta[seq(1,nrow(model$mle$delta),nrow(model$mle$delta)/mixtures),,drop=FALSE][,match(colnames(model$mle$delta),stateNames)]
+          rownames(Par$delta) <- paste0("mix",1:mixtures)
+        } else Par$delta <- c(Par$delta)
       } else {
         deltaNames <- colnames(model.matrix(formDelta,model$data))
         nbDeltaCovs <- length(deltaNames)-1
@@ -312,7 +316,6 @@ getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$con
               tmpdelta[i,] <- as.numeric(tmp/Brobdingnag::sum(tmp))
             }
             delta[(mix-1)*(nbDeltaCovs+1)+1:(nbDeltaCovs+1),] <- tmpdelta
-            colnames(delta) <- stateNames
           }
           colnames(delta) <- stateNames
         } else {
@@ -322,11 +325,11 @@ getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$con
               if(is.miSum(model))
                 delta[deltaNames %in% rownames(model$CIbeta$delta$est),i] <- nw2w(model$CIbeta$delta$est,model$conditions$workBounds$delta)[rownames(model$CIbeta$delta$est) %in% deltaNames,match(stateNames[-1][i],model$stateNames[-1])]
               else
-                delta[deltaNames %in% rownames(model$CIbeta$delta$est),i] <- matrix(model$mod$estimate[parindex[["beta"]]+length(model$mle$beta)+1:length(model$CIbeta$delta$est)],nrow(model$CIbeta$delta$est),ncol(model$CIbeta$delta$est),dimnames=dimnames(model$CIbeta$delta$est))[rownames(model$CIbeta$delta$est) %in% deltaNames,match(stateNames[-1][i],model$stateNames[-1])]
+                delta[deltaNames %in% rownames(model$CIbeta$delta$est),i] <- matrix(model$mod$estimate[parindex[["beta"]]+length(model$mle$beta)+(model$conditions$mixtures-1)+1:length(model$CIbeta$delta$est)],nrow(model$CIbeta$delta$est),ncol(model$CIbeta$delta$est),dimnames=dimnames(model$CIbeta$delta$est))[rownames(model$CIbeta$delta$est) %in% deltaNames,match(stateNames[-1][i],model$stateNames[-1])]
             }
-          } 
+          }
         }
-        if(mixtures==1) rownames(delta) <- gsub("_mix1","",rownames(delta))
+        if(mixtures==1) delta <- c(delta)
         Par$delta <- delta
       }
     } else {
@@ -352,6 +355,13 @@ getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$con
           theta[thetaNames %in% parmNames]<-model$mod$estimate[parindex[["beta"]]+length(model$mle$beta)+length(model$CIbeta$delta$est)+length(model$mle$g0)+1:length(model$mle$theta)][parmNames %in% thetaNames]
       }
       Par$beta <- list(beta=Par$beta,g0=g0,theta=theta)
+    }
+    if(mixtures>1){
+      if(model$conditions$mixtures==mixtures){
+        pie <- model$mle$pi
+      } else pie <- rep(1/mixtures,mixtures)
+      if(!is.list(Par$beta)) Par$beta <- list(beta=Par$beta,pi=pie)
+      else Par$beta$pi <- pie
     }
   } else {
     Par$beta<-NULL

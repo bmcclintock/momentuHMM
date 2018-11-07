@@ -56,12 +56,15 @@ getPar<-function(m){
     }
     beta <- unname(nw2w(m$Par$beta$beta$est,m$conditions$workBounds$beta))
     if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
-      delta <- unname(m$Par$real$delta$est[1,])
+      delta <- unname(m$Par$real$delta$est[1:m$conditions$mixtures,])
     } else {
       delta <- unname(nw2w(m$Par$beta$delta$est,m$conditions$workBounds$delta))
     }
     if(!is.null(m$conditions$recharge)){
       beta <- list(beta=beta,g0=nw2w(m$Par$beta$g0$est,m$conditions$workBounds$g0),theta=nw2w(m$Par$beta$theta$est,m$conditions$workBounds$theta))
+    }
+    if(m$conditions$mixtures>1){
+      pie <- unname(m$Par$real$pi$est)
     }
   } else {
     for(i in distnames){
@@ -75,13 +78,20 @@ getPar<-function(m){
     }
     beta <- unname(matrix(m$mod$estimate[parindex[["beta"]]+1:length(m$mle$beta)],nrow(m$mle$beta),ncol(m$mle$beta)))#unname(nw2w(m$mle$beta,m$conditions$workBounds$beta))
     if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
-      delta <- unname(m$mle$delta[1,])
+      delta <- unname(m$mle$delta[seq(1,nrow(m$mle$delta),nrow(m$mle$delta)/m$conditions$mixtures),])
     } else {
       delta <- unname(matrix(m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+length(m$mle$g0)+length(m$mle$theta)+1:length(m$CIbeta$delta$est)],nrow(m$CIbeta$delta$est),ncol(m$CIbeta$delta$est)))#unname(nw2w(m$CIbeta$delta$est,m$conditions$workBounds$delta))
     }
     if(!is.null(m$conditions$recharge)){
       beta <- list(beta=beta,g0=m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+length(m$CIbeta$delta$est)+1:length(m$mle$g0)],theta=m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+length(m$CIbeta$delta$est)+length(m$mle$g0)+1:length(m$mle$theta)])
     }
+    if(m$conditions$mixtures>1){
+      pie <- unname(m$mle$pi)
+    }
+  }
+  if(m$conditions$mixtures>1){
+    if(!is.list(beta)) beta <- list(beta=beta,pi=pie)
+    else beta$pi <- pie
   }
   list(Par=Par,beta=beta,delta=delta)
 }
