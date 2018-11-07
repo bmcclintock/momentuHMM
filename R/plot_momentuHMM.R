@@ -301,9 +301,21 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     beta$g0 <- m$mle$g0
     beta$theta <- m$mle$theta
   }
-  nbCovsDelta <- ncol(m$covsDelta)-1
-  foo <- length(m$mod$estimate)-ifelse(nbRecovs,(nbRecovs+1)+1,0)-(nbCovsDelta+1)*(nbStates-1)+1
-  delta <- m$mod$estimate[foo:(length(m$mod$estimate)-ifelse(nbRecovs,(nbRecovs+1)+1,0))]
+  
+  mixtures <- m$conditions$mixtures
+  
+  if(!m$conditions$stationary){
+    nbCovsDelta <- ncol(m$covsDelta)-1
+    foo <- length(m$mod$estimate)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-(nbCovsDelta+1)*(nbStates-1)*mixtures+1
+    delta <- m$mod$estimate[foo:(length(m$mod$estimate)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0))]
+  } else {
+    delta <- NULL
+  }
+  
+  if(mixtures>1){
+    if(!m$conditions$stationary) beta$pi <- m$mod$estimate[length(m$mod$estimate)-(mixtures-1)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-(nbCovsDelta+1)*(nbStates-1)*mixtures+1:(mixtures-1)]
+    else beta$pi <- m$mod$estimate[length(m$mod$estimate)-(mixtures-1)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)+1:(mixtures-1)]
+  } else beta$pi <- NULL
   
   tmpPar <- Par
   tmpConditions <- m$conditions
@@ -360,7 +372,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     }
   }
   
-  par <- w2n(wpar,tmpp$bounds,tmpp$parSize,nbStates,nbCovs,tmpInputs$estAngleMean,tmpInputs$circularAngleMean,tmpInputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,tmpInputs$dist,tmpp$Bndind,nc,meanind,m$covsDelta,tmpConditions$workBounds)
+  par <- w2n(wpar,tmpp$bounds,tmpp$parSize,nbStates,nbCovs,tmpInputs$estAngleMean,tmpInputs$circularAngleMean,tmpInputs$consensus,stationary=m$conditions$stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,tmpInputs$dist,tmpp$Bndind,nc,meanind,m$covsDelta,tmpConditions$workBounds)
   
   inputs <- checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
   p <- inputs$p
@@ -652,11 +664,11 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             }
           }
           gradfun<-function(wpar,k) {
-            w2n(wpar,p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,inputs$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta,m$conditions$workBounds[i])[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,k]
+            w2n(wpar,p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,inputs$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta,m$conditions$workBounds[c(i,"beta")])[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,k]
           }
-          est<-w2n(c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta$beta),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,inputs$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta,m$conditions$workBounds[i])[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,]
+          est<-w2n(c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta$beta,beta$pi),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary=TRUE,DMinputs$cons[i],fullDM,DMind,DMinputs$workcons[i],gridLength,inputs$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta,m$conditions$workBounds[c(i,"beta")])[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,]
           if(plotCI){
-            dN<-t(mapply(function(x) tryCatch(numDeriv::grad(gradfun,c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta$beta),k=x),error=function(e) NA),1:gridLength))
+            dN<-t(mapply(function(x) tryCatch(numDeriv::grad(gradfun,c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta$beta,beta$pi),k=x),error=function(e) NA),1:gridLength))
             se<-t(apply(dN[,1:parCount[[i]]],1,function(x) tryCatch(suppressWarnings(sqrt(x%*%Sigma[parindex[[i]]+1:parCount[[i]],parindex[[i]]+1:parCount[[i]]]%*%x)),error=function(e) NA)))
             uci<-est+qnorm(1-(1-alpha)/2)*se
             lci<-est-qnorm(1-(1-alpha)/2)*se
@@ -850,10 +862,10 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   if(nbStates>1) {
     par(mar=c(5,4,4,2)-c(0,0,1.5,1)) # bottom, left, top, right
     
-    gamInd<-(length(m$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(m$mod$estimate))-ifelse(nbRecovs,nbRecovs+1+nbG0covs+1,0)-ncol(m$covsDelta)*(nbStates-1)*(!m$conditions$stationary)
+    gamInd<-(length(m$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures+1):(length(m$mod$estimate))-(mixtures-1)-ifelse(nbRecovs,nbRecovs+1+nbG0covs+1,0)-ncol(m$covsDelta)*(nbStates-1)*(!m$conditions$stationary)*mixtures
     quantSup<-qnorm(1-(1-alpha)/2)
     
-    if(nrow(beta$beta)>1) {
+    if(nbCovs>0) {
       
       # values of each covariate
       #rawCovs <- m$rawCovs[which(m$data$ID %in% ID),,drop=FALSE]
@@ -917,43 +929,46 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         tmpSplineInputs<-getSplineFormula(newformula,m$data,tempCovs)
         desMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
         
-        if(is.null(recharge)){
-          trMat <- trMatrix_rcpp(nbStates,beta$beta,desMat,m$conditions$betaRef)
-        } else {
-          trMat <- array(unlist(lapply(split(tmpSplineInputs$covs,1:nrow(desMat)),function(x) tryCatch(get_gamma_recharge(m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta)),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(desMat)))
-        }
-      
-        for(i in 1:nbStates){
-          for(j in 1:nbStates){
-            do.call(plot,c(list(tempCovs[,cov],trMat[i,j,],type="l",ylim=c(0,1),xlab=names(rawCovs)[cov],ylab=paste(i,"->",j),lwd=lwd),arg))
-            if(plotCI){
-              tmpSig <- Sigma[gamInd[unique(c(m$conditions$betaCons))],gamInd[unique(c(m$conditions$betaCons))]]
-              if(!is.null(recharge)){
-                tmpSig <- Sigma[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0),c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)]
-                dN<-matrix(unlist(lapply(split(tmpSplineInputs$covs,1:nrow(desMat)),function(x) tryCatch(numDeriv::grad(get_gamma_recharge,m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta)),error=function(e) NA))),ncol=ncol(tmpSig),byrow=TRUE)
-              } else {
-                dN<-t(apply(desMat,1,function(x) tryCatch(numDeriv::grad(get_gamma,m$mod$estimate[gamInd[unique(c(m$conditions$betaCons))]],covs=matrix(x,1,dimnames=list(NULL,names(x))),nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta),error=function(e) NA)))
-              }
-              se<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%tmpSig%*%x)),error=function(e) NA)))
-              if(!all(is.na(se))) {
-                lci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))-quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]-quantSup*se[i,j]
-                uci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))+quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]+quantSup*se[i,j]
-                
-                ciInd <- which(!is.na(se))
-                
-                withCallingHandlers(do.call(arrows,c(list(as.numeric(tempCovs[ciInd,cov]), lci[ciInd], as.numeric(tempCovs[ciInd,cov]), 
-                                           uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5), lwd=lwd),arg)),warning=muffWarn)
+        for(mix in 1:mixtures){
+          
+          if(is.null(recharge)){
+            trMat <- trMatrix_rcpp(nbStates,beta$beta[(mix-1)*(nbCovs+1)+1:(nbCovs+1),,drop=FALSE],desMat,m$conditions$betaRef)
+          } else {
+            trMat <- array(unlist(lapply(split(tmpSplineInputs$covs,1:nrow(desMat)),function(x) tryCatch(get_gamma_recharge(m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture = mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(desMat)))
+          }
+        
+          for(i in 1:nbStates){
+            for(j in 1:nbStates){
+              do.call(plot,c(list(tempCovs[,cov],trMat[i,j,],type="l",ylim=c(0,1),xlab=names(rawCovs)[cov],ylab=paste(i,"->",j),lwd=lwd),arg))
+              if(plotCI){
+                tmpSig <- Sigma[gamInd[unique(c(m$conditions$betaCons))],gamInd[unique(c(m$conditions$betaCons))]]
+                if(!is.null(recharge)){
+                  tmpSig <- Sigma[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0),c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)]
+                  dN<-matrix(unlist(lapply(split(tmpSplineInputs$covs,1:nrow(desMat)),function(x) tryCatch(numDeriv::grad(get_gamma_recharge,m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),ncol=ncol(tmpSig),byrow=TRUE)
+                } else {
+                  dN<-t(apply(desMat,1,function(x) tryCatch(numDeriv::grad(get_gamma,m$mod$estimate[gamInd[unique(c(m$conditions$betaCons))]],covs=matrix(x,1,dimnames=list(NULL,names(x))),nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix),error=function(e) NA)))
+                }
+                se<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%tmpSig%*%x)),error=function(e) NA)))
+                if(!all(is.na(se))) {
+                  lci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))-quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]-quantSup*se[i,j]
+                  uci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))+quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]+quantSup*se[i,j]
+                  
+                  ciInd <- which(!is.na(se))
+                  
+                  withCallingHandlers(do.call(arrows,c(list(as.numeric(tempCovs[ciInd,cov]), lci[ciInd], as.numeric(tempCovs[ciInd,cov]), 
+                                             uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5), lwd=lwd),arg)),warning=muffWarn)
+                }
               }
             }
           }
+          txt <- paste(names(rawCovs)[-cov],"=",tmpcovs[-cov],collapse=", ")
+          if(nbRecovs & names(rawCovs)[cov]=="recharge"){
+            tmpNames <- c(names(rawCovs)[-cov],colnames(m$reCovs))
+            txt <- paste(tmpNames[!duplicated(tmpNames)],"=",c(tmpcovs[-cov],tmprecovs)[!duplicated(tmpNames)],collapse=", ")
+          }
+          if(ncol(rawCovs)>1 | nbRecovs) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," t"),"T"),"ransition probabilities",ifelse(nbRecovs," at next time step: ",": "),txt),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+          else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," t"),"T"),"ransition probabilities"),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
         }
-        txt <- paste(names(rawCovs)[-cov],"=",tmpcovs[-cov],collapse=", ")
-        if(nbRecovs & names(rawCovs)[cov]=="recharge"){
-          tmpNames <- c(names(rawCovs)[-cov],colnames(m$reCovs))
-          txt <- paste(tmpNames[!duplicated(tmpNames)],"=",c(tmpcovs[-cov],tmprecovs)[!duplicated(tmpNames)],collapse=", ")
-        }
-        if(ncol(rawCovs)>1 | nbRecovs) do.call(mtext,c(list(paste0("Transition probabilities",ifelse(nbRecovs," at next time step: ",": "),txt),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
-        else do.call(mtext,c(list("Transition probabilities",side=3,outer=TRUE,padj=2,cex=cex.main),marg))
         
         if(plotStationary) {
           par(mfrow=c(1,1))

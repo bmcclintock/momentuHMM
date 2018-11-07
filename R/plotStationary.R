@@ -31,8 +31,8 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
     nbStates <- length(model$stateNames)
     beta <- model$mle$beta
 
-    if(nrow(beta)==1)
-        stop("No covariate effect to plot (nrow(beta)==1).")
+    if(nrow(beta)/model$conditions$mixtures==1)
+        stop("No covariate effect to plot")
 
     # prepare colors for the states
     if(!is.null(col) & length(col)!=nbStates) {
@@ -135,8 +135,9 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
     }
     
     nbCovs <- ncol(model.matrix(newformula,data))-1 # substract intercept column
+    mixtures <- model$conditions$mixtures
     
-    gamInd<-(length(model$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(model$mod$estimate))-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-ncol(model$covsDelta)*(nbStates-1)*(!model$conditions$stationary)
+    gamInd<-(length(model$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures+1):(length(model$mod$estimate))-(mixtures-1)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-ncol(model$covsDelta)*(nbStates-1)*(!model$conditions$stationary)*mixtures
     #gamInd <- gamInd[model$conditions$betaCons]
     
     # loop over covariates
@@ -185,14 +186,15 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
 }
 
 # for differentiation in delta method
-get_stat <- function(beta,covs,nbStates,i,betaRef,betaCons,workBounds=matrix(c(-Inf,Inf),length(betaCons),2,byrow=TRUE)) {
-  beta <- w2wn(beta[betaCons],workBounds)
-  beta <- matrix(beta,ncol(covs))
-  gamma <- trMatrix_rcpp(nbStates,beta,covs,betaRef)[,,1]
+get_stat <- function(beta,covs,nbStates,i,betaRef,betaCons,workBounds=matrix(c(-Inf,Inf),length(betaCons),2,byrow=TRUE),mixture=1) {
+  tmpBeta <- rep(NA,length(betaCons))
+  tmpBeta[unique(c(betaCons))] <- beta
+  beta <- w2wn(matrix(tmpBeta[betaCons],nrow(betaCons),ncol(betaCons)),workBounds)
+  gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,betaRef)[,,1]
   solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i]
 }
 
-get_stat_recharge <- function(beta,covs,formula,recharge,nbStates,i,betaRef,betaCons,workBounds=matrix(c(-Inf,Inf),length(betaCons)+length(beta[(max(betaCons)+1):length(beta)]),2,byrow=TRUE)){
+get_stat_recharge <- function(beta,covs,formula,recharge,nbStates,i,betaRef,betaCons,workBounds=matrix(c(-Inf,Inf),length(betaCons)+length(beta[(max(betaCons)+1):length(beta)]),2,byrow=TRUE),mixture=1){
   
   recovs <- model.matrix(recharge$theta,covs)
   
@@ -204,8 +206,8 @@ get_stat_recharge <- function(beta,covs,formula,recharge,nbStates,i,betaRef,beta
   #covs <- matrix(covs,1)
   
   newcovs <- model.matrix(formula,covs)
-  beta <- matrix(beta[1:(nbStates*(nbStates-1)*ncol(newcovs))],ncol(newcovs))
-  gamma <- trMatrix_rcpp(nbStates,beta,newcovs,betaRef)[,,1]
+  beta <- matrix(beta[1:(length(beta)-(ncol(recovs)))],ncol=nbStates*(nbStates-1))
+  gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(newcovs)+1:ncol(newcovs),,drop=FALSE],newcovs,betaRef)[,,1]
   solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i]
 }
 
@@ -252,60 +254,65 @@ statPlot<-function(model,Sigma,nbStates,formula,covs,tempCovs,tmpcovs,cov,rechar
     } else {
       probs <- stationary(model, covs=covs)
     }
+    
+    mixtures <- model$conditions$mixtures
+    
+    for(mix in 1:mixtures){
 
-    if(!is.factor(tempCovs[,cov])){
-        do.call(plot,c(list(tempCovs[,cov],probs[,1],type="l",ylim=c(0,1),col=col[1],xlab=covnames[cov], ylab="Stationary state probabilities",lwd=lwd),arg))
-        for(state in 2:nbStates)
-            points(tempCovs[,cov], probs[,state], type="l", col=col[state])
-    } else {
-        do.call(plot,c(list(tempCovs[,cov],probs[,1],type="l",ylim=c(0,1),col=col[1],xlab=covnames[cov], ylab="Stationary state probabilities",lwd=lwd,border=col[1]),arg))
-        for(state in 2:nbStates)
-            plot(tempCovs[,cov], probs[,state], type="l", col=col[state], border=col[state], add=TRUE)
-    }
-    legend(ifelse(is.null(legend.pos),"topleft",legend.pos),model$stateNames,lwd=rep(lwd,nbStates),col=col,lty=1,bty="n",cex=cex.legend)
-
-    if(plotCI) {
-
-        # this function is used to muffle the warning "zero-length arrow is of indeterminate angle and so skipped" when plotCI=TRUE
-        muffWarn <- function(w) {
-           if(any(grepl("zero-length arrow is of indeterminate angle and so skipped",w)))
-           invokeRestart("muffleWarning")
-        }
-
-        lci <- matrix(NA,gridLength,nbStates)
-        uci <- matrix(NA,gridLength,nbStates)
-
-        for(state in 1:nbStates) {
-          
-          if(is.null(recharge)){
-            dN <- t(apply(desMat, 1, function(x)
-                numDeriv::grad(get_stat,model$mod$estimate[gamInd[unique(c(model$conditions$betaCons))]],covs=matrix(x,1),nbStates=nbStates,i=state,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=model$conditions$workBounds$beta)))
-            tmpSig <- Sigma[gamInd,gamInd]
-          } else {
-            recovs <- model.matrix(recharge$theta,tempCovs)
-            nbRecovs <- ncol(recovs)-1
-            tmpSig <- Sigma[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0),c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)]
-            dN<-matrix(unlist(lapply(split(covs,1:nrow(covs)),function(x) tryCatch(numDeriv::grad(get_stat_recharge,model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=formula,recharge=recharge,nbStates=nbStates,i=state,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta)),error=function(e) NA))),ncol=ncol(tmpSig),byrow=TRUE)
+      if(!is.factor(tempCovs[,cov])){
+          do.call(plot,c(list(tempCovs[,cov],probs[[mix]][,1],type="l",ylim=c(0,1),col=col[1],xlab=covnames[cov], ylab="Stationary state probabilities",lwd=lwd),arg))
+          for(state in 2:nbStates)
+              points(tempCovs[,cov], probs[[mix]][,state], type="l", col=col[state])
+      } else {
+          do.call(plot,c(list(tempCovs[,cov],probs[[mix]][,1],type="l",ylim=c(0,1),col=col[1],xlab=covnames[cov], ylab="Stationary state probabilities",lwd=lwd,border=col[1]),arg))
+          for(state in 2:nbStates)
+              plot(tempCovs[,cov], probs[[mix]][,state], type="l", col=col[state], border=col[state], add=TRUE)
+      }
+      legend(ifelse(is.null(legend.pos),"topleft",legend.pos),model$stateNames,lwd=rep(lwd,nbStates),col=col,lty=1,bty="n",cex=cex.legend)
+  
+      if(plotCI) {
+  
+          # this function is used to muffle the warning "zero-length arrow is of indeterminate angle and so skipped" when plotCI=TRUE
+          muffWarn <- function(w) {
+             if(any(grepl("zero-length arrow is of indeterminate angle and so skipped",w)))
+             invokeRestart("muffleWarning")
           }
+  
+          lci <- matrix(NA,gridLength,nbStates)
+          uci <- matrix(NA,gridLength,nbStates)
+  
+          for(state in 1:nbStates) {
             
-            se <- t(apply(dN, 1, function(x)
-                suppressWarnings(sqrt(x%*%tmpSig%*%x))))
-
-            lci[,state] <- 1/(1 + exp(-(log(probs[,state]/(1-probs[,state])) -
-                                            qnorm(1-(1-alpha)/2) * (1/(probs[,state]-probs[,state]^2)) * se)))
-            uci[,state] <- 1/(1 + exp(-(log(probs[,state]/(1-probs[,state])) +
-                                            qnorm(1-(1-alpha)/2) * (1/(probs[,state]-probs[,state]^2)) * se)))
-
-            # plot the confidence intervals
-            ciInd <- which(!is.na(se))
-
-            withCallingHandlers(do.call(arrows,c(list(as.numeric(tempCovs[ciInd,cov]), lci[ciInd,state], as.numeric(tempCovs[ciInd,cov]),
-                                           uci[ciInd,state], length=0.025, angle=90, code=3, col=col[state], lwd=lwd),arg)),warning=muffWarn)
-
-        }
+            if(is.null(recharge)){
+              dN <- t(apply(desMat, 1, function(x)
+                  numDeriv::grad(get_stat,model$mod$estimate[gamInd[unique(c(model$conditions$betaCons))]],covs=matrix(x,1),nbStates=nbStates,i=state,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=model$conditions$workBounds$beta,mixture=mix)))
+              tmpSig <- Sigma[gamInd,gamInd]
+            } else {
+              recovs <- model.matrix(recharge$theta,tempCovs)
+              nbRecovs <- ncol(recovs)-1
+              tmpSig <- Sigma[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0),c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)]
+              dN<-matrix(unlist(lapply(split(covs,1:nrow(covs)),function(x) tryCatch(numDeriv::grad(get_stat_recharge,model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=formula,recharge=recharge,nbStates=nbStates,i=state,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),ncol=ncol(tmpSig),byrow=TRUE)
+            }
+              
+              se <- t(apply(dN, 1, function(x)
+                  suppressWarnings(sqrt(x%*%tmpSig%*%x))))
+  
+              lci[,state] <- 1/(1 + exp(-(log(probs[[mix]][,state]/(1-probs[[mix]][,state])) -
+                                              qnorm(1-(1-alpha)/2) * (1/(probs[[mix]][,state]-probs[[mix]][,state]^2)) * se)))
+              uci[,state] <- 1/(1 + exp(-(log(probs[[mix]][,state]/(1-probs[[mix]][,state])) +
+                                              qnorm(1-(1-alpha)/2) * (1/(probs[[mix]][,state]-probs[[mix]][,state]^2)) * se)))
+  
+              # plot the confidence intervals
+              ciInd <- which(!is.na(se))
+  
+              withCallingHandlers(do.call(arrows,c(list(as.numeric(tempCovs[ciInd,cov]), lci[ciInd,state], as.numeric(tempCovs[ciInd,cov]),
+                                             uci[ciInd,state], length=0.025, angle=90, code=3, col=col[state], lwd=lwd),arg)),warning=muffWarn)
+  
+          }
+      }
+      if(length(covnames)>1) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities: ",paste(covnames[-cov]," = ",tmpcovs[-cov],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+      else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities"),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
     }
-    if(length(covnames)>1) do.call(mtext,c(list(paste("Stationary state probabilities:",paste(covnames[-cov],"=",tmpcovs[-cov],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
-    else do.call(mtext,c(list("Stationary state probabilities",side=3,outer=TRUE,padj=2,cex=cex.main),marg))
 }
 
 #' @method plotStationary miSum

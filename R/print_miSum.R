@@ -81,6 +81,13 @@ print.miSum <- function(x,...)
       print(m$Par$beta$beta$est)
     }
     
+    if(!is.null(m$Par$real$pi)){
+      cat("\n")
+      cat("Mixture probabilities:\n")
+      cat("----------------------\n")
+      print(m$Par$real$pi$est[1,])
+    }
+    
     cat("\n")
     if(!length(attr(terms.formula(m$conditions$formula),"term.labels"))) {
       cat("Transition probability matrix:\n")
@@ -100,8 +107,9 @@ print.miSum <- function(x,...)
         formDelta <- ~1
       } else formDelta <- m$conditions$formulaDelta
       if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
-        tmp <- m$Par$real$delta$est[1,]
-        rownames(tmp)<-NULL
+        tmp <- m$Par$real$delta$est[1:m$conditions$mixtures,]
+        if(m$conditions$mixtures==1) rownames(tmp)<-NULL
+        else rownames(tmp) <- paste0("mix",1:m$conditions$mixtures)
         print(tmp)
       } else print(m$Par$real$delta$est)
     }

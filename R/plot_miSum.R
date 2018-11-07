@@ -68,6 +68,7 @@ plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.y
   
   m$mle <- lapply(x$Par$real,function(x) x$est)
   m$mle$beta <- x$Par$beta$beta$est
+  m$mle$pi <- c(x$Par$real$pi$est)
   m$mle$delta <- x$Par$real$delta$est
   m$mod <- list()
   if(!is.null(m$conditions$recharge)){
@@ -77,9 +78,10 @@ plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.y
     m$mle$theta <- c(m$Par$beta$theta$est)
     names(m$mle$theta) <- colnames(m$Par$beta$theta$est)
   } else nbRecovs <- 0
-  m$mod$estimate <- expandPar(m$MIcombine$coefficients,m$conditions$optInd,unlist(m$conditions$fixPar),m$conditions$wparIndex,m$conditions$betaCons,length(m$stateNames),m$covsDelta,m$conditions$stationary,nrow(m$Par$beta$beta$est)-1,nbRecovs,m$conditions$mixtures)
+  m$mod$estimate <- expandPar(m$MIcombine$coefficients,m$conditions$optInd,unlist(m$conditions$fixPar),m$conditions$wparIndex,m$conditions$betaCons,length(m$stateNames),m$covsDelta,m$conditions$stationary,nrow(m$Par$beta$beta$est)/m$conditions$mixtures-1,nbRecovs,m$conditions$mixtures)
   #if(!is.null(m$mle$beta)) m$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(m$mle$beta),2,byrow=TRUE)
-  #if(!is.null(m$Par$beta$delta$est)) m$conditions$workBoundsdelta<-matrix(c(-Inf,Inf),length(m$Par$beta$delta$est),2,byrow=TRUE)
+  #if(!is.null(m$Par$beta$pi$est)) m$conditions$workBounds$pi<-matrix(c(-Inf,Inf),length(m$Par$beta$pi$est),2,byrow=TRUE)
+  #if(!is.null(m$Par$beta$delta$est)) m$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(m$Par$beta$delta$est),2,byrow=TRUE)
   #if(!is.null(m$mle$g0)) m$conditions$workBounds$g0<-matrix(c(-Inf,Inf),length(m$mle$g0),2,byrow=TRUE)
   #if(!is.null(m$mle$theta)) m$conditions$workBounds$theta<-matrix(c(-Inf,Inf),length(m$mle$theta),2,byrow=TRUE)
   

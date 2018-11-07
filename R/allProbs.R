@@ -46,8 +46,10 @@ allProbs <- function(m)
     Par<-lapply(Par,function(x) c(t(x)))
     Par<-Par[distnames]
     beta <- m$Par$beta$beta$est
+    pie <- c(m$Par$real$pi$est)
     delta <- m$Par$real$delta$est
     if(!is.null(beta)) m$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(beta),2,byrow=TRUE)
+    if(!is.null(pie)) m$conditions$workBounds$pi <- matrix(c(-Inf,Inf),length(m$Par$beta$pi$est),2,byrow=TRUE)
     if(!is.null(m$Par$beta$delta$est)) m$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(m$Par$beta$delta$est),2,byrow=TRUE)
     
     g0 <- c(m$Par$beta$g0$est)
@@ -59,9 +61,10 @@ allProbs <- function(m)
     p <- inputs$p
     DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
     m$conditions$fullDM <- DMinputs$fullDM
-    m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+    m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,pi=pie,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
   } else {
     beta <- m$mle$beta
+    pie <- m$mle$pi
     delta <- m$mle$delta
     g0 <- m$mle$g0
     theta <- m$mle$theta

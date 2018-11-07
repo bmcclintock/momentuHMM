@@ -26,11 +26,13 @@ logBeta <- function(m)
   
   if(is.miSum(m)){
     beta<-m$Par$beta$beta$est
+    pie<-c(m$Par$real$pi$est)
     delta<-m$Par$real$delta$est
     g0<-m$Par$beta$g0$est
     theta<-m$Par$beta$theta$est
   } else {
     beta <- m$mle$beta
+    pie<-m$mle$pi
     delta <- m$mle$delta
     g0 <- m$mle$g0
     theta <- m$mle$theta
@@ -84,10 +86,20 @@ logBeta <- function(m)
   
   probs <- allProbs(m)
   
-  if(nbStates>1)
-    trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs),m$conditions$betaRef)
-  else
-    trMat <- array(1,dim=c(1,1,nbObs))
+  mixtures <- m$conditions$mixtures
+  if(mixtures==1) pie <- 1
+  
+  trMat <- list()
+  
+  foo <- matrix(0,mixtures,nbStates)
+  mxlscale <- numeric(mixtures)
+  
+  for(mix in 1:mixtures){
+    if(nbStates>1)
+      trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),m$conditions$betaRef)
+    else
+      trMat[[mix]] <- array(1,dim=c(1,1,nbObs))
+  }
   
   aInd <- NULL
   #aInd2 <- NULL
@@ -98,20 +110,24 @@ logBeta <- function(m)
 
   for(i in nbObs:1) {
     
-    if(any(i==aInd)){
-        foo <- rep(1,nbStates)
-        lscale <- 0
-    } else {
-      gamma <- trMat[,,i+1]
-      #if(any(i==aInd2)){
-      #  gamma <- delta %*% gamma
-      #}
-      foo <- gamma%*%(probs[i+1,]*foo)
+    for(mix in 1:mixtures){
+      if(any(i==aInd)){
+          foo[mix,] <- rep(1,nbStates)
+          mxlscale[mix] <- log(pie[mix])
+      } else {
+        gamma <- trMat[[mix]][,,i+1]
+        foo[mix,] <- gamma%*%(probs[i+1,]*foo[mix,])
+      }
     }
-    lbeta[i,] <- log(foo)+lscale
-    sumfoo <- sum(foo)
-    foo <- foo/sumfoo
-    lscale <- lscale+log(sumfoo)
+    A <- max(mxlscale)
+    lscale <- A + log(sum(exp(mxlscale-A)))
+    lbeta[i,] <- log(colSums(foo * pie))+lscale
+    for(mix in 1:mixtures){
+      sumfoo <- sum(foo[mix,])
+      foo[mix,] <- foo[mix,]/sumfoo
+      mxlscale[mix] <- mxlscale[mix]+log(sumfoo)
+    }
+
   }
 
   return(lbeta)

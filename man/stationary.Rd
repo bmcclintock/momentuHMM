@@ -12,7 +12,7 @@ stationary(model, covs)
 \item{covs}{Either a data frame or a design matrix of covariates. If \code{covs} is not provided, then the stationary probabilties are calculated based on the covariate data for each time step.}
 }
 \value{
-Matrix of stationary state probabilities. Each row corresponds to
+A list of length \code{model$conditions$mixtures} where each element is a matrix of stationary state probabilities for each mixture. For each matrix, each row corresponds to
 a row of covs, and each column corresponds to a state.
 }
 \description{

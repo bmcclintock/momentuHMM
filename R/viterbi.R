@@ -80,34 +80,54 @@ viterbi <- function(m)
   covs <- model.matrix(newformula,data)
 
   probs <- allProbs(m)
-  trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs),m$conditions$betaRef)
+  mixtures <- m$conditions$mixtures
+  if(mixtures==1) pie <- 1
+  else pie <- m$mle$pi
+  
+  trMat <- list()
+  for(mix in 1:mixtures){
+    trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),m$conditions$betaRef)
+  }
 
   allStates <- NULL
+  tm <- list()
   for(zoo in 1:nbAnimals) {
+    
     nbObs <- length(which(data$ID==unique(data$ID)[zoo])) # nb of observations for animal zoo
+    tmxi <- matrix(0,nbObs,nbStates)
+    xi_mix <- array(NA,dim=c(mixtures,nbObs,nbStates))
+    
+    for(mix in 1:mixtures){
 
-    if(zoo!=nbAnimals) {
-      p <- probs[aInd[zoo]:(aInd[zoo+1]-1),]
-      tm <- trMat[,,aInd[zoo]:(aInd[zoo+1]-1)]
+      if(zoo!=nbAnimals) {
+        p <- probs[aInd[zoo]:(aInd[zoo+1]-1),]
+        tm[[mix]] <- trMat[[mix]][,,aInd[zoo]:(aInd[zoo+1]-1)]
+      }
+      else {
+        p <- probs[aInd[zoo]:nrow(probs),]
+        tm[[mix]] <- trMat[[mix]][,,aInd[zoo]:nrow(probs)]
+      }
+  
+      foo <- (delta[(mix-1)*nbAnimals+zoo,]%*%tm[[mix]][,,1])*p[1,]
+      xi_mix[mix,1,] <- foo/sum(foo)
+      for(i in 2:nbObs) {
+        foo <- apply(xi_mix[mix,i-1,]*tm[[mix]][,,i],2,max)*p[i,]
+        xi_mix[mix,i,] <- foo/sum(foo)
+      }
     }
-    else {
-      p <- probs[aInd[zoo]:nrow(probs),]
-      tm <- trMat[,,aInd[zoo]:nrow(probs)]
-    }
-
-    xi <- matrix(NA,nbObs,nbStates)
-    foo <- (delta[zoo,]%*%tm[,,1])*p[1,]
-    xi[1,] <- foo/sum(foo)
-    for(i in 2:nbObs) {
-      foo <- apply(xi[i-1,]*tm[,,i],2,max)*p[i,]
-      xi[i,] <- foo/sum(foo)
-    }
-
+    
+    
     stSeq <- rep(NA,nbObs)
-    stSeq[nbObs] <- which.max(xi[nbObs,])
-    for(i in (nbObs-1):1)
-      stSeq[i] <- which.max(tm[,stSeq[i+1],i+1]*xi[i,])
-
+    for(mix in 1:mixtures){
+      tmxi[nbObs,] <- tmxi[nbObs,] + xi_mix[mix,nbObs,]*pie[mix]
+    }
+    stSeq[nbObs] <- which.max(tmxi[nbObs])
+    for(i in (nbObs-1):1){
+      for(mix in 1:mixtures){
+        tmxi[i,] <- tmxi[i,] + tm[[mix]][,stSeq[i+1],i+1]*xi_mix[mix,i,]*pie[mix]
+      }
+      stSeq[i] <- which.max(tmxi[i,])
+    }
     allStates <- c(allStates,stSeq)
   }
 

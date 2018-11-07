@@ -7,7 +7,7 @@
 #' @param model \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object
 #' @param covs Either a data frame or a design matrix of covariates. If \code{covs} is not provided, then the stationary probabilties are calculated based on the covariate data for each time step.
 #'
-#' @return Matrix of stationary state probabilities. Each row corresponds to
+#' @return A list of length \code{model$conditions$mixtures} where each element is a matrix of stationary state probabilities for each mixture. For each matrix, each row corresponds to
 #' a row of covs, and each column corresponds to a state.
 #'
 #' @examples
@@ -102,28 +102,34 @@ stationary.momentuHMM <- function(model, covs)
       if(inherits(ck2,"error")) stop("covs not specified correctly -- ",ck2)
     }
 
-    # all transition matrices
-    if(is.null(recharge))
-      allMat <- trMatrix_rcpp(nbStates=nbStates, beta=beta, covs=covMat, betaRef=model$conditions$betaRef)
-    else {
-      gamInd<-(length(model$mod$estimate)-(nrow(beta))*nbStates*(nbStates-1)+1):(length(model$mod$estimate))-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-ncol(model$covsDelta)*(nbStates-1)*(!model$conditions$stationary)
-      allMat <- array(unlist(lapply(split(tmpSplineInputs$covs,1:nrow(covs)),function(x) tryCatch(get_gamma_recharge(model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta)),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(covs)))
-    }
+    mixtures <- model$conditions$mixtures
+  
+    probs <- list()
     
-    tryCatch({
-        # for each transition matrix, derive corresponding stationary distribution
-        probs <- apply(allMat, 3,
-                       function(gamma)
-                           solve(t(diag(nbStates)-gamma+1),rep(1,nbStates)))
-        probs <- t(probs)
-    },
-    error = function(e) {
-        stop(paste("The stationary probabilities cannot be calculated",
-                   "for these covariate values (singular system)."))
-    })
-
-    colnames(probs) <- model$stateNames
-
+    for(mix in 1:mixtures){
+      # all transition matrices
+      tmpbeta <- beta[(mix-1)*ncol(covMat)+1:ncol(covMat),,drop=FALSE]
+      if(is.null(recharge))
+        allMat <- trMatrix_rcpp(nbStates=nbStates, beta=tmpbeta, covs=covMat, betaRef=model$conditions$betaRef)
+      else {
+        gamInd<-(length(model$mod$estimate)-(nrow(tmpbeta))*nbStates*(nbStates-1)*mixtures+1):(length(model$mod$estimate))-(mixtures-1)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-ncol(model$covsDelta)*(nbStates-1)*(!model$conditions$stationary)*mixtures
+        allMat <- array(unlist(lapply(split(tmpSplineInputs$covs,1:nrow(covs)),function(x) tryCatch(get_gamma_recharge(model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(covs)))
+      }
+      
+      tryCatch({
+          # for each transition matrix, derive corresponding stationary distribution
+          probs[[mix]] <- apply(allMat, 3,
+                         function(gamma)
+                             solve(t(diag(nbStates)-gamma+1),rep(1,nbStates)))
+          probs[[mix]] <- t(probs[[mix]])
+      },
+      error = function(e) {
+          stop(paste("The stationary probabilities cannot be calculated",
+                     "for these covariate values (singular system)."))
+      })
+  
+      colnames(probs[[mix]]) <- model$stateNames
+    }
     return(probs)
 }
 
