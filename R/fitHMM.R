@@ -1240,6 +1240,7 @@ fitHMM <- function(data,nbStates,dist,
     }
     colnames(mle$gamma)<-stateNames
     rownames(mle$gamma)<-rep(stateNames,mixtures)
+    if(mixtures>1) rownames(mle$gamma) <- paste0(rep(stateNames,mixtures),"_mix",rep(1:mixtures,each=nbStates))
   }
   
   if(is.null(betaCons) & nbStates>1) betaCons <- matrix(1:length(mle$beta),nrow(mle$beta),ncol(mle$beta))
