@@ -352,7 +352,8 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   
   double A; 
   double lscale = 0.0;
-    
+  arma::rowvec maxscale(mixtures);
+  
   for(unsigned int i=0;i<allProbs.n_rows;i++) {
       
     for(int mix=0; mix<mixtures; mix++){
@@ -366,7 +367,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         // if 'i' is the 'k'-th element of 'aInd', switch to the next animal
         delt = delta[mix].row(k);
         alpha.row(mix) = (delt * Gamma) % allProbs.row(i);
-        mixlscale(mix) = log(pie[mix]);
+        mixlscale(mix) = 0;
         //if(mix==(mixtures-1)) k++;
       } else {
         alpha.row(mix) = (alpha.row(mix) * Gamma) % allProbs.row(i);
@@ -376,8 +377,9 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       alpha.row(mix) = alpha.row(mix)/sum(alpha.row(mix));
     }
     if((k+1<aInd.size() && i==(unsigned)(aInd(k+1)-2)) || (i==(allProbs.n_rows-1))){
-      A = mixlscale.max(); // cancels out below; helps prevent numerical issues
-      lscale += A + log(sum(exp(mixlscale-A)));
+      maxscale = mixlscale + log(pie);
+      A = maxscale.max(); // cancels out below; helps prevent numerical issues
+      lscale += A + log(sum(exp(maxscale - A)));
       k++;
     }
   }

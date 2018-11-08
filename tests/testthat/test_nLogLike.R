@@ -141,13 +141,16 @@ test_that("logAlpha, logBeta, and nLogLike are consistent with zero and one infl
                 m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds,betaRef=m$conditions$betaRef)
   la<-logAlpha(m)
   lb<-logBeta(m)
-  ll<-0
-  for(i in 1:nbAnimals){
-    aInd<-max(which(data$ID==i))
-    c <- max(la[aInd,]+lb[aInd,]) # cancels below ; prevents numerical errors
-    ll <- ll + c + log(sum(exp(la[aInd,]+lb[aInd,]-c)))
+  for(t in 100:1){
+    ll<-0
+    for(i in 1:nbAnimals){
+      aInd<-which(m$data$ID==i)[t]
+      c <- max(la[aInd,]+lb[aInd,]) # cancels below ; prevents numerical errors
+      ll <- ll + c + log(sum(exp(la[aInd,]+lb[aInd,]-c)))
+    }
+    expect_equal(nll,-ll)
   }
-  expect_equal(nll,-ll)
+
   
   setRNG::setRNG(oldRNG)
   
