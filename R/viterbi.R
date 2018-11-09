@@ -121,7 +121,7 @@ viterbi <- function(m)
     for(mix in 1:mixtures){
       tmxi[nbObs,] <- tmxi[nbObs,] + xi_mix[mix,nbObs,]*pie[mix]
     }
-    stSeq[nbObs] <- which.max(tmxi[nbObs])
+    stSeq[nbObs] <- which.max(tmxi[nbObs,])
     for(i in (nbObs-1):1){
       for(mix in 1:mixtures){
         tmxi[i,] <- tmxi[i,] + tm[[mix]][,stSeq[i+1],i+1]*xi_mix[mix,i,]*pie[mix]

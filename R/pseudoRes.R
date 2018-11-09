@@ -191,24 +191,21 @@ pseudoRes <- function(m, ncores = 1)
   
   par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds)
   
-  #tmpSplineInputs<-getSplineFormula(newformula,data,covs)
-  #desMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
-  
-  trMat <- array(0,dim=c(nbStates,nbStates,nbObs))
+  trMat <- list()
   for(mix in 1:mixtures){
     if(nbStates>1){
       if(is.null(recharge)){
-        trMat <- trMat + trMatrix_rcpp(nbStates,beta[(mix-1)*(nbCovs+1)+1:(nbCovs+1),,drop=FALSE],as.matrix(covs),m$conditions$betaRef) * pie[mix]
+        trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*(nbCovs+1)+1:(nbCovs+1),,drop=FALSE],as.matrix(covs),m$conditions$betaRef)
       } else {
         gamInd<-(length(m$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures+1):(length(m$mod$estimate))-(mixtures-1)-ifelse(nbRecovs,nbRecovs+1+nbG0covs+1,0)-ncol(m$covsDelta)*(nbStates-1)*(!m$conditions$stationary)*mixtures
-        trMat <- trMat + array(unlist(lapply(split(data,1:nrow(data)),function(x) tryCatch(get_gamma_recharge(m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)],covs=x,formula=newformula,recharge=recharge,nbStates=nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(data)))  * pie[mix]
+        trMat[[mix]] <- array(unlist(lapply(split(data,1:nrow(data)),function(x) tryCatch(get_gamma_recharge(m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)],covs=x,formula=newformula,recharge=recharge,nbStates=nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(data))) 
       }
-    } else trMat <- array(1,dim=c(1,1,nbObs))
+    } else trMat[[mix]] <- array(1,dim=c(1,1,nbObs))
   }
   
   genRes <- list()
   for(j in distnames){
-    genRes[[paste0(j,"Res")]] <- rep(NA,nbObs)
+    genRes[[paste0(j,"Res")]] <- rep(0,nbObs)
     pgenMat <- pgenMat2 <- matrix(NA,nbObs,nbStates)
     sp <- par[[j]]
     
@@ -307,7 +304,6 @@ pseudoRes <- function(m, ncores = 1)
         else {
           if(dist[[j]] %in% mvndists){
             names(genArgs) <- c("q","mean","sigma")
-            #pgenMat[genInd,state] <- mapply(Fun[[j]],q=genArgs$q,mean=genArgs$mean,sigma=genArgs$sigma)
             pgenMat[genInd,state] <- mapply(d2,q=genArgs$q,mean=genArgs$mean,sigma=genArgs$sigma)
           } else pgenMat[genInd,state] <- do.call(Fun[[j]],genArgs)
           if(dist[[j]] %in% integerdists){
@@ -316,13 +312,6 @@ pseudoRes <- function(m, ncores = 1)
           }
         }
         
-        #pgenMat[genInd,state] <- zeromass+(1-zeromass)*do.call(Fun[[j]],genArgs)
-        #for(i in 1:nbObs) {
-        #  if(!is.na(data[[j]][i])) {
-        #    genArgs[[1]] <- data[[j]][i]
-        #    pgenMat[i,state] <- zeromass+(1-zeromass)*do.call(Fun[[j]],genArgs)
-        #  }
-        #}
       } else {
         
         genpiInd <- which(genData!=pi & !is.na(genData))
@@ -336,42 +325,36 @@ pseudoRes <- function(m, ncores = 1)
           
           pgenMat[i,state] <- do.call(integrate,genArgs)$value
         }
-        #for(i in 1:nbObs) {
-        #  if(!is.na(data[[j]][i])) {
-        #    # angle==pi => residual=Inf
-        #    if(data[[j]][i]!=pi) {
-        #      genArgs[[3]] <- data[[j]][i]
-        #      pgenMat[i,state] <- do.call(integrate,genArgs)$value
-        #    }
-        #  }
-        #}
       }
     }
-  
+    
     k <- 1
     for(i in 1:nbObs) {
       if(!is.na(genData[i])){
-        if(any(i==aInd)){
-          genRes[[paste0(j,"Res")]][i] <- (delta[k,]%*%trMat[,,i])%*%pgenMat[i,]
-          if(dist[[j]] %in% integerdists)
-            genRes[[paste0(j,"Res")]][i] <- (genRes[[paste0(j,"Res")]][i] + (delta[k,]%*%trMat[,,i])%*%pgenMat2[i,])/2
-          if(dist[[j]] %in% mvndists){
-            genRes[[paste0(j,"Res")]][i] <- stats::qchisq(genRes[[paste0(j,"Res")]][i],df=ndim)
-          } else genRes[[paste0(j,"Res")]][i] <- stats::qnorm(genRes[[paste0(j,"Res")]][i])
-          k <- k + 1
-        } else {
-          gamma <- trMat[,,i]
-          c <- max(la[i-1,]) # cancels below ; prevents numerical errors
-          a <- exp(la[i-1,]-c)
-          
-          genRes[[paste0(j,"Res")]][i] <- t(a)%*%(gamma/sum(a))%*%pgenMat[i,]
-          if(dist[[j]] %in% integerdists)
-            genRes[[paste0(j,"Res")]][i] <- (genRes[[paste0(j,"Res")]][i] + t(a)%*%(gamma/sum(a))%*%pgenMat2[i,])/2
-          if(dist[[j]] %in% mvndists){
-            genRes[[paste0(j,"Res")]][i] <- stats::qchisq(genRes[[paste0(j,"Res")]][i],df=ndim)
-          } else genRes[[paste0(j,"Res")]][i] <- stats::qnorm(genRes[[paste0(j,"Res")]][i])
+        for(mix in 1:mixtures){
+          if(any(i==aInd)){
+            if(dist[[j]] %in% integerdists)
+              genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] + ((delta[(mix-1)*nbAnimals+k,]%*%trMat[[mix]][,,i])%*%pgenMat[i,] + (delta[(mix-1)*nbAnimals+k,]%*%trMat[[mix]][,,i])%*%pgenMat2[i,])/2 * pie[mix]
+            else
+              genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] + (delta[(mix-1)*nbAnimals+k,]%*%trMat[[mix]][,,i])%*%pgenMat[i,] * pie[mix]
+            if(mix==mixtures) k <- k + 1
+          } else {
+            gamma <- trMat[[mix]][,,i]
+            #c <- max(la[i-1,]) # cancels below ; prevents numerical errors
+            #a <- exp(la[i-1,]-c)
+            c <- max(la[[mix]][i-1,])
+            a <- exp(la[[mix]][i-1,]-c)
+            
+            if(dist[[j]] %in% integerdists)
+              genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] + (t(a)%*%(gamma/sum(a))%*%pgenMat[i,] + t(a)%*%(gamma/sum(a))%*%pgenMat2[i,])/2 * pie[mix]
+            else
+              genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] + t(a)%*%(gamma/sum(a))%*%pgenMat[i,] * pie[mix]
+          }
         }
-      }
+        if(dist[[j]] %in% mvndists){
+          genRes[[paste0(j,"Res")]][i] <- stats::qchisq(genRes[[paste0(j,"Res")]][i],df=ndim)
+        } else genRes[[paste0(j,"Res")]][i] <- stats::qnorm(genRes[[paste0(j,"Res")]][i])
+      } else genRes[[paste0(j,"Res")]][i] <- NA
     }
   }
 

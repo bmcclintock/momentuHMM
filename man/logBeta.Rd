@@ -10,7 +10,7 @@ logBeta(m)
 \item{m}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.}
 }
 \value{
-The matrix of backward log-probabilities.
+A list of length \code{model$conditions$mixtures} where each element is a matrix of backward log-probabilities for each mixture.
 }
 \description{
 Used in \code{\link{stateProbs}}.

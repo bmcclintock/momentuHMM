@@ -42,13 +42,35 @@ stateProbs <- function(m)
   aInd <- NULL
   for(i in 1:nbAnimals)
     aInd <- c(aInd,max(which(data$ID==unique(data$ID)[i])))
+  
+  mixtures <- m$conditions$mixtures
+  if(mixtures>1) pie <- m$mle$pi
+  else pie <- 1
     
-  for(i in nbObs:1){
-    if(any(i==aInd)){
-      c <- max(la[i,]) # cancels out below ; prevents numerical errors
-      llk <- c + log(sum(exp(la[i,]-c)))
+  # get probability that individual is in each mixture
+  eta <- lnum <- matrix(0,nbAnimals,mixtures)
+  for(i in 1:nbAnimals){
+    for(mix in 1:mixtures){
+      c <- max(la[[mix]][aInd[i],]+log(pie[mix]))
+      lnum[i,mix] <- c + log(sum(exp(la[[mix]][aInd[i],]+log(pie[mix])-c)))
     }
-    stateProbs[i,] <- exp(la[i,]+lb[i,]-llk)
+    c <- max(lnum[i,])
+    eta[i,] <- exp(lnum[i,] - c - log(sum(exp(lnum[i,]-c))))
+  }
+  
+  k <- 1
+  stateProb <- matrix(NA,mixtures,nbStates)
+  for(i in nbObs:1){
+    for(mix in 1:mixtures){
+      if(any(i==aInd)){
+        c <- max(la[[mix]][i,]) # cancels out below ; prevents numerical errors
+        llk <- c + log(sum(exp(la[[mix]][i,]-c)))
+        ieta <- eta[k,]
+        if(mix==mixtures) k <- k + 1
+      }
+      stateProb[mix,] <- exp(la[[mix]][i,]+lb[[mix]][i,]-llk)
+    }
+    stateProbs[i,] <- colSums(stateProb/rowSums(stateProb) * ieta)
   }
   colnames(stateProbs) <- m$stateNames
   

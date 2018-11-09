@@ -5,7 +5,7 @@
 #'
 #' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.
 #'
-#' @return The matrix of backward log-probabilities.
+#' @return A list of length \code{model$conditions$mixtures} where each element is a matrix of backward log-probabilities for each mixture.
 #'
 #' @examples
 #' \dontrun{
@@ -26,13 +26,11 @@ logBeta <- function(m)
   
   if(is.miSum(m)){
     beta<-m$Par$beta$beta$est
-    pie<-c(m$Par$real$pi$est)
     delta<-m$Par$real$delta$est
     g0<-m$Par$beta$g0$est
     theta<-m$Par$beta$theta$est
   } else {
     beta <- m$mle$beta
-    pie<-m$mle$pi
     delta <- m$mle$delta
     g0 <- m$mle$g0
     theta <- m$mle$theta
@@ -42,7 +40,7 @@ logBeta <- function(m)
   nbAnimals <- length(unique(m$data$ID))
   nbObs <- nrow(m$data)
   lbeta <- matrix(NA,nbObs,nbStates)
-
+  
   # identify covariates
   formula<-m$conditions$formula
   newForm <- newFormulas(formula,nbStates)
@@ -89,10 +87,8 @@ logBeta <- function(m)
   mixtures <- m$conditions$mixtures
   if(mixtures==1) pie <- 1
   
-  trMat <- list()
-  
-  foo <- matrix(0,mixtures,nbStates)
-  mxlscale <- numeric(mixtures)
+  trMat <- lbeta <- list()
+  lbeta[1:mixtures] <- list(matrix(NA,nbObs,nbStates))
   
   for(mix in 1:mixtures){
     if(nbStates>1)
@@ -107,28 +103,26 @@ logBeta <- function(m)
     aInd <- c(aInd,max(which(m$data$ID==unique(m$data$ID)[i])))
     #aInd2 <- c(aInd2,which(m$data$ID==unique(m$data$ID)[i])[1])
   }
-
-  for(i in nbObs:1) {
-    
-    for(mix in 1:mixtures){
+  
+  for(mix in 1:mixtures){
+    for(i in nbObs:1) {
+      
       if(any(i==aInd)){
-          foo[mix,] <- rep(1,nbStates)
-          mxlscale[mix] <- log(pie[mix])
+        foo <- rep(1,nbStates)
+        lscale <- 0
       } else {
         gamma <- trMat[[mix]][,,i+1]
-        foo[mix,] <- gamma%*%(probs[i+1,]*foo[mix,])
+        #if(any(i==aInd2)){
+        #  gamma <- delta %*% gamma
+        #}
+        foo <- gamma%*%(probs[i+1,]*foo)
       }
+      lbeta[[mix]][i,] <- log(foo)+lscale
+      sumfoo <- sum(foo)
+      foo <- foo/sumfoo
+      lscale <- lscale+log(sumfoo)
     }
-    A <- max(mxlscale)
-    lscale <- A + log(sum(exp(mxlscale-A)))
-    lbeta[i,] <- log(colSums(foo * pie))+lscale
-    for(mix in 1:mixtures){
-      sumfoo <- sum(foo[mix,])
-      foo[mix,] <- foo[mix,]/sumfoo
-      mxlscale[mix] <- mxlscale[mix]+log(sumfoo)
-    }
-
   }
-
+  
   return(lbeta)
 }

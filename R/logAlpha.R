@@ -5,7 +5,7 @@
 #'
 #' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.
 #'
-#' @return The matrix of forward log-probabilities.
+#' @return A list of length \code{model$conditions$mixtures} where each element is a matrix of forward log-probabilities for each mixture.
 #'
 #' @examples
 #' \dontrun{
@@ -26,13 +26,11 @@ logAlpha <- function(m)
   
   if(is.miSum(m)){
     beta<-m$Par$beta$beta$est
-    pie<-c(m$Par$real$pi$est)
     delta<-m$Par$real$delta$est
     g0<-m$Par$beta$g0$est
     theta<-m$Par$beta$theta$est
   } else {
     beta <- m$mle$beta
-    pie <- m$mle$pi
     delta <- m$mle$delta
     g0 <- m$mle$g0
     theta <- m$mle$theta
@@ -40,8 +38,7 @@ logAlpha <- function(m)
   
   nbStates <- length(m$stateNames)
   nbObs <- nrow(m$data)
-  lalpha <- matrix(NA,nbObs,nbStates)
-
+  
   # identify covariates
   formula<-m$conditions$formula
   newForm <- newFormulas(formula,nbStates)
@@ -83,16 +80,14 @@ logAlpha <- function(m)
   
   covs <- model.matrix(newformula,m$data)
   nbCovs <- ncol(covs)-1 # substract intercept column
-
+  
   probs <- allProbs(m)
   
   mixtures <- m$conditions$mixtures
   if(mixtures==1) pie <- 1
   
-  trMat <- list()
-  
-  foo <- matrix(0,mixtures,nbStates)
-  mxlscale <- numeric(mixtures)
+  trMat <- lalpha <- list()
+  lalpha[1:mixtures] <- list(matrix(NA,nbObs,nbStates))
   
   for(mix in 1:mixtures){
     if(nbStates>1)
@@ -100,23 +95,22 @@ logAlpha <- function(m)
     else
       trMat[[mix]] <- array(1,dim=c(1,1,nbObs))
   }
-  k <- 1
-  for(i in 1:nbObs) {
-    for(mix in 1:mixtures){
+  
+  for(mix in 1:mixtures){
+    k <- 1
+    for(i in 1:nbObs) {
       gamma <- trMat[[mix]][,,i]
       if(any(i==aInd)){
-        foo[mix,] <- (delta[(mix-1)*nbAnimals+k,] %*% gamma)*probs[i,]
-        mxlscale[mix] <- log(pie[mix])
-        if(mix==mixtures) k <- k + 1
+        foo <- (delta[(mix-1)*nbAnimals+k,] %*% gamma)*probs[i,]
+        lscale <- 0
+        k <- k + 1
       } else {
-        foo[mix,] <- (foo[mix,] %*% gamma)*probs[i,]
+        foo <- (foo %*% gamma)*probs[i,]
       }
-      mxlscale[mix] <- mxlscale[mix]+log(sum(foo[mix,]))
-      foo[mix,] <- foo[mix,]/sum(foo[mix,])
+      lscale <- lscale+log(sum(foo))
+      foo <- foo/sum(foo)
+      lalpha[[mix]][i,] <- log(foo)+lscale
     }
-    A <- max(mxlscale)
-    lscale <- A + log(sum(exp(mxlscale-A)))
-    lalpha[i,] <- log(colSums(foo * pie))+lscale
   }
   return(lalpha)
 }
