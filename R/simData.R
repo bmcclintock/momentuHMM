@@ -406,7 +406,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         model$mle$theta <- c(model$Par$beta$theta$est)
         names(model$mle$theta) <- colnames(model$Par$beta$theta$est)
       } else nbRecovs <- 0
-      model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,nbStates,model$covsDelta,model$conditions$stationary,nrow(model$Par$beta$beta$est)-1,nbRecovs,model$conditions$mixtures)
+      model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,nbStates,model$covsDelta,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures)
       if(!is.null(model$mle$beta)) model$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(model$mle$beta),2,byrow=TRUE)
       if(!is.null(model$Par$beta$pi$est)) model$conditions$workBounds$pi<-matrix(c(-Inf,Inf),length(model$Par$beta$pi$est),2,byrow=TRUE)
       if(!is.null(model$Par$beta$delta$est)) model$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(model$Par$beta$delta$est),2,byrow=TRUE)
@@ -741,6 +741,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     # shrink covs if too many covariate values
     covs <- data.frame(covs[1:sum(allNbObs),])
     colnames(covs) <- covnames
+    rownames(covs) <- 1:sum(allNbObs)
   }
   
   ###############################
