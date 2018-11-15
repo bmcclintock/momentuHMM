@@ -883,25 +883,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   #  else formula <- formula(~1)
   #}
   
-  message("=======================================================================")
-  message("Simulating HMM with ",nbStates," states and ",length(distnames)," data streams")
-  message("-----------------------------------------------------------------------\n")
-  for(i in distnames){
-    pNames<-p$parNames[[i]]
-    #if(!isFALSE(inputs$circularAngleMean[[i]])){ 
-      #pNames[1]<-paste0("circular ",pNames[1])
-      #if(inputs$consensus[[i]]) pNames[2]<-paste0("consensus ",pNames[2])
-    #}
-    if(is.null(DM[[i]])){
-      message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,"=~1",collapse=", "),")")
-    } else if(is.list(DM[[i]])){
-      message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,"=",DM[[i]],collapse=", "),")")
-    } else message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,": custom",collapse=", "),")")
-  }
-  message("\n Transition probability matrix formula: ",paste0(formula,collapse=""))
-  message("\n Initial distribution formula: ",paste0(formDelta,collapse=""))
-  if(mixtures>1) message("\n Number of mixtures: ",mixtures)
-  message("=======================================================================")
+  printMessage(nbStates,dist,p,DM,formula,formDelta,mixtures,"Simulating")
   
   if(length(all.vars(formula)))
     if(!all(all.vars(formula) %in% c("ID",names(allCovs),centerNames,centroidNames,spatialcovnames)))
@@ -1118,21 +1100,11 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
         wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
-        nc <- meanind <- vector('list',length(distnames))
-        names(nc) <- names(meanind) <- distnames
-        for(i in distnames){
-          nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-          if(!isFALSE(inputs$circularAngleMean[[i]])) {
-            meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
-            # deal with angular covariates that are exactly zero
-            if(length(meanind[[i]])){
-              angInd <- which(is.na(match(gsub("cos","",gsub("sin","",colnames(nc[[i]]))),colnames(nc[[i]]),nomatch=NA)))
-              sinInd <- colnames(nc[[i]])[which(grepl("sin",colnames(nc[[i]])[angInd]))]
-              nc[[i]][meanind[[i]],sinInd]<-ifelse(nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)])
-              nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)]<-ifelse(nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],sinInd])
-            }
-          }
-        }
+        
+        ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
+        nc <- ncmean$nc
+        meanind <- ncmean$meanind
+
         covsDelta <- model.matrix(formDelta,subCovs[1,,drop=FALSE])
         fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
         g <- gFull[1,,drop=FALSE]

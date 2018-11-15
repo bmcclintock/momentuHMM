@@ -1,0 +1,22 @@
+printMessage <- function(nbStates,dist,p,DM,formula,formulaDelta,mixtures,what="Fitting"){
+  distnames <- names(dist)
+  message("=======================================================================")
+  message(what," HMM with ",nbStates," states and ",length(distnames)," data streams")
+  message("-----------------------------------------------------------------------\n")
+  for(i in distnames){
+    pNames<-p$parNames[[i]]
+    #if(!isFALSE(inputs$circularAngleMean[[i]])){ 
+    #pNames[1]<-paste0("circular ",pNames[1])
+    #if(inputs$consensus[[i]]) pNames[2]<-paste0("consensus ",pNames[2])
+    #}
+    if(is.null(DM[[i]])){
+      message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,"=~1",collapse=", "),")")
+    } else if(is.list(DM[[i]])){
+      message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,"=",DM[[i]],collapse=", "),")")
+    } else message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,": custom",collapse=", "),")")
+  }
+  message("\n Transition probability matrix formula: ",paste0(formula,collapse=""))
+  message("\n Initial distribution formula: ",paste0(formulaDelta,collapse=""))
+  if(mixtures>1) message("\n Number of mixtures: ",mixtures)
+  message("=======================================================================")
+}

@@ -471,7 +471,7 @@ fitHMM <- function(data,nbStates,dist,
   
   if(nbStates<1) stop('nbStates must be >0')
 
-  # check that there is no response varibale in the formula
+  # check that there is no response variable in the formula
   if(attr(terms(formula),"response")!=0)
     stop("The response variable should not be specified in formula.")
   if(!is.null(formulaDelta) && attr(terms(formulaDelta),"response")!=0)
@@ -618,42 +618,10 @@ fitHMM <- function(data,nbStates,dist,
       stop(distnames[[i]]," data should be binary (0 or 1)")
   
   # determine whether zero-inflation or one-inflation should be included
-  zeroInflation <- oneInflation <- vector('list',length(distnames))
-  names(zeroInflation) <- names(oneInflation) <- distnames
-  for(i in distnames){
-    if(dist[[i]] %in% zeroInflationdists){
-      if(length(which(data[[i]]==0))>0) {
-        zeroInflation[[i]]<-TRUE
-      }
-      else 
-        zeroInflation[[i]]<-FALSE
-    }
-    else zeroInflation[[i]]<-FALSE
-    if(dist[[i]] %in% oneInflationdists){
-      if(length(which(data[[i]]==1))>0) {
-        oneInflation[[i]]<-TRUE
-      }
-      else 
-        oneInflation[[i]]<-FALSE
-    }
-    else oneInflation[[i]]<-FALSE
-    if(is.null(DM[[i]])){
-      if(zeroInflation[[i]]){
-        # check that zero-mass is in the open interval (0,1)
-        zm0 <- Par0[[i]][(length(Par0[[i]])-nbStates*oneInflation[[i]]-nbStates+1):(length(Par0[[i]])-nbStates*oneInflation[[i]])]
-        zm0[which(zm0==0)] <- 1e-8
-        zm0[which(zm0==1)] <- 1-1e-8
-        Par0[[i]][(length(Par0[[i]])-nbStates*oneInflation[[i]]-nbStates+1):(length(Par0[[i]])-nbStates*oneInflation[[i]])] <- zm0
-      }
-      if(oneInflation[[i]]){
-        # check that one-mass is in the open interval (0,1)
-        om0 <- Par0[[i]][(length(Par0[[i]])-nbStates+1):length(Par0[[i]])]
-        om0[which(om0==0)] <- 1e-8
-        om0[which(om0==1)] <- 1-1e-8
-        Par0[[i]][(length(Par0[[i]])-nbStates+1):length(Par0[[i]])] <- om0
-      }
-    }
-  }
+  inflation <- get_inflation(data,dist,DM,Par0,nbStates)
+  Par0 <- inflation$Par0
+  zeroInflation <- inflation$zeroInflation
+  oneInflation <- inflation$oneInflation
 
   mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(newformula),"term.labels")) & !length(attr(terms.formula(formDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior) & is.null(betaCons) & is.null(betaRef) & is.null(mvnCoords) & mixtures==1) # indicator for moveHMMwrap below
   
@@ -666,79 +634,6 @@ fitHMM <- function(data,nbStates,dist,
   DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par0,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
   fullDM <- DMinputs$fullDM
   DMind <- DMinputs$DMind
-  
-  if(!is.null(betaCons) & nbStates>1){
-    if(!is.matrix(betaCons)) stop("betaCons must be a matrix")
-    if(nrow(betaCons)!=(nbCovs+1)*mixtures | ncol(betaCons)!=(nbStates*(nbStates-1))) stop("betaCons must be a ",(nbCovs+1)*mixtures,"x",nbStates*(nbStates-1)," matrix")
-    if(any(abs(as.integer(betaCons)-betaCons)!=0)) stop("betaCons must be a matrix composed of integers")
-    if(min(betaCons)<1 | max(betaCons)>(nbCovs+1)*mixtures*(nbStates*(nbStates-1))) stop("betaCons must be composed of integers between 1 and ",(nbCovs+1)*mixtures*(nbStates*(nbStates-1)))
-  }
-  
-  if(!is.null(betaRef)){
-    if(length(betaRef)!=nbStates) stop("betaRef must be a vector of length ",nbStates)
-    if(!is.numeric(betaRef)) stop("betaRef must be a numeric vector")
-    if(min(betaRef)<1 | max(betaRef)>nbStates) stop("betaRef elements must be between 1 and ",nbStates)
-  } else {
-    betaRef <- 1:nbStates
-  }
-  betaRef <- as.integer(betaRef)
-  
-  if(!is.null(beta0$beta)) {
-    if(is.null(dim(beta0$beta)))
-      stop(paste(paste0("beta",ifelse(is.null(recharge),"0","0$beta"))," has wrong dimensions: it should have",(nbCovs+1)*mixtures,"rows and",
-                     nbStates*(nbStates-1),"columns."))
-    if(ncol(beta0$beta)!=nbStates*(nbStates-1) | nrow(beta0$beta)!=(nbCovs+1)*mixtures)
-      stop(paste(paste0("beta",ifelse(is.null(recharge),"0","0$beta"))," has wrong dimensions: it should have",(nbCovs+1)*mixtures,"rows and",
-                     nbStates*(nbStates-1),"columns."))
-    if(!is.null(betaCons)) {
-      if(!all(beta0$beta == beta0$beta[c(betaCons)])) warning(paste0("beta",ifelse(is.null(recharge),"0","0$beta"))," is not consistent with betaCons; values for ",paste0("beta",ifelse(is.null(recharge),"0","0$beta"))," will be assigned based on the first duplicated element(s) in betaCons")
-      beta0$beta <- matrix(beta0$beta[c(betaCons)],nrow(beta0$beta),ncol(beta0$beta))
-    }
-  } else {
-    if(nbStates>1){
-       beta0$beta <- matrix(c(rep(-1.5,nbStates*(nbStates-1)),rep(0,nbStates*(nbStates-1)*nbCovs)),
-                    nrow=(nbCovs+1)*mixtures,ncol=nbStates*(nbStates-1),byrow=TRUE)
-       for(i in 1:nbStates){
-         if(betaRef[i]!=i){
-           beta0$beta[1,(i-1)*(nbStates-1)+i-(betaRef[i]<i)] <- 1.5
-         }
-       }
-       if(!is.null(betaCons)) beta0$beta <- matrix(beta0$beta[c(betaCons)],nrow(beta0$beta),ncol(beta0$beta))
-    }
-  }
-  if(!is.null(recharge)){
-    if(is.null(beta0$g0)) beta0$g0 <- nw2w(rep(0,nbG0covs+1),workBounds$g0)
-    else if(length(beta0$g0)!=(nbG0covs+1) | any(!is.numeric(beta0$g0))) stop("beta0$g0 must be a numeric vector of length ",nbG0covs+1)
-    if(is.null(beta0$theta)) beta0$theta <- nw2w(c(-1,rep(1,nbRecovs)),workBounds$theta)
-    else if(length(beta0$theta)!=(nbRecovs+1) | any(!is.numeric(beta0$theta))) stop("beta0$theta must be a numeric vector of length ",nbRecovs+1)
-  }
-  
-  if(mixtures<=1){
-    beta0$pi <- NULL
-  } else {
-    if(!is.null(beta0$pi)){
-      if(length(beta0$pi)!=mixtures) stop("beta0$pi must be of length ",mixtures)
-      if(sum(beta0$pi)!=1) stop("beta0$pi must sum to 1")
-    } else beta0$pi <- rep(1/mixtures,mixtures)
-    beta0$pi <- log(beta0$pi[-1]/beta0$pi[1])
-  }
-
-  if(!is.null(delta0)){
-    if(!nbCovsDelta & is.null(formulaDelta)){
-      if(mixtures==1){
-        if(length(delta0) != (nbCovsDelta+1)*nbStates)
-          stop(paste("delta0 has the wrong length: it should have",nbStates*mixtures,"elements."))
-      } else {
-        if(is.null(dim(delta0)) || (ncol(delta0)!=nbStates | nrow(delta0)!=mixtures))
-          stop(paste("delta0 has wrong dimensions: it should have",mixtures,"rows and",
-                     nbStates,"columns."))
-      }
-    } else {
-        if(is.null(dim(delta0)) || (ncol(delta0)!=nbStates-1 | nrow(delta0)!=(nbCovsDelta+1)*mixtures))
-          stop(paste("delta0 has wrong dimensions: it should have",(nbCovsDelta+1)*mixtures,"rows and",
-                          nbStates-1,"columns."))
-    }
-  }
 
   # check elements of nlmPar
   lsPars <- c("print.level","gradtol","stepmax","steptol","iterlim",'hessian')
@@ -750,139 +645,7 @@ fitHMM <- function(data,nbStates,dist,
   ####################################
   ## Prepare initial values for nlm ##
   ####################################
-  if(stationary)
-    delta0 <- NULL
-  else if(!nbCovsDelta & is.null(formulaDelta)){
-    if(is.null(delta0)){
-      delta0 <- matrix(1/nbStates,(nbCovsDelta+1)*mixtures,nbStates)
-    } else {
-      delta0 <- matrix(delta0,(nbCovsDelta+1)*mixtures,nbStates)
-    }
-    delta0 <- apply(delta0,1,function(x) log(x[-1]/x[1]))
-  } else if(is.null(delta0)){
-    delta0 <- matrix(0,nrow=(nbCovsDelta+1)*mixtures,ncol=nbStates-1)
-  }
-  
-  # build the vector of initial working parameters
-  wparIndex <- numeric()
-  if(is.null(fixPar)){
-    fixPar <- vector('list',length(distnames))
-    names(fixPar) <- distnames
-    for(i in distnames){
-      fixPar[[i]] <- rep(NA,length(Par0[[i]]))
-    }
-    #if(!nbCovsDelta & is.null(formulaDelta)) fixPar$delta <- rep(NA,ifelse(is.null(delta0),0,length(delta0)-1))
-    #else fixPar$delta <- rep(NA,length(delta0))
-  }
-  
-  if(is.null(fixPar$beta)) {
-    fixPar$beta <- rep(NA,length(beta0$beta))
-  }
-  if(!is.null(recharge)){
-    if(is.null(fixPar$g0)) {
-      fixPar$g0 <- rep(NA,nbG0covs+1)
-    } else if(length(fixPar$g0)!=(nbG0covs+1)) stop("fixPar$g0 must be a vector of length ",nbG0covs+1)
-    if(is.null(fixPar$theta)){
-      fixPar$theta <- rep(NA,nbRecovs+1)
-    } else if(length(fixPar$theta)!=(nbRecovs+1)) stop("fixPar$theta must be a vector of length ",nbRecovs+1)
-  } else {
-    fixPar$g0 <- fixPar$theta <- NULL
-  }
-  if(mixtures>1){
-    if(is.null(fixPar$pi)) fixPar$pi <- rep(NA,mixtures-1)
-  } else fixPar$pi <- NULL
-  
-  if(nbStates>1){
-    for(state in 1:(nbStates*(nbStates-1))){
-      noBeta<-which(match(colnames(model.matrix(newformula,data)),colnames(model.matrix(formulaStates[[state]],data)),nomatch=0)==0)
-      if(length(noBeta)) {
-        for(mix in 1:mixtures){
-          beta0$beta[noBeta+(nbCovs+1)*(mix-1),state] <- NA
-          fixPar$beta[noBeta+(state-1)*(nbCovs+1)+(mix-1)*(nbCovs+1)*(nbStates*(nbStates-1))] <- 0
-        }
-      }
-    }
-  }
-
-  parindex <- c(0,cumsum(unlist(lapply(Par0,length))))
-  names(parindex) <- c(distnames,"beta")
-  ofixPar <- fixPar
-  for(i in distnames){
-    if(!is.null(fixPar[[i]])){
-      if(length(fixPar[[i]])!=length(Par0[[i]])) stop("fixPar$",i," must be of length ",length(Par0[[i]]))
-      tmp <- which(!is.na(fixPar[[i]]))
-      Par0[[i]][tmp]<-fixPar[[i]][tmp]
-      
-      # if DM is not specified convert fixPar from real to working scale
-      if(is.null(inputs$DM[[i]])){
-        fixPar[[i]][tmp]<-n2w(Par0[i],p$bounds,NULL,NULL,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)[tmp]
-      } 
-      wparIndex <- c(wparIndex,parindex[[i]]+tmp)
-    } else {
-      fixPar[[i]] <- ofixPar[[i]] <- rep(NA,length(Par0[[i]]))
-      #wparIndex <- c(wparIndex,parindex[[i]]+1:length(Par0[[i]]))
-    }
-  }
-  if(nbStates>1){
-    beta0$beta[which(is.na(beta0$beta))] <- 0
-    if(length(fixPar$beta)!=length(beta0$beta)) stop("fixPar$beta must be of length ",length(beta0$beta))
-    tmp <- which(!is.na(fixPar$beta))
-    if(!all(fixPar$beta == fixPar$beta[betaCons],na.rm=TRUE)) stop("fixPar$beta not consistent with betaCons")
-    beta0$beta[tmp]<-fixPar$beta[tmp]
-    wparIndex <- c(wparIndex,parindex[["beta"]]+tmp)
-    
-    if(mixtures>1){
-      if(any(!is.na(fixPar$pi))){
-        tmp <- which(!is.na(fixPar$pi))
-        beta0$pi <- fixPar$pi
-        if(length(tmp)!=length(beta0$pi) | sum(beta0$pi)!=1) stop("fixPar$pi must sum to 1")
-        beta0$pi <- matrix(beta0$pi,1,mixtures)
-        beta0$pi <- log(beta0$pi[-1]/beta0$pi[1])
-        fixPar$pi <- as.vector(beta0$pi)
-        wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0$beta)+1:length(beta0$pi))
-      }
-    }
-  }
-  if(!is.null(fixPar$delta)){
-    if(stationary & any(!is.na(fixPar$delta))) stop("delta cannot be fixed when stationary=TRUE")
-    else if(!stationary) {
-      if(!nbCovsDelta & is.null(formulaDelta)){
-        if(length(fixPar$delta)!=nbStates*mixtures) stop("fixPar$delta must be of length ",nbStates*mixtures)
-      } else if(length(fixPar$delta)!=length(delta0)) stop("fixPar$delta must be of length ",length(delta0))
-      if(any(!is.na(fixPar$delta))){
-        tmp <- which(!is.na(fixPar$delta))
-        if(!nbCovsDelta & is.null(formulaDelta)){
-          delta0 <- matrix(fixPar$delta,mixtures,nbStates)
-          if(length(tmp)!=length(delta0) | !all(rowSums(delta0)==1)) stop("fixPar$delta",ifelse(mixtures>1," rows "," "),"must sum to 1")
-          delta0 <- matrix(apply(delta0,1,function(x) log(x[-1]/x[1])),(nbCovsDelta+1)*mixtures,nbStates-1)
-          fixPar$delta <- as.vector(delta0)
-          wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0$beta)+length(beta0$pi)+1:(length(delta0)))
-        } else {
-          delta0[tmp] <- fixPar$delta[tmp]
-          wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0$beta)+length(beta0$pi)+tmp)
-        }
-      } else fixPar$delta <- rep(NA,length(delta0))
-    }
-  } else {
-    if(!nbCovsDelta & is.null(formulaDelta)) fixPar$delta <- ofixPar$delta <- rep(NA,ifelse(!length(delta0),0,(nbStates-1)*mixtures))
-    else fixPar$delta <- ofixPar$delta <- rep(NA,length(delta0))
-  }
-  if(!is.null(recharge)){
-    if(any(!is.na(fixPar$g0))){
-      tmp <- which(!is.na(fixPar$g0))
-      beta0$g0[tmp] <- fixPar$g0[tmp]
-      wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0$beta)+length(beta0$pi)+length(delta0)+tmp)
-    }
-    if(any(!is.na(fixPar$theta))){
-      tmp <- which(!is.na(fixPar$theta))
-      beta0$theta[tmp] <- fixPar$theta[tmp]
-      wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0$beta)+length(beta0$pi)+length(delta0)+length(beta0$g0)+tmp)
-    }
-  }
-
-  if(any(!(names(fixPar) %in% c(distnames,"beta","pi","delta","g0","theta")))) stop("fixPar names can only include ",paste0(c(distnames,"beta","pi","delta","g0"),sep=", "),"or theta")
-  fixPar <- fixPar[c(distnames,"beta","pi","delta","g0","theta")]
-  ofixPar <- ofixPar[c(distnames,"beta","pi","delta","g0","theta")]
+  fixParIndex <- get_fixParIndex(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,stationary,nbCovsDelta,formulaDelta,data)
   
   parCount<- lapply(fullDM,ncol)
   for(i in distnames[!unlist(lapply(inputs$circularAngleMean,isFALSE))]){
@@ -895,91 +658,16 @@ fitHMM <- function(data,nbStates,dist,
     workBounds <- vector('list',length(distnames))
     names(workBounds) <- distnames
   }
-  workBounds <- getWorkBounds(workBounds,distnames,Par0,parindex,parCount,inputs$DM,beta0,delta0)
+  workBounds <- getWorkBounds(workBounds,distnames,fixParIndex$Par0,parindex,parCount,inputs$DM,fixParIndex$beta0,fixParIndex$delta0)
   
-  wpar <- n2w(Par0,p$bounds,beta0,delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+  wpar <- n2w(fixParIndex$Par0,p$bounds,fixParIndex$beta0,fixParIndex$delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
   if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
 
   parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures-(mixtures-1)-ncol(covsDelta)*(nbStates-1)*(!stationary)*mixtures-ifelse(is.null(recharge),0,(nbRecovs+1)+1)
-  if(retryFits<0) stop("retryFits must be non-negative")
-  if(retryFits>=1){
-    if(is.null(retrySD)){
-      retrySD <- rep(10,length(wpar))
-      retrySD[1:parmInd] <- 1
-    } else if(!is.list(retrySD)){
-      if(length(retrySD)>1) stop('retrySD must be a scalar or list')
-      retrySD <- rep(retrySD,length(wpar))
-    } else {
-      for(i in distnames){
-        if(is.null(retrySD[[i]])){
-          retrySD[[i]] <- rep(1,parCount[[i]])
-        } else {
-          if(any(!is.numeric(retrySD[[i]]))) stop("retrySD$",i," must be numeric")
-          if(any(retrySD[[i]]<0)) stop("retrySD$",i," must be non-negative")
-          if(length(retrySD[[i]])==1){
-            retrySD[[i]] <- rep(retrySD[[i]],parCount[[i]])
-          } else if(length(retrySD[[i]])!=parCount[[i]]){
-            stop("retrySD$",i," must be of length 1 or ",parCount[[i]])
-          }
-        }
-      }
-      if(nbStates>1){
-        if(is.null(retrySD$beta)){
-          retrySD$beta <- rep(10,length(beta0$beta))
-        } else {
-          if(any(!is.numeric(retrySD$beta))) stop("retrySD$beta must be numeric")
-          if(any(retrySD$beta<0)) stop("retrySD$beta must be non-negative")
-          if(length(retrySD$beta)==1){
-            retrySD$beta <- rep(retrySD$beta,length(beta0$beta))
-          } else if(length(retrySD$beta)!=length(beta0$beta)){
-            stop("retrySD$beta must be of length 1 or ",length(beta0$beta))
-          }
-        }
-        if(mixtures>1){
-          if(is.null(retrySD$pi)) {
-            retrySD$pi <- rep(10,length(beta0$pi))
-          } else {
-            if(any(!is.numeric(retrySD$pi))) stop("retrySD$pi must be numeric")
-            if(any(retrySD$pi<0)) stop("retrySD$pi must be non-negative")
-            if(length(retrySD$pi)==1){
-              retrySD$pi <- rep(retrySD$pi,length(beta0$pi))
-            } else if(length(retrySD$pi)!=length(beta0$pi)){
-              stop("retrySD$pi must be of length 1 or ",length(beta0$pi))
-            }              
-          }
-        }
-        if(!is.null(recharge)){
-          for(j in c("g0","theta")){
-            if(is.null(retrySD[[j]])) {
-              retrySD[[j]] <- rep(10,length(beta0[[j]]))
-            } else {
-              if(any(!is.numeric(retrySD[[j]]))) stop("retrySD$",j," must be numeric")
-              if(any(retrySD[[j]]<0)) stop("retrySD$",j," must be non-negative")
-              if(length(retrySD[[j]])==1){
-                retrySD[[j]] <- rep(retrySD[[j]],length(beta0[[j]]))
-              } else if(length(retrySD[[j]])!=length(beta0[[j]])){
-                stop("retrySD$",j," must be of length 1 or ",length(beta0[[j]]))
-              }              
-            }
-          }
-        }
-        if(is.null(retrySD$delta)){
-          retrySD$delta <- rep(10,length(delta0))
-        } else {
-          if(any(!is.numeric(retrySD$delta))) stop("retrySD$delta must be numeric")
-          if(any(retrySD$delta<0)) stop("retrySD$delta must be non-negative")
-          if(length(retrySD$delta)==1){
-            retrySD$delta <- rep(retrySD$delta,length(delta0))
-          } else if(length(retrySD$delta)!=length(delta0)){
-            stop("retrySD$delta must be of length 1 or ",length(delta0))
-          }
-        }
-      }
-      retrySD <- unlist(retrySD[c(distnames,"beta","pi","delta","g0","theta")])
-    }
-  }
+
+  retrySD <- get_retrySD(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStates,fixParIndex$beta0,mixtures,recharge,fixParIndex$delta0)
   
-  optInd <- sort(c(wparIndex,parmInd+which(duplicated(c(betaCons)))))
+  optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons)))))
   
   if(!is.null(prior)){
     if(!is.function(prior)) stop("prior must be a function")
@@ -1002,42 +690,12 @@ fitHMM <- function(data,nbStates,dist,
       invokeRestart("muffleWarning")
   }
   
-  message("=======================================================================")
-  message("Fitting HMM with ",nbStates," states and ",length(distnames)," data streams")
-  message("-----------------------------------------------------------------------\n")
-  for(i in distnames){
-    pNames<-p$parNames[[i]]
-    #if(!isFALSE(inputs$circularAngleMean[[i]])){ 
-      #pNames[1]<-paste0("circular ",pNames[1])
-      #if(inputs$consensus[[i]]) pNames[2]<-paste0("consensus ",pNames[2])
-    #}
-    if(is.null(DM[[i]])){
-      message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,"=~1",collapse=", "),")")
-    } else if(is.list(DM[[i]])){
-      message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,"=",DM[[i]],collapse=", "),")")
-    } else message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,": custom",collapse=", "),")")
-  }
-  message("\n Transition probability matrix formula: ",paste0(formula,collapse=""))
-  message("\n Initial distribution formula: ",paste0(formDelta,collapse=""))
-  if(mixtures>1) message("\n Number of mixtures: ",mixtures)
-  message("=======================================================================")
+  printMessage(nbStates,dist,p,DM,formula,formDelta,mixtures)
   
-  nc <- meanind <- vector('list',length(distnames))
-  names(nc) <- names(meanind) <- distnames
-  for(i in distnames){
-    nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(!isFALSE(inputs$circularAngleMean[[i]])) {
-      meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
-      # deal with angular covariates that are exactly zero
-      if(length(meanind[[i]])){
-        angInd <- which(is.na(match(gsub("cos","",gsub("sin","",colnames(nc[[i]]))),colnames(nc[[i]]),nomatch=NA)))
-        sinInd <- colnames(nc[[i]])[which(grepl("sin",colnames(nc[[i]])[angInd]))]
-        nc[[i]][meanind[[i]],sinInd]<-ifelse(nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)])
-        nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)]<-ifelse(nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],sinInd])
-      }
-    }
-  }
-
+  ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
+  nc <- ncmean$nc
+  meanind <- ncmean$meanind
+  
   if(fit) {
     
     hessian <- TRUE
@@ -1074,7 +732,7 @@ fitHMM <- function(data,nbStates,dist,
         iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
   
         optPar <- wpar
-        optInd <- sort(c(wparIndex,parmInd+which(duplicated(c(betaCons)))))
+        optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons)))))
         if(length(optInd)){
           optPar <- wpar[-optInd]
         }
@@ -1085,16 +743,16 @@ fitHMM <- function(data,nbStates,dist,
         if(optMethod=="nlm"){
           withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
-                                               stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
-                                               nc,meanind,covsDelta,workBounds,prior,betaCons,betaRef,optInd,recovs,g0covs,mixtures,
+                                               stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
+                                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,optInd,recovs,g0covs,mixtures,
                                                print.level=print.level,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
                                                iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)),error=function(e) e),warning=h)
         } else {
           withCallingHandlers(curmod <- tryCatch(optim(optPar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                      inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
-                                                     stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixPar),wparIndex,
-                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,betaRef,optInd,recovs,g0covs,mixtures,
+                                                     stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
+                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,optInd,recovs,g0covs,mixtures,
                                                      method=optMethod,control=control,hessian=hessian),error=function(e) e),warning=h)
         }
         endTime <- proc.time()-startTime
@@ -1111,7 +769,7 @@ fitHMM <- function(data,nbStates,dist,
         }
       }
       
-      wpar <- expandPar(mod$estimate,optInd,unlist(fixPar),wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures)
+      wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures)
       
       if((fitCount+1)<=retryFits){
         cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,"         ",sep="")
@@ -1120,12 +778,12 @@ fitHMM <- function(data,nbStates,dist,
           names(curmod)[which(names(curmod)=="value")] <- "minimum"
           curmod$elapsedTime <- endTime[3]
           if(curmod$minimum < mod$minimum) mod <- curmod
-          wpar <- expandPar(mod$estimate,optInd,unlist(fixPar),wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures)
+          wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures)
         }
         wpar[1:parmInd] <- wpar[1:parmInd]+rnorm(parmInd,0,retrySD[1:parmInd])
         if(nbStates>1)
           wpar[-(1:parmInd)] <- wpar[-(1:parmInd)]+rnorm(length(wpar)-parmInd,0,retrySD[length(wpar)-parmInd])
-        if(length(wparIndex)) wpar[wparIndex] <- unlist(fixPar)[wparIndex]
+        if(length(fixParIndex$wparIndex)) wpar[fixParIndex$wparIndex] <- unlist(fixParIndex$fixPar)[fixParIndex$wparIndex]
         if(!is.null(betaCons) & nbStates>1){
           wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)] <- wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)][betaCons]
         }
@@ -1135,7 +793,7 @@ fitHMM <- function(data,nbStates,dist,
     
     # convert the parameters back to their natural scale
     mod$wpar <- mod$estimate
-    wpar <- mod$estimate <- expandPar(mod$wpar,optInd,unlist(fixPar),wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures)
+    wpar <- mod$estimate <- expandPar(mod$wpar,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures)
     mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
     
     if(!is.null(mod$hessian)){
@@ -1190,9 +848,9 @@ fitHMM <- function(data,nbStates,dist,
     columns <- NULL
     for(i in 1:nbStates)
       for(j in 1:nbStates) {
-        if(betaRef[i]<j)
+        if(fixParIndex$betaRef[i]<j)
           columns[(i-1)*nbStates+j-i] <- paste(i,"->",j)
-        if(j<betaRef[i])
+        if(j<fixParIndex$betaRef[i])
             columns[(i-1)*(nbStates-1)+j] <- paste(i,"->",j)
       }
     colnames(mle$beta) <- columns
@@ -1211,7 +869,7 @@ fitHMM <- function(data,nbStates,dist,
     mle$delta <- matrix(0,nbAnimals*mixtures,nbStates)
     
     for(mix in 1:mixtures){
-      gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,betaRef)[,,1]
+      gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,fixParIndex$betaRef)[,,1]
   
       # error if singular system
       tryCatch(
@@ -1235,7 +893,7 @@ fitHMM <- function(data,nbStates,dist,
   if(nbCovs==0 & nbStates>1) {
     mle$gamma <- matrix(0,nbStates*mixtures,nbStates)
     for(mix in 1:mixtures){
-      trMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,betaRef)
+      trMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,fixParIndex$betaRef)
       mle$gamma[nbStates*(mix-1)+1:nbStates,] <- trMat[,,1]
     }
     colnames(mle$gamma)<-stateNames
@@ -1247,7 +905,7 @@ fitHMM <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
-                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=ofixPar,wparIndex=wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=betaRef,optInd=optInd,recharge=recharge,mvnCoords=mvnCoords,mixtures=mixtures)
+                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=fixParIndex$ofixPar,wparIndex=fixParIndex$wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=fixParIndex$betaRef,optInd=optInd,recharge=recharge,mvnCoords=mvnCoords,mixtures=mixtures)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName)
   

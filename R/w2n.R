@@ -84,7 +84,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   else g0 <- NULL
   
   mixtures <- nrow(workBounds$beta)/((nbCovs+1)*nbStates*(nbStates-1))
-
+  
   # identify initial distribution parameters
   if(!stationary & nbStates>1){
     nbCovsDelta <- ncol(covsDelta)-1 # substract intercept column
@@ -94,23 +94,12 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
     
     tmpwpar <- matrix(w2wn(wpar[foo:length(wpar)],workBounds$delta),(nbCovsDelta+1)*mixtures,nbStates-1)
     
-    delta <- matrix(0,nbAnimals*mixtures,nbStates)
-    for(mix in 1:mixtures){
-      tmpdelta <- c(rep(0,nbCovsDelta+1),tmpwpar[(mix-1)*(nbCovsDelta+1)+1:(nbCovsDelta+1),])
-      deltaXB <- covsDelta%*%matrix(tmpdelta,nrow=nbCovsDelta+1)
-      expdelta <- exp(deltaXB)
-      tmpdelta <- expdelta/rowSums(expdelta)
-      for(i in which(!is.finite(rowSums(tmpdelta)))){
-        tmp <- exp(Brobdingnag::as.brob(deltaXB[i,]))
-        tmpdelta[i,] <- as.numeric(tmp/Brobdingnag::sum(tmp))
-      }
-      delta[(mix-1)*nbAnimals+1:nbAnimals,] <- tmpdelta
-    }
-    #rownames(delta)<-rep(rownames(tmpdelta),nbAnimals)
+    delta <- mlogit(tmpwpar,covsDelta,nbCovsDelta,nbAnimals,nbStates,mixtures)
+    
     wpar <- wpar[-(foo:length(wpar))]
   }
   else delta <- NULL
-
+  
   # identify regression coefficients for the transition probabilities
   pie <- 1
   if(nbStates>1) {
@@ -137,7 +126,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   }
   parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
   names(parindex) <- names(fullDM)
-
+  
   parlist<-list()
   
   for(i in distnames){
@@ -147,7 +136,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
     if(estAngleMean[[i]] & Bndind[[i]]){ 
       bounds[[i]][,1] <- -Inf
       bounds[[i]][which(bounds[[i]][,2]!=1),2] <- Inf
-
+      
       foo <- length(tmpwpar) - nbStates + 1
       x <- tmpwpar[(foo - nbStates):(foo - 1)]
       y <- tmpwpar[foo:length(tmpwpar)]
@@ -157,7 +146,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
       tmpwpar[foo:length(tmpwpar)] <- kappa
     }
     parlist[[i]]<-w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],workcons[[i]],nbObs,circularAngleMean[[i]],consensus[[i]],nbStates,0,nc[[i]],meanind[[i]],workBounds[[i]])
-
+    
     if((dist[[i]] %in% angledists) & !estAngleMean[[i]]){
       tmp<-matrix(0,nrow=(parSize[[i]]+1)*nbStates,ncol=nbObs)
       tmp[nbStates+1:nbStates,]<-parlist[[i]]
@@ -165,13 +154,13 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
     }
     
   }
-
+  
   parlist[["beta"]]<-beta
   parlist[["pi"]]<-pie
   parlist[["delta"]]<-delta
   parlist[["g0"]]<-g0
   parlist[["theta"]]<-theta
-
+  
   return(parlist)
 }
 
@@ -192,7 +181,7 @@ w2wn <- function(wpar,workBounds,k=0){
 w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,consensus,nbStates,k=0,nc,meanind,workBounds){
   
   wpar <- w2wn(wpar,workBounds)
-
+  
   a<-bounds[,1]
   b<-bounds[,2]
   
@@ -252,3 +241,19 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,conse
   }
   return(p)
 }   
+
+mlogit <- function(wpar,covs,nbCovs,nbAnimals,nbStates,mixtures=1){
+  par <- matrix(0,nbAnimals*mixtures,nbStates)
+  for(mix in 1:mixtures){
+    tmppar <- c(rep(0,nbCovs+1),wpar[(mix-1)*(nbCovs+1)+1:(nbCovs+1),])
+    parXB <- covs%*%matrix(tmppar,nrow=nbCovs+1)
+    exppar <- exp(parXB)
+    tmppar <- exppar/rowSums(exppar)
+    for(i in which(!is.finite(rowSums(tmppar)))){
+      tmp <- exp(Brobdingnag::as.brob(parXB[i,]))
+      tmppar[i,] <- as.numeric(tmp/Brobdingnag::sum(tmp))
+    }
+    par[(mix-1)*nbAnimals+1:nbAnimals,] <- tmppar
+  }
+  par
+}
