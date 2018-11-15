@@ -1,4 +1,4 @@
-# momentuHMM [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/momentuHMM)](https://cran.r-project.org/package=momentuHMM) [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Downloads](https://cranlogs.r-pkg.org/badges/momentuHMM)](https://cran.r-project.org/package=momentuHMM)
+# momentuHMM  [![Travis-CI Build Status](https://api.travis-ci.org/bmcclintock/momentuHMM.svg?branch=develop)](https://travis-ci.org/bmcclintock/momentuHMM) [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Downloads](https://cranlogs.r-pkg.org/badges/momentuHMM)](https://cran.r-project.org/package=momentuHMM)
 
 R package for Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models 
 
@@ -7,7 +7,7 @@ Get started with the vignette: [Guide to using momentuHMM](https://cran.r-projec
 ## Installation instructions
 
 ### CRAN release
-The package is available on [CRAN](https://cran.r-project.org/package=momentuHMM). To install it:
+The package is available at [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/momentuHMM)](https://cran.r-project.org/package=momentuHMM). To install it:
 ``` R
 install.packages("momentuHMM")
 ```
