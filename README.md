@@ -7,7 +7,7 @@ Get started with the vignette: [Guide to using momentuHMM](https://cran.r-projec
 ## Installation instructions
 
 ### CRAN release
-The package is available on [CRAN](https://cran.r-project.org/package=momentuHMM). To install it:
+The package is available at [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/momentuHMM)](https://cran.r-project.org/package=momentuHMM). To install it:
 ``` R
 install.packages("momentuHMM")
 ```
