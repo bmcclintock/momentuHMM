@@ -13,17 +13,13 @@ install.packages("momentuHMM")
 ```
 
 ### Install from Github
-
-master branch check: [![Travis-CI Build Status](https://api.travis-ci.org/bmcclintock/momentuHMM.svg?branch=master)](https://travis-ci.org/bmcclintock/momentuHMM)
-develop branch check: [![Travis-CI Build Status](https://api.travis-ci.org/bmcclintock/momentuHMM.svg?branch=develop)](https://travis-ci.org/bmcclintock/momentuHMM)
-
-To install the latest (stable) version of the package from Github:
+To install the latest (stable) version of the package from Github: [![Travis-CI Build Status](https://api.travis-ci.org/bmcclintock/momentuHMM.svg?branch=master)](https://travis-ci.org/bmcclintock/momentuHMM)
 ``` R
 library(devtools)
 install_github("bmcclintock/momentuHMM")
 ```
 
-To install the latest (**unstable**) version of the package from Github:
+To install the latest (**unstable**) version of the package from Github: [![Travis-CI Build Status](https://api.travis-ci.org/bmcclintock/momentuHMM.svg?branch=develop)](https://travis-ci.org/bmcclintock/momentuHMM)
 ``` R
 library(devtools)
 install_github("bmcclintock/momentuHMM", ref="develop")
