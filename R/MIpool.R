@@ -187,7 +187,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     if(mixtures>1) names(parindex)[length(distnames)+2] <- "pi"
     names(parindex)[length(parindex)-1] <- "delta"
     if(!is.null(m$conditions$recharge)){
-      parindex <- c(0,cumsum(c(unlist(parCount),length(m$mle$beta),piInd*(mixtures-1),ncol(m$covsDelta)*(nbStates-1),length(m$mle$g0),length(m$mle$theta))))
+      parindex <- c(0,cumsum(c(unlist(parCount),length(m$mle$beta),piInd*(mixtures-1),ncol(m$covsDelta)*(nbStates-1)*mixtures,length(m$mle$g0),length(m$mle$theta))))
       if(mixtures>1) names(parindex)[1:(length(parindex)-1)] <- c(distnames,"beta","pi","delta","g0","theta")
       else names(parindex)[1:(length(parindex)-1)] <- c(distnames,"beta","delta","g0","theta")
       parmcols$g0 <- length(m$mle$g0)

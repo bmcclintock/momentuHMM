@@ -99,7 +99,7 @@ pseudoRes <- function(m, ncores = 1)
     p <- inputs$p
     DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
     m$conditions$fullDM <- DMinputs$fullDM
-    m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,pi=pie,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+    m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,pi=m$Par$beta$pi$est,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
   } else {
     beta <- m$mle$beta
     pie <- m$mle$pi
