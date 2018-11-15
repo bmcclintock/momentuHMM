@@ -1,6 +1,6 @@
 # momentuHMM [![Travis-CI Build Status](https://api.travis-ci.org/bmcclintock/momentuHMM.svg?branch=recharge)](https://travis-ci.org/bmcclintock/momentuHMM) [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0) [![Downloads](http://cranlogs.r-pkg.org/badges/momentuHMM)](https://cran.r-project.org/package=momentuHMM)
 
-An R package for Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models 
+R package for Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models 
 
 Get started with the vignette: [Guide to using momentuHMM](https://cran.r-project.org/package=momentuHMM/vignettes/momentuHMM.pdf)
 
@@ -13,13 +13,13 @@ install.packages("momentuHMM")
 ```
 
 ### Install from Github
-To install the latest (stable) version of the package from Github:
+To install the latest (stable) version of the package from Github: [![Travis-CI Build Status](https://api.travis-ci.org/bmcclintock/momentuHMM.svg?branch=master)](https://travis-ci.org/bmcclintock/momentuHMM)
 ``` R
 library(devtools)
 install_github("bmcclintock/momentuHMM")
 ```
 
-To install the latest (**unstable**) version of the package from Github:
+To install the latest (**unstable**) version of the package from Github: [![Travis-CI Build Status](https://api.travis-ci.org/bmcclintock/momentuHMM.svg?branch=develop)](https://travis-ci.org/bmcclintock/momentuHMM)
 ``` R
 library(devtools)
 install_github("bmcclintock/momentuHMM", ref="develop")
