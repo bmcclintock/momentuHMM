@@ -1,4 +1,4 @@
-get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,stationary,nbCovsDelta,formulaDelta,data){
+get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data){
   
   if(!is.null(betaCons) & nbStates>1){
     if(!is.matrix(betaCons)) stop("betaCons must be a matrix")
@@ -50,10 +50,15 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     beta0$pi <- NULL
   } else {
     if(!is.null(beta0$pi)){
-      if(length(beta0$pi)!=mixtures) stop("beta0$pi must be of length ",mixtures)
-      if(sum(beta0$pi)!=1) stop("beta0$pi must sum to 1")
-    } else beta0$pi <- rep(1/mixtures,mixtures)
-    beta0$pi <- log(beta0$pi[-1]/beta0$pi[1])
+      if(!nbCovsPi & is.null(formulaPi)){
+        if(length(beta0$pi) != (nbCovsPi+1)*mixtures)
+          stop(paste("beta0$pi has the wrong length: it should have",mixtures,"elements."))
+      } else {
+        if(is.null(dim(beta0$pi)) || (ncol(beta0$pi)!=mixtures-1 | nrow(beta0$pi)!=(nbCovsPi+1)))
+          stop(paste("beta0$pi has wrong dimensions: it should have",(nbCovsPi+1),"rows and",
+                     mixtures-1,"columns."))
+      }
+    } 
   }
   
   if(!is.null(delta0)){
@@ -73,7 +78,7 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     }
   }
   
-  if(stationary)
+  if(stationary) 
     delta0 <- NULL
   else if(!nbCovsDelta & is.null(formulaDelta)){
     if(is.null(delta0)){
@@ -81,9 +86,20 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     } else {
       delta0 <- matrix(delta0,(nbCovsDelta+1)*mixtures,nbStates)
     }
-    delta0 <- apply(delta0,1,function(x) log(x[-1]/x[1]))
+    delta0 <- apply(delta0,1,function(x) log(x[-1]/x[1])) 
   } else if(is.null(delta0)){
     delta0 <- matrix(0,nrow=(nbCovsDelta+1)*mixtures,ncol=nbStates-1)
+  }
+  
+  if(!nbCovsPi & is.null(formulaPi)){
+    if(is.null(beta0$pi)){
+      beta0$pi <- matrix(1/mixtures,(nbCovsPi+1),mixtures)
+    } else {
+      beta0$pi <- matrix(beta0$pi,(nbCovsPi+1),mixtures)
+    }
+    beta0$pi <- log(beta0$pi[-1]/beta0$pi[1])
+  } else if(is.null(beta0$pi)){
+    beta0$pi <- matrix(0,nrow=(nbCovsPi+1),ncol=mixtures-1)
   }
   
   # build the vector of initial working parameters
@@ -109,9 +125,6 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
   } else {
     fixPar$g0 <- fixPar$theta <- NULL
   }
-  if(mixtures>1){
-    if(is.null(fixPar$pi)) fixPar$pi <- rep(NA,mixtures-1)
-  } else fixPar$pi <- NULL
   
   if(nbStates>1){
     for(state in 1:(nbStates*(nbStates-1))){
@@ -163,6 +176,27 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
         wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0$beta)+1:length(beta0$pi))
       }
     }
+  }
+  if(!is.null(fixPar$pi)){
+    if(!nbCovsPi & is.null(formulaPi)){
+      if(length(fixPar$pi)!=mixtures) stop("fixPar$pi must be of length ",mixtures)
+    } else if(length(fixPar$pi)!=length(beta0$pi)) stop("fixPar$pi must be of length ",length(beta0$pi))
+    if(any(!is.na(fixPar$pi))){
+      tmp <- which(!is.na(fixPar$pi))
+      if(!nbCovsPi & is.null(formulaPi)){
+        beta0$pi <- matrix(fixPar$pi,1,mixtures)
+        if(length(tmp)!=length(beta0$pi) | !all(rowSums(beta0$pi)==1)) stop("fixPar$pi must sum to 1")
+        beta0$pi <- matrix(log(beta0$pi[-1]/beta0$pi[1]),(nbCovsPi+1),mixtures-1)
+        fixPar$pi <- as.vector(beta0$pi)
+        wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0$beta)+1:(length(beta0$pi)))
+      } else {
+        beta0$pi[tmp] <- fixPar$pi[tmp]
+        wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0$beta)+tmp)
+      }
+    } else fixPar$pi <- rep(NA,length(beta0$pi))
+  } else {
+    if(!nbCovsPi & is.null(formulaPi)) fixPar$pi <- ofixPar$pi <- rep(NA,ifelse(!length(beta0$pi),0,mixtures))
+    else fixPar$pi <- ofixPar$pi <- rep(NA,length(beta0$pi))
   }
   if(!is.null(fixPar$delta)){
     if(stationary & any(!is.na(fixPar$delta))) stop("delta cannot be fixed when stationary=TRUE")

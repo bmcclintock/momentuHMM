@@ -69,13 +69,13 @@
 #'      m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
 #'      m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),
 #'      m$conditions$wparIndex,covsDelta=m$covsDelta,workBounds=m$conditions$workBounds,
-#'      betaRef=m$conditions$betaRef)
+#'      betaRef=m$conditions$betaRef,covsPi=m$covsPi)
 #' }
 #'
 
 nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,
-                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1)
+                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1,covsPi)
 {
   
   # check arguments
@@ -87,8 +87,8 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
   else nbRecovs <- 0
   
   # convert the parameters back to their natural scale
-  wpar <- expandPar(optPar,optInd,fixPar,wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs,mixtures)
-  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta,workBounds)
+  wpar <- expandPar(optPar,optInd,fixPar,wparIndex,betaCons,nbStates,ncol(covsDelta)-1,stationary,nbCovs,nbRecovs,mixtures,ncol(covsPi)-1)
+  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi)
 
   nbAnimals <- length(unique(data$ID))
 

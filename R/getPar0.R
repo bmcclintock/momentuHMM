@@ -11,6 +11,7 @@
 #' @param formula Regression formula for the transition probability covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formula=model$conditions$formula}.
 #' @param formulaDelta Regression formula for the initial distribution covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formulaDelta=model$conditions$formulaDelta}.
 #' @param mixtures Number of mixtures for the state transition probabilities  (see \code{\link{fitHMM}}). Default: \code{formula=model$conditions$mixtures}.
+#' @param formulaPi Regression formula for the mixture distribution probabilities (see \code{\link{fitHMM}}). Default: \code{formula=model$conditions$formulaPi}. 
 #' @param DM Named list indicating the design matrices to be used for the probability distribution parameters of each data stream in the new model (see \code{\link{fitHMM}}). Only parameters with design matrix column names that match those in model$conditions$fullDM are extracted, so care must be taken in naming columns if any elements of \code{DM}
 #' are specified as matrices instead of formulas. Default: \code{DM=model$conditions$DM}.
 #' @param betaRef Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: \code{formula=model$conditions$betaRef}.
@@ -83,7 +84,7 @@
 #' }
 #' 
 #' @export
-getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,formula=model$conditions$formula,formulaDelta=model$conditions$formulaDelta,mixtures=model$conditions$mixtures,DM=model$conditions$DM,betaRef=model$conditions$betaRef,stateNames=model$stateNames){
+getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,formula=model$conditions$formula,formulaDelta=model$conditions$formulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM,betaRef=model$conditions$betaRef,stateNames=model$stateNames){
   
   if(!is.momentuHMM(model) & !is.miHMM(model) & !is.miSum(model))
     stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
@@ -97,6 +98,7 @@ getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$con
   if(is.miSum(model)){
     model$mle <- lapply(model$Par$real,function(x) x$est)
     model$mle$beta <- model$Par$beta$beta$est
+    model$mle$pi <- model$Par$real$pi$est
     model$mle$delta <- model$Par$real$delta$est
     model$mod <- list()
     if(!is.null(model$conditions$recharge)){
@@ -106,7 +108,7 @@ getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$con
       model$mle$theta <- c(model$Par$beta$theta$est)
       names(model$mle$theta) <- colnames(model$Par$beta$theta$est)
     } else nbRecovs <- 0
-    model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,length(model$stateNames),model$covsDelta,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures)
+    model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,length(model$stateNames),ncol(model$covsDelta)-1,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures,ncol(model$covsPi-1))
     model$CIbeta <- model$Par$beta
     model$CIreal <- model$Par$real
   }
@@ -124,6 +126,9 @@ getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$con
   if(is.null(estAngleMean)) estAngleMean<-model$conditions$estAngleMean
   if(is.null(circularAngleMean)) circularAngleMean<-model$conditions$circularAngleMean
   if(is.null(formula)) formula<-model$conditions$formula
+  if(is.null(formulaPi)) {
+    formPi <- ~1
+  } else formPi <- formulaPi
   if(is.null(formulaDelta)) {
     formDelta <- ~1
   } else formDelta <- formulaDelta
@@ -325,7 +330,7 @@ getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$con
               if(is.miSum(model))
                 delta[deltaNames %in% rownames(model$CIbeta$delta$est),i] <- nw2w(model$CIbeta$delta$est,model$conditions$workBounds$delta)[rownames(model$CIbeta$delta$est) %in% deltaNames,match(stateNames[-1][i],model$stateNames[-1])]
               else
-                delta[deltaNames %in% rownames(model$CIbeta$delta$est),i] <- matrix(model$mod$estimate[parindex[["beta"]]+length(model$mle$beta)+(model$conditions$mixtures-1)+1:length(model$CIbeta$delta$est)],nrow(model$CIbeta$delta$est),ncol(model$CIbeta$delta$est),dimnames=dimnames(model$CIbeta$delta$est))[rownames(model$CIbeta$delta$est) %in% deltaNames,match(stateNames[-1][i],model$stateNames[-1])]
+                delta[deltaNames %in% rownames(model$CIbeta$delta$est),i] <- matrix(model$mod$estimate[parindex[["beta"]]+length(model$mle$beta)+length(model$CIbeta$pi$est)+1:length(model$CIbeta$delta$est)],nrow(model$CIbeta$delta$est),ncol(model$CIbeta$delta$est),dimnames=dimnames(model$CIbeta$delta$est))[rownames(model$CIbeta$delta$est) %in% deltaNames,match(stateNames[-1][i],model$stateNames[-1])]
             }
           }
         }
@@ -356,12 +361,40 @@ getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$con
       }
       Par$beta <- list(beta=Par$beta,g0=g0,theta=theta)
     }
-    if(mixtures>1){
-      if(model$conditions$mixtures==mixtures){
-        pie <- model$mle$pi
-      } else pie <- rep(1/mixtures,mixtures)
-      if(!is.list(Par$beta)) Par$beta <- list(beta=Par$beta,pi=pie)
-      else Par$beta$pi <- pie
+    if(mixtures>1) {
+      if(!length(attr(terms.formula(formPi),"term.labels")) & is.null(model$conditions$formulaPi) & is.null(formulaPi) & model$conditions$mixtures==mixtures){
+        Par$pi<-model$mle$pi[1,]
+      } else {
+        piNames <- colnames(model.matrix(formPi,model$data))
+        nbPiCovs <- length(piNames)-1
+        if(all(grepl("(Intercept)",piNames)) & is.null(formulaPi)){
+          tmp <- rep(0,mixtures)
+          if(model$conditions$mixtures==mixtures && any(piNames %in% rownames(model$CIbeta$pi$est)))
+            tmp<-c(0,model$CIbeta$pi$est[which(rownames(model$CIbeta$pi$est) %in% piNames),])
+          piXB <- model$covsPi[,1,drop=FALSE]%*%matrix(tmp,nrow=1)
+          exppi <- exp(piXB)
+          tmppi <- (exppi/rowSums(exppi))[1,,drop=FALSE]
+          for(i in which(!is.finite(rowSums(tmppi)))){
+            tmp <- exp(Brobdingnag::as.brob(piXB[i,]))
+            tmppi[i,] <- as.numeric(tmp/Brobdingnag::sum(tmp))
+          }
+          pie <- tmppi
+          colnames(pie) <- paste0("mix",1:mixtures)
+        } else {
+          pie <- matrix(0,nrow=length(piNames),ncol=mixtures-1,dimnames = list(piNames,paste0("mix",2:mixtures)))
+          if(mixtures==model$conditions$mixtures && length(which(piNames %in% rownames(model$CIbeta$pi$est))>1)){
+            for(i in match(rownames(model$CIbeta$pi$est),piNames,nomatch=0)){#which(model$stateNames %in% stateNames)){
+              if(is.miSum(model))
+                pie[piNames[i],] <- nw2w(model$CIbeta$pi$est,model$conditions$workBounds$pi)[piNames[i],]
+              else
+                pie[piNames[i],] <- matrix(model$mod$estimate[parindex[["beta"]]+length(model$mle$beta)+1:length(model$CIbeta$pi$est)],nrow(model$CIbeta$pi$est),ncol(model$CIbeta$pi$est),dimnames=dimnames(model$CIbeta$pi$est))[piNames[i],]
+            }
+          }
+        }
+        Par$pi <- pie
+      }
+      if(!is.list(Par$beta)) Par$beta <- list(beta=Par$beta,pi=Par$pi)
+      else Par$beta$pi <- Par$pi
     }
   } else {
     Par$beta<-NULL

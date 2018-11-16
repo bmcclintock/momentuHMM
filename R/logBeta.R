@@ -85,7 +85,6 @@ logBeta <- function(m)
   probs <- allProbs(m)
   
   mixtures <- m$conditions$mixtures
-  if(mixtures==1) pie <- 1
   
   trMat <- lbeta <- list()
   lbeta[1:mixtures] <- list(matrix(NA,nbObs,nbStates))

@@ -348,7 +348,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   unsigned int k=0; // animal index
   arma::mat alpha(mixtures,nbStates);
   arma::rowvec delt(nbStates);
-  arma::rowvec pie = Par["pi"];
+  arma::mat pie = Par["pi"];
   
   double A; 
   double lscale = 0.0;
@@ -377,7 +377,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       alpha.row(mix) = alpha.row(mix)/sum(alpha.row(mix));
     }
     if((k+1<aInd.size() && i==(unsigned)(aInd(k+1)-2)) || (i==(allProbs.n_rows-1))){
-      maxscale = mixlscale + log(pie);
+      maxscale = mixlscale + log(pie.row(k));
       A = maxscale.max(); // cancels out below; helps prevent numerical issues
       lscale += A + log(sum(exp(maxscale - A)));
       k++;

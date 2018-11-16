@@ -46,7 +46,7 @@ allProbs <- function(m)
     Par<-lapply(Par,function(x) c(t(x)))
     Par<-Par[distnames]
     beta <- m$Par$beta$beta$est
-    pie <- c(m$Par$real$pi$est)
+    pie <- m$Par$real$pi$est
     delta <- m$Par$real$delta$est
     if(!is.null(beta)) m$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(beta),2,byrow=TRUE)
     if(!is.null(pie)) m$conditions$workBounds$pi <- matrix(c(-Inf,Inf),length(m$Par$beta$pi$est),2,byrow=TRUE)
@@ -109,7 +109,7 @@ allProbs <- function(m)
   }
   dist <- lapply(dist,function(x) gsub("Consensus","",x))
 
-  par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds)
+  par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds,m$covsPi)
   
   Fun <- lapply(dist,function(x) paste("d",x,sep=""))
   

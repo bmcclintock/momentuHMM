@@ -31,6 +31,7 @@
 #' @param meanind index for circular-circular regression mean angles with at least one non-zero entry in fullDM
 #' @param covsDelta data frame containing the delta model covariates (if any)
 #' @param workBounds named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters
+#' @param covsPi data frame containing the pi model covariates (if any)
 #' 
 #' @return A list of:
 #' \item{...}{Matrices containing the natural parameters for each data stream (e.g., 'step', 'angle', etc.)}
@@ -65,7 +66,7 @@
 #' @importFrom boot inv.logit
 #' @importFrom Brobdingnag as.brob sum
 
-w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind,nc,meanind,covsDelta,workBounds)
+w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi)
 {
   
   # identify recharge parameters
@@ -84,11 +85,11 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   else g0 <- NULL
   
   mixtures <- nrow(workBounds$beta)/((nbCovs+1)*nbStates*(nbStates-1))
+  nbAnimals <- nrow(covsDelta)
   
   # identify initial distribution parameters
   if(!stationary & nbStates>1){
     nbCovsDelta <- ncol(covsDelta)-1 # substract intercept column
-    nbAnimals <- nrow(covsDelta)
     
     foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)*mixtures+1
     
@@ -101,14 +102,14 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   else delta <- NULL
   
   # identify regression coefficients for the transition probabilities
-  pie <- 1
+  pie <- matrix(1,nbAnimals,1)
   if(nbStates>1) {
     
     if(mixtures>1){
-      foo <- length(wpar)-(mixtures-1)+1
-      tmpwpar <- w2wn(wpar[foo:length(wpar)],workBounds$pi)
-      exppi <- exp(c(0,tmpwpar))
-      pie <- exppi/sum(exppi)
+      nbCovsPi <- ncol(covsPi)-1 # substract intercept column
+      foo <- length(wpar)-(nbCovsPi+1)*(mixtures-1)+1
+      tmpwpar <- matrix(w2wn(wpar[foo:length(wpar)],workBounds$pi),(nbCovsPi+1),mixtures-1)
+      pie <- mlogit(tmpwpar,covsPi,nbCovsPi,nbAnimals,mixtures)
       wpar <- wpar[-(foo:length(wpar))]
     }
     

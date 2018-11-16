@@ -6,9 +6,10 @@
 \usage{
 checkPar0(data, nbStates, dist, Par0 = NULL, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
-  formulaDelta = NULL, stationary = FALSE, mixtures = 1, DM = NULL,
-  cons = NULL, userBounds = NULL, workBounds = NULL, workcons = NULL,
-  betaCons = NULL, betaRef = NULL, stateNames = NULL, fixPar = NULL)
+  formulaDelta = NULL, stationary = FALSE, mixtures = 1,
+  formulaPi = NULL, DM = NULL, cons = NULL, userBounds = NULL,
+  workBounds = NULL, workcons = NULL, betaCons = NULL, betaRef = NULL,
+  stateNames = NULL, fixPar = NULL)
 }
 \arguments{
 \item{data}{\code{\link{momentuHMMData}} object or a data frame containing the data stream and covariate values}
@@ -28,16 +29,19 @@ each data stream specified in \code{dist}.  If \code{Par0} is not provided, then
 distributions ('vm' and 'wrpcauchy').}
 
 \item{circularAngleMean}{An optional named list indicating whether to use circular-linear or circular-circular
-regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. See \code{\link{fitHMM}}.}
+regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.}
 
 \item{formula}{Regression formula for the transition probability covariates.}
 
 \item{formulaDelta}{Regression formula for the initial distribution.}
 
 \item{stationary}{\code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
-equal to the stationary distribution. Default: \code{FALSE}.}
+equal to the stationary distribution.}
 
-\item{mixtures}{Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.}
+\item{mixtures}{Number of mixtures for the state transition probabilities.}
+
+\item{formulaPi}{Regression formula for the mixture distribution probabilities. 
+Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilties).}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream.}

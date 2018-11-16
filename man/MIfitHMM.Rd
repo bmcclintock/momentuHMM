@@ -7,9 +7,9 @@
 MIfitHMM(miData, nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
   nbStates, dist, Par0, beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
   circularAngleMean = NULL, formula = ~1, formulaDelta = NULL,
-  stationary = FALSE, mixtures = 1, verbose = NULL, nlmPar = NULL,
-  fit = TRUE, useInitial = FALSE, DM = NULL, cons = NULL,
-  userBounds = NULL, workBounds = NULL, workcons = NULL,
+  stationary = FALSE, mixtures = 1, formulaPi = NULL, verbose = NULL,
+  nlmPar = NULL, fit = TRUE, useInitial = FALSE, DM = NULL,
+  cons = NULL, userBounds = NULL, workBounds = NULL, workcons = NULL,
   betaCons = NULL, betaRef = NULL, mvnCoords = NULL, stateNames = NULL,
   knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
   optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
@@ -59,6 +59,8 @@ regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turn
 equal to the stationary distribution. See \code{\link{fitHMM}}.}
 
 \item{mixtures}{Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.}
+
+\item{formulaPi}{Regression formula for the mixture distribution probabilities. See \code{\link{fitHMM}}.}
 
 \item{verbose}{Deprecated: please use \code{print.level} in \code{nlmPar} argument. Determines the print level of the \code{nlm} optimizer. The default value of 0 means that no
 printing occurs, a value of 1 means that the first and last iterations of the optimization are

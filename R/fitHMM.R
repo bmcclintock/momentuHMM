@@ -58,6 +58,8 @@
 #' @param stationary \code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.
+#' @param formulaPi Regression formula for the mixture distribution probabilities. Default: \code{NULL} (no covariate effects; both \code{beta0$pi} and \code{fixPar$pi} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{beta0$pi} and \code{fixPar$pi} are specified on the working scale.
+#' Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilties).
 #' @param verbose Deprecated: please use \code{print.level} in \code{nlmPar} argument. Determines the print level of the \code{nlm} optimizer. The default value of 0 means that no
 #' printing occurs, a value of 1 means that the first and last iterations of the optimization are
 #' detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.
@@ -433,7 +435,7 @@
 fitHMM <- function(data,nbStates,dist,
                    Par0,beta0=NULL,delta0=NULL,
                    estAngleMean=NULL,circularAngleMean=NULL,
-                   formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,
+                   formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,
                    verbose=NULL,nlmPar=list(),fit=TRUE,
                    DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,
                    mvnCoords=NULL,stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL)
@@ -569,6 +571,14 @@ fitHMM <- function(data,nbStates,dist,
   if(nrow(covsDelta)!=nrow(data[aInd,,drop=FALSE])) stop("covariates cannot contain missing values")
   nbCovsDelta <- ncol(covsDelta)-1 # substract intercept column
   
+  # build design matrix for mixture probabilties
+  if(is.null(formulaPi)){
+    formPi <- ~1
+  } else formPi <- formulaPi
+  covsPi <- model.matrix(formPi,data[aInd,,drop=FALSE])
+  if(nrow(covsPi)!=nrow(data[aInd,,drop=FALSE])) stop("covariates cannot contain missing values")
+  nbCovsPi <- ncol(covsPi)-1 # substract intercept column
+  
   # check that stationary==FALSE if there are covariates
   if(nbCovs>0 & stationary==TRUE)
     stop("stationary can't be set to TRUE if there are covariates in formula.")
@@ -645,7 +655,7 @@ fitHMM <- function(data,nbStates,dist,
   ####################################
   ## Prepare initial values for nlm ##
   ####################################
-  fixParIndex <- get_fixParIndex(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,stationary,nbCovsDelta,formulaDelta,data)
+  fixParIndex <- get_fixParIndex(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data)
   
   parCount<- lapply(fullDM,ncol)
   for(i in distnames[!unlist(lapply(inputs$circularAngleMean,isFALSE))]){
@@ -663,7 +673,7 @@ fitHMM <- function(data,nbStates,dist,
   wpar <- n2w(fixParIndex$Par0,p$bounds,fixParIndex$beta0,fixParIndex$delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
   if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
 
-  parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures-(mixtures-1)-ncol(covsDelta)*(nbStates-1)*(!stationary)*mixtures-ifelse(is.null(recharge),0,(nbRecovs+1)+1)
+  parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures-(nbCovsPi+1)*(mixtures-1)-ncol(covsDelta)*(nbStates-1)*(!stationary)*mixtures-ifelse(is.null(recharge),0,(nbRecovs+1)+1)
 
   retrySD <- get_retrySD(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStates,fixParIndex$beta0,mixtures,recharge,fixParIndex$delta0)
   
@@ -690,7 +700,7 @@ fitHMM <- function(data,nbStates,dist,
       invokeRestart("muffleWarning")
   }
   
-  printMessage(nbStates,dist,p,DM,formula,formDelta,mixtures)
+  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures)
   
   ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
   nc <- ncmean$nc
@@ -710,7 +720,7 @@ fitHMM <- function(data,nbStates,dist,
       
       # just use moveHMM if simpler models are specified
       if(all(distnames %in% c("step","angle")) & all(unlist(dist) %in% moveHMMdists) & mHind){
-        fullPar<-w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind,nc,meanind,covsDelta,workBounds)
+        fullPar<-w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
         Par<-lapply(fullPar[distnames],function(x) x[,1])
         for(i in distnames){
           if(dist[[i]] %in% angledists & !inputs$estAngleMean[[i]])
@@ -744,7 +754,7 @@ fitHMM <- function(data,nbStates,dist,
           withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,optInd,recovs,g0covs,mixtures,
+                                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,optInd,recovs,g0covs,mixtures,covsPi,
                                                print.level=print.level,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
                                                iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)),error=function(e) e),warning=h)
@@ -752,7 +762,7 @@ fitHMM <- function(data,nbStates,dist,
           withCallingHandlers(curmod <- tryCatch(optim(optPar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                      inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                      stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,optInd,recovs,g0covs,mixtures,
+                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,optInd,recovs,g0covs,mixtures,covsPi,
                                                      method=optMethod,control=control,hessian=hessian),error=function(e) e),warning=h)
         }
         endTime <- proc.time()-startTime
@@ -769,7 +779,7 @@ fitHMM <- function(data,nbStates,dist,
         }
       }
       
-      wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures)
+      wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
       
       if((fitCount+1)<=retryFits){
         cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,"         ",sep="")
@@ -778,7 +788,7 @@ fitHMM <- function(data,nbStates,dist,
           names(curmod)[which(names(curmod)=="value")] <- "minimum"
           curmod$elapsedTime <- endTime[3]
           if(curmod$minimum < mod$minimum) mod <- curmod
-          wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures)
+          wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
         }
         wpar[1:parmInd] <- wpar[1:parmInd]+rnorm(parmInd,0,retrySD[1:parmInd])
         if(nbStates>1)
@@ -793,8 +803,8 @@ fitHMM <- function(data,nbStates,dist,
     
     # convert the parameters back to their natural scale
     mod$wpar <- mod$estimate
-    wpar <- mod$estimate <- expandPar(mod$wpar,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures)
-    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
+    wpar <- mod$estimate <- expandPar(mod$wpar,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
+    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
     
     if(!is.null(mod$hessian)){
       Sigma <- tryCatch(MASS::ginv(mod$hessian),error=function(e) e)
@@ -811,7 +821,7 @@ fitHMM <- function(data,nbStates,dist,
   }
   else {
     mod <- NA
-    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
+    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
   }
   
 
@@ -860,7 +870,8 @@ fitHMM <- function(data,nbStates,dist,
     }
     if(mixtures>1){
       rownames(mle$beta) <- paste0(rownames(mle$beta),"_mix",rep(1:mixtures,each=length(colnames(covs))))
-      names(mle$pi) <- paste0("mix",1:mixtures)
+      colnames(mle$pi) <- paste0("mix",1:mixtures)
+      rownames(mle$pi) <- paste0("ID:",data$ID[aInd])
     } else mle$pi <- NULL
   }
 
@@ -905,9 +916,9 @@ fitHMM <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
-                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=fixParIndex$ofixPar,wparIndex=fixParIndex$wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=fixParIndex$betaRef,optInd=optInd,recharge=recharge,mvnCoords=mvnCoords,mixtures=mixtures)
+                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=fixParIndex$ofixPar,wparIndex=fixParIndex$wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=fixParIndex$betaRef,optInd=optInd,recharge=recharge,mvnCoords=mvnCoords,mixtures=mixtures,formulaPi=formulaPi)
 
-  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName)
+  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName,reCovs=recovsCol,g0covs=g0covsCol,covsPi=covsPi)
   
   #compute SEs and CIs on natural and working scale
   CIreal<-tryCatch(CIreal(momentuHMM(mh)),error=function(e) e)
@@ -915,7 +926,7 @@ fitHMM <- function(data,nbStates,dist,
   CIbeta<-tryCatch(CIbeta(momentuHMM(mh)),error=function(e) e)
   if(inherits(CIbeta,"error") & fit==TRUE) warning("Failed to compute SEs confidence intervals on the working scale -- ",CIbeta)
   
-  mh <- list(data=data,mle=mle,CIreal=CIreal,CIbeta=CIbeta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName,reCovs=recovsCol,g0covs=g0covsCol)
+  mh <- list(data=data,mle=mle,CIreal=CIreal,CIbeta=CIbeta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName,reCovs=recovsCol,g0covs=g0covsCol,covsPi=covsPi)
   
   if(!is.null(mvnCoords)) attr(mh,'coords') <- paste0(mvnCoords,c(".x",".y"))
   

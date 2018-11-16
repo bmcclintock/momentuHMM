@@ -180,14 +180,14 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   if(mixtures==1) piInd <- NULL
   else piInd <- 1
   
-  parindex <- c(0,cumsum(c(unlist(parCount),length(m$mle$beta),piInd*(mixtures-1),ncol(m$covsDelta)*(nbStates-1)*mixtures)))
+  parindex <- c(0,cumsum(c(unlist(parCount),length(m$mle$beta),piInd*ncol(m$covsPi)*(mixtures-1),ncol(m$covsDelta)*(nbStates-1)*mixtures)))
   names(parindex)[1:length(distnames)] <- distnames
   if(nbStates>1) {
     names(parindex)[length(distnames)+1] <- "beta"
     if(mixtures>1) names(parindex)[length(distnames)+2] <- "pi"
     names(parindex)[length(parindex)-1] <- "delta"
     if(!is.null(m$conditions$recharge)){
-      parindex <- c(0,cumsum(c(unlist(parCount),length(m$mle$beta),piInd*(mixtures-1),ncol(m$covsDelta)*(nbStates-1)*mixtures,length(m$mle$g0),length(m$mle$theta))))
+      parindex <- c(0,cumsum(c(unlist(parCount),length(m$mle$beta),piInd*ncol(m$covsPi)*(mixtures-1),ncol(m$covsDelta)*(nbStates-1)*mixtures,length(m$mle$g0),length(m$mle$theta))))
       if(mixtures>1) names(parindex)[1:(length(parindex)-1)] <- c(distnames,"beta","pi","delta","g0","theta")
       else names(parindex)[1:(length(parindex)-1)] <- c(distnames,"beta","delta","g0","theta")
       parmcols$g0 <- length(m$mle$g0)
@@ -367,7 +367,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     tmpParNames[which(p$parNames[[i]]=="kappa")] <- "concentration"
     
     DMind[[i]] <- FALSE
-    par <- c(w2n(miBeta$coefficients,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean[i],inputs$consensus[i],m$conditions$stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta,list(beta=matrix(c(-Inf,Inf),length(m$mle$beta),2,byrow=TRUE)))[[i]])
+    par <- c(w2n(miBeta$coefficients,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean[i],inputs$consensus[i],m$conditions$stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta,list(beta=matrix(c(-Inf,Inf),length(m$mle$beta),2,byrow=TRUE)),m$covsPi)[[i]])
     
     if(!(inputs$dist[[i]] %in% angledists) | (inputs$dist[[i]] %in% angledists & m$conditions$estAngleMean[[i]] & !m$conditions$Bndind[[i]])) {
       Par$real[[i]] <- get_CI(miBeta$coefficients,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],DMinputs$cons[[i]],DMinputs$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],NULL)
@@ -427,18 +427,21 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   # pooled pi estimates
   if(mixtures>1 & nbStates>1){
-    piInd <- parindex[["beta"]]+((nbCovs+1)*nbStates*(nbStates-1)*mixtures)+1:(mixtures-1)
-    pie <- matrix(miBeta$coefficients[piInd],nrow=1)
-    est<-lower<-upper<-se<-matrix(NA,nrow=1,ncol=mixtures)
-    est[1,] <- get_delta(pie,matrix(1,1,1),1:mixtures)
-    for(mix in 1:mixtures){
-      dN<-numDeriv::grad(get_delta,pie,covsDelta=matrix(1,1,1),i=mix)
-      se[1,mix]<-suppressWarnings(sqrt(dN%*%miBeta$variance[piInd,piInd]%*%dN))
-      lower[1,mix] <- probCI(est[1,mix],se[1,mix],quantSup,bound="lower")
-      upper[1,mix] <- probCI(est[1,mix],se[1,mix],quantSup,bound="upper")
+    piInd <- parindex[["beta"]]+((nbCovs+1)*nbStates*(nbStates-1)*mixtures)+1:(ncol(m$covsPi)*(mixtures-1))
+    pie <- matrix(miBeta$coefficients[piInd],nrow=ncol(m$covsPi),ncol=mixtures-1)
+    est<-lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsPi),ncol=mixtures)
+    for(j in 1:nrow(m$covsPi)){
+      est[j,] <- get_delta(pie,m$covsPi[j,,drop=FALSE],i=1:mixtures,workBounds=m$conditions$workBounds$pi)
+      for(i in 1:mixtures){
+        dN<-numDeriv::grad(get_delta,pie,covsDelta=m$covsPi[j,,drop=FALSE],i=i,workBounds=m$conditions$workBounds$pi)
+        se[j,i]<-suppressWarnings(sqrt(dN%*%miBeta$variance[piInd,piInd]%*%dN))
+        lower[j,i] <- probCI(est[j,i],se[j,i],quantSup,bound="lower")
+        upper[j,i] <- probCI(est[j,i],se[j,i],quantSup,bound="upper")
+      }
     }
     Par$real$pi <- list(est=est,se=se,lower=lower,upper=upper)
     colnames(Par$real$pi$est) <- colnames(Par$real$pi$se) <- colnames(Par$real$pi$lower) <- colnames(Par$real$pi$upper) <- paste0("mix",1:mixtures)
+    rownames(Par$real$pi$est) <- rownames(Par$real$pi$se) <- rownames(Par$real$pi$lower) <- rownames(Par$real$pi$upper) <- paste0("ID:",unique(m$data$ID))
   }
   
   # pooled delta estimates

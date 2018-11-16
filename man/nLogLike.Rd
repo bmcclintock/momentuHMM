@@ -9,7 +9,7 @@ nLogLike(optPar, nbStates, formula, bounds, parSize, data, dist, covs,
   stationary = FALSE, cons, fullDM, DMind, workcons, Bndind, knownStates,
   fixPar, wparIndex, nc, meanind, covsDelta, workBounds, prior = NULL,
   betaCons = NULL, betaRef, optInd = NULL, recovs = NULL, g0covs = NULL,
-  mixtures = 1)
+  mixtures = 1, covsPi)
 }
 \arguments{
 \item{optPar}{Vector of working parameters.}
@@ -116,7 +116,7 @@ l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bound
      m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
      m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),
      m$conditions$wparIndex,covsDelta=m$covsDelta,workBounds=m$conditions$workBounds,
-     betaRef=m$conditions$betaRef)
+     betaRef=m$conditions$betaRef,covsPi=m$covsPi)
 }
 
 }

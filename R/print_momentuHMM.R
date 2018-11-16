@@ -70,7 +70,14 @@ print.momentuHMM <- function(x,...)
       cat("\n")
       cat("Mixture probabilities:\n")
       cat("----------------------\n")
-      print(m$mle$pi)
+      if(is.null(m$conditions$formulaPi)) {
+        formPi <- ~1
+      } else formPi <- m$conditions$formulaPi
+      if(!length(attr(terms.formula(formPi),"term.labels")) & is.null(m$conditions$formulaPi)){
+        tmp <- m$mle$pi[1,]
+        names(tmp) <- paste0("mix",1:m$conditions$mixtures)
+        print(tmp)
+      } else print(m$mle$pi)
     }
   
     if(!is.null(m$mle$gamma)) {

@@ -6,12 +6,13 @@
 \usage{
 fitHMM(data, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
-  formulaDelta = NULL, stationary = FALSE, mixtures = 1, verbose = NULL,
-  nlmPar = list(), fit = TRUE, DM = NULL, cons = NULL,
-  userBounds = NULL, workBounds = NULL, workcons = NULL,
-  betaCons = NULL, betaRef = NULL, mvnCoords = NULL, stateNames = NULL,
-  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
-  optMethod = "nlm", control = list(), prior = NULL, modelName = NULL)
+  formulaDelta = NULL, stationary = FALSE, mixtures = 1,
+  formulaPi = NULL, verbose = NULL, nlmPar = list(), fit = TRUE,
+  DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL,
+  workcons = NULL, betaCons = NULL, betaRef = NULL, mvnCoords = NULL,
+  stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
+  retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL,
+  modelName = NULL)
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} object.}
@@ -79,6 +80,9 @@ Any formula terms that are not state- or parameter-specific are included on all 
 equal to the stationary distribution. Default: \code{FALSE}.}
 
 \item{mixtures}{Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.}
+
+\item{formulaPi}{Regression formula for the mixture distribution probabilities. Default: \code{NULL} (no covariate effects; both \code{beta0$pi} and \code{fixPar$pi} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{beta0$pi} and \code{fixPar$pi} are specified on the working scale.
+Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilties).}
 
 \item{verbose}{Deprecated: please use \code{print.level} in \code{nlmPar} argument. Determines the print level of the \code{nlm} optimizer. The default value of 0 means that no
 printing occurs, a value of 1 means that the first and last iterations of the optimization are

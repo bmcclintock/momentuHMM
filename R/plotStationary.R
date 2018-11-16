@@ -137,7 +137,7 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
     nbCovs <- ncol(model.matrix(newformula,data))-1 # substract intercept column
     mixtures <- model$conditions$mixtures
     
-    gamInd<-(length(model$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures+1):(length(model$mod$estimate))-(mixtures-1)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-ncol(model$covsDelta)*(nbStates-1)*(!model$conditions$stationary)*mixtures
+    gamInd<-(length(model$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures+1):(length(model$mod$estimate))-(ncol(model$covsPi)*(mixtures-1))-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-ncol(model$covsDelta)*(nbStates-1)*(!model$conditions$stationary)*mixtures
     #gamInd <- gamInd[model$conditions$betaCons]
     
     # loop over covariates
@@ -331,7 +331,7 @@ plotStationary.miSum <- function(model, covs = NULL, col=NULL, plotCI=FALSE, alp
     model$mle$theta <- c(model$Par$beta$theta$est)
     names(model$mle$theta) <- colnames(model$Par$beta$theta$est)
   } else nbRecovs <- 0
-  model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,length(model$stateNames),model$covsDelta,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures)
+  model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,length(model$stateNames),ncol(model$covsDelta)-1,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures,ncol(model$covsPi)-1)
   plotStationary(momentuHMM(model),covs,col,plotCI,alpha,...)
 }
 

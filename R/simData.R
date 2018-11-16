@@ -28,6 +28,8 @@
 #' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.
 #' @param formulaDelta Regression formula for the initial distribution. Default: \code{NULL} (no covariate effects and \code{delta} is specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then \code{delta} must be specified on the working scale.
 #' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.
+#' @param formulaPi Regression formula for the mixture distribution probabilities. Default: \code{NULL} (no covariate effects; both \code{beta0$pi} and \code{fixPar$pi} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{beta0$pi} and \code{fixPar$pi} are specified on the working scale.
+#' Note that only the covariate values corresponding to the first time step for each individual ID are used (i.e. time-varying covariates cannot be used for the mixture probabilties).
 #' @param covs Covariate values to include in the simulated data, as a dataframe. The names of any covariates specified by \code{covs} can
 #' be included in \code{formula} and/or \code{DM}. Covariates can also be simulated according to a standard normal distribution, by setting
 #' \code{covs} to \code{NULL} (the default), and specifying \code{nbCovs>0}.
@@ -355,7 +357,7 @@
 
 simData <- function(nbAnimals=1,nbStates=2,dist,
                     Par,beta=NULL,delta=NULL,
-                    formula=~1,formulaDelta=NULL,mixtures=1,
+                    formula=~1,formulaDelta=NULL,mixtures=1,formulaPi=NULL,
                     covs=NULL,nbCovs=0,
                     spatialCovs=NULL,
                     zeroInflation=NULL,
@@ -406,7 +408,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         model$mle$theta <- c(model$Par$beta$theta$est)
         names(model$mle$theta) <- colnames(model$Par$beta$theta$est)
       } else nbRecovs <- 0
-      model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,nbStates,model$covsDelta,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures)
+      model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,nbStates,ncol(model$covsDelta)-1,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures,ncol(model$covsPi)-1)
       if(!is.null(model$mle$beta)) model$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(model$mle$beta),2,byrow=TRUE)
       if(!is.null(model$Par$beta$pi$est)) model$conditions$workBounds$pi<-matrix(c(-Inf,Inf),length(model$Par$beta$pi$est),2,byrow=TRUE)
       if(!is.null(model$Par$beta$delta$est)) model$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(model$Par$beta$delta$est),2,byrow=TRUE)
@@ -431,6 +433,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       formulaDelta <- formDelta <- ~1
     } else formulaDelta <- formDelta <- model$condition$formulaDelta
     mixtures <- model$conditions$mixtures
+    if(is.null(model$condition$formulaPi)){
+      formulaPi <- formPi <- ~1
+    } else formulaPi <- formPi <- model$condition$formulaPi
   
     Par <- model$mle[distnames]
     parCount<- lapply(model$conditions$fullDM,ncol)
@@ -479,11 +484,15 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     foo <- length(model$mod$estimate)-length(g0)-length(theta)-(nbCovsDelta+1)*(nbStates-1)*mixtures+1
     delta <- matrix(model$mod$estimate[foo:(length(model$mod$estimate)-length(g0)-length(theta))],nrow=(nbCovsDelta+1)*mixtures) 
     if(mixtures>1) {
-      #foo <- length(model$mod$estimate)-length(g0)-length(theta)-(nbCovsDelta+1)*(nbStates-1)*mixtures-(mixtures-1)+1:(mixtures-1)
-      #pie <- model$mod$estimate[foo]
-      pie <- model$mle$pi
-      workBounds$pi <- NULL
-    } else pie <- 1
+      nbCovsPi <- ncol(model$covsPi)-1
+      foo <- length(model$mod$estimate)-length(g0)-length(theta)-(nbCovsDelta+1)*(nbStates-1)*mixtures-(nbCovsPi+1)*(mixtures-1)+1:((nbCovsPi+1)*(mixtures-1))
+      pie <- matrix(model$mod$estimate[foo],nrow=nbCovsPi+1,ncol=mixtures-1)
+      #pie <- model$mle$pi
+      #workBounds$pi <- NULL
+    } else {
+      pie <- NULL
+      nbCovsPi <- 0
+    }
     beta <- list(beta=beta,pi=pie,g0=g0,theta=theta)
 
     Par<-lapply(Par,function(x) c(t(x)))
@@ -499,7 +508,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(!is.null(model$rawCovs)){
         covNames <- c(colnames(model$rawCovs),covNames)
       }
-      covNames <- c(covNames,colnames(model$covsDelta)[-1])
+      covNames <- c(covNames,colnames(model$covsPi)[which(colnames(model$covsPi)!="(Intercept)")],colnames(model$covsDelta)[which(colnames(model$covsDelta)!="(Intercept)")])
       covsCol <- unique(covNames)
       factorterms<-names(model$data)[unlist(lapply(model$data,is.factor))]
       factorcovs<-paste0(rep(factorterms,times=unlist(lapply(model$data[factorterms],nlevels))),unlist(lapply(model$data[factorterms],levels)))
@@ -536,6 +545,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
     Par <- Par[distnames]
     
+    if(is.null(formulaPi)){
+      formPi <- ~1
+    } else formPi <- formulaPi
     if(is.null(formulaDelta)){
       formDelta <- ~1
     } else formDelta <- formulaDelta
@@ -883,15 +895,18 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   #  else formula <- formula(~1)
   #}
   
-  printMessage(nbStates,dist,p,DM,formula,formDelta,mixtures,"Simulating")
+  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating")
   
   if(length(all.vars(formula)))
     if(!all(all.vars(formula) %in% c("ID",names(allCovs),centerNames,centroidNames,spatialcovnames)))
       stop("'formula' covariate(s) not found")
+  if(length(all.vars(formPi)))
+    if(!all(all.vars(formPi) %in% c("ID",names(allCovs),centerNames,centroidNames,spatialcovnames)))
+      stop("'formulaPi' covariate(s) not found")
   if(length(all.vars(formDelta)))
     if(!all(all.vars(formDelta) %in% c("ID",names(allCovs),centerNames,centroidNames,spatialcovnames)))
       stop("'formulaDelta' covariate(s) not found")
-  if(("ID" %in% all.vars(formula) | "ID" %in% all.vars(formDelta)) & nbAnimals<2) stop("ID cannot be a covariate when nbAnimals=1")
+  if(("ID" %in% all.vars(formula) | "ID" %in% all.vars(formPi) | "ID" %in% all.vars(formDelta)) & nbAnimals<2) stop("ID cannot be a covariate when nbAnimals=1")
   
   newForm <- newFormulas(formula,nbStates)
   formulaStates <- newForm$formulaStates
@@ -926,7 +941,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   
   if(mixtures>1){
     if(!is.null(beta)){
-      if(!is.list(beta)) stop("beta0 must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
+      if(!is.list(beta)) stop("beta must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
     }
   }
   
@@ -968,14 +983,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(length(beta0$g0)!=(nbG0covs+1) | any(!is.numeric(beta0$g0))) stop("beta$g0 must be a numeric vector of length ",nbG0covs+1)
     if(length(beta0$theta)!=(nbRecovs+1) | any(!is.numeric(beta0$theta))) stop("beta$theta must be a numeric vector of length ",nbRecovs+1)
   }
-  if(mixtures>1){
-    if(is.null(beta0$pi)){
-      beta0$pi <- rep(1/mixtures,mixtures)
-    } else {
-      if(length(beta0$pi)!=mixtures) stop("beta$pi must be of length ",mixtures)
-      if(sum(beta0$pi)!=1) stop("beta$pi must sum to 1")
-    }
-  }
   if(ncol(beta0$beta)!=nbStates*(nbStates-1) | (nrow(beta0$beta)/mixtures)!=nbBetaCovs) {
     error <- paste("beta has wrong dimensions: it should have",nbBetaCovs*mixtures,"rows and",
                    nbStates*(nbStates-1),"columns.")
@@ -986,6 +993,24 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       noBeta<-which(match(colnames(model.matrix(newformula,tmpCovs)),colnames(model.matrix(formulaStates[[state]],tmpCovs)),nomatch=0)==0)
       if(length(noBeta)) beta0$beta[noBeta,state] <- 0
     }
+  }
+  
+  covsPi <- model.matrix(formPi,tmpCovs)
+  nbCovsPi <- ncol(covsPi)-1
+  if(!nbCovsPi & is.null(formulaPi)){
+    if(is.null(beta0$pi)){
+      beta0$pi <- matrix(1/mixtures,(nbCovsPi+1),mixtures)
+    } else {
+      beta0$pi <- matrix(beta0$pi,(nbCovsPi+1),mixtures)
+    }
+    if(length(beta0$pi) != (nbCovsPi+1)*mixtures)
+      stop(paste("beta$pi has the wrong length: it should have",mixtures,"elements."))
+    beta0$pi <- matrix(log(beta0$pi[-1]/beta0$pi[1]),nbCovsPi+1,mixtures-1)
+  } else {
+    if(is.null(beta0$pi)) beta0$pi <- matrix(0,nrow=(nbCovsPi+1),ncol=mixtures-1)
+    if(is.null(dim(beta0$pi)) || (ncol(beta0$pi)!=mixtures-1 | nrow(beta0$pi)!=(nbCovsPi+1)))
+      stop(paste("beta$pi has wrong dimensions: it should have",(nbCovsPi+1),"rows and",
+                 mixtures-1,"columns."))
   }
   
   covsDelta <- model.matrix(formDelta,tmpCovs)
@@ -1020,16 +1045,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   workBounds <- getWorkBounds(workBounds,distnames,unlist(Par[distnames]),parindex,parCount,inputs$DM,beta0,deltaB)
   
   wnbeta <- w2wn(beta0$beta,workBounds$beta)
+  wnpi <- w2wn(beta0$pi,workBounds$pi)
   if(!is.null(recharge)){
     wng0 <- w2wn(beta0$g0,workBounds$g0)
     wntheta <- w2wn(beta0$theta,workBounds$theta)
   }
   
-  # assign individuals to mixtures
-  if(mixtures>1){
-    mix <- sample.int(mixtures,nbAnimals,prob=beta0$pi,replace=TRUE)
-    beta0$pi <- log(beta0$pi[-1]/beta0$pi[1])
-  } else mix <- rep(1,nbAnimals)
+  mix <- rep(1,nbAnimals)
   
   if(!nbSpatialCovs | !retrySims){
   
@@ -1093,7 +1115,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           subCovs[,"recharge"] <- cumsum(c(g0,model.matrix(recharge$theta,subCovs[-nrow(subCovs),])%*%wntheta))
         }
         DMcov <- model.matrix(newformula,subCovs)
-        gFull <-  DMcov %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
         
         # format parameters
         DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
@@ -1106,7 +1127,15 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         meanind <- ncmean$meanind
 
         covsDelta <- model.matrix(formDelta,subCovs[1,,drop=FALSE])
-        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
+        covsPi <- model.matrix(formPi,subCovs[1,,drop=FALSE])
+        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+        
+        pie <- fullsubPar$pi
+        
+        # assign individual to mixture
+        if(mixtures>1) mix[zoo] <- sample.int(mixtures,1,prob=pie)
+        
+        gFull <-  DMcov %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
         g <- gFull[1,,drop=FALSE]
         delta0 <- fullsubPar$delta[mix[zoo],]
       } else {
@@ -1156,16 +1185,25 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             }
           }
         }
+        
+        covsPi <- model.matrix(formPi,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
+        pie <- mlogit(wnpi,covsPi,nbCovsPi,1,mixtures)
+        
+        # assign individual to mixture
+        if(mixtures>1) mix[zoo] <- sample.int(mixtures,1,prob=pie)
+        
         g <- model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
         covsDelta <- model.matrix(formDelta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
-        delta0 <- c(rep(0,nbCovsDelta+1),deltaB[(mix[zoo]-1)*(nbCovsDelta+1)+1:(nbCovsDelta+1),])
-        deltaXB <- covsDelta %*% matrix(delta0,nrow=nbCovsDelta+1)
-        expdelta <- exp(deltaXB)
-        delta0 <- expdelta/rowSums(expdelta)
-        for(i in which(!is.finite(rowSums(delta0)))){
-          tmp <- exp(Brobdingnag::as.brob(deltaXB[i,]))
-          delta0[i,] <- as.numeric(tmp/Brobdingnag::sum(tmp))
-        }
+        
+        delta0 <- mlogit(deltaB[(mix[zoo]-1)*(nbCovsDelta+1)+1:(nbCovsDelta+1),,drop=FALSE],covsDelta,nbCovsDelta,1,nbStates,mixtures)
+        #delta0 <- c(rep(0,nbCovsDelta+1),deltaB[(mix[zoo]-1)*(nbCovsDelta+1)+1:(nbCovsDelta+1),])
+        #deltaXB <- covsDelta %*% matrix(delta0,nrow=nbCovsDelta+1)
+        #expdelta <- exp(deltaXB)
+        #delta0 <- expdelta/rowSums(expdelta)
+        #for(i in which(!is.finite(rowSums(delta0)))){
+        #  tmp <- exp(Brobdingnag::as.brob(deltaXB[i,]))
+        #  delta0[i,] <- as.numeric(tmp/Brobdingnag::sum(tmp))
+        #}
       }
       gamma[!gamma] <- exp(g)
       gamma <- t(gamma)
@@ -1200,7 +1238,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
               }
             }
           }
-          subPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds)
+          subPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
         } else {
           subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
         }
@@ -1433,7 +1471,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       cat("\r    Attempt ",simCount+1," of ",retrySims,"...",sep="")
       tmp<-suppressMessages(tryCatch(simData(nbAnimals,nbStates,dist,
                           Par,beta,delta,
-                          formula,formulaDelta,mixtures,
+                          formula,formulaDelta,mixtures,formulaPi,
                           covs,nbCovs,
                           spatialCovs,
                           zeroInflation,

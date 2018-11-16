@@ -9,7 +9,8 @@ getPar0(model, nbStates = length(model$stateNames),
   circularAngleMean = model$conditions$circularAngleMean,
   formula = model$conditions$formula,
   formulaDelta = model$conditions$formulaDelta,
-  mixtures = model$conditions$mixtures, DM = model$conditions$DM,
+  mixtures = model$conditions$mixtures,
+  formulaPi = model$conditions$formulaPi, DM = model$conditions$DM,
   betaRef = model$conditions$betaRef, stateNames = model$stateNames)
 }
 \arguments{
@@ -28,6 +29,8 @@ regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turn
 \item{formulaDelta}{Regression formula for the initial distribution covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formulaDelta=model$conditions$formulaDelta}.}
 
 \item{mixtures}{Number of mixtures for the state transition probabilities  (see \code{\link{fitHMM}}). Default: \code{formula=model$conditions$mixtures}.}
+
+\item{formulaPi}{Regression formula for the mixture distribution probabilities (see \code{\link{fitHMM}}). Default: \code{formula=model$conditions$formulaPi}.}
 
 \item{DM}{Named list indicating the design matrices to be used for the probability distribution parameters of each data stream in the new model (see \code{\link{fitHMM}}). Only parameters with design matrix column names that match those in model$conditions$fullDM are extracted, so care must be taken in naming columns if any elements of \code{DM}
 are specified as matrices instead of formulas. Default: \code{DM=model$conditions$DM}.}

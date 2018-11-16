@@ -167,7 +167,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     tmpParNames <- p$parNames[[i]]
     tmpParNames[which(p$parNames[[i]]=="kappa")] <- "concentration"
     if(!m$conditions$DMind[[i]]){
-      par <- c(w2n(m$mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean[i],inputs$consensus[i],m$conditions$stationary,m$conditions$cons,fullDM,m$conditions$DMind,m$conditions$workcons,1,inputs$dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds)[[i]])
+      par <- c(w2n(m$mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean[i],inputs$consensus[i],m$conditions$stationary,m$conditions$cons,fullDM,m$conditions$DMind,m$conditions$workcons,1,inputs$dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds,m$covsPi)[[i]])
     } else {
       par <- as.vector(t(m$mle[[i]]))
     }
@@ -231,21 +231,25 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
     # pi
     if(mixtures>1){
       wpar<-m$mod$estimate
-      pie <- matrix(wpar[i3+1:(mixtures-1)],nrow=1,ncol=mixtures-1)
-      tmpSig <- Sigma[i3+1:(mixtures-1),i3+1:(mixtures-1)]
+      pie <- matrix(wpar[i3+1:(ncol(m$covsPi)*(mixtures-1))],nrow=ncol(m$covsPi),ncol=mixtures-1)
+      tmpSig <- Sigma[i3+1:(ncol(m$covsPi)*(mixtures-1)),i3+1:(ncol(m$covsPi)*(mixtures-1))]
       quantSup <- qnorm(1-(1-alpha)/2)
-      lower<-upper<-se<-matrix(NA,nrow=1,ncol=mixtures)
-      est<-matrix(m$mle$pi,nrow=1,ncol=mixtures)
-      for(mix in 1:mixtures){
-        if(!is.null(Sigma)){
-          dN<-numDeriv::grad(get_delta,pie,covsDelta=matrix(1,1,1),i=mix,workBounds=m$conditions$workBounds$pi)
-          se[1,mix]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
-          lower[1,mix]<-1/(1+exp(-(log(est[1,mix]/(1-est[1,mix]))-quantSup*(1/(est[1,mix]-est[1,mix]^2))*se[1,mix])))#est[1,mix]-quantSup*se[i]
-          upper[1,mix]<-1/(1+exp(-(log(est[1,mix]/(1-est[1,mix]))+quantSup*(1/(est[1,mix]-est[1,mix]^2))*se[1,mix])))#est[j,i]+quantSup*se[i]
+      lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsPi),ncol=mixtures)
+      est<-matrix(m$mle$pi,nrow=nrow(m$covsPi),ncol=mixtures)
+      if(!is.null(Sigma)){
+        for(j in 1:nrow(m$covsPi)){
+          for(i in 1:mixtures){
+            dN<-numDeriv::grad(get_delta,pie,covsDelta=m$covsPi[j,,drop=FALSE],i=i,workBounds=m$conditions$workBounds$pi)
+            se[j,i]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
+            lower[j,i]<-1/(1+exp(-(log(est[j,i]/(1-est[j,i]))-quantSup*(1/(est[j,i]-est[j,i]^2))*se[j,i])))
+            upper[j,i]<-1/(1+exp(-(log(est[j,i]/(1-est[j,i]))+quantSup*(1/(est[j,i]-est[j,i]^2))*se[j,i])))
+          }
         }
       }
+
       Par$pi <- list(est=est,se=se,lower=lower,upper=upper)  
       colnames(Par$pi$est) <- colnames(Par$pi$se) <- colnames(Par$pi$lower) <- colnames(Par$pi$upper) <- paste0("mix",1:mixtures)
+      rownames(Par$pi$est) <- rownames(Par$pi$se) <- rownames(Par$pi$lower) <- rownames(Par$pi$upper) <- paste0("ID:",unique(m$data$ID))
     }
     
     # delta

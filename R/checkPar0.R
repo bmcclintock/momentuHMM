@@ -14,12 +14,14 @@
 #' @param estAngleMean An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy'). 
 #' @param circularAngleMean An optional named list indicating whether to use circular-linear or circular-circular
-#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. See \code{\link{fitHMM}}.
+#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. 
 #' @param formula Regression formula for the transition probability covariates. 
 #' @param formulaDelta Regression formula for the initial distribution. 
 #' @param stationary \code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
-#' equal to the stationary distribution. Default: \code{FALSE}.
-#' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.
+#' equal to the stationary distribution.
+#' @param mixtures Number of mixtures for the state transition probabilities.
+#' @param formulaPi Regression formula for the mixture distribution probabilities. 
+#' Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilties).
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 #' stream.
 #' @param cons Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
@@ -78,7 +80,7 @@
 #' }
 #' @export
 
-checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,stateNames=NULL,fixPar=NULL)
+checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,stateNames=NULL,fixPar=NULL)
 {
   
   ## check that the data is a momentuHMMData object or valid data frame
@@ -219,7 +221,7 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
   m<-suppressMessages(fitHMM(data=data,nbStates=nbStates,dist=dist,
                              Par0=par,beta0=beta0,delta0=delta0,
                              estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
-                             formula=formula,formulaDelta=formulaDelta,stationary=stationary,mixtures=mixtures,
+                             formula=formula,formulaDelta=formulaDelta,stationary=stationary,mixtures=mixtures,formulaPi=formulaPi,
                              DM=DM,cons=cons,userBounds=userBounds,workBounds=workBounds,workcons=workcons,betaCons=betaCons,betaRef=betaRef,fit=FALSE,
                              stateNames=stateNames,fixPar=fixPar))
   
@@ -242,12 +244,21 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
       beta <- list(beta=beta0$beta)
     }
     if(mixtures>1){
-      if(is.null(beta0$pi) & nbStates>1){
-        beta$pi <- m$mle$pi
+      pie <- beta0$pi
+      nbCovsPi <- ncol(m$covsPi)-1
+      if(!nbCovsPi){
+        if(is.null(beta0$pi)){
+          if(!is.null(fixPar$pi)) stop("fixPar$pi cannot be specified unless beta0$pi is specified")
+          pie <- matrix(1/mixtures,(nbCovsPi+1),mixtures)
+        } else {
+          pie <- matrix(pie,(nbCovsPi+1),mixtures)
+        }
+        pie <- log(pie[-1]/pie[1])
+      } else if(is.null(beta0$pi)){
         if(!is.null(fixPar$pi)) stop("fixPar$pi cannot be specified unless beta0$pi is specified")
-      } else {
-        beta$pi <- beta0$pi
+        pie <- matrix(0,nrow=(nbCovsPi+1),ncol=mixtures-1)
       }
+      beta$pi <- pie
     }
     if(!is.null(m$conditions$recharge)){
       if(is.null(beta0$g0) & nbStates>1) {
@@ -334,12 +345,25 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
     
     if(mixtures>1){
       cat("\n")
-      cat("Mixture probabilities (pi):\n")
-      cat("---------------------------\n")
-      tmpPar <- m$mle$pi
-      if(is.null(beta0$pi))
-        tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
-      print(tmpPar) 
+      if(is.null(m$conditions$formulaPi)) {
+        formPi <- ~1
+      } else formPi <- m$conditions$formulaPi
+      if(!length(attr(terms.formula(formPi),"term.labels")) & is.null(m$conditions$formulaPi)){
+        tmpPar <- m$mle$pi[1,]
+        rownames(tmpPar)<-NULL
+        if(is.null(beta0$pi))
+          tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
+        cat("Mixture probabilities (pi):\n")
+        cat("---------------------------\n")
+        print(tmpPar)
+      } else {
+        cat("Regression coeffs for the mixture probabilities:\n")
+        cat("------------------------------------------------\n")
+        tmpPar <- m$CIbeta$pi$est
+        if(is.null(beta0$pi))
+          tmpPar <- matrix(1:length(tmpPar),nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
+        print(tmpPar)
+      }
     }
     
     #if(!is.null(m$mle$beta)) {

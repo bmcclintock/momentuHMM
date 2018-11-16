@@ -4,8 +4,8 @@
 \alias{expandPar}
 \title{Expand vector of free working parameters to vector of all working parameters including any fixed parameters (used in fitHMM.R and nLogLike.R)}
 \usage{
-expandPar(optPar, optInd, fixPar, wparIndex, betaCons, nbStates, covsDelta,
-  stationary, nbCovs, nbRecovs = 0, mixtures = 1)
+expandPar(optPar, optInd, fixPar, wparIndex, betaCons, nbStates, nbCovsDelta,
+  stationary, nbCovs, nbRecovs = 0, mixtures = 1, nbCovsPi = 0)
 }
 \arguments{
 \item{optPar}{vector of free working parameters}
@@ -20,7 +20,7 @@ expandPar(optPar, optInd, fixPar, wparIndex, betaCons, nbStates, covsDelta,
 
 \item{nbStates}{Number of states of the HMM}
 
-\item{covsDelta}{data frame containing the delta model covariates (if any)}
+\item{nbCovsDelta}{Number of initial distribution covariates}
 
 \item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
@@ -30,6 +30,8 @@ equal to the stationary distribution. Default: \code{FALSE}.}
 \item{nbRecovs}{Number of recharge covariates}
 
 \item{mixtures}{Number of mixtures for the state transition probabilities}
+
+\item{nbCovsPi}{Number of mixture probability covariates}
 }
 \value{
 A vector of all working parameters including any fixed parameters
@@ -64,7 +66,7 @@ m <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist)
 # convert free parameter vector (m$mod$wpar) to full set of working parameters (m$mod$estimate)
 est <- momentuHMM:::expandPar(m$mod$wpar,m$conditions$optInd,unlist(m$conditions$fixPar),
                               m$conditions$wparIndex,m$conditions$betaCons,nbStates,
-                              m$covsDelta,m$conditions$stationary,nrow(m$mle$beta)-1)
+                              ncol(m$covsDelta)-1,m$conditions$stationary,nrow(m$mle$beta)-1)
 
 all(est==m$mod$estimate)
 }

@@ -6,12 +6,13 @@
 #' @param wparIndex Vector of indices for the elements of \code{fixPar} that are not NA
 #' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters.
 #' @param nbStates Number of states of the HMM
-#' @param covsDelta data frame containing the delta model covariates (if any)
+#' @param nbCovsDelta Number of initial distribution covariates
 #' @param stationary \code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param nbCovs Number of t.p.m. covariates
 #' @param nbRecovs Number of recharge covariates
 #' @param mixtures Number of mixtures for the state transition probabilities
+#' @param nbCovsPi Number of mixture probability covariates
 #' 
 #' @return A vector of all working parameters including any fixed parameters
 #' 
@@ -42,17 +43,17 @@
 #' # convert free parameter vector (m$mod$wpar) to full set of working parameters (m$mod$estimate)
 #' est <- momentuHMM:::expandPar(m$mod$wpar,m$conditions$optInd,unlist(m$conditions$fixPar),
 #'                               m$conditions$wparIndex,m$conditions$betaCons,nbStates,
-#'                               m$covsDelta,m$conditions$stationary,nrow(m$mle$beta)-1)
+#'                               ncol(m$covsDelta)-1,m$conditions$stationary,nrow(m$mle$beta)-1)
 #'
 #' all(est==m$mod$estimate)
 #' }
-expandPar <- function(optPar,optInd,fixPar,wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs,nbRecovs=0,mixtures=1){
+expandPar <- function(optPar,optInd,fixPar,wparIndex,betaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs=0,mixtures=1,nbCovsPi=0){
   if(length(optInd)){
     wpar <- numeric(length(fixPar))
     wpar[-optInd] <- optPar
     if(length(wparIndex)) wpar[wparIndex] <- fixPar[wparIndex]
     if(!is.null(betaCons) & nbStates>1){
-      foo <- length(wpar)-ncol(covsDelta)*(nbStates-1)*(!stationary)*mixtures-ifelse(nbRecovs,nbRecovs+2,0)-(mixtures-1)-((nbCovs+1)*nbStates*(nbStates-1)*mixtures-1):0
+      foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)*(!stationary)*mixtures-ifelse(nbRecovs,nbRecovs+2,0)-(nbCovsPi+1)*(mixtures-1)-((nbCovs+1)*nbStates*(nbStates-1)*mixtures-1):0
       wpar[foo] <- wpar[foo][betaCons]
     }
   } else {
