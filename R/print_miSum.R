@@ -85,7 +85,14 @@ print.miSum <- function(x,...)
       cat("\n")
       cat("Mixture probabilities:\n")
       cat("----------------------\n")
-      print(m$Par$real$pi$est[1,])
+      if(is.null(m$conditions$formulaPi)) {
+        formPi <- ~1
+      } else formPi <- m$conditions$formulaPi
+      if(!length(attr(terms.formula(formPi),"term.labels")) & is.null(m$conditions$formulaPi)){
+        tmp <- m$Par$real$pi$est[1,]
+        names(tmp) <- paste0("mix",1:m$conditions$mixtures)
+        print(tmp)
+      } else print(m$Par$real$pi$est)
     }
     
     cat("\n")

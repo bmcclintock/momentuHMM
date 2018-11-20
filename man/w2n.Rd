@@ -52,11 +52,11 @@ each data stream.}
 
 \item{meanind}{index for circular-circular regression mean angles with at least one non-zero entry in fullDM}
 
-\item{covsDelta}{data frame containing the delta model covariates (if any)}
+\item{covsDelta}{data frame containing the delta model covariates}
 
 \item{workBounds}{named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters}
 
-\item{covsPi}{data frame containing the pi model covariates (if any)}
+\item{covsPi}{data frame containing the pi model covariates}
 }
 \value{
 A list of:

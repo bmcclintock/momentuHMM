@@ -29,9 +29,9 @@
 #' @param Bndind Named list indicating whether \code{DM} is NULL with default parameter bounds for each data stream.
 #' @param nc indicator for zeros in fullDM
 #' @param meanind index for circular-circular regression mean angles with at least one non-zero entry in fullDM
-#' @param covsDelta data frame containing the delta model covariates (if any)
+#' @param covsDelta data frame containing the delta model covariates
 #' @param workBounds named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters
-#' @param covsPi data frame containing the pi model covariates (if any)
+#' @param covsPi data frame containing the pi model covariates
 #' 
 #' @return A list of:
 #' \item{...}{Matrices containing the natural parameters for each data stream (e.g., 'step', 'angle', etc.)}

@@ -68,7 +68,7 @@ plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.y
   
   m$mle <- lapply(x$Par$real,function(x) x$est)
   m$mle$beta <- x$Par$beta$beta$est
-  m$mle$pi <- c(x$Par$real$pi$est)
+  m$mle$pi <- x$Par$real$pi$est
   m$mle$delta <- x$Par$real$delta$est
   m$mod <- list()
   if(!is.null(m$conditions$recharge)){

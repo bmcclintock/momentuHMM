@@ -85,6 +85,8 @@ model (if any).}
 \item{g0covs}{data frame containing the recharge model g0 covariates (if any)}
 
 \item{mixtures}{Number of mixtures for the state transition probabilities}
+
+\item{covsPi}{data frame containing the pi model covariates}
 }
 \value{
 The negative log-likelihood of the parameters given the data.

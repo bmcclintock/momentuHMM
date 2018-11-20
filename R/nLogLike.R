@@ -42,6 +42,7 @@
 #' @param recovs data frame containing the recharge model theta covariates (if any)
 #' @param g0covs data frame containing the recharge model g0 covariates (if any)
 #' @param mixtures Number of mixtures for the state transition probabilities
+#' @param covsPi data frame containing the pi model covariates
 #'
 #' @return The negative log-likelihood of the parameters given the data.
 #'
