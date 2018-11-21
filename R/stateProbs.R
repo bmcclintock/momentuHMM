@@ -47,16 +47,7 @@ stateProbs <- function(m)
   if(mixtures>1) pie <- m$mle$pi
   else pie <- matrix(1,nbAnimals,1)
     
-  # get probability that individual is in each mixture
-  eta <- lnum <- matrix(0,nbAnimals,mixtures)
-  for(i in 1:nbAnimals){
-    for(mix in 1:mixtures){
-      c <- max(la[[mix]][aInd[i],]+log(pie[i,mix]))
-      lnum[i,mix] <- c + log(sum(exp(la[[mix]][aInd[i],]+log(pie[i,mix])-c)))
-    }
-    c <- max(lnum[i,])
-    eta[i,] <- exp(lnum[i,] - c - log(sum(exp(lnum[i,]-c))))
-  }
+  eta <- mixtureProbs(m)
   
   k <- 1
   stateProb <- matrix(NA,mixtures,nbStates)
