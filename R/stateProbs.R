@@ -26,6 +26,8 @@ stateProbs <- function(m)
 {
   if(!is.momentuHMM(m))
     stop("'m' must be a momentuHMM object (as output by fitHMM)")
+  
+  m <- delta_bc(m)
 
   data <- m$data
   nbStates <- length(m$stateNames)
