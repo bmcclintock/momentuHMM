@@ -1,6 +1,8 @@
-momentuHMM 1.5.0 2018-10-31
+momentuHMM 1.5.0 2018-11-20
 -----------------
 NEW FEATURES
+
+* discrete random effects now available on state transition probabilities via the 'mixtures' and 'formulaPi' arguments in fitHMM, MIfitHMM, and simData
 
 * discrete-time version of Hooten et al (2018; arXiv:1807.08030) recharge model has been added
 
