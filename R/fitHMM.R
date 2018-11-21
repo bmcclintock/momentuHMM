@@ -396,6 +396,27 @@
 #' Par0 <- list(step=Par$step, angle=Par$angle[3:4])   
 #' m.delta <- fitHMM(data.delta, nbStates=2, dist=dist, Par0 = Par0, 
 #'                   formulaDelta=formulaDelta)
+#'                   
+#' ### 11. Two mixtures based on covariate                       
+#' nObs <- 100
+#' nbAnimals <- 20
+#' dist <- list(step="gamma",angle="vm")
+#' Par <- list(step=c(100,1000,50,100),angle=c(0,0,0.1,2))
+#' 
+#' # create sex covariate
+#' cov <- data.frame(sex=factor(rep(c("F","M"),each=nObs*nbAnimals/2)))
+#' formulaPi <- ~ sex + 0
+#' 
+#' # Females more likely in mixture 1, males more likely in mixture 2
+#' beta <- list(beta=matrix(c(-1.5,-0.5,-1.5,-3),2,2),
+#'              pi=matrix(c(-2,2),2,1,dimnames=list(c("sexF","sexM"),"mix2"))) 
+#' 
+#' data.mix<-simData(nbAnimals=nbAnimals,obsPerAnimal=nObs,nbStates=2,dist=dist,Par=Par,
+#'                   beta=beta,formulaPi=formulaPi,mixtures=2,covs=cov) 
+#' 
+#' Par0 <- list(step=Par$step, angle=Par$angle[3:4])   
+#' m.mix <- fitHMM(data.mix, nbStates=2, dist=dist, Par0 = Par0, 
+#'                 beta0=beta,formulaPi=formulaPi,mixtures=2)
 #' }
 #' 
 #' @references
@@ -409,6 +430,9 @@
 #' Langrock R., King R., Matthiopoulos J., Thomas L., Fortin D., Morales J.M. 2012.
 #' Flexible and practical modeling of animal telemetry data: hidden Markov models and extensions.
 #' Ecology, 93 (11), 2336-2342.
+#' 
+#' Maruotti, A., and T. Ryden. 2009. A semiparametric approach to hidden Markov models under longitudinal 
+#' observations. Statistics and Computing 19: 381-393.
 #' 
 #' McClintock B.T., King R., Thomas L., Matthiopoulos J., McConnell B.J., Morales J.M. 2012. A general 
 #' discrete-time modeling framework for animal movement using multistate random walks. Ecological 
