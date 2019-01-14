@@ -55,14 +55,9 @@
 #'  and state- or parameter-specific formulas (see details).
 #' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.
 #' @param formulaDelta Regression formula for the initial distribution. Default: \code{NULL} (no covariate effects; both \code{delta0} and \code{fixPar$delta} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{delta0} and \code{fixPar$delta} are specified on the working scale.
-#' @param stationary \code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
-#' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.
 #' @param formulaPi Regression formula for the mixture distribution probabilities. Default: \code{NULL} (no covariate effects; both \code{beta0$pi} and \code{fixPar$pi} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{beta0$pi} and \code{fixPar$pi} are specified on the working scale.
 #' Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilties).
-#' @param verbose Deprecated: please use \code{print.level} in \code{nlmPar} argument. Determines the print level of the \code{nlm} optimizer. The default value of 0 means that no
-#' printing occurs, a value of 1 means that the first and last iterations of the optimization are
-#' detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.
 #' @param nlmPar List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
 #' \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
 #' for more detail). Ignored unless \code{optMethod="nlm"}.
@@ -82,10 +77,6 @@
 #' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).  Special formula functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 #' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
 #' \code{angleFormula(cov,strength,by)} for the angle mean of circular-circular regression models, and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.
-#' @param cons Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
-#' for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
-#' \code{cons=list(step=c(1,2,1,1))} raises the second parameter to the second power. Default=NULL, which simply raises all parameters to 
-#' the power of 1. \code{cons} is ignored for any given data stream unless \code{DM} is specified.
 #' @param userBounds An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 #' distribution parameters for each data stream. For each matrix, the first column pertains to the lower bound and the second column the upper bound. For example, for a 2-state model using the wrapped Cauchy ('wrpcauchy') distribution for 
 #' a data stream named 'angle' with \code{estAngleMean$angle=TRUE)}, \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2,dimnames=list(c("mean_1",
@@ -95,14 +86,8 @@
 #' For data streams, each element of \code{workBounds} should be a k x 2 matrix with the same name of the corresponding element of 
 #' \code{Par0}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta0)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta0)}.
 #' \code{workBounds} is ignored for any given data stream unless \code{DM} is also specified.
-#' @param workcons Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
-#' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
-#' through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.
 #' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See details.
-#' @param betaRef Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
-#' the diagonal elements of the t.p.m. are the reference. See details.
 #' @param mvnCoords Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.
-#' @param stateNames Optional character vector of length nbStates indicating state names.
 #' @param knownStates Vector of values of the state process which are known prior to fitting the
 #' model (if any). Default: NULL (states are not known). This should be a vector with length the number
 #' of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
@@ -159,14 +144,15 @@
 #' Journal of Agricultural, Biological and Environmental Statistics, 22 (3), 232-248.
 #' 
 #' @export
-#' @importFrom data.tree ToDataFrameTypeCol Traverse Aggregate AreNamesUnique isLeaf
+#' @importFrom data.tree Get Do ToDataFrameTypeCol Traverse Aggregate AreNamesUnique isLeaf
+#' @importFrom stats terms
 fitHHMM <- function(data,hierStates,dist,
                     Par0,beta0=NULL,delta0=NULL,
                     estAngleMean=NULL,circularAngleMean=NULL,
-                    formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,
-                    verbose=NULL,nlmPar=list(),fit=TRUE,
-                    DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,
-                    mvnCoords=NULL,stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL)
+                    formula=~0+level,formulaDelta=~0+level,mixtures=1,formulaPi=NULL,
+                    nlmPar=list(),fit=TRUE,
+                    DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,
+                    mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL)
 {
   if(!inherits(hierStates,"Node")) stop("'hierStates' must be of class Node; see ?data.tree::Node")
   if(!("state" %in% hierStates$fieldsAll)) stop("'hierStates' must include a 'state' field")
@@ -181,191 +167,211 @@ fitHHMM <- function(data,hierStates,dist,
   if(!data.tree::AreNamesUnique(hierStates)) stop("node names in 'hierStates' must be unique")
   if(any(is.na(hdf))) stop("missing levels are not permitted in 'hierStates'")
   
-  if(nbLevels<=2) {
-    data$level <- factor(rep(1,nrow(data)),levels="1")
-  } else {
-    if(is.null(data$level)) stop('data$level must be specified')
-    if(!is.factor(data$level)) stop('data$level must be a factor')
-    if(nlevels(data$level)!=nbLevels) stop('data$level must contain ',nbLevels,' levels')
-    for(k in 1:nbLevels){
-      if(data$level[k]!=levels(data$level)[k]) stop("data$level factor levels not ordered correctly; observation ",k," is level ",data$level[k]," but factor level is ",levels(data$level)[k])
+  stateNames <- unname(hierStates$Get("name",filterFun=data.tree::isLeaf)[hdf$state])
+  
+  if(hierStates$height<=2) stop("'hierStates' must contain >2 levels")
+  if(is.null(data$level)) stop('data$level must be specified')
+  if(!is.factor(data$level)) stop('data$level must be a factor')
+  if(nlevels(data$level)!=nbLevels) stop('data$level must contain ',nbLevels,' levels')
+  for(k in 1:nbLevels){
+    if(data$level[k]!=levels(data$level)[k]) stop("data$level factor levels not ordered correctly; observation ",k," is level ",data$level[k]," but factor level is ",levels(data$level)[k])
+  }
+  if(is.null(formula) || !any(grepl("level",attr(terms(formula),"term.labels")))) stop("'level' must be included in formula")
+  if(is.null(formulaDelta) || !any(grepl("level",attr(terms(formulaDelta),"term.labels")))) stop("'level' must be included in formulaDelta")
+  
+  if(attr(stats::terms(formula),"intercept")) stop("formula can not include an intercept term")
+  if(attr(stats::terms(formulaDelta),"intercept")) stop("formulaDelta can not include an intercept term")
+  
+  # set t.p.m. reference states based on top level
+  hierStatesList <- as.list(hierStates)
+  #if(is.null(betaRef)){
+    betaRef <- rep(NA,nbStates)
+    for(j in 2:length(hierStatesList)){
+      betaRef[unlist(hierStatesList[[j]])] <- min(unlist(hierStatesList[[j]]))
     }
-    if(!any(grepl("level",attr(terms(formula),"term.labels")))) stop("'level' must be included in formula")
-    if(is.null(formulaDelta) || !any(grepl("level",attr(terms(formulaDelta),"term.labels")))) stop("'level' must be included in formulaDelta")
+  #}
+  
+  if(is.null(fixPar$beta) | is.null(betaCons) | is.null(fixPar$delta)){
     
-    hierStatesList <- as.list(hierStates)
-    if(is.null(betaRef)){
-      betaRef <- rep(NA,nbStates)
-      for(j in 2:length(hierStatesList)){
-        betaRef[unlist(hierStatesList[[j]])] <- min(unlist(hierStatesList[[j]]))
+    covs <- model.matrix(formula,data)
+    nbCovs <- ncol(covs)
+    
+    if(is.null(fixPar$beta)){
+      betaInd <- 1
+      if(is.null(fixPar)) fixPar <- list()
+      fixPar$beta <- matrix(NA,nbCovs*mixtures,nbStates*(nbStates-1))
+    } else betaInd <- 0
+    if(!all(dim(fixPar$beta)==c(nbCovs*mixtures,nbStates*(nbStates-1)))) stop("fixPar$beta must be a matrix of dimension ",nbCovs*mixtures,"x",nbStates*(nbStates-1))
+    rownames(fixPar$beta) <- paste0(rep(colnames(covs),mixtures),"_mix",rep(1:mixtures,each=length(colnames(covs))))
+    colnames(fixPar$beta) <- c(sapply(1:nbStates,function(x) paste(rep(x,each=nbStates-1),"->",1:nbStates)[-betaRef[x]]))
+    
+    if(is.null(betaCons)){
+      conInd <- 1
+      betaCons <- matrix(1:(nbCovs*mixtures*nbStates*(nbStates-1)),nbCovs*mixtures,nbStates*(nbStates-1))
+    } else conInd <- 0
+    if(!all(dim(betaCons)==c(nbCovs*mixtures,nbStates*(nbStates-1)))) stop("betaCons must be a matrix of dimension ",nbCovs*mixtures,"x",nbStates*(nbStates-1))
+    dimnames(betaCons)<-dimnames(fixPar$beta)
+    
+    if(is.null(fixPar$delta)){
+      aInd <- NULL
+      nbAnimals <- length(unique(data$ID))
+      for(i in 1:nbAnimals)
+        aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
+      
+      covsDelta <- model.matrix(formulaDelta,data[aInd,,drop=FALSE])
+      nbCovsDelta <- ncol(covsDelta)
+      fixPar$delta <- matrix(NA,nbCovsDelta*mixtures,nbStates-1,byrow=TRUE)
+      colnames(fixPar$delta) <- paste("state",2:nbStates)
+      rownames(fixPar$delta) <- paste0(rep(colnames(covsDelta),mixtures),"_mix",rep(1:mixtures,each=length(colnames(covsDelta))))
+      for(mix in 1:mixtures){
+        fixPar$delta[paste0("level",levels(data$level)[1],"_mix",mix),(1:nbStates)[-c(1,betaRef)]-1] <- -1.e+10
+        fixPar$delta[paste0("level",levels(data$level)[-1],"_mix",mix),] <- 0
       }
     }
     
-    if(is.null(fixPar$beta) | is.null(betaCons) | is.null(fixPar$delta)){
-      # constrain transitions between coarse states to be zero
-      
-      covs <- model.matrix(formula,data)
-      nbCovs <- ncol(covs)
-      
-      if(is.null(fixPar$beta)){
-        betaInd <- 1
-        if(is.null(fixPar)) fixPar <- list()
-        fixPar$beta <- matrix(NA,nbCovs,nbStates*(nbStates-1))
-      } else betaInd <- 0
-      if(!all(dim(fixPar$beta)==c(nbCovs,nbStates*(nbStates-1)))) stop("fixPar$beta must be a matrix of dimension ",nbCovs,"x",nbStates*(nbStates-1))
-      rownames(fixPar$beta) <- colnames(covs)
-      colnames(fixPar$beta) <- c(sapply(1:nbStates,function(x) paste(rep(x,each=nbStates-1),"->",1:nbStates)[-betaRef[x]]))
-      
-      if(is.null(betaCons)){
-        conInd <- 1
-        betaCons <- matrix(1:(nbCovs*nbStates*(nbStates-1)),nbCovs,nbStates*(nbStates-1))
-      } else conInd <- 0
-      if(!all(dim(betaCons)==c(nbCovs,nbStates*(nbStates-1)))) stop("betaCons must be a matrix of dimension ",nbCovs,"x",nbStates*(nbStates-1))
-      dimnames(betaCons)<-dimnames(fixPar$beta)
-      
-      if(is.null(fixPar$delta)){
-        aInd <- NULL
-        nbAnimals <- length(unique(data$ID))
-        for(i in 1:nbAnimals)
-          aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
-        
-        covsDelta <- model.matrix(formulaDelta,data[aInd,,drop=FALSE])
-        nbCovsDelta <- ncol(covsDelta)
-        fixPar$delta <- matrix(NA,nbCovsDelta,nbStates-1,byrow=TRUE,dimnames=list(colnames(covsDelta),paste("state",2:nbStates)))
-        fixPar$delta[paste0("level",levels(data$level)[1]),(1:nbStates)[-c(1,betaRef)]-1] <- -1.e+10
-        fixPar$delta[paste0("level",levels(data$level)[-1]),] <- 0
-      }
-      
-      #top level t.p.m. (must map all states at bottom level back to top level)
-      j <- 1
-      t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
-      names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
-      for(k in names(t)){
-        tt <- data.tree::Traverse(t[[k]],filterFun=function(x) x$level==j+1)
-        withinConstr <- acrossConstr <- list()
-        if(length(tt)){
-          for(h in 1:length(tt)){
-            levelStates <- tt[[h]]$Get("state",filterFun = data.tree::isLeaf)
-            stateInd <- hdf[which(hdf[[paste0("level_",j+1)]]==tt[[h]]$Get("name",filterFun=function(x) x$level==j+1)),"state"]
-            withinConstr[[h]] <- match(paste0(rep(levelStates,each=length(stateInd))," -> ",stateInd),colnames(fixPar$beta),nomatch=0)
-            if(any(withinConstr[[h]])){
+    #top level t.p.m. (must map all states at bottom level back to top level)
+    j <- 1
+    t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
+    names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
+    for(k in names(t)){
+      tt <- data.tree::Traverse(t[[k]],filterFun=function(x) x$level==j+1)
+      withinConstr <- acrossConstr <- list()
+      if(length(tt)){
+        for(h in 1:length(tt)){
+          levelStates <- tt[[h]]$Get("state",filterFun = data.tree::isLeaf)
+          stateInd <- hdf[which(hdf[[paste0("level_",j+1)]]==tt[[h]]$Get("name",filterFun=function(x) x$level==j+1)),"state"]
+          withinConstr[[h]] <- match(paste0(rep(levelStates,each=length(stateInd))," -> ",stateInd),colnames(fixPar$beta),nomatch=0)
+          if(any(withinConstr[[h]])){
+            for(mix in 1:mixtures){
               if(conInd){
-                betaCons[paste0("level",2*j - 1),withinConstr[[h]]] <- min(betaCons[paste0("level",2*j - 1),withinConstr[[h]]])
+                betaCons[paste0("level",2*j - 1,"_mix",mix),withinConstr[[h]]] <- min(betaCons[paste0("level",2*j - 1,"_mix",mix),withinConstr[[h]]])
               }
               if(betaInd){
-                fixPar$beta[paste0("level",2*j - 1),withinConstr[[h]]] <- -1.e+10
+                fixPar$beta[paste0("level",2*j - 1,"_mix",mix),withinConstr[[h]]] <- -1.e+10
               }
             }
-            # constrain across transitions to reference states
-            levelStates <- unlist(lapply(tt[(1:length(tt))[-h]],function(x) x$Get("state",filterFun = data.tree::isLeaf)))
-            stateInd <- hdf[which(hdf[[paste0("level_",j+1)]]==tt[[h]]$Get("name",filterFun=function(x) x$level==j+1)),"state"]
-            acrossConstr[[h]] <- match(paste0(rep(levelStates,each=length(stateInd[-1]))," -> ",stateInd[-1]),colnames(fixPar$beta),nomatch=0)
-            acrossRef <- match(paste0(levelStates," -> ",stateInd[1]),colnames(fixPar$beta),nomatch=0)
+          }
+          # constrain across transitions to reference states
+          levelStates <- unlist(lapply(tt[(1:length(tt))[-h]],function(x) x$Get("state",filterFun = data.tree::isLeaf)))
+          stateInd <- hdf[which(hdf[[paste0("level_",j+1)]]==tt[[h]]$Get("name",filterFun=function(x) x$level==j+1)),"state"]
+          acrossConstr[[h]] <- match(paste0(rep(levelStates,each=length(stateInd[-1]))," -> ",stateInd[-1]),colnames(fixPar$beta),nomatch=0)
+          acrossRef <- match(paste0(levelStates," -> ",stateInd[1]),colnames(fixPar$beta),nomatch=0)
+          for(mix in 1:mixtures){
             if(conInd){
               if(any(acrossConstr[[h]])){
-                betaCons[paste0("level",2*j - 1),acrossConstr[[h]]] <- min(betaCons[paste0("level",2*j - 1),acrossConstr[[h]]])
-                betaCons[paste0("level",(2*j):nbLevels),acrossConstr[[h]]] <- min(betaCons[paste0("level",(2*j):nbLevels),acrossConstr[[h]]])
+                betaCons[paste0("level",2*j - 1,"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0("level",2*j - 1,"_mix",mix),acrossConstr[[h]]])
+                betaCons[paste0("level",(2*j):nbLevels,"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0("level",(2*j):nbLevels,"_mix",mix),acrossConstr[[h]]])
               }
               if(any(acrossRef)){
-                betaCons[paste0("level",2*j - 1),acrossRef] <- min(betaCons[paste0("level",2*j - 1),acrossRef])
-                betaCons[paste0("level",(2*j):nbLevels),acrossRef] <- min(betaCons[paste0("level",(2*j):nbLevels),acrossRef])
+                betaCons[paste0("level",2*j - 1,"_mix",mix),acrossRef] <- min(betaCons[paste0("level",2*j - 1,"_mix",mix),acrossRef])
+                betaCons[paste0("level",(2*j):nbLevels,"_mix",mix),acrossRef] <- min(betaCons[paste0("level",(2*j):nbLevels,"_mix",mix),acrossRef])
               }
             }
             if(betaInd){
               if(any(acrossConstr[[h]])){
-                fixPar$beta[paste0("level",2*j - 1),acrossConstr[[h]]] <- -1.e+10
-                fixPar$beta[paste0("level",(2*j):nbLevels),acrossConstr[[h]]] <- -1.e+10
+                fixPar$beta[paste0("level",2*j - 1,"_mix",mix),acrossConstr[[h]]] <- -1.e+10
+                fixPar$beta[paste0("level",(2*j):nbLevels,"_mix",mix),acrossConstr[[h]]] <- -1.e+10
               }
               if(any(acrossRef)){
-                fixPar$beta[paste0("level",(2*j):nbLevels),acrossRef] <- -1.e+10
+                fixPar$beta[paste0("level",(2*j):nbLevels,"_mix",mix),acrossRef] <- -1.e+10
               }          
             }
           }
         }
       }
+    }
+    
+    hierStates$Do(function(node) node$levelStates <- node$Get("state",traversal="level",filterFun=data.tree::isLeaf))
+    
+    levelStateFun <- function(node) {
+      if (node$parent$isRoot) return (node$levelStates)
+      parent <- node$parent
+      return ( levelStateFun(parent))
+    }
+    
+    betaLower <- matrix(-Inf,nbCovs*mixtures,nbStates*(nbStates-1),dimnames = dimnames(betaCons))
+    betaUpper <- matrix( Inf,nbCovs*mixtures,nbStates*(nbStates-1),dimnames = dimnames(betaCons))
+    
+    for(j in 2:(hierStates$height-1)){
       
-      hierStates$Do(function(node) node$levelStates <- node$Get("state",traversal="level",filterFun=data.tree::isLeaf))
+      #tmpdf <- hdf[,c(paste0("level_",j),"state")]
+      t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
+      names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
       
-      levelStateFun <- function(node) {
-        if (node$parent$isRoot) return (node$levelStates)
-        parent <- node$parent
-        return ( levelStateFun(parent))
-      }
-      
-      betaLower <- matrix(-Inf,nbCovs,nbStates*(nbStates-1),dimnames = dimnames(betaCons))
-      betaUpper <- matrix( Inf,nbCovs,nbStates*(nbStates-1),dimnames = dimnames(betaCons))
-      
-      for(j in 2:(hierStates$height-1)){
-        
-        #tmpdf <- hdf[,c(paste0("level_",j),"state")]
-        t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
-        names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
-        
-        #initial distribution       
-        for(k in names(t)){
-          levelStates <- t[[k]]$Get("state",filterFun = data.tree::isLeaf)
-          allStates <- levelStateFun(t[[k]])
-          fromState <- data.tree::Aggregate(t[[k]],"state",min)
-          tt <- data.tree::Traverse(t[[k]],filterFun=function(x) x$level==j+1)
-          toStates <- unlist(lapply(tt,function(x) data.tree::Aggregate(x,"state",min)))#data.tree::Aggregate(tt[[h]],"state",min)
-          allTrans <- paste0(rep(levelStates,each=length(allStates[which(!(allStates %in% betaRef[toStates]))]))," -> ",allStates[which(!(allStates %in% betaRef[toStates]))])
-          initConstr <- match(allTrans[which(!(allTrans %in% paste0(rep(fromState,each=length(toStates))," -> ",toStates)))],colnames(fixPar$beta),nomatch=0)
+      #initial distribution       
+      for(k in names(t)){
+        levelStates <- t[[k]]$Get("state",filterFun = data.tree::isLeaf)
+        allStates <- levelStateFun(t[[k]])
+        fromState <- data.tree::Aggregate(t[[k]],"state",min)
+        tt <- data.tree::Traverse(t[[k]],filterFun=function(x) x$level==j+1)
+        toStates <- unlist(lapply(tt,function(x) data.tree::Aggregate(x,"state",min)))#data.tree::Aggregate(tt[[h]],"state",min)
+        allTrans <- paste0(rep(levelStates,each=length(allStates[which(!(allStates %in% betaRef[toStates]))]))," -> ",allStates[which(!(allStates %in% betaRef[toStates]))])
+        initConstr <- match(allTrans[which(!(allTrans %in% paste0(rep(fromState,each=length(toStates))," -> ",toStates)))],colnames(fixPar$beta),nomatch=0)
+        for(mix in 1:mixtures){
           if(any(initConstr)){
             if(conInd){
-              betaCons[paste0("level",2*j - 2),initConstr] <- min(betaCons[paste0("level",2*j - 2),initConstr])
+              betaCons[paste0("level",2*j - 2,"_mix",mix),initConstr] <- min(betaCons[paste0("level",2*j - 2,"_mix",mix),initConstr])
             }
             if(betaInd){
-              fixPar$beta[paste0("level",2*j - 2),initConstr] <- -1.e+10
+              fixPar$beta[paste0("level",2*j - 2,"_mix",mix),initConstr] <- -1.e+10
             }
           }
           if(!any(betaRef[fromState] %in% toStates)){
             #warning("to state = ",toStates,"; betaRef[fromState] = ",betaRef[fromState])
-            betaLower[paste0("level",2*j - 2),paste0(rep(fromState,each=length(toStates))," -> ",toStates)] <- 100
+            betaLower[paste0("level",2*j - 2,"_mix",mix),paste0(rep(fromState,each=length(toStates))," -> ",toStates)] <- 100
           }
         }
-        
-        # t.p.m.
-        for(k in names(t)){  
-          levelStates <- t[[k]]$Get("state",filterFun = data.tree::isLeaf)
-          allStates <- levelStateFun(t[[k]])
-          tt <- data.tree::Traverse(t[[k]],filterFun=function(x) x$level==j+1)
-          fromStates <- toStates <- unlist(lapply(tt,function(x) data.tree::Aggregate(x,"state",min)))
-          allTrans <- paste0(rep(levelStates,each=length(allStates[which(!(allStates %in% betaRef[toStates]))]))," -> ",allStates[which(!(allStates %in% betaRef[toStates]))])
-          initConstr <- match(allTrans[which(!(allTrans %in% paste0(rep(fromStates,each=length(toStates))," -> ",toStates)))],colnames(fixPar$beta),nomatch=0)
+      }
+      
+      # t.p.m.
+      for(k in names(t)){  
+        levelStates <- t[[k]]$Get("state",filterFun = data.tree::isLeaf)
+        allStates <- levelStateFun(t[[k]])
+        tt <- data.tree::Traverse(t[[k]],filterFun=function(x) x$level==j+1)
+        fromStates <- toStates <- unlist(lapply(tt,function(x) data.tree::Aggregate(x,"state",min)))
+        allTrans <- paste0(rep(levelStates,each=length(allStates[which(!(allStates %in% betaRef[toStates]))]))," -> ",allStates[which(!(allStates %in% betaRef[toStates]))])
+        initConstr <- match(allTrans[which(!(allTrans %in% paste0(rep(fromStates,each=length(toStates))," -> ",toStates)))],colnames(fixPar$beta),nomatch=0)
+        for(mix in 1:mixtures){
           if(any(initConstr)){
             if(conInd){
-              betaCons[paste0("level",2*j - 1),initConstr] <- min(betaCons[paste0("level",2*j - 1),initConstr])
+              betaCons[paste0("level",2*j - 1,"_mix",mix),initConstr] <- min(betaCons[paste0("level",2*j - 1,"_mix",mix),initConstr])
             }
             if(betaInd){
-              fixPar$beta[paste0("level",2*j - 1),initConstr] <- -1.e+10
+              fixPar$beta[paste0("level",2*j - 1,"_mix",mix),initConstr] <- -1.e+10
             }
           }
           if(!any(betaRef[fromStates] %in% toStates)){
             #warning("to state = ",toStates,"; betaRef[fromStates] = ",betaRef[fromStates])
-            betaLower[paste0("level",2*j - 1),paste0(rep(fromStates,each=length(toStates))," -> ",toStates)] <- 100
+            betaLower[paste0("level",2*j - 1,"_mix",mix),paste0(rep(fromStates,each=length(toStates))," -> ",toStates)] <- 100
           }
         }
       }
-      if(conInd){
-        fixInd <- which(fixPar$beta==-1.e+10)
-        if(length(fixInd)) betaCons[fixInd] <- fixInd[1]
-      }
-      if(is.null(workBounds$beta) & conInd){
-        if(any(is.finite(betaLower))){
-          workBoundsBeta <- cbind(c(betaLower),c(betaUpper))
-          if(is.null(workBounds)) workBounds <- list()
-          workBounds$beta <- workBoundsBeta
-        }
+    }
+    if(conInd){
+      fixInd <- which(fixPar$beta==-1.e+10)
+      if(length(fixInd)) betaCons[fixInd] <- fixInd[1]
+    }
+    if(is.null(workBounds$beta) & conInd){
+      if(any(is.finite(betaLower))){
+        workBoundsBeta <- cbind(c(betaLower),c(betaUpper))
+        if(is.null(workBounds)) workBounds <- list()
+        workBounds$beta <- workBoundsBeta
       }
     }
+    if(mixtures==1){
+      rownames(fixPar$delta) <- colnames(covsDelta)
+      rownames(fixPar$beta) <- colnames(covs)
+      rownames(betaCons) <- rownames(fixPar$beta)
+    }
   }
+  
   fit <- fitHMM(data,nbStates,dist,Par0,beta0,delta0,
                 estAngleMean,circularAngleMean,
-                formula,formulaDelta,stationary,mixtures,formulaPi,
-                verbose,nlmPar,fit,
-                DM,cons,userBounds,workBounds,workcons,betaCons,betaRef,
+                formula,formulaDelta,stationary=FALSE,mixtures,formulaPi,
+                verbose=NULL,nlmPar,fit,
+                DM,cons=NULL,userBounds,workBounds,workcons=NULL,betaCons,betaRef,
                 mvnCoords,stateNames,knownStates,fixPar,retryFits,retrySD,optMethod,control,prior,modelName)
   fit$conditions$hierStates <- hierStates
-  append("momentuHHMM",class(fit))
+  class(fit) <- append("momentuHHMM",class(fit))
   fit
 }

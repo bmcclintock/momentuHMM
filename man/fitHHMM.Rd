@@ -5,14 +5,12 @@
 \title{Fit a multivariate hierarchical HMM to the data}
 \usage{
 fitHHMM(data, hierStates, dist, Par0, beta0 = NULL, delta0 = NULL,
-  estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
-  formulaDelta = NULL, stationary = FALSE, mixtures = 1,
-  formulaPi = NULL, verbose = NULL, nlmPar = list(), fit = TRUE,
-  DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL,
-  workcons = NULL, betaCons = NULL, betaRef = NULL, mvnCoords = NULL,
-  stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
-  retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL,
-  modelName = NULL)
+  estAngleMean = NULL, circularAngleMean = NULL, formula = ~0 + level,
+  formulaDelta = ~0 + level, mixtures = 1, formulaPi = NULL,
+  nlmPar = list(), fit = TRUE, DM = NULL, userBounds = NULL,
+  workBounds = NULL, betaCons = NULL, mvnCoords = NULL,
+  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
+  optMethod = "nlm", control = list(), prior = NULL, modelName = NULL)
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} object.}
@@ -76,17 +74,10 @@ Any formula terms that are not state- or parameter-specific are included on all 
 
 \item{formulaDelta}{Regression formula for the initial distribution. Default: \code{NULL} (no covariate effects; both \code{delta0} and \code{fixPar$delta} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{delta0} and \code{fixPar$delta} are specified on the working scale.}
 
-\item{stationary}{\code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
-equal to the stationary distribution. Default: \code{FALSE}.}
-
 \item{mixtures}{Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.}
 
 \item{formulaPi}{Regression formula for the mixture distribution probabilities. Default: \code{NULL} (no covariate effects; both \code{beta0$pi} and \code{fixPar$pi} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{beta0$pi} and \code{fixPar$pi} are specified on the working scale.
 Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilties).}
-
-\item{verbose}{Deprecated: please use \code{print.level} in \code{nlmPar} argument. Determines the print level of the \code{nlm} optimizer. The default value of 0 means that no
-printing occurs, a value of 1 means that the first and last iterations of the optimization are
-detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.}
 
 \item{nlmPar}{List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
 \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
@@ -110,11 +101,6 @@ Design matrices specified using formulas allow standard functions in R formulas
 (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
 \code{angleFormula(cov,strength,by)} for the angle mean of circular-circular regression models, and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.}
 
-\item{cons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
-for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
-\code{cons=list(step=c(1,2,1,1))} raises the second parameter to the second power. Default=NULL, which simply raises all parameters to 
-the power of 1. \code{cons} is ignored for any given data stream unless \code{DM} is specified.}
-
 \item{userBounds}{An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 distribution parameters for each data stream. For each matrix, the first column pertains to the lower bound and the second column the upper bound. For example, for a 2-state model using the wrapped Cauchy ('wrpcauchy') distribution for 
 a data stream named 'angle' with \code{estAngleMean$angle=TRUE)}, \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2,dimnames=list(c("mean_1",
@@ -126,18 +112,9 @@ For data streams, each element of \code{workBounds} should be a k x 2 matrix wit
 \code{Par0}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta0)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta0)}.
 \code{workBounds} is ignored for any given data stream unless \code{DM} is also specified.}
 
-\item{workcons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
-each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
-through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.}
-
 \item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See details.}
 
-\item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
-the diagonal elements of the t.p.m. are the reference. See details.}
-
 \item{mvnCoords}{Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.}
-
-\item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
 \item{knownStates}{Vector of values of the state process which are known prior to fitting the
 model (if any). Default: NULL (states are not known). This should be a vector with length the number
