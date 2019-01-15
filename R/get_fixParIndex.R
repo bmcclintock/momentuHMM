@@ -195,7 +195,7 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
       }
     } else fixPar$pi <- rep(NA,length(beta0$pi))
   } else {
-    if(!nbCovsPi & is.null(formulaPi)) fixPar$pi <- ofixPar$pi <- rep(NA,ifelse(!length(beta0$pi),0,mixtures))
+    if(!nbCovsPi & is.null(formulaPi)) fixPar$pi <- ofixPar$pi <- rep(NA,ifelse(!length(beta0$pi),0,mixtures-1))
     else fixPar$pi <- ofixPar$pi <- rep(NA,length(beta0$pi))
   }
   if(!is.null(fixPar$delta)){

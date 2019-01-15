@@ -176,6 +176,21 @@ fitHHMM <- function(data,hierStates,dist,
   for(k in 1:nbLevels){
     if(data$level[k]!=levels(data$level)[k]) stop("data$level factor levels not ordered correctly; observation ",k," is level ",data$level[k]," but factor level is ",levels(data$level)[k])
   }
+  
+  ## add additional levels for initial distributions of finer scale states
+  #hlevels <- levels(data$level)
+  #levels(data$level) <- c(hlevels,paste0("i",hlevels[-1]))
+  #for(k in 1:(length(hlevels)-1)){
+  #  rInd <- 0
+  #  for(j in which(data$level==hlevels[k])){
+  #    tmp <- data[j+rInd,]
+  #    tmp[names(dist)] <- NA
+  #    tmp$level <- factor(paste0("i",hlevels[k+1]),levels=levels(data$level))
+  #    data <- DataCombine::InsertRow(data,tmp,j+rInd+1)
+  #    rInd <- rInd + 1
+  #  }
+  #}
+  
   if(is.null(formula) || !any(grepl("level",attr(terms(formula),"term.labels")))) stop("'level' must be included in formula")
   if(is.null(formulaDelta) || !any(grepl("level",attr(terms(formulaDelta),"term.labels")))) stop("'level' must be included in formulaDelta")
   
@@ -223,10 +238,24 @@ fitHHMM <- function(data,hierStates,dist,
       fixPar$delta <- matrix(NA,nbCovsDelta*mixtures,nbStates-1,byrow=TRUE)
       colnames(fixPar$delta) <- paste("state",2:nbStates)
       rownames(fixPar$delta) <- paste0(rep(colnames(covsDelta),mixtures),"_mix",rep(1:mixtures,each=length(colnames(covsDelta))))
-      for(mix in 1:mixtures){
-        fixPar$delta[paste0("level",levels(data$level)[1],"_mix",mix),(1:nbStates)[-c(1,betaRef)]-1] <- -1.e+10
-        fixPar$delta[paste0("level",levels(data$level)[-1],"_mix",mix),] <- 0
-      }
+      #if(any(betaRef==1)){
+        for(mix in 1:mixtures){
+          fixPar$delta[paste0("level",levels(data$level)[1],"_mix",mix),(1:nbStates)[-c(1,betaRef)]-1] <- -1.e+10
+          fixPar$delta[paste0("level",levels(data$level)[-1],"_mix",mix),] <- 0
+        }
+      #} else {
+      #  if(is.null(workBounds$delta)){
+      #    deltaLower <- matrix(-Inf,nbCovsDelta*mixtures,nbStates-1,dimnames=list(rownames(fixPar$delta)))
+      #    deltaUpper <- matrix( Inf,nbCovsDelta*mixtures,nbStates-1,dimnames=list(rownames(fixPar$delta)))
+      #    for(mix in 1:mixtures){
+      #     deltaLower[paste0("level",levels(data$level)[1],"_mix",mix),betaRef-1] <- 100
+      #     fixPar$delta[paste0("level",levels(data$level)[1],"_mix",mix),-(betaRef-1)] <- 0
+      #    }
+      #    workBoundsDelta <- cbind(c(deltaLower),c(deltaUpper))
+      #    if(is.null(workBounds)) workBounds <- list()
+      #    workBounds$delta <- workBoundsDelta
+      #  }
+      #}
     }
     
     #top level t.p.m. (must map all states at bottom level back to top level)
