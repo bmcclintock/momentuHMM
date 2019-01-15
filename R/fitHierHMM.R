@@ -131,7 +131,7 @@
 #'
 #' @details
 #' \itemize{
-#' \item \code{fitHHMM} is very similar to \code{\link{fitHMM}} except that instead of simply specifying the number of states (\code{nbStates}), the \code{hierStates} argument specifies the hierarchical nature of the states as 
+#' \item \code{fitHierHMM} is very similar to \code{\link{fitHMM}} except that instead of simply specifying the number of states (\code{nbStates}), the \code{hierStates} argument specifies the hierarchical nature of the states as 
 #' a \code{\link[data.tree]{Node}} object from the \code{\link[data.tree]{data.tree}} package.
 #' }
 #' 
@@ -146,7 +146,7 @@
 #' @export
 #' @importFrom data.tree Get Do ToDataFrameTypeCol Traverse Aggregate AreNamesUnique isLeaf
 #' @importFrom stats terms
-fitHHMM <- function(data,hierStates,dist,
+fitHierHMM <- function(data,hierStates,dist,
                     Par0,beta0=NULL,delta0=NULL,
                     estAngleMean=NULL,circularAngleMean=NULL,
                     formula=~0+level,formulaDelta=~0+level,mixtures=1,formulaPi=NULL,
@@ -401,6 +401,6 @@ fitHHMM <- function(data,hierStates,dist,
                 DM,cons=NULL,userBounds,workBounds,workcons=NULL,betaCons,betaRef,
                 mvnCoords,stateNames,knownStates,fixPar,retryFits,retrySD,optMethod,control,prior,modelName)
   fit$conditions$hierStates <- hierStates
-  class(fit) <- append("momentuHHMM",class(fit))
+  class(fit) <- append("momentuHierHMM",class(fit))
   fit
 }
