@@ -273,10 +273,10 @@ fitHierHMM <- function(data,hierStates,dist,
           if(any(withinConstr[[h]])){
             for(mix in 1:mixtures){
               if(conInd){
-                betaCons[paste0("level",2*j - 1,"_mix",mix),withinConstr[[h]]] <- min(betaCons[paste0("level",2*j - 1,"_mix",mix),withinConstr[[h]]])
+                betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),withinConstr[[h]]] <- min(betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),withinConstr[[h]]])
               }
               if(betaInd){
-                fixPar$beta[paste0("level",2*j - 1,"_mix",mix),withinConstr[[h]]] <- -1.e+10
+                fixPar$beta[paste0("level",levels(data$level)[2*j-1],"_mix",mix),withinConstr[[h]]] <- -1.e+10
               }
             }
           }
@@ -288,21 +288,21 @@ fitHierHMM <- function(data,hierStates,dist,
           for(mix in 1:mixtures){
             if(conInd){
               if(any(acrossConstr[[h]])){
-                betaCons[paste0("level",2*j - 1,"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0("level",2*j - 1,"_mix",mix),acrossConstr[[h]]])
-                betaCons[paste0("level",(2*j):nbLevels,"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0("level",(2*j):nbLevels,"_mix",mix),acrossConstr[[h]]])
+                betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossConstr[[h]]])
+                betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossConstr[[h]]])
               }
               if(any(acrossRef)){
-                betaCons[paste0("level",2*j - 1,"_mix",mix),acrossRef] <- min(betaCons[paste0("level",2*j - 1,"_mix",mix),acrossRef])
-                betaCons[paste0("level",(2*j):nbLevels,"_mix",mix),acrossRef] <- min(betaCons[paste0("level",(2*j):nbLevels,"_mix",mix),acrossRef])
+                betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossRef] <- min(betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossRef])
+                betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossRef] <- min(betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossRef])
               }
             }
             if(betaInd){
               if(any(acrossConstr[[h]])){
-                fixPar$beta[paste0("level",2*j - 1,"_mix",mix),acrossConstr[[h]]] <- -1.e+10
-                fixPar$beta[paste0("level",(2*j):nbLevels,"_mix",mix),acrossConstr[[h]]] <- -1.e+10
+                fixPar$beta[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossConstr[[h]]] <- -1.e+10
+                fixPar$beta[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossConstr[[h]]] <- -1.e+10
               }
               if(any(acrossRef)){
-                fixPar$beta[paste0("level",(2*j):nbLevels,"_mix",mix),acrossRef] <- -1.e+10
+                fixPar$beta[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossRef] <- -1.e+10
               }          
             }
           }
@@ -339,15 +339,15 @@ fitHierHMM <- function(data,hierStates,dist,
         for(mix in 1:mixtures){
           if(any(initConstr)){
             if(conInd){
-              betaCons[paste0("level",2*j - 2,"_mix",mix),initConstr] <- min(betaCons[paste0("level",2*j - 2,"_mix",mix),initConstr])
+              betaCons[paste0("level",levels(data$level)[2*j-2],"_mix",mix),initConstr] <- min(betaCons[paste0("level",levels(data$level)[2*j-2],"_mix",mix),initConstr])
             }
             if(betaInd){
-              fixPar$beta[paste0("level",2*j - 2,"_mix",mix),initConstr] <- -1.e+10
+              fixPar$beta[paste0("level",levels(data$level)[2*j-2],"_mix",mix),initConstr] <- -1.e+10
             }
           }
           if(!any(betaRef[fromState] %in% toStates)){
             #warning("to state = ",toStates,"; betaRef[fromState] = ",betaRef[fromState])
-            betaLower[paste0("level",2*j - 2,"_mix",mix),paste0(rep(fromState,each=length(toStates))," -> ",toStates)] <- 100
+            betaLower[paste0("level",levels(data$level)[2*j-2],"_mix",mix),paste0(rep(fromState,each=length(toStates))," -> ",toStates)] <- 100
           }
         }
       }
@@ -363,15 +363,15 @@ fitHierHMM <- function(data,hierStates,dist,
         for(mix in 1:mixtures){
           if(any(initConstr)){
             if(conInd){
-              betaCons[paste0("level",2*j - 1,"_mix",mix),initConstr] <- min(betaCons[paste0("level",2*j - 1,"_mix",mix),initConstr])
+              betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),initConstr] <- min(betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),initConstr])
             }
             if(betaInd){
-              fixPar$beta[paste0("level",2*j - 1,"_mix",mix),initConstr] <- -1.e+10
+              fixPar$beta[paste0("level",levels(data$level)[2*j-1],"_mix",mix),initConstr] <- -1.e+10
             }
           }
           if(!any(betaRef[fromStates] %in% toStates)){
             #warning("to state = ",toStates,"; betaRef[fromStates] = ",betaRef[fromStates])
-            betaLower[paste0("level",2*j - 1,"_mix",mix),paste0(rep(fromStates,each=length(toStates))," -> ",toStates)] <- 100
+            betaLower[paste0("level",levels(data$level)[2*j-1],"_mix",mix),paste0(rep(fromStates,each=length(toStates))," -> ",toStates)] <- 100
           }
         }
       }
