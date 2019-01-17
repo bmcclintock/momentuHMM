@@ -4,7 +4,7 @@
 \alias{fitHierHMM}
 \title{Fit a multivariate hierarchical HMM to the data}
 \usage{
-fitHierHMM(data, hierStates, dist, Par0, beta0 = NULL, delta0 = NULL,
+fitHierHMM(data, hierStates, hierDist, Par0, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~0 + level,
   formulaDelta = ~0 + level, mixtures = 1, formulaPi = NULL,
   nlmPar = list(), fit = TRUE, DM = NULL, userBounds = NULL,
@@ -17,11 +17,8 @@ fitHierHMM(data, hierStates, dist, Par0, beta0 = NULL, delta0 = NULL,
 
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See details.}
 
-\item{dist}{A named list indicating the probability distributions of the data streams. Currently
-supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
-\code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
-and their respective probability distributions ('gamma', 'vm', and 'pois').  The names of the data streams 
-(e.g., 'step', 'angle', 'dives') must match component names in \code{data}.}
+\item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. Currently
+supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. See details.}
 
 \item{Par0}{A named list containing vectors of initial state-dependent probability distribution parameters for 
 each data stream specified in \code{dist}. The parameters should be in the order expected by the pdfs of \code{dist}, 
@@ -66,13 +63,13 @@ corresponding to data streams that do not have angular distributions are ignored
 Alternatively, \code{circularAngleMean} can be specified as a numeric scalar, where the value specifies the coefficient for the reference angle (i.e., directional persistence) term in the circular-circular regression model. For example, setting \code{circularAngleMean} to \code{0} specifies a 
 circular-circular regression model with no directional persistence term (thus specifying a biased random walk instead of a biased correlated random walk). Setting \code{circularAngleMean} to 1 is equivalent to setting it to TRUE, i.e., a circular-circular regression model with a coefficient of 1 for the directional persistence reference angle.}
 
-\item{formula}{Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effect). In addition to allowing standard functions in R formulas
+\item{formula}{Regression formula for the transition probability covariates. Default: \code{~0+level}. In addition to allowing standard functions in R formulas
 (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}),
  and state- or parameter-specific formulas (see details).
 Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.}
 
-\item{formulaDelta}{Regression formula for the initial distribution. Default: \code{NULL} (no covariate effects; both \code{delta0} and \code{fixPar$delta} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{delta0} and \code{fixPar$delta} are specified on the working scale.}
+\item{formulaDelta}{Regression formula for the initial distribution. Default: \code{~0+level} (both \code{delta0} and \code{fixPar$delta} are specified on the working scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{delta0} and \code{fixPar$delta} are specified on the working scale.}
 
 \item{mixtures}{Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.}
 

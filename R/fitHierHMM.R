@@ -6,11 +6,8 @@
 #'
 #' @param data A \code{\link{momentuHMMData}} object.
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See details.
-#' @param dist A named list indicating the probability distributions of the data streams. Currently
-#' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
-#' \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
-#' and their respective probability distributions ('gamma', 'vm', and 'pois').  The names of the data streams 
-#' (e.g., 'step', 'angle', 'dives') must match component names in \code{data}.
+#' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. Currently
+#' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. See details.
 #' @param Par0 A named list containing vectors of initial state-dependent probability distribution parameters for 
 #' each data stream specified in \code{dist}. The parameters should be in the order expected by the pdfs of \code{dist}, 
 #' and any zero-mass and/or one-mass parameters should be the last (if both are present, then zero-mass parameters must preceed one-mass parameters). 
@@ -49,12 +46,12 @@
 #' 
 #' Alternatively, \code{circularAngleMean} can be specified as a numeric scalar, where the value specifies the coefficient for the reference angle (i.e., directional persistence) term in the circular-circular regression model. For example, setting \code{circularAngleMean} to \code{0} specifies a 
 #' circular-circular regression model with no directional persistence term (thus specifying a biased random walk instead of a biased correlated random walk). Setting \code{circularAngleMean} to 1 is equivalent to setting it to TRUE, i.e., a circular-circular regression model with a coefficient of 1 for the directional persistence reference angle.
-#' @param formula Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effect). In addition to allowing standard functions in R formulas
+#' @param formula Regression formula for the transition probability covariates. Default: \code{~0+level}. In addition to allowing standard functions in R formulas
 #' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 #' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}),
 #'  and state- or parameter-specific formulas (see details).
 #' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.
-#' @param formulaDelta Regression formula for the initial distribution. Default: \code{NULL} (no covariate effects; both \code{delta0} and \code{fixPar$delta} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{delta0} and \code{fixPar$delta} are specified on the working scale.
+#' @param formulaDelta Regression formula for the initial distribution. Default: \code{~0+level} (both \code{delta0} and \code{fixPar$delta} are specified on the working scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{delta0} and \code{fixPar$delta} are specified on the working scale.
 #' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.
 #' @param formulaPi Regression formula for the mixture distribution probabilities. Default: \code{NULL} (no covariate effects; both \code{beta0$pi} and \code{fixPar$pi} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{beta0$pi} and \code{fixPar$pi} are specified on the working scale.
 #' Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilties).
@@ -146,7 +143,7 @@
 #' @export
 #' @importFrom data.tree Get Do ToDataFrameTypeCol Traverse Aggregate AreNamesUnique isLeaf
 #' @importFrom stats terms
-fitHierHMM <- function(data,hierStates,dist,
+fitHierHMM <- function(data,hierStates,hierDist,
                     Par0,beta0=NULL,delta0=NULL,
                     estAngleMean=NULL,circularAngleMean=NULL,
                     formula=~0+level,formulaDelta=~0+level,mixtures=1,formulaPi=NULL,
@@ -190,6 +187,22 @@ fitHierHMM <- function(data,hierStates,dist,
   #    rInd <- rInd + 1
   #  }
   #}
+  
+  if(!inherits(hierDist,"Node")) stop("'hierDist' must be of class Node; see ?data.tree::Node")
+  if(!("dist" %in% hierDist$fieldsAll)) stop("'hierDist' must include a 'dist' field")
+  if(!data.tree::AreNamesUnique(hierDist)) stop("node names in 'hierDist' must be unique")
+  if(hierDist$height!=3) stop("'hierDist' hierarchy must contain 2 levels")
+  if(!all(hierDist$Get("name",filterFun=function(x) x$level==2) %in% paste0("level",levels(data$level)[seq(1,nlevels(data$level),2)]))) 
+    stop("'hierDist' level types can only include ",paste(paste0("level",levels(data$level)[seq(1,nlevels(data$level),2)]),collapse=", "))
+  
+  dist <- as.list(hierDist$Get("dist",filterFun=isLeaf))
+  dist <- dist[which(unlist(lapply(dist,function(x) !is.na(x))))]
+  
+  for(j in gsub("level","",hierDist$Get("name",filterFun=function(x) x$level==2))){
+    for(k in levels(data$level)[-which(levels(data$level)==j)]){
+      if(any(!is.na(data[which(data$level==k),names(hierDist[[paste0("level",j)]]$Get("dist",filterFun=isLeaf))]))) stop(paste(names(hierDist[[paste0("level",j)]]$Get("dist",filterFun=isLeaf)),collapse=", ")," must be NA for level ",k)
+    }
+  }
   
   if(is.null(formula) || !any(grepl("level",attr(terms(formula),"term.labels")))) stop("'level' must be included in formula")
   if(is.null(formulaDelta) || !any(grepl("level",attr(terms(formulaDelta),"term.labels")))) stop("'level' must be included in formulaDelta")
@@ -401,6 +414,7 @@ fitHierHMM <- function(data,hierStates,dist,
                 DM,cons=NULL,userBounds,workBounds,workcons=NULL,betaCons,betaRef,
                 mvnCoords,stateNames,knownStates,fixPar,retryFits,retrySD,optMethod,control,prior,modelName)
   fit$conditions$hierStates <- hierStates
+  fit$conditions$hierDist <- hierDist
   class(fit) <- append("momentuHierHMM",class(fit))
   fit
 }

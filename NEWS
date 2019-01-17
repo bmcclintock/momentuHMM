@@ -1,12 +1,12 @@
-momentuHMM 1.5.0 2019-01-14
+momentuHMM 1.5.0 2019-01-17
 -----------------
 NEW FEATURES
 
-* discrete random effects now available on state transition probabilities via the 'mixtures' and 'formulaPi' arguments in fitHMM, MIfitHMM, fitHierHMM, and simData
+* discrete random effects now available on state transition probabilities via the 'mixtures' and 'formulaPi' arguments in fitHMM, MIfitHMM, fitHierHMM, simData, and simHierHMM
 
-* hierarchical HMMs can now be implemented using the fitHierHMM function
+* hierarchical HMMs can now be fitted and simulated using the fitHierHMM and simHierHMM functions, respectively
 
-* discrete-time version of Hooten et al (2018; arXiv:1807.08030) recharge model has been added
+* discrete-time version of Hooten et al (2018; <doi:10.1111/ele.13198>) recharge model has been added
 
 * mvnorm2 (bivariate normal) and mvnorm3 (trivariate normal) data stream distributions have been added
 
