@@ -157,12 +157,12 @@ fitHierHMM <- function(data,hierStates,hierDist,
   
   hdf <- data.tree::ToDataFrameTypeCol(hierStates, "state")
   if(any(is.na(hdf$state))) stop("'state' field in 'hierStates' cannot contain NAs")
-  nbStates <- max(hdf$state)
+  nbStates <- length(hierStates$Get("state",filterFun=data.tree::isLeaf))
   
   if(any(duplicated(hdf$state))) stop("'state' field in 'hierStates' cannot contain duplicates")
   if(any(sort(hdf$state)!=1:nbStates)) stop("'state' field in 'hierStates' must include all integers between 1 and ",nbStates)
   if(!data.tree::AreNamesUnique(hierStates)) stop("node names in 'hierStates' must be unique")
-  if(any(is.na(hdf))) stop("missing levels are not permitted in 'hierStates'")
+  #if(any(is.na(hdf))) stop("missing levels are not permitted in 'hierStates'")
   
   stateNames <- unname(hierStates$Get("name",filterFun=data.tree::isLeaf)[hdf$state])
   
@@ -195,7 +195,7 @@ fitHierHMM <- function(data,hierStates,hierDist,
   if(!all(hierDist$Get("name",filterFun=function(x) x$level==2) %in% paste0("level",levels(data$level)[seq(1,nlevels(data$level),2)]))) 
     stop("'hierDist' level types can only include ",paste(paste0("level",levels(data$level)[seq(1,nlevels(data$level),2)]),collapse=", "))
   
-  dist <- as.list(hierDist$Get("dist",filterFun=isLeaf))
+  dist <- as.list(hierDist$Get("dist",filterFun=data.tree::isLeaf))
   dist <- dist[which(unlist(lapply(dist,function(x) !is.na(x))))]
   
   for(j in gsub("level","",hierDist$Get("name",filterFun=function(x) x$level==2))){
@@ -281,7 +281,7 @@ fitHierHMM <- function(data,hierStates,hierDist,
       if(length(tt)){
         for(h in 1:length(tt)){
           levelStates <- tt[[h]]$Get("state",filterFun = data.tree::isLeaf)
-          stateInd <- hdf[which(hdf[[paste0("level_",j+1)]]==tt[[h]]$Get("name",filterFun=function(x) x$level==j+1)),"state"]
+          stateInd <- tt[[h]]$Get("levelStates",filterFun=data.tree::isLeaf)
           withinConstr[[h]] <- match(paste0(rep(levelStates,each=length(stateInd))," -> ",stateInd),colnames(fixPar$beta),nomatch=0)
           if(any(withinConstr[[h]])){
             for(mix in 1:mixtures){
@@ -295,7 +295,6 @@ fitHierHMM <- function(data,hierStates,hierDist,
           }
           # constrain across transitions to reference states
           levelStates <- unlist(lapply(tt[(1:length(tt))[-h]],function(x) x$Get("state",filterFun = data.tree::isLeaf)))
-          stateInd <- hdf[which(hdf[[paste0("level_",j+1)]]==tt[[h]]$Get("name",filterFun=function(x) x$level==j+1)),"state"]
           acrossConstr[[h]] <- match(paste0(rep(levelStates,each=length(stateInd[-1]))," -> ",stateInd[-1]),colnames(fixPar$beta),nomatch=0)
           acrossRef <- match(paste0(levelStates," -> ",stateInd[1]),colnames(fixPar$beta),nomatch=0)
           for(mix in 1:mixtures){
@@ -336,7 +335,6 @@ fitHierHMM <- function(data,hierStates,hierDist,
     
     for(j in 2:(hierStates$height-1)){
       
-      #tmpdf <- hdf[,c(paste0("level_",j),"state")]
       t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
       names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
       
