@@ -6,11 +6,11 @@
 \usage{
 fitHierHMM(data, hierStates, hierDist, Par0, beta0 = NULL, delta0 = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, formula = ~0 + level,
-  formulaDelta = ~0 + level, mixtures = 1, formulaPi = NULL,
-  nlmPar = list(), fit = TRUE, DM = NULL, userBounds = NULL,
-  workBounds = NULL, betaCons = NULL, mvnCoords = NULL,
-  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
-  optMethod = "nlm", control = list(), prior = NULL, modelName = NULL)
+  formulaDelta = ~1, mixtures = 1, formulaPi = NULL, nlmPar = list(),
+  fit = TRUE, DM = NULL, userBounds = NULL, workBounds = NULL,
+  betaCons = NULL, mvnCoords = NULL, knownStates = NULL, fixPar = NULL,
+  retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(),
+  prior = NULL, modelName = NULL)
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} object.}
@@ -39,8 +39,8 @@ information in 'Details').
 Default: \code{NULL}. If not specified, \code{beta0} is initialized such that the diagonal elements
 of the transition probability matrix are dominant.}
 
-\item{delta0}{Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}. If \code{formulaDelta} includes a formula, then \code{delta0} must be specified
-as a k x (\code{nbStates}-1) matrix, where k is the number of covariates and the columns correspond to states 2:\code{nbStates}. See details below.}
+\item{delta0}{Initial value for the initial distribution at the top level of the hierarchy. Default \code{NULL}: all top-level states have equal initial probability.
+\code{delta0} must be specified as a k x (\code{nbStates}-1) matrix, where k is the number of covariates and the columns correspond to states 2:\code{nbStates}. See details below.}
 
 \item{estAngleMean}{An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy'). For example, \code{estAngleMean=list(angle=TRUE)} indicates the angle mean is to be 
@@ -69,7 +69,7 @@ circular-circular regression model with no directional persistence term (thus sp
  and state- or parameter-specific formulas (see details).
 Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.}
 
-\item{formulaDelta}{Regression formula for the initial distribution. Default: \code{~0+level} (both \code{delta0} and \code{fixPar$delta} are specified on the working scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{delta0} and \code{fixPar$delta} are specified on the working scale.}
+\item{formulaDelta}{Regression formula for the initial distribution at the top level of the hierarchy. Default: \code{~1} (both \code{delta0} and \code{fixPar$delta} are specified on the working scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).}
 
 \item{mixtures}{Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.}
 
@@ -168,8 +168,15 @@ function.
 }
 \details{
 \itemize{
-\item \code{fitHierHMM} is very similar to \code{\link{fitHMM}} except that instead of simply specifying the number of states (\code{nbStates}), the \code{hierStates} argument specifies the hierarchical nature of the states as 
-a \code{\link[data.tree]{Node}} object from the \code{\link[data.tree]{data.tree}} package.
+\item \code{fitHierHMM} is very similar to \code{\link{fitHMM}} except that instead of simply specifying the number of states (\code{nbStates}) and distributions (\code{dist}), the \code{hierStates} argument specifies the hierarchical nature of the states, and
+the \code{hierDist} argument specifies the hierarchical nature of the data streams.  Both are specified as 
+\code{\link[data.tree]{Node}} objects from the \code{\link[data.tree]{data.tree}} package.
+
+\item \code{delta0} must be specified
+as a k x (\code{nbStates}-1) matrix of working parameters, where k is the number of regression coefficients and the columns correspond to states 2:\code{nbStates}. For example, in a 3-state
+HMM with \code{formulaDelta=~cov1+cov2}, the matrix \code{delta0} has three rows (intercept + two covariates)
+and 2 columns (corresponding to states 2 and 3). The initial distribution working parameters are transformed to the real scale as \code{exp(covsDelta*Delta)/rowSums(exp(covsDelta*Delta))}, where \code{covsDelta} is the N x k design matrix, \code{Delta=cbind(rep(0,k),delta)} is a k x \code{nbStates} matrix of working parameters,
+and \code{N=length(unique(data$ID))}.
 }
 }
 \references{

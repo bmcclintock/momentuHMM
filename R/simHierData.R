@@ -17,14 +17,14 @@
 #' of columns in the design matrix. See details below.
 #' @param beta Matrix of regression parameters for the transition probabilities (more information
 #' in "Details").
-#' @param delta Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}. If \code{formulaDelta} includes a formula, then \code{delta} must be specified
-#' as a k x (\code{nbStates}-1) matrix, where k is the number of covariates and the columns correspond to states 2:\code{nbStates}. See details below.
+#' @param delta Initial value for the initial distribution at the top level of the hierarchy. Default \code{NULL}: all top-level states have equal initial probability.
+#' \code{delta} must be specified as a k x (\code{nbStates}-1) matrix, where k is the number of covariates and the columns correspond to states 2:\code{nbStates}. See details below.
 #' @param formula Regression formula for the transition probability covariates. Default: \code{~0+level}. In addition to allowing standard functions in R formulas
 #' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 #' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
 #' and state- or parameter-specific formulas (see details).
 #' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.
-#' @param formulaDelta Regression formula for the initial distribution. Default: \code{~0+level} (\code{delta} is specified on the working scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then \code{delta} must be specified on the working scale.
+#' @param formulaDelta Regression formula for the initial distribution at the top level of the hierarchy. Default: \code{~1} (both \code{delta} and \code{fixPar$delta} are specified on the working scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).
 #' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.
 #' @param formulaPi Regression formula for the mixture distribution probabilities. Default: \code{NULL} (no covariate effects; both \code{beta0$pi} and \code{fixPar$pi} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{beta0$pi} and \code{fixPar$pi} are specified on the working scale.
 #' Note that only the covariate values corresponding to the first time step for each individual ID are used (i.e. time-varying covariates cannot be used for the mixture probabilties).
@@ -99,13 +99,11 @@
 #' specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.
 #' @param workBounds An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. For each matrix, the first column pertains to the lower bound and the second column the upper bound.
 #' For data streams, each element of \code{workBounds} should be a k x 2 matrix with the same name of the corresponding element of 
-#' \code{Par0}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta0)}.
+#' \code{Par}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta)}.
 #' \code{workBounds} is ignored for any given data stream unless \code{DM} is also specified.
 #' @param workcons Deprecated. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 #' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
 #' through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.
-#' @param betaRef Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
-#' the diagonal elements of the t.p.m. are the reference. See \code{\link{fitHMM}}.
 #' @param mvnCoords Character string indicating the name of location data that are to be simulated using a multivariate normal distribution. For example, if \code{mu="rw_mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are intended to be location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as such.
 #' @param model A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. This option can be used to simulate from a fitted model.  Default: NULL.
 #' Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
@@ -154,188 +152,33 @@
 #' 
 #'
 #' @details \itemize{
-#' \item x- and y-coordinate location data are generated only if valid 'step' and 'angle' data streams are specified.  Vaild distributions for 'step' include 
-#' 'gamma', 'weibull', 'exp', and 'lnorm'.  Valid distributions for 'angle' include 'vm' and 'wrpcauchy'.  If only a valid 'step' data stream is specified, then only x-coordinates
-#' are generated.
+#' \item \code{simHierHMM} is very similar to \code{\link{simData}} except that instead of simply specifying the number of states (\code{nbStates}) and distributions (\code{dist}), the \code{hierStates} argument specifies the hierarchical nature of the states, and
+#' the \code{hierDist} argument specifies the hierarchical nature of the data streams.  Both are specified as 
+#' \code{\link[data.tree]{Node}} objects from the \code{\link[data.tree]{data.tree}} package.
 #' 
-#' \item If \code{DM} is specified for a particular data stream, then the initial values are specified on 
-#' the working (i.e., beta) scale of the parameters. The working scale of each parameter is determined by the link function used.
-#' The function \code{\link{getParDM}} is intended to help with obtaining initial values on the working scale when specifying a design matrix and other 
-#' parameter constraints. 
-#' 
-#' \item Simulated data that are temporally regular (i.e., \code{lambda=NULL}) and without location measurement error (i.e., \code{errorEllipse=NULL}) are returned
-#' as a \code{\link{momentuHMMData}} object suitable for analysis using \code{\link{fitHMM}}.
-#' 
-#' \item Simulated location data that are temporally-irregular (i.e., \code{lambda>0}) and/or with location measurement error (i.e., \code{errorEllipse!=NULL}) are returned
-#' as a data frame suitable for analysis using \code{\link{crawlWrap}}.
-#' 
-#' \item The matrix \code{beta} of regression coefficients for the transition probabilities has
-#' one row for the intercept, plus one row for each covariate, and one column for
-#' each non-diagonal element of the transition probability matrix. For example, in a 3-state
-#' HMM with 2 \code{formula} covariates, the matrix \code{beta} has three rows (intercept + two covariates)
-#' and six columns (six non-diagonal elements in the 3x3 transition probability matrix -
-#' filled in row-wise).
-#' In a covariate-free model (default), \code{beta} has one row, for the intercept.
-#' 
-#' \item When covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=NULL}), then \code{delta} is specified as a vector of length \code{nbStates} that 
-#' sums to 1.  When covariates are included in \code{formulaDelta}, then \code{delta} must be specified
+#' \item \code{delta} must be specified
 #' as a k x (\code{nbStates}-1) matrix of working parameters, where k is the number of regression coefficients and the columns correspond to states 2:\code{nbStates}. For example, in a 3-state
 #' HMM with \code{formulaDelta=~cov1+cov2}, the matrix \code{delta} has three rows (intercept + two covariates)
 #' and 2 columns (corresponding to states 2 and 3). The initial distribution working parameters are transformed to the real scale as \code{exp(covsDelta*Delta)/rowSums(exp(covsDelta*Delta))}, where \code{covsDelta} is the N x k design matrix, \code{Delta=cbind(rep(0,k),delta)} is a k x \code{nbStates} matrix of working parameters,
 #' and \code{N=length(unique(data$ID))}.
 #' 
-#' \item State-specific formulas can be specified in \code{DM} using special formula functions. These special functions can take
-#' the names \code{paste0("state",1:nbStates)} (where the integer indicates the state-specific formula).  For example, 
-#' \code{DM=list(step=list(mean=~cov1+state1(cov2),sd=~cov2+state2(cov1)))} includes \code{cov1} on the mean parameter for all states, \code{cov2}
-#' on the mean parameter for state 1, \code{cov2} on the sd parameter for all states, and \code{cov1} on the sd parameter for state 2.
-#'
-#' \item State- and parameter-specific formulas can be specified for transition probabilities in \code{formula} using special formula functions.
-#' These special functions can take the names \code{paste0("state",1:nbStates)} (where the integer indicates the current state from which transitions occur),
-#' \code{paste0("toState",1:nbStates)} (where the integer indicates the state to which transitions occur),
-#' or \code{paste0("betaCol",nbStates*(nbStates-1))} (where the integer indicates the column of the \code{beta} matrix).  For example with \code{nbStates=3},
-#' \code{formula=~cov1+betaCol1(cov2)+state3(cov3)+toState1(cov4)} includes \code{cov1} on all transition probability parameters, \code{cov2} on the \code{beta} column corresponding
-#' to the transition from state 1->2, \code{cov3} on transition probabilities from state 3 (i.e., \code{beta} columns corresponding to state transitions 3->1 and 3->2),
-#' and \code{cov4} on transition probabilities to state 1 (i.e., \code{beta} columns corresponding to state transitions 2->1 and 3->1).
-#' 
-#' \item Cyclical relationships (e.g., hourly, monthly) may be simulated using the \code{consinor(x,period)} special formula function for covariate \code{x}
-#' and sine curve period of time length \code{period}. For example, if 
-#' the data are hourly, a 24-hour cycle can be simulated using \code{~cosinor(cov1,24)}, where the covariate \code{cov1} is a repeating series
-#' of integers \code{0,1,...,23,0,1,...,23,0,1,...} (note that \code{simData} will not do this for you, the appropriate covariate must be specified using the \code{covs} argument; see example below). 
-#' The \code{cosinor(x,period)} function converts \code{x} to 2 covariates
-#' \code{cosinorCos(x)=cos(2*pi*x/period)} and \code{consinorSin(x)=sin(2*pi*x/period} for inclusion in the model (i.e., 2 additional parameters per state). The amplitude of the sine wave
-#' is thus \code{sqrt(B_cos^2 + B_sin^2)}, where \code{B_cos} and \code{B_sin} are the working parameters correponding to \code{cosinorCos(x)} and \code{cosinorSin(x)}, respectively (e.g., see Cornelissen 2014).
-#'
-#' When the circular-circular regression model is used, the special function \code{angleFormula(cov,strength,by)} can be used in \code{DM} for the mean of angular distributions (i.e. 'vm', 'vmConsensus', and 'wrpcauchy'),
-#' where \code{cov} is an angle covariate (e.g. wind direction), \code{strength} is a positive real covariate (e.g. wind speed), and \code{by} is an optional factor variable for individual- or group-level effects (e.g. ID, sex). This allows angle covariates to be weighted based on their strength or importance at time step t as in
-#' Rivest et al. (2016).
-#' 
 #' \item If the length of covariate values passed (either through 'covs', or 'model') is not the same
-#' as the number of observations suggested by 'nbAnimals' and 'obsPerAnimal', then the series of
+#' as the number of observations suggested by 'nbAnimals' and 'obsPerLevel', then the series of
 #' covariates is either shortened (removing last values - if too long) or extended (starting
 #' over from the first values - if too short).
 #' }
 #' 
-#' @seealso \code{\link{prepData}}, \code{\link{simObsData}}
+#' @seealso \code{\link{simData}}
 #'
 #' @examples
-#' # 1. Pass a fitted model to simulate from
-#' # (m is a momentuHMM object - as returned by fitHMM - automatically loaded with the package)
-#' # We keep the default nbAnimals=1.
-#' m <- example$m
-#' obsPerAnimal=c(50,100)
-#' data <- simData(model=m,obsPerAnimal=obsPerAnimal)
-#'
-#' # 2. Pass the parameters of the model to simulate from
-#' stepPar <- c(1,10,1,5,0.2,0.3) # mean_1, mean_2, sd_1, sd_2, zeromass_1, zeromass_2
-#' anglePar <- c(pi,0,0.5,2) # mean_1, mean_2, concentration_1, concentration_2
-#' omegaPar <- c(1,10,10,1) # shape1_1, shape1_2, shape2_1, shape2_2
-#' stepDist <- "gamma"
-#' angleDist <- "vm"
-#' omegaDist <- "beta"
-#' data <- simData(nbAnimals=4,nbStates=2,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),
-#'                 Par=list(step=stepPar,angle=anglePar,omega=omegaPar),nbCovs=2,
-#'                 zeroInflation=list(step=TRUE),
-#'                 obsPerAnimal=obsPerAnimal)
-#'
-#' # 3. Include covariates
-#' # (note that it is useless to specify "nbCovs", which are overruled
-#' # by the number of columns of "cov")
-#' cov <- data.frame(temp=log(rnorm(500,20,5)))
-#' stepPar <- c(log(10),0.1,log(100),-0.1,log(5),log(25)) # working scale parameters for step DM
-#' anglePar <- c(pi,0,0.5,2) # mean_1, mean_2, concentration_1, concentration_2
-#' stepDist <- "gamma"
-#' angleDist <- "vm"
-#' data <- simData(nbAnimals=2,nbStates=2,dist=list(step=stepDist,angle=angleDist),
-#'                 Par=list(step=stepPar,angle=anglePar),
-#'                 DM=list(step=list(mean=~temp,sd=~1)),
-#'                 covs=cov,
-#'                 obsPerAnimal=obsPerAnimal)
-#'                 
-#' # 4. Include example 'forest' spatial covariate raster layer
-#' # nbAnimals and obsPerAnimal kept small to reduce example run time
-#' spatialCov<-list(forest=forest)
-#' data <- simData(nbAnimals=1,nbStates=2,dist=list(step=stepDist,angle=angleDist),
-#'                 Par=list(step=c(100,1000,50,100),angle=c(0,0,0.1,5)),
-#'                 beta=matrix(c(5,-10,-25,50),nrow=2,ncol=2,byrow=TRUE),
-#'                 formula=~forest,spatialCovs=spatialCov,
-#'                 obsPerAnimal=250,states=TRUE,
-#'                 retrySims=100)
-#'                 
-#' # 5. Specify design matrix for 'omega' data stream
-#' # natural scale parameters for step and angle
-#' stepPar <- c(1,10,1,5) # shape_1, shape_2, scale_1, scale_2
-#' anglePar <- c(pi,0,0.5,0.7) # mean_1, mean_2, concentration_1, concentration_2
-#' 
-#' # working scale parameters for omega DM
-#' omegaPar <- c(log(1),0.1,log(10),-0.1,log(10),-0.1,log(1),0.1)
-#' 
-#' stepDist <- "weibull"
-#' angleDist <- "wrpcauchy"
-#' omegaDist <- "beta"
-#' 
-#' data <- simData(nbStates=2,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),
-#'                 Par=list(step=stepPar,angle=anglePar,omega=omegaPar),nbCovs=2,
-#'                 DM=list(omega=list(shape1=~cov1,shape2=~cov2)),
-#'                 obsPerAnimal=obsPerAnimal,states=TRUE)
-#'                 
-#' # 6. Include temporal irregularity and location measurement error
-#' lambda <- 2 # expect 2 observations per time step
-#' errorEllipse <- list(M=50,m=25,r=180)
-#' obsData <- simData(model=m,obsPerAnimal=obsPerAnimal,
-#'                    lambda=lambda, errorEllipse=errorEllipse)
-#'                    
-#' # 7. Cosinor and state-dependent formulas
-#' nbStates<-2
-#' dist<-list(step="gamma")
-#' Par<-list(step=c(100,1000,50,100))
-#' 
-#' # include 24-hour cycle on all transition probabilities
-#' # include 12-hour cycle on transitions from state 2
-#' formula=~cosinor(hour24,24)+state2(cosinor(hour12,12))
-#' 
-#' # specify appropriate covariates
-#' covs<-data.frame(hour24=0:23,hour12=0:11)
-#' 
-#' beta<-matrix(c(-1.5,1,1,NA,NA,-1.5,-1,-1,1,1),5,2)
-#' # row names for beta not required but can be helpful
-#' rownames(beta)<-c("(Intercept)",
-#'                   "cosinorCos(hour24, 24)",
-#'                   "cosinorSin(hour24, 24)",
-#'                   "cosinorCos(hour12, 12)",
-#'                   "cosinorSin(hour12, 12)")
-#' data.cos<-simData(nbStates=nbStates,dist=dist,Par=Par,
-#'                   beta=beta,formula=formula,covs=covs)     
-#'                   
-#' # 8. Piecewise constant B-spline on step length mean and angle concentration
-#' library(splines2)
-#' nObs <- 1000 # length of simulated track
-#' cov <- data.frame(time=1:nObs) # time covariate for splines
-#' dist <- list(step="gamma",angle="vm")
-#' stepDM <- list(mean=~bSpline(time,df=2,degree=0),sd=~1)
-#' angleDM <- list(mean=~1,concentration=~bSpline(time,df=2,degree=0))
-#' DM <- list(step=stepDM,angle=angleDM)
-#' Par <- list(step=c(log(1000),1,-1,log(100)),angle=c(0,log(10),2,-5))
-#'
-#' data.spline<-simData(obsPerAnimal=nObs,nbStates=1,dist=dist,Par=Par,DM=DM,covs=cov)        
-#' 
-#' # 9. Initial state (delta) based on covariate
-#' nObs <- 100
-#' dist <- list(step="gamma",angle="vm")
-#' Par <- list(step=c(100,1000,50,100),angle=c(0,0,0.01,0.75))
-#' 
-#' # create sex covariate
-#' cov <- data.frame(sex=factor(rep(c("F","M"),each=nObs))) # sex covariate
-#' formulaDelta <- ~ sex + 0
-#' 
-#' # Female begins in state 1, male begins in state 2
-#' delta <- matrix(c(-100,100),2,1,dimnames=list(c("sexF","sexM"),"state 2")) 
-#'
-#' data.delta<-simData(nbAnimals=2,obsPerAnimal=nObs,nbStates=2,dist=dist,Par=Par,
-#'                     delta=delta,formulaDelta=formulaDelta,covs=cov)        
 #'                 
 #' @references
 #' 
 #' Cornelissen, G. 2014. Cosinor-based rhythmometry. Theoretical Biology and Medical Modelling 11:16.
+#' 
+#' Leos-Barajas, V., Gangloff, E.J., Adam, T., Langrock, R., van Beest, F.M., Nabe-Nielsen, J. and Morales, J.M. 2017. 
+#' Multi-scale modeling of animal movement and general behavior data using hidden Markov models with hierarchical structures. 
+#' Journal of Agricultural, Biological and Environmental Statistics, 22 (3), 232-248.
 #'
 #' McClintock BT, London JM, Cameron MF, Boveng PL. 2015. Modelling animal movement using the Argos satellite telemetry location error ellipse. 
 #' Methods in Ecology and Evolution 6(3):266-277.
@@ -355,7 +198,7 @@
 
 simHierData <- function(nbAnimals=1,hierStates,hierDist,
                     Par,beta=NULL,delta=NULL,
-                    formula=~0+level,formulaDelta=~0+level,mixtures=1,formulaPi=NULL,
+                    formula=~0+level,formulaDelta=~1,mixtures=1,formulaPi=NULL,
                     covs=NULL,nbCovs=0,
                     spatialCovs=NULL,
                     zeroInflation=NULL,
@@ -366,7 +209,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                     angleCovs=NULL,
                     obsPerLevel,
                     initialPosition=c(0,0),
-                    DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaRef=NULL,mvnCoords=NULL,
+                    DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,mvnCoords=NULL,
                     model=NULL,states=FALSE,
                     retrySims=0,
                     lambda=NULL,
@@ -539,41 +382,15 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     # else, allow user to enter new values for covariates
     
   } else {
-    if(!inherits(hierStates,"Node")) stop("'hierStates' must be of class Node; see ?data.tree::Node")
-    if(!("state" %in% hierStates$fieldsAll)) stop("'hierStates' must include a 'state' field")
-    nbLevels <- 2*hierStates$height - 3 #hierStates$height #ncol(data.tree::ToDataFrameTypeCol(hierStates))
     
-    hdf <- data.tree::ToDataFrameTypeCol(hierStates, "state")
-    if(any(is.na(hdf$state))) stop("'state' field in 'hierStates' cannot contain NAs")
-    nbStates <- max(hdf$state)
+    inputHierHMM <- formatHierHMM(data=NULL,hierStates,hierDist,formula,formulaDelta,mixtures,workBounds,betaCons=NULL,fixPar=NULL)
     
-    if(any(duplicated(hdf$state))) stop("'state' field in 'hierStates' cannot contain duplicates")
-    if(any(sort(hdf$state)!=1:nbStates)) stop("'state' field in 'hierStates' must include all integers between 1 and ",nbStates)
-    if(!data.tree::AreNamesUnique(hierStates)) stop("node names in 'hierStates' must be unique")
-    if(any(is.na(hdf))) stop("missing levels are not permitted in 'hierStates'")
+    nbStates <- inputHierHMM$nbStates
+    dist <- inputHierHMM$dist
+    betaRef <- inputHierHMM$betaRef
+    stateNames <- inputHierHMM$stateNames
     
-    stateNames <- unname(hierStates$Get("name",filterFun=data.tree::isLeaf)[hdf$state])
-    
-    if(hierStates$height<=2) stop("'hierStates' must contain >2 levels")
-    
-    if(!inherits(hierDist,"Node")) stop("'hierDist' must be of class Node; see ?data.tree::Node")
-    if(!("dist" %in% hierDist$fieldsAll)) stop("'hierDist' must include a 'dist' field")
-    if(!data.tree::AreNamesUnique(hierDist)) stop("node names in 'hierDist' must be unique")
-    if(hierDist$height!=3) stop("'hierDist' hierarchy must contain 2 levels")
-    
-    dist <- as.list(hierDist$Get("dist",filterFun=isLeaf))
-    dist <- dist[which(unlist(lapply(dist,function(x) !is.na(x))))]
-    
-    if(!is.list(Par) | is.null(names(Par))) stop("'Par' must be a named list")
-    distnames<-names(dist)
-    if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
-    Par <- Par[distnames]
-    
-    if(is.null(formula) || !any(grepl("level",attr(terms(formula),"term.labels")))) stop("'level' must be included in formula")
-    if(is.null(formulaDelta) || !any(grepl("level",attr(terms(formulaDelta),"term.labels")))) stop("'level' must be included in formulaDelta")
-    
-    if(attr(stats::terms(formula),"intercept")) stop("formula can not include an intercept term")
-    if(attr(stats::terms(formulaDelta),"intercept")) stop("formulaDelta can not include an intercept term")
+    distnames <- names(dist)
     
     if(is.null(formulaPi)){
       formPi <- ~1
@@ -750,15 +567,6 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
   }
   
-  if(!is.null(betaRef)){
-    if(length(betaRef)!=nbStates) stop("betaRef must be a vector of length ",nbStates)
-    if(!is.numeric(betaRef)) stop("betaRef must be a numeric vector")
-    if(min(betaRef)<1 | max(betaRef)>nbStates) stop("betaRef elements must be between 1 and ",nbStates)
-  } else {
-    betaRef <- 1:nbStates
-  }
-  betaRef <- as.integer(betaRef)
-  
   #######################################
   ## Prepare parameters for simulation ##
   #######################################
@@ -892,10 +700,6 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   allNbCovs <- nbCovs+nbSpatialCovs
   
-  # initial state distribution
-  if(is.null(delta)) delta0 <- matrix(rep(1,nbStates)/nbStates,mixtures,nbStates)
-  else delta0 <- delta
-  
   zeroMass<-oneMass<-vector('list',length(inputs$dist))
   names(zeroMass)<-names(oneMass)<-distnames
   
@@ -949,7 +753,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     if(!all(all.vars(formPi) %in% c("ID",names(allCovs),centerNames,centroidNames,spatialcovnames)))
       stop("'formulaPi' covariate(s) not found")
   if(length(all.vars(formDelta)))
-    if(!all(all.vars(formDelta) %in% c("ID","level",names(allCovs),centerNames,centroidNames,spatialcovnames)))
+    if(!all(all.vars(formDelta) %in% c("ID",names(allCovs),centerNames,centroidNames,spatialcovnames)))
       stop("'formulaDelta' covariate(s) not found")
   if(("ID" %in% all.vars(formula) | "ID" %in% all.vars(formPi) | "ID" %in% all.vars(formDelta)) & nbAnimals<2) stop("ID cannot be a covariate when nbAnimals=1")
   
@@ -1023,8 +827,13 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   nbBetaCovs <- ncol(model.matrix(newformula,tmpCovs))
   
-  if(is.null(beta0$beta))
-    beta0$beta <- matrix(rnorm(nbStates*(nbStates-1)*nbBetaCovs*mixtures),nrow=nbBetaCovs*mixtures)
+  inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,formula,formulaDelta,mixtures,workBounds,betaCons=NULL,fixPar=NULL,checkData=FALSE)
+  
+  if(is.null(beta0$beta)){
+    beta0$beta <- matrix(rnorm(nbStates*(nbStates-1)*nbBetaCovs*mixtures)[inputHierHMM$betaCons],nrow=nbBetaCovs*mixtures)
+    beta0$beta[which(!is.na(inputHierHMM$fixPar$beta))] <- inputHierHMM$fixPar$beta[which(!is.na(inputHierHMM$fixPar$beta))]
+    workBounds <- inputHierHMM$workBounds
+  }
   if(nbRecovs){
     if(is.null(beta0$g0) | is.null(beta0$theta)) stop("beta$g0 and beta$theta must be specified for recharge model")
     if(length(beta0$g0)!=(nbG0covs+1) | any(!is.numeric(beta0$g0))) stop("beta$g0 must be a numeric vector of length ",nbG0covs+1)
@@ -1062,24 +871,29 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   covsDelta <- model.matrix(formDelta,tmpCovs)
   nbCovsDelta <- ncol(covsDelta)-1
-  if(!nbCovsDelta & is.null(formulaDelta)){
-    if(mixtures==1){
-      if(length(delta0) != (nbCovsDelta+1)*nbStates)
-        stop(paste("delta has the wrong length: it should have",nbStates*mixtures,"elements."))
-      deltaB <- matrix(log(delta0[-1]/delta0[1]),1)
-    } else {
-      if(is.null(dim(delta0)) || (ncol(delta0)!=nbStates | nrow(delta0)!=mixtures))
-        stop(paste("delta has wrong dimensions: it should have",mixtures,"rows and",
-                   nbStates,"columns."))
-      deltaB <- apply(delta0,1,function(x) log(x[-1]/x[1]))
-    }
+  # initial state distribution
+  if(is.null(delta)) {
+    delta0 <- matrix(0,(nbCovsDelta+1)*mixtures,nbStates-1)
+    delta0[which(!is.na(inputHierHMM$fixPar$delta))] <- inputHierHMM$fixPar$delta[which(!is.na(inputHierHMM$fixPar$delta))]
+  } else delta0 <- delta
+  #if(!nbCovsDelta & is.null(formulaDelta)){
+  #  if(mixtures==1){
+  #    if(length(delta0) != (nbCovsDelta+1)*nbStates)
+  #      stop(paste("delta has the wrong length: it should have",nbStates*mixtures,"elements."))
+  #    deltaB <- matrix(log(delta0[-1]/delta0[1]),1)
+  #  } else {
+  #    if(is.null(dim(delta0)) || (ncol(delta0)!=nbStates | nrow(delta0)!=mixtures))
+  #      stop(paste("delta has wrong dimensions: it should have",mixtures,"rows and",
+  #                 nbStates,"columns."))
+  #    deltaB <- apply(delta0,1,function(x) log(x[-1]/x[1]))
+  #  }
     
-  } else {
-    if(is.null(dim(delta0)) || (ncol(delta0)!=nbStates-1 | nrow(delta0)!=(nbCovsDelta+1)*mixtures))
-      stop(paste("delta has wrong dimensions: it should have",(nbCovsDelta+1)*mixtures,"rows and",
-                 nbStates-1,"columns."))
-    deltaB <- delta0
-  }
+  #} else {
+  if(is.null(dim(delta0)) || (ncol(delta0)!=nbStates-1 | nrow(delta0)!=(nbCovsDelta+1)*mixtures))
+    stop(paste("delta has wrong dimensions: it should have",(nbCovsDelta+1)*mixtures,"rows and",
+               nbStates-1,"columns."))
+  deltaB <- delta0
+  #}
   
   parCount<- lapply(Par[distnames],length)
   parindex <- c(0,cumsum(unlist(parCount))[-length(distnames)])
@@ -1299,11 +1113,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
           #  Z[k] <- sample(1:nbStates,size=1,prob=gamma[Z[k-1],])  
           #}
             
-          if(is.null(names(as.list(hierDist)[[paste0("level",level[[zoo]][k])]]))){
-            
-            X[k+1,] <- X[k,]
-            
-          } else {
+          if(!is.null(names(as.list(hierDist)[[paste0("level",level[[zoo]][k])]]))){
             
             if(nbSpatialCovs |  length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
               # format parameters
@@ -1331,7 +1141,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
               subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
             }
             
-            for(i in names(as.list(hierDist)[[paste0("level",level[[zoo]][k])]])){
+            for(i in distnames[which(distnames %in% names(as.list(hierDist)[[paste0("level",level[[zoo]][k])]]))]){
               
               zeroMass[[i]] <- rep(0,nbStates)
               oneMass[[i]] <- rep(0,nbStates)
@@ -1417,6 +1227,10 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
             }
           }
         
+          if(all(is.na(X[k+1,]))){
+            X[k+1,] <- X[k,]
+          }
+          
           if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
             if(nbSpatialCovs){
               for(j in 1:nbSpatialCovs){
