@@ -213,6 +213,7 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
         fromState <- data.tree::Aggregate(t[[k]],"state",min)
         tt <- data.tree::Traverse(t[[k]],filterFun=function(x) x$level==j+1)
         toStates <- unlist(lapply(tt,function(x) data.tree::Aggregate(x,"state",min)))#data.tree::Aggregate(tt[[h]],"state",min)
+        if(is.null(toStates)) toStates <- t[[k]]$state
         allTrans <- paste0(rep(levelStates,each=length(allStates[which(!(allStates %in% betaRef[toStates]))]))," -> ",allStates[which(!(allStates %in% betaRef[toStates]))])
         initConstr <- match(allTrans[which(!(allTrans %in% paste0(rep(fromState,each=length(toStates))," -> ",toStates)))],colnames(fixPar$beta),nomatch=0)
         refConstr <- match(allTrans[which(allTrans %in% paste0(rep(fromState,each=length(toStates))," -> ",toStates))],colnames(fixPar$beta),nomatch=0)
@@ -227,7 +228,10 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
           }
           if(!any(betaRef[fromState] %in% toStates)){
             #warning("to state = ",toStates,"; betaRef[fromState] = ",betaRef[fromState])
-            if(any(refConstr)) betaLower[paste0("level",levels(data$level)[2*j-2],"_mix",mix),refConstr] <- 100
+            if(any(refConstr)){
+              if(sum(refConstr>0)>1) betaLower[paste0("level",levels(data$level)[2*j-2],"_mix",mix),refConstr] <- 100
+              else if(betaInd) fixPar$beta[paste0("level",levels(data$level)[2*j-2],"_mix",mix),refConstr] <- 100
+            }
           }
         }
       }
@@ -238,6 +242,7 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
         allStates <- levelStateFun(t[[k]])
         tt <- data.tree::Traverse(t[[k]],filterFun=function(x) x$level==j+1)
         fromStates <- toStates <- unlist(lapply(tt,function(x) data.tree::Aggregate(x,"state",min)))
+        if(is.null(toStates)) toStates <- fromStates <- t[[k]]$state
         allTrans <- paste0(rep(levelStates,each=length(allStates[which(!(allStates %in% betaRef[toStates]))]))," -> ",allStates[which(!(allStates %in% betaRef[toStates]))])
         initConstr <- match(allTrans[which(!(allTrans %in% paste0(rep(fromStates,each=length(toStates))," -> ",toStates)))],colnames(fixPar$beta),nomatch=0)
         refConstr <- match(allTrans[which(allTrans %in% paste0(rep(fromStates,each=length(toStates))," -> ",toStates))],colnames(fixPar$beta),nomatch=0)
@@ -252,7 +257,10 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
           }
           if(!any(betaRef[fromStates] %in% toStates)){
             #warning("to state = ",toStates,"; betaRef[fromStates] = ",betaRef[fromStates])
-            if(any(refConstr)) betaLower[paste0("level",levels(data$level)[2*j-1],"_mix",mix),refConstr] <- 100
+            if(any(refConstr)) {
+              if(sum(refConstr>0)>1) betaLower[paste0("level",levels(data$level)[2*j-1],"_mix",mix),refConstr] <- 100
+              else if(betaInd) fixPar$beta[paste0("level",levels(data$level)[2*j-1],"_mix",mix),refConstr] <- 100
+            }
           }
         }
       }
