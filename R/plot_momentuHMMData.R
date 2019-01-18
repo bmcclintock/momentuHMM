@@ -201,7 +201,7 @@ plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compa
       ID <- unique(data$ID)[zoo]
       genData <- data[[i]][which(data$ID==ID)]
       # step length time series
-      plot(genData,type="l",xlab="t",ylab=i,
+      plot(which(!is.na(genData)),genData[which(!is.na(genData))],type="l",xlab="t",ylab=i,
            ylim=range(genData,na.rm=TRUE))
       # step length histogram
       hist(genData,xlab=i,main="",col="grey",border="white",breaks=breaks)
