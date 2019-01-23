@@ -20,7 +20,8 @@ simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
 \item{nbStates}{Number of behavioural states to simulate.}
 
 \item{dist}{A named list indicating the probability distributions of the data streams. Currently
-supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
+supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
+'pois', 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), 'rw_mvnorm3' (trivariate normal random walk), 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
 \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
 and their respective probability distributions ('gamma', 'vm', and 'pois').}
 

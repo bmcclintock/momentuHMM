@@ -6,7 +6,8 @@
 #' @param nbAnimals Number of observed individuals to simulate.
 #' @param nbStates Number of behavioural states to simulate.
 #' @param dist A named list indicating the probability distributions of the data streams. Currently
-#' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
+#' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
+#' 'pois', 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), 'rw_mvnorm3' (trivariate normal random walk), 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
 #' \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
 #' and their respective probability distributions ('gamma', 'vm', and 'pois').
 #' @param Par A named list containing vectors of initial state-dependent probability distribution parameters for 
@@ -383,6 +384,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   ## Check if !is.null(model) ##
   ##############################
   if(!is.null(model)) {
+    
+    if(!inherits(model,"momentuHMM")) stop("model must be a 'momentuHMM' object")
+    if(inherits(model,"momentuHierHMM")) stop("model can not be a 'momentuHierHMM' object; use simHierData instead")
     
     if(is.miHMM(model)){
       model <- model$miSum

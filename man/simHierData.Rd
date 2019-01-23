@@ -5,7 +5,7 @@
 \title{Hierarchical simulation tool}
 \usage{
 simHierData(nbAnimals = 1, hierStates, hierDist, Par, beta = NULL,
-  delta = NULL, formula = ~0 + level, formulaDelta = ~1, mixtures = 1,
+  delta = NULL, hierFormula = NULL, formulaDelta = ~1, mixtures = 1,
   formulaPi = NULL, covs = NULL, nbCovs = 0, spatialCovs = NULL,
   zeroInflation = NULL, oneInflation = NULL, circularAngleMean = NULL,
   centers = NULL, centroids = NULL, angleCovs = NULL, obsPerLevel,
@@ -19,7 +19,8 @@ simHierData(nbAnimals = 1, hierStates, hierDist, Par, beta = NULL,
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See details.}
 
 \item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. Currently
-supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. See details.}
+supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
+'pois', 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), 'rw_mvnorm3' (trivariate normal random walk), 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. See details.}
 
 \item{Par}{A named list containing vectors of initial state-dependent probability distribution parameters for 
 each data stream specified in \code{dist}. The parameters should be in the order expected by the pdfs of \code{dist}, 
@@ -36,7 +37,7 @@ in "Details").}
 \item{delta}{Initial value for the initial distribution at the top level of the hierarchy. Default \code{NULL}: all top-level states have equal initial probability.
 \code{delta} must be specified as a k x (\code{nbStates}-1) matrix, where k is the number of covariates and the columns correspond to states 2:\code{nbStates}. See details below.}
 
-\item{formula}{Regression formula for the transition probability covariates. Default: \code{~0+level}. In addition to allowing standard functions in R formulas
+\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy. Default: \code{NULL} (no covariate effects). In addition to allowing standard functions in R formulas
 (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
 and state- or parameter-specific formulas (see details).
@@ -88,9 +89,9 @@ for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'c
 of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. Note that the angle covariates for each activity center are calculated relative to 
 the previous movement direction instead of standard directions relative to the x-axis; this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression.}
 
-\item{centroids}{List where each element is a data frame consisting of at least \code{max(unlist(obsPerAnimal))} rows that provides the x-coordinates ('x') and y-coordinates ('y) for centroids (i.e., dynamic activity centers where the coordinates can change for each time step)
+\item{centroids}{List where each element is a data frame with rows providing the x-coordinates ('x') and y-coordinates ('y) for centroids (i.e., dynamic activity centers where the coordinates can change for each time step)
 from which distance and angle covariates will be calculated based on the simulated location data. These distance and angle 
-covariates can be included in \code{formula} and \code{DM} using the names of \code{centroids}.  If no list names are provided, then generic names are generated 
+covariates can be included in \code{hierFormula} and \code{DM} using the names of \code{centroids}.  If no list names are provided, then generic names are generated 
 for the distance and angle covariates (e.g., 'centroid1.dist', 'centroid1.angle', 'centroid2.dist', 'centroid2.angle'); otherwise the covariate names are derived from the list names
 of \code{centroids} as \code{paste0(rep(names(centroids),each=2),c(".dist",".angle"))}. Note that the angle covariates for each centroid are calculated relative to 
 the previous movement direction instead of standard directions relative to the x-axis; this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression.}
@@ -98,10 +99,9 @@ the previous movement direction instead of standard directions relative to the x
 \item{angleCovs}{Character vector indicating the names of any circular-circular regression angular covariates in \code{covs} or \code{spatialCovs} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 using \code{\link{circAngles}}.}
 
-\item{obsPerLevel}{Either the number of observations per animal (if single value) or the bounds of the number of observations per animal (if vector of two values). In the latter case, 
-the numbers of obervations generated for each animal are uniformously picked from this interval. Alternatively, \code{obsPerAnimal} can be specified as
-a list of length \code{nbAnimals} with each element providing the number of observations (if single value) or the bounds (if vector of two values) for each individual.
-Default: \code{c(500,1500)}.}
+\item{obsPerLevel}{A hierarchical data structure \code{\link[data.tree]{Node}} indicating the number of observations for each level of the hierarchy. For each level, the 'obs' field can either be the number of observations per animal (if single value) or the bounds of the number of observations per animal (if vector of two values). In the latter case, 
+the numbers of obervations generated per level for each animal are uniformously picked from this interval. Alternatively, \code{obsPerLevel} can be specified as
+a list of length \code{nbAnimals} with each element providing the hierarchical data structure for the number of observations for each level of the hierarchy for each animal, where the 'obs' field can either be the number of observations (if single value) or the bounds of the number of observations (if vector of two values) for each individual.}
 
 \item{initialPosition}{2-vector providing the x- and y-coordinates of the initial position for all animals. Alternatively, \code{initialPosition} can be specified as
 a list of length \code{nbAnimals} with each element a 2-vector providing the x- and y-coordinates of the initial position for each individual.
@@ -145,7 +145,7 @@ through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{work
 
 \item{model}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. This option can be used to simulate from a fitted model.  Default: NULL.
 Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
-\code{obsPerAnimal}, \code{states}, \code{initialPosition}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
+\code{obsPerLevel}, \code{states}, \code{initialPosition}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
 \code{covs}, \code{spatialCovs}, \code{centers}, and \code{centroids}.}
 
 \item{states}{\code{TRUE} if the simulated states should be returned, \code{FALSE} otherwise (default).}
@@ -198,8 +198,8 @@ Simulates data from a (multivariate) hierarchical hidden Markov model. Movement 
 }
 \details{
 \itemize{
-\item \code{simHierHMM} is very similar to \code{\link{simData}} except that instead of simply specifying the number of states (\code{nbStates}) and distributions (\code{dist}), the \code{hierStates} argument specifies the hierarchical nature of the states, and
-the \code{hierDist} argument specifies the hierarchical nature of the data streams.  Both are specified as 
+\item \code{simHierData} is very similar to \code{\link{simData}} except that instead of simply specifying the number of states (\code{nbStates}), distributions (\code{dist}), and a single t.p.m. formula (\code{formula}), the \code{hierStates} argument specifies the hierarchical nature of the states,
+the \code{hierDist} argument specifies the hierarchical nature of the data streams, and the \code{hierFormula} argument specifies a t.p.m. formula for each level of the hierarchy.  All are specified as 
 \code{\link[data.tree]{Node}} objects from the \code{\link[data.tree]{data.tree}} package.
 
 \item \code{delta} must be specified

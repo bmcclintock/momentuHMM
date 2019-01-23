@@ -7,9 +7,10 @@
 #' @param data A \code{\link{momentuHMMData}} object.
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See details.
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. Currently
-#' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'pois', 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. See details.
+#' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
+#' 'pois', 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), 'rw_mvnorm3' (trivariate normal random walk), 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. See details.
 #' @param Par0 A named list containing vectors of initial state-dependent probability distribution parameters for 
-#' each data stream specified in \code{dist}. The parameters should be in the order expected by the pdfs of \code{dist}, 
+#' each data stream specified in \code{hierDist}. The parameters should be in the order expected by the pdfs of \code{hierDist}, 
 #' and any zero-mass and/or one-mass parameters should be the last (if both are present, then zero-mass parameters must preceed one-mass parameters). 
 #' Note that zero-mass parameters are mandatory if there are zeros in 
 #' data streams with a 'gamma','weibull','exp','lnorm', or 'beta' distribution, and one-mass parameters are mandatory if there are ones in 
@@ -46,7 +47,7 @@
 #' 
 #' Alternatively, \code{circularAngleMean} can be specified as a numeric scalar, where the value specifies the coefficient for the reference angle (i.e., directional persistence) term in the circular-circular regression model. For example, setting \code{circularAngleMean} to \code{0} specifies a 
 #' circular-circular regression model with no directional persistence term (thus specifying a biased random walk instead of a biased correlated random walk). Setting \code{circularAngleMean} to 1 is equivalent to setting it to TRUE, i.e., a circular-circular regression model with a coefficient of 1 for the directional persistence reference angle.
-#' @param formula Regression formula for the transition probability covariates. Default: \code{~0+level}. In addition to allowing standard functions in R formulas
+#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy. Default: \code{NULL} (no covariate effects). In addition to allowing standard functions in R formulas
 #' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 #' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}),
 #'  and state- or parameter-specific formulas (see details).
@@ -84,7 +85,7 @@
 #' \code{Par0}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta0)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta0)}.
 #' \code{workBounds} is ignored for any given data stream unless \code{DM} is also specified.
 #' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See details.
-#' @param mvnCoords Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.
+#' @param mvnCoords Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{hierDist} and (mu.x, mu.y) are location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.
 #' @param knownStates Vector of values of the state process which are known prior to fitting the
 #' model (if any). Default: NULL (states are not known). This should be a vector with length the number
 #' of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
@@ -128,8 +129,8 @@
 #'
 #' @details
 #' \itemize{
-#' \item \code{fitHierHMM} is very similar to \code{\link{fitHMM}} except that instead of simply specifying the number of states (\code{nbStates}) and distributions (\code{dist}), the \code{hierStates} argument specifies the hierarchical nature of the states, and
-#' the \code{hierDist} argument specifies the hierarchical nature of the data streams.  Both are specified as 
+#' \item \code{fitHierHMM} is very similar to \code{\link{fitHMM}} except that instead of simply specifying the number of states (\code{nbStates}), distributions (\code{dist}), and a single t.p.m. formula (\code{formula}), the \code{hierStates} argument specifies the hierarchical nature of the states,
+#' the \code{hierDist} argument specifies the hierarchical nature of the data streams, and the \code{hierFormula} argument specifies a t.p.m. formula for each level of the hierarchy.  All are specified as 
 #' \code{\link[data.tree]{Node}} objects from the \code{\link[data.tree]{data.tree}} package.
 #' 
 #' \item \code{delta0} must be specified
@@ -148,27 +149,26 @@
 #' Journal of Agricultural, Biological and Environmental Statistics, 22 (3), 232-248.
 #' 
 #' @export
-#' @importFrom data.tree Get Do ToDataFrameTypeCol Traverse Aggregate AreNamesUnique isLeaf
-#' @importFrom stats terms
 fitHierHMM <- function(data,hierStates,hierDist,
                     Par0,beta0=NULL,delta0=NULL,
                     estAngleMean=NULL,circularAngleMean=NULL,
-                    formula=~0+level,formulaDelta=~1,mixtures=1,formulaPi=NULL,
+                    hierFormula=NULL,formulaDelta=~1,mixtures=1,formulaPi=NULL,
                     nlmPar=list(),fit=TRUE,
                     DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,
                     mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL)
 {
 
-  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,formula,formulaDelta,mixtures,workBounds,betaCons,fixPar)
+  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons,fixPar)
   
   fit <- fitHMM(data,inputHierHMM$nbStates,inputHierHMM$dist,Par0,beta0,delta0,
                 estAngleMean,circularAngleMean,
-                formula,formulaDelta,stationary=FALSE,mixtures,formulaPi,
+                formula=inputHierHMM$formula,formulaDelta,stationary=FALSE,mixtures,formulaPi,
                 verbose=NULL,nlmPar,fit,
                 DM,cons=NULL,userBounds,workBounds=inputHierHMM$workBounds,workcons=NULL,inputHierHMM$betaCons,inputHierHMM$betaRef,
                 mvnCoords,inputHierHMM$stateNames,knownStates,inputHierHMM$fixPar,retryFits,retrySD,optMethod,control,prior,modelName)
   fit$conditions$hierStates <- hierStates
   fit$conditions$hierDist <- hierDist
+  fit$conditions$hierFormula <- hierFormula
   class(fit) <- append("momentuHierHMM",class(fit))
   fit
 }
