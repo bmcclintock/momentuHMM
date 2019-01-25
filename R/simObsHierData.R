@@ -1,7 +1,7 @@
 
-#' Observation error simulation tool
+#' Observation error simulation tool for hierarchical HMMs
 #' 
-#' Simulates observed location data subject to temporal irregularity and/or location measurement error
+#' Simulates observed location data subject to temporal irregularity and/or location measurement error in a hierarchical HMM
 #' 
 #' Simulated location data that are temporally-irregular (i.e., \code{lambda>0}) and/or with location measurement error (i.e., \code{errorEllipse!=NULL}) are returned
 #' as a data frame suitable for analysis using \code{\link{crawlWrap}}.
@@ -18,9 +18,10 @@
 #' \code{runif(1,min(errorEllipse$m),max(errorEllipse$m))}, and \code{runif(1,min(errorEllipse$r),max(errorEllipse$r))}. If only a single value is provided for any of the 
 #' error ellipse elements, then the corresponding component is fixed to this value for each location. Only the 'step' and 'angle' data streams are subject to location measurement error;
 #' any other data streams are observed without error.  Ignored unless a valid distribution for the 'step' data stream is specified.
+#' @param coordLevel Level of the hierarchy in which the location data are obtained
 #' 
 #' @return A dataframe of:
-#' \item{time}{Numeric time of each observed (and missing) observation}
+#' \item{time}{Numeric time of each observed (and missing) observation; these are only relative to \code{coordLevel} for suitability with \code{\link{crawlWrap}}}
 #' \item{ID}{The ID(s) of the observed animal(s)}
 #' \item{x}{Either easting or longitude observed location}
 #' \item{y}{Either norting or latitude observed location}
@@ -35,28 +36,18 @@
 #' \item{ln.sd.y}{log of the square root of the y-variance of bivariate normal error (if applicable; required for error ellipse models in \code{\link{crawlWrap}})}
 #' \item{error.corr}{correlation term of bivariate normal error (if applicable; required for error ellipse models in \code{\link{crawlWrap}})}
 #' 
-#' @seealso \code{\link{crawlWrap}}, \code{\link{prepData}}, \code{\link{simData}}
+#' @seealso \code{\link{crawlWrap}}, \code{\link{prepData}}, \code{\link{simHierData}}
 #' 
 #' @references
 #' McClintock BT, London JM, Cameron MF, Boveng PL. 2015. Modelling animal movement using the Argos satellite telemetry location error ellipse. 
 #' Methods in Ecology and Evolution 6(3):266-277.
-#' 
-#' @examples 
-#' # extract momentuHMMData example
-#' data <- example$m$data
-#' lambda <- 2 # expect 2 observations per time step
-#' errorEllipse <- list(M=c(0,50),m=c(0,50),r=c(0,180))
-#' obsData1 <- simObsData(data,lambda=lambda,errorEllipse=errorEllipse)
-#' 
-#' errorEllipse <- list(M=50,m=50,r=180)
-#' obsData2 <- simObsData(data,lambda=lambda,errorEllipse=errorEllipse)
 #' 
 #' @importFrom mvtnorm rmvnorm
 #' @importFrom argosfilter radian
 #' @importFrom crawl argosDiag2Cov
 #' @importFrom stats rexp
 #' @export
-simObsData<-function(data,lambda,errorEllipse){
+simObsHierData<-function(data,lambda,errorEllipse,coordLevel){
   
   if(!is.momentuHMMData(data)) stop("data must be a momentuHMMData object")
   
@@ -82,13 +73,14 @@ simObsData<-function(data,lambda,errorEllipse){
     }
     if(!is.null(lambda))
       if(lambda<=0) stop('lambda must be >0')
-  
+    
     distnames<-names(data)[which(!(names(data) %in% c("ID",coordNames,"step","angle")))]
     
     #Get observed data based on sampling rate (lambda) and measurement error (M,m, and r)
     obsData<-data.frame()
     for(i in unique(data$ID)){
-      idat<-data[which(data$ID==i),]
+      indDat <- data[which(data$ID==i),]
+      idat<-indDat[which(paste0("level",indDat$level)==coordLevel),]
       nbObs<-nrow(idat)
       X<-idat[[coordNames[1]]]
       Y<-idat[[coordNames[2]]]
@@ -119,7 +111,7 @@ simObsData<-function(data,lambda,errorEllipse){
       error_semiminor_axis[which(tmpM<tmpm)]<-tmpM[which(tmpM<tmpm)]
       error_ellipse_orientation<-runif(nobs,r[1],r[2])
       rad<-argosfilter::radian(error_ellipse_orientation)
-        
+      
       #calculate bivariate normal error variance-covariance matrix (Sigma)
       sigma2x<-(error_semimajor_axis/sqrt(2))^2*sin(rad)^2+(error_semiminor_axis/sqrt(2))^2*cos(rad)^2 # x measurement error term
       sigma2y<-(error_semimajor_axis/sqrt(2))^2*cos(rad)^2+(error_semiminor_axis/sqrt(2))^2*sin(rad)^2 # y mearurement error term
@@ -128,17 +120,28 @@ simObsData<-function(data,lambda,errorEllipse){
       xy<-t(apply(cbind(muxy,sigma2x,sigmaxy,sigma2y),1,function(x) mvtnorm::rmvnorm(1,c(x[1],x[2]),matrix(c(x[3],x[4],x[4],x[5]),2,2))))
       
       if(!is.null(errorEllipse))
-        tmpobsData<-data.frame(time=t,ID=rep(i,nobs),error_semimajor_axis=error_semimajor_axis,error_semiminor_axis=error_semiminor_axis,error_ellipse_orientation=error_ellipse_orientation,crawl::argosDiag2Cov(error_semimajor_axis,error_semiminor_axis,error_ellipse_orientation),mux=mux,muy=muy)
+        tmpobsData<-data.frame(time=t,ID=rep(i,nobs),level=factor(rep(gsub("level","",coordLevel),nobs),levels=levels(idat$level)),error_semimajor_axis=error_semimajor_axis,error_semiminor_axis=error_semiminor_axis,error_ellipse_orientation=error_ellipse_orientation,crawl::argosDiag2Cov(error_semimajor_axis,error_semiminor_axis,error_ellipse_orientation),mux=mux,muy=muy)
       else
-        tmpobsData<-data.frame(time=t,ID=rep(i,nobs),mux=mux,muy=muy)
+        tmpobsData<-data.frame(time=t,ID=rep(i,nobs),level=factor(rep(gsub("level","",coordLevel),nobs),levels=levels(idat$level)),mux=mux,muy=muy)
       
       tmpobsData[[coordNames[1]]] <- xy[,1]
       tmpobsData[[coordNames[2]]] <- xy[,2]
       
+      newTimes <- rep(0,nrow(indDat))
+      newTimes[1] <- 1
+      allnewTimes <- numeric()
+      levels <- indDat$level
+      for(k in 2:nrow(indDat)){
+        newTimes[k] <- newTimes[k-1]
+        if(coordLevel==paste0("level",levels[k])){
+          newTimes[k] <- newTimes[k-1] + 1
+        }
+      }
+      
       if(!is.null(lambda)) {
-        tmpobsData<-merge(tmpobsData,data.frame(idat[,c("ID",distnames),drop=FALSE],time=1:nbObs,mux=idat[[coordNames[1]]],muy=idat[[coordNames[2]]]),all = TRUE,by=c("ID","time","mux","muy"))
-      } else if(length(distnames)){
-        tmpobsData<-cbind(tmpobsData,idat[,distnames,drop=FALSE])
+        tmpobsData<-merge(tmpobsData,data.frame(indDat[,c("ID",distnames),drop=FALSE],time=newTimes,mux=indDat[[coordNames[1]]],muy=indDat[[coordNames[2]]]),all = TRUE,by=c("ID","time","level","mux","muy"))
+      } else {
+        tmpobsData<-merge(tmpobsData,data.frame(indDat[,c("ID",distnames),drop=FALSE],time=newTimes,mux=indDat[[coordNames[1]]],muy=indDat[[coordNames[2]]])[which(paste0("level",indDat$level)!=coordLevel),],all = TRUE,by=c("ID","time","level","mux","muy"))
       }
       #tmpobsData <- tmpobsData[order(tmpobsData$time),]
       obsData<-rbind(obsData,tmpobsData)

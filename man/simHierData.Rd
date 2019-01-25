@@ -59,7 +59,7 @@ be included in \code{formula} and/or \code{DM}. Covariates can also be simulated
 
 \item{spatialCovs}{List of \code{\link[raster]{RasterLayer-class}} objects for spatially-referenced covariates. Covariates specified by \code{spatialCovs} are
 extracted from the raster layer(s) based on the simulated location data for each time step (if applicable). The names of the raster layer(s) can be included in 
-\code{formula} and/or \code{DM}.  Note that \code{simData} usually takes longer to generate simulated data when \code{spatialCovs} is specified.}
+\code{formula} and/or \code{DM}.  Note that \code{simHierData} usually takes longer to generate simulated data when \code{spatialCovs} is specified.}
 
 \item{zeroInflation}{A named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated. If \code{zeroInflation} is \code{TRUE} 
 for a given data stream, then values for the zero-mass parameters should be

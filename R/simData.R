@@ -385,7 +385,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   ##############################
   if(!is.null(model)) {
     
-    if(!inherits(model,"momentuHMM")) stop("model must be a 'momentuHMM' object")
     if(inherits(model,"momentuHierHMM")) stop("model can not be a 'momentuHierHMM' object; use simHierData instead")
     
     if(is.miHMM(model)){
@@ -418,6 +417,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(!is.null(model$Par$beta$delta$est)) model$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(model$Par$beta$delta$est),2,byrow=TRUE)
       if(!is.null(model$mle$g0)) model$conditions$workBounds$g0<-matrix(c(-Inf,Inf),length(model$mle$g0),2,byrow=TRUE)
       if(!is.null(model$mle$theta)) model$conditions$workBounds$theta<-matrix(c(-Inf,Inf),length(model$mle$theta),2,byrow=TRUE)
+    } else {
+      if(!inherits(model,"momentuHMM")) stop("model must be a 'momentuHMM' object")
     }
     
     userBounds <- model$conditions$bounds

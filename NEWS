@@ -2,13 +2,15 @@ momentuHMM 1.5.0 2019-01-17
 -----------------
 NEW FEATURES
 
-* hierarchical HMMs can now be fitted and simulated using the fitHierHMM and simHierData functions, respectively
+* hierarchical HMMs can now be fitted and simulated using the fitHierHMM, MIfitHierHMM, and simHierData functions
 
-* discrete individual-level random effects now available on state transition probabilities via the 'mixtures' and 'formulaPi' arguments in fitHMM, MIfitHMM, fitHierHMM, simData, and simHierData
+* discrete individual-level random effects now available on state transition probabilities via the 'mixtures' and 'formulaPi' arguments in fitHMM, MIfitHMM, fitHierHMM, MIfitHierHMM, simData, and simHierData
 
 * discrete-time version of Hooten et al (2018; <doi:10.1111/ele.13198>) recharge model has been added
 
 * mvnorm2 (bivariate normal) and mvnorm3 (trivariate normal) data stream distributions have been added
+
+* rw_norm (normal random walk), rw_mvnorm2 (bivariate normal random walk), and rw_mvnorm3 (trivariate normal random walk) data stream distributions have been added
 
 * circularAngleMean can now alternatively be used to specify the reference angle (i.e. directional persistence) coefficient in circular-circular regression models
 

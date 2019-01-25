@@ -36,7 +36,7 @@
 #' \code{covs} is specified. Simulated covariates are provided generic names (e.g., 'cov1' and 'cov2' for \code{nbCovs=2}) and can be included in \code{formula} and/or \code{DM}.
 #' @param spatialCovs List of \code{\link[raster]{RasterLayer-class}} objects for spatially-referenced covariates. Covariates specified by \code{spatialCovs} are
 #' extracted from the raster layer(s) based on the simulated location data for each time step (if applicable). The names of the raster layer(s) can be included in 
-#' \code{formula} and/or \code{DM}.  Note that \code{simData} usually takes longer to generate simulated data when \code{spatialCovs} is specified.
+#' \code{formula} and/or \code{DM}.  Note that \code{simHierData} usually takes longer to generate simulated data when \code{spatialCovs} is specified.
 #' @param zeroInflation A named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated. If \code{zeroInflation} is \code{TRUE} 
 #' for a given data stream, then values for the zero-mass parameters should be
 #' included in the corresponding element of \code{Par}.
@@ -189,7 +189,6 @@
 #' @export
 #' @importFrom stats rnorm runif rmultinom step terms.formula
 #' @importFrom raster cellFromXY getValues
-#' @importFrom moveHMM simData
 #' @importFrom CircStats rvm
 #' @importFrom LaplacesDemon rbern
 #' @importFrom Brobdingnag as.brob sum
@@ -444,9 +443,9 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     if(!(dist[[mvnCoords]] %in% mvndists)) stop("mvnCoords must correspond to a multivariate normal data stream")
     if(any(c("step","angle") %in% distnames)) stop("step and angle distributions cannot be specified when ",mvnCoords," ~ ",dist[[mvnCoords]])
     if(mvnCoords %in% c("x","y","z")) stop("'x', 'y', and 'z' are reserved and cannot be used for mvnCoords data stream names")
-    if(sum(unlist(dist) %in% rwdists)>1) stop("sorry, simData currently only supports a single multivariate normal random walk distribution (and it must correspond to location data)")
-  } else if(any(unlist(dist) %in% rwdists)) stop("sorry, simData currently only supports random walk distributions for multivariate location data identified through the mvnCoords argument")
-  if(any(unlist(dist)=="rw_norm")) stop("sorry, 'rw_norm' is not currently supported by simData")
+    if(sum(unlist(dist) %in% rwdists)>1) stop("sorry, simHierData currently only supports a single multivariate normal random walk distribution (and it must correspond to location data)")
+  } else if(any(unlist(dist) %in% rwdists)) stop("sorry, simHierData currently only supports random walk distributions for multivariate location data identified through the mvnCoords argument")
+  if(any(unlist(dist)=="rw_norm")) stop("sorry, 'rw_norm' is not currently supported by simHierData")
   
   estAngleMean <- vector('list',length(distnames))
   names(estAngleMean) <- distnames
@@ -724,18 +723,22 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   if("angle" %in% distnames){ 
     if(inputs$dist[["angle"]] %in% angledists & ("step" %in% distnames))
       if(inputs$dist[["step"]] %in% stepdists){
+        if(hierDist$Get("parent",filterFun=isLeaf)$step$name != hierDist$Get("parent",filterFun=isLeaf)$angle$name) stop("step and angle must be in the same level of the hierarchy")
         data$x<-numeric()
         data$y<-numeric()
+        coordLevel <- hierDist$Get("parent",filterFun=isLeaf)$step$name
       }
   } else if("step" %in% distnames){
     if(inputs$dist[["step"]] %in% stepdists){
       data$x<-numeric()
       data$y<-numeric()
+      coordLevel <- hierDist$Get("parent",filterFun=isLeaf)$step$name
     }    
   } else if(!is.null(mvnCoords)){
     data[[paste0(mvnCoords,".x")]]<-numeric()
     data[[paste0(mvnCoords,".y")]]<-numeric()
     if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) data[[paste0(mvnCoords,".z")]]<-numeric()
+    coordLevel <- hierDist$Get("parent",filterFun=isLeaf)[[mvnCoords]]$name
   } else if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs)) stop("spatialCovs, angleCovs, centers, and/or centroids cannot be specified without valid step length and turning angle distributions")
   
   rwInd <- any(unlist(dist) %in% rwdists)
@@ -1365,13 +1368,13 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
     
     # account for observation error (if any)
-    out<-simObsData(momentuHMMData(data),lambda,errorEllipse)
+    out<-simObsHierData(momentuHMMData(data),lambda,errorEllipse,coordLevel)
     
     message("DONE")
     return(out)
   } else {
     simCount <- 0
-    cat("Attempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simData'\n",sep="")
+    cat("Attempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simHierData'\n",sep="")
     while(simCount < retrySims){
       cat("\r    Attempt ",simCount+1," of ",retrySims,"...",sep="")
       tmp<-suppressMessages(tryCatch(simHierData(nbAnimals,hierStates,hierDist,
