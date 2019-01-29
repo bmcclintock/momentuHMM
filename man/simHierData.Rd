@@ -214,9 +214,6 @@ covariates is either shortened (removing last values - if too long) or extended 
 over from the first values - if too short).
 }
 }
-\examples{
-                
-}
 \references{
 Cornelissen, G. 2014. Cosinor-based rhythmometry. Theoretical Biology and Medical Modelling 11:16.
 

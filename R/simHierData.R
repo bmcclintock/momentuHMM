@@ -169,8 +169,6 @@
 #' }
 #' 
 #' @seealso \code{\link{simData}}
-#'
-#' @examples
 #'                 
 #' @references
 #' 

@@ -43,7 +43,8 @@ Imports:
     scatterplot3d,
     RColorBrewer,
     tmvtnorm,
-    data.tree
+    data.tree,
+    DataCombine
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,

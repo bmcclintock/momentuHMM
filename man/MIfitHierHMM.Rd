@@ -67,7 +67,7 @@ object, then \code{MIfitHierHMM} returns a list containing a \code{\link{momentu
 
 \item{useInitial}{Logical indicating whether or not to use parameter estimates for the first model fit as initial values for all subsequent model fits.
 If \code{ncores>1} then the first model is fit on a single core and then used as the initial values for all subsequent model fits on each core 
-(in this case, the progress of the initial model fit can be followed using the \code{verbose} argument). Default: FALSE.}
+(in this case, the progress of the initial model fit can be followed using the \code{nlmPar} or \code{control} arguments). Default: FALSE.}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream. See \code{\link{fitHierHMM}}.}
@@ -144,10 +144,6 @@ of the quadrature method for large parameter vectors. See \code{\link[crawl]{crw
 \item{thetaSamp}{If multiple parameter samples are available in \code{\link[crawl]{crwSimulator}} objects,
 setting \code{thetaSamp=n} will use the nth sample. Defaults to the last. See \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}}. 
 Ignored unless \code{miData} is a \code{\link{crwData}} object.}
-
-\item{verbose}{Deprecated: please use \code{print.level} in \code{nlmPar} argument. Determines the print level of the \code{nlm} optimizer. The default value of 0 means that no
-printing occurs, a value of 1 means that the first and last iterations of the optimization are
-detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.}
 }
 \value{
 If \code{nSims>1}, \code{poolEstimates=TRUE}, and \code{fit=TRUE}, a \code{\link{miHMM}} object, i.e., a list consisting of:
@@ -177,60 +173,6 @@ If \code{miData} is a \code{\link{crwData}} object, \code{nSims} determines both
 
 If \code{miData} is a \code{\link{crwSim}} object or a list of \code{\link{momentuHMMData}} object(s), the specified HMM will simply be fitted to each of the \code{momentuHMMData} objects
 and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} are ignored.
-}
-\examples{
-
-# Don't run because it takes too long on a single core
-\dontrun{
-# extract simulated obsData from example data
-obsData <- miExample$obsData
-
-# error ellipse model
-err.model <- list(x= ~ ln.sd.x - 1, y =  ~ ln.sd.y - 1, rho =  ~ error.corr)
-
-# create crwData object by fitting crwMLE models to obsData and predict locations 
-# at default intervals for both individuals
-crwOut <- crawlWrap(obsData=obsData,
-         theta=c(4,0),fixPar=c(1,1,NA,NA),
-         err.model=err.model)
-
-# HMM specifications
-nbStates <- 2
-stepDist <- "gamma"
-angleDist <- "vm"
-mu0 <- c(20,70)
-sigma0 <- c(10,30)
-kappa0 <- c(1,1)
-stepPar0 <- c(mu0,sigma0)
-anglePar0 <- c(-pi/2,pi/2,kappa0)
-formula <- ~cov1+cos(cov2)
-nbCovs <- 2
-beta0 <- matrix(c(rep(-1.5,nbStates*(nbStates-1)),rep(0,nbStates*(nbStates-1)*nbCovs)),
-                nrow=nbCovs+1,byrow=TRUE)
-
-# first fit HMM to best predicted position process
-bestData<-prepData(crwOut,covNames=c("cov1","cov2"))
-bestFit<-fitHMM(bestData,
-                nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
-                Par0=list(step=stepPar0,angle=anglePar0),beta0=beta0,
-                formula=formula,estAngleMean=list(angle=TRUE))
-            
-print(bestFit)
-
-# extract estimates from 'bestFit'
-bPar0 <- getPar(bestFit)
-
-# Fit nSims=5 imputations of the position process
-miFits<-MIfitHMM(miData=crwOut,nSims=5,
-                  nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
-                  Par0=bPar0$Par,beta0=bPar0$beta,delta0=bPar0$delta,
-                  formula=formula,estAngleMean=list(angle=TRUE),
-                  covNames=c("cov1","cov2"))
-
-# print pooled estimates
-print(miFits)
-}
-
 }
 \references{
 Hooten M.B., Johnson D.S., McClintock B.T., Morales J.M. 2017. Animal Movement: Statistical Models for Telemetry Data. CRC Press, Boca Raton.
