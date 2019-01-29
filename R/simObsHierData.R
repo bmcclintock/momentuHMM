@@ -46,6 +46,7 @@
 #' @importFrom argosfilter radian
 #' @importFrom crawl argosDiag2Cov
 #' @importFrom stats rexp
+#' @importFrom DataCombine InsertRow
 #' @export
 simObsHierData<-function(data,lambda,errorEllipse,coordLevel){
   
@@ -128,8 +129,7 @@ simObsHierData<-function(data,lambda,errorEllipse,coordLevel){
       tmpobsData[[coordNames[2]]] <- xy[,2]
       
       newTimes <- rep(0,nrow(indDat))
-      newTimes[1] <- 1
-      allnewTimes <- numeric()
+      newTimes[1] <- 0
       levels <- indDat$level
       for(k in 2:nrow(indDat)){
         newTimes[k] <- newTimes[k-1]
@@ -137,17 +137,32 @@ simObsHierData<-function(data,lambda,errorEllipse,coordLevel){
           newTimes[k] <- newTimes[k-1] + 1
         }
       }
+      newTimes[which(newTimes==0)] <- 1
       
-      if(!is.null(lambda)) {
-        tmpobsData<-merge(tmpobsData,data.frame(indDat[,c("ID",distnames),drop=FALSE],time=newTimes,mux=indDat[[coordNames[1]]],muy=indDat[[coordNames[2]]]),all = TRUE,by=c("ID","time","level","mux","muy"))
-      } else {
-        tmpobsData<-merge(tmpobsData,data.frame(indDat[,c("ID",distnames),drop=FALSE],time=newTimes,mux=indDat[[coordNames[1]]],muy=indDat[[coordNames[2]]])[which(paste0("level",indDat$level)!=coordLevel),],all = TRUE,by=c("ID","time","level","mux","muy"))
+      tmpData <-data.frame(indDat[,c("ID",distnames),drop=FALSE],time=newTimes, mux=indDat[[coordNames[1]]],muy=indDat[[coordNames[2]]])
+      
+      for(jj in names(tmpData)[!(names(tmpData) %in% names(tmpobsData))]){
+        tmpobsData[[jj]] <- rep(NA,nobs)
       }
-      #tmpobsData <- tmpobsData[order(tmpobsData$time),]
-      obsData<-rbind(obsData,tmpobsData)
+      for(jj in names(tmpobsData)[!(names(tmpobsData) %in% names(tmpData))]){
+        tmpData[[jj]] <- rep(NA,nrow(tmpData))
+      }
+      
+      tmpobsData <- tmpobsData[,names(tmpData)]
+      
+      for(jj in 1:nobs){
+        if(any(tmpData$time==t[jj] & paste0("level",tmpData$level)==coordLevel)){
+          tmpInd <- which(tmpData$time==t[jj] & paste0("level",tmpData$level)==coordLevel)
+          tmpData[tmpInd,is.na(tmpData[tmpInd,])] <- tmpobsData[jj,is.na(tmpData[tmpInd,])]
+        } else {
+          tmpData <- DataCombine::InsertRow(tmpData,tmpobsData[jj,],which.max(tmpData$time > t[jj] & paste0("level",tmpData$level)==coordLevel))
+        }
+      }
+      
+      obsData<-rbind(obsData,tmpData)
     }
     dnames <- names(obsData)
-    out <- obsData[,c("time","ID",coordNames,distnames,"mux","muy",dnames[!(dnames %in% c("time","ID",coordNames,distnames,"mux","muy"))])]
+    out <- obsData[,c("time","ID",coordNames,distnames,"mux","muy",dnames[!(dnames %in% c("time","ID","order",coordNames,distnames,"mux","muy"))])]
   }
   return(out)
 }
