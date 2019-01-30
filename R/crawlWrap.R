@@ -546,21 +546,26 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
       
       ipData <- ipData[,names(tmpData)]
       
-      #for(jj in 1:nrow(ipData)){
-      #    tmpInd <- which(tmpData$time==ipData$time[jj] & tmpData$level==coordLevel)
-      #    tmpData[tmpInd,is.na(tmpData[tmpInd,])] <- ipData[jj,is.na(tmpData[tmpInd,])]
-      #}
-      tmpInd <- which(tmpData$time %in% ipData$time & tmpData$level==coordLevel)
-      tmpData[tmpInd,][is.na(tmpData[tmpInd,])] <- ipData[ipData$time %in% tmpData$time,][is.na(tmpData[tmpInd,])]
+      for(jj in 1:nrow(ipData)){
+          tmpInd <- which(tmpData$time==ipData$time[jj] & tmpData$level==coordLevel)
+          tmpData[tmpInd,is.na(tmpData[tmpInd,])] <- ipData[jj,is.na(tmpData[tmpInd,])]
+      }
+      #tmpInd <- which(tmpData$time %in% ipData$time & tmpData$level==coordLevel)
+      #tmpData[tmpInd,][is.na(tmpData[tmpInd,])] <- ipData[ipData$time %in% tmpData$time,][is.na(tmpData[tmpInd,])]
       
       predData<-rbind(predData,tmpData)
     }
     predData <- predData[,names(pData)]
-    class(predData) <- append(c("crwPredict","crwHierPredict"),class(predData))
+    attrNames <- names(attributes(pData))[!(names(attributes(pData)) %in% names(attributes(predData)))]
+    attributes(predData)[attrNames] <- attributes(pData)[attrNames]
+    attr(predData,"coordLevel") <- coordLevel
+    class(predData) <- append("crwHierPredict",class(predData))
+    cat("DONE\n")
+    return(crwHierData(list(crwFits=model_fits,crwHierPredict=predData)))    
+  } else {
+    cat("DONE\n")
+    return(crwData(list(crwFits=model_fits,crwPredict=predData)))    
   }
-  cat("DONE\n")
-  
-  return(crwData(list(crwFits=model_fits,crwPredict=predData)))
 }
 
 quietCrawl <- function(x) { 

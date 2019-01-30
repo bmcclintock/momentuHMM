@@ -1,0 +1,36 @@
+
+#' Constructor of \code{crwHierData} objects
+#'
+#' @param m A list of attributes of crawl output: \code{crwFits} (a list of crwFit objects) and \code{crwHierPredict} (a crwHierPredict object)
+#'
+#'
+#' @return An object \code{crwHierData}.
+#' 
+#' @seealso \code{\link{crawlWrap}}, \code{\link{MIfitHierHMM}}
+
+crwHierData <- function(m)
+{
+  if(is.null(m$crwFits) | is.null(m$crwHierPredict))
+    stop("Can't construct crwData object: fields are missing")
+  
+  if(any(!unlist(lapply(m$crwFits,function(x) inherits(x,"crwFit")))))
+    stop("Can't construct crwData object: crwFits must be a list of crwFit objects")
+  
+  if(!inherits(m$crwHierPredict,"crwHierPredict")) stop("Can't construct crwData object: crwHierPredict must be a crwHierPredict object")
+  
+  obj <- m
+  
+  class(obj) <- append("crwHierData",class(obj))
+  return(obj)
+}
+
+#' Is crwHierData
+#'
+#' Check that an object is of class \code{\link{crwHierData}}. Used in \code{\link{MIfitHierHMM}}.
+#'
+#' @param x An R object
+#'
+#' @return \code{TRUE} if \code{x} is of class \code{\link{crwHierData}}, \code{FALSE} otherwise.
+
+is.crwHierData <- function(x)
+  inherits(x,"crwHierData")
