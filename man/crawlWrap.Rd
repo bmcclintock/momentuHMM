@@ -10,7 +10,7 @@ crawlWrap(obsData, timeStep = 1, ncores = 1, retryFits = 0, retrySD = 1,
   Time.name = "time", time.scale = "hours", theta, fixPar,
   method = "L-BFGS-B", control = NULL, constr = NULL, prior = NULL,
   need.hess = TRUE, initialSANN = list(maxit = 200), attempts = 1,
-  predTime = NULL, fillCols = FALSE, ...)
+  predTime = NULL, fillCols = FALSE, coordLevel = NULL, ...)
 }
 \arguments{
 \item{obsData}{data.frame object containing fields for animal ID ('ID'), time of observation (identified by \code{Time.name}, must be numeric or POSIXct), 
@@ -89,6 +89,8 @@ for each individual.}
 \item{fillCols}{Logical indicating whether or not to use the crawl::\code{\link[crawl]{fillCols}} function for filling in missing values in \code{obsData} for which
 there is a single unique value. Default: FALSE. If the output from \code{crawlWrap} is intended for analyses using \code{\link{fitHMM}} or \code{\link{MIfitHMM}}, 
 setting \code{fillCols=TRUE} should typically be avoided.}
+
+\item{coordLevel}{Character string indicating the level of the hierarchy for the location data. Ignored unless \code{obsData} includes a 'level' field.}
 
 \item{...}{Additional arguments that are ignored.}
 }

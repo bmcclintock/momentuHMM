@@ -56,6 +56,7 @@
 #' @param fillCols Logical indicating whether or not to use the crawl::\code{\link[crawl]{fillCols}} function for filling in missing values in \code{obsData} for which
 #' there is a single unique value. Default: FALSE. If the output from \code{crawlWrap} is intended for analyses using \code{\link{fitHMM}} or \code{\link{MIfitHMM}}, 
 #' setting \code{fillCols=TRUE} should typically be avoided.
+#' @param coordLevel Character string indicating the level of the hierarchy for the location data. Ignored unless \code{obsData} includes a 'level' field.
 #' @param ... Additional arguments that are ignored.
 #' 
 #' @return A \code{\link{crwData}} object, i.e. a list of:
@@ -110,7 +111,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
                     coord = c("x", "y"), Time.name = "time", time.scale = "hours", theta, fixPar, 
                     method = "L-BFGS-B", control = NULL, constr = NULL, 
                     prior = NULL, need.hess = TRUE, initialSANN = list(maxit = 200), attempts = 1,
-                    predTime = NULL, fillCols = FALSE, ...)
+                    predTime = NULL, fillCols = FALSE, coordLevel = NULL, ...)
 {
   
   if(is.data.frame(obsData)){
@@ -127,9 +128,25 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   ids = as.character(unique(obsData$ID))
   ind_data<-list()
   
+  hierInd <- FALSE
   for(i in ids){
     ind_data[[i]] = obsData[which(obsData$ID==i),]
     if(any(is.na(ind_data[[i]][[Time.name]]))) stop("obsData$",Time.name," cannot contain missing values")
+    #if(any(duplicated(ind_data[[i]][[Time.name]]))){
+    #  if(is.null(ind_data[[i]]$level) | is.null(coordLevel)) stop("duplicated times can only be included when coordLevel is specified and obsData includes a 'level' field")
+    #  if(!is.factor(ind_data[[i]]$level)) stop("'level' field must be a factor")
+    #  if(!(coordLevel %in% levels(ind_data[[i]]$level))) stop("'coordLevel' not found in 'level' field")
+    #  ind_data[[i]] <- obsData[which(obsData$ID==i & obsData$level==coordLevel),]
+    #  hierInd <- TRUE
+    #} else {
+      if(!is.null(ind_data[[i]]$level) & !is.null(coordLevel)){
+        if(!is.factor(ind_data[[i]]$level)) stop("'level' field must be a factor")
+        if(!is.character(coordLevel) | length(coordLevel)!=1) stop("coordLevel must be a character string")
+        if(!(coordLevel %in% levels(ind_data[[i]]$level))) stop("'coordLevel' not found in 'level' field")
+        ind_data[[i]] <- obsData[which(obsData$ID==i & obsData$level==coordLevel),]
+        hierInd <- TRUE
+      }
+    #}
   }
   
   if(is.null(mov.model)){
@@ -330,7 +347,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   }
   for(i in ids){
     if(is.null(predTime[[i]])){
-      iTime <- range(obsData[which(obsData$ID==i),][[Time.name]])
+      iTime <- range(ind_data[[i]][[Time.name]])
       predTime[[i]] <- seq(iTime[1],iTime[2],timeStep)
     }
   }
@@ -509,6 +526,40 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     }
   ,warning=muffleRNGwarning)
   stopImplicitCluster()
+  
+  if(hierInd){
+    
+    pData <- predData
+    predData <- data.frame()
+    
+    for(i in ids){
+      
+      ipData <- pData[which(pData$ID==i),]
+      tmpData <- obsData[which(obsData$ID==i),]
+      
+      for(jj in names(tmpData)[!(names(tmpData) %in% names(ipData))]){
+        ipData[[jj]] <- rep(NA,nrow(ipData))
+      }
+      for(jj in names(ipData)[!(names(ipData) %in% names(tmpData))]){
+        tmpData[[jj]] <- rep(NA,nrow(tmpData))
+      }
+      
+      ipData <- ipData[,names(tmpData)]
+      
+      for(jj in 1:nrow(ipData)){
+        #if(any(tmpData$time==ipData$time[jj] & tmpData$level==coordLevel)){
+          tmpInd <- which(tmpData$time==ipData$time[jj] & tmpData$level==coordLevel)
+          tmpData[tmpInd,is.na(tmpData[tmpInd,])] <- ipData[jj,is.na(tmpData[tmpInd,])]
+        #} else {
+        #  tmpData <- DataCombine::InsertRow(tmpData,ipData[jj,],which.max(tmpData$time > ipData$time[jj] & tmpData$level==coordLevel))
+        #}
+      }
+      predData<-rbind(predData,tmpData)
+    }
+    predData <- predData[,names(pData)]
+    class(predData) <- append("crwPredict",class(predData))
+
+  }
   cat("DONE\n")
   
   return(crwData(list(crwFits=model_fits,crwPredict=predData)))

@@ -81,7 +81,7 @@ simObsHierData<-function(data,lambda,errorEllipse,coordLevel){
     obsData<-data.frame()
     for(i in unique(data$ID)){
       indDat <- data[which(data$ID==i),]
-      idat<-indDat[which(paste0("level",indDat$level)==coordLevel),]
+      idat<-indDat[which(indDat$level==coordLevel),]
       nbObs<-nrow(idat)
       X<-idat[[coordNames[1]]]
       Y<-idat[[coordNames[2]]]
@@ -121,9 +121,9 @@ simObsHierData<-function(data,lambda,errorEllipse,coordLevel){
       xy<-t(apply(cbind(muxy,sigma2x,sigmaxy,sigma2y),1,function(x) mvtnorm::rmvnorm(1,c(x[1],x[2]),matrix(c(x[3],x[4],x[4],x[5]),2,2))))
       
       if(!is.null(errorEllipse))
-        tmpobsData<-data.frame(time=t,ID=rep(i,nobs),level=factor(rep(gsub("level","",coordLevel),nobs),levels=levels(idat$level)),error_semimajor_axis=error_semimajor_axis,error_semiminor_axis=error_semiminor_axis,error_ellipse_orientation=error_ellipse_orientation,crawl::argosDiag2Cov(error_semimajor_axis,error_semiminor_axis,error_ellipse_orientation),mux=mux,muy=muy)
+        tmpobsData<-data.frame(time=t,ID=rep(i,nobs),level=factor(rep(coordLevel,nobs),levels=levels(idat$level)),error_semimajor_axis=error_semimajor_axis,error_semiminor_axis=error_semiminor_axis,error_ellipse_orientation=error_ellipse_orientation,crawl::argosDiag2Cov(error_semimajor_axis,error_semiminor_axis,error_ellipse_orientation),mux=mux,muy=muy)
       else
-        tmpobsData<-data.frame(time=t,ID=rep(i,nobs),level=factor(rep(gsub("level","",coordLevel),nobs),levels=levels(idat$level)),mux=mux,muy=muy)
+        tmpobsData<-data.frame(time=t,ID=rep(i,nobs),level=factor(rep(coordLevel,nobs),levels=levels(idat$level)),mux=mux,muy=muy)
       
       tmpobsData[[coordNames[1]]] <- xy[,1]
       tmpobsData[[coordNames[2]]] <- xy[,2]
@@ -133,7 +133,7 @@ simObsHierData<-function(data,lambda,errorEllipse,coordLevel){
       levels <- indDat$level
       for(k in 2:nrow(indDat)){
         newTimes[k] <- newTimes[k-1]
-        if(coordLevel==paste0("level",levels[k])){
+        if(coordLevel==levels[k]){
           newTimes[k] <- newTimes[k-1] + 1
         }
       }
@@ -151,11 +151,11 @@ simObsHierData<-function(data,lambda,errorEllipse,coordLevel){
       tmpobsData <- tmpobsData[,names(tmpData)]
       
       for(jj in 1:nobs){
-        if(any(tmpData$time==t[jj] & paste0("level",tmpData$level)==coordLevel)){
-          tmpInd <- which(tmpData$time==t[jj] & paste0("level",tmpData$level)==coordLevel)
+        if(any(tmpData$time==t[jj] & tmpData$level==coordLevel)){
+          tmpInd <- which(tmpData$time==t[jj] & tmpData$level==coordLevel)
           tmpData[tmpInd,is.na(tmpData[tmpInd,])] <- tmpobsData[jj,is.na(tmpData[tmpInd,])]
         } else {
-          tmpData <- DataCombine::InsertRow(tmpData,tmpobsData[jj,],which.max(tmpData$time > t[jj] & paste0("level",tmpData$level)==coordLevel))
+          tmpData <- DataCombine::InsertRow(tmpData,tmpobsData[jj,],which.max(tmpData$time > t[jj] & tmpData$level==coordLevel))
         }
       }
       
