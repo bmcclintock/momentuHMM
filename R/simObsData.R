@@ -144,7 +144,7 @@ simObsData<-function(data,lambda,errorEllipse){
       obsData<-rbind(obsData,tmpobsData)
     }
     dnames <- names(obsData)
-    out <- obsData[,c("time","ID",coordNames,distnames,"mux","muy",dnames[!(dnames %in% c("time","ID",coordNames,distnames,"mux","muy"))])]
+    out <- obsData[,c("ID","time",coordNames,distnames,"mux","muy",dnames[!(dnames %in% c("ID","time",coordNames,distnames,"mux","muy"))])]
   }
   return(out)
 }

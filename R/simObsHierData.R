@@ -78,7 +78,7 @@ simObsHierData<-function(data,lambda,errorEllipse,coordLevel){
     distnames<-names(data)[which(!(names(data) %in% c("ID",coordNames,"step","angle")))]
     
     #Get observed data based on sampling rate (lambda) and measurement error (M,m, and r)
-    obsData<-data.frame()
+    out<-data.frame()
     for(i in unique(data$ID)){
       indDat <- data[which(data$ID==i),]
       idat<-indDat[which(indDat$level==coordLevel),]
@@ -129,15 +129,14 @@ simObsHierData<-function(data,lambda,errorEllipse,coordLevel){
       tmpobsData[[coordNames[2]]] <- xy[,2]
       
       newTimes <- rep(0,nrow(indDat))
-      newTimes[1] <- 0
+      newTimes[1] <- 1
       levels <- indDat$level
       for(k in 2:nrow(indDat)){
         newTimes[k] <- newTimes[k-1]
-        if(coordLevel==levels[k]){
+        if(coordLevel==levels[k-1]){
           newTimes[k] <- newTimes[k-1] + 1
         }
       }
-      newTimes[which(newTimes==0)] <- 1
       
       tmpData <-data.frame(indDat[,c("ID",distnames),drop=FALSE],time=newTimes, mux=indDat[[coordNames[1]]],muy=indDat[[coordNames[2]]])
       
@@ -148,21 +147,21 @@ simObsHierData<-function(data,lambda,errorEllipse,coordLevel){
         tmpData[[jj]] <- rep(NA,nrow(tmpData))
       }
       
-      tmpobsData <- tmpobsData[,names(tmpData)]
+      dnames <- names(tmpData)
+      dnames <- unique(c("ID","time","level",coordNames,distnames,"mux","muy",dnames[!(dnames %in% c("ID","time","level",coordNames,distnames,"mux","muy"))]))
       
-      for(jj in 1:nobs){
-        if(any(tmpData$time==t[jj] & tmpData$level==coordLevel)){
-          tmpInd <- which(tmpData$time==t[jj] & tmpData$level==coordLevel)
-          tmpData[tmpInd,is.na(tmpData[tmpInd,])] <- tmpobsData[jj,is.na(tmpData[tmpInd,])]
-        } else {
-          tmpData <- DataCombine::InsertRow(tmpData,tmpobsData[jj,],which.max(tmpData$time > t[jj] & tmpData$level==coordLevel))
-        }
+      tmpData <- tmpData[,dnames]
+      tmpobsData <- tmpobsData[,dnames]
+      
+      for(jj in which(tmpData$time %in% t & tmpData$level==coordLevel)){
+        tmpData[jj,is.na(tmpData[jj,])] <- tmpobsData[which(t==tmpData$time[jj]),is.na(tmpData[jj,])]
+        tmpobsData[which(t==tmpData$time[jj]),is.na(tmpobsData[which(t==tmpData$time[jj]),])] <- tmpData[jj,is.na(tmpobsData[which(t==tmpData$time[jj]),])]
       }
       
-      obsData<-rbind(obsData,tmpData)
+      tmpData <- merge(tmpobsData,tmpData,all=TRUE)
+      
+      out<-rbind(out,tmpData)
     }
-    dnames <- names(obsData)
-    out <- obsData[,c("time","ID",coordNames,distnames,"mux","muy",dnames[!(dnames %in% c("time","ID","order",coordNames,distnames,"mux","muy"))])]
   }
   return(out)
 }

@@ -9,7 +9,7 @@ crawlMerge(crwData, data, Time.name)
 \arguments{
 \item{crwData}{A \code{\link{crwData}} object}
 
-\item{data}{A data frame containing required columns \code{ID} and \code{Time.name}, plus any additional data streams and/or covariates to merge with \code{crwData}.}
+\item{data}{A data frame containing required columns \code{ID}, \code{Time.name}, and, if \code{crwData} is hierarchical, \code{level}, plus any additional data streams and/or covariates to merge with \code{crwData}.}
 
 \item{Time.name}{Character string indicating name of the time column to be used for merging}
 }
@@ -22,9 +22,9 @@ and/or covariates that are unrelated to location.
 }
 \details{
 Specifically, the function merges the \code{crwData$crwPredict} data frame with \code{data}
-based on the \code{ID} and \code{Time.name} columns.  Thus both \code{crwData$crwPredict} and \code{data} must contain \code{ID} and \code{Time.name} columns.
+based on the \code{ID}, \code{Time.name}, and, if \code{crwData} is hierarchical, \code{level} columns.  Thus both \code{crwData$crwPredict} and \code{data} must contain \code{ID}, \code{Time.name}, and, if \code{crwData} is hierarchical, \code{level} columns.
 
-Only rows of \code{data} with \code{ID} and \code{Time.name} values that exactly match \code{crwData$crwPredict} are merged. Typically, the \code{Time.name} column
+Only rows of \code{data} with \code{ID}, \code{Time.name}, and, if \code{crwData} is hierarchical, \code{level} values that exactly match \code{crwData$crwPredict} are merged. Typically, the \code{Time.name} column
 in \code{data} should match predicted times of locations in \code{crwData$crwPredict} (i.e. those corresponding to \code{crwData$crwPredict$locType=="p"})
 }
 \examples{

@@ -546,19 +546,17 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
       
       ipData <- ipData[,names(tmpData)]
       
-      for(jj in 1:nrow(ipData)){
-        #if(any(tmpData$time==ipData$time[jj] & tmpData$level==coordLevel)){
-          tmpInd <- which(tmpData$time==ipData$time[jj] & tmpData$level==coordLevel)
-          tmpData[tmpInd,is.na(tmpData[tmpInd,])] <- ipData[jj,is.na(tmpData[tmpInd,])]
-        #} else {
-        #  tmpData <- DataCombine::InsertRow(tmpData,ipData[jj,],which.max(tmpData$time > ipData$time[jj] & tmpData$level==coordLevel))
-        #}
-      }
+      #for(jj in 1:nrow(ipData)){
+      #    tmpInd <- which(tmpData$time==ipData$time[jj] & tmpData$level==coordLevel)
+      #    tmpData[tmpInd,is.na(tmpData[tmpInd,])] <- ipData[jj,is.na(tmpData[tmpInd,])]
+      #}
+      tmpInd <- which(tmpData$time %in% ipData$time & tmpData$level==coordLevel)
+      tmpData[tmpInd,][is.na(tmpData[tmpInd,])] <- ipData[ipData$time %in% tmpData$time,][is.na(tmpData[tmpInd,])]
+      
       predData<-rbind(predData,tmpData)
     }
     predData <- predData[,names(pData)]
-    class(predData) <- append("crwPredict",class(predData))
-
+    class(predData) <- append(c("crwPredict","crwHierPredict"),class(predData))
   }
   cat("DONE\n")
   
