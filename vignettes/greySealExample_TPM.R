@@ -37,7 +37,7 @@ stateNames<-c(rownames(centers),"low","high")
 
 dist<-list(step="weibull",angle="wrpcauchy")
 estAngleMean<-list(angle=TRUE)
-circularAngleMean<-list(angle=TRUE)
+circularAngleMean<-list(angle=0)
 
 delta<-c(2500,2500,15000) # distance thresholds for activity center states
 
@@ -49,8 +49,9 @@ angleFormula<- ~state1(Abertay.angle)+state2(Farne.angle)+state3(Dogger.angle)
 stepDM<-list(shape=distFormula,scale=distFormula)
 angleDM<-list(mean=angleFormula,concentration=distFormula)
 
-# fix parameters such that activity center states are biased random walks and exploratory states are simple random walks
-fixPar<-list(angle=c(rep(100,nCenters),rep(NA,nCenters*2),rep(-100,2)))
+# fix parameters such that exploratory states are simple random walks (by fixing working concentration parameters to large negative number)
+# activity center states are biased random walks (because circularAngleMean=list(angle=0)) with a single angular covariate per angleMean, so these are simply fixed to 1
+fixPar<-list(angle=c(rep(1,nCenters),rep(NA,nCenters*2),rep(-100,nbStates-nCenters)))
 
 # determine bestDat locations within activity center thresholds and specify knownStates accordingly
 knownStates<-rep(NA,nrow(bestDat))
