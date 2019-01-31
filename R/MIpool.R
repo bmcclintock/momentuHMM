@@ -99,6 +99,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     warning("ginv of the hessian failed for HMM fit(s): ",paste0(goodIndex[tmpVar],collapse=", "))
     im[tmpVar] <- NULL
     nsims <- length(im)
+    if(nsims<1) stop("no valid HMM fits for pooling")
     goodIndex <- goodIndex[-tmpVar]
   }
   
@@ -119,8 +120,9 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   if(length(tmpVar1)){
     warning("working parameter estimates are not finite for HMM fits ",paste0(goodIndex[tmpVar1],collapse=", ")," and will not be included in pooling")
     im[tmpVar1] <- NULL
-    m <- im[[1]]
     nsims <- length(im)
+    if(nsims<1) stop("no valid HMM fits for pooling")
+    m <- im[[1]]
     betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
     betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
     goodIndex <- goodIndex[-tmpVar1]
@@ -129,8 +131,9 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   if(length(tmpVar2)){
     warning("working parameter standard errors are not finite for HMM fits ",paste0(goodIndex[tmpVar2],collapse=", ")," and will not be included in pooling")
     im[tmpVar2] <- NULL
-    m <- im[[1]]
     nsims <- length(im)
+    if(nsims<1) stop("no valid HMM fits for pooling")
+    m <- im[[1]]
     betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
     betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
     goodIndex <- goodIndex[-tmpVar2]
