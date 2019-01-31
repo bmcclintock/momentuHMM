@@ -104,7 +104,22 @@ prepData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
     znames <- unique(unlist(lapply(spatialCovs,function(x) names(attributes(x)$z))))
     if(length(znames))
       if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(data)),"$crwPredict")
-    distnames <- names(predData)[which(!(names(predData) %in% c("ID","x","y",covNames,znames)))]
+    omitNames <- c("ID","x","y",covNames,names(spatialCovs),znames)
+    if(!is.null(centers)) {
+      if(!is.null(rownames(centers))){
+        omitNames <- c(omitNames,paste0(rep(rownames(centers),each=2),c(".dist",".angle")))
+      } else {
+        omitNames <- c(omitNames,paste0("center",rep(1:nrow(centers),each=2),c(".dist",".angle")))
+      }
+    }
+    if(!is.null(centroids)) {
+      if(!is.null(names(centroids))){
+        omitNames <- c(omitNames,paste0(rep(names(centroids),each=2),c(".dist",".angle")))
+      } else {
+        omitNames <- c(omitNames,paste0("centroid",rep(1:length(centroids),each=2),c(".dist",".angle")))
+      }
+    }
+    distnames <- names(predData)[which(!(names(predData) %in% omitNames))]
     data <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
     type <- 'UTM'
     coordNames <- c("x","y")
@@ -271,6 +286,7 @@ prepData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
       if(length(centerInd)){
         if(is.null(rownames(centers))) centerNames<-paste0("center",rep(centerInd,each=2),".",rep(c("dist","angle"),length(centerInd)))
         else centerNames <- paste0(rep(rownames(centers),each=2),".",rep(c("dist","angle"),length(centerInd)))
+        if(any(centerNames %in% names(data))) stop("centers cannot have same names as data")
         centerCovs <- data.frame(matrix(NA,nrow=nrow(data),ncol=length(centerInd)*2,dimnames=list(NULL,centerNames)))
         for(zoo in 1:nbAnimals) {
           nbObs <- length(which(ID==unique(ID)[zoo]))
@@ -299,6 +315,7 @@ prepData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NUL
         if(!all(data[,timeName] %in% centroids[[j]][,timeName])) stop("centroids ",timeName," does not span data; each observation time must have a corresponding entry in centroids")
         if(is.null(names(centroids[j]))) centroidNames <- c(centroidNames,paste0("centroid",rep(j,each=2),".",c("dist","angle")))
         else centroidNames <- c(centroidNames,paste0(rep(names(centroids[j]),each=2),".",c("dist","angle")))
+        if(any(centroidNames %in% names(data))) stop("centroids cannot have same names as data")
       }
       centroidCovs <- data.frame(matrix(NA,nrow=nrow(data),ncol=length(centroidNames),dimnames=list(NULL,centroidNames)))
       centroidInd <- length(centroidNames)/2

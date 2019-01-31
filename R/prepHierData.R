@@ -280,6 +280,7 @@ prepHierData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),coordLev
       if(length(centerInd)){
         if(is.null(rownames(centers))) centerNames<-paste0("center",rep(centerInd,each=2),".",rep(c("dist","angle"),length(centerInd)))
         else centerNames <- paste0(rep(rownames(centers),each=2),".",rep(c("dist","angle"),length(centerInd)))
+        if(any(centerNames %in% names(data))) stop("centers cannot have same names as data")
         centerCovs <- data.frame(matrix(NA,nrow=nrow(data),ncol=length(centerInd)*2,dimnames=list(NULL,centerNames)))
         for(zoo in 1:nbAnimals) {
           nbObs <- length(which(ID==unique(ID)[zoo]))
@@ -308,6 +309,7 @@ prepHierData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),coordLev
         if(!all(data[,timeName] %in% centroids[[j]][,timeName])) stop("centroids ",timeName," does not span data; each observation time must have a corresponding entry in centroids")
         if(is.null(names(centroids[j]))) centroidNames <- c(centroidNames,paste0("centroid",rep(j,each=2),".",c("dist","angle")))
         else centroidNames <- c(centroidNames,paste0(rep(names(centroids[j]),each=2),".",c("dist","angle")))
+        if(any(centroidNames %in% names(data))) stop("centroids cannot have same names as data")
       }
       centroidCovs <- data.frame(matrix(NA,nrow=nrow(data),ncol=length(centroidNames),dimnames=list(NULL,centroidNames)))
       centroidInd <- length(centroidNames)/2
