@@ -203,7 +203,7 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
               if(betaInd){
                 fixPar$beta[paste0("level",levels(data$level)[2*j-1],"_mix",mix),withinConstr[[h]]] <- -1.e+10
                 for(lcovs in levelCovs){
-                  fixPar$beta[paste0(lcovs,"_mix",mix),withinConstr[[h]]] <- -1.e+10
+                  fixPar$beta[paste0(lcovs,"_mix",mix),withinConstr[[h]]] <- 0
                 }
               }
             }
@@ -221,7 +221,7 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
                 }
                 betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossConstr[[h]]])
                 for(ocovs in otherCovs){
-                  betaCons[ocovs,acrossConstr[[h]]] <- min(betaCons[ocovs,acrossConstr[[h]]])
+                  betaCons[paste0(ocovs,"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0(ocovs,"_mix",mix),acrossConstr[[h]]])
                 }
               }
               if(any(acrossRef)){
@@ -231,7 +231,7 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
                 }
                 betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossRef] <- min(betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossRef])
                 for(ocovs in otherCovs){
-                  betaCons[ocovs,acrossRef] <- min(betaCons[ocovs,acrossRef])
+                  betaCons[paste0(ocovs,"_mix",mix),acrossRef] <- min(betaCons[paste0(ocovs,"_mix",mix),acrossRef])
                 }
               }
             }
@@ -239,17 +239,17 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
               if(any(acrossConstr[[h]])){
                 fixPar$beta[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossConstr[[h]]] <- -1.e+10
                 for(lcovs in levelCovs){
-                  fixPar$beta[paste0(lcovs,"_mix",mix),acrossConstr[[h]]] <- -1.e+10
+                  fixPar$beta[paste0(lcovs,"_mix",mix),acrossConstr[[h]]] <- 0
                 }
                 fixPar$beta[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossConstr[[h]]] <- -1.e+10
                 for(ocovs in otherCovs){
-                  fixPar$beta[ocovs,acrossConstr[[h]]] <- -1.e+10
+                  fixPar$beta[paste0(ocovs,"_mix",mix),acrossConstr[[h]]] <- 0
                 }
               }
               if(any(acrossRef)){
                 fixPar$beta[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossRef] <- -1.e+10
                 for(ocovs in otherCovs){
-                  fixPar$beta[ocovs,acrossRef] <- -1.e+10
+                  fixPar$beta[paste0(ocovs,"_mix",mix),acrossRef] <- 0
                 }
               }          
             }
@@ -297,7 +297,7 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
             if(betaInd){
               fixPar$beta[paste0("level",levels(data$level)[2*j-2],"_mix",mix),initConstr] <- -1.e+10
               for(lcovs in levelCovs){
-                fixPar$beta[paste0(lcovs,"_mix",mix),initConstr] <- -1.e+10
+                fixPar$beta[paste0(lcovs,"_mix",mix),initConstr] <- 0
               }
             }
           }
@@ -340,7 +340,7 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
             if(betaInd){
               fixPar$beta[paste0("level",levels(data$level)[2*j-1],"_mix",mix),initConstr] <- -1.e+10
               for(lcovs in levelCovs){
-                fixPar$beta[paste0(lcovs,"_mix",mix),initConstr] <- -1.e+10
+                fixPar$beta[paste0(lcovs,"_mix",mix),initConstr] <- 0
               }
             }
           }
