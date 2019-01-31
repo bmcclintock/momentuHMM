@@ -13,7 +13,7 @@ fitHierHMM(data, hierStates, hierDist, Par0, beta0 = NULL, delta0 = NULL,
   prior = NULL, modelName = NULL)
 }
 \arguments{
-\item{data}{A \code{\link{momentuHMMData}} object.}
+\item{data}{A \code{\link{momentuHierHMMData}} object.}
 
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See details.}
 
@@ -152,7 +152,7 @@ in 'Details'), \code{gamma} (transition probabilities on real scale, based on me
 includes covariates), and \code{delta} (initial distribution).}
 \item{CIreal}{Standard errors and 95\% confidence intervals on the real (i.e., natural) scale of parameters}
 \item{CIbeta}{Standard errors and 95\% confidence intervals on the beta (i.e., working) scale of parameters}
-\item{data}{The momentuHMMData object}
+\item{data}{The momentuHierHMMData object}
 \item{mod}{List object returned by the numerical optimizer \code{nlm} or \code{optim}. Items in \code{mod} include the best set of free working parameters found (\code{wpar}), 
 the best full set of working parameters including any fixed parameters (\code{estimate}), the value of the likelihood at \code{estimate} (\code{minimum}), 
 the estimated variance-covariance matrix at \code{estimate} (\code{Sigma}), and the elapsed time in seconds for the optimization (\code{elapsedTime}).}

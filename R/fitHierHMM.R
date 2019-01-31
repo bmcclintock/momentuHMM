@@ -4,7 +4,7 @@
 #' Fit a (multivariate) hierarchical hidden Markov model to the data provided, using numerical optimization of the log-likelihood
 #' function.
 #'
-#' @param data A \code{\link{momentuHMMData}} object.
+#' @param data A \code{\link{momentuHierHMMData}} object.
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See details.
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. Currently
 #' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
@@ -116,7 +116,7 @@
 #' includes covariates), and \code{delta} (initial distribution).}
 #' \item{CIreal}{Standard errors and 95\% confidence intervals on the real (i.e., natural) scale of parameters}
 #' \item{CIbeta}{Standard errors and 95\% confidence intervals on the beta (i.e., working) scale of parameters}
-#' \item{data}{The momentuHMMData object}
+#' \item{data}{The momentuHierHMMData object}
 #' \item{mod}{List object returned by the numerical optimizer \code{nlm} or \code{optim}. Items in \code{mod} include the best set of free working parameters found (\code{wpar}), 
 #' the best full set of working parameters including any fixed parameters (\code{estimate}), the value of the likelihood at \code{estimate} (\code{minimum}), 
 #' the estimated variance-covariance matrix at \code{estimate} (\code{Sigma}), and the elapsed time in seconds for the optimization (\code{elapsedTime}).}
@@ -157,10 +157,12 @@ fitHierHMM <- function(data,hierStates,hierDist,
                     DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,
                     mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL)
 {
+  
+  if(!inherits(data,"momentuHierHMMData")) stop("data must be a momentuHierHMMData object (as returned by prepHierData or simHierData")
 
   inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons,fixPar)
   
-  fit <- fitHMM(data,inputHierHMM$nbStates,inputHierHMM$dist,Par0,beta0,delta0,
+  fit <- fitHMM(momentuHMMData(data),inputHierHMM$nbStates,inputHierHMM$dist,Par0,beta0,delta0,
                 estAngleMean,circularAngleMean,
                 formula=inputHierHMM$formula,formulaDelta,stationary=FALSE,mixtures,formulaPi,
                 verbose=NULL,nlmPar,fit,

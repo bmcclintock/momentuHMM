@@ -1,8 +1,7 @@
 
-#' Plot \code{momentuHMMData}
-#' @method plot momentuHMMData
+#' Plot \code{momentuHMMData} or \code{momentuHierHMMData}
 #'
-#' @param x An object \code{momentuHMMData}
+#' @param x An object \code{momentuHMMData} or \code{momentuHierHMMData}
 #' @param dataNames Names of the variables to plot. Default is \code{dataNames=c("step","angle")}.
 #' @param animals Vector of indices or IDs of animals for which information will be plotted.
 #' Default: \code{NULL} ; all animals are plotted.
@@ -19,9 +18,10 @@
 #' plot(data,dataNames=c("step","angle","cov1","cov2"),
 #'      compact=TRUE,breaks=20,ask=FALSE)
 #'
+#' @aliases plot.momentuHierHMMData
 #' @export
 #' @importFrom graphics abline axis hist mtext par plot points
-
+#' @method plot momentuHMMData
 plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compact=FALSE,ask=TRUE,breaks="Sturges",...)
 {
   data <- x
@@ -213,4 +213,11 @@ plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compa
   par(ask=FALSE)
   par(mfrow=c(1,1))
   par(mar=c(5,4,4,2))
+}
+
+#' @method plot momentuHierHMMData
+#' @export
+plot.momentuHierHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compact=FALSE,ask=TRUE,breaks="Sturges",...)
+{
+  plot(momentuHMMData(x),dataNames=dataNames,animals=animals,compact=compact,ask=ask,breaks=breaks,...)
 }

@@ -50,7 +50,7 @@
 #' @export
 simObsHierData<-function(data,lambda,errorEllipse,coordLevel){
   
-  if(!is.momentuHMMData(data)) stop("data must be a momentuHMMData object")
+  if(!is.momentuHierHMMData(data)) stop("data must be a momentuHierHMMData object")
   
   coordNames <- c("x","y")
   if(!is.null(attr(data,'coords'))) coordNames <- attr(data,'coords')

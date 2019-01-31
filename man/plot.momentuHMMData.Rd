@@ -2,13 +2,14 @@
 % Please edit documentation in R/plot_momentuHMMData.R
 \name{plot.momentuHMMData}
 \alias{plot.momentuHMMData}
-\title{Plot \code{momentuHMMData}}
+\alias{plot.momentuHierHMMData}
+\title{Plot \code{momentuHMMData} or \code{momentuHierHMMData}}
 \usage{
 \method{plot}{momentuHMMData}(x, dataNames = c("step", "angle"),
   animals = NULL, compact = FALSE, ask = TRUE, breaks = "Sturges", ...)
 }
 \arguments{
-\item{x}{An object \code{momentuHMMData}}
+\item{x}{An object \code{momentuHMMData} or \code{momentuHierHMMData}}
 
 \item{dataNames}{Names of the variables to plot. Default is \code{dataNames=c("step","angle")}.}
 
@@ -25,7 +26,7 @@ Default: \code{NULL} ; all animals are plotted.}
 \item{...}{Currently unused. For compatibility with generic method.}
 }
 \description{
-Plot \code{momentuHMMData}
+Plot \code{momentuHMMData} or \code{momentuHierHMMData}
 }
 \examples{
 # data is a momentuHMMData object (as returned by prepData), automatically loaded with the package
