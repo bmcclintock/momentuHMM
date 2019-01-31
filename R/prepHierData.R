@@ -67,7 +67,22 @@ prepHierData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),coordLev
     znames <- unique(unlist(lapply(spatialCovs,function(x) names(attributes(x)$z))))
     if(length(znames))
       if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(data)),"$crwHierPredict")
-    distnames <- names(predData)[which(!(names(predData) %in% c("ID","x","y",covNames,znames)))]
+    omitNames <- c("ID","x","y",covNames,names(spatialCovs),znames)
+    if(!is.null(centers)) {
+      if(!is.null(rownames(centers))){
+        omitNames <- c(omitNames,paste0(rep(rownames(centers),each=2),c(".dist",".angle")))
+      } else {
+        omitNames <- c(omitNames,paste0("center",rep(1:nrow(centers),each=2),c(".dist",".angle")))
+      }
+    }
+    if(!is.null(centroids)) {
+      if(!is.null(names(centroids))){
+        omitNames <- c(omitNames,paste0(rep(names(centroids),each=2),c(".dist",".angle")))
+      } else {
+        omitNames <- c(omitNames,paste0("centroid",rep(1:length(centroids),each=2),c(".dist",".angle")))
+      }
+    }
+    distnames <- names(predData)[which(!(names(predData) %in% omitNames))]
     type <- 'UTM'
     coordNames <- c("x","y")
     coordLevel <- attr(data$crwHierPredict,"coordLevel")

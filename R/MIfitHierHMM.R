@@ -5,21 +5,21 @@
 #' missing data, temporal-irregularity, or location measurement error in hidden Markov models, where pooled parameter estimates reflect uncertainty
 #' attributable to observation error.
 #' 
-#' \code{miData} can either be a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} object (as returned by \code{MIfitHierHMM} when \code{fit=FALSE}), 
-#' or a list of \code{\link{momentuHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}}). 
+#' \code{miData} can either be a \code{\link{crwHierData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwHierSim}} object (as returned by \code{MIfitHierHMM} when \code{fit=FALSE}), 
+#' or a list of \code{\link{momentuHierHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepHierData}}). 
 #' 
-#' If \code{miData} is a \code{crwData} object, \code{MIfitHierHMM} uses a combination of 
-#' \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepData}}, and \code{\link{fitHierHMM}} to draw \code{nSims} realizations of the position process
+#' If \code{miData} is a \code{crwHierData} object, \code{MIfitHierHMM} uses a combination of 
+#' \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepHierData}}, and \code{\link{fitHierHMM}} to draw \code{nSims} realizations of the position process
 #' and fit the specified HMM to each imputation of the data. The vast majority of \code{MIfitHierHMM} arguments are identical to the corresponding arguments from these functions.
 #' 
-#' If \code{miData} is a \code{\link{crwData}} object, \code{nSims} determines both the number of realizations of the position process to draw 
+#' If \code{miData} is a \code{\link{crwHierData}} object, \code{nSims} determines both the number of realizations of the position process to draw 
 #' (using \code{\link[crawl]{crwSimulator}} and \code{\link{crwPostIS}}) as well as the number of HMM fits.
 #' 
-#' If \code{miData} is a \code{\link{crwSim}} object or a list of \code{\link{momentuHMMData}} object(s), the specified HMM will simply be fitted to each of the \code{momentuHMMData} objects
-#' and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} are ignored.
+#' If \code{miData} is a \code{\link{crwHierSim}} object or a list of \code{\link{momentuHierHMMData}} object(s), the specified HMM will simply be fitted to each of the \code{momentuHierHMMData} objects
+#' and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepHierData}} are ignored.
 #' 
-#' @param miData A \code{\link{crwData}} object, a \code{\link{crwSim}} object, or a list of \code{\link{momentuHMMData}} objects.
-#' @param nSims Number of imputations in which to fit the HMM using \code{\link{fitHierHMM}}. If \code{miData} is a list of \code{momentuHMMData} 
+#' @param miData A \code{\link{crwHierData}} object, a \code{\link{crwHierSim}} object, or a list of \code{\link{momentuHierHMMData}} objects.
+#' @param nSims Number of imputations in which to fit the HMM using \code{\link{fitHierHMM}}. If \code{miData} is a list of \code{momentuHierHMMData} 
 #' objects, \code{nSims} cannot exceed the length of \code{miData}.
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param poolEstimates Logical indicating whether or not to calculate pooled parameter estimates across the \code{nSims} imputations using \code{\link{MIpool}}. Default: \code{TRUE}.
@@ -44,8 +44,8 @@
 #' @param nlmPar List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
 #' \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
 #' for more detail). Ignored unless \code{optMethod="nlm"}.
-#' @param fit \code{TRUE} if the HMM should be fitted to the data, \code{FALSE} otherwise. See \code{\link{fitHierHMM}}. If \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}}
-#' object, then \code{MIfitHierHMM} returns a list containing a \code{\link{momentuHMMData}} object (if \code{nSims=1}) or, if \code{nSims>1}, a \code{\link{crwSim}} object.
+#' @param fit \code{TRUE} if the HMM should be fitted to the data, \code{FALSE} otherwise. See \code{\link{fitHierHMM}}. If \code{fit=FALSE} and \code{miData} is a \code{\link{crwHierData}}
+#' object, then \code{MIfitHierHMM} returns a list containing a \code{\link{momentuHierHMMData}} object (if \code{nSims=1}) or, if \code{nSims>1}, a \code{\link{crwHierSim}} object.
 #' @param useInitial Logical indicating whether or not to use parameter estimates for the first model fit as initial values for all subsequent model fits.  
 #' If \code{ncores>1} then the first model is fit on a single core and then used as the initial values for all subsequent model fits on each core 
 #' (in this case, the progress of the initial model fit can be followed using the \code{nlmPar} or \code{control} arguments). Default: FALSE.
@@ -57,7 +57,7 @@
 #' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See \code{\link{fitHierHMM}}.
 #' @param mvnCoords Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{hierDist} and (mu.x, mu.y) are location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.
 #' @param knownStates Vector of values of the state process which are known prior to fitting the
-#' model (if any). See \code{\link{fitHierHMM}}. If \code{miData} is a list of \code{\link{momentuHMMData}} objects, then \code{knownStates} can alternatively
+#' model (if any). See \code{\link{fitHierHMM}}. If \code{miData} is a list of \code{\link{momentuHierHMMData}} objects, then \code{knownStates} can alternatively
 #' be a list of vectors containing the known values for the state process for each element of \code{miData}.
 #' @param fixPar An optional list of vectors indicating parameters which are assumed known prior to fitting the model. See \code{\link{fitHierHMM}}. 
 #' @param retryFits Non-negative integer indicating the number of times to attempt to iteratively fit the model using random perturbations of the current parameter estimates as the 
@@ -67,45 +67,45 @@
 #' @param control A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).
 #' @param prior A function that returns the log-density of the working scale parameter prior distribution(s).  See \code{\link{fitHierHMM}}.
 #' @param modelName An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions. 
-#' @param covNames Names of any covariates in \code{miData$crwPredict} (if \code{miData} is a \code{\link{crwData}} object; otherwise 
-#' \code{covNames} is ignored). See \code{\link{prepData}}. 
-#' @param spatialCovs List of raster layer(s) for any spatial covariates not included in \code{miData$crwPredict} (if \code{miData} is 
-#' a \code{\link{crwData}} object; otherwise \code{spatialCovs} is ignored). See \code{\link{prepData}}. 
+#' @param covNames Names of any covariates in \code{miData$crwHierPredict} (if \code{miData} is a \code{\link{crwHierData}} object; otherwise 
+#' \code{covNames} is ignored). See \code{\link{prepHierData}}. 
+#' @param spatialCovs List of raster layer(s) for any spatial covariates not included in \code{miData$crwHierPredict} (if \code{miData} is 
+#' a \code{\link{crwHierData}} object; otherwise \code{spatialCovs} is ignored). See \code{\link{prepHierData}}. 
 #' @param centers 2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 #' centers of attraction or repulsion) from which distance and angle covariates will be calculated based on realizations of the position process. 
-#' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' See \code{\link{prepHierData}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.
 #' @param centroids List where each element is a data frame containing the x-coordinates ('x'), y-coordinates ('y'), and times (with user-specified name, e.g., `time') for centroids (i.e., dynamic activity centers where the coordinates can change over time)
-#' from which distance and angle covariates will be calculated based on the location data. See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
-#' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{miData$crwPredict} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
-#' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
-#' @param method Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
-#' @param parIS Size of the parameter importance sample. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
-#' @param dfSim Degrees of freedom for the t approximation to the parameter posterior. See 'df' argument in \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
-#' @param grid.eps Grid size for \code{method="quadrature"}. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' from which distance and angle covariates will be calculated based on the location data. See \code{\link{prepHierData}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.
+#' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{miData$crwHierPredict} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
+#' See \code{\link{prepHierData}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.
+#' @param method Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.
+#' @param parIS Size of the parameter importance sample. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.
+#' @param dfSim Degrees of freedom for the t approximation to the parameter posterior. See 'df' argument in \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.
+#' @param grid.eps Grid size for \code{method="quadrature"}. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.
 #' @param crit Criterion for deciding "significance" of quadrature points
-#' (difference in log-likelihood). See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' (difference in log-likelihood). See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.
 #' @param scaleSim Scale multiplier for the covariance matrix of the t approximation. See 'scale' argument in \code{\link[crawl]{crwSimulator}}. 
-#' Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' Ignored unless \code{miData} is a \code{\link{crwHierData}} object.
 #' @param quad.ask Logical, for method='quadrature'. Whether or not the sampler should ask if quadrature sampling should take place. It is used to stop the sampling if the number of likelihood evaluations would be extreme. Default: FALSE. Ignored if \code{ncores>1}.
 #' @param force.quad A logical indicating whether or not to force the execution 
-#' of the quadrature method for large parameter vectors. See \code{\link[crawl]{crwSimulator}}. Default: TRUE. Ignored unless \code{miData} is a \code{\link{crwData}} object and \code{method=``quadrature''}.
-#' @param fullPost Logical indicating whether to draw parameter values as well to simulate full posterior. See \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
-#' @param dfPostIS Degrees of freedom for multivariate t distribution approximation to parameter posterior. See 'df' argument in \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
-#' @param scalePostIS Extra scaling factor for t distribution approximation. See 'scale' argument in \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' of the quadrature method for large parameter vectors. See \code{\link[crawl]{crwSimulator}}. Default: TRUE. Ignored unless \code{miData} is a \code{\link{crwHierData}} object and \code{method=``quadrature''}.
+#' @param fullPost Logical indicating whether to draw parameter values as well to simulate full posterior. See \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.
+#' @param dfPostIS Degrees of freedom for multivariate t distribution approximation to parameter posterior. See 'df' argument in \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.
+#' @param scalePostIS Extra scaling factor for t distribution approximation. See 'scale' argument in \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.
 #' @param thetaSamp If multiple parameter samples are available in \code{\link[crawl]{crwSimulator}} objects,
 #' setting \code{thetaSamp=n} will use the nth sample. Defaults to the last. See \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}}. 
-#' Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' Ignored unless \code{miData} is a \code{\link{crwHierData}} object.
 #' 
 #' @return  If \code{nSims>1}, \code{poolEstimates=TRUE}, and \code{fit=TRUE}, a \code{\link{miHMM}} object, i.e., a list consisting of:
 #' \item{miSum}{\code{\link{miSum}} object returned by \code{\link{MIpool}}.}
-#' \item{HMMfits}{List of length \code{nSims} comprised of \code{\link{momentuHMM}} objects.}
-#' If \code{poolEstimates=FALSE} and \code{fit=TRUE}, a list of length \code{nSims} consisting of \code{\link{momentuHMM}} objects is returned. 
+#' \item{HMMfits}{List of length \code{nSims} comprised of \code{\link{momentuHierHMM}} objects.}
+#' If \code{poolEstimates=FALSE} and \code{fit=TRUE}, a list of length \code{nSims} consisting of \code{\link{momentuHierHMM}} objects is returned. 
 #' 
-#' However, if \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}} 
-#' object, then \code{MIfitHierHMM} returns a \code{\link{crwSim}} object, i.e., a list containing \code{miData} (a list of 
-#' \code{\link{momentuHMMData}} objects) and \code{crwSimulator} (a list of \code{\link[crawl]{crwSimulator}} objects),and most other arguments related to \code{\link{fitHierHMM}} are ignored.
+#' However, if \code{fit=FALSE} and \code{miData} is a \code{\link{crwHierData}} 
+#' object, then \code{MIfitHierHMM} returns a \code{\link{crwHierSim}} object, i.e., a list containing \code{miData} (a list of 
+#' \code{\link{momentuHierHMMData}} objects) and \code{crwSimulator} (a list of \code{\link[crawl]{crwSimulator}} objects),and most other arguments related to \code{\link{fitHierHMM}} are ignored.
 #' 
-#' @seealso \code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHierHMM}}, \code{\link{getParDM}}, \code{\link{MIpool}}, \code{\link{prepData}} 
+#' @seealso \code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHierHMM}}, \code{\link{getParDM}}, \code{\link{MIpool}}, \code{\link{prepHierData}} 
 #' 
 #' 
 #' @references
@@ -144,12 +144,12 @@ MIfitHierHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0
     }
   }
   
-  if(is.crwData(miData)){
+  if(is.crwHierData(miData)){
     
     if(nSims>=1) {
       
       model_fits <- miData$crwFits
-      predData <- miData$crwPredict
+      predData <- miData$crwHierPredict
   
       Time.name<-attr(predData,"Time.name")
       ids = unique(predData$ID)
@@ -160,7 +160,7 @@ MIfitHierHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0
       }
       znames <- unique(unlist(lapply(spatialCovs,function(x) names(attributes(x)$z))))
       if(length(znames))
-        if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(miData)),"$crwPredict")
+        if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(miData)),"$crwHierPredict")
       #coordNames <- attr(predData,"coord")
       
       if(fit | !missing("hierDist")) {
@@ -188,7 +188,7 @@ MIfitHierHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0
       cat('Drawing',nSims,'realizations from the position process using crawl::crwPostIS...',ifelse(ncores>1 & length(ids)>1,"","\n"))
       
       registerDoParallel(cores=ncores)
-      withCallingHandlers(crwSim <- foreach(i = 1:length(ids), .export="crwSimulator") %dorng% {
+      withCallingHandlers(crwHierSim <- foreach(i = 1:length(ids), .export="crwSimulator") %dorng% {
         #if(!is.null(model_fits[[i]]$err.model)){
           cat("Individual",ids[i],"...\n")
           crawl::crwSimulator(model_fits[[i]],predTime=predData[[Time.name]][which(predData$ID==ids[i] & predData$locType=="p")], method = method, parIS = parIS,
@@ -196,24 +196,29 @@ MIfitHierHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0
         #}
       },warning=muffleRNGwarning)
       stopImplicitCluster()
-      names(crwSim) <- ids
+      names(crwHierSim) <- ids
       
       registerDoParallel(cores=ncores)
       withCallingHandlers(miData<-
-        foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass") %dorng% {
+        foreach(j = 1:nSims, .export=c("crwPostIS","prepHierData"), .errorhandling="pass") %dorng% {
           locs<-data.frame()
           for(i in 1:length(ids)){
             #if(!is.null(model_fits[[i]]$err.model)){
-              tmp<-tryCatch({crawl::crwPostIS(crwSim[[i]], fullPost = fullPost, df = dfPostIS, scale = scalePostIS, thetaSamp = thetaSamp)},error=function(e) e)
+              tmp<-tryCatch({crawl::crwPostIS(crwHierSim[[i]], fullPost = fullPost, df = dfPostIS, scale = scalePostIS, thetaSamp = thetaSamp)},error=function(e) e)
               if(!all(class(tmp) %in% c("crwIS","list"))) stop('crawl::crwPostIS error for individual ',ids[i],'; ',tmp,'  Check crwPostIS arguments, crawl::crwMLE model fits, and/or consult crawl documentation.')
-              locs<-rbind(locs,tmp$alpha.sim[,c("mu.x","mu.y")])
-            #} else {
-            #  locs<-rbind(locs,predData[which(predData$ID==ids[i]),c("mu.x","mu.y")])
-            #}
+              tlocs <- data.frame(x=tmp$alpha.sim[,"mu.x"],y=tmp$alpha.sim[,"mu.y"])
+              #tlocs[[Time.name]] <- predData[[Time.name]][which(predData$ID==ids[i] & predData$locType %in% c("o","p"))]
+              #tlocs$level <- predData$level[which(predData$ID==ids[i] & predData$locType %in% c("o","p"))]
+              #tlocs$ID <- ids[i]
+              tlocs$locType <- predData$locType[which(predData$ID==ids[i] & predData$locType %in% c("o","p"))]
+              locs<-rbind(locs,tlocs)
           }
-          df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
-          pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs),error=function(e) e)
-          if(inherits(pD,"momentuHMMData") & !is.null(mvnCoords)){
+          df<-predData[,c("ID",Time.name,"level","locType",tmpdistnames,covNames,znames),drop=FALSE][which(is.na(predData$locType) | predData$locType!="o"),]
+          df[which(df$locType=="p"),"x"] <- locs[which(locs$locType=="p"),"x"]
+          df[which(df$locType=="p"),"y"] <- locs[which(locs$locType=="p"),"y"]
+          df$locType <- NULL
+          pD <- tryCatch(prepHierData(df,coordLevel=attr(predData,"coordLevel"),covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs),error=function(e) e)
+          if(inherits(pD,"momentuHierHMMData") & !is.null(mvnCoords)){
             names(pD)[which(names(pD) %in% c("x","y"))] <- paste0(mvnCoords,c(".x",".y"))
             attr(pD,'coords') <- paste0(mvnCoords,c(".x",".y"))
           }
@@ -223,18 +228,18 @@ MIfitHierHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0
       stopImplicitCluster()
       cat("DONE\n")
       for(i in which(unlist(lapply(miData,function(x) inherits(x,"error"))))){
-        warning('prepData failed for imputation ',i,"; ",miData[[i]])
+        warning('prepHierData failed for imputation ',i,"; ",miData[[i]])
       }
-      ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))
+      ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHierHMMData"))))
       if(fit) cat('Fitting',length(ind),'realizations of the position process using fitHierHMM... \n')
-      else return(crwSim(list(miData=miData,crwSimulator=crwSim)))
+      else return(crwHierSim(list(miData=miData,crwSimulator=crwHierSim)))
     } else stop("nSims must be >0")
     
   } else {
-    if(!is.list(miData)) stop("miData must either be a crwData object (as returned by crawlWrap) or a list of momentuHMMData objects as returned by simData, prepData, or MIfitHierHMM (when fit=FALSE)")
-    if(is.crwSim(miData)) miData <- miData$miData
-    ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))
-    if(!length(ind)) stop("miData must either be a crwData object (as returned by crawlWrap) or a list of momentuHMMData objects as returned by simData, prepData, or MIfitHierHMM (when fit=FALSE)")
+    if(!is.list(miData)) stop("miData must either be a crwHierData object (as returned by crawlWrap) or a list of momentuHierHMMData objects as returned by simHierData, prepHierData, or MIfitHierHMM (when fit=FALSE)")
+    if(is.crwHierSim(miData)) miData <- miData$miData
+    ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHierHMMData"))))
+    if(!length(ind)) stop("miData must either be a crwHierData object (as returned by crawlWrap) or a list of momentuHierHMMData objects as returned by simHierData, prepHierData, or MIfitHierHMM (when fit=FALSE)")
     if(missing(nSims)) nSims <- length(miData)
     if(nSims>length(miData)) stop("nSims is greater than the length of miData. nSims must be <=",length(miData))
     if(nSims<1) stop("nSims must be >0")
@@ -333,7 +338,7 @@ MIfitHierHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0
   stopImplicitCluster()
   cat("DONE\n")
   
-  for(i in which(!unlist(lapply(fits,function(x) inherits(x,"momentuHMM"))))){
+  for(i in which(!unlist(lapply(fits,function(x) inherits(x,"momentuHierHMM"))))){
     warning('Fit #',i,' failed; ',fits[[i]])
   }
   

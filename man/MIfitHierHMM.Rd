@@ -19,9 +19,9 @@ MIfitHierHMM(miData, nSims, ncores = 1, poolEstimates = TRUE,
   thetaSamp = NULL)
 }
 \arguments{
-\item{miData}{A \code{\link{crwData}} object, a \code{\link{crwSim}} object, or a list of \code{\link{momentuHMMData}} objects.}
+\item{miData}{A \code{\link{crwHierData}} object, a \code{\link{crwHierSim}} object, or a list of \code{\link{momentuHierHMMData}} objects.}
 
-\item{nSims}{Number of imputations in which to fit the HMM using \code{\link{fitHierHMM}}. If \code{miData} is a list of \code{momentuHMMData} 
+\item{nSims}{Number of imputations in which to fit the HMM using \code{\link{fitHierHMM}}. If \code{miData} is a list of \code{momentuHierHMMData} 
 objects, \code{nSims} cannot exceed the length of \code{miData}.}
 
 \item{ncores}{Number of cores to use for parallel processing. Default: 1 (no parallel processing).}
@@ -62,8 +62,8 @@ regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turn
 \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
 for more detail). Ignored unless \code{optMethod="nlm"}.}
 
-\item{fit}{\code{TRUE} if the HMM should be fitted to the data, \code{FALSE} otherwise. See \code{\link{fitHierHMM}}. If \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}}
-object, then \code{MIfitHierHMM} returns a list containing a \code{\link{momentuHMMData}} object (if \code{nSims=1}) or, if \code{nSims>1}, a \code{\link{crwSim}} object.}
+\item{fit}{\code{TRUE} if the HMM should be fitted to the data, \code{FALSE} otherwise. See \code{\link{fitHierHMM}}. If \code{fit=FALSE} and \code{miData} is a \code{\link{crwHierData}}
+object, then \code{MIfitHierHMM} returns a list containing a \code{\link{momentuHierHMMData}} object (if \code{nSims=1}) or, if \code{nSims>1}, a \code{\link{crwHierSim}} object.}
 
 \item{useInitial}{Logical indicating whether or not to use parameter estimates for the first model fit as initial values for all subsequent model fits.
 If \code{ncores>1} then the first model is fit on a single core and then used as the initial values for all subsequent model fits on each core 
@@ -82,7 +82,7 @@ distribution parameters for each data stream. See \code{\link{fitHierHMM}}.}
 \item{mvnCoords}{Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{hierDist} and (mu.x, mu.y) are location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.}
 
 \item{knownStates}{Vector of values of the state process which are known prior to fitting the
-model (if any). See \code{\link{fitHierHMM}}. If \code{miData} is a list of \code{\link{momentuHMMData}} objects, then \code{knownStates} can alternatively
+model (if any). See \code{\link{fitHierHMM}}. If \code{miData} is a list of \code{\link{momentuHierHMMData}} objects, then \code{knownStates} can alternatively
 be a list of vectors containing the known values for the state process for each element of \code{miData}.}
 
 \item{fixPar}{An optional list of vectors indicating parameters which are assumed known prior to fitting the model. See \code{\link{fitHierHMM}}.}
@@ -100,60 +100,60 @@ initial values for likelihood optimization.  See \code{\link{fitHierHMM}}.}
 
 \item{modelName}{An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions.}
 
-\item{covNames}{Names of any covariates in \code{miData$crwPredict} (if \code{miData} is a \code{\link{crwData}} object; otherwise 
-\code{covNames} is ignored). See \code{\link{prepData}}.}
+\item{covNames}{Names of any covariates in \code{miData$crwHierPredict} (if \code{miData} is a \code{\link{crwHierData}} object; otherwise 
+\code{covNames} is ignored). See \code{\link{prepHierData}}.}
 
-\item{spatialCovs}{List of raster layer(s) for any spatial covariates not included in \code{miData$crwPredict} (if \code{miData} is 
-a \code{\link{crwData}} object; otherwise \code{spatialCovs} is ignored). See \code{\link{prepData}}.}
+\item{spatialCovs}{List of raster layer(s) for any spatial covariates not included in \code{miData$crwHierPredict} (if \code{miData} is 
+a \code{\link{crwHierData}} object; otherwise \code{spatialCovs} is ignored). See \code{\link{prepHierData}}.}
 
 \item{centers}{2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 centers of attraction or repulsion) from which distance and angle covariates will be calculated based on realizations of the position process. 
-See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+See \code{\link{prepHierData}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.}
 
 \item{centroids}{List where each element is a data frame containing the x-coordinates ('x'), y-coordinates ('y'), and times (with user-specified name, e.g., `time') for centroids (i.e., dynamic activity centers where the coordinates can change over time)
-from which distance and angle covariates will be calculated based on the location data. See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+from which distance and angle covariates will be calculated based on the location data. See \code{\link{prepHierData}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.}
 
-\item{angleCovs}{Character vector indicating the names of any circular-circular regression angular covariates in \code{miData$crwPredict} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
-See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+\item{angleCovs}{Character vector indicating the names of any circular-circular regression angular covariates in \code{miData$crwHierPredict} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
+See \code{\link{prepHierData}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.}
 
-\item{method}{Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+\item{method}{Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.}
 
-\item{parIS}{Size of the parameter importance sample. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+\item{parIS}{Size of the parameter importance sample. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.}
 
-\item{dfSim}{Degrees of freedom for the t approximation to the parameter posterior. See 'df' argument in \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+\item{dfSim}{Degrees of freedom for the t approximation to the parameter posterior. See 'df' argument in \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.}
 
-\item{grid.eps}{Grid size for \code{method="quadrature"}. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+\item{grid.eps}{Grid size for \code{method="quadrature"}. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.}
 
 \item{crit}{Criterion for deciding "significance" of quadrature points
-(difference in log-likelihood). See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+(difference in log-likelihood). See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.}
 
 \item{scaleSim}{Scale multiplier for the covariance matrix of the t approximation. See 'scale' argument in \code{\link[crawl]{crwSimulator}}. 
-Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+Ignored unless \code{miData} is a \code{\link{crwHierData}} object.}
 
 \item{quad.ask}{Logical, for method='quadrature'. Whether or not the sampler should ask if quadrature sampling should take place. It is used to stop the sampling if the number of likelihood evaluations would be extreme. Default: FALSE. Ignored if \code{ncores>1}.}
 
 \item{force.quad}{A logical indicating whether or not to force the execution 
-of the quadrature method for large parameter vectors. See \code{\link[crawl]{crwSimulator}}. Default: TRUE. Ignored unless \code{miData} is a \code{\link{crwData}} object and \code{method=``quadrature''}.}
+of the quadrature method for large parameter vectors. See \code{\link[crawl]{crwSimulator}}. Default: TRUE. Ignored unless \code{miData} is a \code{\link{crwHierData}} object and \code{method=``quadrature''}.}
 
-\item{fullPost}{Logical indicating whether to draw parameter values as well to simulate full posterior. See \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+\item{fullPost}{Logical indicating whether to draw parameter values as well to simulate full posterior. See \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.}
 
-\item{dfPostIS}{Degrees of freedom for multivariate t distribution approximation to parameter posterior. See 'df' argument in \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+\item{dfPostIS}{Degrees of freedom for multivariate t distribution approximation to parameter posterior. See 'df' argument in \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.}
 
-\item{scalePostIS}{Extra scaling factor for t distribution approximation. See 'scale' argument in \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+\item{scalePostIS}{Extra scaling factor for t distribution approximation. See 'scale' argument in \code{\link[crawl]{crwPostIS}}. Ignored unless \code{miData} is a \code{\link{crwHierData}} object.}
 
 \item{thetaSamp}{If multiple parameter samples are available in \code{\link[crawl]{crwSimulator}} objects,
 setting \code{thetaSamp=n} will use the nth sample. Defaults to the last. See \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}}. 
-Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+Ignored unless \code{miData} is a \code{\link{crwHierData}} object.}
 }
 \value{
 If \code{nSims>1}, \code{poolEstimates=TRUE}, and \code{fit=TRUE}, a \code{\link{miHMM}} object, i.e., a list consisting of:
 \item{miSum}{\code{\link{miSum}} object returned by \code{\link{MIpool}}.}
-\item{HMMfits}{List of length \code{nSims} comprised of \code{\link{momentuHMM}} objects.}
-If \code{poolEstimates=FALSE} and \code{fit=TRUE}, a list of length \code{nSims} consisting of \code{\link{momentuHMM}} objects is returned. 
+\item{HMMfits}{List of length \code{nSims} comprised of \code{\link{momentuHierHMM}} objects.}
+If \code{poolEstimates=FALSE} and \code{fit=TRUE}, a list of length \code{nSims} consisting of \code{\link{momentuHierHMM}} objects is returned. 
 
-However, if \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}} 
-object, then \code{MIfitHierHMM} returns a \code{\link{crwSim}} object, i.e., a list containing \code{miData} (a list of 
-\code{\link{momentuHMMData}} objects) and \code{crwSimulator} (a list of \code{\link[crawl]{crwSimulator}} objects),and most other arguments related to \code{\link{fitHierHMM}} are ignored.
+However, if \code{fit=FALSE} and \code{miData} is a \code{\link{crwHierData}} 
+object, then \code{MIfitHierHMM} returns a \code{\link{crwHierSim}} object, i.e., a list containing \code{miData} (a list of 
+\code{\link{momentuHierHMMData}} objects) and \code{crwSimulator} (a list of \code{\link[crawl]{crwSimulator}} objects),and most other arguments related to \code{\link{fitHierHMM}} are ignored.
 }
 \description{
 Fit a (multivariate) hierarchical hidden Markov model to multiple imputation data. Multiple imputation is a method for accommodating 
@@ -161,18 +161,18 @@ missing data, temporal-irregularity, or location measurement error in hidden Mar
 attributable to observation error.
 }
 \details{
-\code{miData} can either be a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} object (as returned by \code{MIfitHierHMM} when \code{fit=FALSE}), 
-or a list of \code{\link{momentuHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}}).
+\code{miData} can either be a \code{\link{crwHierData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwHierSim}} object (as returned by \code{MIfitHierHMM} when \code{fit=FALSE}), 
+or a list of \code{\link{momentuHierHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepHierData}}).
 
-If \code{miData} is a \code{crwData} object, \code{MIfitHierHMM} uses a combination of 
-\code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepData}}, and \code{\link{fitHierHMM}} to draw \code{nSims} realizations of the position process
+If \code{miData} is a \code{crwHierData} object, \code{MIfitHierHMM} uses a combination of 
+\code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepHierData}}, and \code{\link{fitHierHMM}} to draw \code{nSims} realizations of the position process
 and fit the specified HMM to each imputation of the data. The vast majority of \code{MIfitHierHMM} arguments are identical to the corresponding arguments from these functions.
 
-If \code{miData} is a \code{\link{crwData}} object, \code{nSims} determines both the number of realizations of the position process to draw 
+If \code{miData} is a \code{\link{crwHierData}} object, \code{nSims} determines both the number of realizations of the position process to draw 
 (using \code{\link[crawl]{crwSimulator}} and \code{\link{crwPostIS}}) as well as the number of HMM fits.
 
-If \code{miData} is a \code{\link{crwSim}} object or a list of \code{\link{momentuHMMData}} object(s), the specified HMM will simply be fitted to each of the \code{momentuHMMData} objects
-and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} are ignored.
+If \code{miData} is a \code{\link{crwHierSim}} object or a list of \code{\link{momentuHierHMMData}} object(s), the specified HMM will simply be fitted to each of the \code{momentuHierHMMData} objects
+and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepHierData}} are ignored.
 }
 \references{
 Hooten M.B., Johnson D.S., McClintock B.T., Morales J.M. 2017. Animal Movement: Statistical Models for Telemetry Data. CRC Press, Boca Raton.
@@ -181,5 +181,5 @@ McClintock B.T. 2017. Incorporating telemetry error into hidden Markov movement 
 and Environmental Statistics.
 }
 \seealso{
-\code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHierHMM}}, \code{\link{getParDM}}, \code{\link{MIpool}}, \code{\link{prepData}}
+\code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHierHMM}}, \code{\link{getParDM}}, \code{\link{MIpool}}, \code{\link{prepHierData}}
 }
