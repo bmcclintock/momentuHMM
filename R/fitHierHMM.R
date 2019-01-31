@@ -172,5 +172,5 @@ fitHierHMM <- function(data,hierStates,hierDist,
   fit$conditions$hierDist <- hierDist
   fit$conditions$hierFormula <- hierFormula
   class(fit) <- append("momentuHierHMM",class(fit))
-  fit
+  return(momentuHierHMM(fit))
 }
