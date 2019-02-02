@@ -24,6 +24,7 @@
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param poolEstimates Logical indicating whether or not to calculate pooled parameter estimates across the \code{nSims} imputations using \code{\link{MIpool}}. Default: \code{TRUE}.
 #' @param alpha Significance level for calculating confidence intervals of pooled estimates when \code{poolEstimates=TRUE} (see \code{\link{MIpool}}). Default: 0.95.
+#' @param progressBar Logical indicating whether or not to show progress bars when using parallel processing. Default: \code{TRUE}. Ignored if \code{ncores==1}, \code{ncores==nSims}, or \code{capabilities('tcltk')==FALSE} (progress bars require the \code{\link[tcltk:tcltk-package]{tcltk}} package).
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHierHMM}}.
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. See \code{\link{fitHierHMM}}.
 #' @param Par0 A named list containing vectors of initial state-dependent probability distribution parameters for 
@@ -118,10 +119,12 @@
 #' @export
 #' @importFrom crawl crwPostIS crwSimulator
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
+#' @importFrom parallel makeCluster clusterExport stopCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
+#' @importFrom tcltk tkProgressBar setTkProgressBar
 #' @importFrom raster getZ
-MIfitHierHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
+MIfitHierHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, progressBar = TRUE,
                        hierStates, hierDist, 
                        Par0, beta0 = NULL, delta0 = NULL,
                        estAngleMean = NULL, circularAngleMean = NULL,
@@ -143,6 +146,8 @@ MIfitHierHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0
       if(!control$hessian) stop("estimates cannot be pooled unless hessian is calculated")
     }
   }
+  
+  progressBar <- ifelse(ncores>1 && nSims>ncores && capabilities('tcltk'),progressBar,FALSE)
   
   if(is.crwHierData(miData)){
     
@@ -322,11 +327,19 @@ MIfitHierHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0
     beta0[parallelStart:nSims] <- list(tmpPar$beta)
     delta0[parallelStart:nSims] <- list(tmpPar$delta)
   }
-  registerDoParallel(cores=ncores)
+  cl <- makeCluster(ncores)
+  registerDoParallel(cl)
+  clusterExport(cl, c("nSims"), envir = environment())
   withCallingHandlers(fits[parallelStart:nSims] <-
     foreach(j = parallelStart:nSims, .export=c("fitHierHMM"), .errorhandling="pass") %dorng% {
       
-      if(nSims>1) cat("     \rImputation ",j,"... ",sep="")
+      if(nSims>1) {
+        cat("     \rImputation ",j,"... ",sep="")
+        if(progressBar){
+          if(!exists("pb")) pb <- tcltk::tkProgressBar(paste0("MIfitHMM core ",j-parallelStart+1," initiated ",Sys.time()), min=1, max=nSims, initial=j)
+          tcltk::setTkProgressBar(pb, j, label=paste("fitting imputation",j))#, label=paste(round((j-1)/nSims*100,0),"% done"))
+        }
+      }
       tmpFit<-suppressMessages(fitHierHMM(miData[[j]], hierStates, hierDist, Par0[[j]], beta0[[j]], delta0[[j]],
                                       estAngleMean, circularAngleMean, hierFormula, formulaDelta, mixtures, formulaPi, 
                                       nlmPar, fit, DM, 
@@ -335,7 +348,7 @@ MIfitHierHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0
       tmpFit
     } 
   ,warning=muffleRNGwarning)
-  stopImplicitCluster()
+  stopCluster(cl)
   cat("DONE\n")
   
   for(i in which(!unlist(lapply(fits,function(x) inherits(x,"momentuHierHMM"))))){

@@ -13,6 +13,7 @@ LazyData: TRUE
 Imports:
     Rcpp,
     doParallel,
+    parallel,
     foreach,
     numDeriv,
     CircStats,
@@ -47,6 +48,7 @@ Imports:
     DataCombine
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
+    tcltk,
     testthat,
     setRNG,
     knitr,

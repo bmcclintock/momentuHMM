@@ -5,15 +5,16 @@
 \title{Fit HMMs to multiple imputation data}
 \usage{
 MIfitHMM(miData, nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
-  nbStates, dist, Par0, beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
-  circularAngleMean = NULL, formula = ~1, formulaDelta = NULL,
-  stationary = FALSE, mixtures = 1, formulaPi = NULL, verbose = NULL,
-  nlmPar = NULL, fit = TRUE, useInitial = FALSE, DM = NULL,
-  cons = NULL, userBounds = NULL, workBounds = NULL, workcons = NULL,
-  betaCons = NULL, betaRef = NULL, mvnCoords = NULL, stateNames = NULL,
-  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
-  optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
-  covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL,
+  progressBar = TRUE, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
+  estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
+  formulaDelta = NULL, stationary = FALSE, mixtures = 1,
+  formulaPi = NULL, verbose = NULL, nlmPar = NULL, fit = TRUE,
+  useInitial = FALSE, DM = NULL, cons = NULL, userBounds = NULL,
+  workBounds = NULL, workcons = NULL, betaCons = NULL, betaRef = NULL,
+  mvnCoords = NULL, stateNames = NULL, knownStates = NULL,
+  fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm",
+  control = list(), prior = NULL, modelName = NULL, covNames = NULL,
+  spatialCovs = NULL, centers = NULL, centroids = NULL,
   angleCovs = NULL, method = "IS", parIS = 1000, dfSim = Inf,
   grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE,
   force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
@@ -30,6 +31,8 @@ objects, \code{nSims} cannot exceed the length of \code{miData}.}
 \item{poolEstimates}{Logical indicating whether or not to calculate pooled parameter estimates across the \code{nSims} imputations using \code{\link{MIpool}}. Default: \code{TRUE}.}
 
 \item{alpha}{Significance level for calculating confidence intervals of pooled estimates when \code{poolEstimates=TRUE} (see \code{\link{MIpool}}). Default: 0.95.}
+
+\item{progressBar}{Logical indicating whether or not to show progress bars when using parallel processing. Default: \code{TRUE}. Ignored if \code{ncores==1}, \code{ncores==nSims}, or \code{capabilities('tcltk')==FALSE} (progress bars require the \code{\link[tcltk:tcltk-package]{tcltk}} package).}
 
 \item{nbStates}{Number of states of the HMM. See \code{\link{fitHMM}}.}
 
