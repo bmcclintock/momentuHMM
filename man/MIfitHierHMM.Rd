@@ -30,7 +30,8 @@ objects, \code{nSims} cannot exceed the length of \code{miData}.}
 
 \item{alpha}{Significance level for calculating confidence intervals of pooled estimates when \code{poolEstimates=TRUE} (see \code{\link{MIpool}}). Default: 0.95.}
 
-\item{progressBar}{Logical indicating whether or not to show progress bars when using parallel processing. Default: \code{TRUE}. Ignored if \code{ncores==1}, \code{ncores==nSims}, or \code{capabilities('tcltk')==FALSE} (progress bars require the \code{\link[tcltk:tcltk-package]{tcltk}} package).}
+\item{progressBar}{Logical indicating whether or not to show progress bars when using parallel processing. Default: \code{TRUE}. Ignored if \code{ncores=1} or \code{capabilities('tcltk')=FALSE} (progress bars require the \code{\link[tcltk:tcltk-package]{tcltk}} package).
+Ignored for hierarchical HMM fitting if \code{ncores=nSims}. Ignored for crawl simulations if \code{miData} is a \code{crwHierData} object and \code{ncores=nbAnimals}, where \code{nbAnimals=length(unique(miData$crwHierPredict$ID))}.}
 
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHierHMM}}.}
 
