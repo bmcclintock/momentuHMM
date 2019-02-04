@@ -99,7 +99,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     warning("ginv of the hessian failed for HMM fit(s): ",paste0(goodIndex[tmpVar],collapse=", "))
     im[tmpVar] <- NULL
     nsims <- length(im)
-    if(nsims<1) stop("no valid HMM fits for pooling")
+    if(nsims<2) stop("Pooling requires at least 2 valid HMM fits")
     goodIndex <- goodIndex[-tmpVar]
   }
   
@@ -121,7 +121,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     warning("working parameter estimates are not finite for HMM fits ",paste0(goodIndex[tmpVar1],collapse=", ")," and will not be included in pooling")
     im[tmpVar1] <- NULL
     nsims <- length(im)
-    if(nsims<1) stop("no valid HMM fits for pooling")
+    if(nsims<2) stop("Pooling requires at least 2 valid HMM fits")
     m <- im[[1]]
     betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
     betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
@@ -132,7 +132,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     warning("working parameter standard errors are not finite for HMM fits ",paste0(goodIndex[tmpVar2],collapse=", ")," and will not be included in pooling")
     im[tmpVar2] <- NULL
     nsims <- length(im)
-    if(nsims<1) stop("no valid HMM fits for pooling")
+    if(nsims<2) stop("Pooling requires at least 2 valid HMM fits")
     m <- im[[1]]
     betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
     betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
@@ -156,7 +156,8 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     registerDoParallel(cores=ncores)
     withCallingHandlers(im_states <- foreach(i = 1:nsims, .combine = rbind) %dorng% {momentuHMM::viterbi(im[[i]])},warning=muffleRNGwarning)
     stopImplicitCluster()
-    states <- apply(im_states,2,function(x) which.max(hist(x,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts))
+    if(nsims>1) states <- apply(im_states,2,function(x) which.max(hist(x,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts))
+    else states <- im_states
     registerDoParallel(cores=ncores)
     withCallingHandlers(im_stateProbs <- foreach(i = 1:nsims) %dorng% {momentuHMM::stateProbs(im[[i]])},warning=muffleRNGwarning)
     stopImplicitCluster()
@@ -566,7 +567,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   mh$rawCovs<-mhrawCovs
   
   # get fixPar$delta in working scale format so expandPar works correctly in post-analysis
-  if(!mh$conditions$stationary & nbStates>1) {
+  if(!is.momentuHierHMM(im[[1]]) & !mh$conditions$stationary & nbStates>1) {
     if(any(!is.na(mh$conditions$fixPar$delta))){
       tmp <- which(!is.na(mh$conditions$fixPar$delta))
       if(!nbCovsDelta){
