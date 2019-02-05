@@ -5,7 +5,7 @@
 \title{Fit hierarchical HMMs to multiple imputation data}
 \usage{
 MIfitHierHMM(miData, nSims, ncores = 1, poolEstimates = TRUE,
-  alpha = 0.95, progressBar = TRUE, hierStates, hierDist, Par0,
+  alpha = 0.95, progressBar = FALSE, hierStates, hierDist, Par0,
   beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
   circularAngleMean = NULL, hierFormula = NULL, formulaDelta = ~1,
   mixtures = 1, formulaPi = NULL, nlmPar = NULL, fit = TRUE,
@@ -30,7 +30,7 @@ objects, \code{nSims} cannot exceed the length of \code{miData}.}
 
 \item{alpha}{Significance level for calculating confidence intervals of pooled estimates when \code{poolEstimates=TRUE} (see \code{\link{MIpool}}). Default: 0.95.}
 
-\item{progressBar}{Logical indicating whether or not to show progress bars when using parallel processing. Default: \code{TRUE}. Ignored if \code{ncores=1} or \code{capabilities('tcltk')=FALSE} (progress bars require the \code{\link[tcltk:tcltk-package]{tcltk}} package).
+\item{progressBar}{Logical indicating whether or not to show progress bars when using parallel processing. Default: \code{FALSE}. Ignored if \code{ncores=1} or \code{capabilities('tcltk')=FALSE} (progress bars require the \code{\link[tcltk:tcltk-package]{tcltk}} package).
 Ignored for hierarchical HMM fitting if \code{ncores=nSims}. Ignored for crawl simulations if \code{miData} is a \code{crwHierData} object and \code{ncores=nbAnimals}, where \code{nbAnimals=length(unique(miData$crwHierPredict$ID))}.}
 
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHierHMM}}.}

@@ -24,7 +24,7 @@
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param poolEstimates Logical indicating whether or not to calculate pooled parameter estimates across the \code{nSims} imputations using \code{\link{MIpool}}. Default: \code{TRUE}.
 #' @param alpha Significance level for calculating confidence intervals of pooled estimates when \code{poolEstimates=TRUE} (see \code{\link{MIpool}}). Default: 0.95.
-#' @param progressBar Logical indicating whether or not to show progress bars when using parallel processing. Default: \code{TRUE}. Ignored if \code{ncores=1} or \code{capabilities('tcltk')=FALSE} (progress bars require the \code{\link[tcltk:tcltk-package]{tcltk}} package).
+#' @param progressBar Logical indicating whether or not to show progress bars when using parallel processing. Default: \code{FALSE}. Ignored if \code{ncores=1} or \code{capabilities('tcltk')=FALSE} (progress bars require the \code{\link[tcltk:tcltk-package]{tcltk}} package).
 #' Ignored for HMM fitting if \code{ncores=nSims}. Ignored for crawl simulations if \code{miData} is a \code{crwData} object and \code{ncores=nbAnimals}, where \code{nbAnimals=length(unique(miData$crwPredict$ID))}.
 #' @param nbStates Number of states of the HMM. See \code{\link{fitHMM}}.
 #' @param dist A named list indicating the probability distributions of the data streams. See \code{\link{fitHMM}}.
@@ -186,9 +186,8 @@
 #' @importFrom parallel makeCluster clusterExport stopCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
-#' @importFrom tcltk tkProgressBar setTkProgressBar
 #' @importFrom raster getZ
-MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, progressBar = TRUE,
+MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, progressBar = FALSE,
                    nbStates, dist, 
                    Par0, beta0 = NULL, delta0 = NULL,
                    estAngleMean = NULL, circularAngleMean = NULL,
@@ -254,7 +253,7 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
       cat('Drawing ',nSims,' realizations from the position process using crawl... ',ifelse(ncores>1 & length(ids)>1,"","\n"),sep="")
       
       nbAnimals <- length(ids)
-      if(progressBar){
+      if(nbAnimals>ncores && progressBar){
         cl <- makeCluster(ncores)
         registerDoParallel(cl)
         clusterExport(cl, c("nbAnimals"), envir = environment())
@@ -270,12 +269,12 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
           crawl::crwSimulator(model_fits[[i]],predTime=predData[[Time.name]][which(predData$ID==ids[i] & predData$locType=="p")], method = method, parIS = parIS,
                                   df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, quad.ask = ifelse(ncores>1, FALSE, quad.ask), force.quad = force.quad)
       },warning=muffleRNGwarning)
-      if(progressBar) stopCluster(cl)
+      if(nbAnimals>ncores && progressBar) stopCluster(cl)
       else stopImplicitCluster()
       names(crwSim) <- ids
       if(ncores==1) cat("DONE\n")
       
-      if(progressBar){
+      if(nSims>ncores && progressBar){
         cl <- makeCluster(ncores)
         registerDoParallel(cl)
         clusterExport(cl, c("nSims"), envir = environment())
@@ -304,7 +303,7 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
           pD
         }
       ,warning=muffleRNGwarning)
-      if(progressBar) stopCluster(cl)
+      if(nSims>ncores && progressBar) stopCluster(cl)
       else stopImplicitCluster()
       cat("DONE\n")
       for(i in which(unlist(lapply(miData,function(x) inherits(x,"error"))))){
@@ -398,7 +397,7 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
     delta0[parallelStart:nSims] <- list(tmpPar$delta)
   }
   
-  if(progressBar){
+  if(nSims>ncores && progressBar){
     cl <- makeCluster(ncores)
     registerDoParallel(cl)
     clusterExport(cl, c("nSims"), envir = environment())
@@ -423,7 +422,7 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
       tmpFit
     } 
   ,warning=muffleRNGwarning)
-  if(progressBar) stopCluster(cl)
+  if(nSims>ncores && progressBar) stopCluster(cl)
   else stopImplicitCluster()
   cat("DONE\n")
   

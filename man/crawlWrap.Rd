@@ -5,7 +5,7 @@
 \title{Fit and predict tracks for using crawl}
 \usage{
 crawlWrap(obsData, timeStep = 1, ncores = 1, retryFits = 0, retrySD = 1,
-  retryParallel = FALSE, progressBar = TRUE, mov.model = ~1,
+  retryParallel = FALSE, progressBar = FALSE, mov.model = ~1,
   err.model = NULL, activity = NULL, drift = NULL, coord = c("x", "y"),
   Time.name = "time", time.scale = "hours", theta, fixPar,
   method = "L-BFGS-B", control = NULL, constr = NULL, prior = NULL,
@@ -38,7 +38,7 @@ for all parameters of all individuals. Ignored unless \code{retryFits>0}.}
 \item{retryParallel}{Logical indicating whether or not to perform \code{retryFits} attempts for each individual in parallel. Default: FALSE. Ignored unless \code{retryFits>0} and \code{ncores>1}.
 Note that when attempts are done in parallel (i.e. \code{retryParallel=TRUE}), the current value for the log-likelihood of each individual and warnings about convergence are not printed to the console.}
 
-\item{progressBar}{Logical indicating whether or not to show progress bars when using parallel processing. Default: \code{TRUE}. Ignored if \code{ncores=1}, \code{length(unique(obsData$ID))<=ncores}, or \code{capabilities('tcltk')=FALSE} (progress bars require the \code{\link[tcltk:tcltk-package]{tcltk}} package).}
+\item{progressBar}{Logical indicating whether or not to show progress bars when using parallel processing. Default: \code{FALSE}. Ignored if \code{ncores=1}, \code{length(unique(obsData$ID))<=ncores}, or \code{capabilities('tcltk')=FALSE} (progress bars require the \code{\link[tcltk:tcltk-package]{tcltk}} package).}
 
 \item{mov.model}{List of mov.model objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one movement model is provided, then the same movement model is used
 for each individual.}
