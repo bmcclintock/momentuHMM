@@ -1,21 +1,19 @@
-#' Get starting values for new model from existing \code{momentuHMM} model fit
+#' Get hierarchical HMM starting values for new model from existing \code{momentuHMM} or  \code{momentuHMM} model fit
 #' 
-#' For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}) from an existing \code{\link{momentuHMM}} model fit based on the provided arguments for the new model. Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
+#' For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHierHMM}} or \code{\link{MIfitHierHMM}}) from an existing \code{\link{momentuHMM}} or  \code{\link{momentuHierHMM}} model fit based on the provided arguments for the new model. Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
 #' 
 #' @param model A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{fitHierHMM}}, \code{\link{MIfitHMM}}, \code{\link{MIfitHierHMM}}, or \code{\link{MIpool}})
-#' @param nbStates Number of states in the new model. Default: \code{nbStates=length(model$stateNames)}
+#' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHierHMM}}.
 #' @param estAngleMean Named list indicating whether or not the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. Default: \code{estAngleMean=model$conditions$estAngleMean}
 #' @param circularAngleMean Named list indicating whether circular-linear or circular-circular 
 #' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model.  See \code{\link{fitHMM}}. Default: \code{circularAngleMean=model$conditions$circularAngleMean}
-#' @param formula Regression formula for the transition probability covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formula=model$conditions$formula}.
+#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy (see \code{\link{fitHierHMM}}).  Default: \code{formula=model$conditions$hierFormula}.
 #' @param formulaDelta Regression formula for the initial distribution covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formulaDelta=model$conditions$formulaDelta}.
 #' @param mixtures Number of mixtures for the state transition probabilities  (see \code{\link{fitHMM}}). Default: \code{formula=model$conditions$mixtures}.
 #' @param formulaPi Regression formula for the mixture distribution probabilities (see \code{\link{fitHMM}}). Default: \code{formula=model$conditions$formulaPi}. 
 #' @param DM Named list indicating the design matrices to be used for the probability distribution parameters of each data stream in the new model (see \code{\link{fitHMM}}). Only parameters with design matrix column names that match those in model$conditions$fullDM are extracted, so care must be taken in naming columns if any elements of \code{DM}
 #' are specified as matrices instead of formulas. Default: \code{DM=model$conditions$DM}.
-#' @param betaRef Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: \code{formula=model$conditions$betaRef}.
-#' @param stateNames Character vector of length \code{nbStates} indicating the names and order of the states in the new model. Default: \code{stateNames=model$stateNames[1:nbStates]}.
 #'
 #' @return 
 #' A named list containing starting values suitable for \code{Par0} and \code{beta0} arguments in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}:
@@ -25,69 +23,38 @@
 #' \item{delta}{Initial distribution of the HMM. Only returned if \code{stateNames} has the same membership as the state names for \code{model}}.
 #' 
 #' All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{userBounds}, \code{workBounds}, etc.) and \code{data} are assumed to be the same 
-#' for \code{model} and the new model (as specified by  \code{nbStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{formulaDelta}, \code{DM}, \code{stateNames}, etc.).
+#' for \code{model} and the new model (as specified by  \code{hierStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{hierFormula}, \code{formulaDelta}, \code{DM}, etc.).
 #'
 #' @seealso \code{\link{getPar}}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 #' 
-#' @examples 
-#' # model is a momentuHMM object, automatically loaded with the package
-#' model <- example$m
-#' data <- model$data
-#' dist <- model$conditions$dist
-#' nbStates <- length(model$stateNames)
-#' estAngleMean <- model$conditions$estAngleMean
-#' 
-#' newformula <- ~cov1+cov2
-#' Par0 <- getPar0(model,formula=newformula)
-#' 
-#' \dontrun{
-#' newModel <- fitHMM(model$data,dist=dist,nbStates=nbStates,
-#'                    Par0=Par0$Par,beta0=Par0$beta,
-#'                    formula=newformula,
-#'                    estAngleMean=estAngleMean)
-#' }
-#' 
-#' newDM1 <- list(step=list(mean=~cov1,sd=~cov1))
-#' Par0 <- getPar0(model,DM=newDM1)
-#' 
-#' \dontrun{
-#' newModel1 <- fitHMM(model$data,dist=dist,nbStates=nbStates,
-#'                    Par0=Par0$Par,beta0=Par0$beta,
-#'                    formula=model$conditions$formula,
-#'                    estAngleMean=estAngleMean,
-#'                    DM=newDM1)
-#' }
-#' 
-#' # same model but specify DM for step using matrices
-#' newDM2 <- list(step=matrix(c(1,0,0,0,
-#'                            "cov1",0,0,0,
-#'                            0,1,0,0,
-#'                            0,"cov1",0,0,
-#'                            0,0,1,0,
-#'                            0,0,"cov1",0,
-#'                            0,0,0,1,
-#'                            0,0,0,"cov1"),nrow=nbStates*2))
-#'                            
-#' # to be extracted, new design matrix column names must match 
-#' # column names of model$conditions$fullDM
-#' colnames(newDM2$step)<-paste0(rep(c("mean_","sd_"),each=2*nbStates),
-#'                       rep(1:nbStates,each=2),
-#'                       rep(c(":(Intercept)",":cov1"),2*nbStates))
-#' Par0 <- getPar0(model,DM=newDM2)
-#'                       
-#' \dontrun{
-#' newModel2 <- fitHMM(model$data,dist=dist,nbStates=nbStates,
-#'                    Par0=Par0$Par,beta0=Par0$beta,
-#'                    formula=model$conditions$formula,
-#'                    estAngleMean=estAngleMean,
-#'                    DM=newDM2)
-#' }
-#' 
 #' @export
-getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,formula=model$conditions$formula,formulaDelta=model$conditions$formulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM,betaRef=model$conditions$betaRef,stateNames=model$stateNames){
+getHierPar0<-function(model,hierStates=model$conditions$hierStates,estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,hierFormula=model$conditions$hierFormula,formulaDelta=model$conditions$formulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM){
   
   if(!is.momentuHMM(model) & !is.miHMM(model) & !is.miSum(model))
-    stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
+    stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, fitHierHMM, MIfitHMM, MIfitHierHMM, or MIpool)")
+  
+  if(is.momentuHierHMM(model)){
+    inputHierHMM <- formatHierHMM(data=NULL,hierStates,model$conditions$hierDist,hierFormula,formulaDelta,mixtures,workBounds=NULL,betaCons=NA,fixPar=list(beta=NA,delta=NA),checkData=FALSE)
+    nbStates <- inputHierHMM$nbStates
+    formula <- inputHierHMM$formula
+    betaRef <- inputHierHMM$betaRef
+    stateNames <- inputHierHMM$stateNames
+  } else {
+    if(!inherits(hierStates,"Node")) stop("'hierStates' must be of class Node; see ?data.tree::Node")
+    if(!("state" %in% hierStates$fieldsAll)) stop("'hierStates' must include a 'state' field")
+    hdf <- data.tree::ToDataFrameTypeCol(hierStates, "state")
+    if(any(is.na(hdf$state))) stop("'state' field in 'hierStates' cannot contain NAs")
+    nbStates <- length(hierStates$Get("state",filterFun=data.tree::isLeaf))
+    
+    if(any(duplicated(hdf$state))) stop("'state' field in 'hierStates' cannot contain duplicates")
+    if(any(sort(hdf$state)!=1:nbStates)) stop("'state' field in 'hierStates' must include all integers between 1 and ",nbStates)
+    if(!data.tree::AreNamesUnique(hierStates)) stop("node names in 'hierStates' must be unique")
+    
+    formula <- formatHierFormula(hierFormula)
+    betaRef <- rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
+    stateNames <- unname(hierStates$Get("name",filterFun=data.tree::isLeaf)[hdf$state])
+  }
+
   
   if(is.miHMM(model)) model <- model$miSum
   
@@ -179,7 +146,7 @@ getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$con
     if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
     if(!any(names(DM) %in% distnames)) stop("DM names must include at least one of: ",paste0(distnames,collapse=", "))
   }
-
+  
   #Par <- list()
   for(i in distnames){
     if(is.null(DM[[i]])) Par[[i]]<-c(t(model$mle[[i]][,which(colnames(model$mle[[i]]) %in% stateNames)]))
@@ -196,30 +163,30 @@ getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$con
   
   for(i in distnames){
     #if(!is.null(DM[[i]])) {
-      parmNames<-colnames(model$conditions$fullDM[[i]])
-      if(!isFALSE(model$conditions$circularAngleMean[[i]])) parmNames <- unique(gsub("cos","",gsub("sin","",parmNames)))
-      for(j in 1:length(model$stateNames)){
-        for(k in p$parNames[[i]]){
-          parmNames<-gsub(paste0(k,"_",j),paste0(k,"_",model$stateNames[j]),parmNames)
-        }
+    parmNames<-colnames(model$conditions$fullDM[[i]])
+    if(!isFALSE(model$conditions$circularAngleMean[[i]])) parmNames <- unique(gsub("cos","",gsub("sin","",parmNames)))
+    for(j in 1:length(model$stateNames)){
+      for(k in p$parNames[[i]]){
+        parmNames<-gsub(paste0(k,"_",j),paste0(k,"_",model$stateNames[j]),parmNames)
       }
-      newparmNames<-colnames(DMinputs[[i]])
-      if(!isFALSE(circularAngleMean[[i]])) newparmNames <- unique(gsub("cos","",gsub("sin","",newparmNames)))
-      tmpPar <- rep(0,length(newparmNames))
-      for(j in 1:length(stateNames)){
-        for(k in p$parNames[[i]]){
-          newparmNames<-gsub(paste0(k,"_",j),paste0(k,"_",stateNames[j]),newparmNames)
-        }
+    }
+    newparmNames<-colnames(DMinputs[[i]])
+    if(!isFALSE(circularAngleMean[[i]])) newparmNames <- unique(gsub("cos","",gsub("sin","",newparmNames)))
+    tmpPar <- rep(0,length(newparmNames))
+    for(j in 1:length(stateNames)){
+      for(k in p$parNames[[i]]){
+        newparmNames<-gsub(paste0(k,"_",j),paste0(k,"_",stateNames[j]),newparmNames)
       }
-      if(any(newparmNames %in% parmNames)){
-        if(is.miSum(model))
-          tmpPar[match(parmNames,newparmNames,nomatch=0)] <- nw2w((model$CIbeta[[i]]$est-model$conditions$workcons[[i]])^(1/model$conditions$cons[[i]]),model$conditions$workBounds[[i]])[parmNames %in% newparmNames]#model$CIbeta[[i]]$est[parmNames %in% newparmNames]
-        else
-          tmpPar[match(parmNames,newparmNames,nomatch=0)] <- model$mod$estimate[parindex[[i]]+1:parCount[[i]]][parmNames %in% newparmNames]
-      }
-      if(!isFALSE(circularAngleMean[[i]])) names(tmpPar) <- unique(gsub("cos","",gsub("sin","",colnames(DMinputs[[i]]))))
-      else names(tmpPar) <- colnames(DMinputs[[i]])
-      Par[[i]] <- tmpPar
+    }
+    if(any(newparmNames %in% parmNames)){
+      if(is.miSum(model))
+        tmpPar[match(parmNames,newparmNames,nomatch=0)] <- nw2w((model$CIbeta[[i]]$est-model$conditions$workcons[[i]])^(1/model$conditions$cons[[i]]),model$conditions$workBounds[[i]])[parmNames %in% newparmNames]#model$CIbeta[[i]]$est[parmNames %in% newparmNames]
+      else
+        tmpPar[match(parmNames,newparmNames,nomatch=0)] <- model$mod$estimate[parindex[[i]]+1:parCount[[i]]][parmNames %in% newparmNames]
+    }
+    if(!isFALSE(circularAngleMean[[i]])) names(tmpPar) <- unique(gsub("cos","",gsub("sin","",colnames(DMinputs[[i]]))))
+    else names(tmpPar) <- colnames(DMinputs[[i]])
+    Par[[i]] <- tmpPar
     #}
     if(is.null(DM[[i]])){
       for(j in model$stateNames){
@@ -250,7 +217,7 @@ getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$con
     }
     betaNames <- paste0(rep(betaNames,mixtures),"_mix",rep(1:mixtures,each=length(betaNames)))
     if(model$conditions$mixtures==1) betaRow <- paste0(rep(betaRow,model$conditions$mixtures),"_mix",rep(1:model$conditions$mixtures,each=length(betaRow)))
-                                                        
+    
     tmpPar <- matrix(0,length(betaNames),nbStates*(nbStates-1))
     #betaRef <- model$conditions$betaRef
     #if(length(model$stateNames)==1) tmpPar[1,] <- rep(-1.5,nbStates*(nbStates-1))

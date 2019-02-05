@@ -88,10 +88,6 @@
 #' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).  Special formula functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 #' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
 #' \code{angleFormula(cov,strength,by)} for the angle mean of circular-circular regression models, and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.
-#' @param cons Deprecated. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
-#' for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
-#' \code{cons=list(step=c(1,2,1,1))} raises the second parameter to the second power. Default=NULL, which simply raises all parameters to 
-#' the power of 1. \code{cons} is ignored for any given data stream unless \code{DM} is specified.
 #' @param userBounds An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 #' distribution parameters for each data stream. For example, for a 2-state model using the wrapped Cauchy ('wrpcauchy') distribution for 
 #' a data stream named 'angle' with \code{estAngleMean$angle=TRUE)}, \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2,dimnames=list(c("mean_1",
@@ -101,9 +97,6 @@
 #' For data streams, each element of \code{workBounds} should be a k x 2 matrix with the same name of the corresponding element of 
 #' \code{Par}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta)}.
 #' \code{workBounds} is ignored for any given data stream unless \code{DM} is also specified.
-#' @param workcons Deprecated. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
-#' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
-#' through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.
 #' @param mvnCoords Character string indicating the name of location data that are to be simulated using a multivariate normal distribution. For example, if \code{mu="rw_mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are intended to be location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as such.
 #' @param model A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. This option can be used to simulate from a fitted model.  Default: NULL.
 #' Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
@@ -206,16 +199,12 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                     angleCovs=NULL,
                     obsPerLevel,
                     initialPosition=c(0,0),
-                    DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,mvnCoords=NULL,
+                    DM=NULL,userBounds=NULL,workBounds=NULL,mvnCoords=NULL,
                     model=NULL,states=FALSE,
                     retrySims=0,
                     lambda=NULL,
                     errorEllipse=NULL)
 {
-  
-  if(!is.null(cons) & is.null(model)) warning("cons argument is deprecated in momentuHMM >= 1.4.0. Please use workBounds instead.")
-  if(!is.null(workcons) & is.null(model)) warning("workcons argument is deprecated in momentuHMM >= 1.4.0. Please use workBounds instead.")
-  if(!is.null(workBounds) & (!is.null(cons) | !is.null(workcons)) & is.null(model)) stop("workBounds cannot be specified when using deprecated arguments cons or workcons; either workBounds or both cons and workcons must be NULL")
   
   ##############################
   ## Check if !is.null(model) ##
@@ -387,6 +376,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     formula <- inputHierHMM$formula
     betaRef <- inputHierHMM$betaRef
     stateNames <- inputHierHMM$stateNames
+    
+    cons <- workcons <- NULL
     
     distnames <- names(dist)
     
@@ -1405,7 +1396,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                                              angleCovs,
                                              obsPerLevel,
                                              initialPosition,
-                                             DM,cons,userBounds,workBounds,workcons,mvnCoords,
+                                             DM,userBounds,workBounds,mvnCoords,
                                              model,states,
                                              retrySims=0,
                                              lambda,

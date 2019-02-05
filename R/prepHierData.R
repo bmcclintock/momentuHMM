@@ -94,14 +94,15 @@ prepHierData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),coordLev
   
   if(is.null(data$level)) stop("data must include a 'level' field")
   if(!is.factor(data$level)) stop("'level' field must be a factor")
-  if(!is.character(coordLevel) | length(coordLevel)!=1) stop("coordLevel must be a character string")
-  if(!(coordLevel %in% levels(data$level))) stop("'coordLevel' not found in 'level' field")
-  levelData <- data[which(data$level==coordLevel),]
   
   if(any(c("step","angle") %in% distnames) & !is.null(coordNames)) stop("data objects cannot be named 'step' or 'angle';\n  these names are reserved for step lengths and turning angles calculated from coordinates")
   if(!is.null(coordNames)){
     if(length(coordNames)!=2) stop('coordNames must be of length 2')
+    if(!is.character(coordLevel) | length(coordLevel)!=1) stop("coordLevel must be a character string")
+    if(!(coordLevel %in% levels(data$level))) stop("'coordLevel' not found in 'level' field")
   }
+  
+  
   if(!is.null(covNames) | !is.null(angleCovs)){
     covNames <- unique(c(covNames,angleCovs[!(angleCovs %in% names(spatialCovs))]))
     if(length(covNames)){
@@ -114,8 +115,11 @@ prepHierData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),coordLev
     ID <- as.character(data$ID) # homogenization of numeric and string IDs
     distnames <- distnames[-which(distnames %in% "ID")]
   } 
-  else
+  else {
     ID <- rep("Animal1",nrow(data)) # default ID if none provided
+    data$ID <- ID
+  }
+  if(!is.null(coordNames)) levelData <- data[which(data$level==coordLevel),]
   
   if(length(which(is.na(ID)))>0)
     stop("Missing IDs")
@@ -158,22 +162,22 @@ prepHierData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),coordLev
   
   # check that each animal's observations are contiguous
   for(i in 1:nbAnimals) {
-    ind <- which(levelData$ID==unique(levelData$ID)[i])
+    ind <- which(data$ID==unique(data$ID)[i])
     if(length(ind)!=length(ind[1]:ind[length(ind)]))
       stop("Each animal's obervations must be contiguous.")
-    if(!is.null(coordNames))
-      if(length(ind)<3) stop('each individual must have at least 3 observations to calculate step lengths and turning angles')
   }
   
-  for(zoo in 1:nbAnimals) {
-    nbObs <- length(which(levelData$ID==unique(levelData$ID)[zoo]))
-    # d = data for one individual
-    d <- data.frame(ID=rep(unique(levelData$ID)[zoo],nbObs))
-    for(j in c("step","angle")){
-      genData <- rep(NA,nbObs)
-      i1 <- which(levelData$ID==unique(levelData$ID)[zoo])[1]
-      i2 <- i1+nbObs-1
-      if(!is.null(coordNames)){
+  if(!is.null(coordNames)){
+    for(zoo in 1:nbAnimals) {
+      nbObs <- length(which(levelData$ID==unique(levelData$ID)[zoo]))
+      if(nbObs<3) stop('each individual must have at least 3 observations to calculate step lengths and turning angles')
+      # d = data for one individual
+      d <- data.frame(ID=rep(unique(levelData$ID)[zoo],nbObs))
+      for(j in c("step","angle")){
+        genData <- rep(NA,nbObs)
+        i1 <- which(levelData$ID==unique(levelData$ID)[zoo])[1]
+        i2 <- i1+nbObs-1
+  
         for(i in (i1+1):(i2-1)) {
           if(j=="step" & !is.na(lx[i-1]) & !is.na(lx[i]) & !is.na(ly[i-1]) & !is.na(ly[i])) {
             # step length
@@ -187,7 +191,7 @@ prepHierData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),coordLev
                                          c(lx[i+1],ly[i+1]),type)
           }
         }
-        if(j=="step" & !is.null(coordNames)) {
+        if(j=="step") {
           genData[i2-i1] <- spDistsN1(pts = matrix(c(lx[i2-1],ly[i2-1]),ncol=2),pt = c(lx[i2],ly[i2]),longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
         } 
       } 
