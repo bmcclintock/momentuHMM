@@ -8,9 +8,21 @@
 #' system of linear equations defined by \code{Par}, \code{DM}, and any other constraints using singular value decomposition. 
 #' This can be helpful for exploring relationships between the natural and working scale parameters when covariates are included, but \code{getParDM}
 #' will not necessarily return ``good'' starting values (i.e., \code{Par0}) for \code{\link{fitHMM}} or \code{\link{MIfitHMM}}. 
-#'
-#' @param data Optional \code{\link{momentuHMMData}} object or a data frame containing the covariate values. 
+#' 
+#' @param data Optional \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 
 #' \code{data} must be specified if covariates are included in \code{DM}.
+#' 
+#' If a data frame is provided, then either \code{nbStates} and \code{dist} must be specified (for a regular HMM) or \code{hierStates} and \code{hierDist}
+#' must be specified (for a hierarchical HMM).
+#' 
+#' @param ... further arguments passed to or from other methods
+#' @export
+getParDM <- function(data, ...) {
+  UseMethod("getParDM")
+}
+
+#' @rdname getParDM
+#' @method getParDM default
 #' @param nbStates Number of states of the HMM.
 #' @param dist A named list indicating the probability distributions of the data streams. Currently
 #' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
@@ -100,13 +112,26 @@
 #' @importFrom CircStats circ.mean
 #' @importFrom nleqslv nleqslv
 #' @export
-getParDM<-function(data=data.frame(),nbStates,dist,
+getParDM.default<-function(data=data.frame(),nbStates,dist,
                  Par,
                  zeroInflation=NULL,
                  oneInflation=NULL,
                  estAngleMean=NULL,
                  circularAngleMean=NULL,
-                 DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL){
+                 DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL, ...){
+  
+  hierArgs <- list(...)
+  argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist"))]
+  
+  if(missing(nbStates) & missing(dist)){
+    if(all(c("hierStates","hierDist") %in% argNames)){
+      return(getParDM.momentuHierHMMData(data,hierStates=hierArgs$hierStates,hierDist=hierArgs$hierDist,Par,zeroInflation,oneInflation,estAngleMean,circularAngleMean,DM,userBounds,workBounds))
+    }
+  }
+  if((!missing(nbStates) | !missing(dist))){
+    if(any(c("hierStates","hierDist") %in% argNames))
+      stop("Either nbStates and dist must be specified (for a regular HMM) or hierStates and hierDist must be specified (for a hierarchical HMM)")
+  }
   
   if(!is.null(cons)) warning("cons argument is deprecated in momentuHMM >= 1.4.0.  Please use workBounds instead.")
   if(!is.null(workcons)) warning("workcons argument is deprecated in momentuHMM >= 1.4.0.  Please use workBounds instead.")
@@ -448,4 +473,30 @@ getParDM<-function(data=data.frame(),nbStates,dist,
     }
   }
   wpar
+}
+
+#' @rdname getParDM
+#' @method getParDM momentuHierHMMData
+#' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHMM}}.
+#' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. See \code{\link{fitHMM}}.
+#'
+#' @export
+getParDM.momentuHierHMMData<-function(data=data.frame(),hierStates,hierDist,
+                       Par,
+                       zeroInflation=NULL,
+                       oneInflation=NULL,
+                       estAngleMean=NULL,
+                       circularAngleMean=NULL,
+                       DM=NULL,userBounds=NULL,workBounds=NULL){
+  
+  ## check that the data is a momentuHierHMMData object or valid data frame
+  if(!is.momentuHierHMMData(data))
+    if(!is.data.frame(data)) stop('data must be a data.frame')
+  #else if(ncol(data)<1) stop('data is empty')
+  
+  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierFormula=NULL,formulaDelta=~1,mixtures=1,workBounds,betaCons=NA,fixPar=list(beta=NA,delta=NA),checkData=FALSE)
+  nbStates <- inputHierHMM$nbStates
+  dist <- inputHierHMM$dist
+  
+  return(getParDM.default(data,nbStates,dist,Par,zeroInflation,oneInflation,estAngleMean,circularAngleMean,DM,cons=NULL,userBounds,workBounds,workcons=NULL))
 }

@@ -134,7 +134,7 @@ For data streams, each element of \code{workBounds} should be a k x 2 matrix wit
 
 \item{mvnCoords}{Character string indicating the name of location data that are to be simulated using a multivariate normal distribution. For example, if \code{mu="rw_mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are intended to be location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as such.}
 
-\item{model}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. This option can be used to simulate from a fitted model.  Default: NULL.
+\item{model}{A \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. This option can be used to simulate from a fitted model.  Default: NULL.
 Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
 \code{obsPerLevel}, \code{states}, \code{initialPosition}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
 \code{covs}, \code{spatialCovs}, \code{centers}, and \code{centroids}.}

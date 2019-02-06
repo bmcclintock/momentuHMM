@@ -3,8 +3,16 @@
 #'
 #' Fit a (multivariate) hidden Markov model to the data provided, using numerical optimization of the log-likelihood
 #' function.
-#'
-#' @param data A \code{\link{momentuHMMData}} object.
+#' 
+#' @param data A \code{\link{momentuHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simData}}) or a \code{\link{momentuHierHMMData}} (as returned by \code{\link{prepHierData}} or \code{\link{simHierData}}) object.
+#' @param ... further arguments passed to other methods
+#' @export
+fitHMM <- function(data, ...) {
+  UseMethod("fitHMM")
+}
+
+#' @rdname fitHMM
+#' @method fitHMM momentuHMMData
 #' @param nbStates Number of states of the HMM.
 #' @param dist A named list indicating the probability distributions of the data streams. Currently
 #' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
@@ -55,7 +63,9 @@
 #' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}),
 #'  and state- or parameter-specific formulas (see details).
 #' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.
-#' @param formulaDelta Regression formula for the initial distribution. Default: \code{NULL} (no covariate effects; both \code{delta0} and \code{fixPar$delta} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{delta0} and \code{fixPar$delta} are specified on the working scale.
+#' @param formulaDelta Regression formula for the initial distribution. Default for \code{fitHMM.momentuHMMData}: \code{NULL} (no covariate effects; both \code{delta0} and \code{fixPar$delta} are specified on the real scale). 
+#' Default for \code{fitHMM.momentuHierHMMData}: \code{~1} (both \code{delta0} and \code{fixPar$delta} are specified on the working scale).
+#' Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{delta0} and \code{fixPar$delta} are specified on the working scale.
 #' @param stationary \code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.
@@ -126,7 +136,7 @@
 #' @param prior A function that returns the log-density of the working scale parameter prior distribution(s). See 'Details'.
 #' @param modelName An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions. 
 #'
-#' @return A \code{\link{momentuHMM}} object, i.e. a list of:
+#' @return A \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object, i.e. a list of:
 #' \item{mle}{A named list of the maximum likelihood estimates of the parameters of the model (if the numerical algorithm
 #' has indeed identified the global maximum of the likelihood function). Elements are included for the parameters of each
 #' data strea, as well as \code{beta} (transition probabilities regression coefficients - more information
@@ -134,7 +144,7 @@
 #' includes covariates), and \code{delta} (initial distribution).}
 #' \item{CIreal}{Standard errors and 95\% confidence intervals on the real (i.e., natural) scale of parameters}
 #' \item{CIbeta}{Standard errors and 95\% confidence intervals on the beta (i.e., working) scale of parameters}
-#' \item{data}{The momentuHMMData object}
+#' \item{data}{The momentuHMMData or momentuHierHMMData object}
 #' \item{mod}{List object returned by the numerical optimizer \code{nlm} or \code{optim}. Items in \code{mod} include the best set of free working parameters found (\code{wpar}), 
 #' the best full set of working parameters including any fixed parameters (\code{estimate}), the value of the likelihood at \code{estimate} (\code{minimum}), 
 #' the estimated variance-covariance matrix at \code{estimate} (\code{Sigma}), and the elapsed time in seconds for the optimization (\code{elapsedTime}).}
@@ -158,7 +168,7 @@
 #' transition 2 -> 2 for state 2 (same as default), and state transition 3 -> 3 for state 3 (same as default).
 #' 
 #' \item When covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=NULL}), then \code{delta0} (and \code{fixPar$delta}) are specified as a vector of length \code{nbStates} that 
-#' sums to 1.  When covariates are included in \code{formulaDelta}, then \code{delta0}  (and \code{fixPar$delta}) must be specified
+#' sums to 1.  When any formula is specified for \code{formulaDelta} (e.g. \code{formulaDelta=~1}, \code{formulaDelta=~cov1}), then \code{delta0}  (and \code{fixPar$delta}) must be specified
 #' as a k x (\code{nbStates}-1) matrix of working parameters, where k is the number of regression coefficients and the columns correspond to states 2:\code{nbStates}. For example, in a 3-state
 #' HMM with \code{formulaDelta=~cov1+cov2}, the matrix \code{delta0} has three rows (intercept + two covariates)
 #' and 2 columns (corresponding to states 2 and 3). The initial distribution working parameters are transformed to the real scale as \code{exp(covsDelta*Delta)/rowSums(exp(covsDelta*Delta))}, where \code{covsDelta} is the N x k design matrix, \code{Delta=cbind(rep(0,k),delta0)} is a k x \code{nbStates} matrix of working parameters,
@@ -432,6 +442,10 @@
 #' Flexible and practical modeling of animal telemetry data: hidden Markov models and extensions.
 #' Ecology, 93 (11), 2336-2342.
 #' 
+#' Leos-Barajas, V., Gangloff, E.J., Adam, T., Langrock, R., van Beest, F.M., Nabe-Nielsen, J. and Morales, J.M. 2017. 
+#' Multi-scale modeling of animal movement and general behavior data using hidden Markov models with hierarchical structures. 
+#' Journal of Agricultural, Biological and Environmental Statistics, 22 (3), 232-248.
+#' 
 #' Maruotti, A., and T. Ryden. 2009. A semiparametric approach to hidden Markov models under longitudinal 
 #' observations. Statistics and Computing 19: 381-393.
 #' 
@@ -457,7 +471,7 @@
 #'
 #' @useDynLib momentuHMM
 
-fitHMM <- function(data,nbStates,dist,
+fitHMM.momentuHMMData <- function(data,nbStates,dist,
                    Par0,beta0=NULL,delta0=NULL,
                    estAngleMean=NULL,circularAngleMean=NULL,
                    formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,
@@ -958,4 +972,45 @@ fitHMM <- function(data,nbStates,dist,
   if(fit) message(ifelse(retryFits>=1,"\n",""),"DONE")
   
   return(momentuHMM(mh))
+}
+
+#' @rdname fitHMM
+#' @method fitHMM momentuHierHMMData
+#' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See details.
+#' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. See details.
+#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy. Default: \code{NULL} (no covariate effects). See details.
+#' 
+#' @details
+#' \itemize{
+#' \item \code{fitHMM.momentuHierHMMData} is very similar to \code{\link{fitHMM.momentuHMMData}} except that instead of simply specifying the number of states (\code{nbStates}), distributions (\code{dist}), and a single t.p.m. formula (\code{formula}), the \code{hierStates} argument specifies the hierarchical nature of the states,
+#' the \code{hierDist} argument specifies the hierarchical nature of the data streams, and the \code{hierFormula} argument specifies a t.p.m. formula for each level of the hierarchy.  All are specified as 
+#' \code{\link[data.tree]{Node}} objects from the \code{\link[data.tree]{data.tree}} package.
+#' }
+#' 
+#' @seealso \code{\link{prepHierData}}, \code{\link{simHierData}}
+#' 
+#' @export
+fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
+                       Par0,beta0=NULL,delta0=NULL,
+                       estAngleMean=NULL,circularAngleMean=NULL,
+                       hierFormula=NULL,formulaDelta=~1,mixtures=1,formulaPi=NULL,
+                       nlmPar=list(),fit=TRUE,
+                       DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,
+                       mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL)
+{
+  
+  if(!inherits(data,"momentuHierHMMData")) stop("data must be a momentuHierHMMData object (as returned by prepHierData or simHierData)")
+  
+  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons,fixPar)
+  
+  fit <- fitHMM(momentuHMMData(data),inputHierHMM$nbStates,inputHierHMM$dist,Par0,beta0,delta0,
+                estAngleMean,circularAngleMean,
+                formula=inputHierHMM$formula,formulaDelta,stationary=FALSE,mixtures,formulaPi,
+                verbose=NULL,nlmPar,fit,
+                DM,cons=NULL,userBounds,workBounds=inputHierHMM$workBounds,workcons=NULL,inputHierHMM$betaCons,inputHierHMM$betaRef,
+                mvnCoords,inputHierHMM$stateNames,knownStates,inputHierHMM$fixPar,retryFits,retrySD,optMethod,control,prior,modelName)
+  fit$conditions$hierStates <- hierStates
+  fit$conditions$hierDist <- hierDist
+  fit$conditions$hierFormula <- hierFormula
+  return(momentuHierHMM(fit))
 }

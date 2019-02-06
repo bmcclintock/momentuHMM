@@ -2,16 +2,30 @@
 % Please edit documentation in R/getParDM.R
 \name{getParDM}
 \alias{getParDM}
+\alias{getParDM.default}
+\alias{getParDM.momentuHierHMMData}
 \title{Get starting values on working scale based on design matrix and other parameter constraints}
 \usage{
-getParDM(data = data.frame(), nbStates, dist, Par, zeroInflation = NULL,
-  oneInflation = NULL, estAngleMean = NULL, circularAngleMean = NULL,
-  DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL,
-  workcons = NULL)
+getParDM(data, ...)
+
+\method{getParDM}{default}(data = data.frame(), nbStates, dist, Par,
+  zeroInflation = NULL, oneInflation = NULL, estAngleMean = NULL,
+  circularAngleMean = NULL, DM = NULL, cons = NULL, userBounds = NULL,
+  workBounds = NULL, workcons = NULL, ...)
+
+\method{getParDM}{momentuHierHMMData}(data = data.frame(), hierStates,
+  hierDist, Par, zeroInflation = NULL, oneInflation = NULL,
+  estAngleMean = NULL, circularAngleMean = NULL, DM = NULL,
+  userBounds = NULL, workBounds = NULL)
 }
 \arguments{
-\item{data}{Optional \code{\link{momentuHMMData}} object or a data frame containing the covariate values. 
-\code{data} must be specified if covariates are included in \code{DM}.}
+\item{data}{Optional \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 
+\code{data} must be specified if covariates are included in \code{DM}.
+
+If a data frame is provided, then either \code{nbStates} and \code{dist} must be specified (for a regular HMM) or \code{hierStates} and \code{hierDist}
+must be specified (for a hierarchical HMM).}
+
+\item{...}{further arguments passed to or from other methods}
 
 \item{nbStates}{Number of states of the HMM.}
 
@@ -67,6 +81,10 @@ For data streams, each element of \code{workBounds} should be a k x 2 matrix wit
 \item{workcons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
 through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.}
+
+\item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHMM}}.}
+
+\item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. See \code{\link{fitHMM}}.}
 }
 \value{
 A list of parameter values that can be used as starting values (\code{Par0}) in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
