@@ -41,7 +41,7 @@ in "Details").}
 (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
 and state- or parameter-specific formulas (see details).
-Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities.}
+Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy.}
 
 \item{formulaDelta}{Regression formula for the initial distribution at the top level of the hierarchy. Default: \code{~1} (both \code{delta} and \code{fixPar$delta} are specified on the working scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).}
 
