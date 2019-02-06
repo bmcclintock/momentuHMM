@@ -17,7 +17,7 @@ momentuHierHMM <- function(m)
   
   obj <- m
   
-  class(obj) <- append("momentuHierHMM",class(obj))
+  class(obj) <- append(c("momentuHierHMM","hierarchical"),class(obj))
   return(obj)
 }
 

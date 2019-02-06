@@ -19,7 +19,7 @@ crwHierSim <- function(m)
   
   obj <- m
   
-  class(obj) <- append("crwHierSim",class(obj))
+  class(obj) <- append(c("crwHierSim","hierarchical"),class(obj))
   return(obj)
 }
 

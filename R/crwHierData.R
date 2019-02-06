@@ -20,7 +20,7 @@ crwHierData <- function(m)
   
   obj <- m
   
-  class(obj) <- append("crwHierData",class(obj))
+  class(obj) <- append(c("crwHierData","hierarchical"),class(obj))
   return(obj)
 }
 
