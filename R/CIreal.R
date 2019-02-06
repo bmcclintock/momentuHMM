@@ -120,7 +120,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL)
   }
 
   # inverse of Hessian
-  if(!is.null(m$mod$hessian)) Sigma <- m$mod$Sigma
+  if(!is.null(m$mod$hessian) && !inherits(m$mod$Sigma,"error")) Sigma <- m$mod$Sigma
   else Sigma <- NULL
   
   ncmean <- get_ncmean(distnames,m$conditions$fullDM,m$conditions$circularAngleMean,nbStates)

@@ -101,7 +101,7 @@ CIbeta <- function(m,alpha=0.95)
 
 
   # inverse of Hessian
-  if(!is.null(m$mod$hessian)) Sigma <- m$mod$Sigma
+  if(!is.null(m$mod$hessian) && !inherits(m$mod$Sigma,"error")) Sigma <- m$mod$Sigma
   else Sigma <- NULL
 
   p <- parDef(dist,nbStates,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds)
