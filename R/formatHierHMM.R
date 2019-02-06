@@ -1,4 +1,4 @@
-#' @importFrom data.tree Node Get Do ToDataFrameTypeCol Traverse Aggregate AreNamesUnique isRoot isLeaf
+#' @importFrom data.tree Node Get Do ToDataFrameTypeCol Traverse Aggregate AreNamesUnique isRoot isLeaf Clone
 #' @importFrom stats terms
 formatHierHMM <- function(data=NULL,hierStates,hierDist,
                           hierFormula,formulaDelta,mixtures,
@@ -73,11 +73,11 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
   dist <- dist[which(unlist(lapply(dist,function(x) !is.na(x))))]
   
   if(is.null(hierFormula)){
-    hierFormula <- data.tree::Node$new(hierStates$Get("name",filterFun=isRoot))
-    hierFormula$AddChild(hierDist$Get("name",filterFun=function(x) x$level==2)[1],formula=~1)
+    whierFormula <- data.tree::Node$new(hierStates$Get("name",filterFun=isRoot))
+    whierFormula$AddChild(hierDist$Get("name",filterFun=function(x) x$level==2)[1],formula=~1)
     for(j in hierDist$Get("name",filterFun=function(x) x$level==2)[-1]){
-      hierFormula$AddChild(paste0(j,"i"),formula=~1)
-      hierFormula$AddChild(j,formula=~1)
+      whierFormula$AddChild(paste0(j,"i"),formula=~1)
+      whierFormula$AddChild(j,formula=~1)
     }
   } else {
     if(!inherits(hierFormula,"Node")) stop("'hierFormula' must be of class Node; see ?data.tree::Node")
@@ -90,20 +90,22 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
         stop("'hierFormula' level types can only include ",paste(paste0("level",levels(data$level)),collapse=", "))
     }
     
-    #if(!all(hierDist$Get("name",filterFun=function(x) x$level==2)==hierFormula$Get("name",filterFun=function(x) x$level==2)[seq(1,hierFormula$count,2)])) stop("'hierDist' and 'hierFormula' are not consistent; check number of nodes, node names, and node order")
+    whierFormula <- data.tree::Clone(hierFormula)
+    
+    #if(!all(hierDist$Get("name",filterFun=function(x) x$level==2)==whierFormula$Get("name",filterFun=function(x) x$level==2)[seq(1,whierFormula$count,2)])) stop("'hierDist' and 'hierFormula' are not consistent; check number of nodes, node names, and node order")
     for(j in hierDist$Get("name",filterFun=function(x) x$level==2)){
-      if(is.null(hierFormula[[j]])) {
-        hierFormula$AddChild(j,formula=~1)
-      } else if(is.null(hierFormula[[j]]$formula)){
-        hierFormula[[j]]$formula <- ~1
-      } else if(!is.formula(hierFormula[[j]]$formula)) stop("'hierFormula$",j,"$formula' must be a formula")
+      if(is.null(whierFormula[[j]])) {
+        whierFormula$AddChild(j,formula=~1)
+      } else if(is.null(whierFormula[[j]]$formula)){
+        whierFormula[[j]]$formula <- ~1
+      } else if(!is.formula(whierFormula[[j]]$formula)) stop("'hierFormula$",j,"$formula' must be a formula")
       
       if(j!=hierDist$Get("name",filterFun=function(x) x$level==2)[1]){
-        if(is.null(hierFormula[[paste0(j,"i")]])) {
-          hierFormula$AddChild(paste0(j,"i"),formula=~1)
-        } else if(is.null(hierFormula[[paste0(j,"i")]]$formula)){
-          hierFormula[[paste0(j,"i")]]$formula <- ~1
-        } else if(!is.formula(hierFormula[[paste0(j,"i")]]$formula)) stop("'hierFormula$",paste0(j,"i"),"$formula' must be a formula")
+        if(is.null(whierFormula[[paste0(j,"i")]])) {
+          whierFormula$AddChild(paste0(j,"i"),formula=~1)
+        } else if(is.null(whierFormula[[paste0(j,"i")]]$formula)){
+          whierFormula[[paste0(j,"i")]]$formula <- ~1
+        } else if(!is.formula(whierFormula[[paste0(j,"i")]]$formula)) stop("'hierFormula$",paste0(j,"i"),"$formula' must be a formula")
       }
     }
   }
@@ -117,7 +119,7 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
   }
   #if(attr(stats::terms(formula),"intercept")) stop("formula can not include an intercept term")
 
-  formula <- formatHierFormula(hierFormula)
+  formula <- formatHierFormula(whierFormula)
   
   # set t.p.m. reference states based on top level
   #if(is.null(betaRef)){

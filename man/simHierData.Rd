@@ -6,7 +6,7 @@
 \usage{
 simHierData(nbAnimals = 1, hierStates, hierDist, Par, beta = NULL,
   delta = NULL, hierFormula = NULL, formulaDelta = ~1, mixtures = 1,
-  formulaPi = NULL, covs = NULL, nbCovs = 0, spatialCovs = NULL,
+  formulaPi = NULL, covs = NULL, nbHierCovs = NULL, spatialCovs = NULL,
   zeroInflation = NULL, oneInflation = NULL, circularAngleMean = NULL,
   centers = NULL, centroids = NULL, angleCovs = NULL, obsPerLevel,
   initialPosition = c(0, 0), DM = NULL, userBounds = NULL,
@@ -16,9 +16,9 @@ simHierData(nbAnimals = 1, hierStates, hierDist, Par, beta = NULL,
 \arguments{
 \item{nbAnimals}{Number of observed individuals to simulate.}
 
-\item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See details.}
+\item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See details.}
 
-\item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. Currently
+\item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). Currently
 supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
 'pois', 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), 'rw_mvnorm3' (trivariate normal random walk), 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. See details.}
 
@@ -37,7 +37,7 @@ in "Details").}
 \item{delta}{Initial value for the initial distribution at the top level of the hierarchy. Default \code{NULL}: all top-level states have equal initial probability.
 \code{delta} must be specified as a k x (\code{nbStates}-1) matrix, where k is the number of covariates and the columns correspond to states 2:\code{nbStates}. See details below.}
 
-\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy. Default: \code{NULL} (no covariate effects). In addition to allowing standard functions in R formulas
+\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (no covariate effects). In addition to allowing standard functions in R formulas
 (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
 and state- or parameter-specific formulas (see details).
@@ -51,11 +51,11 @@ Any formula terms that are not state- or parameter-specific are included on all 
 Note that only the covariate values corresponding to the first time step for each individual ID are used (i.e. time-varying covariates cannot be used for the mixture probabilties).}
 
 \item{covs}{Covariate values to include in the simulated data, as a dataframe. The names of any covariates specified by \code{covs} can
-be included in \code{formula} and/or \code{DM}. Covariates can also be simulated according to a standard normal distribution, by setting
+be included in \code{hierFormula} and/or \code{DM}. Covariates can also be simulated according to a standard normal distribution, by setting
 \code{covs} to \code{NULL} (the default), and specifying \code{nbCovs>0}.}
 
-\item{nbCovs}{Number of covariates to simulate (0 by default). Does not need to be specified if
-\code{covs} is specified. Simulated covariates are provided generic names (e.g., 'cov1' and 'cov2' for \code{nbCovs=2}) and can be included in \code{formula} and/or \code{DM}.}
+\item{nbHierCovs}{A hierarchical data structure \code{\link[data.tree]{Node}} for the number of covariates ('nbCovs') to simulate for each level of the hierarchy (0 by default). Does not need to be specified if
+\code{covs} is specified. Simulated covariates are provided generic names (e.g., 'cov1.1' and 'cov1.2' for \code{nbHierCovs$level1$nbCovs=2}) and can be included in \code{hierFormula} and/or \code{DM}.}
 
 \item{spatialCovs}{List of \code{\link[raster]{RasterLayer-class}} objects for spatially-referenced covariates. Covariates specified by \code{spatialCovs} are
 extracted from the raster layer(s) based on the simulated location data for each time step (if applicable). The names of the raster layer(s) can be included in 
