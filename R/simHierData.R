@@ -98,7 +98,7 @@
 #' \code{Par}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta)}.
 #' \code{workBounds} is ignored for any given data stream unless \code{DM} is also specified.
 #' @param mvnCoords Character string indicating the name of location data that are to be simulated using a multivariate normal distribution. For example, if \code{mu="rw_mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are intended to be location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as such.
-#' @param model A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. This option can be used to simulate from a fitted model.  Default: NULL.
+#' @param model A \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. This option can be used to simulate from a fitted model.  Default: NULL.
 #' Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
 #' \code{obsPerLevel}, \code{states}, \code{initialPosition}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
 #' \code{covs}, \code{spatialCovs}, \code{centers}, and \code{centroids}.
@@ -371,43 +371,6 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     
     inputHierHMM <- formatHierHMM(data=NULL,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons=NULL,fixPar=NULL)
     
-    if(is.null(nbHierCovs)){
-      wnbHierCovs <- data.tree::Node$new(hierStates$Get("name",filterFun=isRoot))
-      wnbHierCovs$AddChild(hierDist$Get("name",filterFun=function(x) x$level==2)[1],nbCovs=0)
-      for(j in hierDist$Get("name",filterFun=function(x) x$level==2)[-1]){
-        wnbHierCovs$AddChild(paste0(j,"i"),nbCovs=0)
-        wnbHierCovs$AddChild(j,nbCovs=0)
-      }
-    } else {
-      if(!inherits(nbHierCovs,"Node")) stop("'nbHierCovs' must be of class Node; see ?data.tree::Node")
-      if(!("nbCovs" %in% nbHierCovs$fieldsAll)) stop("'nbHierCovs' must include a 'nbCovs' field")
-      if(!data.tree::AreNamesUnique(nbHierCovs)) stop("node names in 'nbHierCovs' must be unique")
-      if(nbHierCovs$height!=2) stop("'nbHierCovs' hierarchy must contain 1 level")
-      
-      wnbHierCovs <- data.tree::Clone(nbHierCovs)
-      
-      #if(!all(hierDist$Get("name",filterFun=function(x) x$level==2)==wnbHierCovs$Get("name",filterFun=function(x) x$level==2)[seq(1,wnbHierCovs$count,2)])) stop("'hierDist' and 'nbHierCovs' are not consistent; check number of nodes, node names, and node order")
-      for(j in hierDist$Get("name",filterFun=function(x) x$level==2)){
-        if(is.null(wnbHierCovs[[j]])) {
-          wnbHierCovs$AddChild(j,nbCovs=0)
-        } else if(is.null(wnbHierCovs[[j]]$nbCovs)){
-          wnbHierCovs[[j]]$nbCovs <- 0
-        } else if(!is.numeric(wnbHierCovs[[j]]$nbCovs)) stop("'nbHierCovs$",j,"$nbCovs' must be numeric")
-        
-        #if(j!=hierDist$Get("name",filterFun=function(x) x$level==2)[1]){
-        #  if(is.null(wnbHierCovs[[paste0(j,"i")]])) {
-        #    wnbHierCovs$AddChild(paste0(j,"i"),nbCovs=0)
-        #  } else if(is.null(wnbHierCovs[[paste0(j,"i")]]$nbCovs)){
-        #    wnbHierCovs[[paste0(j,"i")]]$nbCovs <- 0
-        #  } else if(!is.numeric(wnbHierCovs[[paste0(j,"i")]]$nbCovs)) stop("'nbHierCovs$",paste0(j,"i"),"$nbCovs' must be numeric")
-        #}
-      }
-    }
-    
-    if(!all(sort(wnbHierCovs$Get("name",filterFun=function(x) x$level==2))==sort(hierDist$Get("name",filterFun=function(x) x$level==2)))) 
-      stop("'nbHierCovs' level types can only include ",paste(hierDist$Get("name",filterFun=function(x) x$level==2),collapse=", "))
-    
-    nbCovs <- data.tree::Aggregate(wnbHierCovs,"nbCovs",sum,filterFun=isLeaf)
     nbStates <- inputHierHMM$nbStates
     dist <- inputHierHMM$dist
     formula <- inputHierHMM$formula
@@ -559,6 +522,44 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       initialPosition[[i]]<-tmpPos
     }
   }
+  
+  if(is.null(nbHierCovs)){
+    wnbHierCovs <- data.tree::Node$new(hierDist$Get("name",filterFun=isRoot))
+    wnbHierCovs$AddChild(hierDist$Get("name",filterFun=function(x) x$level==2)[1],nbCovs=0)
+    for(j in hierDist$Get("name",filterFun=function(x) x$level==2)[-1]){
+      #wnbHierCovs$AddChild(paste0(j,"i"),nbCovs=0)
+      wnbHierCovs$AddChild(j,nbCovs=0)
+    }
+  } else {
+    if(!inherits(nbHierCovs,"Node")) stop("'nbHierCovs' must be of class Node; see ?data.tree::Node")
+    if(!("nbCovs" %in% nbHierCovs$fieldsAll)) stop("'nbHierCovs' must include a 'nbCovs' field")
+    if(!data.tree::AreNamesUnique(nbHierCovs)) stop("node names in 'nbHierCovs' must be unique")
+    if(nbHierCovs$height!=2) stop("'nbHierCovs' hierarchy must contain 1 level")
+    
+    wnbHierCovs <- data.tree::Clone(nbHierCovs)
+    
+    #if(!all(hierDist$Get("name",filterFun=function(x) x$level==2)==wnbHierCovs$Get("name",filterFun=function(x) x$level==2)[seq(1,wnbHierCovs$count,2)])) stop("'hierDist' and 'nbHierCovs' are not consistent; check number of nodes, node names, and node order")
+    for(j in hierDist$Get("name",filterFun=function(x) x$level==2)){
+      if(is.null(wnbHierCovs[[j]])) {
+        wnbHierCovs$AddChild(j,nbCovs=0)
+      } else if(is.null(wnbHierCovs[[j]]$nbCovs)){
+        wnbHierCovs[[j]]$nbCovs <- 0
+      } else if(!is.numeric(wnbHierCovs[[j]]$nbCovs)) stop("'nbHierCovs$",j,"$nbCovs' must be numeric")
+      
+      #if(j!=hierDist$Get("name",filterFun=function(x) x$level==2)[1]){
+      #  if(is.null(wnbHierCovs[[paste0(j,"i")]])) {
+      #    wnbHierCovs$AddChild(paste0(j,"i"),nbCovs=0)
+      #  } else if(is.null(wnbHierCovs[[paste0(j,"i")]]$nbCovs)){
+      #    wnbHierCovs[[paste0(j,"i")]]$nbCovs <- 0
+      #  } else if(!is.numeric(wnbHierCovs[[paste0(j,"i")]]$nbCovs)) stop("'nbHierCovs$",paste0(j,"i"),"$nbCovs' must be numeric")
+      #}
+    }
+  }
+  
+  if(!all(sort(wnbHierCovs$Get("name",filterFun=function(x) x$level==2))==sort(hierDist$Get("name",filterFun=function(x) x$level==2)))) 
+    stop("'nbHierCovs' level types can only include ",paste(hierDist$Get("name",filterFun=function(x) x$level==2),collapse=", "))
+  
+  nbCovs <- data.tree::Aggregate(wnbHierCovs,"nbCovs",sum,filterFun=isLeaf)
   
   if(is.null(model)){
     if(!is.null(covs) & nbCovs>0) {
