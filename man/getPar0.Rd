@@ -2,19 +2,34 @@
 % Please edit documentation in R/getPar0.R
 \name{getPar0}
 \alias{getPar0}
+\alias{getPar0.momentuHMM}
+\alias{getPar0.momentuHierHMM}
 \title{Get starting values for new model from existing \code{momentuHMM} or \code{momentuHierHMM} model fit}
 \usage{
-getPar0(model, nbStates = length(model$stateNames),
+getPar0(model, ...)
+
+\method{getPar0}{momentuHMM}(model, nbStates = length(model$stateNames),
   estAngleMean = model$conditions$estAngleMean,
   circularAngleMean = model$conditions$circularAngleMean,
   formula = model$conditions$formula,
   formulaDelta = model$conditions$formulaDelta,
   mixtures = model$conditions$mixtures,
   formulaPi = model$conditions$formulaPi, DM = model$conditions$DM,
-  betaRef = model$conditions$betaRef, stateNames = model$stateNames)
+  betaRef = model$conditions$betaRef, stateNames = model$stateNames, ...)
+
+\method{getPar0}{momentuHierHMM}(model,
+  hierStates = model$conditions$hierStates,
+  estAngleMean = model$conditions$estAngleMean,
+  circularAngleMean = model$conditions$circularAngleMean,
+  hierFormula = model$conditions$hierFormula,
+  formulaDelta = model$conditions$formulaDelta,
+  mixtures = model$conditions$mixtures,
+  formulaPi = model$conditions$formulaPi, DM = model$conditions$DM, ...)
 }
 \arguments{
 \item{model}{A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})}
+
+\item{...}{further arguments passed to or from other methods}
 
 \item{nbStates}{Number of states in the new model. Default: \code{nbStates=length(model$stateNames)}}
 
@@ -38,6 +53,10 @@ are specified as matrices instead of formulas. Default: \code{DM=model$condition
 \item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: \code{formula=model$conditions$betaRef}.}
 
 \item{stateNames}{Character vector of length \code{nbStates} indicating the names and order of the states in the new model. Default: \code{stateNames=model$stateNames[1:nbStates]}.}
+
+\item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states (see \code{\link{fitHMM}}). Default: \code{hierStates=model$conditions$hierStates}.}
+
+\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy (see \code{\link{fitHMM}}). Default: \code{hierFormula=model$conditions$hierFormula}.}
 }
 \value{
 A named list containing starting values suitable for \code{Par0} and \code{beta0} arguments in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}:
@@ -46,8 +65,8 @@ each data stream specified in \code{model$conditions$dist}}
 \item{beta}{Matrix of regression coefficients for the transition probabilities}
 \item{delta}{Initial distribution of the HMM. Only returned if \code{stateNames} has the same membership as the state names for \code{model}}.
 
-All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{userBounds}, \code{workBounds}, etc.) and \code{data} are assumed to be the same 
-for \code{model} and the new model (as specified by  \code{nbStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{formulaDelta}, \code{DM}, \code{stateNames}, etc.).
+All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{hierDist}, \code{userBounds}, \code{workBounds}, etc.) and \code{data} are assumed to be the same 
+for \code{model} and the new model (as specified by  \code{nbStates}, \code{hierStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{hierFormula}, \code{formulaDelta}, \code{DM}, etc.).
 }
 \description{
 For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}) from an existing \code{\link{momentuHMM}} or \code{momentuHierHMM} model fit based on the provided arguments for the new model. 
@@ -109,5 +128,5 @@ newModel2 <- fitHMM(model$data,dist=dist,nbStates=nbStates,
 
 }
 \seealso{
-\code{\link{getPar}}, \code{\link{getHierPar0}}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
+\code{\link{getPar}}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 }

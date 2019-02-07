@@ -4,6 +4,14 @@
 #' Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
 #' 
 #' @param model A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})
+#' @param ... further arguments passed to or from other methods
+#' @export
+getPar0 <- function(model, ...) {
+  UseMethod("getPar0")
+}
+
+#' @rdname getPar0
+#' @method getPar0 momentuHMM
 #' @param nbStates Number of states in the new model. Default: \code{nbStates=length(model$stateNames)}
 #' @param estAngleMean Named list indicating whether or not the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. Default: \code{estAngleMean=model$conditions$estAngleMean}
@@ -25,10 +33,10 @@
 #' \item{beta}{Matrix of regression coefficients for the transition probabilities}
 #' \item{delta}{Initial distribution of the HMM. Only returned if \code{stateNames} has the same membership as the state names for \code{model}}.
 #' 
-#' All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{userBounds}, \code{workBounds}, etc.) and \code{data} are assumed to be the same 
-#' for \code{model} and the new model (as specified by  \code{nbStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{formulaDelta}, \code{DM}, \code{stateNames}, etc.).
+#' All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{hierDist}, \code{userBounds}, \code{workBounds}, etc.) and \code{data} are assumed to be the same 
+#' for \code{model} and the new model (as specified by  \code{nbStates}, \code{hierStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{hierFormula}, \code{formulaDelta}, \code{DM}, etc.).
 #'
-#' @seealso \code{\link{getPar}}, \code{\link{getHierPar0}}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
+#' @seealso \code{\link{getPar}}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 #' 
 #' @examples 
 #' # model is a momentuHMM object, automatically loaded with the package
@@ -85,7 +93,7 @@
 #' }
 #' 
 #' @export
-getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,formula=model$conditions$formula,formulaDelta=model$conditions$formulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM,betaRef=model$conditions$betaRef,stateNames=model$stateNames){
+getPar0.momentuHMM<-function(model,nbStates=length(model$stateNames),estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,formula=model$conditions$formula,formulaDelta=model$conditions$formulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM,betaRef=model$conditions$betaRef,stateNames=model$stateNames,...){
   
   if(!is.momentuHMM(model) & !is.miHMM(model) & !is.miSum(model))
     stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
@@ -402,4 +410,23 @@ getPar0<-function(model,nbStates=length(model$stateNames),estAngleMean=model$con
     Par$delta<-NULL
   }
   list(Par=Par[distnames],beta=Par$beta,delta=Par$delta)
+}
+
+
+#' @rdname getPar0
+#' @method getPar0 momentuHierHMM
+#' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states (see \code{\link{fitHMM}}). Default: \code{hierStates=model$conditions$hierStates}.
+#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy (see \code{\link{fitHMM}}). Default: \code{hierFormula=model$conditions$hierFormula}.
+#' 
+#' @export
+getPar0.momentuHierHMM<-function(model,hierStates=model$conditions$hierStates,estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,hierFormula=model$conditions$hierFormula,formulaDelta=model$conditions$formulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM,...){
+  
+  inputHierHMM <- formatHierHMM(model$data,hierStates,model$conditions$hierDist,hierFormula,formulaDelta,mixtures,workBounds=NULL,betaCons=NA,fixPar=list(beta=NA,delta=NA))
+  nbStates <- inputHierHMM$nbStates
+  formula <- inputHierHMM$formula
+  betaRef <- inputHierHMM$betaRef
+  stateNames <- inputHierHMM$stateNames
+  
+  return(getPar0.momentuHMM(model,nbStates,estAngleMean,circularAngleMean,formula,formulaDelta,mixtures,formulaPi,DM,betaRef,stateNames))
+
 }
