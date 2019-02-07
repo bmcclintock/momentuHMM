@@ -105,7 +105,7 @@ prepData <- function(data, ...) {
 #' @export
 #' @importFrom sp spDistsN1
 #' @importFrom raster cellFromXY getValues getZ
-prepData.default <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NULL,spatialCovs=NULL,centers=NULL,centroids=NULL,angleCovs=NULL,...)
+prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL,...)
 {
   if(is.crwData(data)){
     predData <- data$crwPredict
@@ -143,12 +143,8 @@ prepData.default <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covN
   
   # for directing hierarchical data to prepData.hierarchical
   hierArgs <- list(...)
-  argNames <- names(hierArgs)[which(names(hierArgs) %in% c("coordLevel"))]
-  if("coordLevel" %in% argNames){
-    if(!is.null(coordNames) & is.null(data$level)) stop("'level' field not found in data")
-    else {
-      return(prepData.hierarchical(data, type, coordNames, covNames, spatialCovs, centers, centroids, angleCovs, coordLevel=hierArgs$coordLevel))
-    }
+  if("hierLevels" %in% names(hierArgs)){
+    return(prepData.hierarchical(data, type, coordNames, covNames, spatialCovs, centers, centroids, angleCovs, ...))
   }
   
   distnames<-names(data)
@@ -373,6 +369,8 @@ prepData.default <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covN
 
 #' @rdname prepData
 #' @method prepData hierarchical
+#' @param hierLevels Character vector indicating the levels of the hierarchy and their order, from top (coarsest scale) to bottom (finest scale), that are included in \code{data$level}. For example, for a 2-level hierarchy then 
+#' \code{hierLevels=c("1","2i","2")} indicates \code{data$level} for each observation can be one of three factor levels: "1" (coarse scale), "2i" (initial fine scale), and "2" (fine scale).  Ignored if \code{data} is a \code{\link{crwHierData}} object.
 #' @param coordLevel Character string indicating the level of the hierarchy for the location data. If specified, then \code{data} must include a 'level' field indicating the level of the hierarchy for each observation.  Ignored if \code{coordNames} is \code{NULL} or \code{data} is a \code{\link{crwHierData}} object.
 #' 
 #' @seealso \code{\link{crwHierData}}
@@ -380,7 +378,7 @@ prepData.default <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covN
 #' @export
 #' @importFrom sp spDistsN1
 #' @importFrom raster cellFromXY getValues getZ
-prepData.hierarchical <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NULL,spatialCovs=NULL,centers=NULL,centroids=NULL,angleCovs=NULL,coordLevel,...)
+prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, hierLevels, coordLevel, ...)
 {
   if(is.crwHierData(data)){
     predData <- data$crwHierPredict
@@ -409,6 +407,7 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'),coordNames=c("x","y")
     distnames <- names(predData)[which(!(names(predData) %in% omitNames))]
     type <- 'UTM'
     coordNames <- c("x","y")
+    hierLevels <- levels(data$crwHierPredict$level)
     coordLevel <- attr(data$crwHierPredict,"coordLevel")
     data <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(is.na(predData$locType) | predData$locType!="o"),]
   }
@@ -417,13 +416,20 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'),coordNames=c("x","y")
   distnames<-names(data)#[which(!(names(data) %in% "level"))]
   
   if(is.null(data$level)) stop("data must include a 'level' field")
-  if(!is.factor(data$level)) stop("'level' field must be a factor")
+  if(any(is.na(data$level))) stop("data$level cannot include missing values")
+  if(!is.factor(data$level)) data$level <- factor(data$level,levels=hierLevels)
+  if(nlevels(data$level)!=length(hierLevels) || !all(levels(data$level)==hierLevels) || any(is.na(data$level))) stop("data$level not consistent with 'hierLevels'")
+  
+  nbLevels <- length(hierLevels)
+  for(k in 1:min(nbLevels,nrow(data))){
+    if(data$level[k]!=hierLevels[k]) stop("data$level and/or 'hierLevels' not ordered correctly; observation ",k," is level ",data$level[k]," but factor level is ",hierLevels[k])
+  }
   
   if(any(c("step","angle") %in% distnames) & !is.null(coordNames)) stop("data objects cannot be named 'step' or 'angle';\n  these names are reserved for step lengths and turning angles calculated from coordinates")
   if(!is.null(coordNames)){
     if(length(coordNames)!=2) stop('coordNames must be of length 2')
     if(!is.character(coordLevel) | length(coordLevel)!=1) stop("coordLevel must be a character string")
-    if(!(coordLevel %in% levels(data$level))) stop("'coordLevel' not found in 'level' field")
+    if(!(coordLevel %in% hierLevels)) stop("'coordLevel' must be one of '",paste(hierLevels,collapse="', '"),"'")
   }
   
   

@@ -14,7 +14,8 @@ prepData(data, ...)
 
 \method{prepData}{hierarchical}(data, type = c("UTM", "LL"),
   coordNames = c("x", "y"), covNames = NULL, spatialCovs = NULL,
-  centers = NULL, centroids = NULL, angleCovs = NULL, coordLevel, ...)
+  centers = NULL, centroids = NULL, angleCovs = NULL, hierLevels,
+  coordLevel, ...)
 }
 \arguments{
 \item{data}{Either a data frame of data streams or a \code{\link{crwData}} (or \code{\link{crwHierData}}) object (as returned by \code{\link{crawlWrap}}). If \code{data} is a data frame, it can optionally include a field \code{ID}
@@ -58,6 +59,9 @@ or \code{\link{MIfitHMM}}.}
 
 \item{angleCovs}{Character vector indicating the names of any circular-circular regression angular covariates in \code{data} or \code{spatialCovs} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 using \code{\link{circAngles}}.}
+
+\item{hierLevels}{Character vector indicating the levels of the hierarchy and their order, from top (coarsest scale) to bottom (finest scale), that are included in \code{data$level}. For example, for a 2-level hierarchy then 
+\code{hierLevels=c("1","2i","2")} indicates \code{data$level} for each observation can be one of three factor levels: "1" (coarse scale), "2i" (initial fine scale), and "2" (fine scale).  Ignored if \code{data} is a \code{\link{crwHierData}} object.}
 
 \item{coordLevel}{Character string indicating the level of the hierarchy for the location data. If specified, then \code{data} must include a 'level' field indicating the level of the hierarchy for each observation.  Ignored if \code{coordNames} is \code{NULL} or \code{data} is a \code{\link{crwHierData}} object.}
 }
