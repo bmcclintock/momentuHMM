@@ -20,7 +20,7 @@ momentuHierHMMData <- function(data)
 
 #' Is momentuHierHMMData
 #'
-#' Check that an object is of class \code{\link{momentuHierHMMData}}. Used in \code{\link{fitHierHMM}}.
+#' Check that an object is of class \code{\link{momentuHierHMMData}}. Used in \code{\link{fitHMM}}.
 #'
 #' @param x An R object
 #'

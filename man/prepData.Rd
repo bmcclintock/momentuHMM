@@ -106,5 +106,5 @@ d <- prepData(data,coordNames=c("coord1","coord2"),covNames="cov1",
 
 }
 \seealso{
-\code{\link{crawlMerge}}, \code{\link{crawlWrap}}, \code{\link{crwData}}
+\code{\link{prepHierData}}, \code{\link{crawlMerge}}, \code{\link{crawlWrap}}, \code{\link{crwData}}
 }

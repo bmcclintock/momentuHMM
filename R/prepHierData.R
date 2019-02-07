@@ -2,7 +2,7 @@
 #' Preprocessing of the hierarchical data streams and covariates
 #' 
 #' Preprocessing of the hierarchical data streams, including calculation of step length, turning angle, and covariates from location data to be suitable for
-#' analysis using \code{\link{fitHierHMM}}
+#' analysis using \code{\link{fitHMM}}
 #'
 #' @param data Either a data frame of data streams or a \code{\link{crwHierData}} object (as returned by \code{\link{crawlWrap}}). If \code{data} is a data frame, it can optionally include a field \code{ID}
 #' (identifiers for the observed individuals), coordinates from which step length ('step') 
@@ -15,7 +15,6 @@
 #' Ignored if \code{data} is a \code{\link{crwHierData}} object.
 #' @param coordNames Names of the columns of coordinates in the \code{data} data frame. Default: \code{c("x","y")}. If \code{coordNames=NULL} then step lengths, turning angles, 
 #' and location covariates (i.e., those specified by \code{spatialCovs}, \code{centers}, and \code{angleCovs}) are not calculated. Ignored if \code{data} is a \code{\link{crwHierData}} object.
-#' @param coordLevel Character string indicating the level of the hierarchy for the location data. Ignored if \code{data} is a \code{\link{crwHierData}} object.
 #' @param covNames Character vector indicating the names of any covariates in \code{data} dataframe. Any variables in \code{data} (other than \code{ID}) that are not identified in 
 #' \code{covNames} and/or \code{angleCovs} are assumed to be data streams (i.e., missing values will not be accounted for).
 #' @param spatialCovs List of \code{\link[raster]{Raster-class}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
@@ -26,17 +25,18 @@
 #' centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the location data. If no row names are provided, then generic names are generated 
 #' for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'center2.dist', 'center2.angle'); otherwise the covariate names are derived from the row names
 #' of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. As with covariates identified in \code{angleCovs}, note that the angle covariates for each activity center are calculated relative to 
-#' the previous movement direction (instead of standard direction relative to the x-axis); this is to allow the mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHierHMM}}
-#' or \code{\link{MIfitHierHMM}}.
+#' the previous movement direction (instead of standard direction relative to the x-axis); this is to allow the mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
+#' or \code{\link{MIfitHMM}}.
 #' @param centroids List where each element is a data frame containing the x-coordinates ('x'), y-coordinates ('y'), and times (with user-specified name, e.g., `time') for centroids (i.e., dynamic activity centers where the coordinates can change over time)
 #' from which distance and angle covariates will be calculated based on the location data. If any centroids are specified, then \code{data} must include a column indicating the time of each observation, and this column name must match the corresponding user-specified 
 #' name of the time column in \code{centroids} (e.g. `time'). Times can be numeric or POSIXt.  If no list names are provided, then generic names are generated 
 #' for the distance and angle covariates (e.g., 'centroid1.dist', 'centroid1.angle', 'centroid2.dist', 'centroid2.angle'); otherwise the covariate names are derived from the list names
 #' of \code{centroids} as \code{paste0(rep(names(centroids),each=2),c(".dist",".angle"))}. As with covariates identified in \code{angleCovs}, note that the angle covariates for each centroid are calculated relative to 
-#' the previous movement direction (instead of standard direction relative to the x-axis); this is to allow the mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHierHMM}}
-#' or \code{\link{MIfitHierHMM}}.
+#' the previous movement direction (instead of standard direction relative to the x-axis); this is to allow the mean turning angle to be modelled as a function of these covariates using circular-circular regression in \code{\link{fitHMM}}
+#' or \code{\link{MIfitHMM}}.
 #' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{data} or \code{spatialCovs} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 #' using \code{\link{circAngles}}.
+#' @param coordLevel Character string indicating the level of the hierarchy for the location data. Ignored if \code{data} is a \code{\link{crwHierData}} object.
 
 #' @return An object \code{\link{momentuHierHMMData}}, i.e., a dataframe of:
 #' \item{ID}{The ID(s) of the observed animal(s)}
@@ -50,13 +50,13 @@
 #' locations (\code{crwHierData$crwHierPredict$mu.x} and \code{crwHierData$crwHierPredict$mu.y}). Prior to using \code{prepHierData}, additional data streams or covariates unrelated to location (including z-values associated with
 #' \code{spatialCovs} raster stacks or bricks) can be merged with the \code{crwHierData} object using \code{\link{crawlMerge}}.
 #' 
-#' @seealso \code{\link{crawlMerge}}, \code{\link{crawlWrap}}, \code{\link{crwHierData}}
+#' @seealso \code{\link{prepData}}, \code{\link{crawlMerge}}, \code{\link{crawlWrap}}, \code{\link{crwHierData}}
 #'
 #' @export
 #' @importFrom sp spDistsN1
 #' @importFrom raster cellFromXY getValues getZ
 
-prepHierData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),coordLevel,covNames=NULL,spatialCovs=NULL,centers=NULL,centroids=NULL,angleCovs=NULL)
+prepHierData <- function(data, type=c('UTM','LL'),coordNames=c("x","y"),covNames=NULL,spatialCovs=NULL,centers=NULL,centroids=NULL,angleCovs=NULL,coordLevel)
 {
   if(is.crwHierData(data)){
     predData <- data$crwHierPredict

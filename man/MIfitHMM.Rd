@@ -2,12 +2,16 @@
 % Please edit documentation in R/MIfitHMM.R
 \name{MIfitHMM}
 \alias{MIfitHMM}
+\alias{MIfitHMM.default}
+\alias{MIfitHMM.hierarchical}
 \title{Fit HMMs to multiple imputation data}
 \usage{
-MIfitHMM(miData, nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
-  progressBar = FALSE, nbStates, dist, Par0, beta0 = NULL, delta0 = NULL,
-  estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
-  formulaDelta = NULL, stationary = FALSE, mixtures = 1,
+MIfitHMM(miData, ...)
+
+\method{MIfitHMM}{default}(miData, nSims, ncores = 1, poolEstimates = TRUE,
+  alpha = 0.95, progressBar = FALSE, nbStates, dist, Par0, beta0 = NULL,
+  delta0 = NULL, estAngleMean = NULL, circularAngleMean = NULL,
+  formula = ~1, formulaDelta = NULL, stationary = FALSE, mixtures = 1,
   formulaPi = NULL, verbose = NULL, nlmPar = NULL, fit = TRUE,
   useInitial = FALSE, DM = NULL, cons = NULL, userBounds = NULL,
   workBounds = NULL, workcons = NULL, betaCons = NULL, betaRef = NULL,
@@ -18,10 +22,26 @@ MIfitHMM(miData, nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
   angleCovs = NULL, method = "IS", parIS = 1000, dfSim = Inf,
   grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE,
   force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
-  thetaSamp = NULL)
+  thetaSamp = NULL, ...)
+
+\method{MIfitHMM}{hierarchical}(miData, nSims, ncores = 1,
+  poolEstimates = TRUE, alpha = 0.95, progressBar = FALSE, hierStates,
+  hierDist, Par0, beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
+  circularAngleMean = NULL, hierFormula = NULL, formulaDelta = ~1,
+  mixtures = 1, formulaPi = NULL, nlmPar = NULL, fit = TRUE,
+  useInitial = FALSE, DM = NULL, userBounds = NULL, workBounds = NULL,
+  betaCons = NULL, mvnCoords = NULL, knownStates = NULL, fixPar = NULL,
+  retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(),
+  prior = NULL, modelName = NULL, covNames = NULL, spatialCovs = NULL,
+  centers = NULL, centroids = NULL, angleCovs = NULL, method = "IS",
+  parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
+  quad.ask = FALSE, force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf,
+  scalePostIS = 1, thetaSamp = NULL, ...)
 }
 \arguments{
-\item{miData}{A \code{\link{crwData}} object, a \code{\link{crwSim}} object, or a list of \code{\link{momentuHMMData}} objects.}
+\item{miData}{A \code{\link{crwData}} object, a \code{\link{crwHierData}} object, a \code{\link{crwSim}} object, a \code{\link{crwHierSim}} object, a list of \code{\link{momentuHMMData}} objects, or a list of \code{\link{momentuHierHMMData}} objects.}
+
+\item{...}{further arguments passed to or from other methods}
 
 \item{nSims}{Number of imputations in which to fit the HMM using \code{\link{fitHMM}}. If \code{miData} is a list of \code{momentuHMMData} 
 objects, \code{nSims} cannot exceed the length of \code{miData}.}
@@ -166,6 +186,12 @@ of the quadrature method for large parameter vectors. See \code{\link[crawl]{crw
 \item{thetaSamp}{If multiple parameter samples are available in \code{\link[crawl]{crwSimulator}} objects,
 setting \code{thetaSamp=n} will use the nth sample. Defaults to the last. See \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}}. 
 Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+
+\item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHMM}}.}
+
+\item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. See \code{\link{fitHMM}}.}
+
+\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy. See \code{\link{fitHMM}}.}
 }
 \value{
 If \code{nSims>1}, \code{poolEstimates=TRUE}, and \code{fit=TRUE}, a \code{\link{miHMM}} object, i.e., a list consisting of:
@@ -183,18 +209,18 @@ missing data, temporal-irregularity, or location measurement error in hidden Mar
 attributable to observation error.
 }
 \details{
-\code{miData} can either be a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} object (as returned by \code{MIfitHMM} when \code{fit=FALSE}), 
-or a list of \code{\link{momentuHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}}).
+\code{miData} can either be a \code{\link{crwData}} or \code{\link{crwHierData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} or \code{\link{crwHierSim}} object (as returned by \code{MIfitHMM} when \code{fit=FALSE}), 
+or a list of \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}} or \code{\link{prepHierData}}).
 
-If \code{miData} is a \code{crwData} object, \code{MIfitHMM} uses a combination of 
-\code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepData}}, and \code{\link{fitHMM}} to draw \code{nSims} realizations of the position process
+If \code{miData} is a \code{crwData} (or \code{crwHierData}) object, \code{MIfitHMM} uses a combination of 
+\code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepData}} (or \code{\link{prepHierData}}), and \code{\link{fitHMM}} to draw \code{nSims} realizations of the position process
 and fit the specified HMM to each imputation of the data. The vast majority of \code{MIfitHMM} arguments are identical to the corresponding arguments from these functions.
 
-If \code{miData} is a \code{\link{crwData}} object, \code{nSims} determines both the number of realizations of the position process to draw 
+If \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object, \code{nSims} determines both the number of realizations of the position process to draw 
 (using \code{\link[crawl]{crwSimulator}} and \code{\link{crwPostIS}}) as well as the number of HMM fits.
 
-If \code{miData} is a \code{\link{crwSim}} object or a list of \code{\link{momentuHMMData}} object(s), the specified HMM will simply be fitted to each of the \code{momentuHMMData} objects
-and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} are ignored.
+If \code{miData} is a \code{\link{crwSim}} (or \code{\link{crwHierSim}}) object or a list of \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}) object(s), the specified HMM will simply be fitted to each of the \code{momentuHMMData} (or \code{momentuHierHMMData}) objects
+and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} (or \code{\link{prepHierData}}) are ignored.
 }
 \examples{
 
@@ -258,4 +284,6 @@ and Environmental Statistics.
 }
 \seealso{
 \code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHMM}}, \code{\link{getParDM}}, \code{\link{MIpool}}, \code{\link{prepData}}
+
+\code{\link{prepHierData}}
 }

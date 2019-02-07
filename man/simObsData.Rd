@@ -2,12 +2,19 @@
 % Please edit documentation in R/simObsData.R
 \name{simObsData}
 \alias{simObsData}
+\alias{simObsData.momentuHMMData}
+\alias{simObsData.momentuHierHMMData}
 \title{Observation error simulation tool}
 \usage{
-simObsData(data, lambda, errorEllipse)
+simObsData(data, lambda, errorEllipse, ...)
+
+\method{simObsData}{momentuHMMData}(data, lambda, errorEllipse, ...)
+
+\method{simObsData}{momentuHierHMMData}(data, lambda, errorEllipse, coordLevel,
+  ...)
 }
 \arguments{
-\item{data}{A \code{\link{momentuHMMData}} object with necessary field 'x' (easting/longitudinal coordinates) and 'y' (northing/latitudinal coordinates)}
+\item{data}{A \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} object with necessary fields 'x' (easting/longitudinal coordinates) and 'y' (northing/latitudinal coordinates)}
 
 \item{lambda}{Observation rate for location data. If \code{NULL}, location data are kept at temporally-regular intervals. Otherwise 
 \code{lambda} is the rate parameter of the exponential distribution for the waiting times between successive location observations, i.e., 
@@ -21,6 +28,10 @@ in McClintock et al. (2015), where the components of the error ellipse for each 
 \code{runif(1,min(errorEllipse$m),max(errorEllipse$m))}, and \code{runif(1,min(errorEllipse$r),max(errorEllipse$r))}. If only a single value is provided for any of the 
 error ellipse elements, then the corresponding component is fixed to this value for each location. Only the 'step' and 'angle' data streams are subject to location measurement error;
 any other data streams are observed without error.  Ignored unless a valid distribution for the 'step' data stream is specified.}
+
+\item{...}{further arguments passed to or from other methods}
+
+\item{coordLevel}{Level of the hierarchy in which the location data are obtained}
 }
 \value{
 A dataframe of:
@@ -63,4 +74,6 @@ Methods in Ecology and Evolution 6(3):266-277.
 }
 \seealso{
 \code{\link{crawlWrap}}, \code{\link{prepData}}, \code{\link{simData}}
+
+\code{\link{prepHierData}}, \code{\link{simHierData}}
 }

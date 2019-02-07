@@ -1,8 +1,9 @@
-#' Get starting values for new model from existing \code{momentuHMM} model fit
+#' Get starting values for new model from existing \code{momentuHMM} or \code{momentuHierHMM} model fit
 #' 
-#' For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}) from an existing \code{\link{momentuHMM}} model fit based on the provided arguments for the new model. Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
+#' For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}) from an existing \code{\link{momentuHMM}} or \code{momentuHierHMM} model fit based on the provided arguments for the new model. 
+#' Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
 #' 
-#' @param model A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{fitHierHMM}}, \code{\link{MIfitHMM}}, \code{\link{MIfitHierHMM}}, or \code{\link{MIpool}})
+#' @param model A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})
 #' @param nbStates Number of states in the new model. Default: \code{nbStates=length(model$stateNames)}
 #' @param estAngleMean Named list indicating whether or not the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. Default: \code{estAngleMean=model$conditions$estAngleMean}
@@ -27,7 +28,7 @@
 #' All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{userBounds}, \code{workBounds}, etc.) and \code{data} are assumed to be the same 
 #' for \code{model} and the new model (as specified by  \code{nbStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{formulaDelta}, \code{DM}, \code{stateNames}, etc.).
 #'
-#' @seealso \code{\link{getPar}}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
+#' @seealso \code{\link{getPar}}, \code{\link{getHierPar0}}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 #' 
 #' @examples 
 #' # model is a momentuHMM object, automatically loaded with the package

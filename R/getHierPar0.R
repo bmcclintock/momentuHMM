@@ -1,14 +1,15 @@
-#' Get hierarchical HMM starting values for new model from existing \code{momentuHMM} or  \code{momentuHMM} model fit
+#' Get starting values for new hierarchical model from existing \code{momentuHMM} or \code{momentuHierHMM} model fit
 #' 
-#' For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHierHMM}} or \code{\link{MIfitHierHMM}}) from an existing \code{\link{momentuHMM}} or  \code{\link{momentuHierHMM}} model fit based on the provided arguments for the new model. Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
+#' For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}) from an existing \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} model fit based on the provided arguments for the new model. 
+#' Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
 #' 
-#' @param model A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{fitHierHMM}}, \code{\link{MIfitHMM}}, \code{\link{MIfitHierHMM}}, or \code{\link{MIpool}})
-#' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHierHMM}}.
+#' @param model A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})
+#' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHMM}}.
 #' @param estAngleMean Named list indicating whether or not the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. Default: \code{estAngleMean=model$conditions$estAngleMean}
 #' @param circularAngleMean Named list indicating whether circular-linear or circular-circular 
 #' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model.  See \code{\link{fitHMM}}. Default: \code{circularAngleMean=model$conditions$circularAngleMean}
-#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy (see \code{\link{fitHierHMM}}).  Default: \code{formula=model$conditions$hierFormula}.
+#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy (see \code{\link{fitHMM}}).  Default: \code{formula=model$conditions$hierFormula}.
 #' @param formulaDelta Regression formula for the initial distribution covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formulaDelta=model$conditions$formulaDelta}.
 #' @param mixtures Number of mixtures for the state transition probabilities  (see \code{\link{fitHMM}}). Default: \code{formula=model$conditions$mixtures}.
 #' @param formulaPi Regression formula for the mixture distribution probabilities (see \code{\link{fitHMM}}). Default: \code{formula=model$conditions$formulaPi}. 
@@ -25,13 +26,13 @@
 #' All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{userBounds}, \code{workBounds}, etc.) and \code{data} are assumed to be the same 
 #' for \code{model} and the new model (as specified by  \code{hierStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{hierFormula}, \code{formulaDelta}, \code{DM}, etc.).
 #'
-#' @seealso \code{\link{getPar}}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
+#' @seealso \code{\link{getPar}}, \code{getPar0}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 #' 
 #' @export
 getHierPar0<-function(model,hierStates=model$conditions$hierStates,estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,hierFormula=model$conditions$hierFormula,formulaDelta=model$conditions$formulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM){
   
   if(!is.momentuHMM(model) & !is.miHMM(model) & !is.miSum(model))
-    stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, fitHierHMM, MIfitHMM, MIfitHierHMM, or MIpool)")
+    stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
   
   if(is.momentuHierHMM(model)){
     inputHierHMM <- formatHierHMM(data=NULL,hierStates,model$conditions$hierDist,hierFormula,formulaDelta,mixtures,workBounds=NULL,betaCons=NA,fixPar=list(beta=NA,delta=NA),checkData=FALSE)

@@ -122,13 +122,17 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
   
   hierArgs <- list(...)
   argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist"))]
-  
-  if(missing(nbStates) & missing(dist)){
-    if(all(c("hierStates","hierDist") %in% argNames)){
-      return(getParDM.momentuHierHMMData(data,hierStates=hierArgs$hierStates,hierDist=hierArgs$hierDist,Par,zeroInflation,oneInflation,estAngleMean,circularAngleMean,DM,userBounds,workBounds))
+
+  ## check that the data is a momentuHMMData object or valid data frame
+  if(!is.momentuHMMData(data)){ 
+    if(missing(nbStates) & missing(dist)){
+      if(all(c("hierStates","hierDist") %in% argNames)){
+        return(getParDM.hierarchical(data,hierStates=hierArgs$hierStates,hierDist=hierArgs$hierDist,Par,zeroInflation,oneInflation,estAngleMean,circularAngleMean,DM,userBounds,workBounds))
+      }
     }
+    if(!is.data.frame(data)) stop('data must be a data.frame')
   }
-  if((!missing(nbStates) | !missing(dist))){
+  if(!missing(nbStates) | !missing(dist)){
     if(any(c("hierStates","hierDist") %in% argNames))
       stop("Either nbStates and dist must be specified (for a regular HMM) or hierStates and hierDist must be specified (for a hierarchical HMM)")
   }
@@ -136,11 +140,6 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
   if(!is.null(cons)) warning("cons argument is deprecated in momentuHMM >= 1.4.0.  Please use workBounds instead.")
   if(!is.null(workcons)) warning("workcons argument is deprecated in momentuHMM >= 1.4.0.  Please use workBounds instead.")
   if(!is.null(workBounds) & (!is.null(cons) | !is.null(workcons))) stop("workBounds cannot be specified when using deprecated arguments cons or workcons; either workBounds or both cons and workcons must be NULL")
-  
-  ## check that the data is a momentuHMMData object or valid data frame
-  if(!is.momentuHMMData(data))
-    if(!is.data.frame(data)) stop('data must be a data.frame')
-    #else if(ncol(data)<1) stop('data is empty')
   
   if(nbStates<1) stop('nbStates must be >0')
   
@@ -476,18 +475,18 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
 }
 
 #' @rdname getParDM
-#' @method getParDM momentuHierHMMData
+#' @method getParDM hierarchical
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHMM}}.
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. See \code{\link{fitHMM}}.
 #'
 #' @export
-getParDM.momentuHierHMMData<-function(data=data.frame(),hierStates,hierDist,
+getParDM.hierarchical<-function(data=data.frame(), hierStates, hierDist,
                        Par,
                        zeroInflation=NULL,
                        oneInflation=NULL,
                        estAngleMean=NULL,
                        circularAngleMean=NULL,
-                       DM=NULL,userBounds=NULL,workBounds=NULL){
+                       DM=NULL, userBounds=NULL, workBounds=NULL, ...){
   
   ## check that the data is a momentuHierHMMData object or valid data frame
   if(!is.momentuHierHMMData(data))

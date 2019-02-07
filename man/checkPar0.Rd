@@ -2,17 +2,29 @@
 % Please edit documentation in R/checkPar0.R
 \name{checkPar0}
 \alias{checkPar0}
+\alias{checkPar0.default}
+\alias{checkPar0.hierarchical}
 \title{Check parameter length and order for a \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model}
 \usage{
-checkPar0(data, nbStates, dist, Par0 = NULL, beta0 = NULL, delta0 = NULL,
-  estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
-  formulaDelta = NULL, stationary = FALSE, mixtures = 1,
+checkPar0(data, ...)
+
+\method{checkPar0}{default}(data, nbStates, dist, Par0 = NULL, beta0 = NULL,
+  delta0 = NULL, estAngleMean = NULL, circularAngleMean = NULL,
+  formula = ~1, formulaDelta = NULL, stationary = FALSE, mixtures = 1,
   formulaPi = NULL, DM = NULL, cons = NULL, userBounds = NULL,
   workBounds = NULL, workcons = NULL, betaCons = NULL, betaRef = NULL,
-  stateNames = NULL, fixPar = NULL)
+  stateNames = NULL, fixPar = NULL, ...)
+
+\method{checkPar0}{hierarchical}(data, hierStates, hierDist, Par0 = NULL,
+  beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
+  circularAngleMean = NULL, hierFormula = NULL, formulaDelta = ~1,
+  mixtures = 1, formulaPi = NULL, DM = NULL, userBounds = NULL,
+  workBounds = NULL, betaCons = NULL, fixPar = NULL, ...)
 }
 \arguments{
-\item{data}{\code{\link{momentuHMMData}} object or a data frame containing the data stream and covariate values}
+\item{data}{\code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the data stream and covariate values}
+
+\item{...}{further arguments passed to or from other methods}
 
 \item{nbStates}{Number of states of the HMM.}
 
@@ -64,6 +76,12 @@ each data stream.}
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
 \item{fixPar}{An optional list of vectors indicating parameters which are assumed known prior to fitting the model.}
+
+\item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See \code{\link{fitHMM}}.}
+
+\item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See \code{\link{fitHMM}}.}
+
+\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). See \code{\link{fitHMM}}.}
 }
 \description{
 Prints parameters with labels based on \code{DM}, \code{formula}, and/or \code{formulaDelta}.  See \code{\link{fitHMM}} for 

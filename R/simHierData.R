@@ -1435,7 +1435,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
     
     # account for observation error (if any)
-    out<-simObsHierData(momentuHierHMMData(data),lambda,errorEllipse,coordLevel)
+    out<-simObsData(momentuHierHMMData(data),lambda,errorEllipse,coordLevel)
     
     message("DONE")
     return(out)

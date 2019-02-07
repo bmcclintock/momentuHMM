@@ -3,7 +3,7 @@
 \name{getParDM}
 \alias{getParDM}
 \alias{getParDM.default}
-\alias{getParDM.momentuHierHMMData}
+\alias{getParDM.hierarchical}
 \title{Get starting values on working scale based on design matrix and other parameter constraints}
 \usage{
 getParDM(data, ...)
@@ -13,10 +13,10 @@ getParDM(data, ...)
   circularAngleMean = NULL, DM = NULL, cons = NULL, userBounds = NULL,
   workBounds = NULL, workcons = NULL, ...)
 
-\method{getParDM}{momentuHierHMMData}(data = data.frame(), hierStates,
-  hierDist, Par, zeroInflation = NULL, oneInflation = NULL,
-  estAngleMean = NULL, circularAngleMean = NULL, DM = NULL,
-  userBounds = NULL, workBounds = NULL)
+\method{getParDM}{hierarchical}(data = data.frame(), hierStates, hierDist,
+  Par, zeroInflation = NULL, oneInflation = NULL, estAngleMean = NULL,
+  circularAngleMean = NULL, DM = NULL, userBounds = NULL,
+  workBounds = NULL, ...)
 }
 \arguments{
 \item{data}{Optional \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 

@@ -16,5 +16,5 @@ An object \code{crwHierData}.
 Constructor of \code{crwHierData} objects
 }
 \seealso{
-\code{\link{crawlWrap}}, \code{\link{MIfitHierHMM}}
+\code{\link{crawlWrap}}, \code{\link{MIfitHMM}}
 }

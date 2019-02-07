@@ -13,5 +13,5 @@ is.crwHierData(x)
 \code{TRUE} if \code{x} is of class \code{\link{crwHierData}}, \code{FALSE} otherwise.
 }
 \description{
-Check that an object is of class \code{\link{crwHierData}}. Used in \code{\link{MIfitHierHMM}}.
+Check that an object is of class \code{\link{crwHierData}}. Used in \code{\link{MIfitHMM}}.
 }

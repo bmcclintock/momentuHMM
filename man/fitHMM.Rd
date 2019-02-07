@@ -16,7 +16,7 @@ fitHMM(data, ...)
   workcons = NULL, betaCons = NULL, betaRef = NULL, mvnCoords = NULL,
   stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
   retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL,
-  modelName = NULL)
+  modelName = NULL, ...)
 
 \method{fitHMM}{momentuHierHMMData}(data, hierStates, hierDist, Par0,
   beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
@@ -25,12 +25,12 @@ fitHMM(data, ...)
   DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL,
   mvnCoords = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
   retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL,
-  modelName = NULL)
+  modelName = NULL, ...)
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simData}}) or a \code{\link{momentuHierHMMData}} (as returned by \code{\link{prepHierData}} or \code{\link{simHierData}}) object.}
 
-\item{...}{further arguments passed to other methods}
+\item{...}{further arguments passed to or from other methods}
 
 \item{nbStates}{Number of states of the HMM.}
 
@@ -186,11 +186,12 @@ Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \co
 
 \item{modelName}{An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions.}
 
-\item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See details.}
+\item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See details.}
 
-\item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. See details.}
+\item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See details.}
 
-\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy. Default: \code{NULL} (no covariate effects). See details.}
+\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (no covariate effects).
+Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy. See details.}
 }
 \value{
 A \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object, i.e. a list of:

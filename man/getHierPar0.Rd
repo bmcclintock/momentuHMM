@@ -2,7 +2,7 @@
 % Please edit documentation in R/getHierPar0.R
 \name{getHierPar0}
 \alias{getHierPar0}
-\title{Get hierarchical HMM starting values for new model from existing \code{momentuHMM} or  \code{momentuHMM} model fit}
+\title{Get starting values for new hierarchical model from existing \code{momentuHMM} or \code{momentuHierHMM} model fit}
 \usage{
 getHierPar0(model, hierStates = model$conditions$hierStates,
   estAngleMean = model$conditions$estAngleMean,
@@ -13,9 +13,9 @@ getHierPar0(model, hierStates = model$conditions$hierStates,
   formulaPi = model$conditions$formulaPi, DM = model$conditions$DM)
 }
 \arguments{
-\item{model}{A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{fitHierHMM}}, \code{\link{MIfitHMM}}, \code{\link{MIfitHierHMM}}, or \code{\link{MIpool}})}
+\item{model}{A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})}
 
-\item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHierHMM}}.}
+\item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHMM}}.}
 
 \item{estAngleMean}{Named list indicating whether or not the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. Default: \code{estAngleMean=model$conditions$estAngleMean}}
@@ -23,7 +23,7 @@ distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. Defau
 \item{circularAngleMean}{Named list indicating whether circular-linear or circular-circular 
 regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model.  See \code{\link{fitHMM}}. Default: \code{circularAngleMean=model$conditions$circularAngleMean}}
 
-\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy (see \code{\link{fitHierHMM}}).  Default: \code{formula=model$conditions$hierFormula}.}
+\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy (see \code{\link{fitHMM}}).  Default: \code{formula=model$conditions$hierFormula}.}
 
 \item{formulaDelta}{Regression formula for the initial distribution covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formulaDelta=model$conditions$formulaDelta}.}
 
@@ -45,8 +45,9 @@ All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications 
 for \code{model} and the new model (as specified by  \code{hierStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{hierFormula}, \code{formulaDelta}, \code{DM}, etc.).
 }
 \description{
-For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHierHMM}} or \code{\link{MIfitHierHMM}}) from an existing \code{\link{momentuHMM}} or  \code{\link{momentuHierHMM}} model fit based on the provided arguments for the new model. Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
+For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}) from an existing \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} model fit based on the provided arguments for the new model. 
+Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
 }
 \seealso{
-\code{\link{getPar}}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
+\code{\link{getPar}}, \code{getPar0}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 }

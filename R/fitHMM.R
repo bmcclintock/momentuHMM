@@ -5,7 +5,7 @@
 #' function.
 #' 
 #' @param data A \code{\link{momentuHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simData}}) or a \code{\link{momentuHierHMMData}} (as returned by \code{\link{prepHierData}} or \code{\link{simHierData}}) object.
-#' @param ... further arguments passed to other methods
+#' @param ... further arguments passed to or from other methods
 #' @export
 fitHMM <- function(data, ...) {
   UseMethod("fitHMM")
@@ -477,7 +477,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                    formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,
                    verbose=NULL,nlmPar=list(),fit=TRUE,
                    DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,
-                   mvnCoords=NULL,stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL)
+                   mvnCoords=NULL,stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, ...)
 {
   
   #####################
@@ -976,9 +976,10 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
 
 #' @rdname fitHMM
 #' @method fitHMM momentuHierHMMData
-#' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See details.
-#' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. See details.
-#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy. Default: \code{NULL} (no covariate effects). See details.
+#' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See details.
+#' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See details.
+#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (no covariate effects).
+#' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy. See details.
 #' 
 #' @details
 #' \itemize{
@@ -996,7 +997,7 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
                        hierFormula=NULL,formulaDelta=~1,mixtures=1,formulaPi=NULL,
                        nlmPar=list(),fit=TRUE,
                        DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,
-                       mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL)
+                       mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, ...)
 {
   
   if(!inherits(data,"momentuHierHMMData")) stop("data must be a momentuHierHMMData object (as returned by prepHierData or simHierData)")

@@ -2,7 +2,7 @@
 % Please edit documentation in R/getPar0.R
 \name{getPar0}
 \alias{getPar0}
-\title{Get starting values for new model from existing \code{momentuHMM} model fit}
+\title{Get starting values for new model from existing \code{momentuHMM} or \code{momentuHierHMM} model fit}
 \usage{
 getPar0(model, nbStates = length(model$stateNames),
   estAngleMean = model$conditions$estAngleMean,
@@ -14,7 +14,7 @@ getPar0(model, nbStates = length(model$stateNames),
   betaRef = model$conditions$betaRef, stateNames = model$stateNames)
 }
 \arguments{
-\item{model}{A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{fitHierHMM}}, \code{\link{MIfitHMM}}, \code{\link{MIfitHierHMM}}, or \code{\link{MIpool}})}
+\item{model}{A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})}
 
 \item{nbStates}{Number of states in the new model. Default: \code{nbStates=length(model$stateNames)}}
 
@@ -50,7 +50,8 @@ All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications 
 for \code{model} and the new model (as specified by  \code{nbStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{formulaDelta}, \code{DM}, \code{stateNames}, etc.).
 }
 \description{
-For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}) from an existing \code{\link{momentuHMM}} model fit based on the provided arguments for the new model. Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
+For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}) from an existing \code{\link{momentuHMM}} or \code{momentuHierHMM} model fit based on the provided arguments for the new model. 
+Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
 }
 \examples{
 # model is a momentuHMM object, automatically loaded with the package
@@ -108,5 +109,5 @@ newModel2 <- fitHMM(model$data,dist=dist,nbStates=nbStates,
 
 }
 \seealso{
-\code{\link{getPar}}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
+\code{\link{getPar}}, \code{\link{getHierPar0}}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 }

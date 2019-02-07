@@ -4,7 +4,15 @@
 #' Prints parameters with labels based on \code{DM}, \code{formula}, and/or \code{formulaDelta}.  See \code{\link{fitHMM}} for 
 #' further argument details.
 #' 
-#' @param data \code{\link{momentuHMMData}} object or a data frame containing the data stream and covariate values
+#' @param data \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the data stream and covariate values
+#' @param ... further arguments passed to or from other methods
+#' @export
+checkPar0 <- function(data, ...) {
+  UseMethod("checkPar0")
+}
+
+#' @rdname checkPar0
+#' @method checkPar0 default
 #' @param nbStates Number of states of the HMM.
 #' @param dist A named list indicating the probability distributions of the data streams. 
 #' @param Par0 Optional named list containing vectors of state-dependent probability distribution parameters for 
@@ -79,15 +87,28 @@
 #'           circularAngleMean=list(angle=TRUE))                
 #' }
 #' @export
-
-checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,stateNames=NULL,fixPar=NULL)
+checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,stateNames=NULL,fixPar=NULL,...)
 {
+  
+  hierArgs <- list(...)
+  argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist"))]
   
   ## check that the data is a momentuHMMData object or valid data frame
   if(!is.momentuHMMData(data)){
+    if(missing(nbStates) & missing(dist)){
+      if(all(c("hierStates","hierDist") %in% argNames)){
+        if(is.null(formulaDelta)) formulaDelta <- ~1
+        if(length(attr(stats::terms.formula(formula),"term.labels"))>0 && is.null(hierArgs$hierFormula)) stop("hierFormula should be specified instead of formula")
+        return(checkPar0.hierarchical(data,hierStates=hierArgs$hierStates,hierDist=hierArgs$hierDist,Par0,beta0,delta0,estAngleMean,circularAngleMean,hierFormula=hierArgs$hierFormula,formulaDelta=formulaDelta,mixtures,formulaPi,DM,userBounds,workBounds,betaCons,fixPar))
+      }
+    }
     if(!is.data.frame(data)) stop('data must be a data.frame')
     if(is.null(data$ID)) data$ID <- rep(1,nrow(data))
     data <- momentuHMMData(data)
+  }
+  if(!missing(nbStates) | !missing(dist)){
+    if(any(c("hierStates","hierDist") %in% argNames))
+      stop("Either nbStates and dist must be specified (for a regular HMM) or hierStates and hierDist must be specified (for a hierarchical HMM)")
   }
   
   if(is.null(Par0)){
@@ -406,4 +427,32 @@ checkPar0 <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAng
       }
     }
   }
+}
+
+#' @rdname checkPar0
+#' @method checkPar0 hierarchical
+#' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See \code{\link{fitHMM}}.
+#' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See \code{\link{fitHMM}}.
+#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). See \code{\link{fitHMM}}.
+#' 
+#' @export
+checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,hierFormula=NULL,formulaDelta=~1,mixtures=1,formulaPi=NULL,DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,fixPar=NULL,...)
+{
+  
+  ## check that the data is a momentuHierHMMData object or valid data frame
+  if(!is.momentuHierHMMData(data)){
+    if(!is.data.frame(data)) stop('data must be a data.frame')
+    if(is.null(data$ID)) data$ID <- rep(1,nrow(data))
+    if(is.null(data$level)) stop("data$level must be specified")
+    data <- momentuHierHMMData(data)
+  }
+  
+  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons,fixPar)
+  nbStates <- inputHierHMM$nbStates
+  dist <- inputHierHMM$dist
+  formula <- inputHierHMM$formula
+  betaRef <- inputHierHMM$betaRef
+  stateNames <- inputHierHMM$stateNames
+  
+  return(checkPar0.default(data,nbStates,dist,Par0,beta0,delta0,estAngleMean,circularAngleMean,formula,formulaDelta,stationary=FALSE,mixtures,formulaPi,DM,cons=NULL,userBounds,workBounds,workcons=NULL,betaCons,betaRef,stateNames,fixPar))
 }

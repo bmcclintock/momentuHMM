@@ -48,7 +48,7 @@
 #' locations (\code{crwData$crwPredict$mu.x} and \code{crwData$crwPredict$mu.y}). Prior to using \code{prepData}, additional data streams or covariates unrelated to location (including z-values associated with
 #' \code{spatialCovs} raster stacks or bricks) can be merged with the \code{crwData} object using \code{\link{crawlMerge}}.
 #' 
-#' @seealso \code{\link{crawlMerge}}, \code{\link{crawlWrap}}, \code{\link{crwData}}
+#' @seealso \code{\link{prepHierData}}, \code{\link{crawlMerge}}, \code{\link{crawlWrap}}, \code{\link{crwData}}
 #'
 #' @examples
 #' coord1 <- c(1,2,3,4,5,6,7,8,9,10)

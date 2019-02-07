@@ -13,5 +13,5 @@ is.momentuHierHMMData(x)
 \code{TRUE} if \code{x} is of class \code{\link{momentuHierHMMData}}, \code{FALSE} otherwise.
 }
 \description{
-Check that an object is of class \code{\link{momentuHierHMMData}}. Used in \code{\link{fitHierHMM}}.
+Check that an object is of class \code{\link{momentuHierHMMData}}. Used in \code{\link{fitHMM}}.
 }

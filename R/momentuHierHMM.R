@@ -3,7 +3,7 @@
 #'
 #' @param m A list of attributes of the fitted model: \code{mle} (the maximum likelihood estimates of
 #' the parameters of the model), \code{data} (the \code{fitHMM} data), \code{mod} (the object
-#' returned by the \code{fitHierHMM} numerical optimizer \code{nlm} or \code{optim}), \code{conditions} (conditions used to fit
+#' returned by the \code{fitHMM} numerical optimizer \code{nlm} or \code{optim}), \code{conditions} (conditions used to fit
 #' the model: \code{hierStates}, \code{hierDist}, \code{zeroInflation}, \code{estAngleMean}, \code{circularAngleMean}
 #' \code{stationary}, \code{formula}, \code{userBounds}, \code{bounds}, \code{workBounds}, \code{DM}, etc.), 
 #' \code{stateNames}, and \code{rawCovs} (optional -- only if there are transition probability matrix covariates in the data).

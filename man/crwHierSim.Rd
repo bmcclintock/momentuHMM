@@ -7,10 +7,10 @@
 crwHierSim(m)
 }
 \arguments{
-\item{m}{A list of attributes required for multiple imputation data generated from a \code{\link{crwHierData}} object using \code{\link{MIfitHierHMM}}: \code{miData} (a list of 
+\item{m}{A list of attributes required for multiple imputation data generated from a \code{\link{crwHierData}} object using \code{\link{MIfitHMM}}: \code{miData} (a list of 
 \code{\link{momentuHMMData}} objects), and \code{crwSimulator} (a list of \code{\link[crawl]{crwSimulator}} objects).
 
-\code{crwHierSim} objects are returned by \code{\link{MIfitHierHMM}} when argument \code{miData} is a \code{\link{crwHierData}} object and argument \code{fit=FALSE}.}
+\code{crwHierSim} objects are returned by \code{\link{MIfitHMM}} when argument \code{miData} is a \code{\link{crwHierData}} object and argument \code{fit=FALSE}.}
 }
 \value{
 An object \code{crwHierSim}.

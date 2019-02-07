@@ -2,9 +2,9 @@ momentuHMM 1.5.0 2019-02-04
 -----------------
 NEW FEATURES
 
-* hierarchical HMMs can now be fitted and simulated using the fitHierHMM, MIfitHierHMM, and simHierData functions
+* hierarchical HMMs can now be fitted and simulated using the fitHMM, MIfitHMM, and simHierData functions
 
-* discrete individual-level random effects now available on state transition probabilities via the 'mixtures' and 'formulaPi' arguments in fitHMM, MIfitHMM, fitHierHMM, MIfitHierHMM, simData, and simHierData
+* discrete individual-level random effects now available on state transition probabilities via the 'mixtures' and 'formulaPi' arguments in fitHMM, MIfitHMM, simData, and simHierData
 
 * discrete-time version of Hooten et al (2019; <doi:10.1111/ele.13198>) recharge model has been added
 
@@ -14,7 +14,7 @@ NEW FEATURES
 
 * circularAngleMean can now alternatively be used to specify the reference angle (i.e. directional persistence) coefficient in circular-circular regression models
 
-* progressBar argument has been added to crawlWrap, MIfitHMM, and MIfitHierHMM
+* progressBar argument has been added to crawlWrap and MIfitHMM
 
 
 momentuHMM 1.4.3 2018-11-21

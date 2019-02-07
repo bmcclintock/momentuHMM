@@ -6,7 +6,7 @@
 #'
 #' @return An object \code{crwHierData}.
 #' 
-#' @seealso \code{\link{crawlWrap}}, \code{\link{MIfitHierHMM}}
+#' @seealso \code{\link{crawlWrap}}, \code{\link{MIfitHMM}}
 
 crwHierData <- function(m)
 {
@@ -26,7 +26,7 @@ crwHierData <- function(m)
 
 #' Is crwHierData
 #'
-#' Check that an object is of class \code{\link{crwHierData}}. Used in \code{\link{MIfitHierHMM}}.
+#' Check that an object is of class \code{\link{crwHierData}}. Used in \code{\link{MIfitHMM}}.
 #'
 #' @param x An R object
 #'

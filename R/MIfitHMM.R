@@ -5,20 +5,28 @@
 #' missing data, temporal-irregularity, or location measurement error in hidden Markov models, where pooled parameter estimates reflect uncertainty
 #' attributable to observation error.
 #' 
-#' \code{miData} can either be a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} object (as returned by \code{MIfitHMM} when \code{fit=FALSE}), 
-#' or a list of \code{\link{momentuHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}}). 
+#' \code{miData} can either be a \code{\link{crwData}} or \code{\link{crwHierData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} or \code{\link{crwHierSim}} object (as returned by \code{MIfitHMM} when \code{fit=FALSE}), 
+#' or a list of \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}} or \code{\link{prepHierData}}). 
 #' 
-#' If \code{miData} is a \code{crwData} object, \code{MIfitHMM} uses a combination of 
-#' \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepData}}, and \code{\link{fitHMM}} to draw \code{nSims} realizations of the position process
+#' If \code{miData} is a \code{crwData} (or \code{crwHierData}) object, \code{MIfitHMM} uses a combination of 
+#' \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepData}} (or \code{\link{prepHierData}}), and \code{\link{fitHMM}} to draw \code{nSims} realizations of the position process
 #' and fit the specified HMM to each imputation of the data. The vast majority of \code{MIfitHMM} arguments are identical to the corresponding arguments from these functions.
 #' 
-#' If \code{miData} is a \code{\link{crwData}} object, \code{nSims} determines both the number of realizations of the position process to draw 
+#' If \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object, \code{nSims} determines both the number of realizations of the position process to draw 
 #' (using \code{\link[crawl]{crwSimulator}} and \code{\link{crwPostIS}}) as well as the number of HMM fits.
 #' 
-#' If \code{miData} is a \code{\link{crwSim}} object or a list of \code{\link{momentuHMMData}} object(s), the specified HMM will simply be fitted to each of the \code{momentuHMMData} objects
-#' and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} are ignored.
+#' If \code{miData} is a \code{\link{crwSim}} (or \code{\link{crwHierSim}}) object or a list of \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}) object(s), the specified HMM will simply be fitted to each of the \code{momentuHMMData} (or \code{momentuHierHMMData}) objects
+#' and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} (or \code{\link{prepHierData}}) are ignored.
 #' 
-#' @param miData A \code{\link{crwData}} object, a \code{\link{crwSim}} object, or a list of \code{\link{momentuHMMData}} objects.
+#' @param miData A \code{\link{crwData}} object, a \code{\link{crwHierData}} object, a \code{\link{crwSim}} object, a \code{\link{crwHierSim}} object, a list of \code{\link{momentuHMMData}} objects, or a list of \code{\link{momentuHierHMMData}} objects.
+#' @param ... further arguments passed to or from other methods
+#' @export
+MIfitHMM <- function(miData, ...) {
+  UseMethod("MIfitHMM")
+}
+
+#' @rdname MIfitHMM
+#' @method MIfitHMM default
 #' @param nSims Number of imputations in which to fit the HMM using \code{\link{fitHMM}}. If \code{miData} is a list of \code{momentuHMMData} 
 #' objects, \code{nSims} cannot exceed the length of \code{miData}.
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
@@ -187,7 +195,8 @@
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
 #' @importFrom raster getZ
-MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, progressBar = FALSE,
+#' @importFrom stats terms.formula
+MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, progressBar = FALSE,
                    nbStates, dist, 
                    Par0, beta0 = NULL, delta0 = NULL,
                    estAngleMean = NULL, circularAngleMean = NULL,
@@ -197,9 +206,37 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
                    mvnCoords = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
                    covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL,
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
-                   fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL)
+                   fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, ...)
 {
-
+  
+  # for directing list of momentuHierHMMData objects to MIfitHMM.hierarchical
+  hierArgs <- list(...)
+  argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist","hierFormula"))]
+  
+  if(is.list(miData) & !is.crwData(miData) & !is.crwSim(miData)){
+    if(missing(nbStates) & missing(dist)){
+        if(all(c("hierStates","hierDist") %in% argNames)){
+          if(is.null(formulaDelta)) formulaDelta <- ~1
+          if(length(attr(stats::terms.formula(formula),"term.labels"))>0 && is.null(hierArgs$hierFormula)) stop("hierFormula should be specified instead of formula")
+          return(MIfitHMM.hierarchical(miData,nSims, ncores, poolEstimates, alpha, progressBar,
+                                       hierArgs$hierStates, hierArgs$hierDist, 
+                                       Par0, beta0, delta0,
+                                       estAngleMean, circularAngleMean,
+                                       hierArgs$hierFormula, formulaDelta, mixtures, formulaPi,
+                                       nlmPar, fit, useInitial,
+                                       DM, userBounds, workBounds, betaCons,
+                                       mvnCoords, knownStates, fixPar, retryFits, retrySD, optMethod, control, prior, modelName,
+                                       covNames, spatialCovs, centers, centroids, angleCovs,
+                                       method, parIS, dfSim, grid.eps, crit, scaleSim, quad.ask, force.quad,
+                                       fullPost, dfPostIS, scalePostIS,thetaSamp))
+        }
+    }
+  }
+  if(!missing(nbStates) | !missing(dist)){
+    if(any(c("hierStates","hierDist") %in% argNames))
+      stop("Either nbStates and dist must be specified (for a regular HMM) or hierStates and hierDist must be specified (for a hierarchical HMM)")
+  }
+  
   j <- NULL #gets rid of no visible binding for global variable 'j' NOTE in R cmd check
   
   if(poolEstimates){
@@ -434,6 +471,287 @@ MIfitHMM<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
   
   if(poolEstimates & nSims>1) out <- miHMM(list(miSum=MIpool(fits,alpha=alpha,ncores=ncores),HMMfits=fits))
     else out <- fits
+  
+  out
+}
+
+#' @rdname MIfitHMM
+#' @method MIfitHMM hierarchical
+#' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHMM}}.
+#' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. See \code{\link{fitHMM}}.
+#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy. See \code{\link{fitHMM}}.
+#' 
+#' @seealso \code{\link{prepHierData}} 
+#' 
+#' @export
+#' @importFrom crawl crwPostIS crwSimulator
+#' @importFrom doParallel registerDoParallel stopImplicitCluster
+#' @importFrom parallel makeCluster clusterExport stopCluster
+#' @importFrom foreach foreach %dopar%
+#' @importFrom doRNG %dorng%
+#' @importFrom raster getZ
+MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, progressBar = FALSE,
+                       hierStates, hierDist, 
+                       Par0, beta0 = NULL, delta0 = NULL,
+                       estAngleMean = NULL, circularAngleMean = NULL,
+                       hierFormula = NULL, formulaDelta = ~1, mixtures = 1, formulaPi = NULL,
+                       nlmPar = NULL, fit = TRUE, useInitial = FALSE,
+                       DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL,
+                       mvnCoords = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
+                       covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL,
+                       method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
+                       fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, ...)
+{
+  
+  j <- NULL #gets rid of no visible binding for global variable 'j' NOTE in R cmd check
+  
+  if(poolEstimates){
+    if(optMethod=="nlm" & !is.null(nlmPar$hessian)){
+      if(!nlmPar$hessian) stop("estimates cannot be pooled unless hessian is calculated")
+    } else if(optMethod %in% fitMethods[-1] & !is.null(control$hessian)){
+      if(!control$hessian) stop("estimates cannot be pooled unless hessian is calculated")
+    }
+  }
+  
+  progressBar <- ifelse(ncores>1 && capabilities('tcltk'),progressBar,FALSE)
+  
+  if(is.crwHierData(miData)){
+    
+    if(nSims>=1) {
+      
+      model_fits <- miData$crwFits
+      predData <- miData$crwHierPredict
+      
+      Time.name<-attr(predData,"Time.name")
+      ids = unique(predData$ID)
+      
+      if(!is.null(covNames) | !is.null(angleCovs)){
+        covNames <- unique(c(covNames,angleCovs[!(angleCovs %in% names(spatialCovs))]))
+        if(!length(covNames)) covNames <- NULL
+      }
+      znames <- unique(unlist(lapply(spatialCovs,function(x) names(attributes(x)$z))))
+      if(length(znames))
+        if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(miData)),"$crwHierPredict")
+      #coordNames <- attr(predData,"coord")
+      
+      if(fit | !missing("hierDist")) {
+        inputHierHMM <- formatHierHMM(data=NULL,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons,fixPar,checkData=FALSE)
+        dist <- inputHierHMM$dist
+        if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
+        distnames <- tmpdistnames <- names(dist)[which(!(names(dist) %in% c("step","angle")))]
+        if(any(is.na(match(distnames,names(predData))))){
+          for(i in which(is.na(match(distnames,names(predData))))){
+            if(dist[[distnames[i]]] %in% mvndists){
+              if(dist[[distnames[i]]] %in% c("mvnorm2","rw_mvnorm2")){
+                tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"))
+              } else if(dist[[distnames[i]]] %in% c("mvnorm3","rw_mvnorm3")){
+                tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"),paste0(distnames[i],".z"))          
+              }
+            }
+          }
+          if(any(is.na(match(tmpdistnames,names(predData))))) stop(paste0(tmpdistnames[is.na(match(tmpdistnames,names(predData)))],collapse=", ")," not found in miData")
+          tmpdistnames <- tmpdistnames[which(!(tmpdistnames %in% attr(predData,'coord')))]
+        }
+      } else {
+        distnames <- tmpdistnames <- names(predData)[which(!(names(predData) %in% c("ID","level",attr(predData,'coord'),covNames,znames)))]
+      }
+      cat('Drawing ',nSims,' realizations from the position process using crawl... ',ifelse(ncores>1 & length(ids)>1,"","\n"),sep="")
+      
+      nbAnimals <- length(ids)
+      if(nbAnimals>ncores && progressBar){
+        cl <- makeCluster(ncores)
+        registerDoParallel(cl)
+        clusterExport(cl, c("nbAnimals"), envir = environment())
+      } else {
+        registerDoParallel(cores=ncores)
+      }
+      withCallingHandlers(crwHierSim <- foreach(i = 1:length(ids), .export="crwSimulator") %dorng% {
+        cat("Simulating individual ",ids[i],"...\n",sep="")
+        if(nbAnimals>ncores && progressBar){
+          if(!exists("pb")) pb <- tcltk::tkProgressBar(paste0("crwSimulator core ",i," initiated ",Sys.time()), min=1, max=nbAnimals, initial=i)
+          tcltk::setTkProgressBar(pb, i, label=paste("simulating individual",ids[i]))
+        }
+        crawl::crwSimulator(model_fits[[i]],predTime=predData[[Time.name]][which(predData$ID==ids[i] & predData$locType=="p")], method = method, parIS = parIS,
+                            df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, quad.ask = ifelse(ncores>1, FALSE, quad.ask), force.quad = force.quad)
+      },warning=muffleRNGwarning)
+      if(nbAnimals>ncores && progressBar) stopCluster(cl)
+      else stopImplicitCluster()
+      names(crwHierSim) <- ids
+      if(ncores==1) cat("DONE\n")
+      
+      if(nSims>ncores && progressBar){
+        cl <- makeCluster(ncores)
+        registerDoParallel(cl)
+        clusterExport(cl, c("nSims"), envir = environment())
+      } else {
+        registerDoParallel(cores=ncores)
+      }
+      withCallingHandlers(miData<-
+                            foreach(j = 1:nSims, .export=c("crwPostIS","prepHierData"), .errorhandling="pass") %dorng% {
+                              cat("\rDrawing imputation ",j,"... ",sep="")
+                              if(nSims>ncores && progressBar){
+                                if(!exists("pb")) pb <- tcltk::tkProgressBar(paste0("crwPostIS core ",j," initiated ",Sys.time()), min=1, max=nSims, initial=j)
+                                tcltk::setTkProgressBar(pb, j, label=paste("drawing imputation",j))
+                              }
+                              locs<-data.frame()
+                              for(i in 1:length(ids)){
+                                #if(!is.null(model_fits[[i]]$err.model)){
+                                tmp<-tryCatch({crawl::crwPostIS(crwHierSim[[i]], fullPost = fullPost, df = dfPostIS, scale = scalePostIS, thetaSamp = thetaSamp)},error=function(e) e)
+                                if(!all(class(tmp) %in% c("crwIS","list"))) stop('crawl::crwPostIS error for individual ',ids[i],'; ',tmp,'  Check crwPostIS arguments, crawl::crwMLE model fits, and/or consult crawl documentation.')
+                                tlocs <- data.frame(x=tmp$alpha.sim[,"mu.x"],y=tmp$alpha.sim[,"mu.y"])
+                                #tlocs[[Time.name]] <- predData[[Time.name]][which(predData$ID==ids[i] & predData$locType %in% c("o","p"))]
+                                #tlocs$level <- predData$level[which(predData$ID==ids[i] & predData$locType %in% c("o","p"))]
+                                #tlocs$ID <- ids[i]
+                                tlocs$locType <- predData$locType[which(predData$ID==ids[i] & predData$locType %in% c("o","p"))]
+                                locs<-rbind(locs,tlocs)
+                              }
+                              df<-predData[,c("ID",Time.name,"level","locType",tmpdistnames,covNames,znames),drop=FALSE][which(is.na(predData$locType) | predData$locType!="o"),]
+                              df[which(df$locType=="p"),"x"] <- locs[which(locs$locType=="p"),"x"]
+                              df[which(df$locType=="p"),"y"] <- locs[which(locs$locType=="p"),"y"]
+                              df$locType <- NULL
+                              pD <- tryCatch(prepHierData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,coordLevel=attr(predData,"coordLevel")),error=function(e) e)
+                              if(inherits(pD,"momentuHierHMMData") & !is.null(mvnCoords)){
+                                names(pD)[which(names(pD) %in% c("x","y"))] <- paste0(mvnCoords,c(".x",".y"))
+                                attr(pD,'coords') <- paste0(mvnCoords,c(".x",".y"))
+                              }
+                              pD
+                            }
+                          ,warning=muffleRNGwarning)
+      if(nSims>ncores && progressBar) stopCluster(cl)
+      else stopImplicitCluster()
+      cat("DONE\n")
+      for(i in which(unlist(lapply(miData,function(x) inherits(x,"error"))))){
+        warning('prepHierData failed for imputation ',i,"; ",miData[[i]])
+      }
+      ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHierHMMData"))))
+      if(fit) cat('Fitting',length(ind),'realizations of the position process using fitHMM... \n')
+      else return(crwHierSim(list(miData=miData,crwSimulator=crwHierSim)))
+    } else stop("nSims must be >0")
+    
+  } else {
+    if(!is.list(miData)) stop("miData must either be a crwHierData object (as returned by crawlWrap) or a list of momentuHierHMMData objects as returned by simHierData, prepHierData, or MIfitHMM (when fit=FALSE)")
+    if(is.crwHierSim(miData)) miData <- miData$miData
+    ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHierHMMData"))))
+    if(!length(ind)) stop("miData must either be a crwHierData object (as returned by crawlWrap) or a list of momentuHierHMMData objects as returned by simHierData, prepHierData, or MIfitHMM (when fit=FALSE)")
+    if(missing(nSims)) nSims <- length(miData)
+    if(nSims>length(miData)) stop("nSims is greater than the length of miData. nSims must be <=",length(miData))
+    if(nSims<1) stop("nSims must be >0")
+    cat('Fitting',min(nSims,length(ind)),'imputation(s) using fitHMM... \n')
+  }
+  
+  inputHierHMM <- formatHierHMM(data=NULL,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons=NULL,fixPar=NULL)
+  nbStates <- inputHierHMM$nbStates
+  dist <- inputHierHMM$dist
+  formula <- inputHierHMM$formula
+  
+  if(!is.list(knownStates)){
+    tmpStates<-knownStates
+    knownStates<-vector('list',nSims)
+    if(!is.null(tmpStates))
+      knownStates[1:nSims]<-list(tmpStates)
+  } else if(length(knownStates)<nSims) stop("knownStates must be a list of length >=",nSims)
+  
+  if(all(names(dist) %in% names(Par0))){
+    tmpPar0<-Par0
+    Par0<-vector('list',nSims)
+    Par0[1:nSims]<-list(tmpPar0)
+  } else if(length(Par0)<nSims) stop("Par0 must be a list of length >=",nSims)
+  
+  newForm <- newFormulas(formula,nbStates)
+  recharge <- newForm$recharge
+  
+  if(is.null(recharge) & mixtures==1){
+    if(!is.list(beta0)){
+      tmpbeta0<-beta0
+      beta0<-vector('list',nSims)
+      if(!is.null(tmpbeta0))
+        beta0[1:nSims]<-list(tmpbeta0)
+    } else if(length(beta0)<nSims) stop("beta0 must be a list of length >=",nSims)
+  } else {
+    if(!is.null(beta0) && !is.list(beta0)){
+      if(!is.null(recharge)) stop("beta0 must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
+      if(mixtures>1) stop("beta0 must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
+    }
+    if(!is.list(beta0[[1]])){
+      tmpbeta0<-beta0
+      beta0<-vector('list',nSims)
+      if(!is.null(tmpbeta0))
+        beta0[1:nSims]<-list(tmpbeta0)
+    } else if(length(beta0)<nSims) stop("beta0 must be a list of length >=",nSims)    
+  }
+  if(!is.list(delta0)){
+    tmpdelta0<-delta0
+    delta0<-vector('list',nSims)
+    if(!is.null(tmpdelta0))
+      delta0[1:nSims]<-list(tmpdelta0)
+  } else if(length(delta0)<nSims) stop("delta0 must be a list of length >=",nSims)
+  
+  #check HMM inputs and print model message
+  test<-fitHMM(miData[[ind[1]]], hierStates, hierDist, Par0[[ind[1]]], beta0[[ind[1]]], delta0[[ind[1]]],
+                   estAngleMean, circularAngleMean, hierFormula, formulaDelta, mixtures, formulaPi, 
+                   nlmPar, fit = FALSE, DM,
+                   userBounds, workBounds, betaCons, mvnCoords, knownStates[[ind[1]]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName)
+  
+  # fit HMM(s)
+  fits <- list()
+  parallelStart <- 1
+  if(useInitial){
+    parallelStart <- 2
+    if(nSims>1){
+      cat("\rImputation ",1,"... ",sep="")
+    }
+    fits[[1]]<-suppressMessages(fitHMM(miData[[1]], hierStates, hierDist, Par0[[1]], beta0[[1]], delta0[[1]],
+                                           estAngleMean, circularAngleMean, hierFormula, formulaDelta, mixtures, formulaPi, 
+                                           nlmPar, fit, DM,
+                                           userBounds, workBounds, betaCons, mvnCoords, knownStates[[1]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
+    if(retryFits>=1){
+      cat("\n")
+    }
+    if(nSims>1){
+      cat("DONE\nFitting remaining imputations... \n")
+    }
+    tmpPar <- getPar0(fits[[1]])
+    Par0[parallelStart:nSims] <- list(tmpPar$Par)
+    beta0[parallelStart:nSims] <- list(tmpPar$beta)
+    delta0[parallelStart:nSims] <- list(tmpPar$delta)
+  }
+  if(nSims>ncores && progressBar){
+    cl <- makeCluster(ncores)
+    registerDoParallel(cl)
+    clusterExport(cl, c("nSims"), envir = environment())
+  } else {
+    registerDoParallel(cores=ncores)
+  }
+  withCallingHandlers(fits[parallelStart:nSims] <-
+                        foreach(j = parallelStart:nSims, .export=c("fitHMM"), .errorhandling="pass") %dorng% {
+                          
+                          if(nSims>1) {
+                            cat("     \rImputation ",j,"... ",sep="")
+                            if(nSims>ncores && progressBar){
+                              if(!exists("pb")) pb <- tcltk::tkProgressBar(paste0("MIfitHMM core ",j-parallelStart+1," initiated ",Sys.time()), min=1, max=nSims, initial=j)
+                              tcltk::setTkProgressBar(pb, j, label=paste("fitting imputation",j))#, label=paste(round((j-1)/nSims*100,0),"% done"))
+                            }
+                          }
+                          tmpFit<-suppressMessages(fitHMM(miData[[j]], hierStates, hierDist, Par0[[j]], beta0[[j]], delta0[[j]],
+                                                              estAngleMean, circularAngleMean, hierFormula, formulaDelta, mixtures, formulaPi, 
+                                                              nlmPar, fit, DM, 
+                                                              userBounds, workBounds, betaCons, mvnCoords, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
+                          if(retryFits>=1) cat("\n")
+                          tmpFit
+                        } 
+                      ,warning=muffleRNGwarning)
+  if(nSims>ncores && progressBar) stopCluster(cl)
+  else stopImplicitCluster()
+  cat("DONE\n")
+  
+  for(i in which(!unlist(lapply(fits,function(x) inherits(x,"momentuHierHMM"))))){
+    warning('Fit #',i,' failed; ',fits[[i]])
+  }
+  
+  fits <- HMMfits(fits)
+  
+  if(poolEstimates & nSims>1) out <- miHMM(list(miSum=MIpool(fits,alpha=alpha,ncores=ncores),HMMfits=fits))
+  else out <- fits
   
   out
 }
