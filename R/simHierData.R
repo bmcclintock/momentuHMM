@@ -1,181 +1,46 @@
 
-#' Hierarchical simulation tool
-#'
-#' Simulates data from a (multivariate) hierarchical hidden Markov model. Movement data can be generated with or without observation error attributable to temporal irregularity or location measurement error.
-#'
-#' @param nbAnimals Number of observed individuals to simulate.
+#' @rdname simData
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See details.
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). Currently
 #' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
 #' 'pois', 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), 'rw_mvnorm3' (trivariate normal random walk), 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. See details.
-#' @param Par A named list containing vectors of initial state-dependent probability distribution parameters for 
-#' each data stream specified in \code{dist}. The parameters should be in the order expected by the pdfs of \code{dist}, 
-#' and any zero-mass and/or one-mass parameters should be the last (if both are present, then zero-mass parameters must preceed one-mass parameters). 
-#' 
-#' If \code{DM} is not specified for a given data stream, then \code{Par} 
-#' is on the natural (i.e., real) scale of the parameters. However, if \code{DM} is specified for a given data stream, then 
-#' \code{Par} must be on the working (i.e., beta) scale of the parameters, and the length of \code{Par} must match the number 
-#' of columns in the design matrix. See details below.
-#' @param beta Matrix of regression parameters for the transition probabilities (more information
-#' in "Details").
-#' @param delta Initial value for the initial distribution at the top level of the hierarchy. Default \code{NULL}: all top-level states have equal initial probability.
-#' \code{delta} must be specified as a k x (\code{nbStates}-1) matrix, where k is the number of covariates and the columns correspond to states 2:\code{nbStates}. See details below.
 #' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (no covariate effects). In addition to allowing standard functions in R formulas
 #' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
 #' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
 #' and state- or parameter-specific formulas (see details).
 #' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy.
-#' @param formulaDelta Regression formula for the initial distribution at the top level of the hierarchy. Default: \code{~1} (both \code{delta} and \code{fixPar$delta} are specified on the working scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).
-#' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.
-#' @param formulaPi Regression formula for the mixture distribution probabilities. Default: \code{NULL} (no covariate effects; both \code{beta0$pi} and \code{fixPar$pi} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{beta0$pi} and \code{fixPar$pi} are specified on the working scale.
-#' Note that only the covariate values corresponding to the first time step for each individual ID are used (i.e. time-varying covariates cannot be used for the mixture probabilties).
-#' @param covs Covariate values to include in the simulated data, as a dataframe. The names of any covariates specified by \code{covs} can
-#' be included in \code{hierFormula} and/or \code{DM}. Covariates can also be simulated according to a standard normal distribution, by setting
-#' \code{covs} to \code{NULL} (the default), and specifying \code{nbCovs>0}.
 #' @param nbHierCovs A hierarchical data structure \code{\link[data.tree]{Node}} for the number of covariates ('nbCovs') to simulate for each level of the hierarchy (0 by default). Does not need to be specified if
 #' \code{covs} is specified. Simulated covariates are provided generic names (e.g., 'cov1.1' and 'cov1.2' for \code{nbHierCovs$level1$nbCovs=2}) and can be included in \code{hierFormula} and/or \code{DM}.
-#' @param spatialCovs List of \code{\link[raster]{RasterLayer-class}} objects for spatially-referenced covariates. Covariates specified by \code{spatialCovs} are
-#' extracted from the raster layer(s) based on the simulated location data for each time step (if applicable). The names of the raster layer(s) can be included in 
-#' \code{formula} and/or \code{DM}.  Note that \code{simHierData} usually takes longer to generate simulated data when \code{spatialCovs} is specified.
-#' @param zeroInflation A named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated. If \code{zeroInflation} is \code{TRUE} 
-#' for a given data stream, then values for the zero-mass parameters should be
-#' included in the corresponding element of \code{Par}.
-#' @param oneInflation A named list of logicals indicating whether the probability distributions of the data streams should be one-inflated. If \code{oneInflation} is \code{TRUE} 
-#' for a given data stream, then values for the one-mass parameters should be
-#' included in the corresponding element of \code{Par}.
-#' @param circularAngleMean An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
-#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.  For example, 
-#' \code{circularAngleMean=list(angle=TRUE)} indicates the angle mean is be estimated for 'angle' using circular-circular 
-#' regression.  Whenever circular-circular regression is used for an angular data stream, a corresponding design matrix (\code{DM}) 
-#' must be specified for the data stream, and the previous movement direction (i.e., a turning angle of zero) is automatically used 
-#' as the reference angle (i.e., the intercept). Default is \code{NULL}, which assumes circular-linear regression is 
-#' used for any angular distributions. Any \code{circularAngleMean} elements 
-#' corresponding to data streams that do not have angular distributions are ignored.
-#' \code{circularAngleMean} is also ignored for any 'vmConsensus' data streams (because the consensus model is a circular-circular regression model).
-#' 
-#' Alternatively, \code{circularAngleMean} can be specified as a numeric scalar, where the value specifies the coefficient for the reference angle (i.e., directional persistence) term in the circular-circular regression model. For example, setting \code{circularAngleMean} to \code{0} specifies a 
-#' circular-circular regression model with no directional persistence term (thus specifying a biased random walk instead of a biased correlated random walk). Setting \code{circularAngleMean} to 1 is equivalent to setting it to TRUE, i.e., a circular-circular regression model with a coefficient of 1 for the directional persistence reference angle.
-#' @param centers 2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
-#' centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the simulated location data. These distance and angle 
-#' covariates can be included in \code{formula} and \code{DM} using the row names of \code{centers}.  If no row names are provided, then generic names are generated 
-#' for the distance and angle covariates (e.g., 'center1.dist', 'center1.angle', 'center2.dist', 'center2.angle'); otherwise the covariate names are derived from the row names
-#' of \code{centers} as \code{paste0(rep(rownames(centers),each=2),c(".dist",".angle"))}. Note that the angle covariates for each activity center are calculated relative to 
-#' the previous movement direction instead of standard directions relative to the x-axis; this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression.
-#' @param centroids List where each element is a data frame with rows providing the x-coordinates ('x') and y-coordinates ('y) for centroids (i.e., dynamic activity centers where the coordinates can change for each time step)
-#' from which distance and angle covariates will be calculated based on the simulated location data. These distance and angle 
-#' covariates can be included in \code{hierFormula} and \code{DM} using the names of \code{centroids}.  If no list names are provided, then generic names are generated 
-#' for the distance and angle covariates (e.g., 'centroid1.dist', 'centroid1.angle', 'centroid2.dist', 'centroid2.angle'); otherwise the covariate names are derived from the list names
-#' of \code{centroids} as \code{paste0(rep(names(centroids),each=2),c(".dist",".angle"))}. Note that the angle covariates for each centroid are calculated relative to 
-#' the previous movement direction instead of standard directions relative to the x-axis; this is to allow turning angles to be simulated as a function of these covariates using circular-circular regression.
-#' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{covs} or \code{spatialCovs} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
-#' using \code{\link{circAngles}}.
-#' @param obsPerLevel A hierarchical data structure \code{\link[data.tree]{Node}} indicating the number of observations for each level of the hierarchy. For each level, the 'obs' field can either be the number of observations per animal (if single value) or the bounds of the number of observations per animal (if vector of two values). In the latter case, 
+#' @param obsPerLevel A hierarchical data structure \code{\link[data.tree]{Node}} indicating the number of observations for each level of the hierarchy ('obs'). For each level, the 'obs' field can either be the number of observations per animal (if single value) or the bounds of the number of observations per animal (if vector of two values). In the latter case, 
 #' the numbers of obervations generated per level for each animal are uniformously picked from this interval. Alternatively, \code{obsPerLevel} can be specified as
 #' a list of length \code{nbAnimals} with each element providing the hierarchical data structure for the number of observations for each level of the hierarchy for each animal, where the 'obs' field can either be the number of observations (if single value) or the bounds of the number of observations (if vector of two values) for each individual.
-#' @param initialPosition 2-vector providing the x- and y-coordinates of the initial position for all animals. Alternatively, \code{initialPosition} can be specified as
-#' a list of length \code{nbAnimals} with each element a 2-vector providing the x- and y-coordinates of the initial position for each individual.
-#' Default: \code{c(0,0)}.  If \code{mvnCoord} corresponds to a data stream with ``mvnorm3'' or ''rw_mvnorm3'' probability distributions, then \code{initialPosition} must be composed of 3-vector(s) for the x-, y-, and z-coordinates.
-#' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
-#' stream. Each element of \code{DM} can either be a named list of regression formulas or a ``pseudo'' design matrix.  For example, for a 2-state 
-#' model using the gamma distribution for a data stream named 'step', \code{DM=list(step=list(mean=~cov1, sd=~1))} specifies the mean 
-#' parameters as a function of the covariate 'cov1' for each state.  This model could equivalently be specified as a 4x6 ``pseudo'' design matrix using 
-#' character strings for the covariate: 
-#' \code{DM=list(step=matrix(c(1,0,0,0,'cov1',0,0,0,0,1,0,0,0,'cov1',0,0,0,0,1,0,0,0,0,1),4,6))}
-#' where the 4 rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the 6 columns correspond to the regression 
-#' coefficients. 
-#' 
-#' Design matrices specified using formulas allow standard functions in R formulas
-#' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}).  Special formula functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
-#' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
-#' \code{angleFormula(cov,strength,by)} for the angle mean of circular-circular regression models, and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.
-#' @param userBounds An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
-#' distribution parameters for each data stream. For example, for a 2-state model using the wrapped Cauchy ('wrpcauchy') distribution for 
-#' a data stream named 'angle' with \code{estAngleMean$angle=TRUE)}, \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2,dimnames=list(c("mean_1",
-#' "mean_2","concentration_1","concentration_2"))))} 
-#' specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.
-#' @param workBounds An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. For each matrix, the first column pertains to the lower bound and the second column the upper bound.
-#' For data streams, each element of \code{workBounds} should be a k x 2 matrix with the same name of the corresponding element of 
-#' \code{Par}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta)}.
-#' \code{workBounds} is ignored for any given data stream unless \code{DM} is also specified.
-#' @param mvnCoords Character string indicating the name of location data that are to be simulated using a multivariate normal distribution. For example, if \code{mu="rw_mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are intended to be location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as such.
-#' @param model A \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. This option can be used to simulate from a fitted model.  Default: NULL.
-#' Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
-#' \code{obsPerLevel}, \code{states}, \code{initialPosition}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
-#' \code{covs}, \code{spatialCovs}, \code{centers}, and \code{centroids}.
-#' @param states \code{TRUE} if the simulated states should be returned, \code{FALSE} otherwise (default).
-#' @param retrySims Number of times to attempt to simulate data within the spatial extent of \code{spatialCovs}. If \code{retrySims=0} (the default), an
-#' error is returned if the simulated tracks(s) move beyond the extent(s) of the raster layer(s). Instead of relying on \code{retrySims}, in many cases
-#' it might be better to simply expand the extent of the raster layer(s) and/or adjust the step length and turning angle probability distributions. 
-#' Ignored if \code{spatialCovs=NULL}.
-#' @param lambda Observation rate for location data. If \code{NULL} (the default), location data are obtained at regular intervals. Otherwise 
-#' \code{lambda} is the rate parameter of the exponential distribution for the waiting times between successive location observations, i.e., 
-#' \code{1/lambda} is the expected time between successive location observations. Only the 'step' and 'angle' data streams are subject to temporal irregularity;
-#' any other data streams are observed at temporally-regular intervals.  Ignored unless a valid distribution for the 'step' data stream is specified.
-#' @param errorEllipse List providing the upper bound for the semi-major axis (\code{M}; on scale of x- and y-coordinates), semi-minor axis (\code{m}; 
-#' on scale of x- and y-coordinates), and orientation (\code{r}; in degrees) of location error ellipses. If \code{NULL} (the default), no location 
-#' measurement error is simulated. If \code{errorEllipse} is specified, then each observed location is subject to bivariate normal errors as described 
-#' in McClintock et al. (2015), where the components of the error ellipse for each location are randomly drawn from \code{runif(1,min(errorEllipse$M),max(errorEllipse$M))}, 
-#' \code{runif(1,min(errorEllipse$m),max(errorEllipse$m))}, and \code{runif(1,min(errorEllipse$r),max(errorEllipse$r))}. If only a single value is provided for any of the 
-#' error ellipse elements, then the corresponding component is fixed to this value for each location. Only the 'step' and 'angle' data streams are subject to location measurement error;
-#' any other data streams are observed without error.  Ignored unless a valid distribution for the 'step' data stream is specified.
-#' 
-#' @return If the simulated data are temporally regular (i.e., \code{lambda=NULL}) with no measurement error (i.e., \code{errorEllipse=NULL}), an object \code{\link{momentuHMMData}}, 
-#' i.e., a dataframe of:
-#' \item{ID}{The ID(s) of the observed animal(s)}
-#' \item{...}{Data streams as specified by \code{dist}}
-#' \item{x}{Either easting or longitude (if data streams include valid non-negative distribution for 'step')}
-#' \item{y}{Either norting or latitude (if data streams include valid non-negative distribution for 'step')}
-#' \item{...}{Covariates (if any)}
-#' 
-#' If simulated location data are temporally irregular (i.e., \code{lambda>0}) and/or include measurement error (i.e., \code{errorEllipse!=NULL}), a dataframe of:
-#' \item{time}{Numeric time of each observed (and missing) observation}
-#' \item{ID}{The ID(s) of the observed animal(s)}
-#' \item{x}{Either easting or longitude observed location}
-#' \item{y}{Either norting or latitude observed location}
-#' \item{...}{Data streams that are not derived from location (if applicable)}
-#' \item{...}{Covariates at temporally-regular true (\code{mux},\code{muy}) locations (if any)}
-#' \item{mux}{Either easting or longitude true location}
-#' \item{muy}{Either norting or latitude true location}
-#' \item{error_semimajor_axis}{error ellipse semi-major axis (if applicable)}
-#' \item{error_semiminor_axis}{error ellipse semi-minor axis (if applicable)}
-#' \item{error_ellipse_orientation}{error ellipse orientation (if applicable)}
-#' \item{ln.sd.x}{log of the square root of the x-variance of bivariate normal error (if applicable; required for error ellipse models in \code{\link{crawlWrap}})}
-#' \item{ln.sd.y}{log of the square root of the y-variance of bivariate normal error (if applicable; required for error ellipse models in \code{\link{crawlWrap}})}
-#' \item{error.corr}{correlation term of bivariate normal error (if applicable; required for error ellipse models in \code{\link{crawlWrap}})}
-#' 
 #'
 #' @details \itemize{
-#' \item \code{simHierData} is very similar to \code{\link{simData}} except that instead of simply specifying the number of states (\code{nbStates}), distributions (\code{dist}), and a single t.p.m. formula (\code{formula}), the \code{hierStates} argument specifies the hierarchical nature of the states,
-#' the \code{hierDist} argument specifies the hierarchical nature of the data streams, and the \code{hierFormula} argument specifies a t.p.m. formula for each level of the hierarchy.  All are specified as 
+#' \item If the length of covariate values passed (either through 'covs', or 'model') is not the same
+#' as the number of observations suggested by 'nbAnimals' and 'obsPerAnimal' (or 'obsPerLevel' for \code{simHierData}), then the series of
+#' covariates is either shortened (removing last values - if too long) or extended (starting
+#' over from the first values - if too short).
+#' 
+#' \item \code{simHierData} is very similar to \code{\link{simData}} except that instead of simply specifying the number of states (\code{nbStates}), distributions (\code{dist}), observations (\code{obsPerAnimal}), covariates (\code{nbCovs}), and a single t.p.m. formula (\code{formula}), the \code{hierStates} argument specifies the hierarchical nature of the states,
+#' the \code{hierDist} argument specifies the hierarchical nature of the data streams, the \code{obsPerLevel} argument specifies the number of observations for each level of the hierarchy, the \code{nbHierCovs} argument specifies the number of covariates for each level of the hierarchy, and the \code{hierFormula} argument specifies a t.p.m. formula for each level of the hierarchy.  All are specified as 
 #' \code{\link[data.tree]{Node}} objects from the \code{\link[data.tree]{data.tree}} package.
 #' 
-#' \item \code{delta} must be specified
+#' \item For \code{simData}, when covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=NULL}), then \code{delta} is specified as a vector of length \code{nbStates} that 
+#' sums to 1.  When covariates are included in \code{formulaDelta}, then \code{delta} must be specified
 #' as a k x (\code{nbStates}-1) matrix of working parameters, where k is the number of regression coefficients and the columns correspond to states 2:\code{nbStates}. For example, in a 3-state
 #' HMM with \code{formulaDelta=~cov1+cov2}, the matrix \code{delta} has three rows (intercept + two covariates)
 #' and 2 columns (corresponding to states 2 and 3). The initial distribution working parameters are transformed to the real scale as \code{exp(covsDelta*Delta)/rowSums(exp(covsDelta*Delta))}, where \code{covsDelta} is the N x k design matrix, \code{Delta=cbind(rep(0,k),delta)} is a k x \code{nbStates} matrix of working parameters,
 #' and \code{N=length(unique(data$ID))}.
 #' 
-#' \item If the length of covariate values passed (either through 'covs', or 'model') is not the same
-#' as the number of observations suggested by 'nbAnimals' and 'obsPerLevel', then the series of
-#' covariates is either shortened (removing last values - if too long) or extended (starting
-#' over from the first values - if too short).
+#' \item For \code{simHierData}, \code{delta} must be specified
+#' as a k x (\code{nbStates}-1) matrix of working parameters, where k is the number of regression coefficients and the columns correspond to states 2:\code{nbStates}. 
 #' }
 #' 
-#' @seealso \code{\link{simData}}
-#'                 
 #' @references
-#' 
-#' Cornelissen, G. 2014. Cosinor-based rhythmometry. Theoretical Biology and Medical Modelling 11:16.
 #' 
 #' Leos-Barajas, V., Gangloff, E.J., Adam, T., Langrock, R., van Beest, F.M., Nabe-Nielsen, J. and Morales, J.M. 2017. 
 #' Multi-scale modeling of animal movement and general behavior data using hidden Markov models with hierarchical structures. 
 #' Journal of Agricultural, Biological and Environmental Statistics, 22 (3), 232-248.
-#'
-#' McClintock BT, London JM, Cameron MF, Boveng PL. 2015. Modelling animal movement using the Argos satellite telemetry location error ellipse. 
-#' Methods in Ecology and Evolution 6(3):266-277.
-#' 
-#' Rivest, LP, Duchesne, T, Nicosia, A, Fortin, D, 2016. A general angular regression model for the analysis of data on animal movement in ecology. 
-#' Journal of the Royal Statistical Society: Series C (Applied Statistics), 65(3):445-463.
 #'
 #' @export
 #' @importFrom stats rnorm runif rmultinom step terms.formula

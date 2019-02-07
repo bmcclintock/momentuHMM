@@ -181,13 +181,6 @@
 #' filled in row-wise).
 #' In a covariate-free model (default), \code{beta} has one row, for the intercept.
 #' 
-#' \item When covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=NULL}), then \code{delta} is specified as a vector of length \code{nbStates} that 
-#' sums to 1.  When covariates are included in \code{formulaDelta}, then \code{delta} must be specified
-#' as a k x (\code{nbStates}-1) matrix of working parameters, where k is the number of regression coefficients and the columns correspond to states 2:\code{nbStates}. For example, in a 3-state
-#' HMM with \code{formulaDelta=~cov1+cov2}, the matrix \code{delta} has three rows (intercept + two covariates)
-#' and 2 columns (corresponding to states 2 and 3). The initial distribution working parameters are transformed to the real scale as \code{exp(covsDelta*Delta)/rowSums(exp(covsDelta*Delta))}, where \code{covsDelta} is the N x k design matrix, \code{Delta=cbind(rep(0,k),delta)} is a k x \code{nbStates} matrix of working parameters,
-#' and \code{N=length(unique(data$ID))}.
-#' 
 #' \item State-specific formulas can be specified in \code{DM} using special formula functions. These special functions can take
 #' the names \code{paste0("state",1:nbStates)} (where the integer indicates the state-specific formula).  For example, 
 #' \code{DM=list(step=list(mean=~cov1+state1(cov2),sd=~cov2+state2(cov1)))} includes \code{cov1} on the mean parameter for all states, \code{cov2}
@@ -212,11 +205,6 @@
 #' When the circular-circular regression model is used, the special function \code{angleFormula(cov,strength,by)} can be used in \code{DM} for the mean of angular distributions (i.e. 'vm', 'vmConsensus', and 'wrpcauchy'),
 #' where \code{cov} is an angle covariate (e.g. wind direction), \code{strength} is a positive real covariate (e.g. wind speed), and \code{by} is an optional factor variable for individual- or group-level effects (e.g. ID, sex). This allows angle covariates to be weighted based on their strength or importance at time step t as in
 #' Rivest et al. (2016).
-#' 
-#' \item If the length of covariate values passed (either through 'covs', or 'model') is not the same
-#' as the number of observations suggested by 'nbAnimals' and 'obsPerAnimal', then the series of
-#' covariates is either shortened (removing last values - if too long) or extended (starting
-#' over from the first values - if too short).
 #' }
 #' 
 #' @seealso \code{\link{prepData}}, \code{\link{simObsData}}
