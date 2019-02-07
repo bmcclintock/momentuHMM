@@ -210,17 +210,17 @@ attributable to observation error.
 }
 \details{
 \code{miData} can either be a \code{\link{crwData}} or \code{\link{crwHierData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} or \code{\link{crwHierSim}} object (as returned by \code{MIfitHMM} when \code{fit=FALSE}), 
-or a list of \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}} or \code{\link{prepHierData}}).
+or a list of \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}}).
 
 If \code{miData} is a \code{crwData} (or \code{crwHierData}) object, \code{MIfitHMM} uses a combination of 
-\code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepData}} (or \code{\link{prepHierData}}), and \code{\link{fitHMM}} to draw \code{nSims} realizations of the position process
+\code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepData}}, and \code{\link{fitHMM}} to draw \code{nSims} realizations of the position process
 and fit the specified HMM to each imputation of the data. The vast majority of \code{MIfitHMM} arguments are identical to the corresponding arguments from these functions.
 
 If \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object, \code{nSims} determines both the number of realizations of the position process to draw 
 (using \code{\link[crawl]{crwSimulator}} and \code{\link{crwPostIS}}) as well as the number of HMM fits.
 
 If \code{miData} is a \code{\link{crwSim}} (or \code{\link{crwHierSim}}) object or a list of \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}) object(s), the specified HMM will simply be fitted to each of the \code{momentuHMMData} (or \code{momentuHierHMMData}) objects
-and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} (or \code{\link{prepHierData}}) are ignored.
+and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} are ignored.
 }
 \examples{
 
@@ -284,6 +284,4 @@ and Environmental Statistics.
 }
 \seealso{
 \code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHMM}}, \code{\link{getParDM}}, \code{\link{MIpool}}, \code{\link{prepData}}
-
-\code{\link{prepHierData}}
 }

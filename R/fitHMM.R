@@ -4,7 +4,7 @@
 #' Fit a (multivariate) hidden Markov model to the data provided, using numerical optimization of the log-likelihood
 #' function.
 #' 
-#' @param data A \code{\link{momentuHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simData}}) or a \code{\link{momentuHierHMMData}} (as returned by \code{\link{prepHierData}} or \code{\link{simHierData}}) object.
+#' @param data A \code{\link{momentuHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simData}}) or a \code{\link{momentuHierHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simHierData}}) object.
 #' @param ... further arguments passed to or from other methods
 #' @export
 fitHMM <- function(data, ...) {
@@ -988,7 +988,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
 #' \code{\link[data.tree]{Node}} objects from the \code{\link[data.tree]{data.tree}} package.
 #' }
 #' 
-#' @seealso \code{\link{prepHierData}}, \code{\link{simHierData}}
+#' @seealso \code{\link{simHierData}}
 #' 
 #' @export
 fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
@@ -1000,7 +1000,7 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
                        mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, ...)
 {
   
-  if(!inherits(data,"momentuHierHMMData")) stop("data must be a momentuHierHMMData object (as returned by prepHierData or simHierData)")
+  if(!inherits(data,"momentuHierHMMData")) stop("data must be a momentuHierHMMData object (as returned by prepData or simHierData)")
   
   inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons,fixPar)
   

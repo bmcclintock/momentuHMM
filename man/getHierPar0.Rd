@@ -45,7 +45,7 @@ All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications 
 for \code{model} and the new model (as specified by  \code{hierStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{hierFormula}, \code{formulaDelta}, \code{DM}, etc.).
 }
 \description{
-For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}) from an existing \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} model fit based on the provided arguments for the new model. 
+For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}) from an existing \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} model fit based on the provided arguments for the new hierarchical model. 
 Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
 }
 \seealso{

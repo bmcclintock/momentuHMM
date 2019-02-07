@@ -28,7 +28,7 @@ fitHMM(data, ...)
   modelName = NULL, ...)
 }
 \arguments{
-\item{data}{A \code{\link{momentuHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simData}}) or a \code{\link{momentuHierHMMData}} (as returned by \code{\link{prepHierData}} or \code{\link{simHierData}}) object.}
+\item{data}{A \code{\link{momentuHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simData}}) or a \code{\link{momentuHierHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simHierData}}) object.}
 
 \item{...}{further arguments passed to or from other methods}
 
@@ -532,5 +532,5 @@ Journal of the Royal Statistical Society: Series C (Applied Statistics), 65(3):4
 \seealso{
 \code{\link{getParDM}}, \code{\link{prepData}}, \code{\link{simData}}
 
-\code{\link{prepHierData}}, \code{\link{simHierData}}
+\code{\link{simHierData}}
 }

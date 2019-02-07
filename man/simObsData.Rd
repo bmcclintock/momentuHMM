@@ -75,5 +75,5 @@ Methods in Ecology and Evolution 6(3):266-277.
 \seealso{
 \code{\link{crawlWrap}}, \code{\link{prepData}}, \code{\link{simData}}
 
-\code{\link{prepHierData}}, \code{\link{simHierData}}
+\code{\link{simHierData}}
 }

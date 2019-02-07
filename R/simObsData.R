@@ -161,7 +161,7 @@ simObsData.momentuHMMData<-function(data,lambda,errorEllipse,...){
 #' @method simObsData momentuHierHMMData
 #' @param coordLevel Level of the hierarchy in which the location data are obtained
 #' 
-#' @seealso \code{\link{prepHierData}}, \code{\link{simHierData}}
+#' @seealso \code{\link{simHierData}}
 #' 
 #' @importFrom mvtnorm rmvnorm
 #' @importFrom argosfilter radian

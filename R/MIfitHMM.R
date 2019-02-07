@@ -6,17 +6,17 @@
 #' attributable to observation error.
 #' 
 #' \code{miData} can either be a \code{\link{crwData}} or \code{\link{crwHierData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} or \code{\link{crwHierSim}} object (as returned by \code{MIfitHMM} when \code{fit=FALSE}), 
-#' or a list of \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}} or \code{\link{prepHierData}}). 
+#' or a list of \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}}). 
 #' 
 #' If \code{miData} is a \code{crwData} (or \code{crwHierData}) object, \code{MIfitHMM} uses a combination of 
-#' \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepData}} (or \code{\link{prepHierData}}), and \code{\link{fitHMM}} to draw \code{nSims} realizations of the position process
+#' \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepData}}, and \code{\link{fitHMM}} to draw \code{nSims} realizations of the position process
 #' and fit the specified HMM to each imputation of the data. The vast majority of \code{MIfitHMM} arguments are identical to the corresponding arguments from these functions.
 #' 
 #' If \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object, \code{nSims} determines both the number of realizations of the position process to draw 
 #' (using \code{\link[crawl]{crwSimulator}} and \code{\link{crwPostIS}}) as well as the number of HMM fits.
 #' 
 #' If \code{miData} is a \code{\link{crwSim}} (or \code{\link{crwHierSim}}) object or a list of \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}) object(s), the specified HMM will simply be fitted to each of the \code{momentuHMMData} (or \code{momentuHierHMMData}) objects
-#' and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} (or \code{\link{prepHierData}}) are ignored.
+#' and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} are ignored.
 #' 
 #' @param miData A \code{\link{crwData}} object, a \code{\link{crwHierData}} object, a \code{\link{crwSim}} object, a \code{\link{crwHierSim}} object, a list of \code{\link{momentuHMMData}} objects, or a list of \code{\link{momentuHierHMMData}} objects.
 #' @param ... further arguments passed to or from other methods
@@ -481,7 +481,6 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. See \code{\link{fitHMM}}.
 #' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy. See \code{\link{fitHMM}}.
 #' 
-#' @seealso \code{\link{prepHierData}} 
 #' 
 #' @export
 #' @importFrom crawl crwPostIS crwSimulator
@@ -587,7 +586,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
         registerDoParallel(cores=ncores)
       }
       withCallingHandlers(miData<-
-                            foreach(j = 1:nSims, .export=c("crwPostIS","prepHierData"), .errorhandling="pass") %dorng% {
+                            foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass") %dorng% {
                               cat("\rDrawing imputation ",j,"... ",sep="")
                               if(nSims>ncores && progressBar){
                                 if(!exists("pb")) pb <- tcltk::tkProgressBar(paste0("crwPostIS core ",j," initiated ",Sys.time()), min=1, max=nSims, initial=j)
@@ -609,7 +608,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                               df[which(df$locType=="p"),"x"] <- locs[which(locs$locType=="p"),"x"]
                               df[which(df$locType=="p"),"y"] <- locs[which(locs$locType=="p"),"y"]
                               df$locType <- NULL
-                              pD <- tryCatch(prepHierData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,coordLevel=attr(predData,"coordLevel")),error=function(e) e)
+                              pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,coordLevel=attr(predData,"coordLevel")),error=function(e) e)
                               if(inherits(pD,"momentuHierHMMData") & !is.null(mvnCoords)){
                                 names(pD)[which(names(pD) %in% c("x","y"))] <- paste0(mvnCoords,c(".x",".y"))
                                 attr(pD,'coords') <- paste0(mvnCoords,c(".x",".y"))
@@ -621,7 +620,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
       else stopImplicitCluster()
       cat("DONE\n")
       for(i in which(unlist(lapply(miData,function(x) inherits(x,"error"))))){
-        warning('prepHierData failed for imputation ',i,"; ",miData[[i]])
+        warning('prepData failed for imputation ',i,"; ",miData[[i]])
       }
       ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHierHMMData"))))
       if(fit) cat('Fitting',length(ind),'realizations of the position process using fitHMM... \n')
@@ -629,10 +628,10 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     } else stop("nSims must be >0")
     
   } else {
-    if(!is.list(miData)) stop("miData must either be a crwHierData object (as returned by crawlWrap) or a list of momentuHierHMMData objects as returned by simHierData, prepHierData, or MIfitHMM (when fit=FALSE)")
+    if(!is.list(miData)) stop("miData must either be a crwHierData object (as returned by crawlWrap) or a list of momentuHierHMMData objects as returned by simHierData, prepData, or MIfitHMM (when fit=FALSE)")
     if(is.crwHierSim(miData)) miData <- miData$miData
     ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHierHMMData"))))
-    if(!length(ind)) stop("miData must either be a crwHierData object (as returned by crawlWrap) or a list of momentuHierHMMData objects as returned by simHierData, prepHierData, or MIfitHMM (when fit=FALSE)")
+    if(!length(ind)) stop("miData must either be a crwHierData object (as returned by crawlWrap) or a list of momentuHierHMMData objects as returned by simHierData, prepData, or MIfitHMM (when fit=FALSE)")
     if(missing(nSims)) nSims <- length(miData)
     if(nSims>length(miData)) stop("nSims is greater than the length of miData. nSims must be <=",length(miData))
     if(nSims<1) stop("nSims must be >0")
