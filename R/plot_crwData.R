@@ -322,9 +322,8 @@ plot.crwData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,plotEllipse=TRUE,
 #' @export
 plot.crwHierData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,plotEllipse=TRUE,crawlPlot=FALSE,...)
 {
-  data <- x[c("crwFits","crwHierPredict")]
-  names(data) <- c("crwFits","crwPredict")
-  data$crwPredict <- data$crwPredict[which(x$crwHierPredict$level==attr(x$crwHierPredict,"coordLevel")),]
+  data <- x
+  data$crwPredict <- data$crwPredict[which(x$crwPredict$level==attr(x$crwPredict,"coordLevel")),]
   class(data$crwPredict) <- append("crwPredict",class(data$crwPredict))
   plot(crwData(data),animals=animals,compact=compact,ask=ask,plotEllipse=plotEllipse,crawlPlot=crawlPlot,...)
 }

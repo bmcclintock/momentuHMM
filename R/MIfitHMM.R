@@ -90,15 +90,14 @@ MIfitHMM <- function(miData, ...) {
 #' @param modelName An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions. 
 #' @param covNames Names of any covariates in \code{miData$crwPredict} (if \code{miData} is a \code{\link{crwData}} object; otherwise 
 #' \code{covNames} is ignored). See \code{\link{prepData}}. 
-#' @param spatialCovs List of raster layer(s) for any spatial covariates not included in \code{miData$crwPredict} (if \code{miData} is 
-#' a \code{\link{crwData}} object; otherwise \code{spatialCovs} is ignored). See \code{\link{prepData}}. 
+#' @param spatialCovs List of raster layer(s) for any spatial covariates. See \code{\link{prepData}}. 
 #' @param centers 2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 #' centers of attraction or repulsion) from which distance and angle covariates will be calculated based on realizations of the position process. 
 #' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param centroids List where each element is a data frame containing the x-coordinates ('x'), y-coordinates ('y'), and times (with user-specified name, e.g., `time') for centroids (i.e., dynamic activity centers where the coordinates can change over time)
 #' from which distance and angle covariates will be calculated based on the location data. See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{miData$crwPredict} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
-#' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.
 #' @param method Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param parIS Size of the parameter importance sample. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param dfSim Degrees of freedom for the t approximation to the parameter posterior. See 'df' argument in \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
@@ -519,7 +518,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     if(nSims>=1) {
       
       model_fits <- miData$crwFits
-      predData <- miData$crwHierPredict
+      predData <- miData$crwPredict
       
       Time.name<-attr(predData,"Time.name")
       ids = unique(predData$ID)
@@ -530,7 +529,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
       }
       znames <- unique(unlist(lapply(spatialCovs,function(x) names(attributes(x)$z))))
       if(length(znames))
-        if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(miData)),"$crwHierPredict")
+        if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(miData)),"$crwPredict")
       #coordNames <- attr(predData,"coord")
       
       if(fit | !missing("hierDist")) {
@@ -608,7 +607,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                               df[which(df$locType=="p"),"x"] <- locs[which(locs$locType=="p"),"x"]
                               df[which(df$locType=="p"),"y"] <- locs[which(locs$locType=="p"),"y"]
                               df$locType <- NULL
-                              pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,coordLevel=attr(predData,"coordLevel")),error=function(e) e)
+                              pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,coordLevel=attr(predData,"coordLevel"),hierLevels=levels(predData$level)),error=function(e) e)
                               if(inherits(pD,"momentuHierHMMData") & !is.null(mvnCoords)){
                                 names(pD)[which(names(pD) %in% c("x","y"))] <- paste0(mvnCoords,c(".x",".y"))
                                 attr(pD,'coords') <- paste0(mvnCoords,c(".x",".y"))

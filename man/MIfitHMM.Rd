@@ -145,8 +145,7 @@ initial values for likelihood optimization.  See \code{\link{fitHMM}}.}
 \item{covNames}{Names of any covariates in \code{miData$crwPredict} (if \code{miData} is a \code{\link{crwData}} object; otherwise 
 \code{covNames} is ignored). See \code{\link{prepData}}.}
 
-\item{spatialCovs}{List of raster layer(s) for any spatial covariates not included in \code{miData$crwPredict} (if \code{miData} is 
-a \code{\link{crwData}} object; otherwise \code{spatialCovs} is ignored). See \code{\link{prepData}}.}
+\item{spatialCovs}{List of raster layer(s) for any spatial covariates. See \code{\link{prepData}}.}
 
 \item{centers}{2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 centers of attraction or repulsion) from which distance and angle covariates will be calculated based on realizations of the position process. 
@@ -156,7 +155,7 @@ See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwDat
 from which distance and angle covariates will be calculated based on the location data. See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 
 \item{angleCovs}{Character vector indicating the names of any circular-circular regression angular covariates in \code{miData$crwPredict} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
-See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.}
 
 \item{method}{Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 

@@ -4,10 +4,10 @@
 #' This function can be used to merge \code{\link{crwData}} or \code{\link{crwHierData}} objects (as returned by \code{\link{crawlWrap}}) with additional data streams
 #' and/or covariates that are unrelated to location. 
 #' 
-#' Specifically, the function merges the \code{crwData$crwPredict} or \code{crwData$crwHierPredict} data frame with \code{data}
+#' Specifically, the function merges the \code{crwData$crwPredict} data frame with \code{data}
 #' based on the \code{ID}, \code{Time.name}, and, if \code{crwData} is hierarchical, \code{level} columns.  Thus \code{data} must contain \code{ID}, \code{Time.name}, and, if \code{crwData} is hierarchical, \code{level} columns. 
 #' 
-#' Only rows of \code{data} with \code{ID}, \code{Time.name}, and, if \code{crwData} is hierarchical, \code{level} values that exactly match \code{crwData$crwPredict} (or \code{crwData$crwHierPredict}) are merged. Typically, the \code{Time.name} column
+#' Only rows of \code{data} with \code{ID}, \code{Time.name}, and, if \code{crwData} is hierarchical, \code{level} values that exactly match \code{crwData$crwPredict} are merged. Typically, the \code{Time.name} column
 #' in \code{data} should match predicted times of locations in \code{crwData$crwPredict} (i.e. those corresponding to \code{crwData$crwPredict$locType=="p"})
 #' 
 #' @param crwData A \code{\link{crwData}} or \code{\link{crwHierData}} object
@@ -62,14 +62,14 @@ crawlMerge.crwData<-function(crwData, data, Time.name){
 #' @export
 crawlMerge.crwHierData<-function(crwData, data, Time.name){
   crwFits <- crwData$crwFits
-  if(!(Time.name %in% names(crwData$crwHierPredict))) stop(Time.name," not found in crwData$crwHierPredict")
+  if(!(Time.name %in% names(crwData$crwPredict))) stop(Time.name," not found in crwData$crwPredict")
   if(!("ID" %in% names(data))) stop("ID not found in data")
   if(!(Time.name %in% names(data))) stop(Time.name," not found in data")
   if(!("level" %in% names(data))) stop("level not found in data")
   dataNames <- c("ID",Time.name,"level")
   covNames <- names(data)[!(names(data) %in% dataNames)]
-  if(any(covNames %in% names(crwData$crwHierPredict)[!(names(crwData$crwHierPredict) %in% dataNames)])) stop("Data stream and/or covariate names in data cannot match column names in crwData$crwHierPredict")
-  tmp<-merge(crwData$crwHierPredict,data,by=dataNames,all.x=TRUE,all.y=FALSE,sort=FALSE)
-  crwData$crwHierPredict[covNames]<-tmp[covNames]
+  if(any(covNames %in% names(crwData$crwPredict)[!(names(crwData$crwPredict) %in% dataNames)])) stop("Data stream and/or covariate names in data cannot match column names in crwData$crwPredict")
+  tmp<-merge(crwData$crwPredict,data,by=dataNames,all.x=TRUE,all.y=FALSE,sort=FALSE)
+  crwData$crwPredict[covNames]<-tmp[covNames]
   return(crwData)
 }

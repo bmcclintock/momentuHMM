@@ -97,7 +97,7 @@ setting \code{fillCols=TRUE} should typically be avoided.}
 \item{...}{Additional arguments that are ignored.}
 }
 \value{
-A \code{\link{crwData}} object, i.e. a list of:
+A \code{\link{crwData}} or \code{\link{crwHierData}} object, i.e. a list of:
 \item{crwFits}{A list of \code{crwFit} objects returned by crawl::crwMLE. See \code{\link[crawl]{crwMLE}}}
 \item{crwPredict}{A \code{crwPredict} data frame with \code{obsData} merged with the predicted locations. See \code{\link[crawl]{crwPredict}}.}
 The \code{\link{crwData}} object is used in \code{\link{MIfitHMM}} analyses that account for temporal irregularity or location measurement error.

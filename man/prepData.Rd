@@ -80,7 +80,7 @@ analysis using \code{\link{fitHMM}}.
 \details{
 \itemize{
 \item If \code{data} is a \code{\link{crwData}} (or \code{\link{crwHierData}}) object, the \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}) object created by \code{prepData} includes step lengths and turning angles calculated from the best predicted 
-locations (i.e., \code{crwData$crwPredict$mu.x} and \code{crwData$crwPredict$mu.y} or \code{crwHierData$crwHierPredict$mu.x} and \code{crwHierData$crwHierPredict$mu.y}). Prior to using \code{prepData}, additional data streams or covariates unrelated to location (including z-values associated with
+locations (i.e., \code{crwData$crwPredict$mu.x} and \code{crwData$crwPredict$mu.y}). Prior to using \code{prepData}, additional data streams or covariates unrelated to location (including z-values associated with
 \code{spatialCovs} raster stacks or bricks) can be merged with the \code{crwData} (or \code{crwHierData}) object using \code{\link{crawlMerge}}.
 
 \item For hierarchical data, \code{data} must include a 'level' field indicating the level of the hierarchy for each observation, and, for location data identified by \code{coordNames}, the \code{coordLevel} argument must indicate the level of the hierarchy at which the location data are obtained.

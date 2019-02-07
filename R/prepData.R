@@ -55,7 +55,7 @@ prepData <- function(data, ...) {
 #' @details 
 #' \itemize{
 #' \item If \code{data} is a \code{\link{crwData}} (or \code{\link{crwHierData}}) object, the \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}) object created by \code{prepData} includes step lengths and turning angles calculated from the best predicted 
-#' locations (i.e., \code{crwData$crwPredict$mu.x} and \code{crwData$crwPredict$mu.y} or \code{crwHierData$crwHierPredict$mu.x} and \code{crwHierData$crwHierPredict$mu.y}). Prior to using \code{prepData}, additional data streams or covariates unrelated to location (including z-values associated with
+#' locations (i.e., \code{crwData$crwPredict$mu.x} and \code{crwData$crwPredict$mu.y}). Prior to using \code{prepData}, additional data streams or covariates unrelated to location (including z-values associated with
 #' \code{spatialCovs} raster stacks or bricks) can be merged with the \code{crwData} (or \code{crwHierData}) object using \code{\link{crawlMerge}}.
 #' 
 #' \item For hierarchical data, \code{data} must include a 'level' field indicating the level of the hierarchy for each observation, and, for location data identified by \code{coordNames}, the \code{coordLevel} argument must indicate the level of the hierarchy at which the location data are obtained.
@@ -381,14 +381,14 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
 prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, hierLevels, coordLevel, ...)
 {
   if(is.crwHierData(data)){
-    predData <- data$crwHierPredict
+    predData <- data$crwPredict
     if(!is.null(covNames) | !is.null(angleCovs)){
       covNames <- unique(c(covNames,angleCovs[!(angleCovs %in% names(spatialCovs))]))
       if(!length(covNames)) covNames <- NULL
     }
     znames <- unique(unlist(lapply(spatialCovs,function(x) names(attributes(x)$z))))
     if(length(znames))
-      if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(data)),"$crwHierPredict")
+      if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(data)),"$crwPredict")
     omitNames <- c("ID","x","y",covNames,names(spatialCovs),znames)
     if(!is.null(centers)) {
       if(!is.null(rownames(centers))){
@@ -407,8 +407,8 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     distnames <- names(predData)[which(!(names(predData) %in% omitNames))]
     type <- 'UTM'
     coordNames <- c("x","y")
-    hierLevels <- levels(data$crwHierPredict$level)
-    coordLevel <- attr(data$crwHierPredict,"coordLevel")
+    hierLevels <- levels(data$crwPredict$level)
+    coordLevel <- attr(data$crwPredict,"coordLevel")
     data <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(is.na(predData$locType) | predData$locType!="o"),]
   }
   if(!is.data.frame(data)) stop("data must be a data frame")

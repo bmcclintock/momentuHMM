@@ -60,7 +60,7 @@
 #' @param coordLevel Character string indicating the level of the hierarchy for the location data. Ignored unless \code{obsData} includes a 'level' field.
 #' @param ... Additional arguments that are ignored.
 #' 
-#' @return A \code{\link{crwData}} object, i.e. a list of:
+#' @return A \code{\link{crwData}} or \code{\link{crwHierData}} object, i.e. a list of:
 #' \item{crwFits}{A list of \code{crwFit} objects returned by crawl::crwMLE. See \code{\link[crawl]{crwMLE}}}
 #' \item{crwPredict}{A \code{crwPredict} data frame with \code{obsData} merged with the predicted locations. See \code{\link[crawl]{crwPredict}}.}
 #' The \code{\link{crwData}} object is used in \code{\link{MIfitHMM}} analyses that account for temporal irregularity or location measurement error.
@@ -598,9 +598,9 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     attrNames <- names(attributes(pData))[!(names(attributes(pData)) %in% names(attributes(predData)))]
     attributes(predData)[attrNames] <- attributes(pData)[attrNames]
     attr(predData,"coordLevel") <- coordLevel
-    class(predData) <- append("crwHierPredict",class(predData))
+    class(predData) <- append("crwPredict",class(predData))
     cat("DONE\n")
-    return(crwHierData(list(crwFits=model_fits,crwHierPredict=predData)))    
+    return(crwHierData(list(crwFits=model_fits,crwPredict=predData)))    
   } else {
     cat("DONE\n")
     return(crwData(list(crwFits=model_fits,crwPredict=predData)))    

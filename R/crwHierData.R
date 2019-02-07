@@ -1,7 +1,7 @@
 
 #' Constructor of \code{crwHierData} objects
 #'
-#' @param m A list of attributes of crawl output: \code{crwFits} (a list of crwFit objects) and \code{crwHierPredict} (a crwHierPredict object)
+#' @param m A list of attributes of crawl output: \code{crwFits} (a list of crwFit objects) and \code{crwPredict} (a crwPredict object)
 #'
 #'
 #' @return An object \code{crwHierData}.
@@ -10,13 +10,15 @@
 
 crwHierData <- function(m)
 {
-  if(is.null(m$crwFits) | is.null(m$crwHierPredict))
-    stop("Can't construct crwData object: fields are missing")
+  if(is.null(m$crwFits) | is.null(m$crwPredict))
+    stop("Can't construct crwHierData object: fields are missing")
   
   if(any(!unlist(lapply(m$crwFits,function(x) inherits(x,"crwFit")))))
-    stop("Can't construct crwData object: crwFits must be a list of crwFit objects")
+    stop("Can't construct crwHierData object: crwFits must be a list of crwFit objects")
   
-  if(!inherits(m$crwHierPredict,"crwHierPredict")) stop("Can't construct crwData object: crwHierPredict must be a crwHierPredict object")
+  if(!inherits(m$crwPredict,"crwPredict")) stop("Can't construct crwHierData object: crwPredict must be a crwPredict object")
+  
+  if(is.null(m$crwPredict$level)) stop("Can't construct crwHierData object: crwPredict must include a 'level' field")
   
   obj <- m
   

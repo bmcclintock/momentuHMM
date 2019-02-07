@@ -7,7 +7,7 @@
 crwHierData(m)
 }
 \arguments{
-\item{m}{A list of attributes of crawl output: \code{crwFits} (a list of crwFit objects) and \code{crwHierPredict} (a crwHierPredict object)}
+\item{m}{A list of attributes of crawl output: \code{crwFits} (a list of crwFit objects) and \code{crwPredict} (a crwPredict object)}
 }
 \value{
 An object \code{crwHierData}.
