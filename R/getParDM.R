@@ -34,10 +34,10 @@ getParDM <- function(data, ...) {
 #' in the order expected by the pdfs of \code{dist}, and any zero-mass parameters should be the last.
 #' @param zeroInflation A named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated. If \code{zeroInflation} is \code{TRUE} 
 #' for a given data stream, then values for the zero-mass parameters should be
-#' included in the corresponding element of \code{Par}. Ignored if \code{data} is a \code{\link{momentuHMMData}} object.
+#' included in the corresponding element of \code{Par}. Ignored if \code{data} is a \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} object.
 #' @param oneInflation Named list of logicals indicating whether the probability distributions of the data streams are one-inflated. If \code{oneInflation} is \code{TRUE} 
 #' for a given data stream, then values for the one-mass parameters should be
-#' included in the corresponding element of \code{Par}. Ignored if \code{data} is a \code{\link{momentuHMMData}} object.
+#' included in the corresponding element of \code{Par}. Ignored if \code{data} is a \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} object.
 #' @param estAngleMean An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy'). Any \code{estAngleMean} elements corresponding to data streams that do not have angular distributions are ignored.
 #' @param circularAngleMean An optional named list indicating whether to use circular-linear or circular-circular 
@@ -489,9 +489,11 @@ getParDM.hierarchical<-function(data=data.frame(), hierStates, hierDist,
                        DM=NULL, userBounds=NULL, workBounds=NULL, ...){
   
   ## check that the data is a momentuHierHMMData object or valid data frame
-  if(!is.momentuHierHMMData(data))
+  if(!is.momentuHierHMMData(data)){
     if(!is.data.frame(data)) stop('data must be a data.frame')
-  #else if(ncol(data)<1) stop('data is empty')
+  } else {
+    data <- momentuHMMData(data)
+  }
   
   inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierFormula=NULL,formulaDelta=~1,mixtures=1,workBounds,betaCons=NA,fixPar=list(beta=NA,delta=NA),checkData=FALSE)
   nbStates <- inputHierHMM$nbStates
