@@ -14,6 +14,8 @@ NEW FEATURES
 
 * circularAngleMean can now alternatively be used to specify the reference angle (i.e. directional persistence) coefficient in circular-circular regression models
 
+* added getTrProbs function for calculating transition probabilities
+
 * progressBar argument has been added to crawlWrap and MIfitHMM
 
 

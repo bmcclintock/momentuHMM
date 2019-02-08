@@ -1,9 +1,11 @@
 #' @importFrom data.tree Node Get Do ToDataFrameTypeCol Traverse Aggregate AreNamesUnique isRoot isLeaf Clone
 #' @importFrom stats terms
 formatHierHMM <- function(data=NULL,hierStates,hierDist,
-                          hierFormula,formulaDelta,mixtures,
-                          workBounds,betaCons,
-                          fixPar,checkData=TRUE){
+                          hierFormula=NULL,formulaDelta=~1,mixtures=1,
+                          workBounds=NULL,betaCons=NULL,
+                          fixPar=NULL,checkData=TRUE){
+  
+  if(is.null(data)) checkData <- FALSE
   
   if(!inherits(hierStates,"Node")) stop("'hierStates' must be of class Node; see ?data.tree::Node")
   if(!("state" %in% hierStates$fieldsAll)) stop("'hierStates' must include a 'state' field")
@@ -27,7 +29,7 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
   if(!data.tree::AreNamesUnique(hierDist)) stop("node names in 'hierDist' must be unique")
   if(hierDist$height!=3) stop("'hierDist' hierarchy must contain 2 levels")
   
-  if(!is.null(data) && checkData){
+  if(checkData){
     if(is.null(data$level)) stop('data$level must be specified')
     if(!is.factor(data$level)) stop('data$level must be a factor')
     if(nlevels(data$level)!=nbLevels) stop('data$level must contain ',nbLevels,' levels')
@@ -58,15 +60,15 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
       }
     }
   }# else {
-   # lInd <- gsub("level","",sort(hierDist$Get("name",filterFun=function(x) x$level==2),decreasing=TRUE)[1])
-   # lLevels <- c(paste0(lInd,"i"),lInd)
-   # for(j in sort(hierDist$Get("name",filterFun=function(x) x$level==2),decreasing=TRUE)[-1]){
-   #   lLevels <- c(gsub("level","",j),lLevels)
-   #   if(j!="level1") {
-   #     lLevels <- c(paste0(gsub("level","",j),"i"),lLevels)
-   #   }
-   # }
-   # data <- data.frame(level=factor(lLevels,levels=lLevels))
+  # lInd <- gsub("level","",sort(hierDist$Get("name",filterFun=function(x) x$level==2),decreasing=TRUE)[1])
+  # lLevels <- c(paste0(lInd,"i"),lInd)
+  # for(j in sort(hierDist$Get("name",filterFun=function(x) x$level==2),decreasing=TRUE)[-1]){
+  #   lLevels <- c(gsub("level","",j),lLevels)
+  #   if(j!="level1") {
+  #     lLevels <- c(paste0(gsub("level","",j),"i"),lLevels)
+  #   }
+  # }
+  # data <- data.frame(level=factor(lLevels,levels=lLevels))
   #}
   
   dist <- as.list(hierDist$Get("dist",filterFun=data.tree::isLeaf))
@@ -85,7 +87,7 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
     if(!data.tree::AreNamesUnique(hierFormula)) stop("node names in 'hierFormula' must be unique")
     if(hierFormula$height!=2) stop("'hierFormula' hierarchy must contain 1 level")
     
-    if(!is.null(data) && checkData){
+    if(checkData){
       if(!all(hierFormula$Get("name",filterFun=function(x) x$level==2) %in% paste0("level",levels(data$level)))) 
         stop("'hierFormula' level types can only include ",paste(paste0("level",levels(data$level)),collapse=", "))
     }
@@ -118,12 +120,12 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
     if(!attr(stats::terms(formulaDelta),"intercept")) stop("formulaDelta must include an intercept term")
   }
   #if(attr(stats::terms(formula),"intercept")) stop("formula can not include an intercept term")
-
+  
   formula <- formatHierFormula(whierFormula)
   
   # set t.p.m. reference states based on top level
   #if(is.null(betaRef)){
-    betaRef <- rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
+  betaRef <- rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
   #}
   
   if(!is.null(data) && (is.null(fixPar$beta) | is.null(betaCons) | is.null(fixPar$delta))){
@@ -163,6 +165,7 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
         fixPar$delta[paste0("(Intercept)","_mix",mix),(2:nbStates)[-(betaRef-1)]-1] <- -1.e+10
         if(nbCovsDelta>1) fixPar$delta[paste0(colnames(covsDelta)[which(colnames(covsDelta)=="(Intercept)")],"_mix",mix),(2:nbStates)[-(betaRef-1)]-1] <- 0
       }
+      if(mixtures==1) rownames(fixPar$delta) <- colnames(covsDelta)
       #} else {
       #  if(is.null(workBounds$delta)){
       #    deltaLower <- matrix(-Inf,nbCovsDelta*mixtures,nbStates-1,dimnames=list(rownames(fixPar$delta)))
@@ -374,12 +377,9 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
       }
     }
     if(mixtures==1){
-      rownames(fixPar$delta) <- colnames(covsDelta)
       rownames(fixPar$beta) <- colnames(covs)
       rownames(betaCons) <- rownames(fixPar$beta)
     }
-    return(list(nbStates=nbStates,dist=dist,formula=formula,betaRef=betaRef,betaCons=betaCons,fixPar=fixPar,workBounds=workBounds,stateNames=stateNames))
-  } else {
-    return(list(nbStates=nbStates,dist=dist,formula=formula,betaRef=betaRef,stateNames=stateNames))
   }
+  return(list(nbStates=nbStates,dist=dist,formula=formula,betaRef=betaRef,betaCons=betaCons,fixPar=fixPar,workBounds=workBounds,stateNames=stateNames))
 }
