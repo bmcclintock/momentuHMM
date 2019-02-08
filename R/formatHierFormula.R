@@ -7,6 +7,7 @@ formatHierFormula <- function(hierFormula){
     #if(j==lLevels[1]) if(!attr(stats::terms(hierFormula[[j]]$formula),"intercept")) stop("hierFormula$",j,"$formula must include an intercept term")
     formulaTerms[[j]] <- attr(stats::terms(hierFormula[[j]]$formula),"term.labels")
     if(length(formulaTerms[[j]])){
+      if("level" %in% formulaTerms[[j]]) stop("hierFormula$",j,"$formula cannot include 'level'")
       formulaTerms[[j]] <- paste0("I((level=='",gsub("level","",j),"')*",formulaTerms[[j]],")")
     }
   }
