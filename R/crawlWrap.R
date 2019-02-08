@@ -598,7 +598,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     attrNames <- names(attributes(pData))[!(names(attributes(pData)) %in% names(attributes(predData)))]
     attributes(predData)[attrNames] <- attributes(pData)[attrNames]
     attr(predData,"coordLevel") <- coordLevel
-    class(predData) <- append("crwPredict",class(predData))
+    class(predData) <- append(c("crwPredict","hierarchical"),class(predData))
     cat("DONE\n")
     return(crwHierData(list(crwFits=model_fits,crwPredict=predData)))    
   } else {

@@ -18,7 +18,7 @@ crwHierData <- function(m)
   
   if(!inherits(m$crwPredict,"crwPredict")) stop("Can't construct crwHierData object: crwPredict must be a crwPredict object")
   
-  if(is.null(m$crwPredict$level)) stop("Can't construct crwHierData object: crwPredict must include a 'level' field")
+  if(!inherits(m$crwPredict,"hierarchical") | is.null(m$crwPredict$level)) stop("Can't construct crwHierData object: crwPredict must be of class 'hierarchical' and include a 'level' field")
   
   obj <- m
   
