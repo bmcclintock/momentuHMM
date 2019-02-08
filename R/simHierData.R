@@ -752,11 +752,11 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   nbBetaCovs <- ncol(model.matrix(newformula,tmpCovs))
   
   inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons=NULL,fixPar=NULL,checkData=FALSE)
+  workBounds <- inputHierHMM$workBounds
   
   if(is.null(beta0$beta)){
     beta0$beta <- matrix(rnorm(nbStates*(nbStates-1)*nbBetaCovs*mixtures)[inputHierHMM$betaCons],nrow=nbBetaCovs*mixtures)
     beta0$beta[which(!is.na(inputHierHMM$fixPar$beta))] <- inputHierHMM$fixPar$beta[which(!is.na(inputHierHMM$fixPar$beta))]
-    workBounds <- inputHierHMM$workBounds
   }
   if(nbRecovs){
     if(is.null(beta0$g0) | is.null(beta0$theta)) stop("beta$g0 and beta$theta must be specified for recharge model")
@@ -823,10 +823,10 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   parindex <- c(0,cumsum(unlist(parCount))[-length(distnames)])
   names(parindex) <- distnames
   
-  if(is.null(workBounds)) {
-    workBounds <- vector('list',length(distnames))
-    names(workBounds) <- distnames
-  }
+  #if(is.null(workBounds)) {
+  #  workBounds <- vector('list',length(distnames))
+  #  names(workBounds) <- distnames
+  #}
   workBounds <- getWorkBounds(workBounds,distnames,unlist(Par[distnames]),parindex,parCount,inputs$DM,beta0,deltaB)
   
   wnbeta <- w2wn(beta0$beta,workBounds$beta)
