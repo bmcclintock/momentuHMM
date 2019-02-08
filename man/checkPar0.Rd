@@ -8,11 +8,12 @@
 \usage{
 checkPar0(data, ...)
 
-\method{checkPar0}{default}(data, nbStates, dist, Par0 = NULL, beta0 = NULL,
-  delta0 = NULL, estAngleMean = NULL, circularAngleMean = NULL,
-  formula = ~1, formulaDelta = NULL, stationary = FALSE, mixtures = 1,
-  formulaPi = NULL, DM = NULL, cons = NULL, userBounds = NULL,
-  workBounds = NULL, workcons = NULL, betaCons = NULL, betaRef = NULL,
+\method{checkPar0}{default}(data, nbStates, dist, Par0 = NULL,
+  beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
+  circularAngleMean = NULL, formula = ~1, formulaDelta = NULL,
+  stationary = FALSE, mixtures = 1, formulaPi = NULL, DM = NULL,
+  cons = NULL, userBounds = NULL, workBounds = NULL,
+  workcons = NULL, betaCons = NULL, betaRef = NULL,
   stateNames = NULL, fixPar = NULL, ...)
 
 \method{checkPar0}{hierarchical}(data, hierStates, hierDist, Par0 = NULL,

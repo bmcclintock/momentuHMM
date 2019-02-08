@@ -10,12 +10,13 @@ fitHMM(data, ...)
 
 \method{fitHMM}{momentuHMMData}(data, nbStates, dist, Par0, beta0 = NULL,
   delta0 = NULL, estAngleMean = NULL, circularAngleMean = NULL,
-  formula = ~1, formulaDelta = NULL, stationary = FALSE, mixtures = 1,
-  formulaPi = NULL, verbose = NULL, nlmPar = list(), fit = TRUE,
-  DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL,
-  workcons = NULL, betaCons = NULL, betaRef = NULL, mvnCoords = NULL,
-  stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
-  retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL,
+  formula = ~1, formulaDelta = NULL, stationary = FALSE,
+  mixtures = 1, formulaPi = NULL, verbose = NULL, nlmPar = list(),
+  fit = TRUE, DM = NULL, cons = NULL, userBounds = NULL,
+  workBounds = NULL, workcons = NULL, betaCons = NULL,
+  betaRef = NULL, mvnCoords = NULL, stateNames = NULL,
+  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
+  optMethod = "nlm", control = list(), prior = NULL,
   modelName = NULL, ...)
 
 \method{fitHMM}{momentuHierHMMData}(data, hierStates, hierDist, Par0,
@@ -23,9 +24,9 @@ fitHMM(data, ...)
   circularAngleMean = NULL, hierFormula = NULL, formulaDelta = ~1,
   mixtures = 1, formulaPi = NULL, nlmPar = list(), fit = TRUE,
   DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL,
-  mvnCoords = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
-  retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL,
-  modelName = NULL, ...)
+  mvnCoords = NULL, knownStates = NULL, fixPar = NULL,
+  retryFits = 0, retrySD = NULL, optMethod = "nlm",
+  control = list(), prior = NULL, modelName = NULL, ...)
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simData}}) or a \code{\link{momentuHierHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simHierData}}) object.}

@@ -9,10 +9,12 @@
 getTrProbs(data, ...)
 
 \method{getTrProbs}{default}(data, nbStates, beta, workBoundsBeta = NULL,
-  formula = ~1, mixtures = 1, betaRef = NULL, stateNames = NULL, ...)
+  formula = ~1, mixtures = 1, betaRef = NULL, stateNames = NULL,
+  ...)
 
 \method{getTrProbs}{hierarchical}(data, hierStates, beta,
-  workBoundsBeta = NULL, hierFormula = NULL, mixtures = 1, hierDist, ...)
+  workBoundsBeta = NULL, hierFormula = NULL, mixtures = 1, hierDist,
+  ...)
 }
 \arguments{
 \item{data}{\code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 

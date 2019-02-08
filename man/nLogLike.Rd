@@ -8,8 +8,8 @@ nLogLike(optPar, nbStates, formula, bounds, parSize, data, dist, covs,
   estAngleMean, circularAngleMean, consensus, zeroInflation, oneInflation,
   stationary = FALSE, cons, fullDM, DMind, workcons, Bndind, knownStates,
   fixPar, wparIndex, nc, meanind, covsDelta, workBounds, prior = NULL,
-  betaCons = NULL, betaRef, optInd = NULL, recovs = NULL, g0covs = NULL,
-  mixtures = 1, covsPi)
+  betaCons = NULL, betaRef, optInd = NULL, recovs = NULL,
+  g0covs = NULL, mixtures = 1, covsPi)
 }
 \arguments{
 \item{optPar}{Vector of working parameters.}

@@ -4,13 +4,14 @@
 \alias{crawlWrap}
 \title{Fit and predict tracks for using crawl}
 \usage{
-crawlWrap(obsData, timeStep = 1, ncores = 1, retryFits = 0, retrySD = 1,
-  retryParallel = FALSE, progressBar = FALSE, mov.model = ~1,
-  err.model = NULL, activity = NULL, drift = NULL, coord = c("x", "y"),
-  Time.name = "time", time.scale = "hours", theta, fixPar,
-  method = "L-BFGS-B", control = NULL, constr = NULL, prior = NULL,
-  need.hess = TRUE, initialSANN = list(maxit = 200), attempts = 1,
-  predTime = NULL, fillCols = FALSE, coordLevel = NULL, ...)
+crawlWrap(obsData, timeStep = 1, ncores = 1, retryFits = 0,
+  retrySD = 1, retryParallel = FALSE, progressBar = FALSE,
+  mov.model = ~1, err.model = NULL, activity = NULL, drift = NULL,
+  coord = c("x", "y"), Time.name = "time", time.scale = "hours",
+  theta, fixPar, method = "L-BFGS-B", control = NULL, constr = NULL,
+  prior = NULL, need.hess = TRUE, initialSANN = list(maxit = 200),
+  attempts = 1, predTime = NULL, fillCols = FALSE,
+  coordLevel = NULL, ...)
 }
 \arguments{
 \item{obsData}{data.frame object containing fields for animal ID ('ID'), time of observation (identified by \code{Time.name}, must be numeric or POSIXct), 

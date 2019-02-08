@@ -8,35 +8,38 @@
 \usage{
 MIfitHMM(miData, ...)
 
-\method{MIfitHMM}{default}(miData, nSims, ncores = 1, poolEstimates = TRUE,
-  alpha = 0.95, progressBar = FALSE, nbStates, dist, Par0, beta0 = NULL,
-  delta0 = NULL, estAngleMean = NULL, circularAngleMean = NULL,
-  formula = ~1, formulaDelta = NULL, stationary = FALSE, mixtures = 1,
-  formulaPi = NULL, verbose = NULL, nlmPar = NULL, fit = TRUE,
-  useInitial = FALSE, DM = NULL, cons = NULL, userBounds = NULL,
-  workBounds = NULL, workcons = NULL, betaCons = NULL, betaRef = NULL,
+\method{MIfitHMM}{default}(miData, nSims, ncores = 1,
+  poolEstimates = TRUE, alpha = 0.95, progressBar = FALSE, nbStates,
+  dist, Par0, beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
+  circularAngleMean = NULL, formula = ~1, formulaDelta = NULL,
+  stationary = FALSE, mixtures = 1, formulaPi = NULL,
+  verbose = NULL, nlmPar = NULL, fit = TRUE, useInitial = FALSE,
+  DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL,
+  workcons = NULL, betaCons = NULL, betaRef = NULL,
   mvnCoords = NULL, stateNames = NULL, knownStates = NULL,
   fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm",
-  control = list(), prior = NULL, modelName = NULL, covNames = NULL,
-  spatialCovs = NULL, centers = NULL, centroids = NULL,
-  angleCovs = NULL, method = "IS", parIS = 1000, dfSim = Inf,
-  grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE,
-  force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
-  thetaSamp = NULL, ...)
+  control = list(), prior = NULL, modelName = NULL,
+  covNames = NULL, spatialCovs = NULL, centers = NULL,
+  centroids = NULL, angleCovs = NULL, method = "IS", parIS = 1000,
+  dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
+  quad.ask = FALSE, force.quad = TRUE, fullPost = TRUE,
+  dfPostIS = Inf, scalePostIS = 1, thetaSamp = NULL, ...)
 
 \method{MIfitHMM}{hierarchical}(miData, nSims, ncores = 1,
-  poolEstimates = TRUE, alpha = 0.95, progressBar = FALSE, hierStates,
-  hierDist, Par0, beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
-  circularAngleMean = NULL, hierFormula = NULL, formulaDelta = ~1,
-  mixtures = 1, formulaPi = NULL, nlmPar = NULL, fit = TRUE,
-  useInitial = FALSE, DM = NULL, userBounds = NULL, workBounds = NULL,
-  betaCons = NULL, mvnCoords = NULL, knownStates = NULL, fixPar = NULL,
-  retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(),
-  prior = NULL, modelName = NULL, covNames = NULL, spatialCovs = NULL,
-  centers = NULL, centroids = NULL, angleCovs = NULL, method = "IS",
-  parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
-  quad.ask = FALSE, force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf,
-  scalePostIS = 1, thetaSamp = NULL, ...)
+  poolEstimates = TRUE, alpha = 0.95, progressBar = FALSE,
+  hierStates, hierDist, Par0, beta0 = NULL, delta0 = NULL,
+  estAngleMean = NULL, circularAngleMean = NULL, hierFormula = NULL,
+  formulaDelta = ~1, mixtures = 1, formulaPi = NULL, nlmPar = NULL,
+  fit = TRUE, useInitial = FALSE, DM = NULL, userBounds = NULL,
+  workBounds = NULL, betaCons = NULL, mvnCoords = NULL,
+  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
+  optMethod = "nlm", control = list(), prior = NULL,
+  modelName = NULL, covNames = NULL, spatialCovs = NULL,
+  centers = NULL, centroids = NULL, angleCovs = NULL,
+  method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1,
+  crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
+  fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
+  thetaSamp = NULL, ...)
 }
 \arguments{
 \item{miData}{A \code{\link{crwData}} object, a \code{\link{crwHierData}} object, a \code{\link{crwSim}} object, a \code{\link{crwHierSim}} object, a list of \code{\link{momentuHMMData}} objects, or a list of \code{\link{momentuHierHMMData}} objects.}

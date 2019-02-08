@@ -5,8 +5,8 @@
 \alias{plot.crwHierData}
 \title{Plot \code{crwData}}
 \usage{
-\method{plot}{crwData}(x, animals = NULL, compact = FALSE, ask = TRUE,
-  plotEllipse = TRUE, crawlPlot = FALSE, ...)
+\method{plot}{crwData}(x, animals = NULL, compact = FALSE,
+  ask = TRUE, plotEllipse = TRUE, crawlPlot = FALSE, ...)
 }
 \arguments{
 \item{x}{An object \code{crwData} or \code{crwHierData} (as returned by \code{\link{crawlWrap}}).}

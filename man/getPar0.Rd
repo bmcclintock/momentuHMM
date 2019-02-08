@@ -15,7 +15,8 @@ getPar0(model, ...)
   formulaDelta = model$conditions$formulaDelta,
   mixtures = model$conditions$mixtures,
   formulaPi = model$conditions$formulaPi, DM = model$conditions$DM,
-  betaRef = model$conditions$betaRef, stateNames = model$stateNames, ...)
+  betaRef = model$conditions$betaRef, stateNames = model$stateNames,
+  ...)
 
 \method{getPar0}{momentuHierHMM}(model,
   hierStates = model$conditions$hierStates,
@@ -24,7 +25,8 @@ getPar0(model, ...)
   hierFormula = model$conditions$hierFormula,
   formulaDelta = model$conditions$formulaDelta,
   mixtures = model$conditions$mixtures,
-  formulaPi = model$conditions$formulaPi, DM = model$conditions$DM, ...)
+  formulaPi = model$conditions$formulaPi, DM = model$conditions$DM,
+  ...)
 }
 \arguments{
 \item{model}{A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})}

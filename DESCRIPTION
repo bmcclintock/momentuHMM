@@ -54,6 +54,7 @@ Suggests:
     knitr,
     splines, 
     splines2 (>= 0.2.8)
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.1
+Encoding: UTF-8
 NeedsCompilation: yes
 VignetteBuilder: knitr

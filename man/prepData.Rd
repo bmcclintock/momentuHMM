@@ -8,9 +8,9 @@
 \usage{
 prepData(data, ...)
 
-\method{prepData}{default}(data, type = c("UTM", "LL"), coordNames = c("x",
-  "y"), covNames = NULL, spatialCovs = NULL, centers = NULL,
-  centroids = NULL, angleCovs = NULL, ...)
+\method{prepData}{default}(data, type = c("UTM", "LL"),
+  coordNames = c("x", "y"), covNames = NULL, spatialCovs = NULL,
+  centers = NULL, centroids = NULL, angleCovs = NULL, ...)
 
 \method{prepData}{hierarchical}(data, type = c("UTM", "LL"),
   coordNames = c("x", "y"), covNames = NULL, spatialCovs = NULL,

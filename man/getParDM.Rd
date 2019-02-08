@@ -10,13 +10,13 @@ getParDM(data, ...)
 
 \method{getParDM}{default}(data = data.frame(), nbStates, dist, Par,
   zeroInflation = NULL, oneInflation = NULL, estAngleMean = NULL,
-  circularAngleMean = NULL, DM = NULL, cons = NULL, userBounds = NULL,
-  workBounds = NULL, workcons = NULL, ...)
+  circularAngleMean = NULL, DM = NULL, cons = NULL,
+  userBounds = NULL, workBounds = NULL, workcons = NULL, ...)
 
-\method{getParDM}{hierarchical}(data = data.frame(), hierStates, hierDist,
-  Par, zeroInflation = NULL, oneInflation = NULL, estAngleMean = NULL,
-  circularAngleMean = NULL, DM = NULL, userBounds = NULL,
-  workBounds = NULL, ...)
+\method{getParDM}{hierarchical}(data = data.frame(), hierStates,
+  hierDist, Par, zeroInflation = NULL, oneInflation = NULL,
+  estAngleMean = NULL, circularAngleMean = NULL, DM = NULL,
+  userBounds = NULL, workBounds = NULL, ...)
 }
 \arguments{
 \item{data}{Optional \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 
