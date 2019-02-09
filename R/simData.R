@@ -2,6 +2,9 @@
 #' Simulation tool
 #'
 #' Simulates data from a (multivariate) hidden Markov model. Movement data can be generated with or without observation error attributable to temporal irregularity or location measurement error.
+#' \code{simHierData} is very similar to \code{\link{simData}} except that instead of simply specifying the number of states (\code{nbStates}), distributions (\code{dist}), observations (\code{obsPerAnimal}), covariates (\code{nbCovs}), and a single t.p.m. formula (\code{formula}), the \code{hierStates} argument specifies the hierarchical nature of the states,
+#' the \code{hierDist} argument specifies the hierarchical nature of the data streams, the \code{obsPerLevel} argument specifies the number of observations for each level of the hierarchy, the \code{nbHierCovs} argument specifies the number of covariates for each level of the hierarchy, and the \code{hierFormula} argument specifies a t.p.m. formula for each level of the hierarchy.
+#' All of the hierarhcial arguments in \code{simHierData} are specified as \code{\link[data.tree]{Node}} objects from the \code{\link[data.tree]{data.tree}} package.
 #'
 #' @param nbAnimals Number of observed individuals to simulate.
 #' @param nbStates Number of behavioural states to simulate.
@@ -132,10 +135,10 @@
 #' error ellipse elements, then the corresponding component is fixed to this value for each location. Only the 'step' and 'angle' data streams are subject to location measurement error;
 #' any other data streams are observed without error.  Ignored unless a valid distribution for the 'step' data stream is specified.
 #' 
-#' @return If the simulated data are temporally regular (i.e., \code{lambda=NULL}) with no measurement error (i.e., \code{errorEllipse=NULL}), an object \code{\link{momentuHMMData}}, 
+#' @return If the simulated data are temporally regular (i.e., \code{lambda=NULL}) with no measurement error (i.e., \code{errorEllipse=NULL}), an object \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}), 
 #' i.e., a dataframe of:
 #' \item{ID}{The ID(s) of the observed animal(s)}
-#' \item{...}{Data streams as specified by \code{dist}}
+#' \item{...}{Data streams as specified by \code{dist} (or \code{hierDist})}
 #' \item{x}{Either easting or longitude (if data streams include valid non-negative distribution for 'step')}
 #' \item{y}{Either norting or latitude (if data streams include valid non-negative distribution for 'step')}
 #' \item{...}{Covariates (if any)}
@@ -168,7 +171,7 @@
 #' parameter constraints. 
 #' 
 #' \item Simulated data that are temporally regular (i.e., \code{lambda=NULL}) and without location measurement error (i.e., \code{errorEllipse=NULL}) are returned
-#' as a \code{\link{momentuHMMData}} object suitable for analysis using \code{\link{fitHMM}}.
+#' as a \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}) object suitable for analysis using \code{\link{fitHMM}}.
 #' 
 #' \item Simulated location data that are temporally-irregular (i.e., \code{lambda>0}) and/or with location measurement error (i.e., \code{errorEllipse!=NULL}) are returned
 #' as a data frame suitable for analysis using \code{\link{crawlWrap}}.

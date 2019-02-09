@@ -210,10 +210,10 @@ the numbers of obervations generated per level for each animal are uniformously 
 a list of length \code{nbAnimals} with each element providing the hierarchical data structure for the number of observations for each level of the hierarchy for each animal, where the 'obs' field can either be the number of observations (if single value) or the bounds of the number of observations (if vector of two values) for each individual.}
 }
 \value{
-If the simulated data are temporally regular (i.e., \code{lambda=NULL}) with no measurement error (i.e., \code{errorEllipse=NULL}), an object \code{\link{momentuHMMData}}, 
+If the simulated data are temporally regular (i.e., \code{lambda=NULL}) with no measurement error (i.e., \code{errorEllipse=NULL}), an object \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}), 
 i.e., a dataframe of:
 \item{ID}{The ID(s) of the observed animal(s)}
-\item{...}{Data streams as specified by \code{dist}}
+\item{...}{Data streams as specified by \code{dist} (or \code{hierDist})}
 \item{x}{Either easting or longitude (if data streams include valid non-negative distribution for 'step')}
 \item{y}{Either norting or latitude (if data streams include valid non-negative distribution for 'step')}
 \item{...}{Covariates (if any)}
@@ -236,6 +236,9 @@ If simulated location data are temporally irregular (i.e., \code{lambda>0}) and/
 }
 \description{
 Simulates data from a (multivariate) hidden Markov model. Movement data can be generated with or without observation error attributable to temporal irregularity or location measurement error.
+\code{simHierData} is very similar to \code{\link{simData}} except that instead of simply specifying the number of states (\code{nbStates}), distributions (\code{dist}), observations (\code{obsPerAnimal}), covariates (\code{nbCovs}), and a single t.p.m. formula (\code{formula}), the \code{hierStates} argument specifies the hierarchical nature of the states,
+the \code{hierDist} argument specifies the hierarchical nature of the data streams, the \code{obsPerLevel} argument specifies the number of observations for each level of the hierarchy, the \code{nbHierCovs} argument specifies the number of covariates for each level of the hierarchy, and the \code{hierFormula} argument specifies a t.p.m. formula for each level of the hierarchy.
+All of the hierarhcial arguments in \code{simHierData} are specified as \code{\link[data.tree]{Node}} objects from the \code{\link[data.tree]{data.tree}} package.
 }
 \details{
 \itemize{
@@ -249,7 +252,7 @@ The function \code{\link{getParDM}} is intended to help with obtaining initial v
 parameter constraints. 
 
 \item Simulated data that are temporally regular (i.e., \code{lambda=NULL}) and without location measurement error (i.e., \code{errorEllipse=NULL}) are returned
-as a \code{\link{momentuHMMData}} object suitable for analysis using \code{\link{fitHMM}}.
+as a \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}) object suitable for analysis using \code{\link{fitHMM}}.
 
 \item Simulated location data that are temporally-irregular (i.e., \code{lambda>0}) and/or with location measurement error (i.e., \code{errorEllipse!=NULL}) are returned
 as a data frame suitable for analysis using \code{\link{crawlWrap}}.
@@ -293,10 +296,6 @@ Rivest et al. (2016).
 as the number of observations suggested by 'nbAnimals' and 'obsPerAnimal' (or 'obsPerLevel' for \code{simHierData}), then the series of
 covariates is either shortened (removing last values - if too long) or extended (starting
 over from the first values - if too short).
-
-\item \code{simHierData} is very similar to \code{\link{simData}} except that instead of simply specifying the number of states (\code{nbStates}), distributions (\code{dist}), observations (\code{obsPerAnimal}), covariates (\code{nbCovs}), and a single t.p.m. formula (\code{formula}), the \code{hierStates} argument specifies the hierarchical nature of the states,
-the \code{hierDist} argument specifies the hierarchical nature of the data streams, the \code{obsPerLevel} argument specifies the number of observations for each level of the hierarchy, the \code{nbHierCovs} argument specifies the number of covariates for each level of the hierarchy, and the \code{hierFormula} argument specifies a t.p.m. formula for each level of the hierarchy.  All are specified as 
-\code{\link[data.tree]{Node}} objects from the \code{\link[data.tree]{data.tree}} package.
 
 \item For \code{simData}, when covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=NULL}), then \code{delta} is specified as a vector of length \code{nbStates} that 
 sums to 1.  When covariates are included in \code{formulaDelta}, then \code{delta} must be specified
