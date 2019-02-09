@@ -113,16 +113,18 @@ anglePar0 <- c(0.7,1.5) # natural scale conentration_1, concentration_2
 stepDM <- matrix(c(1,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1),4,4,
           dimnames=list(NULL,c("mean:(Intercept)","mean_2",
                                "sd_1:(Intercept)","sd_2:(Intercept)")))
-stepcons <- c(1,2,1,1) # coefficient for 'mean_2' constrained to be positive
+stepworkBounds <- matrix(c(-Inf,Inf),4,2,byrow=TRUE,
+                         dimnames=list(colnames(stepDM),c("lower","upper")))
+stepworkBounds["mean_2","lower"] <- 0 #coefficient for 'mean_2' constrained to be positive
 wPar0 <- getParDM(nbStates=2,dist=list(step=stepDist),
                       Par=list(step=stepPar0),
-                      DM=list(step=stepDM),cons=list(step=stepcons))
+                      DM=list(step=stepDM),workBounds=list(step=stepworkBounds))
 
 \dontrun{
 # Fit HMM using wPar0 as initial values for the step data stream
 mPar <- fitHMM(data,nbStates=2,dist=list(step=stepDist,angle=angleDist),
                Par0=list(step=wPar0$step,angle=anglePar0),
-               DM=list(step=stepDM),cons=list(step=stepcons))
+               DM=list(step=stepDM),workBounds=list(step=stepworkBounds))
 }
 
 # get working parameters for 'DM' using 'cov1' and 'cov2' covariates
