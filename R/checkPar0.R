@@ -250,6 +250,12 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
   p <- inputs$p
   DMinputs<-getDM(m$data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,par,inputs$cons,inputs$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,inputs$circularAngleMean)
   
+  for(i in names(fixPar)){
+    if(i %in% names(m$conditions$dist)){
+      par[[i]][!is.na(fixPar[[i]])] <- fixPar[[i]][!is.na(fixPar[[i]])]
+    }
+  }
+  
   if(is.null(m$conditions$recharge) & mixtures==1){
     if(is.null(beta0) & nbStates>1) {
       beta <- list(beta=m$mle$beta)
