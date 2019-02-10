@@ -153,6 +153,13 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   
   nbAnimals <- length(ids)
   progressBar <- ifelse(ncores>1 && nbAnimals>ncores && capabilities('tcltk'),progressBar,FALSE)
+  if(progressBar){
+    test_pb <- tryCatch(tcltk::tkProgressBar(),error=function(e) e)
+    if(inherits(test_pb,"error")){
+      warning("progressBar not possible: \n ",test_pb)
+      progressBar <- FALSE
+    }
+  }
   
   if(is.null(mov.model)){
     mov.model<-list()

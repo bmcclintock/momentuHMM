@@ -247,6 +247,13 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
   }
   
   progressBar <- ifelse(ncores>1 && capabilities('tcltk'),progressBar,FALSE)
+  if(progressBar){
+    test_pb <- tryCatch(tcltk::tkProgressBar(),error=function(e) e)
+    if(inherits(test_pb,"error")){
+      warning("progressBar not possible: \n ",test_pb)
+      progressBar <- FALSE
+    }
+  }
   
   if(is.crwData(miData)){
     
@@ -512,6 +519,13 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
   }
   
   progressBar <- ifelse(ncores>1 && capabilities('tcltk'),progressBar,FALSE)
+  if(progressBar){
+    test_pb <- tryCatch(tcltk::tkProgressBar(),error=function(e) e)
+    if(inherits(test_pb,"error")){
+      warning("progressBar not possible: \n ",test_pb)
+      progressBar <- FALSE
+    }
+  }
   
   if(is.crwHierData(miData)){
     
