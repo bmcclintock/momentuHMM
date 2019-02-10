@@ -13,7 +13,7 @@ crwHierSim <- function(m)
   if(is.null(m$miData) | is.null(m$crwSimulator))
     stop("Can't construct crwHierSim object: fields are missing")
   
-  stopifnot(any(unlist(lapply(m$miData,is.momentuHMMData))))
+  stopifnot(any(unlist(lapply(m$miData,is.momentuHierHMMData))))
   
   stopifnot(any(unlist(lapply(m$crwSimulator,function(x) inherits(x,"crwSimulator")))))
   
