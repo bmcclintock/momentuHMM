@@ -592,12 +592,12 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
       
       ipData <- ipData[,names(tmpData)]
       
-      for(jj in 1:nrow(ipData)){
-          tmpInd <- which(tmpData$time==ipData$time[jj] & tmpData$level==coordLevel)
-          tmpData[tmpInd,is.na(tmpData[tmpInd,])] <- ipData[jj,is.na(tmpData[tmpInd,])]
-      }
-      #tmpInd <- which(tmpData$time %in% ipData$time & tmpData$level==coordLevel)
-      #tmpData[tmpInd,][is.na(tmpData[tmpInd,])] <- ipData[ipData$time %in% tmpData$time,][is.na(tmpData[tmpInd,])]
+      #for(jj in 1:nrow(ipData)){
+      #    tmpInd <- which(tmpData$time==ipData$time[jj] & tmpData$level==coordLevel)
+      #    tmpData[tmpInd,is.na(tmpData[tmpInd,])] <- ipData[jj,is.na(tmpData[tmpInd,])]
+      #}
+      tmpInd <- which(tmpData$time %in% ipData$time & tmpData$level==coordLevel)
+      tmpData[tmpInd,] <- Map(function(x,y) {x[is.na(x)] <- y[is.na(x)]; x}, tmpData[tmpInd,], ipData[ipData$time %in% tmpData$time,])
       
       predData<-rbind(predData,tmpData)
     }
