@@ -102,7 +102,7 @@ object, then \code{MIfitHMM} returns a list containing a \code{\link{momentuHMMD
 
 \item{useInitial}{Logical indicating whether or not to use parameter estimates for the first model fit as initial values for all subsequent model fits.
 If \code{ncores>1} then the first model is fit on a single core and then used as the initial values for all subsequent model fits on each core 
-(in this case, the progress of the initial model fit can be followed using the \code{verbose} argument). Default: FALSE.}
+(in this case, the progress of the initial model fit can be followed using the \code{verbose} argument). Default: FALSE. Ignored if \code{nSims<2}.}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream. See \code{\link{fitHMM}}.}

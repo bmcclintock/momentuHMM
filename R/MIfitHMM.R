@@ -63,7 +63,7 @@ MIfitHMM <- function(miData, ...) {
 #' object, then \code{MIfitHMM} returns a list containing a \code{\link{momentuHMMData}} object (if \code{nSims=1}) or, if \code{nSims>1}, a \code{\link{crwSim}} object.
 #' @param useInitial Logical indicating whether or not to use parameter estimates for the first model fit as initial values for all subsequent model fits.  
 #' If \code{ncores>1} then the first model is fit on a single core and then used as the initial values for all subsequent model fits on each core 
-#' (in this case, the progress of the initial model fit can be followed using the \code{verbose} argument). Default: FALSE.
+#' (in this case, the progress of the initial model fit can be followed using the \code{verbose} argument). Default: FALSE. Ignored if \code{nSims<2}.
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 #' stream. See \code{\link{fitHMM}}.
 #' @param cons Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
@@ -419,6 +419,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
   # fit HMM(s)
   fits <- list()
   parallelStart <- 1
+  useInitial <- ifelse(nSims<2,FALSE,useInitial)
   if(useInitial){
     parallelStart <- 2
     if(nSims>1){
@@ -440,7 +441,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     delta0[parallelStart:nSims] <- list(tmpPar$delta)
   }
   
-  if(nSims>ncores && progressBar){
+  if((nSims-parallelStart+1)>ncores && progressBar){
     cl <- makeCluster(ncores)
     registerDoParallel(cl)
     clusterExport(cl, c("nSims"), envir = environment())
