@@ -72,7 +72,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   ##############################
   if(!is.null(model)) {
     
-    if(!inherits(model,"momentuHierHMM")) stop("model must be a 'momentuHierHMM' object")
+    if(!inherits(model,"momentuHierHMM") & !inherits(model,"hierarchical")) stop("model must be a 'momentuHierHMM' and/or 'hierarchical' object")
     
     if(is.miHMM(model)){
       model <- model$miSum

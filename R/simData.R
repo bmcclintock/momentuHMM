@@ -376,11 +376,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   ##############################
   if(!is.null(model)) {
     
-    if(inherits(model,"momentuHierHMM")) stop("model can not be a 'momentuHierHMM' object; use simHierData instead")
-    
     if(is.miHMM(model)){
       model <- model$miSum
-    }
+    } 
+    if(inherits(model,"momentuHierHMM") | inherits(model,"hierarchical")) stop("model can not be a 'momentuHierHMM' or 'hierarchical' object; use simHierData instead")
     
     model <- delta_bc(model)
     

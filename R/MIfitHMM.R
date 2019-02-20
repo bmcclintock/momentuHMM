@@ -767,9 +767,12 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
   }
   
   fits <- HMMfits(fits)
+  class(fits) <- append(class(fits),"hierarchical")
   
-  if(poolEstimates & nSims>1) out <- miHMM(list(miSum=MIpool(fits,alpha=alpha,ncores=ncores),HMMfits=fits))
-  else out <- fits
+  if(poolEstimates & nSims>1) {
+    out <- miHMM(list(miSum=MIpool(fits,alpha=alpha,ncores=ncores),HMMfits=fits))
+    class(out) <- append(class(out),"hierarchical")
+  } else out <- fits
   
   out
 }

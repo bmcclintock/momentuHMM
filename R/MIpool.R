@@ -611,7 +611,9 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   mh$Par <- Par
   mh$MIcombine <- miCombo
   
-  return(miSum(mh))
+  mh <- miSum(mh)
+  if(is.momentuHierHMM(im[[1]])) class(mh) <- append(class(mh),"hierarchical")
+  return(mh)
 }
 
 mi_parm_list<-function(est,se,lower,upper,m){
