@@ -523,9 +523,9 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
         }
         if(j=="step") {
           genData[i2-i1] <- spDistsN1(pts = matrix(c(lx[i2-1],ly[i2-1]),ncol=2),pt = c(lx[i2],ly[i2]),longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
-        } 
+        }
+        dataHMM[which(ID==unique(ID)[zoo] & dataHMM$level==coordLevel),j] <- genData
       } 
-      dataHMM[which(ID==unique(ID)[zoo] & dataHMM$level==coordLevel),j] <- genData
     }
   }
   
