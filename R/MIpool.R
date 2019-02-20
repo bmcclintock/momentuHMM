@@ -118,25 +118,27 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
   tmpVar1 <- which(unlist(lapply(betaCoeff,function(x) any(!is.finite(x)))))
   if(length(tmpVar1)){
-    warning("working parameter estimates are not finite for HMM fits ",paste0(goodIndex[tmpVar1],collapse=", ")," and will not be included in pooling")
-    im[tmpVar1] <- NULL
-    nsims <- length(im)
-    if(nsims<2) stop("Pooling requires at least 2 valid HMM fits")
-    m <- im[[1]]
-    betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
-    betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
-    goodIndex <- goodIndex[-tmpVar1]
+    warning("working parameter estimates are not finite for HMM fits ",paste0(goodIndex[tmpVar1],collapse=", "))#," and will not be included in pooling")
+    betaCoeff[tmpVar1] <- lapply(betaCoeff[tmpVar1],function(x) {x[which(!is.finite(x))]<-NA; return(x)})
+    #im[tmpVar1] <- NULL
+    #nsims <- length(im)
+    #if(nsims<2) stop("Pooling requires at least 2 valid HMM fits")
+    #m <- im[[1]]
+    #betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
+    #betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
+    #goodIndex <- goodIndex[-tmpVar1]
   }
   tmpVar2 <- unique(c(which(unlist(lapply(betaVar,function(x) any(!is.finite(x))))),which(unlist(lapply(betaVar,function(x) any(!is.finite(sqrt(diag(x)))))))))
   if(length(tmpVar2)){
-    warning("working parameter standard errors are not finite for HMM fits ",paste0(goodIndex[tmpVar2],collapse=", ")," and will not be included in pooling")
-    im[tmpVar2] <- NULL
-    nsims <- length(im)
-    if(nsims<2) stop("Pooling requires at least 2 valid HMM fits")
-    m <- im[[1]]
-    betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
-    betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
-    goodIndex <- goodIndex[-tmpVar2]
+    warning("working parameter standard errors are not finite for HMM fits ",paste0(goodIndex[tmpVar2],collapse=", "))#," and will not be included in pooling")
+    betaVar[tmpVar2] <- suppressWarnings(lapply(betaVar[tmpVar2],function(x) {x[which(!is.finite(x))]<-NA; diag(x)[which(!is.finite(sqrt(diag(x))))]<-NA; return(x)}))
+    #im[tmpVar2] <- NULL
+    #nsims <- length(im)
+    #if(nsims<2) stop("Pooling requires at least 2 valid HMM fits")
+    #m <- im[[1]]
+    #betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
+    #betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
+    #goodIndex <- goodIndex[-tmpVar2]
   }
   
   data <- m$data
