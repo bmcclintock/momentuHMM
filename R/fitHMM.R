@@ -520,9 +520,8 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   
   if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
   if(!is.list(Par0) | is.null(names(Par0))) stop("'Par0' must be a named list")
-  distnames<-names(dist)
+  distnames<-tmpdistnames<-names(dist)
   if(any(is.na(match(distnames,names(data))))){
-    tmpdistnames <- distnames
     for(i in which(is.na(match(distnames,names(data))))){
       if(dist[[distnames[i]]] %in% mvndists){
         if(dist[[distnames[i]]] %in% c("mvnorm2","rw_mvnorm2")){
@@ -534,6 +533,10 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     }
     if(any(is.na(match(tmpdistnames,names(data))))) stop(paste0(tmpdistnames[is.na(match(tmpdistnames,names(data)))],collapse=", ")," not found in data")
   } 
+  for(i in tmpdistnames){
+    if(all(is.na(data[[i]]))) stop("data$",i," consists entirely of NAs")
+  }
+  
   if(!all(distnames %in% names(Par0))) stop(paste0(distnames[which(!(distnames %in% names(Par0)))],collapse=", ")," missing in 'Par0'")
   Par0 <- Par0[distnames]
   
