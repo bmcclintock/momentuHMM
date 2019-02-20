@@ -252,7 +252,10 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     if(inherits(test_pb,"error")){
       warning("progressBar not possible: \n ",test_pb)
       progressBar <- FALSE
+    } else {
+      close(test_pb)
     }
+    rm(test_pb)
   }
   
   if(is.crwData(miData)){
@@ -422,9 +425,9 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
   useInitial <- ifelse(nSims<2,FALSE,useInitial)
   if(useInitial){
     parallelStart <- 2
-    if(nSims>1){
-      cat("\rImputation ",1,"... ",sep="")
-    }
+
+    cat("\rImputation ",1,"... ",sep="")
+    
     fits[[1]]<-suppressMessages(fitHMM(miData[[1]],nbStates, dist, Par0[[1]], beta0[[1]], delta0[[1]],
                                     estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi, verbose,
                                     nlmPar, fit, DM, cons,
@@ -432,9 +435,8 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     if(retryFits>=1){
       cat("\n")
     }
-    if(nSims>1){
-      cat("DONE\nFitting remaining imputations... \n")
-    }
+    cat("DONE\nFitting remaining imputations... \n")
+
     tmpPar <- getPar0(fits[[1]])
     Par0[parallelStart:nSims] <- list(tmpPar$Par)
     beta0[parallelStart:nSims] <- list(tmpPar$beta)
@@ -525,7 +527,10 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     if(inherits(test_pb,"error")){
       warning("progressBar not possible: \n ",test_pb)
       progressBar <- FALSE
+    } else {
+      close(test_pb)
     }
+    rm(test_pb)
   }
   
   if(is.crwHierData(miData)){
@@ -708,11 +713,12 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
   # fit HMM(s)
   fits <- list()
   parallelStart <- 1
+  useInitial <- ifelse(nSims<2,FALSE,useInitial)
   if(useInitial){
     parallelStart <- 2
-    if(nSims>1){
-      cat("\rImputation ",1,"... ",sep="")
-    }
+
+    cat("\rImputation ",1,"... ",sep="")
+
     fits[[1]]<-suppressMessages(fitHMM(miData[[1]], hierStates, hierDist, Par0[[1]], beta0[[1]], delta0[[1]],
                                            estAngleMean, circularAngleMean, hierFormula, formulaDelta, mixtures, formulaPi, 
                                            nlmPar, fit, DM,
@@ -720,9 +726,8 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     if(retryFits>=1){
       cat("\n")
     }
-    if(nSims>1){
-      cat("DONE\nFitting remaining imputations... \n")
-    }
+    cat("DONE\nFitting remaining imputations... \n")
+    
     tmpPar <- getPar0(fits[[1]])
     Par0[parallelStart:nSims] <- list(tmpPar$Par)
     beta0[parallelStart:nSims] <- list(tmpPar$beta)
