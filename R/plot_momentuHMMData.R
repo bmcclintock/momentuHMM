@@ -163,7 +163,7 @@ plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compa
     }
     if(all(c("step","angle") %in% dataNames)) dataNames<-dataNames[-which(dataNames %in% c("step","angle"))]
     
-  } else if(!is.null(data$step) & (is.null(data$angle) | !is.null(data[[coordNames[2]]]))) { # only step length is provided
+  } else if(!is.null(data$step) & !is.null(data[[coordNames[1]]]) & (is.null(data$angle) | !is.null(data[[coordNames[2]]]))) { # only step length is provided
     if(all(data[[coordNames[2]]]==0)){
       for(zoo in animalsInd) {
           ################
