@@ -1,3 +1,29 @@
+
+#' Convert hierarchical HMM structure to a conventional HMM
+#' 
+#' @param data Optional \code{\link{momentuHierHMMData}} object or a data frame containing the data streams and covariates. 
+#' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See \code{\link{fitHMM}}. 
+#' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See \code{\link{fitHMM}}. 
+#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). See \code{\link{fitHMM}}. Default: \code{NULL} (only hierarchical-level effects, with no covariate effects). 
+#' @param formulaDelta Regression formula for the initial distribution. See \code{\link{fitHMM}}. Default: \code{~1} (no covariate effects and \code{fixPar$delta} is specified on the working scale). 
+#' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). See \code{\link{fitHMM}}. Default: \code{mixtures=1}.  
+#' @param workBounds An optional named list of 2-column matrices specifying bounds on the working scale. See \code{\link{fitHMM}}.
+#' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See \code{\link{fitHMM}}. Default: NULL (based on the hierarchy, certain t.p.m. parameters are constrained to be equal)
+#' @param fixPar An optional list of vectors indicating parameters which are assumed known prior to fitting the model. See \code{\link{fitHMM}}. Default: NULL 
+#' (based on the hierarchy, certain t.p.m. and delta parameters are fixed to be effectively zero). 
+#' @param checkData logical indicating whether or not to check the suitability of \code{data} for the specified hierarchy. Ignored unless \code{data} is provided. Default: TRUE.
+#' 
+#' @return A list of arguments needed for specifying a hierarchical HMM as a conventional HMM in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}, including:
+#' \item{nbStates}{See \code{\link{fitHMM}}.}
+#' \item{dist}{See \code{\link{fitHMM}}.}
+#' \item{formula}{See \code{\link{fitHMM}}.}
+#' \item{betaRef}{See \code{\link{fitHMM}}.}
+#' \item{betaCons}{See \code{\link{fitHMM}}.}
+#' \item{fixPar}{See \code{\link{fitHMM}}.}
+#' \item{workBounds}{See \code{\link{fitHMM}}.}
+#' \item{stateNames}{See \code{\link{fitHMM}}.}
+#' 
+#' @export
 #' @importFrom data.tree Node Get Do ToDataFrameTypeCol Traverse Aggregate AreNamesUnique isRoot isLeaf Clone
 #' @importFrom stats terms
 formatHierHMM <- function(data=NULL,hierStates,hierDist,

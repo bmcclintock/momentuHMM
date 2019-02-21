@@ -981,7 +981,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
 #' @method fitHMM momentuHierHMMData
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See details.
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See details.
-#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (no covariate effects).
+#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (only hierarchical-level effects, with no covariate effects).
 #' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy. See details.
 #' 
 #' @details

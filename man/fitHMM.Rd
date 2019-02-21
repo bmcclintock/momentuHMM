@@ -191,7 +191,7 @@ Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \co
 
 \item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See details.}
 
-\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (no covariate effects).
+\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (only hierarchical-level effects, with no covariate effects).
 Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy. See details.}
 }
 \value{
