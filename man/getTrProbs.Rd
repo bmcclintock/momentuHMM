@@ -17,12 +17,12 @@ getTrProbs(data, ...)
   ...)
 }
 \arguments{
-\item{data}{\code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 
+\item{data}{\code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 
 
 If a data frame is provided, then either \code{nbStates} must be specified (for a regular HMM) or \code{hierStates} and \code{hierDist}
 must be specified (for a hierarchical HMM).}
 
-\item{...}{further arguments passed to or from other methods}
+\item{...}{further arguments passed to or from other methods; ignored if \code{data} is a \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object}
 
 \item{nbStates}{Number of states}
 
@@ -55,6 +55,9 @@ parameters.
 }
 \examples{
 m <- example$m
+trProbs <- getTrProbs(m)
+
+# equivalent
 trProbs <- getTrProbs(m$data,nbStates=2,beta=m$mle$beta,formula=m$conditions$formula)
 
 }

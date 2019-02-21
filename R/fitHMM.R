@@ -1016,5 +1016,6 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
   fit$conditions$hierStates <- hierStates
   fit$conditions$hierDist <- hierDist
   fit$conditions$hierFormula <- hierFormula
+  class(fit$data) <- class(data)
   return(momentuHierHMM(fit))
 }

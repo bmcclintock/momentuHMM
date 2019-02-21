@@ -3,12 +3,12 @@
 #' Computation of the transition probability matrix for each time step as a function of the covariates and the regression
 #' parameters. 
 #' 
-#' @param data \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 
+#' @param data \code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 
 #' 
 #' If a data frame is provided, then either \code{nbStates} must be specified (for a regular HMM) or \code{hierStates} and \code{hierDist}
 #' must be specified (for a hierarchical HMM).
 #' 
-#' @param ... further arguments passed to or from other methods
+#' @param ... further arguments passed to or from other methods; ignored if \code{data} is a \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object
 #' @export
 getTrProbs <- function(data, ...){
  UseMethod("getTrProbs")
@@ -30,53 +30,68 @@ getTrProbs <- function(data, ...){
 #' 
 #' @examples
 #' m <- example$m
+#' trProbs <- getTrProbs(m)
+#' 
+#' # equivalent
 #' trProbs <- getTrProbs(m$data,nbStates=2,beta=m$mle$beta,formula=m$conditions$formula)
 #' 
 #' @export
 getTrProbs.default <- function(data,nbStates,beta,workBoundsBeta=NULL,formula=~1,mixtures=1,betaRef=NULL,stateNames=NULL, ...)
 {  
-  hierArgs <- list(...)
-  argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist","hierFormula"))]
   
-  ## check that the data is a momentuHMMData object or valid data frame
-  if(!is.momentuHMMData(data)){ 
-    if(missing(nbStates)){
-      if(all(c("hierStates","hierDist") %in% argNames)){
-        return(getTrProbs.hierarchical(data,hierStates=hierArgs$hierStates,beta,workBoundsBeta,hierFormula=hierArgs$hierFormula,mixtures,hierArgs$hierDist))
-      }
-    }
-    if(!is.data.frame(data)) stop('data must be a data.frame')
-  }
-  if(!missing(nbStates)){
-    if(any(c("hierStates","hierDist","hierFormula") %in% argNames))
-      stop("Either nbStates must be specified (for a regular HMM) or hierStates and hierDist must be specified (for a hierarchical HMM)")
-  }
-  
-  if(!is.null(betaRef)){
-    if(length(betaRef)!=nbStates) stop("betaRef must be a vector of length ",nbStates)
-    if(!is.numeric(betaRef)) stop("betaRef must be a numeric vector")
-    if(min(betaRef)<1 | max(betaRef)>nbStates) stop("betaRef elements must be between 1 and ",nbStates)
-  } else {
-    betaRef <- 1:nbStates
-  }
-  betaRef <- as.integer(betaRef)
-  
-  if(is.null(stateNames)){
-    for(i in 1:nbStates)
-      stateNames[i] <- paste("state",i)
-  } else if(length(stateNames)!=nbStates){
-    stop("stateNames must have length ",nbStates)
-  }
-  
-  if(!is.formula(formula))
-    stop("Check the argument 'formula'.")
-  
-  covs <- model.matrix(formula,data)
-  if(!is.matrix(beta)) stop("'beta' must be a matrix")
-  if(nrow(beta)!=(ncol(covs)*mixtures) | ncol(beta)!=(nbStates*(nbStates-1))) stop('beta must be a matrix with',ncol(covs)*mixtures,"rows and",nbStates*(nbStates-1),"columns")
+  if(!is.momentuHMM(data)){
+    hierArgs <- list(...)
+    argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist","hierFormula"))]
     
-  if(!is.null(workBoundsBeta)){
-    if(!is.matrix(workBoundsBeta) || (nrow(workBoundsBeta)!=length(beta) | ncol(workBoundsBeta)!=2)) stop('workBoundsBeta must be a matrix with',length(beta),"rows and 2 columns")
+    ## check that the data is a momentuHMMData object or valid data frame
+    if(!is.momentuHMMData(data)){ 
+      if(missing(nbStates)){
+        if(all(c("hierStates","hierDist") %in% argNames)){
+          return(getTrProbs.hierarchical(data,hierStates=hierArgs$hierStates,beta,workBoundsBeta,hierFormula=hierArgs$hierFormula,mixtures,hierArgs$hierDist))
+        }
+      }
+      if(!is.data.frame(data)) stop('data must be a data.frame')
+    }
+    if(!missing(nbStates)){
+      if(any(c("hierStates","hierDist","hierFormula") %in% argNames))
+        stop("Either nbStates must be specified (for a regular HMM) or hierStates and hierDist must be specified (for a hierarchical HMM)")
+    }
+    
+    if(!is.null(betaRef)){
+      if(length(betaRef)!=nbStates) stop("betaRef must be a vector of length ",nbStates)
+      if(!is.numeric(betaRef)) stop("betaRef must be a numeric vector")
+      if(min(betaRef)<1 | max(betaRef)>nbStates) stop("betaRef elements must be between 1 and ",nbStates)
+    } else {
+      betaRef <- 1:nbStates
+    }
+    betaRef <- as.integer(betaRef)
+    
+    if(is.null(stateNames)){
+      for(i in 1:nbStates)
+        stateNames[i] <- paste("state",i)
+    } else if(length(stateNames)!=nbStates){
+      stop("stateNames must have length ",nbStates)
+    }
+    
+    if(!is.formula(formula))
+      stop("Check the argument 'formula'.")
+    
+    covs <- model.matrix(formula,data)
+    if(!is.matrix(beta)) stop("'beta' must be a matrix")
+    if(nrow(beta)!=(ncol(covs)*mixtures) | ncol(beta)!=(nbStates*(nbStates-1))) stop('beta must be a matrix with',ncol(covs)*mixtures,"rows and",nbStates*(nbStates-1),"columns")
+      
+    if(!is.null(workBoundsBeta)){
+      if(!is.matrix(workBoundsBeta) || (nrow(workBoundsBeta)!=length(beta) | ncol(workBoundsBeta)!=2)) stop('workBoundsBeta must be a matrix with',length(beta),"rows and 2 columns")
+    }
+  } else {
+    stateNames <- data$stateNames
+    nbStates <- length(stateNames)
+    beta <- data$mle$beta
+    workBoundsBeta <- data$conditions$workBounds$beta
+    formula <- data$conditions$formula
+    mixtures <- data$conditions$mixtures
+    betaRef <- data$conditions$betaRef
+    covs <- model.matrix(formula,data$data)
   }
   wnbeta <- w2wn(beta,workBoundsBeta)
   trMat <- list()
@@ -103,6 +118,18 @@ getTrProbs.default <- function(data,nbStates,beta,workBoundsBeta=NULL,formula=~1
 #' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). See \code{\link{fitHMM}}.
 #' @export
 getTrProbs.hierarchical <- function(data,hierStates,beta,workBoundsBeta=NULL,hierFormula=NULL,mixtures=1,hierDist,...){
+  
+  if(is.momentuHierHMM(data)){
+    hierStates <- data$conditions$hierStates
+    beta <- data$mle$beta
+    workBoundsBeta <- data$conditions$workBounds$beta
+    hierFormula <- data$conditions$hierFormula
+    mixtures <- data$conditions$mixtures
+    hierDist <- data$conditions$hierDist
+    data <- data$data
+  }
+  
   inputHierHMM <- formatHierHMM(data,hierStates=hierStates,hierDist=hierDist,hierFormula=hierFormula,mixtures=mixtures,workBounds=list(beta=workBoundsBeta),fixPar=list(delta=NA),checkData=FALSE)
+  
   return(getTrProbs.default(data,inputHierHMM$nbStates,beta,inputHierHMM$workBounds$beta,inputHierHMM$formula,mixtures,inputHierHMM$betaRef,inputHierHMM$stateNames))
 }
