@@ -88,7 +88,7 @@ getPar<-function(m){
     if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
       delta <- unname(m$mle$delta[seq(1,nrow(m$mle$delta),nrow(m$mle$delta)/m$conditions$mixtures),])
     } else {
-      delta <- unname(matrix(m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+length(m$CIbeta$pi)+1:length(m$CIbeta$delta$est)],nrow(m$CIbeta$delta$est),ncol(m$CIbeta$delta$est)))#unname(nw2w(m$CIbeta$delta$est,m$conditions$workBounds$delta))
+      delta <- unname(matrix(m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+length(m$CIbeta$pi$est)+1:length(m$CIbeta$delta$est)],nrow(m$CIbeta$delta$est),ncol(m$CIbeta$delta$est)))#unname(nw2w(m$CIbeta$delta$est,m$conditions$workBounds$delta))
     }
     if(!is.null(m$conditions$recharge)){
       beta <- list(beta=beta,g0=m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+length(m$CIbeta$pi$est)+length(m$CIbeta$delta$est)+1:length(m$mle$g0)],theta=m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+length(m$CIbeta$pi$est)+length(m$CIbeta$delta$est)+length(m$mle$g0)+1:length(m$mle$theta)])
