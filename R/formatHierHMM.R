@@ -54,6 +54,7 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
   if(!("dist" %in% hierDist$fieldsAll)) stop("'hierDist' must include a 'dist' field")
   if(!data.tree::AreNamesUnique(hierDist)) stop("node names in 'hierDist' must be unique")
   if(hierDist$height!=3) stop("'hierDist' hierarchy must contain 2 levels")
+  if(!all(hierDist$Get("name",filterFun=function(x) x$level==2)==paste0("level",1:hierDist$count))) stop("hierDist level names from top to bottom should be ",paste0("'level",paste0(1:hierDist$count,"'"),collapse=", ")," (not ",paste0(paste0("'",hierDist$Get("name",filterFun=function(x) x$level==2),"'"),collapse=", "),")")
   
   if(checkData){
     if(is.null(data$level)) stop('data$level must be specified')
