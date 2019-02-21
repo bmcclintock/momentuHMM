@@ -214,49 +214,51 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
             }
           }
           # constrain across transitions to reference states
-          levelStates <- unlist(lapply(tt[(1:length(tt))[-h]],function(x) x$Get("state",filterFun = data.tree::isLeaf)))
-          acrossConstr[[h]] <- match(paste0(rep(levelStates,each=length(stateInd[-1]))," -> ",stateInd[-1]),colnames(fixPar$beta),nomatch=0)
-          acrossRef <- match(paste0(levelStates," -> ",stateInd[1]),colnames(fixPar$beta),nomatch=0)
-          for(mix in 1:mixtures){
-            if(conInd){
-              if(any(acrossConstr[[h]])){
-                betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossConstr[[h]]])
-                for(lcovs in levelCovs){
-                  betaCons[paste0(lcovs,"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0(lcovs,"_mix",mix),acrossConstr[[h]]])
+          levelStates <- lapply(tt[(1:length(tt))[-h]],function(x) x$Get("state",filterFun = data.tree::isLeaf))
+          for(ll in 1:length(levelStates)){
+            acrossConstr[[h]] <- match(paste0(rep(levelStates[[ll]],each=length(stateInd[-1]))," -> ",stateInd[-1]),colnames(fixPar$beta),nomatch=0)
+            acrossRef <- match(paste0(levelStates[[ll]]," -> ",stateInd[1]),colnames(fixPar$beta),nomatch=0)
+            for(mix in 1:mixtures){
+              if(conInd){
+                if(any(acrossConstr[[h]])){
+                  betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossConstr[[h]]])
+                  for(lcovs in levelCovs){
+                    betaCons[paste0(lcovs,"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0(lcovs,"_mix",mix),acrossConstr[[h]]])
+                  }
+                  betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossConstr[[h]]])
+                  for(ocovs in otherCovs){
+                    betaCons[paste0(ocovs,"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0(ocovs,"_mix",mix),acrossConstr[[h]]])
+                  }
                 }
-                betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossConstr[[h]]])
-                for(ocovs in otherCovs){
-                  betaCons[paste0(ocovs,"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0(ocovs,"_mix",mix),acrossConstr[[h]]])
-                }
-              }
-              if(any(acrossRef)){
-                betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossRef] <- min(betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossRef])
-                for(lcovs in levelCovs){
-                  betaCons[paste0(lcovs,"_mix",mix),acrossRef] <- min(betaCons[paste0(lcovs,"_mix",mix),acrossRef])
-                }
-                betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossRef] <- min(betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossRef])
-                for(ocovs in otherCovs){
-                  betaCons[paste0(ocovs,"_mix",mix),acrossRef] <- min(betaCons[paste0(ocovs,"_mix",mix),acrossRef])
-                }
-              }
-            }
-            if(betaInd){
-              if(any(acrossConstr[[h]])){
-                fixPar$beta[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossConstr[[h]]] <- -1.e+10
-                for(lcovs in levelCovs){
-                  fixPar$beta[paste0(lcovs,"_mix",mix),acrossConstr[[h]]] <- 0
-                }
-                fixPar$beta[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossConstr[[h]]] <- -1.e+10
-                for(ocovs in otherCovs){
-                  fixPar$beta[paste0(ocovs,"_mix",mix),acrossConstr[[h]]] <- 0
+                if(any(acrossRef)){
+                  betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossRef] <- min(betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossRef])
+                  for(lcovs in levelCovs){
+                    betaCons[paste0(lcovs,"_mix",mix),acrossRef] <- min(betaCons[paste0(lcovs,"_mix",mix),acrossRef])
+                  }
+                  betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossRef] <- min(betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossRef])
+                  for(ocovs in otherCovs){
+                    betaCons[paste0(ocovs,"_mix",mix),acrossRef] <- min(betaCons[paste0(ocovs,"_mix",mix),acrossRef])
+                  }
                 }
               }
-              if(any(acrossRef)){
-                fixPar$beta[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossRef] <- -1.e+10
-                for(ocovs in otherCovs){
-                  fixPar$beta[paste0(ocovs,"_mix",mix),acrossRef] <- 0
+              if(betaInd){
+                if(any(acrossConstr[[h]])){
+                  fixPar$beta[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossConstr[[h]]] <- -1.e+10
+                  for(lcovs in levelCovs){
+                    fixPar$beta[paste0(lcovs,"_mix",mix),acrossConstr[[h]]] <- 0
+                  }
+                  fixPar$beta[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossConstr[[h]]] <- -1.e+10
+                  for(ocovs in otherCovs){
+                    fixPar$beta[paste0(ocovs,"_mix",mix),acrossConstr[[h]]] <- 0
+                  }
                 }
-              }          
+                if(any(acrossRef)){
+                  fixPar$beta[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossRef] <- -1.e+10
+                  for(ocovs in otherCovs){
+                    fixPar$beta[paste0(ocovs,"_mix",mix),acrossRef] <- 0
+                  }
+                }          
+              }
             }
           }
         }
