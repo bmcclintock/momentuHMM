@@ -35,7 +35,6 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
   
   if(!inherits(hierStates,"Node")) stop("'hierStates' must be of class Node; see ?data.tree::Node")
   if(!("state" %in% hierStates$fieldsAll)) stop("'hierStates' must include a 'state' field")
-  nbLevels <- 2*hierStates$height - 3 #hierStates$height #ncol(data.tree::ToDataFrameTypeCol(hierStates))
   
   hdf <- data.tree::ToDataFrameTypeCol(hierStates, "state")
   if(any(is.na(hdf$state))) stop("'state' field in 'hierStates' cannot contain NAs")
@@ -48,13 +47,16 @@ formatHierHMM <- function(data=NULL,hierStates,hierDist,
   
   stateNames <- unname(hierStates$Get("name",filterFun=data.tree::isLeaf)[hdf$state])
   
-  if(hierStates$height<=2) stop("'hierStates' must contain >2 levels")
+  if(hierStates$height<=2) stop("'hierStates' must contain at least 2 levels below root (i.e., hierStates$height must be > 2)")
+  
+  if(any(unlist(lapply(Traverse(hierStates,traversal="level",filterFun=function(x) !isLeaf(x)),function(x) x$count))<2)) stop("each node in 'hierStates' must have at least 2 children")
   
   if(!inherits(hierDist,"Node")) stop("'hierDist' must be of class Node; see ?data.tree::Node")
   if(!("dist" %in% hierDist$fieldsAll)) stop("'hierDist' must include a 'dist' field")
   if(!data.tree::AreNamesUnique(hierDist)) stop("node names in 'hierDist' must be unique")
-  if(hierDist$height!=3) stop("'hierDist' hierarchy must contain 2 levels")
+  if(hierDist$height!=3) stop("'hierDist' hierarchy must contain 2 levels below root (i.e., hierDist$height must be 3)")
   if(!all(hierDist$Get("name",filterFun=function(x) x$level==2)==paste0("level",1:hierDist$count))) stop("hierDist level names from top to bottom should be ",paste0("'level",paste0(1:hierDist$count,"'"),collapse=", ")," (not ",paste0(paste0("'",hierDist$Get("name",filterFun=function(x) x$level==2),"'"),collapse=", "),")")
+  nbLevels <- 2*hierDist$count - 1 #hierStates$height #ncol(data.tree::ToDataFrameTypeCol(hierStates))
   
   if(checkData){
     if(is.null(data$level)) stop('data$level must be specified')
