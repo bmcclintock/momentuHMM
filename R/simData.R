@@ -1390,8 +1390,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           }
       } else if("step" %in% distnames){
         if(inputs$dist[["step"]] %in% stepdists){
-          d$x=c(0,cumsum(d$step)[-nrow(d)])
-          d$y=X[,2]
+          d$x=c(initialPosition[[zoo]][1],initialPosition[[zoo]][1]+cumsum(d$step)[-nrow(d)])
+          d$y=rep(initialPosition[[zoo]][2],nrow(d))
         }    
       } else if(!is.null(mvnCoords)){
         d[[paste0(mvnCoords,".x")]] <- d[[mvnCoords]][,1]

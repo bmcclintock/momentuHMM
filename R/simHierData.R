@@ -1233,8 +1233,11 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
           }
       } else if("step" %in% distnames){
         if(inputs$dist[["step"]] %in% stepdists){
-          d$x=c(0,cumsum(d$step)[-nrow(d)])
-          d$y=X[,2]
+          d$step[nrow(d)] <- NA
+          tmpstep <- d$step
+          tmpstep[which(d$level!=gsub("level","",coordLevel))] <- 0
+          d$x=c(initialPosition[[zoo]][1],initialPosition[[zoo]][1]+cumsum(tmpstep)[-nrow(d)])
+          d$y=rep(initialPosition[[zoo]][2],nrow(d))
         }    
       } else if(!is.null(mvnCoords)){
         d[[paste0(mvnCoords,".x")]] <- d[[mvnCoords]][,1]
