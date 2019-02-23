@@ -307,7 +307,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
   nbCovsDelta <- ncol(m$covsDelta)-1
   if(stationary)
     delta <- NULL
-  else if(!nbCovsDelta){
+  else if(!nbCovsDelta & !inherits(data,"hierarchical")){
     if(is.null(delta0)){
       if(!is.null(fixPar$delta)) stop("fixPar$delta cannot be specified unless delta0 is specified")
       delta <- matrix(1/nbStates,(nbCovsDelta+1)*mixtures,nbStates)
@@ -439,10 +439,13 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
 #' @method checkPar0 hierarchical
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See \code{\link{fitHMM}}.
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See \code{\link{fitHMM}}.
+#' @param hierBeta A hierarchical data structure \code{\link[data.tree]{Node}} for the initial matrix of regression coefficients for the transition probabilities at each level of the hierarchy ('beta'). See \code{\link{fitHMM}}.
+#' @param hierDelta A hierarchical data structure \code{\link[data.tree]{Node}} for the initial values for the initial distribution at each level of the hierarchy ('delta'). See \code{\link{fitHMM}}.
 #' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). See \code{\link{fitHMM}}.
+#' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). See \code{\link{fitHMM}}. Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). 
 #' 
 #' @export
-checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,hierFormula=NULL,formulaDelta=~1,mixtures=1,formulaPi=NULL,DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,fixPar=NULL,...)
+checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=NULL,hierDelta=NULL,estAngleMean=NULL,circularAngleMean=NULL,hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,fixPar=NULL,...)
 {
   
   ## check that the data is a momentuHierHMMData object or valid data frame
@@ -453,12 +456,18 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,beta0=NULL
     data <- momentuHierHMMData(data)
   }
   
-  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons,fixPar)
+  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,betaCons,fixPar)
   nbStates <- inputHierHMM$nbStates
   dist <- inputHierHMM$dist
+  beta0 <- inputHierHMM$beta
+  delta0 <- inputHierHMM$delta
   formula <- inputHierHMM$formula
+  formulaDelta <- inputHierHMM$formulaDelta
+  workBounds <- inputHierHMM$workBounds
+  betaCons <- inputHierHMM$betaCons
   betaRef <- inputHierHMM$betaRef
   stateNames <- inputHierHMM$stateNames
+  fixPar <- inputHierHMM$fixPar
   
   return(checkPar0.default(data,nbStates,dist,Par0,beta0,delta0,estAngleMean,circularAngleMean,formula,formulaDelta,stationary=FALSE,mixtures,formulaPi,DM,cons=NULL,userBounds,workBounds,workcons=NULL,betaCons,betaRef,stateNames,fixPar))
 }

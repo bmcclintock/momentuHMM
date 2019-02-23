@@ -12,7 +12,7 @@ getTrProbs(data, ...)
   formula = ~1, mixtures = 1, betaRef = NULL, stateNames = NULL,
   ...)
 
-\method{getTrProbs}{hierarchical}(data, hierStates, beta,
+\method{getTrProbs}{hierarchical}(data, hierStates, hierBeta, hierDelta,
   workBoundsBeta = NULL, hierFormula = NULL, mixtures = 1, hierDist,
   ...)
 }
@@ -40,6 +40,10 @@ The first column pertains to the lower bound and the second column the upper bou
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See \code{\link{fitHMM}}.}
+
+\item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial matrix of regression coefficients for the transition probabilities at each level of the hierarchy ('beta'). See \code{\link{fitHMM}}.}
+
+\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial values for the initial distribution at each level of the hierarchy ('delta'). See \code{\link{fitHMM}}.}
 
 \item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). See \code{\link{fitHMM}}.}
 

@@ -116,12 +116,15 @@ getTrProbs.default <- function(data,nbStates,beta,workBoundsBeta=NULL,formula=~1
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See \code{\link{fitHMM}}.
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See \code{\link{fitHMM}}.
 #' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). See \code{\link{fitHMM}}.
+#' @param hierBeta A hierarchical data structure \code{\link[data.tree]{Node}} for the initial matrix of regression coefficients for the transition probabilities at each level of the hierarchy ('beta'). See \code{\link{fitHMM}}.
+#' @param hierDelta A hierarchical data structure \code{\link[data.tree]{Node}} for the initial values for the initial distribution at each level of the hierarchy ('delta'). See \code{\link{fitHMM}}.
+#' 
 #' @export
-getTrProbs.hierarchical <- function(data,hierStates,beta,workBoundsBeta=NULL,hierFormula=NULL,mixtures=1,hierDist,...){
+getTrProbs.hierarchical <- function(data,hierStates,hierBeta,hierDelta,workBoundsBeta=NULL,hierFormula=NULL,mixtures=1,hierDist,...){
   
   if(is.momentuHierHMM(data)){
     hierStates <- data$conditions$hierStates
-    beta <- data$mle$beta
+    hierBeta <- data$conditions$hierBeta
     workBoundsBeta <- data$conditions$workBounds$beta
     hierFormula <- data$conditions$hierFormula
     mixtures <- data$conditions$mixtures
@@ -129,7 +132,8 @@ getTrProbs.hierarchical <- function(data,hierStates,beta,workBoundsBeta=NULL,hie
     data <- data$data
   }
   
-  inputHierHMM <- formatHierHMM(data,hierStates=hierStates,hierDist=hierDist,hierFormula=hierFormula,mixtures=mixtures,workBounds=list(beta=workBoundsBeta),fixPar=list(delta=NA),checkData=FALSE)
+  inputHierHMM <- formatHierHMM(data,hierStates=hierStates,hierDist=hierDist,hierBeta=hierBeta,hierDelta=hierDelta,hierFormula=hierFormula,mixtures=mixtures,workBounds=list(beta=workBoundsBeta),checkData=FALSE)
+  if(mixtures>1) inputHierHMM$beta <- inputHierHMM$beta$beta
   
-  return(getTrProbs.default(data,inputHierHMM$nbStates,beta,inputHierHMM$workBounds$beta,inputHierHMM$formula,mixtures,inputHierHMM$betaRef,inputHierHMM$stateNames))
+  return(getTrProbs.default(data,inputHierHMM$nbStates,inputHierHMM$beta,inputHierHMM$workBounds$beta,inputHierHMM$formula,mixtures,inputHierHMM$betaRef,inputHierHMM$stateNames))
 }

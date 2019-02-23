@@ -17,10 +17,11 @@ checkPar0(data, ...)
   stateNames = NULL, fixPar = NULL, ...)
 
 \method{checkPar0}{hierarchical}(data, hierStates, hierDist, Par0 = NULL,
-  beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
-  circularAngleMean = NULL, hierFormula = NULL, formulaDelta = ~1,
-  mixtures = 1, formulaPi = NULL, DM = NULL, userBounds = NULL,
-  workBounds = NULL, betaCons = NULL, fixPar = NULL, ...)
+  hierBeta = NULL, hierDelta = NULL, estAngleMean = NULL,
+  circularAngleMean = NULL, hierFormula = NULL,
+  hierFormulaDelta = NULL, mixtures = 1, formulaPi = NULL,
+  DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL,
+  fixPar = NULL, ...)
 }
 \arguments{
 \item{data}{\code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the data stream and covariate values}
@@ -82,7 +83,13 @@ each data stream.}
 
 \item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See \code{\link{fitHMM}}.}
 
+\item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial matrix of regression coefficients for the transition probabilities at each level of the hierarchy ('beta'). See \code{\link{fitHMM}}.}
+
+\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial values for the initial distribution at each level of the hierarchy ('delta'). See \code{\link{fitHMM}}.}
+
 \item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). See \code{\link{fitHMM}}.}
+
+\item{hierFormulaDelta}{A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). See \code{\link{fitHMM}}. Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale).}
 }
 \description{
 Prints parameters with labels based on \code{DM}, \code{formula}, and/or \code{formulaDelta}.  See \code{\link{fitHMM}} for 

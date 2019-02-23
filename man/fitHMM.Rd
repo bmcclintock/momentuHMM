@@ -20,13 +20,14 @@ fitHMM(data, ...)
   modelName = NULL, ...)
 
 \method{fitHMM}{momentuHierHMMData}(data, hierStates, hierDist, Par0,
-  beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
-  circularAngleMean = NULL, hierFormula = NULL, formulaDelta = ~1,
-  mixtures = 1, formulaPi = NULL, nlmPar = list(), fit = TRUE,
-  DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL,
-  mvnCoords = NULL, knownStates = NULL, fixPar = NULL,
-  retryFits = 0, retrySD = NULL, optMethod = "nlm",
-  control = list(), prior = NULL, modelName = NULL, ...)
+  hierBeta = NULL, hierDelta = NULL, estAngleMean = NULL,
+  circularAngleMean = NULL, hierFormula = NULL,
+  hierFormulaDelta = NULL, mixtures = 1, formulaPi = NULL,
+  nlmPar = list(), fit = TRUE, DM = NULL, userBounds = NULL,
+  workBounds = NULL, hierBetaCons = NULL, mvnCoords = NULL,
+  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
+  optMethod = "nlm", control = list(), prior = NULL,
+  modelName = NULL, ...)
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simData}}) or a \code{\link{momentuHierHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simHierData}}) object.}
@@ -191,8 +192,16 @@ Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \co
 
 \item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See details.}
 
+\item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial matrix of regression coefficients for the transition probabilities at each level of the hierarchy ('beta').}
+
+\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial values for the initial distribution at each level of the hierarchy ('delta').}
+
 \item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (only hierarchical-level effects, with no covariate effects).
 Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy. See details.}
+
+\item{hierFormulaDelta}{A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale).}
+
+\item{hierBetaCons}{An optional hierarchical data structure \code{\link[data.tree]{Node}} composed of integers identifying any equality constraints among the t.p.m. parameters for each level of the hierarchy ('betaCons'). Default: NULL (based on the hierarchy, certain t.p.m. parameters are constrained to be equal)}
 }
 \value{
 A \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object, i.e. a list of:

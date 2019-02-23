@@ -981,8 +981,12 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
 #' @method fitHMM momentuHierHMMData
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See details.
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See details.
+#' @param hierBeta A hierarchical data structure \code{\link[data.tree]{Node}} for the initial matrix of regression coefficients for the transition probabilities at each level of the hierarchy ('beta'). 
+#' @param hierDelta A hierarchical data structure \code{\link[data.tree]{Node}} for the initial values for the initial distribution at each level of the hierarchy ('delta'). 
 #' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (only hierarchical-level effects, with no covariate effects).
 #' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy. See details.
+#' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). 
+#' @param hierBetaCons An optional hierarchical data structure \code{\link[data.tree]{Node}} composed of integers identifying any equality constraints among the t.p.m. parameters for each level of the hierarchy ('betaCons'). Default: NULL (based on the hierarchy, certain t.p.m. parameters are constrained to be equal)
 #' 
 #' @details
 #' \itemize{
@@ -995,27 +999,30 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
 #' 
 #' @export
 fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
-                       Par0,beta0=NULL,delta0=NULL,
+                       Par0,hierBeta=NULL,hierDelta=NULL,
                        estAngleMean=NULL,circularAngleMean=NULL,
-                       hierFormula=NULL,formulaDelta=~1,mixtures=1,formulaPi=NULL,
+                       hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,
                        nlmPar=list(),fit=TRUE,
-                       DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,
+                       DM=NULL,userBounds=NULL,workBounds=NULL,hierBetaCons=NULL,
                        mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, ...)
 {
   
   if(!inherits(data,"momentuHierHMMData")) stop("data must be a momentuHierHMMData object (as returned by prepData or simHierData)")
   
-  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons,fixPar)
+  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,hierBetaCons,fixPar)
   
-  fit <- fitHMM(momentuHMMData(data),inputHierHMM$nbStates,inputHierHMM$dist,Par0,beta0,delta0,
+  fit <- fitHMM(momentuHMMData(data),inputHierHMM$nbStates,inputHierHMM$dist,Par0,inputHierHMM$beta,inputHierHMM$delta,
                 estAngleMean,circularAngleMean,
-                formula=inputHierHMM$formula,formulaDelta,stationary=FALSE,mixtures,formulaPi,
+                formula=inputHierHMM$formula,inputHierHMM$formulaDelta,stationary=FALSE,mixtures,formulaPi,
                 verbose=NULL,nlmPar,fit,
                 DM,cons=NULL,userBounds,workBounds=inputHierHMM$workBounds,workcons=NULL,inputHierHMM$betaCons,inputHierHMM$betaRef,
                 mvnCoords,inputHierHMM$stateNames,knownStates,inputHierHMM$fixPar,retryFits,retrySD,optMethod,control,prior,modelName)
   fit$conditions$hierStates <- hierStates
   fit$conditions$hierDist <- hierDist
+  fit$conditions$hierBeta <- hierBeta
+  fit$conditions$hierDelta <- hierDelta
   fit$conditions$hierFormula <- hierFormula
+  fit$conditions$hierFormulaDelta <- hierFormulaDelta
   class(fit$data) <- class(data)
   return(momentuHierHMM(fit))
 }

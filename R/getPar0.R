@@ -417,13 +417,15 @@ getPar0.momentuHMM<-function(model,nbStates=length(model$stateNames),estAngleMea
 #' @method getPar0 momentuHierHMM
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states (see \code{\link{fitHMM}}). Default: \code{hierStates=model$conditions$hierStates}.
 #' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy (see \code{\link{fitHMM}}). Default: \code{hierFormula=model$conditions$hierFormula}.
+#' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). 
 #' 
 #' @export
-getPar0.momentuHierHMM<-function(model,hierStates=model$conditions$hierStates,estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,hierFormula=model$conditions$hierFormula,formulaDelta=model$conditions$formulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM,...){
+getPar0.momentuHierHMM<-function(model,hierStates=model$conditions$hierStates,estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,hierFormula=model$conditions$hierFormula,hierFormulaDelta=model$conditions$hierFormulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM,...){
   
-  inputHierHMM <- formatHierHMM(model$data,hierStates,model$conditions$hierDist,hierFormula,formulaDelta,mixtures,workBounds=NULL,betaCons=NA,fixPar=list(beta=NA,delta=NA))
+  inputHierHMM <- formatHierHMM(data=model$data,hierStates=hierStates,hierDist=model$conditions$hierDist,hierFormula=hierFormula,hierFormulaDelta=hierFormulaDelta,mixture=mixtures,workBounds=NULL)
   nbStates <- inputHierHMM$nbStates
   formula <- inputHierHMM$formula
+  formulaDelta <- inputHierHMM$formulaDelta
   betaRef <- inputHierHMM$betaRef
   stateNames <- inputHierHMM$stateNames
   
