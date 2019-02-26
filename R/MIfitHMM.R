@@ -75,6 +75,7 @@ MIfitHMM <- function(miData, ...) {
 #' each data stream. See \code{\link{fitHMM}}.
 #' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See \code{\link{fitHMM}}.
 #' @param betaRef Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. See \code{\link{fitHMM}}. 
+#' @param deltaCons Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}. See \code{\link{fitHMM}}.
 #' @param mvnCoords Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.
 #' @param stateNames Optional character vector of length nbStates indicating state names.
 #' @param knownStates Vector of values of the state process which are known prior to fitting the
@@ -201,7 +202,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
                    estAngleMean = NULL, circularAngleMean = NULL,
                    formula = ~1, formulaDelta = NULL, stationary = FALSE, mixtures = 1, formulaPi = NULL,
                    verbose = NULL, nlmPar = NULL, fit = TRUE, useInitial = FALSE,
-                   DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL, workcons = NULL, betaCons = NULL, betaRef = NULL,
+                   DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL, workcons = NULL, betaCons = NULL, betaRef = NULL, deltaCons = NULL,
                    mvnCoords = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
                    covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL,
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
@@ -210,20 +211,21 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
   
   # for directing list of momentuHierHMMData objects to MIfitHMM.hierarchical
   hierArgs <- list(...)
-  argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist","hierFormula"))]
+  argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist","hierBeta","hierDelta","hierFormula","hierFormulaDelta"))]
   
   if(is.list(miData) & !is.crwData(miData) & !is.crwSim(miData)){
     if(missing(nbStates) & missing(dist)){
         if(all(c("hierStates","hierDist") %in% argNames)){
           if(is.null(formulaDelta)) formulaDelta <- ~1
           if(length(attr(stats::terms.formula(formula),"term.labels"))>0 && is.null(hierArgs$hierFormula)) stop("hierFormula should be specified instead of formula")
+          if(length(attr(stats::terms.formula(formulaDelta),"term.labels"))>0 && is.null(hierArgs$hierFormulaDelta)) stop("hierFormulaDelta should be specified instead of formulaDelta")
           return(MIfitHMM.hierarchical(miData,nSims, ncores, poolEstimates, alpha, progressBar,
                                        hierArgs$hierStates, hierArgs$hierDist, 
-                                       Par0, beta0, delta0,
+                                       Par0, hierArgs$hierBeta, hierArgs$hierDelta,
                                        estAngleMean, circularAngleMean,
-                                       hierArgs$hierFormula, formulaDelta, mixtures, formulaPi,
+                                       hierArgs$hierFormula, hierArgs$hierFormulaDelta, mixtures, formulaPi,
                                        nlmPar, fit, useInitial,
-                                       DM, userBounds, workBounds, betaCons,
+                                       DM, userBounds, workBounds,
                                        mvnCoords, knownStates, fixPar, retryFits, retrySD, optMethod, control, prior, modelName,
                                        covNames, spatialCovs, centers, centroids, angleCovs,
                                        method, parIS, dfSim, grid.eps, crit, scaleSim, quad.ask, force.quad,
@@ -417,7 +419,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
   test<-fitHMM(miData[[ind[1]]],nbStates, dist, Par0[[ind[1]]], beta0[[ind[1]]], delta0[[ind[1]]],
            estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi, verbose,
            nlmPar, fit = FALSE, DM, cons,
-           userBounds, workBounds, workcons, betaCons, betaRef, mvnCoords, stateNames, knownStates[[ind[1]]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName)
+           userBounds, workBounds, workcons, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[ind[1]]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName)
   
   # fit HMM(s)
   fits <- list()
@@ -431,7 +433,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     fits[[1]]<-suppressMessages(fitHMM(miData[[1]],nbStates, dist, Par0[[1]], beta0[[1]], delta0[[1]],
                                     estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi, verbose,
                                     nlmPar, fit, DM, cons,
-                                    userBounds, workBounds, workcons, betaCons, betaRef, mvnCoords, stateNames, knownStates[[1]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
+                                    userBounds, workBounds, workcons, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[1]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
     if(retryFits>=1){
       cat("\n")
     }
@@ -463,7 +465,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
       tmpFit<-suppressMessages(fitHMM(miData[[j]],nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
                                       estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi, verbose,
                                       nlmPar, fit, DM, cons,
-                                      userBounds, workBounds, workcons, betaCons, betaRef, mvnCoords, stateNames, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
+                                      userBounds, workBounds, workcons, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
       if(retryFits>=1) cat("\n")
       tmpFit
     } 
@@ -488,8 +490,10 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
 #' @method MIfitHMM hierarchical
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHMM}}.
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. See \code{\link{fitHMM}}.
+#' @param hierBeta A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition probabilities at each level of the hierarchy, including initial values ('beta'), parameter equality constraints ('betaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See \code{\link{fitHMM}}.
+#' @param hierDelta A hierarchical data structure \code{\link[data.tree]{Node}} for the initial distribution at each level of the hierarchy, including initial values ('delta'), parameter equality constraints ('deltaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See \code{\link{fitHMM}}.
 #' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy. See \code{\link{fitHMM}}.
-#' 
+#' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). See \code{\link{fitHMM}}.
 #' 
 #' @export
 #' @importFrom crawl crwPostIS crwSimulator
@@ -498,13 +502,14 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
 #' @importFrom raster getZ
+#' @importFrom data.tree Clone
 MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, progressBar = FALSE,
                        hierStates, hierDist, 
-                       Par0, beta0 = NULL, delta0 = NULL,
+                       Par0, hierBeta = NULL, hierDelta = NULL,
                        estAngleMean = NULL, circularAngleMean = NULL,
-                       hierFormula = NULL, formulaDelta = ~1, mixtures = 1, formulaPi = NULL,
+                       hierFormula = NULL, hierFormulaDelta = NULL, mixtures = 1, formulaPi = NULL,
                        nlmPar = NULL, fit = TRUE, useInitial = FALSE,
-                       DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL,
+                       DM = NULL, userBounds = NULL, workBounds = NULL,
                        mvnCoords = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
                        covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL,
                        method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
@@ -553,7 +558,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
       #coordNames <- attr(predData,"coord")
       
       if(fit | !missing("hierDist")) {
-        inputHierHMM <- formatHierHMM(data=NULL,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons,fixPar,checkData=FALSE)
+        inputHierHMM <- formatHierHMM(data=NULL,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,checkData=FALSE)
         dist <- inputHierHMM$dist
         if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
         distnames <- tmpdistnames <- names(dist)[which(!(names(dist) %in% c("step","angle")))]
@@ -657,7 +662,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     cat('Fitting',min(nSims,length(ind)),'imputation(s) using fitHMM... \n')
   }
   
-  inputHierHMM <- formatHierHMM(data=NULL,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons=NULL,fixPar=NULL)
+  inputHierHMM <- formatHierHMM(data=NULL,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures)
   nbStates <- inputHierHMM$nbStates
   dist <- inputHierHMM$dist
   formula <- inputHierHMM$formula
@@ -679,36 +684,51 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
   recharge <- newForm$recharge
   
   if(is.null(recharge) & mixtures==1){
-    if(!is.list(beta0)){
-      tmpbeta0<-beta0
-      beta0<-vector('list',nSims)
-      if(!is.null(tmpbeta0))
-        beta0[1:nSims]<-list(tmpbeta0)
-    } else if(length(beta0)<nSims) stop("beta0 must be a list of length >=",nSims)
+    if(!is.list(hierBeta)){
+      if(!inherits(hierBeta,"Node"))
+        tmphierBeta<-hierBeta
+      else tmphierBeta <- Clone(hierBeta)
+      hierBeta<-vector('list',nSims)
+      if(!is.null(tmphierBeta))
+        hierBeta[1:nSims]<-list(tmphierBeta)
+    } else if(length(hierBeta)<nSims) stop("hierBeta must be a list of length >=",nSims)
   } else {
-    if(!is.null(beta0) && !is.list(beta0)){
-      if(!is.null(recharge)) stop("beta0 must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
-      if(mixtures>1) stop("beta0 must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
+    if(!is.null(hierBeta) && !is.list(hierBeta)){
+      if(!is.null(recharge)) stop("hierBeta must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
+      if(mixtures>1) stop("hierBeta must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
     }
-    if(!is.list(beta0[[1]])){
-      tmpbeta0<-beta0
-      beta0<-vector('list',nSims)
-      if(!is.null(tmpbeta0))
-        beta0[1:nSims]<-list(tmpbeta0)
-    } else if(length(beta0)<nSims) stop("beta0 must be a list of length >=",nSims)    
+    if(!is.list(hierBeta[[1]])){
+      if(inherits(hierBeta[[1]],"Node")){
+        tmphierBeta<-lapply(hierBeta,Clone)
+        hierBeta<-vector('list',nSims)
+        hierBeta[1:nSims]<-list(tmphierBeta)
+      } else {
+          tmphierBeta<-hierBeta
+          hierBeta<-vector('list',nSims)
+          if(!is.null(tmphierBeta)){
+            hierBeta[1:nSims]<-list(tmphierBeta)
+        }
+      }
+    } else if(length(hierBeta)<nSims) stop("hierBeta must be a list of length >=",nSims)    
   }
-  if(!is.list(delta0)){
-    tmpdelta0<-delta0
-    delta0<-vector('list',nSims)
-    if(!is.null(tmpdelta0))
-      delta0[1:nSims]<-list(tmpdelta0)
-  } else if(length(delta0)<nSims) stop("delta0 must be a list of length >=",nSims)
+  if(!is.list(hierDelta)){
+    if(inherits(hierDelta,"Node")){
+      tmphierDelta<-data.tree::Clone(hierDelta)
+      hierDelta<-vector('list',nSims)
+      hierDelta[1:nSims]<-list(hierDelta)
+    } else {
+      tmphierDelta<-hierDelta
+      hierDelta<-vector('list',nSims)
+      if(!is.null(tmphierDelta))
+        hierDelta[1:nSims]<-list(tmphierDelta)
+    }
+  } else if(length(hierDelta)<nSims) stop("hierDelta must be a list of length >=",nSims)
   
   #check HMM inputs and print model message
-  test<-fitHMM(miData[[ind[1]]], hierStates, hierDist, Par0[[ind[1]]], beta0[[ind[1]]], delta0[[ind[1]]],
-                   estAngleMean, circularAngleMean, hierFormula, formulaDelta, mixtures, formulaPi, 
+  test<-fitHMM(miData[[ind[1]]], hierStates, hierDist, Par0[[ind[1]]], hierBeta[[ind[1]]], hierDelta[[ind[1]]],
+                   estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                    nlmPar, fit = FALSE, DM,
-                   userBounds, workBounds, betaCons, mvnCoords, knownStates[[ind[1]]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName)
+                   userBounds, workBounds, mvnCoords, knownStates[[ind[1]]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName)
   
   # fit HMM(s)
   fits <- list()
@@ -719,10 +739,10 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
 
     cat("\rImputation ",1,"... ",sep="")
 
-    fits[[1]]<-suppressMessages(fitHMM(miData[[1]], hierStates, hierDist, Par0[[1]], beta0[[1]], delta0[[1]],
-                                           estAngleMean, circularAngleMean, hierFormula, formulaDelta, mixtures, formulaPi, 
+    fits[[1]]<-suppressMessages(fitHMM(miData[[1]], hierStates, hierDist, Par0[[1]], hierBeta[[1]], hierDelta[[1]],
+                                           estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                                            nlmPar, fit, DM,
-                                           userBounds, workBounds, betaCons, mvnCoords, knownStates[[1]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
+                                           userBounds, workBounds, mvnCoords, knownStates[[1]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
     if(retryFits>=1){
       cat("\n")
     }
@@ -750,10 +770,10 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                               tcltk::setTkProgressBar(pb, j, label=paste("fitting imputation",j))#, label=paste(round((j-1)/nSims*100,0),"% done"))
                             }
                           }
-                          tmpFit<-suppressMessages(fitHMM(miData[[j]], hierStates, hierDist, Par0[[j]], beta0[[j]], delta0[[j]],
-                                                              estAngleMean, circularAngleMean, hierFormula, formulaDelta, mixtures, formulaPi, 
+                          tmpFit<-suppressMessages(fitHMM(miData[[j]], hierStates, hierDist, Par0[[j]], hierBeta[[j]], hierDelta[[j]],
+                                                              estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                                                               nlmPar, fit, DM, 
-                                                              userBounds, workBounds, betaCons, mvnCoords, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
+                                                              userBounds, workBounds, mvnCoords, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
                           if(retryFits>=1) cat("\n")
                           tmpFit
                         } 

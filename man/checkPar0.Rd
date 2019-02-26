@@ -14,14 +14,14 @@ checkPar0(data, ...)
   stationary = FALSE, mixtures = 1, formulaPi = NULL, DM = NULL,
   cons = NULL, userBounds = NULL, workBounds = NULL,
   workcons = NULL, betaCons = NULL, betaRef = NULL,
-  stateNames = NULL, fixPar = NULL, ...)
+  deltaCons = NULL, stateNames = NULL, fixPar = NULL, ...)
 
 \method{checkPar0}{hierarchical}(data, hierStates, hierDist, Par0 = NULL,
   hierBeta = NULL, hierDelta = NULL, estAngleMean = NULL,
   circularAngleMean = NULL, hierFormula = NULL,
   hierFormulaDelta = NULL, mixtures = 1, formulaPi = NULL,
-  DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL,
-  fixPar = NULL, ...)
+  DM = NULL, userBounds = NULL, workBounds = NULL, fixPar = NULL,
+  ...)
 }
 \arguments{
 \item{data}{\code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the data stream and covariate values}
@@ -74,6 +74,8 @@ each data stream.}
 \item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters.}
 
 \item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link.}
+
+\item{deltaCons}{Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 

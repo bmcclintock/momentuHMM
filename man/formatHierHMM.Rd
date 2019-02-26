@@ -6,8 +6,7 @@
 \usage{
 formatHierHMM(data, hierStates, hierDist, hierBeta = NULL,
   hierDelta = NULL, hierFormula = NULL, hierFormulaDelta = NULL,
-  mixtures = 1, workBounds = NULL, hierBetaCons = NULL,
-  hierDeltaCons = NULL, fixPar = NULL, checkData = TRUE)
+  mixtures = 1, checkData = TRUE)
 }
 \arguments{
 \item{data}{\code{\link{momentuHierHMMData}} object or a data frame containing the data streams and covariates.}
@@ -16,24 +15,15 @@ formatHierHMM(data, hierStates, hierDist, hierBeta = NULL,
 
 \item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See \code{\link{fitHMM}}.}
 
-\item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial matrix of regression coefficients for the transition probabilities at each level of the hierarchy ('beta'). See \code{\link{fitHMM}}.}
+\item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition probabilities at each level of the hierarchy, including initial values ('beta'), parameter equality constraints ('betaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See \code{\link{fitHMM}}.}
 
-\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial values for the initial distribution at each level of the hierarchy ('delta'). See \code{\link{fitHMM}}.}
+\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial distribution at each level of the hierarchy, including initial values ('delta'), parameter equality constraints ('deltaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See \code{\link{fitHMM}}.}
 
 \item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). See \code{\link{fitHMM}}. Default: \code{NULL} (only hierarchical-level effects, with no covariate effects).}
 
 \item{hierFormulaDelta}{A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). See \code{\link{fitHMM}}. Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale).}
 
 \item{mixtures}{Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). See \code{\link{fitHMM}}. Default: \code{mixtures=1}.}
-
-\item{workBounds}{An optional named list of 2-column matrices specifying bounds on the working scale. Bounds for \code{beta} and \code{delta} must be provided as 2-column matrices within a hierarchical data structure \code{\link[data.tree]{Node}} corresponding to \code{hierBeta} and \code{hierDelta}, respectively. See \code{\link{fitHMM}}.}
-
-\item{hierBetaCons}{An optional hierarchical data structure \code{\link[data.tree]{Node}} composed of integers identifying any equality constraints among the t.p.m. parameters for each level of the hierarchy ('betaCons'). See \code{\link{fitHMM}}. Default: NULL (based on the hierarchy, certain t.p.m. parameters are constrained to be equal)}
-
-\item{hierDeltaCons}{An optional hierarchical data structure \code{\link[data.tree]{Node}} composed of integers identifying any equality constraints among the initial distribution parameters for each level of the hierarchy ('deltaCons'). See \code{\link{fitHMM}}. Default: NULL (based on the hierarchy, certain t.p.m. parameters are constrained to be equal)}
-
-\item{fixPar}{An optional list of vectors indicating parameters which are assumed known prior to fitting the model. Fixed parameters for \code{beta} and \code{delta} must be provided as vectors within a hierarchical data structure \code{\link[data.tree]{Node}} corresponding to \code{hierBeta} and \code{hierDelta}, respectively. See \code{\link{fitHMM}}. Default: NULL 
-(based on the hierarchy, certain t.p.m. and delta parameters are fixed to be effectively zero).}
 
 \item{checkData}{logical indicating whether or not to check the suitability of \code{data} for the specified hierarchy. Ignored unless \code{data} is provided. Default: TRUE.}
 }
@@ -42,8 +32,12 @@ A list of arguments needed for specifying a hierarchical HMM as a conventional H
 \item{nbStates}{See \code{\link{fitHMM}}.}
 \item{dist}{See \code{\link{fitHMM}}.}
 \item{formula}{See \code{\link{fitHMM}}.}
+\item{formulaDelta}{See \code{\link{fitHMM}}.}
+\item{beta0}{See \code{\link{fitHMM}}.}
+\item{delta0}{See \code{\link{fitHMM}}.}
 \item{betaRef}{See \code{\link{fitHMM}}.}
 \item{betaCons}{See \code{\link{fitHMM}}.}
+\item{deltaCons}{See \code{\link{fitHMM}}.}
 \item{fixPar}{See \code{\link{fitHMM}}.}
 \item{workBounds}{See \code{\link{fitHMM}}.}
 \item{stateNames}{See \code{\link{fitHMM}}.}

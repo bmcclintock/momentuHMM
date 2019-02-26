@@ -41,6 +41,7 @@ checkPar0 <- function(data, ...) {
 #' each data stream. 
 #' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters.
 #' @param betaRef Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link.
+#' @param deltaCons Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}. 
 #' @param stateNames Optional character vector of length nbStates indicating state names.
 #' @param fixPar An optional list of vectors indicating parameters which are assumed known prior to fitting the model. 
 #' 
@@ -87,19 +88,19 @@ checkPar0 <- function(data, ...) {
 #'           circularAngleMean=list(angle=TRUE))                
 #' }
 #' @export
-checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,stateNames=NULL,fixPar=NULL,...)
+checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,deltaCons=NULL,stateNames=NULL,fixPar=NULL,...)
 {
   
   hierArgs <- list(...)
-  argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist"))]
+  argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist","hierBeta","hierDelta","hierFormula","hierFormulaDelta"))]
   
   ## check that the data is a momentuHMMData object or valid data frame
   if(!is.momentuHMMData(data)){
     if(missing(nbStates) & missing(dist)){
       if(all(c("hierStates","hierDist") %in% argNames)){
-        if(is.null(formulaDelta)) formulaDelta <- ~1
         if(length(attr(stats::terms.formula(formula),"term.labels"))>0 && is.null(hierArgs$hierFormula)) stop("hierFormula should be specified instead of formula")
-        return(checkPar0.hierarchical(data,hierStates=hierArgs$hierStates,hierDist=hierArgs$hierDist,Par0,beta0,delta0,estAngleMean,circularAngleMean,hierFormula=hierArgs$hierFormula,formulaDelta=formulaDelta,mixtures,formulaPi,DM,userBounds,workBounds,betaCons,fixPar))
+        if(length(attr(stats::terms.formula(formulaDelta),"term.labels"))>0 && is.null(hierArgs$hierFormulaDelta)) stop("hierFormulaDelta should be specified instead of formulaDelta")
+        return(checkPar0.hierarchical(data,hierStates=hierArgs$hierStates,hierDist=hierArgs$hierDist,Par0,hierBeta=hierArgs$hierBeta,hierDelta=hierArgs$hierDelta,estAngleMean,circularAngleMean,hierFormula=hierArgs$hierFormula,hierFormulaDelta = hierArgs$hierFormulaDelta,mixtures,formulaPi,DM,userBounds,workBounds,fixPar))
       }
     }
     if(!is.data.frame(data)) stop('data must be a data.frame')
@@ -445,7 +446,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
 #' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). See \code{\link{fitHMM}}. Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). 
 #' 
 #' @export
-checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=NULL,hierDelta=NULL,estAngleMean=NULL,circularAngleMean=NULL,hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,fixPar=NULL,...)
+checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=NULL,hierDelta=NULL,estAngleMean=NULL,circularAngleMean=NULL,hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,DM=NULL,userBounds=NULL,workBounds=NULL,fixPar=NULL,...)
 {
   
   ## check that the data is a momentuHierHMMData object or valid data frame
@@ -456,18 +457,35 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
     data <- momentuHierHMMData(data)
   }
   
-  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,betaCons,fixPar)
+  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures)
   nbStates <- inputHierHMM$nbStates
   dist <- inputHierHMM$dist
   beta0 <- inputHierHMM$beta
   delta0 <- inputHierHMM$delta
   formula <- inputHierHMM$formula
   formulaDelta <- inputHierHMM$formulaDelta
-  workBounds <- inputHierHMM$workBounds
+  #workBounds <- inputHierHMM$workBounds
   betaCons <- inputHierHMM$betaCons
+  deltaCons <- inputHierHMM$deltaCons
   betaRef <- inputHierHMM$betaRef
   stateNames <- inputHierHMM$stateNames
-  fixPar <- inputHierHMM$fixPar
+  #fixPar <- inputHierHMM$fixPar
   
-  return(checkPar0.default(data,nbStates,dist,Par0,beta0,delta0,estAngleMean,circularAngleMean,formula,formulaDelta,stationary=FALSE,mixtures,formulaPi,DM,cons=NULL,userBounds,workBounds,workcons=NULL,betaCons,betaRef,stateNames,fixPar))
+  if(is.null(fixPar)) fixPar <- list()
+  if(is.list(fixPar)){
+    if(!is.null(fixPar$beta)) stop("'fixPar$beta' cannot be specified; use 'hierBeta' instead")
+    fixPar$beta <- inputHierHMM$fixPar$beta
+    if(!is.null(fixPar$delta)) stop("'fixPar$delta' cannot be specified; use 'hierDelta' instead")
+    fixPar$delta <- inputHierHMM$fixPar$delta
+  }
+  
+  if(is.null(workBounds)) workBounds <- list()
+  if(is.list(workBounds)){
+    if(!is.null(workBounds$beta)) stop("'workBounds$beta' cannot be specified; use 'hierBeta' instead")
+    workBounds$beta <- inputHierHMM$workBounds$beta
+    if(!is.null(workBounds$delta)) stop("'workBounds$delta' cannot be specified; use 'hierDelta' instead")
+    workBounds$delta <- inputHierHMM$workBounds$delta
+  }
+  
+  return(checkPar0.default(data,nbStates,dist,Par0,beta0,delta0,estAngleMean,circularAngleMean,formula,formulaDelta,stationary=FALSE,mixtures,formulaPi,DM,cons=NULL,userBounds,workBounds,workcons=NULL,betaCons,betaRef,deltaCons,stateNames,fixPar))
 }

@@ -13,8 +13,7 @@ getTrProbs(data, ...)
   ...)
 
 \method{getTrProbs}{hierarchical}(data, hierStates, hierBeta, hierDelta,
-  workBoundsBeta = NULL, hierFormula = NULL, mixtures = 1, hierDist,
-  ...)
+  hierFormula = NULL, mixtures = 1, hierDist, ...)
 }
 \arguments{
 \item{data}{\code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 
@@ -41,9 +40,9 @@ The first column pertains to the lower bound and the second column the upper bou
 
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See \code{\link{fitHMM}}.}
 
-\item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial matrix of regression coefficients for the transition probabilities at each level of the hierarchy ('beta'). See \code{\link{fitHMM}}.}
+\item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition probabilities at each level of the hierarchy, including initial values ('beta'), parameter equality constraints ('betaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.}
 
-\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial values for the initial distribution at each level of the hierarchy ('delta'). See \code{\link{fitHMM}}.}
+\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial distribution at each level of the hierarchy, including initial values ('delta'), parameter equality constraints ('deltaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.}
 
 \item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). See \code{\link{fitHMM}}.}
 

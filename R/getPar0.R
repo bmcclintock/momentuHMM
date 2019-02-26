@@ -422,7 +422,7 @@ getPar0.momentuHMM<-function(model,nbStates=length(model$stateNames),estAngleMea
 #' @export
 getPar0.momentuHierHMM<-function(model,hierStates=model$conditions$hierStates,estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,hierFormula=model$conditions$hierFormula,hierFormulaDelta=model$conditions$hierFormulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM,...){
   
-  inputHierHMM <- formatHierHMM(data=model$data,hierStates=hierStates,hierDist=model$conditions$hierDist,hierFormula=hierFormula,hierFormulaDelta=hierFormulaDelta,mixture=mixtures,workBounds=NULL)
+  inputHierHMM <- formatHierHMM(data=model$data,hierStates=hierStates,hierDist=model$conditions$hierDist,hierFormula=hierFormula,hierFormulaDelta=hierFormulaDelta,mixtures=mixtures)
   nbStates <- inputHierHMM$nbStates
   formula <- inputHierHMM$formula
   formulaDelta <- inputHierHMM$formulaDelta

@@ -4,11 +4,11 @@
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). Currently
 #' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
 #' 'pois', 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), 'rw_mvnorm3' (trivariate normal random walk), 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. See details.
-#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (only hierarchical-level effects, with no covariate effects). In addition to allowing standard functions in R formulas
-#' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
-#' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
-#' and state- or parameter-specific formulas (see details).
-#' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy.
+#' @param hierBeta A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition probabilities at each level of the hierarchy, including initial values ('beta'), parameter equality constraints ('betaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.
+#' @param hierDelta A hierarchical data structure \code{\link[data.tree]{Node}} for the initial distribution at each level of the hierarchy, including initial values ('delta'), parameter equality constraints ('deltaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.
+#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (only hierarchical-level effects, with no covariate effects).
+#' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy. See details.
+#' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). 
 #' @param nbHierCovs A hierarchical data structure \code{\link[data.tree]{Node}} for the number of covariates ('nbCovs') to simulate for each level of the hierarchy (0 by default). Does not need to be specified if
 #' \code{covs} is specified. Simulated covariates are provided generic names (e.g., 'cov1.1' and 'cov1.2' for \code{nbHierCovs$level1$nbCovs=2}) and can be included in \code{hierFormula} and/or \code{DM}.
 #' @param obsPerLevel A hierarchical data structure \code{\link[data.tree]{Node}} indicating the number of observations for each level of the hierarchy ('obs'). For each level, the 'obs' field can either be the number of observations per animal (if single value) or the bounds of the number of observations per animal (if vector of two values). In the latter case, 
@@ -48,8 +48,8 @@
 #' @importFrom data.tree Node Get Aggregate isLeaf Clone
 
 simHierData <- function(nbAnimals=1,hierStates,hierDist,
-                    Par,beta=NULL,delta=NULL,
-                    hierFormula=NULL,formulaDelta=~1,mixtures=1,formulaPi=NULL,
+                    Par,hierBeta=NULL,hierDelta=NULL,
+                    hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,
                     covs=NULL,nbHierCovs=NULL,
                     spatialCovs=NULL,
                     zeroInflation=NULL,
@@ -108,6 +108,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     
     hierStates <- model$conditions$hierStates
     hierDist <- model$conditions$hierDist
+    hierBeta <- model$conditions$hierBeta
+    hierDelta <- model$conditions$hierDelta
     userBounds <- model$conditions$bounds
     workBounds <- model$conditions$workBounds
     mvnCoords <- model$conditions$mvnCoords
@@ -230,13 +232,19 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     
   } else {
     
-    inputHierHMM <- formatHierHMM(data=NULL,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons=NULL,fixPar=NULL)
+    inputHierHMM <- formatHierHMM(data=NULL,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures)
     
     nbStates <- inputHierHMM$nbStates
     dist <- inputHierHMM$dist
+    beta <- inputHierHMM$beta
+    delta <- inputHierHMM$delta
     formula <- inputHierHMM$formula
+    formulaDelta <- inputHierHMM$formulaDelta
     betaRef <- inputHierHMM$betaRef
     stateNames <- inputHierHMM$stateNames
+    
+    if(!is.null(workBounds$beta)) stop("'workBounds$beta' cannot be specified; use 'hierBeta' instead")
+    if(!is.null(workBounds$delta)) stop("'workBounds$delta' cannot be specified; use 'hierDelta' instead")
     
     cons <- workcons <- NULL
     
@@ -710,12 +718,6 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
   }
   
-  if(mixtures>1){
-    if(!is.null(beta)){
-      if(!is.list(beta)) stop("beta must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
-    }
-  }
-  
   # build design matrix for recharge model
   if(!is.null(recharge)){
     g0covs <- model.matrix(recharge$g0,tmpCovs[1,,drop=FALSE])
@@ -749,8 +751,16 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   nbBetaCovs <- ncol(model.matrix(newformula,tmpCovs))
   
-  inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons=NULL,fixPar=NULL,checkData=FALSE)
-  workBounds <- inputHierHMM$workBounds
+  inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,checkData=FALSE)
+  if(is.null(model)){
+    beta0$beta <- inputHierHMM$beta
+    delta <- inputHierHMM$delta
+  }
+  if(is.null(workBounds)) workBounds <- list()
+  if(is.list(workBounds)){
+    workBounds$beta <- inputHierHMM$workBounds$beta
+    workBounds$delta <- inputHierHMM$workBounds$delta
+  }
   
   if(is.null(beta0$beta)){
     beta0$beta <- matrix(rnorm(nbStates*(nbStates-1)*nbBetaCovs*mixtures)[inputHierHMM$betaCons],nrow=nbBetaCovs*mixtures)

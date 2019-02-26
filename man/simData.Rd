@@ -17,8 +17,8 @@ simData(nbAnimals = 1, nbStates = 2, dist, Par, beta = NULL,
   model = NULL, states = FALSE, retrySims = 0, lambda = NULL,
   errorEllipse = NULL)
 
-simHierData(nbAnimals = 1, hierStates, hierDist, Par, beta = NULL,
-  delta = NULL, hierFormula = NULL, formulaDelta = ~1,
+simHierData(nbAnimals = 1, hierStates, hierDist, Par, hierBeta = NULL,
+  hierDelta = NULL, hierFormula = NULL, hierFormulaDelta = NULL,
   mixtures = 1, formulaPi = NULL, covs = NULL, nbHierCovs = NULL,
   spatialCovs = NULL, zeroInflation = NULL, oneInflation = NULL,
   circularAngleMean = NULL, centers = NULL, centroids = NULL,
@@ -196,11 +196,14 @@ any other data streams are observed without error.  Ignored unless a valid distr
 supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
 'pois', 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), 'rw_mvnorm3' (trivariate normal random walk), 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. See details.}
 
-\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (only hierarchical-level effects, with no covariate effects). In addition to allowing standard functions in R formulas
-(e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
-(\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
-and state- or parameter-specific formulas (see details).
-Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy.}
+\item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition probabilities at each level of the hierarchy, including initial values ('beta'), parameter equality constraints ('betaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.}
+
+\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial distribution at each level of the hierarchy, including initial values ('delta'), parameter equality constraints ('deltaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.}
+
+\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (only hierarchical-level effects, with no covariate effects).
+Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy. See details.}
+
+\item{hierFormulaDelta}{A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale).}
 
 \item{nbHierCovs}{A hierarchical data structure \code{\link[data.tree]{Node}} for the number of covariates ('nbCovs') to simulate for each level of the hierarchy (0 by default). Does not need to be specified if
 \code{covs} is specified. Simulated covariates are provided generic names (e.g., 'cov1.1' and 'cov1.2' for \code{nbHierCovs$level1$nbCovs=2}) and can be included in \code{hierFormula} and/or \code{DM}.}
