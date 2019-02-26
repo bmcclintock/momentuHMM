@@ -7,7 +7,7 @@
 formatHierHMM(data, hierStates, hierDist, hierBeta = NULL,
   hierDelta = NULL, hierFormula = NULL, hierFormulaDelta = NULL,
   mixtures = 1, workBounds = NULL, hierBetaCons = NULL,
-  fixPar = NULL, checkData = TRUE)
+  hierDeltaCons = NULL, fixPar = NULL, checkData = TRUE)
 }
 \arguments{
 \item{data}{\code{\link{momentuHierHMMData}} object or a data frame containing the data streams and covariates.}
@@ -29,6 +29,8 @@ formatHierHMM(data, hierStates, hierDist, hierBeta = NULL,
 \item{workBounds}{An optional named list of 2-column matrices specifying bounds on the working scale. Bounds for \code{beta} and \code{delta} must be provided as 2-column matrices within a hierarchical data structure \code{\link[data.tree]{Node}} corresponding to \code{hierBeta} and \code{hierDelta}, respectively. See \code{\link{fitHMM}}.}
 
 \item{hierBetaCons}{An optional hierarchical data structure \code{\link[data.tree]{Node}} composed of integers identifying any equality constraints among the t.p.m. parameters for each level of the hierarchy ('betaCons'). See \code{\link{fitHMM}}. Default: NULL (based on the hierarchy, certain t.p.m. parameters are constrained to be equal)}
+
+\item{hierDeltaCons}{An optional hierarchical data structure \code{\link[data.tree]{Node}} composed of integers identifying any equality constraints among the initial distribution parameters for each level of the hierarchy ('deltaCons'). See \code{\link{fitHMM}}. Default: NULL (based on the hierarchy, certain t.p.m. parameters are constrained to be equal)}
 
 \item{fixPar}{An optional list of vectors indicating parameters which are assumed known prior to fitting the model. Fixed parameters for \code{beta} and \code{delta} must be provided as vectors within a hierarchical data structure \code{\link[data.tree]{Node}} corresponding to \code{hierBeta} and \code{hierDelta}, respectively. See \code{\link{fitHMM}}. Default: NULL 
 (based on the hierarchy, certain t.p.m. and delta parameters are fixed to be effectively zero).}

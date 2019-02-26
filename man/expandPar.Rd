@@ -4,7 +4,7 @@
 \alias{expandPar}
 \title{Expand vector of free working parameters to vector of all working parameters including any fixed parameters (used in fitHMM.R and nLogLike.R)}
 \usage{
-expandPar(optPar, optInd, fixPar, wparIndex, betaCons, nbStates,
+expandPar(optPar, optInd, fixPar, wparIndex, betaCons, deltaCons, nbStates,
   nbCovsDelta, stationary, nbCovs, nbRecovs = 0, mixtures = 1,
   nbCovsPi = 0)
 }
@@ -18,6 +18,8 @@ expandPar(optPar, optInd, fixPar, wparIndex, betaCons, nbStates,
 \item{wparIndex}{Vector of indices for the elements of \code{fixPar} that are not NA}
 
 \item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters.}
+
+\item{deltaCons}{Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters.}
 
 \item{nbStates}{Number of states of the HMM}
 
@@ -66,7 +68,8 @@ m <- fitHMM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist)
 
 # convert free parameter vector (m$mod$wpar) to full set of working parameters (m$mod$estimate)
 est <- momentuHMM:::expandPar(m$mod$wpar,m$conditions$optInd,unlist(m$conditions$fixPar),
-                              m$conditions$wparIndex,m$conditions$betaCons,nbStates,
+                              m$conditions$wparIndex,m$conditions$betaCons,m$conditions$deltaCons,
+                              nbStates,
                               ncol(m$covsDelta)-1,m$conditions$stationary,nrow(m$mle$beta)-1)
 
 all(est==m$mod$estimate)

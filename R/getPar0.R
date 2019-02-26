@@ -117,7 +117,7 @@ getPar0.momentuHMM<-function(model,nbStates=length(model$stateNames),estAngleMea
       model$mle$theta <- c(model$Par$beta$theta$est)
       names(model$mle$theta) <- colnames(model$Par$beta$theta$est)
     } else nbRecovs <- 0
-    model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,length(model$stateNames),ncol(model$covsDelta)-1,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures,ncol(model$covsPi-1))
+    model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,model$conditions$deltaCons,length(model$stateNames),ncol(model$covsDelta)-1,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures,ncol(model$covsPi-1))
     model$CIbeta <- model$Par$beta
     model$CIreal <- model$Par$real
   }

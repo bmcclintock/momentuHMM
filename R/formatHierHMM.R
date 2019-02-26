@@ -11,6 +11,7 @@
 #' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). See \code{\link{fitHMM}}. Default: \code{mixtures=1}.  
 #' @param workBounds An optional named list of 2-column matrices specifying bounds on the working scale. Bounds for \code{beta} and \code{delta} must be provided as 2-column matrices within a hierarchical data structure \code{\link[data.tree]{Node}} corresponding to \code{hierBeta} and \code{hierDelta}, respectively. See \code{\link{fitHMM}}.
 #' @param hierBetaCons An optional hierarchical data structure \code{\link[data.tree]{Node}} composed of integers identifying any equality constraints among the t.p.m. parameters for each level of the hierarchy ('betaCons'). See \code{\link{fitHMM}}. Default: NULL (based on the hierarchy, certain t.p.m. parameters are constrained to be equal)
+#' @param hierDeltaCons An optional hierarchical data structure \code{\link[data.tree]{Node}} composed of integers identifying any equality constraints among the initial distribution parameters for each level of the hierarchy ('deltaCons'). See \code{\link{fitHMM}}. Default: NULL (based on the hierarchy, certain t.p.m. parameters are constrained to be equal)
 #' @param fixPar An optional list of vectors indicating parameters which are assumed known prior to fitting the model. Fixed parameters for \code{beta} and \code{delta} must be provided as vectors within a hierarchical data structure \code{\link[data.tree]{Node}} corresponding to \code{hierBeta} and \code{hierDelta}, respectively. See \code{\link{fitHMM}}. Default: NULL 
 #' (based on the hierarchy, certain t.p.m. and delta parameters are fixed to be effectively zero). 
 #' @param checkData logical indicating whether or not to check the suitability of \code{data} for the specified hierarchy. Ignored unless \code{data} is provided. Default: TRUE.
@@ -31,7 +32,7 @@
 formatHierHMM <- function(data,hierStates,hierDist,
                           hierBeta=NULL,hierDelta=NULL,
                           hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,
-                          workBounds=NULL,hierBetaCons=NULL,
+                          workBounds=NULL,hierBetaCons=NULL,hierDeltaCons=NULL,
                           fixPar=NULL,checkData=TRUE){
   
   if(is.null(data)) checkData <- FALSE
@@ -354,13 +355,19 @@ formatHierHMM <- function(data,hierStates,hierDist,
       }
     }
     
-    betaCons <- hierMap(hierBetaCons,fixPar$beta,betaCons,hierStates,formula,data,what="hierBetaCons",attribute="betaCons",bc=TRUE)
-    betaCons <- hierDeltaMap(hierBetaCons,fixPar,betaCons,hierStates,formula,formulaDelta,data,what="hierBetaCons",attribute="betaCons",bc=TRUE)$beta0
+    obetaCons <- betaCons
     
-    if(!is.null(hierBeta)) beta0 <- hierMap(hierBeta,fixPar$beta,betaCons,hierStates,formula,data)
-    bd <- hierDeltaMap(hierDelta,list(beta=beta0,delta=fixPar$delta),betaCons,hierStates,formula,formulaDelta,data,what="hierDelta",attribute="delta")
-    delta0 <- bd$delta
-    beta0 <- bd$beta
+    betaCons <- hierMap(hierBetaCons,fixPar$beta,obetaCons,hierStates,formula,data,what="hierBetaCons",attribute="betaCons",bc=TRUE)
+    betaCons <- hierDeltaMap(hierDeltaCons,list(beta=fixPar$beta,delta=fixPar$delta),betaCons,hierStates,formula,formulaDelta,data,what="hierDeltaCons",attribute="deltaCons",bc=TRUE)$beta
+    
+    deltaCons <- hierDeltaMap(hierDeltaCons,list(beta=fixPar$beta,delta=fixPar$delta),obetaCons,hierStates,formula,formulaDelta,data,what="hierDeltaCons",attribute="deltaCons",bc=TRUE)$delta
+    
+    if(!is.null(hierBeta)) beta0 <- hierMap(hierBeta,fixPar$beta,obetaCons,hierStates,formula,data)
+    if(!is.null(hierDelta)) {
+      bd <- hierDeltaMap(hierDelta,list(beta=beta0,delta=fixPar$delta),obetaCons,hierStates,formula,formulaDelta,data,what="hierDelta",attribute="delta")
+      delta0 <- bd$delta
+      beta0 <- bd$beta
+    }
     
     fixPar$beta <- hierMap(hierFixBeta,fixPar$beta,betaCons,hierStates,formula,data,what="fixPar$beta",attribute="fixPar")
     bd <- hierDeltaMap(hierFixDelta,list(beta=fixPar$beta,delta=fixPar$delta),betaCons,hierStates,formula,formulaDelta,data,what="fixPar$delta",attribute="fixPar")
@@ -368,7 +375,7 @@ formatHierHMM <- function(data,hierStates,hierDist,
     fixPar$beta <- bd$beta
     
     if(!is.null(beta0)) {
-      #beta0[which(is.na(beta0))] <- 0
+      if(is.null(hierDelta)) beta0[which(is.na(beta0))] <- 0
       if(mixtures>1) beta0 <- list(beta = beta0)
     }
     
@@ -379,7 +386,7 @@ formatHierHMM <- function(data,hierStates,hierDist,
       if(!is.null(beta0)) rownames(beta0) <- rownames(fixPar$beta)
     }
   }
-  return(list(nbStates=nbStates,dist=dist,formula=formula,formulaDelta=formulaDelta,beta=beta0,delta=delta0,betaRef=betaRef,betaCons=betaCons,fixPar=fixPar,workBounds=workBounds,stateNames=stateNames))
+  return(list(nbStates=nbStates,dist=dist,formula=formula,formulaDelta=formulaDelta,beta=beta0,delta=delta0,betaRef=betaRef,betaCons=betaCons,deltaCons=deltaCons,fixPar=fixPar,workBounds=workBounds,stateNames=stateNames))
 }
 
 checkHierFormula <- function(data,hierFormula,hierStates,hierDist,checkData,what="formula"){
@@ -482,7 +489,7 @@ hierDeltaMap <- function(hierDelta,fixPar,betaCons,hierStates,formula,formulaDel
     beta0 <- fixPar$beta
   } else {
     beta0 <- betaCons
-    delta0 <- NULL
+    delta0 <- fixPar$delta
   }
   if(!is.null(hierDelta)){
     for(j in 1:(hierStates$height-1)){
@@ -503,10 +510,13 @@ hierDeltaMap <- function(hierDelta,fixPar,betaCons,hierStates,formula,formulaDel
         if(!bc) beta0[initsInd] <- inits
         else {
           betaInd <- betaCons[paste0(covNames,"_mix",rep(1:mixtures,each=nbCovs)),]
-          naInd <- is.na(fixPar[paste0(covNames,"_mix",rep(1:mixtures,each=nbCovs)),])
+          naInd <- is.na(fixPar$beta[paste0(covNames,"_mix",rep(1:mixtures,each=nbCovs)),])
           beta0[paste0(covNames,"_mix",rep(1:mixtures,each=nbCovs)),][naInd] <- unique(betaInd[naInd])[inits][match(betaInd[naInd],unique(betaInd[naInd]))]
         }
       } else if(j==1 & !is.null(delta0)){
+        delta0 <- matrix(1:length(fixPar$delta),nrow(fixPar$delta),ncol(fixPar$delta),dimnames = dimnames(fixPar$delta))
+        fixInd <- which(fixPar$delta==-1.e+10)
+        if(length(fixInd)) delta0[fixInd] <- fixInd[1]
         covNames <- colnames(model.matrix(formulaDelta,data))
         nbCovs <- length(covNames)
         inits <- hierDelta[[paste0("level",j)]][[attribute]]

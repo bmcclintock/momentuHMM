@@ -14,20 +14,20 @@ fitHMM(data, ...)
   mixtures = 1, formulaPi = NULL, verbose = NULL, nlmPar = list(),
   fit = TRUE, DM = NULL, cons = NULL, userBounds = NULL,
   workBounds = NULL, workcons = NULL, betaCons = NULL,
-  betaRef = NULL, mvnCoords = NULL, stateNames = NULL,
-  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
-  optMethod = "nlm", control = list(), prior = NULL,
-  modelName = NULL, ...)
+  betaRef = NULL, deltaCons = NULL, mvnCoords = NULL,
+  stateNames = NULL, knownStates = NULL, fixPar = NULL,
+  retryFits = 0, retrySD = NULL, optMethod = "nlm",
+  control = list(), prior = NULL, modelName = NULL, ...)
 
 \method{fitHMM}{momentuHierHMMData}(data, hierStates, hierDist, Par0,
   hierBeta = NULL, hierDelta = NULL, estAngleMean = NULL,
   circularAngleMean = NULL, hierFormula = NULL,
   hierFormulaDelta = NULL, mixtures = 1, formulaPi = NULL,
   nlmPar = list(), fit = TRUE, DM = NULL, userBounds = NULL,
-  workBounds = NULL, hierBetaCons = NULL, mvnCoords = NULL,
-  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
-  optMethod = "nlm", control = list(), prior = NULL,
-  modelName = NULL, ...)
+  workBounds = NULL, hierBetaCons = NULL, hierDeltaCons = NULL,
+  mvnCoords = NULL, knownStates = NULL, fixPar = NULL,
+  retryFits = 0, retrySD = NULL, optMethod = "nlm",
+  control = list(), prior = NULL, modelName = NULL, ...)
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simData}}) or a \code{\link{momentuHierHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simHierData}}) object.}
@@ -154,6 +154,8 @@ through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{work
 
 \item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
 the diagonal elements of the t.p.m. are the reference. See details.}
+
+\item{deltaCons}{Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}. See details.}
 
 \item{mvnCoords}{Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.}
 

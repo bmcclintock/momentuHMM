@@ -98,7 +98,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         model$mle$theta <- c(model$Par$beta$theta$est)
         names(model$mle$theta) <- colnames(model$Par$beta$theta$est)
       } else nbRecovs <- 0
-      model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,nbStates,ncol(model$covsDelta)-1,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures,ncol(model$covsPi)-1)
+      model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,model$conditions$deltaCons,nbStates,ncol(model$covsDelta)-1,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures,ncol(model$covsPi)-1)
       if(!is.null(model$mle$beta)) model$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(model$mle$beta),2,byrow=TRUE)
       if(!is.null(model$Par$beta$pi$est)) model$conditions$workBounds$pi<-matrix(c(-Inf,Inf),length(model$Par$beta$pi$est),2,byrow=TRUE)
       if(!is.null(model$Par$beta$delta$est)) model$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(model$Par$beta$delta$est),2,byrow=TRUE)
