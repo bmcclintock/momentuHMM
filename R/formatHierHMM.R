@@ -171,8 +171,13 @@ formatHierHMM <- function(data,hierStates,hierDist,
     j <- 1
     t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
     names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
+    intCov <- c(paste0("level",levels(data$level)[2*j-1]),paste0("I((level == \"",levels(data$level)[2*j-1],"\") * 1)"))
+    intCov <- intCov[which(intCov %in% colnames(covs))]
+    ointCov <- c(paste0("level",levels(data$level)[(2*j):nbLevels]),paste0("I((level == \"",levels(data$level)[(2*j):nbLevels],"\") * 1)"))
+    ointCov <- ointCov[which(ointCov %in% colnames(covs))]
     levelCovs <- colnames(covs)[grepl(paste0("I((level == \"",levels(data$level)[2*j-1],"\")"),colnames(covs),fixed=TRUE)]
-    otherCovs <- colnames(covs)[-which(colnames(covs) %in% c(paste0("level",levels(data$level)),levelCovs))]
+    levelCovs <- levelCovs[which(!(levelCovs %in% intCov))]
+    otherCovs <- colnames(covs)[-which(colnames(covs) %in% c(intCov,levelCovs,ointCov))]
     for(k in names(t)){
       tt <- data.tree::Traverse(t[[k]],filterFun=function(x) x$level==j+1)
       withinConstr <- acrossConstr <- list()
@@ -183,11 +188,11 @@ formatHierHMM <- function(data,hierStates,hierDist,
           withinConstr[[h]] <- match(paste0(rep(levelStates,each=length(stateInd))," -> ",stateInd),colnames(fixPar$beta),nomatch=0)
           if(any(withinConstr[[h]])){
             for(mix in 1:mixtures){
-              betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),withinConstr[[h]]] <- min(betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),withinConstr[[h]]])
+              betaCons[paste0(intCov,"_mix",mix),withinConstr[[h]]] <- min(betaCons[paste0(intCov,"_mix",mix),withinConstr[[h]]])
               for(lcovs in levelCovs){
                 betaCons[paste0(lcovs,"_mix",mix),withinConstr[[h]]] <- min(betaCons[paste0(lcovs,"_mix",mix),withinConstr[[h]]])
               }
-              fixPar$beta[paste0("level",levels(data$level)[2*j-1],"_mix",mix),withinConstr[[h]]] <- -1.e+10
+              fixPar$beta[paste0(intCov,"_mix",mix),withinConstr[[h]]] <- -1.e+10
               for(lcovs in levelCovs){
                 fixPar$beta[paste0(lcovs,"_mix",mix),withinConstr[[h]]] <- 0
               }
@@ -200,37 +205,37 @@ formatHierHMM <- function(data,hierStates,hierDist,
             acrossRef <- match(paste0(levelStates[[ll]]," -> ",stateInd[1]),colnames(fixPar$beta),nomatch=0)
             for(mix in 1:mixtures){
               if(any(acrossConstr[[h]])){
-                betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossConstr[[h]]])
+                betaCons[paste0(intCov,"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0(intCov,"_mix",mix),acrossConstr[[h]]])
                 for(lcovs in levelCovs){
                   betaCons[paste0(lcovs,"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0(lcovs,"_mix",mix),acrossConstr[[h]]])
                 }
-                betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossConstr[[h]]])
+                betaCons[paste0(ointCov,"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0(ointCov,"_mix",mix),acrossConstr[[h]]])
                 for(ocovs in otherCovs){
                   betaCons[paste0(ocovs,"_mix",mix),acrossConstr[[h]]] <- min(betaCons[paste0(ocovs,"_mix",mix),acrossConstr[[h]]])
                 }
               }
               if(any(acrossRef)){
-                betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossRef] <- min(betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossRef])
+                betaCons[paste0(intCov,"_mix",mix),acrossRef] <- min(betaCons[paste0(intCov,"_mix",mix),acrossRef])
                 for(lcovs in levelCovs){
                   betaCons[paste0(lcovs,"_mix",mix),acrossRef] <- min(betaCons[paste0(lcovs,"_mix",mix),acrossRef])
                 }
-                betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossRef] <- min(betaCons[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossRef])
+                betaCons[paste0(ointCov,"_mix",mix),acrossRef] <- min(betaCons[paste0(ointCov,"_mix",mix),acrossRef])
                 for(ocovs in otherCovs){
                   betaCons[paste0(ocovs,"_mix",mix),acrossRef] <- min(betaCons[paste0(ocovs,"_mix",mix),acrossRef])
                 }
               }
               if(any(acrossConstr[[h]])){
-                fixPar$beta[paste0("level",levels(data$level)[2*j-1],"_mix",mix),acrossConstr[[h]]] <- -1.e+10
+                fixPar$beta[paste0(intCov,"_mix",mix),acrossConstr[[h]]] <- -1.e+10
                 for(lcovs in levelCovs){
                   fixPar$beta[paste0(lcovs,"_mix",mix),acrossConstr[[h]]] <- 0
                 }
-                fixPar$beta[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossConstr[[h]]] <- -1.e+10
+                fixPar$beta[paste0(ointCov,"_mix",mix),acrossConstr[[h]]] <- -1.e+10
                 for(ocovs in otherCovs){
                   fixPar$beta[paste0(ocovs,"_mix",mix),acrossConstr[[h]]] <- 0
                 }
               }
               if(any(acrossRef)){
-                fixPar$beta[paste0("level",levels(data$level)[(2*j):nbLevels],"_mix",mix),acrossRef] <- -1.e+10
+                fixPar$beta[paste0(ointCov,"_mix",mix),acrossRef] <- -1.e+10
                 for(ocovs in otherCovs){
                   fixPar$beta[paste0(ocovs,"_mix",mix),acrossRef] <- 0
                 }
@@ -255,8 +260,10 @@ formatHierHMM <- function(data,hierStates,hierDist,
       t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
       names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
       
+      intCov <- c(paste0("level",levels(data$level)[2*j-2]),paste0("I((level == \"",levels(data$level)[2*j-2],"\") * 1)"))
+      intCov <- intCov[which(intCov %in% colnames(covs))]
       levelCovs <- colnames(covs)[grepl(paste0("I((level == \"",levels(data$level)[2*j-2],"\")"),colnames(covs),fixed=TRUE)]
-      otherCovs <- colnames(covs)[-which(colnames(covs) %in% c(paste0("level",levels(data$level)),levelCovs))]
+      levelCovs <- levelCovs[which(!(levelCovs %in% intCov))]
       
       #initial distribution       
       for(k in names(t)){
@@ -271,11 +278,11 @@ formatHierHMM <- function(data,hierStates,hierDist,
         refConstr <- match(allTrans[which(allTrans %in% paste0(rep(fromState,each=length(toStates))," -> ",toStates))],colnames(fixPar$beta),nomatch=0)
         for(mix in 1:mixtures){
           if(any(initConstr)){
-            betaCons[paste0("level",levels(data$level)[2*j-2],"_mix",mix),initConstr] <- min(betaCons[paste0("level",levels(data$level)[2*j-2],"_mix",mix),initConstr])
+            betaCons[paste0(intCov,"_mix",mix),initConstr] <- min(betaCons[paste0(intCov,"_mix",mix),initConstr])
             for(lcovs in levelCovs){
               betaCons[paste0(lcovs,"_mix",mix),initConstr] <- min(betaCons[paste0(lcovs,"_mix",mix),initConstr])
             }
-            fixPar$beta[paste0("level",levels(data$level)[2*j-2],"_mix",mix),initConstr] <- -1.e+10
+            fixPar$beta[paste0(intCov,"_mix",mix),initConstr] <- -1.e+10
             for(lcovs in levelCovs){
               fixPar$beta[paste0(lcovs,"_mix",mix),initConstr] <- 0
             }
@@ -284,18 +291,21 @@ formatHierHMM <- function(data,hierStates,hierDist,
             #warning("to state = ",toStates,"; betaRef[fromState] = ",betaRef[fromState])
             if(any(refConstr)){
               if(sum(refConstr>0)>1){
-                betaLower[paste0("level",levels(data$level)[2*j-2],"_mix",mix),refConstr] <- 500
+                betaLower[paste0(intCov,"_mix",mix),refConstr] <- 500
                 for(lcovs in levelCovs){
                   betaLower[paste0(lcovs,"_mix",mix),refConstr] <- -(500-100)/length(levelCovs) # don't let XB be less than 100
                 }
-              } else if(!length(levelCovs)) fixPar$beta[paste0("level",levels(data$level)[2*j-2],"_mix",mix),refConstr] <- 500
+              } else if(!length(levelCovs)) fixPar$beta[paste0(intCov,"_mix",mix),refConstr] <- 500
             }
           }
         }
       }
       
+      intCov <- c(paste0("level",levels(data$level)[2*j-1]),paste0("I((level == \"",levels(data$level)[2*j-1],"\") * 1)"))
+      intCov <- intCov[which(intCov %in% colnames(covs))]
       levelCovs <- colnames(covs)[grepl(paste0("I((level == \"",levels(data$level)[2*j-1],"\")"),colnames(covs),fixed=TRUE)]
-      
+      levelCovs <- levelCovs[which(!(levelCovs %in% intCov))]
+
       # t.p.m.
       for(k in names(t)){  
         levelStates <- t[[k]]$Get("state",filterFun = data.tree::isLeaf)
@@ -308,11 +318,11 @@ formatHierHMM <- function(data,hierStates,hierDist,
         refConstr <- match(allTrans[which(allTrans %in% paste0(rep(fromStates,each=length(toStates))," -> ",toStates))],colnames(fixPar$beta),nomatch=0)
         for(mix in 1:mixtures){
           if(any(initConstr)){
-            betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),initConstr] <- min(betaCons[paste0("level",levels(data$level)[2*j-1],"_mix",mix),initConstr])
+            betaCons[paste0(intCov,"_mix",mix),initConstr] <- min(betaCons[paste0(intCov,"_mix",mix),initConstr])
             for(lcovs in levelCovs){
               betaCons[paste0(lcovs,"_mix",mix),initConstr] <- min(betaCons[paste0(lcovs,"_mix",mix),initConstr])
             }
-            fixPar$beta[paste0("level",levels(data$level)[2*j-1],"_mix",mix),initConstr] <- -1.e+10
+            fixPar$beta[paste0(intCov,"_mix",mix),initConstr] <- -1.e+10
             for(lcovs in levelCovs){
               fixPar$beta[paste0(lcovs,"_mix",mix),initConstr] <- 0
             }
@@ -321,11 +331,11 @@ formatHierHMM <- function(data,hierStates,hierDist,
             #warning("to state = ",toStates,"; betaRef[fromStates] = ",betaRef[fromStates])
             if(any(refConstr)) {
               if(sum(refConstr>0)>1){
-                betaLower[paste0("level",levels(data$level)[2*j-1],"_mix",mix),refConstr] <- 500
+                betaLower[paste0(intCov,"_mix",mix),refConstr] <- 500
                 for(lcovs in levelCovs){
                   betaLower[paste0(lcovs,"_mix",mix),refConstr] <- -(500-100)/length(levelCovs) # don't let XB be less than 100
                 }
-              } else if(!length(levelCovs)) fixPar$beta[paste0("level",levels(data$level)[2*j-1],"_mix",mix),refConstr] <- 500
+              } else if(!length(levelCovs)) fixPar$beta[paste0(intCov,"_mix",mix),refConstr] <- 500
             }
           }
         }

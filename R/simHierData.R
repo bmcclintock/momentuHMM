@@ -687,12 +687,6 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       stop("'formulaDelta' covariate(s) not found")
   if(("ID" %in% all.vars(formula) | "ID" %in% all.vars(formPi) | "ID" %in% all.vars(formDelta)) & nbAnimals<2) stop("ID cannot be a covariate when nbAnimals=1")
   
-  newForm <- newFormulas(formula,nbStates)
-  formulaStates <- newForm$formulaStates
-  formterms <- newForm$formterms
-  newformula <- newForm$newformula
-  recharge <- newForm$recharge
-  
   tmpCovs <- data.frame(ID=factor(1,levels=1:nbAnimals))
   if(!is.null(allCovs))
     tmpCovs <- cbind(tmpCovs,allCovs[1,,drop=FALSE])
@@ -719,6 +713,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   }
   
   # build design matrix for recharge model
+  recharge <- newFormulas(formula,nbStates)$recharge
   if(!is.null(recharge)){
     g0covs <- model.matrix(recharge$g0,tmpCovs[1,,drop=FALSE])
     nbG0covs <- ncol(g0covs)-1
@@ -728,6 +723,31 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     tmpcovs <- cbind(tmpCovs,rep(0,nrow(tmpCovs)))
     colnames(tmpcovs) <- c(colnames(tmpCovs),"recharge")
     tmpCovs <- tmpcovs
+  }
+  
+  tmpCovs$level <- factor(level[[1]][1],levels=lLevels[[1]])
+  
+  # get formula now that data are available (in order to properly deal with factor covariates in hierFormula)
+  inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,checkData=FALSE)
+  formula <- inputHierHMM$formula
+  
+  if(is.null(model)){
+    beta <- inputHierHMM$beta
+    delta <- inputHierHMM$delta
+  }
+  if(is.null(workBounds)) workBounds <- list()
+  if(is.list(workBounds)){
+    workBounds$beta <- inputHierHMM$workBounds$beta
+    workBounds$delta <- inputHierHMM$workBounds$delta
+  }
+  
+  newForm <- newFormulas(formula,nbStates)
+  formulaStates <- newForm$formulaStates
+  formterms <- newForm$formterms
+  newformula <- newForm$newformula
+  recharge <- newForm$recharge
+  
+  if(!is.null(recharge)){
     if(!is.null(beta)){
       if(!is.list(beta)) stop("beta must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
     }
@@ -747,20 +767,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     } else beta0 <- beta
   }
   
-  tmpCovs$level <- factor(level[[1]][1],levels=lLevels[[1]])
-  
   nbBetaCovs <- ncol(model.matrix(newformula,tmpCovs))
-  
-  inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,checkData=FALSE)
-  if(is.null(model)){
-    beta0$beta <- inputHierHMM$beta
-    delta <- inputHierHMM$delta
-  }
-  if(is.null(workBounds)) workBounds <- list()
-  if(is.list(workBounds)){
-    workBounds$beta <- inputHierHMM$workBounds$beta
-    workBounds$delta <- inputHierHMM$workBounds$delta
-  }
   
   if(is.null(beta0$beta)){
     beta0$beta <- matrix(rnorm(nbStates*(nbStates-1)*nbBetaCovs*mixtures)[inputHierHMM$betaCons],nrow=nbBetaCovs*mixtures)
