@@ -674,7 +674,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   #  else formula <- formula(~1)
   #}
   
-  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating")
+  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",hierarchical=TRUE)
   
   if(length(all.vars(formula)))
     if(!all(all.vars(formula) %in% c("ID","level",names(allCovs),centerNames,centroidNames,spatialcovnames)))

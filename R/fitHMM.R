@@ -743,7 +743,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
       invokeRestart("muffleWarning")
   }
   
-  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures)
+  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,hierarchical=inherits(data,"hierarchical"))
   
   ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
   nc <- ncmean$nc
