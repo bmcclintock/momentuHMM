@@ -16,7 +16,7 @@ formatHierFormula <- function(data,hierFormula){
     if(length(unlist(formulaTerms))) form <- paste0(form," + ",paste0(unlist(formulaTerms),collapse = " + "))
     form <- as.formula(form)
   } else {
-    lLevels <- hierFormula$Get("name",filterFun=function(x) x$level==2)
+    lLevels <- paste0("level",levels(data$level))#hierFormula$Get("name",filterFun=function(x) x$level==2)
     formulaTerms <- formTerms <- list()
     factorTerms <- names(data)[which(unlist(lapply(data,function(x) inherits(x,"factor"))))]
     for(j in lLevels){
@@ -58,8 +58,10 @@ formatHierFormula <- function(data,hierFormula){
       } else form <- paste0("~ 0 + ",paste0("I((level=='",gsub("level","",lLevels[-factorLevels]),"')*1)",collapse=" + "))
       intercepts <- paste0("I((level=='",gsub("level","",lLevels),"')*1)")
     } else {
-      form <- "~ 0 + level"
-      intercepts <- paste0("level",levels(data$level))
+      form <- paste0("~ 0 + ",paste0("I((level=='",gsub("level","",lLevels),"')*1)",collapse=" + "))
+      intercepts <- paste0("I((level=='",gsub("level","",lLevels),"')*1)")
+      #form <- "~ 0 + level"
+      #intercepts <- paste0("level",levels(data$level))
     }
     if(length(unlist(formulaTerms))) form <- paste0(form," + ",paste0(unlist(formTerms),collapse = " + "))
     form <- as.formula(form)
