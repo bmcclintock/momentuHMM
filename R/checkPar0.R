@@ -100,6 +100,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
       if(all(c("hierStates","hierDist") %in% argNames)){
         if(length(attr(stats::terms.formula(formula),"term.labels"))>0 && is.null(hierArgs$hierFormula)) stop("hierFormula should be specified instead of formula")
         if(length(attr(stats::terms.formula(formulaDelta),"term.labels"))>0 && is.null(hierArgs$hierFormulaDelta)) stop("hierFormulaDelta should be specified instead of formulaDelta")
+        class(data) <- append("hierarchical",class(data))
         return(checkPar0.hierarchical(data,hierStates=hierArgs$hierStates,hierDist=hierArgs$hierDist,Par0,hierBeta=hierArgs$hierBeta,hierDelta=hierArgs$hierDelta,estAngleMean,circularAngleMean,hierFormula=hierArgs$hierFormula,hierFormulaDelta = hierArgs$hierFormulaDelta,mixtures,formulaPi,DM,userBounds,workBounds,fixPar))
       }
     }
@@ -237,7 +238,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
       bInd <- getboundInd(nc[[i]])
       nPar[[i]] <- nPar[[i]][which(!duplicated(bInd))[bInd]]
     }
-    par <- getParDM(data,nbStates,dist,nPar,zeroInflation,oneInflation,estAngleMean,circularAngleMean,DM,cons,userBounds,workBounds,workcons)
+    par <- getParDM.default(data=data,nbStates=nbStates,dist=dist,Par=nPar,zeroInflation=zeroInflation,oneInflation=oneInflation,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,DM=DM,cons=cons,userBounds=userBounds,workBounds=workBounds,workcons=workcons)
     
   } else par <- Par0
   m<-suppressMessages(fitHMM(data=data,nbStates=nbStates,dist=dist,
@@ -327,7 +328,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
   m$mod$estimate <- wpar
   m$mod$hessian <- matrix(0,length(wpar),length(wpar))
   
-  m$CIreal<-CIreal(m)
+  #m$CIreal<-CIreal(m)
   m$CIbeta<-CIbeta(m)
   
   distnames <- names(inputs$dist)
@@ -352,7 +353,6 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
       print(tmpPar)
     }
   }
-  
   if(length(m$stateNames)>1){
     if(!is.null(m$conditions$recharge)){
       cat("\n")
@@ -394,45 +394,47 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
       }
     }
     
-    #if(!is.null(m$mle$beta)) {
-    cat("\n")
-    cat("Regression coeffs for the transition probabilities (beta):\n")
-    cat("----------------------------------------------------------\n")
-    tmpPar <- m$mle$beta
-    if(is.null(beta0))
-      tmpPar <- matrix(1:length(tmpPar),nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
-    else if(!is.null(m$conditions$recharge)){
-      if(is.null(beta0$beta)) tmpPar <- matrix(1:length(tmpPar),nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
-    }
-    if(!is.null(betaCons))
-      tmpPar <- matrix(tmpPar[c(betaCons)],nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
-    print(tmpPar)
-    #}
-    
-    if(!stationary){
+    if(!inherits(data,"hierarchical")){   
+      #if(!is.null(m$mle$beta)) {
       cat("\n")
-      m <- delta_bc(m)
-      if(is.null(m$conditions$formulaDelta)) {
-        formDelta <- ~1
-      } else formDelta <- m$conditions$formulaDelta
-      if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
-        tmpPar <- m$mle$delta[1:mixtures,]
-        if(mixtures==1) rownames(tmpPar)<-NULL
-        else rownames(tmpPar) <- paste0("mix",1:mixtures)
-        if(is.null(delta0))
-          tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
-        cat("Initial distribution:\n")
-        cat("---------------------\n")
-        print(tmpPar)
-      } else {
-        cat("Regression coeffs for the initial distribution:\n")
-        cat("---------------------------------------------------\n")
-        tmpPar <- m$CIbeta$delta$est
-        if(is.null(delta0))
-          tmpPar <- matrix(1:length(tmpPar),nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
-        print(tmpPar)
+      cat("Regression coeffs for the transition probabilities (beta):\n")
+      cat("----------------------------------------------------------\n")
+      tmpPar <- m$mle$beta
+      if(is.null(beta0))
+        tmpPar <- matrix(1:length(tmpPar),nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
+      else if(!is.null(m$conditions$recharge)){
+        if(is.null(beta0$beta)) tmpPar <- matrix(1:length(tmpPar),nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
       }
-    }
+      if(!is.null(betaCons))
+        tmpPar <- matrix(tmpPar[c(betaCons)],nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
+      print(tmpPar)
+      #}
+      
+      if(!stationary){
+        cat("\n")
+        m <- delta_bc(m)
+        if(is.null(m$conditions$formulaDelta)) {
+          formDelta <- ~1
+        } else formDelta <- m$conditions$formulaDelta
+        if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
+          tmpPar <- m$mle$delta[1:mixtures,]
+          if(mixtures==1) rownames(tmpPar)<-NULL
+          else rownames(tmpPar) <- paste0("mix",1:mixtures)
+          if(is.null(delta0))
+            tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
+          cat("Initial distribution:\n")
+          cat("---------------------\n")
+          print(tmpPar)
+        } else {
+          cat("Regression coeffs for the initial distribution:\n")
+          cat("---------------------------------------------------\n")
+          tmpPar <- m$CIbeta$delta$est
+          if(is.null(delta0))
+            tmpPar <- matrix(1:length(tmpPar),nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
+          print(tmpPar)
+        }
+      }
+    } else return(m)
   }
 }
 
@@ -474,9 +476,9 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
   if(is.null(fixPar)) fixPar <- list()
   if(is.list(fixPar)){
     if(!is.null(fixPar$beta)) stop("'fixPar$beta' cannot be specified; use 'hierBeta' instead")
-    fixPar$beta <- inputHierHMM$fixPar$beta
+    if(!is.null(hierBeta) | !is.null(hierDelta)) fixPar$beta <- inputHierHMM$fixPar$beta
     if(!is.null(fixPar$delta)) stop("'fixPar$delta' cannot be specified; use 'hierDelta' instead")
-    fixPar$delta <- inputHierHMM$fixPar$delta
+    if(!is.null(hierDelta)) fixPar$delta <- inputHierHMM$fixPar$delta
   }
   
   if(is.null(workBounds)) workBounds <- list()
@@ -487,5 +489,73 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
     workBounds$delta <- inputHierHMM$workBounds$delta
   }
   
-  return(checkPar0.default(data,nbStates,dist,Par0,beta0,delta0,estAngleMean,circularAngleMean,formula,formulaDelta,stationary=FALSE,mixtures,formulaPi,DM,cons=NULL,userBounds,workBounds,workcons=NULL,betaCons,betaRef,deltaCons,stateNames,fixPar))
+  m <- checkPar0.default(data=data,nbStates=nbStates,dist=dist,Par0=Par0,beta0=beta0,delta0=delta0,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,formula=formula,formulaDelta=formulaDelta,stationary=FALSE,mixtures=mixtures,formulaPi=formulaPi,DM=DM,cons=NULL,userBounds=userBounds,workBounds=workBounds,workcons=NULL,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,stateNames=stateNames,fixPar=fixPar)
+  
+  hier <- mapHier(m$mle$beta,m$mle$pi,m$CIbeta$delta$est,hierBeta=hierBeta,hierDelta=hierDelta,inputHierHMM$fixPar,m$conditions$betaCons,m$conditions$deltaCons,hierStates,m$conditions$formula,m$conditions$formulaDelta,m$data,m$conditions$mixtures,m$mle$g0,m$mle$theta,fill=TRUE)
+  
+  if(!is.list(hier$hierBeta)){
+    beta0 <- list(beta=hier$hierBeta)
+  } else {
+    beta0 <- hier$hierBeta
+  }
+  delta0 <- hier$hierDelta
+  
+
+  cat("\n")
+  cat("Regression coeffs for the transition probabilities (beta):\n")
+  cat("----------------------------------------------------------\n")
+  for(j in 1:(hierStates$height-1)){
+  cat("------------------------- ",paste0("level",j)," -----------------------\n")
+    if(j>1){
+      t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
+      names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
+      for(jj in names(t)){
+        tmpPar <- beta0$beta[[paste0("level",j)]][[jj]]$beta
+        tmpCons <- beta0$beta[[paste0("level",j)]][[jj]]$betaCons
+        if(is.null(hierBeta))
+          tmpPar <- tmpCons
+        else if(!is.null(m$conditions$recharge)){
+          if(is.null(hierBeta$beta)) tmpPar <- tmpCons
+        }
+        print(tmpPar)
+        cat("\n")
+      }
+    } else {
+      tmpPar <- beta0$beta[[paste0("level",j)]]$beta
+      tmpCons <- beta0$beta[[paste0("level",j)]]$betaCons
+      if(is.null(hierBeta))
+        tmpPar <- tmpCons
+      else if(!is.null(m$conditions$recharge)){
+        if(is.null(hierBeta$beta)) tmpPar <- tmpCons
+      }
+      print(tmpPar)
+      cat("\n")
+    }
+  }
+  
+  cat("Regression coeffs for the initial distribution:\n")
+  cat("--------------------------------------------------\n")
+  for(j in 1:(hierStates$height-1)){
+    cat("-------------------- ",paste0("level",j)," --------------------\n")
+    if(j>1){
+      t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
+      names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
+      for(jj in names(t)){
+        tmpPar <- delta0[[paste0("level",j)]][[jj]]$delta
+        tmpCons <- delta0[[paste0("level",j)]][[jj]]$deltaCons
+        if(is.null(hierDelta))
+          tmpPar <- tmpCons
+        print(tmpPar)
+        cat("\n")
+      }
+    } else {
+      tmpPar <- delta0[[paste0("level",j)]]$delta
+      tmpCons <- delta0[[paste0("level",j)]]$deltaCons
+      if(is.null(hierDelta))
+        tmpPar <- tmpCons
+      print(tmpPar)
+      cat("\n")
+    }
+  }
+
 }
