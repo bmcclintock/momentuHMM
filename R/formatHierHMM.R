@@ -115,8 +115,8 @@ formatHierHMM <- function(data,hierStates,hierDist,
   }
   formula <- formatHierFormula(data,whierFormula)
   
-  newForm <- newFormulas(formula,nbStates)
-  if(!is.null(newForm$recharge)) stop("sorry, hierarchical recharge models are not currently supported")
+  recharge <- newFormulas(formula,nbStates)$recharge
+  if(!is.null(recharge)) stop("sorry, hierarchical recharge models are not currently supported")
   
   # set t.p.m. reference states based on top level
   betaRef <- rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
@@ -344,18 +344,24 @@ formatHierHMM <- function(data,hierStates,hierDist,
     fixInd <- which(fixPar$beta==-1.e+10)
     if(length(fixInd)) betaCons[fixInd] <- fixInd[1]
     
-    if(mixtures>1){
-      if(!is.null(hierBeta)){
-        if(!is.list(hierBeta) || !all(names(hierBeta) %in% c("beta","pi"))) stop("hierBeta must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
+    Pi <- g0 <- theta <- NULL
+    if(!is.null(hierBeta)){
+      if(mixtures>1){
+        if(!is.list(hierBeta) || !all(names(hierBeta) %in% c("beta","pi","g0","theta"))) stop("hierBeta must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
+        Pi <- hierBeta$pi
       }
-    } else {
-      hierBeta <- list(beta=hierBeta)
+      if(!is.null(recharge)){
+        if(!is.list(hierBeta) || !all(names(hierBeta) %in% c("beta","pi","g0","theta"))) stop("hierBeta must be a list with elements named 'beta', 'g0', and/or 'theta' when including a recharge model")
+        g0 <- hierBeta$g0
+        theta <- hierBeta$theta
+      }
+      if(is.list(hierBeta)) hierBeta <- hierBeta$beta
     }
     
-    cons <- mapCons(hierBeta$beta,hierDelta,fixPar,betaCons,hierStates,formula,formulaDelta,data,mixtures)
-    fix  <- mapPar(hierBeta$beta,hierDelta,fixPar,betaCons,cons$deltaCons,hierStates,formula,formulaDelta,data,mixtures,field="fixPar")
-    par  <- mapPar(hierBeta$beta,hierDelta,fixPar,betaCons,cons$deltaCons,hierStates,formula,formulaDelta,data,mixtures,field="beta")
-    wb   <- mapBounds(hierBeta$beta,hierDelta,fixPar,betaCons,cons$deltaCons,hierStates,formula,formulaDelta,data,mixtures)
+    cons <- mapCons(hierBeta,hierDelta,fixPar,betaCons,hierStates,formula,formulaDelta,data,mixtures)
+    fix  <- mapPar(hierBeta,hierDelta,fixPar,betaCons,cons$deltaCons,hierStates,formula,formulaDelta,data,mixtures,field="fixPar")
+    par  <- mapPar(hierBeta,hierDelta,fixPar,betaCons,cons$deltaCons,hierStates,formula,formulaDelta,data,mixtures,field="beta")
+    wb   <- mapBounds(hierBeta,hierDelta,fixPar,betaCons,cons$deltaCons,hierStates,formula,formulaDelta,data,mixtures)
     
     betaCons <- cons$betaCons
     deltaCons <- cons$deltaCons
@@ -382,10 +388,17 @@ formatHierHMM <- function(data,hierStates,hierDist,
       if(!is.null(fixPar$beta)) rownames(fixPar$beta) <- colnames(covs)
       if(!is.null(fixPar$delta)) rownames(fixPar$delta) <- colnames(covsDelta)
       if(!is.null(betaCons)) rownames(betaCons) <- rownames(fixPar$beta)
+      if(!is.null(deltaCons)) rownames(deltaCons) <- colnames(covsDelta)
       if(!is.null(beta0)) rownames(beta0) <- rownames(fixPar$beta)
+      if(!is.null(delta0)) rownames(delta0) <- rownames(fixPar$delta)
     }
+    
+    # populate hierBeta and hierDelta if not provided
+    hier <- mapHier(beta0,Pi,delta0,hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,formula,formulaDelta,data,mixtures,g0,theta)
+    hierBeta <- hier$hierBeta
+    hierDelta <- hier$hierDelta
   }
-  return(list(nbStates=nbStates,dist=dist,formula=formula,formulaDelta=formulaDelta,beta=beta0,delta=delta0,betaRef=betaRef,betaCons=betaCons,deltaCons=deltaCons,fixPar=fixPar,workBounds=workBounds,stateNames=stateNames))
+  return(list(nbStates=nbStates,dist=dist,formula=formula,formulaDelta=formulaDelta,beta=beta0,delta=delta0,hierBeta=hierBeta,hierDelta=hierDelta,betaRef=betaRef,betaCons=betaCons,deltaCons=deltaCons,fixPar=fixPar,workBounds=workBounds,stateNames=stateNames))
 }
 
 checkHierFormula <- function(data,hierFormula,hierStates,hierDist,checkData,what="formula"){
@@ -504,8 +517,12 @@ mapCons <- function(hierBeta,hierDelta,fixPar,betaCons,hierStates,formula,formul
 mapPar <- function(hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,formula,formulaDelta,data,mixtures,field="beta"){
   
   match.arg(field,c("beta","fixPar"))
-  beta <- delta <- NULL
   
+  if(field=="beta") beta <- delta <- NULL
+  else {
+    beta <- fixPar$beta
+    delta <- fixPar$delta
+  }
   if(field %in% hierBeta$fieldsAll){
     beta <- fixPar$beta
     what <- "hierBeta"
@@ -652,4 +669,121 @@ mapBounds <- function(hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,fo
     delta <- cbind(deltaLower[deltaCons],deltaUpper[deltaCons])
   }
   return(list(beta = beta, delta = delta))
+}
+
+mapHier <- function(beta,pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,formula,formulaDelta,data,mixtures,g0=NULL,theta=NULL,fill=FALSE){
+  
+  if(is.null(hierBeta)){
+    hierBeta <- Node$new("hierBeta")
+    hierBeta$AddChild(paste0("level1"))
+    for(j in 2:(hierStates$height-1)){
+      hierBeta$AddChild(paste0("level",j))
+      for(jj in hierStates$Get("name",filterFun=function(x) x$level==j & x$count>0)){
+        hierBeta[[paste0("level",j)]]$AddChild(jj)
+      }
+    }
+  }
+  if(is.null(hierDelta)){
+    hierDelta <- Node$new("hierDelta")
+    hierDelta$AddChild(paste0("level1"))
+    for(j in 2:(hierStates$height-1)){
+      hierDelta$AddChild(paste0("level",j))
+      for(jj in hierStates$Get("name",filterFun=function(x) x$level==j & x$count>0)){
+        hierDelta[[paste0("level",j)]]$AddChild(jj)
+      }
+    }        
+  }
+  
+  if(is.null(beta)) beta <- matrix(0,nrow(fixPar$beta),ncol(fixPar$beta),dimnames=dimnames(fixPar$beta))
+  if(is.null(delta)) delta <- matrix(0,nrow(fixPar$delta),ncol(fixPar$delta),dimnames=dimnames(fixPar$delta))
+  
+  whierBeta <- NULL
+  if(is.list(hierBeta)){
+    if(inherits(hierBeta$beta,"Node")) whierBeta <- Clone(hierBeta$beta)
+  } else if(inherits(hierBeta,"Node")) whierBeta <- data.tree::Clone(hierBeta)
+
+  if(inherits(whierBeta,"Node")){
+    what <- "hierBeta"
+    for(j in 1:(hierStates$height-1)){
+      covNames <- colnames(model.matrix(formula,data[which(data$level==j),]))
+      covNames <- covNames[grepl(paste0("level",j,"$"),covNames) | grepl(paste0("I((level == \"",j,"\")"),covNames,fixed=TRUE)]
+      nbCovs <- length(covNames)
+      if(mixtures>1) covNames <- paste0(covNames,"_mix",rep(1:mixtures,each=nbCovs))
+      if(j>1){
+        initsInd <- unique(betaCons[covNames,][which(is.na(fixPar$beta[covNames,]))])
+        inits <- beta[initsInd]
+        count <- 0
+        t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
+        names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
+        for(jj in names(t)){
+          nStates <- length(t[[jj]]$Get("state",filterFun = data.tree::isLeaf))
+          if(is.null(whierBeta[[paste0("level",j)]][[jj]]$betaCons)) {
+            iRef <- count + matrix(1:(nStates*(nStates-1)*nbCovs*mixtures),nbCovs*mixtures,nStates*(nStates-1))
+            if(fill) whierBeta[[paste0("level",j)]][[jj]]$betaCons <- iRef
+          } else iRef <- whierBeta[[paste0("level",j)]][[jj]]$betaCons
+          if(fill & is.null(whierBeta[[paste0("level",j)]][[jj]]$fixPar)) whierBeta[[paste0("level",j)]][[jj]]$fixPar <- matrix(NA,nbCovs*mixtures,nStates*(nStates-1)) 
+          if(fill & is.null(whierBeta[[paste0("level",j)]][[jj]]$workBounds)) whierBeta[[paste0("level",j)]][[jj]]$workBounds <- matrix(c(-Inf,Inf),nbCovs*mixtures*nStates*(nStates-1),2,byrow=TRUE)
+          if(!is.null(whierBeta[[paste0("level",j)]][[jj]]$beta)) whierBeta[[paste0("level",j)]][[jj]]$beta[] <- inits[iRef]
+          else whierBeta[[paste0("level",j)]][[jj]]$beta <- inits[iRef]
+          count <- count + (nStates*(nStates-1)*nbCovs*mixtures)
+        }
+      } else {
+        initsInd <- unique(betaCons[covNames,][which(is.na(fixPar$beta[covNames,]))])
+        if(fill & is.null(whierBeta[[paste0("level",j)]]$betaCons)) whierBeta[[paste0("level",j)]]$betaCons <- matrix(1:length(beta[initsInd]),nbCovs*mixtures)
+        if(fill & is.null(whierBeta[[paste0("level",j)]]$fixPar)) whierBeta[[paste0("level",j)]]$fixPar <- matrix(rep(NA,length(beta[initsInd])),nbCovs*mixtures)
+        if(fill & is.null(whierBeta[[paste0("level",j)]]$workBounds)) whierBeta[[paste0("level",j)]]$workBounds <- matrix(c(-Inf,Inf),length(beta[initsInd]),2,byrow=TRUE)
+        if(!is.null(whierBeta[[paste0("level",j)]]$beta)) whierBeta[[paste0("level",j)]]$beta[] <- beta[initsInd]
+        else whierBeta[[paste0("level",j)]]$beta <- beta[initsInd]
+      }
+    }
+  }
+  
+  whierDelta <- Clone(hierDelta)
+  what <- "hierDelta"
+  for(j in 1:(hierStates$height-1)){
+    if(j>1){
+      covNames <- colnames(model.matrix(formula,data[which(data$level==paste0(j,"i")),]))
+      covNames <- covNames[grepl(paste0("level",j,"i$"),covNames) | grepl(paste0("I((level == \"",j,"i\")"),covNames,fixed=TRUE)]
+      nbCovs <- length(covNames)
+      if(mixtures>1) covNames <- paste0(covNames,"_mix",rep(1:mixtures,each=nbCovs))
+      initsInd <- unique(betaCons[covNames,][which(is.na(fixPar$beta[covNames,]))])
+      inits <- beta[initsInd]
+      count <- 0
+      t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
+      names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
+      for(jj in names(t)){
+        nStates <- length(t[[jj]]$Get("state",filterFun = data.tree::isLeaf))
+        if(is.null(whierDelta[[paste0("level",j)]][[jj]]$deltaCons)) {
+          iRef <- count + matrix(1:((nStates-1)*nbCovs*mixtures),nbCovs*mixtures,(nStates-1))
+          if(fill) whierDelta[[paste0("level",j)]][[jj]]$deltaCons <- iRef
+        } else iRef <- whierDelta[[paste0("level",j)]][[jj]]$deltaCons
+        if(fill & is.null(whierDelta[[paste0("level",j)]][[jj]]$fixPar)) whierDelta[[paste0("level",j)]][[jj]]$fixPar <- matrix(NA,nbCovs*mixtures,(nStates-1))
+        if(fill & is.null(whierDelta[[paste0("level",j)]][[jj]]$workBounds)) whierDelta[[paste0("level",j)]][[jj]]$workBounds <- matrix(c(-Inf,Inf),nbCovs*mixtures*(nStates-1),2,byrow=TRUE)
+        if(!is.null(whierDelta[[paste0("level",j)]][[jj]]$delta)) whierDelta[[paste0("level",j)]][[jj]]$delta[] <- inits[iRef]
+        else whierDelta[[paste0("level",j)]][[jj]]$delta <- inits[iRef]
+        count <- count + (nStates-1)*nbCovs*mixtures
+      }
+    } else if(j==1){
+      covNames <- colnames(model.matrix(formulaDelta,data))
+      nbCovs <- length(covNames)
+      if(mixtures>1) covNames <- paste0(covNames,"_mix",rep(1:mixtures,each=nbCovs))
+      initsInd <- unique(deltaCons[covNames,][which(is.na(fixPar$delta[covNames,]))])
+      if(fill & is.null(whierDelta[[paste0("level",j)]]$deltaCons)) whierDelta[[paste0("level",j)]]$deltaCons <- matrix(1:length(delta[initsInd]),nbCovs*mixtures)
+      if(fill & is.null(whierDelta[[paste0("level",j)]]$fixPar)) whierDelta[[paste0("level",j)]]$fixPar <- matrix(rep(NA,length(delta[initsInd])),nbCovs*mixtures)
+      if(fill & is.null(whierDelta[[paste0("level",j)]]$workBounds)) whierDelta[[paste0("level",j)]]$workBounds <- matrix(c(-Inf,Inf),length(delta[initsInd]),2,byrow=TRUE)
+      if(!is.null(whierDelta[[paste0("level",j)]]$delta)) whierDelta[[paste0("level",j)]]$delta[] <- delta[initsInd]
+      else whierDelta[[paste0("level",j)]]$delta <- delta[initsInd]
+    }
+  }
+  
+  recharge <- newFormulas(formula,length(hierStates$Get("state",filterFun=data.tree::isLeaf)))$recharge
+  if(mixtures>1 | !is.null(recharge)){
+    whierBeta <- list(beta=whierBeta)
+    if(mixtures>1) whierBeta$pi <- pi
+    if(!is.null(recharge)){
+      whierBeta$g0 <- g0
+      whierBeta$theta <- theta
+    }
+  }
+  return(list(hierBeta=whierBeta,hierDelta=whierDelta))
 }

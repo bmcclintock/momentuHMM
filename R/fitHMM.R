@@ -1033,10 +1033,24 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
                 verbose=NULL,nlmPar,fit,
                 DM,cons=NULL,userBounds,workBounds=workBounds,workcons=NULL,inputHierHMM$betaCons,inputHierHMM$betaRef,deltaCons=inputHierHMM$deltaCons,
                 mvnCoords,inputHierHMM$stateNames,knownStates,fixPar,retryFits,retrySD,optMethod,control,prior,modelName)
+  
+  # replace initial values with estimates in hierBeta and hierDelta (if provided)
+  par <- getPar(fit)
+  if(is.list(par$beta)){
+    beta <- par$beta$beta
+    pi <- par$beta$pi
+    g0 <- par$beta$g0
+    theta <- par$beta$theta
+  } else {
+    beta <- par$beta
+    pi <- g0 <- theta <- NULL
+  }
+  hier <- mapHier(beta,pi,par$delta,hierBeta,hierDelta,fit$conditions$fixPar,fit$conditions$betaCons,fit$conditions$deltaCons,hierStates,fit$conditions$formula,fit$conditions$formulaDelta,fit$data,fit$conditions$mixtures,g0,theta,fill=TRUE)
+
   fit$conditions$hierStates <- hierStates
   fit$conditions$hierDist <- hierDist
-  fit$conditions$hierBeta <- hierBeta
-  fit$conditions$hierDelta <- hierDelta
+  fit$conditions$hierBeta <- hier$hierBeta
+  fit$conditions$hierDelta <- hier$hierDelta
   fit$conditions$hierFormula <- hierFormula
   fit$conditions$hierFormulaDelta <- hierFormulaDelta
   class(fit$data) <- class(data)

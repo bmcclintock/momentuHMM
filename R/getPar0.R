@@ -34,7 +34,7 @@ getPar0 <- function(model, ...) {
 #' \item{delta}{Initial distribution of the HMM. Only returned if \code{stateNames} has the same membership as the state names for \code{model}}.
 #' 
 #' All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{hierDist}, \code{userBounds}, \code{workBounds}, etc.) and \code{data} are assumed to be the same 
-#' for \code{model} and the new model (as specified by  \code{nbStates}, \code{hierStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{hierFormula}, \code{formulaDelta}, \code{DM}, etc.).
+#' for \code{model} and the new model (as specified by  \code{nbStates}, \code{hierStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{hierFormula}, \code{formulaDelta}, \code{hierFormulaDelta}, \code{DM}, etc.).
 #'
 #' @seealso \code{\link{getPar}}, \code{\link{getParDM}}, \code{\link{fitHMM}}, \code{\link{MIfitHMM}}
 #' 
@@ -426,9 +426,28 @@ getPar0.momentuHierHMM<-function(model,hierStates=model$conditions$hierStates,es
   nbStates <- inputHierHMM$nbStates
   formula <- inputHierHMM$formula
   formulaDelta <- inputHierHMM$formulaDelta
+  betaCons <- inputHierHMM$betaCons
   betaRef <- inputHierHMM$betaRef
+  deltaCons <- inputHierHMM$deltaCons
+  fixPar <- inputHierHMM$fixPar
   stateNames <- inputHierHMM$stateNames
   
-  return(getPar0.momentuHMM(model,nbStates,estAngleMean,circularAngleMean,formula,formulaDelta,mixtures,formulaPi,DM,betaRef,stateNames))
+  Par0 <- getPar0.momentuHMM(model,nbStates,estAngleMean,circularAngleMean,formula,formulaDelta,mixtures,formulaPi,DM,betaRef,stateNames)
+  
+  if(is.list(Par0$beta)){
+    beta0 <- Par0$beta$beta
+    Pi <- Par0$beta$pi
+    g0 <- Par0$beta$g0
+    theta <- Par0$beta$theta
+  } else {
+    beta0 <- Par0$beta
+    Pi <- g0 <- theta <- NULL
+  }
+  hier <- mapHier(beta0,Pi,Par0$delta,hierBeta=NULL,hierDelta=NULL,fixPar,betaCons,deltaCons,hierStates,formula,formulaDelta,model$data,mixtures,g0,theta)
 
+  Par0$beta <- Par0$delta <- NULL
+  Par0$hierBeta <- hier$hierBeta
+  Par0$hierDelta <- hier$hierDelta
+  
+  Par0
 }
