@@ -1,6 +1,7 @@
 .travis.yml
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^data-raw$
 vignettes/nfsData.RData
 vignettes/turtleData.RData
 vignettes/greySealData_TPM.RData

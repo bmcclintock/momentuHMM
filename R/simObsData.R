@@ -167,7 +167,6 @@ simObsData.momentuHMMData<-function(data,lambda,errorEllipse,...){
 #' @importFrom argosfilter radian
 #' @importFrom crawl argosDiag2Cov
 #' @importFrom stats rexp
-#' @importFrom DataCombine InsertRow
 #' @export
 simObsData.momentuHierHMMData<-function(data,lambda,errorEllipse,coordLevel,...){
   
