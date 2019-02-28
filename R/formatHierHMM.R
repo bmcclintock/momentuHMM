@@ -711,6 +711,7 @@ mapHier <- function(beta,pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,h
       if(mixtures>1) covNames <- paste0(covNames,"_mix",rep(1:mixtures,each=nbCovs))
       if(j>1){
         initsInd <- unique(betaCons[covNames,][which(is.na(fixPar$beta[covNames,]))])
+        dimNames <- mapply(function(x) mapply(`[[`, dimnames(fixPar$beta), arrayInd(x, dim(fixPar$beta))),initsInd)
         inits <- beta[initsInd]
         count <- 0
         t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
@@ -719,21 +720,22 @@ mapHier <- function(beta,pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,h
           nStates <- length(t[[jj]]$Get("state",filterFun = data.tree::isLeaf))
           if(is.null(whierBeta[[paste0("level",j)]][[jj]]$betaCons)) {
             iRef <- count + matrix(1:(nStates*(nStates-1)*nbCovs*mixtures),nbCovs*mixtures,nStates*(nStates-1))
-            if(fill) whierBeta[[paste0("level",j)]][[jj]]$betaCons <- iRef
           } else iRef <- whierBeta[[paste0("level",j)]][[jj]]$betaCons
-          if(fill & is.null(whierBeta[[paste0("level",j)]][[jj]]$fixPar)) whierBeta[[paste0("level",j)]][[jj]]$fixPar <- matrix(NA,nbCovs*mixtures,nStates*(nStates-1)) 
-          if(fill & is.null(whierBeta[[paste0("level",j)]][[jj]]$workBounds)) whierBeta[[paste0("level",j)]][[jj]]$workBounds <- matrix(c(-Inf,Inf),nbCovs*mixtures*nStates*(nStates-1),2,byrow=TRUE)
-          if(!is.null(whierBeta[[paste0("level",j)]][[jj]]$beta)) whierBeta[[paste0("level",j)]][[jj]]$beta[] <- inits[iRef]
-          else whierBeta[[paste0("level",j)]][[jj]]$beta <- inits[iRef]
+          idimNames <- list(covNames,unique(dimNames[2,iRef]))
+          if(fill & is.null(whierBeta[[paste0("level",j)]][[jj]]$betaCons)) whierBeta[[paste0("level",j)]][[jj]]$betaCons <- matrix(iRef,nbCovs*mixtures,nStates*(nStates-1),dimnames=idimNames) 
+          if(fill & is.null(whierBeta[[paste0("level",j)]][[jj]]$fixPar)) whierBeta[[paste0("level",j)]][[jj]]$fixPar <- matrix(NA,nbCovs*mixtures,nStates*(nStates-1),dimnames=idimNames) 
+          if(fill & is.null(whierBeta[[paste0("level",j)]][[jj]]$workBounds)) whierBeta[[paste0("level",j)]][[jj]]$workBounds <- matrix(c(-Inf,Inf),nbCovs*mixtures*nStates*(nStates-1),2,byrow=TRUE, dimnames = list(paste0(idimNames[[1]],":",rep(idimNames[[2]],each=length(idimNames[[1]]))),c("lower","upper")))
+          whierBeta[[paste0("level",j)]][[jj]]$beta <- matrix(inits[iRef],nbCovs*mixtures,nStates*(nStates-1),dimnames=idimNames)
           count <- count + (nStates*(nStates-1)*nbCovs*mixtures)
         }
       } else {
         initsInd <- unique(betaCons[covNames,][which(is.na(fixPar$beta[covNames,]))])
-        if(fill & is.null(whierBeta[[paste0("level",j)]]$betaCons)) whierBeta[[paste0("level",j)]]$betaCons <- matrix(1:length(beta[initsInd]),nbCovs*mixtures)
-        if(fill & is.null(whierBeta[[paste0("level",j)]]$fixPar)) whierBeta[[paste0("level",j)]]$fixPar <- matrix(rep(NA,length(beta[initsInd])),nbCovs*mixtures)
-        if(fill & is.null(whierBeta[[paste0("level",j)]]$workBounds)) whierBeta[[paste0("level",j)]]$workBounds <- matrix(c(-Inf,Inf),length(beta[initsInd]),2,byrow=TRUE)
-        if(!is.null(whierBeta[[paste0("level",j)]]$beta)) whierBeta[[paste0("level",j)]]$beta[] <- beta[initsInd]
-        else whierBeta[[paste0("level",j)]]$beta <- beta[initsInd]
+        dimNames <- mapply(function(x) mapply(`[[`, dimnames(fixPar$beta), arrayInd(x, dim(fixPar$beta))),initsInd)
+        dimNames <- list(covNames,unique(dimNames[2,]))
+        if(fill & is.null(whierBeta[[paste0("level",j)]]$betaCons)) whierBeta[[paste0("level",j)]]$betaCons <- matrix(1:length(beta[initsInd]),nbCovs*mixtures,dimnames = dimNames)
+        if(fill & is.null(whierBeta[[paste0("level",j)]]$fixPar)) whierBeta[[paste0("level",j)]]$fixPar <- matrix(rep(NA,length(beta[initsInd])),nbCovs*mixtures,dimnames = dimNames)
+        if(fill & is.null(whierBeta[[paste0("level",j)]]$workBounds)) whierBeta[[paste0("level",j)]]$workBounds <- matrix(c(-Inf,Inf),length(beta[initsInd]),2,byrow=TRUE, dimnames = list(paste0(dimNames[[1]],":",rep(dimNames[[2]],each=length(dimNames[[1]]))),c("lower","upper")))
+        whierBeta[[paste0("level",j)]]$beta <- matrix(beta[initsInd],nbCovs*mixtures,dimnames = dimNames)
       }
     }
   }
@@ -747,6 +749,7 @@ mapHier <- function(beta,pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,h
       nbCovs <- length(covNames)
       if(mixtures>1) covNames <- paste0(covNames,"_mix",rep(1:mixtures,each=nbCovs))
       initsInd <- unique(betaCons[covNames,][which(is.na(fixPar$beta[covNames,]))])
+      dimNames <- mapply(function(x) mapply(`[[`, dimnames(fixPar$beta), arrayInd(x, dim(fixPar$beta))),initsInd)
       inits <- beta[initsInd]
       count <- 0
       t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
@@ -755,12 +758,12 @@ mapHier <- function(beta,pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,h
         nStates <- length(t[[jj]]$Get("state",filterFun = data.tree::isLeaf))
         if(is.null(whierDelta[[paste0("level",j)]][[jj]]$deltaCons)) {
           iRef <- count + matrix(1:((nStates-1)*nbCovs*mixtures),nbCovs*mixtures,(nStates-1))
-          if(fill) whierDelta[[paste0("level",j)]][[jj]]$deltaCons <- iRef
         } else iRef <- whierDelta[[paste0("level",j)]][[jj]]$deltaCons
-        if(fill & is.null(whierDelta[[paste0("level",j)]][[jj]]$fixPar)) whierDelta[[paste0("level",j)]][[jj]]$fixPar <- matrix(NA,nbCovs*mixtures,(nStates-1))
-        if(fill & is.null(whierDelta[[paste0("level",j)]][[jj]]$workBounds)) whierDelta[[paste0("level",j)]][[jj]]$workBounds <- matrix(c(-Inf,Inf),nbCovs*mixtures*(nStates-1),2,byrow=TRUE)
-        if(!is.null(whierDelta[[paste0("level",j)]][[jj]]$delta)) whierDelta[[paste0("level",j)]][[jj]]$delta[] <- inits[iRef]
-        else whierDelta[[paste0("level",j)]][[jj]]$delta <- inits[iRef]
+        idimNames <- list(covNames,gsub('.*->',"state",unique(dimNames[2,iRef])))
+        if(fill & is.null(whierDelta[[paste0("level",j)]][[jj]]$deltaCons)) whierDelta[[paste0("level",j)]][[jj]]$deltaCons <- matrix(iRef,nbCovs*mixtures,(nStates-1),dimnames=idimNames)
+        if(fill & is.null(whierDelta[[paste0("level",j)]][[jj]]$fixPar)) whierDelta[[paste0("level",j)]][[jj]]$fixPar <- matrix(NA,nbCovs*mixtures,(nStates-1),dimnames=idimNames)
+        if(fill & is.null(whierDelta[[paste0("level",j)]][[jj]]$workBounds)) whierDelta[[paste0("level",j)]][[jj]]$workBounds <- matrix(c(-Inf,Inf),nbCovs*mixtures*(nStates-1),2,byrow=TRUE, dimnames = list(paste0(idimNames[[1]],":",rep(idimNames[[2]],each=length(idimNames[[1]]))),c("lower","upper")))
+        whierDelta[[paste0("level",j)]][[jj]]$delta <- matrix(inits[iRef],nbCovs*mixtures,(nStates-1),dimnames=idimNames)
         count <- count + (nStates-1)*nbCovs*mixtures
       }
     } else if(j==1){
@@ -768,11 +771,12 @@ mapHier <- function(beta,pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,h
       nbCovs <- length(covNames)
       if(mixtures>1) covNames <- paste0(covNames,"_mix",rep(1:mixtures,each=nbCovs))
       initsInd <- unique(deltaCons[covNames,][which(is.na(fixPar$delta[covNames,]))])
-      if(fill & is.null(whierDelta[[paste0("level",j)]]$deltaCons)) whierDelta[[paste0("level",j)]]$deltaCons <- matrix(1:length(delta[initsInd]),nbCovs*mixtures)
-      if(fill & is.null(whierDelta[[paste0("level",j)]]$fixPar)) whierDelta[[paste0("level",j)]]$fixPar <- matrix(rep(NA,length(delta[initsInd])),nbCovs*mixtures)
-      if(fill & is.null(whierDelta[[paste0("level",j)]]$workBounds)) whierDelta[[paste0("level",j)]]$workBounds <- matrix(c(-Inf,Inf),length(delta[initsInd]),2,byrow=TRUE)
-      if(!is.null(whierDelta[[paste0("level",j)]]$delta)) whierDelta[[paste0("level",j)]]$delta[] <- delta[initsInd]
-      else whierDelta[[paste0("level",j)]]$delta <- delta[initsInd]
+      dimNames <- mapply(function(x) mapply(`[[`, dimnames(fixPar$delta), arrayInd(x, dim(fixPar$delta))),initsInd)
+      dimNames <- list(covNames,unique(dimNames[2,]))
+      if(fill & is.null(whierDelta[[paste0("level",j)]]$deltaCons)) whierDelta[[paste0("level",j)]]$deltaCons <- matrix(1:length(delta[initsInd]),nbCovs*mixtures,dimnames=dimNames)
+      if(fill & is.null(whierDelta[[paste0("level",j)]]$fixPar)) whierDelta[[paste0("level",j)]]$fixPar <- matrix(rep(NA,length(delta[initsInd])),nbCovs*mixtures,dimnames=dimNames)
+      if(fill & is.null(whierDelta[[paste0("level",j)]]$workBounds)) whierDelta[[paste0("level",j)]]$workBounds <- matrix(c(-Inf,Inf),length(delta[initsInd]),2,byrow=TRUE, dimnames = list(paste0(dimNames[[1]],":",rep(dimNames[[2]],each=length(dimNames[[1]]))),c("lower","upper")))
+      whierDelta[[paste0("level",j)]]$delta <- matrix(delta[initsInd],nbCovs*mixtures,dimnames=dimNames)
     }
   }
   
