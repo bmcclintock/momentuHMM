@@ -1328,7 +1328,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     while(simCount < retrySims){
       cat("\r    Attempt ",simCount+1," of ",retrySims,"...",sep="")
       tmp<-suppressMessages(tryCatch(simHierData(nbAnimals,hierStates,hierDist,
-                                             Par,beta,delta,
+                                             Par,hierBeta,hierDelta,
                                              hierFormula,formulaDelta,mixtures,formulaPi,
                                              covs,nbHierCovs,
                                              spatialCovs,

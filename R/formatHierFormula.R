@@ -44,9 +44,10 @@ formatHierFormula <- function(data,hierFormula){
             colmm[jj] <- gsub("*(Intercept)","*1",colmm[jj],fixed=TRUE)
           }
           formTerms[[j]] <- c(formTerms[[j]],colmm)
-        }
-        else {
-          formTerms[[j]] <- c(formTerms[[j]],paste0("I((level=='",gsub("level","",j),"')*",formulaTerms[[j]][k],")"))
+        } else {
+          for(k in 1:length(formulaTerms[[j]])){
+            formTerms[[j]] <- c(formTerms[[j]],paste0("I((level=='",gsub("level","",j),"')*",formulaTerms[[j]][k],")"))
+          }
         }
       }
     }
