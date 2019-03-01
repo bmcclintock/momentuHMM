@@ -397,7 +397,8 @@ formatHierHMM <- function(data,hierStates,hierDist,
     hier <- mapHier(beta0,Pi,delta0,hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,formula,formulaDelta,data,mixtures,g0,theta)
     hierBeta <- hier$hierBeta
     hierDelta <- hier$hierDelta
-  }
+  } else betaCons <- deltaCons <- fixPar <- workBounds <- NULL
+  
   return(list(nbStates=nbStates,dist=dist,formula=formula,formulaDelta=formulaDelta,beta=beta0,delta=delta0,hierBeta=hierBeta,hierDelta=hierDelta,betaRef=betaRef,betaCons=betaCons,deltaCons=deltaCons,fixPar=fixPar,workBounds=workBounds,stateNames=stateNames))
 }
 

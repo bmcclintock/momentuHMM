@@ -647,25 +647,25 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         if(hierDist$Get("parent",filterFun=isLeaf)$step$name != hierDist$Get("parent",filterFun=isLeaf)$angle$name) stop("step and angle must be in the same level of the hierarchy")
         data$x<-numeric()
         data$y<-numeric()
-        coordLevel <- hierDist$Get("parent",filterFun=isLeaf)$step$name
+        coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=isLeaf)$step$name)
       }
   } else if("step" %in% distnames){
     if(inputs$dist[["step"]] %in% stepdists){
       data$x<-numeric()
       data$y<-numeric()
-      coordLevel <- hierDist$Get("parent",filterFun=isLeaf)$step$name
+      coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=isLeaf)$step$name)
     }    
   } else if(!is.null(mvnCoords)){
     data[[paste0(mvnCoords,".x")]]<-numeric()
     data[[paste0(mvnCoords,".y")]]<-numeric()
     if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) data[[paste0(mvnCoords,".z")]]<-numeric()
-    coordLevel <- hierDist$Get("parent",filterFun=isLeaf)[[mvnCoords]]$name
+    coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=isLeaf)[[mvnCoords]]$name)
   } else {
     if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs)) stop("spatialCovs, angleCovs, centers, and/or centroids cannot be specified without valid step length and turning angle distributions")
     coordLevel <- NULL
   }
   
-  if(!is.null(coordLevel)) distCoordLevel <- names(hierDist[[coordLevel]]$children)
+  if(!is.null(coordLevel)) distCoordLevel <- names(hierDist[[paste("level",coordLevel)]]$children)
   
   rwInd <- any(unlist(dist) %in% rwdists)
   
@@ -673,8 +673,6 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   #  if(allNbCovs) formula <- formula(paste0("~",paste0(c(colnames(allCovs),spatialcovnames),collapse="+")))
   #  else formula <- formula(~1)
   #}
-  
-  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",hierarchical=TRUE)
   
   if(length(all.vars(formula)))
     if(!all(all.vars(formula) %in% c("ID","level",names(allCovs),centerNames,centroidNames,spatialcovnames)))
@@ -730,6 +728,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   # get formula now that data are available (in order to properly deal with factor covariates in hierFormula)
   inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,checkData=FALSE)
   formula <- inputHierHMM$formula
+  
+  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",hierarchical=TRUE)
   
   if(is.null(model)){
     beta <- inputHierHMM$beta
@@ -1029,7 +1029,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         
         #kInd <- which(subCovs$level==gsub("level","",kk))
       
-        if(!is.null(coordLevel)) coordNA <- which(level[[zoo]]==gsub("level","",coordLevel))[sum(level[[zoo]]==gsub("level","",coordLevel))]
+        if(!is.null(coordLevel)) coordNA <- which(level[[zoo]]==coordLevel)[sum(level[[zoo]]==coordLevel)]
       
         for (k in 1:nbObs){
           
