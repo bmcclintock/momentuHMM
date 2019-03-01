@@ -318,19 +318,15 @@ pseudoRes <- function(m, ncores = 1)
     
     k <- 1
     for(i in 1:nbObs) {
-      if(any(i==aInd)) {
-        iPi <- pie[k,]
-        kInd <- k
-        k <- k + 1
-      }
       if(!is.na(genData[i])){
         for(mix in 1:mixtures){
           if(any(i==aInd)){
-            #iPi <- pie[k,]
+            iPi <- pie[k,]
             if(dist[[j]] %in% integerdists)
-              genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] + ((delta[(mix-1)*nbAnimals+kInd,]%*%trMat[[mix]][,,i])%*%pgenMat[i,] + (delta[(mix-1)*nbAnimals+kInd,]%*%trMat[[mix]][,,i])%*%pgenMat2[i,])/2 * iPi[mix]
+              genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] + ((delta[(mix-1)*nbAnimals+k,]%*%trMat[[mix]][,,i])%*%pgenMat[i,] + (delta[(mix-1)*nbAnimals+k,]%*%trMat[[mix]][,,i])%*%pgenMat2[i,])/2 * iPi[mix]
             else
-              genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] + (delta[(mix-1)*nbAnimals+kInd,]%*%trMat[[mix]][,,i])%*%pgenMat[i,] * iPi[mix]
+              genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] + (delta[(mix-1)*nbAnimals+k,]%*%trMat[[mix]][,,i])%*%pgenMat[i,] * iPi[mix]
+            if(mix==mixtures) k <- k + 1
           } else {
             gamma <- trMat[[mix]][,,i]
             #c <- max(la[i-1,]) # cancels below ; prevents numerical errors
