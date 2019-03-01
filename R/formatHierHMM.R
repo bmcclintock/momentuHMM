@@ -741,7 +741,7 @@ mapHier <- function(beta,pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,h
     }
   }
   
-  whierDelta <- Clone(hierDelta)
+  whierDelta <- data.tree::Clone(hierDelta)
   what <- "hierDelta"
   for(j in 1:(hierStates$height-1)){
     if(j>1){

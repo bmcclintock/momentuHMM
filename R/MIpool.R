@@ -82,7 +82,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   ident <- !unlist(lapply(checksims,function(x) isTRUE(all.equal(x,checksims[[1]]))))
   if(any(ident)){
     # check that only differences are in the design matrix covariate values
-    checksims2 <- lapply(checksims, function(x) x$conditions[-match("fullDM",names(x$conditions))])
+    checksims2 <- lapply(checksims, function(x) x$conditions[-match(c("fullDM","hierBeta","hierDelta"),names(x$conditions),nomatch=0)])
     ident2 <- !unlist(lapply(checksims2,function(x) isTRUE(all.equal(x,checksims2[[1]]))))
     if(any(ident2)) stop("Model conditions for each imputation must be identical. Imputations that do not match the first: ",paste(which(ident),collapse=", "))
   }

@@ -715,7 +715,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     if(inherits(hierDelta,"Node")){
       tmphierDelta<-data.tree::Clone(hierDelta)
       hierDelta<-vector('list',nSims)
-      hierDelta[1:nSims]<-list(hierDelta)
+      hierDelta[1:nSims]<-list(tmphierDelta)
     } else {
       tmphierDelta<-hierDelta
       hierDelta<-vector('list',nSims)
@@ -725,7 +725,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
   } else if(length(hierDelta)<nSims) stop("hierDelta must be a list of length >=",nSims)
   
   #check HMM inputs and print model message
-  test<-fitHMM(miData[[ind[1]]], hierStates, hierDist, Par0[[ind[1]]], hierBeta[[ind[1]]], hierDelta[[ind[1]]],
+  test<-fitHMM.momentuHierHMMData(miData[[ind[1]]], hierStates, hierDist, Par0[[ind[1]]], hierBeta[[ind[1]]], hierDelta[[ind[1]]],
                    estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                    nlmPar, fit = FALSE, DM,
                    userBounds, workBounds, mvnCoords, knownStates[[ind[1]]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName)
@@ -739,7 +739,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
 
     cat("\rImputation ",1,"... ",sep="")
 
-    fits[[1]]<-suppressMessages(fitHMM(miData[[1]], hierStates, hierDist, Par0[[1]], hierBeta[[1]], hierDelta[[1]],
+    fits[[1]]<-suppressMessages(fitHMM.momentuHierHMMData(miData[[1]], hierStates, hierDist, Par0[[1]], hierBeta[[1]], hierDelta[[1]],
                                            estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                                            nlmPar, fit, DM,
                                            userBounds, workBounds, mvnCoords, knownStates[[1]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
@@ -761,7 +761,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     registerDoParallel(cores=ncores)
   }
   withCallingHandlers(fits[parallelStart:nSims] <-
-                        foreach(j = parallelStart:nSims, .export=c("fitHMM"), .errorhandling="pass") %dorng% {
+                        foreach(j = parallelStart:nSims, .export=c("fitHMM.momentuHierHMMData"), .errorhandling="pass") %dorng% {
                           
                           if(nSims>1) {
                             cat("     \rImputation ",j,"... ",sep="")
@@ -770,7 +770,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                               tcltk::setTkProgressBar(pb, j, label=paste("fitting imputation",j))#, label=paste(round((j-1)/nSims*100,0),"% done"))
                             }
                           }
-                          tmpFit<-suppressMessages(fitHMM(miData[[j]], hierStates, hierDist, Par0[[j]], hierBeta[[j]], hierDelta[[j]],
+                          tmpFit<-suppressMessages(fitHMM.momentuHierHMMData(miData[[j]], hierStates, hierDist, Par0[[j]], hierBeta[[j]], hierDelta[[j]],
                                                               estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                                                               nlmPar, fit, DM, 
                                                               userBounds, workBounds, mvnCoords, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))

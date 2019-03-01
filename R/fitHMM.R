@@ -1027,7 +1027,7 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
     workBounds$delta <- inputHierHMM$workBounds$delta
   }
   
-  fit <- fitHMM(momentuHMMData(data),inputHierHMM$nbStates,inputHierHMM$dist,Par0,inputHierHMM$beta,inputHierHMM$delta,
+  hfit <- fitHMM.momentuHMMData(momentuHMMData(data),inputHierHMM$nbStates,inputHierHMM$dist,Par0,inputHierHMM$beta,inputHierHMM$delta,
                 estAngleMean,circularAngleMean,
                 formula=inputHierHMM$formula,inputHierHMM$formulaDelta,stationary=FALSE,mixtures,formulaPi,
                 verbose=NULL,nlmPar,fit,
@@ -1035,24 +1035,28 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
                 mvnCoords,inputHierHMM$stateNames,knownStates,fixPar,retryFits,retrySD,optMethod,control,prior,modelName)
   
   # replace initial values with estimates in hierBeta and hierDelta (if provided)
-  par <- getPar(fit)
-  if(is.list(par$beta)){
-    beta <- par$beta$beta
-    pi <- par$beta$pi
-    g0 <- par$beta$g0
-    theta <- par$beta$theta
+  if(fit){
+    par <- getPar(hfit)
+    if(is.list(par$beta)){
+      beta <- par$beta$beta
+      pi <- par$beta$pi
+      g0 <- par$beta$g0
+      theta <- par$beta$theta
+    } else {
+      beta <- par$beta
+      pi <- g0 <- theta <- NULL
+    }
+    hier <- mapHier(beta,pi,par$delta,hierBeta,hierDelta,hfit$conditions$fixPar,hfit$conditions$betaCons,hfit$conditions$deltaCons,hierStates,hfit$conditions$formula,hfit$conditions$formulaDelta,hfit$data,hfit$conditions$mixtures,g0,theta,fill=TRUE)
+    hfit$conditions$hierBeta <- hier$hierBeta
+    hfit$conditions$hierDelta <- hier$hierDelta
   } else {
-    beta <- par$beta
-    pi <- g0 <- theta <- NULL
+    hfit$conditions$hierBeta <- hierBeta
+    hfit$conditions$hierDelta <- hierDelta    
   }
-  hier <- mapHier(beta,pi,par$delta,hierBeta,hierDelta,fit$conditions$fixPar,fit$conditions$betaCons,fit$conditions$deltaCons,hierStates,fit$conditions$formula,fit$conditions$formulaDelta,fit$data,fit$conditions$mixtures,g0,theta,fill=TRUE)
-
-  fit$conditions$hierStates <- hierStates
-  fit$conditions$hierDist <- hierDist
-  fit$conditions$hierBeta <- hier$hierBeta
-  fit$conditions$hierDelta <- hier$hierDelta
-  fit$conditions$hierFormula <- hierFormula
-  fit$conditions$hierFormulaDelta <- hierFormulaDelta
-  class(fit$data) <- class(data)
-  return(momentuHierHMM(fit))
+  hfit$conditions$hierStates <- hierStates
+  hfit$conditions$hierDist <- hierDist
+  hfit$conditions$hierFormula <- hierFormula
+  hfit$conditions$hierFormulaDelta <- hierFormulaDelta
+  class(hfit$data) <- class(data)
+  return(momentuHierHMM(hfit))
 }
