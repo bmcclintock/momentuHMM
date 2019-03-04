@@ -507,9 +507,7 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
   for(j in 1:(hierStates$height-1)){
   cat("------------------------- ",paste0("level",j)," -----------------------\n")
     if(j>1){
-      t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
-      names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
-      for(jj in names(t)){
+      for(jj in hierStates$Get("name",filterFun=function(x) x$level==j & x$count>0)){
         tmpPar <- beta0$beta[[paste0("level",j)]][[jj]]$beta
         tmpCons <- beta0$beta[[paste0("level",j)]][[jj]]$betaCons
         if(is.null(hierBeta))
@@ -538,9 +536,7 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
   for(j in 1:(hierStates$height-1)){
     cat("-------------------- ",paste0("level",j)," --------------------\n")
     if(j>1){
-      t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
-      names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
-      for(jj in names(t)){
+      for(jj in hierStates$Get("name",filterFun=function(x) x$level==j & x$count>0)){
         tmpPar <- delta0[[paste0("level",j)]][[jj]]$delta
         tmpCons <- delta0[[paste0("level",j)]][[jj]]$deltaCons
         if(is.null(hierDelta))

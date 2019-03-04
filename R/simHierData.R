@@ -735,10 +735,11 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     beta <- inputHierHMM$beta
     delta <- inputHierHMM$delta
   }
-  if(is.null(workBounds)) workBounds <- list()
-  if(is.list(workBounds)){
-    workBounds$beta <- inputHierHMM$workBounds$beta
-    workBounds$delta <- inputHierHMM$workBounds$delta
+  if(is.null(workBounds)) wworkBounds <- list()
+  else wworkBounds <- workBounds
+  if(is.list(wworkBounds)){
+    wworkBounds$beta <- inputHierHMM$workBounds$beta
+    wworkBounds$delta <- inputHierHMM$workBounds$delta
   }
   
   newForm <- newFormulas(formula,nbStates)
@@ -838,17 +839,13 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   parindex <- c(0,cumsum(unlist(parCount))[-length(distnames)])
   names(parindex) <- distnames
   
-  #if(is.null(workBounds)) {
-  #  workBounds <- vector('list',length(distnames))
-  #  names(workBounds) <- distnames
-  #}
-  workBounds <- getWorkBounds(workBounds,distnames,unlist(Par[distnames]),parindex,parCount,inputs$DM,beta0,deltaB)
+  wworkBounds <- getWorkBounds(wworkBounds,distnames,unlist(Par[distnames]),parindex,parCount,inputs$DM,beta0,deltaB)
   
-  wnbeta <- w2wn(beta0$beta,workBounds$beta)
-  wnpi <- w2wn(beta0$pi,workBounds$pi)
+  wnbeta <- w2wn(beta0$beta,wworkBounds$beta)
+  wnpi <- w2wn(beta0$pi,wworkBounds$pi)
   if(!is.null(recharge)){
-    wng0 <- w2wn(beta0$g0,workBounds$g0)
-    wntheta <- w2wn(beta0$theta,workBounds$theta)
+    wng0 <- w2wn(beta0$g0,wworkBounds$g0)
+    wntheta <- w2wn(beta0$theta,wworkBounds$theta)
   }
   
   mix <- rep(1,nbAnimals)
@@ -928,7 +925,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         
         covsDelta <- model.matrix(formDelta,subCovs[1,,drop=FALSE])
         covsPi <- model.matrix(formPi,subCovs[1,,drop=FALSE])
-        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta,wworkBounds,covsPi)
         
         pie <- fullsubPar$pi
         
@@ -1077,7 +1074,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                   }
                 }
               }
-              subPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+              subPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist,p$Bndind,nc,meanind,covsDelta,wworkBounds,covsPi)
             } else {
               subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
             }
@@ -1329,7 +1326,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       cat("\r    Attempt ",simCount+1," of ",retrySims,"...",sep="")
       tmp<-suppressMessages(tryCatch(simHierData(nbAnimals,hierStates,hierDist,
                                              Par,hierBeta,hierDelta,
-                                             hierFormula,formulaDelta,mixtures,formulaPi,
+                                             hierFormula,hierFormulaDelta,mixtures,formulaPi,
                                              covs,nbHierCovs,
                                              spatialCovs,
                                              zeroInflation,
