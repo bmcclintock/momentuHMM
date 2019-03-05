@@ -4,16 +4,16 @@
 \alias{CIreal}
 \title{Confidence intervals for the natural (i.e., real) parameters}
 \usage{
-CIreal(m, alpha = 0.95, covs = NULL)
+CIreal(m, alpha = 0.95, covs = NULL, parms = NULL)
 }
 \arguments{
 \item{m}{A \code{momentuHMM} object}
 
 \item{alpha}{Significance level of the confidence intervals. Default: 0.95 (i.e. 95\% CIs).}
 
-\item{covs}{Data frame consisting of a single row indicating the covariate values to be used in the calculations. 
-For any covariates that are not specified using \code{covs}, the means of the covariate(s) are used 
-(unless the covariate is a factor, in which case the first factor in the data is used). By default, no covariates are specified.}
+\item{covs}{Data frame consisting of a single row indicating the covariate values to be used in the calculations. By default, no covariates are specified.}
+
+\item{parms}{Optional character vector indicating which groups of real parameters to calculate confidence intervals for (e.g., 'step', 'angle', 'gamma', 'delta', etc.). Default: NULL, in which case confidence intervals are calculated for all groups of parameters in the model.}
 }
 \value{
 A list of the following objects:
@@ -26,6 +26,10 @@ Computes the standard errors and confidence intervals on the real (i.e., natural
 as well as for the transition probabilities parameters. If covariates are included in the probability distributions or TPM formula, the mean values
 of non-factor covariates are used for calculating the natural parameters. For any covariate(s) of class 'factor', then the value(s) from the first observation 
 in the data are used.
+}
+\details{
+For any covariates that are not specified using \code{covs}, the means of the covariate(s) are used 
+(unless the covariate is a factor, in which case the first factor in the data is used).
 }
 \examples{
 # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
