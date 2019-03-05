@@ -61,7 +61,8 @@ CIreal <- function(m,alpha=0.95,covs=NULL,parms=NULL)
   
   # identify covariates
   if(is.null(covs)){
-    tempCovs <- m$data[1,]
+    if(inherits(m,"momentuHierHMM")) tempCovs <- as.data.frame(lapply(m,function(x) x[which.max(!is.na(x))]))
+    else tempCovs <- m$data[1,]
     for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansList))))]){
       if(inherits(m$data[[j]],"angle")) tempCovs[[j]] <- CircStats::circ.mean(m$data[[j]][!is.na(m$data[[j]])])
       else tempCovs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
@@ -79,7 +80,11 @@ CIreal <- function(m,alpha=0.95,covs=NULL,parms=NULL)
       if(any(class(m$data[[j]]) %in% meansList)){
         if(inherits(m$data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(m$data[[j]][!is.na(m$data[[j]])])
         else covs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
-      } else covs[[j]] <- m$data[[j]][1]
+      } else {
+        if(inherits(m,"momentuHierHMM")) covInd <- which.max(!is.na(m$data[[j]]))
+        else covInd <- 1
+        covs[[j]] <- m$data[[j]][covInd]
+      }
     }
     for(j in names(m$data)[which(names(m$data) %in% names(covs))]){
       if(inherits(m$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(m$data[[j]]))
