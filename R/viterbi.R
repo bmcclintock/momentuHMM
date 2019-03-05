@@ -4,9 +4,10 @@
 #' For a given model, reconstructs the most probable states sequence,
 #' using the Viterbi algorithm.
 #'
-#' @param m An object \code{momentuHMM}
+#' @param m An object \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}}
+#' @param hierarchical Logical indicating whether or not to return a list of Viterbi-decoded states for each level of a hierarchical HMM. Ignored unless \code{m} is a \code{\link{momentuHierHMM}} object.
 #'
-#' @return The sequence of most probable states.
+#' @return The sequence of most probable states. If \code{hierarchical} is \code{TRUE}, then a list of the most probable states for each level of the hierarchy is returned.
 #'
 #' @examples
 #' # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
@@ -22,11 +23,11 @@
 #'
 #' @export
 
-viterbi <- function(m)
+viterbi <- function(m, hierarchical=FALSE)
 {
   if(!is.momentuHMM(m))
     stop("'m' must be a momentuHMM object (as output by fitHMM)")
-
+  
   m <- delta_bc(m)
   
   data <- m$data
@@ -36,7 +37,7 @@ viterbi <- function(m)
   
   if(nbStates==1)
     stop("No states to decode (nbStates=1)")
-
+  
   # identify covariates
   formula<-m$conditions$formula
   newForm <- newFormulas(formula,nbStates)
@@ -78,7 +79,7 @@ viterbi <- function(m)
   }
   
   covs <- model.matrix(newformula,data)
-
+  
   probs <- allProbs(m)
   mixtures <- m$conditions$mixtures
   if(mixtures==1) pie <- 1
@@ -88,7 +89,7 @@ viterbi <- function(m)
   for(mix in 1:mixtures){
     trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),m$conditions$betaRef)
   }
-
+  
   allStates <- NULL
   tm <- list()
   for(zoo in 1:nbAnimals) {
@@ -98,7 +99,7 @@ viterbi <- function(m)
     xi_mix <- array(NA,dim=c(mixtures,nbObs,nbStates))
     
     for(mix in 1:mixtures){
-
+      
       if(zoo!=nbAnimals) {
         p <- probs[aInd[zoo]:(aInd[zoo+1]-1),]
         tm[[mix]] <- trMat[[mix]][,,aInd[zoo]:(aInd[zoo+1]-1)]
@@ -107,7 +108,7 @@ viterbi <- function(m)
         p <- probs[aInd[zoo]:nrow(probs),]
         tm[[mix]] <- trMat[[mix]][,,aInd[zoo]:nrow(probs)]
       }
-  
+      
       foo <- (delta[(mix-1)*nbAnimals+zoo,]%*%tm[[mix]][,,1])*p[1,]
       xi_mix[mix,1,] <- foo/sum(foo)
       for(i in 2:nbObs) {
@@ -130,6 +131,19 @@ viterbi <- function(m)
     }
     allStates <- c(allStates,stSeq)
   }
+  
+  if(inherits(m,"momentuHierHMM") && hierarchical){
+    return(hierViterbi(m, allStates))
+  } else return(allStates)
+}
 
-  return(allStates)
+hierViterbi <- function(m, allStates){
+    out <- list()
+    for(j in 1:(m$conditions$hierStates$height-1)){
+      if(j==m$conditions$hierStates$height-1) ref <- m$conditions$hierStates$Get("state",filterFun=data.tree::isLeaf)
+      else ref <- m$conditions$hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
+      out[[paste0("level",j)]] <- names(ref)[match(allStates[which(m$data$level %in% c(j,paste0(j,"i")))],ref,nomatch=0)]
+    }
+    class(out) <- append("hierarchical",class(out))
+    out
 }

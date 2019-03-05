@@ -4,13 +4,15 @@
 \alias{viterbi}
 \title{Viterbi algorithm}
 \usage{
-viterbi(m)
+viterbi(m, hierarchical = FALSE)
 }
 \arguments{
-\item{m}{An object \code{momentuHMM}}
+\item{m}{An object \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}}}
+
+\item{hierarchical}{Logical indicating whether or not to return a list of Viterbi-decoded states for each level of a hierarchical HMM. Ignored unless \code{m} is a \code{\link{momentuHierHMM}} object.}
 }
 \value{
-The sequence of most probable states.
+The sequence of most probable states. If \code{hierarchical} is \code{TRUE}, then a list of the most probable states for each level of the hierarchy is returned.
 }
 \description{
 For a given model, reconstructs the most probable states sequence,
