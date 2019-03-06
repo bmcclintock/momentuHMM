@@ -1061,8 +1061,10 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
 
   hfit <- momentuHierHMM(hfit)
   
-  hierGammaDelta <- hierGamma(hfit)
-  hfit$CIreal$hierDelta <- hierGammaDelta$hierDelta
-  hfit$CIreal$hierGamma <- hierGammaDelta$hierGamma
+  if(fit){
+    hierGammaDelta <- hierGamma(hfit)
+    hfit$CIreal$hierDelta <- hierGammaDelta$hierDelta
+    hfit$CIreal$hierGamma <- hierGammaDelta$hierGamma
+  }
   hfit
 }
