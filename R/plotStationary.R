@@ -71,30 +71,7 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
     newformula <- newForm$newformula
     recharge <- newForm$recharge
     
-    if(is.null(covs)){
-      covs <- data[1,]
-      for(j in names(data)[which(unlist(lapply(data,function(x) any(class(x) %in% meansList))))]){
-        if(inherits(data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(data[[j]][!is.na(data[[j]])])
-        else covs[[j]]<-mean(data[[j]],na.rm=TRUE)
-      }
-    } else {
-      if(!is.data.frame(covs)) stop('covs must be a data frame')
-      if(nrow(covs)>1) stop('covs must consist of a single row')
-      if(is.null(recharge))
-        if(!all(names(covs) %in% names(data))) stop('invalid covs specified')
-      else 
-        if(!all(names(covs) %in% c(names(data),"recharge"))) stop('invalid covs specified')
-      if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(data$ID))
-      for(j in names(data)[which(names(data) %in% names(covs))]){
-        if(inherits(data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(data[[j]]))
-        if(is.na(covs[[j]])) stop("check value for ",j)
-      }
-      for(j in names(data)[which(!(names(data) %in% names(covs)))]){
-        if(inherits(data[[j]],"factor")) covs[[j]] <- data[[j]][1]
-        else if(inherits(data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(data[[j]][!is.na(data[[j]])])
-        else if(any(class(data[[j]]) %in% meansList)) covs[[j]]<-mean(data[[j]],na.rm=TRUE)
-      }
-    }
+    covs <- getCovs(model,covs,unique(model$data$ID))
     
     aInd <- NULL
     nbAnimals <- length(unique(data$ID))

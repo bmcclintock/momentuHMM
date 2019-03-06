@@ -60,38 +60,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL,parms=NULL)
   m <- delta_bc(m)
   
   # identify covariates
-  if(is.null(covs)){
-    if(inherits(m,"momentuHierHMM")) tempCovs <- as.data.frame(lapply(m,function(x) x[which.max(!is.na(x))]))
-    else tempCovs <- m$data[1,]
-    for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansList))))]){
-      if(inherits(m$data[[j]],"angle")) tempCovs[[j]] <- CircStats::circ.mean(m$data[[j]][!is.na(m$data[[j]])])
-      else tempCovs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
-    }
-    covs <- tempCovs
-  } else {
-    if(!is.data.frame(covs)) stop('covs must be a data frame')
-    if(nrow(covs)>1) stop('covs must consist of a single row')
-    if(is.null(recharge))
-      if(!all(names(covs) %in% names(m$data))) stop('invalid covs specified')
-    else 
-      if(!all(names(covs) %in% c(names(m$data),"recharge"))) stop('invalid covs specified')
-    if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(m$data$ID))
-    for(j in names(m$data)[which(!(names(m$data) %in% names(covs)))]){
-      if(any(class(m$data[[j]]) %in% meansList)){
-        if(inherits(m$data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(m$data[[j]][!is.na(m$data[[j]])])
-        else covs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
-      } else {
-        if(inherits(m,"momentuHierHMM")) covInd <- which.max(!is.na(m$data[[j]]))
-        else covInd <- 1
-        covs[[j]] <- m$data[[j]][covInd]
-      }
-    }
-    for(j in names(m$data)[which(names(m$data) %in% names(covs))]){
-      if(inherits(m$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(m$data[[j]]))
-      if(is.na(covs[[j]])) stop("check covs value for ",j)
-    }    
-    tempCovs <- covs[1,]
-  }
+  tempCovs <- getCovs(m,covs,unique(m$data$ID))[1,]
   
   formula<-m$conditions$formula
   newForm <- newFormulas(formula,nbStates)

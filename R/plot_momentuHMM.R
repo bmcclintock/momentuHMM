@@ -198,30 +198,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   newformula <- newForm$newformula
   recharge <- newForm$recharge
   
-  if(is.null(covs)){
-    covs <- m$data[which(m$data$ID %in% ID),][1,]
-    for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansList))))]){
-      if(inherits(m$data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(m$data[[j]][which(m$data$ID %in% ID)][!is.na(m$data[[j]][which(m$data$ID %in% ID)])])
-      else covs[[j]]<-mean(m$data[[j]][which(m$data$ID %in% ID)],na.rm=TRUE)
-    }
-  } else {
-    if(!is.data.frame(covs)) stop('covs must be a data frame')
-    if(nrow(covs)>1) stop('covs must consist of a single row')
-    if(is.null(recharge))
-      if(!all(names(covs) %in% names(m$data))) stop('invalid covs specified')
-    else 
-      if(!all(names(covs) %in% c(names(m$data),"recharge"))) stop('invalid covs specified')
-    if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(m$data$ID))
-    for(j in names(m$data)[which(names(m$data) %in% names(covs))]){
-      if(inherits(m$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(m$data[[j]]))
-      if(is.na(covs[[j]])) stop("check value for ",j)
-    }
-    for(j in names(m$data)[which(!(names(m$data) %in% names(covs)))]){
-      if(inherits(m$data[[j]],"factor")) covs[[j]] <- m$data[[j]][which(m$data$ID %in% ID)][1]
-      else if(inherits(m$data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(m$data[[j]][which(m$data$ID %in% ID)][!is.na(m$data[[j]][which(m$data$ID %in% ID)])])
-      else if(any(class(m$data[[j]]) %in% meansList)) covs[[j]]<-mean(m$data[[j]][which(m$data$ID %in% ID)],na.rm=TRUE)
-    }
-  }
+  covs <- getCovs(m,covs,ID)
   
   nbCovs <- ncol(model.matrix(newformula,m$data))-1 # substract intercept column
   
@@ -1296,4 +1273,38 @@ plotHistMVN <- function(gen,genDensities,dist,message,sepStates,breaks="Sturges"
     plot.new()
     if(!sepStates) legend(ifelse(is.null(legend.pos),"topright",legend.pos),legText,lwd=rep(lwd,nbStates),col=col,bty="n",cex=cex.legend)
   }
+}
+
+getCovs <-function(m,covs,ID){
+  if(is.null(covs)){
+    if(inherits(m,"momentuHierHMM")) covs <- as.data.frame(lapply(m$data,function(x) x[which.max(!is.na(x))]))
+    else covs <- m$data[which(m$data$ID %in% ID),][1,]
+    for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansList))))]){
+      if(inherits(m$data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(m$data[[j]][which(m$data$ID %in% ID)][!is.na(m$data[[j]][which(m$data$ID %in% ID)])])
+      else covs[[j]]<-mean(m$data[[j]][which(m$data$ID %in% ID)],na.rm=TRUE)
+    }
+  } else {
+    if(!is.data.frame(covs)) stop('covs must be a data frame')
+    if(nrow(covs)>1) stop('covs must consist of a single row')
+    if(is.null(recharge))
+      if(!all(names(covs) %in% names(m$data))) stop('invalid covs specified')
+    else 
+      if(!all(names(covs) %in% c(names(m$data),"recharge"))) stop('invalid covs specified')
+    if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(m$data$ID))
+    for(j in names(m$data)[which(!(names(m$data) %in% names(covs)))]){
+      if(any(class(m$data[[j]]) %in% meansList)){
+        if(inherits(m$data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(m$data[[j]][!is.na(m$data[[j]])])
+        else covs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
+      } else {
+        if(inherits(m,"momentuHierHMM")) covInd <- which.max(!is.na(m$data[[j]]))
+        else covInd <- 1
+        covs[[j]] <- m$data[[j]][covInd]
+      }
+    }
+    for(j in names(m$data)[which(names(m$data) %in% names(covs))]){
+      if(inherits(m$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(m$data[[j]]))
+      if(is.na(covs[[j]])) stop("check covs value for ",j)
+    }  
+  }
+  covs
 }
