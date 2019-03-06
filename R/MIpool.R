@@ -1,7 +1,7 @@
 #'
 #' Calculate pooled parameter estimates and states across multiple imputations
 #' 
-#' @param HMMfits List comprised of \code{\link{momentuHMM}} objects
+#' @param HMMfits List comprised of \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} objects
 #' @param alpha Significance level for calculating confidence intervals of pooled estimates (including location error ellipses). Default: 0.95.
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param covs Data frame consisting of a single row indicating the covariate values to be used in the calculation of pooled natural parameters. 
@@ -17,6 +17,7 @@
 #' \item{timeInStates}{The proportion of time steps assigned to each state}
 #' \item{states}{The most freqent state assignment for each time step based on the \code{\link{viterbi}} algorithm for each model fit}
 #' \item{stateProbs}{Pooled state probability estimates for each time step}
+#' \item{hierStateProbs}{Pooled state probability estimates for each time step at each level of the hierarchy (only applies if \code{HMMfits} is comprised of \code{\link{momentuHierHMM}} objects)}
 #' 
 #' @details
 #' Pooled estimates, standard errors, and confidence intervals are calculated using standard multiple imputation formulas. Working scale parameters are pooled
@@ -555,6 +556,17 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     colnames(Par$stateProbs$se) <- m$stateNames
     colnames(Par$stateProbs$lower) <- m$stateNames
     colnames(Par$stateProbs$upper) <- m$stateNames
+  }
+  
+  if(inherits(im[[1]],"hierarchical")){
+    tmp<-lapply(Par$stateProbs,function(x) hierStateProbs(im[[1]],x))
+    Par$hierStateProbs <- list()
+    for(j in names(tmp$est)){
+      Par$hierStateProbs[[j]] <- list()
+      for(jj in names(tmp)){
+        Par$hierStateProbs[[j]][[jj]] <- tmp[[jj]][[j]]
+      }
+    }
   }
   
   mh <- im[[1]]
