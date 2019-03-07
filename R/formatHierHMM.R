@@ -86,8 +86,14 @@ formatHierHMM <- function(data,hierStates,hierDist,
       stop("'hierDist' level types can only include ",paste(paste0("level",levels(data$level)[seq(1,nlevels(data$level),2)]),collapse=", "))
     
     for(j in gsub("level","",hierDist$Get("name",filterFun=function(x) x$level==2))){
+      jDist <- hierDist[[paste0("level",j)]]$Get("dist",filterFun=isLeaf)
+      if(any(!is.na(jDist))){
+        tmpNames <- names(jDist[!is.na(jDist)])
+        if(!all(tmpNames %in% names(data))) stop(paste0(tmpNames[which(!(tmpNames %in% names(data)))],collapse=", ")," not found in data")
+      }
+      dataNames <- names(jDist)
       for(k in levels(data$level)[-which(levels(data$level)==j)]){
-        if(any(!is.na(data[which(data$level==k),names(hierDist[[paste0("level",j)]]$Get("dist",filterFun=isLeaf))]))) stop(paste(names(hierDist[[paste0("level",j)]]$Get("dist",filterFun=isLeaf)),collapse=", ")," must be NA for level ",k)
+        if(any(!is.na(data[which(data$level==k),dataNames]))) stop(paste(dataNames,collapse=", ")," must be NA for level ",k)
       }
     }
   }# else {
@@ -383,8 +389,15 @@ formatHierHMM <- function(data,hierStates,hierDist,
       if(is.null(hierDelta)) beta0[which(is.na(beta0))] <- 0
     }
     
-    if(mixtures>1) beta0 <- list(beta = beta0, pi = hierBeta$pi)
-    else {
+    if(mixtures>1 | !is.null(recharge)){
+      beta0 <- list(beta=beta0)
+      if(mixtures>1) beta0$pi <- Pi
+      if(!is.null(recharge)){
+        beta0$g0 <- g0
+        beta0$theta <- theta
+      }
+    }
+    if(mixtures==1){
       if(!is.null(fixPar$beta)) rownames(fixPar$beta) <- colnames(covs)
       if(!is.null(fixPar$delta)) rownames(fixPar$delta) <- colnames(covsDelta)
       if(!is.null(betaCons)) rownames(betaCons) <- rownames(fixPar$beta)
@@ -692,7 +705,7 @@ mapHier <- function(beta,pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,h
       nbCovs <- length(covNames)
       if(mixtures>1) covNames <- paste0(covNames,"_mix",rep(1:mixtures,each=nbCovs))
       if(j>1){
-        initsInd <- unique(betaCons[covNames,][which(is.na(fixPar$beta[covNames,]))])
+        initsInd <- betaCons[covNames,][which(is.na(fixPar$beta[covNames,]))]
         dimNames <- mapply(function(x) mapply(`[[`, dimnames(fixPar$beta), arrayInd(x, dim(fixPar$beta))),initsInd)
         inits <- beta[initsInd]
         count <- 0
@@ -747,7 +760,7 @@ mapHier <- function(beta,pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,h
       covNames <- covNames[grepl(paste0("level",j,"i$"),covNames) | grepl(paste0("I((level == \"",j,"i\")"),covNames,fixed=TRUE)]
       nbCovs <- length(covNames)
       if(mixtures>1) covNames <- paste0(covNames,"_mix",rep(1:mixtures,each=nbCovs))
-      initsInd <- unique(betaCons[covNames,][which(is.na(fixPar$beta[covNames,]))])
+      initsInd <- betaCons[covNames,][which(is.na(fixPar$beta[covNames,]))]
       dimNames <- mapply(function(x) mapply(`[[`, dimnames(fixPar$beta), arrayInd(x, dim(fixPar$beta))),initsInd)
       inits <- beta[initsInd]
       count <- 0

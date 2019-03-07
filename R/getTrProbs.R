@@ -147,7 +147,7 @@ getTrProbs.hierarchical <- function(data,hierStates,hierBeta,hierFormula=NULL,mi
   beta$AddChild("level1",gamma=list())
 
   for(mix in 1:mixtures){
-    beta$level1$gamma[[mix]] <- trProbs[[mix]][ref1,ref1,which(data$level=="1")]
+    beta$level1$gamma[[mix]] <- trProbs[[mix]][ref1,ref1,which(data$level=="1"),drop=FALSE]
     dimnames(beta$level1$gamma[[mix]]) <- list(names(ref1),names(ref1),NULL)
   }
   if(mixtures==1) beta$level1$gamma <- beta$level1$gamma[[1]]
@@ -164,7 +164,7 @@ getTrProbs.hierarchical <- function(data,hierStates,hierBeta,hierFormula=NULL,mi
       if(!is.null(ref)){
         beta[[paste0("level",j)]]$AddChild(k,gamma=list())
         for(mix in 1:mixtures){
-          beta[[paste0("level",j)]][[k]]$gamma[[mix]] <- trProbs[[mix]][ref,ref,which(data$level==j)]
+          beta[[paste0("level",j)]][[k]]$gamma[[mix]] <- trProbs[[mix]][ref,ref,which(data$level==j),drop=FALSE]
           dimnames(beta[[paste0("level",j)]][[k]]$gamma[[mix]]) <- list(names(ref),names(ref),NULL)
         }
         if(mixtures==1) beta[[paste0("level",j)]][[k]]$gamma <- beta[[paste0("level",j)]][[k]]$gamma[[1]]

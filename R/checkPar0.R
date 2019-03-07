@@ -99,7 +99,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
     if(missing(nbStates) & missing(dist)){
       if(all(c("hierStates","hierDist") %in% argNames)){
         if(length(attr(stats::terms.formula(formula),"term.labels"))>0 && is.null(hierArgs$hierFormula)) stop("hierFormula should be specified instead of formula")
-        if(length(attr(stats::terms.formula(formulaDelta),"term.labels"))>0 && is.null(hierArgs$hierFormulaDelta)) stop("hierFormulaDelta should be specified instead of formulaDelta")
+        if((!is.null(formulaDelta) && length(attr(stats::terms.formula(formulaDelta),"term.labels"))>0) && is.null(hierArgs$hierFormulaDelta)) stop("hierFormulaDelta should be specified instead of formulaDelta")
         class(data) <- append("hierarchical",class(data))
         return(checkPar0.hierarchical(data,hierStates=hierArgs$hierStates,hierDist=hierArgs$hierDist,Par0,hierBeta=hierArgs$hierBeta,hierDelta=hierArgs$hierDelta,estAngleMean,circularAngleMean,hierFormula=hierArgs$hierFormula,hierFormulaDelta = hierArgs$hierFormulaDelta,mixtures,formulaPi,DM,userBounds,workBounds,fixPar))
       }
@@ -501,7 +501,8 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
   delta0 <- hier$hierDelta
   
 
-  cat("\n")
+  cat("\n\n")
+  cat("----------------------------------------------------------\n")
   cat("Regression coeffs for the transition probabilities (beta):\n")
   cat("----------------------------------------------------------\n")
   for(j in 1:(hierStates$height-1)){
@@ -530,11 +531,14 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
       cat("\n")
     }
   }
+  cat("----------------------------------------------------------\n")
   
-  cat("Regression coeffs for the initial distribution:\n")
-  cat("--------------------------------------------------\n")
+  cat("\n")
+  cat("----------------------------------------------------------\n")
+  cat("Regression coeffs for the initial distribution (delta):\n")
+  cat("----------------------------------------------------------\n")
   for(j in 1:(hierStates$height-1)){
-    cat("-------------------- ",paste0("level",j)," --------------------\n")
+    cat("------------------------ ",paste0("level",j)," ------------------------\n")
     if(j>1){
       for(jj in hierStates$Get("name",filterFun=function(x) x$level==j & x$count>0)){
         tmpPar <- delta0[[paste0("level",j)]][[jj]]$delta
@@ -553,5 +557,6 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
       cat("\n")
     }
   }
+  cat("----------------------------------------------------------\n")
 
 }
