@@ -12,7 +12,7 @@ getTrProbs(data, ...)
   formula = ~1, mixtures = 1, betaRef = NULL, stateNames = NULL,
   ...)
 
-\method{getTrProbs}{hierarchical}(data, hierStates, hierBeta, hierDelta,
+\method{getTrProbs}{hierarchical}(data, hierStates, hierBeta,
   hierFormula = NULL, mixtures = 1, hierDist, ...)
 }
 \arguments{
@@ -42,8 +42,6 @@ The first column pertains to the lower bound and the second column the upper bou
 
 \item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition probabilities at each level of the hierarchy, including initial values ('beta'), parameter equality constraints ('betaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.}
 
-\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial distribution at each level of the hierarchy, including initial values ('delta'), parameter equality constraints ('deltaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.}
-
 \item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). See \code{\link{fitHMM}}.}
 
 \item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See \code{\link{fitHMM}}.}
@@ -51,6 +49,8 @@ The first column pertains to the lower bound and the second column the upper bou
 \value{
 If \code{mixtures=1}, an array of dimension \code{nbStates} x \code{nbStates} x \code{nrow(data)} containing the t.p.m for each observation in \code{data}.
 If \code{mixtures>1}, a list of length \code{mixtures}, where each element is an array of dimension \code{nbStates} x \code{nbStates} x \code{nrow(data)} containing the t.p.m for each observation in \code{data}.
+
+If a hierarchical HMM structure is provided, then a hierarchical data structure containing the state transition probabilities for each time step at each level of the hierarchy ('gamma') is returned.
 }
 \description{
 Computation of the transition probability matrix for each time step as a function of the covariates and the regression
