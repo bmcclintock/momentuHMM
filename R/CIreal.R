@@ -60,7 +60,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL,parms=NULL)
   m <- delta_bc(m)
   
   # identify covariates
-  tempCovs <- getCovs(m,covs,unique(m$data$ID))[1,]
+  tempCovs <- getCovs(m,covs,unique(m$data$ID),checkHier=FALSE)[1,]
   
   formula<-m$conditions$formula
   newForm <- newFormulas(formula,nbStates)

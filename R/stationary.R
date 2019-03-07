@@ -137,12 +137,12 @@ stationary.momentuHMM <- function(model, covs)
             for(j in 1:(model$conditions$hierStates$height-1)){
                   
               if(j==1){
-                ref <- hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
+                ref <- model$conditions$hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
                 probs[[mix]][["level1"]] <- getProbs(allMat[ref,ref,which(covMat[,colnames(covMat) %in% paste0("I((level == \"",j,"\") * 1)")]==1),drop=FALSE],names(ref))
               } else {
                 
-                t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
-                names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
+                t <- data.tree::Traverse(model$conditions$hierStates,filterFun=function(x) x$level==j)
+                names(t) <- model$conditions$hierStates$Get("name",filterFun=function(x) x$level==j)
                 
                 if(length(names(t))) probs[[mix]][[paste0("level",j)]] <- list()
                 

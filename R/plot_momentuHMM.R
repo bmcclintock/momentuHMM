@@ -832,29 +832,35 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       #  meanCovs <- as.numeric(covs)
       #}
       
-      for(cov in 1:ncol(rawCovs)) {
-        
-        par(mfrow=c(nbStates,nbStates))
+      if(inherits(m,"hierarchical")) {
+        covIndex <- which(!(names(rawCovs)=="level"))
+        covs$level <- NULL
+        covs <- data.frame(covs[rep(1:nrow(covs),nlevels(m$data$level)),,drop=FALSE],level=rep(levels(m$data$level),each=nrow(covs)))
+      } else covIndex <- 1:ncol(rawCovs)
+      
+      for(cov in covIndex) {
         
         if(!is.factor(rawCovs[,cov])){
           
           gridLength <- 101
+          hGridLength <- gridLength*ifelse(inherits(m,"hierarchical"),nlevels(m$data$level),1)
           
-          inf <- min(rawCovs[,cov],na.rm=T)
-          sup <- max(rawCovs[,cov],na.rm=T)
+          inf <- min(rawCovs[,cov],na.rm=TRUE)
+          sup <- max(rawCovs[,cov],na.rm=TRUE)
           
           # set all covariates to their mean, except for "cov"
           # (which takes a grid of values from inf to sup)
-          tempCovs <- data.frame(matrix(covs[names(rawCovs)][[1]],nrow=gridLength,ncol=1))
+          tempCovs <- data.frame(matrix(covs[names(rawCovs)][[1]],nrow=hGridLength,ncol=1))
           if(ncol(rawCovs)>1)
             for(i in 2:ncol(rawCovs))
               tempCovs <- cbind(tempCovs,rep(covs[names(rawCovs)][[i]],gridLength))
           
-          tempCovs[,cov] <- seq(inf,sup,length=gridLength)
+          tempCovs[,cov] <- rep(seq(inf,sup,length=gridLength),each=hGridLength/gridLength)
         } else {
           gridLength<- nlevels(rawCovs[,cov])
+          hGridLength <- gridLength*ifelse(inherits(m,"hierarchical"),nlevels(m$data$level),1)
           # set all covariates to their mean, except for "cov"
-          tempCovs <- data.frame(matrix(covs[names(rawCovs)][[1]],nrow=gridLength,ncol=1))
+          tempCovs <- data.frame(matrix(covs[names(rawCovs)][[1]],nrow=hGridLength,ncol=1))
           if(ncol(rawCovs)>1)
             for(i in 2:ncol(rawCovs))
               tempCovs <- cbind(tempCovs,rep(covs[names(rawCovs)][[i]],gridLength))
@@ -891,38 +897,61 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           } else {
             trMat <- array(unlist(lapply(split(tmpSplineInputs$covs,1:nrow(desMat)),function(x) tryCatch(get_gamma_recharge(m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture = mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(desMat)))
           }
-        
-          for(i in 1:nbStates){
-            for(j in 1:nbStates){
-              do.call(plot,c(list(tempCovs[,cov],trMat[i,j,],type="l",ylim=c(0,1),xlab=names(rawCovs)[cov],ylab=paste(i,"->",j),lwd=lwd),arg))
-              if(plotCI){
-                tmpSig <- Sigma[gamInd[unique(c(m$conditions$betaCons))],gamInd[unique(c(m$conditions$betaCons))]]
-                if(!is.null(recharge)){
-                  tmpSig <- Sigma[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0),c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)]
-                  dN<-matrix(unlist(lapply(split(tmpSplineInputs$covs,1:nrow(desMat)),function(x) tryCatch(numDeriv::grad(get_gamma_recharge,m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),ncol=ncol(tmpSig),byrow=TRUE)
-                } else {
-                  dN<-t(apply(desMat,1,function(x) tryCatch(numDeriv::grad(get_gamma,m$mod$estimate[gamInd[unique(c(m$conditions$betaCons))]],covs=matrix(x,1,dimnames=list(NULL,names(x))),nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix),error=function(e) NA)))
-                }
-                se<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%tmpSig%*%x)),error=function(e) NA)))
-                if(!all(is.na(se))) {
-                  lci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))-quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]-quantSup*se[i,j]
-                  uci<-1/(1+exp(-(log(trMat[i,j,]/(1-trMat[i,j,]))+quantSup*(1/(trMat[i,j,]-trMat[i,j,]^2))*se)))#trMat[i,j,]+quantSup*se[i,j]
+          
+          if(!inherits(m,"hierarchical")){
+            
+            plotTPM(nbStates,cov,ref=1:nbStates,tempCovs,trMat,rawCovs,lwd,arg,plotCI,Sigma,gamInd,m,desMat,nbRecovs,tmpSplineInputs$formula,recharge,mix,muffWarn,quantSup,tmpSplineInputs$covs,stateNames=1:nbStates)
+            
+            txt <- paste(names(rawCovs)[-cov],"=",tmpcovs[-cov],collapse=", ")
+            if(nbRecovs & names(rawCovs)[cov]=="recharge"){
+              tmpNames <- c(names(rawCovs)[-cov],colnames(m$reCovs))
+              txt <- paste(tmpNames[!duplicated(tmpNames)],"=",c(tmpcovs[-cov],tmprecovs)[!duplicated(tmpNames)],collapse=", ")
+            }
+            if(ncol(rawCovs)>1 | nbRecovs) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," t"),"T"),"ransition probabilities",ifelse(nbRecovs," at next time step: ",": "),txt),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+            else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," t"),"T"),"ransition probabilities"),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+            
+          } else {
+            for(j in 1:(m$conditions$hierStates$height-1)){
+              
+              txt <- paste(names(rawCovs)[-cov][which(names(rawCovs)[-cov]!="level")],"=",tmpcovs[which(tmpcovs$level==j),-cov][which(names(rawCovs)[-cov]!="level")],collapse=", ")
+              if(nbRecovs & names(rawCovs)[cov]=="recharge"){
+                tmpNames <- c(names(rawCovs)[-cov][which(names(rawCovs)[-cov]!="level")],colnames(m$reCovs))
+                txt <- paste(tmpNames[!duplicated(tmpNames)],"=",c(tmpcovs[which(tmpcovs$level==j),-cov][which(names(rawCovs)[-cov]!="level")],tmprecovs)[!duplicated(tmpNames)],collapse=", ")
+              }
+              
+              if(j==1) {
+
+                ref <- m$conditions$hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
+                
+                # only plot if there is variation in stationary state proabilities
+                if(!all(apply(trMat[ref,ref,which(tempCovs$level==j)],1:2,function(x) all( abs(x - mean(x)) < 1.e-6 )))){
                   
-                  ciInd <- which(!is.na(se))
-                  
-                  withCallingHandlers(do.call(arrows,c(list(as.numeric(tempCovs[ciInd,cov]), lci[ciInd], as.numeric(tempCovs[ciInd,cov]), 
-                                             uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5), lwd=lwd),arg)),warning=muffWarn)
+                  plotTPM(nbStates,cov,ref,tempCovs[which(tempCovs$level==j),],trMat[,,which(tempCovs$level==j)],rawCovs,lwd,arg,plotCI,Sigma,gamInd,m,desMat[which(tempCovs$level==j),],nbRecovs,tmpSplineInputs$formula,recharge,mix,muffWarn,quantSup,tmpSplineInputs$covs[which(tempCovs$level==j),],stateNames=names(ref))
+     
+                  if(ncol(rawCovs[-cov])>1 | nbRecovs) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," t"),"T"),"ransition probabilities for level",j,ifelse(nbRecovs," at next time step: ",": "),txt),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+                  else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," t"),"T"),"ransition probabilities for level",j),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+                
+                  #if(length(covnames[-cov])>1) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j,": ",paste(covnames[-cov][which(covnames[-cov]!="level")]," = ",tmpcovs[which(tmpcovs$level==j),-cov][which(covnames[-cov]!="level")],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+                  #else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+                } 
+              } else {
+                t <- data.tree::Traverse(m$conditions$hierStates,filterFun=function(x) x$level==j)
+                names(t) <- m$conditions$hierStates$Get("name",filterFun=function(x) x$level==j)
+                for(k in names(t)){
+                  ref <- t[[k]]$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
+                  # only plot if jth node has children and there is variation in stationary state proabilities
+                  if(!is.null(ref) && !all(apply(trMat[ref,ref,which(tempCovs$level==j)],1:2,function(x) all( abs(x - mean(x)) < 1.e-6 )))){
+                    
+                    plotTPM(nbStates,cov,ref,tempCovs[which(tempCovs$level==j),],trMat[,,which(tempCovs$level==j)],rawCovs,lwd,arg,plotCI,Sigma,gamInd,m,desMat[which(tempCovs$level==j),],nbRecovs,tmpSplineInputs$formula,recharge,mix,muffWarn,quantSup,tmpSplineInputs$covs[which(tempCovs$level==j),],stateNames=names(ref))
+                    
+                    if(ncol(rawCovs[-cov])>1 | nbRecovs) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," t"),"T"),"ransition probabilities for level",j," ",k,ifelse(nbRecovs," at next time step: ",": "),txt),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+                    else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," t"),"T"),"ransition probabilities for level",j," ",k),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
+                    
+                  }
                 }
               }
             }
           }
-          txt <- paste(names(rawCovs)[-cov],"=",tmpcovs[-cov],collapse=", ")
-          if(nbRecovs & names(rawCovs)[cov]=="recharge"){
-            tmpNames <- c(names(rawCovs)[-cov],colnames(m$reCovs))
-            txt <- paste(tmpNames[!duplicated(tmpNames)],"=",c(tmpcovs[-cov],tmprecovs)[!duplicated(tmpNames)],collapse=", ")
-          }
-          if(ncol(rawCovs)>1 | nbRecovs) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," t"),"T"),"ransition probabilities",ifelse(nbRecovs," at next time step: ",": "),txt),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
-          else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," t"),"T"),"ransition probabilities"),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
         }
         
         if(plotStationary) {
@@ -1275,9 +1304,39 @@ plotHistMVN <- function(gen,genDensities,dist,message,sepStates,breaks="Sturges"
   }
 }
 
-getCovs <-function(m,covs,ID){
+plotTPM <- function(nbStates,cov,ref=1:nbStates,tempCovs,trMat,rawCovs,lwd,arg,plotCI,Sigma,gamInd,m,desMat,nbRecovs,formula,recharge,mix,muffWarn,quantSup,covs,stateNames){
+  
+  par(mfrow=c(length(ref),length(ref)))
+  
+  for(i in 1:length(ref)){
+    for(j in 1:length(ref)){
+      do.call(plot,c(list(tempCovs[,cov],trMat[ref[i],ref[j],],type="l",ylim=c(0,1),xlab=names(rawCovs)[cov],ylab=paste(stateNames[i],"->",stateNames[j]),lwd=lwd),arg))
+      if(plotCI){
+        tmpSig <- Sigma[gamInd[unique(c(m$conditions$betaCons))],gamInd[unique(c(m$conditions$betaCons))]]
+        if(!is.null(recharge)){
+          tmpSig <- Sigma[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0),c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)]
+          dN<-matrix(unlist(lapply(split(covs,1:nrow(desMat)),function(x) tryCatch(numDeriv::grad(get_gamma_recharge,m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)],covs=x,formula=formula,recharge=recharge,nbStates=nbStates,i=ref[i],j=ref[j],betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),ncol=ncol(tmpSig),byrow=TRUE)
+        } else {
+          dN<-t(apply(desMat,1,function(x) tryCatch(numDeriv::grad(get_gamma,m$mod$estimate[gamInd[unique(c(m$conditions$betaCons))]],covs=matrix(x,1,dimnames=list(NULL,names(x))),nbStates=nbStates,i=ref[i],j=ref[j],betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix),error=function(e) NA)))
+        }
+        se<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%tmpSig%*%x)),error=function(e) NA)))
+        if(!all(is.na(se))) {
+          lci<-1/(1+exp(-(log(trMat[ref[i],ref[j],]/(1-trMat[ref[i],ref[j],]))-quantSup*(1/(trMat[ref[i],ref[j],]-trMat[ref[i],ref[j],]^2))*se)))#trMat[ref[i],ref[j],]-quantSup*se[ref[i],ref[j]]
+          uci<-1/(1+exp(-(log(trMat[ref[i],ref[j],]/(1-trMat[ref[i],ref[j],]))+quantSup*(1/(trMat[ref[i],ref[j],]-trMat[ref[i],ref[j],]^2))*se)))#trMat[ref[i],ref[j],]+quantSup*se[ref[i],ref[j]]
+          
+          ciInd <- which(!is.na(se))
+          
+          withCallingHandlers(do.call(arrows,c(list(as.numeric(tempCovs[ciInd,cov]), lci[ciInd], as.numeric(tempCovs[ciInd,cov]), 
+                                                    uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5), lwd=lwd),arg)),warning=muffWarn)
+        }
+      }
+    }
+  }
+}
+
+getCovs <-function(m,covs,ID,checkHier=TRUE){
   if(is.null(covs)){
-    if(inherits(m,"momentuHierHMM")) covs <- as.data.frame(lapply(m$data,function(x) x[which.max(!is.na(x))]))
+    if(inherits(m,"hierarchical")) covs <- as.data.frame(lapply(m$data,function(x) x[which.max(!is.na(x))]))
     else covs <- m$data[which(m$data$ID %in% ID),][1,]
     for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansList))))]){
       if(inherits(m$data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(m$data[[j]][which(m$data$ID %in% ID)][!is.na(m$data[[j]][which(m$data$ID %in% ID)])])
@@ -1291,12 +1350,13 @@ getCovs <-function(m,covs,ID){
     else 
       if(!all(names(covs) %in% c(names(m$data),"recharge"))) stop('invalid covs specified')
     if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(m$data$ID))
+    if(checkHier && inherits(m,"hierarchical") && any(names(covs) %in% "level")) stop("covs$level cannot be specified for hierarchical models")
     for(j in names(m$data)[which(!(names(m$data) %in% names(covs)))]){
       if(any(class(m$data[[j]]) %in% meansList)){
         if(inherits(m$data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(m$data[[j]][!is.na(m$data[[j]])])
         else covs[[j]]<-mean(m$data[[j]],na.rm=TRUE)
       } else {
-        if(inherits(m,"momentuHierHMM")) covInd <- which.max(!is.na(m$data[[j]]))
+        if(inherits(m,"hierarchical")) covInd <- which.max(!is.na(m$data[[j]]))
         else covInd <- 1
         covs[[j]] <- m$data[[j]][covInd]
       }
