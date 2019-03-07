@@ -158,7 +158,7 @@ print.momentuHierHMM <- function(x,...)
     }
     
     if(!is.null(m$mle$pi)){
-      #cat("\n")
+      cat("\n")
       cat("Mixture probabilities:\n")
       cat("----------------------\n")
       if(is.null(m$conditions$formulaPi)) {

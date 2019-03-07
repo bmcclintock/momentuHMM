@@ -7,10 +7,15 @@ hierGamma <- function(m){
   
   hierStates <- m$conditions$hierStates
   
-  ref1 <- hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2)
+  mixtures <- m$conditions$mixtures
   
-  CIgamma$AddChild("level1",gamma=lapply(m$CIreal$gamma,function(x) matrix(x[ref1,ref1],length(ref1),length(ref1),dimnames=list(names(ref1),names(ref1)))))
-  CIdelta$AddChild("level1",delta=lapply(m$CIreal$delta,function(x) matrix(x[,ref1],nrow(x),dimnames=list(rownames(x),names(ref1)))))
+  ref <- hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2)
+  mixref <- rep(seq(0,mixtures*length(m$stateNames)-1,length(m$stateNames)),each=length(ref))+ref
+  if(mixtures>1) nameref <- paste0(rep(names(ref),mixtures),"_mix",rep(1:mixtures,each=length(ref)))
+  else nameref <- names(ref)
+  
+  CIgamma$AddChild("level1",gamma=lapply(m$CIreal$gamma,function(x) matrix(x[mixref,ref],length(mixref),length(ref),dimnames=list(nameref,names(ref)))))
+  CIdelta$AddChild("level1",delta=lapply(m$CIreal$delta,function(x) matrix(x[,ref],nrow(x),dimnames=list(rownames(x),names(ref)))))
   
   for(j in 2:(hierStates$height-1)){
     
@@ -27,8 +32,16 @@ hierGamma <- function(m){
     for(k in names(t)){
       levelStates <- t[[k]]$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
       if(!is.null(levelStates)){
-        CIgamma[[paste0("level",j)]]$gamma[[k]] <- lapply(tmpGamma,function(x) matrix(x[levelStates,levelStates],length(levelStates),length(levelStates),dimnames=list(names(levelStates),names(levelStates))))
-        CIdelta[[paste0("level",j)]]$delta[[k]] <- lapply(tmpDelta,function(x) matrix(x[ref[[k]],levelStates],1,dimnames=list(k,names(levelStates))))
+        mixref <- rep(seq(0,mixtures*length(m$stateNames)-1,length(m$stateNames)),each=length(levelStates))+levelStates
+        if(mixtures>1) nameref <- paste0(rep(names(levelStates),mixtures),"_mix",rep(1:mixtures,each=length(levelStates)))
+        else nameref <- names(ref)
+        
+        mixrefk <- rep(seq(0,mixtures*length(m$stateNames)-1,length(m$stateNames)),each=length(ref[[k]]))+ref[[k]]
+        if(mixtures>1) namerefk <- paste0(rep(names(ref[k]),mixtures),"_mix",1:mixtures)
+        else namerefk <- k
+        
+        CIgamma[[paste0("level",j)]]$gamma[[k]] <- lapply(tmpGamma,function(x) matrix(x[mixref,levelStates],length(mixref),length(levelStates),dimnames=list(nameref,names(levelStates))))
+        CIdelta[[paste0("level",j)]]$delta[[k]] <- lapply(tmpDelta,function(x) matrix(x[mixrefk,levelStates],mixtures,dimnames=list(namerefk,names(levelStates))))
       }
     }  
   }
