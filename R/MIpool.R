@@ -17,6 +17,7 @@
 #' \item{timeInStates}{The proportion of time steps assigned to each state}
 #' \item{states}{The most freqent state assignment for each time step based on the \code{\link{viterbi}} algorithm for each model fit}
 #' \item{stateProbs}{Pooled state probability estimates for each time step}
+#' \item{mixtureProbs}{Pooled mixture probabilities for each individual (only applies if \code{mixtures>1})}
 #' \item{hierStateProbs}{Pooled state probability estimates for each time step at each level of the hierarchy (only applies if \code{HMMfits} is comprised of \code{\link{momentuHierHMM}} objects)}
 #' 
 #' @details
@@ -155,6 +156,8 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   p <- parDef(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,m$conditions$bounds)
   
+  mixtures <- m$conditions$mixtures
+  
   if(nbStates>1) {
     cat("Decoding state sequences and probabilities for each imputation... ")
     registerDoParallel(cores=ncores)
@@ -165,6 +168,11 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     registerDoParallel(cores=ncores)
     withCallingHandlers(im_stateProbs <- foreach(i = 1:nsims) %dorng% {momentuHMM::stateProbs(im[[i]])},warning=muffleRNGwarning)
     stopImplicitCluster()
+    if(mixtures>1){
+      registerDoParallel(cores=ncores)
+      withCallingHandlers(mixProbs <- foreach(i = 1:nsims) %dorng% {mixtureProbs(im[[i]])},warning=muffleRNGwarning)
+      stopImplicitCluster()
+    }
     cat("DONE\n")
   } else states <- rep(1,nrow(data))
   
@@ -176,9 +184,6 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   for(i in distnames[!unlist(lapply(m$conditions$circularAngleMean,isFALSE))]){
     parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]])))))
   }
-  
-  
-  mixtures <- m$conditions$mixtures
   
   parmcols <- parCount
   parmcols$beta <- ncol(m$mle$beta)
@@ -508,26 +513,43 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     
     lower[["timeInStates"]] <- probCI(xbar[["timeInStates"]],MI_se[["timeInStates"]],quantSup,"lower")
     upper[["timeInStates"]] <- probCI(xbar[["timeInStates"]],MI_se[["timeInStates"]],quantSup,"upper")
+    
+    if(mixtures>1){
+      xmat[["mixtureProbs"]] <- array(unlist(mixProbs),c(nbAnimals,mixtures,nsims))
+      xvar[["mixtureProbs"]] <- array(0,c(nbAnimals,mixtures,nsims)) # don't have se's; might be a way to get these but probably quite complicated
+      n <- apply(!(is.na(xmat[["mixtureProbs"]])+is.na(xvar[["mixtureProbs"]])),1:2,sum)
+      
+      if(any(n<2)) warning("need at least 2 simulations with valid point and variance estimates for mixtureProbs")
+      
+      xbar[["mixtureProbs"]] <-   apply( xmat[["mixtureProbs"]] , 1:2 , mean,na.rm=TRUE)
+      B_m[["mixtureProbs"]] <-   apply( xmat[["mixtureProbs"]] , 1:2 , var,na.rm=TRUE)
+      
+      W_m[["mixtureProbs"]] <- apply( xvar[["mixtureProbs"]] , 1:2 , mean,na.rm=TRUE)
+      MI_se[["mixtureProbs"]] <- sqrt(W_m[["mixtureProbs"]] + (n+1)/n * B_m[["mixtureProbs"]])
+      
+      dfs<-(n-1)*(1+1/(n+1)*W_m[["mixtureProbs"]]/B_m[["mixtureProbs"]])^2
+      quantSup<-qt(1-(1-alpha)/2,df=dfs)
+      
+      lower[["mixtureProbs"]] <- suppressWarnings(probCI(xbar[["mixtureProbs"]],MI_se[["mixtureProbs"]],quantSup,"lower"))
+      upper[["mixtureProbs"]] <- suppressWarnings(probCI(xbar[["mixtureProbs"]],MI_se[["mixtureProbs"]],quantSup,"upper"))
+    }
   }
   
   if(nbStates>1) {
     Par$timeInStates <- list(est=xbar$timeInStates,se=MI_se$timeInStates,lower=lower$timeInStates,upper=upper$timeInStates)
-    names(Par$timeInStates$est) <- m$stateNames
-    names(Par$timeInStates$se) <- m$stateNames
-    names(Par$timeInStates$lower) <- m$stateNames
-    names(Par$timeInStates$upper) <- m$stateNames
+    Par$timeInStates <- lapply(Par$timeInStates,function(x){ names(x) = m$stateNames;x})
     
     Par$states <- states
     
     Par$stateProbs <- list(est=xbar$stateProbs,se=MI_se$stateProbs,lower=lower$stateProbs,upper=upper$stateProbs)
-    rownames(Par$stateProbs$est) <- data$ID
-    rownames(Par$stateProbs$se) <- data$ID
-    rownames(Par$stateProbs$lower) <- data$ID
-    rownames(Par$stateProbs$upper) <- data$ID
-    colnames(Par$stateProbs$est) <- m$stateNames
-    colnames(Par$stateProbs$se) <- m$stateNames
-    colnames(Par$stateProbs$lower) <- m$stateNames
-    colnames(Par$stateProbs$upper) <- m$stateNames
+    Par$stateProbs <- lapply(Par$stateProbs,function(x) {rownames(x) = data$ID;x})
+    Par$stateProbs <- lapply(Par$stateProbs,function(x) {colnames(x) = m$stateNames;x})
+    
+    if(mixtures>1){
+      Par$mixtureProbs <- list(est=xbar$mixtureProbs,se=MI_se$mixtureProbs,lower=lower$mixtureProbs,upper=upper$mixtureProbs)
+      Par$mixtureProbs <- lapply(Par$mixtureProbs,function(x) {rownames(x)=paste0("ID:",unique(data$ID));x})
+      Par$mixtureProbs <- lapply(Par$mixtureProbs,function(x) {colnames(x)=paste0("mix",1:mixtures);x})
+    }
   }
   
   if(inherits(im[[1]],"hierarchical")){

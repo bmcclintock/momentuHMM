@@ -27,6 +27,7 @@ A \code{\link{miSum}} object, i.e., a list comprised of model and pooled paramet
 \item{timeInStates}{The proportion of time steps assigned to each state}
 \item{states}{The most freqent state assignment for each time step based on the \code{\link{viterbi}} algorithm for each model fit}
 \item{stateProbs}{Pooled state probability estimates for each time step}
+\item{mixtureProbs}{Pooled mixture probabilities for each individual (only applies if \code{mixtures>1})}
 \item{hierStateProbs}{Pooled state probability estimates for each time step at each level of the hierarchy (only applies if \code{HMMfits} is comprised of \code{\link{momentuHierHMM}} objects)}
 }
 \description{
