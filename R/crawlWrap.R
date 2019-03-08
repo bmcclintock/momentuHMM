@@ -148,7 +148,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
         if(!(coordLevel %in% levels(ind_data[[i]]$level))) stop("'coordLevel' not found in 'level' field")
         ind_data[[i]] <- obsData[which(obsData$ID==i & obsData$level==coordLevel),]
         hierInd <- TRUE
-      }
+      } else if(!is.null(coordLevel)) stop("coordLevel can not be specified unless obsData includes a 'level' field")
     #}
   }
   
@@ -568,6 +568,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
           }
         }
       }
+      if(!is.null(coordLevel)) pD$level <- coordLevel
       pD
     }
   ,warning=muffleRNGwarning)
@@ -583,6 +584,10 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
       
       ipData <- pData[which(pData$ID==i),]
       tmpData <- obsData[which(obsData$ID==i),]
+      #tmpData[[Time.name]] <- as.POSIXct(as.numeric(tmpData[[Time.name]]),origin="1970-01-01 00:00:00",tz=attributes(pData[[Time.name]])$tzone)
+      tmpData <- merge(tmpData,ipData[,Time.name,drop=FALSE],all=TRUE,by=Time.name)
+      tmpData$level[is.na(tmpData$level)] <- coordLevel
+      tmpData$ID[is.na(tmpData$ID)] <- i
       
       for(jj in names(tmpData)[!(names(tmpData) %in% names(ipData))]){
         ipData[[jj]] <- rep(NA,nrow(ipData))

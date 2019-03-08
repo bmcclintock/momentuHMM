@@ -88,12 +88,23 @@ formatHierHMM <- function(data,hierStates,hierDist,
     for(j in gsub("level","",hierDist$Get("name",filterFun=function(x) x$level==2))){
       jDist <- hierDist[[paste0("level",j)]]$Get("dist",filterFun=isLeaf)
       if(any(!is.na(jDist))){
-        tmpNames <- names(jDist[!is.na(jDist)])
-        if(!all(tmpNames %in% names(data))) stop(paste0(tmpNames[which(!(tmpNames %in% names(data)))],collapse=", ")," not found in data")
-      }
-      dataNames <- names(jDist)
-      for(k in levels(data$level)[-which(levels(data$level)==j)]){
-        if(any(!is.na(data[which(data$level==k),dataNames]))) stop(paste(dataNames,collapse=", ")," must be NA for level ",k)
+        dist <- jDist[!is.na(jDist)]
+        distnames <- tmpdistnames <- names(dist)
+        if(!all(distnames %in% names(data))){
+          for(i in which(is.na(match(distnames,names(data))))){
+            if(dist[i] %in% mvndists){
+              if(dist[i] %in% c("mvnorm2","rw_mvnorm2")){
+                tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"))
+              } else if(jDist[i] %in% c("mvnorm3","rw_mvnorm3")){
+                tmpdistnames <- c(tmpdistnames[-1],paste0(distnames[i],".x"),paste0(distnames[i],".y"),paste0(distnames[i],".z"))          
+              }
+            }
+          }
+          if(any(is.na(match(tmpdistnames,names(data))))) stop(paste0(tmpdistnames[is.na(match(tmpdistnames,names(data)))],collapse=", ")," not found in data")
+        }
+        for(k in levels(data$level)[-which(levels(data$level)==j)]){
+          if(any(!is.na(data[which(data$level==k),tmpdistnames]))) stop(paste(tmpdistnames,collapse=", ")," must be NA for level ",k)
+        }
       }
     }
   }# else {

@@ -1,6 +1,25 @@
 hierGamma <- function(m){
   
-  if(!inherits(m,"momentuHierHMM")) stop("m must be a 'momentuHierHMM' object")
+  if(is.miSum(m) && inherits(m,"hierarchical")){
+    m$mle <- lapply(m$Par$real,function(x) x$est)
+    m$mle$beta <- m$Par$beta$beta$est
+    m$mle$pi <- m$Par$real$pi$est
+    m$mle$delta <- m$Par$real$delta$est
+    m$mod <- list()
+    if(!is.null(m$conditions$recharge)){
+      nbRecovs <- ncol(m$g0covs) + ncol(m$reCovs)
+      m$mle$g0 <- c(m$Par$beta$g0$est)
+      names(m$mle$g0) <- colnames(m$Par$beta$g0$est)
+      m$mle$theta <- c(m$Par$beta$theta$est)
+      names(m$mle$theta) <- colnames(m$Par$beta$theta$est)
+    } else nbRecovs <- 0
+    m$mod$estimate <- expandPar(m$MIcombine$coefficients,m$conditions$optInd,unlist(m$conditions$fixPar),m$conditions$wparIndex,m$conditions$betaCons,m$conditions$deltaCons,length(m$stateNames),ncol(m$covsDelta)-1,m$conditions$stationary,nrow(m$Par$beta$beta$est)/m$conditions$mixtures-1,nbRecovs,m$conditions$mixtures,ncol(m$covsPi)-1)
+    m$mod$hessian <- NA
+    m$mod$Sigma <- matrix(0,length(m$mod$estimate),length(m$mod$estimate))
+    m$mod$Sigma[-m$conditions$optInd,-m$conditions$optInd] <- m$MIcombine$variance
+    m$CIreal <- m$Par$real
+    m <- momentuHMM(m)
+  } else if(!inherits(m,"momentuHierHMM")) stop("m must be a 'momentuHierHMM' object")
   
   CIgamma <- data.tree::Node$new("hierGamma")
   CIdelta <- data.tree::Node$new("hierDelta")
@@ -34,7 +53,7 @@ hierGamma <- function(m){
       if(!is.null(levelStates)){
         mixref <- rep(seq(0,mixtures*length(m$stateNames)-1,length(m$stateNames)),each=length(levelStates))+levelStates
         if(mixtures>1) nameref <- paste0(rep(names(levelStates),mixtures),"_mix",rep(1:mixtures,each=length(levelStates)))
-        else nameref <- names(ref)
+        else nameref <- names(levelStates)
         
         mixrefk <- rep(seq(0,mixtures*length(m$stateNames)-1,length(m$stateNames)),each=length(ref[[k]]))+ref[[k]]
         if(mixtures>1) namerefk <- paste0(rep(names(ref[k]),mixtures),"_mix",1:mixtures)

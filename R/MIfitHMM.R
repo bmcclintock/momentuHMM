@@ -698,18 +698,21 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
       if(mixtures>1) stop("hierBeta must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
     }
     if(!is.list(hierBeta[[1]])){
-      if(inherits(hierBeta[[1]],"Node")){
-        tmphierBeta<-lapply(hierBeta,Clone)
+      if(inherits(hierBeta$beta,"Node")){
+        tmphierBeta <- vector('list',length(hierBeta))
+        names(tmphierBeta) <- names(hierBeta)
+        tmphierBeta[names(hierBeta)!="beta"] <- hierBeta[names(hierBeta)!="beta"]
+        tmphierBeta$beta <- data.tree::Clone(hierBeta$beta)
         hierBeta<-vector('list',nSims)
         hierBeta[1:nSims]<-list(tmphierBeta)
       } else {
-          tmphierBeta<-hierBeta
-          hierBeta<-vector('list',nSims)
-          if(!is.null(tmphierBeta)){
-            hierBeta[1:nSims]<-list(tmphierBeta)
+        tmphierBeta<-hierBeta
+        hierBeta<-vector('list',nSims)
+        if(!is.null(tmphierBeta)){
+          hierBeta[1:nSims]<-list(tmphierBeta)
         }
       }
-    } else if(length(hierBeta)<nSims) stop("hierBeta must be a list of length >=",nSims)    
+    } else if(length(hierBeta)<nSims) stop("hierBeta must be a list of length >=",nSims)     
   }
   if(!is.list(hierDelta)){
     if(inherits(hierDelta,"Node")){

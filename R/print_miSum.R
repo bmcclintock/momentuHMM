@@ -34,98 +34,24 @@
 
 print.miSum <- function(x,...)
 {
-  m <- x
-  distnames <- names(m$conditions$dist)
-  nbStates <- length(m$stateNames)
-  DMind <- m$conditions$DMind
+  m <- x # the name "x" is for compatibility with the generic method
+  m <- delta_bc(m)
   
-  if(!is.null(m$modelName)) {
-    mess <- paste("Model:",m$modelName)
-    cat(rep("-",nchar(mess)),"------------\n",sep="")
-    cat(mess,"\n")
-    cat(rep("-",nchar(mess)),"------------\n",sep="")
-  }
+  m$mle <- lapply(x$Par$real,function(x) x$est)
+  m$mle$beta <- x$Par$beta$beta$est
+  m$mle$pi <- x$Par$real$pi$est
+  m$mle$delta <- x$Par$real$delta$est
+  m$mod <- list()
+  if(!is.null(m$conditions$recharge)){
+    nbRecovs <- ncol(m$g0covs) + ncol(m$reCovs)
+    m$mle$g0 <- c(m$Par$beta$g0$est)
+    names(m$mle$g0) <- colnames(m$Par$beta$g0$est)
+    m$mle$theta <- c(m$Par$beta$theta$est)
+    names(m$mle$theta) <- colnames(m$Par$beta$theta$est)
+  } else nbRecovs <- 0
+  m$CIbeta <- m$Par$beta
+  m$CIreal <- m$Par$real
   
-  for(i in distnames){
-    cat("\n")
-    if(DMind[[i]]) {
-      cat(i,                "parameters:\n")      
-      cat(rep("-",nchar(i)),"------------\n",sep="")
-      print(m$Par$real[[i]]$est)
-    } else {
-      cat("Regression coeffs for",i,"parameters:\n")
-      cat(rep("-",nchar(i)),"----------------------------------\n",sep="")
-      print(m$Par$beta[[i]]$est)
-      cat("\n")
-      cat(i,                "parameters (based on mean or specified covariate values):\n")
-      cat(rep("-",nchar(i)),"----------------------------------------------------------\n",sep="")
-      print(x$Par$real[[i]]$est)
-    }
-  }
-  
-  if(nbStates>1){
-    
-    if(!is.null(m$conditions$recharge)){
-      cat("\n")
-      cat("Recharge parameters for the transition probabilities:\n")
-      cat("-----------------------------------------------------\n")
-      g0theta <- c(m$Par$beta$g0$est,m$Par$beta$theta$est)
-      names(g0theta) <- c(paste0("g0:",colnames(m$Par$beta$g0$est)),paste0("theta:",colnames(m$Par$beta$theta$est)))
-      print(g0theta)      
-    }
-  
-    if(!is.null(m$Par$beta$beta)) {
-      cat("\n")
-      cat("Regression coeffs for the transition probabilities:\n")
-      cat("---------------------------------------------------\n")
-      print(m$Par$beta$beta$est)
-    }
-    
-    if(!is.null(m$Par$real$pi)){
-      cat("\n")
-      cat("Mixture probabilities:\n")
-      cat("----------------------\n")
-      if(is.null(m$conditions$formulaPi)) {
-        formPi <- ~1
-      } else formPi <- m$conditions$formulaPi
-      if(!length(attr(terms.formula(formPi),"term.labels")) & is.null(m$conditions$formulaPi)){
-        tmp <- m$Par$real$pi$est[1,]
-        names(tmp) <- paste0("mix",1:m$conditions$mixtures)
-        print(tmp)
-      } else print(m$Par$real$pi$est)
-    }
-    
-    cat("\n")
-    if(!length(attr(terms.formula(m$conditions$formula),"term.labels"))) {
-      cat("Transition probability matrix:\n")
-      cat("------------------------------\n")
-    } else {
-      cat("Transition probability matrix (based on mean or specified covariate values):\n")
-      cat("----------------------------------------------------------------------------\n")
-    }
-    print(m$Par$real$gamma$est)
-    
-    if(!is.null(m$Par$real$delta)){
-      cat("\n")
-      cat("Initial distribution:\n")
-      cat("---------------------\n")
-      m <- delta_bc(m)
-      if(is.null(m$conditions$formulaDelta)) {
-        formDelta <- ~1
-      } else formDelta <- m$conditions$formulaDelta
-      if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
-        tmp <- m$Par$real$delta$est[1:m$conditions$mixtures,]
-        if(m$conditions$mixtures==1) rownames(tmp)<-NULL
-        else rownames(tmp) <- paste0("mix",1:m$conditions$mixtures)
-        print(tmp)
-      } else print(m$Par$real$delta$est)
-    }
-  
-    if(!is.null(m$Par$timeInStates)){
-      cat("\n")
-      cat("Proportion of time steps spent in each state:\n")
-      cat("---------------------------------------------\n")
-      print(m$Par$timeInStates$est)   
-    }
-  }
+  if(inherits(m,"hierarchical")) print.momentuHierHMM(m)
+  else print.momentuHMM(m)
 }

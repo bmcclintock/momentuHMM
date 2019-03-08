@@ -415,9 +415,9 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     pie <- matrix(miBeta$coefficients[piInd],nrow=ncol(m$covsPi),ncol=mixtures-1)
     est<-lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsPi),ncol=mixtures)
     for(j in 1:nrow(m$covsPi)){
-      est[j,] <- get_delta(pie,m$covsPi[j,,drop=FALSE],i=1:mixtures,workBounds=m$conditions$workBounds$pi)
+      est[j,] <- get_delta(pie,m$covsPi[j,,drop=FALSE],i=1:mixtures)
       for(i in 1:mixtures){
-        dN<-numDeriv::grad(get_delta,pie,covsDelta=m$covsPi[j,,drop=FALSE],i=i,workBounds=m$conditions$workBounds$pi)
+        dN<-numDeriv::grad(get_delta,pie,covsDelta=m$covsPi[j,,drop=FALSE],i=i)
         se[j,i]<-suppressWarnings(sqrt(dN%*%miBeta$variance[piInd,piInd]%*%dN))
         lower[j,i] <- probCI(est[j,i],se[j,i],quantSup,bound="lower")
         upper[j,i] <- probCI(est[j,i],se[j,i],quantSup,bound="upper")
@@ -619,6 +619,17 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   mh <- miSum(mh)
   if(is.momentuHierHMM(im[[1]])) class(mh) <- append(class(mh),"hierarchical")
+  
+  if(inherits(mh,"hierarchical")){
+    hier <- mapHier(mh$Par$beta$beta$est,mh$Par$beta$pi$est,mh$Par$beta$delta$est,mh$conditions$hierBeta,mh$conditions$hierDelta,mh$conditions$fixPar,mh$conditions$betaCons,mh$conditions$deltaCons,mh$conditions$hierStates,mh$conditions$formula,mh$conditions$formulaDelta,mh$data,mh$conditions$mixtures,mh$Par$beta$g0,mh$Par$beta$theta,fill=FALSE)
+    mh$conditions$hierBeta <- hier$hierBeta
+    mh$conditions$hierDelta <- hier$hierDelta
+    
+    hierGammaDelta <- hierGamma(mh)
+    mh$Par$real$hierDelta <- hierGammaDelta$hierDelta
+    mh$Par$real$hierGamma <- hierGammaDelta$hierGamma
+  }
+  
   return(mh)
 }
 
