@@ -14,18 +14,18 @@ fitHMM(data, ...)
   mixtures = 1, formulaPi = NULL, verbose = NULL, nlmPar = list(),
   fit = TRUE, DM = NULL, cons = NULL, userBounds = NULL,
   workBounds = NULL, workcons = NULL, betaCons = NULL,
-  betaRef = NULL, mvnCoords = NULL, stateNames = NULL,
-  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
-  optMethod = "nlm", control = list(), prior = NULL,
-  modelName = NULL, ...)
+  betaRef = NULL, deltaCons = NULL, mvnCoords = NULL,
+  stateNames = NULL, knownStates = NULL, fixPar = NULL,
+  retryFits = 0, retrySD = NULL, optMethod = "nlm",
+  control = list(), prior = NULL, modelName = NULL, ...)
 
 \method{fitHMM}{momentuHierHMMData}(data, hierStates, hierDist, Par0,
-  beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
-  circularAngleMean = NULL, hierFormula = NULL, formulaDelta = ~1,
-  mixtures = 1, formulaPi = NULL, nlmPar = list(), fit = TRUE,
-  DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL,
-  mvnCoords = NULL, knownStates = NULL, fixPar = NULL,
-  retryFits = 0, retrySD = NULL, optMethod = "nlm",
+  hierBeta = NULL, hierDelta = NULL, estAngleMean = NULL,
+  circularAngleMean = NULL, hierFormula = NULL,
+  hierFormulaDelta = NULL, mixtures = 1, formulaPi = NULL,
+  nlmPar = list(), fit = TRUE, DM = NULL, userBounds = NULL,
+  workBounds = NULL, mvnCoords = NULL, knownStates = NULL,
+  fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm",
   control = list(), prior = NULL, modelName = NULL, ...)
 }
 \arguments{
@@ -154,6 +154,8 @@ through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{work
 \item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
 the diagonal elements of the t.p.m. are the reference. See details.}
 
+\item{deltaCons}{Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}. See details.}
+
 \item{mvnCoords}{Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
@@ -191,8 +193,14 @@ Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \co
 
 \item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See details.}
 
+\item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition probabilities at each level of the hierarchy, including initial values ('beta'), parameter equality constraints ('betaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.}
+
+\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial distribution at each level of the hierarchy, including initial values ('delta'), parameter equality constraints ('deltaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.}
+
 \item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (only hierarchical-level effects, with no covariate effects).
 Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy. See details.}
+
+\item{hierFormulaDelta}{A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale).}
 }
 \value{
 A \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object, i.e. a list of:

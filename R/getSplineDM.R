@@ -1,3 +1,4 @@
+#' @importFrom stats predict
 #' @importFrom qdapRegex rm_between
 getSplineDM<-function(distnames,DM,m,covs){
   splineInd<-list()

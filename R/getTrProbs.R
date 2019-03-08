@@ -41,19 +41,19 @@ getTrProbs.default <- function(data,nbStates,beta,workBoundsBeta=NULL,formula=~1
   
   if(!is.momentuHMM(data)){
     hierArgs <- list(...)
-    argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist","hierFormula"))]
+    argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist","hierBeta","hierDelta","hierFormula"))]
     
     ## check that the data is a momentuHMMData object or valid data frame
     if(!is.momentuHMMData(data)){ 
       if(missing(nbStates)){
         if(all(c("hierStates","hierDist") %in% argNames)){
-          return(getTrProbs.hierarchical(data,hierStates=hierArgs$hierStates,beta,workBoundsBeta,hierFormula=hierArgs$hierFormula,mixtures,hierArgs$hierDist))
+          return(getTrProbs.hierarchical(data,hierStates=hierArgs$hierStates,hierBeta=hierArgs$hierBeta,hierDelta=hierArgs$hierDelta,hierFormula=hierArgs$hierFormula,mixtures,hierArgs$hierDist))
         }
       }
       if(!is.data.frame(data)) stop('data must be a data.frame')
     }
     if(!missing(nbStates)){
-      if(any(c("hierStates","hierDist","hierFormula") %in% argNames))
+      if(any(c("hierStates","hierDist","hierFormula","hierBeta","hierDelta") %in% argNames))
         stop("Either nbStates must be specified (for a regular HMM) or hierStates and hierDist must be specified (for a hierarchical HMM)")
     }
     
@@ -114,22 +114,62 @@ getTrProbs.default <- function(data,nbStates,beta,workBoundsBeta=NULL,formula=~1
 #' @rdname getTrProbs
 #' @method getTrProbs hierarchical
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See \code{\link{fitHMM}}.
-#' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See \code{\link{fitHMM}}.
+#' @param hierBeta A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition probabilities at each level of the hierarchy, including initial values ('beta'), parameter equality constraints ('betaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.
 #' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). See \code{\link{fitHMM}}.
+#' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See \code{\link{fitHMM}}.
+#' 
+#' @return 
+#' If a hierarchical HMM structure is provided, then a hierarchical data structure containing the state transition probabilities for each time step at each level of the hierarchy ('gamma') is returned.
+#' 
 #' @export
-getTrProbs.hierarchical <- function(data,hierStates,beta,workBoundsBeta=NULL,hierFormula=NULL,mixtures=1,hierDist,...){
+getTrProbs.hierarchical <- function(data,hierStates,hierBeta,hierFormula=NULL,mixtures=1,hierDist,...){
   
   if(is.momentuHierHMM(data)){
     hierStates <- data$conditions$hierStates
-    beta <- data$mle$beta
-    workBoundsBeta <- data$conditions$workBounds$beta
+    hierBeta <- data$conditions$hierBeta
+    hierDelta <- data$conditions$hierDelta
     hierFormula <- data$conditions$hierFormula
     mixtures <- data$conditions$mixtures
     hierDist <- data$conditions$hierDist
     data <- data$data
   }
   
-  inputHierHMM <- formatHierHMM(data,hierStates=hierStates,hierDist=hierDist,hierFormula=hierFormula,mixtures=mixtures,workBounds=list(beta=workBoundsBeta),fixPar=list(delta=NA),checkData=FALSE)
+  inputHierHMM <- formatHierHMM(data,hierStates=hierStates,hierDist=hierDist,hierBeta=hierBeta,hierDelta=hierDelta,hierFormula=hierFormula,mixtures=mixtures,checkData=FALSE)
+  if(mixtures>1) inputHierHMM$beta <- inputHierHMM$beta$beta
   
-  return(getTrProbs.default(data,inputHierHMM$nbStates,beta,inputHierHMM$workBounds$beta,inputHierHMM$formula,mixtures,inputHierHMM$betaRef,inputHierHMM$stateNames))
+  trProbs <- getTrProbs.default(data,inputHierHMM$nbStates,inputHierHMM$beta,inputHierHMM$workBounds$beta,inputHierHMM$formula,mixtures,inputHierHMM$betaRef,inputHierHMM$stateNames)
+  if(mixtures==1) trProbs <- list(trProbs)
+  
+  beta <- data.tree::Node$new("getTrProbs")
+  
+  ref1 <- hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2)
+  
+  beta$AddChild("level1",gamma=list())
+
+  for(mix in 1:mixtures){
+    beta$level1$gamma[[mix]] <- trProbs[[mix]][ref1,ref1,which(data$level=="1"),drop=FALSE]
+    dimnames(beta$level1$gamma[[mix]]) <- list(names(ref1),names(ref1),NULL)
+  }
+  if(mixtures==1) beta$level1$gamma <- beta$level1$gamma[[1]]
+  
+  for(j in 2:(hierStates$height-1)){
+    
+    t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
+    names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
+    
+    beta$AddChild(paste0("level",j))
+    
+    for(k in names(t)){
+      ref <- t[[k]]$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
+      if(!is.null(ref)){
+        beta[[paste0("level",j)]]$AddChild(k,gamma=list())
+        for(mix in 1:mixtures){
+          beta[[paste0("level",j)]][[k]]$gamma[[mix]] <- trProbs[[mix]][ref,ref,which(data$level==j),drop=FALSE]
+          dimnames(beta[[paste0("level",j)]][[k]]$gamma[[mix]]) <- list(names(ref),names(ref),NULL)
+        }
+        if(mixtures==1) beta[[paste0("level",j)]][[k]]$gamma <- beta[[paste0("level",j)]][[k]]$gamma[[1]]
+      }
+    }  
+  }
+  beta
 }

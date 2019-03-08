@@ -52,21 +52,21 @@ stationary.momentuHMM <- function(model, covs)
       } else {
         tmpSplineInputs<-getSplineFormula(newformula,model$data,model$data[1,])
       }
-      covMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+
     } else if(is.data.frame(covs)){
       if(is.null(recharge))
         if(!all(names(covs) %in% names(model$data))) stop('invalid covs specified')
       else 
         if(!all(names(covs) %in% c(names(model$data),"recharge"))) stop('invalid covs specified')
       if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(model$data$ID))
+      if(inherits(model,"hierarchical") && any(names(covs) %in% "level")) stop("covs$level cannot be specified for hierarchical models")
       for(j in names(model$data)[which(names(model$data) %in% names(covs))]){
         if(inherits(model$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(model$data[[j]]))
         if(any(is.na(covs[[j]]))) stop("check value(s) for ",j)
       }
       
       tmpSplineInputs<-getSplineFormula(newformula,model$data,covs)
-      
-      covMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+
     } else if(is.matrix(covs)){
       covMat <- covs
     } else stop("covs must either be a data frame or a matrix")
@@ -101,7 +101,15 @@ stationary.momentuHMM <- function(model, covs)
       if(inherits(ck1,"error")) stop("covs not specified correctly -- ",ck1)
       if(inherits(ck2,"error")) stop("covs not specified correctly -- ",ck2)
     }
-
+    
+    if(!is.matrix(covs)){
+      if(inherits(model,"hierarchical") & !("level" %in% names(covs))){
+        # expand covs for each level of hierarchy
+        tmpSplineInputs$covs <- data.frame(tmpSplineInputs$covs[rep(1:nrow(tmpSplineInputs$covs),nlevels(model$data$level)),,drop=FALSE],level=rep(levels(model$data$level),each=nrow(tmpSplineInputs$covs)))
+      }
+      covMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+    }
+    
     mixtures <- model$conditions$mixtures
   
     probs <- list()
@@ -117,18 +125,41 @@ stationary.momentuHMM <- function(model, covs)
       }
       
       tryCatch({
+        
           # for each transition matrix, derive corresponding stationary distribution
-          probs[[mix]] <- apply(allMat, 3,
-                         function(gamma)
-                             solve(t(diag(nbStates)-gamma+1),rep(1,nbStates)))
-          probs[[mix]] <- t(probs[[mix]])
+          if(!inherits(model,"hierarchical")){
+
+            probs[[mix]] <- getProbs(allMat,model$stateNames)
+          
+          } else {
+            
+            probs[[mix]] <- list()
+            for(j in 1:(model$conditions$hierStates$height-1)){
+                  
+              if(j==1){
+                ref <- model$conditions$hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
+                probs[[mix]][["level1"]] <- getProbs(allMat[ref,ref,which(covMat[,colnames(covMat) %in% paste0("I((level == \"",j,"\") * 1)")]==1),drop=FALSE],names(ref))
+              } else {
+                
+                t <- data.tree::Traverse(model$conditions$hierStates,filterFun=function(x) x$level==j)
+                names(t) <- model$conditions$hierStates$Get("name",filterFun=function(x) x$level==j)
+                
+                if(length(names(t))) probs[[mix]][[paste0("level",j)]] <- list()
+                
+                for(k in names(t)){
+                  ref <- t[[k]]$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
+                  if(!is.null(ref)){
+                    probs[[mix]][[paste0("level",j)]][[k]] <- getProbs(allMat[ref,ref,which(covMat[,colnames(covMat) %in% paste0("I((level == \"",j,"\") * 1)")]==1),drop=FALSE],names(ref))
+                  }
+                }  
+              }
+            }
+          }
       },
       error = function(e) {
           stop(paste("The stationary probabilities cannot be calculated",
                      "for these covariate values (singular system)."))
       })
-  
-      colnames(probs[[mix]]) <- model$stateNames
     }
     return(probs)
 }
@@ -149,4 +180,18 @@ stationary.miSum <- function(model, covs)
 stationary.miHMM <- function(model, covs)
 {
   stationary(model$miSum,covs)
+}
+
+getProbs <- function(allMat,stateNames){
+  
+  nbStates <- length(stateNames)
+  
+  probs <- apply(allMat, 3,
+                 function(gamma)
+                     solve(t(diag(nbStates)-gamma+1),rep(1,nbStates)))
+  probs <- t(probs)
+  
+  colnames(probs) <- stateNames
+  
+  probs
 }

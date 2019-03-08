@@ -64,6 +64,7 @@ pseudoRes <- function(m, ncores = 1)
   data <- m$data
   nbObs <- nrow(data)
   nbStates <- length(m$stateNames)
+  nbAnimals <- length(unique(m$data$ID))
   dist <- m$conditions$dist
   distnames <- names(dist)
   
@@ -94,6 +95,8 @@ pseudoRes <- function(m, ncores = 1)
     theta <- c(m$Par$beta$theta$est)
     if(!is.null(g0)) m$conditions$workBounds$g0<-matrix(c(-Inf,Inf),length(g0),2,byrow=TRUE)
     if(!is.null(theta)) m$conditions$workBounds$theta<-matrix(c(-Inf,Inf),length(theta),2,byrow=TRUE)
+    
+    m$mle <- list(g0=g0,theta=theta)
     
     inputs <- checkInputs(nbStates,dist,Par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
     p <- inputs$p
@@ -129,46 +132,13 @@ pseudoRes <- function(m, ncores = 1)
   la <- logAlpha(m)
   
   # identify covariates
-  formula<-m$conditions$formula
-  newForm <- newFormulas(formula,nbStates)
-  formulaStates <- newForm$formulaStates
-  formterms <- newForm$formterms
-  newformula <- newForm$newformula
-  recharge <- newForm$recharge
-  
-  aInd <- NULL
-  nbAnimals <- length(unique(data$ID))
-  for(i in 1:nbAnimals){
-    aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
-  }
-  
-  if(!is.null(recharge)){
-    g0covs <- model.matrix(recharge$g0,data[aInd,])
-    nbG0covs <- ncol(g0covs)-1
-    recovs <- model.matrix(recharge$theta,data)
-    nbRecovs <- ncol(recovs)-1
-    data$recharge<-rep(0,nrow(data))
-    for(i in 1:nbAnimals){
-      idInd <- which(data$ID==unique(data$ID)[i])
-      if(nbRecovs){
-        g <- g0 %*% t(g0covs[i,,drop=FALSE])
-        data$recharge[idInd] <- cumsum(c(g,theta%*%t(recovs[idInd[-length(idInd)],])))
-      }
-    }
-    #for(j in 1:nbStates){
-    #  formulaStates[[j]] <- as.formula(paste0(Reduce( paste, deparse(formulaStates[[j]]) ),"+recharge"))
-    #}
-    #formterms <- c(formterms,"recharge")
-    newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
-  } else {
-    nbG0covs <- 0
-    nbRecovs <- 0
-    g0covs <- NULL
-    recovs <- NULL
-  }
-  
-  covs <- model.matrix(newformula,data)
-  nbCovs <- ncol(covs)-1 # substract intercept column
+  reForm <- formatRecharge(m,data,par=list(g0=g0,theta=theta))
+  recharge <- reForm$recharge
+  newformula <- reForm$newformula
+  data <- reForm$data
+  covs <- reForm$covs
+  nbCovs <- reForm$nbCovs
+  aInd <- reForm$aInd
   
   mixtures <- m$conditions$mixtures
   if(mixtures==1) pie <- matrix(1,nbAnimals,1)
@@ -185,8 +155,8 @@ pseudoRes <- function(m, ncores = 1)
       if(is.null(recharge)){
         trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*(nbCovs+1)+1:(nbCovs+1),,drop=FALSE],as.matrix(covs),m$conditions$betaRef)
       } else {
-        gamInd<-(length(m$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures+1):(length(m$mod$estimate))-(ncol(m$covsPi)*(mixtures-1))-ifelse(nbRecovs,nbRecovs+1+nbG0covs+1,0)-ncol(m$covsDelta)*(nbStates-1)*(!m$conditions$stationary)*mixtures
-        trMat[[mix]] <- array(unlist(lapply(split(data,1:nrow(data)),function(x) tryCatch(get_gamma_recharge(m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)],covs=x,formula=newformula,recharge=recharge,nbStates=nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(data))) 
+        gamInd<-(length(m$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures+1):(length(m$mod$estimate))-(ncol(m$covsPi)*(mixtures-1))-ifelse(reForm$nbRecovs,reForm$nbRecovs+1+reForm$nbG0covs+1,0)-ncol(m$covsDelta)*(nbStates-1)*(!m$conditions$stationary)*mixtures
+        trMat[[mix]] <- array(unlist(lapply(split(data,1:nrow(data)),function(x) tryCatch(get_gamma_recharge(m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-reForm$nbRecovs:0)],covs=x,formula=newformula,recharge=recharge,nbStates=nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(data))) 
       }
     } else trMat[[mix]] <- array(1,dim=c(1,1,nbObs))
   }

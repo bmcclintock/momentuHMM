@@ -4,7 +4,7 @@
 #' Plots time series, qq-plots (against the standard normal distribution), and sample
 #' ACF functions of the pseudo-residuals for each data stream
 #'
-#' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, \code{\link{HMMfits}}, or \code{\link{miSum}} object.
+#' @param m A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, \code{\link{HMMfits}}, or \code{\link{miSum}} object.
 #' @param lag.max maximum lag at which to calculate the acf.  See \code{\link[stats]{acf}}.
 #' @param ncores number of cores to use for parallel processing
 #'
@@ -70,6 +70,15 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
 
   # reduce top margin
   par(mar=c(5,4,4,2)-c(0,0,3,0)) # bottom, left, top, right
+  
+  if(any(unlist(lapply(m,function(x) inherits(x,"hierarchical"))))){
+    for(i in distnames){
+      for(j in 1:nSims){
+        iLevel <- gsub("level","",m[[j]]$conditions$hierDist$Get("parent",filterFun=isLeaf)[[i]]$name)
+        pr[[j]][[paste0(i,"Res")]] <- pr[[j]][[paste0(i,"Res")]][which(m[[j]]$data$level==iLevel)]
+      }
+    }
+  }
   
   for(i in distnames){
       # time series

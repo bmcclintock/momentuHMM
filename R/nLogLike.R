@@ -38,6 +38,7 @@
 #' @param prior A function that returns the log-density of the working scale parameter prior distribution(s)
 #' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters.
 #' @param betaRef Indices of reference elements for t.p.m. multinomial logit link.
+#' @param deltaCons Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. 
 #' @param optInd indices of constrained parameters
 #' @param recovs data frame containing the recharge model theta covariates (if any)
 #' @param g0covs data frame containing the recharge model g0 covariates (if any)
@@ -76,7 +77,7 @@
 
 nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,
-                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1,covsPi)
+                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,deltaCons=NULL,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1,covsPi)
 {
   
   # check arguments
@@ -88,7 +89,7 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
   else nbRecovs <- 0
   
   # convert the parameters back to their natural scale
-  wpar <- expandPar(optPar,optInd,fixPar,wparIndex,betaCons,nbStates,ncol(covsDelta)-1,stationary,nbCovs,nbRecovs,mixtures,ncol(covsPi)-1)
+  wpar <- expandPar(optPar,optInd,fixPar,wparIndex,betaCons,deltaCons,nbStates,ncol(covsDelta)-1,stationary,nbCovs,nbRecovs,mixtures,ncol(covsPi)-1)
   par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi)
 
   nbAnimals <- length(unique(data$ID))

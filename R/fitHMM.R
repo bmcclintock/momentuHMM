@@ -112,6 +112,7 @@ fitHMM <- function(data, ...) {
 #' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See details.
 #' @param betaRef Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
 #' the diagonal elements of the t.p.m. are the reference. See details.
+#' @param deltaCons Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}. See details.
 #' @param mvnCoords Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.
 #' @param stateNames Optional character vector of length nbStates indicating state names.
 #' @param knownStates Vector of values of the state process which are known prior to fitting the
@@ -476,7 +477,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                    estAngleMean=NULL,circularAngleMean=NULL,
                    formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,
                    verbose=NULL,nlmPar=list(),fit=TRUE,
-                   DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,
+                   DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,deltaCons=NULL,
                    mvnCoords=NULL,stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, ...)
 {
   
@@ -675,7 +676,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   zeroInflation <- inflation$zeroInflation
   oneInflation <- inflation$oneInflation
 
-  mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(newformula),"term.labels")) & !length(attr(terms.formula(formDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior) & is.null(betaCons) & is.null(betaRef) & is.null(mvnCoords) & mixtures==1) # indicator for moveHMMwrap below
+  mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(newformula),"term.labels")) & !length(attr(terms.formula(formDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior) & is.null(betaCons) & is.null(betaRef) & is.null(deltaCons) & is.null(mvnCoords) & mixtures==1) # indicator for moveHMMwrap below
   
   inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames,checkInflation = TRUE)
   p <- inputs$p
@@ -697,7 +698,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   ####################################
   ## Prepare initial values for nlm ##
   ####################################
-  fixParIndex <- get_fixParIndex(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data)
+  fixParIndex <- get_fixParIndex(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,deltaCons,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data)
   
   parCount<- lapply(fullDM,ncol)
   for(i in distnames[!unlist(lapply(inputs$circularAngleMean,isFALSE))]){
@@ -719,7 +720,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
 
   retrySD <- get_retrySD(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStates,fixParIndex$beta0,mixtures,recharge,fixParIndex$delta0)
   
-  optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons)))))
+  optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar$pi)+which(duplicated(c(deltaCons)))))
   
   if(!is.null(prior)){
     if(!is.function(prior)) stop("prior must be a function")
@@ -742,7 +743,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
       invokeRestart("muffleWarning")
   }
   
-  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures)
+  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,hierarchical=inherits(data,"hierarchical"))
   
   ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
   nc <- ncmean$nc
@@ -784,7 +785,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
         iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
   
         optPar <- wpar
-        optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons)))))
+        optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar$pi)+which(duplicated(c(deltaCons)))))
         if(length(optInd)){
           optPar <- wpar[-optInd]
         }
@@ -796,7 +797,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
           withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,optInd,recovs,g0covs,mixtures,covsPi,
+                                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,
                                                print.level=print.level,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
                                                iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)),error=function(e) e),warning=h)
@@ -804,7 +805,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
           withCallingHandlers(curmod <- tryCatch(optim(optPar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                      inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                      stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,optInd,recovs,g0covs,mixtures,covsPi,
+                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,
                                                      method=optMethod,control=control,hessian=hessian),error=function(e) e),warning=h)
         }
         endTime <- proc.time()-startTime
@@ -821,7 +822,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
         }
       }
       
-      wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
+      wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
       
       if((fitCount+1)<=retryFits){
         cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,"         ",sep="")
@@ -830,7 +831,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
           names(curmod)[which(names(curmod)=="value")] <- "minimum"
           curmod$elapsedTime <- endTime[3]
           if(curmod$minimum < mod$minimum) mod <- curmod
-          wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
+          wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
         }
         wpar[1:parmInd] <- wpar[1:parmInd]+rnorm(parmInd,0,retrySD[1:parmInd])
         if(nbStates>1)
@@ -845,7 +846,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     
     # convert the parameters back to their natural scale
     mod$wpar <- mod$estimate
-    wpar <- mod$estimate <- expandPar(mod$wpar,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
+    wpar <- mod$estimate <- expandPar(mod$wpar,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
     mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
     
     if(!is.null(mod$hessian)){
@@ -958,7 +959,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
-                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=fixParIndex$ofixPar,wparIndex=fixParIndex$wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=fixParIndex$betaRef,optInd=optInd,recharge=recharge,mvnCoords=mvnCoords,mixtures=mixtures,formulaPi=formulaPi)
+                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=fixParIndex$ofixPar,wparIndex=fixParIndex$wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recharge=recharge,mvnCoords=mvnCoords,mixtures=mixtures,formulaPi=formulaPi)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName,reCovs=recovsCol,g0covs=g0covsCol,covsPi=covsPi)
   
@@ -981,8 +982,11 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
 #' @method fitHMM momentuHierHMMData
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See details.
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See details.
+#' @param hierBeta A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition probabilities at each level of the hierarchy, including initial values ('beta'), parameter equality constraints ('betaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.
+#' @param hierDelta A hierarchical data structure \code{\link[data.tree]{Node}} for the initial distribution at each level of the hierarchy, including initial values ('delta'), parameter equality constraints ('deltaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.
 #' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (only hierarchical-level effects, with no covariate effects).
 #' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy. See details.
+#' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). 
 #' 
 #' @details
 #' \itemize{
@@ -995,27 +999,72 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
 #' 
 #' @export
 fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
-                       Par0,beta0=NULL,delta0=NULL,
+                       Par0,hierBeta=NULL,hierDelta=NULL,
                        estAngleMean=NULL,circularAngleMean=NULL,
-                       hierFormula=NULL,formulaDelta=~1,mixtures=1,formulaPi=NULL,
+                       hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,
                        nlmPar=list(),fit=TRUE,
-                       DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,
+                       DM=NULL,userBounds=NULL,workBounds=NULL,
                        mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, ...)
 {
   
   if(!inherits(data,"momentuHierHMMData")) stop("data must be a momentuHierHMMData object (as returned by prepData or simHierData)")
   
-  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons,fixPar)
+  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures)
   
-  fit <- fitHMM(momentuHMMData(data),inputHierHMM$nbStates,inputHierHMM$dist,Par0,beta0,delta0,
+  if(is.null(fixPar)) fixPar <- list()
+  if(is.list(fixPar)){
+    if(!is.null(fixPar$beta)) stop("'fixPar$beta' cannot be specified; use 'hierBeta' instead")
+    fixPar$beta <- inputHierHMM$fixPar$beta
+    if(!is.null(fixPar$delta)) stop("'fixPar$delta' cannot be specified; use 'hierDelta' instead")
+    fixPar$delta <- inputHierHMM$fixPar$delta
+  }
+  
+  if(is.null(workBounds)) workBounds <- list()
+  if(is.list(workBounds)){
+    if(!is.null(workBounds$beta)) stop("'workBounds$beta' cannot be specified; use 'hierBeta' instead")
+    workBounds$beta <- inputHierHMM$workBounds$beta
+    if(!is.null(workBounds$delta)) stop("'workBounds$delta' cannot be specified; use 'hierDelta' instead")
+    workBounds$delta <- inputHierHMM$workBounds$delta
+  }
+  
+  hfit <- fitHMM.momentuHMMData(momentuHMMData(data),inputHierHMM$nbStates,inputHierHMM$dist,Par0,inputHierHMM$beta,inputHierHMM$delta,
                 estAngleMean,circularAngleMean,
-                formula=inputHierHMM$formula,formulaDelta,stationary=FALSE,mixtures,formulaPi,
+                formula=inputHierHMM$formula,inputHierHMM$formulaDelta,stationary=FALSE,mixtures,formulaPi,
                 verbose=NULL,nlmPar,fit,
-                DM,cons=NULL,userBounds,workBounds=inputHierHMM$workBounds,workcons=NULL,inputHierHMM$betaCons,inputHierHMM$betaRef,
-                mvnCoords,inputHierHMM$stateNames,knownStates,inputHierHMM$fixPar,retryFits,retrySD,optMethod,control,prior,modelName)
-  fit$conditions$hierStates <- hierStates
-  fit$conditions$hierDist <- hierDist
-  fit$conditions$hierFormula <- hierFormula
-  class(fit$data) <- class(data)
-  return(momentuHierHMM(fit))
+                DM,cons=NULL,userBounds,workBounds=workBounds,workcons=NULL,inputHierHMM$betaCons,inputHierHMM$betaRef,deltaCons=inputHierHMM$deltaCons,
+                mvnCoords,inputHierHMM$stateNames,knownStates,fixPar,retryFits,retrySD,optMethod,control,prior,modelName)
+  
+  # replace initial values with estimates in hierBeta and hierDelta (if provided)
+  if(fit){
+    par <- getPar(hfit)
+    if(is.list(par$beta)){
+      beta <- par$beta$beta
+      pi <- par$beta$pi
+      g0 <- par$beta$g0
+      theta <- par$beta$theta
+    } else {
+      beta <- par$beta
+      pi <- g0 <- theta <- NULL
+    }
+    hier <- mapHier(beta,pi,par$delta,hierBeta,hierDelta,hfit$conditions$fixPar,hfit$conditions$betaCons,hfit$conditions$deltaCons,hierStates,hfit$conditions$formula,hfit$conditions$formulaDelta,hfit$data,hfit$conditions$mixtures,g0,theta,fill=TRUE)
+    hfit$conditions$hierBeta <- hier$hierBeta
+    hfit$conditions$hierDelta <- hier$hierDelta
+  } else {
+    hfit$conditions$hierBeta <- hierBeta
+    hfit$conditions$hierDelta <- hierDelta    
+  }
+  hfit$conditions$hierStates <- hierStates
+  hfit$conditions$hierDist <- hierDist
+  hfit$conditions$hierFormula <- hierFormula
+  hfit$conditions$hierFormulaDelta <- hierFormulaDelta
+  class(hfit$data) <- class(data)
+
+  hfit <- momentuHierHMM(hfit)
+  
+  if(fit){
+    hierGammaDelta <- hierGamma(hfit)
+    hfit$CIreal$hierDelta <- hierGammaDelta$hierDelta
+    hfit$CIreal$hierGamma <- hierGammaDelta$hierGamma
+  }
+  hfit
 }

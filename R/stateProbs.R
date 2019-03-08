@@ -4,7 +4,8 @@
 #' For a given model, computes the probability of the process being in the different states
 #' at each time point.
 #'
-#' @param m A \code{momentuHMM} object.
+#' @param m A \code{momentuHMM} or \code{momentuHierHMM} object.
+#' @param hierarchical Logical indicating whether or not to return a list of state probabilities for each level of a hierarchical HMM. Ignored unless \code{m} is a \code{\link{momentuHierHMM}} object.
 #'
 #' @return The matrix of state probabilities, with element [i,j] the probability
 #' of being in state j in observation i.
@@ -22,7 +23,7 @@
 #'
 #' @export
 
-stateProbs <- function(m)
+stateProbs <- function(m, hierarchical=FALSE)
 {
   if(!is.momentuHMM(m))
     stop("'m' must be a momentuHMM object (as output by fitHMM)")
@@ -67,5 +68,19 @@ stateProbs <- function(m)
   }
   colnames(stateProbs) <- m$stateNames
   
-  return(stateProbs)
+  if(inherits(m,"momentuHierHMM") && hierarchical){
+    return(hierStateProbs(m, stateProbs))
+  } else return(stateProbs)
+}
+
+hierStateProbs <- function(m, stateProbs){
+  out <- list()
+  for(j in 1:(m$conditions$hierStates$height-1)){
+    if(j==m$conditions$hierStates$height-1) ref <- m$conditions$hierStates$Get("state",filterFun=data.tree::isLeaf)
+    else ref <- m$conditions$hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
+    out[[paste0("level",j)]] <- stateProbs[which(m$data$level %in% c(j,paste0(j,"i"))),ref]
+    colnames(out[[paste0("level",j)]]) <- names(ref)
+  }
+  class(out) <- append("hierarchical",class(out))
+  out
 }

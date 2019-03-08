@@ -16,22 +16,23 @@ MIfitHMM(miData, ...)
   verbose = NULL, nlmPar = NULL, fit = TRUE, useInitial = FALSE,
   DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL,
   workcons = NULL, betaCons = NULL, betaRef = NULL,
-  mvnCoords = NULL, stateNames = NULL, knownStates = NULL,
-  fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm",
-  control = list(), prior = NULL, modelName = NULL,
-  covNames = NULL, spatialCovs = NULL, centers = NULL,
-  centroids = NULL, angleCovs = NULL, method = "IS", parIS = 1000,
-  dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
-  quad.ask = FALSE, force.quad = TRUE, fullPost = TRUE,
-  dfPostIS = Inf, scalePostIS = 1, thetaSamp = NULL, ...)
+  deltaCons = NULL, mvnCoords = NULL, stateNames = NULL,
+  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
+  optMethod = "nlm", control = list(), prior = NULL,
+  modelName = NULL, covNames = NULL, spatialCovs = NULL,
+  centers = NULL, centroids = NULL, angleCovs = NULL,
+  method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1,
+  crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
+  fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
+  thetaSamp = NULL, ...)
 
 \method{MIfitHMM}{hierarchical}(miData, nSims, ncores = 1,
   poolEstimates = TRUE, alpha = 0.95, progressBar = FALSE,
-  hierStates, hierDist, Par0, beta0 = NULL, delta0 = NULL,
+  hierStates, hierDist, Par0, hierBeta = NULL, hierDelta = NULL,
   estAngleMean = NULL, circularAngleMean = NULL, hierFormula = NULL,
-  formulaDelta = ~1, mixtures = 1, formulaPi = NULL, nlmPar = NULL,
-  fit = TRUE, useInitial = FALSE, DM = NULL, userBounds = NULL,
-  workBounds = NULL, betaCons = NULL, mvnCoords = NULL,
+  hierFormulaDelta = NULL, mixtures = 1, formulaPi = NULL,
+  nlmPar = NULL, fit = TRUE, useInitial = FALSE, DM = NULL,
+  userBounds = NULL, workBounds = NULL, mvnCoords = NULL,
   knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
   optMethod = "nlm", control = list(), prior = NULL,
   modelName = NULL, covNames = NULL, spatialCovs = NULL,
@@ -122,6 +123,8 @@ each data stream. See \code{\link{fitHMM}}.}
 
 \item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. See \code{\link{fitHMM}}.}
 
+\item{deltaCons}{Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}. See \code{\link{fitHMM}}.}
+
 \item{mvnCoords}{Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, then \code{mvnCoords="mu"} needs to be specified in order for these data to be treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
@@ -193,7 +196,13 @@ Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 
 \item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. See \code{\link{fitHMM}}.}
 
+\item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition probabilities at each level of the hierarchy, including initial values ('beta'), parameter equality constraints ('betaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See \code{\link{fitHMM}}.}
+
+\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial distribution at each level of the hierarchy, including initial values ('delta'), parameter equality constraints ('deltaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See \code{\link{fitHMM}}.}
+
 \item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy. See \code{\link{fitHMM}}.}
+
+\item{hierFormulaDelta}{A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). See \code{\link{fitHMM}}.}
 }
 \value{
 If \code{nSims>1}, \code{poolEstimates=TRUE}, and \code{fit=TRUE}, a \code{\link{miHMM}} object, i.e., a list consisting of:

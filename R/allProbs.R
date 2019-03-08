@@ -70,33 +70,9 @@ allProbs <- function(m)
     theta <- m$mle$theta
   }
   
-  formula<-m$conditions$formula
-  newForm <- newFormulas(formula,nbStates)
-  newformula <- newForm$newformula
-  recharge <- newForm$recharge
-  
-  aInd <- NULL
-  nbAnimals <- length(unique(data$ID))
-  for(i in 1:nbAnimals){
-    aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
-  }
-  
-  if(!is.null(recharge)){
-    g0covs <- model.matrix(recharge$g0,data[aInd,])
-    recovs <- model.matrix(recharge$theta,data)
-    nbRecovs <- ncol(recovs)-1
-    data$recharge<-rep(0,nrow(data))
-    for(i in 1:nbAnimals){
-      idInd <- which(data$ID==unique(data$ID)[i])
-      if(nbRecovs){
-        g <- g0 %*% t(g0covs[i,,drop=FALSE])
-        data$recharge[idInd] <- cumsum(c(g,theta%*%t(recovs[idInd[-length(idInd)],])))
-      }
-    }
-    newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
-  }
-  
-  nbCovs <- ncol(model.matrix(newformula,data))-1 # substract intercept column
+  reForm <- formatRecharge(m,data)
+  data <- reForm$data
+  nbCovs <- reForm$nbCovs
   
   ncmean <- get_ncmean(distnames,m$conditions$fullDM,m$conditions$circularAngleMean,nbStates)
   nc <- ncmean$nc

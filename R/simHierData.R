@@ -4,11 +4,11 @@
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). Currently
 #' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
 #' 'pois', 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), 'rw_mvnorm3' (trivariate normal random walk), 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. See details.
-#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (only hierarchical-level effects, with no covariate effects). In addition to allowing standard functions in R formulas
-#' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
-#' (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
-#' and state- or parameter-specific formulas (see details).
-#' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy.
+#' @param hierBeta A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition probabilities at each level of the hierarchy, including initial values ('beta'), parameter equality constraints ('betaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.
+#' @param hierDelta A hierarchical data structure \code{\link[data.tree]{Node}} for the initial distribution at each level of the hierarchy, including initial values ('delta'), parameter equality constraints ('deltaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.
+#' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (only hierarchical-level effects, with no covariate effects).
+#' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy. See details.
+#' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). 
 #' @param nbHierCovs A hierarchical data structure \code{\link[data.tree]{Node}} for the number of covariates ('nbCovs') to simulate for each level of the hierarchy (0 by default). Does not need to be specified if
 #' \code{covs} is specified. Simulated covariates are provided generic names (e.g., 'cov1.1' and 'cov1.2' for \code{nbHierCovs$level1$nbCovs=2}) and can be included in \code{hierFormula} and/or \code{DM}.
 #' @param obsPerLevel A hierarchical data structure \code{\link[data.tree]{Node}} indicating the number of observations for each level of the hierarchy ('obs'). For each level, the 'obs' field can either be the number of observations per animal (if single value) or the bounds of the number of observations per animal (if vector of two values). In the latter case, 
@@ -48,8 +48,8 @@
 #' @importFrom data.tree Node Get Aggregate isLeaf Clone
 
 simHierData <- function(nbAnimals=1,hierStates,hierDist,
-                    Par,beta=NULL,delta=NULL,
-                    hierFormula=NULL,formulaDelta=~1,mixtures=1,formulaPi=NULL,
+                    Par,hierBeta=NULL,hierDelta=NULL,
+                    hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,
                     covs=NULL,nbHierCovs=NULL,
                     spatialCovs=NULL,
                     zeroInflation=NULL,
@@ -98,7 +98,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         model$mle$theta <- c(model$Par$beta$theta$est)
         names(model$mle$theta) <- colnames(model$Par$beta$theta$est)
       } else nbRecovs <- 0
-      model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,nbStates,ncol(model$covsDelta)-1,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures,ncol(model$covsPi)-1)
+      model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,model$conditions$deltaCons,nbStates,ncol(model$covsDelta)-1,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures,ncol(model$covsPi)-1)
       if(!is.null(model$mle$beta)) model$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(model$mle$beta),2,byrow=TRUE)
       if(!is.null(model$Par$beta$pi$est)) model$conditions$workBounds$pi<-matrix(c(-Inf,Inf),length(model$Par$beta$pi$est),2,byrow=TRUE)
       if(!is.null(model$Par$beta$delta$est)) model$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(model$Par$beta$delta$est),2,byrow=TRUE)
@@ -108,6 +108,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     
     hierStates <- model$conditions$hierStates
     hierDist <- model$conditions$hierDist
+    hierBeta <- model$conditions$hierBeta
+    hierDelta <- model$conditions$hierDelta
     userBounds <- model$conditions$bounds
     workBounds <- model$conditions$workBounds
     mvnCoords <- model$conditions$mvnCoords
@@ -230,13 +232,19 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     
   } else {
     
-    inputHierHMM <- formatHierHMM(data=NULL,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons=NULL,fixPar=NULL)
+    inputHierHMM <- formatHierHMM(data=NULL,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures)
     
     nbStates <- inputHierHMM$nbStates
     dist <- inputHierHMM$dist
+    beta <- inputHierHMM$beta
+    delta <- inputHierHMM$delta
     formula <- inputHierHMM$formula
+    formulaDelta <- inputHierHMM$formulaDelta
     betaRef <- inputHierHMM$betaRef
     stateNames <- inputHierHMM$stateNames
+    
+    if(!is.null(workBounds$beta)) stop("'workBounds$beta' cannot be specified; use 'hierBeta' instead")
+    if(!is.null(workBounds$delta)) stop("'workBounds$delta' cannot be specified; use 'hierDelta' instead")
     
     cons <- workcons <- NULL
     
@@ -639,25 +647,25 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         if(hierDist$Get("parent",filterFun=isLeaf)$step$name != hierDist$Get("parent",filterFun=isLeaf)$angle$name) stop("step and angle must be in the same level of the hierarchy")
         data$x<-numeric()
         data$y<-numeric()
-        coordLevel <- hierDist$Get("parent",filterFun=isLeaf)$step$name
+        coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=isLeaf)$step$name)
       }
   } else if("step" %in% distnames){
     if(inputs$dist[["step"]] %in% stepdists){
       data$x<-numeric()
       data$y<-numeric()
-      coordLevel <- hierDist$Get("parent",filterFun=isLeaf)$step$name
+      coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=isLeaf)$step$name)
     }    
   } else if(!is.null(mvnCoords)){
     data[[paste0(mvnCoords,".x")]]<-numeric()
     data[[paste0(mvnCoords,".y")]]<-numeric()
     if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) data[[paste0(mvnCoords,".z")]]<-numeric()
-    coordLevel <- hierDist$Get("parent",filterFun=isLeaf)[[mvnCoords]]$name
+    coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=isLeaf)[[mvnCoords]]$name)
   } else {
     if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs)) stop("spatialCovs, angleCovs, centers, and/or centroids cannot be specified without valid step length and turning angle distributions")
     coordLevel <- NULL
   }
   
-  if(!is.null(coordLevel)) distCoordLevel <- names(hierDist[[coordLevel]]$children)
+  if(!is.null(coordLevel)) distCoordLevel <- names(hierDist[[paste("level",coordLevel)]]$children)
   
   rwInd <- any(unlist(dist) %in% rwdists)
   
@@ -665,8 +673,6 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   #  if(allNbCovs) formula <- formula(paste0("~",paste0(c(colnames(allCovs),spatialcovnames),collapse="+")))
   #  else formula <- formula(~1)
   #}
-  
-  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating")
   
   if(length(all.vars(formula)))
     if(!all(all.vars(formula) %in% c("ID","level",names(allCovs),centerNames,centroidNames,spatialcovnames)))
@@ -678,12 +684,6 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     if(!all(all.vars(formDelta) %in% c("ID",names(allCovs),centerNames,centroidNames,spatialcovnames)))
       stop("'formulaDelta' covariate(s) not found")
   if(("ID" %in% all.vars(formula) | "ID" %in% all.vars(formPi) | "ID" %in% all.vars(formDelta)) & nbAnimals<2) stop("ID cannot be a covariate when nbAnimals=1")
-  
-  newForm <- newFormulas(formula,nbStates)
-  formulaStates <- newForm$formulaStates
-  formterms <- newForm$formterms
-  newformula <- newForm$newformula
-  recharge <- newForm$recharge
   
   tmpCovs <- data.frame(ID=factor(1,levels=1:nbAnimals))
   if(!is.null(allCovs))
@@ -710,13 +710,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
   }
   
-  if(mixtures>1){
-    if(!is.null(beta)){
-      if(!is.list(beta)) stop("beta must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
-    }
-  }
-  
   # build design matrix for recharge model
+  recharge <- newFormulas(formula,nbStates)$recharge
   if(!is.null(recharge)){
     g0covs <- model.matrix(recharge$g0,tmpCovs[1,,drop=FALSE])
     nbG0covs <- ncol(g0covs)-1
@@ -726,6 +721,34 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     tmpcovs <- cbind(tmpCovs,rep(0,nrow(tmpCovs)))
     colnames(tmpcovs) <- c(colnames(tmpCovs),"recharge")
     tmpCovs <- tmpcovs
+  }
+  
+  tmpCovs$level <- factor(level[[1]][1],levels=lLevels[[1]])
+  
+  # get formula now that data are available (in order to properly deal with factor covariates in hierFormula)
+  inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,checkData=FALSE)
+  formula <- inputHierHMM$formula
+  
+  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",hierarchical=TRUE)
+  
+  if(is.null(model)){
+    beta <- inputHierHMM$beta
+    delta <- inputHierHMM$delta
+  }
+  if(is.null(workBounds)) wworkBounds <- list()
+  else wworkBounds <- workBounds
+  if(is.list(wworkBounds)){
+    wworkBounds$beta <- inputHierHMM$workBounds$beta
+    wworkBounds$delta <- inputHierHMM$workBounds$delta
+  }
+  
+  newForm <- newFormulas(formula,nbStates)
+  formulaStates <- newForm$formulaStates
+  formterms <- newForm$formterms
+  newformula <- newForm$newformula
+  recharge <- newForm$recharge
+  
+  if(!is.null(recharge)){
     if(!is.null(beta)){
       if(!is.list(beta)) stop("beta must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
     }
@@ -745,12 +768,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     } else beta0 <- beta
   }
   
-  tmpCovs$level <- factor(level[[1]][1],levels=lLevels[[1]])
-  
   nbBetaCovs <- ncol(model.matrix(newformula,tmpCovs))
-  
-  inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,hierFormula,formulaDelta,mixtures,workBounds,betaCons=NULL,fixPar=NULL,checkData=FALSE)
-  workBounds <- inputHierHMM$workBounds
   
   if(is.null(beta0$beta)){
     beta0$beta <- matrix(rnorm(nbStates*(nbStates-1)*nbBetaCovs*mixtures)[inputHierHMM$betaCons],nrow=nbBetaCovs*mixtures)
@@ -821,17 +839,13 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   parindex <- c(0,cumsum(unlist(parCount))[-length(distnames)])
   names(parindex) <- distnames
   
-  #if(is.null(workBounds)) {
-  #  workBounds <- vector('list',length(distnames))
-  #  names(workBounds) <- distnames
-  #}
-  workBounds <- getWorkBounds(workBounds,distnames,unlist(Par[distnames]),parindex,parCount,inputs$DM,beta0,deltaB)
+  wworkBounds <- getWorkBounds(wworkBounds,distnames,unlist(Par[distnames]),parindex,parCount,inputs$DM,beta0,deltaB)
   
-  wnbeta <- w2wn(beta0$beta,workBounds$beta)
-  wnpi <- w2wn(beta0$pi,workBounds$pi)
+  wnbeta <- w2wn(beta0$beta,wworkBounds$beta)
+  wnpi <- w2wn(beta0$pi,wworkBounds$pi)
   if(!is.null(recharge)){
-    wng0 <- w2wn(beta0$g0,workBounds$g0)
-    wntheta <- w2wn(beta0$theta,workBounds$theta)
+    wng0 <- w2wn(beta0$g0,wworkBounds$g0)
+    wntheta <- w2wn(beta0$theta,wworkBounds$theta)
   }
   
   mix <- rep(1,nbAnimals)
@@ -911,7 +925,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         
         covsDelta <- model.matrix(formDelta,subCovs[1,,drop=FALSE])
         covsPi <- model.matrix(formPi,subCovs[1,,drop=FALSE])
-        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta,wworkBounds,covsPi)
         
         pie <- fullsubPar$pi
         
@@ -1012,7 +1026,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         
         #kInd <- which(subCovs$level==gsub("level","",kk))
       
-        if(!is.null(coordLevel)) coordNA <- which(level[[zoo]]==gsub("level","",coordLevel))[sum(level[[zoo]]==gsub("level","",coordLevel))]
+        if(!is.null(coordLevel)) coordNA <- which(level[[zoo]]==coordLevel)[sum(level[[zoo]]==coordLevel)]
       
         for (k in 1:nbObs){
           
@@ -1060,7 +1074,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                   }
                 }
               }
-              subPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+              subPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist,p$Bndind,nc,meanind,covsDelta,wworkBounds,covsPi)
             } else {
               subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
             }
@@ -1311,8 +1325,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     while(simCount < retrySims){
       cat("\r    Attempt ",simCount+1," of ",retrySims,"...",sep="")
       tmp<-suppressMessages(tryCatch(simHierData(nbAnimals,hierStates,hierDist,
-                                             Par,beta,delta,
-                                             hierFormula,formulaDelta,mixtures,formulaPi,
+                                             Par,hierBeta,hierDelta,
+                                             hierFormula,hierFormulaDelta,mixtures,formulaPi,
                                              covs,nbHierCovs,
                                              spatialCovs,
                                              zeroInflation,

@@ -4,10 +4,12 @@
 \alias{stateProbs}
 \title{State probabilities}
 \usage{
-stateProbs(m)
+stateProbs(m, hierarchical = FALSE)
 }
 \arguments{
-\item{m}{A \code{momentuHMM} object.}
+\item{m}{A \code{momentuHMM} or \code{momentuHierHMM} object.}
+
+\item{hierarchical}{Logical indicating whether or not to return a list of state probabilities for each level of a hierarchical HMM. Ignored unless \code{m} is a \code{\link{momentuHierHMM}} object.}
 }
 \value{
 The matrix of state probabilities, with element [i,j] the probability

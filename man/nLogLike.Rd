@@ -8,8 +8,8 @@ nLogLike(optPar, nbStates, formula, bounds, parSize, data, dist, covs,
   estAngleMean, circularAngleMean, consensus, zeroInflation, oneInflation,
   stationary = FALSE, cons, fullDM, DMind, workcons, Bndind, knownStates,
   fixPar, wparIndex, nc, meanind, covsDelta, workBounds, prior = NULL,
-  betaCons = NULL, betaRef, optInd = NULL, recovs = NULL,
-  g0covs = NULL, mixtures = 1, covsPi)
+  betaCons = NULL, betaRef, deltaCons = NULL, optInd = NULL,
+  recovs = NULL, g0covs = NULL, mixtures = 1, covsPi)
 }
 \arguments{
 \item{optPar}{Vector of working parameters.}
@@ -77,6 +77,8 @@ model (if any).}
 \item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters.}
 
 \item{betaRef}{Indices of reference elements for t.p.m. multinomial logit link.}
+
+\item{deltaCons}{Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters.}
 
 \item{optInd}{indices of constrained parameters}
 

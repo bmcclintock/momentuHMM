@@ -1,10 +1,19 @@
-get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data){
+get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,deltaCons,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data){
   
-  if(!is.null(betaCons) & nbStates>1){
-    if(!is.matrix(betaCons)) stop("betaCons must be a matrix")
-    if(nrow(betaCons)!=(nbCovs+1)*mixtures | ncol(betaCons)!=(nbStates*(nbStates-1))) stop("betaCons must be a ",(nbCovs+1)*mixtures,"x",nbStates*(nbStates-1)," matrix")
-    if(any(abs(as.integer(betaCons)-betaCons)!=0)) stop("betaCons must be a matrix composed of integers")
-    if(min(betaCons)<1 | max(betaCons)>(nbCovs+1)*mixtures*(nbStates*(nbStates-1))) stop("betaCons must be composed of integers between 1 and ",(nbCovs+1)*mixtures*(nbStates*(nbStates-1)))
+  if(nbStates>1){
+    if(!is.null(betaCons)){
+      if(!is.matrix(betaCons)) stop("betaCons must be a matrix")
+      if(nrow(betaCons)!=(nbCovs+1)*mixtures | ncol(betaCons)!=(nbStates*(nbStates-1))) stop("betaCons must be a ",(nbCovs+1)*mixtures,"x",nbStates*(nbStates-1)," matrix")
+      if(any(abs(as.integer(betaCons)-betaCons)!=0)) stop("betaCons must be a matrix composed of integers")
+      if(min(betaCons)<1 | max(betaCons)>(nbCovs+1)*mixtures*(nbStates*(nbStates-1))) stop("betaCons must be composed of integers between 1 and ",(nbCovs+1)*mixtures*(nbStates*(nbStates-1)))
+    }
+    if(!is.null(deltaCons)){
+      if(is.null(formulaDelta)) stop("deltaCons cannot be specified unless formulaDelta includes a formula")
+      if(!is.matrix(deltaCons)) stop("deltaCons must be a matrix")
+      if(nrow(deltaCons)!=(nbCovsDelta+1)*mixtures | ncol(deltaCons)!=(nbStates-1)) stop("deltaCons must be a ",(nbCovsDelta+1)*mixtures,"x",(nbStates-1)," matrix")
+      if(any(abs(as.integer(deltaCons)-deltaCons)!=0)) stop("deltaCons must be a matrix composed of integers")
+      if(min(deltaCons)<1 | max(deltaCons)>(nbCovsDelta+1)*mixtures*(nbStates-1)) stop("deltaCons must be composed of integers between 1 and ",(nbCovsDelta+1)*mixtures**(nbStates-1))
+    }
   }
   
   if(!is.null(betaRef)){
@@ -75,6 +84,10 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
       if(is.null(dim(delta0)) || (ncol(delta0)!=nbStates-1 | nrow(delta0)!=(nbCovsDelta+1)*mixtures))
         stop(paste("delta0 has wrong dimensions: it should have",(nbCovsDelta+1)*mixtures,"rows and",
                    nbStates-1,"columns."))
+      if(!is.null(deltaCons)) {
+        if(!all(delta0 == delta0[c(deltaCons)])) warning("delta0 is not consistent with deltaCons; values for delta0 will be assigned based on the first duplicated element(s) in deltaCons")
+        delta0 <- matrix(delta0[c(deltaCons)],nrow(delta0),ncol(delta0))
+      }
     }
   }
   
@@ -213,6 +226,7 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
           fixPar$delta <- as.vector(delta0)
           wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0$beta)+length(beta0$pi)+1:(length(delta0)))
         } else {
+          if(!all(fixPar$delta == fixPar$delta[deltaCons],na.rm=TRUE)) stop("fixPar$delta not consistent with deltaCons")
           delta0[tmp] <- fixPar$delta[tmp]
           wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0$beta)+length(beta0$pi)+tmp)
         }
