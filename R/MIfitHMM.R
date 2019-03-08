@@ -416,7 +416,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
   } else if(length(delta0)<nSims) stop("delta0 must be a list of length >=",nSims)
   
   #check HMM inputs and print model message
-  test<-fitHMM(miData[[ind[1]]],nbStates, dist, Par0[[ind[1]]], beta0[[ind[1]]], delta0[[ind[1]]],
+  test<-fitHMM.momentuHMMData(miData[[ind[1]]],nbStates, dist, Par0[[ind[1]]], beta0[[ind[1]]], delta0[[ind[1]]],
            estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi, verbose,
            nlmPar, fit = FALSE, DM, cons,
            userBounds, workBounds, workcons, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[ind[1]]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName)
@@ -430,7 +430,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
 
     cat("\rImputation ",1,"... ",sep="")
     
-    fits[[1]]<-suppressMessages(fitHMM(miData[[1]],nbStates, dist, Par0[[1]], beta0[[1]], delta0[[1]],
+    fits[[1]]<-suppressMessages(fitHMM.momentuHMMData(miData[[1]],nbStates, dist, Par0[[1]], beta0[[1]], delta0[[1]],
                                     estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi, verbose,
                                     nlmPar, fit, DM, cons,
                                     userBounds, workBounds, workcons, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[1]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
@@ -453,7 +453,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     registerDoParallel(cores=ncores)
   }
   withCallingHandlers(fits[parallelStart:nSims] <-
-    foreach(j = parallelStart:nSims, .export=c("fitHMM"), .errorhandling="pass") %dorng% {
+    foreach(j = parallelStart:nSims, .export=c("fitHMM.momentuHMMData"), .errorhandling="pass") %dorng% {
       
       if(nSims>1) {
         cat("     \rImputation ",j,"... ",sep="")
@@ -462,7 +462,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
           tcltk::setTkProgressBar(pb, j, label=paste("fitting imputation",j))#, label=paste(round((j-1)/nSims*100,0),"% done"))
         }
       }
-      tmpFit<-suppressMessages(fitHMM(miData[[j]],nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
+      tmpFit<-suppressMessages(fitHMM.momentuHMMData(miData[[j]],nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
                                       estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi, verbose,
                                       nlmPar, fit, DM, cons,
                                       userBounds, workBounds, workcons, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
