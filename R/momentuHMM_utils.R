@@ -123,6 +123,7 @@ delta_bc <- function(m){
       ################################################################################
     }
     if(is.null(m$conditions$mixtures)) m$conditions$mixtures <- 1
+    if(is.null(m$covsPi)) m$covsPi <- matrix(1,length(unique(m$data$ID)),1)
   } else if(!is.miHMM(m) & any(unlist(lapply(m,is.momentuHMM)))){
     m <- HMMfits(m)
   }

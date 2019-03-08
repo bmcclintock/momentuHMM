@@ -191,27 +191,20 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     }
   }
   
-  formula<-m$conditions$formula
-  newForm <- newFormulas(formula,nbStates)
-  formulaStates <- newForm$formulaStates
-  formterms <- newForm$formterms
-  newformula <- newForm$newformula
-  recharge <- newForm$recharge
-  
   covs <- getCovs(m,covs,ID)
   
-  nbCovs <- ncol(model.matrix(newformula,m$data))-1 # substract intercept column
-  
-  aInd <- NULL
-  for(i in 1:nbAnimals){
-    aInd <- c(aInd,which(m$data$ID==ID[i])[1])
-  }
+  # identify covariates
+  reForm <- formatRecharge(m,m$data)
+  recharge <- reForm$recharge
+  newformula <- reForm$newformula
+  nbCovs <- reForm$nbCovs
+  aInd <- reForm$aInd
+  nbG0covs <- reForm$nbG0covs
+  nbRecovs <- reForm$nbRecovs
+  g0covs <- reForm$g0covs
+  recovs <- reForm$recovs
   
   if(!is.null(recharge)){
-    g0covs <- model.matrix(recharge$g0,m$data[aInd,])
-    nbG0covs <- ncol(g0covs)-1
-    recovs <- model.matrix(recharge$theta,m$data)
-    nbRecovs <- ncol(recovs)-1
     m$data$recharge<-rep(0,nrow(m$data))
     for(i in 1:nbAnimals){
       idInd <- which(m$data$ID==ID[i])#which(m$data$ID==unique(m$data$ID)[i])
@@ -224,18 +217,12 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     g0 <- m$mle$g0 %*% t(g0covs)
     recovs <- model.matrix(recharge$theta,covs)
     if(is.null(covs$recharge)) covs$recharge <- mean(m$data$recharge) #g0 + theta%*%t(recovs)
-    nbCovs <- nbCovs + 1
-    newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
     covsCol <- cbind(get_all_vars(newformula,m$data),get_all_vars(recharge$theta,m$data))#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
     if(!all(names(covsCol) %in% names(m$data))){
       covsCol <- covsCol[,names(covsCol) %in% names(m$data),drop=FALSE]
     }
     rawCovs <- covsCol[which(m$data$ID %in% ID),c(unique(colnames(covsCol))),drop=FALSE]
   } else {
-    nbG0covs <- 0
-    nbRecovs <- 0
-    g0covs <- NULL
-    recovs <- NULL
     rawCovs <- m$rawCovs[which(m$data$ID %in% ID),,drop=FALSE]
   }
 

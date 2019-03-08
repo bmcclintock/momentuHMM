@@ -49,6 +49,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL,parms=NULL)
     stop("alpha needs to be between 0 and 1.")
 
   nbStates <- length(m$stateNames)
+  nbAnimals <- length(unique(m$data$ID))
 
   dist <- m$conditions$dist
   distnames <- names(dist)
@@ -59,47 +60,17 @@ CIreal <- function(m,alpha=0.95,covs=NULL,parms=NULL)
   
   m <- delta_bc(m)
   
-  # identify covariates
   tempCovs <- getCovs(m,covs,unique(m$data$ID),checkHier=FALSE)[1,]
   
-  formula<-m$conditions$formula
-  newForm <- newFormulas(formula,nbStates)
-  formulaStates <- newForm$formulaStates
-  formterms <- newForm$formterms
-  newformula <- newForm$newformula
-  recharge <- newForm$recharge
+  # identify covariates
+  reForm <- formatRecharge(m,m$data,tempCovs)
+  m$data <- reForm$data
+  recharge <- reForm$recharge
+  newformula <- reForm$newformula
+  tempCovs <- reForm$covs
+  nbCovs <- reForm$nbCovs
+  if(!is.null(recharge) & is.null(parms)) pparms <- c(pparms,"g0","theta")
   
-  nbCovs <- ncol(model.matrix(newformula,m$data))-1 # substract intercept column
-  
-  aInd <- NULL
-  nbAnimals <- length(unique(m$data$ID))
-  for(i in 1:nbAnimals){
-    aInd <- c(aInd,which(m$data$ID==unique(m$data$ID)[i])[1])
-  }
-  
-  if(!is.null(recharge)){
-    g0covs <- model.matrix(recharge$g0,m$data[aInd,])
-    nbG0covs <- ncol(g0covs)-1
-    recovs <- model.matrix(recharge$theta,m$data)
-    nbRecovs <- ncol(recovs)-1
-    m$data$recharge<-rep(0,nrow(m$data))
-    for(i in 1:nbAnimals){
-      idInd <- which(m$data$ID==unique(m$data$ID)[i])
-      if(nbRecovs){
-        g0 <- m$mle$g0 %*% t(g0covs[i,,drop=FALSE])
-        theta <- m$mle$theta
-        m$data$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
-      }
-    }
-    if(is.null(tempCovs$recharge)) tempCovs$recharge <- mean(m$data$recharge)
-    newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
-    nbCovs <- nbCovs + 1
-    if(is.null(parms)) pparms <- c(pparms,"g0","theta")
-  } else {
-    nbG0covs <- 0
-    nbRecovs <- 0
-  }
-
   # inverse of Hessian
   if(!is.null(m$mod$hessian) && !inherits(m$mod$Sigma,"error")) Sigma <- m$mod$Sigma
   else Sigma <- NULL
@@ -187,9 +158,9 @@ CIreal <- function(m,alpha=0.95,covs=NULL,parms=NULL)
           est[(mix-1)*nbStates+1:nbStates,] <- get_gamma(wpar,tempCovMat,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix)
           tmpSig <- Sigma[(i2:i3)[unique(c(m$conditions$betaCons))],(i2:i3)[unique(c(m$conditions$betaCons))]]
         } else {
-          wpar <- c(m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))],m$mod$estimate[length(m$mod$estimate)-nbRecovs:0])
+          wpar <- c(m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))],m$mod$estimate[length(m$mod$estimate)-reForm$nbRecovs:0])
           est[(mix-1)*nbStates+1:nbStates,] <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,recharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix)
-          tmpSig <- Sigma[c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0),c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)]
+          tmpSig <- Sigma[c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-reForm$nbRecovs:0),c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-reForm$nbRecovs:0)]
         }
     
         if(!is.null(Sigma)){
@@ -243,7 +214,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL,parms=NULL)
       if(!m$conditions$stationary){
         wpar<-m$mod$estimate
         nbCovsDelta <- ncol(m$covsDelta)-1
-        foo <- length(wpar)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-(nbCovsDelta+1)*(nbStates-1)*mixtures
+        foo <- length(wpar)-ifelse(reForm$nbRecovs,(reForm$nbRecovs+1)+(reForm$nbG0covs+1),0)-(nbCovsDelta+1)*(nbStates-1)*mixtures
         delta <- matrix(wpar[foo+1:((nbCovsDelta+1)*(nbStates-1)*mixtures)],nrow=(nbCovsDelta+1)*mixtures,ncol=nbStates-1)
         tmpSig <- Sigma[foo+1:((nbCovsDelta+1)*(nbStates-1)*mixtures),foo+1:((nbCovsDelta+1)*(nbStates-1)*mixtures)]
         quantSup <- qnorm(1-(1-alpha)/2)

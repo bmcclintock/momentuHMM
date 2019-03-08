@@ -144,6 +144,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   data <- m$data
   nbStates <- length(m$stateNames)
+  nbAnimals <- length(unique(m$data$ID))
   dist <- m$conditions$dist
   distnames <- names(dist)
   estAngleMean <- m$conditions$estAngleMean
@@ -325,42 +326,13 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   #DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
   #fullDM<-DMinputs$fullDM
   
-  formula<-m$conditions$formula
-  newForm <- newFormulas(formula,nbStates)
-  formulaStates <- newForm$formulaStates
-  formterms <- newForm$formterms
-  newformula <- newForm$newformula
-  recharge <- newForm$recharge
-  
-  nbCovs <- ncol(model.matrix(newformula,mhdata))-1 # substract intercept column
-  
-  aInd <- NULL
-  nbAnimals <- length(unique(mhdata$ID))
-  for(i in 1:nbAnimals){
-    aInd <- c(aInd,which(mhdata$ID==unique(mhdata$ID)[i])[1])
-  }
-  
-  if(!is.null(recharge)){
-    g0covs <- model.matrix(recharge$g0,mhdata[aInd,])
-    nbG0covs <- ncol(g0covs)-1
-    recovs <- model.matrix(recharge$theta,mhdata)
-    nbRecovs <- ncol(recovs)-1
-    mhdata$recharge<-rep(0,nrow(mhdata))
-    for(i in 1:nbAnimals){
-      idInd <- which(mhdata$ID==unique(mhdata$ID)[i])
-      if(nbRecovs){
-        g0 <- Par$beta$g0$est %*% t(g0covs[i,,drop=FALSE])
-        theta <- Par$beta$theta$est
-        mhdata$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
-      }
-    }
-    if(is.null(tempCovs$recharge)) tempCovs$recharge <- mean(mhdata$recharge)
-    newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
-    nbCovs <- nbCovs + 1
-  } else {
-    nbG0covs <- 0
-    nbRecovs <- 0
-  }
+  # identify covariates
+  reForm <- formatRecharge(m,mhdata,tempCovs,lapply(Par$beta,function(x) x$est))
+  mhdata <- reForm$data
+  recharge <- reForm$recharge
+  newformula <- reForm$newformula
+  tempCovs <- reForm$covs
+  nbCovs <- reForm$nbCovs
   
   #miBeta <- mitools::MIcombine(results=lapply(im,function(x) x$mod$estimate),variances=lapply(im,function(x) x$mod$Sigma))
   
@@ -410,9 +382,9 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
         est[(mix-1)*nbStates+1:nbStates,] <- get_gamma(wpar,tempCovMat,nbStates,1:nbStates,1:nbStates,m$conditions$betaRef,m$conditions$betaCons,mixture=mix)
         tmpSig <- miBeta$variance[gamInd,gamInd]
       } else {
-        wpar <- c(miBeta$coefficients[gamInd],miBeta$coefficients[length(miBeta$coefficients)-nbRecovs:0])
+        wpar <- c(miBeta$coefficients[gamInd],miBeta$coefficients[length(miBeta$coefficients)-reForm$nbRecovs:0])
         est[(mix-1)*nbStates+1:nbStates,] <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,recharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix)
-        tmpSig <- miBeta$variance[c(gamInd,length(miBeta$coefficients)-nbRecovs:0),c(gamInd,length(miBeta$coefficients)-nbRecovs:0)]
+        tmpSig <- miBeta$variance[c(gamInd,length(miBeta$coefficients)-reForm$nbRecovs:0),c(gamInd,length(miBeta$coefficients)-reForm$nbRecovs:0)]
       }
       for(i in 1:nbStates){
         for(j in 1:nbStates){
@@ -454,7 +426,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   # pooled delta estimates
   if(!m$conditions$stationary & nbStates>1){
     nbCovsDelta <- ncol(m$covsDelta)-1
-    foo <- length(miBeta$coefficients)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-(nbCovsDelta+1)*(nbStates-1)*mixtures
+    foo <- length(miBeta$coefficients)-ifelse(reForm$nbRecovs,(reForm$nbRecovs+1)+(reForm$nbG0covs+1),0)-(nbCovsDelta+1)*(nbStates-1)*mixtures
     deltInd <- foo+1:((nbCovsDelta+1)*(nbStates-1)*mixtures)
     delta <- matrix(miBeta$coefficients[deltInd],nrow=(nbCovsDelta+1)*mixtures,ncol=nbStates-1)
     est<-lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsDelta)*mixtures,ncol=nbStates)

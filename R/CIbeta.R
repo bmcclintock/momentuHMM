@@ -57,48 +57,10 @@ CIbeta <- function(m,alpha=0.95)
   m <- delta_bc(m)
 
   # identify covariates
-  formula<-m$conditions$formula
-  newForm <- newFormulas(formula,nbStates)
-  formulaStates <- newForm$formulaStates
-  formterms <- newForm$formterms
-  newformula <- newForm$newformula
-  recharge <- newForm$recharge
-  
-  aInd <- NULL
-  nbAnimals <- length(unique(m$data$ID))
-  for(i in 1:nbAnimals){
-    aInd <- c(aInd,which(m$data$ID==unique(m$data$ID)[i])[1])
-  }
-  
-  if(!is.null(recharge)){
-    g0covs <- model.matrix(recharge$g0,m$data[aInd,])
-    nbG0covs <- ncol(g0covs)-1
-    recovs <- model.matrix(recharge$theta,m$data)
-    nbRecovs <- ncol(recovs)-1
-    m$data$recharge<-rep(0,nrow(m$data))
-    for(i in 1:nbAnimals){
-      idInd <- which(m$data$ID==unique(m$data$ID)[i])
-      if(nbRecovs){
-        g0 <- m$mle$g0 %*% t(g0covs[i,,drop=FALSE])
-        theta <- m$mle$theta
-        m$data$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
-      }
-    }
-    for(j in 1:nbStates){
-      formulaStates[[j]] <- as.formula(paste0(Reduce( paste, deparse(formulaStates[[j]]) ),"+recharge"))
-    }
-    formterms <- c(formterms,"recharge")
-    newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
-  } else {
-    nbG0covs <- 0
-    nbRecovs <- 0
-    g0covs <- NULL
-    recovs <- NULL
-  }
-  
-  covs <- model.matrix(newformula,m$data)
-  nbCovs <- ncol(covs)-1 # substract intercept column
-
+  reForm <- formatRecharge(m,m$data)
+  recharge <- reForm$recharge
+  covs <- reForm$covs
+  nbCovs <- reForm$nbCovs
 
   # inverse of Hessian
   if(!is.null(m$mod$hessian) && !inherits(m$mod$Sigma,"error")) Sigma <- m$mod$Sigma
@@ -106,13 +68,6 @@ CIbeta <- function(m,alpha=0.95)
 
   p <- parDef(dist,nbStates,m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds)
   bounds <- p$bounds
-  #if(!all(unlist(lapply(p$bounds,is.numeric)))){
-  #  for(i in distnames){
-  #    if(!is.numeric(bounds[[i]])){
-  #      bounds[[i]] <- gsub(i,"",bounds[[i]],fixed=TRUE)
-  #    }
-  #  }
-  #}
   
   ncmean <- get_ncmean(distnames,fullDM,m$conditions$circularAngleMean,nbStates)
   nc <- ncmean$nc
@@ -171,7 +126,7 @@ CIbeta <- function(m,alpha=0.95)
   # group CIs for initial distribution
   if(nbStates>1 & !m$conditions$stationary){
 
-    dInd <- length(wpar)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)
+    dInd <- length(wpar)-ifelse(reForm$nbRecovs,(reForm$nbRecovs+1)+(reForm$nbG0covs+1),0)
     foo <- dInd -(nbCovsDelta+1)*(nbStates-1)*mixtures+1
     
     est <- w2wn(wpar[foo:dInd],m$conditions$workBounds$delta)
@@ -184,15 +139,15 @@ CIbeta <- function(m,alpha=0.95)
   
   if(!is.null(recharge)){
     
-    ind <- tail(cumsum(unlist(parCount)),1)+(nbCovs+1)*nbStates*(nbStates-1)+(nbCovsDelta+1)*(nbStates-1)+1:(nbG0covs+1)
+    ind <- tail(cumsum(unlist(parCount)),1)+(nbCovs+1)*nbStates*(nbStates-1)+(nbCovsDelta+1)*(nbStates-1)+1:(reForm$nbG0covs+1)
     est <- w2wn(wpar[ind],m$conditions$workBounds$g0)
     
-    Par$g0 <- get_CIwb(wpar[ind],est,ind,Sigma,alpha,m$conditions$workBounds$g0,rnames="[1,]",cnames=colnames(g0covs),cons=rep(1,length(est)))
+    Par$g0 <- get_CIwb(wpar[ind],est,ind,Sigma,alpha,m$conditions$workBounds$g0,rnames="[1,]",cnames=colnames(reForm$g0covs),cons=rep(1,length(est)))
     
-    ind <- tail(cumsum(unlist(parCount)),1)+(nbCovs+1)*nbStates*(nbStates-1)+(nbCovsDelta+1)*(nbStates-1)+nbG0covs+1+1:(nbRecovs+1)
+    ind <- tail(cumsum(unlist(parCount)),1)+(nbCovs+1)*nbStates*(nbStates-1)+(nbCovsDelta+1)*(nbStates-1)+reForm$nbG0covs+1+1:(reForm$nbRecovs+1)
     est <- w2wn(wpar[ind],m$conditions$workBounds$theta)
     
-    Par$theta <- get_CIwb(wpar[ind],est,ind,Sigma,alpha,m$conditions$workBounds$theta,rnames="[1,]",cnames=colnames(recovs),cons=rep(1,length(est)))
+    Par$theta <- get_CIwb(wpar[ind],est,ind,Sigma,alpha,m$conditions$workBounds$theta,rnames="[1,]",cnames=colnames(reForm$recovs),cons=rep(1,length(est)))
     
   }
   return(Par)
