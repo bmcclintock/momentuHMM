@@ -21,6 +21,7 @@
 #' Hidden Markov Models for Time Series: An Introduction Using R.
 #' Chapman & Hall (London).
 #'
+#' @importFrom Brobdingnag sum brob
 #' @export
 
 stateProbs <- function(m, hierarchical=FALSE)
@@ -40,7 +41,7 @@ stateProbs <- function(m, hierarchical=FALSE)
   nbObs <- nrow(data)
   la <- logAlpha(m) # forward log-probabilities
   lb <- logBeta(m) # backward log-probabilities
-  stateProbs <- matrix(NA,nbObs,nbStates)
+  stateProbs <- matrix(0,nbObs,nbStates)
 
   aInd <- NULL
   for(i in 1:nbAnimals)
@@ -53,7 +54,7 @@ stateProbs <- function(m, hierarchical=FALSE)
   eta <- mixtureProbs(m)
   
   k <- 1
-  stateProb <- matrix(NA,mixtures,nbStates)
+  stateProb <- list()
   for(i in nbObs:1){
     for(mix in 1:mixtures){
       if(any(i==aInd)){
@@ -62,9 +63,14 @@ stateProbs <- function(m, hierarchical=FALSE)
         ieta <- eta[k,]
         if(mix==mixtures) k <- k + 1
       }
-      stateProb[mix,] <- exp(la[[mix]][i,]+lb[[mix]][i,]-llk)
+      stateProb[[mix]] <- exp(la[[mix]][i,]+lb[[mix]][i,]-llk)
+      if(!sum(stateProb[[mix]])) {
+        stateProb[[mix]] <- Brobdingnag::brob(la[[mix]][i,]+lb[[mix]][i,]-llk)
+        stateProbs[i,] <- stateProbs[i,] + as.numeric(stateProb[[mix]]/Brobdingnag::sum(stateProb[[mix]]) * ieta[mix])
+      } else {
+        stateProbs[i,] <- stateProbs[i,] + stateProb[[mix]] / sum(stateProb[[mix]]) * ieta[mix]
+      }
     }
-    stateProbs[i,] <- colSums(stateProb/rowSums(stateProb) * ieta)
   }
   colnames(stateProbs) <- m$stateNames
   

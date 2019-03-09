@@ -82,8 +82,7 @@ pseudoRes <- function(m, ncores = 1)
       m$conditions$workBounds[[i]]<-matrix(c(-Inf,Inf),nrow(m$conditions$workBounds[[i]]),2,byrow=TRUE)
     }
     
-    Par<-lapply(Par,function(x) c(t(x)))
-    Par<-Par[distnames]
+    Par<-lapply(Par[distnames],function(x) c(t(x)))
     beta <- m$Par$beta$beta$est
     pie <- m$Par$real$pi$est
     delta <- m$Par$real$delta$est
