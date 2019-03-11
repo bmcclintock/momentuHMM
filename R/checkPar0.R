@@ -460,6 +460,7 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
   }
   
   inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures)
+  data <- inputHierHMM$data
   nbStates <- inputHierHMM$nbStates
   dist <- inputHierHMM$dist
   beta0 <- inputHierHMM$beta
@@ -491,7 +492,7 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
   
   m <- checkPar0.default(data=data,nbStates=nbStates,dist=dist,Par0=Par0,beta0=beta0,delta0=delta0,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,formula=formula,formulaDelta=formulaDelta,stationary=FALSE,mixtures=mixtures,formulaPi=formulaPi,DM=DM,cons=NULL,userBounds=userBounds,workBounds=workBounds,workcons=NULL,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,stateNames=stateNames,fixPar=fixPar)
   
-  hier <- mapHier(m$mle$beta,m$mle$pi,m$CIbeta$delta$est,hierBeta=hierBeta,hierDelta=hierDelta,inputHierHMM$fixPar,m$conditions$betaCons,m$conditions$deltaCons,hierStates,m$conditions$formula,m$conditions$formulaDelta,m$data,m$conditions$mixtures,m$mle$g0,m$mle$theta,fill=TRUE)
+  hier <- mapHier(m$mle$beta,m$mle$pi,m$CIbeta$delta$est,hierBeta=hierBeta,hierDelta=hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,hierStates,m$conditions$formula,m$conditions$formulaDelta,m$data,m$conditions$mixtures,m$mle$g0,m$mle$theta,fill=TRUE)
   
   if(!is.list(hier$hierBeta)){
     beta0 <- list(beta=hier$hierBeta)

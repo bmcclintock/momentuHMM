@@ -1,15 +1,22 @@
 #' @importFrom stats terms
 #' @importFrom data.tree Get
-formatHierFormula <- function(data,hierFormula){
+formatHierFormula <- function(data,hierFormula,hierStates){
   if(is.null(data)){
     lLevels <- hierFormula$Get("name",filterFun=function(x) x$level==2)
-    formulaTerms <- list()
+    formulaTerms <- recharge <- list()
     for(j in lLevels){
-      #if(j==lLevels[1]) if(!attr(stats::terms(hierFormula[[j]]$formula),"intercept")) stop("hierFormula$",j,"$formula must include an intercept term")
-      formulaTerms[[j]] <- attr(stats::terms(hierFormula[[j]]$formula),"term.labels")
+      newForm <- newFormulas(hierFormula[[j]]$formula, length(hierStates$Get("state",filterFun=data.tree::isLeaf)))
+      formulaTerms[[j]] <- newForm$formterms
+      recharge[[j]] <- newForm$recharge
       if(length(formulaTerms[[j]])){
         if(any(grepl("level",formulaTerms[[j]]))) stop("hierFormula$",j,"$formula cannot include 'level'")
         formulaTerms[[j]] <- paste0("I((level=='",gsub("level","",j),"')*",formulaTerms[[j]],")")
+      }
+      if(!is.null(recharge[[j]])){
+        #formulaTerms[[j]] <- c(formulaTerms[[j]],paste0("I((level=='",gsub("level","",j),"')*","recharge",gsub("level","",j),")"))
+        #data[[paste0("recharge",gsub("level","",j))]] <- rep(0,nrow(data))
+        formulaTerms[[j]] <- c(formulaTerms[[j]],paste0("I((level=='",gsub("level","",j),"')*","recharge)"))
+        data$recharge <- rep(0,nrow(data))
       }
     }
     form <- "~ 0 + level"
@@ -17,11 +24,13 @@ formatHierFormula <- function(data,hierFormula){
     form <- as.formula(form)
   } else {
     lLevels <- paste0("level",levels(data$level))#hierFormula$Get("name",filterFun=function(x) x$level==2)
-    formulaTerms <- formTerms <- list()
+    formulaTerms <- formTerms <- recharge <- list()
     factorTerms <- names(data)[which(unlist(lapply(data,function(x) inherits(x,"factor"))))]
     for(j in lLevels){
+      newForm <- newFormulas(hierFormula[[j]]$formula, length(hierStates$Get("state",filterFun=data.tree::isLeaf)))
       #if(j==lLevels[1]) if(!attr(stats::terms(hierFormula[[j]]$formula),"intercept")) stop("hierFormula$",j,"$formula must include an intercept term")
-      formulaTerms[[j]] <- attr(stats::terms(hierFormula[[j]]$formula),"term.labels")
+      formulaTerms[[j]] <- newForm$formterms
+      recharge[[j]] <- newForm$recharge
       formTerms[[j]] <- NULL
       if(length(formulaTerms[[j]])){
         if(any(grepl("level",formulaTerms[[j]]))) stop("hierFormula$",j,"$formula cannot include 'level'")
@@ -50,6 +59,14 @@ formatHierFormula <- function(data,hierFormula){
           }
         }
       }
+      if(!is.null(recharge[[j]])){
+        #formulaTerms[[j]] <- c(formulaTerms[[j]],paste0("recharge",gsub("level","",j)))
+        #formTerms[[j]] <- c(formTerms[[j]],paste0("I((level=='",gsub("level","",j),"')*","recharge",gsub("level","",j),")"))
+        #data[[paste0("recharge",gsub("level","",j))]] <- rep(0,nrow(data))
+        formulaTerms[[j]] <- c(formulaTerms[[j]],"recharge")
+        formTerms[[j]] <- c(formTerms[[j]],paste0("I((level=='",gsub("level","",j),"')*","recharge)"))
+        data$recharge <- rep(0,nrow(data))
+      }
     }
     factorLevels <- which(unlist(lapply(formulaTerms,function(x) any(x %in% factorTerms))))
     if(any(factorLevels)){
@@ -66,5 +83,5 @@ formatHierFormula <- function(data,hierFormula){
     if(length(unlist(formulaTerms))) form <- paste0(form," + ",paste0(unlist(formTerms),collapse = " + "))
     form <- as.formula(form)
   }
-  return(form)
+  return(list(formula=form,data=data,recharge=recharge))
 }
