@@ -41,19 +41,19 @@ getTrProbs.default <- function(data,nbStates,beta,workBoundsBeta=NULL,formula=~1
   
   if(!is.momentuHMM(data)){
     hierArgs <- list(...)
-    argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist","hierBeta","hierDelta","hierFormula"))]
+    argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist","hierBeta","hierFormula"))]
     
     ## check that the data is a momentuHMMData object or valid data frame
     if(!is.momentuHMMData(data)){ 
       if(missing(nbStates)){
         if(all(c("hierStates","hierDist") %in% argNames)){
-          return(getTrProbs.hierarchical(data,hierStates=hierArgs$hierStates,hierBeta=hierArgs$hierBeta,hierDelta=hierArgs$hierDelta,hierFormula=hierArgs$hierFormula,mixtures,hierArgs$hierDist))
+          return(getTrProbs.hierarchical(data,hierStates=hierArgs$hierStates,hierBeta=hierArgs$hierBeta,hierFormula=hierArgs$hierFormula,mixtures,hierArgs$hierDist))
         }
       }
       if(!is.data.frame(data)) stop('data must be a data.frame')
     }
     if(!missing(nbStates)){
-      if(any(c("hierStates","hierDist","hierFormula","hierBeta","hierDelta") %in% argNames))
+      if(any(c("hierStates","hierDist","hierFormula","hierBeta") %in% argNames))
         stop("Either nbStates must be specified (for a regular HMM) or hierStates and hierDist must be specified (for a hierarchical HMM)")
     }
     
@@ -127,14 +127,13 @@ getTrProbs.hierarchical <- function(data,hierStates,hierBeta,hierFormula=NULL,mi
   if(is.momentuHierHMM(data)){
     hierStates <- data$conditions$hierStates
     hierBeta <- data$conditions$hierBeta
-    hierDelta <- data$conditions$hierDelta
     hierFormula <- data$conditions$hierFormula
     mixtures <- data$conditions$mixtures
     hierDist <- data$conditions$hierDist
     data <- data$data
   }
   
-  inputHierHMM <- formatHierHMM(data,hierStates=hierStates,hierDist=hierDist,hierBeta=hierBeta,hierDelta=hierDelta,hierFormula=hierFormula,mixtures=mixtures,checkData=FALSE)
+  inputHierHMM <- formatHierHMM(data,hierStates=hierStates,hierDist=hierDist,hierBeta=hierBeta,hierDelta=NULL,hierFormula=hierFormula,mixtures=mixtures,checkData=FALSE)
   if(mixtures>1) inputHierHMM$beta <- inputHierHMM$beta$beta
   
   trProbs <- getTrProbs.default(data,inputHierHMM$nbStates,inputHierHMM$beta,inputHierHMM$workBounds$beta,inputHierHMM$formula,mixtures,inputHierHMM$betaRef,inputHierHMM$stateNames)
