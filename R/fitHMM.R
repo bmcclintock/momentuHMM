@@ -1046,7 +1046,7 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
       beta <- par$beta
       pi <- g0 <- theta <- NULL
     }
-    hier <- mapHier(beta,pi,par$delta,hierBeta,hierDelta,hfit$conditions$fixPar,hfit$conditions$betaCons,hfit$conditions$deltaCons,hierStates,hfit$conditions$formula,hfit$conditions$formulaDelta,hfit$data,hfit$conditions$mixtures,g0,theta,fill=TRUE)
+    hier <- mapHier(beta,pi,par$delta,hierBeta,hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,hierStates,hfit$conditions$formula,hfit$conditions$formulaDelta,hfit$data,hfit$conditions$mixtures,g0,theta,fill=TRUE)
     hfit$conditions$hierBeta <- hier$hierBeta
     hfit$conditions$hierDelta <- hier$hierDelta
   } else {

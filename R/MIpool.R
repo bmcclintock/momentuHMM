@@ -621,7 +621,8 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   if(is.momentuHierHMM(im[[1]])) class(mh) <- append(class(mh),"hierarchical")
   
   if(inherits(mh,"hierarchical")){
-    hier <- mapHier(mh$Par$beta$beta$est,mh$Par$beta$pi$est,mh$Par$beta$delta$est,mh$conditions$hierBeta,mh$conditions$hierDelta,mh$conditions$fixPar,mh$conditions$betaCons,mh$conditions$deltaCons,mh$conditions$hierStates,mh$conditions$formula,mh$conditions$formulaDelta,mh$data,mh$conditions$mixtures,mh$Par$beta$g0,mh$Par$beta$theta,fill=FALSE)
+    inputHierHMM <- formatHierHMM(mh$data,mh$conditions$hierStates,mh$conditions$hierDist,hierBeta=NULL,hierDelta=NULL,mh$conditions$hierFormula,mh$conditions$hierFormulaDelta,mh$conditions$mixtures)
+    hier <- mapHier(mh$Par$beta$beta$est,mh$Par$beta$pi$est,mh$Par$beta$delta$est,mh$conditions$hierBeta,mh$conditions$hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,mh$conditions$hierStates,mh$conditions$formula,mh$conditions$formulaDelta,mh$data,mh$conditions$mixtures,mh$Par$beta$g0,mh$Par$beta$theta,fill=FALSE)
     mh$conditions$hierBeta <- hier$hierBeta
     mh$conditions$hierDelta <- hier$hierDelta
     

@@ -426,10 +426,10 @@ getPar0.momentuHierHMM<-function(model,hierStates=model$conditions$hierStates,es
   nbStates <- inputHierHMM$nbStates
   formula <- inputHierHMM$formula
   formulaDelta <- inputHierHMM$formulaDelta
-  betaCons <- inputHierHMM$betaCons
+  betaCons <- inputHierHMM$hBetaCons
   betaRef <- inputHierHMM$betaRef
-  deltaCons <- inputHierHMM$deltaCons
-  fixPar <- inputHierHMM$fixPar
+  deltaCons <- inputHierHMM$hDeltaCons
+  fixPar <- inputHierHMM$hFixPar
   stateNames <- inputHierHMM$stateNames
   
   Par0 <- getPar0.momentuHMM(model,nbStates,estAngleMean,circularAngleMean,formula,formulaDelta,mixtures,formulaPi,DM,betaRef,stateNames)
