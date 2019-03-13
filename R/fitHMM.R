@@ -549,9 +549,11 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     if(!(dist[[mvnCoords]] %in% mvndists)) stop("mvnCoords must correspond to a multivariate normal data stream")
   }
   
-  newForm <- newFormulas(formula,nbStates)
+  # convert RW data
+  data <- RWdata(dist,data)
+  
+  newForm <- newFormulas(formula,nbStates,hierarchical = TRUE)
   formulaStates <- newForm$formulaStates
-  formterms <- newForm$formterms
   newformula <- newForm$newformula
   recharge <- newForm$recharge
   
@@ -578,15 +580,18 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   
   # build design matrix for recharge model
   if(!is.null(recharge)){
-    g0covs <- model.matrix(recharge$g0,data[aInd,,drop=FALSE])
+    reForm <- formatRecharge(nbStates,formula,data=data)
+    formulaStates <- reForm$formulaStates
+    newformula <- reForm$newformula
+    recharge <- reForm$recharge
+    newdata <- reForm$newdata
+    g0covs <- reForm$g0covs
     nbG0covs <- ncol(g0covs)-1
-    recovs <- model.matrix(recharge$theta,data)
+    recovs <- reForm$recovs
     nbRecovs <- ncol(recovs)-1
-    if(!nbRecovs | !attributes(terms(recharge$theta))$intercept) stop("invalid recharge model -- theta must include an intercept and at least 1 covariate")
-    tmpcovs <- cbind(covs,rep(0,nrow(data)))
-    colnames(tmpcovs) <- c(colnames(covs),"recharge")
-    covs <- tmpcovs
-    nbCovs <- nbCovs + 1
+    if(!nbRecovs | (!inherits(data,"hierarchical") & !attributes(terms(recharge$theta))$intercept)) stop("invalid recharge model -- theta must include an intercept and at least 1 covariate")
+    covs <- reForm$covs
+    nbCovs <- ncol(covs)-1
     if(!is.null(beta0)){
       if(!is.list(beta0)) stop("beta0 must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
     }
@@ -604,6 +609,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     nbG0covs <- 0
     g0covs <- g0covsCol <- NULL
     recovs <- recovsCol <- NULL
+    newdata <- NULL
   }
   
   # build design matrix for initial distribution
@@ -681,9 +687,6 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames,checkInflation = TRUE)
   p <- inputs$p
   
-  # convert RW data
-  data <- RWdata(dist,data)
-  
   DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par0,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
   fullDM <- DMinputs$fullDM
   DMind <- DMinputs$DMind
@@ -698,7 +701,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   ####################################
   ## Prepare initial values for nlm ##
   ####################################
-  fixParIndex <- get_fixParIndex(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,deltaCons,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data)
+  fixParIndex <- get_fixParIndex(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,deltaCons,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data,newdata)
   
   parCount<- lapply(fullDM,ncol)
   for(i in distnames[!unlist(lapply(inputs$circularAngleMean,isFALSE))]){
@@ -1039,14 +1042,22 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
     par <- getPar(hfit)
     if(is.list(par$beta)){
       beta <- par$beta$beta
-      pi <- par$beta$pi
+      Pi <- par$beta$pi
       g0 <- par$beta$g0
+      names(g0) <- names(hfit$mle$g0)
       theta <- par$beta$theta
+      names(theta) <- names(hfit$mle$theta)
     } else {
       beta <- par$beta
-      pi <- g0 <- theta <- NULL
+      Pi <- g0 <- theta <- NULL
     }
-    hier <- mapHier(beta,pi,par$delta,hierBeta,hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,hierStates,hfit$conditions$formula,hfit$conditions$formulaDelta,hfit$data,hfit$conditions$mixtures,g0,theta,fill=TRUE)
+    hier <- mapHier(beta,Pi,par$delta,hierBeta,hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,hierStates,inputHierHMM$newformula,hfit$conditions$formulaDelta,inputHierHMM$data,hfit$conditions$mixtures,inputHierHMM$recharge,fill=TRUE)
+    if(!is.null(inputHierHMM$recharge)){
+      for(j in names(inputHierHMM$recharge)){
+        hier$hierBeta[[j]]$g0 <- g0[names(hier$hierBeta[[j]]$g0)]
+        hier$hierBeta[[j]]$theta <- theta[names(hier$hierBeta[[j]]$theta)]
+      }
+    }
     hfit$conditions$hierBeta <- hier$hierBeta
     hfit$conditions$hierDelta <- hier$hierDelta
   } else {
@@ -1062,9 +1073,7 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
   hfit <- momentuHierHMM(hfit)
   
   if(fit){
-    hierGammaDelta <- hierGamma(hfit)
-    hfit$CIreal$hierDelta <- hierGammaDelta$hierDelta
-    hfit$CIreal$hierGamma <- hierGammaDelta$hierGamma
+    hfit$CIreal <- CIreal.hierarchical(hfit)
   }
   hfit
 }

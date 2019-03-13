@@ -102,7 +102,7 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
     if(nbRecovs){
       g0 <- par$g0 %*% t(g0covs[i,,drop=FALSE])
       theta <- par$theta
-      covs[idInd,"recharge"] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
+      covs[idInd,which(grepl("recharge",colnames(covs)))] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
     }
   }
   

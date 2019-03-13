@@ -32,6 +32,7 @@ viterbi <- function(m, hierarchical=FALSE)
   
   data <- m$data
   nbStates <- length(m$stateNames)
+  nbAnimals <- length(unique(m$data$ID))
   beta <- m$mle$beta
   delta <- m$mle$delta
   
@@ -39,46 +40,9 @@ viterbi <- function(m, hierarchical=FALSE)
     stop("No states to decode (nbStates=1)")
   
   # identify covariates
-  formula<-m$conditions$formula
-  newForm <- newFormulas(formula,nbStates)
-  formulaStates <- newForm$formulaStates
-  formterms <- newForm$formterms
-  newformula <- newForm$newformula
-  recharge <- newForm$recharge
-  
-  aInd <- NULL
-  nbAnimals <- length(unique(data$ID))
-  for(i in 1:nbAnimals){
-    aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
-  }
-  
-  if(!is.null(recharge)){
-    g0covs <- model.matrix(recharge$g0,data[aInd,])
-    nbG0covs <- ncol(g0covs)-1
-    recovs <- model.matrix(recharge$theta,data)
-    nbRecovs <- ncol(recovs)-1
-    data$recharge<-rep(0,nrow(data))
-    for(i in 1:nbAnimals){
-      idInd <- which(data$ID==unique(data$ID)[i])
-      if(nbRecovs){
-        g0 <- m$mle$g0 %*% t(g0covs[i,,drop=FALSE])
-        theta <- m$mle$theta
-        data$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
-      }
-    }
-    for(j in 1:nbStates){
-      formulaStates[[j]] <- as.formula(paste0(Reduce( paste, deparse(formulaStates[[j]]) ),"+recharge"))
-    }
-    formterms <- c(formterms,"recharge")
-    newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
-  } else {
-    nbG0covs <- 0
-    nbRecovs <- 0
-    g0covs <- NULL
-    recovs <- NULL
-  }
-  
-  covs <- model.matrix(newformula,data)
+  reForm <- formatRecharge(nbStates,m$conditions$formula,m$data,par=m$mle)
+  covs <- reForm$covs
+  aInd <- reForm$aInd
   
   probs <- allProbs(m)
   mixtures <- m$conditions$mixtures

@@ -39,37 +39,30 @@ stationary.momentuHMM <- function(model, covs)
         stop("No state probabilities (1-state model).")
 
     formula<-model$conditions$formula
-    newForm <- newFormulas(formula,nbStates)
-    formulaStates <- newForm$formulaStates
-    formterms <- newForm$formterms
+    newForm <- newFormulas(formula,nbStates,hierarchical=TRUE)
     newformula <- newForm$newformula
     recharge <- newForm$recharge
     
-    if(missing(covs)){
-      covs <- model$rawCovs
-      if(length(covs)){
+    if(!missing(covs)){
+      if(is.data.frame(covs)){
+        if(is.null(recharge)){
+          if(!all(names(covs) %in% names(model$data))) stop('invalid covs specified')
+        } else {
+          if(!all(names(covs) %in% c(names(model$data),"recharge"))) stop('invalid covs specified')
+        }
+        if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(model$data$ID))
+        if(inherits(model,"hierarchical") && any(names(covs) %in% "level")) stop("covs$level cannot be specified for hierarchical models")
+        for(j in names(model$data)[which(names(model$data) %in% names(covs))]){
+          if(inherits(model$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(model$data[[j]]))
+          if(any(is.na(covs[[j]]))) stop("check value(s) for ",j)
+        }
+        
         tmpSplineInputs<-getSplineFormula(newformula,model$data,covs)
-      } else {
-        tmpSplineInputs<-getSplineFormula(newformula,model$data,model$data[1,])
-      }
-
-    } else if(is.data.frame(covs)){
-      if(is.null(recharge))
-        if(!all(names(covs) %in% names(model$data))) stop('invalid covs specified')
-      else 
-        if(!all(names(covs) %in% c(names(model$data),"recharge"))) stop('invalid covs specified')
-      if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(model$data$ID))
-      if(inherits(model,"hierarchical") && any(names(covs) %in% "level")) stop("covs$level cannot be specified for hierarchical models")
-      for(j in names(model$data)[which(names(model$data) %in% names(covs))]){
-        if(inherits(model$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(model$data[[j]]))
-        if(any(is.na(covs[[j]]))) stop("check value(s) for ",j)
-      }
-      
-      tmpSplineInputs<-getSplineFormula(newformula,model$data,covs)
-
-    } else if(is.matrix(covs)){
-      covMat <- covs
-    } else stop("covs must either be a data frame or a matrix")
+  
+      } else if(is.matrix(covs)){
+        covMat <- covs
+      } else stop("covs must either be a data frame or a matrix")
+    }
     
     aInd <- NULL
     nbAnimals <- length(unique(model$data$ID))
@@ -78,28 +71,39 @@ stationary.momentuHMM <- function(model, covs)
     }
     
     if(!is.null(recharge)){
-      if(is.matrix(covs)) stop("covs must be provided as a data frame for recharge models")
-      g0covs <- model.matrix(recharge$g0,model$data[aInd,])
+      reForm <- formatRecharge(nbStates,formula,data=model$data,par=list(g0=model$mle$g0,theta=model$mle$theta))
+      newformula <- reForm$newformula
+      recharge <- reForm$recharge
+      model$data <- cbind(model$data,reForm$newdata)
+      g0covs <- reForm$g0covs
       nbG0covs <- ncol(g0covs)-1
-      recovs <- model.matrix(recharge$theta,model$data)
+      recovs <- reForm$recovs
       nbRecovs <- ncol(recovs)-1
-      model$data$recharge<-rep(0,nrow(model$data))
-      for(i in 1:nbAnimals){
-        idInd <- which(model$data$ID==unique(model$data$ID)[i])
-        if(nbRecovs){
-          g0 <- model$mle$g0 %*% t(g0covs[i,,drop=FALSE])
-          theta <- model$mle$theta
-          model$data$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
-        }
+      if(missing(covs)){
+        covs <- model$data
+      } else if(is.matrix(covs)){
+        stop("covs must be provided as a data frame for recharge models")
       }
-      if(!length(covs)) covs <- model$data
-      newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
       tmpSplineInputs<-getSplineFormula(newformula,model$data,covs)
+      
+      testCovs <- tmpSplineInputs$covs
+      if(inherits(model,"hierarchical")){
+        testCovs$level <- model$data$level[1]
+      }
       # check that all covariates are provided
-      ck1 <- tryCatch(model.matrix(recharge$theta,tmpSplineInputs$covs),error=function(e) e)
-      ck2 <- tryCatch(model.matrix(tmpSplineInputs$formula,tmpSplineInputs$covs),error=function(e) e)
+      ck1 <- tryCatch(model.matrix(recharge$theta,testCovs),error=function(e) e)
+      ck2 <- tryCatch(model.matrix(tmpSplineInputs$formula,testCovs),error=function(e) e)
       if(inherits(ck1,"error")) stop("covs not specified correctly -- ",ck1)
       if(inherits(ck2,"error")) stop("covs not specified correctly -- ",ck2)
+    } else {
+      if(missing(covs)){
+        covs <- model$rawCovs
+        if(length(covs)){
+          tmpSplineInputs<-getSplineFormula(newformula,model$data,covs)
+        } else {
+          tmpSplineInputs<-getSplineFormula(newformula,model$data,model$data[1,])
+        }
+      }
     }
     
     if(!is.matrix(covs)){
@@ -121,7 +125,7 @@ stationary.momentuHMM <- function(model, covs)
         allMat <- trMatrix_rcpp(nbStates=nbStates, beta=tmpbeta, covs=covMat, betaRef=model$conditions$betaRef)
       else {
         gamInd<-(length(model$mod$estimate)-(nrow(tmpbeta))*nbStates*(nbStates-1)*mixtures+1):(length(model$mod$estimate))-(ncol(model$covsPi)*(mixtures-1))-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-ncol(model$covsDelta)*(nbStates-1)*(!model$conditions$stationary)*mixtures
-        allMat <- array(unlist(lapply(split(tmpSplineInputs$covs,1:nrow(covs)),function(x) tryCatch(get_gamma_recharge(model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(covs)))
+        allMat <- array(unlist(lapply(split(tmpSplineInputs$covs,1:nrow(tmpSplineInputs$covs)),function(x) tryCatch(get_gamma_recharge(model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(tmpSplineInputs$covs)))
       }
       
       tryCatch({

@@ -57,7 +57,7 @@ CIbeta <- function(m,alpha=0.95)
   m <- delta_bc(m)
 
   # identify covariates
-  reForm <- formatRecharge(m,m$data)
+  reForm <- formatRecharge(nbStates,m$conditions$formula,m$data,par=m$mle)
   recharge <- reForm$recharge
   covs <- reForm$covs
   nbCovs <- reForm$nbCovs

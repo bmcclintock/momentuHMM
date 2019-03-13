@@ -6,7 +6,7 @@
 #' of non-factor covariates are used for calculating the natural parameters. For any covariate(s) of class 'factor', then the value(s) from the first observation 
 #' in the data are used.
 #'
-#' @param m A \code{momentuHMM} object
+#' @param m A \code{momentuHMM}, \code{momentuHierHMM}, or \code{miSum} object
 #' @param alpha Significance level of the confidence intervals. Default: 0.95 (i.e. 95\% CIs).
 #' @param covs Data frame consisting of a single row indicating the covariate values to be used in the calculations. By default, no covariates are specified.
 #' @param parms Optional character vector indicating which groups of real parameters to calculate confidence intervals for (e.g., 'step', 'angle', 'gamma', 'delta', etc.). Default: NULL, in which case confidence intervals are calculated for all groups of parameters in the model.
@@ -19,6 +19,8 @@
 #' \item{...}{List(s) of estimates ('est'), standard errors ('se'), and confidence intervals ('lower', 'upper') for the natural parameters of the data streams}
 #' \item{gamma}{List of estimates ('est'), standard errors ('se'), and confidence intervals ('lower', 'upper') for the transition probabilities}
 #' \item{delta}{List of estimates ('est'), standard errors ('se'), and confidence intervals ('lower', 'upper') for the initial state probabilities}
+#' \item{hierGamma}{A hierarchical data structure \code{\link[data.tree]{Node}} including a list of estimates ('est'), standard errors ('se'), and confidence intervals ('lower', 'upper') for the transition probabilities for each level of the hierarchy (only applies if \code{m} is a hierarchical model object)}
+#' \item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} including a list of estimates ('est'), standard errors ('se'), and confidence intervals ('lower', 'upper') for the initial state probabilities for each level of the hierarchy (only applies if \code{m} is a hierarchical model object)}
 #'
 #' @examples
 #' # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
@@ -32,12 +34,18 @@
 #' all.equal(ci1,ci2)
 #'
 #' @export
+CIreal <- function(m,alpha=0.95,covs=NULL,parms=NULL) {
+  UseMethod("CIreal")
+}
+
+#' @rdname CIreal
+#' @method CIreal default
 #' @importFrom numDeriv grad
 #' @importFrom utils tail
 #' @importFrom Brobdingnag as.brob sum
 #' @importFrom CircStats circ.mean
-
-CIreal <- function(m,alpha=0.95,covs=NULL,parms=NULL)
+#' @export
+CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
 {
   if(!is.momentuHMM(m))
     stop("'m' must be a momentuHMM object (as output by fitHMM)")
@@ -63,8 +71,8 @@ CIreal <- function(m,alpha=0.95,covs=NULL,parms=NULL)
   tempCovs <- getCovs(m,covs,unique(m$data$ID),checkHier=FALSE)[1,]
   
   # identify covariates
-  reForm <- formatRecharge(m,m$data,tempCovs)
-  m$data <- reForm$data
+  reForm <- formatRecharge(nbStates,m$conditions$formula,m$data,covs=tempCovs,par=m$mle)
+  m$data <- cbind(m$data,reForm$newdata)
   recharge <- reForm$recharge
   newformula <- reForm$newformula
   tempCovs <- reForm$covs
@@ -288,12 +296,16 @@ get_recharge <- function(g0theta,g0covs,recovs,workBounds=NULL,k=0){
 get_gamma_recharge <- function(beta,covs,formula,recharge,nbStates,i,j,betaRef,betaCons,workBounds=NULL,mixture=1){
   
   recovs <- model.matrix(recharge$theta,covs)
+  g0covs <- model.matrix(recharge$g0,covs)
   
-  beta <- w2wn(c(beta[betaCons],beta[length(beta)-(ncol(recovs)-1):0]),workBounds)
+  tmpBeta <- rep(NA,length(betaCons))
+  tmpBeta[unique(c(betaCons))] <- beta[1:(length(beta)-(ncol(recovs)))]
+  tmpBeta <- matrix(tmpBeta[betaCons],nrow(betaCons),ncol(betaCons))
+  beta <- w2wn(c(tmpBeta,beta[length(beta)-(ncol(recovs)-1):0]),workBounds)
 
   #g0 <- beta[length(beta)-ncol(recovs)-(ncol(g0covs)-1):0] %*% t(g0covs)
   theta <- beta[length(beta)-(ncol(recovs)-1):0]
-  covs[,"recharge"] <- covs[,"recharge"] + theta%*%t(recovs) # g0  + theta%*%t(recovs)
+  covs[,"recharge"] <- covs[,"recharge"]*g0covs[,1] + theta%*%t(recovs) # g0  + theta%*%t(recovs)
   #covs <- matrix(covs,1)
 
   newcovs <- model.matrix(formula,covs)
@@ -395,4 +407,95 @@ w2nDMangle<-function(w,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,con
   w[foo:length(w)] <- kappa
   
   w2nDM(w,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,consensus,nbStates,k,nc,meanind,workBounds)
+}
+
+#' @rdname CIreal
+#' @method CIreal hierarchical
+#' @importFrom numDeriv grad
+#' @importFrom utils tail
+#' @importFrom Brobdingnag as.brob sum
+#' @importFrom CircStats circ.mean
+#' @export
+CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){
+  
+  if(is.miSum(m)){
+    m$mle <- lapply(m$Par$real,function(x) x$est)
+    m$mle$beta <- m$Par$beta$beta$est
+    m$mle$pi <- m$Par$real$pi$est
+    m$mle$delta <- m$Par$real$delta$est
+    m$mod <- list()
+    if(!is.null(m$conditions$recharge)){
+      nbRecovs <- ncol(m$g0covs) + ncol(m$reCovs)
+      m$mle$g0 <- c(m$Par$beta$g0$est)
+      names(m$mle$g0) <- colnames(m$Par$beta$g0$est)
+      m$mle$theta <- c(m$Par$beta$theta$est)
+      names(m$mle$theta) <- colnames(m$Par$beta$theta$est)
+    } else nbRecovs <- 0
+    m$mod$estimate <- expandPar(m$MIcombine$coefficients,m$conditions$optInd,unlist(m$conditions$fixPar),m$conditions$wparIndex,m$conditions$betaCons,m$conditions$deltaCons,length(m$stateNames),ncol(m$covsDelta)-1,m$conditions$stationary,nrow(m$Par$beta$beta$est)/m$conditions$mixtures-1,nbRecovs,m$conditions$mixtures,ncol(m$covsPi)-1)
+    m$mod$hessian <- NA
+    m$mod$Sigma <- matrix(0,length(m$mod$estimate),length(m$mod$estimate))
+    m$mod$Sigma[-m$conditions$optInd,-m$conditions$optInd] <- m$MIcombine$variance
+    m$CIreal <- m$Par$real
+    m <- momentuHMM(m)
+  } else if(!inherits(m,"momentuHierHMM")) stop("m must be a momentuHierHMM or hierarchical miSum object")
+  
+  if(!is.null(covs)){
+    ci <- CIreal.default(m=m,alpha=alpha,covs=covs,parms=parms)
+    tmpcovs <- covs
+    tmpcovs$level <- "1"
+  } else {
+    ci <- m$CIreal
+    tmpcovs <- data.frame(level="1")
+  }
+  
+  
+  
+  CIgamma <- data.tree::Node$new("hierGamma")
+  CIdelta <- data.tree::Node$new("hierDelta")
+  
+  hierStates <- m$conditions$hierStates
+  
+  mixtures <- m$conditions$mixtures
+  
+  ref <- hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2)
+  mixref <- rep(seq(0,mixtures*length(m$stateNames)-1,length(m$stateNames)),each=length(ref))+ref
+  if(mixtures>1) nameref <- paste0(rep(names(ref),mixtures),"_mix",rep(1:mixtures,each=length(ref)))
+  else nameref <- names(ref)
+  
+  CIgamma$AddChild("level1",gamma=lapply(m$CIreal$gamma,function(x) matrix(x[mixref,ref],length(mixref),length(ref),dimnames=list(nameref,names(ref)))))
+  CIdelta$AddChild("level1",delta=lapply(m$CIreal$delta,function(x) matrix(x[,ref],nrow(x),dimnames=list(rownames(x),names(ref)))))
+  
+  for(j in 2:(hierStates$height-1)){
+    
+    t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
+    names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
+    
+    tmpcovs$level <- j
+    tmpGamma <- CIreal.default(m=m,alpha=alpha,covs=tmpcovs,parms=c("gamma"))$gamma
+    tmpcovs$level <- paste0(j,"i")
+    tmpDelta <- CIreal.default(m=m,alpha=alpha,covs=tmpcovs,parms=c("gamma"))$gamma
+    CIgamma$AddChild(paste0("level",j),gamma=list())
+    CIdelta$AddChild(paste0("level",j),delta=list())
+    
+    ref <- hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j)
+    
+    for(k in names(t)){
+      levelStates <- t[[k]]$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
+      if(!is.null(levelStates)){
+        mixref <- rep(seq(0,mixtures*length(m$stateNames)-1,length(m$stateNames)),each=length(levelStates))+levelStates
+        if(mixtures>1) nameref <- paste0(rep(names(levelStates),mixtures),"_mix",rep(1:mixtures,each=length(levelStates)))
+        else nameref <- names(levelStates)
+        
+        mixrefk <- rep(seq(0,mixtures*length(m$stateNames)-1,length(m$stateNames)),each=length(ref[[k]]))+ref[[k]]
+        if(mixtures>1) namerefk <- paste0(rep(names(ref[k]),mixtures),"_mix",1:mixtures)
+        else namerefk <- k
+        
+        CIgamma[[paste0("level",j)]]$gamma[[k]] <- lapply(tmpGamma,function(x) matrix(x[mixref,levelStates],length(mixref),length(levelStates),dimnames=list(nameref,names(levelStates))))
+        CIdelta[[paste0("level",j)]]$delta[[k]] <- lapply(tmpDelta,function(x) matrix(x[mixrefk,levelStates],mixtures,dimnames=list(namerefk,names(levelStates))))
+      }
+    }  
+  }
+  ci$hierDelta <- CIdelta
+  ci$hierGamma <- CIgamma
+  ci
 }

@@ -194,7 +194,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   covs <- getCovs(m,covs,ID)
   
   # identify covariates
-  reForm <- formatRecharge(m,m$data)
+  reForm <- formatRecharge(nbStates,m$conditions$formula,m$data,par=m$mle)
   recharge <- reForm$recharge
   newformula <- reForm$newformula
   nbCovs <- reForm$nbCovs
@@ -510,8 +510,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       grid <- seq(0,max(m$data[[i]],na.rm=TRUE),length=10000)
     } else if(inputs$dist[[i]] %in% mvndists){
       if(inputs$dist[[i]]=="mvnorm2" || inputs$dist[[i]]=="rw_mvnorm2"){
-        grid <- c(seq(min(m$data[[paste0(i,".x")]]), max(m$data[[paste0(i,".x")]]), length=100),
-                  seq(min(m$data[[paste0(i,".y")]]), max(m$data[[paste0(i,".y")]]), length=100))
+        grid <- c(seq(min(m$data[[paste0(i,".x")]],na.rm=TRUE), max(m$data[[paste0(i,".x")]],na.rm=TRUE), length=100),
+                  seq(min(m$data[[paste0(i,".y")]],na.rm=TRUE), max(m$data[[paste0(i,".y")]],na.rm=TRUE), length=100))
       }
     } else {
       grid <- seq(min(m$data[[i]],na.rm=TRUE),max(m$data[[i]],na.rm=TRUE),length=10000)
@@ -943,6 +943,13 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         
         if(plotStationary) {
           par(mfrow=c(1,1))
+          if(inherits(m,"hierarchical")){
+            if(is.null(recharge)){
+              tmpSplineInputs$covs <- tempCovs
+            } else {
+              tmpSplineInputs$covs <- tmpSplineInputs$covs[which(tmpSplineInputs$covs$level==levels(m$data$level)[1]),]
+            }
+          }
           statPlot(m,Sigma,nbStates,tmpSplineInputs$formula,tmpSplineInputs$covs,tempCovs,tmpcovs,cov,recharge,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
         }
       }
@@ -1265,7 +1272,7 @@ plotHistMVN <- function(gen,genDensities,dist,message,sepStates,breaks="Sturges"
     h1 <- hist(gen[[paste0(distname,".x")]], breaks=breaks, plot=FALSE)
     h2 <- hist(gen[[paste0(distname,".y")]], breaks=breaks, plot=FALSE)
     top <- max(h1$counts, h2$counts)
-    k <- MASS::kde2d(gen[[paste0(distname,".x")]], gen[[paste0(distname,".y")]], n=25)
+    k <- MASS::kde2d(gen[[paste0(distname,".x")]][!is.na(gen[[paste0(distname,".x")]])], gen[[paste0(distname,".y")]][!is.na(gen[[paste0(distname,".y")]])], n=25)
     rf <- grDevices::colorRampPalette(rev(RColorBrewer::brewer.pal(11,'Spectral')))
     r <- rf(32)
     graphics::image(k, col=r,xlab=paste0(distname,".x"),ylab=paste0(distname,".y"),cex.lab=1.1) #plot the image

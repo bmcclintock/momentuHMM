@@ -11,7 +11,7 @@ getPar0 <- function(model, ...) {
 }
 
 #' @rdname getPar0
-#' @method getPar0 momentuHMM
+#' @method getPar0 default
 #' @param nbStates Number of states in the new model. Default: \code{nbStates=length(model$stateNames)}
 #' @param estAngleMean Named list indicating whether or not the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. Default: \code{estAngleMean=model$conditions$estAngleMean}
@@ -93,34 +93,14 @@ getPar0 <- function(model, ...) {
 #' }
 #' 
 #' @export
-getPar0.momentuHMM<-function(model,nbStates=length(model$stateNames),estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,formula=model$conditions$formula,formulaDelta=model$conditions$formulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM,betaRef=model$conditions$betaRef,stateNames=model$stateNames,...){
+getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,formula=model$conditions$formula,formulaDelta=model$conditions$formulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM,betaRef=model$conditions$betaRef,stateNames=model$stateNames,...){
   
   if(!is.momentuHMM(model) & !is.miHMM(model) & !is.miSum(model))
     stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
   
-  if(is.miHMM(model)) model <- model$miSum
-  
   model$conditions$optInd <- numeric() # extra hack needed for bc
   model <- delta_bc(model)
   model$conditions$optInd <- NULL # extra hack needed for bc
-  
-  if(is.miSum(model)){
-    model$mle <- lapply(model$Par$real,function(x) x$est)
-    model$mle$beta <- model$Par$beta$beta$est
-    model$mle$pi <- model$Par$real$pi$est
-    model$mle$delta <- model$Par$real$delta$est
-    model$mod <- list()
-    if(!is.null(model$conditions$recharge)){
-      nbRecovs <- ncol(model$g0covs) + ncol(model$reCovs)
-      model$mle$g0 <- c(model$Par$beta$g0$est)
-      names(model$mle$g0) <- colnames(model$Par$beta$g0$est)
-      model$mle$theta <- c(model$Par$beta$theta$est)
-      names(model$mle$theta) <- colnames(model$Par$beta$theta$est)
-    } else nbRecovs <- 0
-    model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,model$conditions$deltaCons,length(model$stateNames),ncol(model$covsDelta)-1,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures,ncol(model$covsPi-1))
-    model$CIbeta <- model$Par$beta
-    model$CIreal <- model$Par$real
-  }
   
   if(!is.null(model$mod$hessian) & inherits(model$CIbeta,"error")){
     model$mod$hessian <- NULL
@@ -412,15 +392,47 @@ getPar0.momentuHMM<-function(model,nbStates=length(model$stateNames),estAngleMea
   list(Par=Par[distnames],beta=Par$beta,delta=Par$delta)
 }
 
+#' @method getPar0 miHMM
+#' 
+#' @export
+getPar0.miHMM <- function(model,...){
+  model <- model$miSum
+  getPar0.miSum(model,...)
+}
+
+#' @method getPar0 miSum
+#' 
+#' @export
+getPar0.miSum <- function(model,...){
+
+    model$mle <- lapply(model$Par$real,function(x) x$est)
+    model$mle$beta <- model$Par$beta$beta$est
+    model$mle$pi <- model$Par$real$pi$est
+    model$mle$delta <- model$Par$real$delta$est
+    model$mod <- list()
+    if(!is.null(model$conditions$recharge)){
+      nbRecovs <- ncol(model$g0covs) + ncol(model$reCovs)
+      model$mle$g0 <- c(model$Par$beta$g0$est)
+      names(model$mle$g0) <- colnames(model$Par$beta$g0$est)
+      model$mle$theta <- c(model$Par$beta$theta$est)
+      names(model$mle$theta) <- colnames(model$Par$beta$theta$est)
+    } else nbRecovs <- 0
+    model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,model$conditions$deltaCons,length(model$stateNames),ncol(model$covsDelta)-1,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures,ncol(model$covsPi-1))
+    model$CIbeta <- model$Par$beta
+    model$CIreal <- model$Par$real
+    
+    getPar0.default(model,...)
+
+}
 
 #' @rdname getPar0
-#' @method getPar0 momentuHierHMM
+#' @method getPar0 hierarchical
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states (see \code{\link{fitHMM}}). Default: \code{hierStates=model$conditions$hierStates}.
 #' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy (see \code{\link{fitHMM}}). Default: \code{hierFormula=model$conditions$hierFormula}.
 #' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). 
 #' 
 #' @export
-getPar0.momentuHierHMM<-function(model,hierStates=model$conditions$hierStates,estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,hierFormula=model$conditions$hierFormula,hierFormulaDelta=model$conditions$hierFormulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM,...){
+getPar0.hierarchical<-function(model,hierStates=model$conditions$hierStates,estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,hierFormula=model$conditions$hierFormula,hierFormulaDelta=model$conditions$hierFormulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM,...){
   
   inputHierHMM <- formatHierHMM(data=model$data,hierStates=hierStates,hierDist=model$conditions$hierDist,hierFormula=hierFormula,hierFormulaDelta=hierFormulaDelta,mixtures=mixtures)
   nbStates <- inputHierHMM$nbStates
@@ -432,18 +444,16 @@ getPar0.momentuHierHMM<-function(model,hierStates=model$conditions$hierStates,es
   fixPar <- inputHierHMM$hFixPar
   stateNames <- inputHierHMM$stateNames
   
-  Par0 <- getPar0.momentuHMM(model,nbStates,estAngleMean,circularAngleMean,formula,formulaDelta,mixtures,formulaPi,DM,betaRef,stateNames)
+  Par0 <- getPar0.default(model,nbStates,estAngleMean,circularAngleMean,formula,formulaDelta,mixtures,formulaPi,DM,betaRef,stateNames)
   
   if(is.list(Par0$beta)){
     beta0 <- Par0$beta$beta
     Pi <- Par0$beta$pi
-    g0 <- Par0$beta$g0
-    theta <- Par0$beta$theta
   } else {
     beta0 <- Par0$beta
-    Pi <- g0 <- theta <- NULL
+    Pi <- NULL
   }
-  hier <- mapHier(beta0,Pi,Par0$delta,hierBeta=NULL,hierDelta=NULL,fixPar,betaCons,deltaCons,hierStates,formula,formulaDelta,model$data,mixtures,g0,theta)
+  hier <- mapHier(beta0,Pi,Par0$delta,hierBeta=NULL,hierDelta=NULL,fixPar,betaCons,deltaCons,hierStates,inputHierHMM$newformula,formulaDelta,inputHierHMM$data,mixtures)
 
   Par0$beta <- Par0$delta <- NULL
   Par0$hierBeta <- hier$hierBeta

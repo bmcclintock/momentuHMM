@@ -354,22 +354,6 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
     }
   }
   if(length(m$stateNames)>1){
-    if(!is.null(m$conditions$recharge)){
-      cat("\n")
-      cat("Initial recharge parameter (g0):\n")
-      cat("--------------------------------\n")
-      tmpPar <- m$mle$g0
-      if(is.null(beta0$g0))
-        tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
-      print(tmpPar) 
-      cat("\n")
-      cat("Recharge function parameters (theta):\n")
-      cat("-------------------------------------\n")
-      tmpPar <- m$mle$theta
-      if(is.null(beta0$theta))
-        tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
-      print(tmpPar) 
-    }
     
     if(mixtures>1){
       cat("\n")
@@ -395,6 +379,24 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
     }
     
     if(!inherits(data,"hierarchical")){   
+      
+      if(!is.null(m$conditions$recharge)){
+        cat("\n")
+        cat("Initial recharge parameter (g0):\n")
+        cat("--------------------------------\n")
+        tmpPar <- m$mle$g0
+        if(is.null(beta0$g0))
+          tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
+        print(tmpPar) 
+        cat("\n")
+        cat("Recharge function parameters (theta):\n")
+        cat("-------------------------------------\n")
+        tmpPar <- m$mle$theta
+        if(is.null(beta0$theta))
+          tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
+        print(tmpPar) 
+      }
+      
       #if(!is.null(m$mle$beta)) {
       cat("\n")
       cat("Regression coeffs for the transition probabilities (beta):\n")
@@ -460,7 +462,6 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
   }
   
   inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures)
-  data <- inputHierHMM$data
   nbStates <- inputHierHMM$nbStates
   dist <- inputHierHMM$dist
   beta0 <- inputHierHMM$beta
@@ -473,6 +474,7 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
   betaRef <- inputHierHMM$betaRef
   stateNames <- inputHierHMM$stateNames
   #fixPar <- inputHierHMM$fixPar
+  recharge <- inputHierHMM$recharge
   
   if(is.null(fixPar)) fixPar <- list()
   if(is.list(fixPar)){
@@ -480,6 +482,8 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
     if(!is.null(hierBeta) | !is.null(hierDelta)) fixPar$beta <- inputHierHMM$fixPar$beta
     if(!is.null(fixPar$delta)) stop("'fixPar$delta' cannot be specified; use 'hierDelta' instead")
     if(!is.null(hierDelta)) fixPar$delta <- inputHierHMM$fixPar$delta
+    if(!is.null(recharge) && (is.null(hierBeta) & !is.null(fixPar$g0))) stop("'fixPar$g0' cannot be specified unless 'hierBeta'is specified")
+    if(!is.null(recharge) && (is.null(hierBeta) & !is.null(fixPar$theta))) stop("'fixPar$theta' cannot be specified unless 'hierBeta'is specified")
   }
   
   if(is.null(workBounds)) workBounds <- list()
@@ -492,7 +496,16 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
   
   m <- checkPar0.default(data=data,nbStates=nbStates,dist=dist,Par0=Par0,beta0=beta0,delta0=delta0,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,formula=formula,formulaDelta=formulaDelta,stationary=FALSE,mixtures=mixtures,formulaPi=formulaPi,DM=DM,cons=NULL,userBounds=userBounds,workBounds=workBounds,workcons=NULL,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,stateNames=stateNames,fixPar=fixPar)
   
-  hier <- mapHier(m$mle$beta,m$mle$pi,m$CIbeta$delta$est,hierBeta=hierBeta,hierDelta=hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,hierStates,m$conditions$formula,m$conditions$formulaDelta,m$data,m$conditions$mixtures,m$mle$g0,m$mle$theta,fill=TRUE)
+  hier <- mapHier(m$mle$beta,m$mle$pi,m$CIbeta$delta$est,hierBeta=hierBeta,hierDelta=hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,hierStates,inputHierHMM$newformula,m$conditions$formulaDelta,inputHierHMM$data,m$conditions$mixtures,recharge,fill=TRUE)
+  
+  if(!is.null(recharge)){
+    g0 <- m$mle$g0
+    theta <- m$mle$theta
+    for(j in names(recharge)){
+      hier$hierBeta[[j]]$g0 <- g0[names(hier$hierBeta[[j]]$g0)]
+      hier$hierBeta[[j]]$theta <- theta[names(hier$hierBeta[[j]]$theta)]
+    }
+  }
   
   if(!is.list(hier$hierBeta)){
     beta0 <- list(beta=hier$hierBeta)
@@ -501,8 +514,34 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
   }
   delta0 <- hier$hierDelta
   
-
-  cat("\n\n")
+  if(!is.null(recharge)){
+    cat("\n\n")
+    cat("----------------------------------------------------------\n")
+    cat("Initial recharge parameter (g0):\n")
+    cat("----------------------------------------------------------\n")
+    for(j in names(recharge)){
+      cat("------------------------- ",j," -----------------------\n")
+      tmpPar <- hier$hierBeta[[j]]$g0
+      if(is.null(hierBeta))
+        tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
+      print(tmpPar) 
+    }
+    cat("----------------------------------------------------------\n")
+    cat("\n")
+    cat("----------------------------------------------------------\n")
+    cat("Recharge function parameters (theta):\n")
+    cat("----------------------------------------------------------\n")
+    for(j in names(recharge)){
+      cat("------------------------- ",j," -----------------------\n")
+      tmpPar <- hier$hierBeta[[j]]$theta
+      if(is.null(hierBeta))
+        tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
+      print(tmpPar) 
+    }
+    cat("----------------------------------------------------------\n")
+  } else cat("\n")
+  
+  cat("\n")
   cat("----------------------------------------------------------\n")
   cat("Regression coeffs for the transition probabilities (beta):\n")
   cat("----------------------------------------------------------\n")
@@ -514,9 +553,6 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
         tmpCons <- beta0$beta[[paste0("level",j)]][[jj]]$betaCons
         if(is.null(hierBeta))
           tmpPar <- tmpCons
-        else if(!is.null(m$conditions$recharge)){
-          if(is.null(hierBeta$beta)) tmpPar <- tmpCons
-        }
         print(tmpPar)
         cat("\n")
       }
@@ -525,9 +561,6 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
       tmpCons <- beta0$beta[[paste0("level",j)]]$betaCons
       if(is.null(hierBeta))
         tmpPar <- tmpCons
-      else if(!is.null(m$conditions$recharge)){
-        if(is.null(hierBeta$beta)) tmpPar <- tmpCons
-      }
       print(tmpPar)
       cat("\n")
     }

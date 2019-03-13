@@ -1,38 +1,37 @@
-formatRecharge <- function(nbStates,formula,data,covs=NULL,par=NULL,hierRecharge=NULL){
+formatRecharge <- function(nbStates,formula,data,covs=NULL,par=NULL){
   
   nbAnimals <- length(unique(data$ID))
+  dataNames <- colnames(data)
   
-  if(is.null(hierRecharge)){
-    newForm <- newFormulas(formula,nbStates)
-    newformula <- newForm$newformula
-    recharge <- newForm$recharge
-    rechargeName <- "recharge"
-    
-    aInd <- NULL
-    for(i in 1:nbAnimals){
-      aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
-    }
-    
-    if(!is.null(recharge)){
-      g0covs <- model.matrix(recharge$g0,data[aInd,])
-      recovs <- model.matrix(recharge$theta,data)
-    }
-  } else {
-    newformula <- formula
-    recharge <- hierRecharge[[1]]
-    #rechargeName <- paste0("recharge",gsub("level","",names(hierRecharge)))
-    rechargeName <- "recharge"
-    
-    aInd <- NULL
-    for(i in 1:nbAnimals){
-      aInd <- c(aInd,which(data$ID==unique(data$ID)[i] & data$level==gsub("level","",names(hierRecharge)))[1])
-    }
-    
-    if(!is.null(recharge)){
-      g0covs <- model.matrix(recharge$g0,data[aInd,])
-      recovs <- model.matrix(recharge$theta,data)
-      recovs[which(data$level!=gsub("level","",names(hierRecharge))),] <- 0
-    }
+  newForm <- newFormulas(formula,nbStates)
+  newformula <- newForm$newformula
+  formulaStates <- newForm$formulaStates
+  recharge <- newForm$recharge
+  rechargeName <- "recharge"
+  
+  aInd <- NULL
+  for(i in 1:nbAnimals){
+    aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
+  }
+  
+  if(!is.null(recharge)){
+    g0covs <- model.matrix(recharge$g0,data[aInd,])
+    recovs <- model.matrix(recharge$theta,data)
+  }
+  
+  if(!is.null(recharge)){
+    if(inherits(data,"hierarchical")){
+      tmpg0covs <- model.matrix(recharge$g0,data)
+      g0covs <- tmpg0covs[1,,drop=FALSE]
+      for(iLevel in levels(data$level)){
+        lInd <- paste0("I((level == \"",iLevel,"\") * 1)")
+        if(any(lInd %in% rownames(attr(terms(recharge$g0),"factors")))){
+          reFact <- attr(terms(recharge$g0),"factors")[lInd,,drop=FALSE]
+          g0covs[1,colnames(reFact)[which(reFact>0)]] <- tmpg0covs[which(data$level==iLevel)[1],colnames(reFact)[which(reFact>0)]]
+        }
+      }
+    } else g0covs <- model.matrix(recharge$g0,data[aInd,])
+    recovs <- model.matrix(recharge$theta,data)
   }
   
   if(!is.null(recharge)){
@@ -50,9 +49,9 @@ formatRecharge <- function(nbStates,formula,data,covs=NULL,par=NULL,hierRecharge
         data[[rechargeName]][idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
       }
     }
-    if(is.null(hierRecharge)) newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
+    #if(is.null(hierRecharge)) newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
     if(!is.null(covs)){
-      if(is.null(covs[,colnames(covs)[which(grepl(rechargeName,colnames(covs)))]])) covs[,colnames(covs)[which(grepl(rechargeName,colnames(covs)))]] <- mean(data[[rechargeName]])
+      covs[[rechargeName]] <- mean(data[[rechargeName]])
     }
   } else {
     nbG0covs <- 0
@@ -67,5 +66,5 @@ formatRecharge <- function(nbStates,formula,data,covs=NULL,par=NULL,hierRecharge
   }
   nbCovs <- ncol(tmpCovs)-1 # substract intercept column
   
-  list(data=data,newformula=newformula,recharge=recharge,covs=covs,nbCovs=nbCovs,nbG0covs=nbG0covs,nbRecovs=nbRecovs,g0covs=g0covs,recovs=recovs,aInd=aInd)
+  list(newdata=data[,which(!(names(data) %in% dataNames)),drop=FALSE],newformula=newformula,formulaStates=formulaStates,recharge=recharge,covs=covs,nbCovs=nbCovs,nbG0covs=nbG0covs,nbRecovs=nbRecovs,g0covs=g0covs,recovs=recovs,aInd=aInd)
 }

@@ -148,15 +148,6 @@ print.momentuHierHMM <- function(x,...)
   
   if(length(m$stateNames)>1){
     
-    if(!is.null(m$conditions$recharge)){
-      cat("\n")
-      cat("Recharge parameters for the transition probabilities:\n")
-      cat("-----------------------------------------------------\n")
-      g0theta <- c(m$mle$g0,m$mle$theta)
-      names(g0theta) <- c(paste0("g0:",names(m$mle$g0)),paste0("theta:",names(m$mle$theta)))
-      print(g0theta)      
-    }
-    
     if(!is.null(m$mle$pi)){
       cat("\n")
       cat("Mixture probabilities:\n")
@@ -181,13 +172,42 @@ print.momentuHierHMM <- function(x,...)
     }
     delta0 <- m$conditions$hierDelta
     
-    cat("\n\n")
-    cat("---------------------------------------------------\n")
+    if(!is.null(m$conditions$recharge)){
+      g0 <- m$mle$g0
+      theta <- m$mle$theta
+      cat("\n\n")
+      cat("---------------------------------------------------------------\n")
+      cat("Initial recharge parameter (g0):\n")
+      cat("---------------------------------------------------------------\n")
+      for(j in 1:(hierStates$height-1)){
+        tmpPar <- g0[names(beta0$beta[[paste0("level",j)]]$g0)]
+        if(length(tmpPar)){
+          cat("-------------------------- ",paste0("level",j)," ---------------------------\n")
+          print(tmpPar) 
+        }
+      }
+      cat("---------------------------------------------------------------\n")
+      cat("\n")
+      cat("---------------------------------------------------------------\n")
+      cat("Recharge function parameters (theta):\n")
+      cat("---------------------------------------------------------------\n")
+      for(j in 1:(hierStates$height-1)){
+        tmpPar <- theta[names(beta0$beta[[paste0("level",j)]]$theta)]
+        if(length(tmpPar)){
+          cat("-------------------------- ",paste0("level",j)," ---------------------------\n")
+          print(tmpPar) 
+        }
+      }
+      cat("---------------------------------------------------------------\n")
+    } else cat("\n")
+    
+    cat("\n")
+    cat("---------------------------------------------------------------\n")
     cat("Regression coeffs for the transition probabilities:\n")
-    cat("---------------------------------------------------\n")
+    cat("---------------------------------------------------------------\n")
     
     for(j in 1:(hierStates$height-1)){
-      cat("--------------------- ",paste0("level",j)," --------------------\n")
+      cat("-------------------------- ",paste0("level",j)," ---------------------------\n")
       if(j>1){
         for(jj in hierStates$Get("name",filterFun=function(x) x$level==j & x$count>0)){
           tmpPar <- beta0$beta[[paste0("level",j)]][[jj]]$beta
@@ -200,7 +220,7 @@ print.momentuHierHMM <- function(x,...)
         cat("\n")
       }
     }
-    cat("---------------------------------------------------\n")
+    cat("---------------------------------------------------------------\n")
     
     cat("\n")
     cat("---------------------------------------------------------------\n")

@@ -69,8 +69,8 @@ allProbs <- function(m)
     theta <- m$mle$theta
   }
   
-  reForm <- formatRecharge(m,data)
-  data <- reForm$data
+  reForm <- formatRecharge(nbStates,m$conditions$formula,data,par=m$mle)
+  data <- cbind(data,reForm$newdata)
   nbCovs <- reForm$nbCovs
   
   ncmean <- get_ncmean(distnames,m$conditions$fullDM,m$conditions$circularAngleMean,nbStates)

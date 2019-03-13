@@ -68,9 +68,7 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
     }
 
     formula<-model$conditions$formula
-    newForm <- newFormulas(formula,nbStates)
-    formulaStates <- newForm$formulaStates
-    formterms <- newForm$formterms
+    newForm <- newFormulas(formula,nbStates,hierarchical=TRUE)
     newformula <- newForm$newformula
     recharge <- newForm$recharge
     
@@ -83,24 +81,18 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
     }
     
     if(!is.null(recharge)){
-      g0covs <- model.matrix(recharge$g0,data[aInd,])
+      reForm <- formatRecharge(nbStates,formula,data=data,covs=covs,par=list(g0=model$mle$g0,theta=model$mle$theta))
+      newformula <- reForm$newformula
+      recharge <- reForm$recharge
+      data <- cbind(data,reForm$newdata)
+      g0covs <- reForm$g0covs
       nbG0covs <- ncol(g0covs)-1
-      recovs <- model.matrix(recharge$theta,data)
+      recovs <- reForm$recovs
       nbRecovs <- ncol(recovs)-1
-      data$recharge<-rep(0,nrow(data))
-      for(i in 1:nbAnimals){
-        idInd <- which(data$ID==unique(data$ID)[i])
-        if(nbRecovs){
-          g0 <- model$mle$g0 %*% t(g0covs[i,,drop=FALSE])
-          theta <- model$mle$theta
-          data$recharge[idInd] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
-        }
-      }
-      g0covs <- model.matrix(recharge$g0,covs)
-      g0 <- model$mle$g0 %*% t(g0covs)
-      recovs <- model.matrix(recharge$theta,covs)
-      if(is.null(covs$recharge)) covs$recharge <- mean(data$recharge) #g0 + theta%*%t(recovs)
-      newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
+      rechargeName <- "recharge"
+      if(!is.null(covs[[rechargeName]])) reForm$covs[[rechargeName]] <- covs[[rechargeName]]
+      covs <- reForm$covs
+
       covsCol <- cbind(get_all_vars(newformula,data),get_all_vars(recharge$theta,data))#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
       if(!all(names(covsCol) %in% names(data))){
         covsCol <- covsCol[,names(covsCol) %in% names(data),drop=FALSE]
@@ -116,8 +108,8 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
     
     if(inherits(model,"hierarchical")) {
       covIndex <- which(!(names(rawCovs)=="level"))
-      covs$level <- NULL
-      covs <- data.frame(covs[rep(1:nrow(covs),nlevels(model$data$level)),,drop=FALSE],level=rep(levels(model$data$level),each=nrow(covs)))
+      #covs$level <- NULL
+      #covs <- data.frame(covs[rep(1:nrow(covs),nlevels(model$data$level)),,drop=FALSE],level=rep(levels(model$data$level),each=nrow(covs)))
     } else covIndex <- 1:ncol(rawCovs)
     
     nbCovs <- ncol(model.matrix(newformula,data))-1 # substract intercept column
@@ -132,7 +124,7 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
         if(!is.factor(rawCovs[,cov])){
 
           gridLength <- 101
-          hGridLength <- gridLength*ifelse(inherits(model,"hierarchical"),nlevels(model$data$level),1)
+          hGridLength <- gridLength#gridLength*ifelse(inherits(model,"hierarchical"),nlevels(model$data$level),1)
 
           inf <- min(rawCovs[,cov],na.rm=TRUE)
           sup <- max(rawCovs[,cov],na.rm=TRUE)
@@ -147,7 +139,7 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
           tempCovs[,cov] <- rep(seq(inf,sup,length=gridLength),each=hGridLength/gridLength)
         } else {
           gridLength<- nlevels(rawCovs[,cov])
-          hGridLength <- gridLength*ifelse(inherits(model,"hierarchical"),nlevels(model$data$level),1)
+          hGridLength <- gridLength#gridLength*ifelse(inherits(model,"hierarchical"),nlevels(model$data$level),1)
           # set all covariates to their mean, except for "cov"
           tempCovs <- data.frame(matrix(covs[names(rawCovs)][[1]],nrow=hGridLength,ncol=1))
           if(ncol(rawCovs)>1)
@@ -168,34 +160,29 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
         }
 
         tmpSplineInputs<-getSplineFormula(newformula,data,tempCovs)
-
+        
+        if(inherits(model,"hierarchical")) {
+          #tmpSplineInputs$covs$level <- NULL
+          tempCovs <- tempCovs[rep(1:nrow(tempCovs),each=nlevels(model$data$level)),,drop=FALSE]
+          tempCovs$level <- rep(levels(model$data$level),times=nrow(tmpSplineInputs$covs))
+          tmpcovs <- tmpcovs[rep(1,nlevels(model$data$level)),,drop=FALSE]
+          tmpcovs$level <- levels(model$data$level)
+          if(is.null(recharge)){
+            tmpSplineInputs$covs <- tempCovs
+          }
+        }
         statPlot(model,Sigma,nbStates,tmpSplineInputs$formula,tmpSplineInputs$covs,tempCovs,tmpcovs,cov,recharge,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
     }
 }
 
 # for differentiation in delta method
 get_stat <- function(beta,covs,nbStates,i,betaRef,betaCons,workBounds=matrix(c(-Inf,Inf),length(betaCons),2,byrow=TRUE),mixture=1,ref=1:nbStates) {
-  tmpBeta <- rep(NA,length(betaCons))
-  tmpBeta[unique(c(betaCons))] <- beta
-  beta <- w2wn(matrix(tmpBeta[betaCons],nrow(betaCons),ncol(betaCons)),workBounds)
-  gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,betaRef)[,,1]
+  gamma <- get_gamma(beta,covs,nbStates,1:nbStates,1:nbStates,betaRef,betaCons,workBounds,mixture)
   solve(t(diag(length(ref))-gamma[ref,ref]+1),rep(1,length(ref)))[i]
 }
 
 get_stat_recharge <- function(beta,covs,formula,recharge,nbStates,i,betaRef,betaCons,workBounds=matrix(c(-Inf,Inf),length(betaCons)+length(beta[(max(betaCons)+1):length(beta)]),2,byrow=TRUE),mixture=1,ref=1:nbStates){
-  
-  recovs <- model.matrix(recharge$theta,covs)
-  
-  beta <- w2wn(c(beta[betaCons],beta[length(beta)-(ncol(recovs)-1):0]),workBounds)
-  
-  #g0 <- beta[length(beta)-ncol(recovs)-(ncol(g0covs)-1):0] %*% t(g0covs)
-  theta <- beta[length(beta)-(ncol(recovs)-1):0]
-  covs[,"recharge"] <- covs[,"recharge"] + theta%*%t(recovs) # g0  + theta%*%t(recovs)
-  #covs <- matrix(covs,1)
-  
-  newcovs <- model.matrix(formula,covs)
-  beta <- matrix(beta[1:(length(beta)-(ncol(recovs)))],ncol=nbStates*(nbStates-1))
-  gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(newcovs)+1:ncol(newcovs),,drop=FALSE],newcovs,betaRef)[,,1]
+  gamma <- get_gamma_recharge(beta,covs,formula,recharge,nbStates,1:nbStates,1:nbStates,betaRef,betaCons,workBounds,mixture)
   solve(t(diag(length(ref))-gamma[ref,ref]+1),rep(1,length(ref)))[i]
 }
 
@@ -240,6 +227,7 @@ statPlot<-function(model,Sigma,nbStates,formula,covs,tempCovs,tmpcovs,cov,rechar
       desMat <- model.matrix(formula,data=covs)
       probs <- stationary(model, covs=desMat)
     } else {
+      if(inherits(model,"hierarchical")) covs$level <- NULL
       probs <- stationary(model, covs=covs)
     }
     
@@ -247,7 +235,7 @@ statPlot<-function(model,Sigma,nbStates,formula,covs,tempCovs,tmpcovs,cov,rechar
     
     for(mix in 1:mixtures){
       if(!inherits(model,"hierarchical")){
-        plotCall(cov,tempCovs,probs[[mix]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,recharge,desMat,mix,Sigma,gamInd,covs,alpha,1:nbStates,model$stateNames)
+        plotCall(cov,tempCovs,probs[[mix]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,recharge,desMat,mix,Sigma,gamInd,alpha,1:nbStates,model$stateNames,formula)
         if(length(covnames)>1) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities: ",paste(covnames[-cov]," = ",tmpcovs[-cov],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
         else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities"),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
       } else {
@@ -256,7 +244,7 @@ statPlot<-function(model,Sigma,nbStates,formula,covs,tempCovs,tmpcovs,cov,rechar
             # only plot if there is variation in stationary state proabilities
             if(!all(apply(probs[[mix]][["level1"]],2,function(x) all( abs(x - mean(x)) < 1.e-6 )))){
               ref <- model$conditions$hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
-              plotCall(cov,tempCovs[which(tempCovs$level==j),],probs[[mix]][["level1"]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,recharge,desMat[which(tempCovs$level==j),],mix,Sigma,gamInd,covs[which(tempCovs$level==j),],alpha,ref,names(ref))
+              plotCall(cov,tempCovs[which(tempCovs$level==j),],probs[[mix]][["level1"]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,recharge,desMat[which(tempCovs$level==j),],mix,Sigma,gamInd,alpha,ref,names(ref),formula)
               if(length(covnames[-cov])>1) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j,": ",paste(covnames[-cov][which(covnames[-cov]!="level")]," = ",tmpcovs[which(tmpcovs$level==j),-cov][which(covnames[-cov]!="level")],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
               else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
             }
@@ -267,7 +255,7 @@ statPlot<-function(model,Sigma,nbStates,formula,covs,tempCovs,tmpcovs,cov,rechar
               ref <- t[[k]]$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
               # only plot if jth node has children and there is variation in stationary state proabilities
               if(!is.null(ref) && !all(apply(probs[[mix]][[paste0("level",j)]][[k]],2,function(x) all( abs(x - mean(x)) < 1.e-6 )))){
-                plotCall(cov,tempCovs[which(tempCovs$level==j),],probs[[mix]][[paste0("level",j)]][[k]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,recharge,desMat[which(tempCovs$level==j),],mix,Sigma,gamInd,covs[which(tempCovs$level==j),],alpha,ref,names(ref))
+                plotCall(cov,tempCovs[which(tempCovs$level==j),],probs[[mix]][[paste0("level",j)]][[k]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,recharge,desMat[which(tempCovs$level==j),],mix,Sigma,gamInd,alpha,ref,names(ref),formula)
                 if(length(covnames[-cov])>1) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j," ",k,": ",paste(covnames[-cov][which(covnames[-cov]!="level")]," = ",tmpcovs[which(tmpcovs$level==j),-cov][which(covnames[-cov]!="level")],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
                 else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j," ",k),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
               }
@@ -278,7 +266,7 @@ statPlot<-function(model,Sigma,nbStates,formula,covs,tempCovs,tmpcovs,cov,rechar
     }
 }
 
-plotCall <- function(cov,tempCovs,pr,model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,recharge,desMat,mix,Sigma,gamInd,covs,alpha,ref=1:nbStates,stateNames){
+plotCall <- function(cov,tempCovs,pr,model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,recharge,desMat,mix,Sigma,gamInd,alpha,ref=1:nbStates,stateNames,formula){
   if(!is.factor(tempCovs[,cov])){
     do.call(plot,c(list(tempCovs[,cov],pr[,1],type="l",ylim=c(0,1),col=col[ref[1]],xlab=covnames[cov], ylab="Stationary state probabilities",lwd=lwd),arg))
     for(state in 2:length(ref))
@@ -311,7 +299,7 @@ plotCall <- function(cov,tempCovs,pr,model,nbStates,covnames,lwd,arg,col,legend.
         recovs <- model.matrix(recharge$theta,tempCovs)
         nbRecovs <- ncol(recovs)-1
         tmpSig <- Sigma[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0),c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)]
-        dN<-matrix(unlist(lapply(split(covs,1:nrow(covs)),function(x) tryCatch(numDeriv::grad(get_stat_recharge,model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=formula,recharge=recharge,nbStates=nbStates,i=state,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta),mixture=mix,ref=ref),error=function(e) NA))),ncol=ncol(tmpSig),byrow=TRUE)
+        dN<-matrix(unlist(lapply(split(tempCovs,1:nrow(tempCovs)),function(x) tryCatch(numDeriv::grad(get_stat_recharge,model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=formula,recharge=recharge,nbStates=nbStates,i=state,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta),mixture=mix,ref=ref),error=function(e) NA))),ncol=ncol(tmpSig),byrow=TRUE)
       }
       
       se <- t(apply(dN, 1, function(x)

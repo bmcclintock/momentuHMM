@@ -2,13 +2,13 @@
 % Please edit documentation in R/getPar0.R
 \name{getPar0}
 \alias{getPar0}
-\alias{getPar0.momentuHMM}
-\alias{getPar0.momentuHierHMM}
+\alias{getPar0.default}
+\alias{getPar0.hierarchical}
 \title{Get starting values for new model from existing \code{momentuHMM} or \code{momentuHierHMM} model fit}
 \usage{
 getPar0(model, ...)
 
-\method{getPar0}{momentuHMM}(model, nbStates = length(model$stateNames),
+\method{getPar0}{default}(model, nbStates = length(model$stateNames),
   estAngleMean = model$conditions$estAngleMean,
   circularAngleMean = model$conditions$circularAngleMean,
   formula = model$conditions$formula,
@@ -18,7 +18,7 @@ getPar0(model, ...)
   betaRef = model$conditions$betaRef, stateNames = model$stateNames,
   ...)
 
-\method{getPar0}{momentuHierHMM}(model,
+\method{getPar0}{hierarchical}(model,
   hierStates = model$conditions$hierStates,
   estAngleMean = model$conditions$estAngleMean,
   circularAngleMean = model$conditions$circularAngleMean,

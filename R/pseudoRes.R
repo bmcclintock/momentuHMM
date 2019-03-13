@@ -131,10 +131,10 @@ pseudoRes <- function(m, ncores = 1)
   la <- logAlpha(m)
   
   # identify covariates
-  reForm <- formatRecharge(m,data,par=list(g0=g0,theta=theta))
+  reForm <- formatRecharge(nbStates,m$conditions$formula,data,par=list(g0=g0,theta=theta))
   recharge <- reForm$recharge
   newformula <- reForm$newformula
-  data <- reForm$data
+  data <- cbind(data,reForm$newdata)
   covs <- reForm$covs
   nbCovs <- reForm$nbCovs
   aInd <- reForm$aInd

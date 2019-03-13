@@ -187,7 +187,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
   stateFormula
 }
 
-newFormulas<-function(formula,nbStates)
+newFormulas<-function(formula,nbStates,hierarchical=FALSE)
 {
   stateForms<- terms(formula, specials = c(paste0(rep(c("state","toState"),each=nbStates),1:nbStates),"recharge"))
   newformula<-formula
@@ -198,11 +198,14 @@ newFormulas<-function(formula,nbStates)
   
   if(nbStates>1){
     if(length(unlist(attr(stateForms,"specials")))){
-      newForm<-attr(stateForms,"term.labels")[-unlist(attr(stateForms,"specials"))]
+      #newForm<-attr(stateForms,"term.labels")[-unlist(attr(stateForms,"specials"))]
+      newForm <- attr(stateForms,"term.labels")[-which(attr(stateForms,"factors")[unlist(attr(stateForms,"specials")),]>0)]#attr(drop.terms(stateForms,which(attr(stateForms,"factors")[unlist(attr(stateForms,"specials")),]>0)),"term.labels")
       for(i in 1:nbStates){
         if(!is.null(attr(stateForms,"specials")[[paste0("state",i)]])){
           for(j in 1:(nbStates-1)){
-            newForm<-c(newForm,gsub(paste0("state",i),paste0("betaCol",(i-1)*(nbStates-1)+j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("state",i)]]]))
+            #newForm<-c(newForm,gsub(paste0("state",i),paste0("betaCol",(i-1)*(nbStates-1)+j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("state",i)]]]))
+            stateFact <- attr(stateForms,"factors")[attr(stateForms,"specials")[[paste0("state",i)]],,drop=FALSE]
+            newForm<-c(newForm,gsub(paste0("state",i),paste0("betaCol",(i-1)*(nbStates-1)+j),colnames(stateFact)[which(stateFact>0)]))
           }
         }
         if(!is.null(attr(stateForms,"specials")[[paste0("toState",i)]])){
@@ -212,15 +215,22 @@ newFormulas<-function(formula,nbStates)
           betaInd<-t(betaInd)[,i]
           betaInd<-betaInd[!is.na(betaInd)]
           for(j in betaInd){
-            newForm<-c(newForm,gsub(paste0("toState",i),paste0("betaCol",j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("toState",i)]]]))
+            #newForm<-c(newForm,gsub(paste0("toState",i),paste0("betaCol",j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("toState",i)]]]))
+            stateFact <- attr(stateForms,"factors")[attr(stateForms,"specials")[[paste0("state",i)]],,drop=FALSE]
+            newForm<-c(newForm,gsub(paste0("toState",i),paste0("betaCol",j),colnames(stateFact)[which(stateFact>0)]))
           }
         }
       }
       if(!is.null(attr(stateForms,"specials")$recharge)){
-        recharge <- eval(parse(text=attr(stateForms,"term.labels")[which(grepl("recharge",attr(stateForms,"term.labels")))]))
+        reSub <- rownames(attr(stateForms,"factors"))[attr(stateForms,"specials")$recharge]
+        recharge <- eval(parse(text=reSub))
         #recharge <- stateFormulas(as.formula(paste("~",paste(attr(stateForms,"term.labels")[which(grepl("recharge",attr(stateForms,"term.labels")))]))),1)[[1]]
+        if(!hierarchical){
+          reFact <- attr(stateForms,"factors")[attr(stateForms,"specials")$recharge,,drop=FALSE]
+          newForm <- c(newForm,gsub(reSub,"recharge",colnames(reFact)[which(reFact>0)],fixed=TRUE))
+        }
         if(length(newForm)){
-          newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
+          newformula<-as.formula(paste("~",ifelse(attr(terms(formula),"intercept"),"","0+"),paste(newForm,collapse="+")))
         } else {
           newformula <- ~1
         }

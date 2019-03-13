@@ -332,8 +332,8 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   #fullDM<-DMinputs$fullDM
   
   # identify covariates
-  reForm <- formatRecharge(m,mhdata,tempCovs,lapply(Par$beta,function(x) x$est))
-  mhdata <- reForm$data
+  reForm <- formatRecharge(nbStates,m$conditions$formula,mhdata,covs=tempCovs,par=lapply(Par$beta,function(x) x$est))
+  mhdata <- cbind(mhdata,reForm$newdata)
   recharge <- reForm$recharge
   newformula <- reForm$newformula
   tempCovs <- reForm$covs
@@ -622,13 +622,11 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   if(inherits(mh,"hierarchical")){
     inputHierHMM <- formatHierHMM(mh$data,mh$conditions$hierStates,mh$conditions$hierDist,hierBeta=NULL,hierDelta=NULL,mh$conditions$hierFormula,mh$conditions$hierFormulaDelta,mh$conditions$mixtures)
-    hier <- mapHier(mh$Par$beta$beta$est,mh$Par$beta$pi$est,mh$Par$beta$delta$est,mh$conditions$hierBeta,mh$conditions$hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,mh$conditions$hierStates,mh$conditions$formula,mh$conditions$formulaDelta,mh$data,mh$conditions$mixtures,mh$Par$beta$g0,mh$Par$beta$theta,fill=FALSE)
+    hier <- mapHier(mh$Par$beta$beta$est,mh$Par$beta$pi$est,mh$Par$beta$delta$est,mh$conditions$hierBeta,mh$conditions$hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,mh$conditions$hierStates,inputHierHMM$newformula,mh$conditions$formulaDelta,inputHierHMM$data,mh$conditions$mixtures,inputHierHMM$recharge)
     mh$conditions$hierBeta <- hier$hierBeta
     mh$conditions$hierDelta <- hier$hierDelta
     
-    hierGammaDelta <- hierGamma(mh)
-    mh$Par$real$hierDelta <- hierGammaDelta$hierDelta
-    mh$Par$real$hierGamma <- hierGammaDelta$hierGamma
+    mh$Par$real <- CIreal.hierarchical(mh)
   }
   
   return(mh)

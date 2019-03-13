@@ -144,18 +144,18 @@ formatHierHMM <- function(data,hierStates,hierDist,
   
   if(!is.null(data)){
     
-    covs <- model.matrix(formula,data)
-    for(j in paste0("level",levels(data$level))){
-      if(!is.null(recharge[[j]])){
-        reForm <- formatRecharge(nbStates,formula,data=data,par=list(g0=hierBeta[[j]]$Get("g0")[[j]],theta=hierBeta[[j]]$Get("theta")[[j]]),hierRecharge=recharge[j])
-        data <- reForm$data
-        covs <- reForm$covs
-        recharge[[j]]$nbG0covs <- reForm$nbG0covs
-        recharge[[j]]$nbRecovs <- reForm$nbRecovs
-        recharge[[j]]$g0covs <- reForm$g0covs
-        recharge[[j]]$recovs <- reForm$recovs
-      }
-    }
+    if(!is.null(recharge)){
+      reParms <- getRechargeParms(recharge,data,hierBeta)
+      g0 <- reParms$g0
+      theta <- reParms$theta
+      rePar <- list(g0=g0,theta=theta)
+    } else rePar <- NULL
+    
+    reForm <- formatRecharge(nbStates,formula,data=data,par=rePar)
+    newformula <- reForm$newformula
+    data <- cbind(data,reForm$newdata)
+    aInd <- reForm$aInd
+    covs <- model.matrix(newformula,data)
     nbCovs <- ncol(covs)
     
     fixPar <- list()
@@ -165,11 +165,6 @@ formatHierHMM <- function(data,hierStates,hierDist,
     
     betaCons <- matrix(1:(nbCovs*mixtures*nbStates*(nbStates-1)),nbCovs*mixtures,nbStates*(nbStates-1))
     dimnames(betaCons)<-dimnames(fixPar$beta)
-    
-    aInd <- NULL
-    nbAnimals <- length(unique(data$ID))
-    for(i in 1:nbAnimals)
-      aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
     
     covsDelta <- model.matrix(formulaDelta,data[aInd,,drop=FALSE])
     nbCovsDelta <- ncol(covsDelta)
@@ -381,25 +376,26 @@ formatHierHMM <- function(data,hierStates,hierDist,
     fixInd <- which(fixPar$beta==-1.e+10)
     if(length(fixInd)) betaCons[fixInd] <- fixInd[1]
     
-    Pi <- g0 <- theta <- NULL
+    Pi <- NULL
     if(!is.null(hierBeta)){
       if(mixtures>1){
         #if(!is.list(hierBeta) || !all(names(hierBeta) %in% c("beta","pi","g0","theta"))) stop("hierBeta must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
         if(!is.list(hierBeta) || !all(names(hierBeta) %in% c("beta","pi"))) stop("hierBeta must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
         Pi <- hierBeta$pi
       }
-      #if(!is.null(recharge)){
-      #  if(!is.list(hierBeta) || !all(names(hierBeta) %in% c("beta","pi","g0","theta"))) stop("hierBeta must be a list with elements named 'beta', 'g0', and/or 'theta' when including a recharge model")
-      #  g0 <- hierBeta$g0
-      #  theta <- hierBeta$theta
-      #}
+      if(!is.null(recharge)){
+        #  if(!is.list(hierBeta) || !all(names(hierBeta) %in% c("beta","pi","g0","theta"))) stop("hierBeta must be a list with elements named 'beta', 'g0', and/or 'theta' when including a recharge model")
+        #  g0 <- hierBeta$g0
+        #  theta <- hierBeta$theta
+        if(is.list(hierBeta) && any(names(hierBeta) %in% c("g0","theta"))) stop("for hierarchical recharge models, initial values for g0 and theta must be specified within the corresponding levels of hierBeta")
+      }
       if(is.list(hierBeta)) hierBeta <- hierBeta$beta
     }
     
-    cons <- mapCons(hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,formula,formulaDelta,data,mixtures)
-    fix  <- mapPar(hierBeta,hierDelta,fixPar,betaCons,cons$deltaCons,hierStates,formula,formulaDelta,data,mixtures,field="fixPar",check=FALSE)
-    par  <- mapPar(hierBeta,hierDelta,fixPar,betaCons,cons$deltaCons,hierStates,formula,formulaDelta,data,mixtures,field="beta")
-    wb   <- mapBounds(hierBeta,hierDelta,fixPar,betaCons,cons$deltaCons,hierStates,formula,formulaDelta,data,mixtures)
+    cons <- mapCons(hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,newformula,formulaDelta,data,mixtures)
+    fix  <- mapPar(hierBeta,hierDelta,fixPar,betaCons,cons$deltaCons,hierStates,newformula,formulaDelta,data,mixtures,field="fixPar",check=FALSE)
+    par  <- mapPar(hierBeta,hierDelta,fixPar,betaCons,cons$deltaCons,hierStates,newformula,formulaDelta,data,mixtures,field="beta")
+    wb   <- mapBounds(hierBeta,hierDelta,fixPar,betaCons,cons$deltaCons,hierStates,newformula,formulaDelta,data,mixtures)
     
     beta0 <- par$beta
     delta0 <- par$delta
@@ -415,15 +411,6 @@ formatHierHMM <- function(data,hierStates,hierDist,
       if(is.null(hierDelta)) beta0[which(is.na(beta0))] <- 0
     }
     
-    #if(mixtures>1 | !is.null(recharge)){
-    if(mixtures>1){
-      beta0 <- list(beta=beta0)
-      if(mixtures>1) beta0$pi <- Pi
-      #if(!is.null(recharge)){
-      #  beta0$g0 <- g0
-      #  beta0$theta <- theta
-      #}
-    }
     if(mixtures==1){
       if(!is.null(fixPar$beta)) rownames(fixPar$beta) <- colnames(covs)
       if(!is.null(fixPar$delta)) rownames(fixPar$delta) <- colnames(covsDelta)
@@ -437,8 +424,17 @@ formatHierHMM <- function(data,hierStates,hierDist,
       if(!is.null(delta0)) rownames(delta0) <- colnames(covsDelta)
     }
     
+    if(mixtures>1 | !is.null(recharge)){
+      beta0 <- list(beta=beta0)
+      if(mixtures>1) beta0$pi <- Pi
+      if(!is.null(recharge)){
+        beta0$g0 <- g0
+        beta0$theta <- theta
+      }
+    }
+    
     # populate hierBeta and hierDelta if not provided
-    hier <- mapHier(beta0,Pi,delta0,hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,formula,formulaDelta,data,mixtures,g0,theta)
+    hier <- mapHier(beta0,Pi,delta0,hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,newformula,formulaDelta,data,mixtures)
     hierBeta <- hier$hierBeta
     hierDelta <- hier$hierDelta
     
@@ -446,7 +442,7 @@ formatHierHMM <- function(data,hierStates,hierDist,
 
   if(all(unlist(lapply(recharge,is.null)))) recharge <- NULL
 
-  return(list(data=data,nbStates=nbStates,dist=dist,formula=formula,formulaDelta=formulaDelta,beta=beta0,delta=delta0,hierBeta=hierBeta,hierDelta=hierDelta,betaRef=betaRef,betaCons=cons$betaCons,deltaCons=cons$deltaCons,fixPar=fix,workBounds=workBounds,stateNames=stateNames,hBetaCons=betaCons,hDeltaCons=deltaCons,hFixPar=fixPar,recharge=recharge))
+  return(list(data=data,nbStates=nbStates,dist=dist,formula=formula,newformula=newformula,formulaDelta=formulaDelta,beta=beta0,delta=delta0,hierBeta=hierBeta,hierDelta=hierDelta,betaRef=betaRef,betaCons=cons$betaCons,deltaCons=cons$deltaCons,fixPar=fix,workBounds=workBounds,stateNames=stateNames,hBetaCons=betaCons,hDeltaCons=deltaCons,hFixPar=fixPar,recharge=recharge))
 
 }
 
@@ -721,7 +717,41 @@ mapBounds <- function(hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,fo
   return(list(beta = beta, delta = delta))
 }
 
-mapHier <- function(beta,pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,formula,formulaDelta,data,mixtures,g0=NULL,theta=NULL,fill=FALSE){
+getRechargeParms <- function(recharge,data,hierBeta){
+
+  hierG0 <- hierTheta <- list()
+  g0 <- numeric()
+  theta <- numeric()
+  for(j in names(recharge)){
+    tmpg0covs <- model.matrix(recharge[[j]]$g0,data)
+    tmpnbG0 <- ncol(tmpg0covs)
+    tmpG0 <- hierBeta[[j]]$g0
+    if(!is.null(tmpG0)){
+      if(length(tmpG0)!=tmpnbG0 | any(!is.numeric(tmpG0))) stop("hierBeta$",j,"$g0 must be a numeric vector of length ",tmpnbG0)
+      hierG0[[j]] <- tmpG0
+    } else {
+      hierG0[[j]] <- rep(0,tmpnbG0)
+    }
+    names(hierG0[[j]]) <- colnames(tmpg0covs)
+    g0 <- c(g0,hierG0[[j]])
+    
+    tmprecovs <- model.matrix(recharge[[j]]$theta,data)
+    tmpnbRecovs <- ncol(tmprecovs)
+    tmpTheta <- hierBeta[[j]]$theta
+    if(!is.null(tmpTheta)){
+      if(length(tmpTheta)!=tmpnbRecovs | any(!is.numeric(tmpTheta))) stop("hierBeta$",j,"$theta must be a numeric vector of length ",tmpnbRecovs)
+      hierTheta[[j]] <- tmpTheta
+    } else {
+      hierTheta[[j]] <- c(-1,rep(0,tmpnbRecovs-1))
+    }
+    names(hierTheta[[j]]) <- colnames(tmprecovs)
+    theta <- c(theta,hierTheta[[j]])
+  }
+
+  list(g0=g0,theta=theta,hierG0=hierG0,hierTheta=hierTheta)
+}
+
+mapHier <- function(beta,Pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,formula,formulaDelta,data,mixtures,recharge=NULL,fill=FALSE){
   
   if(is.null(hierBeta)){
     hierBeta <- Node$new("hierBeta")
@@ -879,14 +909,16 @@ mapHier <- function(beta,pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,h
     }
   }
   
-  recharge <- newFormulas(formula,length(hierStates$Get("state",filterFun=data.tree::isLeaf)))$recharge
-  if(mixtures>1 | !is.null(recharge)){
-    whierBeta <- list(beta=whierBeta)
-    if(mixtures>1) whierBeta$pi <- pi
-    if(!is.null(recharge)){
-      whierBeta$g0 <- g0
-      whierBeta$theta <- theta
+  if(!is.null(recharge)){
+    reParms <- getRechargeParms(recharge,data,hierBeta)
+    for(j in names(recharge)){
+      whierBeta[[j]]$g0 <- reParms$hierG0[[j]]
+      whierBeta[[j]]$theta <- reParms$hierTheta[[j]]
     }
+  }
+  
+  if(mixtures>1){
+    whierBeta <- list(beta=whierBeta, pi=Pi)
   }
   return(list(hierBeta=whierBeta,hierDelta=whierDelta))
 }
