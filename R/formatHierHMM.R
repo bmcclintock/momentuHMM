@@ -153,7 +153,11 @@ formatHierHMM <- function(data,hierStates,hierDist,
     
     reForm <- formatRecharge(nbStates,formula,data=data,par=rePar)
     newformula <- reForm$newformula
+    coords <- attr(data,"coords")
+    coordLevel <- attr(data,"coordLevel")
     data <- cbind(data,reForm$newdata)
+    attr(data,"coords") <- coords
+    attr(data,"coordLevel") <- coordLevel
     aInd <- reForm$aInd
     covs <- model.matrix(newformula,data)
     nbCovs <- ncol(covs)

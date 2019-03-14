@@ -334,6 +334,8 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   # identify covariates
   reForm <- formatRecharge(nbStates,m$conditions$formula,mhdata,covs=tempCovs,par=lapply(Par$beta,function(x) x$est))
   mhdata <- cbind(mhdata,reForm$newdata)
+  attr(mhdata,'coords') <- attr(m$data,'coords')
+  attr(mhdata,'coordLevel') <- attr(m$data,'coordLevel')
   recharge <- reForm$recharge
   newformula <- reForm$newformula
   tempCovs <- reForm$covs
@@ -587,13 +589,14 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     } else mh$conditions$fixPar$delta <- rep(NA,length(deltInd))
   }
   
-  coordNames <- c("x","y")
+  coordNames <- attr(m$data,"coords")
   
   mvnorm2Ind <- 1
   if(!is.null(m$conditions$mvnCoords)){
+    coordNames <- c("x","y")
     if(m$conditions$dist[[m$conditions$mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) mvnorm2Ind <- 0#coordNames <- c("x","y","z")
     coordNames <- paste0(m$conditions$mvnCoords,".",coordNames)
-  }
+  } else if(is.null(coordNames)) coordNames <- c("x","y")
   
   errorEllipse<-NULL
   if(all(coordNames %in% names(mh$data)) & mvnorm2Ind){

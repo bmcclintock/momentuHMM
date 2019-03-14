@@ -44,6 +44,7 @@ prepData <- function(data, ...) {
 #' or \code{\link{MIfitHMM}}.
 #' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{data} or \code{spatialCovs} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 #' using \code{\link{circAngles}}.
+#' @param altCoordNames Character string indicating an alternative name for the returned location data. If provided, then \code{prepData} will return easting (or longitude) coordinate names as \code{paste0(altCoordNames,".x")} and northing (or latitude) as \code{paste0(altCoordNames,".y")} instead of \code{x} and \code{y}, respectively. This can be useful for location data that are intended to be modeled using a bivariate normal distribution (see \code{\link{fitHMM}}). Ignored unless \code{coordNames} are provided.
 
 #' @return An object \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}}, i.e., a dataframe of:
 #' \item{ID}{The ID(s) of the observed animal(s)}
@@ -104,8 +105,8 @@ prepData <- function(data, ...) {
 #' 
 #' @export
 #' @importFrom sp spDistsN1
-#' @importFrom raster cellFromXY getValues getZ
-prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL,...)
+#' @importFrom raster cellFromXY getValues getZ is.factor levels
+prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames=NULL, ...)
 {
   if(is.crwData(data)){
     predData <- data$crwPredict
@@ -116,7 +117,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
     znames <- unique(unlist(lapply(spatialCovs,function(x) names(attributes(x)$z))))
     if(length(znames))
       if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(data)),"$crwPredict")
-    omitNames <- c("ID","x","y",covNames,names(spatialCovs),znames)
+    omitNames <- c("ID","mu.x","mu.y","x","y",covNames,names(spatialCovs),znames)
     if(!is.null(centers)) {
       if(!is.null(rownames(centers))){
         omitNames <- c(omitNames,paste0(rep(rownames(centers),each=2),c(".dist",".angle")))
@@ -137,6 +138,11 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
     coordNames <- c("x","y")
   }
   
+  if(!is.null(coordNames)){
+    if(!is.null(altCoordNames) && (!is.character(altCoordNames) | length(altCoordNames)>1)) stop("'altCoordNames' must be a character string")
+    outNames <- c("x","y")
+    if(!is.null(altCoordNames)) outNames <- paste0(altCoordNames,".",outNames)
+  }
   
   if(!is.data.frame(data)) stop("data must be a data frame")
   if(any(dim(data)==0)) stop("data is empty")
@@ -145,7 +151,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
   hierArgs <- list(...)
   if("hierLevels" %in% names(hierArgs)){
     return(prepData.hierarchical(data, type, coordNames, covNames, spatialCovs, centers, centroids, angleCovs, ...))
-  }
+  } else if("coordLevel" %in% names(hierArgs)) stop("'coordLevel' cannot be specified unless 'hierLevels' is also specified")
   
   distnames<-names(data)
   if(any(c("step","angle") %in% distnames) & !is.null(coordNames)) stop("data objects cannot be named 'step' or 'angle';\n  these names are reserved for step lengths and turning angles calculated from coordinates")
@@ -270,12 +276,13 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
   } else covs<-NULL
   
   if(!is.null(coordNames)) {
-    dataHMM <- cbind(dataHMM,x=x,y=y)
+    dataHMM[[outNames[1]]] <- x
+    dataHMM[[outNames[2]]] <- y
     class(dataHMM$angle)<-c(class(dataHMM$angle), "angle")
     if(nbSpatialCovs){
       spCovs<-numeric()
       xy<-dataHMM
-      sp::coordinates(xy)<-c("x","y")
+      sp::coordinates(xy) <- outNames
       for(j in 1:nbSpatialCovs){
         getCells<-raster::cellFromXY(spatialCovs[[j]],xy)
         if(any(is.na(getCells))) stop("Location data are beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
@@ -296,6 +303,11 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
       }
       spCovs<-data.frame(spCovs)
       names(spCovs)<-spatialcovnames
+      for(j in spatialcovnames){
+        if(any(raster::is.factor(spatialCovs[[j]]))){
+          spCovs[[j]] <- factor(spCovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
+        }
+      }
       #data<-cbind(data,spCovs)
       if(is.null(covs)) covs <- spCovs
       else covs<-cbind(covs,spCovs)
@@ -356,13 +368,15 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
     if(!is.null(angleCovs)){
       if(!all(angleCovs %in% colnames(covs))) stop('angleCovs not found in data or spatialCovs')
       for(i in angleCovs){
-        covs[[i]]<-circAngles(covs[[i]],dataHMM)
+        covs[[i]]<-circAngles(covs[[i]],dataHMM,coordNames=outNames)
       }
     }
   }
   if(!is.null(covs)) dataHMM <- cbind(dataHMM,covs)
   
   dataHMM$ID<-as.factor(dataHMM$ID)
+  
+  if(!is.null(coordNames)) attr(dataHMM,"coords") <- outNames
   
   return(momentuHMMData(dataHMM))
 }
@@ -378,7 +392,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
 #' @export
 #' @importFrom sp spDistsN1
 #' @importFrom raster cellFromXY getValues getZ
-prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, hierLevels, coordLevel, ...)
+prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames = NULL, hierLevels, coordLevel, ...)
 {
   if(is.crwHierData(data)){
     predData <- data$crwPredict
@@ -389,7 +403,7 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     znames <- unique(unlist(lapply(spatialCovs,function(x) names(attributes(x)$z))))
     if(length(znames))
       if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(data)),"$crwPredict")
-    omitNames <- c("ID","x","y",covNames,names(spatialCovs),znames)
+    omitNames <- c("ID","mu.x","mu.y","x","y",covNames,names(spatialCovs),znames)
     if(!is.null(centers)) {
       if(!is.null(rownames(centers))){
         omitNames <- c(omitNames,paste0(rep(rownames(centers),each=2),c(".dist",".angle")))
@@ -411,6 +425,13 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     coordLevel <- attr(data$crwPredict,"coordLevel")
     data <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(is.na(predData$locType) | predData$locType!="o"),]
   }
+  
+  if(!is.null(coordNames)){
+    if(!is.null(altCoordNames) && (!is.character(altCoordNames) | length(altCoordNames)>1)) stop("'altCoordNames' must be a character string")
+    outNames <- c("x","y")
+    if(!is.null(altCoordNames)) outNames <- paste0(altCoordNames,".",outNames)
+  }
+  
   if(!is.data.frame(data)) stop("data must be a data frame")
   if(any(dim(data)==0)) stop("data is empty")
   distnames<-names(data)#[which(!(names(data) %in% "level"))]
@@ -476,7 +497,7 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
   if(!is.null(coordNames)){
     if(length(which(coordNames %in% names(data)))<2)
       stop("coordNames not found in data")
-    if(any(names(data)[which(!(names(data) %in% coordNames))] %in% c("x","y"))) stop("non-coordinate data objects cannot be named 'x' or 'y'")
+    if(any(names(data)[which(!(names(data) %in% coordNames))] %in% coordNames)) stop("non-coordinate data objects cannot be named ",coordNames[1]," or ",coordNames[2])
     x <- data[,coordNames[1]]
     y <- data[,coordNames[2]]
     lx <- levelData[,coordNames[1]]
@@ -555,14 +576,15 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
   } else covs<-NULL
   
   if(!is.null(coordNames)) {
-    dataHMM <- cbind(dataHMM,x=x,y=y)
+    dataHMM[[outNames[1]]] <- x
+    dataHMM[[outNames[2]]] <- y
     if(nbSpatialCovs | !is.null(centers) | !is.null(centroids) | !is.null(angleCovs)){
-      # fill in location data for other levels of the hierarchy
+      # temporarily fill in location data for other levels of the hierarchy to get spatial covariates
       for(zoo in 1:nbAnimals){
         iInd <- which(ID==unique(ID)[zoo])
-        X <- dataHMM$x[iInd]
+        X <- dataHMM[[outNames[1]]][iInd]
         X[1] <- X[which.max(!is.na(X))]
-        Y <- dataHMM$y[iInd]
+        Y <- dataHMM[[outNames[2]]][iInd]
         Y[1] <- Y[which.max(!is.na(Y))]
         for(k in 1:(length(iInd)-1)){
           if(is.na(X[k+1])){
@@ -572,17 +594,17 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
             Y[k+1] <- Y[k]
           }
         }
-        dataHMM$x[iInd] <- X
-        dataHMM$y[iInd] <- Y
+        dataHMM[[outNames[1]]][iInd] <- X
+        dataHMM[[outNames[2]]][iInd] <- Y
       }
-      x <- dataHMM$x
-      y <- dataHMM$y
+      x <- dataHMM[[outNames[1]]]
+      y <- dataHMM[[outNames[2]]]
     }
     class(dataHMM$angle)<-c(class(dataHMM$angle), "angle")
     if(nbSpatialCovs){
       spCovs<-numeric()
       xy<-dataHMM
-      sp::coordinates(xy)<-c("x","y")
+      sp::coordinates(xy) <- outNames
       for(j in 1:nbSpatialCovs){
         getCells<-raster::cellFromXY(spatialCovs[[j]],xy)
         if(any(is.na(getCells))) stop("Location data are beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
@@ -603,6 +625,11 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
       }
       spCovs<-data.frame(spCovs)
       names(spCovs)<-spatialcovnames
+      for(j in spatialcovnames){
+        if(any(raster::is.factor(spatialCovs[[j]]))){
+          spCovs[[j]] <- factor(spCovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
+        }
+      }
       #data<-cbind(data,spCovs)
       if(is.null(covs)) covs <- spCovs
       else covs<-cbind(covs,spCovs)
@@ -663,13 +690,21 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     if(!is.null(angleCovs)){
       if(!all(angleCovs %in% colnames(covs))) stop('angleCovs not found in data or spatialCovs')
       for(i in angleCovs){
-        covs[[i]]<-circAngles(covs[[i]],dataHMM)
+        covs[[i]]<-circAngles(covs[[i]],dataHMM,coordNames=outNames)
       }
     }
   }
   if(!is.null(covs)) dataHMM <- cbind(dataHMM,covs)
   
   dataHMM$ID<-as.factor(dataHMM$ID)
+  
+  # return coordNames to NA if not at coordLevel
+  dataHMM[which(dataHMM$level!=coordLevel),outNames] <- NA
+  
+  if(!is.null(coordNames)) {
+    attr(dataHMM,"coords") <- outNames
+    attr(dataHMM,"coordLevel") <- coordLevel
+  }
   
   return(momentuHierHMMData(dataHMM))
 }

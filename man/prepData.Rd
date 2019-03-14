@@ -10,12 +10,13 @@ prepData(data, ...)
 
 \method{prepData}{default}(data, type = c("UTM", "LL"),
   coordNames = c("x", "y"), covNames = NULL, spatialCovs = NULL,
-  centers = NULL, centroids = NULL, angleCovs = NULL, ...)
+  centers = NULL, centroids = NULL, angleCovs = NULL,
+  altCoordNames = NULL, ...)
 
 \method{prepData}{hierarchical}(data, type = c("UTM", "LL"),
   coordNames = c("x", "y"), covNames = NULL, spatialCovs = NULL,
-  centers = NULL, centroids = NULL, angleCovs = NULL, hierLevels,
-  coordLevel, ...)
+  centers = NULL, centroids = NULL, angleCovs = NULL,
+  altCoordNames = NULL, hierLevels, coordLevel, ...)
 }
 \arguments{
 \item{data}{Either a data frame of data streams or a \code{\link{crwData}} (or \code{\link{crwHierData}}) object (as returned by \code{\link{crawlWrap}}). If \code{data} is a data frame, it can optionally include a field \code{ID}
@@ -59,6 +60,8 @@ or \code{\link{MIfitHMM}}.}
 
 \item{angleCovs}{Character vector indicating the names of any circular-circular regression angular covariates in \code{data} or \code{spatialCovs} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 using \code{\link{circAngles}}.}
+
+\item{altCoordNames}{Character string indicating an alternative name for the returned location data. If provided, then \code{prepData} will return easting (or longitude) coordinate names as \code{paste0(altCoordNames,".x")} and northing (or latitude) as \code{paste0(altCoordNames,".y")} instead of \code{x} and \code{y}, respectively. This can be useful for location data that are intended to be modeled using a bivariate normal distribution (see \code{\link{fitHMM}}). Ignored unless \code{coordNames} are provided.}
 
 \item{hierLevels}{Character vector indicating the levels of the hierarchy and their order, from top (coarsest scale) to bottom (finest scale), that are included in \code{data$level}. For example, for a 2-level hierarchy then 
 \code{hierLevels=c("1","2i","2")} indicates \code{data$level} for each observation can be one of three factor levels: "1" (coarse scale), "2i" (initial fine scale), and "2" (fine scale).  Ignored if \code{data} is a \code{\link{crwHierData}} object.}

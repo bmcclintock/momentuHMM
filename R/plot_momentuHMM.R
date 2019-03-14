@@ -114,12 +114,13 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       invokeRestart("muffleWarning")
   }
   
-  coordNames <- c("x","y")
+  coordNames <- attr(m$data,"coords")
   
   if(!is.null(m$conditions$mvnCoords)){
+    coordNames <- c("x","y")
     if(m$conditions$dist[[m$conditions$mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) coordNames <- c("x","y","z")
     coordNames <- paste0(m$conditions$mvnCoords,".",coordNames)
-  }
+  } else if(is.null(coordNames)) coordNames <- c("x","y")
   
   ######################
   ## Prepare the data ##
@@ -447,7 +448,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     if(inputs$dist[[i]] %in% angledists)
       if(i=="angle" & ("step" %in% distnames))
         if(inputs$dist$step %in% stepdists & m$conditions$zeroInflation$step)
-          if(all(c("x","y") %in% names(m$data)))
+          if(all(coordNames %in% names(m$data)))
             infInd <- TRUE
     
     #get covariate names
@@ -1012,7 +1013,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           if(plotTracks){
             # plot trajectory
             if(length(coordNames)==2){
-              do.call(plot,c(list(x=x[[zoo]],y=y[[zoo]],pch=16,xlab="x",ylab="y",col=col[subStates],cex=cex,asp=asp),arg))
+              do.call(plot,c(list(x=x[[zoo]],y=y[[zoo]],pch=16,xlab=coordNames[1],ylab=coordNames[2],col=col[subStates],cex=cex,asp=asp),arg))
               
               do.call(segments,c(list(x0=x[[zoo]][-length(x[[zoo]])],y0=y[[zoo]][-length(x[[zoo]])],x1=x[[zoo]][-1],y1=y[[zoo]][-1],
                        col=col[subStates[-length(subStates)]],lwd=lwd),arg))
@@ -1025,7 +1026,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
               ## interactive 3d plot
               #do.call(plotly::plot_ly,list(x=x[[zoo]],y=y[[zoo]],z=z[[zoo]],type='scatter3d',mode='lines',
               #                             opacity = 1, line = list(width = 6, color = col[subStates])))  %>% plotly::layout(title=paste("ID",ID[zoo]))
-              plot3d <- scatterplot3d::scatterplot3d(x = x[[zoo]], y = y[[zoo]], z = z[[zoo]],color=col[subStates],type="o",pch=20,xlab="x",ylab="y",zlab="z",box=FALSE)
+              plot3d <- scatterplot3d::scatterplot3d(x = x[[zoo]], y = y[[zoo]], z = z[[zoo]],color=col[subStates],type="o",pch=20,xlab=coordNames[1],ylab=coordNames[2],zlab=coordNames[3],box=FALSE)
               plot2d <- plot3d$xyz.convert(x = x[[zoo]], y = y[[zoo]], z = z[[zoo]])
               do.call(segments,c(list(x0=plot2d$x[-length(plot2d$x)],y0=plot2d$y[-length(plot2d$y)],x1=plot2d$x[-1],y1=plot2d$y[-1],
                                       col=col[subStates[-length(subStates)]],lwd=lwd),arg))
@@ -1345,6 +1346,10 @@ getCovs <-function(m,covs,ID,checkHier=TRUE){
       if(!all(names(covs) %in% c(names(m$data),"recharge"))) stop('invalid covs specified')
     if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(m$data$ID))
     if(checkHier && inherits(m,"hierarchical") && any(names(covs) %in% "level")) stop("covs$level cannot be specified for hierarchical models")
+    for(j in names(m$data)[which(names(m$data) %in% names(covs))]){
+      if(inherits(m$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(m$data[[j]]))
+      if(is.na(covs[[j]])) stop("check covs value for ",j)
+    }  
     for(j in names(m$data)[which(!(names(m$data) %in% names(covs)))]){
       if(any(class(m$data[[j]]) %in% meansList)){
         if(inherits(m$data[[j]],"angle")) covs[[j]] <- CircStats::circ.mean(m$data[[j]][!is.na(m$data[[j]])])
@@ -1355,10 +1360,6 @@ getCovs <-function(m,covs,ID,checkHier=TRUE){
         covs[[j]] <- m$data[[j]][covInd]
       }
     }
-    for(j in names(m$data)[which(names(m$data) %in% names(covs))]){
-      if(inherits(m$data[[j]],"factor")) covs[[j]] <- factor(covs[[j]],levels=levels(m$data[[j]]))
-      if(is.na(covs[[j]])) stop("check covs value for ",j)
-    }  
   }
   covs
 }

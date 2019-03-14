@@ -343,7 +343,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
               locs<-rbind(locs,tmp$alpha.sim[,c("mu.x","mu.y")])
           }
           df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
-          pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs),error=function(e) e)
+          pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=mvnCoords),error=function(e) e)
           if(inherits(pD,"momentuHMMData") & !is.null(mvnCoords)){
             names(pD)[which(names(pD) %in% c("x","y"))] <- paste0(mvnCoords,c(".x",".y"))
             attr(pD,'coords') <- paste0(mvnCoords,c(".x",".y"))
@@ -632,11 +632,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                               df[which(df$locType=="p"),"x"] <- locs[which(locs$locType=="p"),"x"]
                               df[which(df$locType=="p"),"y"] <- locs[which(locs$locType=="p"),"y"]
                               df$locType <- NULL
-                              pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,coordLevel=attr(predData,"coordLevel"),hierLevels=levels(predData$level)),error=function(e) e)
-                              if(inherits(pD,"momentuHierHMMData") & !is.null(mvnCoords)){
-                                names(pD)[which(names(pD) %in% c("x","y"))] <- paste0(mvnCoords,c(".x",".y"))
-                                attr(pD,'coords') <- paste0(mvnCoords,c(".x",".y"))
-                              }
+                              pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=mvnCoords,coordLevel=attr(predData,"coordLevel"),hierLevels=levels(predData$level)),error=function(e) e)
                               pD
                             }
                           ,warning=muffleRNGwarning)
