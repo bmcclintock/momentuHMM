@@ -281,7 +281,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
     class(dataHMM$angle)<-c(class(dataHMM$angle), "angle")
     if(nbSpatialCovs){
       spCovs<-numeric()
-      xy<-dataHMM
+      xy<-as.data.frame(dataHMM[,outNames])
       sp::coordinates(xy) <- outNames
       for(j in 1:nbSpatialCovs){
         getCells<-raster::cellFromXY(spatialCovs[[j]],xy)
@@ -603,7 +603,7 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     class(dataHMM$angle)<-c(class(dataHMM$angle), "angle")
     if(nbSpatialCovs){
       spCovs<-numeric()
-      xy<-dataHMM
+      xy<-as.data.frame(dataHMM[,outNames])
       sp::coordinates(xy) <- outNames
       for(j in 1:nbSpatialCovs){
         getCells<-raster::cellFromXY(spatialCovs[[j]],xy)

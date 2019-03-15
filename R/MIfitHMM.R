@@ -296,7 +296,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
           tmpdistnames <- tmpdistnames[which(!(tmpdistnames %in% attr(predData,'coord')))]
         }
       } else {
-        distnames <- tmpdistnames <- names(predData)[which(!(names(predData) %in% c("ID",attr(predData,'coord'),covNames,znames)))]
+        distnames <- tmpdistnames <- names(predData)[which(!(names(predData) %in% c("ID",Time.name,attr(predData,'coord'),covNames,znames)))]
       }
       cat('Drawing ',nSims,' realizations from the position process using crawl... ',ifelse(ncores>1 & length(ids)>1,"","\n"),sep="")
       
@@ -342,12 +342,8 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
               if(!all(class(tmp) %in% c("crwIS","list"))) stop('crawl::crwPostIS error for individual ',ids[i],'; ',tmp,'  Check crwPostIS arguments, crawl::crwMLE model fits, and/or consult crawl documentation.')
               locs<-rbind(locs,tmp$alpha.sim[,c("mu.x","mu.y")])
           }
-          df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
-          pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=mvnCoords),error=function(e) e)
-          if(inherits(pD,"momentuHMMData") & !is.null(mvnCoords)){
-            names(pD)[which(names(pD) %in% c("x","y"))] <- paste0(mvnCoords,c(".x",".y"))
-            attr(pD,'coords') <- paste0(mvnCoords,c(".x",".y"))
-          }
+          df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",Time.name,tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
+          pD <- tryCatch(prepData.default(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=mvnCoords),error=function(e) e)
           pD
         }
       ,warning=muffleRNGwarning)
@@ -576,7 +572,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
           tmpdistnames <- tmpdistnames[which(!(tmpdistnames %in% attr(predData,'coord')))]
         }
       } else {
-        distnames <- tmpdistnames <- names(predData)[which(!(names(predData) %in% c("ID","level",attr(predData,'coord'),covNames,znames)))]
+        distnames <- tmpdistnames <- names(predData)[which(!(names(predData) %in% c("ID",Time.name,"level","locType",covNames,znames)))]
       }
       cat('Drawing ',nSims,' realizations from the position process using crawl... ',ifelse(ncores>1 & length(ids)>1,"","\n"),sep="")
       
@@ -632,7 +628,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                               df[which(df$locType=="p"),"x"] <- locs[which(locs$locType=="p"),"x"]
                               df[which(df$locType=="p"),"y"] <- locs[which(locs$locType=="p"),"y"]
                               df$locType <- NULL
-                              pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=mvnCoords,coordLevel=attr(predData,"coordLevel"),hierLevels=levels(predData$level)),error=function(e) e)
+                              pD <- tryCatch(prepData.hierarchical(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=mvnCoords,coordLevel=attr(predData,"coordLevel"),hierLevels=levels(predData$level)),error=function(e) e)
                               pD
                             }
                           ,warning=muffleRNGwarning)
@@ -676,10 +672,10 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     Par0[1:nSims]<-list(tmpPar0)
   } else if(length(Par0)<nSims) stop("Par0 must be a list of length >=",nSims)
   
-  newForm <- newFormulas(formula,nbStates)
-  recharge <- newForm$recharge
+  #newForm <- newFormulas(formula,nbStates)
+  #recharge <- newForm$recharge
   
-  if(is.null(recharge) & mixtures==1){
+  if(mixtures==1){
     if(!is.list(hierBeta)){
       if(!inherits(hierBeta,"Node"))
         tmphierBeta<-hierBeta
@@ -690,7 +686,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     } else if(length(hierBeta)<nSims) stop("hierBeta must be a list of length >=",nSims)
   } else {
     if(!is.null(hierBeta) && !is.list(hierBeta)){
-      if(!is.null(recharge)) stop("hierBeta must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
+      #if(!is.null(recharge)) stop("hierBeta must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
       if(mixtures>1) stop("hierBeta must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
     }
     if(!is.list(hierBeta[[1]])){

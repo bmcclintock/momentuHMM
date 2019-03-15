@@ -83,7 +83,7 @@ formatHierFormula <- function(data,hierFormula,hierStates){
 }
 
 getFactorTerms <- function(formulaTerms,factorTerms,formula,data,level){
-  if(any(formulaTerms %in% factorTerms)){
+  #if(any(formulaTerms %in% factorTerms)){
     mm<-model.matrix(formula,data)
     as <- attr(mm,"assign")
     colmm <- colnames(mm)
@@ -102,10 +102,8 @@ getFactorTerms <- function(formulaTerms,factorTerms,formula,data,level){
       colmm[jj] <- gsub("*(Intercept)","*1",colmm[jj],fixed=TRUE)
     }
     formTerms <- colmm
-  } else {
-    for(k in 1:length(formulaTerms)){
-      formTerms <- paste0("I((level=='",gsub("level","",level),"')*",formulaTerms,")")
-    }
-  }
+  #} else {
+  #  formTerms <- c(paste0("I((level=='",gsub("level","",level),"')*1)"),paste0("I((level=='",gsub("level","",level),"')*",formulaTerms,")"))
+  #}
   formTerms
 }
