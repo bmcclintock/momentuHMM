@@ -497,9 +497,8 @@ getParDM.hierarchical<-function(data=data.frame(), hierStates, hierDist,
     data <- momentuHMMData(data)
   }
   
-  inputHierHMM <- formatHierHMM(data=NULL,hierStates=hierStates,hierDist=hierDist,hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,checkData=FALSE)
-  nbStates <- inputHierHMM$nbStates
-  dist <- inputHierHMM$dist
+  nbStates <- nbHierStates(hierStates)$nbStates
+  dist <-   dist <- getHierDist(hierDist,data=NULL,checkData=FALSE)
   
   return(getParDM.default(data,nbStates,dist,Par,zeroInflation,oneInflation,estAngleMean,circularAngleMean,DM,cons=NULL,userBounds,workBounds,workcons=NULL))
 }

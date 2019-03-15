@@ -972,6 +972,13 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         recovs <- model.matrix(recharge$theta,m$data)
       }
       
+      #if(inherits(m,"hierarchical") & all(coordNames %in% names(m$data))){
+      #  hViterbi <- hierViterbi(m, states, stateNames=FALSE)
+      #  cat("DONE\n")
+      #  for(j in 1:(m$conditions$hierStates$height-1)){
+      #  }
+      #}
+      
       for(zoo in 1:nbAnimals) {
         # states for animal 'zoo'
         subStates <- states[which(m$data$ID==ID[zoo])]
@@ -1012,6 +1019,10 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         if(all(coordNames %in% names(m$data))){
           if(plotTracks){
             # plot trajectory
+            remNA <- which(!is.na(x[[zoo]]))
+            x[[zoo]] <- x[[zoo]][remNA]
+            y[[zoo]] <- y[[zoo]][remNA]
+            subStates <- subStates[remNA]
             if(length(coordNames)==2){
               do.call(plot,c(list(x=x[[zoo]],y=y[[zoo]],pch=16,xlab=coordNames[1],ylab=coordNames[2],col=col[subStates],cex=cex,asp=asp),arg))
               
@@ -1023,6 +1034,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
                   do.call(lines,c(list(errorEllipse[[zoo]][[i]],col=adjustcolor(col[subStates[i]],alpha.f=0.25),cex=cex),arg))
               }
             } else {
+              z[[zoo]] <- z[[zoo]][remNA]
               ## interactive 3d plot
               #do.call(plotly::plot_ly,list(x=x[[zoo]],y=y[[zoo]],z=z[[zoo]],type='scatter3d',mode='lines',
               #                             opacity = 1, line = list(width = 6, color = col[subStates])))  %>% plotly::layout(title=paste("ID",ID[zoo]))

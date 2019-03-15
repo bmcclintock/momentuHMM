@@ -199,7 +199,7 @@ newFormulas<-function(formula,nbStates,hierarchical=FALSE)
   if(nbStates>1){
     if(length(unlist(attr(stateForms,"specials")))){
       #newForm<-attr(stateForms,"term.labels")[-unlist(attr(stateForms,"specials"))]
-      newForm <- attr(stateForms,"term.labels")[-which(attr(stateForms,"factors")[unlist(attr(stateForms,"specials")),]>0)]#attr(drop.terms(stateForms,which(attr(stateForms,"factors")[unlist(attr(stateForms,"specials")),]>0)),"term.labels")
+      newForm <- attr(stateForms,"term.labels")[-which(colSums(attr(stateForms,"factors")[unlist(attr(stateForms,"specials")),,drop=FALSE])>0)]#attr(drop.terms(stateForms,which(attr(stateForms,"factors")[unlist(attr(stateForms,"specials")),]>0)),"term.labels")
       for(i in 1:nbStates){
         if(!is.null(attr(stateForms,"specials")[[paste0("state",i)]])){
           for(j in 1:(nbStates-1)){

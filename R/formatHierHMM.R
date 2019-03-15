@@ -35,92 +35,12 @@ formatHierHMM <- function(data,hierStates,hierDist,
   
   if(is.null(data)) checkData <- FALSE
   
-  if(!inherits(hierStates,"Node")) stop("'hierStates' must be of class Node; see ?data.tree::Node")
-  if(!("state" %in% hierStates$fieldsAll)) stop("'hierStates' must include a 'state' field")
-  
-  hdf <- data.tree::ToDataFrameTypeCol(hierStates, "state")
-  if(any(is.na(hdf$state))) stop("'state' field in 'hierStates' cannot contain NAs")
-  nbStates <- length(hierStates$Get("state",filterFun=data.tree::isLeaf))
-   
-  if(any(duplicated(hdf$state))) stop("'state' field in 'hierStates' cannot contain duplicates")
-  if(any(sort(hdf$state)!=1:nbStates)) stop("'state' field in 'hierStates' must include all integers between 1 and ",nbStates)
-  if(!data.tree::AreNamesUnique(hierStates)) stop("node names in 'hierStates' must be unique")
-  #if(any(is.na(hdf))) stop("missing levels are not permitted in 'hierStates'")
-  
-  stateNames <- unname(hierStates$Get("name",filterFun=data.tree::isLeaf)[hdf$state])
-  
-  if(hierStates$height<=2) stop("'hierStates' must contain at least 2 levels below root (i.e., hierStates$height must be > 2)")
-  
-  if(any(unlist(lapply(Traverse(hierStates,traversal="level",filterFun=function(x) !isLeaf(x)),function(x) x$count))<2)) stop("each node in 'hierStates' must have at least 2 children")
-  
-  if(!inherits(hierDist,"Node")) stop("'hierDist' must be of class Node; see ?data.tree::Node")
-  if(!("dist" %in% hierDist$fieldsAll)) stop("'hierDist' must include a 'dist' field")
-  if(!data.tree::AreNamesUnique(hierDist)) stop("node names in 'hierDist' must be unique")
-  if(hierDist$height!=3) stop("'hierDist' hierarchy must contain 2 levels below root (i.e., hierDist$height must be 3)")
-  if(!all(hierDist$Get("name",filterFun=function(x) x$level==2)==paste0("level",1:hierDist$count))) stop("hierDist level names from top to bottom should be ",paste0("'level",paste0(1:hierDist$count,"'"),collapse=", ")," (not ",paste0(paste0("'",hierDist$Get("name",filterFun=function(x) x$level==2),"'"),collapse=", "),")")
+  hStates <- nbHierStates(hierStates)
+  nbStates <- hStates$nbStates
+  stateNames <- hStates$stateNames
+
+  dist <- getHierDist(hierDist,data,checkData)
   nbLevels <- 2*hierDist$count - 1 #hierStates$height #ncol(data.tree::ToDataFrameTypeCol(hierStates))
-  
-  if(checkData){
-    if(is.null(data$level)) stop('data$level must be specified')
-    if(!is.factor(data$level)) stop('data$level must be a factor')
-    if(nlevels(data$level)!=nbLevels) stop('data$level must contain ',nbLevels,' levels')
-    for(k in 1:min(nbLevels,nrow(data))){
-      if(data$level[k]!=levels(data$level)[k]) stop("data$level factor levels not ordered correctly; observation ",k," is level ",data$level[k]," but factor level is ",levels(data$level)[k])
-    }
-    
-    ## add additional levels for initial distributions of finer scale states
-    #hlevels <- levels(data$level)
-    #levels(data$level) <- c(hlevels,paste0("i",hlevels[-1]))
-    #for(k in 1:(length(hlevels)-1)){
-    #  rInd <- 0
-    #  for(j in which(data$level==hlevels[k])){
-    #    tmp <- data[j+rInd,]
-    #    tmp[names(dist)] <- NA
-    #    tmp$level <- factor(paste0("i",hlevels[k+1]),levels=levels(data$level))
-    #    data <- DataCombine::InsertRow(data,tmp,j+rInd+1)
-    #    rInd <- rInd + 1
-    #  }
-    #}
-    
-    if(!all(hierDist$Get("name",filterFun=function(x) x$level==2) %in% paste0("level",levels(data$level)[seq(1,nlevels(data$level),2)]))) 
-      stop("'hierDist' level types can only include ",paste(paste0("level",levels(data$level)[seq(1,nlevels(data$level),2)]),collapse=", "))
-    
-    for(j in gsub("level","",hierDist$Get("name",filterFun=function(x) x$level==2))){
-      jDist <- hierDist[[paste0("level",j)]]$Get("dist",filterFun=isLeaf)
-      if(any(!is.na(jDist))){
-        dist <- jDist[!is.na(jDist)]
-        distnames <- tmpdistnames <- names(dist)
-        if(!all(distnames %in% names(data))){
-          for(i in which(is.na(match(distnames,names(data))))){
-            if(dist[i] %in% mvndists){
-              if(dist[i] %in% c("mvnorm2","rw_mvnorm2")){
-                tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"))
-              } else if(jDist[i] %in% c("mvnorm3","rw_mvnorm3")){
-                tmpdistnames <- c(tmpdistnames[-1],paste0(distnames[i],".x"),paste0(distnames[i],".y"),paste0(distnames[i],".z"))          
-              }
-            }
-          }
-          if(any(is.na(match(tmpdistnames,names(data))))) stop(paste0(tmpdistnames[is.na(match(tmpdistnames,names(data)))],collapse=", ")," not found in data")
-        }
-        for(k in levels(data$level)[-which(levels(data$level)==j)]){
-          if(any(!is.na(data[which(data$level==k),tmpdistnames]))) stop(paste(tmpdistnames,collapse=", ")," must be NA for level ",k)
-        }
-      }
-    }
-  }# else {
-  # lInd <- gsub("level","",sort(hierDist$Get("name",filterFun=function(x) x$level==2),decreasing=TRUE)[1])
-  # lLevels <- c(paste0(lInd,"i"),lInd)
-  # for(j in sort(hierDist$Get("name",filterFun=function(x) x$level==2),decreasing=TRUE)[-1]){
-  #   lLevels <- c(gsub("level","",j),lLevels)
-  #   if(j!="level1") {
-  #     lLevels <- c(paste0(gsub("level","",j),"i"),lLevels)
-  #   }
-  # }
-  # data <- data.frame(level=factor(lLevels,levels=lLevels))
-  #}
-  
-  dist <- as.list(hierDist$Get("dist",filterFun=data.tree::isLeaf))
-  dist <- dist[which(unlist(lapply(dist,function(x) !is.na(x))))]
 
   whierFormulaDelta <- checkHierFormula(data,hierFormulaDelta,hierStates,hierDist,checkData,what="formulaDelta")
   formulaDelta <- whierFormulaDelta$level1$formulaDelta
@@ -442,12 +362,109 @@ formatHierHMM <- function(data,hierStates,hierDist,
     hierBeta <- hier$hierBeta
     hierDelta <- hier$hierDelta
     
-  } else betaCons <- deltaCons <- fixPar <- workBounds <- cons <- fix <- NULL
+  } else newformula <- betaCons <- deltaCons <- fixPar <- workBounds <- cons <- fix <- NULL
 
   if(all(unlist(lapply(recharge,is.null)))) recharge <- NULL
 
   return(list(data=data,nbStates=nbStates,dist=dist,formula=formula,newformula=newformula,formulaDelta=formulaDelta,beta=beta0,delta=delta0,hierBeta=hierBeta,hierDelta=hierDelta,betaRef=betaRef,betaCons=cons$betaCons,deltaCons=cons$deltaCons,fixPar=fix,workBounds=workBounds,stateNames=stateNames,hBetaCons=betaCons,hDeltaCons=deltaCons,hFixPar=fixPar,recharge=recharge))
 
+}
+
+nbHierStates <- function(hierStates){
+  
+  if(!inherits(hierStates,"Node")) stop("'hierStates' must be of class Node; see ?data.tree::Node")
+  if(!("state" %in% hierStates$fieldsAll)) stop("'hierStates' must include a 'state' field")
+  
+  hdf <- data.tree::ToDataFrameTypeCol(hierStates, "state")
+  if(any(is.na(hdf$state))) stop("'state' field in 'hierStates' cannot contain NAs")
+  
+  nbStates <- length(hierStates$Get("state",filterFun=data.tree::isLeaf))
+  
+  if(any(duplicated(hdf$state))) stop("'state' field in 'hierStates' cannot contain duplicates")
+  if(any(sort(hdf$state)!=1:nbStates)) stop("'state' field in 'hierStates' must include all integers between 1 and ",nbStates)
+  if(!data.tree::AreNamesUnique(hierStates)) stop("node names in 'hierStates' must be unique")
+  #if(any(is.na(hdf))) stop("missing levels are not permitted in 'hierStates'")
+  
+  stateNames <- unname(hierStates$Get("name",filterFun=data.tree::isLeaf)[hdf$state])
+  
+  if(hierStates$height<=2) stop("'hierStates' must contain at least 2 levels below root (i.e., hierStates$height must be > 2)")
+  
+  if(any(unlist(lapply(Traverse(hierStates,traversal="level",filterFun=function(x) !isLeaf(x)),function(x) x$count))<2)) stop("each node in 'hierStates' must have at least 2 children")
+  
+  list(nbStates=nbStates,stateNames=stateNames)
+}
+
+getHierDist <- function(hierDist,data,checkData){
+  
+  if(!inherits(hierDist,"Node")) stop("'hierDist' must be of class Node; see ?data.tree::Node")
+  if(!("dist" %in% hierDist$fieldsAll)) stop("'hierDist' must include a 'dist' field")
+  if(!data.tree::AreNamesUnique(hierDist)) stop("node names in 'hierDist' must be unique")
+  if(hierDist$height!=3) stop("'hierDist' hierarchy must contain 2 levels below root (i.e., hierDist$height must be 3)")
+  if(!all(hierDist$Get("name",filterFun=function(x) x$level==2)==paste0("level",1:hierDist$count))) stop("hierDist level names from top to bottom should be ",paste0("'level",paste0(1:hierDist$count,"'"),collapse=", ")," (not ",paste0(paste0("'",hierDist$Get("name",filterFun=function(x) x$level==2),"'"),collapse=", "),")")
+  nbLevels <- 2*hierDist$count - 1 #hierStates$height #ncol(data.tree::ToDataFrameTypeCol(hierStates))
+  
+  if(checkData){
+    if(is.null(data$level)) stop('data$level must be specified')
+    if(!is.factor(data$level)) stop('data$level must be a factor')
+    if(nlevels(data$level)!=nbLevels) stop('data$level must contain ',nbLevels,' levels')
+    for(k in 1:min(nbLevels,nrow(data))){
+      if(data$level[k]!=levels(data$level)[k]) stop("data$level factor levels not ordered correctly; observation ",k," is level ",data$level[k]," but factor level is ",levels(data$level)[k])
+    }
+    
+    ## add additional levels for initial distributions of finer scale states
+    #hlevels <- levels(data$level)
+    #levels(data$level) <- c(hlevels,paste0("i",hlevels[-1]))
+    #for(k in 1:(length(hlevels)-1)){
+    #  rInd <- 0
+    #  for(j in which(data$level==hlevels[k])){
+    #    tmp <- data[j+rInd,]
+    #    tmp[names(dist)] <- NA
+    #    tmp$level <- factor(paste0("i",hlevels[k+1]),levels=levels(data$level))
+    #    data <- DataCombine::InsertRow(data,tmp,j+rInd+1)
+    #    rInd <- rInd + 1
+    #  }
+    #}
+    
+    if(!all(hierDist$Get("name",filterFun=function(x) x$level==2) %in% paste0("level",levels(data$level)[seq(1,nlevels(data$level),2)]))) 
+      stop("'hierDist' level types can only include ",paste(paste0("level",levels(data$level)[seq(1,nlevels(data$level),2)]),collapse=", "))
+    
+    for(j in gsub("level","",hierDist$Get("name",filterFun=function(x) x$level==2))){
+      jDist <- hierDist[[paste0("level",j)]]$Get("dist",filterFun=isLeaf)
+      if(any(!is.na(jDist))){
+        dist <- jDist[!is.na(jDist)]
+        distnames <- tmpdistnames <- names(dist)
+        if(!all(distnames %in% names(data))){
+          for(i in which(is.na(match(distnames,names(data))))){
+            if(dist[i] %in% mvndists){
+              if(dist[i] %in% c("mvnorm2","rw_mvnorm2")){
+                tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"))
+              } else if(jDist[i] %in% c("mvnorm3","rw_mvnorm3")){
+                tmpdistnames <- c(tmpdistnames[-1],paste0(distnames[i],".x"),paste0(distnames[i],".y"),paste0(distnames[i],".z"))          
+              }
+            }
+          }
+          if(any(is.na(match(tmpdistnames,names(data))))) stop(paste0(tmpdistnames[is.na(match(tmpdistnames,names(data)))],collapse=", ")," not found in data")
+        }
+        for(k in levels(data$level)[-which(levels(data$level)==j)]){
+          if(any(!is.na(data[which(data$level==k),tmpdistnames]))) stop(paste(tmpdistnames,collapse=", ")," must be NA for level ",k)
+        }
+      }
+    }
+  }# else {
+  # lInd <- gsub("level","",sort(hierDist$Get("name",filterFun=function(x) x$level==2),decreasing=TRUE)[1])
+  # lLevels <- c(paste0(lInd,"i"),lInd)
+  # for(j in sort(hierDist$Get("name",filterFun=function(x) x$level==2),decreasing=TRUE)[-1]){
+  #   lLevels <- c(gsub("level","",j),lLevels)
+  #   if(j!="level1") {
+  #     lLevels <- c(paste0(gsub("level","",j),"i"),lLevels)
+  #   }
+  # }
+  # data <- data.frame(level=factor(lLevels,levels=lLevels))
+  #}
+  
+  dist <- as.list(hierDist$Get("dist",filterFun=data.tree::isLeaf))
+  dist <- dist[which(unlist(lapply(dist,function(x) !is.na(x))))]
+  dist
 }
 
 checkHierFormula <- function(data,hierFormula,hierStates,hierDist,checkData,what="formula"){

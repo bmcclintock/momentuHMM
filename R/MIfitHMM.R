@@ -554,8 +554,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
       #coordNames <- attr(predData,"coord")
       
       if(fit | !missing("hierDist")) {
-        inputHierHMM <- formatHierHMM(data=NULL,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,checkData=FALSE)
-        dist <- inputHierHMM$dist
+        dist <- getHierDist(hierDist,data=NULL,checkData=FALSE)
         if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
         distnames <- tmpdistnames <- names(dist)[which(!(names(dist) %in% c("step","angle")))]
         if(any(is.na(match(distnames,names(predData))))){
@@ -654,10 +653,8 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     cat('Fitting',min(nSims,length(ind)),'imputation(s) using fitHMM... \n')
   }
   
-  inputHierHMM <- formatHierHMM(data=NULL,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures)
-  nbStates <- inputHierHMM$nbStates
-  dist <- inputHierHMM$dist
-  formula <- inputHierHMM$formula
+  nbStates <- nbHierStates(hierStates)$nbStates
+  dist <- getHierDist(hierDist,data=NULL,checkData=FALSE)
   
   if(!is.list(knownStates)){
     tmpStates<-knownStates

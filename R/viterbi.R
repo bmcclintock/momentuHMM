@@ -101,12 +101,13 @@ viterbi <- function(m, hierarchical=FALSE)
   } else return(allStates)
 }
 
-hierViterbi <- function(m, allStates){
+hierViterbi <- function(m, allStates, stateNames = TRUE){
     out <- list()
     for(j in 1:(m$conditions$hierStates$height-1)){
       if(j==m$conditions$hierStates$height-1) ref <- m$conditions$hierStates$Get("state",filterFun=data.tree::isLeaf)
       else ref <- m$conditions$hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
-      out[[paste0("level",j)]] <- names(ref)[match(allStates[which(m$data$level %in% c(j,paste0(j,"i")))],ref,nomatch=0)]
+      out[[paste0("level",j)]] <- match(allStates[which(m$data$level %in% c(j,paste0(j,"i")))],ref,nomatch=0)
+      if(stateNames) out[[paste0("level",j)]] <- names(ref)[out[[paste0("level",j)]]]
     }
     class(out) <- append("hierarchical",class(out))
     out
