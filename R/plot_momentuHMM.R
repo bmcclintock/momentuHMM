@@ -853,7 +853,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             for(i in 2:ncol(rawCovs))
               tempCovs <- cbind(tempCovs,rep(covs[names(rawCovs)][[i]],gridLength))
           
-          tempCovs[,cov] <- as.factor(levels(rawCovs[,cov]))
+          tempCovs[,cov] <- as.factor(rep(levels(rawCovs[,cov]),each=hGridLength/gridLength))
         }
         
         names(tempCovs) <- names(rawCovs)
@@ -903,7 +903,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
               
               txt <- paste(names(rawCovs)[-cov][which(names(rawCovs)[-cov]!="level")],"=",tmpcovs[which(tmpcovs$level==j),-cov][which(names(rawCovs)[-cov]!="level")],collapse=", ")
               if(nbRecovs & names(rawCovs)[cov]=="recharge"){
-                tmpNames <- c(names(rawCovs)[-cov][which(names(rawCovs)[-cov]!="level")],colnames(m$reCovs))
+                tmpNames <- c(names(rawCovs)[-cov][which(names(rawCovs)[-cov]!="level")],colnames(m$reCovs)[which(colnames(m$reCovs)!="level")])
+                tmprecovs <- tmprecovs[,which(colnames(tmprecovs)!="level"),drop=FALSE]
                 txt <- paste(tmpNames[!duplicated(tmpNames)],"=",c(tmpcovs[which(tmpcovs$level==j),-cov][which(names(rawCovs)[-cov]!="level")],tmprecovs)[!duplicated(tmpNames)],collapse=", ")
               }
               

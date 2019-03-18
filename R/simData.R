@@ -340,7 +340,7 @@
 #'
 #' @export
 #' @importFrom stats rnorm runif rmultinom step terms.formula
-#' @importFrom raster cellFromXY getValues
+#' @importFrom raster cellFromXY getValues is.factor levels
 #' @importFrom moveHMM simData
 #' @importFrom CircStats rvm
 #' @importFrom LaplacesDemon rbern
@@ -666,17 +666,17 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(length(initialPosition)!=nbAnimals) stop("initialPosition must be a list of length ",nbAnimals)
     for(i in 1:nbAnimals){
       if(is.null(mvnCoords) || dist[[mvnCoords]] %in% c("mvnorm2","rw_mvnorm2")){
-        if(length(initialPosition[[i]])!=2 | !is.numeric(initialPosition[[i]])) stop("each element of initialPosition must be a numeric vector of length 2")
+        if(length(initialPosition[[i]])!=2 | !is.numeric(initialPosition[[i]]) | any(!is.finite(initialPosition[[i]]))) stop("each element of initialPosition must be a finite numeric vector of length 2")
       } else if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")){
-        if(length(initialPosition[[i]])!=3 | !is.numeric(initialPosition[[i]])) stop("each element of initialPosition must be a numeric vector of length 3")
+        if(length(initialPosition[[i]])!=3 | !is.numeric(initialPosition[[i]]) | any(!is.finite(initialPosition[[i]]))) stop("each element of initialPosition must be a finite numeric vector of length 3")
       }
     }
   } else {
     if(is.null(mvnCoords) || dist[[mvnCoords]] %in% c("mvnorm2","rw_mvnorm2")){
-      if(length(initialPosition)!=2 | !is.numeric(initialPosition)) stop("initialPosition must be a numeric vector of length 2")
+      if(length(initialPosition)!=2 | !is.numeric(initialPosition) | any(!is.finite(initialPosition))) stop("initialPosition must be a finite numeric vector of length 2")
     } else if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")){
       if(all(initialPosition==0)) initialPosition <- c(0,0,0)
-      if(length(initialPosition)!=3 | !is.numeric(initialPosition)) stop("initialPosition must be a numeric vector of length 3")
+      if(length(initialPosition)!=3 | !is.numeric(initialPosition) | any(!is.finite(initialPosition))) stop("initialPosition must be a finite numeric vector of length 3")
     }
     tmpPos<-initialPosition
     initialPosition<-vector('list',nbAnimals)
@@ -1406,13 +1406,18 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       data <- rbind(data,d)
     }
     
-    if(nbSpatialCovs>0) colnames(allSpatialcovs)<-spatialcovnames
-  
     if(nbCovs>0)
       data <- cbind(data,allCovs)
     
-    if(nbSpatialCovs>0)
+    if(nbSpatialCovs>0){
+      colnames(allSpatialcovs)<-spatialcovnames
+      for(j in spatialcovnames){
+        if(any(raster::is.factor(spatialCovs[[j]]))){
+          allSpatialcovs[[j]] <- factor(allSpatialcovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
+        }
+      }
       data <- cbind(data,allSpatialcovs)
+    }
     
     if(length(centerInd)){
       data <- cbind(data,centerCovs)

@@ -27,56 +27,63 @@ rrw_norm <- stats::rnorm
 RWdata <- function(dist,data){
   distnames <- names(dist)
   if(any(unlist(dist) %in% rwdists)){
+    newdata <- NULL
     colInd <- NULL
-    for(i in distnames){
-      if(dist[[i]] %in% rwdists){
-        tmpdata <- data
-        lInd <- 1:nrow(data)
-        if(dist[[i]] %in% mvndists){
-          if(inherits(data,"hierarchical")){
-            iLevel <- unique(data$level[which(!is.na(data[[paste0(i,".x")]]))])
-            lInd <- which(data$level==iLevel)
-            tmpdata <- data[lInd,]
-            colInd <- NULL
+    ID <- unique(data$ID)
+    for(j in ID){
+      jInd <- which(data$ID==j)
+      for(i in distnames){
+        if(dist[[i]] %in% rwdists){
+          tmpdata <- ldata <- data[jInd,,drop=FALSE]
+          lInd <- 1:nrow(tmpdata)
+          if(dist[[i]] %in% mvndists){
+            if(inherits(data,"hierarchical")){
+              iLevel <- attr(data,"coordLevel")
+              lInd <- which(tmpdata$level==iLevel)
+              ldata <- tmpdata[lInd,]
+              colInd <- NULL
+            }
+            tmpdata[[paste0(i,".x_tm1")]] <- tmpdata[[paste0(i,".x")]]
+            tmpdata[[paste0(i,".y_tm1")]] <- tmpdata[[paste0(i,".y")]]
+            ldata[[paste0(i,".x_tm1")]] <- ldata[[paste0(i,".x")]]
+            ldata[[paste0(i,".y_tm1")]] <- ldata[[paste0(i,".y")]]
+            if(dist[[i]]=="rw_mvnorm2"){
+              colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(distnames[which(!(distnames %in% i))],paste0(i,".x"),paste0(i,".y"))))]))
+            } else if(dist[[i]]=="rw_mvnorm3"){
+              tmpdata[[paste0(i,".z_tm1")]] <- tmpdata[[paste0(i,".z")]]
+              ldata[[paste0(i,".z_tm1")]] <- ldata[[paste0(i,".z")]]
+              colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(distnames[which(!(distnames %in% i))],paste0(i,".x"),paste0(i,".y"),paste0(i,".z"))))]))
+            }
+          } else {
+            if(inherits(data,"hierarchical")){
+              iLevel <- attr(data,"coordLevel")
+              lInd <- which(tmpdata$level==iLevel)
+              ldata <- tmpdata[lInd,]
+              colInd <- NULL
+            }
+            tmpdata[[paste0(i,"_tm1")]] <- tmpdata[[i]]
+            ldata[[paste0(i,"_tm1")]][lInd] <- ldata[[i]]
+            colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% distnames))]))
           }
-          tmpdata[[paste0(i,".x_tm1")]] <- tmpdata[[paste0(i,".x")]]
-          tmpdata[[paste0(i,".y_tm1")]] <- tmpdata[[paste0(i,".y")]]
-          data[[paste0(i,".x_tm1")]] <- data[[paste0(i,".x")]]
-          data[[paste0(i,".y_tm1")]] <- data[[paste0(i,".y")]]
-          if(dist[[i]]=="rw_mvnorm2"){
-            colInd <- unique(c(colInd,colnames(data)[which(!(colnames(data) %in% c(distnames[which(!(distnames %in% i))],paste0(i,".x"),paste0(i,".y"))))]))
-          } else if(dist[[i]]=="rw_mvnorm3"){
-            tmpdata[[paste0(i,".z_tm1")]] <- tmpdata[[paste0(i,".z")]]
-            data[[paste0(i,".z_tm1")]] <- data[[paste0(i,".z")]]
-            colInd <- unique(c(colInd,colnames(data)[which(!(colnames(data) %in% c(distnames[which(!(distnames %in% i))],paste0(i,".x"),paste0(i,".y"),paste0(i,".z"))))]))
-          }
-        } else {
           if(inherits(data,"hierarchical")){
-            iLevel <- unique(data$level[which(!is.na(data[[i]]))])
-            lInd <- which(data$level==iLevel)
-            tmpdata <- data[lInd,]
-            colInd <- NULL
-          } else tmpdata <- data
-          tmpdata[[paste0(i,"_tm1")]] <- tmpdata[[i]]
-          data[[paste0(i,"_tm1")]] <- data[[i]]
-          colInd <- unique(c(colInd,colnames(data)[which(!(colnames(data) %in% distnames))]))
-        }
-        if(inherits(data,"hierarchical")){
-          tmpdata[,colInd] <- rbind(rep(NA,length(colInd)),tmpdata[-nrow(tmpdata),colInd])
-          tmpdata <- tmpdata[-1,,drop=FALSE]
-          data[lInd,colInd] <- rbind(rep(NA,length(colInd)),data[lInd[-length(lInd)],colInd])
-          data <- data[-lInd[1],,drop=FALSE]
-          data[lInd[-1]-1,colnames(data)] <- tmpdata[,colnames(data)]
-          data[which(data$level!=iLevel),paste0(colnames(data)[!colnames(data) %in% colInd],"_tm1")] <- 0 # can't have NAs in covariates
+            ldata[,colInd] <- rbind(rep(NA,length(colInd)),ldata[-nrow(ldata),colInd])
+            ldata <- ldata[-1,,drop=FALSE]
+            tmpdata[lInd,colInd] <- rbind(rep(NA,length(colInd)),tmpdata[lInd[-length(lInd)],colInd])
+            tmpdata <- tmpdata[-lInd[1],,drop=FALSE]
+            tmpdata[lInd[-1]-1,colnames(tmpdata)] <- ldata[,colnames(tmpdata)]
+            tmpdata[which(tmpdata$level!=iLevel),paste0(colnames(tmpdata)[!colnames(tmpdata) %in% colInd],"_tm1")] <- 0 # can't have NAs in covariates
+          }
         }
       }
+      if(!inherits(data,"hierarchical")){
+        tmpdata[,colInd] <- rbind(rep(NA,length(colInd)),tmpdata[-nrow(tmpdata),colInd])
+        tmpdata <- tmpdata[-1,,drop=FALSE]
+      }
+      newdata <- rbind(newdata,tmpdata)
     }
-    if(!inherits(data,"hierarchical")){
-      data[,colInd] <- rbind(rep(NA,length(colInd)),data[-nrow(data),colInd])
-      data <- data[-1,,drop=FALSE]
-    }
-  }
-  data
+    class(newdata) <- class(data)
+  } else newdata <- data
+  newdata
 }
 
 # startup message

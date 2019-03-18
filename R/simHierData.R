@@ -108,6 +108,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     
     hierStates <- model$conditions$hierStates
     hierDist <- model$conditions$hierDist
+    hierFormula <- model$conditions$hierFormula
+    hierFormulaDelta <- model$conditions$hierFormulaDelta
     hierBeta <- model$conditions$hierBeta
     hierDelta <- model$conditions$hierDelta
     userBounds <- model$conditions$bounds
@@ -375,17 +377,17 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     if(length(initialPosition)!=nbAnimals) stop("initialPosition must be a list of length ",nbAnimals)
     for(i in 1:nbAnimals){
       if(is.null(mvnCoords) || dist[[mvnCoords]] %in% c("mvnorm2","rw_mvnorm2")){
-        if(length(initialPosition[[i]])!=2 | !is.numeric(initialPosition[[i]])) stop("each element of initialPosition must be a numeric vector of length 2")
+        if(length(initialPosition[[i]])!=2 | !is.numeric(initialPosition[[i]]) | any(!is.finite(initialPosition[[i]]))) stop("each element of initialPosition must be a finite numeric vector of length 2")
       } else if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")){
-        if(length(initialPosition[[i]])!=3 | !is.numeric(initialPosition[[i]])) stop("each element of initialPosition must be a numeric vector of length 3")
+        if(length(initialPosition[[i]])!=3 | !is.numeric(initialPosition[[i]]) | any(!is.finite(initialPosition[[i]]))) stop("each element of initialPosition must be a finite numeric vector of length 3")
       }
     }
   } else {
     if(is.null(mvnCoords) || dist[[mvnCoords]] %in% c("mvnorm2","rw_mvnorm2")){
-      if(length(initialPosition)!=2 | !is.numeric(initialPosition)) stop("initialPosition must be a numeric vector of length 2")
+      if(length(initialPosition)!=2 | !is.numeric(initialPosition) | any(!is.finite(initialPosition))) stop("initialPosition must be a finite numeric vector of length 2")
     } else if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")){
       if(all(initialPosition==0)) initialPosition <- c(0,0,0)
-      if(length(initialPosition)!=3 | !is.numeric(initialPosition)) stop("initialPosition must be a numeric vector of length 3")
+      if(length(initialPosition)!=3 | !is.numeric(initialPosition) | any(!is.finite(initialPosition))) stop("initialPosition must be a finite numeric vector of length 3")
     }
     tmpPos<-initialPosition
     initialPosition<-vector('list',nbAnimals)
@@ -665,7 +667,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     coordLevel <- NULL
   }
   
-  if(!is.null(coordLevel)) distCoordLevel <- names(hierDist[[paste("level",coordLevel)]]$children)
+  if(!is.null(coordLevel)) distCoordLevel <- names(hierDist[[paste0("level",coordLevel)]]$children)
   
   rwInd <- any(unlist(dist) %in% rwdists)
   
@@ -710,37 +712,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
   }
   
-  # build design matrix for recharge model
-  recharge <- newFormulas(formula,nbStates)$recharge
-  if(!is.null(recharge)){
-    g0covs <- model.matrix(recharge$g0,tmpCovs[1,,drop=FALSE])
-    nbG0covs <- ncol(g0covs)-1
-    recovs <- model.matrix(recharge$theta,tmpCovs)
-    nbRecovs <- ncol(recovs)-1
-    if(!nbRecovs) stop("invalid recharge model -- theta must include an intercept and at least 1 covariate")
-    tmpcovs <- cbind(tmpCovs,rep(0,nrow(tmpCovs)))
-    colnames(tmpcovs) <- c(colnames(tmpCovs),"recharge")
-    tmpCovs <- tmpcovs
-  }
-  
   tmpCovs$level <- factor(level[[1]][1],levels=lLevels[[1]])
-  
-  # get formula now that data are available (in order to properly deal with factor covariates in hierFormula)
-  inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,checkData=FALSE)
-  formula <- inputHierHMM$formula
-  
-  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",hierarchical=TRUE)
-  
-  if(is.null(model)){
-    beta <- inputHierHMM$beta
-    delta <- inputHierHMM$delta
-  }
-  if(is.null(workBounds)) wworkBounds <- list()
-  else wworkBounds <- workBounds
-  if(is.list(wworkBounds)){
-    wworkBounds$beta <- inputHierHMM$workBounds$beta
-    wworkBounds$delta <- inputHierHMM$workBounds$delta
-  }
   
   newForm <- newFormulas(formula,nbStates)
   formulaStates <- newForm$formulaStates
@@ -748,25 +720,45 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   newformula <- newForm$newformula
   recharge <- newForm$recharge
   
+  # build design matrix for recharge model
   if(!is.null(recharge)){
-    if(!is.null(beta)){
-      if(!is.list(beta)) stop("beta must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
-    }
-    for(j in 1:nbStates){
-      formulaStates[[j]] <- as.formula(paste0(Reduce( paste, deparse(formulaStates[[j]]) ),"+recharge"))
-    }
-    formterms <- c(formterms,"recharge")
-    newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
-    beta0 <- beta
+    reForm <- formatRecharge(nbStates,formula,data=tmpCovs)
+    formulaStates <- reForm$formulaStates
+    formterms <- newForm$formterms
+    tmpCovs <- cbind(tmpCovs,reForm$newdata)
+    g0covs <- reForm$g0covs
+    nbG0covs <- ncol(g0covs)-1
+    recovs <- reForm$recovs
+    nbRecovs <- ncol(recovs)-1
   } else {
     nbRecovs <- 0
     nbG0covs <- 0
     g0covs <- NULL
     recovs <- NULL
-    if(is.null(model) & !is.list(beta)){
-      beta0 <- list(beta=beta)
-    } else beta0 <- beta
   }
+  
+  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",hierarchical=TRUE)
+  
+  tmpCovs <- tmpCovs[rep(1,length(lLevels[[1]])),,drop=FALSE]
+  tmpCovs$level <- factor(lLevels[[1]],levels=lLevels[[1]])
+  class(tmpCovs) <- append("hierarchical",class(tmpCovs))
+  inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,checkData=FALSE)
+  
+  if(is.null(model)){
+    beta <- inputHierHMM$beta
+    delta <- inputHierHMM$delta
+  }
+  
+  if(is.null(workBounds)) wworkBounds <- list()
+  else wworkBounds <- workBounds
+  if(is.list(wworkBounds)){
+    wworkBounds$beta <- inputHierHMM$workBounds$beta
+    wworkBounds$delta <- inputHierHMM$workBounds$delta
+  }
+  
+  if(is.null(model) & !is.list(beta)){
+      beta0 <- list(beta=beta)
+  } else beta0 <- beta
   
   nbBetaCovs <- ncol(model.matrix(newformula,tmpCovs))
   
@@ -906,10 +898,11 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       gamma[cbind(1:nbStates,betaRef)] <- 1
       gamma <- t(gamma)
       
+      class(subCovs) <- append("hierarchical",class(subCovs))
+      
       if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd) & !length(angleCovs) & !rwInd) {
         if(!is.null(recharge)){
-          g0 <- model.matrix(recharge$g0,subCovs[1,,drop=FALSE]) %*% wng0
-          subCovs[,"recharge"] <- cumsum(c(g0,model.matrix(recharge$theta,subCovs[-nrow(subCovs),])%*%wntheta))
+          subCovs[,"recharge"] <- formatRecharge(nbStates,formula,data=subCovs,par=list(g0=wng0,theta=wntheta))$newdata$recharge
         }
         DMcov <- model.matrix(newformula,subCovs)
         
@@ -966,8 +959,13 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
           }
         }
         if(!is.null(recharge)){
-          g0 <- model.matrix(recharge$g0,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wng0
-          subCovs[1,"recharge"] <- g0 #+ model.matrix(recharge$theta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wntheta
+          tmpSubSpatCovs <- subCovs[1,,drop=FALSE]
+          tmpSubSpatCovs[colnames(subSpatialcovs[1,,drop=FALSE])] <- subSpatialcovs[1,,drop=FALSE]
+          tmpSubSpatCovs <- tmpSubSpatCovs[rep(1,length(lLevels[[1]])),,drop=FALSE]
+          tmpSubSpatCovs$level <- factor(lLevels[[1]],levels=lLevels[[1]])
+          subCovs[1,"recharge"] <- formatRecharge(nbStates,formula,data=tmpSubSpatCovs,par=list(g0=wng0,theta=wntheta))$newdata$recharge[1]
+          #g0 <- model.matrix(recharge$g0,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wng0
+          #subCovs[1,"recharge"] <- g0 #+ model.matrix(recharge$theta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wntheta
         }
         
         for(i in distnames){
@@ -1244,6 +1242,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
             #if(length(centerInd)) subCovs[1,centerNames[seq(2,2*length(centerInd),2)]] <- NA
             d$x=X[,1]
             d$y=X[,2]
+            coordNames <- c("x","y")
           }
       } else if("step" %in% distnames){
         if(inputs$dist[["step"]] %in% stepdists){
@@ -1252,12 +1251,16 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
           tmpstep[which(d$level!=gsub("level","",coordLevel))] <- 0
           d$x=c(initialPosition[[zoo]][1],initialPosition[[zoo]][1]+cumsum(tmpstep)[-nrow(d)])
           d$y=rep(initialPosition[[zoo]][2],nrow(d))
+          coordNames <- c("x","y")
         }    
       } else if(!is.null(mvnCoords)){
         d[[paste0(mvnCoords,".x")]] <- d[[mvnCoords]][,1]
         d[[paste0(mvnCoords,".y")]] <- d[[mvnCoords]][,2]
         if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) d[[paste0(mvnCoords,".z")]] <- d[[mvnCoords]][,3]
         d[[mvnCoords]] <- NULL
+        coordNames <- paste0(mvnCoords,c(".x",".y"))
+      } else {
+        coordNames <- NULL
       }
       for(j in angleCovs[which(angleCovs %in% names(subCovs))])
         allCovs[cumNbObs[zoo]+1:nbObs,j] <- subCovs[,j]
@@ -1266,13 +1269,18 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       data <- rbind(data,d)
     }
     
-    if(nbSpatialCovs>0) colnames(allSpatialcovs)<-spatialcovnames
-    
     if(nbCovs>0)
       data <- cbind(data,allCovs)
     
-    if(nbSpatialCovs>0)
+    if(nbSpatialCovs>0){
+      colnames(allSpatialcovs)<-spatialcovnames
+      for(j in spatialcovnames){
+        if(any(raster::is.factor(spatialCovs[[j]]))){
+          allSpatialcovs[[j]] <- factor(allSpatialcovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
+        }
+      }
       data <- cbind(data,allSpatialcovs)
+    }
     
     if(length(centerInd)){
       data <- cbind(data,centerCovs)
@@ -1303,8 +1311,10 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       class(data[[i]]) <- c(class(data[[i]]), "angle")
     }
     
-    if(!is.null(mvnCoords)){
-      attr(data,'coords') <- paste0(mvnCoords,c(".x",".y"))
+    if(!is.null(coordNames)){
+      attr(data,'coords') <- coordNames
+      attr(data,"coordLevel") <- coordLevel
+      data[which(data$level!=coordLevel),coordNames] <- NA
       #tmpNames <- colnames(data)[-which(colnames(data)=="ID")]
       #prepDat <- prepData(data,coordNames = paste0(mvnCoords,c(".x",".y")))
       #data$step <- prepDat$step

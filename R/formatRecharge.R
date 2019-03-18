@@ -15,19 +15,16 @@ formatRecharge <- function(nbStates,formula,data,covs=NULL,par=NULL){
   }
   
   if(!is.null(recharge)){
-    g0covs <- model.matrix(recharge$g0,data[aInd,])
-    recovs <- model.matrix(recharge$theta,data)
-  }
-  
-  if(!is.null(recharge)){
     if(inherits(data,"hierarchical")){
       tmpg0covs <- model.matrix(recharge$g0,data)
-      g0covs <- tmpg0covs[1,,drop=FALSE]
-      for(iLevel in levels(data$level)){
-        lInd <- paste0("I((level == \"",iLevel,"\") * 1)")
-        if(any(lInd %in% rownames(attr(terms(recharge$g0),"factors")))){
-          reFact <- attr(terms(recharge$g0),"factors")[lInd,,drop=FALSE]
-          g0covs[1,colnames(reFact)[which(reFact>0)]] <- tmpg0covs[which(data$level==iLevel)[1],colnames(reFact)[which(reFact>0)]]
+      g0covs <- tmpg0covs[aInd,,drop=FALSE]
+      for(i in 1:nbAnimals){
+        for(iLevel in levels(data$level)){
+          lInd <- paste0("I((level == \"",iLevel,"\") * 1)")
+          if(any(lInd %in% rownames(attr(terms(recharge$g0),"factors")))){
+            reFact <- attr(terms(recharge$g0),"factors")[lInd,,drop=FALSE]
+            g0covs[i,colnames(reFact)[which(reFact>0)]] <- tmpg0covs[which(data$level==iLevel)[1],colnames(reFact)[which(reFact>0)]]
+          }
         }
       }
     } else g0covs <- model.matrix(recharge$g0,data[aInd,])
