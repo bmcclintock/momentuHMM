@@ -325,18 +325,7 @@ plotCall <- function(cov,tempCovs,pr,model,nbStates,covnames,lwd,arg,col,legend.
 plotStationary.miSum <- function(model, covs = NULL, col=NULL, plotCI=FALSE, alpha=0.95, ...)
 {
   model <- delta_bc(model)
-  model$mle <- lapply(model$Par$real,function(x) x$est)
-  model$mle$beta <- model$Par$beta$beta$est
-  model$mle$delta <- model$Par$real$delta$est
-  model$mod <- list()
-  if(!is.null(model$conditions$recharge)){
-    nbRecovs <- ncol(model$g0covs) + ncol(model$reCovs)
-    model$mle$g0 <- c(model$Par$beta$g0$est)
-    names(model$mle$g0) <- colnames(model$Par$beta$g0$est)
-    model$mle$theta <- c(model$Par$beta$theta$est)
-    names(model$mle$theta) <- colnames(model$Par$beta$theta$est)
-  } else nbRecovs <- 0
-  model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,model$conditions$deltaCons,length(model$stateNames),ncol(model$covsDelta)-1,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures,ncol(model$covsPi)-1)
+  model <- formatmiSum(model)
   plotStationary(momentuHMM(model),covs,col,plotCI,alpha,...)
 }
 

@@ -86,19 +86,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     distnames<-names(dist)
     
     if(is.miSum(model)){
-      model$mle <- lapply(model$Par$real,function(x) x$est)
-      model$mle$beta <- model$Par$beta$beta$est
-      model$mle$pi <- model$Par$real$pi$est
-      model$mle$delta <- model$Par$real$delta$est
-      model$mod <- list()
-      if(!is.null(model$conditions$recharge)){
-        nbRecovs <- ncol(model$g0covs) + ncol(model$reCovs)
-        model$mle$g0 <- c(model$Par$beta$g0$est)
-        names(model$mle$g0) <- colnames(model$Par$beta$g0$est)
-        model$mle$theta <- c(model$Par$beta$theta$est)
-        names(model$mle$theta) <- colnames(model$Par$beta$theta$est)
-      } else nbRecovs <- 0
-      model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,model$conditions$deltaCons,nbStates,ncol(model$covsDelta)-1,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures,ncol(model$covsPi)-1)
+      model <- formatmiSum(model)
       if(!is.null(model$mle$beta)) model$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(model$mle$beta),2,byrow=TRUE)
       if(!is.null(model$Par$beta$pi$est)) model$conditions$workBounds$pi<-matrix(c(-Inf,Inf),length(model$Par$beta$pi$est),2,byrow=TRUE)
       if(!is.null(model$Par$beta$delta$est)) model$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(model$Par$beta$delta$est),2,byrow=TRUE)
@@ -189,6 +177,9 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
     beta <- list(beta=beta,pi=pie,g0=g0,theta=theta)
     
+    workBounds$beta <- model$conditions$hierBeta
+    workBounds$delta <- model$conditions$hierDelta
+    
     Par<-lapply(Par,function(x) c(t(x)))
     
     if(states) model$data$states <- NULL
@@ -234,7 +225,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     
   } else {
     
-    inputHierHMM <- formatHierHMM(data=NULL,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures)
+    inputHierHMM <- formatHierHMM(data=NULL,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds)
     
     nbStates <- inputHierHMM$nbStates
     dist <- inputHierHMM$dist
@@ -245,8 +236,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     betaRef <- inputHierHMM$betaRef
     stateNames <- inputHierHMM$stateNames
     
-    if(!is.null(workBounds$beta)) stop("'workBounds$beta' cannot be specified; use 'hierBeta' instead")
-    if(!is.null(workBounds$delta)) stop("'workBounds$delta' cannot be specified; use 'hierDelta' instead")
+    #if(!is.null(workBounds$beta)) stop("'workBounds$beta' cannot be specified; use 'hierBeta' instead")
+    #if(!is.null(workBounds$delta)) stop("'workBounds$delta' cannot be specified; use 'hierDelta' instead")
     
     cons <- workcons <- NULL
     
@@ -742,19 +733,14 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   tmpCovs <- tmpCovs[rep(1,length(lLevels[[1]])),,drop=FALSE]
   tmpCovs$level <- factor(lLevels[[1]],levels=lLevels[[1]])
   class(tmpCovs) <- append("hierarchical",class(tmpCovs))
-  inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,checkData=FALSE)
+  inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,checkData=FALSE)
   
   if(is.null(model)){
     beta <- inputHierHMM$beta
     delta <- inputHierHMM$delta
   }
   
-  if(is.null(workBounds)) wworkBounds <- list()
-  else wworkBounds <- workBounds
-  if(is.list(wworkBounds)){
-    wworkBounds$beta <- inputHierHMM$workBounds$beta
-    wworkBounds$delta <- inputHierHMM$workBounds$delta
-  }
+  wworkBounds <- inputHierHMM$workBounds
   
   if(is.null(model) & !is.list(beta)){
       beta0 <- list(beta=beta)

@@ -450,7 +450,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
 #' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). See \code{\link{fitHMM}}. Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). 
 #' 
 #' @export
-checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=NULL,hierDelta=NULL,estAngleMean=NULL,circularAngleMean=NULL,hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,DM=NULL,userBounds=NULL,workBounds=NULL,fixPar=NULL,...)
+checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=NULL,hierDelta=NULL,estAngleMean=NULL,circularAngleMean=NULL,hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,deltaCons=NULL,fixPar=NULL,...)
 {
   
   ## check that the data is a momentuHierHMMData object or valid data frame
@@ -461,42 +461,24 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
     data <- momentuHierHMMData(data)
   }
   
-  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures)
+  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,betaCons,deltaCons,fixPar)
   nbStates <- inputHierHMM$nbStates
   dist <- inputHierHMM$dist
   beta0 <- inputHierHMM$beta
   delta0 <- inputHierHMM$delta
   formula <- inputHierHMM$formula
   formulaDelta <- inputHierHMM$formulaDelta
-  #workBounds <- inputHierHMM$workBounds
+  workBounds <- inputHierHMM$workBounds
   betaCons <- inputHierHMM$betaCons
   deltaCons <- inputHierHMM$deltaCons
   betaRef <- inputHierHMM$betaRef
   stateNames <- inputHierHMM$stateNames
-  #fixPar <- inputHierHMM$fixPar
+  fixPar <- inputHierHMM$fixPar
   recharge <- inputHierHMM$recharge
-  
-  if(is.null(fixPar)) fixPar <- list()
-  if(is.list(fixPar)){
-    if(!is.null(fixPar$beta)) stop("'fixPar$beta' cannot be specified; use 'hierBeta' instead")
-    if(!is.null(hierBeta) | !is.null(hierDelta)) fixPar$beta <- inputHierHMM$fixPar$beta
-    if(!is.null(fixPar$delta)) stop("'fixPar$delta' cannot be specified; use 'hierDelta' instead")
-    if(!is.null(hierDelta)) fixPar$delta <- inputHierHMM$fixPar$delta
-    if(!is.null(recharge) && (is.null(hierBeta) & !is.null(fixPar$g0))) stop("'fixPar$g0' cannot be specified unless 'hierBeta'is specified")
-    if(!is.null(recharge) && (is.null(hierBeta) & !is.null(fixPar$theta))) stop("'fixPar$theta' cannot be specified unless 'hierBeta'is specified")
-  }
-  
-  if(is.null(workBounds)) workBounds <- list()
-  if(is.list(workBounds)){
-    if(!is.null(workBounds$beta)) stop("'workBounds$beta' cannot be specified; use 'hierBeta' instead")
-    workBounds$beta <- inputHierHMM$workBounds$beta
-    if(!is.null(workBounds$delta)) stop("'workBounds$delta' cannot be specified; use 'hierDelta' instead")
-    workBounds$delta <- inputHierHMM$workBounds$delta
-  }
   
   m <- checkPar0.default(data=data,nbStates=nbStates,dist=dist,Par0=Par0,beta0=beta0,delta0=delta0,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,formula=formula,formulaDelta=formulaDelta,stationary=FALSE,mixtures=mixtures,formulaPi=formulaPi,DM=DM,cons=NULL,userBounds=userBounds,workBounds=workBounds,workcons=NULL,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,stateNames=stateNames,fixPar=fixPar)
   
-  hier <- mapHier(m$mle$beta,m$mle$pi,m$CIbeta$delta$est,hierBeta=hierBeta,hierDelta=hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,hierStates,inputHierHMM$newformula,m$conditions$formulaDelta,inputHierHMM$data,m$conditions$mixtures,recharge,fill=TRUE)
+  hier <- mapHier(list(beta=m$mle$beta,g0=m$mle$g0,theta=m$mle$theta),m$mle$pi,m$CIbeta$delta$est,hierBeta=hierBeta,hierDelta=hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,hierStates,inputHierHMM$newformula,m$conditions$formulaDelta,inputHierHMM$data,m$conditions$mixtures,recharge,fill=TRUE)
   
   if(!is.null(recharge)){
     g0 <- m$mle$g0

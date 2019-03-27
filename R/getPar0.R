@@ -31,8 +31,9 @@ getPar0 <- function(model, ...) {
 #' \item{Par}{A list of vectors of state-dependent probability distribution parameters for 
 #' each data stream specified in \code{model$conditions$dist}}
 #' \item{beta}{Matrix of regression coefficients for the transition probabilities}
-#' \item{delta}{Initial distribution of the HMM. Only returned if \code{stateNames} has the same membership as the state names for \code{model}}.
+#' \item{delta}{Initial distribution of the HMM. Only returned if \code{stateNames} has the same membership as the state names for \code{model}}
 #' 
+#' @details 
 #' All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{hierDist}, \code{userBounds}, \code{workBounds}, etc.) and \code{data} are assumed to be the same 
 #' for \code{model} and the new model (as specified by  \code{nbStates}, \code{hierStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{hierFormula}, \code{formulaDelta}, \code{hierFormulaDelta}, \code{DM}, etc.).
 #'
@@ -223,21 +224,20 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
   }
   
   if(nbStates>1){
-    newForm <- newFormulas(formula,nbStates)
-    formulaStates <- newForm$formulaStates
-    formterms <- newForm$formterms
-    newformula <- newForm$newformula
-    recharge <- newForm$recharge
+    reForm <- formatRecharge(nbStates,formula,model$data)
+    formulaStates <- reForm$formulaStates
+    formterms <- reForm$formterms
+    newformula <- reForm$newformula
+    recharge <- reForm$recharge
     
     betaRow <- rownames(model$mle$beta)
     
     if(!is.null(recharge)){
-      model$data$recharge <- rep(0,nrow(model$data))
-      betaNames <- colnames(model.matrix(as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge")),model$data))
-    } else {
-      betaNames <- colnames(model.matrix(newformula,model$data))
+      model$data <- cbind(model$data,reForm$newdata)
     }
+    betaNames <- colnames(model.matrix(newformula,model$data))
     betaNames <- paste0(rep(betaNames,mixtures),"_mix",rep(1:mixtures,each=length(betaNames)))
+    
     if(model$conditions$mixtures==1) betaRow <- paste0(rep(betaRow,model$conditions$mixtures),"_mix",rep(1:model$conditions$mixtures,each=length(betaRow)))
                                                         
     tmpPar <- matrix(0,length(betaNames),nbStates*(nbStates-1))
@@ -276,12 +276,7 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
     }
     Par$beta<-tmpPar
     if(mixtures==1){
-      if(!is.null(recharge)){
-        model$data$recharge <- rep(0,nrow(model$data))
-        betaNames <- colnames(model.matrix(as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge")),model$data))
-      } else {
-        betaNames <- colnames(model.matrix(newformula,model$data))
-      }
+      betaNames <- colnames(model.matrix(newformula,model$data))
       rownames(Par$beta) <- betaNames
     }
     if(setequal(colnames(model$mle$delta),stateNames) & nbStates>1) {
@@ -339,6 +334,7 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
         else 
           g0[g0Names %in% parmNames]<-model$mod$estimate[parindex[["beta"]]+length(model$mle$beta)+length(model$CIbeta$delta$est)+1:length(model$mle$g0)][parmNames %in% g0Names]
       }
+      names(g0) <- g0Names
       parmNames <- names(model$mle$theta)
       thetaNames <- colnames(model.matrix(recharge$theta,model$data))
       theta <- rep(0,length(thetaNames))
@@ -348,6 +344,7 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
         else 
           theta[thetaNames %in% parmNames]<-model$mod$estimate[parindex[["beta"]]+length(model$mle$beta)+length(model$CIbeta$delta$est)+length(model$mle$g0)+1:length(model$mle$theta)][parmNames %in% thetaNames]
       }
+      names(theta) <- thetaNames
       Par$beta <- list(beta=Par$beta,g0=g0,theta=theta)
     }
     if(mixtures>1) {
@@ -405,19 +402,7 @@ getPar0.miHMM <- function(model,...){
 #' @export
 getPar0.miSum <- function(model,...){
 
-    model$mle <- lapply(model$Par$real,function(x) x$est)
-    model$mle$beta <- model$Par$beta$beta$est
-    model$mle$pi <- model$Par$real$pi$est
-    model$mle$delta <- model$Par$real$delta$est
-    model$mod <- list()
-    if(!is.null(model$conditions$recharge)){
-      nbRecovs <- ncol(model$g0covs) + ncol(model$reCovs)
-      model$mle$g0 <- c(model$Par$beta$g0$est)
-      names(model$mle$g0) <- colnames(model$Par$beta$g0$est)
-      model$mle$theta <- c(model$Par$beta$theta$est)
-      names(model$mle$theta) <- colnames(model$Par$beta$theta$est)
-    } else nbRecovs <- 0
-    model$mod$estimate <- expandPar(model$MIcombine$coefficients,model$conditions$optInd,unlist(model$conditions$fixPar),model$conditions$wparIndex,model$conditions$betaCons,model$conditions$deltaCons,length(model$stateNames),ncol(model$covsDelta)-1,model$conditions$stationary,nrow(model$Par$beta$beta$est)/model$conditions$mixtures-1,nbRecovs,model$conditions$mixtures,ncol(model$covsPi-1))
+    model <- formatmiSum(model)
     model$CIbeta <- model$Par$beta
     model$CIreal <- model$Par$real
     
@@ -430,6 +415,10 @@ getPar0.miSum <- function(model,...){
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states (see \code{\link{fitHMM}}). Default: \code{hierStates=model$conditions$hierStates}.
 #' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy (see \code{\link{fitHMM}}). Default: \code{hierFormula=model$conditions$hierFormula}.
 #' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). 
+#' 
+#' @details 
+#' Note that for hierarchical models, \code{getPar0} will return hierarchical data.tree objects (\code{hierBeta} and \code{hierDelta}) with the default values for \code{fixPar}, \code{betaCons}, and \code{deltaCons};
+#' if hierarchical t.p.m. or initial distribution parameters are subject to constraints, then these must be set manually on the list object returned by \code{getPar0}.
 #' 
 #' @export
 getPar0.hierarchical<-function(model,hierStates=model$conditions$hierStates,estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,hierFormula=model$conditions$hierFormula,hierFormulaDelta=model$conditions$hierFormulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM,...){
@@ -447,14 +436,17 @@ getPar0.hierarchical<-function(model,hierStates=model$conditions$hierStates,estA
   Par0 <- getPar0.default(model,nbStates,estAngleMean,circularAngleMean,formula,formulaDelta,mixtures,formulaPi,DM,betaRef,stateNames)
   
   if(is.list(Par0$beta)){
-    beta0 <- Par0$beta$beta
     Pi <- Par0$beta$pi
   } else {
-    beta0 <- Par0$beta
     Pi <- NULL
   }
-  hier <- mapHier(beta0,Pi,Par0$delta,hierBeta=NULL,hierDelta=NULL,fixPar,betaCons,deltaCons,hierStates,inputHierHMM$newformula,formulaDelta,inputHierHMM$data,mixtures)
-
+  hier <- mapHier(Par0$beta,Pi,Par0$delta,hierBeta=NULL,hierDelta=NULL,fixPar,betaCons,deltaCons,hierStates,inputHierHMM$newformula,formulaDelta,inputHierHMM$data,mixtures,recharge=inputHierHMM$recharge,fill=TRUE)
+  if(!is.null(inputHierHMM$recharge)){
+    for(j in names(inputHierHMM$recharge)){
+      hier$hierBeta[[j]]$g0 <- Par0$beta$g0[names(hier$hierBeta[[j]]$g0)]
+      hier$hierBeta[[j]]$theta <- Par0$beta$theta[names(hier$hierBeta[[j]]$theta)]
+    }
+  }
   Par0$beta <- Par0$delta <- NULL
   Par0$hierBeta <- hier$hierBeta
   Par0$hierDelta <- hier$hierDelta

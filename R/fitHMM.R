@@ -719,7 +719,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   wpar <- n2w(fixParIndex$Par0,p$bounds,fixParIndex$beta0,fixParIndex$delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
   if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
 
-  parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures-(nbCovsPi+1)*(mixtures-1)-ncol(covsDelta)*(nbStates-1)*(!stationary)*mixtures-ifelse(is.null(recharge),0,(nbRecovs+1)+1)
+  parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures-(nbCovsPi+1)*(mixtures-1)-ncol(covsDelta)*(nbStates-1)*(!stationary)*mixtures-ifelse(is.null(recharge),0,(nbRecovs+1+nbG0covs+1))
 
   retrySD <- get_retrySD(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStates,fixParIndex$beta0,mixtures,recharge,fixParIndex$delta0)
   
@@ -1006,36 +1006,20 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
                        estAngleMean=NULL,circularAngleMean=NULL,
                        hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,
                        nlmPar=list(),fit=TRUE,
-                       DM=NULL,userBounds=NULL,workBounds=NULL,
+                       DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,deltaCons=NULL,
                        mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, ...)
 {
   
   if(!inherits(data,"momentuHierHMMData")) stop("data must be a momentuHierHMMData object (as returned by prepData or simHierData)")
   
-  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures)
-  
-  if(is.null(fixPar)) fixPar <- list()
-  if(is.list(fixPar)){
-    if(!is.null(fixPar$beta)) stop("'fixPar$beta' cannot be specified; use 'hierBeta' instead")
-    fixPar$beta <- inputHierHMM$fixPar$beta
-    if(!is.null(fixPar$delta)) stop("'fixPar$delta' cannot be specified; use 'hierDelta' instead")
-    fixPar$delta <- inputHierHMM$fixPar$delta
-  }
-  
-  if(is.null(workBounds)) workBounds <- list()
-  if(is.list(workBounds)){
-    if(!is.null(workBounds$beta)) stop("'workBounds$beta' cannot be specified; use 'hierBeta' instead")
-    workBounds$beta <- inputHierHMM$workBounds$beta
-    if(!is.null(workBounds$delta)) stop("'workBounds$delta' cannot be specified; use 'hierDelta' instead")
-    workBounds$delta <- inputHierHMM$workBounds$delta
-  }
+  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,betaCons,deltaCons,fixPar)
   
   hfit <- fitHMM.momentuHMMData(momentuHMMData(data),inputHierHMM$nbStates,inputHierHMM$dist,Par0,inputHierHMM$beta,inputHierHMM$delta,
                 estAngleMean,circularAngleMean,
                 formula=inputHierHMM$formula,inputHierHMM$formulaDelta,stationary=FALSE,mixtures,formulaPi,
                 verbose=NULL,nlmPar,fit,
-                DM,cons=NULL,userBounds,workBounds=workBounds,workcons=NULL,inputHierHMM$betaCons,inputHierHMM$betaRef,deltaCons=inputHierHMM$deltaCons,
-                mvnCoords,inputHierHMM$stateNames,knownStates,fixPar,retryFits,retrySD,optMethod,control,prior,modelName)
+                DM,cons=NULL,userBounds,workBounds=inputHierHMM$workBounds,workcons=NULL,inputHierHMM$betaCons,inputHierHMM$betaRef,deltaCons=inputHierHMM$deltaCons,
+                mvnCoords,inputHierHMM$stateNames,knownStates,inputHierHMM$fixPar,retryFits,retrySD,optMethod,control,prior,modelName)
   
   # replace initial values with estimates in hierBeta and hierDelta (if provided)
   if(fit){
@@ -1051,7 +1035,7 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
       beta <- par$beta
       Pi <- g0 <- theta <- NULL
     }
-    hier <- mapHier(beta,Pi,par$delta,hierBeta,hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,hierStates,inputHierHMM$newformula,hfit$conditions$formulaDelta,inputHierHMM$data,hfit$conditions$mixtures,inputHierHMM$recharge,fill=TRUE)
+    hier <- mapHier(list(beta=beta,g0=g0,theta=theta),Pi,par$delta,hierBeta,hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,hierStates,inputHierHMM$newformula,hfit$conditions$formulaDelta,inputHierHMM$data,hfit$conditions$mixtures,inputHierHMM$recharge,fill=TRUE)
     if(!is.null(inputHierHMM$recharge)){
       for(j in names(inputHierHMM$recharge)){
         hier$hierBeta[[j]]$g0 <- g0[names(hier$hierBeta[[j]]$g0)]

@@ -85,11 +85,13 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
 
   #covs <- model.matrix(formula,data)
   nbCovs <- ncol(covs)-1
-  if(!is.null(recovs)) nbRecovs <- ncol(recovs)-1 + ncol(g0covs)-1
-  else nbRecovs <- 0
+  if(!is.null(recovs)) {
+    nbRecovs <- ncol(recovs)-1
+    nbG0covs <- ncol(g0covs)-1
+  } else nbRecovs <- nbG0covs <- 0
   
   # convert the parameters back to their natural scale
-  wpar <- expandPar(optPar,optInd,fixPar,wparIndex,betaCons,deltaCons,nbStates,ncol(covsDelta)-1,stationary,nbCovs,nbRecovs,mixtures,ncol(covsPi)-1)
+  wpar <- expandPar(optPar,optInd,fixPar,wparIndex,betaCons,deltaCons,nbStates,ncol(covsDelta)-1,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,ncol(covsPi)-1)
   par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi)
 
   nbAnimals <- length(unique(data$ID))

@@ -698,10 +698,10 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
   
   dataHMM$ID<-as.factor(dataHMM$ID)
   
-  # return coordNames to NA if not at coordLevel
-  dataHMM[which(dataHMM$level!=coordLevel),outNames] <- NA
-  
   if(!is.null(coordNames)) {
+    # return coordNames to NA if not at coordLevel
+    dataHMM[which(dataHMM$level!=coordLevel),outNames] <- NA
+    
     attr(dataHMM,"coords") <- outNames
     attr(dataHMM,"coordLevel") <- coordLevel
   }

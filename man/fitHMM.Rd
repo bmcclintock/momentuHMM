@@ -24,8 +24,9 @@ fitHMM(data, ...)
   circularAngleMean = NULL, hierFormula = NULL,
   hierFormulaDelta = NULL, mixtures = 1, formulaPi = NULL,
   nlmPar = list(), fit = TRUE, DM = NULL, userBounds = NULL,
-  workBounds = NULL, mvnCoords = NULL, knownStates = NULL,
-  fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm",
+  workBounds = NULL, betaCons = NULL, deltaCons = NULL,
+  mvnCoords = NULL, knownStates = NULL, fixPar = NULL,
+  retryFits = 0, retrySD = NULL, optMethod = "nlm",
   control = list(), prior = NULL, modelName = NULL, ...)
 }
 \arguments{

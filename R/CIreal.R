@@ -419,19 +419,7 @@ w2nDMangle<-function(w,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,con
 CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){
   
   if(is.miSum(m)){
-    m$mle <- lapply(m$Par$real,function(x) x$est)
-    m$mle$beta <- m$Par$beta$beta$est
-    m$mle$pi <- m$Par$real$pi$est
-    m$mle$delta <- m$Par$real$delta$est
-    m$mod <- list()
-    if(!is.null(m$conditions$recharge)){
-      nbRecovs <- ncol(m$g0covs) + ncol(m$reCovs)
-      m$mle$g0 <- c(m$Par$beta$g0$est)
-      names(m$mle$g0) <- colnames(m$Par$beta$g0$est)
-      m$mle$theta <- c(m$Par$beta$theta$est)
-      names(m$mle$theta) <- colnames(m$Par$beta$theta$est)
-    } else nbRecovs <- 0
-    m$mod$estimate <- expandPar(m$MIcombine$coefficients,m$conditions$optInd,unlist(m$conditions$fixPar),m$conditions$wparIndex,m$conditions$betaCons,m$conditions$deltaCons,length(m$stateNames),ncol(m$covsDelta)-1,m$conditions$stationary,nrow(m$Par$beta$beta$est)/m$conditions$mixtures-1,nbRecovs,m$conditions$mixtures,ncol(m$covsPi)-1)
+    m <- formatmiSum(m)
     m$mod$hessian <- NA
     m$mod$Sigma <- matrix(0,length(m$mod$estimate),length(m$mod$estimate))
     m$mod$Sigma[-m$conditions$optInd,-m$conditions$optInd] <- m$MIcombine$variance

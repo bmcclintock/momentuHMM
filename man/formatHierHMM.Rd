@@ -6,7 +6,8 @@
 \usage{
 formatHierHMM(data, hierStates, hierDist, hierBeta = NULL,
   hierDelta = NULL, hierFormula = NULL, hierFormulaDelta = NULL,
-  mixtures = 1, checkData = TRUE)
+  mixtures = 1, workBounds = NULL, betaCons = NULL,
+  deltaCons = NULL, fixPar = NULL, checkData = TRUE)
 }
 \arguments{
 \item{data}{\code{\link{momentuHierHMMData}} object or a data frame containing the data streams and covariates.}
@@ -24,6 +25,14 @@ formatHierHMM(data, hierStates, hierDist, hierBeta = NULL,
 \item{hierFormulaDelta}{A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). See \code{\link{fitHMM}}. Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale).}
 
 \item{mixtures}{Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). See \code{\link{fitHMM}}. Default: \code{mixtures=1}.}
+
+\item{workBounds}{A list with elements named \code{'beta'} and/or \code{'delta'}, where each element is a hierarchical data structure \code{\link[data.tree]{Node}} indicating t.p.m. and initial distribution working parameter bounds ('workBounds') for parameters in \code{hierBeta} and \code{hierDelta}, respectively.}
+
+\item{betaCons}{A hierarchical data structure \code{\link[data.tree]{Node}} indicating t.p.m. constraints ('betaCons') among parameters in \code{hierBeta} at each level of the hierarchy.}
+
+\item{deltaCons}{A hierarchical data structure \code{\link[data.tree]{Node}} indicating initial distribution constraints ('deltaCons') among parameters in \code{hierDelta} at each level of the hierarchy.}
+
+\item{fixPar}{A list with elements named \code{'beta'} and/or \code{'delta'}, where each element is a hierarchical data structure \code{\link[data.tree]{Node}} indicating t.p.m. and initial distribution parameters in \code{hierBeta} and \code{hierDelta}, respectively, which are assumed known.}
 
 \item{checkData}{logical indicating whether or not to check the suitability of \code{data} for the specified hierarchy. Ignored unless \code{data} is provided. Default: TRUE.}
 }

@@ -20,8 +20,8 @@ checkPar0(data, ...)
   hierBeta = NULL, hierDelta = NULL, estAngleMean = NULL,
   circularAngleMean = NULL, hierFormula = NULL,
   hierFormulaDelta = NULL, mixtures = 1, formulaPi = NULL,
-  DM = NULL, userBounds = NULL, workBounds = NULL, fixPar = NULL,
-  ...)
+  DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL,
+  deltaCons = NULL, fixPar = NULL, ...)
 }
 \arguments{
 \item{data}{\code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the data stream and covariate values}

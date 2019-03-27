@@ -16,14 +16,14 @@ getTrProbs <- function(data, ...){
 
 #' @rdname getTrProbs
 #' @method getTrProbs default
-#' @param nbStates Number of states
+#' @param nbStates Number of states. Ignored unless \code{data} is a data frame.
 #' @param beta Matrix of regression coefficients for the transition probabilities
-#' @param workBoundsBeta An optional 2-column matrix specifying bounds on the working scale of the transition probability parameters. Must be a k x 2 matrix, where k=\code{length(beta)}.
-#' The first column pertains to the lower bound and the second column the upper bound.
-#' @param formula Regression formula for the transition probability covariates.
-#' @param mixtures Number of mixtures for the state transition probabilities
-#' @param betaRef Indices of reference elements for t.p.m. multinomial logit link.
-#' @param stateNames Optional character vector of length nbStates indicating state names.
+#' @param workBounds An optional named list of 2-column matrices specifying bounds on the working scale of the transition probability parameters ('beta' and, for recharge models, 'g0' and 'theta'). \code{workBounds$beta} must be a k x 2 matrix, where k=\code{length(beta)}.
+#' The first column pertains to the lower bound and the second column the upper bound. Ignored unless \code{data} is a data frame.
+#' @param formula Regression formula for the transition probability covariates. Ignored unless \code{data} is a data frame.
+#' @param mixtures Number of mixtures for the state transition probabilities.  Ignored unless \code{data} is a data frame.
+#' @param betaRef Indices of reference elements for t.p.m. multinomial logit link. Ignored unless \code{data} is a data frame.
+#' @param stateNames Optional character vector of length nbStates indicating state names. Ignored unless \code{data} is a data frame.
 #' 
 #' @return If \code{mixtures=1}, an array of dimension \code{nbStates} x \code{nbStates} x \code{nrow(data)} containing the t.p.m for each observation in \code{data}.
 #' If \code{mixtures>1}, a list of length \code{mixtures}, where each element is an array of dimension \code{nbStates} x \code{nbStates} x \code{nrow(data)} containing the t.p.m for each observation in \code{data}.
@@ -36,7 +36,7 @@ getTrProbs <- function(data, ...){
 #' trProbs <- getTrProbs(m$data,nbStates=2,beta=m$mle$beta,formula=m$conditions$formula)
 #' 
 #' @export
-getTrProbs.default <- function(data,nbStates,beta,workBoundsBeta=NULL,formula=~1,mixtures=1,betaRef=NULL,stateNames=NULL, ...)
+getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mixtures=1,betaRef=NULL,stateNames=NULL, ...)
 {  
   
   if(!is.momentuHMM(data)){
@@ -47,7 +47,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBoundsBeta=NULL,formula=~1
     if(!is.momentuHMMData(data)){ 
       if(missing(nbStates)){
         if(all(c("hierStates","hierDist") %in% argNames)){
-          return(getTrProbs.hierarchical(data,hierStates=hierArgs$hierStates,hierBeta=hierArgs$hierBeta,hierFormula=hierArgs$hierFormula,mixtures,hierArgs$hierDist))
+          return(getTrProbs.hierarchical(data=data,hierStates=hierArgs$hierStates,hierBeta=hierArgs$hierBeta,workBounds=workBounds,hierFormula=hierArgs$hierFormula,mixtures=mixtures,hierDist=hierArgs$hierDist))
         }
       }
       if(!is.data.frame(data)) stop('data must be a data.frame')
@@ -76,24 +76,36 @@ getTrProbs.default <- function(data,nbStates,beta,workBoundsBeta=NULL,formula=~1
     if(!is.formula(formula))
       stop("Check the argument 'formula'.")
     
-    covs <- model.matrix(formula,data)
+    if(is.list(beta)){
+      if(!is.null(beta$g0)) g0 <- w2wn(beta$g0,workBounds$g0)
+      if(!is.null(beta$theta)) theta <- w2wn(beta$theta,workBounds$theta)
+      beta <- beta$beta
+    }
+    
+    reForm <- formatRecharge(nbStates,formula,data,par=list(g0=g0,theta=theta))
+    covs <- reForm$covs
+    
     if(!is.matrix(beta)) stop("'beta' must be a matrix")
     if(nrow(beta)!=(ncol(covs)*mixtures) | ncol(beta)!=(nbStates*(nbStates-1))) stop('beta must be a matrix with',ncol(covs)*mixtures,"rows and",nbStates*(nbStates-1),"columns")
       
-    if(!is.null(workBoundsBeta)){
-      if(!is.matrix(workBoundsBeta) || (nrow(workBoundsBeta)!=length(beta) | ncol(workBoundsBeta)!=2)) stop('workBoundsBeta must be a matrix with',length(beta),"rows and 2 columns")
+    if(!is.null(workBounds$beta)){
+      if(!is.matrix(workBounds$beta) || (nrow(workBounds$beta)!=length(beta) | ncol(workBounds$beta)!=2)) stop('workBounds$beta must be a matrix with',length(beta),"rows and 2 columns")
     }
   } else {
     stateNames <- data$stateNames
     nbStates <- length(stateNames)
     beta <- data$mle$beta
-    workBoundsBeta <- data$conditions$workBounds$beta
+    g0 <- data$mle$g0
+    theta <- data$mle$theta
+    workBounds <- NULL
     formula <- data$conditions$formula
     mixtures <- data$conditions$mixtures
     betaRef <- data$conditions$betaRef
-    covs <- model.matrix(formula,data$data)
+    reForm <- formatRecharge(nbStates,formula,data$data,par=list(g0=g0,theta=theta))
+    covs <- reForm$covs
   }
-  wnbeta <- w2wn(beta,workBoundsBeta)
+  wnbeta <- w2wn(beta,workBounds$beta)
+  
   trMat <- list()
   
   for(mix in 1:mixtures){
@@ -122,21 +134,23 @@ getTrProbs.default <- function(data,nbStates,beta,workBoundsBeta=NULL,formula=~1
 #' If a hierarchical HMM structure is provided, then a hierarchical data structure containing the state transition probabilities for each time step at each level of the hierarchy ('gamma') is returned.
 #' 
 #' @export
-getTrProbs.hierarchical <- function(data,hierStates,hierBeta,hierFormula=NULL,mixtures=1,hierDist,...){
+getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hierFormula=NULL,mixtures=1,hierDist,...){
   
   if(is.momentuHierHMM(data)){
+    trProbs <- getTrProbs.default(data)
     hierStates <- data$conditions$hierStates
     hierBeta <- data$conditions$hierBeta
     hierFormula <- data$conditions$hierFormula
     mixtures <- data$conditions$mixtures
     hierDist <- data$conditions$hierDist
     data <- data$data
+  } else {
+    inputHierHMM <- formatHierHMM(data,hierStates=hierStates,hierDist=hierDist,hierBeta=hierBeta,hierDelta=NULL,hierFormula=hierFormula,mixtures=mixtures,workBounds=workBounds,checkData=FALSE)
+    if(is.list(inputHierHMM$beta)) beta <- inputHierHMM$beta$beta
+    else beta <- inputHierHMM$beta
+    trProbs <- getTrProbs.default(inputHierHMM$data,inputHierHMM$nbStates,beta,inputHierHMM$workBounds,inputHierHMM$newformula,mixtures,inputHierHMM$betaRef,inputHierHMM$stateNames)
   }
   
-  inputHierHMM <- formatHierHMM(data,hierStates=hierStates,hierDist=hierDist,hierBeta=hierBeta,hierDelta=NULL,hierFormula=hierFormula,mixtures=mixtures,checkData=FALSE)
-  if(mixtures>1) inputHierHMM$beta <- inputHierHMM$beta$beta
-  
-  trProbs <- getTrProbs.default(data,inputHierHMM$nbStates,inputHierHMM$beta,inputHierHMM$workBounds$beta,inputHierHMM$formula,mixtures,inputHierHMM$betaRef,inputHierHMM$stateNames)
   if(mixtures==1) trProbs <- list(trProbs)
   
   beta <- data.tree::Node$new("getTrProbs")

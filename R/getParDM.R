@@ -498,7 +498,7 @@ getParDM.hierarchical<-function(data=data.frame(), hierStates, hierDist,
   }
   
   nbStates <- nbHierStates(hierStates)$nbStates
-  dist <-   dist <- getHierDist(hierDist,data=NULL,checkData=FALSE)
+  dist <- getHierDist(hierDist,data=NULL,checkData=FALSE)
   
   return(getParDM.default(data,nbStates,dist,Par,zeroInflation,oneInflation,estAngleMean,circularAngleMean,DM,cons=NULL,userBounds,workBounds,workcons=NULL))
 }

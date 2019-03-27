@@ -67,14 +67,18 @@ A named list containing starting values suitable for \code{Par0} and \code{beta0
 \item{Par}{A list of vectors of state-dependent probability distribution parameters for 
 each data stream specified in \code{model$conditions$dist}}
 \item{beta}{Matrix of regression coefficients for the transition probabilities}
-\item{delta}{Initial distribution of the HMM. Only returned if \code{stateNames} has the same membership as the state names for \code{model}}.
-
-All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{hierDist}, \code{userBounds}, \code{workBounds}, etc.) and \code{data} are assumed to be the same 
-for \code{model} and the new model (as specified by  \code{nbStates}, \code{hierStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{hierFormula}, \code{formulaDelta}, \code{hierFormulaDelta}, \code{DM}, etc.).
+\item{delta}{Initial distribution of the HMM. Only returned if \code{stateNames} has the same membership as the state names for \code{model}}
 }
 \description{
 For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}) from an existing \code{\link{momentuHMM}} or \code{momentuHierHMM} model fit based on the provided arguments for the new model. 
 Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
+}
+\details{
+All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{hierDist}, \code{userBounds}, \code{workBounds}, etc.) and \code{data} are assumed to be the same 
+for \code{model} and the new model (as specified by  \code{nbStates}, \code{hierStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{hierFormula}, \code{formulaDelta}, \code{hierFormulaDelta}, \code{DM}, etc.).
+
+Note that for hierarchical models, \code{getPar0} will return hierarchical data.tree objects (\code{hierBeta} and \code{hierDelta}) with the default values for \code{fixPar}, \code{betaCons}, and \code{deltaCons};
+if hierarchical t.p.m. or initial distribution parameters are subject to constraints, then these must be set manually on the list object returned by \code{getPar0}.
 }
 \examples{
 # model is a momentuHMM object, automatically loaded with the package

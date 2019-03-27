@@ -8,12 +8,12 @@
 \usage{
 getTrProbs(data, ...)
 
-\method{getTrProbs}{default}(data, nbStates, beta, workBoundsBeta = NULL,
+\method{getTrProbs}{default}(data, nbStates, beta, workBounds = NULL,
   formula = ~1, mixtures = 1, betaRef = NULL, stateNames = NULL,
   ...)
 
 \method{getTrProbs}{hierarchical}(data, hierStates, hierBeta,
-  hierFormula = NULL, mixtures = 1, hierDist, ...)
+  workBounds = NULL, hierFormula = NULL, mixtures = 1, hierDist, ...)
 }
 \arguments{
 \item{data}{\code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 
@@ -23,20 +23,20 @@ must be specified (for a hierarchical HMM).}
 
 \item{...}{further arguments passed to or from other methods; ignored if \code{data} is a \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object}
 
-\item{nbStates}{Number of states}
+\item{nbStates}{Number of states. Ignored unless \code{data} is a data frame.}
 
 \item{beta}{Matrix of regression coefficients for the transition probabilities}
 
-\item{workBoundsBeta}{An optional 2-column matrix specifying bounds on the working scale of the transition probability parameters. Must be a k x 2 matrix, where k=\code{length(beta)}.
-The first column pertains to the lower bound and the second column the upper bound.}
+\item{workBounds}{An optional named list of 2-column matrices specifying bounds on the working scale of the transition probability parameters ('beta' and, for recharge models, 'g0' and 'theta'). \code{workBounds$beta} must be a k x 2 matrix, where k=\code{length(beta)}.
+The first column pertains to the lower bound and the second column the upper bound. Ignored unless \code{data} is a data frame.}
 
-\item{formula}{Regression formula for the transition probability covariates.}
+\item{formula}{Regression formula for the transition probability covariates. Ignored unless \code{data} is a data frame.}
 
-\item{mixtures}{Number of mixtures for the state transition probabilities}
+\item{mixtures}{Number of mixtures for the state transition probabilities.  Ignored unless \code{data} is a data frame.}
 
-\item{betaRef}{Indices of reference elements for t.p.m. multinomial logit link.}
+\item{betaRef}{Indices of reference elements for t.p.m. multinomial logit link. Ignored unless \code{data} is a data frame.}
 
-\item{stateNames}{Optional character vector of length nbStates indicating state names.}
+\item{stateNames}{Optional character vector of length nbStates indicating state names. Ignored unless \code{data} is a data frame.}
 
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See \code{\link{fitHMM}}.}
 

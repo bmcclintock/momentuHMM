@@ -111,15 +111,12 @@ getPar<-function(m){
   # map hierarchical beta and delta
   if(is.momentuHierHMM(m)){
     if(is.list(beta)){
-      beta0 <- beta$beta
       Pi <- beta$pi
-      theta <- beta$theta
     } else {
-      beta0 <- beta
       Pi <- NULL
     }
     inputHierHMM <- formatHierHMM(m$data,m$conditions$hierStates,m$conditions$hierDist,hierBeta=NULL,hierDelta=NULL,m$conditions$hierFormula,m$conditions$hierFormulaDelta,m$conditions$mixtures)
-    hier <- mapHier(beta0,Pi,delta,m$conditions$hierBeta,m$conditions$hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,m$conditions$hierStates,inputHierHMM$newformula,m$conditions$formulaDelta,inputHierHMM$data,m$conditions$mixtures)
+    hier <- mapHier(beta,Pi,delta,m$conditions$hierBeta,m$conditions$hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,m$conditions$hierStates,inputHierHMM$newformula,m$conditions$formulaDelta,inputHierHMM$data,m$conditions$mixtures,inputHierHMM$recharge)
     beta <- hier$hierBeta
     delta <- hier$hierDelta
     out <- list(Par=Par, hierBeta=beta, hierDelta=delta)

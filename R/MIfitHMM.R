@@ -225,7 +225,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
                                        estAngleMean, circularAngleMean,
                                        hierArgs$hierFormula, hierArgs$hierFormulaDelta, mixtures, formulaPi,
                                        nlmPar, fit, useInitial,
-                                       DM, userBounds, workBounds,
+                                       DM, userBounds, workBounds, betaCons, deltaCons,
                                        mvnCoords, knownStates, fixPar, retryFits, retrySD, optMethod, control, prior, modelName,
                                        covNames, spatialCovs, centers, centroids, angleCovs,
                                        method, parIS, dfSim, grid.eps, crit, scaleSim, quad.ask, force.quad,
@@ -505,7 +505,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                        estAngleMean = NULL, circularAngleMean = NULL,
                        hierFormula = NULL, hierFormulaDelta = NULL, mixtures = 1, formulaPi = NULL,
                        nlmPar = NULL, fit = TRUE, useInitial = FALSE,
-                       DM = NULL, userBounds = NULL, workBounds = NULL,
+                       DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL, deltaCons = NULL,
                        mvnCoords = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
                        covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL,
                        method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
@@ -720,7 +720,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
   test<-fitHMM.momentuHierHMMData(miData[[ind[1]]], hierStates, hierDist, Par0[[ind[1]]], hierBeta[[ind[1]]], hierDelta[[ind[1]]],
                    estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                    nlmPar, fit = FALSE, DM,
-                   userBounds, workBounds, mvnCoords, knownStates[[ind[1]]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName)
+                   userBounds, workBounds, betaCons, deltaCons, mvnCoords, knownStates[[ind[1]]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName)
   
   # fit HMM(s)
   fits <- list()
@@ -734,7 +734,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     fits[[1]]<-suppressMessages(fitHMM.momentuHierHMMData(miData[[1]], hierStates, hierDist, Par0[[1]], hierBeta[[1]], hierDelta[[1]],
                                            estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                                            nlmPar, fit, DM,
-                                           userBounds, workBounds, mvnCoords, knownStates[[1]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
+                                           userBounds, workBounds, betaCons, deltaCons, mvnCoords, knownStates[[1]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
     if(retryFits>=1){
       cat("\n")
     }
@@ -765,7 +765,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                           tmpFit<-suppressMessages(fitHMM.momentuHierHMMData(miData[[j]], hierStates, hierDist, Par0[[j]], hierBeta[[j]], hierDelta[[j]],
                                                               estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                                                               nlmPar, fit, DM, 
-                                                              userBounds, workBounds, mvnCoords, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
+                                                              userBounds, workBounds, betaCons, deltaCons, mvnCoords, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
                           if(retryFits>=1) cat("\n")
                           tmpFit
                         } 
