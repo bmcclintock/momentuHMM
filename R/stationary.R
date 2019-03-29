@@ -48,7 +48,8 @@ stationary.momentuHMM <- function(model, covs)
         if(is.null(recharge)){
           if(!all(names(covs) %in% names(model$data))) stop('invalid covs specified')
         } else {
-          if(!all(names(covs) %in% c(names(model$data),"recharge"))) stop('invalid covs specified')
+          if(!inherits(model,"hierarchical")) if(!all(names(covs) %in% c(names(model$data),"recharge"))) stop('invalid covs specified')
+          else if(!all(names(covs) %in% c(names(model$data),paste0("recharge",levels(model$data$level))))) stop('invalid covs specified')
         }
         if(any(names(covs) %in% "ID")) covs$ID<-factor(covs$ID,levels=unique(model$data$ID))
         if(inherits(model,"hierarchical") && any(names(covs) %in% "level")) stop("covs$level cannot be specified for hierarchical models")
@@ -74,7 +75,8 @@ stationary.momentuHMM <- function(model, covs)
       reForm <- formatRecharge(nbStates,formula,data=model$data,par=list(g0=model$mle$g0,theta=model$mle$theta))
       newformula <- reForm$newformula
       recharge <- reForm$recharge
-      model$data <- cbind(model$data,reForm$newdata)
+      hierRecharge <- reForm$hierRecharge
+      model$data[colnames(reForm$newdata)] <- reForm$newdata
       g0covs <- reForm$g0covs
       nbG0covs <- ncol(g0covs)-1
       recovs <- reForm$recovs
@@ -84,6 +86,8 @@ stationary.momentuHMM <- function(model, covs)
       } else if(is.matrix(covs)){
         stop("covs must be provided as a data frame for recharge models")
       }
+
+      if(inherits(model,"hierarchical")) class(covs) <- append("hierarchical",class(covs))
       tmpSplineInputs<-getSplineFormula(newformula,model$data,covs)
       
       testCovs <- tmpSplineInputs$covs
@@ -110,6 +114,7 @@ stationary.momentuHMM <- function(model, covs)
       if(inherits(model,"hierarchical") & !("level" %in% names(covs))){
         # expand covs for each level of hierarchy
         tmpSplineInputs$covs <- data.frame(tmpSplineInputs$covs[rep(1:nrow(tmpSplineInputs$covs),nlevels(model$data$level)),,drop=FALSE],level=rep(levels(model$data$level),each=nrow(tmpSplineInputs$covs)))
+        class(tmpSplineInputs$covs) <- append("hierarchical",class(tmpSplineInputs$covs))
       }
       covMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
     }
@@ -125,7 +130,7 @@ stationary.momentuHMM <- function(model, covs)
         allMat <- trMatrix_rcpp(nbStates=nbStates, beta=tmpbeta, covs=covMat, betaRef=model$conditions$betaRef)
       else {
         gamInd<-(length(model$mod$estimate)-(nrow(tmpbeta))*nbStates*(nbStates-1)*mixtures+1):(length(model$mod$estimate))-(ncol(model$covsPi)*(mixtures-1))-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-ncol(model$covsDelta)*(nbStates-1)*(!model$conditions$stationary)*mixtures
-        allMat <- array(unlist(lapply(split(tmpSplineInputs$covs,1:nrow(tmpSplineInputs$covs)),function(x) tryCatch(get_gamma_recharge(model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(tmpSplineInputs$covs)))
+        allMat <- array(unlist(lapply(split(tmpSplineInputs$covs,1:nrow(tmpSplineInputs$covs)),function(x) tryCatch(get_gamma_recharge(model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(tmpSplineInputs$covs)))
       }
       
       tryCatch({

@@ -333,10 +333,11 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   # identify covariates
   reForm <- formatRecharge(nbStates,m$conditions$formula,mhdata,covs=tempCovs,par=lapply(Par$beta,function(x) x$est))
-  mhdata <- cbind(mhdata,reForm$newdata)
+  mhdata[colnames(reForm$newdata)] <- reForm$newdata
   attr(mhdata,'coords') <- attr(m$data,'coords')
   attr(mhdata,'coordLevel') <- attr(m$data,'coordLevel')
   recharge <- reForm$recharge
+  hierRecharge <- reForm$hierRecharge
   newformula <- reForm$newformula
   tempCovs <- reForm$covs
   nbCovs <- reForm$nbCovs
@@ -390,7 +391,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
         tmpSig <- miBeta$variance[gamInd,gamInd]
       } else {
         wpar <- c(miBeta$coefficients[gamInd],miBeta$coefficients[length(miBeta$coefficients)-reForm$nbRecovs:0])
-        est[(mix-1)*nbStates+1:nbStates,] <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,recharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix)
+        est[(mix-1)*nbStates+1:nbStates,] <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,hierRecharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix)
         tmpSig <- miBeta$variance[c(gamInd,length(miBeta$coefficients)-reForm$nbRecovs:0),c(gamInd,length(miBeta$coefficients)-reForm$nbRecovs:0)]
       }
       for(i in 1:nbStates){
@@ -398,7 +399,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
           if(is.null(recharge)){
             dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix)
           } else {
-            dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix)
+            dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix)
           }  
           se[(mix-1)*nbStates+i,j]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
           lower[(mix-1)*nbStates+i,j]<-1/(1+exp(-(log(est[(mix-1)*nbStates+i,j]/(1-est[(mix-1)*nbStates+i,j]))-quantSup*(1/(est[(mix-1)*nbStates+i,j]-est[(mix-1)*nbStates+i,j]^2))*se[(mix-1)*nbStates+i,j])))#est[(mix-1)*nbStates+i,j]-quantSup*se[(mix-1)*nbStates+i,j]
@@ -573,7 +574,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   mh$CIbeta <- NULL
   if(any(ident)) mh$conditions$fullDM <- fullDM
   
-  mh$data<-mhdata
+  mh$data<-mhdata[!(colnames(mhdata) %in% colnames(reForm$newdata))]
   mh$rawCovs<-mhrawCovs
   
   # get fixPar$delta in working scale format so expandPar works correctly in post-analysis

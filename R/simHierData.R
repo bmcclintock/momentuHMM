@@ -705,6 +705,18 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   tmpCovs$level <- factor(level[[1]][1],levels=lLevels[[1]])
   
+  tmpCovs <- tmpCovs[rep(1,length(lLevels[[1]])),,drop=FALSE]
+  tmpCovs$level <- factor(lLevels[[1]],levels=lLevels[[1]])
+  class(tmpCovs) <- append("hierarchical",class(tmpCovs))
+  
+  inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,checkData=FALSE)
+  nbStates <- inputHierHMM$nbStates
+  dist <- inputHierHMM$dist
+  formula <- inputHierHMM$formula
+  formulaDelta <- inputHierHMM$formulaDelta
+  betaRef <- inputHierHMM$betaRef
+  stateNames <- inputHierHMM$stateNames
+  
   newForm <- newFormulas(formula,nbStates)
   formulaStates <- newForm$formulaStates
   formterms <- newForm$formterms
@@ -716,7 +728,11 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     reForm <- formatRecharge(nbStates,formula,data=tmpCovs)
     formulaStates <- reForm$formulaStates
     formterms <- newForm$formterms
-    tmpCovs <- cbind(tmpCovs,reForm$newdata)
+    tmpCovs[colnames(reForm$newdata)] <- reForm$newdata
+    recharge <- reForm$recharge
+    hierRecharge <- reForm$hierRecharge
+    recLevelNames <- names(hierRecharge)
+    rechargeNames <- paste0("recharge",gsub("level","",recLevelNames))
     g0covs <- reForm$g0covs
     nbG0covs <- ncol(g0covs)-1
     recovs <- reForm$recovs
@@ -727,13 +743,6 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     g0covs <- NULL
     recovs <- NULL
   }
-  
-  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",hierarchical=TRUE)
-  
-  tmpCovs <- tmpCovs[rep(1,length(lLevels[[1]])),,drop=FALSE]
-  tmpCovs$level <- factor(lLevels[[1]],levels=lLevels[[1]])
-  class(tmpCovs) <- append("hierarchical",class(tmpCovs))
-  inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,checkData=FALSE)
   
   if(is.null(model)){
     beta <- inputHierHMM$beta
@@ -828,6 +837,9 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   mix <- rep(1,nbAnimals)
   
+  
+  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",hierarchical=TRUE)
+  
   if(!nbSpatialCovs | !retrySims){
     
     ###########################
@@ -888,7 +900,9 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       
       if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd) & !length(angleCovs) & !rwInd) {
         if(!is.null(recharge)){
-          subCovs[,"recharge"] <- formatRecharge(nbStates,formula,data=subCovs,par=list(g0=wng0,theta=wntheta))$newdata$recharge
+          for(j in rechargeNames){
+            subCovs[[j]] <- formatRecharge(nbStates,formula,data=subCovs,par=list(g0=wng0,theta=wntheta))$newdata[[j]]
+          }
         }
         DMcov <- model.matrix(newformula,subCovs)
         
@@ -949,7 +963,9 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
           tmpSubSpatCovs[colnames(subSpatialcovs[1,,drop=FALSE])] <- subSpatialcovs[1,,drop=FALSE]
           tmpSubSpatCovs <- tmpSubSpatCovs[rep(1,length(lLevels[[1]])),,drop=FALSE]
           tmpSubSpatCovs$level <- factor(lLevels[[1]],levels=lLevels[[1]])
-          subCovs[1,"recharge"] <- formatRecharge(nbStates,formula,data=tmpSubSpatCovs,par=list(g0=wng0,theta=wntheta))$newdata$recharge[1]
+          for(j in rechargeNames){
+            subCovs[1,j] <- formatRecharge(nbStates,formula,data=tmpSubSpatCovs,par=list(g0=wng0,theta=wntheta))$newdata[[j]][1]
+          }
           #g0 <- model.matrix(recharge$g0,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wng0
           #subCovs[1,"recharge"] <- g0 #+ model.matrix(recharge$theta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wntheta
         }
@@ -1191,7 +1207,21 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                 }
               }
               if(!is.null(recharge)){
-                subCovs[k+1,"recharge"] <- subCovs[k,"recharge"] + model.matrix(recharge$theta,cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])) %*% wntheta
+                colInd <- lapply(recLevelNames,function(x) which(grepl(paste0("I((level == \"",gsub("level","",x),"\")"),colnames(recovs),fixed=TRUE)))
+                
+                for(j in 1:length(rechargeNames)){
+                  tmpSubCovs <- cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])
+                  if(subCovs[k+1,"level"]==gsub("level","",recLevelNames[j]) & match(subCovs[k,"level"],levels(subCovs$level))>=match(subCovs[k+1,"level"],levels(subCovs$level))){
+                    tmpSubCovs$level <- subCovs[k+1,"level"]
+                    subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]] + model.matrix(recharge$theta,tmpSubCovs)[,colInd[[j]],drop=FALSE] %*% wntheta[colInd[[j]]]
+                  } else if(match(subCovs[k,"level"],levels(subCovs$level))>match(subCovs[k+1,"level"],levels(subCovs$level))){
+                    #tmpSubCovs$level <- subCovs[k,"level"]
+                    subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]] + model.matrix(recharge$theta,tmpSubCovs)[,colInd[[j]],drop=FALSE] %*% wntheta[colInd[[j]]]
+                  } else {
+                    subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]]
+                  }
+                }
+                #subCovs[k+1,"recharge"] <- subCovs[k,"recharge"] + model.matrix(recharge$theta,cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])) %*% wntheta
               }
               for(i in distnames){
                 if(dist[[i]] %in% rwdists){

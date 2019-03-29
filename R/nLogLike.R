@@ -44,6 +44,7 @@
 #' @param g0covs data frame containing the recharge model g0 covariates (if any)
 #' @param mixtures Number of mixtures for the state transition probabilities
 #' @param covsPi data frame containing the pi model covariates
+#' @param recharge recharge model specification (only used for hierarchical models)
 #'
 #' @return The negative log-likelihood of the parameters given the data.
 #'
@@ -77,7 +78,7 @@
 
 nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,
-                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,deltaCons=NULL,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1,covsPi)
+                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,deltaCons=NULL,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1,covsPi,recharge=NULL)
 {
   
   # check arguments
@@ -102,9 +103,21 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
     idInd <- which(data$ID==unique(data$ID)[i])
     aInd <- c(aInd,idInd[1])
     if(nbRecovs){
-      g0 <- par$g0 %*% t(g0covs[i,,drop=FALSE])
-      theta <- par$theta
-      covs[idInd,which(grepl("recharge",colnames(covs)))] <- cumsum(c(g0,theta%*%t(recovs[idInd[-length(idInd)],])))
+      if(inherits(data,"hierarchical")) {
+        recLevels <- length(recharge)
+        recLevelNames <- names(recharge)
+        rechargeNames <- paste0("recharge",gsub("level","",recLevelNames))
+        colInd <- lapply(recLevelNames,function(x) which(grepl(paste0("I((level == \"",gsub("level","",x),"\")"),colnames(recovs),fixed=TRUE)))
+      } else {
+        recLevels <- 1
+        rechargeNames <- "recharge"
+        colInd <- list(1:ncol(recovs))
+      }
+      for(iLevel in 1:recLevels){
+        g0 <- par$g0 %*% t(g0covs[(i-1)*recLevels+iLevel,,drop=FALSE])
+        theta <- par$theta
+        covs[idInd,grepl(rechargeNames[iLevel],colnames(covs))] <- cumsum(c(g0,theta[colInd[[iLevel]]]%*%t(recovs[idInd[-length(idInd)],colInd[[iLevel]]])))
+      }
     }
   }
   

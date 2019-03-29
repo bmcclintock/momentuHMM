@@ -74,6 +74,7 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
   reForm <- formatRecharge(nbStates,m$conditions$formula,m$data,covs=tempCovs,par=m$mle)
   m$data <- cbind(m$data,reForm$newdata)
   recharge <- reForm$recharge
+  hierRecharge <- reForm$hierRecharge
   newformula <- reForm$newformula
   tempCovs <- reForm$covs
   nbCovs <- reForm$nbCovs
@@ -167,7 +168,7 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
           tmpSig <- Sigma[(i2:i3)[unique(c(m$conditions$betaCons))],(i2:i3)[unique(c(m$conditions$betaCons))]]
         } else {
           wpar <- c(m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))],m$mod$estimate[length(m$mod$estimate)-reForm$nbRecovs:0])
-          est[(mix-1)*nbStates+1:nbStates,] <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,recharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix)
+          est[(mix-1)*nbStates+1:nbStates,] <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,hierRecharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix)
           tmpSig <- Sigma[c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-reForm$nbRecovs:0),c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-reForm$nbRecovs:0)]
         }
     
@@ -177,7 +178,7 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
               if(is.null(recharge)){
                 dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix)
               } else {
-                dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,recharge=recharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix)
+                dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix)
               }  
               se[(mix-1)*nbStates+i,j]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
               lower[(mix-1)*nbStates+i,j]<-1/(1+exp(-(log(est[(mix-1)*nbStates+i,j]/(1-est[(mix-1)*nbStates+i,j]))-quantSup*(1/(est[(mix-1)*nbStates+i,j]-est[(mix-1)*nbStates+i,j]^2))*se[(mix-1)*nbStates+i,j])))#est[i,j]-quantSup*se[i,j]
@@ -282,18 +283,30 @@ get_gamma <- function(beta,covs,nbStates,i,j,betaRef,betaCons,workBounds=NULL,mi
   gamma[i,j]
 }
 
-get_recharge <- function(g0theta,g0covs,recovs,workBounds=NULL,k=0){
+get_recharge <- function(g0theta,recovs,g0covs,recharge,hierRecharge,rechargeName="recharge",covs,workBounds=NULL,k=0){
   
   g0 <- w2wn(g0theta[1:ncol(g0covs)],workBounds$g0)
   theta <- w2wn(g0theta[-(1:ncol(g0covs))],workBounds$theta)
   
+  if(inherits(covs,"hierarchical")){
+    recLevelNames <- names(hierRecharge)
+    rechargeNames <- paste0("recharge",gsub("level","",recLevelNames))
+    colInd <- which(grepl(paste0("I((level == \"",gsub("level","",recLevelNames[which(rechargeName==rechargeNames)]),"\")"),colnames(recovs),fixed=TRUE))
+    g0covs <- g0covs[which(covs$level==gsub("level","",recLevelNames[which(rechargeName==rechargeNames)]))[1],,drop=FALSE]
+  } else {
+    colInd <- 1:ncol(recovs)
+    g0covs <- g0covs[1,,drop=FALSE]
+  }
   g <- g0 %*% t(g0covs)
-  recharge <- cumsum(c(g,theta%*%t(recovs)))
-  if(k) recharge <- recharge[k]
-  return(recharge)
+  rec <- cumsum(c(g,theta[colInd]%*%t(recovs[-nrow(recovs),colInd])))
+  
+  if(k) rec <- rec[k]
+  return(rec)
 }
 
-get_gamma_recharge <- function(beta,covs,formula,recharge,nbStates,i,j,betaRef,betaCons,workBounds=NULL,mixture=1){
+get_gamma_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,j,betaRef,betaCons,workBounds=NULL,mixture=1){
+  
+  recharge <- expandRechargeFormulas(hierRecharge)
   
   recovs <- model.matrix(recharge$theta,covs)
   g0covs <- model.matrix(recharge$g0,covs)
@@ -305,8 +318,20 @@ get_gamma_recharge <- function(beta,covs,formula,recharge,nbStates,i,j,betaRef,b
 
   #g0 <- beta[length(beta)-ncol(recovs)-(ncol(g0covs)-1):0] %*% t(g0covs)
   theta <- beta[length(beta)-(ncol(recovs)-1):0]
-  covs[,"recharge"] <- covs[,"recharge"]*g0covs[,1] + theta%*%t(recovs) # g0  + theta%*%t(recovs)
-  #covs <- matrix(covs,1)
+  
+  if(inherits(covs,"hierarchical")){
+    recLevels <- length(hierRecharge)
+    recLevelNames <- names(hierRecharge)
+    rechargeNames <- paste0("recharge",gsub("level","",recLevelNames))
+    colInd <- lapply(recLevelNames,function(x) which(grepl(paste0("I((level == \"",gsub("level","",x),"\")"),colnames(recovs),fixed=TRUE)))
+  } else {
+    recLevels <- 1
+    rechargeNames <- "recharge"
+    colInd <- list(1:ncol(recovs))
+  }
+  for(iLevel in 1:recLevels){
+    covs[,rechargeNames[iLevel]] <- covs[,rechargeNames[iLevel],drop=FALSE] + theta[colInd[[iLevel]]]%*%t(recovs[,colInd[[iLevel]],drop=FALSE]) # g0  + theta%*%t(recovs)
+  }
 
   newcovs <- model.matrix(formula,covs)
   beta <- matrix(beta[1:(length(beta)-(ncol(recovs)))],ncol=nbStates*(nbStates-1))
@@ -436,7 +461,7 @@ CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){
     tmpcovs <- data.frame(level="1")
   }
   
-  
+  class(tmpcovs) <- append("hierarchical",class(tmpcovs))
   
   CIgamma <- data.tree::Node$new("hierGamma")
   CIdelta <- data.tree::Node$new("hierDelta")

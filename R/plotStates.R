@@ -6,7 +6,6 @@
 #' @param m A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object
 #' @param animals Vector of indices or IDs of animals for which states will be plotted.
 #' @param ask If \code{TRUE}, the execution pauses between each plot.
-#' @param hierarchical Logical indicating whether or not to plot the states and state probabilities for each level of a hierarchical HMM. Ignored unless \code{m} is a hierarchical object.
 #'
 #' @examples
 #' # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
@@ -17,12 +16,15 @@
 #'
 #' @export
 
-plotStates <- function(m,animals=NULL,ask=TRUE,hierarchical=FALSE)
+plotStates <- function(m,animals=NULL,ask=TRUE)
 {
   if(!is.momentuHMM(m) & !is.miHMM(m) & !is.miSum(m))
     stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
   
   if(is.miHMM(m)) m <- m$miSum
+  
+  if(inherits(m,"hierarchical")) hierarchical <- TRUE
+  else hierarchical <- FALSE
   
   nbAnimals <- length(unique(m$data$ID))
   nbStates <- length(m$stateNames)#ifelse(is.momentuHMM(m),ncol(m$mle$stepPar),ncol(m$Par$stepPar$est))
@@ -40,7 +42,7 @@ plotStates <- function(m,animals=NULL,ask=TRUE,hierarchical=FALSE)
   } else {
     states <- m$Par$states
     sp <- m$Par$stateProbs$est
-    if(inherits(m,"hierarchical") && hierarchical){
+    if(hierarchical){
       states <- hierViterbi(m, states)
       sp <- hierStateProbs(m, sp)
     }
@@ -68,7 +70,7 @@ plotStates <- function(m,animals=NULL,ask=TRUE,hierarchical=FALSE)
     }
   }
   
-  if(!inherits(m,"hierarchical") | !hierarchical){
+  if(!hierarchical){
     
     par(mfrow=c(nbStates+1,1))
     par(ask=ask)
@@ -105,7 +107,7 @@ plotStates <- function(m,animals=NULL,ask=TRUE,hierarchical=FALSE)
         # plot the states
         par(mar=c(5,6.5,4,2)-c(2,0,0,0))
         plot((1:nbStates)[match(states[[paste0("level",j)]][ind],ref)],main=paste("level",j,": ","ID ",unique(m$data$ID)[zoo],sep=""),ylim=c(0.5,nbStates+0.5),yaxt="n",
-             yaxt="n",xlab="",ylab=NA,type="o",pch=20)
+             yaxt="n",xlab="",ylab=NA)
         axis(side=2,at=1:nbStates,labels=ref,las=2)
         
         # plot the states probabilities

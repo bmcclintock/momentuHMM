@@ -30,9 +30,8 @@ formatHierFormula <- function(data,hierFormula,hierStates){
         form <- paste0("~0+",paste0(unlist(recTerms),collapse = " + "))
         recharge[[j]][[parm]] <- as.formula(form)
       }
-      formulaTerms[[j]] <- c(formulaTerms[[j]],"recharge")
       formTerms[[j]] <- c(formTerms[[j]],paste0("I((level=='",gsub("level","",j),"')*1):recharge(g0=~",as.character(recharge[[j]]$g0)[-1],", theta=~",as.character(recharge[[j]]$theta)[-1],")"))
-      if(!is.null(data)) data$recharge <- rep(0,nrow(data))
+      if(!is.null(data)) data[[paste0("recharge",gsub("level","",j))]] <- rep(0,nrow(data))
     }
   }
   form <- paste0("~ 0 + ",paste0(unlist(formTerms),collapse = " + "))

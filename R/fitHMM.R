@@ -584,12 +584,13 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     formulaStates <- reForm$formulaStates
     newformula <- reForm$newformula
     recharge <- reForm$recharge
+    hierRecharge <- reForm$hierRecharge
     newdata <- reForm$newdata
     g0covs <- reForm$g0covs
     nbG0covs <- ncol(g0covs)-1
     recovs <- reForm$recovs
     nbRecovs <- ncol(recovs)-1
-    if(!nbRecovs | (!inherits(data,"hierarchical") & !attributes(terms(recharge$theta))$intercept)) stop("invalid recharge model -- theta must include an intercept and at least 1 covariate")
+    if(!nbRecovs | (!inherits(data,"hierarchical") && !attributes(terms(recharge$theta))$intercept)) stop("invalid recharge model -- theta must include an intercept and at least 1 covariate")
     covs <- reForm$covs
     nbCovs <- ncol(covs)-1
     if(!is.null(beta0)){
@@ -800,7 +801,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
           withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,
+                                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,
                                                print.level=print.level,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
                                                iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)),error=function(e) e),warning=h)
@@ -808,7 +809,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
           withCallingHandlers(curmod <- tryCatch(optim(optPar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                      inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                      stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,
+                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,
                                                      method=optMethod,control=control,hessian=hessian),error=function(e) e),warning=h)
         }
         endTime <- proc.time()-startTime

@@ -326,7 +326,10 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
     }
     if(!is.null(recharge)){
       parmNames <- names(model$mle$g0)
-      g0Names <- colnames(model.matrix(recharge$g0,model$data))
+      
+      forms <- expandRechargeFormulas(recharge)
+      
+      g0Names <- colnames(model.matrix(forms$g0,model$data))
       g0 <- rep(0,length(g0Names))
       if(any(g0Names %in% parmNames)){
         if(is.miSum(model))
@@ -336,7 +339,7 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
       }
       names(g0) <- g0Names
       parmNames <- names(model$mle$theta)
-      thetaNames <- colnames(model.matrix(recharge$theta,model$data))
+      thetaNames <- colnames(model.matrix(forms$theta,model$data))
       theta <- rep(0,length(thetaNames))
       if(any(thetaNames %in% parmNames)){
         if(is.miSum(model))

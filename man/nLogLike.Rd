@@ -9,7 +9,8 @@ nLogLike(optPar, nbStates, formula, bounds, parSize, data, dist, covs,
   stationary = FALSE, cons, fullDM, DMind, workcons, Bndind, knownStates,
   fixPar, wparIndex, nc, meanind, covsDelta, workBounds, prior = NULL,
   betaCons = NULL, betaRef, deltaCons = NULL, optInd = NULL,
-  recovs = NULL, g0covs = NULL, mixtures = 1, covsPi)
+  recovs = NULL, g0covs = NULL, mixtures = 1, covsPi,
+  recharge = NULL)
 }
 \arguments{
 \item{optPar}{Vector of working parameters.}
@@ -89,6 +90,8 @@ model (if any).}
 \item{mixtures}{Number of mixtures for the state transition probabilities}
 
 \item{covsPi}{data frame containing the pi model covariates}
+
+\item{recharge}{recharge model specification (only used for hierarchical models)}
 }
 \value{
 The negative log-likelihood of the parameters given the data.

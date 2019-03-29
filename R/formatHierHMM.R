@@ -61,7 +61,7 @@ formatHierHMM <- function(data,hierStates,hierDist,
   #data <- newForm$data
   recharge <- newForm$recharge
   
-  if(length(recharge)>1) stop("sorry, only 1 recharge model is currently supported")
+  #if(length(recharge)>1) stop("sorry, only 1 recharge model is currently supported")
   
   # set t.p.m. reference states based on top level
   betaRef <- rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))

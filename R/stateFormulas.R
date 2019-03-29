@@ -103,7 +103,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
             if(any(!unlist(lapply(data[varform],function(x) inherits(x,"factor"))))) stop("angleFormula 'by' argument must be of class factor")
           }
         }
-
+        
         if(!is.null(group)) group <- paste0(group,":")
         mainpart<-c(mainpart,paste0(group,ifelse(strengthInd,paste0(attr(stmp,"stripped.arguments")$angleFormula[[jj]]$strength,":"),""),c("sin","cos"),"(",jj,")"))
       }
@@ -113,7 +113,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
       tmplabs<-attr(Terms,"term.labels")[attr(Terms,"specials")[[paste0(spec,j)]]]
       if(length(tmplabs)){
         tmp<- terms(as.formula(paste("~",substr(tmplabs,nchar(paste0(spec,j))+1,nchar(tmplabs)),collapse="+")),specials=c("cosinor","angleFormula","recharge"))
-      
+        
         tmpnames<-attr(tmp,"term.labels")
         if(any(grepl("angleStrength\\(",tmpnames))) stop("'angleStrength' is defunct in momentuHMM >=1.4.2. Please use 'angleFormula' instead")
         if(any(attr(tmp,"order")>1)){
@@ -223,17 +223,32 @@ newFormulas<-function(formula,nbStates,hierarchical=FALSE)
       }
       if(!is.null(attr(stateForms,"specials")$recharge)){
         reSub <- rownames(attr(stateForms,"factors"))[attr(stateForms,"specials")$recharge]
-        recharge <- eval(parse(text=reSub))
+        recharge <- lapply(reSub,function(x) eval(parse(text=x)))
         #recharge <- stateFormulas(as.formula(paste("~",paste(attr(stateForms,"term.labels")[which(grepl("recharge",attr(stateForms,"term.labels")))]))),1)[[1]]
-        if(!hierarchical){
-          reFact <- attr(stateForms,"factors")[attr(stateForms,"specials")$recharge,,drop=FALSE]
-          newForm <- c(newForm,gsub(reSub,"recharge",colnames(reFact)[which(reFact>0)],fixed=TRUE))
+        hierInd <- FALSE
+        for(k in 1:length(reSub)){
+          #if(!hierarchical){
+            reFact <- attr(stateForms,"factors")[attr(stateForms,"specials")$recharge[k],,drop=FALSE]
+            iLevel <- gsub("\") * 1)","",gsub("I((level == \"","",names(which(attr(stateForms,"factors")[,colnames(reFact)[which(reFact>0)]]==2)),fixed=TRUE),fixed=TRUE)
+            if(length(iLevel)){
+              hierInd <- TRUE
+              if(!hierarchical){
+                newForm <- c(newForm,gsub(reSub[k],paste0("recharge",iLevel),colnames(reFact)[which(reFact>0)],fixed=TRUE))
+              }
+              names(recharge)[k] <- paste0("level",iLevel)
+            } else {
+              if(!hierarchical){
+                newForm <- c(newForm,gsub(reSub[k],"recharge",colnames(reFact)[which(reFact>0)],fixed=TRUE))
+              }
+            }
+          #}
         }
         if(length(newForm)){
           newformula<-as.formula(paste("~",ifelse(attr(terms(formula),"intercept"),"","0+"),paste(newForm,collapse="+")))
         } else {
           newformula <- ~1
         }
+        if(!hierInd) recharge <- recharge[[1]]
       } else {
         newformula<-as.formula(paste("~",paste(newForm,collapse="+")))
       }
@@ -248,6 +263,9 @@ newFormulas<-function(formula,nbStates,hierarchical=FALSE)
       newformula<-formula
     } else {
       formterms<-attr(terms.formula(newformula),"term.labels")
+    }
+    if(hierarchical){
+      recharge <- expandRechargeFormulas(recharge)
     }
   }  
   return(list(formulaStates=formulaStates,formterms=formterms,newformula=newformula,recharge=recharge))

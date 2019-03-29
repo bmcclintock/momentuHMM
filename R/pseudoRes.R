@@ -133,8 +133,9 @@ pseudoRes <- function(m, ncores = 1)
   # identify covariates
   reForm <- formatRecharge(nbStates,m$conditions$formula,data,par=list(g0=g0,theta=theta))
   recharge <- reForm$recharge
+  hierRecharge <- reForm$hierRecharge
   newformula <- reForm$newformula
-  data <- cbind(data,reForm$newdata)
+  if(!is.null(recharge)) data[colnames(reForm$newdata)] <- reForm$newdata
   covs <- reForm$covs
   nbCovs <- reForm$nbCovs
   aInd <- reForm$aInd
@@ -155,7 +156,7 @@ pseudoRes <- function(m, ncores = 1)
         trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*(nbCovs+1)+1:(nbCovs+1),,drop=FALSE],as.matrix(covs),m$conditions$betaRef)
       } else {
         gamInd<-(length(m$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures+1):(length(m$mod$estimate))-(ncol(m$covsPi)*(mixtures-1))-ifelse(reForm$nbRecovs,reForm$nbRecovs+1+reForm$nbG0covs+1,0)-ncol(m$covsDelta)*(nbStates-1)*(!m$conditions$stationary)*mixtures
-        trMat[[mix]] <- array(unlist(lapply(split(data,1:nrow(data)),function(x) tryCatch(get_gamma_recharge(m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-reForm$nbRecovs:0)],covs=x,formula=newformula,recharge=recharge,nbStates=nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(data))) 
+        trMat[[mix]] <- array(unlist(lapply(split(data,1:nrow(data)),function(x) tryCatch(get_gamma_recharge(m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-reForm$nbRecovs:0)],covs=x,formula=newformula,hierRecharge=hierRecharge,nbStates=nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(data))) 
       }
     } else trMat[[mix]] <- array(1,dim=c(1,1,nbObs))
   }

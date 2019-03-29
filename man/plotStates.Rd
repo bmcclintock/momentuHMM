@@ -4,7 +4,7 @@
 \alias{plotStates}
 \title{Plot states}
 \usage{
-plotStates(m, animals = NULL, ask = TRUE, hierarchical = FALSE)
+plotStates(m, animals = NULL, ask = TRUE)
 }
 \arguments{
 \item{m}{A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object}
@@ -12,8 +12,6 @@ plotStates(m, animals = NULL, ask = TRUE, hierarchical = FALSE)
 \item{animals}{Vector of indices or IDs of animals for which states will be plotted.}
 
 \item{ask}{If \code{TRUE}, the execution pauses between each plot.}
-
-\item{hierarchical}{Logical indicating whether or not to plot the states and state probabilities for each level of a hierarchical HMM. Ignored unless \code{m} is a hierarchical object.}
 }
 \description{
 Plot the states and states probabilities.
