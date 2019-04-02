@@ -45,7 +45,8 @@ Imports:
     RColorBrewer,
     tmvtnorm,
     data.tree,
-    DataCombine
+    DataCombine,
+    lubridate
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     tcltk,

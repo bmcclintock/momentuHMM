@@ -103,6 +103,7 @@
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom parallel makeCluster clusterExport stopCluster
 #' @importFrom foreach foreach %dopar%
+#' @importFrom lubridate with_tz
 #' @importFrom doRNG %dorng%
 #' @importFrom stats formula setNames
 #' @importFrom sp coordinates
@@ -361,7 +362,14 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   for(i in ids){
     if(is.null(predTime[[i]])){
       iTime <- range(ind_data[[i]][[Time.name]])
-      predTime[[i]] <- seq(iTime[1],iTime[2],timeStep)
+      if(inherits(obsData[[Time.name]],"POSIXct")){
+        tzone <- attributes(obsData[[Time.name]])$tzone
+        predTime[[i]] <- as.POSIXct(seq(iTime[1],iTime[2],timeStep),tz=tzone)
+      } else {
+        tzone <- NULL
+        predTime[[i]] <- seq(iTime[1],iTime[2],timeStep)
+      }
+      attributes(predTime[[i]])$tzone <- tzone
     }
   }
   if(!is.null(names(predTime))) {
@@ -512,6 +520,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   if(exists("pb")) rm(pb)
 
   convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
+  if(!length(convFits)) stop("crawl::crwMLE failed for all individuals.  Check crawl::crwMLE arguments and/or consult crawl documentation.\n")
   model_fits <- model_fits[convFits]
   
   txt <- NULL
@@ -553,6 +562,9 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
         tcltk::setTkProgressBar(pb, which(i==ids), label=paste("predicting individual",i))
       }
       pD<-crawl::crwPredict(model_fits[[i]], predTime=predTime[[i]],return.type = "flat")
+      if(inherits(ind_data[[i]][[Time.name]],"POSIXct") && attributes(pD[[Time.name]])$tzone != attributes(ind_data[[i]][[Time.name]])$tzone){
+        pD[[Time.name]] <- lubridate::with_tz(pD[[Time.name]],tz=attributes(ind_data[[i]][[Time.name]])$tzone)
+      }
       if(length(predTime[[i]])>1){
         pD[[Time.name]][which(pD$locType=="p")]<-predTime[[i]][predTime[[i]]>=min(model_fits[[i]]$data[[Time.name]])]
       } else if(inherits(obsData[[Time.name]],"POSIXct")){
@@ -580,7 +592,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     pData <- predData
     predData <- data.frame()
     
-    for(i in ids){
+    for(i in convFits){
       
       ipData <- pData[which(pData$ID==i),]
       tmpData <- obsData[which(obsData$ID==i),]
