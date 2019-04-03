@@ -416,6 +416,10 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   ,warning=muffleRNGwarning)
   if(progressBar) stopCluster(cl)
   else stopImplicitCluster()
+  
+  convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
+  if(!length(convFits)) stop("crawl::crwMLE failed for all individuals.  Check crawl::crwMLE arguments and/or consult crawl documentation.\n")
+    
   cat("DONE\n")
   if(retryFits>0) cat("\n\n")
   
