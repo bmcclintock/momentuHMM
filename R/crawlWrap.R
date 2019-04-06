@@ -575,11 +575,14 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
         pD[[Time.name]] <- as.POSIXct(pD$TimeNum*ts,origin="1970-01-01 00:00:00",tz=attributes(pD[[Time.name]])$tzone)
       }
       if(!fillCols){
+        # remove duplicated observation times (because this what crwPredict does)
+        dups <- duplicated(ind_data[[i]][[Time.name]])
+        tmpind_data <- as.data.frame(ind_data[[i]][!dups,,drop=FALSE])
         for(j in names(pD)[names(pD) %in% names(ind_data[[i]])]){
           if(!(j %in% c(Time.name,"ID",coord))){
-            if(!isTRUE(all.equal(pD[[j]],ind_data[[i]][[j]]))) {
-              pD[[j]][pD[[Time.name]] %in% ind_data[[i]][[Time.name]]] <- ind_data[[i]][[j]]
-              pD[[j]][!(pD[[Time.name]] %in% ind_data[[i]][[Time.name]])] <- NA
+            if(!isTRUE(all.equal(pD[[j]],tmpind_data[[j]]))) {
+              pD[[j]][pD[[Time.name]] %in% tmpind_data[[Time.name]]] <- tmpind_data[[j]]
+              pD[[j]][!(pD[[Time.name]] %in% tmpind_data[[Time.name]])] <- NA
             }
           }
         }
