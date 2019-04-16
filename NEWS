@@ -1,4 +1,4 @@
-momentuHMM 1.5.0 2019-02-04
+momentuHMM 1.5.0 2019-04-16
 -----------------
 NEW FEATURES
 
@@ -17,6 +17,10 @@ NEW FEATURES
 * added getTrProbs function for calculating transition probabilities
 
 * progressBar argument has been added to crawlWrap and MIfitHMM
+
+CHANGES
+
+* updated for compatibility with crawl (>= 2.2.2); notable changes include addition of vector_mask argument to prepData and MIfitHMM.
 
 
 momentuHMM 1.4.3 2018-11-21
