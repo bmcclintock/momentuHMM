@@ -17,7 +17,7 @@ Imports:
     foreach,
     numDeriv,
     CircStats,
-    crawl (>= 2.2.1),
+    crawl (>= 2.2.2),
     ggmap,
     ggplot2,
     mitools,

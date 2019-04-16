@@ -99,6 +99,7 @@ MIfitHMM <- function(miData, ...) {
 #' from which distance and angle covariates will be calculated based on the location data. See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{miData$crwPredict} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 #' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.
+#' @param vector_mask A \code{\link[sf]{sf}} for correcting coordinates that travel through a restricted area (e.g. inland for marine mammals). See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.
 #' @param method Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param parIS Size of the parameter importance sample. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param dfSim Degrees of freedom for the t approximation to the parameter posterior. See 'df' argument in \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
@@ -204,7 +205,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
                    verbose = NULL, nlmPar = NULL, fit = TRUE, useInitial = FALSE,
                    DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL, workcons = NULL, betaCons = NULL, betaRef = NULL, deltaCons = NULL,
                    mvnCoords = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
-                   covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL,
+                   covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, vector_mask = NULL,
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
                    fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, ...)
 {
@@ -227,7 +228,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
                                        nlmPar, fit, useInitial,
                                        DM, userBounds, workBounds, betaCons, deltaCons,
                                        mvnCoords, knownStates, fixPar, retryFits, retrySD, optMethod, control, prior, modelName,
-                                       covNames, spatialCovs, centers, centroids, angleCovs,
+                                       covNames, spatialCovs, centers, centroids, angleCovs, vector_mask,
                                        method, parIS, dfSim, grid.eps, crit, scaleSim, quad.ask, force.quad,
                                        fullPost, dfPostIS, scalePostIS,thetaSamp))
         }
@@ -343,7 +344,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
               locs<-rbind(locs,tmp$alpha.sim[,c("mu.x","mu.y")])
           }
           df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",Time.name,tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
-          pD <- tryCatch(prepData.default(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=mvnCoords),error=function(e) e)
+          pD <- tryCatch(prepData.default(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=mvnCoords,vector_mask=vector_mask),error=function(e) e)
           pD
         }
       ,warning=muffleRNGwarning)
@@ -507,7 +508,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                        nlmPar = NULL, fit = TRUE, useInitial = FALSE,
                        DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL, deltaCons = NULL,
                        mvnCoords = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
-                       covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL,
+                       covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, vector_mask = NULL,
                        method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
                        fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, ...)
 {
@@ -627,7 +628,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                               df[which(df$locType=="p"),"x"] <- locs[which(locs$locType=="p"),"x"]
                               df[which(df$locType=="p"),"y"] <- locs[which(locs$locType=="p"),"y"]
                               df$locType <- NULL
-                              pD <- tryCatch(prepData.hierarchical(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=mvnCoords,coordLevel=attr(predData,"coordLevel"),hierLevels=levels(predData$level)),error=function(e) e)
+                              pD <- tryCatch(prepData.hierarchical(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=mvnCoords,hierLevels=levels(predData$level),coordLevel=attr(predData,"coordLevel"),vector_mask=vector_mask),error=function(e) e)
                               pD
                             }
                           ,warning=muffleRNGwarning)

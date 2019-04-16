@@ -21,10 +21,10 @@ MIfitHMM(miData, ...)
   optMethod = "nlm", control = list(), prior = NULL,
   modelName = NULL, covNames = NULL, spatialCovs = NULL,
   centers = NULL, centroids = NULL, angleCovs = NULL,
-  method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1,
-  crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
-  fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
-  thetaSamp = NULL, ...)
+  vector_mask = NULL, method = "IS", parIS = 1000, dfSim = Inf,
+  grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE,
+  force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf,
+  scalePostIS = 1, thetaSamp = NULL, ...)
 
 \method{MIfitHMM}{hierarchical}(miData, nSims, ncores = 1,
   poolEstimates = TRUE, alpha = 0.95, progressBar = FALSE,
@@ -37,10 +37,11 @@ MIfitHMM(miData, ...)
   fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm",
   control = list(), prior = NULL, modelName = NULL,
   covNames = NULL, spatialCovs = NULL, centers = NULL,
-  centroids = NULL, angleCovs = NULL, method = "IS", parIS = 1000,
-  dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
-  quad.ask = FALSE, force.quad = TRUE, fullPost = TRUE,
-  dfPostIS = Inf, scalePostIS = 1, thetaSamp = NULL, ...)
+  centroids = NULL, angleCovs = NULL, vector_mask = NULL,
+  method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1,
+  crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
+  fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
+  thetaSamp = NULL, ...)
 }
 \arguments{
 \item{miData}{A \code{\link{crwData}} object, a \code{\link{crwHierData}} object, a \code{\link{crwSim}} object, a \code{\link{crwHierSim}} object, a list of \code{\link{momentuHMMData}} objects, or a list of \code{\link{momentuHierHMMData}} objects.}
@@ -162,6 +163,8 @@ from which distance and angle covariates will be calculated based on the locatio
 
 \item{angleCovs}{Character vector indicating the names of any circular-circular regression angular covariates in \code{miData$crwPredict} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.}
+
+\item{vector_mask}{A \code{\link[sf]{sf}} for correcting coordinates that travel through a restricted area (e.g. inland for marine mammals). See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.}
 
 \item{method}{Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 
