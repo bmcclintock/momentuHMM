@@ -986,8 +986,8 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
 #' @method fitHMM momentuHierHMMData
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See details.
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See details.
-#' @param hierBeta A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition probabilities at each level of the hierarchy, including initial values ('beta'), parameter equality constraints ('betaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.
-#' @param hierDelta A hierarchical data structure \code{\link[data.tree]{Node}} for the initial distribution at each level of the hierarchy, including initial values ('delta'), parameter equality constraints ('deltaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.
+#' @param hierBeta A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of initial values for the regression coefficients of the transition probabilities at each level of the hierarchy ('beta'). See details.
+#' @param hierDelta A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of initial values for the regression coefficients of the initial distribution at each level of the hierarchy ('delta'). See details.
 #' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (only hierarchical-level effects, with no covariate effects).
 #' Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy. See details.
 #' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). 

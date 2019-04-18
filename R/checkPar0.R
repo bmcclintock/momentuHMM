@@ -461,6 +461,9 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
     data <- momentuHierHMMData(data)
   }
   
+  if(is.null(hierBeta) & !is.null(fixPar$beta)) stop("fixPar$beta cannot be specified unless hierBeta is specified")
+  if(is.null(hierDelta) & !is.null(fixPar$delta)) stop("fixPar$delta cannot be specified unless hierDelta is specified")
+  
   inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,betaCons,deltaCons,fixPar)
   nbStates <- inputHierHMM$nbStates
   dist <- inputHierHMM$dist

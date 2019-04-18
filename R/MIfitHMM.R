@@ -487,8 +487,8 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
 #' @method MIfitHMM hierarchical
 #' @param hierStates A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHMM}}.
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. See \code{\link{fitHMM}}.
-#' @param hierBeta A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition probabilities at each level of the hierarchy, including initial values ('beta'), parameter equality constraints ('betaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See \code{\link{fitHMM}}.
-#' @param hierDelta A hierarchical data structure \code{\link[data.tree]{Node}} for the initial distribution at each level of the hierarchy, including initial values ('delta'), parameter equality constraints ('deltaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See \code{\link{fitHMM}}.
+#' @param hierBeta A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of initial values for the regression coefficients of the transition probabilities at each level of the hierarchy ('beta'). See \code{\link{fitHMM}}. 
+#' @param hierDelta A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of initial values for the regression coefficients of the initial distribution at each level of the hierarchy ('delta'). See \code{\link{fitHMM}}. 
 #' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy. See \code{\link{fitHMM}}.
 #' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). See \code{\link{fitHMM}}.
 #' 

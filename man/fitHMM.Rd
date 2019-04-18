@@ -194,9 +194,9 @@ Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \co
 
 \item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See details.}
 
-\item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition probabilities at each level of the hierarchy, including initial values ('beta'), parameter equality constraints ('betaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.}
+\item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of initial values for the regression coefficients of the transition probabilities at each level of the hierarchy ('beta'). See details.}
 
-\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial distribution at each level of the hierarchy, including initial values ('delta'), parameter equality constraints ('deltaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.}
+\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of initial values for the regression coefficients of the initial distribution at each level of the hierarchy ('delta'). See details.}
 
 \item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (only hierarchical-level effects, with no covariate effects).
 Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy. See details.}
