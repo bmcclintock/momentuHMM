@@ -261,14 +261,14 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
   if(is.null(m$conditions$recharge) & mixtures==1){
     if(is.null(beta0) & nbStates>1) {
       beta <- list(beta=m$mle$beta)
-      if(!is.null(fixPar$beta)) stop("fixPar$beta cannot be specified unless beta0 is specified")
+      if(!inherits(data,"hierarchical") && !is.null(fixPar$beta)) stop("fixPar$beta cannot be specified unless beta0 is specified")
     } else {
       beta <- list(beta=beta0)
     }
   } else {
     if(is.null(beta0$beta) & nbStates>1) {
       beta <- list(beta=m$mle$beta)
-      if(!is.null(fixPar$beta)) stop("fixPar$beta cannot be specified unless beta0$beta is specified")
+      if(!inherits(data,"hierarchical") && !is.null(fixPar$beta)) stop("fixPar$beta cannot be specified unless beta0$beta is specified")
     } else {
       beta <- list(beta=beta0$beta)
     }
@@ -311,14 +311,14 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
     delta <- NULL
   else if(!nbCovsDelta & !inherits(data,"hierarchical")){
     if(is.null(delta0)){
-      if(!is.null(fixPar$delta)) stop("fixPar$delta cannot be specified unless delta0 is specified")
+      if(!inherits(data,"hierarchical") && !is.null(fixPar$delta)) stop("fixPar$delta cannot be specified unless delta0 is specified")
       delta <- matrix(1/nbStates,(nbCovsDelta+1)*mixtures,nbStates)
     } else {
       delta <- matrix(delta,(nbCovsDelta+1)*mixtures,nbStates)
     }
     delta <- apply(delta,1,function(x) log(x[-1]/x[1]))
   } else if(is.null(delta0)){
-    if(!is.null(fixPar$delta)) stop("fixPar$delta cannot be specified unless delta0 is specified")
+    if(!inherits(data,"hierarchical") && !is.null(fixPar$delta)) stop("fixPar$delta cannot be specified unless delta0 is specified")
     delta <- matrix(0,nrow=(nbCovsDelta+1)*mixtures,ncol=nbStates-1)
   }
   
