@@ -4,8 +4,8 @@
 #' @param data \code{\link{momentuHierHMMData}} object or a data frame containing the data streams and covariates. 
 #' @param hierStates A hierarchical data structure \code{\link[data.tree]{Node}} for the states ('state').  See \code{\link{fitHMM}}. 
 #' @param hierDist A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See \code{\link{fitHMM}}. 
-#' @param hierBeta A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition probabilities at each level of the hierarchy, including initial values ('beta'), parameter equality constraints ('betaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See \code{\link{fitHMM}}. 
-#' @param hierDelta A hierarchical data structure \code{\link[data.tree]{Node}} for the initial distribution at each level of the hierarchy, including initial values ('delta'), parameter equality constraints ('deltaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See \code{\link{fitHMM}}. 
+#' @param hierBeta A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of initial values for the regression coefficients of the transition probabilities at each level of the hierarchy ('beta'). See \code{\link{fitHMM}}. 
+#' @param hierDelta A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of initial values for the regression coefficients of the initial distribution at each level of the hierarchy ('delta'). See \code{\link{fitHMM}}. 
 #' @param hierFormula A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). See \code{\link{fitHMM}}. Default: \code{NULL} (only hierarchical-level effects, with no covariate effects). 
 #' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). See \code{\link{fitHMM}}. Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). 
 #' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). See \code{\link{fitHMM}}. Default: \code{mixtures=1}.  
@@ -135,11 +135,30 @@ formatHierHMM <- function(data,hierStates,hierDist,
     names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
     intCov <- c(paste0("level",levels(data$level)[2*j-1]),paste0("I((level == \"",levels(data$level)[2*j-1],"\") * 1)"))
     intCov <- intCov[which(intCov %in% colnames(covs))]
-    ointCov <- c(paste0("level",levels(data$level)[(2*j):nbLevels]),paste0("I((level == \"",levels(data$level)[(2*j):nbLevels],"\") * 1)"))
-    ointCov <- ointCov[which(ointCov %in% colnames(covs))]
+    ointCov <- otherCovs <- list()
+    for(ol in levels(data$level)[(2*j):nbLevels]){
+      ointCov[[ol]] <- c(paste0("level",ol),paste0("I((level == \"",ol,"\") * 1)"))
+      ointCov[[ol]] <- ointCov[[ol]][which(ointCov[[ol]] %in% colnames(covs))]
+    }
     levelCovs <- colnames(covs)[grepl(paste0("I((level == \"",levels(data$level)[2*j-1],"\")"),colnames(covs),fixed=TRUE)]
     levelCovs <- levelCovs[which(!(levelCovs %in% intCov))]
-    otherCovs <- colnames(covs)[-which(colnames(covs) %in% c(intCov,levelCovs,ointCov))]
+    alloCovs <- colnames(covs)[-which(colnames(covs) %in% c(intCov,levelCovs,unlist(ointCov)))]
+    fInd <- which(unlist(lapply(data,function(x) inherits(x,"factor"))))
+    factorCovs <- names(data)[fInd]
+    factorCovs <- factorCovs[-which(factorCovs=="level")]
+    nfInd <- names(data)[-fInd]
+    for(ol in levels(data$level)[(2*j):nbLevels]){
+      otherCovs[[ol]] <- alloCovs[grepl(paste0("I((level == \"",ol,"\")"),alloCovs,fixed=TRUE)]
+      oInt <- find_intercept(ointCov[[ol]],otherCovs[[ol]],factorCovs,nfInd,data)
+      ointCov[[ol]] <- oInt$intCov
+      otherCovs[[ol]] <- oInt$otherCovs
+    }
+    ointCov <- unlist(ointCov)
+    otherCovs <- unlist(otherCovs)
+    Int <- find_intercept(intCov,levelCovs,factorCovs,nfInd,data)
+    intCov <- Int$intCov
+    levelCovs <- Int$otherCovs
+
     for(k in names(t)){
       tt <- data.tree::Traverse(t[[k]],filterFun=function(x) x$level==j+1)
       withinConstr <- acrossConstr <- list()
@@ -156,7 +175,7 @@ formatHierHMM <- function(data,hierStates,hierDist,
               }
               hFixPar$beta[paste0(intCov,"_mix",mix),withinConstr[[h]]] <- -1.e+10
               for(lcovs in levelCovs){
-                hFixPar$beta[paste0(lcovs,"_mix",mix),withinConstr[[h]]] <- 0
+                hFixPar$beta[paste0(lcovs,"_mix",mix),withinConstr[[h]]] <- ifelse(length(intCov),0,-1.e+10) # if there's not intercept then all should be -1.e+10
               }
             }
           }
@@ -226,6 +245,9 @@ formatHierHMM <- function(data,hierStates,hierDist,
       intCov <- intCov[which(intCov %in% colnames(covs))]
       levelCovs <- colnames(covs)[grepl(paste0("I((level == \"",levels(data$level)[2*j-2],"\")"),colnames(covs),fixed=TRUE)]
       levelCovs <- levelCovs[which(!(levelCovs %in% intCov))]
+      Int <- find_intercept(intCov,levelCovs,factorCovs,nfInd,data)
+      intCov <- Int$intCov
+      levelCovs <- Int$otherCovs
       
       #initial distribution       
       for(k in names(t)){
@@ -267,6 +289,9 @@ formatHierHMM <- function(data,hierStates,hierDist,
       intCov <- intCov[which(intCov %in% colnames(covs))]
       levelCovs <- colnames(covs)[grepl(paste0("I((level == \"",levels(data$level)[2*j-1],"\")"),colnames(covs),fixed=TRUE)]
       levelCovs <- levelCovs[which(!(levelCovs %in% intCov))]
+      Int <- find_intercept(intCov,levelCovs,factorCovs,nfInd,data)
+      intCov <- Int$intCov
+      levelCovs <- Int$otherCovs
 
       # t.p.m.
       for(k in names(t)){  
@@ -856,7 +881,7 @@ mapHier <- function(beta,Pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,h
   
   whierBeta <- NULL
   if(is.list(hierBeta)){
-    if(inherits(hierBeta$beta,"Node")) whierBeta <- Clone(hierBeta$beta)
+    if(inherits(hierBeta$beta,"Node")) whierBeta <- data.tree::Clone(hierBeta$beta)
   } else if(inherits(hierBeta,"Node")) whierBeta <- data.tree::Clone(hierBeta)
 
   if(inherits(whierBeta,"Node")){
@@ -918,64 +943,67 @@ mapHier <- function(beta,Pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,h
     }
   }
   
-  whierDelta <- data.tree::Clone(hierDelta)
-  what <- "hierDelta"
-  for(j in 1:(hierStates$height-1)){
-    if(j>1){
-      covNames <- colnames(model.matrix(formula,data[which(data$level==paste0(j,"i")),]))
-      covNames <- covNames[grepl(paste0("level",j,"i$"),covNames) | grepl(paste0("I((level == \"",j,"i\")"),covNames,fixed=TRUE)]
-      nbCovs <- length(covNames)
-      if(mixtures>1) covNames <- paste0(covNames,"_mix",rep(1:mixtures,each=nbCovs))
-      initsInd <- betaCons[covNames,][which(is.na(fixPar$beta[covNames,]))]
-      dimNames <- mapply(function(x) mapply(`[[`, dimnames(fixPar$beta), arrayInd(x, dim(fixPar$beta))),initsInd)
-      inits <- beta[initsInd]
-      count <- 0
-      t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
-      names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
-      for(jj in names(t)){
-        nStates <- t[[jj]]$count#length(t[[jj]]$Get("state",filterFun = data.tree::isLeaf))
-        jRef <- sum(!(rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j)[jj],times=hierStates$Get("leafCount",filterFun=function(x) x$level==j)[jj]) %in% betaRef))
-        pCount <- (nStates-1)*ifelse(jRef,jRef,1)
-        if(nStates){
-          if(is.null(whierDelta[[paste0("level",j)]][[jj]]$deltaCons)) {
-            iRef <- count + matrix(1:(pCount*nbCovs*mixtures),nbCovs*mixtures,pCount)
-          } else iRef <- count + whierDelta[[paste0("level",j)]][[jj]]$deltaCons
-          idimNames <- list(covNames,gsub('.*->',"state",unique(dimNames[2,count + matrix(1:(pCount*nbCovs*mixtures),nbCovs*mixtures,pCount)])))
-          if(fill & is.null(whierDelta[[paste0("level",j)]][[jj]]$deltaCons)) whierDelta[[paste0("level",j)]][[jj]]$deltaCons <- matrix(iRef-count,nbCovs*mixtures,pCount,dimnames=idimNames)
-          if(fill & is.null(whierDelta[[paste0("level",j)]][[jj]]$fixPar)) whierDelta[[paste0("level",j)]][[jj]]$fixPar <- matrix(NA,nbCovs*mixtures,pCount,dimnames=idimNames)
-          if(fill & is.null(whierDelta[[paste0("level",j)]][[jj]]$workBounds)) whierDelta[[paste0("level",j)]][[jj]]$workBounds <- matrix(c(-Inf,Inf),nbCovs*mixtures*pCount,2,byrow=TRUE, dimnames = list(paste0(idimNames[[1]],":",rep(idimNames[[2]],each=length(idimNames[[1]]))),c("lower","upper")))
-          deltaInits <- inits[iRef]
-          if(!is.null(whierDelta[[paste0("level",j)]][[jj]]$deltaCons)) deltaInits <- deltaInits[whierDelta[[paste0("level",j)]][[jj]]$deltaCons]
-          whierDelta[[paste0("level",j)]][[jj]]$delta <- matrix(deltaInits,nbCovs*mixtures,pCount,dimnames=idimNames)
-          count <- count + pCount*nbCovs*mixtures
-        } else {
-          if(is.null(whierDelta[[paste0("level",j)]][[jj]])){
-            #if(fill) whierDelta[[paste0("level",j)]]$AddChild(jj,deltaCons=NULL)
-          } else if(!is.null(whierDelta[[paste0("level",j)]][[jj]]$deltaCons)) stop("There should be no parameters for hierDelta$level",j,"$",jj,"$deltaCons")
-          if(is.null(whierDelta[[paste0("level",j)]][[jj]])){
-            #if(fill) whierDelta[[paste0("level",j)]]$AddChild(jj,fixPar=NULL)
-          } else if(!is.null(whierDelta[[paste0("level",j)]][[jj]]$fixPar)) stop("There should be no parameters for hierDelta$level",j,"$",jj,"$fixPar")
-          if(is.null(whierDelta[[paste0("level",j)]][[jj]])){
-            #if(fill) whierDelta[[paste0("level",j)]]$AddChild(jj,workBounds=NULL)
-          } else if(!is.null(whierDelta[[paste0("level",j)]][[jj]]$workBounds)) stop("There should be no parameters for hierDelta$level",j,"$",jj,"$workBounds")
-          if(is.null(whierDelta[[paste0("level",j)]][[jj]])){
-            #whierDelta[[paste0("level",j)]]$AddChild(jj,delta=NULL)
-          } else if(!is.null(whierDelta[[paste0("level",j)]][[jj]]$delta)) stop("There should be no parameters for hierDelta$level",j,"$",jj,"$delta")
+  whierDelta <- NULL
+  if(inherits(hierDelta,"Node")){
+    whierDelta <- data.tree::Clone(hierDelta)
+    what <- "hierDelta"
+    for(j in 1:(hierStates$height-1)){
+      if(j>1){
+        covNames <- colnames(model.matrix(formula,data[which(data$level==paste0(j,"i")),]))
+        covNames <- covNames[grepl(paste0("level",j,"i$"),covNames) | grepl(paste0("I((level == \"",j,"i\")"),covNames,fixed=TRUE)]
+        nbCovs <- length(covNames)
+        if(mixtures>1) covNames <- paste0(covNames,"_mix",rep(1:mixtures,each=nbCovs))
+        initsInd <- betaCons[covNames,][which(is.na(fixPar$beta[covNames,]))]
+        dimNames <- mapply(function(x) mapply(`[[`, dimnames(fixPar$beta), arrayInd(x, dim(fixPar$beta))),initsInd)
+        inits <- beta[initsInd]
+        count <- 0
+        t <- data.tree::Traverse(hierStates,filterFun=function(x) x$level==j)
+        names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
+        for(jj in names(t)){
+          nStates <- t[[jj]]$count#length(t[[jj]]$Get("state",filterFun = data.tree::isLeaf))
+          jRef <- sum(!(rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j)[jj],times=hierStates$Get("leafCount",filterFun=function(x) x$level==j)[jj]) %in% betaRef))
+          pCount <- (nStates-1)*ifelse(jRef,jRef,1)
+          if(nStates){
+            if(is.null(whierDelta[[paste0("level",j)]][[jj]]$deltaCons)) {
+              iRef <- count + matrix(1:(pCount*nbCovs*mixtures),nbCovs*mixtures,pCount)
+            } else iRef <- count + whierDelta[[paste0("level",j)]][[jj]]$deltaCons
+            idimNames <- list(covNames,gsub('.*->',"state",unique(dimNames[2,count + matrix(1:(pCount*nbCovs*mixtures),nbCovs*mixtures,pCount)])))
+            if(fill & is.null(whierDelta[[paste0("level",j)]][[jj]]$deltaCons)) whierDelta[[paste0("level",j)]][[jj]]$deltaCons <- matrix(iRef-count,nbCovs*mixtures,pCount,dimnames=idimNames)
+            if(fill & is.null(whierDelta[[paste0("level",j)]][[jj]]$fixPar)) whierDelta[[paste0("level",j)]][[jj]]$fixPar <- matrix(NA,nbCovs*mixtures,pCount,dimnames=idimNames)
+            if(fill & is.null(whierDelta[[paste0("level",j)]][[jj]]$workBounds)) whierDelta[[paste0("level",j)]][[jj]]$workBounds <- matrix(c(-Inf,Inf),nbCovs*mixtures*pCount,2,byrow=TRUE, dimnames = list(paste0(idimNames[[1]],":",rep(idimNames[[2]],each=length(idimNames[[1]]))),c("lower","upper")))
+            deltaInits <- inits[iRef]
+            if(!is.null(whierDelta[[paste0("level",j)]][[jj]]$deltaCons)) deltaInits <- deltaInits[whierDelta[[paste0("level",j)]][[jj]]$deltaCons]
+            whierDelta[[paste0("level",j)]][[jj]]$delta <- matrix(deltaInits,nbCovs*mixtures,pCount,dimnames=idimNames)
+            count <- count + pCount*nbCovs*mixtures
+          } else {
+            if(is.null(whierDelta[[paste0("level",j)]][[jj]])){
+              #if(fill) whierDelta[[paste0("level",j)]]$AddChild(jj,deltaCons=NULL)
+            } else if(!is.null(whierDelta[[paste0("level",j)]][[jj]]$deltaCons)) stop("There should be no parameters for hierDelta$level",j,"$",jj,"$deltaCons")
+            if(is.null(whierDelta[[paste0("level",j)]][[jj]])){
+              #if(fill) whierDelta[[paste0("level",j)]]$AddChild(jj,fixPar=NULL)
+            } else if(!is.null(whierDelta[[paste0("level",j)]][[jj]]$fixPar)) stop("There should be no parameters for hierDelta$level",j,"$",jj,"$fixPar")
+            if(is.null(whierDelta[[paste0("level",j)]][[jj]])){
+              #if(fill) whierDelta[[paste0("level",j)]]$AddChild(jj,workBounds=NULL)
+            } else if(!is.null(whierDelta[[paste0("level",j)]][[jj]]$workBounds)) stop("There should be no parameters for hierDelta$level",j,"$",jj,"$workBounds")
+            if(is.null(whierDelta[[paste0("level",j)]][[jj]])){
+              #whierDelta[[paste0("level",j)]]$AddChild(jj,delta=NULL)
+            } else if(!is.null(whierDelta[[paste0("level",j)]][[jj]]$delta)) stop("There should be no parameters for hierDelta$level",j,"$",jj,"$delta")
+          }
         }
+      } else if(j==1){
+        covNames <- colnames(model.matrix(formulaDelta,data))
+        nbCovs <- length(covNames)
+        if(mixtures>1) covNames <- paste0(covNames,"_mix",rep(1:mixtures,each=nbCovs))
+        initsInd <- unique(deltaCons[covNames,][which(is.na(fixPar$delta[covNames,]))])
+        dimNames <- mapply(function(x) mapply(`[[`, dimnames(fixPar$delta), arrayInd(x, dim(fixPar$delta))),initsInd)
+        dimNames <- list(covNames,unique(dimNames[2,]))
+        deltaInits <- delta[initsInd]
+        if(!is.null(whierDelta[[paste0("level",j)]]$deltaCons)) deltaInits <- deltaInits[whierDelta[[paste0("level",j)]]$deltaCons]
+        if(fill & is.null(whierDelta[[paste0("level",j)]]$deltaCons)) whierDelta[[paste0("level",j)]]$deltaCons <- matrix(1:length(deltaInits),nbCovs*mixtures,dimnames=dimNames)
+        if(fill & is.null(whierDelta[[paste0("level",j)]]$fixPar)) whierDelta[[paste0("level",j)]]$fixPar <- matrix(rep(NA,length(deltaInits)),nbCovs*mixtures,dimnames=dimNames)
+        if(fill & is.null(whierDelta[[paste0("level",j)]]$workBounds)) whierDelta[[paste0("level",j)]]$workBounds <- matrix(c(-Inf,Inf),length(deltaInits),2,byrow=TRUE, dimnames = list(paste0(dimNames[[1]],":",rep(dimNames[[2]],each=length(dimNames[[1]]))),c("lower","upper")))
+        whierDelta[[paste0("level",j)]]$delta <- matrix(deltaInits,nbCovs*mixtures,dimnames=dimNames)
       }
-    } else if(j==1){
-      covNames <- colnames(model.matrix(formulaDelta,data))
-      nbCovs <- length(covNames)
-      if(mixtures>1) covNames <- paste0(covNames,"_mix",rep(1:mixtures,each=nbCovs))
-      initsInd <- unique(deltaCons[covNames,][which(is.na(fixPar$delta[covNames,]))])
-      dimNames <- mapply(function(x) mapply(`[[`, dimnames(fixPar$delta), arrayInd(x, dim(fixPar$delta))),initsInd)
-      dimNames <- list(covNames,unique(dimNames[2,]))
-      deltaInits <- delta[initsInd]
-      if(!is.null(whierDelta[[paste0("level",j)]]$deltaCons)) deltaInits <- deltaInits[whierDelta[[paste0("level",j)]]$deltaCons]
-      if(fill & is.null(whierDelta[[paste0("level",j)]]$deltaCons)) whierDelta[[paste0("level",j)]]$deltaCons <- matrix(1:length(deltaInits),nbCovs*mixtures,dimnames=dimNames)
-      if(fill & is.null(whierDelta[[paste0("level",j)]]$fixPar)) whierDelta[[paste0("level",j)]]$fixPar <- matrix(rep(NA,length(deltaInits)),nbCovs*mixtures,dimnames=dimNames)
-      if(fill & is.null(whierDelta[[paste0("level",j)]]$workBounds)) whierDelta[[paste0("level",j)]]$workBounds <- matrix(c(-Inf,Inf),length(deltaInits),2,byrow=TRUE, dimnames = list(paste0(dimNames[[1]],":",rep(dimNames[[2]],each=length(dimNames[[1]]))),c("lower","upper")))
-      whierDelta[[paste0("level",j)]]$delta <- matrix(deltaInits,nbCovs*mixtures,dimnames=dimNames)
     }
   }
   
@@ -991,4 +1019,31 @@ mapHier <- function(beta,Pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,h
     whierBeta <- list(beta=whierBeta, pi=Pi)
   }
   return(list(hierBeta=whierBeta,hierDelta=whierDelta))
+}
+
+find_intercept <- function(intCov,otherCovs,factorCovs,nfInd,data){
+  if(!length(intCov)){
+    fMat <- matrix(unlist(lapply(factorCovs,function(x) grepl(x,otherCovs))),nrow=length(factorCovs),ncol=length(otherCovs),byrow=TRUE,dimnames=list(factorCovs,otherCovs))
+    fCovs <- which(apply(fMat,2,function(x) any(x)))
+    if(!length(fCovs)) stop("hierFormula and hierFormulaDelta formulas must contain an intercept (unless the formula contains a factor covariate)")
+    nfCovs <- which(apply(matrix(unlist(lapply(nfInd,function(x) grepl(x,otherCovs))),nrow=length(nfInd),ncol=length(otherCovs),byrow=TRUE),2,function(x) any(x)))
+    fMat[,otherCovs[nfCovs]] <- FALSE
+    if(sum(rowSums(fMat)>0)>1){
+      factorTerms <- factorCovs[which(rowSums(fMat)>0)]
+      multiFact <- which(colSums(fMat)>1)
+      for(k in which(rowSums(fMat)>0)){
+        if(sum(fMat[k,])!=length(fCovs)){
+          if(sum(fMat[k,colSums(fMat)==1]) && sum(fMat[k,colSums(fMat)==1])!=nlevels(data[[factorCovs[k]]])) {
+            fMat[k,] <- FALSE
+          } else {
+            if(sum(fMat)>sum(fMat[,multiFact])) fMat[k,multiFact] <- FALSE
+          }
+        }
+      }
+    }
+    fCovs <- which(apply(fMat,2,function(x) any(x)))
+    intCov <- otherCovs[fCovs]
+    otherCovs <- otherCovs[-fCovs]
+  }
+  list(intCov=intCov,otherCovs=otherCovs)
 }

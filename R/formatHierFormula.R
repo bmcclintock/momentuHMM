@@ -45,12 +45,15 @@ getFactorTerms <- function(formulaTerms,factorTerms,formula,data,level){
   colmm <- colnames(mm)
   for(jj in 1:length(colmm)){
     cterms <- unlist(strsplit(formulaTerms[as[jj]],":"))
-    lInd <- unlist(strsplit(colmm[jj],":"))[which(cterms %in% factorTerms)]
-    for(kk in cterms[which(cterms %in% factorTerms)]){
-      lInd <- gsub(kk,"",lInd)
+    cInd <- which(cterms %in% factorTerms)
+    lInd <- unlist(strsplit(colmm[jj],":"))[cInd]
+    if(length(cInd)){
+      for(kk in 1:length(cInd)){
+        lInd[kk] <- gsub(cterms[cInd[kk]],"",lInd[kk])
+      }
     }
-    names(lInd) <- cterms[which(cterms %in% factorTerms)]
-    for(kk in cterms[which(cterms %in% factorTerms)]){
+    names(lInd) <- cterms[cInd]
+    for(kk in cterms[cInd]){
       colmm[jj] <- gsub(paste0(kk,lInd[kk]),paste0("(",kk,"=='",lInd[kk],"')"),colmm[jj])
     }
     colmm[jj] <- paste0("I((level=='",gsub("level","",level),"')*",colmm[jj],")")
