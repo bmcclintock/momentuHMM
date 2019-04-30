@@ -404,7 +404,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     predTime <- predTime[ids]
   } else names(predTime) <- ids
   
-  cat('Fitting',nbAnimals,'track(s) using crawl::crwMLE...',ifelse(ncores>1,"","\n"))
+  cat('Fitting',nbAnimals,'track(s) using crawl::crwMLE...',ifelse(nbAnimals>1 & ncores>1,"","\n"))
   if(progressBar){
     cl <- makeCluster(ncores)
     registerDoParallel(cl)
