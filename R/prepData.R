@@ -218,9 +218,9 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
     if(is.null(spatialcovnames)) stop('spatialCovs must be a named list')
     nbSpatialCovs<-length(spatialcovnames)
     for(j in 1:nbSpatialCovs){
-      if(!any(class(spatialCovs[[j]]) %in% c("RasterLayer","RasterBrick","RasterStack"))) stop("spatialCovs$",spatialcovnames[j]," must be of class 'RasterLayer', 'RasterStack', or 'RasterBrick'")
+      if(!inherits(spatialCovs[[j]],c("RasterLayer","RasterBrick","RasterStack"))) stop("spatialCovs$",spatialcovnames[j]," must be of class 'RasterLayer', 'RasterStack', or 'RasterBrick'")
       if(any(is.na(raster::getValues(spatialCovs[[j]])))) stop("missing values are not permitted in spatialCovs$",spatialcovnames[j])
-      if(any(class(spatialCovs[[j]]) %in% c("RasterBrick","RasterStack"))){
+      if(inherits(spatialCovs[[j]],c("RasterBrick","RasterStack"))){
         if(is.null(raster::getZ(spatialCovs[[j]]))) stop("spatialCovs$",spatialcovnames[j]," is a raster stack or brick that must have set z values (see ?raster::setZ)")
         else if(!(names(attributes(spatialCovs[[j]])$z) %in% names(data))) stop("spatialCovs$",spatialcovnames[j]," z value '",names(attributes(spatialCovs[[j]])$z),"' not found in data")
       }
@@ -558,9 +558,9 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     if(is.null(spatialcovnames)) stop('spatialCovs must be a named list')
     nbSpatialCovs<-length(spatialcovnames)
     for(j in 1:nbSpatialCovs){
-      if(!any(class(spatialCovs[[j]]) %in% c("RasterLayer","RasterBrick","RasterStack"))) stop("spatialCovs$",spatialcovnames[j]," must be of class 'RasterLayer', 'RasterStack', or 'RasterBrick'")
+      if(!inherits(spatialCovs[[j]],c("RasterLayer","RasterBrick","RasterStack"))) stop("spatialCovs$",spatialcovnames[j]," must be of class 'RasterLayer', 'RasterStack', or 'RasterBrick'")
       if(any(is.na(raster::getValues(spatialCovs[[j]])))) stop("missing values are not permitted in spatialCovs$",spatialcovnames[j])
-      if(any(class(spatialCovs[[j]]) %in% c("RasterBrick","RasterStack"))){
+      if(inherits(spatialCovs[[j]],c("RasterBrick","RasterStack"))){
         if(is.null(raster::getZ(spatialCovs[[j]]))) stop("spatialCovs$",spatialcovnames[j]," is a raster stack or brick that must have set z values (see ?raster::setZ)")
         else if(!(names(attributes(spatialCovs[[j]])$z) %in% names(data))) stop("spatialCovs$",spatialcovnames[j]," z value '",names(attributes(spatialCovs[[j]])$z),"' not found in data")
       }

@@ -621,8 +621,18 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       else if(!(inputs$dist[["step"]] %in% stepdists)) stop("spatialCovs can only be included when valid 'step' distributions are specified") 
     }
     for(j in 1:nbSpatialCovs){
-      if(class(spatialCovs[[j]])!="RasterLayer") stop("spatialCovs$",spatialcovnames[j]," must be of class 'RasterLayer'")
-      if(any(is.na(raster::getValues(spatialCovs[[j]])))) stop("missing values are not permitted in spatialCovs")
+      if(!inherits(spatialCovs[[j]],c("RasterLayer","RasterBrick","RasterStack"))) stop("spatialCovs$",spatialcovnames[j]," must be of class 'RasterLayer', 'RasterStack', or 'RasterBrick'")
+      if(any(is.na(raster::getValues(spatialCovs[[j]])))) stop("missing values are not permitted in spatialCovs$",spatialcovnames[j])
+      if(inherits(spatialCovs[[j]],c("RasterBrick","RasterStack"))){
+        if(is.null(raster::getZ(spatialCovs[[j]]))) stop("spatialCovs$",spatialcovnames[j]," is a raster stack or brick that must have set z values (see ?raster::setZ)")
+        else if(!(names(attributes(spatialCovs[[j]])$z) %in% names(covs))) {
+          if(!is.null(model)) covs[[names(attributes(spatialCovs[[j]])$z)]] <- model$data[[names(attributes(spatialCovs[[j]])$z)]]
+          else stop("spatialCovs$",spatialcovnames[j]," z value '",names(attributes(spatialCovs[[j]])$z),"' not found in covs")
+        }
+        zname <- names(attributes(spatialCovs[[j]])$z)
+        zvalues <- raster::getZ(spatialCovs[[j]])
+        if(!all(unique(covs[[zname]]) %in% zvalues)) stop("data$",zname," includes z-values with no matching raster layer in spatialCovs$",spatialcovnames[j])
+      }
     }
   } else nbSpatialCovs <- 0
 
@@ -904,7 +914,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     for(j in 1:nbSpatialCovs){
       getCell<-raster::cellFromXY(spatialCovs[[j]],initialPosition[[1]])
       if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
-      tmpCovs[[spatialcovnames[j]]]<-spatialCovs[[j]][getCell]
+      spCov <- spatialCovs[[j]][getCell]
+      if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+        zname <- names(attributes(spatialCovs[[j]])$z)
+        zvalues <- raster::getZ(spatialCovs[[j]])
+        spCov <- spCov[1,which(zvalues==covs[[zname]][1])]
+      }
+      tmpCovs[[spatialcovnames[j]]]<-spCov
     }
   }
   if(length(centerInd)){
@@ -1127,7 +1143,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           for(j in 1:nbSpatialCovs){
             getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[1,1],X[1,2]))
             if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
-            subSpatialcovs[1,j]<-spatialCovs[[j]][getCell]
+            spCov <- spatialCovs[[j]][getCell]
+            if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+              zname <- names(attributes(spatialCovs[[j]])$z)
+              zvalues <- raster::getZ(spatialCovs[[j]])
+              spCov <- spCov[1,which(zvalues==covs[[zname]][1])]
+            }
+            subSpatialcovs[1,j]<-spCov
             if(spatialcovnames[j] %in% angleCovs) {
               subAnglecovs[1,spatialcovnames[j]] <- subSpatialcovs[1,j]
               subSpatialcovs[1,j] <- 0  # set to zero because can't have NA covariates
@@ -1320,7 +1342,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             for(j in 1:nbSpatialCovs){
               getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[k+1,1],X[k+1,2]))
               if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
-              subSpatialcovs[k+1,j]<-spatialCovs[[j]][getCell]
+              spCov <- spatialCovs[[j]][getCell]
+              if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+                zname <- names(attributes(spatialCovs[[j]])$z)
+                zvalues <- raster::getZ(spatialCovs[[j]])
+                spCov <- spCov[1,which(zvalues==covs[[zname]][k+1])]
+              }
+              subSpatialcovs[k+1,j]<-spCov
               if(spatialcovnames[j] %in% angleCovs) {
                 subAnglecovs[k+1,spatialcovnames[j]] <- subSpatialcovs[k+1,j]
                 subSpatialcovs[k+1,j] <- circAngles(subAnglecovs[k:(k+1),spatialcovnames[j]],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
