@@ -94,6 +94,11 @@ RWdata <- function(dist,data){
   newdata
 }
 
+#' @importFrom dplyr lag
+crw <- function(x_tm1,lag=1){
+  dplyr::lag(x_tm1,n=lag-1,default=x_tm1[1])-dplyr::lag(x_tm1,n=lag,default=x_tm1[1])
+}
+
 # startup message
 #' @importFrom utils packageDescription available.packages
 print.momentuHMM.version <- function()
