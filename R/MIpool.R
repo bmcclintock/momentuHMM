@@ -633,6 +633,8 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     mh$Par$real <- CIreal.hierarchical(mh)
   }
   
+  attr(mh$data,"coords") <- coordNames
+  
   return(mh)
 }
 

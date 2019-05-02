@@ -20,7 +20,7 @@ predTimes <- seq(as.POSIXlt("2012-11-20 02:00:00 UTC",tz="UTC"),as.POSIXlt("2012
 # fit crawl model and predict locations at 2 hour time steps
 crwOut<-crawlWrap(turtleData,retryFits=retryFits,Time.name="time",
                   err.model=err.model,
-                  theta=c(7.747508, 8.223732, 8.514144, 7.101799, 7.248497, 7.941228, 9.460062, -2.502675),fixPar = fixPar, constr=constr,
+                  theta=c(7.747508, 8.223732, 8.514144, 7.101799, 7.248497, 7.941228, 5, -10),fixPar = fixPar, constr=constr,
                   predTime=predTimes) 
 
 # add date field to crwPredict data frame to match z values of raster bricks (speedBrick and dirBrick); see ?raster::getZ
