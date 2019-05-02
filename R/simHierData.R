@@ -217,7 +217,12 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% rwdists){
         covs[[paste0(mvnCoords,".x_tm1")]] <- NULL
         covs[[paste0(mvnCoords,".y_tm1")]] <- NULL
-        if(dist[[mvnCoords]]=="rw_mvnorm3") covs[[paste0(mvnCoords,".z_tm1")]] <- NULL
+        covs[[paste0(mvnCoords,".x_tm2")]] <- NULL
+        covs[[paste0(mvnCoords,".y_tm2")]] <- NULL
+        if(dist[[mvnCoords]]=="rw_mvnorm3") {
+          covs[[paste0(mvnCoords,".z_tm1")]] <- NULL
+          covs[[paste0(mvnCoords,".z_tm2")]] <- NULL
+        }
         if(!ncol(covs)) covs <- NULL
       }
     }
@@ -995,12 +1000,12 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         for(i in distnames){
           if(dist[[i]] %in% rwdists){
             if(dist[[i]] %in% c("rw_mvnorm2")){
-              subCovs[1,paste0(i,".x_tm1")] <- X[1,1]
-              subCovs[1,paste0(i,".y_tm1")] <- X[1,2]
+              subCovs[1,paste0(i,".x_tm1")] <- subCovs[1,paste0(i,".x_tm2")] <- X[1,1]
+              subCovs[1,paste0(i,".y_tm1")] <- subCovs[1,paste0(i,".y_tm2")] <- X[1,2]
             } else if(dist[[i]] %in% c("rw_mvnorm3")){
-              subCovs[1,paste0(i,".x_tm1")] <- X[1,1]
-              subCovs[1,paste0(i,".y_tm1")] <- X[1,2]
-              subCovs[1,paste0(i,".z_tm1")] <- X[1,3]
+              subCovs[1,paste0(i,".x_tm1")] <- subCovs[1,paste0(i,".x_tm2")] <- X[1,1]
+              subCovs[1,paste0(i,".y_tm1")] <- subCovs[1,paste0(i,".y_tm2")] <- X[1,2]
+              subCovs[1,paste0(i,".z_tm1")] <- subCovs[1,paste0(i,".z_tm2")] <- X[1,3]
             }
           }
         }
@@ -1253,8 +1258,13 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
               }
               for(i in distnames){
                 if(dist[[i]] %in% rwdists){
-                  if(dist[[i]] %in% c("rw_mvnorm2")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1"))] <- X[k+1,]
-                  else if(dist[[i]] %in% c("rw_mvnorm3")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1",".z_tm1"))] <- X[k+1,]
+                  if(dist[[i]] %in% c("rw_mvnorm2")) {
+                    subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1"))] <- X[k+1,]
+                    subCovs[k+1,paste0(i,c(".x_tm2",".y_tm2"))] <- X[k,]
+                  } else if(dist[[i]] %in% c("rw_mvnorm3")) {
+                    subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1",".z_tm1"))] <- X[k+1,]
+                    subCovs[k+1,paste0(i,c(".x_tm2",".y_tm2",".z_tm2"))] <- X[k,]
+                  }
                 }
               }
               g <- model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]

@@ -43,16 +43,19 @@ RWdata <- function(dist,data){
               ldata <- tmpdata[lInd,]
               colInd <- NULL
             }
-            tmpdata[[paste0(i,".x_tm1")]] <- tmpdata[[paste0(i,".x")]]
-            tmpdata[[paste0(i,".y_tm1")]] <- tmpdata[[paste0(i,".y")]]
+            tmpdata[[paste0(i,".x_tm1")]] <- tmpdata[[paste0(i,".x_tm2")]] <- tmpdata[[paste0(i,".x")]]
+            tmpdata[[paste0(i,".y_tm1")]] <- tmpdata[[paste0(i,".y_tm2")]] <- tmpdata[[paste0(i,".y")]]
             ldata[[paste0(i,".x_tm1")]] <- ldata[[paste0(i,".x")]]
+            ldata[[paste0(i,".x_tm2")]] <- rep(ldata[[paste0(i,".x")]],times=c(3,rep(1,nrow(ldata)-3),0,0))
             ldata[[paste0(i,".y_tm1")]] <- ldata[[paste0(i,".y")]]
+            ldata[[paste0(i,".y_tm2")]] <- rep(ldata[[paste0(i,".y")]],times=c(3,rep(1,nrow(ldata)-3),0,0))
             if(dist[[i]]=="rw_mvnorm2"){
-              colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(distnames[which(!(distnames %in% i))],paste0(i,".x"),paste0(i,".y"))))]))
+              colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(distnames[which(!(distnames %in% i))],paste0(i,".x",c("","_tm2")),paste0(i,".y",c("","_tm2")))))]))
             } else if(dist[[i]]=="rw_mvnorm3"){
-              tmpdata[[paste0(i,".z_tm1")]] <- tmpdata[[paste0(i,".z")]]
+              tmpdata[[paste0(i,".z_tm1")]] <- tmpdata[[paste0(i,".z_tm2")]] <- tmpdata[[paste0(i,".z")]]
               ldata[[paste0(i,".z_tm1")]] <- ldata[[paste0(i,".z")]]
-              colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(distnames[which(!(distnames %in% i))],paste0(i,".x"),paste0(i,".y"),paste0(i,".z"))))]))
+              ldata[[paste0(i,".z_tm2")]] <- rep(ldata[[paste0(i,".z")]],times=c(3,rep(1,nrow(ldata)-3),0,0))
+              colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(distnames[which(!(distnames %in% i))],paste0(i,".x",c("","_tm2")),paste0(i,".y",c("","_tm2")),paste0(i,".z",c("","_tm2")))))]))
             }
           } else {
             if(inherits(data,"hierarchical")){
@@ -61,8 +64,9 @@ RWdata <- function(dist,data){
               ldata <- tmpdata[lInd,]
               colInd <- NULL
             }
-            tmpdata[[paste0(i,"_tm1")]] <- tmpdata[[i]]
+            tmpdata[[paste0(i,"_tm1")]] <- tmpdata[[paste0(i,"_tm2")]] <- tmpdata[[i]]
             ldata[[paste0(i,"_tm1")]][lInd] <- ldata[[i]]
+            ldata[[paste0(i,"_tm2")]][lInd] <- rep(ldata[[i]],times=c(3,rep(1,nrow(ldata)-3),0,0))
             colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% distnames))]))
           }
           if(inherits(data,"hierarchical")){
@@ -71,13 +75,17 @@ RWdata <- function(dist,data){
             tmpdata[lInd,colInd] <- rbind(rep(NA,length(colInd)),tmpdata[lInd[-length(lInd)],colInd])
             tmpdata <- tmpdata[-lInd[1],,drop=FALSE]
             tmpdata[lInd[-1]-1,colnames(tmpdata)] <- ldata[,colnames(tmpdata)]
-            tmpdata[which(tmpdata$level!=iLevel),paste0(colnames(tmpdata)[!colnames(tmpdata) %in% colInd],"_tm1")] <- 0 # can't have NAs in covariates
+            tmpdata[which(tmpdata$level!=iLevel),colnames(tmpdata)[match(paste0(colnames(tmpdata)[!colnames(tmpdata) %in% colInd],"_tm1"),colnames(tmpdata),nomatch=0)]] <- 0 # can't have NAs in covariates
+            tmpdata[which(tmpdata$level!=iLevel),colnames(tmpdata)[match(paste0(colnames(tmpdata)[!colnames(tmpdata) %in% colInd],"_tm2"),colnames(tmpdata),nomatch=0)]] <- 0 # can't have NAs in covariates
           }
         }
       }
       if(!inherits(data,"hierarchical")){
-        tmpdata[,colInd] <- rbind(rep(NA,length(colInd)),tmpdata[-nrow(tmpdata),colInd])
-        tmpdata <- tmpdata[-1,,drop=FALSE]
+        ldata[,colInd] <- rbind(rep(NA,length(colInd)),ldata[-nrow(ldata),colInd])
+        ldata <- ldata[-1,,drop=FALSE]
+        tmpdata[lInd,colInd] <- rbind(rep(NA,length(colInd)),tmpdata[lInd[-length(lInd)],colInd])
+        tmpdata <- tmpdata[-lInd[1],,drop=FALSE]
+        tmpdata[lInd[-1]-1,colnames(tmpdata)] <- ldata[,colnames(tmpdata)]
       }
       newdata <- rbind(newdata,tmpdata)
     }
