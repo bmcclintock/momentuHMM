@@ -215,8 +215,13 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   miBeta$variance[,(parindex[["beta"]]+1:length(m$mle$beta))[duplicated(c(m$conditions$betaCons))]] <- 0
   
   # multiple imputation results for working parameters
-  if(length(m$conditions$optInd))
-    miCombo <- mitools::MIcombine(results=lapply(im,function(x) x$mod$wpar),variances=lapply(im,function(x) x$mod$Sigma[-m$conditions$optInd,-m$conditions$optInd]))
+  if(length(m$conditions$optInd)){
+    twb <- lapply(im,function(x) x$mod$wpar)
+    twb <- lapply(twb,function(x) {x[which(!is.finite(x))]<-NA; return(x)})
+    twvar <- lapply(im,function(x) x$mod$Sigma[-m$conditions$optInd,-m$conditions$optInd])
+    twvar <- lapply(twvar,function(x) {x[which(!is.finite(x))]<-NA; diag(x)[which(!is.finite(sqrt(diag(x))))]<-NA; return(x)})
+    miCombo <- mitools::MIcombine(results=twb,variances=twvar)
+  }
   
   for(parm in 1:nparms){
     
