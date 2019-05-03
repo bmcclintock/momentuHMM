@@ -1,5 +1,5 @@
 #' @importFrom stats formula terms.formula
-getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInflation,oneInflation,circularAngleMean,ParChecks=TRUE){
+getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInflation,oneInflation,circularAngleMean,ParChecks=TRUE,wlag=FALSE){
   
   distnames<-names(dist)
   fullDM <- vector('list',length(dist))
@@ -9,6 +9,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
   nbObs<-nrow(data)
   parSize<-lapply(parNames,length)
   #parCount <- vector('list',length(dist))
+  lag <- 0
   
   for(i in distnames){
     if(is.null(DM[[i]])){
@@ -47,6 +48,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       for(j in names(DM[[i]])){
         tmpCov[[j]] <- vector('list',nbStates)
         for(state in 1:nbStates){
+          if(wlag) lag <- get_crwlag(formulaStates[[j]][[state]],lag)
           tmpCov[[j]][[state]]<-model.matrix(formulaStates[[j]][[state]],data)
           if(!isFALSE(circularAngleMean[[i]])){
             if(j=="mean"){
@@ -133,10 +135,13 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
           for(j in 1:length(tmpcov)){
             tmpcovj <- gsub(factorcovs[factorvar][j],tmpcov[j],tmpcovj)
           }
-          tmpcovs<-model.matrix(formula(paste("~ 0 + ",tmpcovj)),data)
+          tform <- formula(paste("~ 0 + ",tmpcovj))
+          if(wlag) lag <- get_crwlag(tform,lag)
+          tmpcovs<-model.matrix(tform,data)
           tmpcovs<-tmpcovs[,which(gsub(" ","",colnames(tmpcovs)) %in% gsub(" ","",cov))]
           covs<-cbind(covs,tmpcovs)
         } else {
+          if(wlag) lag <- get_crwlag(form,lag)
           tmpcovs<-model.matrix(form,data)[,2]
           covs<-cbind(covs,tmpcovs)
         }
@@ -146,7 +151,8 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       #parCount[[i]] <- ncol(tmpDM)
     }
     colnames(tmpDM)<-DMnames
-    fullDM[[i]]<-tmpDM
+    if(!wlag) fullDM[[i]]<-tmpDM
+    else fullDM[[i]]<-tmpDM[,,dim(tmpDM)[3],drop=FALSE]
   }
   tmp<-simpDM<-lapply(fullDM,function(x) apply(x,1:2,unique))
   for(i in distnames){
@@ -239,5 +245,14 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
     rownames(simpDM[[i]]) <- rownames(bounds[[i]])
   }
   
-  return(list(fullDM=simpDM,DMind=DMind,cons=cons,workcons=workcons))
+  return(list(fullDM=simpDM,DMind=DMind,cons=cons,workcons=workcons,lag=lag))
+}
+
+get_crwlag <- function(form,clag){
+  lag <- 0
+  if(length(attr(terms(form, specials="crw"),"specials")$crw)){
+    Terms <- terms(form,specials="crw")
+    lag <- as.numeric(unlist(attr(prodlim::strip.terms(Terms[attr(Terms,"specials")$crw],specials="crw",arguments=list(crw=list("lag"=1))),"stripped.arguments")))
+  }
+  max(c(clag,lag))
 }
