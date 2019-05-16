@@ -693,8 +693,10 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     tmpCovs <- cbind(tmpCovs,allCovs[1,,drop=FALSE])
   if(nbSpatialCovs){
     for(j in 1:nbSpatialCovs){
+      for(i in 1:length(initialPosition)){
+        if(is.na(raster::cellFromXY(spatialCovs[[j]],initialPosition[[i]]))) stop("initialPosition for individual ",i," is not within the spatial extent of the ",spatialcovnames[j]," raster")
+      }
       getCell<-raster::cellFromXY(spatialCovs[[j]],initialPosition[[1]])
-      if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
       spCov <- spatialCovs[[j]][getCell]
       if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
         zname <- names(attributes(spatialCovs[[j]])$z)

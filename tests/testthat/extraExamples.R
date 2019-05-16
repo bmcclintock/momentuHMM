@@ -153,6 +153,7 @@ plot(bestFit,plotCI=TRUE,ask=FALSE)
 plotStates(bestFit,ask=FALSE)
 
 # fit 4 realizations of the position process using multiple imputation
+setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=10)
 miSims <- MIfitHMM(crwOut,nSims=4,fit=FALSE)
 
 miFits <- list()
