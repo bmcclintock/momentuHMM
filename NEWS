@@ -1,4 +1,4 @@
-momentuHMM 1.5.0 2019-04-16
+momentuHMM 1.5.0 2019-05-21
 -----------------
 NEW FEATURES
 
@@ -20,7 +20,7 @@ NEW FEATURES
 
 CHANGES
 
-* updated for compatibility with crawl (>= 2.2.2); notable changes include addition of vector_mask argument to prepData and MIfitHMM.
+* updated for compatibility with crawl (>= 2.2.1); notable changes include addition of vector_mask argument to prepData and MIfitHMM.
 
 
 momentuHMM 1.4.3 2018-11-21
