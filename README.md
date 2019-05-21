@@ -1,6 +1,4 @@
-# momentuHMM  [![Travis-CI Build Status](https://api.travis-ci.org/bmcclintock/momentuHMM.svg?branch=develop)](https://travis-ci.org/bmcclintock/momentuHMM) [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![CRAN_Downloads](https://cranlogs.r-pkg.org/badges/momentuHMM)](https://cran.r-project.org/package=momentuHMM)
-[![CRAN_Downloads](https://cranlogs.r-pkg.org/badges/grand-total/momentuHMM)](https://cran.r-project.org/package=momentuHMM)
+# momentuHMM  [![Travis-CI Build Status](https://api.travis-ci.org/bmcclintock/momentuHMM.svg?branch=develop)](https://travis-ci.org/bmcclintock/momentuHMM) [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![CRAN_Downloads](https://cranlogs.r-pkg.org/badges/momentuHMM)](https://cran.r-project.org/package=momentuHMM) [![CRAN_Downloads](https://cranlogs.r-pkg.org/badges/grand-total/momentuHMM)](https://cran.r-project.org/package=momentuHMM)
 
 R package for Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models 
 
