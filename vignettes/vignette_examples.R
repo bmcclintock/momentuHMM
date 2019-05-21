@@ -315,4 +315,13 @@ dev.off()
 for(plt in seq(1,nbAnimals+3)[-c(7,8)])
   unlink(paste0("plot_groupExampleResults0",ifelse(plt>9,"","0"),plt,".pdf"))
 
+###################################################
+### land constraint example
+###################################################
+#source(paste0(getwd(),"/landConstraintExample.R"))
+load(paste0(example_wd,"landConstraintExample.RData"))
+png(file=paste0(getwd(),"/plot_landConstraintExample.png"),width=6,height=6,units="in",res=80)
+raster::plot(boundary$boundary,legend.width=1, legend.shrink=0.75,legend.args=list(text='            Distance to water', font=2, line=1, cex=0.8))
+points(simBound$mu.x,simBound$mu.y,type="l")
+dev.off()
 rm(list=ls()[-which(ls()=="example_wd")])

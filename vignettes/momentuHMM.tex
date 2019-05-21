@@ -147,7 +147,7 @@
 \noindent \textbf{Summary}\\
 \textbf{1.} Discrete-time hidden Markov models (HMMs) have become an immensely popular tool for inferring latent animal behaviors from telemetry data, largely because they are relatively fast and easy to implement when data streams are observed without error and at regular time intervals. While movement HMMs typically rely solely on location data, auxiliary biotelemetry and environmental data are powerful and readily-available resources for incorporating much more behavioral realism and inferring ecological relationships that would otherwise be difficult or impossible to infer from location data alone.  However, there is a paucity of generalized user-friendly software available for implementing (multivariate) HMMs of animal movement. Furthermore, location measurement error, temporal irregularity, and other forms of missing data are often pervasive in telemetry studies (particularly in marine systems).\\ %and the incorporation of uncertainty attributable to location measurement error or missing data typically requires fitting HMMs using custom and computationally-demanding model fitting techniques, such as Markov chain Monte Carlo.\\ 
 \textbf{2.} Here we provide a guide to using an open-source R package, \verb|momentuHMM| version 1.5.0%(Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models)
-, that addresses many of the deficiencies in existing software.  Features for multivariate HMMs in \verb|momentuHMM| (pronounced ``momentum'') include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states, such as those based on location (e.g., step length, turning angle) and auxiliary biotelemetry data (e.g., from pressure, conductivity, heart rate, or motion sensors); 3) biased and correlated random walk movement models, including ``activity centers'' associated with attractive or repulsive forces; 4) user-specified design matrices and constraints for covariate modelling of initial distribution, state transition probability, and probability distribution parameters using linear model formulas familiar to most R users; 5) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data; 6) seamless integration of spatio-temporal covariate raster data; 7) cosinor and spline regression formulas for cyclical (e.g., daily, seasonal) and other complicated patterns; 8) discrete random effects on state transition probabilities; 9) hierarchical hidden Markov models for data streams and/or state switching at multiple time scales; 10) ``recharge'' models for an aggregated physiological process associated with state switching in heterogeneous environments; 11) model checking and selection; and 12) data simulation capabilities for study design, power analyses and assessing model performance, including simulation of location data subject to temporal irregularity and/or measurement error.\\ 
+, that addresses many of the deficiencies in existing software.  Features for multivariate HMMs in \verb|momentuHMM| (pronounced ``momentum'') include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states, such as those based on location (e.g., step length, turning angle) and auxiliary biotelemetry data (e.g., from pressure, conductivity, heart rate, or motion sensors); 3) biased and correlated random walk movement models, including ``activity centers'' associated with attractive or repulsive forces; 4) user-specified design matrices and constraints for covariate modelling of initial distribution, state transition probability, and probability distribution parameters using linear model formulas familiar to most R users; 5) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data; 6) seamless integration of spatio-temporal covariate raster data; 7) cosinor and spline regression formulas for cyclical (e.g., daily, seasonal) and other complicated patterns; 8) discrete individual-level random effects on state transition probabilities; 9) hierarchical hidden Markov models for data streams and/or state switching at multiple time scales; 10) ``recharge'' models for an aggregated physiological process associated with state switching in heterogeneous environments; 11) model checking and selection; and 12) data simulation capabilities for study design, power analyses and assessing model performance, including simulation of location data subject to temporal irregularity and/or measurement error.\\ 
 \textbf{3.} After providing a brief introduction to (multivariate) HMMs for telemetry data, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics.\\
 \textbf{4.} While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs. Practitioners interested in additional features for \verb|momentuHMM| are encouraged to contact the authors.\\
 
@@ -177,9 +177,9 @@ When data streams are observed without error and at regular time intervals, a ma
 
 While statisticians have been applying HMMs to telemetry data for decades, R \citep{RCoreTeam2017} packages such as \verb|bsam| \citep{JonsenEtAl2005}, \verb|moveHMM| \citep{MichelotEtAl2016}, and \verb|swim| \citep{WhoriskeyEtAl2017} have recently helped make these models of animal movement behavior more accessible to the practitioners that are actually conducting telemetry studies.  These advances represent important steps toward making HMMs of animal movement more accessible, but the models that can currently be implemented using existing software remain limited in many key respects. For example, existing HMM software for animal movement is limited to two data streams based solely on location data (e.g. step length and turning angle), and while \verb|moveHMM| allows for a user-specified number of latent behavioral states (\verb|bsam| and \verb|swim| are limited to $N=2$ states), it is typically difficult to identify $>$2 biologically-meaningful behavior states from only 2 data streams \citep[e.g.][]{MoralesEtAl2004,BeyerEtAl2013,McClintockEtAl2014b}. Both \verb|moveHMM| and \verb|swim| are designed for temporally-regular (or linearly-interpolated) location data with negligible measurement error, but the realities of animal-borne telemetry often yield temporally-irregular location data subject to error (particularly in aquatic environments). Other notable deficiencies of existing software include limited abilities to incorporate spatio-temporal environmental or individual covariates on parameters, biased (or directed) movements in response to attractive or repulsive forces \citep[e.g.][]{McClintockEtAl2012,LangrockEtAl2014}, cyclical (e.g. daily, seasonal) and other more complicated behavioral patterns, or constraints on parameters. 
 
-To address these deficiencies in existing software, we developed a user-friendly R package, \verb|momentuHMM| (Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models), intended for practitioners wishing to implement more flexible and realistic (multivariate) HMM analyses of animal movement while accounting for common challenges associated with telemetry data \citep{McClintockMichelot2018}. Features for multivariate HMM analyses in \verb|momentuHMM| include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states; 3) biased and correlated random walk movement models, including ``activity centers'' associated with attractive or repulsive forces \citep[e.g.][]{McClintockEtAl2012}; 4) user-specified design matrices and constraints for covariate modelling of state transition probability and probability distribution parameters using linear model formulas familiar to most R users; 5) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data \citep{HootenEtAl2017,McClintock2017}; 6) seamless integration of spatio-temporal environmental covariate data (e.g., wind direction, forest cover, sea ice concentration) using the \verb|raster| package \citep{Hijmans2016}; 7) cosinor \citep[e.g.][]{Cornelissen2014} and spline regression formulas for cyclical and other complicated behavioral patterns; 8) discrete random effects on state transition probabilities \citep[e.g.][]{DeRuiterEtAl2017}; 9) hierarchical hidden Markov models \citep[e.g.][]{Leos-BarajasEtAl2017} for data streams and/or state switching at multiple time scales; 10) ``recharge'' models for an aggregated physiological process associated with state switching in heterogeneous environments \citep{HootenEtAl2019}; 11) model checking and selection; and 12) data simulation capabilities for study design, power analyses and assessing model performance, including simulation of location data subject to temporal irregularity and/or measurement error. 
+To address these deficiencies in existing software, we developed a user-friendly R package, \verb|momentuHMM| (Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models), intended for practitioners wishing to implement more flexible and realistic (multivariate) HMM analyses of animal movement while accounting for common challenges associated with telemetry data \citep{McClintockMichelot2018}. Features for multivariate HMM analyses in \verb|momentuHMM| include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states; 3) biased and correlated random walk movement models, including ``activity centers'' associated with attractive or repulsive forces \citep[e.g.][]{McClintockEtAl2012}; 4) user-specified design matrices and constraints for covariate modelling of state transition probability and probability distribution parameters using linear model formulas familiar to most R users; 5) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data \citep{HootenEtAl2017,McClintock2017}; 6) seamless integration of spatio-temporal environmental covariate data (e.g., wind direction, forest cover, sea ice concentration) using the \verb|raster| package \citep{Hijmans2016}; 7) cosinor \citep[e.g.][]{Cornelissen2014} and spline regression formulas for cyclical and other complicated behavioral patterns; 8) discrete individual-level random effects on state transition probabilities \citep[e.g.][]{DeRuiterEtAl2017}; 9) hierarchical hidden Markov models \citep[e.g.][]{Leos-BarajasEtAl2017} for data streams and/or state switching at multiple time scales; 10) ``recharge'' models for an aggregated physiological process associated with state switching in heterogeneous environments \citep{HootenEtAl2019}; 11) model checking and selection; and 12) data simulation capabilities for study design, power analyses and assessing model performance, including simulation of location data subject to temporal irregularity and/or measurement error. 
 
-In the following tutorial, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples, including an example of periodic cycles in African elephant movement, a 3-state (``resting'', ``foraging'', ``transit'') northern fur seal example incorporating auxiliary dive activity data \citep{McClintockEtAl2014b}, a loggerhead turtle example relating ``foraging'' and ``transit'' movements to ocean surface currents, a 5-state grey seal example incorporating biased movements toward haul-out and foraging locations \citep{McClintockEtAl2012}, a 4-state (``outbound'', ``searching'', ``foraging'', ``inbound'') southern elephant seal example with biased movements toward and away from a colony \citep{MichelotEtAl2017}, a 3-state (``resting'', ``foraging'', ``transit'') harbour seal example using population-level constraints on movement parameters \citep{McClintockEtAl2013c}, and a 6-state northern fulmar example incorporating biased movements relative to both static (i.e. colony) and dynamic (i.e. fishing vessels) activity centers \citep{PirottaEtAl2018}. Using simulated data, we also demonstrate how the group dynamic model of \cite{LangrockEtAl2014} can be implemented using \verb|momentuHMM|. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics. While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs.  Additional information, including help files, data, examples, and package usage is available by downloading the \verb|momentuHMM| package from CRAN (\url{cran.r-project.org}) or Github (\url{github.com/bmcclintock/momentuHMM}). This article describes \verb|momentuHMM| version 1.5.0.
+In the following tutorial, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples, including an example of periodic cycles in African elephant movement, a 3-state (``resting'', ``foraging'', ``transit'') northern fur seal example incorporating auxiliary dive activity data \citep{McClintockEtAl2014b}, a loggerhead turtle example relating ``foraging'' and ``transit'' movements to ocean surface currents, a 5-state grey seal example incorporating biased movements toward haul-out and foraging locations \citep{McClintockEtAl2012}, a 4-state (``outbound'', ``searching'', ``foraging'', ``inbound'') southern elephant seal example with biased movements toward and away from a colony \citep{MichelotEtAl2017}, a 3-state (``resting'', ``foraging'', ``transit'') harbour seal example using population-level constraints on movement parameters \citep{McClintockEtAl2013c}, and a 6-state northern fulmar example incorporating biased movements relative to both static (i.e. colony) and dynamic (i.e. fishing vessels) activity centers \citep{PirottaEtAl2018}. Using simulated data, we also demonstrate how the group dynamic model of \cite{LangrockEtAl2014} can be implemented using \verb|momentuHMM|. Finally, we demonstrate how to simulate movement subject to barriers (e.g. land for marine animals) or other constraints. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics. While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs.  Additional information, including help files, data, examples, and package usage is available by downloading the \verb|momentuHMM| package from CRAN (\url{cran.r-project.org}) or Github (\url{github.com/bmcclintock/momentuHMM}). This article describes \verb|momentuHMM| version 1.5.0.
 
 \section{momentuHMM overview}
 %Given the deliberately similar syntax between the two packages, 
@@ -430,7 +430,7 @@ See section \ref{sec:turtle} for example code using \verb|angleFormula| and the 
 
 \subsection{Random walk probability distributions}
 \label{sec:rw}
-\verb|momentuHMM| includes several normal random walk probability distributions that can be specified in the \verb|dist| argument (see Tables \ref{tab:unipdfs} and \ref{tab:multipdfs}), including univariate (e.g. for modeling depths), bivariate (e.g. for modeling 2-D positions), and trivariate (e.g. for modeling 3-D positions) normal random walks. These can be particularly useful for modeling movement on positions directly instead of steps and turns. A random walk model assumes position at time $t$ is a function of the position at time $t-1$; in its simplest form without any covariates, we have $x_t \sim N(x_{t-1},\sigma^2)$ for the univariate case. We demonstrate use of the bivariate normal random walk model for loggerhead turtle movements relative to ocean surface currents in section \ref{sec:turtle}.
+\verb|momentuHMM| includes several normal random walk probability distributions that can be specified in the \verb|dist| argument (see Tables \ref{tab:unipdfs} and \ref{tab:multipdfs}), including univariate (e.g. for modeling depths), bivariate (e.g. for modeling 2-D positions), and trivariate (e.g. for modeling 3-D positions) normal random walks. These can be particularly useful for modeling movement on positions directly instead of steps and turns. A random walk model assumes position at time $t$ is a function of the position at time $t-1$; in its simplest form without any covariates, we have $x_t \sim N(x_{t-1},\sigma^2)$ for the univariate case. We demonstrate use of the bivariate normal random walk model for loggerhead turtle movements relative to ocean surface currents in section \ref{sec:turtle}. We also demonstrate how to simulate movement subject to barriers (e.g. land for marine animals) or other constraints using a bivariate normal random walk in section \ref{sec:avoidLand}.
 
 \subsection{Multiple imputation}
 \label{sec:mi}
@@ -465,11 +465,7 @@ We can load the data from the URL (this requires an Internet connection):
               \hlstr{"28Source-Save%20the%20Elephants%29.csv"}\hlstd{)}
 \hlstd{rawData} \hlkwb{<-} \hlkwd{read.csv}\hlstd{(}\hlkwd{url}\hlstd{(URL))}
 \end{alltt}
-
-
-{\ttfamily\noindent\color{warningcolor}{\#\# Warning in open.connection(file, "{}rt"{}): URL 'https://www.datarepository.movebank.org/bitstream/handle/10255/move.373/Elliptical\%20Time-Density\%20Model\%20\%28Wall\%20et\%20al.\%202014\%29\%20African\%20Elephant\%20Dataset\%20\%28Source-Save\%20the\%20Elephants\%29.csv': status was 'Couldn't connect to server'}}
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in open.connection(file, "{}rt"{}): cannot open the connection to 'https://www.datarepository.movebank.org/bitstream/handle/10255/move.373/Elliptical\%20Time-Density\%20Model\%20\%28Wall\%20et\%20al.\%202014\%29\%20African\%20Elephant\%20Dataset\%20\%28Source-Save\%20the\%20Elephants\%29.csv'}}\end{kframe}
+\end{kframe}
 \end{knitrout}
 
 The data set contains two tracks; for this analysis, we only consider the first one. In addition to hourly locations, the tag also collected external temperature data. We subset the data frame to keep only the relevant rows and columns:
@@ -478,21 +474,12 @@ The data set contains two tracks; for this analysis, we only consider the first 
 \begin{alltt}
 \hlcom{# select and rename relevant columns}
 \hlstd{rawData} \hlkwb{<-} \hlstd{rawData[,}\hlkwd{c}\hlstd{(}\hlnum{11}\hlstd{,}\hlnum{3}\hlstd{,}\hlnum{4}\hlstd{,}\hlnum{5}\hlstd{,}\hlnum{6}\hlstd{)]}
-\end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in eval(expr, envir, enclos): object 'rawData' not found}}\begin{alltt}
 \hlkwd{colnames}\hlstd{(rawData)} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"ID"}\hlstd{,}\hlstr{"time"}\hlstd{,}\hlstr{"lon"}\hlstd{,}\hlstr{"lat"}\hlstd{,}\hlstr{"temp"}\hlstd{)}
-\end{alltt}
 
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in colnames(rawData) <- c("{}ID"{}, "{}time"{}, "{}lon"{}, "{}lat"{}, "{}temp"{}): object 'rawData' not found}}\begin{alltt}
 \hlcom{# only keep first track}
 \hlstd{rawData} \hlkwb{<-} \hlkwd{subset}\hlstd{(rawData,ID}\hlopt{==}\hlkwd{unique}\hlstd{(ID)[}\hlnum{1}\hlstd{])}
 \end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in subset(rawData, ID == unique(ID)[1]): object 'rawData' not found}}\end{kframe}
+\end{kframe}
 \end{knitrout}
 
 The data now has the following columns:
@@ -501,9 +488,16 @@ The data now has the following columns:
 \begin{alltt}
 \hlkwd{head}\hlstd{(rawData)}
 \end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in head(rawData): object 'rawData' not found}}\end{kframe}
+\begin{verbatim}
+##            ID                    time       lon      lat temp
+## 1 Salif Keita 2008-03-22 17:00:00.000 -2.160167 15.65350   38
+## 2 Salif Keita 2008-03-22 18:00:00.000 -2.160075 15.65452   35
+## 3 Salif Keita 2008-03-22 19:00:00.000 -2.159902 15.65451   32
+## 4 Salif Keita 2008-03-22 20:00:00.000 -2.159435 15.65489   30
+## 5 Salif Keita 2008-03-22 21:00:00.000 -2.158113 15.65512   29
+## 6 Salif Keita 2008-03-22 22:00:00.000 -2.157848 15.65461   28
+\end{verbatim}
+\end{kframe}
 \end{knitrout}
 
 Location measurement error is negligible for these terrestrial GPS data, although about 1\% of the hourly observations collected between 22 March 2008 and 30 September 2010 are missing. Instead of simply ignoring these missing data, we can employ \verb|crawlWrap| to predict the missing locations based on the CTCRW model of \cite{JohnsonEtAl2008} prior to conducting our HMM analysis.
@@ -1767,6 +1761,68 @@ Finally, we can create a plot similar to \cite{PirottaEtAl2018} using the \verb|
   \caption{Seven northern fulmar tracks, colored by the most likely state sequence.}
   \label{fig:northernFulmar}
 \end{figure}
+
+\subsection{Simulating constrained movement}
+\label{sec:avoidLand}
+In section \ref{sec:turtle} we briefly demonstrated how potential functions can be used within a bivariate normal random walk to model loggerhead turtle movements relative to ocean surface currents. Here we'll show how this approach can be used in \verb|simData| to simulate movement data subject to barriers or other constraints (e.g. land for marine animals). To accomplish this, we'll rely on the \verb|forest| raster that is automatically loaded with \verb|momentuHMM|. We'll start by pretending that \verb|forest| cells with values $>0$ are ``land'' and all others are ``water''.  Then we'll create a new raster named \verb|boundary| containing the shortest distance from land to water using \verb|raster::distance|:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{boundary} \hlkwb{<-} \hlstd{forest}
+\hlstd{boundary[boundary}\hlopt{>}\hlnum{0}\hlstd{]} \hlkwb{<-} \hlnum{NA}
+\hlstd{boundary} \hlkwb{<-} \hlstd{raster}\hlopt{::}\hlkwd{distance}\hlstd{(boundary)}
+\hlkwd{names}\hlstd{(boundary)} \hlkwb{<-} \hlstr{"boundary"}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+Next we'll calculate the gradients in the x- and y-directions for inclusion as covariates in our potential function using \verb|ctmcmove::rast.grad|:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# boundary needs to have a CRS for ctmcmove::rast.grad}
+\hlkwd{proj4string}\hlstd{(boundary)} \hlkwb{<-} \hlstd{sp}\hlopt{::}\hlkwd{CRS}\hlstd{(}\hlstr{"+init=epsg:4326"}\hlstd{)}
+
+\hlcom{# compute gradients in x- and y- directions}
+\hlstd{grad} \hlkwb{<-} \hlstd{ctmcmove}\hlopt{::}\hlkwd{rast.grad}\hlstd{(boundary)}
+\hlstd{grad.x} \hlkwb{<-} \hlstd{grad}\hlopt{$}\hlstd{rast.grad.x}
+\hlstd{grad.y} \hlkwb{<-} \hlstd{grad}\hlopt{$}\hlstd{rast.grad.y}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+Now we're ready to simulate our bivariate normal random walk model including these gradients in the potential function:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{dist} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlstr{"rw_mvnorm2"}\hlstd{)} \hlcom{# bivariate normal random walk}
+\hlstd{DM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mean.x}\hlstd{=}\hlopt{~}\hlstd{mu.x_tm1}\hlopt{+}\hlkwd{crw}\hlstd{(mu.x_tm1,}\hlkwc{lag}\hlstd{=}\hlnum{1}\hlstd{)}\hlopt{+}\hlstd{grad.x,}
+                   \hlkwc{mean.y}\hlstd{=}\hlopt{~}\hlstd{mu.y_tm1}\hlopt{+}\hlkwd{crw}\hlstd{(mu.y_tm1,}\hlkwc{lag}\hlstd{=}\hlnum{1}\hlstd{)}\hlopt{+}\hlstd{grad.y,}
+                   \hlkwc{sigma.x}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{,}
+                   \hlkwc{sigma.xy}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{,}
+                   \hlkwc{sigma.y}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{))}
+
+\hlcom{# specify parameters on working parameter scale}
+\hlstd{Par} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{0.75}\hlstd{,}\hlopt{-}\hlnum{750000}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0.75}\hlstd{,}\hlopt{-}\hlnum{1500}\hlstd{,}\hlkwd{log}\hlstd{(}\hlnum{100000}\hlstd{),}\hlnum{0}\hlstd{,}\hlkwd{log}\hlstd{(}\hlnum{100000}\hlstd{)))}
+\hlkwd{names}\hlstd{(Par}\hlopt{$}\hlstd{mu)} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"mu.x_tm1"}\hlstd{,}\hlstr{"crw(mu.x_tm1,lag=1)"}\hlstd{,}\hlstr{"grad.x"}\hlstd{,}
+                   \hlstr{"mu.y_tm1"}\hlstd{,}\hlstr{"crw(mu.y_tm1,lag=1)"}\hlstd{,}\hlstr{"grad.y"}\hlstd{,}
+                   \hlstr{"sigma.x"}\hlstd{,}\hlstr{"sigma.xy"}\hlstd{,}\hlstr{"sigma.y"}\hlstd{)}
+
+\hlcom{# simulate and plot}
+\hlstd{simBound} \hlkwb{<-} \hlkwd{simData}\hlstd{(}\hlkwc{nbStates}\hlstd{=}\hlnum{1}\hlstd{,} \hlkwc{obsPerAnimal} \hlstd{=} \hlnum{10000}\hlstd{,} \hlkwc{dist}\hlstd{=dist,} \hlkwc{Par}\hlstd{=Par,}
+                    \hlkwc{DM}\hlstd{=DM,} \hlkwc{spatialCovs}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{grad.x}\hlstd{=grad.x,}\hlkwc{grad.y}\hlstd{=grad.y),}
+                    \hlkwc{mvnCoords}\hlstd{=}\hlstr{"mu"}\hlstd{,} \hlkwc{initialPosition}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{25000}\hlstd{,}\hlnum{75000}\hlstd{))}
+\hlkwd{plot}\hlstd{(simBound,}\hlkwc{dataNames}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"mu.x"}\hlstd{,}\hlstr{"mu.y"}\hlstd{),}\hlkwc{ask}\hlstd{=}\hlnum{FALSE}\hlstd{)}
+\hlkwd{plot}\hlstd{(boundary}\hlopt{$}\hlstd{boundary)}
+\hlkwd{points}\hlstd{(simBound}\hlopt{$}\hlstd{mu.x,simBound}\hlopt{$}\hlstd{mu.y,}\hlkwc{type}\hlstd{=}\hlstr{"l"}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{plot_landConstraintExample.png}
+  \caption{Simulated track from a bivariate normal random walk model with movements repulsed from ``land'' using a potential function.}
+  \label{fig:landConstraint}
+\end{figure}
+The model specified in \verb|DM| is identical to Eq. \ref{eq:potFun}, except we have replaced the ocean surface current velocities with gradients for nearest distance to water. As we can see in Figure \ref{fig:landConstraint}, the track is repelled from ``land'' and tends to stay in the ``water''. This repulsion owes to the large negative values for the coefficients corresponding to \verb|grad.x| and \verb|grad.y|. 
 
 \section{Discussion}
 Here we have introduced version 1.5.0 of the R package \verb|momentuHMM| and demonstrated some of its capabilities for conducting multivariate HMM analyses with animal location, auxiliary biotelemetry, and environmental data. The package allows for fitting (and simulating from) a suite of biased and correlated random walk movement process models \citep[e.g.][]{McClintockEtAl2012}, can be used for an unlimited number of data streams and latent behavior states, includes multiple imputation methods to account for measurement error, temporal irregularity, and other forms of missing data that would otherwise be prohibitive to maximum likelihood analysis, and integrates seamlessly with rasters to facilitate spatio-temporal covariate modelling. Because the package incorporates biased random walks, it can also be used to implement group dynamic models \cite[e.g.][]{LangrockEtAl2014}. The package therefore greatly expands on available software and facilitates the incorporation of more ecological and behavioral realism for hypothesis-driven analyses of animal movement that account for many of the challenges commonly associated with telemetry data. While many of the features of \verb|momentuHMM| were motivated by animal movement data, we note that the package is not limited to location data and can be used for analyzing any type of data that is amenable to (multivariate) HMMs.
