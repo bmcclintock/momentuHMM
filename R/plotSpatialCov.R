@@ -4,7 +4,7 @@
 #'
 #' @param data Data frame or \code{\link{momentuHMMData}} object, with necessary fields 'x' (longitudinal direction) and 'y' (latitudinal direction).  A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object is also permitted, from which the data will be extracted.
 #' If \code{states=NULL} and a \code{momentuHMM}, \code{miHMM}, or \code{miSum} object is provided, the decoded states are automatically plotted.
-#' @param spatialCov \code{\link[raster]{RasterLayer-class}} object on which to plot the location data
+#' @param spatialCov \code{\link[=RasterLayer-class]{RasterLayer}} object on which to plot the location data
 #' @param segments \code{TRUE} if segments should be plotted between the observations (default),
 #' \code{FALSE} otherwise.
 #' @param compact \code{FALSE} if tracks should be plotted separately, \code{TRUE}

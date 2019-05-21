@@ -30,7 +30,7 @@ test_that("betaCons works correctly",{
   
   oldRNG<-setRNG::setRNG()
   
-  setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=4)
+  setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=3)
   
   theta<-c(6,-0.5)
   err.model <- list(x= ~ ln.sd.x - 1, y =  ~ ln.sd.y - 1, rho =  ~ error.corr)

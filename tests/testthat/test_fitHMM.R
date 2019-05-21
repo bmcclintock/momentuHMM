@@ -129,7 +129,7 @@ test_that("equivalent momentuHMM and moveHMM models match",{
   par0 <- example$par0
   nbStates<-simPar$nbStates
   
-  setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=1)
+  setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=4)
   
   data<-simData(nbAnimals=2,model=example$m)
   momentuHMM_fit<-fitHMM(data=data,nbStates=nbStates,Par=list(step=log(par0$Par$step),angle=par0$Par$angle),stationary=TRUE,
