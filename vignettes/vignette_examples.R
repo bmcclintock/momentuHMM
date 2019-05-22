@@ -11,7 +11,7 @@ append.RData <- function(x, file) {
 ###################################################
 ### Elephant example
 ###################################################
-#source(paste0(getwd(),"/elephantExample.R"))
+#source(paste0(getwd(),"/examples/elephantExample.R"))
 load(paste0(example_wd,"elephantExample.RData"))
 
 activityBudgets<-table(viterbi(m3))/nrow(m3$data)
@@ -43,7 +43,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ###################################################
 ### Northern fur seal example
 ###################################################
-#source(paste0(getwd(),"/nfsExample.R"))
+#source(paste0(getwd(),"/examples/nfsExample.R"))
 load(paste0(example_wd,"nfsExample.RData"))
 
 nfsTimeInStates<-nfsFits$miSum$Par$timeInStates
@@ -58,7 +58,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ###################################################
 ### Turtle example
 ###################################################
-#source(paste0(getwd(),"/turtleExample.R"))
+#source(paste0(getwd(),"/examples/turtleExample.R"))
 load(paste0(example_wd,"turtleExample.RData"))
 
 turtle_miSum<-turtleFits$miSum[c("Par","data")]
@@ -106,8 +106,8 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ###################################################
 ### Grey seal example
 ###################################################
-#source(paste0(getwd(),"/greySealExample_TPM.R"))
-load(paste0(example_wd,"greySealResults_TPM.RData"))
+#source(paste0(getwd(),"/examples/greySealExample.R"))
+load(paste0(example_wd,"greySealResults.RData"))
 
 greySealTimeInStates<-greySealPool$Par$timeInStates
 
@@ -120,7 +120,7 @@ dev.off()
 for(plt in seq(1,18)[-c(2,6,9,13)])
   unlink(paste0("plot_greySealResults0",ifelse(plt>9,"","0"),plt,".pdf"))
 
-load(paste0(getwd(),"/greySealData_TPM.RData"))
+load(paste0(getwd(),"/greySealData.RData"))
 load(paste0(getwd(),"/coastUTM.RData"))
 
 colvect<-c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2")
@@ -182,7 +182,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ###################################################
 ### Elephant seal example
 ###################################################
-#source(paste0(getwd(),"/sesExample.R"))
+#source(paste0(getwd(),"/examples/sesExample.R"))
 load(paste0(example_wd,"sesExample.RData"))
 
 sesCIbeta<-m3$CIbeta
@@ -224,7 +224,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ###################################################
 ### harbour seal example
 ###################################################
-#source(paste0(getwd(),"/harbourSealExample.R"))
+#source(paste0(getwd(),"/examples/harbourSealExample.R"))
 load(paste0(example_wd,"harbourSealExample.RData"))
 
 append.RData(hsActivityBudgets,file=paste0(getwd(),"/vignette_inputs.RData"))
@@ -276,6 +276,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ###################################################
 ### northern fulmar example
 ###################################################
+#source(paste0(getwd(),"/examples/northernFulmarExample.R"))
 load(paste0(example_wd,"northernFulmarExample.RData"))
 fulmarElapsedTime <- round(m2$mod$elapsedTime/60,0)
 timeIn1 <- timeInStates(m2)
@@ -294,7 +295,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ###################################################
 ### group dynamic example
 ###################################################
-#source(paste0(getwd(),"/groupExample.R"))
+#source(paste0(getwd(),"/examples/groupExample.R"))
 load(paste0(example_wd,"groupExample.RData"))
 pdf(file=paste0(getwd(),"/plot_groupExampleCentroid%03d.pdf"),onefile=FALSE)
 plot(centroidData,ask=FALSE)
@@ -318,7 +319,7 @@ for(plt in seq(1,nbAnimals+3)[-c(7,8)])
 ###################################################
 ### land constraint example
 ###################################################
-#source(paste0(getwd(),"/landConstraintExample.R"))
+#source(paste0(getwd(),"/examples/landConstraintExample.R"))
 load(paste0(example_wd,"landConstraintExample.RData"))
 png(file=paste0(getwd(),"/plot_landConstraintExample.png"),width=6,height=6,units="in",res=80)
 raster::plot(boundary$boundary,legend.width=1, legend.shrink=0.75,legend.args=list(text='            Distance to water', font=2, line=1, cex=0.8))

@@ -7,7 +7,7 @@ oldRNG<-setRNG::setRNG()
 setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=10)
 
 # load grey seal data from github
-load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/greySealData_TPM.RData"))
+load(url("https://raw.github.com/bmcclintock/momentuHMM/develop/vignettes/greySealData.RData"))
 
 nSims <- 400 # number of imputatons
 ncores <- 7 # number of CPU cores
@@ -115,9 +115,9 @@ endTime<-proc.time()-startTime
 greySealPool<-MIpool(greySealFits,ncores=ncores)
 plot(greySealPool,plotCI=TRUE,ask=FALSE)
 
-setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=4957)
+setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=2484)
 greySealSim<-simData(model=greySealPool,centers=centers,initialPosition = centers[1,],obsPerAnimal = 1515,states=TRUE)
 setRNG::setRNG(oldRNG)
 
-save.image("greySealExample_TPM.RData")
-save(greySealPool,greySealSim,file="greySealResults_TPM.RData")
+save.image("greySealExample.RData")
+save(greySealPool,greySealSim,file="greySealResults.RData")

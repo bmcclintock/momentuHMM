@@ -216,7 +216,7 @@ newFormulas<-function(formula,nbStates,hierarchical=FALSE)
           betaInd<-betaInd[!is.na(betaInd)]
           for(j in betaInd){
             #newForm<-c(newForm,gsub(paste0("toState",i),paste0("betaCol",j),attr(stateForms,"term.labels")[attr(stateForms,"specials")[[paste0("toState",i)]]]))
-            stateFact <- attr(stateForms,"factors")[attr(stateForms,"specials")[[paste0("state",i)]],,drop=FALSE]
+            stateFact <- attr(stateForms,"factors")[attr(stateForms,"specials")[[paste0("toState",i)]],,drop=FALSE]
             newForm<-c(newForm,gsub(paste0("toState",i),paste0("betaCol",j),colnames(stateFact)[which(stateFact>0)]))
           }
         }

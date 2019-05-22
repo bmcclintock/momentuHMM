@@ -4,7 +4,7 @@
 ^data-raw$
 vignettes/nfsData.RData
 vignettes/turtleData.RData
-vignettes/greySealData_TPM.RData
+vignettes/greySealData.RData
 vignettes/coastUTM.RData
 vignettes/sesData.csv
 tests/testthat/Rplots.pdf
