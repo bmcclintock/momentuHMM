@@ -200,7 +200,7 @@ test_that("logAlpha, logBeta, and nLogLike are consistent when mixtures=2",{
       tmpll<-numeric(m$conditions$mixtures)
       for(mix in 1:m$conditions$mixtures){
         aInd<-which(m$data$ID==i)[t]
-        c <- max(la[[mix]][aInd,]) # cancels below ; prevents numerical errors
+        c <- max(la[[mix]][aInd,]+lb[[mix]][aInd,]) # cancels below ; prevents numerical errors
         tmpll[mix] <- tmpll[mix] + c + log(sum(exp(la[[mix]][aInd,]+lb[[mix]][aInd,]+log(m$mle$pi[mix])-c)))
       }
       c <- max(tmpll)
