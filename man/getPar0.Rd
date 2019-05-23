@@ -13,6 +13,7 @@ getPar0(model, ...)
   circularAngleMean = model$conditions$circularAngleMean,
   formula = model$conditions$formula,
   formulaDelta = model$conditions$formulaDelta,
+  stationary = model$conditions$stationary,
   mixtures = model$conditions$mixtures,
   formulaPi = model$conditions$formulaPi, DM = model$conditions$DM,
   betaRef = model$conditions$betaRef, stateNames = model$stateNames,
@@ -44,6 +45,8 @@ regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turn
 \item{formula}{Regression formula for the transition probability covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formula=model$conditions$formula}.}
 
 \item{formulaDelta}{Regression formula for the initial distribution covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formulaDelta=model$conditions$formulaDelta}.}
+
+\item{stationary}{FALSE if there are covariates in formula or formulaDelta. If TRUE, the initial distribution is considered equal to the stationary distribution. Default: FALSE.}
 
 \item{mixtures}{Number of mixtures for the state transition probabilities  (see \code{\link{fitHMM}}). Default: \code{formula=model$conditions$mixtures}.}
 
