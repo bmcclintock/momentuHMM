@@ -99,7 +99,7 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     } else {
       delta0 <- matrix(delta0,(nbCovsDelta+1)*mixtures,nbStates)
     }
-    delta0 <- apply(delta0,1,function(x) log(x[-1]/x[1])) 
+    delta0 <- t(apply(delta0,1,function(x) log(x[-1]/x[1])))
   } else if(is.null(delta0)){
     delta0 <- matrix(0,nrow=(nbCovsDelta+1)*mixtures,ncol=nbStates-1)
   }
