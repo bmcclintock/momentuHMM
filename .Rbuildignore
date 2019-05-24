@@ -5,6 +5,7 @@
 vignettes/nfsData.RData
 vignettes/turtleData.RData
 vignettes/greySealData.RData
+vignettes/pilotWhaleData.RData
 vignettes/coastUTM.RData
 vignettes/sesData.csv
 tests/testthat/Rplots.pdf
