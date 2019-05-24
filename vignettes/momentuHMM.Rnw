@@ -15,6 +15,21 @@
 \usepackage{booktabs}
 \usepackage{url}
 \usepackage{lscape}
+\usepackage[toc,page]{appendix}
+
+\newcommand{\stoptocwriting}{%
+  \addtocontents{toc}{\protect\setcounter{tocdepth}{-5}}}
+\newcommand{\resumetocwriting}{%
+  \addtocontents{toc}{\protect\setcounter{tocdepth}{\arabic{tocdepth}}}}
+
+\usepackage{color}   %May be necessary if you want to color links
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true, %set true if you want colored links
+    linktoc=all,     %set to all if you want both sections and subsections linked
+    linkcolor=blue,  %choose some color if you want links to stand out
+    citecolor=blue
+}
 
 % \usepackage{lineno}
 
@@ -111,6 +126,8 @@ concordance=TRUE
 
 %\newpage{}
 
+\tableofcontents
+
 \global\long\def\baselinestretch{1.0}
  \global\long\def\baselinestretch{1.0}
 
@@ -134,7 +151,7 @@ While statisticians have been applying HMMs to telemetry data for decades, R \ci
 
 To address these deficiencies in existing software, we developed a user-friendly R package, \verb|momentuHMM| (Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models), intended for practitioners wishing to implement more flexible and realistic (multivariate) HMM analyses of animal movement while accounting for common challenges associated with telemetry data \citep{McClintockMichelot2018}. Features for multivariate HMM analyses in \verb|momentuHMM| include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states; 3) biased and correlated random walk movement models, including ``activity centers'' associated with attractive or repulsive forces \citep[e.g.][]{McClintockEtAl2012}; 4) user-specified design matrices and constraints for covariate modelling of state transition probability and probability distribution parameters using linear model formulas familiar to most R users; 5) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data \citep{HootenEtAl2017,McClintock2017}; 6) seamless integration of spatio-temporal environmental covariate data (e.g., wind direction, forest cover, sea ice concentration) using the \verb|raster| package \citep{Hijmans2016}; 7) cosinor \citep[e.g.][]{Cornelissen2014} and spline regression formulas for cyclical and other complicated behavioral patterns; 8) discrete individual-level random effects on state transition probabilities \citep[e.g.][]{DeRuiterEtAl2017}; 9) hierarchical hidden Markov models \citep[e.g.][]{Leos-BarajasEtAl2017} for data streams and/or state switching at multiple time scales; 10) ``recharge'' models for an aggregated physiological process associated with state switching in heterogeneous environments \citep{HootenEtAl2019}; 11) model checking and selection; and 12) data simulation capabilities for study design, power analyses and assessing model performance, including simulation of location data subject to temporal irregularity and/or measurement error. 
 
-In the following tutorial, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples, including an example of periodic cycles in African elephant movement, a 3-state (``resting'', ``foraging'', ``transit'') northern fur seal example incorporating auxiliary dive activity data \citep{McClintockEtAl2014b}, a loggerhead turtle example relating ``foraging'' and ``transit'' movements to ocean surface currents, a 5-state grey seal example incorporating biased movements toward haul-out and foraging locations \citep{McClintockEtAl2012}, a 4-state (``outbound'', ``searching'', ``foraging'', ``inbound'') southern elephant seal example with biased movements toward and away from a colony \citep{MichelotEtAl2017}, a 3-state (``resting'', ``foraging'', ``transit'') harbour seal example using population-level constraints on movement parameters \citep{McClintockEtAl2013c}, and a 6-state northern fulmar example incorporating biased movements relative to both static (i.e. colony) and dynamic (i.e. fishing vessels) activity centers \citep{PirottaEtAl2018}. Using simulated data, we also demonstrate how the group dynamic model of \cite{LangrockEtAl2014} can be implemented using \verb|momentuHMM|. Finally, we demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using potential functions \citep[e.g.][]{BrillingerEtAl2012}. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics. While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs.  Additional information, including help files, data, examples, and package usage is available by downloading the \verb|momentuHMM| package from CRAN (\url{cran.r-project.org}) or Github (\url{github.com/bmcclintock/momentuHMM}). This article describes \verb|momentuHMM| version \Sexpr{installed.packages()["momentuHMM","Version"]}.
+In the following tutorial, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples, including an example of periodic cycles in African elephant movement, a 3-state (``resting'', ``foraging'', ``transit'') northern fur seal example incorporating auxiliary dive activity data \citep{McClintockEtAl2014b}, a loggerhead turtle example relating ``foraging'' and ``transit'' movements to ocean surface currents, a 5-state grey seal example incorporating biased movements toward haul-out and foraging locations \citep{McClintockEtAl2012}, a 4-state (``outbound'', ``searching'', ``foraging'', ``inbound'') southern elephant seal example with biased movements toward and away from a colony \citep{MichelotEtAl2017}, a 3-state (``resting'', ``foraging'', ``transit'') harbour seal example using population-level constraints on movement parameters \citep{McClintockEtAl2013c}, a 6-state northern fulmar example incorporating biased movements relative to both static (i.e. colony) and dynamic (i.e. fishing vessels) activity centers \citep{PirottaEtAl2018}, and hierarchical HMMs fitted to harbor porpoise and garter snake data \citep{Leos-BarajasEtAl2017}. Using simulated data, we also demonstrate how the group dynamic model of \cite{LangrockEtAl2014} can be implemented using \verb|momentuHMM|. Finally, we demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using potential functions \citep[e.g.][]{BrillingerEtAl2012}. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics. While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs.  Additional information, including help files, data, examples, and package usage is available by downloading the \verb|momentuHMM| package from CRAN (\url{https://cran.r-project.org}) or Github (\url{https://github.com/bmcclintock/momentuHMM}). This article describes \verb|momentuHMM| version \Sexpr{installed.packages()["momentuHMM","Version"]}.
 
 \section{momentuHMM overview}
 %Given the deliberately similar syntax between the two packages, 
@@ -303,7 +320,7 @@ fitHaggis <- fitHMM(data = processedHaggis, nbStates = 2,
 @
 Note that many of the arguments in \verb|fitHMM| are lists, with each element of the list corresponding to a data stream.  The list names provided in \verb|dist|, \verb|Par0|, and \verb|estAngleMean| (e.g. `step' and `angle') must therefore have a corresponding column in \verb|data| with the same name.  Additional data streams can be added to the model by simply adding the additional elements to these list arguments (see examples in sections \ref{sec:nfs} and \ref{sec:northernFulmar}).  
 
-As seen above, the \verb|formula| argument can include many of the functions and operators commonly used to construct terms in R linear model formulas (e.g. \verb|a*b|, \verb|a:b|, \verb|cos(a)|). The \verb|formulaDelta| argument can be similarly used to specify covariate models for the initial distribution.  Unique to \verb|momentuHMM|, the \verb|formula| argument can also be used to specify transition probability matrix models that incorporate cyclical patterns (using the \verb|cosinor| special function; see example in section \ref{sec:elephant}), splines for explaining other more complicated patterns (e.g., \verb|bs| and \verb|ns| functions in the R base package \verb|splines|), and factor variables (e.g., \verb|formula=~ID| for individual-level effects).  By default the \verb|formula| argument applies to all state transition probabilities, but the special functions \verb|state|, \verb|toState|, and \verb|betaCol| allow for state- and parameter-specific formulas to be specified (see examples in sections \ref{sec:greySeal} and \ref{sec:northernFulmar}). While \verb|betaCol| allows a formula to be specified for a specific transition (e.g. state $3 \rightarrow 1$), \verb|state| and \verb|toState| allow a formula to be specified for all transitions from (e.g. $3 \rightarrow 1$, $3 \rightarrow 2$) and to (e.g. state $1 \rightarrow 3$, $2 \rightarrow 3$) specific states, respectively. The \verb|betaCons| argument allows for equality constraints among any of the transition probability parameters (e.g. $\gamma^{(t)}_{12}=\gamma^{(t)}_{21}$; see example in section \ref{sec:northernFulmar}). Specific state transition probabilities can also be fixed to zero (or any other value) using the \verb|fixPar| argument, which can be useful for incorporating more behavioral realism.  For example, \verb|fixPar| can be used to prohibit or enforce switching from one particular state to another (possibly as a function of spatio-temporal covariates). 
+As seen above, the \verb|formula| argument can include many of the functions and operators commonly used to construct terms in R linear model formulas (e.g. \verb|a*b|, \verb|a:b|, \verb|cos(a)|). The \verb|formulaDelta| argument can be similarly used to specify covariate models for the initial distribution.  The \verb|formula| argument can also be used to specify transition probability matrix models that incorporate cyclical patterns (using the \verb|cosinor| special function; see example in section \ref{sec:elephant}), splines for explaining other more complicated patterns (e.g., \verb|bs| and \verb|ns| functions in the R base package \verb|splines|), and factor variables (e.g., \verb|formula=~ID| for individual-level effects).  By default the \verb|formula| argument applies to all state transition probabilities, but the special functions \verb|state|, \verb|toState|, and \verb|betaCol| allow for state- and parameter-specific formulas to be specified (see examples in sections \ref{sec:greySeal} and \ref{sec:northernFulmar}). While \verb|betaCol| allows a formula to be specified for a specific transition (e.g. state $3 \rightarrow 1$), \verb|state| and \verb|toState| allow a formula to be specified for all transitions from (e.g. $3 \rightarrow 1$, $3 \rightarrow 2$) and to (e.g. state $1 \rightarrow 3$, $2 \rightarrow 3$) specific states, respectively. The \verb|betaCons| argument allows for equality constraints among any of the transition probability parameters (e.g. $\gamma^{(t)}_{12}=\gamma^{(t)}_{21}$; see example in section \ref{sec:northernFulmar}). Specific state transition probabilities can also be fixed to zero (or any other value) using the \verb|fixPar| argument, which can be useful for incorporating more behavioral realism.  For example, \verb|fixPar| can be used to prohibit or enforce switching from one particular state to another (possibly as a function of spatio-temporal covariates). 
 
 Similar to the \verb|formula| argument for state transition probability modelling, it is through the \verb|DM| argument of \verb|fitHMM| that models are specified for the state-dependent probability distribution parameters for each data stream.  \verb|DM| is a list argument containing an element for each data stream, but each element itself is also a list specifying the design matrix formulas for each parameter. For example, the following fits the exact same wild haggis model as above, but employs a user-specified (intercept-only) design matrix for the step length data stream:
 <<fit-haggis, echo=TRUE, eval=FALSE>>=
@@ -374,6 +391,10 @@ See section \ref{sec:turtle} for example code using \verb|angleFormula| and the 
 \subsection{Random walk probability distributions}
 \label{sec:rw}
 \verb|momentuHMM| includes several normal random walk probability distributions that can be specified in the \verb|dist| argument (see Tables \ref{tab:unipdfs} and \ref{tab:multipdfs}), including univariate (e.g. for modeling depths), bivariate (e.g. for modeling 2-D positions), and trivariate (e.g. for modeling 3-D positions) normal random walks. These can be particularly useful for modeling movement on positions directly instead of steps and turns. A random walk model assumes position at time $t$ is a function of the position at time $t-1$; in its simplest form without any covariates, we have $x_t \sim N(x_{t-1},\sigma^2)$ for the univariate case. We demonstrate use of the bivariate normal random walk model for loggerhead turtle movements relative to ocean surface currents in section \ref{sec:turtle}. We also demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using a bivariate normal random walk in section \ref{sec:avoidLand}.
+
+\subsection{Hierarchical hidden Markov models}
+\label{sec:HHMM}
+Hierarchical hidden Markov models \citep[HHMMs; see][]{Leos-BarajasEtAl2017} can also be fitted in \verb|momentuHMM|. HMMs with hierarchical structures allow for data streams and/or state transitions to occur at multiple time scales. For example, biotelemetry data are often collected at different time scales (e.g. 1-hr intervals for one data stream and 1-min intervals for another data stream) or state transitions can be governed by both larger- and finer-scale behavioral processes. HHMMs are integrated into the workhorse functions of \verb|momentuHMM| and are specified via hierarchically-structured arguments for the data stream probability distributions (\verb|hierDist|), behavioral states (\verb|hierStates|), state transition probabilities (\verb|hierFormula|, \verb|hierBeta|), and initial distributions (\verb|hierFormulaDelta|, \verb|hierDelta|) using the \verb|data.tree| package \citep{Glur2018}.  We demonstrate how both the harbor porpoise and garter snake examples from \cite{Leos-BarajasEtAl2017} can be fitted using \verb|momentuHMM| in section \ref{sec:HHMMexamples}.
 
 \subsection{Multiple imputation}
 \label{sec:mi}
@@ -708,7 +729,7 @@ and
 \end{equation*}
 This is analogous to state 2 in our model for steps and turns, where the terms $(x_{t-1}-x_{t-2})$ and $(y_{t-1}-y_{t-2})$ account for persistence in velocity. For state 1 we would simply remove the terms related to ocean surface current velocities ($u_t$ and $v_t$). 
 
-Multivariate normal distributions require some additonal book-keeping when preparing the data; the \verb|altCoordNames| argument in \verb|prepData| and \verb|MIfitHMM| and the \verb|mvnCoords| argument in \verb|fitHMM| and \verb|MIfitHMM| are designed to help properly format and identify multivariate coordinate data streams. For example, if a bivariate normal data stream name is ``loc'' (e.g. \verb|dist=list(loc="mvnorm2")|), then the data must include columns ``loc.x'' and ''loc.y'' for the x- and y- coordinates, respectively.  When using a multivariate normal random walk distribution, the previous position can be referenced in \verb|DM| formulas or pseudo-design matrices. For example, for a bivariate normal random walk data stream named ``mu'' (e.g. \verb|dist=list(mu="rw_mvnorm2")|), the previous position can be refereced in \verb|DM| as ``mu.x\_tm1'' and ``mu.y\_tm1''. This allows for persistence in velocity to be included as in Eq. \ref{eq:potFun} via the special formula function \verb|crw(x_tm1,lag)|, where argument \verb|x_tm1| is the previous position (e.g. ``mu.x\_tm1'' or ``mu.y\_tm1'') and argument \verb|lag| specifies the time lag for the persistence (\verb|lag=1| in this example, but higher order lags could also be included). A complete demonstration of how to implement this bivariate normal random walk model can be found in the ``turtleExample\_rw\_mvnorm2.R'' script in the \verb|momentuHMM| ``vignettes'' source directory (or at \url{github.com/bmcclintock/momentuHMM}).
+Multivariate normal distributions require some additonal book-keeping when preparing the data; the \verb|altCoordNames| argument in \verb|prepData| and \verb|MIfitHMM| and the \verb|mvnCoords| argument in \verb|fitHMM| and \verb|MIfitHMM| are designed to help properly format and identify multivariate coordinate data streams. For example, if a bivariate normal data stream name is ``loc'' (e.g. \verb|dist=list(loc="mvnorm2")|), then the data must include columns ``loc.x'' and ''loc.y'' for the x- and y- coordinates, respectively.  When using a multivariate normal random walk distribution, the previous position can be referenced in \verb|DM| formulas or pseudo-design matrices. For example, for a bivariate normal random walk data stream named ``mu'' (e.g. \verb|dist=list(mu="rw_mvnorm2")|), the previous position can be refereced in \verb|DM| as ``mu.x\_tm1'' and ``mu.y\_tm1''. This allows for persistence in velocity to be included as in Eq. \ref{eq:potFun} via the special formula function \verb|crw(x_tm1,lag)|, where argument \verb|x_tm1| is the previous position (e.g. ``mu.x\_tm1'' or ``mu.y\_tm1'') and argument \verb|lag| specifies the time lag for the persistence (\verb|lag=1| in this example, but higher order lags could also be included). A complete demonstration of how to implement this bivariate normal random walk model can be found in the ``turtleExample\_rw\_mvnorm2.R'' script in the \verb|momentuHMM| ``vignettes'' source directory (or at \url{https://github.com/bmcclintock/momentuHMM}).
 
 \subsection{Grey seal}
 \label{sec:greySeal}
@@ -770,6 +791,7 @@ A simulated track is presented along with the fitted track in Figure \ref{fig:gr
 \end{figure}
 
 \subsection{Southern elephant seal}
+\stoptocwriting
 Here, we analyse the southern elephant seal (\emph{Mirounga leonina}) data from \cite{MichelotEtAl2017} using \verb|momentuHMM|. The data set consists of 15 tracks, each encompassing (at most) one foraging trip, starting from Kerguelen Island. We want to fit the model described by \cite{MichelotEtAl2017}, with the four following states:
 \begin{enumerate}
 \item outbound trip from the colony to the ice;
@@ -927,6 +949,7 @@ The three fitted model can be compared with \verb|AIC(m1,m2,m3)|, which overwhel
   \caption{Selected results from the elephant seal example. Panels include estimates and 95\% confidence intervals for the ``outbound'' mean step length parameter (top-left panel), ``inbound'' mean step length parameter (top-right panel), ``outbound'' turning angle concentration parameter (bottom-left panel), and ``inbound'' turning angle concentration parameter (bottom-right panel) as a function of distance to colony (`colony.dist'). Distance to colony has been standardized based on a mean of 2539 km (SD = 1021.3).}
   \label{fig:sesResults}
 \end{figure}
+\resumetocwriting
 
 \subsection{Group dynamic animal movement}
 \label{sec:groupModel}
@@ -1458,6 +1481,15 @@ plotSat(m2, zoom = 7, shape = c(17,1,17,1,17,1), size = 2,
   \caption{Seven northern fulmar tracks, colored by the most likely state sequence.}
   \label{fig:northernFulmar}
 \end{figure}
+
+\subsection{Hierarchical HMMs}
+\label{sec:HHMMexamples}
+
+\subsubsection{Harbor porpoise example}
+\label{sec:harborPorpoise}
+
+\subsubsection{Garter snake example}
+\label{sec:garterSnake}
 
 \subsection{Simulating constrained movement}
 \label{sec:avoidLand}
