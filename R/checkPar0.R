@@ -200,7 +200,11 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
     inputs <- checkInputs(nbStates,dist,nPar,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames=NULL,checkInflation = TRUE)
     
     # convert RW data
-    data <- RWdata(dist,data)
+    if(any(unlist(dist) %in% rwdists)){
+      data <- RWdata(dist,data,knownStates=NULL)
+      knownStates <- data$knownStates
+      data$knownStates <- NULL
+    }
     
     tempCovs <- data[1,]
     DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,nPar,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)

@@ -24,11 +24,15 @@ rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- mvtnorm::rmvnorm
 drw_norm <- stats::dnorm
 rrw_norm <- stats::rnorm
 
-RWdata <- function(dist,data){
+RWdata <- function(dist,data,knownStates){
   distnames <- names(dist)
   if(any(unlist(dist) %in% rwdists)){
     newdata <- NULL
     colInd <- NULL
+    if(length(knownStates)){
+      if("knownStates" %in% colnames(data)) stop("data cannot include a column named 'knownStates'")
+      data$knownStates <- knownStates
+    }
     ID <- unique(data$ID)
     for(j in ID){
       jInd <- which(data$ID==j)

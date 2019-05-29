@@ -549,8 +549,22 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     if(!(dist[[mvnCoords]] %in% mvndists)) stop("mvnCoords must correspond to a multivariate normal data stream")
   }
   
+  # check knownStates
+  if(length(knownStates) > 0){
+    if(length(knownStates) != nrow(data)) 
+      stop("'knownStates' should be of same length as the data, i.e. ",nrow(data))
+    if(!all(is.na(knownStates))) {
+      if(max(knownStates, na.rm = TRUE) > nbStates | min(knownStates, na.rm = TRUE) < 1 | !isTRUE(all.equal(knownStates,as.integer(knownStates)))) 
+        stop("'knownStates' should only contain integers between 1 and ", nbStates, " (or NAs)")
+    }
+  }
+  
   # convert RW data
-  data <- RWdata(dist,data)
+  if(any(unlist(dist) %in% rwdists)){
+    data <- RWdata(dist,data,knownStates)
+    knownStates <- data$knownStates
+    data$knownStates <- NULL
+  }
   
   newForm <- newFormulas(formula,nbStates,hierarchical = TRUE)
   formulaStates <- newForm$formulaStates
@@ -634,15 +648,6 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     stop("stationary can't be set to TRUE if there are covariates in formula.")
   if(nbCovsDelta>0 & stationary==TRUE)
     stop("stationary can't be set to TRUE if there are covariates in formulaDelta.")
-  
-  if(length(knownStates) > 0){
-    if(length(knownStates) != nrow(data)) 
-      stop("'knownStates' should be of same length as the data, i.e. ",nrow(data))
-    if(!all(is.na(knownStates))) {
-      if(max(knownStates, na.rm = TRUE) > nbStates | min(knownStates, na.rm = TRUE) < 1 | !isTRUE(all.equal(knownStates,as.integer(knownStates)))) 
-        stop("'knownStates' should only contain integers between 1 and ", nbStates, " (or NAs)")
-    }
-  }
 
   if(length(covsCol)>0 | !is.null(recharge)) {
     if(!is.null(recharge)){
