@@ -257,10 +257,12 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
     colnames(tmpPar) <- columns
     rownames(tmpPar) <- betaNames
     
+    if(length(betaRef)!=nbStates) stop("dimension mismatch between nbStates and betaRef")
+    
     if(length(which(model$stateNames %in% stateNames))>1){
       for(i in match(model$stateNames,stateNames,nomatch=0)){#which(model$stateNames %in% stateNames)){
         for(j in match(model$stateNames,stateNames,nomatch=0)){#which(model$stateNames %in% stateNames)) {
-          if(betaRef[i]!=j & i>0 & j>0){
+          if(i>0 & j>0 && betaRef[i]!=j){
             betaInd <- paste(match(stateNames[i],model$stateNames),"->",match(stateNames[j],model$stateNames))
             if(betaInd %in% colnames(model$mle$beta)){
               if(is.miSum(model))
