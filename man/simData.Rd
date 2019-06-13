@@ -428,7 +428,8 @@ formulaDelta <- ~ sex + 0
 delta <- matrix(c(-100,100),2,1,dimnames=list(c("sexF","sexM"),"state 2")) 
 
 data.delta<-simData(nbAnimals=2,obsPerAnimal=nObs,nbStates=2,dist=dist,Par=Par,
-                    delta=delta,formulaDelta=formulaDelta,covs=cov)        
+                    delta=delta,formulaDelta=formulaDelta,covs=cov,
+                    beta=matrix(-1.5,1,2),states=TRUE)        
                 
 }
 \references{

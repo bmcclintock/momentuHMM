@@ -330,7 +330,8 @@
 #' delta <- matrix(c(-100,100),2,1,dimnames=list(c("sexF","sexM"),"state 2")) 
 #'
 #' data.delta<-simData(nbAnimals=2,obsPerAnimal=nObs,nbStates=2,dist=dist,Par=Par,
-#'                     delta=delta,formulaDelta=formulaDelta,covs=cov)        
+#'                     delta=delta,formulaDelta=formulaDelta,covs=cov,
+#'                     beta=matrix(-1.5,1,2),states=TRUE)        
 #'                 
 #' @references
 #' 
@@ -1126,6 +1127,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
         wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+        if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
         
         ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
         nc <- ncmean$nc
@@ -1237,6 +1239,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           fullDM <- DMinputs$fullDM
           DMind <- DMinputs$DMind
           wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+          if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
+          
           nc <- meanind <- vector('list',length(distnames))
           names(nc) <- names(meanind) <- distnames
           for(i in distnames){
