@@ -5,7 +5,7 @@ example_wd <- ("~/Documents/Dropbox/current projects/moveHMM extension/momentuHM
 
 append.RData <- function(x, file) {
   old.objects <- load(file)
-  save(list = c(old.objects, deparse(substitute(x))), file = file)
+  save(list = c(old.objects, deparse(substitute(x))), file = file, version=2) # version=2 covers R 1.40 to 3.5.0; if version>2 then produces CRAN warning about depenency on R >= 3.5.0
 }
 
 ###################################################
@@ -315,6 +315,18 @@ dev.off()
 
 for(plt in seq(1,nbAnimals+3)[-c(7,8)])
   unlink(paste0("plot_groupExampleResults0",ifelse(plt>9,"","0"),plt,".pdf"))
+
+###################################################
+### harbor porpoise HHMM example
+###################################################
+#source(paste0(getwd(),"/examples/harborPorpoiseExample.R"))
+load(paste0(example_wd,"harborPorpoiseExample.RData"))
+hhmmPar <- getPar(hhmm)
+append.RData(hhmmPar,file=paste0(getwd(),"/vignette_inputs.RData"))
+pdf(file=paste0(getwd(),"/plot_harborPorpoiseStates%03d.pdf"),width=8,height=11,onefile=FALSE)
+plotStates(hhmm,ask=FALSE)
+dev.off()
+rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
 ###################################################
 ### land constraint example

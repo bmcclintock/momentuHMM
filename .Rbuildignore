@@ -8,6 +8,10 @@ vignettes/greySealData.RData
 vignettes/pilotWhaleData.RData
 vignettes/coastUTM.RData
 vignettes/sesData.csv
+vignettes/momentuHMM.pdf
+vignettes/vignette_examples.R
+^vignettes/figure$
+^vignettes/cache$
 tests/testthat/Rplots.pdf
 tests/testthat/test_examples.R
 tests/testthat/test_extraExamples.R

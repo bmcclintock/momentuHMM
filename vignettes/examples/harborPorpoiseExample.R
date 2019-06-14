@@ -8,6 +8,7 @@ library(data.tree)
 # load harbor porpoise data from Leos-Barajas et al
 load(url("https://static-content.springer.com/esm/art%3A10.1007%2Fs13253-017-0282-9/MediaObjects/13253_2017_282_MOESM2_ESM.rdata"))
 
+# convert date_time to POSIX
 data <- lapply(data,function(x) {x$date_time <- as.POSIXct(x$date_time,tz="UTC"); x})
 
 ### add 2 extra rows for each time step where coarse scale behavior switches occur (hourly in this case)
@@ -98,9 +99,6 @@ DM <- list(dive_duration=dw_DM[1:(2*nbStates),1:6],
 # get initial parameter values for data stream probability distributions on the working scale
 Par <- getParDM(porpoiseData,hierStates=hierStates,hierDist=hierDist,Par=Par0,DM=DM)
 
-# get t.p.m reference states for top level of hierarchy
-betaRef <- rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
-
 # define hierarchical t.p.m. formula(s)
 hierFormula <- Node$new("harbor porpoise HHMM formula")
 hierFormula$AddChild("level1", formula=~1)
@@ -108,13 +106,11 @@ hierFormula$AddChild("level2", formula=~1)
 # equivalent
 #hierFormula <- as.Node(list(name="harbor porpoise HHMM formula",
 #                           level1=list(formula=~1),
-#                           level2i=list(formula=~1),
 #                           level2=list(formula=~1)))
 
-# define hierarchical t.p.m. formula(s)
+# define hierarchical initial distribution formula(s)
 hierFormulaDelta <- Node$new("harbor porpoise HHMM formulaDelta")
 hierFormulaDelta$AddChild("level1", formulaDelta=~1)
-hierFormulaDelta$AddChild("level2i", formulaDelta=~1)
 hierFormulaDelta$AddChild("level2", formulaDelta=~1)
 
 
