@@ -45,7 +45,6 @@ Imports:
     RColorBrewer,
     tmvtnorm,
     data.tree,
-    DataCombine,
     lubridate
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
@@ -54,7 +53,8 @@ Suggests:
     setRNG,
     knitr,
     splines, 
-    splines2 (>= 0.2.8)
+    splines2 (>= 0.2.8),
+    webshot
 RoxygenNote: 6.1.1
 Encoding: UTF-8
 NeedsCompilation: yes
