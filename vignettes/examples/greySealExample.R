@@ -50,7 +50,7 @@ stepDM<-list(shape=distFormula,scale=distFormula)
 angleDM<-list(mean=angleFormula,concentration=distFormula)
 
 # fix parameters such that exploratory states are simple random walks (by fixing working concentration parameters to large negative number)
-# activity center states are biased random walks (because circularAngleMean=list(angle=0)) with a single angular covariate per angleMean, so these are simply fixed to 1
+# activity center states are biased random walks (because circularAngleMean=list(angle=0)) with a single angular covariate per angleMean, so these are simply fixed to +1 (positive=attraction, negative=repulsion)
 fixPar<-list(angle=c(rep(1,nCenters),rep(NA,nCenters*2),rep(-100,nbStates-nCenters)))
 
 # determine bestDat locations within activity center thresholds and specify knownStates accordingly

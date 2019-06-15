@@ -425,7 +425,7 @@ where ${\mathbf X}_\mu$ is a $T \times K$ matrix composed of the turning angles 
 x_{t,k}=\text{atan2}(\sin(r_{t,k}-b_{t-1}),\cos(r_{t,k}-b_{t-1})) 
   \label{eq:angleCov}
 \end{equation}
-for angular covariate $r_{t,k}$ and $k=1,\ldots,K$ (note that \verb|prepData| and \verb|MIfitHMM| calculate ${\mathbf X}_\mu$ based on the \verb|angleCovs|, \verb|centers|, or \verb|centroids| arguments so users need not bother). Because this link function is designed for turning angles, a turning angle of 0 is provided as the reference angle (hence the ``$1+$'' preceeding the cosine term in Eq. \ref{eq:circ}).  Thus as a trade-off between biased and correlated movements, the working parameters $({\boldsymbol \beta}_\mu)$ for the expected turning angle at time $t$ weight the attractive (or repulsive) strengths of the angular covariates relative to directional persistence.  When all ${\boldsymbol \beta}_\mu=0$, the model reduces to a correlated random walk, but an increasingly biased random walk results as ${\boldsymbol \beta}_\mu$ gets larger (or smaller). Many interesting hypotheses about animal movmement can be addressed using circular-circular regression on movement direction, including the effects of wind, sea surface currents (see example in section \ref{sec:turtle}), centers of attraction or repulsion (see examples in sections \ref{sec:greySeal} and \ref{sec:northernFulmar}), group dynamic models (see example in section \ref{sec:groupModel}), and dynamic activity centers (see example in section \ref{sec:northernFulmar}.
+for angular covariate $r_{t,k}$ and $k=1,\ldots,K$ (note that \verb|prepData| and \verb|MIfitHMM| calculate ${\mathbf X}_\mu$ based on the \verb|angleCovs|, \verb|centers|, or \verb|centroids| arguments so users need not bother). Because this link function is designed for turning angles, a turning angle of 0 is provided as the reference angle (hence the ``$1+$'' preceeding the cosine term in Eq. \ref{eq:circ}).  Thus as a trade-off between biased and correlated movements, the working parameters $({\boldsymbol \beta}_\mu)$ for the expected turning angle at time $t$ weight the attractive (or repulsive) strengths of the angular covariates relative to directional persistence.  When all ${\boldsymbol \beta}_\mu=0$, the model reduces to a correlated random walk, but an increasingly biased random walk results as ${\boldsymbol \beta}_\mu$ gets larger (or smaller). Alternatively, \verb|circularAngleMean| can be specified as a numeric scalar, where the value specifies the coefficient for the reference angle (i.e., directional persistence) term in Eq. \ref{eq:circ}. For example, setting \verb|circularAngleMean| to 0 specifies a circular-circular regression model with no directional persistence term (thus specifying a biased random walk instead of a biased correlated random walk; see examples in sections \ref{sec:greySeal}, \ref{sec:ses2}, and \ref{sec:groupModel}). Setting \verb|circularAngleMean| to 1 is equivalent to setting it to \verb|TRUE|, i.e., a circular-circular regression model with a coefficient of 1 for the directional persistence reference angle. Many interesting hypotheses about animal movmement can be addressed using circular-circular regression on movement direction, including the effects of wind, sea surface currents (see example in section \ref{sec:turtle}), centers of attraction or repulsion (see examples in sections \ref{sec:greySeal}, \ref{sec:ses}, and \ref{sec:northernFulmar}), group dynamic models (see example in section \ref{sec:groupModel}), and dynamic activity centers (see example in section \ref{sec:northernFulmar}.
 
 The special function \verb|angleFormula| can be included in \verb|DM| formulas or pseudo-design matrices in order to model the circular-circular regression angle mean as a function of the relative strength (or importance) of angular covariates \citep{RivestEtAl2016}:
 \begin{equation}
@@ -897,13 +897,13 @@ Similar to \cite{McClintockEtAl2012}, we assume a Weibull distribution for step 
                          \hlkwc{Par0} \hlstd{= Par0,} \hlkwc{beta0} \hlstd{= beta0,} \hlkwc{fixPar} \hlstd{= fixPar,}
                          \hlkwc{formula} \hlstd{= distFormula,}
                          \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),}
-                         \hlkwc{circularAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),}
+                         \hlkwc{circularAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{0}\hlstd{),}
                          \hlkwc{DM} \hlstd{= DM,} \hlkwc{knownStates} \hlstd{= knownStates)}
 \hlkwd{plot}\hlstd{(greySealFits,} \hlkwc{plotCI} \hlstd{=} \hlnum{TRUE}\hlstd{)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-As with the step length and turning angle concentration parameters, the state transition probabilities are also allowed to change as a function of distance to activity centers (as specified by the \verb|formula| argument). The starting values (\verb|Par0| and \verb|beta0|) for each imputation were extracted from a single HMM fitted to the best predicted locations from \verb|crawlWrap|, and \verb|fixPar| was used to remove short-term directional persistence (and thus formulate the model as a mixture of biased and simple random walks). 
+As with the step length and turning angle concentration parameters, the state transition probabilities are also allowed to change as a function of distance to activity centers (as specified by the \verb|formula| argument). The starting values (\verb|Par0| and \verb|beta0|) for each imputation were extracted from a single HMM fitted to the best predicted locations from \verb|crawlWrap|, and \verb|circularAngleMean=list(angle=0)| was used to remove short-term directional persistence (and thus formulate the model as a mixture of biased and simple random walks). %With a single angular covariate in a circular-circular regression model, the coefficient for the angular covariate should be fixed using \verb|fixPar| whenever short-term directional persistence is removed (because the coefficient is not identifiable); the magnitude of the fixed coefficient is not important, only the sign is important (i.e. positive for attraction, negative for repulsion).
 
 Estimated activity budgets for the 5 states of this multiple imputation HMM were 0.28 $(0.27-0.3)$ for the ``Abertay'' haul-out state, 0.12 $(0.11-0.13)$ for the ``Farne Islands'' haul-out state, 0.37 $(0.35-0.38)$ for the ``Dogger Bank'' foraging state, 0.11 $(0.05-0.2)$ for a low-speed ``exploratory'' state, and 0.12 $(0.07-0.21)$ for a high-speed ``exploratory'' state. All three activity center states exhibited shorter step lengths and less biased movements when within the vicinity of these targets (Figure \ref{fig:greySealResults}). Results from this analysis were thus very similar to those of \cite{McClintockEtAl2012}, but this implementation required far less computation time and no custom model-fitting algorithms. 
 
@@ -938,6 +938,7 @@ A simulated track is presented along with the fitted track in Figure \ref{fig:gr
 \end{figure}
 
 \subsection{Southern elephant seal}
+\label{sec:ses}
 \stoptocwriting
 Here, we analyse the southern elephant seal (\emph{Mirounga leonina}) data from \cite{MichelotEtAl2017} using \verb|momentuHMM|. The data set consists of 15 tracks, each encompassing (at most) one foraging trip, starting from Kerguelen Island. We want to fit the model described by \cite{MichelotEtAl2017}, with the four following states:
 \begin{enumerate}
@@ -1000,6 +1001,7 @@ We start by fitting a covariate-free 4-state correlated random walk model, which
 \end{knitrout}
 
 \subsubsection{Model 2}
+\label{sec:ses2}
 This model mimics the formulation of \cite{MichelotEtAl2017}. We model the effect of the distance to colony on the transition probability from outbound to search, and of the time since departure on the transition probability from search to inbound.
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1044,17 +1046,17 @@ Biased random walks are used to model the movement in states 1 and 4, with repul
 \end{kframe}
 \end{knitrout}
 
-To specify the direction of the bias (away from or towards the colony), we fix the parameters linking the mean turning angle to the direction of the colony. In state 1, we fix the coefficient to a large negative number (e.g.\ -100) so that the mean direction is away from the colony. In state 4, we fix it to a large positive number (e.g.\ 100) so that the mean direction is towards the colony. Fixing these parameters to large positive (or negative) values effectively removes the correlated random walk component of Eq. \ref{eq:circ} for states 1 and 4. The four other parameters correspond to the angle concentrations and should be estimated (NAs in \verb|fixPar|).
+To specify the direction of the bias (away from or towards the colony), we fix the parameters linking the mean turning angle to the direction of the colony. Because we will remove the correlated random walk component of Eq. \ref{eq:circ} for states 1 and 4 (by setting \verb|circularAngleMean=list(angle=0)|; see section \ref{sec:circ}), we fix the coefficient to $-1$ for state 1 (so that the mean direction is away from the colony), and we fix the coefficient to $+1$ for state 4 (so that the mean direction is towards the colony). Note that with only a single angular covariate, the magnitude of these fixed coefficients is not important; only the sign is important (i.e. positive for attraction, negative for repulsion). The four other parameters correspond to the angle concentrations and should be estimated (NAs in \verb|fixPar|).
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{fixPar} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{100}\hlstd{,}\hlnum{100}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{),}\hlkwc{beta}\hlstd{=fixbeta)}
+\hlstd{fixPar} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{),}\hlkwc{beta}\hlstd{=fixbeta)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-Because no covariates are specified for the mean angle of state 2 (searching) and state 3 (foraging), these states are reduced to correlated random walks with a mean turning angle of zero (i.e. $\text{atan2}(0,1)=0$ as in Eq. \ref{eq:circ}).
+Because no covariates are specified for the mean angle of state 2 (searching) and state 3 (foraging), these states are reduced to correlated random walks with a mean turning angle of zero (i.e. $\text{atan2}(0,0)=0$; see Eq. \ref{eq:circ}).
 
-We can now fit the second model with starting parameter values extracted from the simpler model using \verb|getPar0|. In \verb|fitHMM|, we use the arguments \verb|estAngleMean| and \verb|circularAngleMean| to indicate that the angle mean is to be estimated using circular-circular regression.
+We can now fit the second model with starting parameter values extracted from the simpler model using \verb|getPar0|. In \verb|fitHMM|, we use the arguments \verb|estAngleMean| and \verb|circularAngleMean| to indicate that the angle mean is to be estimated using circular-circular regression (with short-term directional persistence removed for states 1 and 4).
 
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1062,13 +1064,13 @@ We can now fit the second model with starting parameter values extracted from th
 \hlstd{Par0} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(}\hlkwc{model}\hlstd{=m1,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,}
                 \hlkwc{DM}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mean}\hlstd{=angleFormula,} \hlkwc{concentration}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{)),}
                 \hlkwc{estAngleMean}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),}
-                \hlkwc{circularAngleMean}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),} \hlkwc{formula}\hlstd{=formula)}
+                \hlkwc{circularAngleMean}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{0}\hlstd{),} \hlkwc{formula}\hlstd{=formula)}
 
 \hlstd{m2} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(}\hlkwc{data}\hlstd{=data,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=}\hlstr{"gamma"}\hlstd{,}\hlkwc{angle}\hlstd{=}\hlstr{"vm"}\hlstd{),}
              \hlkwc{Par0}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=Par0}\hlopt{$}\hlstd{Par}\hlopt{$}\hlstd{step,} \hlkwc{angle}\hlstd{=Par0}\hlopt{$}\hlstd{Par}\hlopt{$}\hlstd{angle),}
              \hlkwc{beta0}\hlstd{=Par0}\hlopt{$}\hlstd{beta,} \hlkwc{fixPar}\hlstd{=fixPar,} \hlkwc{formula}\hlstd{=formula,}
              \hlkwc{DM}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mean}\hlstd{=angleFormula,} \hlkwc{concentration}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{)),}
-             \hlkwc{estAngleMean}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),} \hlkwc{circularAngleMean}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),}
+             \hlkwc{estAngleMean}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{),} \hlkwc{circularAngleMean}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{0}\hlstd{),}
              \hlkwc{stateNames} \hlstd{= stateNames)}
 \end{alltt}
 \end{kframe}
@@ -1085,7 +1087,7 @@ Instead of relying entirely on \verb|fixPar| for parameter constraints, an equiv
                     \hlkwd{rep}\hlstd{(}\hlnum{NA}\hlstd{,}\hlnum{12}\hlstd{)),}
                   \hlkwc{nrow}\hlstd{=}\hlnum{3}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{)}
 
-\hlstd{fixPar} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{100}\hlstd{,}\hlnum{100}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{),}\hlkwc{beta}\hlstd{=fixbeta)}
+\hlstd{fixPar} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{),}\hlkwc{beta}\hlstd{=fixbeta)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -1192,7 +1194,7 @@ Now we can use the simulated centroid track (Fig. \ref{fig:groupResults}) as a d
 \hlstd{stateNames} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"group"}\hlstd{,}\hlstr{"solitary"}\hlstd{)}
 
 \hlstd{Par} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{30}\hlstd{,}\hlnum{50}\hlstd{,}\hlnum{15}\hlstd{,}\hlnum{25}\hlstd{),}
-            \hlkwc{angle} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{1.e+7}\hlstd{,}\hlkwd{log}\hlstd{(}\hlnum{2.5}\hlstd{),}\hlkwd{log}\hlstd{(}\hlnum{5}\hlstd{)))}
+            \hlkwc{angle} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlkwd{log}\hlstd{(}\hlnum{2.5}\hlstd{),}\hlkwd{log}\hlstd{(}\hlnum{5}\hlstd{)))}
 
 \hlstd{beta} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.944439}\hlstd{,}\hlopt{-}\hlnum{1.734601}\hlstd{),}\hlnum{1}\hlstd{,nbStates)}
 
@@ -1217,7 +1219,7 @@ Now we can use the simulated centroid track (Fig. \ref{fig:groupResults}) as a d
 
 \hlstd{groupData} \hlkwb{<-} \hlkwd{simData}\hlstd{(}\hlkwc{nbAnimals}\hlstd{=nbAnimals,} \hlkwc{nbStates}\hlstd{=nbStates,} \hlkwc{dist}\hlstd{=dist,}
                      \hlkwc{Par} \hlstd{= Par,} \hlkwc{beta} \hlstd{= beta,} \hlkwc{delta} \hlstd{= delta,} \hlkwc{DM} \hlstd{= DM,}
-                     \hlkwc{circularAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle} \hlstd{=} \hlnum{TRUE}\hlstd{),}
+                     \hlkwc{circularAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle} \hlstd{=} \hlnum{0}\hlstd{),}
                      \hlkwc{centroids} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{centroid} \hlstd{= cD),}
                      \hlkwc{obsPerAnimal} \hlstd{= nbObs,}
                      \hlkwc{initialPosition} \hlstd{= initialPositions,}
@@ -1225,19 +1227,21 @@ Now we can use the simulated centroid track (Fig. \ref{fig:groupResults}) as a d
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-\noindent Here state 1 (``group'') has biased movements toward the centroid and state 2 (``solitary'') is simply a correlated random walk independent of the group centroid (Fig. \ref{fig:groupResults}).  Note that despite this being a 2-state HMM, the working scale parameters for turning angle (\verb|Par$angle|) only includes 3 parameters (1 for the angle mean and 2 for the concentration parameters).  This is because under the circular-circular regression model, no working parameter is specified\footnote{More accurately, the working parameter for the reference angle is automatically fixed to $\beta_0=1$.} for the reference turning angle of zero (i.e., the component for short-term directional persistence; see Eq. \ref{eq:circ}) and no angular covariates were specified in the model for state 2 (``solitary''). Thus the first parameter corresponds to the working scale parameter of the \verb|centroid.angle| covariate for state 1 (``group''), while the second and third parameters are the working scale parameters for the concentration parameters for states 1 and 2, respectively.  In this case, the angle mean parameter for state 1 was set at a large value (1.e+7) so as to enforce a biased random walk (instead of a biased correlated random walk). In other words, the large value for the biased random walk component ``swamps'' the correlated random walk component in Eq. \ref{eq:circ}.
+\noindent Here state 1 (``group'') has biased movements toward the centroid and state 2 (``solitary'') is simply a correlated random walk independent of the group centroid (Fig. \ref{fig:groupResults}).  Note that despite this being a 2-state HMM, the working scale parameters for turning angle (\verb|Par$angle|) only includes 3 parameters (1 for the angle mean and 2 for the concentration parameters).  This is because under the circular-circular regression model, no working parameter is specified\footnote{More accurately, the working parameter for the reference angle is automatically fixed to $\beta_0=1$ (or whatever scalar is provided by the circularAngleMean argument).} for the reference turning angle of zero (i.e., the component for short-term directional persistence; see Eq. \ref{eq:circ}) and no angular covariates were specified in the model for state 2 (``solitary''). Thus the first parameter corresponds to the working scale parameter of the \verb|centroid.angle| covariate for state 1 (``group''), while the second and third parameters are the working scale parameters for the concentration parameters for states 1 and 2, respectively.  In this case, we remove the correlated random walk component for state 1 by setting \verb|circularAngleMean = list(angle = 0)|, and the angle mean parameter for state 1 was set at a positive value $(+1)$ to enforce a biased random walk with attraction towards the group centriod. As there is only a single angular covariate here, the magnitude of this value is not important; only the sign matters (i.e. positive for attraction, negative for repulsion).
 
 Finally, we can fit the group dynamic model using \verb|fitHMM|:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlstd{Par0} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{30}\hlstd{,}\hlnum{50}\hlstd{,}\hlnum{15}\hlstd{,}\hlnum{25}\hlstd{),}
-             \hlkwc{angle} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlkwd{log}\hlstd{(}\hlnum{2.5}\hlstd{),}\hlkwd{log}\hlstd{(}\hlnum{5}\hlstd{)))}
+             \hlkwc{angle} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlkwd{log}\hlstd{(}\hlnum{2.5}\hlstd{),}\hlkwd{log}\hlstd{(}\hlnum{5}\hlstd{)))}
+
+\hlstd{fixPar} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{))}
 
 \hlstd{groupFit} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(groupData,} \hlkwc{nbStates}\hlstd{=nbStates,} \hlkwc{dist}\hlstd{=dist,} \hlkwc{Par}\hlstd{=Par0,}
                    \hlkwc{DM} \hlstd{= DM,} \hlkwc{stationary} \hlstd{=} \hlnum{TRUE}\hlstd{,}
                    \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle} \hlstd{=} \hlnum{TRUE}\hlstd{),}
-                   \hlkwc{circularAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle} \hlstd{=} \hlnum{TRUE}\hlstd{),}
+                   \hlkwc{circularAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle} \hlstd{=} \hlnum{0}\hlstd{),} \hlkwc{fixPar} \hlstd{= fixPar,}
                    \hlkwc{stateNames} \hlstd{= stateNames)}
 \end{alltt}
 \end{kframe}

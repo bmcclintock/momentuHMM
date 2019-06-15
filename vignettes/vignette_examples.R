@@ -92,7 +92,7 @@ for(plt in seq(1,6)[-c(1,2,4)])
 
 pdf(file=paste0(getwd(),"/plot_turtleResults2.pdf"),width=7,height=7*50/73)
 par(mar=c(4,4,0,1))
-plot(speedrast,col=gray.colors(20, start=1, end=0.3),xlab="easting (km)",ylab="northing (km)",legend.args=list(text='       speed (m/s)', side=3, line=1),box=FALSE,bty="n")
+raster::plot(speedrast,col=gray.colors(20, start=1, end=0.3),xlab="easting (km)",ylab="northing (km)",legend.args=list(text='       speed (m/s)', side=3, line=1),box=FALSE,bty="n")
 my.symbols(rastx,rasty,ms.arrows, xsize=20,ysize=20,add=TRUE,angle=getValues(dirrast), r=getValues(speedrast), length=.015)
 points(x,y,type="o",pch=20,col=c("#E69F00", "#56B4E9")[turtleFits$miSum$Par$states],cex=.5)
 segments(x0=x[-length(x)],y0=y[-length(y)],x1=x[-1],y1=y[-1],

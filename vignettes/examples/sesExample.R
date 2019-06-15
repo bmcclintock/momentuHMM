@@ -61,14 +61,14 @@ fixbeta <- matrix(c(NA,-100,-100,-100,NA,NA,-100,NA,-100,-100,-100,-100,
 angleFormula <- ~ state1(colony.angle) + state4(colony.angle)
 
 # constrain states 1 and 4 to biased random walks (outbound=repulsion, inbound=attraction)
-fixPar <- list(angle=c(-100,100,NA,NA,NA,NA),beta=fixbeta)
+fixPar <- list(angle=c(-1,1,NA,NA,NA,NA),beta=fixbeta)
 
 Par0 <- getPar0(model=m1, nbStates=4, DM=list(angle=list(mean=angleFormula, concentration=~1)), 
-                estAngleMean=list(angle=TRUE), circularAngleMean=list(angle=TRUE), formula=formula)
+                estAngleMean=list(angle=TRUE), circularAngleMean=list(angle=0), formula=formula)
 
 m2 <- fitHMM(data=data, nbStates=4, dist=list(step="gamma",angle="vm"), Par0=list(step=Par0$Par$step, angle=Par0$Par$angle),
              beta0=Par0$beta, fixPar=fixPar, formula=formula, DM=list(angle=list(mean=angleFormula, concentration=~1)), 
-             estAngleMean=list(angle=TRUE), circularAngleMean=list(angle=TRUE), stateNames = stateNames)
+             estAngleMean=list(angle=TRUE), circularAngleMean=list(angle=0), stateNames = stateNames)
 #############################################################################################
 
 

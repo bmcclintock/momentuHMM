@@ -26,7 +26,7 @@ nbAnimals <- 20
 nbStates<-2
 stateNames <- c("group","solitary")
 
-Par <- list(step=c(30,50,15,25), angle = c(1.e+7,log(2.5),log(5)))
+Par <- list(step=c(30,50,15,25), angle = c(1,log(2.5),log(5)))
 DM <- list(angle=list(mean=~state1(centroid.angle),concentration=~1))
   
 beta <- matrix(c(-2.944439,-1.734601),1,nbStates)
@@ -44,14 +44,15 @@ for (i in 1:nbAnimals) {
   initialPositions[[i]] <- runif(2, -10, 10)
 }
 
-groupData <- simData(nbAnimals=nbAnimals,nbStates=nbStates,dist=dist,Par=Par,beta=beta,delta=delta,DM=DM,circularAngleMean=list(angle=TRUE),centroids=list(centroid=data.frame(x=centroidData$x,y=centroidData$y)),obsPerAnimal=nbObs,initialPosition=initialPositions,states=TRUE,stateNames=stateNames)
+groupData <- simData(nbAnimals=nbAnimals,nbStates=nbStates,dist=dist,Par=Par,beta=beta,delta=delta,DM=DM,circularAngleMean=list(angle=0),centroids=list(centroid=data.frame(x=centroidData$x,y=centroidData$y)),obsPerAnimal=nbObs,initialPosition=initialPositions,states=TRUE,stateNames=stateNames)
 plot(groupData,compact=TRUE,ask=FALSE)
 #########################################################################
 
 #########################################################################
 ## Fit group dynamic model to simulated paths ###########################
-Par0 <- list(step=c(30,50,15,25), angle = c(0,log(2.5),log(5)))
-groupFit <- fitHMM(groupData,nbStates=nbStates,dist=dist,Par=Par0,DM=DM,stationary=TRUE,estAngleMean=list(angle=TRUE),circularAngleMean=list(angle=TRUE),stateNames=stateNames)
+Par0 <- list(step=c(30,50,15,25), angle = c(1,log(2.5),log(5)))
+fixPar <- list(angle=c(1,NA,NA))
+groupFit <- fitHMM(groupData,nbStates=nbStates,dist=dist,Par=Par0,DM=DM,stationary=TRUE,estAngleMean=list(angle=TRUE),circularAngleMean=list(angle=0),fixPar=fixPar,stateNames=stateNames)
 plot(groupFit,ask=FALSE)
 #########################################################################
 
