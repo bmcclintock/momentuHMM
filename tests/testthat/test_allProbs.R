@@ -20,7 +20,7 @@ test_that("Zero-inflation works",{
   m<-example$m
   nbStates<-length(example$m$stateNames)
   m$conditions$zeroInflation$step<-TRUE
-  m$mod$estimate<-c(m$mod$estimate[1:(2*nbStates)],boot::logit(c(0.2,0.3)),m$mod$estimate[-(1:(2*nbStates))])
+  m$mod$estimate<-c(m$mod$estimate[1:(2*nbStates)],stats::qlogis(c(0.2,0.3)),m$mod$estimate[-(1:(2*nbStates))])
   m$conditions$fullDM$step<-diag(3*nbStates)
   m$conditions$cons$step<-rep(1,3*nbStates)
   m$conditions$workcons$step<-rep(0,3*nbStates)

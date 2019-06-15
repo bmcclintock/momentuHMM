@@ -115,7 +115,7 @@ test_that("Step length only + zero-inflation works",{
   angleMean <- NULL
   formula <- ~cov1+cov2
 
-  expect_error(fitHMM(data=data,nbStates=nbStates,Par=list(step=c(log(stepPar0[1:(2*nbStates)]),boot::logit(zeromass0))),DM=list(step=diag(3*nbStates)),dist=list(step=stepDist),formula=formula,
+  expect_error(fitHMM(data=data,nbStates=nbStates,Par=list(step=c(log(stepPar0[1:(2*nbStates)]),stats::qlogis(zeromass0))),DM=list(step=diag(3*nbStates)),dist=list(step=stepDist),formula=formula,
               nlmPar=list(print.level=0)), NA)
   
   setRNG::setRNG(oldRNG)

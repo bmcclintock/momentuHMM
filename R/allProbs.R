@@ -11,7 +11,6 @@
 #' \dontrun{
 #' P <- momentuHMM:::allProbs(m=example$m)
 #' }
-#' @importFrom LaplacesDemon dbern
 
 allProbs <- function(m)
 {

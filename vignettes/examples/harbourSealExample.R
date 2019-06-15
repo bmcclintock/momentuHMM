@@ -120,7 +120,7 @@ angleDM<-matrix(c(1,0,0,
 angleBounds<-matrix(c(0,0.95,
                       0,0.95,
                       0,0.95),nrow=nbStates,byrow=TRUE,dimnames=list(rownames(angleDM),c("lower","upper")))
-angleworkBounds <- matrix(c(-Inf,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf,rep(Inf,2),0),ncol(angleDM),2,dimnames=list(colnames(angleDM),c("lower","upper")))
+angleworkBounds <- matrix(c(-Inf,stats::qlogis((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf,rep(Inf,2),0),ncol(angleDM),2,dimnames=list(colnames(angleDM),c("lower","upper")))
 
 omegaDM<-matrix(c(1,0,0,0,0,0,
                   0,0,1,1,0,0,
@@ -151,8 +151,8 @@ delta0 <- c(0.99,0.005,0.005)
 
 Par0<-getParDM(data=hsData,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist,omega=omegaDist),Par=list(step=stepPar0,angle=anglePar0,omega=omegaPar0),DM=list(step=stepDM,angle=angleDM,omega=omegaDM),workBounds=list(step=stepworkBounds,angle=angleworkBounds,omega=omegaworkBounds),userBounds = list(step=stepBounds,angle=angleBounds,omega=omegaBounds))
 
-fixPar<-list(step=c(rep(NA,nbStates*2),NA,NA,boot::logit(1.e-100)),
-             omega=c(rep(NA,4),NA,boot::logit(1.e-100)))
+fixPar<-list(step=c(rep(NA,nbStates*2),NA,NA,stats::qlogis(1.e-100)),
+             omega=c(rep(NA,4),NA,stats::qlogis(1.e-100)))
 
 # define prior function to help prevent working parameters from initially straying too far along boundaries
 prior <- function(par){
@@ -184,7 +184,7 @@ stepworkBounds.sex<-matrix(c(rep(-Inf,7),0,0,-Inf,0,0,rep(-Inf,2),-Inf,rep(-Inf,
 angleDM.sex<-matrix(c("sexF",0,0,"sexM",0,0,
                       0,"sexF","sexF",0,"sexM","sexM",
                       0,"sexF",0,0,"sexM",0),nrow=nbStates,byrow=TRUE,dimnames=list(paste0("concentration_",1:nbStates),c("concentration_1:sexF","concentration_23:sexF","concentration_2:sexF","concentration_1:sexM","concentration_23:sexM","concentration_2:sexM")))
-angleworkBounds.sex<-matrix(c(-Inf,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf,-Inf,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf,Inf,Inf,0,Inf,Inf,0),ncol(angleDM.sex),2,dimnames=list(colnames(angleDM.sex),c("lower","upper")))
+angleworkBounds.sex<-matrix(c(-Inf,stats::qlogis((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf,-Inf,stats::qlogis((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf,Inf,Inf,0,Inf,Inf,0),ncol(angleDM.sex),2,dimnames=list(colnames(angleDM.sex),c("lower","upper")))
 
 omegaDM.sex<-matrix(c("sexF",0,"sexM",0,0,0,0,0,0,0,0,
                       0,0,0,0,"sexF","sexF","sexM","sexM",0,0,0,
@@ -197,8 +197,8 @@ omegaDM.sex<-matrix(c("sexF",0,"sexM",0,0,0,0,0,0,0,0,
                       0,0,0,0,0,0,0,0,0,1,0),nrow=nbStates*3,byrow=TRUE,dimnames=list(c(paste0("shape1_",1:nbStates),paste0("shape2_",1:nbStates),paste0("zeromass_",1:nbStates)),c("shape_1:sexF","shape2_1:sexF","shape_1:sexM","shape2_1:sexM","shape_2:sexF","shape1_2:sexF","shape_2:sexM","shape1_2:sexM","zeromass_1:sexF","zeromass_23:(Intercept)","zeromass_1:sexM")))
 omegaworkBounds.sex<-matrix(c(rep(c(-Inf,0),4),-Inf,-Inf,-Inf,rep(Inf,ncol(omegaDM.sex))),ncol(omegaDM.sex),2,dimnames=list(colnames(omegaDM.sex),c("lower","upper")))
 
-fixPar.sex<-list(step=c(rep(NA,nbStates*2*2),NA,NA,boot::logit(1.e-100),NA,NA),
-                 omega=c(rep(NA,4*2),NA,boot::logit(1.e-100),NA))
+fixPar.sex<-list(step=c(rep(NA,nbStates*2*2),NA,NA,stats::qlogis(1.e-100),NA,NA),
+                 omega=c(rep(NA,4*2),NA,stats::qlogis(1.e-100),NA))
 
 bfPar<-getPar0(bestFit)
 Par0.sex<-getPar0(bestFit,formula=~sex,formulaDelta=~sex,DM=list(step=stepDM.sex,angle=angleDM.sex,omega=omegaDM.sex))
@@ -239,7 +239,7 @@ angleDM.ind[1,1:N]<-paste0("ID",1:N)
 angleDM.ind[2,N+1:N]<-angleDM.ind[3,N+1:N]<-paste0("ID",1:N)
 angleDM.ind[2,2*N+1:N]<-paste0("ID",1:N)
 
-angleworkBounds.ind<-matrix(c(rep(c(-Inf,boot::logit((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf),each=N),rep(Inf,2*N),rep(0,N)),ncol=2,dimnames=list(colnames(angleDM.ind),c("lower","upper")))
+angleworkBounds.ind<-matrix(c(rep(c(-Inf,stats::qlogis((0.75 - angleBounds[3,1])/(angleBounds[3,2] - angleBounds[3,1])),-Inf),each=N),rep(Inf,2*N),rep(0,N)),ncol=2,dimnames=list(colnames(angleDM.ind),c("lower","upper")))
 
 omegazm<-unique(hsData$ID[which(hsData$omega==0)])
 omegaDM.ind<-matrix(0,nrow=nbStates*3,ncol=N*2*(nbStates-1)+length(omegazm)+1,dimnames=list(c(paste0("shape1_",1:nbStates),paste0("shape2_",1:nbStates),paste0("zeromass_",1:nbStates)),c(paste0("shape_1:(Intercept)ID",1:N),paste0("shape2_1ID",1:N),paste0("shape_2:(Intercept)ID",1:N),paste0("shape1_2ID",1:N),paste0("zeromass_1:(Intercept)ID",omegazm),paste0("zeromass_23:(Intercept)"))))
@@ -251,8 +251,8 @@ omegaDM.ind[7,4*N+1:length(omegazm)]<-paste0("ID",omegazm)
 omegaDM.ind[7:9,ncol(omegaDM.ind)]<-1
 omegaworkBounds.ind<-matrix(c(rep(c(-Inf,0,-Inf,0),each=N),rep(-Inf,length(omegazm)),-Inf,rep(c(Inf,Inf,Inf,Inf),each=N),rep(Inf,length(omegazm)),Inf),ncol=2,dimnames=list(colnames(omegaDM.ind),c("lower","upper")))
 
-fixPar.ind<-list(step=c(rep(NA,N*nbStates*2),rep(NA,length(stepzm)*(nbStates-1)),boot::logit(1.e-100)),
-                 omega=c(rep(NA,N*2*(nbStates-1)),rep(NA,length(omegazm)),boot::logit(1.e-100)))
+fixPar.ind<-list(step=c(rep(NA,N*nbStates*2),rep(NA,length(stepzm)*(nbStates-1)),stats::qlogis(1.e-100)),
+                 omega=c(rep(NA,N*2*(nbStates-1)),rep(NA,length(omegazm)),stats::qlogis(1.e-100)))
 
 Par0.ind<-getPar0(bestFit,DM=list(step=stepDM.ind,angle=angleDM.ind,omega=omegaDM.ind),formula=~ID+0,formulaDelta=~ID+0)
 

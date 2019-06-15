@@ -1126,7 +1126,7 @@ angleBounds <- matrix(c(0,0.95,
                         0,0.95,
                         0,0.95),nrow=nbStates,byrow=TRUE,
                       dimnames=list(rownames(angleDM),c("lower","upper")))
-transitcons <- boot::logit((0.75 - angleBounds[3,1])
+transitcons <- stats::qlogis((0.75 - angleBounds[3,1])
                            /(angleBounds[3,2] - angleBounds[3,1]))
 angleworkBounds <- matrix(c(-Inf,transitcons,-Inf,
                             rep(Inf,2),0),ncol(angleDM),2,
@@ -1179,8 +1179,8 @@ omegaBounds <- matrix(c(1,10,
 @
 Lastly, we wish to impose some biologically-meaningful constraints on the zero-inflation parameters using the \verb|fixPar| argument. Because we would never expect a harbour seal in the ``transit'' state to exhibit a step length of zero, it makes sense to constrain the zero-mass step length parameter for the ``transit'' state to (effectively) zero.  Similarly, we would not expect a harbour seal in the ``foraging'' or ``transit'' states to exhibit no dive activity, and it therefore also makes sense to constrain the zero-mass dive activity parameters for these states to zero.  We can accomplish this using the following \verb|fixPar| argument:
 <<spec-hsFixPar, echo=TRUE, eval=FALSE>>=
-fixPar <- list(step=c(rep(NA,nbStates*2),NA,NA,boot::logit(1.e-100)),
-             omega=c(rep(NA,4),NA,boot::logit(1.e-100)))
+fixPar <- list(step=c(rep(NA,nbStates*2),NA,NA,stats::qlogis(1.e-100)),
+             omega=c(rep(NA,4),NA,stats::qlogis(1.e-100)))
 @
 Putting it all together, we can fit our constrained model assuming no individual- or sex-level effects using \verb|MIfitHMM|:
 <<fit-hs, echo=TRUE, eval=FALSE>>=

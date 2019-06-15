@@ -42,7 +42,6 @@
 #' @importFrom stats rnorm runif rmultinom step terms.formula
 #' @importFrom raster cellFromXY getValues
 #' @importFrom CircStats rvm
-#' @importFrom LaplacesDemon rbern
 #' @importFrom Brobdingnag as.brob sum
 #' @importFrom mvtnorm rmvnorm
 #' @importFrom data.tree Node Get Aggregate isLeaf Clone

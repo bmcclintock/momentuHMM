@@ -15,6 +15,24 @@ meansListNoTime<-c("numeric","integer","logical")
 plotArgs <- c("cex","cex.main","cex.lab","cex.axis","cex.legend","lwd","asp","legend.pos")
 fitMethods<-c("nlm","Nelder-Mead","SANN")
 
+#' @importFrom stats dbinom
+dbern <- function (x, prob, log = FALSE) 
+{
+  return(stats::dbinom(x, 1, prob, log))
+}
+
+#' @importFrom stats pbinom
+pbern <- function (q, prob, lower.tail = TRUE, log.p = FALSE) 
+{
+  return(stats::pbinom(q, 1, prob, lower.tail, log.p))
+}
+
+#' @importFrom stats rbinom
+rbern <- function (n, prob) 
+{
+  return(stats::rbinom(n, 1, prob))
+}
+
 dmvnorm2 <- dmvnorm3 <- drw_mvnorm2 <- drw_mvnorm3 <- function(x,mean,sigma){
   dmvnorm_rcpp(x,mean,sigma)
 }

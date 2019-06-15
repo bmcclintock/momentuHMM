@@ -57,7 +57,6 @@
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
 #' @importFrom stats median var qt
-#' @importFrom boot logit inv.logit
 #' @importFrom CircStats circ.mean
 #' @importFrom car dataEllipse
 #' @importFrom mitools MIcombine
@@ -649,10 +648,11 @@ mi_parm_list<-function(est,se,lower,upper,m){
   Par
 }
 
+#' @importFrom stats plogis qlogis
 probCI<-function(x,se,z,bound="lower"){
   if(bound=="lower")
-    ci<-boot::inv.logit(boot::logit(x)-z*(1/(x-x^2))*se) 
+    ci<-stats::plogis(stats::qlogis(x)-z*(1/(x-x^2))*se) 
   else if(bound=="upper")
-    ci<-boot::inv.logit(boot::logit(x)+z*(1/(x-x^2))*se) 
+    ci<-stats::plogis(stats::qlogis(x)+z*(1/(x-x^2))*se) 
   ci
 }

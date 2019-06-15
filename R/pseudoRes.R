@@ -38,7 +38,6 @@
 #'
 #' @export
 #' @importFrom stats integrate qnorm qchisq mahalanobis
-#' @importFrom LaplacesDemon pbern
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%

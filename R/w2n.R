@@ -63,7 +63,6 @@
 #' }
 #'
 #'
-#' @importFrom boot inv.logit
 #' @importFrom Brobdingnag as.brob sum
 
 w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi)
@@ -165,6 +164,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
   return(parlist)
 }
 
+#' @importFrom stats plogis
 w2wn <- function(wpar,workBounds,k=0){
   
   ind1<-which(is.finite(workBounds[,1]) & is.infinite(workBounds[,2]))
@@ -172,13 +172,14 @@ w2wn <- function(wpar,workBounds,k=0){
   ind3<-which(is.infinite(workBounds[,1]) & is.finite(workBounds[,2]))
   
   wpar[ind1] <- exp(wpar[ind1])+workBounds[ind1,1]
-  wpar[ind2] <- (workBounds[ind2,2]-workBounds[ind2,1]) * boot::inv.logit(wpar[ind2])+workBounds[ind2,1]
+  wpar[ind2] <- (workBounds[ind2,2]-workBounds[ind2,1]) * stats::plogis(wpar[ind2])+workBounds[ind2,1]
   wpar[ind3] <- -(exp(-wpar[ind3]) - workBounds[ind3,2])
   
   if(k) wpar <- wpar[k]
   return(wpar)
 }
 
+#' @importFrom stats plogis
 w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,consensus,nbStates,k=0,nc,meanind,workBounds){
   
   wpar <- w2wn(wpar,workBounds)
@@ -226,7 +227,7 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,conse
   ind33<-ind3[which(is.infinite(a[ind3]) & is.finite(b[ind3]))]
   
   p[ind31,] <- (l_t[ind31,,drop=FALSE] * exp(XB[ind31,,drop=FALSE])+a[ind31])
-  p[ind32,] <- ((b[ind32]-a[ind32])*(l_t[ind32,,drop=FALSE] * boot::inv.logit(XB[ind32,,drop=FALSE]))+a[ind32])
+  p[ind32,] <- ((b[ind32]-a[ind32])*(l_t[ind32,,drop=FALSE] * stats::plogis(XB[ind32,,drop=FALSE]))+a[ind32])
   p[ind33,] <- -(exp(-XB[ind33,,drop=FALSE]) - b[ind33])
   
   if(!any(is.na(p))){ 

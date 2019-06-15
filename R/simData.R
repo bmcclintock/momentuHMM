@@ -348,7 +348,6 @@
 #' @importFrom raster cellFromXY getValues is.factor levels
 #' @importFrom moveHMM simData
 #' @importFrom CircStats rvm
-#' @importFrom LaplacesDemon rbern
 #' @importFrom Brobdingnag as.brob sum
 #' @importFrom mvtnorm rmvnorm
 

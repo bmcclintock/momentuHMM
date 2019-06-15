@@ -1343,7 +1343,7 @@ In order to force the ``transit'' state to have strong directional persistence, 
                         \hlnum{0}\hlstd{,}\hlnum{0.95}\hlstd{,}
                         \hlnum{0}\hlstd{,}\hlnum{0.95}\hlstd{),}\hlkwc{nrow}\hlstd{=nbStates,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
                       \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{rownames}\hlstd{(angleDM),}\hlkwd{c}\hlstd{(}\hlstr{"lower"}\hlstd{,}\hlstr{"upper"}\hlstd{)))}
-\hlstd{transitcons} \hlkwb{<-} \hlstd{boot}\hlopt{::}\hlkwd{logit}\hlstd{((}\hlnum{0.75} \hlopt{-} \hlstd{angleBounds[}\hlnum{3}\hlstd{,}\hlnum{1}\hlstd{])}
+\hlstd{transitcons} \hlkwb{<-} \hlstd{stats}\hlopt{::}\hlkwd{qlogis}\hlstd{((}\hlnum{0.75} \hlopt{-} \hlstd{angleBounds[}\hlnum{3}\hlstd{,}\hlnum{1}\hlstd{])}
                            \hlopt{/}\hlstd{(angleBounds[}\hlnum{3}\hlstd{,}\hlnum{2}\hlstd{]} \hlopt{-} \hlstd{angleBounds[}\hlnum{3}\hlstd{,}\hlnum{1}\hlstd{]))}
 \hlstd{angleworkBounds} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{Inf}\hlstd{,transitcons,}\hlopt{-}\hlnum{Inf}\hlstd{,}
                             \hlkwd{rep}\hlstd{(}\hlnum{Inf}\hlstd{,}\hlnum{2}\hlstd{),}\hlnum{0}\hlstd{),}\hlkwd{ncol}\hlstd{(angleDM),}\hlnum{2}\hlstd{,}
@@ -1404,8 +1404,8 @@ Lastly, we wish to impose some biologically-meaningful constraints on the zero-i
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{fixPar} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=}\hlkwd{c}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlnum{NA}\hlstd{,nbStates}\hlopt{*}\hlnum{2}\hlstd{),}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,boot}\hlopt{::}\hlkwd{logit}\hlstd{(}\hlnum{1.e-100}\hlstd{)),}
-             \hlkwc{omega}\hlstd{=}\hlkwd{c}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlnum{NA}\hlstd{,}\hlnum{4}\hlstd{),}\hlnum{NA}\hlstd{,boot}\hlopt{::}\hlkwd{logit}\hlstd{(}\hlnum{1.e-100}\hlstd{)))}
+\hlstd{fixPar} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=}\hlkwd{c}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlnum{NA}\hlstd{,nbStates}\hlopt{*}\hlnum{2}\hlstd{),}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,stats}\hlopt{::}\hlkwd{qlogis}\hlstd{(}\hlnum{1.e-100}\hlstd{)),}
+             \hlkwc{omega}\hlstd{=}\hlkwd{c}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlnum{NA}\hlstd{,}\hlnum{4}\hlstd{),}\hlnum{NA}\hlstd{,stats}\hlopt{::}\hlkwd{qlogis}\hlstd{(}\hlnum{1.e-100}\hlstd{)))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}

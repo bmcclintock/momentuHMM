@@ -47,7 +47,6 @@
 #' workBounds=m$conditions$workBounds)
 #' }
 #'
-#' @importFrom boot logit
 #' @importFrom stats dunif
 
 n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcons,Bndind)
@@ -95,6 +94,7 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcon
   return(c(wpar,wbeta,wpi,wdelta,wg0,wtheta))
 }
 
+#' @importFrom stats qlogis
 nw2w <-function(wpar,workBounds){
   
   ind1<-which(is.finite(workBounds[,1]) & is.infinite(workBounds[,2]))
@@ -102,13 +102,14 @@ nw2w <-function(wpar,workBounds){
   ind3<-which(is.infinite(workBounds[,1]) & is.finite(workBounds[,2]))
   
   wpar[ind1] <- log(wpar[ind1]-workBounds[ind1,1])
-  wpar[ind2] <- boot::logit((wpar[ind2]-workBounds[ind2,1])/(workBounds[ind2,2]-workBounds[ind2,1]))
+  wpar[ind2] <- stats::qlogis((wpar[ind2]-workBounds[ind2,1])/(workBounds[ind2,2]-workBounds[ind2,1]))
   wpar[ind3] <- -log(-wpar[ind3] + workBounds[ind3,2])
   
   wpar
   
 }
 
+#' @importFrom stats qlogis
 n2wDM<-function(bounds,DM,par,cons,workcons,nbStates){
   
   a<-bounds[,1]
@@ -142,7 +143,7 @@ n2wDM<-function(bounds,DM,par,cons,workcons,nbStates){
   ind33<-ind3[which(is.infinite(a[ind3]) & is.finite(b[ind3]))]
   
   p[ind31]<-(log(par[ind31]-a[ind31])-workcons[ind31])^(1/cons[ind31])
-  p[ind32]<-(boot::logit((par[ind32]-a[ind32])/(b[ind32]-a[ind32]))-workcons[ind32])^(1/cons[ind32])
+  p[ind32]<-(stats::qlogis((par[ind32]-a[ind32])/(b[ind32]-a[ind32]))-workcons[ind32])^(1/cons[ind32])
   p[ind33]<-(-log(-par[ind33]+b[ind33])-workcons[ind33])^(1/cons[ind33])
   
   p

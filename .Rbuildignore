@@ -7,8 +7,15 @@ vignettes/turtleData.RData
 vignettes/greySealData.RData
 vignettes/pilotWhaleData.RData
 vignettes/coastUTM.RData
+vignettes/pilotWhaleData.RData
 vignettes/sesData.csv
 vignettes/momentuHMM.pdf
+vignettes/momentuHMM.synctex.gz
+vignettes/momentuHMM.log
+vignettes/momentuHMM.toc
+vignettes/momentuHMM-concordance.tex
+vignettes/momentuHMM.bbl
+vignettes/momentuHMM.tex
 vignettes/vignette_examples.R
 ^vignettes/figure$
 ^vignettes/cache$

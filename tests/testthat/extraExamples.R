@@ -112,7 +112,7 @@ wstepPar0 <- log(c(stepPar[1],1.1,stepPar[2],1.1,stepPar[3:6]))
 # angle DM (using circular-circular regression on mean angle)
 angleDM <- matrix(c("haulout.angle",0,0,0,0,0,0,"fish.angle",0,0,0,0,0,0,0,1,0,0,0,0,0,"log1p(haulout.dist)",0,0,0,0,0,0,1,0,0,0,0,0,"log1p(fish.dist)",0,0,0,0,0,0,1),6,7)
 # angle working parameters
-wanglePar0 <- c(1,1,boot::logit(c(0.01,anglePar[1],0.01,anglePar[2],anglePar[3])))
+wanglePar0 <- c(1,1,stats::qlogis(c(0.01,anglePar[1],0.01,anglePar[2],anglePar[3])))
 
 centersPar <- list(step=wstepPar0,angle=wanglePar0)
 centersDM <- list(step=stepDM,angle=angleDM)

@@ -113,6 +113,7 @@ getParDM <- function(data, ...) {
 #'
 #' @importFrom CircStats circ.mean
 #' @importFrom nleqslv nleqslv
+#' @importFrom stats plogis
 #' @export
 getParDM.default<-function(data=data.frame(),nbStates,dist,
                  Par,
@@ -313,7 +314,7 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
         ind24<-ind2[which(is.infinite(a[ind2]) & is.infinite(b[ind2]))]
         
         if(length(ind21)) p[ind21]<-(solve(unique(fullDM[[i]])[ind21,ind21],log(par[ind21]-a[ind21]))-workcons[[i]][ind21])^(1/cons[[i]][ind21])
-        if(length(ind22)) p[ind22]<-(solve(unique(fullDM[[i]])[ind22,ind22],logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][ind22])^(1/cons[[i]][ind22])
+        if(length(ind22)) p[ind22]<-(solve(unique(fullDM[[i]])[ind22,ind22],stats::qlogis((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][ind22])^(1/cons[[i]][ind22])
         if(length(ind23)) p[ind23]<-(solve(unique(fullDM[[i]])[ind23,ind23],-log(-par[ind23]+b[ind23]))-workcons[[i]][ind23])^(1/cons[[i]][ind23])
         if(length(ind24)) p[ind24]<-(solve(unique(fullDM[[i]])[ind24,ind24],par[ind24])-workcons[[i]][ind24])^(1/cons[[i]][ind24])
  
@@ -370,7 +371,7 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
               if(length(ind22)){
                 asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind22,-meanind,drop=FALSE])
                 adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-                p[-meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][-meanind])^(1/cons[[i]][-meanind])
+                p[-meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% stats::qlogis((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][-meanind])^(1/cons[[i]][-meanind])
               }
               
               if(length(ind23)){
@@ -414,7 +415,7 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
               if(length(ind22)){
                 asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind22,meanind,drop=FALSE])
                 adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-                p[meanind-length(meanind2)/2] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][meanind-length(meanind2)/2])^(1/cons[[i]][meanind-length(meanind2)/2])
+                p[meanind-length(meanind2)/2] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% stats::qlogis((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][meanind-length(meanind2)/2])^(1/cons[[i]][meanind-length(meanind2)/2])
               }
               
               if(length(ind23)){
@@ -445,7 +446,7 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
           if(length(ind22)){
             asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind22,,drop=FALSE])
             adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-            p <- ((asvd$v %*% adiag %*% t(asvd$u) %*% logit((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]])^(1/cons[[i]])
+            p <- ((asvd$v %*% adiag %*% t(asvd$u) %*% stats::qlogis((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]])^(1/cons[[i]])
           }
           
           if(length(ind23)){
