@@ -1,7 +1,6 @@
 # hierarchical HMM harbor porpoise example from Leos-Barajas et al (https://doi.org/10.1007/s13253-017-0282-9)
 # this implementation is virtually identical except that the coarse- and fine-scale initial distributions are not assumed to be the corresponding stationary distributions
 
-#devtools::install_github('bmcclintock/momentuHMM@develop')
 library(momentuHMM)
 library(data.tree)
 
@@ -164,7 +163,7 @@ stats <- stationary(hhmm)
 stats[[1]]$level1[1,]
 ######################################################
 
-### fine scale ###################################
+### fine scale #######################################
 # stationary distribution
 lapply(stats[[1]]$level2,function(x) x[1,])
 ######################################################

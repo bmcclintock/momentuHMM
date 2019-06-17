@@ -1,6 +1,5 @@
 # hierarchical HMM garter snake example from Leos-Barajas et al (https://doi.org/10.1007/s13253-017-0282-9)
 
-#devtools::install_github('bmcclintock/momentuHMM@develop')
 library(momentuHMM)
 library(data.tree)
 
@@ -11,8 +10,8 @@ W <- dim(dataAr)[3] # number of individuals
 M <- dim(dataAr)[2] # number of time series per individual
 
 ### add 2 extra rows for each time step where coarse scale behavior switches occur (when every time series segment starts in this case)
-# level=1  covariate indicates when coarse scale behavior switching can occur (i.e., coarse scale t.p.m. used when level=1)
-# level=2i covariate indicates start of each fine scale interval (i.e., fine scale initial distribution used when level=2i)
+# level=1  indicates when coarse scale behavior switching can occur (i.e., coarse scale t.p.m. used when level=1)
+# level=2i indicates start of each fine scale interval (i.e., fine scale initial distribution used when level=2i)
 # level=2  otherwise (i.e., fine scale t.p.m used when level=2)
 snakeData <- NULL
 for(w in 1:W){
@@ -30,7 +29,7 @@ plot(snakeData,dataNames="step",ask=FALSE)
 # number of mixtures
 mixtures <- 1
 
-### define hierarchical HMM: states 1-3 = coarse state 1 (motionless); states 4-6 = coarse state 2 (exploratory); states 7-9 = coarse state 3 (escape)
+### define hierarchical HMM: states 1-3 = coarse state 1; states 4-6 = coarse state 2; states 7-9 = coarse state 3
 hierStates <- Node$new("garter snake HHMM states")
 hierStates$AddChild("internalState1")
 hierStates$internalState1$AddChild("mo1", state=1) # motionless
@@ -157,7 +156,7 @@ for(jj in 1:hierStates$count){
                                           nrow=length(covNames)*mixtures,
                                           ncol=hierStates[[j]]$count*(hierStates[[j]]$count-1),byrow=TRUE,
                                           dimnames=dimNames)
-  betaCons$level2[[j]]$betaCons <- matrix((jj-1)*hierStates$count*(hierStates$count-1)*length(covNames)*mixtures+rep(seq(1,hierStates$count*(hierStates$count-1)*mixtures,mixtures),each=length(covNames)*mixtures),
+  betaCons$level2[[j]]$betaCons <- matrix(rep(seq(1,hierStates$count*(hierStates$count-1)*mixtures,mixtures),each=length(covNames)*mixtures),
                                           nrow=length(covNames)*mixtures,
                                           ncol=hierStates[[j]]$count*(hierStates[[j]]$count-1),
                                           dimnames=dimNames)
@@ -192,7 +191,7 @@ for(jj in 1:hierStates$count){
                                           nrow=length(level2DeltaCovNames)*mixtures,
                                           ncol=(hierStates[[j]]$count-1),byrow=TRUE,
                                           dimnames=deltaDimNames)
-  deltaCons$level2[[j]]$deltaCons <- matrix((jj-1)*(hierStates$count-1)*length(level2DeltaCovNames)*mixtures+rep(seq(1,(hierStates$count-1)*mixtures,mixtures),each=length(level2DeltaCovNames)*mixtures),
+  deltaCons$level2[[j]]$deltaCons <- matrix(rep(seq(1,(hierStates$count-1)*mixtures,mixtures),each=length(level2DeltaCovNames)*mixtures),
                                             nrow=length(level2DeltaCovNames)*mixtures,
                                             ncol=(hierStates[[j]]$count-1),
                                             dimnames=deltaDimNames)
@@ -202,7 +201,7 @@ for(jj in 1:hierStates$count){
 if(mixtures>1) hierBeta <- list(beta=hierBeta, pi=rep(1/mixtures,mixtures))
 
 # check hierarchical model specification and parameters
-checkPar0(snakeData,hierStates=hierStates,hierDist=hierDist,Par0=Par,hierFormula=hierFormula,hierFormulaDelta=hierFormulaDelta,mixtures=mixtures,DM=DM,hierBeta=hierBeta,hierDelta=hierDelta)
+checkPar0(snakeData,hierStates=hierStates,hierDist=hierDist,Par0=Par,hierFormula=hierFormula,hierFormulaDelta=hierFormulaDelta,mixtures=mixtures,DM=DM,hierBeta=hierBeta,hierDelta=hierDelta,betaCons=betaCons,deltaCons=deltaCons)
 
 # compute hierarchical state transition probabilities based on initial values
 iTrProbs <- getTrProbs(snakeData,hierStates=hierStates,hierBeta=hierBeta,hierFormula=hierFormula,hierDist=hierDist,mixtures=mixtures)
@@ -210,7 +209,7 @@ iTrProbs$level1$gamma[,,1] # tpm at first time step for level1
 lapply(iTrProbs$level2,function(x) x$gamma[,,1]) # tpm at first time step for level2
 
 # fit hierarchical HMM
-hhmm <- fitHMM(snakeData,hierStates=hierStates,hierDist=hierDist,hierFormula=hierFormula,hierFormulaDelta=hierFormulaDelta,mixtures=mixtures,Par0=Par,DM=DM,hierBeta=hierBeta,hierDelta=hierDelta,nlmPar=list(print.level=2))
+hhmm <- fitHMM(snakeData,hierStates=hierStates,hierDist=hierDist,hierFormula=hierFormula,hierFormulaDelta=hierFormulaDelta,mixtures=mixtures,Par0=Par,DM=DM,hierBeta=hierBeta,hierDelta=hierDelta,betaCons=betaCons,deltaCons=deltaCons,nlmPar=list(print.level=2))
 hhmm
 plot(hhmm,ask=FALSE)
 plotPR(hhmm)

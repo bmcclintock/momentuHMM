@@ -416,7 +416,7 @@ The function \verb|simData| can be used to simulate multivariate HMM data from s
 \label{sec:example}
 We will now demonstrate some of the capabilities of \verb|momentuHMM| using real telemetry data. These examples are intended for demonstration purposes only, and we do not claim these example analyses represent improvements relative to previous or alternative analyses for these data sets. While only some of the key workflow elements are included here, complete R code and further details for these analyses are available in the ``vignettes'' source directory.
 
-<<load-vignette_inputs, results='hide', echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE, cache=TRUE>>=
+<<load-vignette_inputs, results='hide', echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE>>=
 library(momentuHMM)
 #example_wd <- ("~/Dropbox/vignette examples/")
 example_wd <- ("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/vignette examples/")
@@ -1550,13 +1550,13 @@ plot(hierStates)
 @
 Here we can see that the coarse-scale ``nonforaging'' and ``foraging'' states are both composed of three fine-scale states. Note that the \verb|Node| attribute \verb|state| is required in \verb|hierStates| and determines the index for each state in our HHMM. Alternatively, we could specify the exact same \verb|Node| as:
 <<harborPorpoise-4, echo=TRUE, eval=FALSE>>=
-hierStates <- as.Node(list(name="harbor porpoise HHMM states",
-                           nonforaging=list(nf1=list(state=1),
-                                            nf2=list(state=2),
-                                            nf3=list(state=3)),
-                           foraging=list(f1=list(state=4),
-                                         f2=list(state=5),
-                                         f3=list(state=6))))
+hierStates <- data::tree::as.Node(list(name="harbor porpoise HHMM states",
+                                       nonforaging=list(nf1=list(state=1),
+                                                        nf2=list(state=2),
+                                                        nf3=list(state=3)),
+                                       foraging=list(f1=list(state=4),
+                                                     f2=list(state=5),
+                                                     f3=list(state=6))))
 @
 
 Next we will specify the hierarchical nature of the data streams for the \verb|hierDist| argument in \verb|fitHMM|:
@@ -1712,7 +1712,7 @@ head(hStates$level1)
 head(hStates$level2)
 @
 
-We can also plot the estimated state probabilities for each level of the hierarchy (Figures \ref{fig:hpLevel1} and \ref{fig:hpLevel2}) using the \verb|plotStates| function:
+We can plot the estimated state probabilities for each level of the hierarchy (Figures \ref{fig:hpLevel1} and \ref{fig:hpLevel2}) using the \verb|plotStates| function:
 <<harborPorpoise-17, echo=TRUE, eval=FALSE>>=
 plotStates(hhmm)
 @
@@ -1729,8 +1729,20 @@ plotStates(hhmm)
   \label{fig:hpLevel2}
 \end{figure}
 
+We can also calculate the stationary probabilities of each state for each level of the hierarchy:
+<<harborPorpoise-19, echo=TRUE, eval=TRUE, cache=TRUE>>=
+# stationary distributions
+stats <- stationary(hhmm)
+
+# coarse scale 
+stats[[1]]$level1[1,]
+
+# fine scale 
+lapply(stats[[1]]$level2,function(x) x[1,])
+@
+
 Finally, we can simulate from our fitted HHMM using the \verb|simHierData| function. This requires that we specify the number of observations for each level of the hierarchy as a \verb|data.tree| \verb|Node| (with attribute \verb|obs|) using the \verb|obsPerLevel| argument:
-<<harborPorpoise-18, echo=-1, eval=TRUE>>=
+<<harborPorpoise-20, echo=-1, eval=TRUE, cache=TRUE>>=
 set.seed(1,kind="Mersenne-Twister",normal.kind="Inversion")
 obsPerLevel <- data.tree::Node$new("simHierData")
 
@@ -1740,12 +1752,259 @@ obsPerLevel$AddChild("level1",obs=100)
 # number of level 2 observations that follow each level 1 observation
 obsPerLevel$AddChild("level2",obs=25) 
 
-simHHMM <- simHierData(model=hhmm, obsPerLevel = obsPerLevel, states = TRUE)
+simHHMM <- simHierData(model=hhmm, 
+                       obsPerLevel = obsPerLevel, states = TRUE)
 head(simHHMM)
 @
 
 \subsubsection{Garter snake example}
 \label{sec:garterSnake}
+Next we'll quickly demonstrate how to perform the HHMM analysis for the garter snake movement data in \cite{Leos-BarajasEtAl2017} using \verb|momentuHMM|. This is also a 2-level HHMM, but now we include three coarse-scale states each composed of three fine-scale states (for a total of $N=9$ states).  As before, we must first add the \verb|level| field to our data to indicate the level of the hierarchy for each observation and then create a \verb|momentuHierHMMData| object with \verb|prepData|:
+<<garterSnake-1, echo=TRUE, eval=TRUE, cache=TRUE>>=
+# load garter snake data from Leos-Barajas et al
+load(url(paste0("https://static-content.springer.com/esm/",
+                "art%3A10.1007%2Fs13253-017-0282-9/MediaObjects/",
+                "13253_2017_282_MOESM1_ESM.rdata")))
+
+W <- dim(dataAr)[3] # number of individuals
+M <- dim(dataAr)[2] # number of time series per individual
+
+### add 2 extra rows for each time step where coarse scale behavior switches occur
+# level=1  indicates when coarse-scale behavior switching can occur 
+# level=2i indicates start of each fine-scale interval
+# level=2  indicates when fine-scale behavior switching can occur
+snakeData <- NULL
+for(w in 1:W){
+  coarseInd <- data.frame(ID=w,level=c("1","2i"),step=NA)
+  for(m in 1:M){
+    tmp <- rbind(coarseInd,data.frame(ID=w,level="2",step=sqrt(dataAr[,m,w])))
+    snakeData <- rbind(snakeData,tmp)
+  }
+}
+
+# prepare hierarchical data
+snakeData <- prepData(snakeData,coordNames=NULL,hierLevels=c("1","2i","2"))
+@
+The sole data stream for this example is step length at the fine-scale level, and no coordinates are provided (hence \verb|coordNames=NULL|). As in section \ref{sec:harborPorpoise}, this example has no data streams observed at the coarse-scale level, but these could be easily included (if available).  Next we define our HHMM structure via the \verb|hierStates| data tree Node:
+<<garterSnake-2, echo=TRUE, eval=FALSE>>=
+### define hierarchical HMM: states 1-3 = coarse state 1
+###                          states 4-6 = coarse state 2
+###                          states 7-9 = coarse state 3
+hierStates <- data.tree::Node$new("garter snake HHMM states")
+hierStates$AddChild("internalState1")
+hierStates$internalState1$AddChild("mo1", state=1) # motionless
+hierStates$internalState1$AddChild("ex1", state=2) # slow exploratory
+hierStates$internalState1$AddChild("es1", state=3) # rapid escape
+hierStates$AddChild("internalState2")
+hierStates$internalState2$AddChild("mo2", state=4) # motionless
+hierStates$internalState2$AddChild("ex2", state=5) # slow exploratory
+hierStates$internalState2$AddChild("es2", state=6) # rapid escape
+hierStates$AddChild("internalState3")
+hierStates$internalState3$AddChild("mo3", state=7) # motionless
+hierStates$internalState3$AddChild("ex3", state=8) # slow exploratory
+hierStates$internalState3$AddChild("es3", state=9) # rapid escape
+@
+Or, equivalently: 
+<<garterSnake-3, echo=TRUE, eval=TRUE, cache=TRUE>>=
+hierStates <- data.tree::as.Node(list(name="garter snake HHMM states",
+                                      internalState1=list(mo1=list(state=1),
+                                                          ex1=list(state=2),
+                                                          es1=list(state=3)),
+                                      internalState2=list(mo2=list(state=4),
+                                                          ex2=list(state=5),
+                                                          es2=list(state=6)),
+                                      internalState3=list(mo3=list(state=7),
+                                                          ex3=list(state=8),
+                                                          es3=list(state=9))))
+plot(hierStates)
+@
+We then specify the level of the hierarchy and probability distribution for the step length data stream via the \verb|hierDist| data tree Node:
+<<garterSnake-4, echo=TRUE, eval=TRUE, cache=TRUE>>=
+### data stream distributions: 
+### level 1 = coarse level (no data streams)
+### level 2 = fine level (step="gamma")
+hierDist <- data.tree::Node$new("garter snake HHMM dist")
+hierDist$AddChild("level1")
+hierDist$AddChild("level2")
+hierDist$level2$AddChild("step", dist="gamma")
+
+plot(hierDist)
+@
+As in the harbor porpoise example (section \ref{sec:harborPorpoise}), we follow \cite{Leos-BarajasEtAl2017} and assume the fine-scale data stream probability distribution does not depend on coarse-scale state:
+<<garterSnake-5, echo=TRUE, eval=TRUE, cache=TRUE>>=
+# defining start values for step data stream
+mu0 <- c(0.121,0.678,1.375)
+sd0 <- c(0.06,0.321,0.4875)
+Par0 <- list(step=c(rep(mu0,hierStates$count),rep(sd0,hierStates$count)))
+
+nbStates <- length(hierStates$Get("state",filterFun=data.tree::isLeaf))
+
+# constrain data stream distributions to be same for coarse-scale states
+DM <- list(step=matrix(c(1,0,0,0,0,0,
+                         0,1,0,0,0,0,
+                         0,0,1,0,0,0,
+                         1,0,0,0,0,0,
+                         0,1,0,0,0,0,
+                         0,0,1,0,0,0,
+                         1,0,0,0,0,0,
+                         0,1,0,0,0,0,
+                         0,0,1,0,0,0,
+                         0,0,0,1,0,0,
+                         0,0,0,0,1,0,
+                         0,0,0,0,0,1,
+                         0,0,0,1,0,0,
+                         0,0,0,0,1,0,
+                         0,0,0,0,0,1,
+                         0,0,0,1,0,0,
+                         0,0,0,0,1,0,
+                         0,0,0,0,0,1),
+                       nrow=nbStates*2,
+                       ncol=6,
+                       byrow=TRUE,
+                       dimnames=list(c(paste0("mean_",1:nbStates),
+                                       paste0("sd_",1:nbStates)),
+                                     paste0(rep(c("mean","sd"),each=3),
+                                            c("_147:(Intercept)",
+                                              "_258:(Intercept)",
+                                              "_369:(Intercept)")))))
+
+# initial parameter values for data stream probability distributions
+Par <- getParDM(snakeData,
+                hierStates=hierStates,hierDist=hierDist,
+                Par=Par0,DM=DM)
+@
+We do not include any covariates in \verb|hierFormula| or \verb|hierFormulaDelta|, so all that's left before fitting the model is the (optional) step of specifying starting values for the t.p.m. and initial distribution at each level of the hierarchy \citep[based on values reported by][]{Leos-BarajasEtAl2017}:
+<<garterSnake-6, echo=TRUE, eval=TRUE, cache=TRUE>>=
+hierBeta <- data.tree::Node$new("garter snake beta")
+hierBeta$AddChild("level1")
+hierBeta$AddChild("level2")
+hierBeta$level2$AddChild("internalState1")
+hierBeta$level2$AddChild("internalState2")
+hierBeta$level2$AddChild("internalState3")
+
+hierDelta <- data.tree::Clone(hierBeta)
+hierDelta$name <- "garter snake delta"
+
+# reference states for level1
+level1states <- hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),
+                               filterFun=function(x) x$level==2) 
+
+hierBeta$level1$beta <- matrix(c(1.24, 0.44, 1.1, -0.87, -1.40, -1.11),
+                               nrow=1,
+                               ncol=hierStates$count*(hierStates$count-1),
+                               byrow=TRUE,
+                               dimnames=list("(Intercept)",
+                                        c(sapply(level1states,function(x) 
+                                          paste(
+                                           rep(x,each=hierStates$count-1),
+                                           "->",
+                                           level1states[-which(level1states==x)])))))
+
+hierDelta$level1$delta <- matrix(rep(c(-2.5,-3.5),hierStates$count-1),
+                                 nrow=1,
+                                 ncol=(hierStates$count-1),
+                                 byrow=TRUE,
+                                 dimnames=list("(Intercept)",
+                                               paste("state",level1states[-1])))
+
+beta0_level2 <- delta0_level2 <- list()
+beta0_level2$internalState1 <- c(-2.99, -5.06, 3.93, 1.25, 34.84, 35.97)
+beta0_level2$internalState2 <- c(-1.72, -2.78, 3.54, 2.83, 34.72, 36.21)
+beta0_level2$internalState3 <- c(-5.10, -17.69, 5.76, -11.34, 33.39, 37.37)
+
+delta0_level2$internalState1 <- c(-1.39, 0.16)
+delta0_level2$internalState2 <- c(-1.27, 2.33) 
+delta0_level2$internalState3 <- c(0.34, -0.26)
+
+for(jj in 1:hierStates$count){
+  j <-  names(hierStates$children)[jj]
+  
+  # reference states for internalState j
+  ref <- hierStates[[j]]$Get(function(x) 
+                              data.tree::Aggregate(x,"state",min),
+                             filterFun=function(x) x$level==2) 
+  
+  # states for internalState j
+  states <- hierStates[[j]]$Get("state",filterFun = isLeaf)   
+  
+  dimNames <- list("(Intercept)",
+                   paste0(rep(states,each=hierStates[[j]]$count-1),
+                          " -> ",
+                          states[-which(states==ref)]))
+  
+  hierBeta$level2[[j]]$beta <- matrix(beta0_level2[[j]],
+                                      nrow=1,
+                                      ncol=hierStates[[j]]$count*
+                                           (hierStates[[j]]$count-1),
+                                      byrow=TRUE,
+                                      dimnames=dimNames)
+  
+  hierDelta$level2[[j]]$delta <- matrix(delta0_level2[[j]],
+                                        nrow=1,
+                                        ncol=(hierStates[[j]]$count-1),
+                                        byrow=TRUE,
+                                        dimnames=list("(Intercept)",
+                                                      names(states)[-1]))
+}
+@
+Let's check our model specification:
+<<garterSnake-7, echo=TRUE, eval=TRUE, cache=TRUE>>=
+checkPar0(snakeData,hierStates=hierStates,hierDist=hierDist,
+          Par0=Par,DM=DM,
+          hierBeta=hierBeta,hierDelta=hierDelta)
+@
+Again note that higher-level (i.e. ``parent'') states are indexed based on the lowest state index of their ``children''.  For example, ``internalState1'' is indexed by state 1, ``internalState2'' is indexed by state 4, and ``internalState3'' is indexed by state 7. We can also examine the starting values for the t.p.m. on the real scale (``\verb|gamma|'') at each level of the hierarchy using the \verb|getTrProbs| function:
+<<garterSnake-8, echo=TRUE, eval=TRUE, cache=TRUE>>=
+iTrProbs <- getTrProbs(snakeData,hierStates=hierStates,
+                       hierBeta=hierBeta,hierDist=hierDist)
+
+# t.p.m. at first time step for level1
+iTrProbs$level1$gamma[,,1] 
+
+# t.p.m. at first time step for level2
+lapply(iTrProbs$level2,function(x) x$gamma[,,1]) 
+@
+Now let's fit our garter snake HHMM:
+<<garterSnake-9, echo=c(4,5,6), eval=TRUE, cache=TRUE>>=
+Par <- hhmm2Par$Par
+hierBeta <- hhmm2Par$hierBeta
+hierDelta <- hhmm2Par$hierDelta
+# fit hierarchical HMM
+hhmm <- fitHMM(snakeData,hierStates=hierStates,hierDist=hierDist,
+               Par0=Par,DM=DM,hierBeta=hierBeta,hierDelta=hierDelta)
+@
+<<garterSnake-10, echo=TRUE, eval=TRUE>>=
+hhmm
+@
+
+These estimates are virtually identical to \cite{Leos-BarajasEtAl2017}; the only (very slight) difference is in the estimates for the coarse-scale initial distribution $({\boldsymbol \delta}^{(0)})$ because, unlike in \cite{Leos-BarajasEtAl2017}, the forward algorithm in \verb|momentuHMM| (Eq. \ref{eq:HMMlike}) includes a state transition between time steps $t=0$ and $t=1$.
+
+As usual, we can check pseudo-residuals using \verb|plotPR| (Figure \ref{fig:snakePR}):
+<<garterSnake-11, echo=TRUE, eval=FALSE, cache=TRUE>>=
+plotPR(hhmm)
+@
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{plot_garterSnakePR.pdf}
+  \caption{Pseudo-residual plot for the HHMM garter snake example.}
+  \label{fig:snakePR}
+\end{figure}
+and simulate from our fitted HHMM using \verb|simHierData|:
+<<garterSnake-12, echo=-1, eval=TRUE, cache=TRUE>>=
+set.seed(1,kind="Mersenne-Twister",normal.kind="Inversion")
+obsPerLevel <- data.tree::Node$new("simHierData")
+
+# number of level 1 observations
+obsPerLevel$AddChild("level1",obs=M) 
+
+# number of level 2 observations that follow each level 1 observation
+obsPerLevel$AddChild("level2",obs=dim(dataAr)[1])
+
+simHHMM <- simHierData(nbAnimals=W,
+                       model=hhmm, 
+                       obsPerLevel = obsPerLevel, states = TRUE)
+head(simHHMM)
+@
 
 \subsection{Simulating constrained movement}
 \label{sec:avoidLand}

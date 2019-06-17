@@ -329,6 +329,18 @@ dev.off()
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
 ###################################################
+### garter snake HHMM example
+###################################################
+#source(paste0(getwd(),"/examples/harborPorpoiseExample.R"))
+load(paste0(example_wd,"garterSnakeExample.RData"))
+hhmm2Par <- getPar(hhmm)
+append.RData(hhmm2Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+pdf(file=paste0(getwd(),"/plot_garterSnakePR.pdf"),width=5,height=2.5)
+plotPR(hhmm)
+dev.off()
+rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
+
+###################################################
 ### land constraint example
 ###################################################
 #source(paste0(getwd(),"/examples/landConstraintExample.R"))
