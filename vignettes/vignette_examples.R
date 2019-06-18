@@ -353,3 +353,6 @@ rm(list=ls()[-which(ls()=="example_wd")])
 
 # reduce size of png files
 system(paste("pngquant -f --ext .png --speed=1 *.png"))
+
+# reduce size of pdf files
+system(paste0("$HOME/Documents/Dropbox/'current projects'/'moveHMM extension'/momentuHMM/momentuHMM/vignettes/./script.sh"))
