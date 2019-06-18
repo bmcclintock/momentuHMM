@@ -350,3 +350,6 @@ raster::plot(boundary$boundary,legend.width=1, legend.shrink=0.75,legend.args=li
 points(simBound$mu.x,simBound$mu.y,type="l")
 dev.off()
 rm(list=ls()[-which(ls()=="example_wd")])
+
+# reduce size of png files
+system(paste("pngquant -f --ext .png --speed=1 *.png"))
