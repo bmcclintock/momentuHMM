@@ -123,7 +123,6 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
   if(is.null(formulaDelta)) {
     formDelta <- ~1
   } else formDelta <- formulaDelta
-  if(is.null(stationary)) stationary <- model$conditions$stationary
   if(is.null(DM)) DM<-model$conditions$DM
   if(!is.null(stateNames)){
     if(length(stateNames)!=nbStates) stop("stateNames must be of length ",nbStates)
@@ -238,6 +237,10 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
       model$data <- cbind(model$data,reForm$newdata)
     }
     betaNames <- colnames(model.matrix(newformula,model$data))
+    
+    if((length(betaNames)-1) | (ncol(model.matrix(formDelta,model$data))-1)) stationary <- FALSE
+    else if(is.null(stationary)) stationary <- model$conditions$stationary
+    
     betaNames <- paste0(rep(betaNames,mixtures),"_mix",rep(1:mixtures,each=length(betaNames)))
     
     if(model$conditions$mixtures==1) betaRow <- paste0(rep(betaRow,model$conditions$mixtures),"_mix",rep(1:model$conditions$mixtures,each=length(betaRow)))
@@ -284,17 +287,14 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
       rownames(Par$beta) <- betaNames
     }
     if(setequal(colnames(model$mle$delta),stateNames) & nbStates>1 & !stationary) {
-      if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(model$conditions$formulaDelta) & is.null(formulaDelta) & model$conditions$mixtures==mixtures){
-        if(!model$conditions$stationary) Par$delta<-model$mle$delta[1,,drop=FALSE][,match(colnames(model$mle$delta),stateNames)]
-        else Par$delta <- matrix(0,mixtures,nbStates)
-        if(mixtures>1){
-          if(!model$conditions$stationary) Par$delta <- model$mle$delta[seq(1,nrow(model$mle$delta),nrow(model$mle$delta)/mixtures),,drop=FALSE][,match(colnames(model$mle$delta),stateNames)]
-          rownames(Par$delta) <- paste0("mix",1:mixtures)
-        } else Par$delta <- c(Par$delta)
+      
+      deltaNames <- colnames(model.matrix(formDelta,model$data))
+      nbDeltaCovs <- length(deltaNames)-1
+      deltaNames <- paste0(rep(deltaNames,mixtures),"_mix",rep(1:mixtures,each=length(deltaNames)))
+        
+      if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(model$conditions$formulaDelta) & is.null(formulaDelta) & model$conditions$mixtures==mixtures & !model$conditions$stationary){
+        Par$delta<-model$mle$delta[1,,drop=FALSE][,match(colnames(model$mle$delta),stateNames)]
       } else {
-        deltaNames <- colnames(model.matrix(formDelta,model$data))
-        nbDeltaCovs <- length(deltaNames)-1
-        deltaNames <- paste0(rep(deltaNames,mixtures),"_mix",rep(1:mixtures,each=length(deltaNames)))
         if(model$conditions$mixtures==1 & !model$conditions$stationary) rownames(model$CIbeta$delta$est) <- paste0(rep(rownames(model$CIbeta$delta$est),model$conditions$mixtures),"_mix",rep(1:model$conditions$mixtures,each=length(rownames(model$CIbeta$delta$est))))
         if(all(grepl("(Intercept)",deltaNames)) & is.null(formulaDelta)){
           delta <- matrix(0,mixtures,nbStates)
@@ -314,6 +314,7 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
             delta[(mix-1)*(nbDeltaCovs+1)+1:(nbDeltaCovs+1),] <- tmpdelta
           }
           colnames(delta) <- stateNames
+          rownames(delta) <- deltaNames
         } else {
           delta <- matrix(0,nrow=length(deltaNames),ncol=nbStates-1,dimnames = list(deltaNames,stateNames[-1]))
           if(!model$conditions$stationary){
@@ -327,7 +328,11 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
             }
           }
         }
-        if(mixtures==1) delta <- c(delta)
+        if(mixtures==1) {
+          deltaNames <- colnames(model.matrix(formDelta,model$data))
+          rownames(delta) <- deltaNames
+          if(!nbDeltaCovs) delta <- c(delta)
+        }
         Par$delta <- delta
       }
     } else {
