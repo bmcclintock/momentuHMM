@@ -2,7 +2,7 @@
 #' Summary \code{momentuHMMData}
 #' @method summary momentuHMMData
 #'
-#' @param object A \code{momentuHMMData} object.
+#' @param object A \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} object.
 #' @param dataNames Names of the variables to summarize. Default is \code{dataNames=c("step","angle")}.
 #' @param animals Vector of indices or IDs of animals for which data will be summarized.
 #' Default: \code{NULL} ; data for all animals are summarized.
@@ -48,10 +48,11 @@ summary.momentuHMMData <- function(object,dataNames=c("step","angle"),animals=NU
 
     # print individuals' IDs and numbers of observations
     nbAnimals <- length(animalsInd)
+    header <- ifelse(!inherits(data,"hierarchical"),"HMM","Hierarchical HMM")
     if(nbAnimals==1)
-        cat("Movement data for 1 individual:\n\n",sep="")
+        cat(header," data for 1 individual:\n\n",sep="")
     else
-        cat("Movement data for ",nbAnimals," individuals:\n\n",sep="")
+        cat(header," data for ",nbAnimals," individuals:\n\n",sep="")
     for(zoo in animalsInd)
         cat(as.character(unique(data$ID)[zoo])," -- ",
             length(which(data$ID==unique(data$ID)[zoo]))," observations\n",sep="")
@@ -64,5 +65,13 @@ summary.momentuHMMData <- function(object,dataNames=c("step","angle"),animals=NU
 
     # print data summaries
     cat("\n\nData summaries:\n\n",sep="")
-    print(summary(as.data.frame(data[which(data$ID %in% unique(data$ID)[animalsInd]),covsCol]),digits=2))
+    print(summary(as.data.frame(data[which(data$ID %in% unique(data$ID)[animalsInd]),covsCol,drop=FALSE]),digits=2))
+}
+
+#' @rdname summary.momentuHMMData
+#' @method summary momentuHierHMMData
+#' @export
+summary.momentuHierHMMData <- function(object,dataNames=c("step","angle","level"),animals=NULL,...)
+{
+    summary.momentuHMMData(object=object,dataNames=dataNames,animals=animals,...)    
 }
