@@ -152,7 +152,7 @@ While statisticians have been applying HMMs to telemetry data for decades, R \ci
 
 To address these deficiencies in existing software, we developed a user-friendly R package, \verb|momentuHMM| (Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models), intended for practitioners wishing to implement more flexible and realistic (multivariate) HMM analyses of animal movement while accounting for common challenges associated with telemetry data \citep{McClintockMichelot2018}. Features for multivariate HMM analyses in \verb|momentuHMM| include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states; 3) biased and correlated random walk movement models, including ``activity centers'' associated with attractive or repulsive forces \citep[e.g.][]{McClintockEtAl2012}; 4) user-specified design matrices and constraints for covariate modelling of state transition probability and probability distribution parameters using linear model formulas familiar to most R users; 5) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data \citep{HootenEtAl2017,McClintock2017}; 6) seamless integration of spatio-temporal environmental covariate data (e.g., wind direction, forest cover, sea ice concentration) using the \verb|raster| package \citep{Hijmans2016}; 7) cosinor \citep[e.g.][]{Cornelissen2014} and spline regression formulas for cyclical and other complicated behavioral patterns; 8) discrete individual-level random effects on state transition probabilities \citep[e.g.][]{DeRuiterEtAl2017}; 9) hierarchical hidden Markov models \citep[e.g.][]{Leos-BarajasEtAl2017} for data streams and/or state switching at multiple time scales; 10) ``recharge'' models for an aggregated physiological process associated with state switching in heterogeneous environments \citep{HootenEtAl2019}; 11) model checking and selection; and 12) data simulation capabilities for study design, power analyses and assessing model performance, including simulation of location data subject to temporal irregularity and/or measurement error. 
 
-In the following tutorial, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples, including an example of periodic cycles in African elephant movement, a 3-state (``resting'', ``foraging'', ``transit'') northern fur seal example incorporating auxiliary dive activity data \citep{McClintockEtAl2014b}, a loggerhead turtle example relating ``foraging'' and ``transit'' movements to ocean surface currents, a 5-state grey seal example incorporating biased movements toward haul-out and foraging locations \citep{McClintockEtAl2012}, a 4-state (``outbound'', ``searching'', ``foraging'', ``inbound'') southern elephant seal example with biased movements toward and away from a colony \citep{MichelotEtAl2017}, a 3-state (``resting'', ``foraging'', ``transit'') harbour seal example using population-level constraints on movement parameters \citep{McClintockEtAl2013c}, a 6-state northern fulmar example incorporating biased movements relative to both static (i.e. colony) and dynamic (i.e. fishing vessels) activity centers \citep{PirottaEtAl2018}, and hierarchical HMMs fitted to harbor porpoise and garter snake data \citep{Leos-BarajasEtAl2017}. Using simulated data, we also demonstrate how the group dynamic model of \cite{LangrockEtAl2014} can be implemented using \verb|momentuHMM|. Finally, we demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using potential functions \citep[e.g.][]{BrillingerEtAl2012}. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics. While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs.  Additional information, including help files, data, examples, and package usage is available by downloading the \verb|momentuHMM| package from CRAN (\url{https://cran.r-project.org}) or Github (\url{https://github.com/bmcclintock/momentuHMM}). This article describes \verb|momentuHMM| version \Sexpr{installed.packages()["momentuHMM","Version"]}.
+In the following tutorial, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples, including an example of periodic cycles in African elephant movement, a 3-state (``resting'', ``foraging'', ``transit'') northern fur seal example incorporating auxiliary dive activity data \citep{McClintockEtAl2014b}, a loggerhead turtle example relating ``foraging'' and ``transit'' movements to ocean surface currents, a 5-state grey seal example incorporating biased movements toward haul-out and foraging locations \citep{McClintockEtAl2012}, a 4-state (``outbound'', ``searching'', ``foraging'', ``inbound'') southern elephant seal example with biased movements toward and away from a colony \citep{MichelotEtAl2017}, a 3-state (``resting'', ``foraging'', ``transit'') harbour seal example using population-level constraints on movement parameters \citep{McClintockEtAl2013c}, a 6-state northern fulmar example incorporating biased movements relative to both static (i.e. colony) and dynamic (i.e. fishing vessels) activity centers \citep{PirottaEtAl2018}, a 4-state long-finned pilot whale example including individual-level random effects on state transition probabilities \citep{IsojunnoEtAl2017}, and hierarchical HMMs fitted to harbor porpoise and garter snake data \citep{Leos-BarajasEtAl2017}. Using simulated data, we also demonstrate how the group dynamic model of \cite{LangrockEtAl2014} can be implemented using \verb|momentuHMM|. Finally, we demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using potential functions \citep[e.g.][]{BrillingerEtAl2012}. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics. While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs.  Additional information, including help files, data, examples, and package usage is available by downloading the \verb|momentuHMM| package from CRAN (\url{https://cran.r-project.org}) or Github (\url{https://github.com/bmcclintock/momentuHMM}). This article describes \verb|momentuHMM| version \Sexpr{installed.packages()["momentuHMM","Version"]}.
 
 \section{momentuHMM overview}
 %Given the deliberately similar syntax between the two packages, 
@@ -390,13 +390,17 @@ Note that the von Mises consensus distribution is parameterized in terms of $\mu
 %\end{equation*}
 See section \ref{sec:turtle} for example code using \verb|angleFormula| and the von Mises consensus (``vmConsensus'') distribution.
 
-\subsection{Random walk probability distributions}
-\label{sec:rw}
-\verb|momentuHMM| includes several normal random walk probability distributions that can be specified in the \verb|dist| argument (see Tables \ref{tab:unipdfs} and \ref{tab:multipdfs}), including univariate (e.g. for modeling depths), bivariate (e.g. for modeling 2-D positions), and trivariate (e.g. for modeling 3-D positions) normal random walks. These can be particularly useful for modeling movement on positions directly instead of steps and turns. A random walk model assumes position at time $t$ is a function of the position at time $t-1$; in its simplest form without any covariates, we have $x_t \sim N(x_{t-1},\sigma^2)$ for the univariate case. We demonstrate use of the bivariate normal random walk model for loggerhead turtle movements relative to ocean surface currents in section \ref{sec:turtle}. We also demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using a bivariate normal random walk in section \ref{sec:avoidLand}.
+\subsection{Individual-level random effects}
+\label{sec:randomEffects}
+HMM applications often assume the initial distribution and state transition probability matrix is the same for all individuals (i.e. ``complete pooling'' of the individuals' time series). But in reality, individuals often do not exhibit the same state-switching dynamics and there is individual-level variation.  Individual heterogeneity can often be well explained by covariates (e.g., sex, age class) and included in \verb|formula|, but it is not always possible to identify (and/or measure) all of the important covariates that drive this variation. One option is to include separate state-switching dynamics for each individual (i.e. ``no pooling'') by specifying \verb|formulaDelta = ~ID| and \verb|formula = ~ID|, but this ``fixed'' effect approach can result in many additional parameters to estimate (it also doesn't explain very much about potential factors driving individual heterogeneity). Alternatively, generic individual heterogeneity in state-switching dynamics can be modeled as a ``random'' effect. While continuous-valued individual-level random effects can be computationally demanding, discrete-valued random effects are more computationally feasible and can be effective in ``mopping up'' individual heterogeneity in the initial distribution and state transition probabilities that is not explained by measurable covariates. Discrete-valued random effects have recently been used in HHMs of animal movement \citep[e.g.][]{McKellarEtAl2014,TownerEtAl2016,DeRuiterEtAl2017,IsojunnoEtAl2017}, and these ``mixed'' HMMs can be fitted with \verb|fitHMM| (or \verb|MIfitHMM|) through the \verb|mixtures| and \verb|formulaPi| arguments.  The \verb|mixtures| argument specifies the number of mixtures $(K)$ in the model, where each mixture represents a possible initial distribution and transition probability matrix, and each individual time series is assumed to be driven by exactly one of these mixtures. For $K$ mixtures, the mixture weight $(\pi_k; k=1,\ldots,K)$ is the probability that the $k$th mixture underlies the state-switching dynamics for a given individual, and a model formula for ${\boldsymbol \pi}$ can be specified using the \verb|formulaPi| argument. For example, \cite{TownerEtAl2016} found support for $K=3$ mixtures and a sex covariate on ${\boldsymbol \pi}$ in their HMM for white shark movement, indicating that each of the three possible state-switching dynamics were exhibited differently for males and females; the random effects component of their model would be specified in \verb|fitHMM| (or \verb|MIfitHMM|) by simply setting \verb|mixtures = 3| and \verb|formulaPi = ~sex|. Note that because $\sum_{k=1}^K \pi_k = 1$, \verb|momentuHMM| uses a multinomial logit link function for ${\boldsymbol \pi}$ when covariates are included in \verb|formulaPi|. We demonstrate how to fit discrete-valued individual-level random effects on the initial distribution and state transition probabilities using the long-finned pilot whale example from \cite{IsojunnoEtAl2017} in section \ref{sec:pilotWhale}.
 
 \subsection{Hierarchical hidden Markov models}
 \label{sec:HHMM}
 Hierarchical hidden Markov models \citep[HHMMs; see][]{Leos-BarajasEtAl2017} can also be fitted in \verb|momentuHMM|. HMMs with hierarchical structures allow for data streams and/or state transitions to occur at multiple regular time scales. For example, biotelemetry data are often collected at different time scales (e.g. 1-hr intervals for one data stream and 1-min intervals for another data stream) or state transitions can be governed by both larger- and finer-scale behavioral processes. HHMMs are integrated into the workhorse functions of \verb|momentuHMM| and are specified via hierarchically-structured arguments for the data stream probability distributions (\verb|hierDist|), behavioral states (\verb|hierStates|), state transition probabilities (\verb|hierFormula|, \verb|hierBeta|), and initial distributions (\verb|hierFormulaDelta|, \verb|hierDelta|) using the \verb|data.tree| package \citep{Glur2018}.  We demonstrate how both the harbor porpoise and garter snake examples from \cite{Leos-BarajasEtAl2017} can be fitted using \verb|momentuHMM| in section \ref{sec:HHMMexamples}.
+
+\subsection{Random walk probability distributions}
+\label{sec:rw}
+\verb|momentuHMM| includes several normal random walk probability distributions that can be specified in the \verb|dist| argument (see Tables \ref{tab:unipdfs} and \ref{tab:multipdfs}), including univariate (e.g. for modeling depths), bivariate (e.g. for modeling 2-D positions), and trivariate (e.g. for modeling 3-D positions) normal random walks. These can be particularly useful for modeling movement on positions directly instead of steps and turns. A random walk model assumes position at time $t$ is a function of the position at time $t-1$; in its simplest form without any covariates, we have $x_t \sim N(x_{t-1},\sigma^2)$ for the univariate case. We demonstrate use of the bivariate normal random walk model for loggerhead turtle movements relative to ocean surface currents in section \ref{sec:turtle}. We also demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using a bivariate normal random walk in section \ref{sec:avoidLand}.
 
 \subsection{Multiple imputation}
 \label{sec:mi}
@@ -410,7 +414,7 @@ The generic \verb|plot| functions for \verb|momentuHMM| models (\verb|plot.momen
 Diagnostic tools include the calculation and plotting of pseudo-residuals \citep{ZucchiniEtAl2016} using the \verb|pseudoRes| and \verb|plotPR| functions, respectively. For discrete distributions (e.g.\ Bernoulli, Poisson), a continuity adjustment is used for calculating pseudo-residuals. Akaike's Information Criterion can be calculated for one or more models using the \verb|AIC.momentuHMM| function.
 
 \subsection{Simulation}
-The function \verb|simData| can be used to simulate multivariate HMM data from scratch or based on the estimated parameters of existing \verb|momentuHMM| or \verb|miSum| models.  The \verb|simData| arguments are very similar to those used for model specification in \verb|fitHMM| (e.g., \verb|dist|, \verb|DM|) and data preparation in \verb|prepData| (e.g., \verb|spatialCovs|, \verb|centers|), but they include additonal arguments, \verb|lambda| and \verb|errorEllipse|, for simulating location data subject to temporal irregularity and measurement error, respectively. The \verb|spatialCovs| argument allows for rasters of spatio-temporal covariate values to be utilized in simulation models, while the \verb|centers| argument allows activity centers to be incorporated. Thus \verb|simData| can be used to simulate more ecologically-realistic tracks (potentially subject to observation error) that can be useful for study design, power analyses, and assessing model performance. Goodness-of-fit can also be investigated by drawing simulated data sets from a fitted model and comparing them to observed properties of the data \citep{MoralesEtAl2004}. While \verb|simData| can be used for simulating tracks from fitted models, we note that it assumes the location data are Cartesian coordinates; the \verb|simData| function is therefore not appropriate for simulating tracks from models that were fitted to unprojected (latitude and longitude) data.
+The functions \verb|simData| (and \verb|simHierData|) can be used to simulate multivariate HMM (or HHMM) data from scratch or based on the estimated parameters of existing \verb|momentuHMM| or \verb|miSum| models.  The \verb|simData| and \verb|simHierData| arguments are very similar to those used for model specification in \verb|fitHMM| (e.g., \verb|dist|, \verb|hierDist|, \verb|DM|) and data preparation in \verb|prepData| (e.g., \verb|spatialCovs|, \verb|centers|), but they include additonal arguments, \verb|lambda| and \verb|errorEllipse|, for simulating location data subject to temporal irregularity and measurement error, respectively. The \verb|spatialCovs| argument allows for rasters of spatio-temporal covariate values to be utilized in simulation models, while the \verb|centers| argument allows activity centers to be incorporated. Thus \verb|simData| and \verb|simHierData| can be used to simulate more ecologically-realistic tracks (potentially subject to observation error) that can be useful for study design, power analyses, and assessing model performance. Goodness-of-fit can also be investigated by drawing simulated data sets from a fitted model and comparing them to observed properties of the data \citep{MoralesEtAl2004}. While \verb|simData| and \verb|simHierData| can be used for simulating tracks from fitted models, we note that it assumes the location data are Cartesian coordinates; the \verb|simData| and \verb|simHierData| functions are therefore not appropriate for simulating tracks from models that were fitted to unprojected (latitude and longitude) data.
   
 \section{Examples}
 \label{sec:example}
@@ -1488,13 +1492,201 @@ plotSat(m2, zoom = 7, shape = c(17,1,17,1,17,1), size = 2,
   \label{fig:northernFulmar}
 \end{figure}
 
+\subsection{Pilot whale example}
+\label{sec:pilotWhale}
+<<pilotWhale-1, echo=FALSE, eval=TRUE, cache=TRUE>>=
+## load data 
+load(url("https://raw.github.com/bmcclintock/momentuHMM/develop/vignettes/pilotWhaleData.RData"))
+
+## prepare data
+names(data.keep)[1] <- "ID"
+pilotData <- prepData(data.keep,coordNames = NULL)
+@
+Here we demonstrate how to include individual heterogeneity in state-switching dynamics via discrete-valued random effects by fitting the 4-state (``exploratory'', ``foraging'', ``crowded'', ``directed'') mixed HHM for long-finned pilot whales described in \cite{IsojunnoEtAl2017}.  The pilot whale data consist of 11 data streams collected from 15 individuals, and, as usual, we must first prepare the data for \verb|fitHMM| using \verb|prepData|. Let's summarize our prepared data using the \verb|summary| function:
+<<pilotWhale-2, echo=TRUE, eval=TRUE>>=
+summary(pilotData, dataNames=names(pilotData)[-1])
+@
+We next specify the data stream probability distributions and starting values for the parameters \citep[based on those reported by ][]{IsojunnoEtAl2017}:
+<<pilotWhale-3, echo=TRUE, eval=TRUE>>=
+## 11 data streams
+dist <- list(dive.dur = "weibull",
+             dive.depth = "gamma",
+             GR.speed2 = "gamma",
+             dive.pitchvar2 = "beta",
+             breath.headchange = "vm",
+             GR.size = "pois",
+             GR.tight = "bern",
+             dive.CS.pres = "bern",
+             dive.SS.pres = "bern",
+             presurf = "bern",
+             postsurf = "bern")
+
+## initial values
+Par0 <- list(dive.dur = c(1.9, 2.72, 1.64, 4.21, 
+                          1.3, 8.14, 1.53, 0.79),
+             dive.depth = c(10.23, 315.91, 10.74, 5.51, 
+                             4.93, 233.12,  6.32, 1.91),
+             GR.speed2 = c(1.15, 1.32, 1.36, 1.57, 
+                           0.66, 0.51, 0.77, 0.76),
+             dive.pitchvar2 = c( 2.21, 2.88,  1.82,  3.18, 
+                                17.94, 6.04, 16.06, 55.36),
+             breath.headchange = c(3.07, 5.65, 2.64, 18.02),
+             GR.size = c(6, 7.39, 20.39, 9.52),
+             GR.tight = c(0.89, 0.66, 0.76, 0.81),
+             dive.CS.pres = c(0.76, 0.99, 0.41, 0.47),
+             dive.SS.pres = c(0.72, 0.98, 0.39, 0.41),
+             presurf = c(0.76, 0.99, 0.71, 0.71),
+             postsurf = c(0.81, 0.96, 0.72, 0.66))
+
+beta0 <- matrix(c(-2.38, -3.86, -1.22, 
+                   0.21,  -1.6, -0.47, 
+                  -3.56, -4.15, -2.29, 
+                  -1.17, -3.05, -2.54),nrow=1)
+
+stateNames <- c("exploratory","foraging","crowded","directed")
+@
+Let's first fit the null model with no discrete-valued individual-level random effects on the state-switching dynamics.  \cite{IsojunnoEtAl2017} found that model selection criteria favored models that assume the initial distribution is the stationary distribution, so we'll set \verb|stationary=TRUE|:
+<<pilotWhale-4, echo=c(4,5,6,7,8), eval=TRUE, cache=TRUE, message=FALSE>>=
+Par0 <- fitmix1_Par$Par
+beta0 <- fitmix1_Par$beta
+delta0 <- fitmix1_Par$delta
+## fit model with single mixture on TPM
+fitmix1 <- fitHMM(pilotData, nbStates=4, dist=dist,
+                  Par0=Par0, beta0=beta0, 
+                  stationary=TRUE,
+                  stateNames=stateNames,
+                  nlmPar=list(hessian=FALSE))
+@
+\noindent (note that we've set the \verb|nlmPar| option \verb|hessian=FALSE| simply to speed up the compile time for this vignette). 
+
+Now we'll fit a model with $K=2$ mixtures of discrete-valued individual-level random effects by setting \verb|mixtures=2|, but first we'll set some starting values from the null model (using \verb|getPar0|) and check our model specification (using \verb|checkPar0|):
+<<pilotWhale-5, echo=TRUE, eval=TRUE>>=
+Par0_mix2 <- getPar0(fitmix1,mixtures=2)
+Par0_mix2$beta$beta[1,] <- c(-2.26, -3.93, -0.58, 
+                              0.03, -2.25, -0.26, 
+                             -3.38, -4.79, -2.82, 
+                             -1.06,  -3.3, -3.43)
+Par0_mix2$beta$beta[2,] <- c(-2.51, -3.32, -2.63, 
+                              0.03, -1.26, -0.12, 
+                             -96.8, -3.62, -1.75, 
+                             -1.76, -2.14, -1.38)
+Par0_mix2$beta$pi <- c(0.73, 0.27)
+@
+\noindent Note that because \verb|mixtures| is $>1$, the starting values for \verb|beta0| must now be specified as a list with elements named \verb|beta| (containing the starting values for the t.p.m. parameters) and/or \verb|pi| (containing the starting values for the mixture probability parameters).
+<<pilotWhale-6, echo=TRUE, eval=TRUE, cache=TRUE>>=
+# check model specification
+checkPar0(pilotData, nbStates=4, dist=dist,
+          Par0=Par0_mix2$Par, beta0=Par0_mix2$beta, 
+          stationary=TRUE,
+          mixtures=2,
+          stateNames=stateNames)
+@
+We can see above that by setting \verb|mixtures=2| we now have $K=2$ sets of state transition probability matrix parameters, each suffixed by a mixture label (\verb|_mix1| or \verb|_mix2|). We also now have $K=2$ mixture probability parameters $({\boldsymbol \pi})$, where the first $(\pi_1)$ corresponds to parameters suffixed with \verb|_mix1| and the second $(\pi_2)$ corresponds to parameters suffixed with \verb|_mix2|. Now let's fit the $K=2$ mixture model from \cite{IsojunnoEtAl2017}:
+<<pilotWhale-7, echo=-1, eval=TRUE, cache=TRUE>>=
+Par0_mix2 <- fitmix2_Par
+fitmix2 <- fitHMM(pilotData, nbStates=4, dist=dist,
+                  Par0=Par0_mix2$Par, beta0=Par0_mix2$beta, 
+                  stationary=TRUE,
+                  mixtures=2,
+                  stateNames=stateNames, nlmPar=list(hessian=FALSE))
+fitmix2
+@
+\noindent Based on our fitted model, we can calculate the probability of each individual being in a particular mixture using the \verb|mixtureProbs| function and the t.p.m. for each mixture using the \verb|getTrProbs| function:
+<<pilotWhale-8, echo=TRUE, eval=TRUE, cache=TRUE>>=
+## calculate mixture probabilities for each individual
+round(mixtureProbs(fitmix2),4)
+
+## calculate state transition probabilities for each mixture
+trProbs2 <- getTrProbs(fitmix2)
+
+# mixture 1
+round(trProbs2[[1]][,,1],2)
+# mixture 2
+round(trProbs2[[2]][,,1],2)
+@
+
+Now let's fit a model with $K=3$ mixtures by setting some starting values with the help of \verb|getPar0|:
+<<pilotWhale-9a, echo=TRUE, eval=TRUE>>=
+Par0_mix3 <- getPar0(fitmix2,mixtures=3)
+Par0_mix3$beta$beta[1,] <- c(-2.15, -4.31, -1.09, 
+                              0.28, -1.88,  -0.3, 
+                              -3.5, -4.71, -3.11, 
+                             -0.68, -2.49,  -2.6)
+Par0_mix3$beta$beta[2,] <- c(  -2.5,  -2.47,  0.63, 
+                             -17.22, -13.18,  0.59, 
+                              -3.92, -13.96, -2.27, 
+                              -1.25,  -3.57, -3.75)
+Par0_mix3$beta$beta[3,] <- c(-2.71, -3.48, -3.01, 
+                             -0.35, -1.12,  -0.1, 
+                             -96.8, -2.98, -1.53, 
+                             -2.29, -2.07, -1.55)
+Par0_mix3$beta$pi <- c(0.4, 0.4, 0.2)
+@
+\noindent and then calling \verb|fitHMM| with \verb|mixtures=3|:
+<<pilotWhale-9b, echo=-1, eval=TRUE, cache=TRUE>>=
+Par0_mix3 <- fitmix3_Par
+fitmix3 <- fitHMM(pilotData, nbStates=4, dist=dist,
+                  Par0=Par0_mix3$Par, beta0=Par0_mix3$beta,
+                  stationary=TRUE,
+                  mixtures=3,
+                  stateNames=stateNames,
+                  nlmPar=list(hessian=FALSE))
+fitmix3
+
+## calculate mixture probabilities for each individual
+round(mixtureProbs(fitmix3),4)
+
+## calculate state transition probabilities for each mixture
+trProbs3 <- getTrProbs(fitmix3)
+
+# mixture 1
+round(trProbs3[[1]][,,1],2)
+
+# mixture 2
+round(trProbs3[[2]][,,1],2)
+
+# mixture 3
+round(trProbs3[[3]][,,1],2)
+@
+\noindent And let's do the same with $K=4$:
+<<pilotWhale-10, echo=-1, eval=TRUE, cache=TRUE, message=FALSE>>=
+Par0_mix4 <- fitmix4_Par
+fitmix4 <- fitHMM(pilotData, nbStates=4, dist=dist,
+                  Par0=Par0_mix4$Par, beta0=Par0_mix4$beta,
+                  stationary=TRUE,
+                  mixtures=4,
+                  stateNames=stateNames,
+                  nlmPar=list(hessian=FALSE))
+@
+
+For comparison to the null and random effects models, let's also fit a model including individual-level fixed effects:
+<<pilotWhale-11, echo=-3, eval=TRUE, cache=TRUE>>=
+Par0_fix <- getPar0(fitmix1, formula= ~ID, formulaDelta= ~ID)
+Par0_fix$delta[1,] <- log(fitmix1$mle$delta[1,-1]/fitmix1$mle$delta[1,1])
+Par0_fix <- fitfix_Par
+
+fitfix <- fitHMM(pilotData, nbStates=4, dist=dist,
+                  formula = ~ID, formulaDelta = ~ID,
+                  Par0=Par0_fix$Par, beta0=Par0_fix$beta, 
+                  delta0=Par0_fix$delta,
+                  stateNames=stateNames,
+                  nlmPar=list(hessian=FALSE))
+@
+
+Based on AIC, we find overwhelming support for the discrete-valued individual-level random effects model with $K=3$ mixtures:
+<<pilotWhale-12, echo=TRUE, eval=TRUE>>=
+AIC(fitmix1,fitmix2,fitmix3,fitmix4,fitfix)
+
+AICweights(fitmix1,fitmix2,fitmix3,fitmix4,fitfix)
+@
+
 \subsection{Hierarchical HMMs}
 \label{sec:HHMMexamples}
-As we already noted in section \ref{sec:HHMM}, HMMs with hierarchical structures allow for data streams and/or state transitions to occur at multiple regular time scales. \cite{Leos-BarajasEtAl2017} provide two examples where state transitions are allowed to occur at both ``coarse'' and ``fine'' time scales, and here we demonstrate how both of these examples can be fitted in \verb|momentuHMM|. The key to fitting (and simulating) hierarchical hidden Markov models (HHMMs) in \verb|momentuHMM| is specifying certain \verb|fitHMM| (and \verb|simData|) arguments hierarchically using the \verb|data.tree| package \citep{Glur2018}. For HHMMs, instead of simply specifying the number of states (\verb|nbStates|), distributions (\verb|dist|), and a single t.p.m. (\verb|formula|) or initial distribution (\verb|formulaDelta|) formula, the \verb|hierStates| argument specifies the hierarchical nature of the states, the \verb|hierDist| argument specifies the hierarchical nature of the data streams, and the \verb|hierFormula| or \verb|hierFormulaDelta| arguments specify a t.p.m. or initial distribution formula for each level of the hierarchy. All are specified as \verb|Node| objects from the \verb|data.tree| package.  In the examples below, we focus on how to implement these HHMMs in \verb|momentuHMM| and refer readers to \cite{Leos-BarajasEtAl2017} for specific details about the data sets and the particular models being fitted.
+As we already noted in section \ref{sec:HHMM}, HMMs with hierarchical structures allow for data streams and/or state transitions to occur at multiple regular time scales. \cite{Leos-BarajasEtAl2017} provide two examples where state transitions are allowed to occur at both ``coarse'' and ``fine'' time scales, and here we demonstrate how both of these examples can be fitted in \verb|momentuHMM|. The key to fitting (and simulating) hierarchical hidden Markov models (HHMMs) in \verb|momentuHMM| is specifying certain \verb|fitHMM| (and \verb|simHierData|) arguments hierarchically using the \verb|data.tree| package \citep{Glur2018}. For HHMMs, instead of simply specifying the number of states (\verb|nbStates|), distributions (\verb|dist|), and a single t.p.m. (\verb|formula|) or initial distribution (\verb|formulaDelta|) formula, the \verb|hierStates| argument specifies the hierarchical nature of the states, the \verb|hierDist| argument specifies the hierarchical nature of the data streams, and the \verb|hierFormula| or \verb|hierFormulaDelta| arguments specify a t.p.m. or initial distribution formula for each level of the hierarchy. All are specified as \verb|Node| objects from the \verb|data.tree| package.  In the examples below, we focus on how to implement these HHMMs in \verb|momentuHMM| and refer readers to \cite{Leos-BarajasEtAl2017} for specific details about the data sets and the particular models being fitted.
 
 \subsubsection{Harbor porpoise example}
 \label{sec:harborPorpoise}
-In order to replicate the harbor porpoise HHMM example from \cite{Leos-BarajasEtAl2017} in \verb|momentuHMM|, we must first use \verb|prepData| to prepare our hierarchical data. This requires an additional field named \verb|level| to be included in \verb|data| that identifies the level of the hierarchy for each observation. These levels must be ordered from the coarsest to finest time scales, and must also indicate the initial observations at each level of the hierarchy (except for the coarsest level).  For example, if there are three time scales (e.g. ``coarse'', ``medium'', and ``fine'' scales), then the \verb|level| field must include the ordered factors ``\verb|1|'' (corresponding to coarse-scale observations), ``\verb|2i|'' (initial medium-scale observations), ``\verb|2|'' (medium-scale observations), ``\verb|3i|'' (initial fine-scale observations), and ``\verb|3|'' (fine-scale observations). In the harbor porpoise example from \cite{Leos-BarajasEtAl2017}, there are only two levels in the hierarchy so the \verb|level| factor levels are ``\verb|1|'' (coarse level), ``\verb|2i|'' (initial fine level), and ``\verb|2|'' (fine level).  After downloading the data, we can manually add the \verb|level| field to our data frame as follows:
+In order to replicate the harbor porpoise HHMM example from \cite{Leos-BarajasEtAl2017} in \verb|momentuHMM|, we must first use \verb|prepData| to prepare our hierarchical data. This requires an additional field named \verb|level| to be included in \verb|data| that identifies the level of the hierarchy for each observation. These levels must be ordered from the coarsest to finest time scales, and must also indicate the initial observations at each level of the hierarchy (except for the coarsest level).  For example, if there are $M=3$ time scales in the hierarchy (e.g. ``coarse'', ``medium'', and ``fine'' scales), then the \verb|level| field must include $2*M-1=5$ ordered factors: ``\verb|1|'' (corresponding to coarse-scale observations), ``\verb|2i|'' (initial medium-scale observations), ``\verb|2|'' (medium-scale observations), ``\verb|3i|'' (initial fine-scale observations), and ``\verb|3|'' (fine-scale observations). In the harbor porpoise example from \cite{Leos-BarajasEtAl2017}, there are only $M=2$ levels in the hierarchy so the $2*M-1=3$ ordered \verb|level| factors are ``\verb|1|'' (coarse level), ``\verb|2i|'' (initial fine level), and ``\verb|2|'' (fine level).  After downloading the data, we can manually add the \verb|level| field to our data frame as follows:
 <<harborPorpoise-1, echo=TRUE, eval=TRUE, cache=TRUE>>=
 # load harbor porpoise data from Leos-Barajas et al
 load(url(paste0("https://static-content.springer.com/esm/",
@@ -1510,24 +1702,35 @@ for(i in 1:length(data)){
   coarseInd <- data.frame(date_time=as.POSIXct(format(data[[i]]$date_time[1],
                                                       format="%Y-%m-%d %H:%M"),
                                                tz="UTC"),
+                          level=c("1","2i"),
                           dive_duration=NA,
                           maximum_depth=NA,
-                          dive_wiggliness=NA,
-                          level=c("1","2i"))
+                          dive_wiggliness=NA)
   tmp <- rbind(coarseInd,data.frame(data[[i]],level="2"))
   porpoiseData <- rbind(porpoiseData,tmp)
 }
 
 head(porpoiseData)
 @
-By including the \verb|level| field, we will be able to specify when the coarse-scale state switching can occur (i.e., a coarse scale t.p.m. will be used when \verb|level=1|), the start of each fine-scale interval (i.e. a fine-scale initial distribution will be used when \verb|level=2i|), and when the fine-scale state switching can occur (i.e. a fine scale t.p.m. will be used when \verb|level=2|). Now that we have labeled each observation in our data with a \verb|level| factor, we can prepare our HHMM data using \verb|prepData|:
-<<harborPorpoise-2, echo=TRUE, eval=TRUE>>=
+\noindent By including the \verb|level| field, we will be able to specify when the coarse-scale state switching can occur (i.e., a coarse scale t.p.m. will be used when \verb|level=1|), the start of each fine-scale interval (i.e. a fine-scale initial distribution will be used when \verb|level=2i|), and when the fine-scale state switching can occur (i.e. a fine scale t.p.m. will be used when \verb|level=2|). 
+
+Now that we have labeled each observation in our data with a \verb|level| factor, we can prepare our HHMM data using \verb|prepData|:
+<<harborPorpoise-2a, echo=TRUE, eval=TRUE>>=
 # prepare hierarchical data
-porpoiseData <- prepData(porpoiseData,
-                         coordNames=NULL,
-                         hierLevels=c("1","2i","2"))
+porpoiseData <- prepData(data = porpoiseData,
+                         coordNames = NULL,
+                         hierLevels = c("1", "2i", "2"))
+
+# summarize prepared data
+summary(porpoiseData, dataNames = names(porpoiseData)[-1])
 @
-Here we have used the \verb|hierLevels| argument to identify the ordered factor levels that \verb|prepData| can expect to find in the \verb|level| field. When \verb|hierLevels| is specified, \verb|prepData| assumes these data are intended for a HHMM analysis and assigns the classes \verb|hierarchical| and \verb|momentuHierHMMData| to \verb|porpoiseData| (and corresponding methods for these classes will hereafter be used when calling functions such as \verb|fitHMM|). Note that because there are no location data in this example, we have set \verb|coordNames| to \verb|NULL|. Also note that in this example there are no data streams observed at the coarse time scale (\verb|level=1|), but these could be easily included (if available).
+\noindent Here we have used the \verb|hierLevels| argument to identify the ordered factor levels that \verb|prepData| can expect to find in the \verb|level| field. When \verb|hierLevels| is specified, \verb|prepData| assumes the data are intended for a HHMM analysis and assigns the classes \verb|hierarchical| and \verb|momentuHierHMMData| to the returned object (and corresponding methods for these classes will hereafter be used when calling functions such as \verb|fitHMM|). Because \verb|prepData| assumes the \verb|level| field is a factor with levels ordered according to \verb|hierLevels|, an error is returned if the order of the \verb|level| field in \verb|data| is not consistent with \verb|hierLevels|: 
+<<harborPorpoise-2b, echo=TRUE, eval=TRUE, error=TRUE>>=
+porpoiseData <- prepData(data = porpoiseData,
+                         coordNames = NULL,
+                         hierLevels = c("1", "2", "2i"))
+@
+\noindent Note that because there are no location data in this example, we have set \verb|coordNames| to \verb|NULL|. Also note that in this example there are no data streams observed at the coarse time scale (\verb|level=1|), but these could be easily included (if available). By definition there are no data streams observed at the initial fine scale (\verb|level=2i|), but covariates (if available) could be included here for modeling the fine-scale initial distributions or state transition probabilities.
 
 Now that our hierarchical data are prepared, we are ready to specify the HHMM.  We will start with the hierarchical nature of the states, which is specified using the \verb|hierStates| argument in \verb|fitHMM|:
 <<harborPorpoise-3, echo=TRUE, eval=TRUE, cache=TRUE>>=
@@ -1537,27 +1740,28 @@ library(data.tree)
 ### states 1-3 = coarse state 1 (nonforaging)
 ### states 4-6 = coarse state 2 (foraging)
 hierStates <- data.tree::Node$new("harbor porpoise HHMM states")
-hierStates$AddChild("nonforaging")
-hierStates$nonforaging$AddChild("nf1", state=1)
-hierStates$nonforaging$AddChild("nf2", state=2)
-hierStates$nonforaging$AddChild("nf3", state=3)
-hierStates$AddChild("foraging")
-hierStates$foraging$AddChild("f1", state=4)
-hierStates$foraging$AddChild("f2", state=5)
-hierStates$foraging$AddChild("f3", state=6)
+hierStates$AddChild(name="nonforaging")
+hierStates$nonforaging$AddChild(name="nf1", state=1)
+hierStates$nonforaging$AddChild(name="nf2", state=2)
+hierStates$nonforaging$AddChild(name="nf3", state=3)
+hierStates$AddChild(name="foraging")
+hierStates$foraging$AddChild(name="f1", state=4)
+hierStates$foraging$AddChild(name="f2", state=5)
+hierStates$foraging$AddChild(name="f3", state=6)
 
 plot(hierStates)
 @
-Here we can see that the coarse-scale ``nonforaging'' and ``foraging'' states are both composed of three fine-scale states. Note that the \verb|Node| attribute \verb|state| is required in \verb|hierStates| and determines the index for each state in our HHMM. Alternatively, we could specify the exact same \verb|Node| as:
+\noindent Here we can see that the coarse-scale ``nonforaging'' and ``foraging'' states are both composed of three fine-scale states. Note that the \verb|Node| attribute \verb|state| is required in \verb|hierStates| and determines the index for each state in our HHMM. Alternatively, we could specify the exact same \verb|Node| as:
 <<harborPorpoise-4, echo=TRUE, eval=FALSE>>=
-hierStates <- data::tree::as.Node(list(name="harbor porpoise HHMM states",
-                                       nonforaging=list(nf1=list(state=1),
-                                                        nf2=list(state=2),
-                                                        nf3=list(state=3)),
-                                       foraging=list(f1=list(state=4),
-                                                     f2=list(state=5),
-                                                     f3=list(state=6))))
+hierStates <- data.tree::as.Node(list(name="harbor porpoise HHMM states",
+                                      nonforaging=list(nf1=list(state=1),
+                                                       nf2=list(state=2),
+                                                       nf3=list(state=3)),
+                                      foraging=list(f1=list(state=4),
+                                                    f2=list(state=5),
+                                                    f3=list(state=6))))
 @
+\noindent The name for any of the ``children'' added to a node are user-specified and are akin to the \verb|stateNames| argument in \verb|fitHMM| for a standard HMM.  While these names are arbitrary, the name and state attributes must be unique.
 
 Next we will specify the hierarchical nature of the data streams for the \verb|hierDist| argument in \verb|fitHMM|:
 <<harborPorpoise-5, echo=TRUE, eval=TRUE, cache=TRUE>>=
@@ -1565,30 +1769,30 @@ Next we will specify the hierarchical nature of the data streams for the \verb|h
 # level 1 = coarse scale (no data streams)
 # level 2 = fine scale (dive_duration, maximum_depth, dive_wiggliness)
 hierDist <- data.tree::Node$new("harbor porpoise HHMM dist")
-hierDist$AddChild("level1")
-hierDist$AddChild("level2")
-hierDist$level2$AddChild("dive_duration", dist="gamma")
-hierDist$level2$AddChild("maximum_depth", dist="gamma")
-hierDist$level2$AddChild("dive_wiggliness", dist="gamma")
+hierDist$AddChild(name="level1")
+hierDist$AddChild(name="level2")
+hierDist$level2$AddChild(name="dive_duration", dist="gamma")
+hierDist$level2$AddChild(name="maximum_depth", dist="gamma")
+hierDist$level2$AddChild(name="dive_wiggliness", dist="gamma")
 
 plot(hierDist)
 @
-The \verb|Node| attribute \verb|dist| is required in \verb|hierDist| and specifies the probability distribution for each data stream at each level of the hierarchy. In this case, \verb|level1| (corresponding to coarse-scale observations with \verb|level=1|) has no data streams, and each of the data streams for \verb|level2| (corresponding to fine-scale observations with \verb|level=2|) is assigned a gamma distribution.
+\noindent The \verb|Node| attribute \verb|dist| is required in \verb|hierDist| and specifies the probability distribution for each data stream at each level of the hierarchy. In this case, \verb|level1| (corresponding to coarse-scale observations with \verb|level=1|) has no data streams, and each of the data streams for \verb|level2| (corresponding to fine-scale observations with \verb|level=2|) is assigned a gamma distribution. The first level of the \verb|hierDist| Node must include a child for each level of the hierarchy, and the name for each child must be of the form \verb|paste0("level",i)| for \verb|i|$\in{1,2,\ldots,M}$, where $M$ is the number of levels in the hierarchy; in this case, $M=2$ and the names for each of the children at the first level of the \verb|hierDist| Node must be \verb|level1| and \verb|level2|. The children of these levels must be ``leaves'' (i.e. they have no children), where the \verb|name| attribute indicates the data stream and the \verb|dist| attribute indicates the probability distribution.
 
 \cite{Leos-BarajasEtAl2017} did not include any covariates on the t.p.m. or initial distribution for either level of the hierarchy, but, for demonstration purposes, here is how we would use the \verb|hierFormula| and \verb|hierFormulaDelta| arguments to specify the t.p.m. and initial distribution formula for each level of the hierarchy in \verb|fitHMM|:
 <<harborPorpoise-6, echo=TRUE, eval=TRUE>>=
 # define hierarchical t.p.m. formula(s)
 hierFormula <- data.tree::Node$new("harbor porpoise HHMM formula")
-hierFormula$AddChild("level1", formula=~1)
-hierFormula$AddChild("level2", formula=~1)
+hierFormula$AddChild(name="level1", formula=~1)
+hierFormula$AddChild(name="level2", formula=~1)
 @
 <<harborPorpoise-7, echo=TRUE, eval=TRUE>>=
 # define hierarchical initial distribution formula(s)
 hierFormulaDelta <- data.tree::Node$new("harbor porpoise HHMM formulaDelta")
-hierFormulaDelta$AddChild("level1", formulaDelta=~1)
-hierFormulaDelta$AddChild("level2", formulaDelta=~1)
+hierFormulaDelta$AddChild(name="level1", formulaDelta=~1)
+hierFormulaDelta$AddChild(name="level2", formulaDelta=~1)
 @
-The \verb|Node| attribute \verb|formula| (or \verb|formulaDelta|) is required in \verb|hierFormula| (or \verb|hierFormulaDelta|) and specifies the t.p.m. (or initial distribution) formula for each level of the hierarchy.
+\noindent The \verb|Node| attribute \verb|formula| (or \verb|formulaDelta|) is required in \verb|hierFormula| (or \verb|hierFormulaDelta|) and specifies the t.p.m. (or initial distribution) formula for each level of the hierarchy. Each child in \verb|hierFormula| or \verb|hierFormulaDelta| must be a leaf with a name of the form \verb|paste0("level",i)| for \verb|i|$\in{1,2,\ldots,M}$, where $M$ is the number of levels in the hierarchy.
 
 \cite{Leos-BarajasEtAl2017} assume the data stream probability distributions do not depend on the coarse-scale state, so we can constrain the state-dependent parameters for states 1 (``nf1'') and 4 (``f1''), states 2 (``nf2'') and 5 (``f2''), and states 3 (``nf3'') and 6 (``f3'') to be equal using the \verb|DM| argument:
 <<harborPorpoise-8, echo=TRUE, eval=TRUE>>=
@@ -1649,19 +1853,19 @@ The (optional) last step for fitting this HHMM is specifying starting values for
 <<harborPorpoise-9, echo=TRUE, eval=TRUE>>=
 # initial values ('beta') for t.p.m. at each level of hierarchy
 hierBeta <- data.tree::Node$new("harbor porpoise beta")
-hierBeta$AddChild("level1",beta=matrix(c(-1, -1),1))
-hierBeta$AddChild("level2")
-hierBeta$level2$AddChild("nonforaging",beta=matrix(c(0,-1,1,0,1,1),1))
-hierBeta$level2$AddChild("foraging",beta=matrix(c(-1,1,1,2,0,3),1))
+hierBeta$AddChild(name="level1",beta=matrix(c(-1, -1),1))
+hierBeta$AddChild(name="level2")
+hierBeta$level2$AddChild(name="nonforaging",beta=matrix(c(0,-1,1,0,1,1),1))
+hierBeta$level2$AddChild(name="foraging",beta=matrix(c(-1,1,1,2,0,3),1))
 
 # initial values ('delta') for initial distribution at each level of hierarchy
 hierDelta <- data.tree::Node$new("harbor porpoise delta")
-hierDelta$AddChild("level1",delta=matrix(0,1))
-hierDelta$AddChild("level2")
-hierDelta$level2$AddChild("nonforaging",delta=matrix(c(30, 30),1))
-hierDelta$level2$AddChild("foraging",delta=matrix(c(-6, 2),1))
+hierDelta$AddChild(name="level1",delta=matrix(0,1))
+hierDelta$AddChild(name="level2")
+hierDelta$level2$AddChild(name="nonforaging",delta=matrix(c(30, 30),1))
+hierDelta$level2$AddChild(name="foraging",delta=matrix(c(-6, 2),1))
 @
-The \verb|Node| attribute \verb|beta| (or \verb|delta|) is required in \verb|hierBeta| (or \verb|hierDelta|) and specifies the starting values for the t.p.m. (or initial distribution) at each level of the hierarchy. For each level of the hierarchy, these values are specified just as in \verb|beta0| (or \verb|delta0|) for a standard HMM fitted with \verb|fitHMM|. However, for HHMMs the starting values in \verb|hierDelta| must always be provided as a matrix on the working scale (even if no covariates are included in \verb|hierFormulaDelta|). Any additional arguments pertaining to t.p.m. or initial distribution parameters (such as \verb|workBounds$beta|, \verb|betaCons|, \verb|fixPar$beta|, \verb|workBounds$delta|, \verb|deltaCons|, and \verb|fixPar$delta|) must also be specified as \verb|data.tree| Nodes (with \verb|Node| attributes \verb|workBounds|, \verb|betaCons|, \verb|fixPar|, \verb|workBounds|, \verb|deltaCons|, and \verb|fixPar|, respectively).
+\noindent The \verb|Node| attribute \verb|beta| (or \verb|delta|) is required in \verb|hierBeta| (or \verb|hierDelta|) and specifies the starting values for the t.p.m. (or initial distribution) at each level of the hierarchy. For each level of the hierarchy, these values are specified just as in \verb|beta0| (or \verb|delta0|) for a standard HMM fitted with \verb|fitHMM|. However, for HHMMs the starting values in \verb|hierDelta| must always be provided as a matrix on the working scale (even if no covariates are included in \verb|hierFormulaDelta|). Any additional arguments pertaining to t.p.m. or initial distribution parameters (such as \verb|workBounds$beta|, \verb|betaCons|, \verb|fixPar$beta|, \verb|workBounds$delta|, \verb|deltaCons|, and \verb|fixPar$delta|) must also be specified as \verb|data.tree| Nodes (with \verb|Node| attributes \verb|workBounds|, \verb|betaCons|, \verb|fixPar|, \verb|workBounds|, \verb|deltaCons|, and \verb|fixPar|, respectively).
 
 Before fitting the HHMM, let's first check that everything is in order using the \verb|checkPar0| function:
 <<harborPorpoise-10, echo=TRUE, eval=TRUE>>=
@@ -1670,7 +1874,7 @@ checkPar0(porpoiseData,hierStates=hierStates,hierDist=hierDist,Par0=Par,
           hierFormula=hierFormula,hierFormulaDelta=hierFormulaDelta,
           DM=DM,hierBeta=hierBeta,hierDelta=hierDelta)
 @
-Note that for HHMMs, the reference states for the t.p.m. are determined by the lowest index for each state at the coarsest level in the hierarchy; in this case, the reference states are state 1 for ``nonforaging'' and state 4 for ``foraging''. This differs from standard HMMs fitted with \verb|fitHMM| (where the reference states can be user-specified with the \verb|betaRef| argument).  
+\noindent Note that for HHMMs, the reference states for the t.p.m. are determined by the lowest index for each state at the coarsest level in the hierarchy; in this case, the reference states are state 1 for ``nonforaging'' and state 4 for ``foraging''. This differs from standard HMMs fitted with \verb|fitHMM| (where the reference states can be user-specified with the \verb|betaRef| argument).  
 
 Since everything looks good, we're now ready to fit our HHMM:
 <<harborPorpoise-11, echo=c(4,5,6,7,8), eval=TRUE, cache=TRUE>>=
@@ -1681,22 +1885,22 @@ hierDelta <- hhmmPar$hierDelta
 hhmm <- fitHMM(data=porpoiseData,hierStates=hierStates,hierDist=hierDist,
                hierFormula=hierFormula,hierFormulaDelta=hierFormulaDelta,
                Par0=Par,hierBeta=hierBeta,hierDelta=hierDelta,
-               DM=DM)
+               DM=DM,nlmPar=list(hessian=FALSE))
 @
-Before examining the output for our fitted HHMM, it's worth noting here that when \verb|data| is a \verb|momentuHierHMMData| object, \verb|fitHMM| ``shoehorns'' the HHMM into a standard HMM by constraining the t.p.m. and initial distribution according to the hierarchical structure defined by \verb|hierStates|. This is why the printed t.p.m. formula above may look a little strange at first. The initial distribution formula printed above pertains only to the initial distribution at the coarsest level of the hierarchy, and the initial distributions for all other levels are imbedded in the t.p.m. Let's look a little deeper:
+\noindent Before examining the output for our fitted HHMM, it's worth noting here that when \verb|data| is a \verb|momentuHierHMMData| object, \verb|fitHMM| ``shoehorns'' the HHMM into a standard HMM by constraining the t.p.m. and initial distribution according to the hierarchical structure defined by \verb|hierStates|. This is why the printed t.p.m. formula above may look a little strange at first. The initial distribution formula printed above pertains only to the initial distribution at the coarsest level of the hierarchy, and the initial distributions for all other levels are imbedded in the t.p.m. Let's look a little deeper:
 <<harborPorpoise-12, echo=TRUE, eval=TRUE>>=
 hhmm$conditions$fixPar$beta
 hhmm$conditions$betaCons
 hhmm$conditions$fixPar$delta
 hhmm$conditions$deltaCons
 @
-We can see that even though we did not explicitly specify \verb|fixPar$beta|, \verb|betaCons|, \verb|fixPar$delta|, or \verb|deltaCons|, the working parameters for the t.p.m. and initial distribution for each level of the hierarchy are constrained accordingly by making certain state transition and initial distribution probabilities equal and/or effectively zero.  For example, these constraints do not allow fine-scale state switches between ``nonforaging'' (states $1-3$) and ``foraging'' (states $4-6$) when \verb|level=2|. Similar to how the t.p.m. reference states are defined, higher-level (i.e. ``parent'') states are indexed based on the lowest state index of their ``children''.  For example, ``nonforaging'' is indexed by state 1 and ``foraging'' is indexed by state 4, and only transitions to states 1 or 4 are permitted when \verb|level=1|.  Likewise, because \verb|delta| corresponds to the initial distribution at the coarsest-scale, the initial distribution probabilities are effectively zero for all states except states 1 and 4.
+\noindent We can see that even though we did not explicitly specify \verb|fixPar$beta|, \verb|betaCons|, \verb|fixPar$delta|, or \verb|deltaCons|, the working parameters for the t.p.m. and initial distribution for each level of the hierarchy are constrained accordingly by making certain state transition and initial distribution probabilities equal and/or effectively zero.  For example, these constraints do not allow fine-scale state switches between ``nonforaging'' (states $1-3$) and ``foraging'' (states $4-6$) when \verb|level=2|. Similar to how the t.p.m. reference states are defined, higher-level (i.e. ``parent'') states are indexed based on the lowest state index of their ``children''.  For example, ``nonforaging'' is indexed by state 1 and ``foraging'' is indexed by state 4, and only transitions to states 1 or 4 are permitted when \verb|level=1|.  Likewise, because \verb|delta| corresponds to the initial distribution at the coarsest-scale, the initial distribution probabilities are effectively zero for all states except states 1 and 4.
 
 Let's now examine our fitted HHMM:
 <<harborPorpoise-14, echo=TRUE, eval=TRUE>>=
 hhmm
 @
-These estimates are nearly identical to those reported by \cite{Leos-BarajasEtAl2017}.  The very slight differences are attributable to \cite{Leos-BarajasEtAl2017} assuming that the initial distribution for each level of the hierarchy is equal to the stationary distribution. However, bbecause it constrains the t.p.m. based on \verb|level|, this stationarity assumption is not possible when fitting HHMMs in \verb|momentuHMM|.  
+\noindent These estimates are nearly identical to those reported by \cite{Leos-BarajasEtAl2017}.  The very slight differences are attributable to \cite{Leos-BarajasEtAl2017} assuming that the initial distribution for each level of the hierarchy is equal to the stationary distribution. However, bbecause it constrains the t.p.m. based on \verb|level|, this stationarity assumption is not possible when fitting HHMMs in \verb|momentuHMM|.  
 
 As in a standard HMM, we can decode the most likely state sequence using the \verb|viterbi| function:
 <<harborPorpoise-15, echo=TRUE, eval=TRUE>>=
@@ -1704,7 +1908,7 @@ states <- viterbi(hhmm)
 length(states)
 head(states)
 @
-but we can also obtain the most likely state sequences at each level of the hierarchy by setting the argument \verb|hierarchical=TRUE|
+\noindent but we can also obtain the most likely state sequences at each level of the hierarchy by setting the argument \verb|hierarchical=TRUE|
 <<harborPorpoise-16, echo=TRUE, eval=TRUE>>=
 hStates <- viterbi(hhmm, hierarchical=TRUE)
 lapply(hStates,length)
@@ -1784,27 +1988,43 @@ for(w in 1:W){
 
 # prepare hierarchical data
 snakeData <- prepData(snakeData,coordNames=NULL,hierLevels=c("1","2i","2"))
+
+# summarize prepared data
+summary(snakeData)
 @
-The sole data stream for this example is step length at the fine-scale level, and no coordinates are provided (hence \verb|coordNames=NULL|). As in section \ref{sec:harborPorpoise}, this example has no data streams observed at the coarse-scale level, but these could be easily included (if available).  Next we define our HHMM structure via the \verb|hierStates| data tree Node:
+\noindent The sole data stream for this example is step length at the fine-scale level, and no coordinates are provided (hence \verb|coordNames=NULL|). As in section \ref{sec:harborPorpoise}, this example has no data streams observed at the coarse-scale level, but these could be easily included (if available).  Let's now specify the probability distribution for the fine-scale step length data stream via the \verb|hierDist| data tree Node:
+<<garterSnake-4, echo=TRUE, eval=TRUE, cache=TRUE>>=
+### data stream distributions: 
+### level 1 = coarse level (no data streams)
+### level 2 = fine level (step="gamma")
+hierDist <- data.tree::Node$new("garter snake HHMM dist")
+hierDist$AddChild(name="level1")
+hierDist$AddChild(name="level2")
+hierDist$level2$AddChild(name="step", dist="gamma")
+
+plot(hierDist)
+@
+
+Next we define our HHMM structure via the \verb|hierStates| data tree Node:
 <<garterSnake-2, echo=TRUE, eval=FALSE>>=
 ### define hierarchical HMM: states 1-3 = coarse state 1
 ###                          states 4-6 = coarse state 2
 ###                          states 7-9 = coarse state 3
 hierStates <- data.tree::Node$new("garter snake HHMM states")
-hierStates$AddChild("internalState1")
-hierStates$internalState1$AddChild("mo1", state=1) # motionless
-hierStates$internalState1$AddChild("ex1", state=2) # slow exploratory
-hierStates$internalState1$AddChild("es1", state=3) # rapid escape
-hierStates$AddChild("internalState2")
-hierStates$internalState2$AddChild("mo2", state=4) # motionless
-hierStates$internalState2$AddChild("ex2", state=5) # slow exploratory
-hierStates$internalState2$AddChild("es2", state=6) # rapid escape
-hierStates$AddChild("internalState3")
-hierStates$internalState3$AddChild("mo3", state=7) # motionless
-hierStates$internalState3$AddChild("ex3", state=8) # slow exploratory
-hierStates$internalState3$AddChild("es3", state=9) # rapid escape
+hierStates$AddChild(name="internalState1")
+hierStates$internalState1$AddChild(name="mo1", state=1) # motionless
+hierStates$internalState1$AddChild(name="ex1", state=2) # slow exploratory
+hierStates$internalState1$AddChild(name="es1", state=3) # rapid escape
+hierStates$AddChild(name="internalState2")
+hierStates$internalState2$AddChild(name="mo2", state=4) # motionless
+hierStates$internalState2$AddChild(name="ex2", state=5) # slow exploratory
+hierStates$internalState2$AddChild(name="es2", state=6) # rapid escape
+hierStates$AddChild(name="internalState3")
+hierStates$internalState3$AddChild(name="mo3", state=7) # motionless
+hierStates$internalState3$AddChild(name="ex3", state=8) # slow exploratory
+hierStates$internalState3$AddChild(name="es3", state=9) # rapid escape
 @
-Or, equivalently: 
+\noindent Or, equivalently: 
 <<garterSnake-3, echo=TRUE, eval=TRUE, cache=TRUE>>=
 hierStates <- data.tree::as.Node(list(name="garter snake HHMM states",
                                       internalState1=list(mo1=list(state=1),
@@ -1818,18 +2038,7 @@ hierStates <- data.tree::as.Node(list(name="garter snake HHMM states",
                                                           es3=list(state=9))))
 plot(hierStates)
 @
-We then specify the level of the hierarchy and probability distribution for the step length data stream via the \verb|hierDist| data tree Node:
-<<garterSnake-4, echo=TRUE, eval=TRUE, cache=TRUE>>=
-### data stream distributions: 
-### level 1 = coarse level (no data streams)
-### level 2 = fine level (step="gamma")
-hierDist <- data.tree::Node$new("garter snake HHMM dist")
-hierDist$AddChild("level1")
-hierDist$AddChild("level2")
-hierDist$level2$AddChild("step", dist="gamma")
 
-plot(hierDist)
-@
 As in the harbor porpoise example (section \ref{sec:harborPorpoise}), we follow \cite{Leos-BarajasEtAl2017} and assume the fine-scale data stream probability distribution does not depend on coarse-scale state:
 <<garterSnake-5, echo=TRUE, eval=TRUE, cache=TRUE>>=
 # defining start values for step data stream
@@ -1873,14 +2082,15 @@ Par <- getParDM(snakeData,
                 hierStates=hierStates,hierDist=hierDist,
                 Par=Par0,DM=DM)
 @
+
 We do not include any covariates in \verb|hierFormula| or \verb|hierFormulaDelta|, so all that's left before fitting the model is the (optional) step of specifying starting values for the t.p.m. and initial distribution at each level of the hierarchy \citep[based on values reported by][]{Leos-BarajasEtAl2017}:
 <<garterSnake-6, echo=TRUE, eval=TRUE, cache=TRUE>>=
 hierBeta <- data.tree::Node$new("garter snake beta")
-hierBeta$AddChild("level1")
-hierBeta$AddChild("level2")
-hierBeta$level2$AddChild("internalState1")
-hierBeta$level2$AddChild("internalState2")
-hierBeta$level2$AddChild("internalState3")
+hierBeta$AddChild(name="level1")
+hierBeta$AddChild(name="level2")
+hierBeta$level2$AddChild(name="internalState1")
+hierBeta$level2$AddChild(name="internalState2")
+hierBeta$level2$AddChild(name="internalState3")
 
 hierDelta <- data.tree::Clone(hierBeta)
 hierDelta$name <- "garter snake delta"
@@ -1947,13 +2157,14 @@ for(jj in 1:hierStates$count){
                                                       names(states)[-1]))
 }
 @
+
 Let's check our model specification:
 <<garterSnake-7, echo=TRUE, eval=TRUE, cache=TRUE>>=
 checkPar0(snakeData,hierStates=hierStates,hierDist=hierDist,
           Par0=Par,DM=DM,
           hierBeta=hierBeta,hierDelta=hierDelta)
 @
-Again note that higher-level (i.e. ``parent'') states are indexed based on the lowest state index of their ``children''.  For example, ``internalState1'' is indexed by state 1, ``internalState2'' is indexed by state 4, and ``internalState3'' is indexed by state 7. We can also examine the starting values for the t.p.m. on the real scale (``\verb|gamma|'') at each level of the hierarchy using the \verb|getTrProbs| function:
+\noindent Again note that higher-level (i.e. ``parent'') states are indexed based on the lowest state index of their ``children''.  For example, ``internalState1'' is indexed by state 1, ``internalState2'' is indexed by state 4, and ``internalState3'' is indexed by state 7. We can also examine the starting values for the t.p.m. on the real scale (``\verb|gamma|'') at each level of the hierarchy using the \verb|getTrProbs| function:
 <<garterSnake-8, echo=TRUE, eval=TRUE, cache=TRUE>>=
 iTrProbs <- getTrProbs(snakeData,hierStates=hierStates,
                        hierBeta=hierBeta,hierDist=hierDist)
@@ -1964,6 +2175,7 @@ iTrProbs$level1$gamma[,,1]
 # t.p.m. at first time step for level2
 lapply(iTrProbs$level2,function(x) x$gamma[,,1]) 
 @
+
 Now let's fit our garter snake HHMM:
 <<garterSnake-9, echo=c(4,5,6), eval=TRUE, cache=TRUE>>=
 Par <- hhmm2Par$Par
@@ -1971,13 +2183,13 @@ hierBeta <- hhmm2Par$hierBeta
 hierDelta <- hhmm2Par$hierDelta
 # fit hierarchical HMM
 hhmm <- fitHMM(snakeData,hierStates=hierStates,hierDist=hierDist,
-               Par0=Par,DM=DM,hierBeta=hierBeta,hierDelta=hierDelta)
+               Par0=Par,DM=DM,hierBeta=hierBeta,hierDelta=hierDelta,
+               nlmPar=list(hessian=FALSE))
 @
 <<garterSnake-10, echo=TRUE, eval=TRUE>>=
 hhmm
 @
-
-These estimates are virtually identical to \cite{Leos-BarajasEtAl2017}; the only (very slight) difference is in the estimates for the coarse-scale initial distribution $({\boldsymbol \delta}^{(0)})$ because, unlike in \cite{Leos-BarajasEtAl2017}, the forward algorithm in \verb|momentuHMM| (Eq. \ref{eq:HMMlike}) includes a state transition between time steps $t=0$ and $t=1$.
+\noindent These estimates are virtually identical to \cite{Leos-BarajasEtAl2017}; the only (very slight) difference is in the estimates for the coarse-scale initial distribution $({\boldsymbol \delta}^{(0)})$ because, unlike in \cite{Leos-BarajasEtAl2017}, the forward algorithm in \verb|momentuHMM| (Eq. \ref{eq:HMMlike}) includes a state transition between time steps $t=0$ and $t=1$.
 
 As usual, we can check pseudo-residuals using \verb|plotPR| (Figure \ref{fig:snakePR}):
 <<garterSnake-11, echo=TRUE, eval=FALSE, cache=TRUE>>=
@@ -1989,7 +2201,7 @@ plotPR(hhmm)
   \caption{Pseudo-residual plot for the HHMM garter snake example.}
   \label{fig:snakePR}
 \end{figure}
-and simulate from our fitted HHMM using \verb|simHierData|:
+\noindent and simulate from our fitted HHMM using \verb|simHierData|:
 <<garterSnake-12, echo=-1, eval=TRUE, cache=TRUE>>=
 set.seed(1,kind="Mersenne-Twister",normal.kind="Inversion")
 obsPerLevel <- data.tree::Node$new("simHierData")

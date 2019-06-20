@@ -16,13 +16,16 @@ data <- lapply(data,function(x) {x$date_time <- as.POSIXct(x$date_time,tz="UTC")
 # level=2  otherwise (i.e., fine scale t.p.m used when level=2)
 porpoiseData <- NULL
 for(i in 1:length(data)){
-  coarseInd <- data.frame(date_time=as.POSIXct(format(data[[i]]$date_time[1],format="%Y-%m-%d %H:%M"),tz="UTC"),dive_duration=NA,maximum_depth=NA,dive_wiggliness=NA,level=c("1","2i"))
+  coarseInd <- data.frame(date_time=as.POSIXct(format(data[[i]]$date_time[1],format="%Y-%m-%d %H:%M"),tz="UTC"),level=c("1","2i"),dive_duration=NA,maximum_depth=NA,dive_wiggliness=NA)
   tmp <- rbind(coarseInd,data.frame(data[[i]],level="2"))
   porpoiseData <- rbind(porpoiseData,tmp)
 }
 
 # prepare hierarchical data
-porpoiseData <- prepData(porpoiseData[,c("date_time","level","dive_duration","maximum_depth","dive_wiggliness")],coordNames=NULL,hierLevels=c("1","2i","2"))
+porpoiseData <- prepData(porpoiseData,coordNames=NULL,hierLevels=c("1","2i","2"))
+
+# data summary
+summary(porpoiseData,dataNames=names(porpoiseData)[-1])
 
 ### define hierarchical HMM: states 1-3 = coarse state 1 (nonforaging); states 4-6 = coarse state 2 (foraging)
 hierStates <- Node$new("harbor porpoise HHMM states")

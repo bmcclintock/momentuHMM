@@ -317,6 +317,38 @@ for(plt in seq(1,nbAnimals+3)[-c(7,8)])
   unlink(paste0("plot_groupExampleResults0",ifelse(plt>9,"","0"),plt,".pdf"))
 
 ###################################################
+### pilot whale example
+###################################################
+#source(paste0(getwd(),"/examples/pilotWhaleExample.R"))
+load(paste0(example_wd,"pilotWhaleExample.RData"))
+fitmix1_Par <- getPar(fitmix1)
+append.RData(fitmix1_Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+Par0_mix2 <- getPar0(fitmix1,mixtures=2)
+Par0_mix2$beta$beta[1,] <- c(-2.26, -3.93, -0.58, 
+                              0.03, -2.25, -0.26, 
+                             -3.38, -4.79, -2.82, 
+                             -1.06,  -3.3, -3.43)
+Par0_mix2$beta$beta[2,] <- c(-2.51, -3.32, -2.63, 
+                              0.03, -1.26, -0.12, 
+                             -96.8, -3.62, -1.75, 
+                             -1.76, -2.14, -1.38)
+Par0_mix2$beta$pi <- c(0.73, 0.27)
+append.RData(Par0_mix2,file=paste0(getwd(),"/vignette_inputs.RData"))
+fitmix2_Par <- getPar(fitmix2)
+append.RData(fitmix2_Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+fitmix3_Par <- getPar(fitmix3)
+append.RData(fitmix3_Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+fitmix4_Par <- getPar(fitmix4)
+append.RData(fitmix4_Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+fitfix_Par <- getPar(fitfix)
+append.RData(fitfix_Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+#pilotWhaleAIC <- AIC(fitmix1,fitmix2,fitmix3,fitfix)
+#append.RData(pilotWhaleAIC,file=paste0(getwd(),"/vignette_inputs.RData"))
+#pilotWhaleAICweights <- AICweights(fitmix1,fitmix2,fitmix3,fitfix)
+#append.RData(pilotWhaleAICweights,file=paste0(getwd(),"/vignette_inputs.RData"))
+rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
+
+###################################################
 ### harbor porpoise HHMM example
 ###################################################
 #source(paste0(getwd(),"/examples/harborPorpoiseExample.R"))

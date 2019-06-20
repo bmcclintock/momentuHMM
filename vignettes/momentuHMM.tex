@@ -196,7 +196,7 @@ While statisticians have been applying HMMs to telemetry data for decades, R \ci
 
 To address these deficiencies in existing software, we developed a user-friendly R package, \verb|momentuHMM| (Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models), intended for practitioners wishing to implement more flexible and realistic (multivariate) HMM analyses of animal movement while accounting for common challenges associated with telemetry data \citep{McClintockMichelot2018}. Features for multivariate HMM analyses in \verb|momentuHMM| include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states; 3) biased and correlated random walk movement models, including ``activity centers'' associated with attractive or repulsive forces \citep[e.g.][]{McClintockEtAl2012}; 4) user-specified design matrices and constraints for covariate modelling of state transition probability and probability distribution parameters using linear model formulas familiar to most R users; 5) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data \citep{HootenEtAl2017,McClintock2017}; 6) seamless integration of spatio-temporal environmental covariate data (e.g., wind direction, forest cover, sea ice concentration) using the \verb|raster| package \citep{Hijmans2016}; 7) cosinor \citep[e.g.][]{Cornelissen2014} and spline regression formulas for cyclical and other complicated behavioral patterns; 8) discrete individual-level random effects on state transition probabilities \citep[e.g.][]{DeRuiterEtAl2017}; 9) hierarchical hidden Markov models \citep[e.g.][]{Leos-BarajasEtAl2017} for data streams and/or state switching at multiple time scales; 10) ``recharge'' models for an aggregated physiological process associated with state switching in heterogeneous environments \citep{HootenEtAl2019}; 11) model checking and selection; and 12) data simulation capabilities for study design, power analyses and assessing model performance, including simulation of location data subject to temporal irregularity and/or measurement error. 
 
-In the following tutorial, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples, including an example of periodic cycles in African elephant movement, a 3-state (``resting'', ``foraging'', ``transit'') northern fur seal example incorporating auxiliary dive activity data \citep{McClintockEtAl2014b}, a loggerhead turtle example relating ``foraging'' and ``transit'' movements to ocean surface currents, a 5-state grey seal example incorporating biased movements toward haul-out and foraging locations \citep{McClintockEtAl2012}, a 4-state (``outbound'', ``searching'', ``foraging'', ``inbound'') southern elephant seal example with biased movements toward and away from a colony \citep{MichelotEtAl2017}, a 3-state (``resting'', ``foraging'', ``transit'') harbour seal example using population-level constraints on movement parameters \citep{McClintockEtAl2013c}, a 6-state northern fulmar example incorporating biased movements relative to both static (i.e. colony) and dynamic (i.e. fishing vessels) activity centers \citep{PirottaEtAl2018}, and hierarchical HMMs fitted to harbor porpoise and garter snake data \citep{Leos-BarajasEtAl2017}. Using simulated data, we also demonstrate how the group dynamic model of \cite{LangrockEtAl2014} can be implemented using \verb|momentuHMM|. Finally, we demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using potential functions \citep[e.g.][]{BrillingerEtAl2012}. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics. While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs.  Additional information, including help files, data, examples, and package usage is available by downloading the \verb|momentuHMM| package from CRAN (\url{https://cran.r-project.org}) or Github (\url{https://github.com/bmcclintock/momentuHMM}). This article describes \verb|momentuHMM| version 1.5.0.
+In the following tutorial, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples, including an example of periodic cycles in African elephant movement, a 3-state (``resting'', ``foraging'', ``transit'') northern fur seal example incorporating auxiliary dive activity data \citep{McClintockEtAl2014b}, a loggerhead turtle example relating ``foraging'' and ``transit'' movements to ocean surface currents, a 5-state grey seal example incorporating biased movements toward haul-out and foraging locations \citep{McClintockEtAl2012}, a 4-state (``outbound'', ``searching'', ``foraging'', ``inbound'') southern elephant seal example with biased movements toward and away from a colony \citep{MichelotEtAl2017}, a 3-state (``resting'', ``foraging'', ``transit'') harbour seal example using population-level constraints on movement parameters \citep{McClintockEtAl2013c}, a 6-state northern fulmar example incorporating biased movements relative to both static (i.e. colony) and dynamic (i.e. fishing vessels) activity centers \citep{PirottaEtAl2018}, a 4-state long-finned pilot whale example including individual-level random effects on state transition probabilities \citep{IsojunnoEtAl2017}, and hierarchical HMMs fitted to harbor porpoise and garter snake data \citep{Leos-BarajasEtAl2017}. Using simulated data, we also demonstrate how the group dynamic model of \cite{LangrockEtAl2014} can be implemented using \verb|momentuHMM|. Finally, we demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using potential functions \citep[e.g.][]{BrillingerEtAl2012}. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics. While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs.  Additional information, including help files, data, examples, and package usage is available by downloading the \verb|momentuHMM| package from CRAN (\url{https://cran.r-project.org}) or Github (\url{https://github.com/bmcclintock/momentuHMM}). This article describes \verb|momentuHMM| version 1.5.0.
 
 \section{momentuHMM overview}
 %Given the deliberately similar syntax between the two packages, 
@@ -446,13 +446,17 @@ Note that the von Mises consensus distribution is parameterized in terms of $\mu
 %\end{equation*}
 See section \ref{sec:turtle} for example code using \verb|angleFormula| and the von Mises consensus (``vmConsensus'') distribution.
 
-\subsection{Random walk probability distributions}
-\label{sec:rw}
-\verb|momentuHMM| includes several normal random walk probability distributions that can be specified in the \verb|dist| argument (see Tables \ref{tab:unipdfs} and \ref{tab:multipdfs}), including univariate (e.g. for modeling depths), bivariate (e.g. for modeling 2-D positions), and trivariate (e.g. for modeling 3-D positions) normal random walks. These can be particularly useful for modeling movement on positions directly instead of steps and turns. A random walk model assumes position at time $t$ is a function of the position at time $t-1$; in its simplest form without any covariates, we have $x_t \sim N(x_{t-1},\sigma^2)$ for the univariate case. We demonstrate use of the bivariate normal random walk model for loggerhead turtle movements relative to ocean surface currents in section \ref{sec:turtle}. We also demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using a bivariate normal random walk in section \ref{sec:avoidLand}.
+\subsection{Individual-level random effects}
+\label{sec:randomEffects}
+HMM applications often assume the initial distribution and state transition probability matrix is the same for all individuals (i.e. ``complete pooling'' of the individuals' time series). But in reality, individuals often do not exhibit the same state-switching dynamics and there is individual-level variation.  Individual heterogeneity can often be well explained by covariates (e.g., sex, age class) and included in \verb|formula|, but it is not always possible to identify (and/or measure) all of the important covariates that drive this variation. One option is to include separate state-switching dynamics for each individual (i.e. ``no pooling'') by specifying \verb|formulaDelta = ~ID| and \verb|formula = ~ID|, but this ``fixed'' effect approach can result in many additional parameters to estimate (it also doesn't explain very much about potential factors driving individual heterogeneity). Alternatively, generic individual heterogeneity in state-switching dynamics can be modeled as a ``random'' effect. While continuous-valued individual-level random effects can be computationally demanding, discrete-valued random effects are more computationally feasible and can be effective in ``mopping up'' individual heterogeneity in the initial distribution and state transition probabilities that is not explained by measurable covariates. Discrete-valued random effects have recently been used in HHMs of animal movement \citep[e.g.][]{McKellarEtAl2014,TownerEtAl2016,DeRuiterEtAl2017,IsojunnoEtAl2017}, and these ``mixed'' HMMs can be fitted with \verb|fitHMM| (or \verb|MIfitHMM|) through the \verb|mixtures| and \verb|formulaPi| arguments.  The \verb|mixtures| argument specifies the number of mixtures $(K)$ in the model, where each mixture represents a possible initial distribution and transition probability matrix, and each individual time series is assumed to be driven by exactly one of these mixtures. For $K$ mixtures, the mixture weight $(\pi_k; k=1,\ldots,K)$ is the probability that the $k$th mixture underlies the state-switching dynamics for a given individual, and a model formula for ${\boldsymbol \pi}$ can be specified using the \verb|formulaPi| argument. For example, \cite{TownerEtAl2016} found support for $K=3$ mixtures and a sex covariate on ${\boldsymbol \pi}$ in their HMM for white shark movement, indicating that each of the three possible state-switching dynamics were exhibited differently for males and females; the random effects component of their model would be specified in \verb|fitHMM| (or \verb|MIfitHMM|) by simply setting \verb|mixtures = 3| and \verb|formulaPi = ~sex|. Note that because $\sum_{k=1}^K \pi_k = 1$, \verb|momentuHMM| uses a multinomial logit link function for ${\boldsymbol \pi}$ when covariates are included in \verb|formulaPi|. We demonstrate how to fit discrete-valued individual-level random effects on the initial distribution and state transition probabilities using the long-finned pilot whale example from \cite{IsojunnoEtAl2017} in section \ref{sec:pilotWhale}.
 
 \subsection{Hierarchical hidden Markov models}
 \label{sec:HHMM}
 Hierarchical hidden Markov models \citep[HHMMs; see][]{Leos-BarajasEtAl2017} can also be fitted in \verb|momentuHMM|. HMMs with hierarchical structures allow for data streams and/or state transitions to occur at multiple regular time scales. For example, biotelemetry data are often collected at different time scales (e.g. 1-hr intervals for one data stream and 1-min intervals for another data stream) or state transitions can be governed by both larger- and finer-scale behavioral processes. HHMMs are integrated into the workhorse functions of \verb|momentuHMM| and are specified via hierarchically-structured arguments for the data stream probability distributions (\verb|hierDist|), behavioral states (\verb|hierStates|), state transition probabilities (\verb|hierFormula|, \verb|hierBeta|), and initial distributions (\verb|hierFormulaDelta|, \verb|hierDelta|) using the \verb|data.tree| package \citep{Glur2018}.  We demonstrate how both the harbor porpoise and garter snake examples from \cite{Leos-BarajasEtAl2017} can be fitted using \verb|momentuHMM| in section \ref{sec:HHMMexamples}.
+
+\subsection{Random walk probability distributions}
+\label{sec:rw}
+\verb|momentuHMM| includes several normal random walk probability distributions that can be specified in the \verb|dist| argument (see Tables \ref{tab:unipdfs} and \ref{tab:multipdfs}), including univariate (e.g. for modeling depths), bivariate (e.g. for modeling 2-D positions), and trivariate (e.g. for modeling 3-D positions) normal random walks. These can be particularly useful for modeling movement on positions directly instead of steps and turns. A random walk model assumes position at time $t$ is a function of the position at time $t-1$; in its simplest form without any covariates, we have $x_t \sim N(x_{t-1},\sigma^2)$ for the univariate case. We demonstrate use of the bivariate normal random walk model for loggerhead turtle movements relative to ocean surface currents in section \ref{sec:turtle}. We also demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using a bivariate normal random walk in section \ref{sec:avoidLand}.
 
 \subsection{Multiple imputation}
 \label{sec:mi}
@@ -466,7 +470,7 @@ The generic \verb|plot| functions for \verb|momentuHMM| models (\verb|plot.momen
 Diagnostic tools include the calculation and plotting of pseudo-residuals \citep{ZucchiniEtAl2016} using the \verb|pseudoRes| and \verb|plotPR| functions, respectively. For discrete distributions (e.g.\ Bernoulli, Poisson), a continuity adjustment is used for calculating pseudo-residuals. Akaike's Information Criterion can be calculated for one or more models using the \verb|AIC.momentuHMM| function.
 
 \subsection{Simulation}
-The function \verb|simData| can be used to simulate multivariate HMM data from scratch or based on the estimated parameters of existing \verb|momentuHMM| or \verb|miSum| models.  The \verb|simData| arguments are very similar to those used for model specification in \verb|fitHMM| (e.g., \verb|dist|, \verb|DM|) and data preparation in \verb|prepData| (e.g., \verb|spatialCovs|, \verb|centers|), but they include additonal arguments, \verb|lambda| and \verb|errorEllipse|, for simulating location data subject to temporal irregularity and measurement error, respectively. The \verb|spatialCovs| argument allows for rasters of spatio-temporal covariate values to be utilized in simulation models, while the \verb|centers| argument allows activity centers to be incorporated. Thus \verb|simData| can be used to simulate more ecologically-realistic tracks (potentially subject to observation error) that can be useful for study design, power analyses, and assessing model performance. Goodness-of-fit can also be investigated by drawing simulated data sets from a fitted model and comparing them to observed properties of the data \citep{MoralesEtAl2004}. While \verb|simData| can be used for simulating tracks from fitted models, we note that it assumes the location data are Cartesian coordinates; the \verb|simData| function is therefore not appropriate for simulating tracks from models that were fitted to unprojected (latitude and longitude) data.
+The functions \verb|simData| (and \verb|simHierData|) can be used to simulate multivariate HMM (or HHMM) data from scratch or based on the estimated parameters of existing \verb|momentuHMM| or \verb|miSum| models.  The \verb|simData| and \verb|simHierData| arguments are very similar to those used for model specification in \verb|fitHMM| (e.g., \verb|dist|, \verb|hierDist|, \verb|DM|) and data preparation in \verb|prepData| (e.g., \verb|spatialCovs|, \verb|centers|), but they include additonal arguments, \verb|lambda| and \verb|errorEllipse|, for simulating location data subject to temporal irregularity and measurement error, respectively. The \verb|spatialCovs| argument allows for rasters of spatio-temporal covariate values to be utilized in simulation models, while the \verb|centers| argument allows activity centers to be incorporated. Thus \verb|simData| and \verb|simHierData| can be used to simulate more ecologically-realistic tracks (potentially subject to observation error) that can be useful for study design, power analyses, and assessing model performance. Goodness-of-fit can also be investigated by drawing simulated data sets from a fitted model and comparing them to observed properties of the data \citep{MoralesEtAl2004}. While \verb|simData| and \verb|simHierData| can be used for simulating tracks from fitted models, we note that it assumes the location data are Cartesian coordinates; the \verb|simData| and \verb|simHierData| functions are therefore not appropriate for simulating tracks from models that were fitted to unprojected (latitude and longitude) data.
   
 \section{Examples}
 \label{sec:example}
@@ -1790,13 +1794,778 @@ Finally, we can create a plot similar to \cite{PirottaEtAl2018} using the \verb|
   \label{fig:northernFulmar}
 \end{figure}
 
+\subsection{Pilot whale example}
+\label{sec:pilotWhale}
+
+Here we demonstrate how to include individual heterogeneity in state-switching dynamics via discrete-valued random effects by fitting the 4-state (``exploratory'', ``foraging'', ``crowded'', ``directed'') mixed HHM for long-finned pilot whales described in \cite{IsojunnoEtAl2017}.  The pilot whale data consist of 11 data streams collected from 15 individuals, and, as usual, we must first prepare the data for \verb|fitHMM| using \verb|prepData|. Let's summarize our prepared data using the \verb|summary| function:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{summary}\hlstd{(pilotData,} \hlkwc{dataNames}\hlstd{=}\hlkwd{names}\hlstd{(pilotData)[}\hlopt{-}\hlnum{1}\hlstd{])}
+\end{alltt}
+\begin{verbatim}
+## HMM data for 15 individuals:
+## 
+## gm08_150c -- 156 observations
+## gm08_154d -- 142 observations
+## gm08_159a -- 192 observations
+## gm09_137b -- 152 observations
+## gm09_138a -- 223 observations
+## gm09_156b -- 254 observations
+## gm10_000a -- 119 observations
+## gm10_143a -- 146 observations
+## gm10_152b -- 50 observations
+## gm10_157b -- 130 observations
+## gm10_158d -- 148 observations
+## gm13_137a -- 144 observations
+## gm13_149a -- 88 observations
+## gm13_169a -- 190 observations
+## gm14_180a -- 180 observations
+## 
+## 
+## Data summaries:
+## 
+##     dive.dur       dive.depth       GR.speed2     dive.pitchvar2 
+##  Min.   : 0.14   Min.   :  0.86   Min.   :0.025   Min.   :0.010  
+##  1st Qu.: 0.64   1st Qu.:  5.36   1st Qu.:0.838   1st Qu.:0.042  
+##  Median : 0.81   Median :  7.08   Median :1.272   Median :0.070  
+##  Mean   : 1.40   Mean   : 26.36   Mean   :1.367   Mean   :0.100  
+##  3rd Qu.: 1.41   3rd Qu.: 11.73   3rd Qu.:1.732   3rd Qu.:0.121  
+##  Max.   :13.75   Max.   :617.37   Max.   :8.824   Max.   :0.673  
+##                                   NA's   :892     NA's   :142    
+##  breath.headchange     GR.size       GR.tight     dive.CS.pres
+##  Min.   :-3.12587   Min.   : 0    Min.   :0.00   Min.   :0.0  
+##  1st Qu.:-0.19089   1st Qu.: 6    1st Qu.:1.00   1st Qu.:0.0  
+##  Median : 0.00066   Median : 9    Median :1.00   Median :1.0  
+##  Mean   :-0.00407   Mean   :11    Mean   :0.82   Mean   :0.6  
+##  3rd Qu.: 0.18903   3rd Qu.:13    3rd Qu.:1.00   3rd Qu.:1.0  
+##  Max.   : 3.05424   Max.   :79    Max.   :1.00   Max.   :1.0  
+##  NA's   :261        NA's   :665   NA's   :1128   NA's   :905  
+##   dive.SS.pres     presurf        postsurf   
+##  Min.   :0.00   Min.   :0.00   Min.   :0.00  
+##  1st Qu.:0.00   1st Qu.:0.00   1st Qu.:0.00  
+##  Median :1.00   Median :1.00   Median :1.00  
+##  Mean   :0.56   Mean   :0.74   Mean   :0.74  
+##  3rd Qu.:1.00   3rd Qu.:1.00   3rd Qu.:1.00  
+##  Max.   :1.00   Max.   :1.00   Max.   :1.00  
+##  NA's   :905    NA's   :15     NA's   :15
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+We next specify the data stream probability distributions and starting values for the parameters \citep[based on those reported by ][]{IsojunnoEtAl2017}:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{## 11 data streams}
+\hlstd{dist} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{dive.dur} \hlstd{=} \hlstr{"weibull"}\hlstd{,}
+             \hlkwc{dive.depth} \hlstd{=} \hlstr{"gamma"}\hlstd{,}
+             \hlkwc{GR.speed2} \hlstd{=} \hlstr{"gamma"}\hlstd{,}
+             \hlkwc{dive.pitchvar2} \hlstd{=} \hlstr{"beta"}\hlstd{,}
+             \hlkwc{breath.headchange} \hlstd{=} \hlstr{"vm"}\hlstd{,}
+             \hlkwc{GR.size} \hlstd{=} \hlstr{"pois"}\hlstd{,}
+             \hlkwc{GR.tight} \hlstd{=} \hlstr{"bern"}\hlstd{,}
+             \hlkwc{dive.CS.pres} \hlstd{=} \hlstr{"bern"}\hlstd{,}
+             \hlkwc{dive.SS.pres} \hlstd{=} \hlstr{"bern"}\hlstd{,}
+             \hlkwc{presurf} \hlstd{=} \hlstr{"bern"}\hlstd{,}
+             \hlkwc{postsurf} \hlstd{=} \hlstr{"bern"}\hlstd{)}
+
+\hlcom{## initial values}
+\hlstd{Par0} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{dive.dur} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{1.9}\hlstd{,} \hlnum{2.72}\hlstd{,} \hlnum{1.64}\hlstd{,} \hlnum{4.21}\hlstd{,}
+                          \hlnum{1.3}\hlstd{,} \hlnum{8.14}\hlstd{,} \hlnum{1.53}\hlstd{,} \hlnum{0.79}\hlstd{),}
+             \hlkwc{dive.depth} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{10.23}\hlstd{,} \hlnum{315.91}\hlstd{,} \hlnum{10.74}\hlstd{,} \hlnum{5.51}\hlstd{,}
+                             \hlnum{4.93}\hlstd{,} \hlnum{233.12}\hlstd{,}  \hlnum{6.32}\hlstd{,} \hlnum{1.91}\hlstd{),}
+             \hlkwc{GR.speed2} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{1.15}\hlstd{,} \hlnum{1.32}\hlstd{,} \hlnum{1.36}\hlstd{,} \hlnum{1.57}\hlstd{,}
+                           \hlnum{0.66}\hlstd{,} \hlnum{0.51}\hlstd{,} \hlnum{0.77}\hlstd{,} \hlnum{0.76}\hlstd{),}
+             \hlkwc{dive.pitchvar2} \hlstd{=} \hlkwd{c}\hlstd{(} \hlnum{2.21}\hlstd{,} \hlnum{2.88}\hlstd{,}  \hlnum{1.82}\hlstd{,}  \hlnum{3.18}\hlstd{,}
+                                \hlnum{17.94}\hlstd{,} \hlnum{6.04}\hlstd{,} \hlnum{16.06}\hlstd{,} \hlnum{55.36}\hlstd{),}
+             \hlkwc{breath.headchange} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{3.07}\hlstd{,} \hlnum{5.65}\hlstd{,} \hlnum{2.64}\hlstd{,} \hlnum{18.02}\hlstd{),}
+             \hlkwc{GR.size} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{6}\hlstd{,} \hlnum{7.39}\hlstd{,} \hlnum{20.39}\hlstd{,} \hlnum{9.52}\hlstd{),}
+             \hlkwc{GR.tight} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{0.89}\hlstd{,} \hlnum{0.66}\hlstd{,} \hlnum{0.76}\hlstd{,} \hlnum{0.81}\hlstd{),}
+             \hlkwc{dive.CS.pres} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{0.76}\hlstd{,} \hlnum{0.99}\hlstd{,} \hlnum{0.41}\hlstd{,} \hlnum{0.47}\hlstd{),}
+             \hlkwc{dive.SS.pres} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{0.72}\hlstd{,} \hlnum{0.98}\hlstd{,} \hlnum{0.39}\hlstd{,} \hlnum{0.41}\hlstd{),}
+             \hlkwc{presurf} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{0.76}\hlstd{,} \hlnum{0.99}\hlstd{,} \hlnum{0.71}\hlstd{,} \hlnum{0.71}\hlstd{),}
+             \hlkwc{postsurf} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{0.81}\hlstd{,} \hlnum{0.96}\hlstd{,} \hlnum{0.72}\hlstd{,} \hlnum{0.66}\hlstd{))}
+
+\hlstd{beta0} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.38}\hlstd{,} \hlopt{-}\hlnum{3.86}\hlstd{,} \hlopt{-}\hlnum{1.22}\hlstd{,}
+                   \hlnum{0.21}\hlstd{,}  \hlopt{-}\hlnum{1.6}\hlstd{,} \hlopt{-}\hlnum{0.47}\hlstd{,}
+                  \hlopt{-}\hlnum{3.56}\hlstd{,} \hlopt{-}\hlnum{4.15}\hlstd{,} \hlopt{-}\hlnum{2.29}\hlstd{,}
+                  \hlopt{-}\hlnum{1.17}\hlstd{,} \hlopt{-}\hlnum{3.05}\hlstd{,} \hlopt{-}\hlnum{2.54}\hlstd{),}\hlkwc{nrow}\hlstd{=}\hlnum{1}\hlstd{)}
+
+\hlstd{stateNames} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"exploratory"}\hlstd{,}\hlstr{"foraging"}\hlstd{,}\hlstr{"crowded"}\hlstd{,}\hlstr{"directed"}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+Let's first fit the null model with no discrete-valued individual-level random effects on the state-switching dynamics.  \cite{IsojunnoEtAl2017} found that model selection criteria favored models that assume the initial distribution is the stationary distribution, so we'll set \verb|stationary=TRUE|:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{## fit model with single mixture on TPM}
+\hlstd{fitmix1} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(pilotData,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=dist,}
+                  \hlkwc{Par0}\hlstd{=Par0,} \hlkwc{beta0}\hlstd{=beta0,}
+                  \hlkwc{stationary}\hlstd{=}\hlnum{TRUE}\hlstd{,}
+                  \hlkwc{stateNames}\hlstd{=stateNames,}
+                  \hlkwc{nlmPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{hessian}\hlstd{=}\hlnum{FALSE}\hlstd{))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\noindent (note that we've set the \verb|nlmPar| option \verb|hessian=FALSE| simply to speed up the compile time for this vignette). 
+
+Now we'll fit a model with $K=2$ mixtures of discrete-valued individual-level random effects by setting \verb|mixtures=2|, but first we'll set some starting values from the null model (using \verb|getPar0|) and check our model specification (using \verb|checkPar0|):
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{Par0_mix2} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(fitmix1,}\hlkwc{mixtures}\hlstd{=}\hlnum{2}\hlstd{)}
+\hlstd{Par0_mix2}\hlopt{$}\hlstd{beta}\hlopt{$}\hlstd{beta[}\hlnum{1}\hlstd{,]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.26}\hlstd{,} \hlopt{-}\hlnum{3.93}\hlstd{,} \hlopt{-}\hlnum{0.58}\hlstd{,}
+                              \hlnum{0.03}\hlstd{,} \hlopt{-}\hlnum{2.25}\hlstd{,} \hlopt{-}\hlnum{0.26}\hlstd{,}
+                             \hlopt{-}\hlnum{3.38}\hlstd{,} \hlopt{-}\hlnum{4.79}\hlstd{,} \hlopt{-}\hlnum{2.82}\hlstd{,}
+                             \hlopt{-}\hlnum{1.06}\hlstd{,}  \hlopt{-}\hlnum{3.3}\hlstd{,} \hlopt{-}\hlnum{3.43}\hlstd{)}
+\hlstd{Par0_mix2}\hlopt{$}\hlstd{beta}\hlopt{$}\hlstd{beta[}\hlnum{2}\hlstd{,]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.51}\hlstd{,} \hlopt{-}\hlnum{3.32}\hlstd{,} \hlopt{-}\hlnum{2.63}\hlstd{,}
+                              \hlnum{0.03}\hlstd{,} \hlopt{-}\hlnum{1.26}\hlstd{,} \hlopt{-}\hlnum{0.12}\hlstd{,}
+                             \hlopt{-}\hlnum{96.8}\hlstd{,} \hlopt{-}\hlnum{3.62}\hlstd{,} \hlopt{-}\hlnum{1.75}\hlstd{,}
+                             \hlopt{-}\hlnum{1.76}\hlstd{,} \hlopt{-}\hlnum{2.14}\hlstd{,} \hlopt{-}\hlnum{1.38}\hlstd{)}
+\hlstd{Par0_mix2}\hlopt{$}\hlstd{beta}\hlopt{$}\hlstd{pi} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.73}\hlstd{,} \hlnum{0.27}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\noindent Note that because \verb|mixtures| is $>1$, the starting values for \verb|beta0| must now be specified as a list with elements named \verb|beta| (containing the starting values for the t.p.m. parameters) and/or \verb|pi| (containing the starting values for the mixture probability parameters).
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# check model specification}
+\hlkwd{checkPar0}\hlstd{(pilotData,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=dist,}
+          \hlkwc{Par0}\hlstd{=Par0_mix2}\hlopt{$}\hlstd{Par,} \hlkwc{beta0}\hlstd{=Par0_mix2}\hlopt{$}\hlstd{beta,}
+          \hlkwc{stationary}\hlstd{=}\hlnum{TRUE}\hlstd{,}
+          \hlkwc{mixtures}\hlstd{=}\hlnum{2}\hlstd{,}
+          \hlkwc{stateNames}\hlstd{=stateNames)}
+\end{alltt}
+\begin{verbatim}
+## 
+## dive.dur parameters:
+## --------------------
+##       exploratory foraging  crowded  directed
+## shape    1.895587 2.719570 1.640040 4.2099390
+## scale    1.301088 8.142114 1.529318 0.7911992
+## 
+## dive.depth parameters:
+## ----------------------
+##      exploratory foraging   crowded directed
+## mean   10.221159 315.7408 10.752753 5.507151
+## sd      4.920867 233.2394  6.325075 1.908221
+## 
+## GR.speed2 parameters:
+## ---------------------
+##      exploratory  foraging crowded  directed
+## mean   1.1469499 1.3170625 1.36225 1.5706933
+## sd     0.6602282 0.5121064 0.77157 0.7628831
+## 
+## dive.pitchvar2 parameters:
+## --------------------------
+##        exploratory foraging   crowded  directed
+## shape1    2.205733 2.876755  1.823291  3.186465
+## shape2   17.948930 6.036487 16.067474 55.491769
+## 
+## breath.headchange parameters:
+## -----------------------------
+##               exploratory foraging  crowded directed
+## concentration    3.068759 5.653926 2.644184 18.04806
+## 
+## GR.size parameters:
+## -------------------
+##        exploratory foraging  crowded directed
+## lambda    5.996763 7.392536 20.38838 9.522725
+## 
+## GR.tight parameters:
+## --------------------
+##      exploratory  foraging   crowded  directed
+## prob   0.8885557 0.6629627 0.7609689 0.8072405
+## 
+## dive.CS.pres parameters:
+## ------------------------
+##      exploratory  foraging   crowded  directed
+## prob   0.7630851 0.9892991 0.4077435 0.4703789
+## 
+## dive.SS.pres parameters:
+## ------------------------
+##      exploratory  foraging   crowded  directed
+## prob   0.7167555 0.9789121 0.3955766 0.4115657
+## 
+## presurf parameters:
+## -------------------
+##      exploratory  foraging crowded  directed
+## prob     0.76011 0.9924097 0.70787 0.7068425
+## 
+## postsurf parameters:
+## --------------------
+##      exploratory  foraging   crowded  directed
+## prob   0.8081057 0.9619604 0.7164094 0.6568226
+## 
+## Mixture probabilities (pi):
+## ---------------------------
+## mix1 mix2 
+## 0.73 0.27 
+## 
+## Regression coeffs for the transition probabilities (beta):
+## ----------------------------------------------------------
+##                  1 -> 2 1 -> 3 1 -> 4 2 -> 1 2 -> 3 2 -> 4 3 -> 1 3 -> 2
+## (Intercept)_mix1  -2.26  -3.93  -0.58   0.03  -2.25  -0.26  -3.38  -4.79
+## (Intercept)_mix2  -2.51  -3.32  -2.63   0.03  -1.26  -0.12 -96.80  -3.62
+##                  3 -> 4 4 -> 1 4 -> 2 4 -> 3
+## (Intercept)_mix1  -2.82  -1.06  -3.30  -3.43
+## (Intercept)_mix2  -1.75  -1.76  -2.14  -1.38
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+We can see above that by setting \verb|mixtures=2| we now have $K=2$ sets of state transition probability matrix parameters, each suffixed by a mixture label (\verb|_mix1| or \verb|_mix2|). We also now have $K=2$ mixture probability parameters $({\boldsymbol \pi})$, where the first $(\pi_1)$ corresponds to parameters suffixed with \verb|_mix1| and the second $(\pi_2)$ corresponds to parameters suffixed with \verb|_mix2|. Now let's fit the $K=2$ mixture model from \cite{IsojunnoEtAl2017}:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{fitmix2} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(pilotData,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=dist,}
+                  \hlkwc{Par0}\hlstd{=Par0_mix2}\hlopt{$}\hlstd{Par,} \hlkwc{beta0}\hlstd{=Par0_mix2}\hlopt{$}\hlstd{beta,}
+                  \hlkwc{stationary}\hlstd{=}\hlnum{TRUE}\hlstd{,}
+                  \hlkwc{mixtures}\hlstd{=}\hlnum{2}\hlstd{,}
+                  \hlkwc{stateNames}\hlstd{=stateNames,} \hlkwc{nlmPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{hessian}\hlstd{=}\hlnum{FALSE}\hlstd{))}
+\end{alltt}
+
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# Fitting HMM with 4 states and 11 data streams}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# -----------------------------------------------------------------------}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.dur \textasciitilde{} weibull(shape=\textasciitilde{}1, scale=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.depth \textasciitilde{} gamma(mean=\textasciitilde{}1, sd=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ GR.speed2 \textasciitilde{} gamma(mean=\textasciitilde{}1, sd=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.pitchvar2 \textasciitilde{} beta(shape1=\textasciitilde{}1, shape2=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ breath.headchange \textasciitilde{} vm(concentration=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ GR.size \textasciitilde{} pois(lambda=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ GR.tight \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.CS.pres \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.SS.pres \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ presurf \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ postsurf \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Transition probability matrix formula: \textasciitilde{}1}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Initial distribution formula: \textasciitilde{}1}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Number of mixtures: 2}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ Mixture probability formula: \textasciitilde{}1}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# DONE}}\begin{alltt}
+\hlstd{fitmix2}
+\end{alltt}
+\begin{verbatim}
+## Value of the maximum log-likelihood: -18481.29 
+## 
+## 
+## dive.dur parameters:
+## --------------------
+##       exploratory foraging  crowded  directed
+## shape    1.936296 2.765043 1.648316 4.0151432
+## scale    1.372185 8.194463 1.525709 0.7855839
+## 
+## dive.depth parameters:
+## ----------------------
+##      exploratory foraging   crowded directed
+## mean    10.65323 319.2099 10.708474 5.650962
+## sd       5.19198 230.5566  6.319645 1.960661
+## 
+## GR.speed2 parameters:
+## ---------------------
+##      exploratory  foraging  crowded  directed
+## mean   1.1379085 1.3188728 1.379888 1.5330244
+## sd     0.6637213 0.5154339 0.774373 0.7589017
+## 
+## dive.pitchvar2 parameters:
+## --------------------------
+##        exploratory foraging   crowded  directed
+## shape1    2.156273 2.954203  1.788241  2.791914
+## shape2   17.462342 6.134090 15.932112 44.398296
+## 
+## breath.headchange parameters:
+## -----------------------------
+##               exploratory foraging  crowded directed
+## mean              0.00000 0.000000 0.000000   0.0000
+## concentration     2.86254 5.650729 2.636543  17.5883
+## 
+## GR.size parameters:
+## -------------------
+##        exploratory foraging crowded directed
+## lambda    5.893962 7.428444 20.5167 9.348098
+## 
+## GR.tight parameters:
+## --------------------
+##      exploratory  foraging   crowded  directed
+## prob   0.9054784 0.6575736 0.7645632 0.7937692
+## 
+## dive.CS.pres parameters:
+## ------------------------
+##      exploratory  foraging   crowded  directed
+## prob   0.7570289 0.9892898 0.3978535 0.5077637
+## 
+## dive.SS.pres parameters:
+## ------------------------
+##      exploratory  foraging   crowded directed
+## prob   0.7246258 0.9795692 0.3849078 0.440141
+## 
+## presurf parameters:
+## -------------------
+##      exploratory  foraging   crowded  directed
+## prob   0.7519146 0.9923487 0.7113906 0.7172221
+## 
+## postsurf parameters:
+## --------------------
+##      exploratory  foraging   crowded  directed
+## prob   0.8176395 0.9621881 0.7139607 0.6647271
+## 
+## Regression coeffs for the transition probabilities:
+## ---------------------------------------------------
+##                     1 -> 2    1 -> 3     1 -> 4     2 -> 1    2 -> 3
+## (Intercept)_mix1 -2.255164 -3.921555 -0.5878246 0.03912368 -2.230029
+## (Intercept)_mix2 -2.474720 -3.374581 -2.6435725 0.03630417 -1.202661
+##                      2 -> 4     3 -> 1    3 -> 2    3 -> 4    4 -> 1
+## (Intercept)_mix1 -0.2580981  -3.390892 -4.797065 -2.838810 -1.053870
+## (Intercept)_mix2 -0.0930870 -96.800000 -3.526245 -1.723148 -1.730594
+##                     4 -> 2    4 -> 3
+## (Intercept)_mix1 -3.310025 -3.418480
+## (Intercept)_mix2 -2.081930 -1.406935
+## 
+## Mixture probabilities:
+## ----------------------
+##      mix1      mix2 
+## 0.7334777 0.2665223 
+## 
+## Transition probability matrix:
+## ------------------------------
+##                   exploratory    foraging    crowded   directed
+## exploratory_mix1 5.951668e-01 0.062407036 0.01179041 0.33063572
+## foraging_mix1    3.561367e-01 0.342472347 0.03682443 0.26456654
+## crowded_mix1     3.060502e-02 0.007500662 0.90873748 0.05315684
+## directed_mix1    2.458530e-01 0.025753712 0.02310673 0.70528657
+## exploratory_mix2 8.406711e-01 0.070773201 0.02877825 0.05977742
+## foraging_mix2    3.192174e-01 0.307836357 0.09247212 0.28047408
+## crowded_mix2     7.555383e-43 0.024351947 0.82787036 0.14777769
+## directed_mix2    1.145485e-01 0.080613179 0.15832611 0.64651221
+## 
+## Initial distribution:
+## ---------------------
+##      exploratory   foraging   crowded  directed
+## mix1   0.3283189 0.05061176 0.1756211 0.4454483
+## mix2   0.3359432 0.07584579 0.3323006 0.2559104
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\noindent Based on our fitted model, we can calculate the probability of each individual being in a particular mixture using the \verb|mixtureProbs| function and the t.p.m. for each mixture using the \verb|getTrProbs| function:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{## calculate mixture probabilities for each individual}
+\hlkwd{round}\hlstd{(}\hlkwd{mixtureProbs}\hlstd{(fitmix2),}\hlnum{4}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+##                mix1   mix2
+## ID:gm08_150c 1.0000 0.0000
+## ID:gm08_154d 1.0000 0.0000
+## ID:gm08_159a 1.0000 0.0000
+## ID:gm09_137b 1.0000 0.0000
+## ID:gm09_138a 0.0004 0.9996
+## ID:gm09_156b 0.9969 0.0031
+## ID:gm10_000a 0.0000 1.0000
+## ID:gm10_143a 1.0000 0.0000
+## ID:gm10_152b 0.9999 0.0001
+## ID:gm10_157b 0.0000 1.0000
+## ID:gm10_158d 1.0000 0.0000
+## ID:gm13_137a 1.0000 0.0000
+## ID:gm13_149a 1.0000 0.0000
+## ID:gm13_169a 0.0038 0.9962
+## ID:gm14_180a 1.0000 0.0000
+\end{verbatim}
+\begin{alltt}
+\hlcom{## calculate state transition probabilities for each mixture}
+\hlstd{trProbs2} \hlkwb{<-} \hlkwd{getTrProbs}\hlstd{(fitmix2)}
+
+\hlcom{# mixture 1}
+\hlkwd{round}\hlstd{(trProbs2[[}\hlnum{1}\hlstd{]][,,}\hlnum{1}\hlstd{],}\hlnum{2}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+##             exploratory foraging crowded directed
+## exploratory        0.60     0.06    0.01     0.33
+## foraging           0.36     0.34    0.04     0.26
+## crowded            0.03     0.01    0.91     0.05
+## directed           0.25     0.03    0.02     0.71
+\end{verbatim}
+\begin{alltt}
+\hlcom{# mixture 2}
+\hlkwd{round}\hlstd{(trProbs2[[}\hlnum{2}\hlstd{]][,,}\hlnum{1}\hlstd{],}\hlnum{2}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+##             exploratory foraging crowded directed
+## exploratory        0.84     0.07    0.03     0.06
+## foraging           0.32     0.31    0.09     0.28
+## crowded            0.00     0.02    0.83     0.15
+## directed           0.11     0.08    0.16     0.65
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
+Now let's fit a model with $K=3$ mixtures by setting some starting values with the help of \verb|getPar0|:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{Par0_mix3} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(fitmix2,}\hlkwc{mixtures}\hlstd{=}\hlnum{3}\hlstd{)}
+\hlstd{Par0_mix3}\hlopt{$}\hlstd{beta}\hlopt{$}\hlstd{beta[}\hlnum{1}\hlstd{,]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.15}\hlstd{,} \hlopt{-}\hlnum{4.31}\hlstd{,} \hlopt{-}\hlnum{1.09}\hlstd{,}
+                              \hlnum{0.28}\hlstd{,} \hlopt{-}\hlnum{1.88}\hlstd{,}  \hlopt{-}\hlnum{0.3}\hlstd{,}
+                              \hlopt{-}\hlnum{3.5}\hlstd{,} \hlopt{-}\hlnum{4.71}\hlstd{,} \hlopt{-}\hlnum{3.11}\hlstd{,}
+                             \hlopt{-}\hlnum{0.68}\hlstd{,} \hlopt{-}\hlnum{2.49}\hlstd{,}  \hlopt{-}\hlnum{2.6}\hlstd{)}
+\hlstd{Par0_mix3}\hlopt{$}\hlstd{beta}\hlopt{$}\hlstd{beta[}\hlnum{2}\hlstd{,]} \hlkwb{<-} \hlkwd{c}\hlstd{(}  \hlopt{-}\hlnum{2.5}\hlstd{,}  \hlopt{-}\hlnum{2.47}\hlstd{,}  \hlnum{0.63}\hlstd{,}
+                             \hlopt{-}\hlnum{17.22}\hlstd{,} \hlopt{-}\hlnum{13.18}\hlstd{,}  \hlnum{0.59}\hlstd{,}
+                              \hlopt{-}\hlnum{3.92}\hlstd{,} \hlopt{-}\hlnum{13.96}\hlstd{,} \hlopt{-}\hlnum{2.27}\hlstd{,}
+                              \hlopt{-}\hlnum{1.25}\hlstd{,}  \hlopt{-}\hlnum{3.57}\hlstd{,} \hlopt{-}\hlnum{3.75}\hlstd{)}
+\hlstd{Par0_mix3}\hlopt{$}\hlstd{beta}\hlopt{$}\hlstd{beta[}\hlnum{3}\hlstd{,]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.71}\hlstd{,} \hlopt{-}\hlnum{3.48}\hlstd{,} \hlopt{-}\hlnum{3.01}\hlstd{,}
+                             \hlopt{-}\hlnum{0.35}\hlstd{,} \hlopt{-}\hlnum{1.12}\hlstd{,}  \hlopt{-}\hlnum{0.1}\hlstd{,}
+                             \hlopt{-}\hlnum{96.8}\hlstd{,} \hlopt{-}\hlnum{2.98}\hlstd{,} \hlopt{-}\hlnum{1.53}\hlstd{,}
+                             \hlopt{-}\hlnum{2.29}\hlstd{,} \hlopt{-}\hlnum{2.07}\hlstd{,} \hlopt{-}\hlnum{1.55}\hlstd{)}
+\hlstd{Par0_mix3}\hlopt{$}\hlstd{beta}\hlopt{$}\hlstd{pi} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.4}\hlstd{,} \hlnum{0.4}\hlstd{,} \hlnum{0.2}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\noindent and then calling \verb|fitHMM| with \verb|mixtures=3|:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{fitmix3} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(pilotData,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=dist,}
+                  \hlkwc{Par0}\hlstd{=Par0_mix3}\hlopt{$}\hlstd{Par,} \hlkwc{beta0}\hlstd{=Par0_mix3}\hlopt{$}\hlstd{beta,}
+                  \hlkwc{stationary}\hlstd{=}\hlnum{TRUE}\hlstd{,}
+                  \hlkwc{mixtures}\hlstd{=}\hlnum{3}\hlstd{,}
+                  \hlkwc{stateNames}\hlstd{=stateNames,}
+                  \hlkwc{nlmPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{hessian}\hlstd{=}\hlnum{FALSE}\hlstd{))}
+\end{alltt}
+
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# Fitting HMM with 4 states and 11 data streams}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# -----------------------------------------------------------------------}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.dur \textasciitilde{} weibull(shape=\textasciitilde{}1, scale=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.depth \textasciitilde{} gamma(mean=\textasciitilde{}1, sd=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ GR.speed2 \textasciitilde{} gamma(mean=\textasciitilde{}1, sd=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.pitchvar2 \textasciitilde{} beta(shape1=\textasciitilde{}1, shape2=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ breath.headchange \textasciitilde{} vm(concentration=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ GR.size \textasciitilde{} pois(lambda=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ GR.tight \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.CS.pres \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.SS.pres \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ presurf \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ postsurf \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Transition probability matrix formula: \textasciitilde{}1}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Initial distribution formula: \textasciitilde{}1}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Number of mixtures: 3}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ Mixture probability formula: \textasciitilde{}1}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# DONE}}\begin{alltt}
+\hlstd{fitmix3}
+\end{alltt}
+\begin{verbatim}
+## Value of the maximum log-likelihood: -18445.14 
+## 
+## 
+## dive.dur parameters:
+## --------------------
+##       exploratory foraging  crowded  directed
+## shape    1.975978 2.813776 1.648341 3.8522580
+## scale    1.422555 8.246565 1.520763 0.7864722
+## 
+## dive.depth parameters:
+## ----------------------
+##      exploratory foraging   crowded directed
+## mean   10.977415 322.5798 10.638125 5.769243
+## sd      5.427491 228.1005  6.314569 2.013745
+## 
+## GR.speed2 parameters:
+## ---------------------
+##      exploratory  foraging   crowded  directed
+## mean   1.1385507 1.3201513 1.3861439 1.5065078
+## sd     0.6663534 0.5203517 0.7776481 0.7581291
+## 
+## dive.pitchvar2 parameters:
+## --------------------------
+##        exploratory foraging   crowded  directed
+## shape1     2.15122 3.028038  1.764795  2.524053
+## shape2    17.62926 6.225084 15.844942 37.637633
+## 
+## breath.headchange parameters:
+## -----------------------------
+##               exploratory foraging  crowded directed
+## mean             0.000000 0.000000 0.000000  0.00000
+## concentration    2.768482 5.696489 2.629183 17.09466
+## 
+## GR.size parameters:
+## -------------------
+##        exploratory foraging  crowded directed
+## lambda    5.672187 7.460572 20.48158 9.345636
+## 
+## GR.tight parameters:
+## --------------------
+##      exploratory  foraging   crowded  directed
+## prob   0.9098293 0.6533947 0.7686185 0.7903651
+## 
+## dive.CS.pres parameters:
+## ------------------------
+##      exploratory  foraging   crowded  directed
+## prob   0.7618571 0.9892938 0.3923022 0.5248959
+## 
+## dive.SS.pres parameters:
+## ------------------------
+##      exploratory  foraging   crowded  directed
+## prob   0.7364702 0.9804547 0.3799649 0.4544787
+## 
+## presurf parameters:
+## -------------------
+##      exploratory  foraging   crowded  directed
+## prob    0.748499 0.9922603 0.7107198 0.7227432
+## 
+## postsurf parameters:
+## --------------------
+##      exploratory  foraging   crowded  directed
+## prob   0.8213494 0.9624941 0.7156723 0.6705817
+## 
+## Regression coeffs for the transition probabilities:
+## ---------------------------------------------------
+##                     1 -> 2    1 -> 3     1 -> 4      2 -> 1     2 -> 3
+## (Intercept)_mix1 -2.152085 -4.306731 -1.0867497   0.2791947  -1.880898
+## (Intercept)_mix2 -2.498738 -2.469649  0.6277231 -17.2200002 -13.180019
+## (Intercept)_mix3 -2.714484 -3.475361 -3.0076135  -0.3548059  -1.124543
+##                       2 -> 4     3 -> 1     3 -> 2    3 -> 4     4 -> 1
+## (Intercept)_mix1 -0.29671906  -3.501065  -4.714406 -3.111360 -0.6813091
+## (Intercept)_mix2  0.58694161  -3.926036 -13.960064 -2.270529 -1.2524123
+## (Intercept)_mix3 -0.09724842 -96.800000  -2.975692 -1.531841 -2.2900315
+##                     4 -> 2    4 -> 3
+## (Intercept)_mix1 -2.488782 -2.599644
+## (Intercept)_mix2 -3.567966 -3.753564
+## (Intercept)_mix3 -2.073131 -1.549459
+## 
+## Mixture probabilities:
+## ----------------------
+##      mix1      mix2      mix3 
+## 0.4018629 0.3980198 0.2001172 
+## 
+## Transition probability matrix:
+## ------------------------------
+##                   exploratory     foraging      crowded   directed
+## exploratory_mix1 6.816492e-01 7.923599e-02 9.186948e-03 0.22992783
+## foraging_mix1    4.108636e-01 3.107742e-01 4.737849e-02 0.23098376
+## crowded_mix1     2.783618e-02 8.272980e-03 9.227895e-01 0.04110136
+## directed_mix1    3.041933e-01 4.990848e-02 4.467117e-02 0.60122702
+## exploratory_mix2 3.289318e-01 2.703446e-02 2.783241e-02 0.61620128
+## foraging_mix2    1.187207e-08 3.573367e-01 6.746335e-07 0.64266266
+## crowded_mix2     1.756192e-02 7.706355e-07 8.904877e-01 0.09194960
+## directed_mix2    2.136992e-01 2.109457e-02 1.752130e-02 0.74768494
+## exploratory_mix3 8.721443e-01 5.777009e-02 2.699344e-02 0.04309217
+## foraging_mix3    2.390740e-01 3.408966e-01 1.107235e-01 0.30930588
+## crowded_mix3     7.202219e-43 4.025737e-02 7.891729e-01 0.17056974
+## directed_mix3    7.035018e-02 8.739041e-02 1.475339e-01 0.69472552
+## 
+## Initial distribution:
+## ---------------------
+##      exploratory   foraging   crowded  directed
+## mix1   0.3870062 0.06849400 0.2553623 0.2891375
+## mix2   0.2012576 0.02880544 0.1502894 0.6196476
+## mix3   0.3234760 0.08566424 0.2940851 0.2967747
+\end{verbatim}
+\begin{alltt}
+\hlcom{## calculate mixture probabilities for each individual}
+\hlkwd{round}\hlstd{(}\hlkwd{mixtureProbs}\hlstd{(fitmix3),}\hlnum{4}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+##                mix1   mix2  mix3
+## ID:gm08_150c 0.0000 1.0000 0e+00
+## ID:gm08_154d 0.0000 1.0000 0e+00
+## ID:gm08_159a 0.0000 1.0000 0e+00
+## ID:gm09_137b 1.0000 0.0000 0e+00
+## ID:gm09_138a 0.0000 0.0000 1e+00
+## ID:gm09_156b 1.0000 0.0000 0e+00
+## ID:gm10_000a 0.0000 0.0000 1e+00
+## ID:gm10_143a 1.0000 0.0000 0e+00
+## ID:gm10_152b 0.0276 0.9724 0e+00
+## ID:gm10_157b 0.0000 0.0000 1e+00
+## ID:gm10_158d 0.0006 0.9994 0e+00
+## ID:gm13_137a 1.0000 0.0000 0e+00
+## ID:gm13_149a 1.0000 0.0000 0e+00
+## ID:gm13_169a 0.9991 0.0000 9e-04
+## ID:gm14_180a 0.0000 1.0000 0e+00
+\end{verbatim}
+\begin{alltt}
+\hlcom{## calculate state transition probabilities for each mixture}
+\hlstd{trProbs3} \hlkwb{<-} \hlkwd{getTrProbs}\hlstd{(fitmix3)}
+
+\hlcom{# mixture 1}
+\hlkwd{round}\hlstd{(trProbs3[[}\hlnum{1}\hlstd{]][,,}\hlnum{1}\hlstd{],}\hlnum{2}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+##             exploratory foraging crowded directed
+## exploratory        0.68     0.08    0.01     0.23
+## foraging           0.41     0.31    0.05     0.23
+## crowded            0.03     0.01    0.92     0.04
+## directed           0.30     0.05    0.04     0.60
+\end{verbatim}
+\begin{alltt}
+\hlcom{# mixture 2}
+\hlkwd{round}\hlstd{(trProbs3[[}\hlnum{2}\hlstd{]][,,}\hlnum{1}\hlstd{],}\hlnum{2}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+##             exploratory foraging crowded directed
+## exploratory        0.33     0.03    0.03     0.62
+## foraging           0.00     0.36    0.00     0.64
+## crowded            0.02     0.00    0.89     0.09
+## directed           0.21     0.02    0.02     0.75
+\end{verbatim}
+\begin{alltt}
+\hlcom{# mixture 3}
+\hlkwd{round}\hlstd{(trProbs3[[}\hlnum{3}\hlstd{]][,,}\hlnum{1}\hlstd{],}\hlnum{2}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+##             exploratory foraging crowded directed
+## exploratory        0.87     0.06    0.03     0.04
+## foraging           0.24     0.34    0.11     0.31
+## crowded            0.00     0.04    0.79     0.17
+## directed           0.07     0.09    0.15     0.69
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\noindent And let's do the same with $K=4$:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{fitmix4} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(pilotData,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=dist,}
+                  \hlkwc{Par0}\hlstd{=Par0_mix4}\hlopt{$}\hlstd{Par,} \hlkwc{beta0}\hlstd{=Par0_mix4}\hlopt{$}\hlstd{beta,}
+                  \hlkwc{stationary}\hlstd{=}\hlnum{TRUE}\hlstd{,}
+                  \hlkwc{mixtures}\hlstd{=}\hlnum{4}\hlstd{,}
+                  \hlkwc{stateNames}\hlstd{=stateNames,}
+                  \hlkwc{nlmPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{hessian}\hlstd{=}\hlnum{FALSE}\hlstd{))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+For comparison to the null and random effects models, let's also fit a model including individual-level fixed effects:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{Par0_fix} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(fitmix1,} \hlkwc{formula}\hlstd{=} \hlopt{~}\hlstd{ID,} \hlkwc{formulaDelta}\hlstd{=} \hlopt{~}\hlstd{ID)}
+\hlstd{Par0_fix}\hlopt{$}\hlstd{delta[}\hlnum{1}\hlstd{,]} \hlkwb{<-} \hlkwd{log}\hlstd{(fitmix1}\hlopt{$}\hlstd{mle}\hlopt{$}\hlstd{delta[}\hlnum{1}\hlstd{,}\hlopt{-}\hlnum{1}\hlstd{]}\hlopt{/}\hlstd{fitmix1}\hlopt{$}\hlstd{mle}\hlopt{$}\hlstd{delta[}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{])}
+
+\hlstd{fitfix} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(pilotData,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=dist,}
+                  \hlkwc{formula} \hlstd{=} \hlopt{~}\hlstd{ID,} \hlkwc{formulaDelta} \hlstd{=} \hlopt{~}\hlstd{ID,}
+                  \hlkwc{Par0}\hlstd{=Par0_fix}\hlopt{$}\hlstd{Par,} \hlkwc{beta0}\hlstd{=Par0_fix}\hlopt{$}\hlstd{beta,}
+                  \hlkwc{delta0}\hlstd{=Par0_fix}\hlopt{$}\hlstd{delta,}
+                  \hlkwc{stateNames}\hlstd{=stateNames,}
+                  \hlkwc{nlmPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{hessian}\hlstd{=}\hlnum{FALSE}\hlstd{))}
+\end{alltt}
+
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# Fitting HMM with 4 states and 11 data streams}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# -----------------------------------------------------------------------}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.dur \textasciitilde{} weibull(shape=\textasciitilde{}1, scale=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.depth \textasciitilde{} gamma(mean=\textasciitilde{}1, sd=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ GR.speed2 \textasciitilde{} gamma(mean=\textasciitilde{}1, sd=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.pitchvar2 \textasciitilde{} beta(shape1=\textasciitilde{}1, shape2=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ breath.headchange \textasciitilde{} vm(concentration=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ GR.size \textasciitilde{} pois(lambda=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ GR.tight \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.CS.pres \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.SS.pres \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ presurf \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ postsurf \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Transition probability matrix formula: \textasciitilde{}ID}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Initial distribution formula: \textasciitilde{}ID}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# DONE}}\end{kframe}
+\end{knitrout}
+
+Based on AIC, we find overwhelming support for the discrete-valued individual-level random effects model with $K=3$ mixtures:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{AIC}\hlstd{(fitmix1,fitmix2,fitmix3,fitmix4,fitfix)}
+\end{alltt}
+\begin{verbatim}
+##     Model      AIC
+## 1 fitmix3 37086.29
+## 2 fitmix4 37098.24
+## 3 fitmix2 37132.58
+## 4 fitmix1 37164.80
+## 5  fitfix 37190.99
+\end{verbatim}
+\begin{alltt}
+\hlkwd{AICweights}\hlstd{(fitmix1,fitmix2,fitmix3,fitmix4,fitfix)}
+\end{alltt}
+\begin{verbatim}
+##     Model       weight
+## 1 fitmix3 9.974679e-01
+## 2 fitmix4 2.532142e-03
+## 3 fitmix2 8.825442e-11
+## 4 fitmix1 8.904782e-18
+## 5  fitfix 1.828650e-23
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
 \subsection{Hierarchical HMMs}
 \label{sec:HHMMexamples}
-As we already noted in section \ref{sec:HHMM}, HMMs with hierarchical structures allow for data streams and/or state transitions to occur at multiple regular time scales. \cite{Leos-BarajasEtAl2017} provide two examples where state transitions are allowed to occur at both ``coarse'' and ``fine'' time scales, and here we demonstrate how both of these examples can be fitted in \verb|momentuHMM|. The key to fitting (and simulating) hierarchical hidden Markov models (HHMMs) in \verb|momentuHMM| is specifying certain \verb|fitHMM| (and \verb|simData|) arguments hierarchically using the \verb|data.tree| package \citep{Glur2018}. For HHMMs, instead of simply specifying the number of states (\verb|nbStates|), distributions (\verb|dist|), and a single t.p.m. (\verb|formula|) or initial distribution (\verb|formulaDelta|) formula, the \verb|hierStates| argument specifies the hierarchical nature of the states, the \verb|hierDist| argument specifies the hierarchical nature of the data streams, and the \verb|hierFormula| or \verb|hierFormulaDelta| arguments specify a t.p.m. or initial distribution formula for each level of the hierarchy. All are specified as \verb|Node| objects from the \verb|data.tree| package.  In the examples below, we focus on how to implement these HHMMs in \verb|momentuHMM| and refer readers to \cite{Leos-BarajasEtAl2017} for specific details about the data sets and the particular models being fitted.
+As we already noted in section \ref{sec:HHMM}, HMMs with hierarchical structures allow for data streams and/or state transitions to occur at multiple regular time scales. \cite{Leos-BarajasEtAl2017} provide two examples where state transitions are allowed to occur at both ``coarse'' and ``fine'' time scales, and here we demonstrate how both of these examples can be fitted in \verb|momentuHMM|. The key to fitting (and simulating) hierarchical hidden Markov models (HHMMs) in \verb|momentuHMM| is specifying certain \verb|fitHMM| (and \verb|simHierData|) arguments hierarchically using the \verb|data.tree| package \citep{Glur2018}. For HHMMs, instead of simply specifying the number of states (\verb|nbStates|), distributions (\verb|dist|), and a single t.p.m. (\verb|formula|) or initial distribution (\verb|formulaDelta|) formula, the \verb|hierStates| argument specifies the hierarchical nature of the states, the \verb|hierDist| argument specifies the hierarchical nature of the data streams, and the \verb|hierFormula| or \verb|hierFormulaDelta| arguments specify a t.p.m. or initial distribution formula for each level of the hierarchy. All are specified as \verb|Node| objects from the \verb|data.tree| package.  In the examples below, we focus on how to implement these HHMMs in \verb|momentuHMM| and refer readers to \cite{Leos-BarajasEtAl2017} for specific details about the data sets and the particular models being fitted.
 
 \subsubsection{Harbor porpoise example}
 \label{sec:harborPorpoise}
-In order to replicate the harbor porpoise HHMM example from \cite{Leos-BarajasEtAl2017} in \verb|momentuHMM|, we must first use \verb|prepData| to prepare our hierarchical data. This requires an additional field named \verb|level| to be included in \verb|data| that identifies the level of the hierarchy for each observation. These levels must be ordered from the coarsest to finest time scales, and must also indicate the initial observations at each level of the hierarchy (except for the coarsest level).  For example, if there are three time scales (e.g. ``coarse'', ``medium'', and ``fine'' scales), then the \verb|level| field must include the ordered factors ``\verb|1|'' (corresponding to coarse-scale observations), ``\verb|2i|'' (initial medium-scale observations), ``\verb|2|'' (medium-scale observations), ``\verb|3i|'' (initial fine-scale observations), and ``\verb|3|'' (fine-scale observations). In the harbor porpoise example from \cite{Leos-BarajasEtAl2017}, there are only two levels in the hierarchy so the \verb|level| factor levels are ``\verb|1|'' (coarse level), ``\verb|2i|'' (initial fine level), and ``\verb|2|'' (fine level).  After downloading the data, we can manually add the \verb|level| field to our data frame as follows:
+In order to replicate the harbor porpoise HHMM example from \cite{Leos-BarajasEtAl2017} in \verb|momentuHMM|, we must first use \verb|prepData| to prepare our hierarchical data. This requires an additional field named \verb|level| to be included in \verb|data| that identifies the level of the hierarchy for each observation. These levels must be ordered from the coarsest to finest time scales, and must also indicate the initial observations at each level of the hierarchy (except for the coarsest level).  For example, if there are $M=3$ time scales in the hierarchy (e.g. ``coarse'', ``medium'', and ``fine'' scales), then the \verb|level| field must include $2*M-1=5$ ordered factors: ``\verb|1|'' (corresponding to coarse-scale observations), ``\verb|2i|'' (initial medium-scale observations), ``\verb|2|'' (medium-scale observations), ``\verb|3i|'' (initial fine-scale observations), and ``\verb|3|'' (fine-scale observations). In the harbor porpoise example from \cite{Leos-BarajasEtAl2017}, there are only $M=2$ levels in the hierarchy so the $2*M-1=3$ ordered \verb|level| factors are ``\verb|1|'' (coarse level), ``\verb|2i|'' (initial fine level), and ``\verb|2|'' (fine level).  After downloading the data, we can manually add the \verb|level| field to our data frame as follows:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -1814,10 +2583,10 @@ In order to replicate the harbor porpoise HHMM example from \cite{Leos-BarajasEt
   \hlstd{coarseInd} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(}\hlkwc{date_time}\hlstd{=}\hlkwd{as.POSIXct}\hlstd{(}\hlkwd{format}\hlstd{(data[[i]]}\hlopt{$}\hlstd{date_time[}\hlnum{1}\hlstd{],}
                                                       \hlkwc{format}\hlstd{=}\hlstr{"%Y-%m-%d %H:%M"}\hlstd{),}
                                                \hlkwc{tz}\hlstd{=}\hlstr{"UTC"}\hlstd{),}
+                          \hlkwc{level}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"1"}\hlstd{,}\hlstr{"2i"}\hlstd{),}
                           \hlkwc{dive_duration}\hlstd{=}\hlnum{NA}\hlstd{,}
                           \hlkwc{maximum_depth}\hlstd{=}\hlnum{NA}\hlstd{,}
-                          \hlkwc{dive_wiggliness}\hlstd{=}\hlnum{NA}\hlstd{,}
-                          \hlkwc{level}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"1"}\hlstd{,}\hlstr{"2i"}\hlstd{))}
+                          \hlkwc{dive_wiggliness}\hlstd{=}\hlnum{NA}\hlstd{)}
   \hlstd{tmp} \hlkwb{<-} \hlkwd{rbind}\hlstd{(coarseInd,}\hlkwd{data.frame}\hlstd{(data[[i]],}\hlkwc{level}\hlstd{=}\hlstr{"2"}\hlstd{))}
   \hlstd{porpoiseData} \hlkwb{<-} \hlkwd{rbind}\hlstd{(porpoiseData,tmp)}
 \hlstd{\}}
@@ -1825,28 +2594,70 @@ In order to replicate the harbor porpoise HHMM example from \cite{Leos-BarajasEt
 \hlkwd{head}\hlstd{(porpoiseData)}
 \end{alltt}
 \begin{verbatim}
-##             date_time dive_duration maximum_depth dive_wiggliness level
-## 1 2015-11-02 14:43:00            NA            NA              NA     1
-## 2 2015-11-02 14:43:00            NA            NA              NA    2i
-## 3 2015-11-02 14:43:11            28          8.19            5.50     2
-## 4 2015-11-02 14:44:08            18          8.19            3.00     2
-## 5 2015-11-02 14:44:35            14          6.19            5.25     2
-## 6 2015-11-02 14:44:58            17          7.44            2.50     2
+##             date_time level dive_duration maximum_depth dive_wiggliness
+## 1 2015-11-02 14:43:00     1            NA            NA              NA
+## 2 2015-11-02 14:43:00    2i            NA            NA              NA
+## 3 2015-11-02 14:43:11     2            28          8.19            5.50
+## 4 2015-11-02 14:44:08     2            18          8.19            3.00
+## 5 2015-11-02 14:44:35     2            14          6.19            5.25
+## 6 2015-11-02 14:44:58     2            17          7.44            2.50
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
-By including the \verb|level| field, we will be able to specify when the coarse-scale state switching can occur (i.e., a coarse scale t.p.m. will be used when \verb|level=1|), the start of each fine-scale interval (i.e. a fine-scale initial distribution will be used when \verb|level=2i|), and when the fine-scale state switching can occur (i.e. a fine scale t.p.m. will be used when \verb|level=2|). Now that we have labeled each observation in our data with a \verb|level| factor, we can prepare our HHMM data using \verb|prepData|:
+\noindent By including the \verb|level| field, we will be able to specify when the coarse-scale state switching can occur (i.e., a coarse scale t.p.m. will be used when \verb|level=1|), the start of each fine-scale interval (i.e. a fine-scale initial distribution will be used when \verb|level=2i|), and when the fine-scale state switching can occur (i.e. a fine scale t.p.m. will be used when \verb|level=2|). 
+
+Now that we have labeled each observation in our data with a \verb|level| factor, we can prepare our HHMM data using \verb|prepData|:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlcom{# prepare hierarchical data}
-\hlstd{porpoiseData} \hlkwb{<-} \hlkwd{prepData}\hlstd{(porpoiseData,}
-                         \hlkwc{coordNames}\hlstd{=}\hlkwa{NULL}\hlstd{,}
-                         \hlkwc{hierLevels}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"1"}\hlstd{,}\hlstr{"2i"}\hlstd{,}\hlstr{"2"}\hlstd{))}
+\hlstd{porpoiseData} \hlkwb{<-} \hlkwd{prepData}\hlstd{(}\hlkwc{data} \hlstd{= porpoiseData,}
+                         \hlkwc{coordNames} \hlstd{=} \hlkwa{NULL}\hlstd{,}
+                         \hlkwc{hierLevels} \hlstd{=} \hlkwd{c}\hlstd{(}\hlstr{"1"}\hlstd{,} \hlstr{"2i"}\hlstd{,} \hlstr{"2"}\hlstd{))}
+
+\hlcom{# summarize prepared data}
+\hlkwd{summary}\hlstd{(porpoiseData,} \hlkwc{dataNames} \hlstd{=} \hlkwd{names}\hlstd{(porpoiseData)[}\hlopt{-}\hlnum{1}\hlstd{])}
 \end{alltt}
+\begin{verbatim}
+## Hierarchical HMM data for 1 individual:
+## 
+## Animal1 -- 8135 observations
+## 
+## 
+## Data summaries:
+## 
+##    date_time                   level     dive_duration maximum_depth  
+##  Min.   :2015-11-02 14:43:00   1 : 275   Min.   :  1   Min.   :  2.2  
+##  1st Qu.:2015-11-06 02:01:24   2i: 275   1st Qu.: 15   1st Qu.:  7.2  
+##  Median :2015-11-08 14:14:28   2 :7585   Median : 43   Median : 16.2  
+##  Mean   :2015-11-08 11:59:48             Mean   : 58   Mean   : 22.2  
+##  3rd Qu.:2015-11-11 04:43:07             3rd Qu.: 90   3rd Qu.: 30.2  
+##  Max.   :2015-11-14 00:58:50             Max.   :248   Max.   :169.4  
+##                                          NA's   :550   NA's   :550    
+##  dive_wiggliness
+##  Min.   :  0.0  
+##  1st Qu.:  3.8  
+##  Median : 15.0  
+##  Mean   : 23.4  
+##  3rd Qu.: 36.0  
+##  Max.   :253.5  
+##  NA's   :562
+\end{verbatim}
 \end{kframe}
 \end{knitrout}
-Here we have used the \verb|hierLevels| argument to identify the ordered factor levels that \verb|prepData| can expect to find in the \verb|level| field. When \verb|hierLevels| is specified, \verb|prepData| assumes these data are intended for a HHMM analysis and assigns the classes \verb|hierarchical| and \verb|momentuHierHMMData| to \verb|porpoiseData| (and corresponding methods for these classes will hereafter be used when calling functions such as \verb|fitHMM|). Note that because there are no location data in this example, we have set \verb|coordNames| to \verb|NULL|. Also note that in this example there are no data streams observed at the coarse time scale (\verb|level=1|), but these could be easily included (if available).
+\noindent Here we have used the \verb|hierLevels| argument to identify the ordered factor levels that \verb|prepData| can expect to find in the \verb|level| field. When \verb|hierLevels| is specified, \verb|prepData| assumes the data are intended for a HHMM analysis and assigns the classes \verb|hierarchical| and \verb|momentuHierHMMData| to the returned object (and corresponding methods for these classes will hereafter be used when calling functions such as \verb|fitHMM|). Because \verb|prepData| assumes the \verb|level| field is a factor with levels ordered according to \verb|hierLevels|, an error is returned if the order of the \verb|level| field in \verb|data| is not consistent with \verb|hierLevels|: 
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{porpoiseData} \hlkwb{<-} \hlkwd{prepData}\hlstd{(}\hlkwc{data} \hlstd{= porpoiseData,}
+                         \hlkwc{coordNames} \hlstd{=} \hlkwa{NULL}\hlstd{,}
+                         \hlkwc{hierLevels} \hlstd{=} \hlkwd{c}\hlstd{(}\hlstr{"1"}\hlstd{,} \hlstr{"2"}\hlstd{,} \hlstr{"2i"}\hlstd{))}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in prepData.hierarchical(data = porpoiseData, coordNames = NULL, : data\$level not consistent with 'hierLevels'}}\end{kframe}
+\end{knitrout}
+\noindent Note that because there are no location data in this example, we have set \verb|coordNames| to \verb|NULL|. Also note that in this example there are no data streams observed at the coarse time scale (\verb|level=1|), but these could be easily included (if available). By definition there are no data streams observed at the initial fine scale (\verb|level=2i|), but covariates (if available) could be included here for modeling the fine-scale initial distributions or state transition probabilities.
 
 Now that our hierarchical data are prepared, we are ready to specify the HHMM.  We will start with the hierarchical nature of the states, which is specified using the \verb|hierStates| argument in \verb|fitHMM|:
 \begin{knitrout}
@@ -1858,14 +2669,14 @@ Now that our hierarchical data are prepared, we are ready to specify the HHMM.  
 \hlcom{### states 1-3 = coarse state 1 (nonforaging)}
 \hlcom{### states 4-6 = coarse state 2 (foraging)}
 \hlstd{hierStates} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"harbor porpoise HHMM states"}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"nonforaging"}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{nonforaging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"nf1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{1}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{nonforaging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"nf2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{2}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{nonforaging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"nf3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{3}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"foraging"}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{foraging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"f1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{4}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{foraging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"f2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{5}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{foraging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"f3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{6}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"nonforaging"}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlstd{nonforaging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"nf1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{1}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlstd{nonforaging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"nf2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{2}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlstd{nonforaging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"nf3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{3}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"foraging"}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlstd{foraging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"f1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{4}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlstd{foraging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"f2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{5}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlstd{foraging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"f3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{6}\hlstd{)}
 
 \hlkwd{plot}\hlstd{(hierStates)}
 \end{alltt}
@@ -1873,20 +2684,21 @@ Now that our hierarchical data are prepared, we are ready to specify the HHMM.  
 \includegraphics[width=\maxwidth]{figure/harborPorpoise-3-1} 
 
 \end{knitrout}
-Here we can see that the coarse-scale ``nonforaging'' and ``foraging'' states are both composed of three fine-scale states. Note that the \verb|Node| attribute \verb|state| is required in \verb|hierStates| and determines the index for each state in our HHMM. Alternatively, we could specify the exact same \verb|Node| as:
+\noindent Here we can see that the coarse-scale ``nonforaging'' and ``foraging'' states are both composed of three fine-scale states. Note that the \verb|Node| attribute \verb|state| is required in \verb|hierStates| and determines the index for each state in our HHMM. Alternatively, we could specify the exact same \verb|Node| as:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-hierStates <- data::tree::\hlkwd{as.Node}(\hlkwd{list}(name=\hlstr{"harbor porpoise HHMM states"},
-                                       nonforaging=\hlkwd{list}(nf1=\hlkwd{list}(state=1),
-                                                        nf2=\hlkwd{list}(state=2),
-                                                        nf3=\hlkwd{list}(state=3)),
-                                       foraging=\hlkwd{list}(f1=\hlkwd{list}(state=4),
-                                                     f2=\hlkwd{list}(state=5),
-                                                     f3=\hlkwd{list}(state=6))))
+\hlstd{hierStates} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlkwd{as.Node}\hlstd{(}\hlkwd{list}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"harbor porpoise HHMM states"}\hlstd{,}
+                                      \hlkwc{nonforaging}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{nf1}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{state}\hlstd{=}\hlnum{1}\hlstd{),}
+                                                       \hlkwc{nf2}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{state}\hlstd{=}\hlnum{2}\hlstd{),}
+                                                       \hlkwc{nf3}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{state}\hlstd{=}\hlnum{3}\hlstd{)),}
+                                      \hlkwc{foraging}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{f1}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{state}\hlstd{=}\hlnum{4}\hlstd{),}
+                                                    \hlkwc{f2}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{state}\hlstd{=}\hlnum{5}\hlstd{),}
+                                                    \hlkwc{f3}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{state}\hlstd{=}\hlnum{6}\hlstd{))))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
+\noindent The name for any of the ``children'' added to a node are user-specified and are akin to the \verb|stateNames| argument in \verb|fitHMM| for a standard HMM.  While these names are arbitrary, the name and state attributes must be unique.
 
 Next we will specify the hierarchical nature of the data streams for the \verb|hierDist| argument in \verb|fitHMM|:
 \begin{knitrout}
@@ -1896,11 +2708,11 @@ Next we will specify the hierarchical nature of the data streams for the \verb|h
 \hlcom{# level 1 = coarse scale (no data streams)}
 \hlcom{# level 2 = fine scale (dive_duration, maximum_depth, dive_wiggliness)}
 \hlstd{hierDist} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"harbor porpoise HHMM dist"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"dive_duration"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"maximum_depth"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"dive_wiggliness"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
+\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level1"}\hlstd{)}
+\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level2"}\hlstd{)}
+\hlstd{hierDist}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"dive_duration"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
+\hlstd{hierDist}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"maximum_depth"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
+\hlstd{hierDist}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"dive_wiggliness"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
 
 \hlkwd{plot}\hlstd{(hierDist)}
 \end{alltt}
@@ -1908,7 +2720,7 @@ Next we will specify the hierarchical nature of the data streams for the \verb|h
 \includegraphics[width=\maxwidth]{figure/harborPorpoise-5-1} 
 
 \end{knitrout}
-The \verb|Node| attribute \verb|dist| is required in \verb|hierDist| and specifies the probability distribution for each data stream at each level of the hierarchy. In this case, \verb|level1| (corresponding to coarse-scale observations with \verb|level=1|) has no data streams, and each of the data streams for \verb|level2| (corresponding to fine-scale observations with \verb|level=2|) is assigned a gamma distribution.
+\noindent The \verb|Node| attribute \verb|dist| is required in \verb|hierDist| and specifies the probability distribution for each data stream at each level of the hierarchy. In this case, \verb|level1| (corresponding to coarse-scale observations with \verb|level=1|) has no data streams, and each of the data streams for \verb|level2| (corresponding to fine-scale observations with \verb|level=2|) is assigned a gamma distribution. The first level of the \verb|hierDist| Node must include a child for each level of the hierarchy, and the name for each child must be of the form \verb|paste0("level",i)| for \verb|i|$\in{1,2,\ldots,M}$, where $M$ is the number of levels in the hierarchy; in this case, $M=2$ and the names for each of the children at the first level of the \verb|hierDist| Node must be \verb|level1| and \verb|level2|. The children of these levels must be ``leaves'' (i.e. they have no children), where the \verb|name| attribute indicates the data stream and the \verb|dist| attribute indicates the probability distribution.
 
 \cite{Leos-BarajasEtAl2017} did not include any covariates on the t.p.m. or initial distribution for either level of the hierarchy, but, for demonstration purposes, here is how we would use the \verb|hierFormula| and \verb|hierFormulaDelta| arguments to specify the t.p.m. and initial distribution formula for each level of the hierarchy in \verb|fitHMM|:
 \begin{knitrout}
@@ -1916,8 +2728,8 @@ The \verb|Node| attribute \verb|dist| is required in \verb|hierDist| and specifi
 \begin{alltt}
 \hlcom{# define hierarchical t.p.m. formula(s)}
 \hlstd{hierFormula} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"harbor porpoise HHMM formula"}\hlstd{)}
-\hlstd{hierFormula}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{,} \hlkwc{formula}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{)}
-\hlstd{hierFormula}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{,} \hlkwc{formula}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{)}
+\hlstd{hierFormula}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level1"}\hlstd{,} \hlkwc{formula}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{)}
+\hlstd{hierFormula}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level2"}\hlstd{,} \hlkwc{formula}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -1926,12 +2738,12 @@ The \verb|Node| attribute \verb|dist| is required in \verb|hierDist| and specifi
 \begin{alltt}
 \hlcom{# define hierarchical initial distribution formula(s)}
 \hlstd{hierFormulaDelta} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"harbor porpoise HHMM formulaDelta"}\hlstd{)}
-\hlstd{hierFormulaDelta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{,} \hlkwc{formulaDelta}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{)}
-\hlstd{hierFormulaDelta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{,} \hlkwc{formulaDelta}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{)}
+\hlstd{hierFormulaDelta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level1"}\hlstd{,} \hlkwc{formulaDelta}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{)}
+\hlstd{hierFormulaDelta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level2"}\hlstd{,} \hlkwc{formulaDelta}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-The \verb|Node| attribute \verb|formula| (or \verb|formulaDelta|) is required in \verb|hierFormula| (or \verb|hierFormulaDelta|) and specifies the t.p.m. (or initial distribution) formula for each level of the hierarchy.
+\noindent The \verb|Node| attribute \verb|formula| (or \verb|formulaDelta|) is required in \verb|hierFormula| (or \verb|hierFormulaDelta|) and specifies the t.p.m. (or initial distribution) formula for each level of the hierarchy. Each child in \verb|hierFormula| or \verb|hierFormulaDelta| must be a leaf with a name of the form \verb|paste0("level",i)| for \verb|i|$\in{1,2,\ldots,M}$, where $M$ is the number of levels in the hierarchy.
 
 \cite{Leos-BarajasEtAl2017} assume the data stream probability distributions do not depend on the coarse-scale state, so we can constrain the state-dependent parameters for states 1 (``nf1'') and 4 (``f1''), states 2 (``nf2'') and 5 (``f2''), and states 3 (``nf3'') and 6 (``f3'') to be equal using the \verb|DM| argument:
 \begin{knitrout}
@@ -1998,21 +2810,21 @@ The (optional) last step for fitting this HHMM is specifying starting values for
 \begin{alltt}
 \hlcom{# initial values ('beta') for t.p.m. at each level of hierarchy}
 \hlstd{hierBeta} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"harbor porpoise beta"}\hlstd{)}
-\hlstd{hierBeta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{,}\hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{1}\hlstd{,} \hlopt{-}\hlnum{1}\hlstd{),}\hlnum{1}\hlstd{))}
-\hlstd{hierBeta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{)}
-\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"nonforaging"}\hlstd{,}\hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlopt{-}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{),}\hlnum{1}\hlstd{))}
-\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"foraging"}\hlstd{,}\hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{2}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{3}\hlstd{),}\hlnum{1}\hlstd{))}
+\hlstd{hierBeta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level1"}\hlstd{,}\hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{1}\hlstd{,} \hlopt{-}\hlnum{1}\hlstd{),}\hlnum{1}\hlstd{))}
+\hlstd{hierBeta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level2"}\hlstd{)}
+\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"nonforaging"}\hlstd{,}\hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlopt{-}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{),}\hlnum{1}\hlstd{))}
+\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"foraging"}\hlstd{,}\hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{2}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{3}\hlstd{),}\hlnum{1}\hlstd{))}
 
 \hlcom{# initial values ('delta') for initial distribution at each level of hierarchy}
 \hlstd{hierDelta} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"harbor porpoise delta"}\hlstd{)}
-\hlstd{hierDelta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{,}\hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{))}
-\hlstd{hierDelta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{)}
-\hlstd{hierDelta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"nonforaging"}\hlstd{,}\hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{30}\hlstd{,} \hlnum{30}\hlstd{),}\hlnum{1}\hlstd{))}
-\hlstd{hierDelta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"foraging"}\hlstd{,}\hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{6}\hlstd{,} \hlnum{2}\hlstd{),}\hlnum{1}\hlstd{))}
+\hlstd{hierDelta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level1"}\hlstd{,}\hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{))}
+\hlstd{hierDelta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level2"}\hlstd{)}
+\hlstd{hierDelta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"nonforaging"}\hlstd{,}\hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{30}\hlstd{,} \hlnum{30}\hlstd{),}\hlnum{1}\hlstd{))}
+\hlstd{hierDelta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"foraging"}\hlstd{,}\hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{6}\hlstd{,} \hlnum{2}\hlstd{),}\hlnum{1}\hlstd{))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-The \verb|Node| attribute \verb|beta| (or \verb|delta|) is required in \verb|hierBeta| (or \verb|hierDelta|) and specifies the starting values for the t.p.m. (or initial distribution) at each level of the hierarchy. For each level of the hierarchy, these values are specified just as in \verb|beta0| (or \verb|delta0|) for a standard HMM fitted with \verb|fitHMM|. However, for HHMMs the starting values in \verb|hierDelta| must always be provided as a matrix on the working scale (even if no covariates are included in \verb|hierFormulaDelta|). Any additional arguments pertaining to t.p.m. or initial distribution parameters (such as \verb|workBounds$beta|, \verb|betaCons|, \verb|fixPar$beta|, \verb|workBounds$delta|, \verb|deltaCons|, and \verb|fixPar$delta|) must also be specified as \verb|data.tree| Nodes (with \verb|Node| attributes \verb|workBounds|, \verb|betaCons|, \verb|fixPar|, \verb|workBounds|, \verb|deltaCons|, and \verb|fixPar|, respectively).
+\noindent The \verb|Node| attribute \verb|beta| (or \verb|delta|) is required in \verb|hierBeta| (or \verb|hierDelta|) and specifies the starting values for the t.p.m. (or initial distribution) at each level of the hierarchy. For each level of the hierarchy, these values are specified just as in \verb|beta0| (or \verb|delta0|) for a standard HMM fitted with \verb|fitHMM|. However, for HHMMs the starting values in \verb|hierDelta| must always be provided as a matrix on the working scale (even if no covariates are included in \verb|hierFormulaDelta|). Any additional arguments pertaining to t.p.m. or initial distribution parameters (such as \verb|workBounds$beta|, \verb|betaCons|, \verb|fixPar$beta|, \verb|workBounds$delta|, \verb|deltaCons|, and \verb|fixPar$delta|) must also be specified as \verb|data.tree| Nodes (with \verb|Node| attributes \verb|workBounds|, \verb|betaCons|, \verb|fixPar|, \verb|workBounds|, \verb|deltaCons|, and \verb|fixPar|, respectively).
 
 Before fitting the HHMM, let's first check that everything is in order using the \verb|checkPar0| function:
 \begin{knitrout}
@@ -2085,7 +2897,7 @@ Before fitting the HHMM, let's first check that everything is in order using the
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
-Note that for HHMMs, the reference states for the t.p.m. are determined by the lowest index for each state at the coarsest level in the hierarchy; in this case, the reference states are state 1 for ``nonforaging'' and state 4 for ``foraging''. This differs from standard HMMs fitted with \verb|fitHMM| (where the reference states can be user-specified with the \verb|betaRef| argument).  
+\noindent Note that for HHMMs, the reference states for the t.p.m. are determined by the lowest index for each state at the coarsest level in the hierarchy; in this case, the reference states are state 1 for ``nonforaging'' and state 4 for ``foraging''. This differs from standard HMMs fitted with \verb|fitHMM| (where the reference states can be user-specified with the \verb|betaRef| argument).  
 
 Since everything looks good, we're now ready to fit our HHMM:
 \begin{knitrout}
@@ -2095,7 +2907,7 @@ Since everything looks good, we're now ready to fit our HHMM:
 \hlstd{hhmm} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(}\hlkwc{data}\hlstd{=porpoiseData,}\hlkwc{hierStates}\hlstd{=hierStates,}\hlkwc{hierDist}\hlstd{=hierDist,}
                \hlkwc{hierFormula}\hlstd{=hierFormula,}\hlkwc{hierFormulaDelta}\hlstd{=hierFormulaDelta,}
                \hlkwc{Par0}\hlstd{=Par,}\hlkwc{hierBeta}\hlstd{=hierBeta,}\hlkwc{hierDelta}\hlstd{=hierDelta,}
-               \hlkwc{DM}\hlstd{=DM)}
+               \hlkwc{DM}\hlstd{=DM,}\hlkwc{nlmPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{hessian}\hlstd{=}\hlnum{FALSE}\hlstd{))}
 \end{alltt}
 
 
@@ -2119,7 +2931,7 @@ Since everything looks good, we're now ready to fit our HHMM:
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# DONE}}\end{kframe}
 \end{knitrout}
-Before examining the output for our fitted HHMM, it's worth noting here that when \verb|data| is a \verb|momentuHierHMMData| object, \verb|fitHMM| ``shoehorns'' the HHMM into a standard HMM by constraining the t.p.m. and initial distribution according to the hierarchical structure defined by \verb|hierStates|. This is why the printed t.p.m. formula above may look a little strange at first. The initial distribution formula printed above pertains only to the initial distribution at the coarsest level of the hierarchy, and the initial distributions for all other levels are imbedded in the t.p.m. Let's look a little deeper:
+\noindent Before examining the output for our fitted HHMM, it's worth noting here that when \verb|data| is a \verb|momentuHierHMMData| object, \verb|fitHMM| ``shoehorns'' the HHMM into a standard HMM by constraining the t.p.m. and initial distribution according to the hierarchical structure defined by \verb|hierStates|. This is why the printed t.p.m. formula above may look a little strange at first. The initial distribution formula printed above pertains only to the initial distribution at the coarsest level of the hierarchy, and the initial distributions for all other levels are imbedded in the t.p.m. Let's look a little deeper:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -2188,7 +3000,7 @@ Before examining the output for our fitted HHMM, it's worth noting here that whe
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
-We can see that even though we did not explicitly specify \verb|fixPar$beta|, \verb|betaCons|, \verb|fixPar$delta|, or \verb|deltaCons|, the working parameters for the t.p.m. and initial distribution for each level of the hierarchy are constrained accordingly by making certain state transition and initial distribution probabilities equal and/or effectively zero.  For example, these constraints do not allow fine-scale state switches between ``nonforaging'' (states $1-3$) and ``foraging'' (states $4-6$) when \verb|level=2|. Similar to how the t.p.m. reference states are defined, higher-level (i.e. ``parent'') states are indexed based on the lowest state index of their ``children''.  For example, ``nonforaging'' is indexed by state 1 and ``foraging'' is indexed by state 4, and only transitions to states 1 or 4 are permitted when \verb|level=1|.  Likewise, because \verb|delta| corresponds to the initial distribution at the coarsest-scale, the initial distribution probabilities are effectively zero for all states except states 1 and 4.
+\noindent We can see that even though we did not explicitly specify \verb|fixPar$beta|, \verb|betaCons|, \verb|fixPar$delta|, or \verb|deltaCons|, the working parameters for the t.p.m. and initial distribution for each level of the hierarchy are constrained accordingly by making certain state transition and initial distribution probabilities equal and/or effectively zero.  For example, these constraints do not allow fine-scale state switches between ``nonforaging'' (states $1-3$) and ``foraging'' (states $4-6$) when \verb|level=2|. Similar to how the t.p.m. reference states are defined, higher-level (i.e. ``parent'') states are indexed based on the lowest state index of their ``children''.  For example, ``nonforaging'' is indexed by state 1 and ``foraging'' is indexed by state 4, and only transitions to states 1 or 4 are permitted when \verb|level=1|.  Likewise, because \verb|delta| corresponds to the initial distribution at the coarsest-scale, the initial distribution probabilities are effectively zero for all states except states 1 and 4.
 
 Let's now examine our fitted HHMM:
 \begin{knitrout}
@@ -2299,7 +3111,7 @@ Let's now examine our fitted HHMM:
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
-These estimates are nearly identical to those reported by \cite{Leos-BarajasEtAl2017}.  The very slight differences are attributable to \cite{Leos-BarajasEtAl2017} assuming that the initial distribution for each level of the hierarchy is equal to the stationary distribution. However, bbecause it constrains the t.p.m. based on \verb|level|, this stationarity assumption is not possible when fitting HHMMs in \verb|momentuHMM|.  
+\noindent These estimates are nearly identical to those reported by \cite{Leos-BarajasEtAl2017}.  The very slight differences are attributable to \cite{Leos-BarajasEtAl2017} assuming that the initial distribution for each level of the hierarchy is equal to the stationary distribution. However, bbecause it constrains the t.p.m. based on \verb|level|, this stationarity assumption is not possible when fitting HHMMs in \verb|momentuHMM|.  
 
 As in a standard HMM, we can decode the most likely state sequence using the \verb|viterbi| function:
 \begin{knitrout}
@@ -2319,7 +3131,7 @@ As in a standard HMM, we can decode the most likely state sequence using the \ve
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
-but we can also obtain the most likely state sequences at each level of the hierarchy by setting the argument \verb|hierarchical=TRUE|
+\noindent but we can also obtain the most likely state sequences at each level of the hierarchy by setting the argument \verb|hierarchical=TRUE|
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -2479,10 +3291,67 @@ Next we'll quickly demonstrate how to perform the HHMM analysis for the garter s
 
 \hlcom{# prepare hierarchical data}
 \hlstd{snakeData} \hlkwb{<-} \hlkwd{prepData}\hlstd{(snakeData,}\hlkwc{coordNames}\hlstd{=}\hlkwa{NULL}\hlstd{,}\hlkwc{hierLevels}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"1"}\hlstd{,}\hlstr{"2i"}\hlstd{,}\hlstr{"2"}\hlstd{))}
+
+\hlcom{# summarize prepared data}
+\hlkwd{summary}\hlstd{(snakeData)}
 \end{alltt}
+\begin{verbatim}
+## Hierarchical HMM data for 19 individuals:
+## 
+## 1 -- 606 observations
+## 2 -- 606 observations
+## 3 -- 606 observations
+## 4 -- 606 observations
+## 5 -- 606 observations
+## 6 -- 606 observations
+## 7 -- 606 observations
+## 8 -- 606 observations
+## 9 -- 606 observations
+## 10 -- 606 observations
+## 11 -- 606 observations
+## 12 -- 606 observations
+## 13 -- 606 observations
+## 14 -- 606 observations
+## 15 -- 606 observations
+## 16 -- 606 observations
+## 17 -- 606 observations
+## 18 -- 606 observations
+## 19 -- 606 observations
+## 
+## 
+## Data summaries:
+## 
+##       step       level     
+##  Min.   :0.011   1 :  114  
+##  1st Qu.:0.334   2i:  114  
+##  Median :0.700   2 :11286  
+##  Mean   :0.790             
+##  3rd Qu.:1.149             
+##  Max.   :3.130             
+##  NA's   :1496
+\end{verbatim}
 \end{kframe}
 \end{knitrout}
-The sole data stream for this example is step length at the fine-scale level, and no coordinates are provided (hence \verb|coordNames=NULL|). As in section \ref{sec:harborPorpoise}, this example has no data streams observed at the coarse-scale level, but these could be easily included (if available).  Next we define our HHMM structure via the \verb|hierStates| data tree Node:
+\noindent The sole data stream for this example is step length at the fine-scale level, and no coordinates are provided (hence \verb|coordNames=NULL|). As in section \ref{sec:harborPorpoise}, this example has no data streams observed at the coarse-scale level, but these could be easily included (if available).  Let's now specify the probability distribution for the fine-scale step length data stream via the \verb|hierDist| data tree Node:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{### data stream distributions: }
+\hlcom{### level 1 = coarse level (no data streams)}
+\hlcom{### level 2 = fine level (step="gamma")}
+\hlstd{hierDist} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"garter snake HHMM dist"}\hlstd{)}
+\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level1"}\hlstd{)}
+\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level2"}\hlstd{)}
+\hlstd{hierDist}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"step"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
+
+\hlkwd{plot}\hlstd{(hierDist)}
+\end{alltt}
+\end{kframe}
+\includegraphics[width=\maxwidth]{figure/garterSnake-4-1} 
+
+\end{knitrout}
+
+Next we define our HHMM structure via the \verb|hierStates| data tree Node:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -2490,22 +3359,22 @@ The sole data stream for this example is step length at the fine-scale level, an
 \hlcom{###                          states 4-6 = coarse state 2}
 \hlcom{###                          states 7-9 = coarse state 3}
 \hlstd{hierStates} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"garter snake HHMM states"}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"internalState1"}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{internalState1}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"mo1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{1}\hlstd{)} \hlcom{# motionless}
-\hlstd{hierStates}\hlopt{$}\hlstd{internalState1}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"ex1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{2}\hlstd{)} \hlcom{# slow exploratory}
-\hlstd{hierStates}\hlopt{$}\hlstd{internalState1}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"es1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{3}\hlstd{)} \hlcom{# rapid escape}
-\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"internalState2"}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{internalState2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"mo2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{4}\hlstd{)} \hlcom{# motionless}
-\hlstd{hierStates}\hlopt{$}\hlstd{internalState2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"ex2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{5}\hlstd{)} \hlcom{# slow exploratory}
-\hlstd{hierStates}\hlopt{$}\hlstd{internalState2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"es2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{6}\hlstd{)} \hlcom{# rapid escape}
-\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"internalState3"}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{internalState3}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"mo3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{7}\hlstd{)} \hlcom{# motionless}
-\hlstd{hierStates}\hlopt{$}\hlstd{internalState3}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"ex3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{8}\hlstd{)} \hlcom{# slow exploratory}
-\hlstd{hierStates}\hlopt{$}\hlstd{internalState3}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"es3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{9}\hlstd{)} \hlcom{# rapid escape}
+\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"internalState1"}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlstd{internalState1}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"mo1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{1}\hlstd{)} \hlcom{# motionless}
+\hlstd{hierStates}\hlopt{$}\hlstd{internalState1}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"ex1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{2}\hlstd{)} \hlcom{# slow exploratory}
+\hlstd{hierStates}\hlopt{$}\hlstd{internalState1}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"es1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{3}\hlstd{)} \hlcom{# rapid escape}
+\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"internalState2"}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlstd{internalState2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"mo2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{4}\hlstd{)} \hlcom{# motionless}
+\hlstd{hierStates}\hlopt{$}\hlstd{internalState2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"ex2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{5}\hlstd{)} \hlcom{# slow exploratory}
+\hlstd{hierStates}\hlopt{$}\hlstd{internalState2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"es2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{6}\hlstd{)} \hlcom{# rapid escape}
+\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"internalState3"}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlstd{internalState3}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"mo3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{7}\hlstd{)} \hlcom{# motionless}
+\hlstd{hierStates}\hlopt{$}\hlstd{internalState3}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"ex3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{8}\hlstd{)} \hlcom{# slow exploratory}
+\hlstd{hierStates}\hlopt{$}\hlstd{internalState3}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"es3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{9}\hlstd{)} \hlcom{# rapid escape}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-Or, equivalently: 
+\noindent Or, equivalently: 
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -2525,24 +3394,7 @@ Or, equivalently:
 \includegraphics[width=\maxwidth]{figure/garterSnake-3-1} 
 
 \end{knitrout}
-We then specify the level of the hierarchy and probability distribution for the step length data stream via the \verb|hierDist| data tree Node:
-\begin{knitrout}
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{alltt}
-\hlcom{### data stream distributions: }
-\hlcom{### level 1 = coarse level (no data streams)}
-\hlcom{### level 2 = fine level (step="gamma")}
-\hlstd{hierDist} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"garter snake HHMM dist"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"step"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
 
-\hlkwd{plot}\hlstd{(hierDist)}
-\end{alltt}
-\end{kframe}
-\includegraphics[width=\maxwidth]{figure/garterSnake-4-1} 
-
-\end{knitrout}
 As in the harbor porpoise example (section \ref{sec:harborPorpoise}), we follow \cite{Leos-BarajasEtAl2017} and assume the fine-scale data stream probability distribution does not depend on coarse-scale state:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -2590,16 +3442,17 @@ As in the harbor porpoise example (section \ref{sec:harborPorpoise}), we follow 
 \end{alltt}
 \end{kframe}
 \end{knitrout}
+
 We do not include any covariates in \verb|hierFormula| or \verb|hierFormulaDelta|, so all that's left before fitting the model is the (optional) step of specifying starting values for the t.p.m. and initial distribution at each level of the hierarchy \citep[based on values reported by][]{Leos-BarajasEtAl2017}:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlstd{hierBeta} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"garter snake beta"}\hlstd{)}
-\hlstd{hierBeta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{)}
-\hlstd{hierBeta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{)}
-\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"internalState1"}\hlstd{)}
-\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"internalState2"}\hlstd{)}
-\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"internalState3"}\hlstd{)}
+\hlstd{hierBeta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level1"}\hlstd{)}
+\hlstd{hierBeta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level2"}\hlstd{)}
+\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"internalState1"}\hlstd{)}
+\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"internalState2"}\hlstd{)}
+\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"internalState3"}\hlstd{)}
 
 \hlstd{hierDelta} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlkwd{Clone}\hlstd{(hierBeta)}
 \hlstd{hierDelta}\hlopt{$}\hlstd{name} \hlkwb{<-} \hlstr{"garter snake delta"}
@@ -2668,6 +3521,7 @@ We do not include any covariates in \verb|hierFormula| or \verb|hierFormulaDelta
 \end{alltt}
 \end{kframe}
 \end{knitrout}
+
 Let's check our model specification:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -2726,7 +3580,7 @@ Let's check our model specification:
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
-Again note that higher-level (i.e. ``parent'') states are indexed based on the lowest state index of their ``children''.  For example, ``internalState1'' is indexed by state 1, ``internalState2'' is indexed by state 4, and ``internalState3'' is indexed by state 7. We can also examine the starting values for the t.p.m. on the real scale (``\verb|gamma|'') at each level of the hierarchy using the \verb|getTrProbs| function:
+\noindent Again note that higher-level (i.e. ``parent'') states are indexed based on the lowest state index of their ``children''.  For example, ``internalState1'' is indexed by state 1, ``internalState2'' is indexed by state 4, and ``internalState3'' is indexed by state 7. We can also examine the starting values for the t.p.m. on the real scale (``\verb|gamma|'') at each level of the hierarchy using the \verb|getTrProbs| function:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -2767,13 +3621,15 @@ Again note that higher-level (i.e. ``parent'') states are indexed based on the l
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
+
 Now let's fit our garter snake HHMM:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlcom{# fit hierarchical HMM}
 \hlstd{hhmm} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(snakeData,}\hlkwc{hierStates}\hlstd{=hierStates,}\hlkwc{hierDist}\hlstd{=hierDist,}
-               \hlkwc{Par0}\hlstd{=Par,}\hlkwc{DM}\hlstd{=DM,}\hlkwc{hierBeta}\hlstd{=hierBeta,}\hlkwc{hierDelta}\hlstd{=hierDelta)}
+               \hlkwc{Par0}\hlstd{=Par,}\hlkwc{DM}\hlstd{=DM,}\hlkwc{hierBeta}\hlstd{=hierBeta,}\hlkwc{hierDelta}\hlstd{=hierDelta,}
+               \hlkwc{nlmPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{hessian}\hlstd{=}\hlnum{FALSE}\hlstd{))}
 \end{alltt}
 
 
@@ -2924,8 +3780,7 @@ Now let's fit our garter snake HHMM:
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
-
-These estimates are virtually identical to \cite{Leos-BarajasEtAl2017}; the only (very slight) difference is in the estimates for the coarse-scale initial distribution $({\boldsymbol \delta}^{(0)})$ because, unlike in \cite{Leos-BarajasEtAl2017}, the forward algorithm in \verb|momentuHMM| (Eq. \ref{eq:HMMlike}) includes a state transition between time steps $t=0$ and $t=1$.
+\noindent These estimates are virtually identical to \cite{Leos-BarajasEtAl2017}; the only (very slight) difference is in the estimates for the coarse-scale initial distribution $({\boldsymbol \delta}^{(0)})$ because, unlike in \cite{Leos-BarajasEtAl2017}, the forward algorithm in \verb|momentuHMM| (Eq. \ref{eq:HMMlike}) includes a state transition between time steps $t=0$ and $t=1$.
 
 As usual, we can check pseudo-residuals using \verb|plotPR| (Figure \ref{fig:snakePR}):
 \begin{knitrout}
@@ -2941,7 +3796,7 @@ As usual, we can check pseudo-residuals using \verb|plotPR| (Figure \ref{fig:sna
   \caption{Pseudo-residual plot for the HHMM garter snake example.}
   \label{fig:snakePR}
 \end{figure}
-and simulate from our fitted HHMM using \verb|simHierData|:
+\noindent and simulate from our fitted HHMM using \verb|simHierData|:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
