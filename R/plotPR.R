@@ -82,10 +82,18 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
   
   for(i in distnames){
       # time series
-      ylim <- range(unlist(lapply(pr,function(x) x[[paste0(i,"Res")]])),na.rm=TRUE)
+      if(any(is.infinite(pr[[1]][[paste0(i,"Res")]]))){
+        warning("some pseudo-residuals for ",i," are infinite; these will be set to NA for plotting")
+        pr[[1]][[paste0(i,"Res")]][which(is.infinite(pr[[1]][[paste0(i,"Res")]]))] <- NA
+      }
+      ylim <- range(unlist(lapply(pr,function(x) x[[paste0(i,"Res")]][which(is.finite(x[[paste0(i,"Res")]]))])),na.rm=TRUE)
       plot(pr[[1]][[paste0(i,"Res")]],type="l",xlab="Observation index",ylab=paste0(i," pseudo-residuals"),main="",ylim=ylim)
       if(nSims>1){
         for(j in 2:nSims){
+          if(any(is.infinite(pr[[j]][[paste0(i,"Res")]]))){
+            warning("some pseudo-residuals for ",i," are infinite; these will be set to NA for plotting")
+            pr[[j]][[paste0(i,"Res")]][which(is.infinite(pr[[j]][[paste0(i,"Res")]]))] <- NA
+          }
           lines(pr[[j]][[paste0(i,"Res")]],col=col[j])
         }
       }
