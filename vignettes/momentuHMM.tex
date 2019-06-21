@@ -1852,7 +1852,8 @@ Here we demonstrate how to include individual heterogeneity in state-switching d
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
-We next specify the data stream probability distributions and starting values for the parameters \citep[based on those reported by ][]{IsojunnoEtAl2017}:
+
+After specifying the data stream probability distributions and starting values for the parameters \citep[based on those reported by ][]{IsojunnoEtAl2017}, let's first fit the null model with no discrete-valued individual-level random effects on the state-switching dynamics:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -1895,7 +1896,7 @@ We next specify the data stream probability distributions and starting values fo
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-Let's first fit the null model with no discrete-valued individual-level random effects on the state-switching dynamics.  \cite{IsojunnoEtAl2017} found that model selection criteria favored models that assume the initial distribution is the stationary distribution, so we'll set \verb|stationary=TRUE|:
+\noindent \cite{IsojunnoEtAl2017} found that model selection criteria favored models that assume the initial distribution is the stationary distribution, so we'll set \verb|stationary=TRUE|:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -1905,16 +1906,101 @@ Let's first fit the null model with no discrete-valued individual-level random e
                   \hlkwc{stationary}\hlstd{=}\hlnum{TRUE}\hlstd{,}
                   \hlkwc{stateNames}\hlstd{=stateNames,}
                   \hlkwc{nlmPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{hessian}\hlstd{=}\hlnum{FALSE}\hlstd{))}
+\hlstd{fitmix1}
 \end{alltt}
+\begin{verbatim}
+## Value of the maximum log-likelihood: -18510.4 
+## 
+## 
+## dive.dur parameters:
+## --------------------
+##       exploratory foraging  crowded  directed
+## shape    1.895587 2.719570 1.640040 4.2099390
+## scale    1.301088 8.142114 1.529318 0.7911992
+## 
+## dive.depth parameters:
+## ----------------------
+##      exploratory foraging   crowded directed
+## mean   10.221159 315.7408 10.752753 5.507151
+## sd      4.920867 233.2394  6.325075 1.908221
+## 
+## GR.speed2 parameters:
+## ---------------------
+##      exploratory  foraging crowded  directed
+## mean   1.1469499 1.3170625 1.36225 1.5706933
+## sd     0.6602282 0.5121064 0.77157 0.7628831
+## 
+## dive.pitchvar2 parameters:
+## --------------------------
+##        exploratory foraging   crowded  directed
+## shape1    2.205733 2.876755  1.823291  3.186465
+## shape2   17.948930 6.036487 16.067474 55.491769
+## 
+## breath.headchange parameters:
+## -----------------------------
+##               exploratory foraging  crowded directed
+## mean             0.000000 0.000000 0.000000  0.00000
+## concentration    3.068759 5.653926 2.644184 18.04806
+## 
+## GR.size parameters:
+## -------------------
+##        exploratory foraging  crowded directed
+## lambda    5.996763 7.392536 20.38838 9.522725
+## 
+## GR.tight parameters:
+## --------------------
+##      exploratory  foraging   crowded  directed
+## prob   0.8885557 0.6629627 0.7609689 0.8072405
+## 
+## dive.CS.pres parameters:
+## ------------------------
+##      exploratory  foraging   crowded  directed
+## prob   0.7630851 0.9892991 0.4077435 0.4703789
+## 
+## dive.SS.pres parameters:
+## ------------------------
+##      exploratory  foraging   crowded  directed
+## prob   0.7167555 0.9789121 0.3955766 0.4115657
+## 
+## presurf parameters:
+## -------------------
+##      exploratory  foraging crowded  directed
+## prob     0.76011 0.9924097 0.70787 0.7068425
+## 
+## postsurf parameters:
+## --------------------
+##      exploratory  foraging   crowded  directed
+## prob   0.8081057 0.9619604 0.7164094 0.6568226
+## 
+## Regression coeffs for the transition probabilities:
+## ---------------------------------------------------
+##              1 -> 2    1 -> 3    1 -> 4    2 -> 1    2 -> 3     2 -> 4
+## (Intercept) -2.3725 -3.871793 -1.230078 0.2005482 -1.623498 -0.4895434
+##                3 -> 1    3 -> 2    3 -> 4    4 -> 1    4 -> 2    4 -> 3
+## (Intercept) -3.543939 -4.120499 -2.272679 -1.163733 -3.035013 -2.539986
+## 
+## Transition probability matrix:
+## ------------------------------
+##             exploratory   foraging    crowded   directed
+## exploratory  0.71106663 0.06630503 0.01480512 0.20782321
+## foraging     0.40303342 0.32979502 0.06503813 0.20213342
+## crowded      0.02516983 0.01414110 0.87095004 0.08973904
+## directed     0.21699916 0.03340193 0.05479726 0.69480165
+## 
+## Initial distribution:
+## ---------------------
+## exploratory    foraging     crowded    directed 
+##  0.36640726  0.05854032  0.22161529  0.35343713
+\end{verbatim}
 \end{kframe}
 \end{knitrout}
 \noindent (note that we've set the \verb|nlmPar| option \verb|hessian=FALSE| simply to speed up the compile time for this vignette). 
 
-Now we'll fit a model with $K=2$ mixtures of discrete-valued individual-level random effects by setting \verb|mixtures=2|, but first we'll set some starting values from the null model (using \verb|getPar0|) and check our model specification (using \verb|checkPar0|):
+Now we'll fit a model with $K=2$ mixtures of discrete-valued individual-level random effects by setting \verb|mixtures=2|, but first we'll set some starting values based on the null model (using \verb|getPar0|) and check our model specification (using \verb|checkPar0|):
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{Par0_mix2} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(fitmix1,}\hlkwc{mixtures}\hlstd{=}\hlnum{2}\hlstd{)}
+\hlstd{Par0_mix2} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(fitmix1,} \hlkwc{mixtures}\hlstd{=}\hlnum{2}\hlstd{)}
 \hlstd{Par0_mix2}\hlopt{$}\hlstd{beta}\hlopt{$}\hlstd{beta[}\hlnum{1}\hlstd{,]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.26}\hlstd{,} \hlopt{-}\hlnum{3.93}\hlstd{,} \hlopt{-}\hlnum{0.58}\hlstd{,}
                               \hlnum{0.03}\hlstd{,} \hlopt{-}\hlnum{2.25}\hlstd{,} \hlopt{-}\hlnum{0.26}\hlstd{,}
                              \hlopt{-}\hlnum{3.38}\hlstd{,} \hlopt{-}\hlnum{4.79}\hlstd{,} \hlopt{-}\hlnum{2.82}\hlstd{,}
@@ -2226,7 +2312,7 @@ Now let's fit a model with $K=3$ mixtures by setting some starting values with t
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{Par0_mix3} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(fitmix2,}\hlkwc{mixtures}\hlstd{=}\hlnum{3}\hlstd{)}
+\hlstd{Par0_mix3} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(fitmix2,} \hlkwc{mixtures}\hlstd{=}\hlnum{3}\hlstd{)}
 \hlstd{Par0_mix3}\hlopt{$}\hlstd{beta}\hlopt{$}\hlstd{beta[}\hlnum{1}\hlstd{,]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.15}\hlstd{,} \hlopt{-}\hlnum{4.31}\hlstd{,} \hlopt{-}\hlnum{1.09}\hlstd{,}
                               \hlnum{0.28}\hlstd{,} \hlopt{-}\hlnum{1.88}\hlstd{,}  \hlopt{-}\hlnum{0.3}\hlstd{,}
                               \hlopt{-}\hlnum{3.5}\hlstd{,} \hlopt{-}\hlnum{4.71}\hlstd{,} \hlopt{-}\hlnum{3.11}\hlstd{,}
@@ -2559,13 +2645,17 @@ Based on AIC, we find overwhelming support for the discrete-valued individual-le
 \end{kframe}
 \end{knitrout}
 
+
+
 \subsection{Hierarchical HMMs}
 \label{sec:HHMMexamples}
 As we already noted in section \ref{sec:HHMM}, HMMs with hierarchical structures allow for data streams and/or state transitions to occur at multiple regular time scales. \cite{Leos-BarajasEtAl2017} provide two examples where state transitions are allowed to occur at both ``coarse'' and ``fine'' time scales, and here we demonstrate how both of these examples can be fitted in \verb|momentuHMM|. The key to fitting (and simulating) hierarchical hidden Markov models (HHMMs) in \verb|momentuHMM| is specifying certain \verb|fitHMM| (and \verb|simHierData|) arguments hierarchically using the \verb|data.tree| package \citep{Glur2018}. For HHMMs, instead of simply specifying the number of states (\verb|nbStates|), distributions (\verb|dist|), and a single t.p.m. (\verb|formula|) or initial distribution (\verb|formulaDelta|) formula, the \verb|hierStates| argument specifies the hierarchical nature of the states, the \verb|hierDist| argument specifies the hierarchical nature of the data streams, and the \verb|hierFormula| or \verb|hierFormulaDelta| arguments specify a t.p.m. or initial distribution formula for each level of the hierarchy. All are specified as \verb|Node| objects from the \verb|data.tree| package.  In the examples below, we focus on how to implement these HHMMs in \verb|momentuHMM| and refer readers to \cite{Leos-BarajasEtAl2017} for specific details about the data sets and the particular models being fitted.
 
 \subsubsection{Harbor porpoise example}
 \label{sec:harborPorpoise}
-In order to replicate the harbor porpoise HHMM example from \cite{Leos-BarajasEtAl2017} in \verb|momentuHMM|, we must first use \verb|prepData| to prepare our hierarchical data. This requires an additional field named \verb|level| to be included in \verb|data| that identifies the level of the hierarchy for each observation. These levels must be ordered from the coarsest to finest time scales, and must also indicate the initial observations at each level of the hierarchy (except for the coarsest level).  For example, if there are $M=3$ time scales in the hierarchy (e.g. ``coarse'', ``medium'', and ``fine'' scales), then the \verb|level| field must include $2*M-1=5$ ordered factors: ``\verb|1|'' (corresponding to coarse-scale observations), ``\verb|2i|'' (initial medium-scale observations), ``\verb|2|'' (medium-scale observations), ``\verb|3i|'' (initial fine-scale observations), and ``\verb|3|'' (fine-scale observations). In the harbor porpoise example from \cite{Leos-BarajasEtAl2017}, there are only $M=2$ levels in the hierarchy so the $2*M-1=3$ ordered \verb|level| factors are ``\verb|1|'' (coarse level), ``\verb|2i|'' (initial fine level), and ``\verb|2|'' (fine level).  After downloading the data, we can manually add the \verb|level| field to our data frame as follows:
+In order to replicate the harbor porpoise HHMM example from \cite{Leos-BarajasEtAl2017} in \verb|momentuHMM|, we must first use \verb|prepData| to prepare our hierarchical data. This requires an additional field named \verb|level| to be included in \verb|data| that identifies the level of the hierarchy for each observation. These levels must be ordered from the coarsest to finest time scales, and must also indicate the initial observations at each level of the hierarchy (except for the coarsest level).  For example, if there are $M=3$ time scales in the hierarchy (e.g. ``coarse'', ``medium'', and ``fine'' scales), then the \verb|level| field must include $2M-1=5$ ordered factors: ``\verb|1|'' (corresponding to coarse-scale observations), ``\verb|2i|'' (initial medium-scale observations), ``\verb|2|'' (medium-scale observations), ``\verb|3i|'' (initial fine-scale observations), and ``\verb|3|'' (fine-scale observations). Regardless of the number of levels in the hierarchy, note that for each individual the \verb|level| field for the first observation must always be ``\verb|1|'', the second obervation must always be ``\verb|2i|'', the third observation must always be ``\verb|2|'', and the last observation must always be from level $M$. Also note that every ``\verb|1|'' observation must be followed by ``\verb|2i|'', every ``\verb|2i|'' must be followed by one or more ``\verb|2|'', every ``\verb|3i|'' must be preceded by ``\verb|2|'' and followed by one or more ``\verb|3|'', and, after the first observation, every ``\verb|1|'' must be preceded by an observation from level $M$.
+
+In the harbor porpoise example from \cite{Leos-BarajasEtAl2017}, there are only $M=2$ levels in the hierarchy so the $2M-1=3$ ordered \verb|level| factors are ``\verb|1|'' (coarse level), ``\verb|2i|'' (initial fine level), and ``\verb|2|'' (fine level).  After downloading the data, we can manually add the \verb|level| field to our data frame as follows:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -2645,17 +2735,17 @@ Now that we have labeled each observation in our data with a \verb|level| factor
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
-\noindent Here we have used the \verb|hierLevels| argument to identify the ordered factor levels that \verb|prepData| can expect to find in the \verb|level| field. When \verb|hierLevels| is specified, \verb|prepData| assumes the data are intended for a HHMM analysis and assigns the classes \verb|hierarchical| and \verb|momentuHierHMMData| to the returned object (and corresponding methods for these classes will hereafter be used when calling functions such as \verb|fitHMM|). Because \verb|prepData| assumes the \verb|level| field is a factor with levels ordered according to \verb|hierLevels|, an error is returned if the order of the \verb|level| field in \verb|data| is not consistent with \verb|hierLevels|: 
+\noindent For HHMMs, we must use the \verb|hierLevels| argument to identify the ordered factor levels that \verb|prepData| can expect to find in the \verb|level| field. When \verb|hierLevels| is specified, \verb|prepData| assumes the data are intended for a HHMM analysis and assigns the classes \verb|hierarchical| and \verb|momentuHierHMMData| to the returned object (and corresponding methods for these classes will hereafter be used when calling functions such as \verb|fitHMM|). Because \verb|prepData| assumes the \verb|level| field is a factor with levels ordered according to \verb|hierLevels|, an error is returned if the order of \verb|hierLevels| is not consistent with the \verb|level| field (or vice versa): 
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{porpoiseData} \hlkwb{<-} \hlkwd{prepData}\hlstd{(}\hlkwc{data} \hlstd{= porpoiseData,}
-                         \hlkwc{coordNames} \hlstd{=} \hlkwa{NULL}\hlstd{,}
-                         \hlkwc{hierLevels} \hlstd{=} \hlkwd{c}\hlstd{(}\hlstr{"1"}\hlstd{,} \hlstr{"2"}\hlstd{,} \hlstr{"2i"}\hlstd{))}
+\hlkwd{prepData}\hlstd{(}\hlkwc{data} \hlstd{= porpoiseData,}
+                \hlkwc{coordNames} \hlstd{=} \hlkwa{NULL}\hlstd{,}
+                \hlkwc{hierLevels} \hlstd{=} \hlkwd{c}\hlstd{(}\hlstr{"1"}\hlstd{,} \hlstr{"2"}\hlstd{,} \hlstr{"2i"}\hlstd{))}
 \end{alltt}
 
 
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in prepData.hierarchical(data = porpoiseData, coordNames = NULL, : data\$level not consistent with 'hierLevels'}}\end{kframe}
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in prepData.hierarchical(data = porpoiseData, coordNames = NULL, : hierLevels must be ordered factors of the form:\\\#\#\ \ \ \ \ \ '1', '2i', '2', ..., 'Mi', 'M' where M is the number of levels in the hierarchy}}\end{kframe}
 \end{knitrout}
 \noindent Note that because there are no location data in this example, we have set \verb|coordNames| to \verb|NULL|. Also note that in this example there are no data streams observed at the coarse time scale (\verb|level=1|), but these could be easily included (if available). By definition there are no data streams observed at the initial fine scale (\verb|level=2i|), but covariates (if available) could be included here for modeling the fine-scale initial distributions or state transition probabilities.
 

@@ -513,8 +513,18 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
   if(is.null(data$level)) stop("data must include a 'level' field")
   if(any(is.na(data$level))) stop("data$level cannot include missing values")
   if(!is.factor(data$level)) data$level <- factor(data$level,levels=hierLevels)
+  if(any(is.na(as.numeric(gsub("i","",data$level))))) stop(stop("data$level can only include:\n     '1', '2i', '2', ..., 'Mi', 'M' where M is the number of levels in the hierarchy"))
+  if(any(is.na(as.numeric(gsub("i","",hierLevels))))) stop("hierLevels must be ordered factors of the form:\n     '1', '2i', '2', ..., 'Mi', 'M' where M is the number of levels in the hierarchy")
+  else {
+    maxlevel <- max(as.numeric(gsub("i","",data$level)))
+    if(length(hierLevels)!=(2*maxlevel-1)) stop("hierLevels must be of length 2*M-1 where M is the number of levels in the hierarchy")
+    checkHierLevels <- character(2*maxlevel-1)
+    checkHierLevels[1] <- "1"
+    checkHierLevels[seq(2,2*maxlevel-1,2)] <- paste0(seq(2,2*maxlevel-1,2),"i")
+    checkHierLevels[seq(3,2*maxlevel-1,2)] <- as.character(seq(2,2*maxlevel-1,2))
+    if(!all(hierLevels==checkHierLevels)) stop("hierLevels must be ordered factors of the form:\n     '1', '2i', '2', ..., 'Mi', 'M' where M is the number of levels in the hierarchy")
+  }
   if(nlevels(data$level)!=length(hierLevels) || !all(levels(data$level)==hierLevels) || any(is.na(data$level))) stop("data$level not consistent with 'hierLevels'")
-  
   nbLevels <- length(hierLevels)
   for(k in 1:min(nbLevels,nrow(data))){
     if(data$level[k]!=hierLevels[k]) stop("data$level and/or 'hierLevels' not ordered correctly; observation ",k," is level ",data$level[k]," but factor level is ",hierLevels[k])
@@ -544,6 +554,13 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     ID <- rep("Animal1",nrow(data)) # default ID if none provided
     data$ID <- ID
   }
+  
+  # check order of data$level for each individual
+  for(i in unique(data$ID)){
+    if(data[which(data$ID==i)[1],"level"]!=hierLevels[1] | data[tail(which(data$ID==i),1),"level"]!=tail(hierLevels,1)) stop("data$level invalid for individual ",i,": level for first observation must be '",hierLevels[1],"'"," and level for last observation must be '",tail(hierLevels,1),"'")
+    if(!all(rle(as.character(data[which(data$ID==i),"level"]))$values==hierLevels)) stop("data$level invalid for individual ",i,": pattern not consistent with 'hierLevels'")
+  }
+  
   if(!is.null(coordNames)) levelData <- data[which(data$level==coordLevel),]
   
   if(length(which(is.na(ID)))>0)

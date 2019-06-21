@@ -1506,7 +1506,8 @@ Here we demonstrate how to include individual heterogeneity in state-switching d
 <<pilotWhale-2, echo=TRUE, eval=TRUE>>=
 summary(pilotData, dataNames=names(pilotData)[-1])
 @
-We next specify the data stream probability distributions and starting values for the parameters \citep[based on those reported by ][]{IsojunnoEtAl2017}:
+
+After specifying the data stream probability distributions and starting values for the parameters \citep[based on those reported by ][]{IsojunnoEtAl2017}, let's first fit the null model with no discrete-valued individual-level random effects on the state-switching dynamics:
 <<pilotWhale-3, echo=TRUE, eval=TRUE>>=
 ## 11 data streams
 dist <- list(dive.dur = "weibull",
@@ -1545,7 +1546,7 @@ beta0 <- matrix(c(-2.38, -3.86, -1.22,
 
 stateNames <- c("exploratory","foraging","crowded","directed")
 @
-Let's first fit the null model with no discrete-valued individual-level random effects on the state-switching dynamics.  \cite{IsojunnoEtAl2017} found that model selection criteria favored models that assume the initial distribution is the stationary distribution, so we'll set \verb|stationary=TRUE|:
+\noindent \cite{IsojunnoEtAl2017} found that model selection criteria favored models that assume the initial distribution is the stationary distribution, so we'll set \verb|stationary=TRUE|:
 <<pilotWhale-4, echo=c(4,5,6,7,8), eval=TRUE, cache=TRUE, message=FALSE>>=
 Par0 <- fitmix1_Par$Par
 beta0 <- fitmix1_Par$beta
@@ -1556,12 +1557,13 @@ fitmix1 <- fitHMM(pilotData, nbStates=4, dist=dist,
                   stationary=TRUE,
                   stateNames=stateNames,
                   nlmPar=list(hessian=FALSE))
+fitmix1
 @
 \noindent (note that we've set the \verb|nlmPar| option \verb|hessian=FALSE| simply to speed up the compile time for this vignette). 
 
-Now we'll fit a model with $K=2$ mixtures of discrete-valued individual-level random effects by setting \verb|mixtures=2|, but first we'll set some starting values from the null model (using \verb|getPar0|) and check our model specification (using \verb|checkPar0|):
+Now we'll fit a model with $K=2$ mixtures of discrete-valued individual-level random effects by setting \verb|mixtures=2|, but first we'll set some starting values based on the null model (using \verb|getPar0|) and check our model specification (using \verb|checkPar0|):
 <<pilotWhale-5, echo=TRUE, eval=TRUE>>=
-Par0_mix2 <- getPar0(fitmix1,mixtures=2)
+Par0_mix2 <- getPar0(fitmix1, mixtures=2)
 Par0_mix2$beta$beta[1,] <- c(-2.26, -3.93, -0.58, 
                               0.03, -2.25, -0.26, 
                              -3.38, -4.79, -2.82, 
@@ -1607,7 +1609,7 @@ round(trProbs2[[2]][,,1],2)
 
 Now let's fit a model with $K=3$ mixtures by setting some starting values with the help of \verb|getPar0|:
 <<pilotWhale-9a, echo=TRUE, eval=TRUE>>=
-Par0_mix3 <- getPar0(fitmix2,mixtures=3)
+Par0_mix3 <- getPar0(fitmix2, mixtures=3)
 Par0_mix3$beta$beta[1,] <- c(-2.15, -4.31, -1.09, 
                               0.28, -1.88,  -0.3, 
                               -3.5, -4.71, -3.11, 
@@ -1680,13 +1682,19 @@ AIC(fitmix1,fitmix2,fitmix3,fitmix4,fitfix)
 AICweights(fitmix1,fitmix2,fitmix3,fitmix4,fitfix)
 @
 
+<<pilotWhale-13, echo=FALSE, eval=TRUE>>=
+rm(fitmix1,fitmix2,fitmix3,fitmix4,fitfix)
+@
+
 \subsection{Hierarchical HMMs}
 \label{sec:HHMMexamples}
 As we already noted in section \ref{sec:HHMM}, HMMs with hierarchical structures allow for data streams and/or state transitions to occur at multiple regular time scales. \cite{Leos-BarajasEtAl2017} provide two examples where state transitions are allowed to occur at both ``coarse'' and ``fine'' time scales, and here we demonstrate how both of these examples can be fitted in \verb|momentuHMM|. The key to fitting (and simulating) hierarchical hidden Markov models (HHMMs) in \verb|momentuHMM| is specifying certain \verb|fitHMM| (and \verb|simHierData|) arguments hierarchically using the \verb|data.tree| package \citep{Glur2018}. For HHMMs, instead of simply specifying the number of states (\verb|nbStates|), distributions (\verb|dist|), and a single t.p.m. (\verb|formula|) or initial distribution (\verb|formulaDelta|) formula, the \verb|hierStates| argument specifies the hierarchical nature of the states, the \verb|hierDist| argument specifies the hierarchical nature of the data streams, and the \verb|hierFormula| or \verb|hierFormulaDelta| arguments specify a t.p.m. or initial distribution formula for each level of the hierarchy. All are specified as \verb|Node| objects from the \verb|data.tree| package.  In the examples below, we focus on how to implement these HHMMs in \verb|momentuHMM| and refer readers to \cite{Leos-BarajasEtAl2017} for specific details about the data sets and the particular models being fitted.
 
 \subsubsection{Harbor porpoise example}
 \label{sec:harborPorpoise}
-In order to replicate the harbor porpoise HHMM example from \cite{Leos-BarajasEtAl2017} in \verb|momentuHMM|, we must first use \verb|prepData| to prepare our hierarchical data. This requires an additional field named \verb|level| to be included in \verb|data| that identifies the level of the hierarchy for each observation. These levels must be ordered from the coarsest to finest time scales, and must also indicate the initial observations at each level of the hierarchy (except for the coarsest level).  For example, if there are $M=3$ time scales in the hierarchy (e.g. ``coarse'', ``medium'', and ``fine'' scales), then the \verb|level| field must include $2*M-1=5$ ordered factors: ``\verb|1|'' (corresponding to coarse-scale observations), ``\verb|2i|'' (initial medium-scale observations), ``\verb|2|'' (medium-scale observations), ``\verb|3i|'' (initial fine-scale observations), and ``\verb|3|'' (fine-scale observations). In the harbor porpoise example from \cite{Leos-BarajasEtAl2017}, there are only $M=2$ levels in the hierarchy so the $2*M-1=3$ ordered \verb|level| factors are ``\verb|1|'' (coarse level), ``\verb|2i|'' (initial fine level), and ``\verb|2|'' (fine level).  After downloading the data, we can manually add the \verb|level| field to our data frame as follows:
+In order to replicate the harbor porpoise HHMM example from \cite{Leos-BarajasEtAl2017} in \verb|momentuHMM|, we must first use \verb|prepData| to prepare our hierarchical data. This requires an additional field named \verb|level| to be included in \verb|data| that identifies the level of the hierarchy for each observation. These levels must be ordered from the coarsest to finest time scales, and must also indicate the initial observations at each level of the hierarchy (except for the coarsest level).  For example, if there are $M=3$ time scales in the hierarchy (e.g. ``coarse'', ``medium'', and ``fine'' scales), then the \verb|level| field must include $2M-1=5$ ordered factors: ``\verb|1|'' (corresponding to coarse-scale observations), ``\verb|2i|'' (initial medium-scale observations), ``\verb|2|'' (medium-scale observations), ``\verb|3i|'' (initial fine-scale observations), and ``\verb|3|'' (fine-scale observations). Regardless of the number of levels in the hierarchy, note that for each individual the \verb|level| field for the first observation must always be ``\verb|1|'', the second obervation must always be ``\verb|2i|'', the third observation must always be ``\verb|2|'', and the last observation must always be from level $M$. Also note that every ``\verb|1|'' observation must be followed by ``\verb|2i|'', every ``\verb|2i|'' must be followed by one or more ``\verb|2|'', every ``\verb|3i|'' must be preceded by ``\verb|2|'' and followed by one or more ``\verb|3|'', and, after the first observation, every ``\verb|1|'' must be preceded by an observation from level $M$.
+
+In the harbor porpoise example from \cite{Leos-BarajasEtAl2017}, there are only $M=2$ levels in the hierarchy so the $2M-1=3$ ordered \verb|level| factors are ``\verb|1|'' (coarse level), ``\verb|2i|'' (initial fine level), and ``\verb|2|'' (fine level).  After downloading the data, we can manually add the \verb|level| field to our data frame as follows:
 <<harborPorpoise-1, echo=TRUE, eval=TRUE, cache=TRUE>>=
 # load harbor porpoise data from Leos-Barajas et al
 load(url(paste0("https://static-content.springer.com/esm/",
@@ -1724,11 +1732,11 @@ porpoiseData <- prepData(data = porpoiseData,
 # summarize prepared data
 summary(porpoiseData, dataNames = names(porpoiseData)[-1])
 @
-\noindent Here we have used the \verb|hierLevels| argument to identify the ordered factor levels that \verb|prepData| can expect to find in the \verb|level| field. When \verb|hierLevels| is specified, \verb|prepData| assumes the data are intended for a HHMM analysis and assigns the classes \verb|hierarchical| and \verb|momentuHierHMMData| to the returned object (and corresponding methods for these classes will hereafter be used when calling functions such as \verb|fitHMM|). Because \verb|prepData| assumes the \verb|level| field is a factor with levels ordered according to \verb|hierLevels|, an error is returned if the order of the \verb|level| field in \verb|data| is not consistent with \verb|hierLevels|: 
+\noindent For HHMMs, we must use the \verb|hierLevels| argument to identify the ordered factor levels that \verb|prepData| can expect to find in the \verb|level| field. When \verb|hierLevels| is specified, \verb|prepData| assumes the data are intended for a HHMM analysis and assigns the classes \verb|hierarchical| and \verb|momentuHierHMMData| to the returned object (and corresponding methods for these classes will hereafter be used when calling functions such as \verb|fitHMM|). Because \verb|prepData| assumes the \verb|level| field is a factor with levels ordered according to \verb|hierLevels|, an error is returned if the order of \verb|hierLevels| is not consistent with the \verb|level| field (or vice versa): 
 <<harborPorpoise-2b, echo=TRUE, eval=TRUE, error=TRUE>>=
-porpoiseData <- prepData(data = porpoiseData,
-                         coordNames = NULL,
-                         hierLevels = c("1", "2", "2i"))
+prepData(data = porpoiseData,
+                coordNames = NULL,
+                hierLevels = c("1", "2", "2i"))
 @
 \noindent Note that because there are no location data in this example, we have set \verb|coordNames| to \verb|NULL|. Also note that in this example there are no data streams observed at the coarse time scale (\verb|level=1|), but these could be easily included (if available). By definition there are no data streams observed at the initial fine scale (\verb|level=2i|), but covariates (if available) could be included here for modeling the fine-scale initial distributions or state transition probabilities.
 
