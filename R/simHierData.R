@@ -928,6 +928,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
         wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+        if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
         
         ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
         nc <- ncmean$nc
@@ -1085,6 +1086,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
               fullDM <- DMinputs$fullDM
               DMind <- DMinputs$DMind
               wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+              if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
+              
               nc <- meanind <- vector('list',length(distnames))
               names(nc) <- names(meanind) <- distnames
               for(i in distnames){
