@@ -10,10 +10,11 @@ getTrProbs(data, ...)
 
 \method{getTrProbs}{default}(data, nbStates, beta, workBounds = NULL,
   formula = ~1, mixtures = 1, betaRef = NULL, stateNames = NULL,
-  ...)
+  getCI = FALSE, alpha = 0.95, ...)
 
 \method{getTrProbs}{hierarchical}(data, hierStates, hierBeta,
-  workBounds = NULL, hierFormula = NULL, mixtures = 1, hierDist, ...)
+  workBounds = NULL, hierFormula = NULL, mixtures = 1, hierDist,
+  getCI = FALSE, alpha = 0.95, ...)
 }
 \arguments{
 \item{data}{\code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 
@@ -21,7 +22,7 @@ getTrProbs(data, ...)
 If a data frame is provided, then either \code{nbStates} must be specified (for a regular HMM) or \code{hierStates} and \code{hierDist}
 must be specified (for a hierarchical HMM).}
 
-\item{...}{further arguments passed to or from other methods; ignored if \code{data} is a \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object}
+\item{...}{further arguments passed to or from other methods; most are ignored if \code{data} is a \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object}
 
 \item{nbStates}{Number of states. Ignored unless \code{data} is a data frame.}
 
@@ -38,6 +39,10 @@ The first column pertains to the lower bound and the second column the upper bou
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names. Ignored unless \code{data} is a data frame.}
 
+\item{getCI}{Logical indicating whether to calculate standard errors and confidence intervals based on fitted \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object. Default: FALSE.}
+
+\item{alpha}{Significance level of the confidence intervals (if \code{getCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).}
+
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See \code{\link{fitHMM}}.}
 
 \item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition probabilities at each level of the hierarchy, including initial values ('beta'), parameter equality constraints ('betaCons'), fixed parameters ('fixPar'), and working scale bounds ('workBounds'). See details.}
@@ -49,6 +54,8 @@ The first column pertains to the lower bound and the second column the upper bou
 \value{
 If \code{mixtures=1}, an array of dimension \code{nbStates} x \code{nbStates} x \code{nrow(data)} containing the t.p.m for each observation in \code{data}.
 If \code{mixtures>1}, a list of length \code{mixtures}, where each element is an array of dimension \code{nbStates} x \code{nbStates} x \code{nrow(data)} containing the t.p.m for each observation in \code{data}.
+
+If \code{getCI=TRUE} then a list of arrays is returned (with elements \code{est}, \code{se}, \code{lci}, and \code{uci}).
 
 If a hierarchical HMM structure is provided, then a hierarchical data structure containing the state transition probabilities for each time step at each level of the hierarchy ('gamma') is returned.
 }
@@ -62,5 +69,24 @@ trProbs <- getTrProbs(m)
 
 # equivalent
 trProbs <- getTrProbs(m$data,nbStates=2,beta=m$mle$beta,formula=m$conditions$formula)
+
+\dontrun{
+# calculate SEs and 95\% CIs
+trProbsSE <- getTrProbs(m, getCI=TRUE)
+
+# plot estimates and CIs for each state transition
+par(mfrow=c(2,2))
+for(i in 1:2){
+  for(j in 1:2){
+    plot(trProbsSE$est[i,j,],type="l", 
+         ylim=c(0,1), ylab=paste(i,"->",j))
+    arrows(1:dim(trProbsSE$est)[3],
+           trProbsSE$lci[i,j,],
+           1:dim(trProbsSE$est)[3],
+           trProbsSE$uci[i,j,],
+           length=0.025, angle=90, code=3, col=gray(.5), lwd=1.3)
+  }
+}
+}
 
 }
