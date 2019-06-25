@@ -633,9 +633,10 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     for(i in convFits){
       
       ipData <- pData[which(pData$ID==i),]
+      ipData$level <- factor(ipData$level,levels=levels(obsData$level))
       tmpData <- obsData[which(obsData$ID==i),]
       #tmpData[[Time.name]] <- as.POSIXct(as.numeric(tmpData[[Time.name]]),origin="1970-01-01 00:00:00",tz=attributes(pData[[Time.name]])$tzone)
-      tmpData <- merge(tmpData,ipData[,Time.name,drop=FALSE],all=TRUE,by=Time.name)
+      tmpData <- merge(tmpData,ipData[,c(Time.name,"level"),drop=FALSE],all=TRUE,by=c(Time.name,"level"))
       tmpData$level[is.na(tmpData$level)] <- coordLevel
       tmpData$ID[is.na(tmpData$ID)] <- i
       
