@@ -3,7 +3,7 @@
 #' Computation of the transition probability matrix for each time step as a function of the covariates and the regression
 #' parameters. 
 #' 
-#' @param data \code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 
+#' @param data \code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{miSum}} object, \code{\link{miHMM}} object, \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 
 #' 
 #' If a data frame is provided, then either \code{nbStates} must be specified (for a regular HMM) or \code{hierStates} and \code{hierDist}
 #' must be specified (for a hierarchical HMM).
@@ -62,7 +62,7 @@ getTrProbs <- function(data, ...){
 getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mixtures=1,betaRef=NULL,stateNames=NULL, getCI=FALSE, alpha = 0.95, ...)
 {  
   
-  if(!is.momentuHMM(data)){
+  if(!is.momentuHMM(data) & !is.miSum(data) & !is.miHMM(data)){
     hierArgs <- list(...)
     argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist","hierBeta","hierFormula"))]
     
@@ -114,7 +114,23 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
     if(!is.null(workBounds$beta)){
       if(!is.matrix(workBounds$beta) || (nrow(workBounds$beta)!=length(beta) | ncol(workBounds$beta)!=2)) stop('workBounds$beta must be a matrix with',length(beta),"rows and 2 columns")
     }
+    
+    getCI <- FALSE
+    
   } else {
+    
+    if(is.miHMM(data)) data <- data$miSum
+    if(is.miSum(data)){
+      data <- formatmiSum(data)
+      if(length(data$conditions$optInd)){
+        Sigma <- matrix(0,length(data$mod$estimate),length(data$mod$estimate))
+        Sigma[(1:length(data$mod$estimate))[-data$conditions$optInd],(1:length(data$mod$estimate))[-data$conditions$optInd]] <- data$MIcombine$variance
+      } else {
+        Sigma <- data$MIcombine$variance
+      }
+      data$mod$Sigma <- Sigma
+    } else if(is.null(data$mod$hessian) | inherits(data$mod$Sigma,"error")) getCI <- FALSE
+    
     stateNames <- data$stateNames
     nbStates <- length(stateNames)
     beta <- data$mle$beta
@@ -142,42 +158,41 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
       trMat[[mix]] <- array(1,dim=c(1,1,nrow(data)))
     dimnames(trMat[[mix]]) <- list(stateNames,stateNames,NULL)
     
-    if(inherits(data,"momentuHMM") && getCI){
-      if(!is.null(data$mod$hessian) && !inherits(data$mod$Sigma,"error")){
-          Sigma <- data$mod$Sigma
-          
-          tmpSplineInputs<-getSplineFormula(reForm$newformula,data$data,cbind(data$data,reForm$newdata))
-          desMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
-          
-          nbCovs <- ncol(covs) - 1
-          gamInd<-(length(data$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures+1):(length(data$mod$estimate))-(ncol(data$covsPi)*(mixtures-1))-ifelse(nbRecovs,nbRecovs+1+nbG0covs+1,0)-ncol(data$covsDelta)*(nbStates-1)*(!data$conditions$stationary)*mixtures
-          quantSup<-qnorm(1-(1-alpha)/2)
-          
-          tmpSig <- Sigma[gamInd[unique(c(data$conditions$betaCons))],gamInd[unique(c(data$conditions$betaCons))]]
-          se <- lci <- uci <- array(NA,dim=dim(trMat[[mix]]))
-          cat("Computing SEs and ",alpha*100,"% CIs",ifelse(mixtures>1,paste0(" for mixture ",mix,"... "),"... "),sep="")
-          for(i in 1:nbStates){
-            for(j in 1:nbStates){
-              for(id in unique(data$data$ID)){
-                ind <- which(data$data$ID==id)
-                if(!is.null(hierRecharge)){
-                  tmpSig <- Sigma[c(gamInd[unique(c(data$conditions$betaCons))],length(data$mod$estimate)-(nbRecovs+nbG0covs+1):0),c(gamInd[unique(c(data$conditions$betaCons))],length(data$mod$estimate)-(nbRecovs+nbG0covs+1):0)]
-                  allCovs <- cbind(data$data,reForm$newdata)
-                  if(inherits(data,"hierarchical")) class(allCovs) <- append("hierarchical",class(allCovs))
-                  spl <- split(allCovs[ind,,drop=FALSE],1:nrow(desMat[ind,,drop=FALSE]))
-                  dN<-t(mapply(function(x) tryCatch(numDeriv::grad(get_TrProbs_recharge,data$mod$estimate[c(gamInd[unique(c(data$conditions$betaCons))],length(data$mod$estimate)-(nbRecovs+nbG0covs+1):0)],covs=spl[[x]],formula=newformula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=data$conditions$betaRef,betaCons=data$conditions$betaCons,workBounds=rbind(data$conditions$workBounds$beta,data$conditions$workBounds$theta),mixture=mix,allCovs=allCovs[ind,,drop=FALSE][1:x,,drop=FALSE]),error=function(e) NA),1:length(spl)))
-                } else {
-                  dN<-t(apply(desMat[ind,,drop=FALSE],1,function(x) tryCatch(numDeriv::grad(get_gamma,data$mod$estimate[gamInd[unique(c(data$conditions$betaCons))]],covs=matrix(x,1,dimnames=list(NULL,names(x))),nbStates=nbStates,i=i,j=j,betaRef=data$conditions$betaRef,betaCons=data$conditions$betaCons,workBounds=data$conditions$workBounds$beta,mixture=mix),error=function(e) NA)))
-                }
-                se[i,j,ind]<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%tmpSig%*%x)),error=function(e) NA)))
-                lci[i,j,ind]<-1/(1+exp(-(log(trMat[[mix]][i,j,ind]/(1-trMat[[mix]][i,j,ind]))-quantSup*(1/(trMat[[mix]][i,j,ind]-trMat[[mix]][i,j,ind]^2))*se[i,j,ind])))#trMat[[mix]][i,j,]-quantSup*se[i,j]
-                uci[i,j,ind]<-1/(1+exp(-(log(trMat[[mix]][i,j,ind]/(1-trMat[[mix]][i,j,ind]))+quantSup*(1/(trMat[[mix]][i,j,ind]-trMat[[mix]][i,j,ind]^2))*se[i,j,ind])))#trMat[[mix]][i,j,]+quantSup*se[i,j]
-              }
+    if(getCI){
+      
+      Sigma <- data$mod$Sigma
+      
+      tmpSplineInputs<-getSplineFormula(reForm$newformula,data$data,cbind(data$data,reForm$newdata))
+      desMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+      
+      nbCovs <- ncol(covs) - 1
+      gamInd<-(length(data$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures+1):(length(data$mod$estimate))-(ncol(data$covsPi)*(mixtures-1))-ifelse(nbRecovs,nbRecovs+1+nbG0covs+1,0)-ncol(data$covsDelta)*(nbStates-1)*(!data$conditions$stationary)*mixtures
+      quantSup<-qnorm(1-(1-alpha)/2)
+      
+      tmpSig <- Sigma[gamInd[unique(c(data$conditions$betaCons))],gamInd[unique(c(data$conditions$betaCons))]]
+      se <- lci <- uci <- array(NA,dim=dim(trMat[[mix]]))
+      cat("Computing SEs and ",alpha*100,"% CIs",ifelse(mixtures>1,paste0(" for mixture ",mix,"... "),"... "),sep="")
+      for(i in 1:nbStates){
+        for(j in 1:nbStates){
+          for(id in unique(data$data$ID)){
+            ind <- which(data$data$ID==id)
+            if(!is.null(hierRecharge)){
+              tmpSig <- Sigma[c(gamInd[unique(c(data$conditions$betaCons))],length(data$mod$estimate)-(nbRecovs+nbG0covs+1):0),c(gamInd[unique(c(data$conditions$betaCons))],length(data$mod$estimate)-(nbRecovs+nbG0covs+1):0)]
+              allCovs <- cbind(data$data,reForm$newdata)
+              if(inherits(data,"hierarchical")) class(allCovs) <- append("hierarchical",class(allCovs))
+              spl <- split(allCovs[ind,,drop=FALSE],1:nrow(desMat[ind,,drop=FALSE]))
+              dN<-t(mapply(function(x) tryCatch(numDeriv::grad(get_TrProbs_recharge,data$mod$estimate[c(gamInd[unique(c(data$conditions$betaCons))],length(data$mod$estimate)-(nbRecovs+nbG0covs+1):0)],covs=spl[[x]],formula=newformula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=data$conditions$betaRef,betaCons=data$conditions$betaCons,workBounds=rbind(data$conditions$workBounds$beta,data$conditions$workBounds$theta),mixture=mix,allCovs=allCovs[ind,,drop=FALSE][1:x,,drop=FALSE]),error=function(e) NA),1:length(spl)))
+            } else {
+              dN<-t(apply(desMat[ind,,drop=FALSE],1,function(x) tryCatch(numDeriv::grad(get_gamma,data$mod$estimate[gamInd[unique(c(data$conditions$betaCons))]],covs=matrix(x,1,dimnames=list(NULL,names(x))),nbStates=nbStates,i=i,j=j,betaRef=data$conditions$betaRef,betaCons=data$conditions$betaCons,workBounds=data$conditions$workBounds$beta,mixture=mix),error=function(e) NA)))
             }
+            se[i,j,ind]<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%tmpSig%*%x)),error=function(e) NA)))
+            lci[i,j,ind]<-1/(1+exp(-(log(trMat[[mix]][i,j,ind]/(1-trMat[[mix]][i,j,ind]))-quantSup*(1/(trMat[[mix]][i,j,ind]-trMat[[mix]][i,j,ind]^2))*se[i,j,ind])))#trMat[[mix]][i,j,]-quantSup*se[i,j]
+            uci[i,j,ind]<-1/(1+exp(-(log(trMat[[mix]][i,j,ind]/(1-trMat[[mix]][i,j,ind]))+quantSup*(1/(trMat[[mix]][i,j,ind]-trMat[[mix]][i,j,ind]^2))*se[i,j,ind])))#trMat[[mix]][i,j,]+quantSup*se[i,j]
           }
-          cat("DONE\n")
-          trMat[[mix]] <- list(est=trMat[[mix]],se=se,lci=lci,uci=uci)
+        }
       }
+      cat("DONE\n")
+      trMat[[mix]] <- list(est=trMat[[mix]],se=se,lci=lci,uci=uci)
     }
   }
   
@@ -201,13 +216,14 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
 #' @export
 getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hierFormula=NULL,mixtures=1,hierDist, getCI=FALSE, alpha = 0.95, ...){
   
-  if(is.momentuHierHMM(data)){
+  if(is.momentuHierHMM(data) | is.miSum(data) | is.miHMM(data)){
     trProbs <- getTrProbs.default(data,getCI=getCI,alpha=alpha)
     hierStates <- data$conditions$hierStates
     hierBeta <- data$conditions$hierBeta
     hierFormula <- data$conditions$hierFormula
     mixtures <- data$conditions$mixtures
     hierDist <- data$conditions$hierDist
+    if(is.momentuHierHMM(data) && (is.null(data$mod$hessian) | inherits(data$mod$Sigma,"error"))) getCI <- FALSE
     data <- data$data
   } else {
     inputHierHMM <- formatHierHMM(data,hierStates=hierStates,hierDist=hierDist,hierBeta=hierBeta,hierDelta=NULL,hierFormula=hierFormula,mixtures=mixtures,workBounds=workBounds,checkData=FALSE)

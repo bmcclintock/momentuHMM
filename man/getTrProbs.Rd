@@ -17,7 +17,7 @@ getTrProbs(data, ...)
   getCI = FALSE, alpha = 0.95, ...)
 }
 \arguments{
-\item{data}{\code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 
+\item{data}{\code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{miSum}} object, \code{\link{miHMM}} object, \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 
 
 If a data frame is provided, then either \code{nbStates} must be specified (for a regular HMM) or \code{hierStates} and \code{hierDist}
 must be specified (for a hierarchical HMM).}
