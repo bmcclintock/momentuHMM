@@ -844,7 +844,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
         }
         wpar[1:parmInd] <- wpar[1:parmInd]+rnorm(parmInd,0,retrySD[1:parmInd])
         if(nbStates>1)
-          wpar[-(1:parmInd)] <- wpar[-(1:parmInd)]+rnorm(length(wpar)-parmInd,0,retrySD[length(wpar)-parmInd])
+          wpar[-(1:parmInd)] <- wpar[-(1:parmInd)]+rnorm(length(wpar)-parmInd,0,retrySD[-(1:parmInd)])
         if(length(fixParIndex$wparIndex)) wpar[fixParIndex$wparIndex] <- unlist(fixParIndex$fixPar)[fixParIndex$wparIndex]
         if(!is.null(betaCons) & nbStates>1){
           wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)] <- wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)][betaCons]
