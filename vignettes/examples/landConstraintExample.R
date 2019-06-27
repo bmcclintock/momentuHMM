@@ -25,7 +25,7 @@ DM <- list(mu=list(mean.x=~mu.x_tm1+crw(mu.x_tm1,lag=1)+grad.x,
                    sigma.xy=~1,
                    sigma.y=~1))
 
-# specify parameters; negative coefficients for gradients results in repulsion from "land"
+# specify parameters; negative coefficients for gradients results in attraction to "water"
 Par <- list(mu=c(1,0.75,-750000,1,0.75,-1500,log(100000),0,log(100000))) # link scale
 names(Par$mu) <- c("mu.x_tm1","crw(mu.x_tm1,lag=1)","grad.x","mu.y_tm1","crw(mu.y_tm1,lag=1)","grad.y","sigma.x","sigma.xy","sigma.y")
 
