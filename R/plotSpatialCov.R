@@ -65,7 +65,7 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   else if(inherits(data,"miSum")) data <- data$data
   else if(inherits(data,"HMMfits")) stop("data must be a data frame, momentuHMMData, momentuHMM, miHMM, or miSum object")
   
-  if(inherits(data,"momentuHMMData")) data <- as.data.frame(data)
+  if(inherits(data,"momentuHMMData") | inherits(data,"momentuHierHMMData")) data <- as.data.frame(data)
   
   coordNames <- c("x","y")
   if(!is.null(attr(data,'coords'))) {
