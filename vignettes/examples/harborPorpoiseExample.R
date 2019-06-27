@@ -74,25 +74,13 @@ Par0 <- list(dive_duration=c(dd.mu0,dd.sigma0),
              dive_wiggliness=c(dw.mu0,dw.sigma0,dw.pi0))
 
 # constrain fine-scale data stream distributions to be same for coarse-scale states
-dw_DM <- matrix(c(1,0,0,0,0,0,0,0,0,
-                  0,1,0,0,0,0,0,0,0,
-                  0,0,1,0,0,0,0,0,0,
-                  1,0,0,0,0,0,0,0,0,
-                  0,1,0,0,0,0,0,0,0,
-                  0,0,1,0,0,0,0,0,0,
-                  0,0,0,1,0,0,0,0,0,
-                  0,0,0,0,1,0,0,0,0,
-                  0,0,0,0,0,1,0,0,0,
-                  0,0,0,1,0,0,0,0,0,
-                  0,0,0,0,1,0,0,0,0,
-                  0,0,0,0,0,1,0,0,0,
-                  0,0,0,0,0,0,1,0,0,
-                  0,0,0,0,0,0,0,1,0,
-                  0,0,0,0,0,0,0,0,1,
-                  0,0,0,0,0,0,1,0,0,
-                  0,0,0,0,0,0,0,1,0,
-                  0,0,0,0,0,0,0,0,1),nbStates*3,9,byrow=TRUE,dimnames=list(c(paste0("mean_",1:nbStates),paste0("sd_",1:nbStates),paste0("zeromass_",1:nbStates)),
-                                                                           paste0(rep(c("mean","sd","zeromass"),each=3),c("_14:(Intercept)","_25:(Intercept)","_36:(Intercept)"))))
+dw_DM <- matrix(cbind(kronecker(c(1,1,0,0,0,0),diag(3)),
+                      kronecker(c(0,0,1,1,0,0),diag(3)),
+                      kronecker(c(0,0,0,0,1,1),diag(3))),
+                nrow=nbStates*3,
+                ncol=9,
+                dimnames=list(c(paste0("mean_",1:nbStates),paste0("sd_",1:nbStates),paste0("zeromass_",1:nbStates)),
+                                paste0(rep(c("mean","sd","zeromass"),each=3),c("_14:(Intercept)","_25:(Intercept)","_36:(Intercept)"))))
 
 DM <- list(dive_duration=dw_DM[1:(2*nbStates),1:6],
            maximum_depth=dw_DM[1:(2*nbStates),1:6],

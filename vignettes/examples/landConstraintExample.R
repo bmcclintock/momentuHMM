@@ -15,7 +15,7 @@ grad <- ctmcmove::rast.grad(boundary)
 grad.x <- grad$rast.grad.x
 grad.y <- grad$rast.grad.y 
 
-# specify bivariate normal biased correlated random walk with potential function based on distance to origin
+# specify bivariate normal biased correlated random walk with potential function based on distance to "water"
 # mu.x_tm1 is x location at previous time step; crw(mu.x_tm1,lag=1) is mu.x_tm1-mu.x_tm2 at lag 1 (previous x velocity)
 # mu.y_tm1 is y location at previous time step; crw(mu.y_tm1,lag=1) is mu.y_tm1-mu.y_tm2 at lag 1 (previous y velocity)
 dist <- list(mu="rw_mvnorm2") # bivariate normal random walk
@@ -25,7 +25,7 @@ DM <- list(mu=list(mean.x=~mu.x_tm1+crw(mu.x_tm1,lag=1)+grad.x,
                    sigma.xy=~1,
                    sigma.y=~1))
 
-# specify parameters; negative coefficients for gradients results in repulsion near boundary
+# specify parameters; negative coefficients for gradients results in repulsion from "land"
 Par <- list(mu=c(1,0.75,-750000,1,0.75,-1500,log(100000),0,log(100000))) # link scale
 names(Par$mu) <- c("mu.x_tm1","crw(mu.x_tm1,lag=1)","grad.x","mu.y_tm1","crw(mu.y_tm1,lag=1)","grad.y","sigma.x","sigma.xy","sigma.y")
 

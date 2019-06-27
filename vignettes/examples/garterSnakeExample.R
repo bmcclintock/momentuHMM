@@ -72,25 +72,12 @@ sd0 <- c(0.06,0.321,0.4875)
 Par0 <- list(step=c(rep(mu0,hierStates$count),rep(sd0,hierStates$count)))
 
 # constrain fine-scale data stream distributions to be same for coarse-scale states
-DM <- list(step=matrix(c(1,0,0,0,0,0,
-                         0,1,0,0,0,0,
-                         0,0,1,0,0,0,
-                         1,0,0,0,0,0,
-                         0,1,0,0,0,0,
-                         0,0,1,0,0,0,
-                         1,0,0,0,0,0,
-                         0,1,0,0,0,0,
-                         0,0,1,0,0,0,
-                         0,0,0,1,0,0,
-                         0,0,0,0,1,0,
-                         0,0,0,0,0,1,
-                         0,0,0,1,0,0,
-                         0,0,0,0,1,0,
-                         0,0,0,0,0,1,
-                         0,0,0,1,0,0,
-                         0,0,0,0,1,0,
-                         0,0,0,0,0,1),nbStates*2,6,byrow=TRUE,dimnames=list(c(paste0("mean_",1:nbStates),paste0("sd_",1:nbStates)),
-                                                                            paste0(rep(c("mean","sd"),each=3),c("_147:(Intercept)","_258:(Intercept)","_369:(Intercept)")))))
+DM <- list(step=matrix(cbind(kronecker(c(1,1,1,0,0,0),diag(3)),
+                             kronecker(c(0,0,0,1,1,1),diag(3))),
+                       nrow=nbStates*2,
+                       ncol=6,
+                       dimnames=list(c(paste0("mean_",1:nbStates),paste0("sd_",1:nbStates)),
+                                       paste0(rep(c("mean","sd"),each=3),c("_147:(Intercept)","_258:(Intercept)","_369:(Intercept)")))))
 
 # get initial parameter values for data stream probability distributions on the working scale
 Par <- getParDM(snakeData,hierStates=hierStates,hierDist=hierDist,Par=Par0,DM=DM)
