@@ -11,7 +11,8 @@
 #' \dontrun{
 #' P <- momentuHMM:::allProbs(m=example$m)
 #' }
-
+#' 
+#' @importFrom extraDistr dcat
 allProbs <- function(m)
 {
   
@@ -59,7 +60,7 @@ allProbs <- function(m)
     p <- inputs$p
     DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
     m$conditions$fullDM <- DMinputs$fullDM
-    m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,pi=m$Par$beta$pi$est,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+    m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,pi=m$Par$beta$pi$est,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind,inputs$dist)
   } else {
     beta <- m$mle$beta
     pie <- m$mle$pi
@@ -82,6 +83,7 @@ allProbs <- function(m)
     consensus[[i]] <- (dist[[i]]=="vmConsensus")
   }
   dist <- lapply(dist,function(x) gsub("Consensus","",x))
+  dist <- lapply(dist,function(x) ifelse(grepl("cat",x),"cat",x))
 
   par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds,m$covsPi)
   
@@ -142,6 +144,9 @@ allProbs <- function(m)
                                 genPar[nbStates*7+state,genInd], #yz
                                 genPar[nbStates*8+state,genInd]) #z          
         }
+      } else if(dist[[i]]=="cat"){
+        dimCat <- as.numeric(gsub("cat","",m$conditions$dist[[i]]))
+        genArgs[[2]] <- t(genPar[seq(state,dimCat*nbStates,nbStates),genInd])
       } else {
         for(j in 1:(nrow(genPar)/nbStates))
           genArgs[[j+1]] <- genPar[(j-1)*nbStates+state,genInd]

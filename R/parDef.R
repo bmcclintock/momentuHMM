@@ -35,6 +35,12 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
   names(parSize) <- names(parNames) <- names(bounds) <- distnames
 
   for(i in distnames){
+    if(grepl("cat",dist[[i]])){
+      dimCat <- as.integer(gsub("cat","",dist[[i]]))
+      if(is.na(dimCat)) stop("categorical distributions must be specified using paste0('cat',k), where k is the number of categories (e.g. 'cat3', 'cat12', etc.)")
+      if(dimCat<2) stop("categorical distribution must have at least 2 categories")
+      dist[[i]] <- "cat"
+    }
     switch(dist[[i]],
            "bern"={
              parSize[[i]] <- 1
@@ -45,6 +51,11 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
              parSize[[i]] <- 2 + zeroInflation[[i]] + oneInflation[[i]]
              tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
              parNames[[i]]<-c("shape1","shape2")
+           },
+           "cat"={
+             parSize[[i]] <- dimCat-1
+             tmpbounds <- matrix(rep(c(0,1),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
+             parNames[[i]]<-paste0("prob",1:parSize[[i]])
            },
            "exp"={
              parSize[[i]] <- 1 + zeroInflation[[i]]

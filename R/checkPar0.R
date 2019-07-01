@@ -327,7 +327,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
     delta <- matrix(0,nrow=(nbCovsDelta+1)*mixtures,ncol=nbStates-1)
   }
   
-  wpar <- n2w(par,p$bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+  wpar <- n2w(par,p$bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind,inputs$dist)
   
   m$mod <- list()
   m$mod$estimate <- wpar

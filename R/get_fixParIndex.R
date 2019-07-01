@@ -163,7 +163,7 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
       
       # if DM is not specified convert fixPar from real to working scale
       if(is.null(inputs$DM[[i]])){
-        fixPar[[i]][tmp]<-n2w(Par0[i],p$bounds,NULL,NULL,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)[tmp]
+        fixPar[[i]][tmp]<-n2w(Par0[i],p$bounds,NULL,NULL,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind,inputs$dist)[tmp]
       } 
       wparIndex <- c(wparIndex,parindex[[i]]+tmp)
     } else {

@@ -3,7 +3,14 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
   distnames<-names(dist)
   
   for(i in distnames){
-    dist[[i]]<-match.arg(dist[[i]],momentuHMMdists)
+    if(grepl("cat",dist[[i]])){
+      errMess <- stop("categorical distributions must be specified using paste0('cat',k), where k is the number of categories (e.g. 'cat3', 'cat12', etc.)")
+      if(dist[[i]]=="cat") stop(errMess)
+      dist[[i]]<-tryCatch(match.arg(dist[[i]],paste0("cat",1:1.e3)),error = function(e) e)
+      if(inherits("error",dist[[i]])) stop(errMess)
+    } else {
+      dist[[i]]<-match.arg(dist[[i]],momentuHMMdists)
+    }
   }
 
   if(nbStates<0)
@@ -88,6 +95,10 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
       p$bounds[[i]][(parSize[[i]] * nbStates)-nbStates*oneInflation[[i]]-nbStates:1+1,2] <- p$bounds[[i]][(parSize[[i]] * nbStates)-nbStates:1+1,2] <- 1
     }
     #if(!is.null(DM[[i]]) !is.null(userBounds[[i]])) stop("either userBounds$",i," or DM$",i," must be NULL")
+    
+    if(grepl("cat",dist[[i]])){
+      ndist[[i]] <- "cat"
+    }
   }
 
   return(list(p=p,dist=ndist,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,consensus=consensus,DM=DM,cons=cons,workcons=workcons))

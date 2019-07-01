@@ -19,4 +19,5 @@ Used in functions \code{\link{viterbi}}, \code{\link{logAlpha}}, \code{\link{log
 \dontrun{
 P <- momentuHMM:::allProbs(m=example$m)
 }
+
 }

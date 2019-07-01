@@ -144,6 +144,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   map<std::string,FunPtr> funMap;
   funMap["bern"] = dbern_rcpp;
   funMap["beta"] = dbeta_rcpp;
+  funMap["cat"] = dcat_rcpp;
   funMap["exp"] = dexp_rcpp;
   funMap["gamma"] = dgamma_rcpp;
   funMap["lnorm"] = dlnorm_rcpp;
@@ -267,6 +268,14 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
           genArgs1 = cbindmean3(genPar.row(state),genPar.row(nbStates+state),genPar.row(nbStates*2+state));
           genArgs2 = cbindsigma3(genPar.row(nbStates*3+state),genPar.row(nbStates*4+state),genPar.row(nbStates*5+state),genPar.row(nbStates*6+state),genPar.row(nbStates*7+state),genPar.row(nbStates*8+state));          
         }
+      } else if(genDist=="cat"){
+        int catDim = genPar.n_rows / nbStates;
+        arma::mat tmpPar1(catDim,nbObs);
+        for(int l=0; l<catDim; l++){
+          tmpPar1.row(l) = genPar.row(l*nbStates+state);
+        }
+        genArgs1 = tmpPar1;
+        genArgs2 = tmpPar1;
       } else {
         genArgs1 = genPar.row(state); //genPar(arma::span(0),arma::span(state),arma::span());
         genArgs2 = genPar.row(genPar.n_rows - nbStates + state); //genPar(arma::span(genPar.n_rows-1),arma::span(state),arma::span());

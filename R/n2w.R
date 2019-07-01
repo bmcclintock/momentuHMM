@@ -20,6 +20,7 @@
 #' @param workcons Named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 #' each data stream. 
 #' @param Bndind Named list indicating whether \code{DM} is NULL with default parameter bounds for each data stream.
+#' @param dist A named list indicating the probability distributions of the data streams.
 #' 
 #' @return A vector of unconstrained parameters.
 #'
@@ -36,7 +37,8 @@
 #' 
 #' #working parameters
 #' wpar <- momentuHMM:::n2w(par,bounds,list(beta=beta),log(delta[-1]/delta[1]),nbStates,
-#' m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+#' m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,
+#' m$conditions$dist)
 #' 
 #' #natural parameter
 #' p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
@@ -49,7 +51,7 @@
 #'
 #' @importFrom stats dunif
 
-n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcons,Bndind)
+n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcons,Bndind,dist)
 {
   wpar <- NULL
   for(i in names(par)){
@@ -80,8 +82,12 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcon
         y <- kappa * sin(angleMean)
         p[(foo - nbStates):(foo - 1)] <- x
         p[foo:length(p)] <- y
-      }
-      else p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],cons[[i]],workcons[[i]],nbStates)
+      } else if(grepl("cat",dist[[i]])){
+        dimCat <- length(par[[i]])/nbStates
+        for(j in 1:nbStates){
+          p[seq(j,dimCat*nbStates,nbStates)] <- log(par[[i]][seq(j,dimCat*nbStates,nbStates)]/(1-sum(par[[i]][seq(j,dimCat*nbStates,nbStates)])))
+        }
+      } else p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],cons[[i]],workcons[[i]],nbStates)
     }
     wpar <- c(wpar,p)
   }

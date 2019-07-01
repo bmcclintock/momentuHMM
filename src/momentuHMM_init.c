@@ -3,7 +3,7 @@
 #include <stdlib.h> // for NULL
 #include <R_ext/Rdynload.h>
 
-// Generated with tools::package_native_routine_registration_skeleton (R 3.5)
+// Generated with tools::package_native_routine_registration_skeleton (R 3.6)
 
 /* .Call calls */
 extern SEXP _momentuHMM_cbindmean2(SEXP, SEXP);
@@ -13,6 +13,7 @@ extern SEXP _momentuHMM_cbindsigma3(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_combine(SEXP);
 extern SEXP _momentuHMM_dbern_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dbeta_rcpp(SEXP, SEXP, SEXP);
+extern SEXP _momentuHMM_dcat_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dexp_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dgamma_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dlnorm_rcpp(SEXP, SEXP, SEXP);
@@ -35,6 +36,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"_momentuHMM_combine",         (DL_FUNC) &_momentuHMM_combine,          1},
   {"_momentuHMM_dbern_rcpp",      (DL_FUNC) &_momentuHMM_dbern_rcpp,       3},
   {"_momentuHMM_dbeta_rcpp",      (DL_FUNC) &_momentuHMM_dbeta_rcpp,       3},
+  {"_momentuHMM_dcat_rcpp",       (DL_FUNC) &_momentuHMM_dcat_rcpp,        3},
   {"_momentuHMM_dexp_rcpp",       (DL_FUNC) &_momentuHMM_dexp_rcpp,        3},
   {"_momentuHMM_dgamma_rcpp",     (DL_FUNC) &_momentuHMM_dgamma_rcpp,      3},
   {"_momentuHMM_dlnorm_rcpp",     (DL_FUNC) &_momentuHMM_dlnorm_rcpp,      3},

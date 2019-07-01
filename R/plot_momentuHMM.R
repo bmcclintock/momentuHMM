@@ -304,7 +304,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   DMinputs<-getDM(covs,splineInputs$DM,tmpInputs$dist,nbStates,tmpp$parNames,tmpp$bounds,tmpPar,tmpConditions$cons,tmpConditions$workcons,tmpConditions$zeroInflation,tmpConditions$oneInflation,tmpConditions$circularAngleMean)
   fullDM <- DMinputs$fullDM
   DMind <- DMinputs$DMind
-  wpar <- n2w(tmpPar,tmpp$bounds,beta,delta,nbStates,tmpInputs$estAngleMean,tmpInputs$DM,DMinputs$cons,DMinputs$workcons,tmpp$Bndind)
+  wpar <- n2w(tmpPar,tmpp$bounds,beta,delta,nbStates,tmpInputs$estAngleMean,tmpInputs$DM,DMinputs$cons,DMinputs$workcons,tmpp$Bndind,tmpInputs$dist)
   #if(!m$conditions$stationary & nbStates>1) {
   #  wpar[(length(wpar)-nbStates+2):length(wpar)] <- m$mod$estimate[(length(m$mod$estimate)-nbStates+2):length(m$mod$estimate)] #this is done to deal with any delta=0 in n2w
   #}
@@ -527,6 +527,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         sig <- t(sig)
         sig[lower.tri(sig, diag=TRUE)] <- lowertri
         genArgs[[3]] <- sig
+      } else if(grepl("cat",m$conditions$dist[[i]])){
+        dimCat <- as.numeric(gsub("cat","",m$conditions$dist[[i]]))
+        genArgs[[2]] <- t(par[[i]][seq(state,dimCat*nbStates,nbStates),])
       } else {
         for(j in 1:(nrow(par[[i]])/nbStates))
           genArgs[[j+1]] <- par[[i]][(j-1)*nbStates+state,]

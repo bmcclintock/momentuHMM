@@ -184,6 +184,19 @@ dmvnorm_rcpp <- function(x, mean, varcovM) {
     .Call('_momentuHMM_dmvnorm_rcpp', PACKAGE = 'momentuHMM', x, mean, varcovM)
 }
 
+#' Categorical density function
+#'
+#' Probability density function of the categorical distribution (written in C++)
+#'
+#' @param x Vector of quantiles
+#' @param prob success probability
+#' @param foo Unused (for compatibility with template)
+#'
+#' @return Vector of densities
+dcat_rcpp <- function(x, prob, foo) {
+    .Call('_momentuHMM_dcat_rcpp', PACKAGE = 'momentuHMM', x, prob, foo)
+}
+
 #' Get design matrix
 #'
 #' Loop for creating full design matrix (X) from pseudo-design matrix (DM). Written in C++. Used in \code{getDM}.

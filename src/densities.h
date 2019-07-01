@@ -314,6 +314,124 @@ arma::colvec dmvnorm_rcpp(NumericVector x,
   
 }
 
+bool isInteger(double x, bool warn = true) {
+  if (ISNAN(x))
+    return false;
+  if (((x < 0.0) ? std::ceil(x) : std::floor(x)) != x) {
+    if (warn) {
+      char msg[55];
+      std::snprintf(msg, sizeof(msg), "non-integer: %f", x);
+      Rcpp::warning(msg);
+    }
+    return false;
+  }
+  return true;
+}
+
+inline bool is_large_int(double x) {
+  if (x > std::numeric_limits<int>::max())
+    return true;
+  return false;
+}
+
+inline double to_dbl(int x) {
+  return static_cast<double>(x);
+}
+
+inline int to_pos_int(double x) {
+  if (x < 0.0 || ISNAN(x))
+    Rcpp::stop("value cannot be coerced to integer");
+  if (is_large_int(x))
+    Rcpp::stop("value out of integer range");
+  return static_cast<int>(x);
+}
+
+//bool isInteger(double x, bool warn = true);
+//inline bool is_large_int(double x); 
+//inline double to_dbl(int x);
+//inline int to_pos_int(double x);
+
+#define GETV(x, i)      x[i % x.size()]    // wrapped indexing of vector
+#define GETM(x, i, j)   x(i % x.n_rows, j)   // wrapped indexing of matrix
+
+//' Categorical density function
+//'
+//' Probability density function of the categorical distribution (written in C++)
+//'
+//' @param x Vector of quantiles
+//' @param prob success probability
+//' @param foo Unused (for compatibility with template)
+//'
+//' @return Vector of densities
+// [[Rcpp::export]]
+arma::colvec dcat_rcpp(const NumericVector x, const arma::mat prob, const arma::mat foo) 
+{
+  
+  if (x.size() < 1 || prob.n_rows < 1) {
+    return NumericVector(0);
+  }
+  
+  int Nmax = std::max(
+    static_cast<int>(x.size()),
+    static_cast<int>(prob.n_cols)
+  );
+  int k = prob.n_rows;
+  arma::colvec p(Nmax);
+  double p_tot;
+  
+  bool throw_warning = false;
+  
+  //if (k < 2)
+  //  Rcpp::stop("number of columns in prob is < 2");
+  
+  arma::mat prob_tab = prob.t();
+  
+  for (int i = 0; i < prob.n_cols; i++) {
+    p_tot = 0.0;
+    for (int j = 0; j < k; j++) {
+      p_tot += prob_tab(i, j);
+#ifdef IEEE_754
+      if (ISNAN(p_tot))
+        break;
+#endif
+      if (prob_tab(i, j) < 0.0) {
+        p_tot = NAN;
+        throw_warning = true;
+        break;
+      }
+    }
+    for (int j = 0; j < k; j++)
+      prob_tab(i, j) /= p_tot;
+  }
+  
+  for (int i = 0; i < Nmax; i++) {
+#ifdef IEEE_754
+    if (ISNAN(GETV(x, i))) {
+      p[i] = GETV(x, i);
+      continue;
+    }
+#endif
+    if (!isInteger(GETV(x, i)) || GETV(x, i) < 1.0 ||
+        GETV(x, i) > to_dbl(k)) {
+      p[i] = 0.0;
+      continue;
+    }
+    if (is_large_int(GETV(x, i))) {
+      //Rcpp::warning("NAs introduced by coercion to integer range in dcat_rcpp");
+      p[i] = NA_REAL;
+    }
+    p[i] = GETM(prob_tab, i, to_pos_int(GETV(x, i)) - 1);
+  }
+  
+  //if (log_prob)
+  //  p = Rcpp::log(p);
+  
+  //if (throw_warning)
+  //  Rcpp::warning("NaNs produced in dcat_rcpp");
+  
+  return p;
+}
+
 // used in nLogLike_rcpp to map the functions' names to the functions
 typedef arma::colvec (*FunPtr)(NumericVector, arma::mat, arma::mat);
 

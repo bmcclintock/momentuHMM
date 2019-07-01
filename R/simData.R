@@ -6,7 +6,7 @@
 #' @param nbAnimals Number of observed individuals to simulate.
 #' @param nbStates Number of behavioural states to simulate.
 #' @param dist A named list indicating the probability distributions of the data streams. Currently
-#' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
+#' supported distributions are 'bern', 'beta', 'cat', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
 #' 'pois', 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), 'rw_mvnorm3' (trivariate normal random walk), 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
 #' \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
 #' and their respective probability distributions ('gamma', 'vm', and 'pois').
@@ -350,6 +350,7 @@
 #' @importFrom CircStats rvm
 #' @importFrom Brobdingnag as.brob sum
 #' @importFrom mvtnorm rmvnorm
+#' @importFrom extraDistr rcat
 
 simData <- function(nbAnimals=1,nbStates=2,dist,
                     Par,beta=NULL,delta=NULL,
@@ -1125,7 +1126,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
-        wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+        wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind,inputs$dist)
         if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
         
         ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
@@ -1237,7 +1238,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           DMinputs<-getDM(cbind(subCovs[k-maxlag:0,,drop=FALSE],subSpatialcovs[k-maxlag:0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE)
           fullDM <- DMinputs$fullDM
           DMind <- DMinputs$DMind
-          wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+          wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind,inputs$dist)
           if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
           
           nc <- meanind <- vector('list',length(distnames))
@@ -1294,6 +1295,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                                     subPar[[i]][nbStates*8+Z[k]]) #z          
                                     ,3,3)
             } 
+          } else if(inputs$dist[[i]]=="cat"){
+            genArgs[[i]][[2]] <- subPar[[i]][seq(Z[k],(parSize[[i]]+1)*nbStates,nbStates)]
           } else {
             for(j in 1:(parSize[[i]]-zeroInflation[[i]]-oneInflation[[i]]))
               genArgs[[i]][[j+1]] <- subPar[[i]][(j-1)*nbStates+Z[k]]

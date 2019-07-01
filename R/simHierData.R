@@ -927,7 +927,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,oneInflation,inputs$circularAngleMean)
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
-        wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+        wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind,inputs$dist)
         if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
         
         ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
@@ -1085,7 +1085,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
               DMinputs<-getDM(cbind(subCovs[k-maxlag:0,,drop=FALSE],subSpatialcovs[k-maxlag:0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,cons,workcons,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE)
               fullDM <- DMinputs$fullDM
               DMind <- DMinputs$DMind
-              wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+              wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind,inputs$dist)
               if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
               
               nc <- meanind <- vector('list',length(distnames))
@@ -1142,6 +1142,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                                                 subPar[[i]][nbStates*8+Z[k]]) #z          
                                               ,3,3)
                 } 
+              } else if(inputs$dist[[i]]=="cat"){
+                genArgs[[i]][[2]] <- subPar[[i]][seq(Z[k],(parSize[[i]]+1)*nbStates,nbStates)]
               } else {
                 for(j in 1:(parSize[[i]]-zeroInflation[[i]]-oneInflation[[i]]))
                   genArgs[[i]][[j+1]] <- subPar[[i]][(j-1)*nbStates+Z[k]]

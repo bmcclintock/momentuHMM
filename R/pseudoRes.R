@@ -41,6 +41,7 @@
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
+#' @importFrom extraDistr pcat
 
 pseudoRes <- function(m, ncores = 1)
 {
@@ -100,7 +101,7 @@ pseudoRes <- function(m, ncores = 1)
     p <- inputs$p
     DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
     m$conditions$fullDM <- DMinputs$fullDM
-    m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,pi=m$Par$beta$pi$est,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+    m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,pi=m$Par$beta$pi$est,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind,inputs$dist)
   } else {
     beta <- m$mle$beta
     pie <- m$mle$pi
@@ -118,6 +119,7 @@ pseudoRes <- function(m, ncores = 1)
       dist[[i]] <- gsub("Consensus","",dist[[i]])
     } else consensus[[i]] <- FALSE
   }
+  dist <- lapply(dist,function(x) ifelse(grepl("cat",x),"cat",x))
   
   Fun <- lapply(dist,function(x) paste("p",x,sep=""))
   for(j in which(dist %in% angledists)){
@@ -231,6 +233,9 @@ pseudoRes <- function(m, ncores = 1)
                                         genPar[nbStates*7+state,genInd], #yz
                                         genPar[nbStates*8+state,genInd]))) #z          
           }
+        } else if(dist[[j]]=="cat"){
+          dimCat <- as.numeric(gsub("cat","",m$conditions$dist[[j]]))
+          genArgs[[2]] <- t(genPar[seq(state,dimCat*nbStates,nbStates),genInd])
         } else {
           for(k in 1:(nrow(genPar)/nbStates))
             genArgs[[k+1]] <- genPar[(k-1)*nbStates+state,genInd]

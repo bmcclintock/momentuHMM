@@ -51,7 +51,8 @@
 #' 
 #' #working parameters
 #' wpar <- momentuHMM:::n2w(par,bounds,list(beta=beta),log(delta[-1]/delta[1]),nbStates,
-#' m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+#' m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,
+#' m$conditions$dist)
 #' 
 #' #natural parameter
 #' p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
@@ -145,7 +146,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
       tmpwpar[(foo - nbStates):(foo - 1)] <- angleMean
       tmpwpar[foo:length(tmpwpar)] <- kappa
     }
-    parlist[[i]]<-w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],workcons[[i]],nbObs,circularAngleMean[[i]],consensus[[i]],nbStates,0,nc[[i]],meanind[[i]],workBounds[[i]])
+    parlist[[i]]<-w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],workcons[[i]],nbObs,circularAngleMean[[i]],consensus[[i]],nbStates,0,nc[[i]],meanind[[i]],workBounds[[i]],dist[[i]])
     
     if((dist[[i]] %in% angledists) & !estAngleMean[[i]]){
       tmp<-matrix(0,nrow=(parSize[[i]]+1)*nbStates,ncol=nbObs)
@@ -180,7 +181,7 @@ w2wn <- function(wpar,workBounds,k=0){
 }
 
 #' @importFrom stats plogis
-w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,consensus,nbStates,k=0,nc,meanind,workBounds){
+w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,consensus,nbStates,k=0,nc,meanind,workBounds,dist){
   
   wpar <- w2wn(wpar,workBounds)
   
@@ -205,30 +206,50 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,conse
     l_t <- matrix(tmpXB$l_t,nrow(XB),ncol(XB))
   }
   
-  if(length(ind1) & isFALSE(circularAngleMean))
-    p[ind1,] <- (2*atan(XB[ind1,]))
-  
-  if(length(ind2)){
+  if(grepl("cat",dist)){
+    p <- matrix(0,nrow(XB)+nbStates,nbObs)
+    a<-rep(0,nrow(p))
+    b<-rep(1,nrow(p))
+    ind3 <- 1:(nrow(XB)+nbStates)
     for(j in 1:nbStates){
-      zoParInd <- which(grepl(paste0("zeromass_",j),rownames(bounds)) | grepl(paste0("onemass_",j),rownames(bounds)))
-      zoPar <- rbind(XB[zoParInd,,drop=FALSE],rep(0,ncol(XB)))
-      expzo <- exp(zoPar)
-      zo <- expzo/rep(colSums(expzo),each=3)
-      for(i in which(!is.finite(colSums(zo)))){
-        tmp <- exp(Brobdingnag::as.brob(zoPar[,i]))
-        zo[,i] <- as.numeric(tmp/Brobdingnag::sum(tmp))
+      catInd <- seq(j,nrow(XB),nbStates)
+      probPar <- rbind(XB[catInd,,drop=FALSE],rep(0,ncol(XB)))
+      expPar <- exp(probPar)
+      prob <- expPar/rep(colSums(expPar),each=length(catInd)+1)
+      for(i in which(!is.finite(colSums(prob)))){
+        tmp <- exp(Brobdingnag::as.brob(probPar[,i]))
+        prob[,i] <- as.numeric(tmp/Brobdingnag::sum(tmp))
       }
-      p[zoParInd,] <- zo[-3,]
+      p[seq(j,nrow(XB)+nbStates,nbStates),] <- prob
+      a[seq(j,nrow(XB)+nbStates,nbStates)[1:(nrow(XB)/nbStates)]] <- bounds[seq(j,nrow(XB),nbStates),1]
+      b[seq(j,nrow(XB)+nbStates,nbStates)[1:(nrow(XB)/nbStates)]] <- bounds[seq(j,nrow(XB),nbStates),2]
     }
+  } else {
+    if(length(ind1) & isFALSE(circularAngleMean))
+      p[ind1,] <- (2*atan(XB[ind1,]))
+    
+    if(length(ind2)){
+      for(j in 1:nbStates){
+        zoParInd <- which(grepl(paste0("zeromass_",j),rownames(bounds)) | grepl(paste0("onemass_",j),rownames(bounds)))
+        zoPar <- rbind(XB[zoParInd,,drop=FALSE],rep(0,ncol(XB)))
+        expzo <- exp(zoPar)
+        zo <- expzo/rep(colSums(expzo),each=3)
+        for(i in which(!is.finite(colSums(zo)))){
+          tmp <- exp(Brobdingnag::as.brob(zoPar[,i]))
+          zo[,i] <- as.numeric(tmp/Brobdingnag::sum(tmp))
+        }
+        p[zoParInd,] <- zo[-3,]
+      }
+    }
+    
+    ind31<-ind3[which(is.finite(a[ind3]) & is.infinite(b[ind3]))]
+    ind32<-ind3[which(is.finite(a[ind3]) & is.finite(b[ind3]))]
+    ind33<-ind3[which(is.infinite(a[ind3]) & is.finite(b[ind3]))]
+    
+    p[ind31,] <- (l_t[ind31,,drop=FALSE] * exp(XB[ind31,,drop=FALSE])+a[ind31])
+    p[ind32,] <- ((b[ind32]-a[ind32])*(l_t[ind32,,drop=FALSE] * stats::plogis(XB[ind32,,drop=FALSE]))+a[ind32])
+    p[ind33,] <- -(exp(-XB[ind33,,drop=FALSE]) - b[ind33])
   }
-  
-  ind31<-ind3[which(is.finite(a[ind3]) & is.infinite(b[ind3]))]
-  ind32<-ind3[which(is.finite(a[ind3]) & is.finite(b[ind3]))]
-  ind33<-ind3[which(is.infinite(a[ind3]) & is.finite(b[ind3]))]
-  
-  p[ind31,] <- (l_t[ind31,,drop=FALSE] * exp(XB[ind31,,drop=FALSE])+a[ind31])
-  p[ind32,] <- ((b[ind32]-a[ind32])*(l_t[ind32,,drop=FALSE] * stats::plogis(XB[ind32,,drop=FALSE]))+a[ind32])
-  p[ind33,] <- -(exp(-XB[ind33,,drop=FALSE]) - b[ind33])
   
   if(!any(is.na(p))){ 
     if(any(p<a | p>b)){

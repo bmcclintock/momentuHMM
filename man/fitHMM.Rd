@@ -37,7 +37,7 @@ fitHMM(data, ...)
 \item{nbStates}{Number of states of the HMM.}
 
 \item{dist}{A named list indicating the probability distributions of the data streams. Currently
-supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
+supported distributions are 'bern', 'beta', 'cat', exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
 'pois', 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), 'rw_mvnorm3' (trivariate normal random walk), 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
 \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
 and their respective probability distributions ('gamma', 'vm', and 'pois').  The names of the data streams 

@@ -5,7 +5,7 @@
 \title{Scaling function: natural to working parameters.}
 \usage{
 n2w(par, bounds, beta, delta = NULL, nbStates, estAngleMean, DM, cons,
-  workcons, Bndind)
+  workcons, Bndind, dist)
 }
 \arguments{
 \item{par}{Named list of vectors containing the initial parameter values for each data stream.}
@@ -32,6 +32,8 @@ for each data stream.}
 each data stream.}
 
 \item{Bndind}{Named list indicating whether \code{DM} is NULL with default parameter bounds for each data stream.}
+
+\item{dist}{A named list indicating the probability distributions of the data streams.}
 }
 \value{
 A vector of unconstrained parameters.
@@ -54,7 +56,8 @@ delta <- c(0.6,0.4)
 
 #working parameters
 wpar <- momentuHMM:::n2w(par,bounds,list(beta=beta),log(delta[-1]/delta[1]),nbStates,
-m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,
+m$conditions$dist)
 
 #natural parameter
 p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,

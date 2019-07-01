@@ -15,7 +15,7 @@ fitHMM <- function(data, ...) {
 #' @method fitHMM momentuHMMData
 #' @param nbStates Number of states of the HMM.
 #' @param dist A named list indicating the probability distributions of the data streams. Currently
-#' supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
+#' supported distributions are 'bern', 'beta', 'cat', exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
 #' 'pois', 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), 'rw_mvnorm3' (trivariate normal random walk), 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
 #' \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
 #' and their respective probability distributions ('gamma', 'vm', and 'pois').  The names of the data streams 
@@ -723,7 +723,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   }
   workBounds <- getWorkBounds(workBounds,distnames,fixParIndex$Par0,parindex,parCount,inputs$DM,fixParIndex$beta0,fixParIndex$delta0)
   
-  wpar <- n2w(fixParIndex$Par0,p$bounds,fixParIndex$beta0,fixParIndex$delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+  wpar <- n2w(fixParIndex$Par0,p$bounds,fixParIndex$beta0,fixParIndex$delta0,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind,inputs$dist)
   if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
 
   parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures-(nbCovsPi+1)*(mixtures-1)-ncol(covsDelta)*(nbStates-1)*(!stationary)*mixtures-ifelse(is.null(recharge),0,(nbRecovs+1+nbG0covs+1))
@@ -893,7 +893,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
         p$parNames[[i]] <- c("mean",p$parNames[[i]])
       }
     if(DMind[[i]]){
-      mle[[i]]<-matrix(mle[[i]][,1],nrow=length(p$parNames[[i]]),ncol=nbStates,byrow=TRUE)
+      mle[[i]]<-matrix(mle[[i]][1:(length(p$parNames[[i]])*nbStates),1],nrow=length(p$parNames[[i]]),ncol=nbStates,byrow=TRUE)
       rownames(mle[[i]]) <- p$parNames[[i]]
       colnames(mle[[i]]) <- stateNames
     } else {
