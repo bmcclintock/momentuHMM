@@ -28,9 +28,15 @@ test_that("Exceptions are thrown",{
   
   wpar <- n2w(Par,m$conditions$bounds,list(beta=m$mle$beta),log(m$mle$delta[-1]/m$mle$delta[1]),nbStates,m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,m$conditions$dist)
 
+  aInd <- NULL
+  for(i in 1:length(unique(data$ID))){
+    idInd <- which(data$ID==unique(data$ID)[i])
+    aInd <- c(aInd,idInd[1])
+  }
+  
   expect_error(nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
                        m$conditions$estAngleMean,m$conditions$circularAngleMean,inputs$consensus,m$conditions$zeroInflation,m$conditions$oneInflation,
-                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds,betaRef=m$conditions$betaRef,covsPi=m$covsPi),NA)
+                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds,betaRef=m$conditions$betaRef,covsPi=m$covsPi,aInd=aInd),NA)
 
 })
 
@@ -64,12 +70,18 @@ test_that("logAlpha, logBeta, and nLogLike are consistent",{
   foo <- length(m$mod$estimate)-(nbCovsDelta+1)*(nbStates-1)+1
   delta<- m$mod$estimate[foo:length(m$mod$estimate)]
   
+  aInd <- NULL
+  for(i in 1:length(unique(data$ID))){
+    idInd <- which(data$ID==unique(data$ID)[i])
+    aInd <- c(aInd,idInd[1])
+  }
+  
   wpar <- n2w(Par,m$conditions$bounds,list(beta=m$mle$beta),delta,nbStates,m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,m$conditions$dist)
 
   # all data
   nll<-nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
                        m$conditions$estAngleMean,m$conditions$circularAngleMean,inputs$consensus,m$conditions$zeroInflation,m$conditions$oneInflation,
-                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds,betaRef=m$conditions$betaRef,covsPi=m$covsPi)
+                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds,betaRef=m$conditions$betaRef,covsPi=m$covsPi,aInd=aInd)
   la<-logAlpha(m)
   lb<-logBeta(m)
   for(t in sample.int(min(table(m$data$ID)),30)){
@@ -90,7 +102,7 @@ test_that("logAlpha, logBeta, and nLogLike are consistent",{
     data<-data[aInd,]
     nll<-nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
                        m$conditions$estAngleMean,m$conditions$circularAngleMean,inputs$consensus,m$conditions$zeroInflation,m$conditions$oneInflation,
-                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds,betaRef=m$conditions$betaRef,covsPi=m$covsPi)
+                       m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds,betaRef=m$conditions$betaRef,covsPi=m$covsPi,aInd=1)
   
     samp<-sample(aInd,1)
     c <- max(la[[1]][samp,]+lb[[1]][samp,]) # cancels below ; prevents numerical errors
@@ -137,10 +149,16 @@ test_that("logAlpha, logBeta, and nLogLike are consistent with zero and one infl
   
   wpar <- n2w(Par,m$conditions$bounds,list(beta=m$mle$beta),delta,nbStates,m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,m$conditions$dist)
   
+  aInd <- NULL
+  for(i in 1:length(unique(data$ID))){
+    idInd <- which(data$ID==unique(data$ID)[i])
+    aInd <- c(aInd,idInd[1])
+  }
+  
   # all data
   nll<-nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
                 m$conditions$estAngleMean,m$conditions$circularAngleMean,inputs$consensus,m$conditions$zeroInflation,m$conditions$oneInflation,
-                m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds,betaRef=m$conditions$betaRef,covsPi=m$covsPi)
+                m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds,betaRef=m$conditions$betaRef,covsPi=m$covsPi,aInd=aInd)
   la<-logAlpha(m)
   lb<-logBeta(m)
   for(t in sample.int(min(table(m$data$ID)),30)){
@@ -186,10 +204,16 @@ test_that("logAlpha, logBeta, and nLogLike are consistent when mixtures=2",{
   
   wpar <- n2w(Par,m$conditions$bounds,list(beta=m$mle$beta,pi=m$CIbeta$pi$est),delta,nbStates,m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,m$conditions$dist)
   
+  aInd <- NULL
+  for(i in 1:length(unique(data$ID))){
+    idInd <- which(data$ID==unique(data$ID)[i])
+    aInd <- c(aInd,idInd[1])
+  }
+  
   # all data
   nll<-nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
                 m$conditions$estAngleMean,m$conditions$circularAngleMean,inputs$consensus,m$conditions$zeroInflation,m$conditions$oneInflation,
-                m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds,betaRef=m$conditions$betaRef,mixtures=mixtures,covsPi=m$covsPi)
+                m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds,betaRef=m$conditions$betaRef,mixtures=mixtures,covsPi=m$covsPi,aInd=aInd)
   
   la<-logAlpha(m)
   lb<-logBeta(m)
@@ -246,7 +270,13 @@ test_that("angleDist=NULL and zeroInflation=TRUE work",{
 
   wpar <- n2w(Par,inputs$p$bounds,list(beta=m$mle$beta),m$mle$delta,nbStates,inputs$estAngleMean,m$conditions$DM,DMinputs$cons,DMinputs$workcons,m$conditions$Bndind,m$conditions$dist)
   
+  aInd <- NULL
+  for(i in 1:length(unique(data$ID))){
+    idInd <- which(data$ID==unique(data$ID)[i])
+    aInd <- c(aInd,idInd[1])
+  }
+  
   expect_error(nLogLike(wpar,nbStates,m$conditions$formula,inputs$p$bounds,inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
                        inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
-                       m$conditions$stationary,DMinputs$cons,DMinputs$fullDM,m$conditions$DMind,DMinputs$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds,betaRef=m$conditions$betaRef,covsPi=m$covsPi),NA)
+                       m$conditions$stationary,DMinputs$cons,DMinputs$fullDM,m$conditions$DMind,DMinputs$workcons,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds,betaRef=m$conditions$betaRef,covsPi=m$covsPi,aInd=aInd),NA)
 })

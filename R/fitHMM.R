@@ -759,6 +759,13 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   nc <- ncmean$nc
   meanind <- ncmean$meanind
   
+  # aInd = list of indices of first observation for each animal
+  aInd <- NULL
+  for(i in 1:nbAnimals){
+    idInd <- which(data$ID==unique(data$ID)[i])
+    aInd <- c(aInd,idInd[1])
+  }
+  
   if(fit) {
     
     hessian <- TRUE
@@ -807,7 +814,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
           withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,
+                                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,
                                                print.level=print.level,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
                                                iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)),error=function(e) e),warning=h)
@@ -815,7 +822,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
           withCallingHandlers(curmod <- tryCatch(optim(optPar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                      inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                      stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,
+                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,
                                                      method=optMethod,control=control,hessian=hessian),error=function(e) e),warning=h)
         }
         endTime <- proc.time()-startTime

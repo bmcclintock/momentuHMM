@@ -42,7 +42,8 @@ Imports:
     RColorBrewer,
     tmvtnorm,
     data.tree,
-    lubridate
+    lubridate,
+    extraDistr
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     tcltk,

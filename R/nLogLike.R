@@ -45,6 +45,7 @@
 #' @param mixtures Number of mixtures for the state transition probabilities
 #' @param covsPi data frame containing the pi model covariates
 #' @param recharge recharge model specification (only used for hierarchical models)
+#' @param aInd vector of indices of first observation for each animal
 #'
 #' @return The negative log-likelihood of the parameters given the data.
 #'
@@ -79,7 +80,7 @@
 
 nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,
-                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,deltaCons=NULL,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1,covsPi,recharge=NULL)
+                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,deltaCons=NULL,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1,covsPi,recharge=NULL,aInd)
 {
   
   # check arguments
@@ -96,14 +97,9 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
   wpar <- expandPar(optPar,optInd,fixPar,wparIndex,betaCons,deltaCons,nbStates,ncol(covsDelta)-1,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,ncol(covsPi)-1)
   par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi)
 
-  nbAnimals <- length(unique(data$ID))
-
-  # aInd = list of indices of first observation for each animal
-  aInd <- NULL
-  for(i in 1:nbAnimals){
-    idInd <- which(data$ID==unique(data$ID)[i])
-    aInd <- c(aInd,idInd[1])
-    if(nbRecovs){
+  if(nbRecovs){
+    for(i in 1:length(unique(data$ID))){
+      idInd <- which(data$ID==unique(data$ID)[i])
       if(inherits(data,"hierarchical")) {
         recLevels <- length(recharge)
         recLevelNames <- names(recharge)
