@@ -8,9 +8,11 @@ NEW FEATURES
 
 * discrete-time version of Hooten et al (2019; <doi:10.1111/ele.13198>) recharge model has been added
 
-* mvnorm2 (bivariate normal) and mvnorm3 (trivariate normal) data stream distributions have been added
+* 'mvnorm2' (bivariate normal) and 'mvnorm3' (trivariate normal) data stream distributions have been added
 
-* rw_norm (normal random walk), rw_mvnorm2 (bivariate normal random walk), and rw_mvnorm3 (trivariate normal random walk) data stream distributions have been added
+* 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), and 'rw_mvnorm3' (trivariate normal random walk) data stream distributions have been added
+
+* 'cat' (categorical) data stream distributions have been added
 
 * circularAngleMean can now alternatively be used to specify the reference angle (i.e. directional persistence) coefficient in circular-circular regression models
 
