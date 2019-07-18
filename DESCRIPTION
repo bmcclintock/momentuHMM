@@ -43,7 +43,8 @@ Imports:
     tmvtnorm,
     data.tree,
     lubridate,
-    extraDistr
+    extraDistr,
+    rlang
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     tcltk,
