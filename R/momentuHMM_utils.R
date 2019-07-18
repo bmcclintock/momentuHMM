@@ -162,7 +162,7 @@ delta_bc <- function(m){
       beta <- list(beta=beta,g0=m$mle$g0,theta=m$mle$theta)
       m$conditions$workBounds <- getWorkBounds(workBounds,distnames,m$mod$estimate,parindex,parCount,m$conditions$DM,beta,delta)
     }
-    if(is.null(m$conditions$betaCons)){
+    if(length(m$stateNames)>1 && is.null(m$conditions$betaCons)){
       if(is.miSum(m) & !is.null(m$Par$beta$beta)) m$conditions$betaCons <- matrix(1:length(m$Par$beta$beta$est),nrow(m$Par$beta$beta$est),ncol(m$Par$beta$beta$est))
       else if(is.momentuHMM(m) & !is.null(m$mle$beta)) m$conditions$betaCons <- matrix(1:length(m$mle$beta),nrow(m$mle$beta),ncol(m$mle$beta))
     }

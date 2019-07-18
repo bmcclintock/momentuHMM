@@ -49,6 +49,7 @@ getPar<-function(m){
   } else formDelta <- m$conditions$formulaDelta
   
   Par <- list()
+  beta <- delta <- NULL
   if(is.miSum(m)){
     m$mle<-lapply(m$Par$real[distnames],function(x) x$est)
     for(i in distnames){
@@ -58,20 +59,22 @@ getPar<-function(m){
         m$mle[[i]]<-m$mle[[i]][-1,]
       Par[[i]] <- c(t(unname(m$mle[[i]])))
     }
-    beta <- unname(nw2w(m$Par$beta$beta$est,m$conditions$workBounds$beta))
-    if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
-      delta <- unname(m$Par$real$delta$est[1:m$conditions$mixtures,])
-    } else {
-      delta <- unname(nw2w(m$Par$beta$delta$est,m$conditions$workBounds$delta))
-    }
-    if(!is.null(m$conditions$recharge)){
-      beta <- list(beta=beta,g0=nw2w(m$Par$beta$g0$est,m$conditions$workBounds$g0),theta=nw2w(m$Par$beta$theta$est,m$conditions$workBounds$theta))
-    }
-    if(m$conditions$mixtures>1){
-      if(!length(attr(terms.formula(formPi),"term.labels")) & is.null(m$conditions$formulaPi)){
-        pie <- unname(m$Par$real$pi$est)
+    if(nbStates>1){
+      beta <- unname(nw2w(m$Par$beta$beta$est,m$conditions$workBounds$beta))
+      if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
+        delta <- unname(m$Par$real$delta$est[1:m$conditions$mixtures,])
       } else {
-        pie <- unname(nw2w(m$Par$beta$pi$est,m$conditions$workBounds$pi))
+        delta <- unname(nw2w(m$Par$beta$delta$est,m$conditions$workBounds$delta))
+      }
+      if(!is.null(m$conditions$recharge)){
+        beta <- list(beta=beta,g0=nw2w(m$Par$beta$g0$est,m$conditions$workBounds$g0),theta=nw2w(m$Par$beta$theta$est,m$conditions$workBounds$theta))
+      }
+      if(m$conditions$mixtures>1){
+        if(!length(attr(terms.formula(formPi),"term.labels")) & is.null(m$conditions$formulaPi)){
+          pie <- unname(m$Par$real$pi$est)
+        } else {
+          pie <- unname(nw2w(m$Par$beta$pi$est,m$conditions$workBounds$pi))
+        }
       }
     }
   } else {
@@ -84,20 +87,22 @@ getPar<-function(m){
       } else par <- unname(m$mod$estimate[parindex[[i]]+1:parCount[[i]]])#unname(nw2w((m$CIbeta[[i]]$est-m$conditions$workcons[[i]])^(1/m$conditions$cons[[i]]),m$conditions$workBounds[[i]]))
       Par[[i]] <- par
     }
-    beta <- unname(matrix(m$mod$estimate[parindex[["beta"]]+1:length(m$mle$beta)],nrow(m$mle$beta),ncol(m$mle$beta)))#unname(nw2w(m$mle$beta,m$conditions$workBounds$beta))
-    if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
-      delta <- unname(m$mle$delta[seq(1,nrow(m$mle$delta),nrow(m$mle$delta)/m$conditions$mixtures),])
-    } else {
-      delta <- unname(matrix(m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+length(m$CIbeta$pi$est)+1:length(m$CIbeta$delta$est)],nrow(m$CIbeta$delta$est),ncol(m$CIbeta$delta$est)))#unname(nw2w(m$CIbeta$delta$est,m$conditions$workBounds$delta))
-    }
-    if(!is.null(m$conditions$recharge)){
-      beta <- list(beta=beta,g0=m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+length(m$CIbeta$pi$est)+length(m$CIbeta$delta$est)+1:length(m$mle$g0)],theta=m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+length(m$CIbeta$pi$est)+length(m$CIbeta$delta$est)+length(m$mle$g0)+1:length(m$mle$theta)])
-    }
-    if(m$conditions$mixtures>1){
-      if(!length(attr(terms.formula(formPi),"term.labels")) & is.null(m$conditions$formulaPi)){
-        pie <- unname(m$mle$pi[1,])
+    if(nbStates>1){
+      beta <- unname(matrix(m$mod$estimate[parindex[["beta"]]+1:length(m$mle$beta)],nrow(m$mle$beta),ncol(m$mle$beta)))#unname(nw2w(m$mle$beta,m$conditions$workBounds$beta))
+      if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
+        delta <- unname(m$mle$delta[seq(1,nrow(m$mle$delta),nrow(m$mle$delta)/m$conditions$mixtures),])
       } else {
-        pie <- unname(matrix(m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+1:length(m$CIbeta$pi$est)],nrow(m$CIbeta$pi$est),ncol(m$CIbeta$pi$est)))#unname(nw2w(m$CIbeta$pi$est,m$conditions$workBounds$pi))
+        delta <- unname(matrix(m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+length(m$CIbeta$pi$est)+1:length(m$CIbeta$delta$est)],nrow(m$CIbeta$delta$est),ncol(m$CIbeta$delta$est)))#unname(nw2w(m$CIbeta$delta$est,m$conditions$workBounds$delta))
+      }
+      if(!is.null(m$conditions$recharge)){
+        beta <- list(beta=beta,g0=m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+length(m$CIbeta$pi$est)+length(m$CIbeta$delta$est)+1:length(m$mle$g0)],theta=m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+length(m$CIbeta$pi$est)+length(m$CIbeta$delta$est)+length(m$mle$g0)+1:length(m$mle$theta)])
+      }
+      if(m$conditions$mixtures>1){
+        if(!length(attr(terms.formula(formPi),"term.labels")) & is.null(m$conditions$formulaPi)){
+          pie <- unname(m$mle$pi[1,])
+        } else {
+          pie <- unname(matrix(m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+1:length(m$CIbeta$pi$est)],nrow(m$CIbeta$pi$est),ncol(m$CIbeta$pi$est)))#unname(nw2w(m$CIbeta$pi$est,m$conditions$workBounds$pi))
+        }
       }
     }
   }

@@ -210,8 +210,10 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   miBeta <- miCombo <- mitools::MIcombine(results=betaCoeff,variances=betaVar)
   # account for betaCons
-  miBeta$variance[(parindex[["beta"]]+1:length(m$mle$beta))[duplicated(c(m$conditions$betaCons))],] <- 0
-  miBeta$variance[,(parindex[["beta"]]+1:length(m$mle$beta))[duplicated(c(m$conditions$betaCons))]] <- 0
+  if(nbStates>1){
+    miBeta$variance[(parindex[["beta"]]+1:length(m$mle$beta))[duplicated(c(m$conditions$betaCons))],] <- 0
+    miBeta$variance[,(parindex[["beta"]]+1:length(m$mle$beta))[duplicated(c(m$conditions$betaCons))]] <- 0
+  }
   
   # multiple imputation results for working parameters
   if(length(m$conditions$optInd)){
@@ -256,7 +258,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     Par$beta[[i]] <- mi_parm_list(xbar[[i]],MI_se[[i]],lower[[i]],upper[[i]],m$CIbeta[[i]]$est)
   }
   # fill in t.p.m. constraints based on betaCons
-  Par$beta$beta <- lapply(Par$beta$beta,function(x) matrix(x[c(m$conditions$betaCons)],dim(x),dimnames=list(rownames(x),colnames(x))))
+  if(nbStates>1) Par$beta$beta <- lapply(Par$beta$beta,function(x) matrix(x[c(m$conditions$betaCons)],dim(x),dimnames=list(rownames(x),colnames(x))))
   
   #average all numeric variables in imputed data
   mhdata<-m$data
@@ -358,7 +360,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     tmpParNames[which(p$parNames[[i]]=="kappa")] <- "concentration"
     
     DMind[[i]] <- FALSE
-    par <- c(w2n(miBeta$coefficients,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean[i],inputs$consensus[i],m$conditions$stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta,list(beta=matrix(c(-Inf,Inf),length(m$mle$beta),2,byrow=TRUE)),m$covsPi)[[i]])
+    par <- c(w2n(miBeta$coefficients,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean[i],inputs$consensus[i],m$conditions$stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta,list(beta=matrix(rep(c(-Inf,Inf),length(m$mle$beta)),length(m$mle$beta),2,byrow=TRUE)),m$covsPi)[[i]])
     
     if(!(inputs$dist[[i]] %in% angledists) | (inputs$dist[[i]] %in% angledists & m$conditions$estAngleMean[[i]] & !m$conditions$Bndind[[i]])) {
       Par$real[[i]] <- get_CI(miBeta$coefficients,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],DMinputs$cons[[i]],DMinputs$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],NULL,inputs$dist[[i]])
