@@ -468,8 +468,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         cov<-DMterms[jj]
         form<-formula(paste("~",cov))
         varform<-all.vars(form)
-        if(any(varform %in% factorcovs)){
-          factorvar<-factorcovs %in% varform
+        if(any(varform %in% factorcovs) && !all(varform %in% factorterms)){
+          factorvar<-factorcovs %in% (varform[!(varform %in% factorterms)])
           DMterms[jj]<-rep(factorterms,times=unlist(lapply(m$data[factorterms],nlevels)))[which(factorvar)]
         } 
       }
@@ -484,8 +484,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
               cov<-DMparterms[[ii]][[state]][jj]
               form<-formula(paste("~",cov))
               varform<-all.vars(form)
-              if(any(varform %in% factorcovs)){
-                factorvar<-factorcovs %in% varform
+              if(any(varform %in% factorcovs) && !all(varform %in% factorterms)){
+                factorvar<-factorcovs %in% (varform[!(varform %in% factorterms)])
                 DMparterms[[ii]][[state]][jj]<-rep(factorterms,times=unlist(lapply(m$data[factorterms],nlevels)))[which(factorvar)]
               }
             }
@@ -503,19 +503,22 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     genFun <- Fun[[i]]
     if(inputs$dist[[i]] %in% angledists) {
       grid <- seq(-pi,pi,length=1000)
-    } else if(inputs$dist[[i]] %in% integerdists){
-      grid <- seq(0,max(m$data[[i]],na.rm=TRUE))
-    } else if(inputs$dist[[i]] %in% stepdists){
-      grid <- seq(0,max(m$data[[i]],na.rm=TRUE),length=10000)
-    } else if(inputs$dist[[i]] %in% mvndists){
-      if(inputs$dist[[i]]=="mvnorm2" || inputs$dist[[i]]=="rw_mvnorm2"){
-        grid <- c(seq(min(m$data[[paste0(i,".x")]],na.rm=TRUE), max(m$data[[paste0(i,".x")]],na.rm=TRUE), length=100),
-                  seq(min(m$data[[paste0(i,".y")]],na.rm=TRUE), max(m$data[[paste0(i,".y")]],na.rm=TRUE), length=100))
-      }
     } else {
-      grid <- seq(min(m$data[[i]],na.rm=TRUE),max(m$data[[i]],na.rm=TRUE),length=10000)
+      if(all(is.na(m$data[[i]])) || !is.finite(max(m$data[[i]],na.rm=TRUE))) next;
+      
+      if(inputs$dist[[i]] %in% integerdists){
+        grid <- seq(0,max(m$data[[i]],na.rm=TRUE))
+      } else if(inputs$dist[[i]] %in% stepdists){
+        grid <- seq(0,max(m$data[[i]],na.rm=TRUE),length=10000)
+      } else if(inputs$dist[[i]] %in% mvndists){
+        if(inputs$dist[[i]]=="mvnorm2" || inputs$dist[[i]]=="rw_mvnorm2"){
+          grid <- c(seq(min(m$data[[paste0(i,".x")]],na.rm=TRUE), max(m$data[[paste0(i,".x")]],na.rm=TRUE), length=100),
+                    seq(min(m$data[[paste0(i,".y")]],na.rm=TRUE), max(m$data[[paste0(i,".y")]],na.rm=TRUE), length=100))
+        }
+      } else {
+        grid <- seq(min(m$data[[i]],na.rm=TRUE),max(m$data[[i]],na.rm=TRUE),length=10000)
+      }
     }
-    
     for(state in 1:nbStates) {
       genArgs <- list(grid)
       

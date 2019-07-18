@@ -202,8 +202,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
           cov<-covsCol[jj]
           form<-formula(paste("~",cov))
           varform<-all.vars(form)
-          if(any(varform %in% factorcovs)){
-            factorvar<-factorcovs %in% varform
+          if(any(varform %in% factorcovs) && !all(varform %in% factorterms)){
+            factorvar<-factorcovs %in% (varform[!(varform %in% factorterms)])
             covsCol[jj]<-rep(factorterms,times=unlist(lapply(model$data[factorterms],nlevels)))[which(factorvar)]
           } 
         }

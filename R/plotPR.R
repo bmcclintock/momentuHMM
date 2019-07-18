@@ -86,6 +86,7 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
         warning("some pseudo-residuals for ",i," are infinite; these will be set to NA for plotting")
         pr[[1]][[paste0(i,"Res")]][which(is.infinite(pr[[1]][[paste0(i,"Res")]]))] <- NA
       }
+      if(all(is.na(pr[[1]][[paste0(i,"Res")]]))) next;
       ylim <- range(unlist(lapply(pr,function(x) x[[paste0(i,"Res")]][which(is.finite(x[[paste0(i,"Res")]]))])),na.rm=TRUE)
       plot(pr[[1]][[paste0(i,"Res")]],type="l",xlab="Observation index",ylab=paste0(i," pseudo-residuals"),main="",ylim=ylim)
       if(nSims>1){

@@ -536,7 +536,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     if(any(is.na(match(tmpdistnames,names(data))))) stop(paste0(tmpdistnames[is.na(match(tmpdistnames,names(data)))],collapse=", ")," not found in data")
   } 
   for(i in tmpdistnames){
-    if(all(is.na(data[[i]]))) stop("data$",i," consists entirely of NAs")
+    if(all(is.na(data[[i]]))) warning("data$",i," consists entirely of NAs")
   }
   
   if(!all(distnames %in% names(Par0))) stop(paste0(distnames[which(!(distnames %in% names(Par0)))],collapse=", ")," missing in 'Par0'")
@@ -810,7 +810,16 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
         startTime <- proc.time()
   
         # call to optimizer nlm
-        if(optMethod=="nlm"){
+        if(!length(optPar)){
+          curmod <- list()
+          
+          curmod$minimum <- nLogLike(optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
+                                    inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
+                                    stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
+                                    nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd)
+          curmod$estimate <- numeric()
+          
+        } else if(optMethod=="nlm"){
           withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,

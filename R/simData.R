@@ -467,10 +467,14 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       g0 <- nw2w(model$mle$g0,model$conditions$workBounds$g0)
       theta <- nw2w(model$mle$theta,model$conditions$workBounds$theta)
     } else g0 <- theta <- NULL
-    beta <- nw2w(model$mle$beta,model$conditions$workBounds$beta)
     nbCovsDelta <- ncol(model$covsDelta)-1
-    foo <- length(model$mod$estimate)-length(g0)-length(theta)-(nbCovsDelta+1)*(nbStates-1)*mixtures+1
-    delta <- matrix(model$mod$estimate[foo:(length(model$mod$estimate)-length(g0)-length(theta))],nrow=(nbCovsDelta+1)*mixtures) 
+    if(nbStates>1){
+      beta <- nw2w(model$mle$beta,model$conditions$workBounds$beta)
+      foo <- length(model$mod$estimate)-length(g0)-length(theta)-(nbCovsDelta+1)*(nbStates-1)*mixtures+1
+      delta <- matrix(model$mod$estimate[foo:(length(model$mod$estimate)-length(g0)-length(theta))],nrow=(nbCovsDelta+1)*mixtures) 
+    } else {
+      formulaDelta <- NULL
+    }
     if(mixtures>1) {
       nbCovsPi <- ncol(model$covsPi)-1
       foo <- length(model$mod$estimate)-length(g0)-length(theta)-(nbCovsDelta+1)*(nbStates-1)*mixtures-(nbCovsPi+1)*(mixtures-1)+1:((nbCovsPi+1)*(mixtures-1))
@@ -506,8 +510,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           cov<-covsCol[jj]
           form<-formula(paste("~",cov))
           varform<-all.vars(form)
-          if(any(varform %in% factorcovs)){
-            factorvar<-factorcovs %in% varform
+          if(any(varform %in% factorcovs) && !all(varform %in% factorterms)){
+            factorvar<-factorcovs %in% (varform[!(varform %in% factorterms)])
             covsCol[jj]<-rep(factorterms,times=unlist(lapply(model$data[factorterms],nlevels)))[which(factorvar)]
           } 
         }
