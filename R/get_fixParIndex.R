@@ -222,7 +222,7 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
         tmp <- which(!is.na(fixPar$delta))
         if(!nbCovsDelta & is.null(formulaDelta)){
           delta0 <- matrix(fixPar$delta,mixtures,nbStates)
-          if(length(tmp)!=length(delta0) | !all(rowSums(delta0)==1)) stop("fixPar$delta",ifelse(mixtures>1," rows "," "),"must sum to 1")
+          if(length(tmp)!=length(delta0) | !all(mapply(function(x) isTRUE(all.equal(x,1)),rowSums(delta0)))) stop("fixPar$delta",ifelse(mixtures>1," rows "," "),"must sum to 1")
           delta0 <- matrix(apply(delta0,1,function(x) log(x[-1]/x[1])),(nbCovsDelta+1)*mixtures,nbStates-1)
           fixPar$delta <- as.vector(delta0)
           wparIndex <- c(wparIndex,parindex[["beta"]]+length(beta0$beta)+length(beta0$pi)+1:(length(delta0)))
