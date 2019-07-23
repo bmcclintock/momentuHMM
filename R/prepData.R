@@ -308,7 +308,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
                                          c(x[i+1],y[i+1]),type)
           }
         }
-        if(j=="step" & !is.null(coordNames)) {
+        if(j=="step" & !is.na(x[i2-1]) & !is.na(x[i2]) & !is.na(y[i2-1]) & !is.na(y[i2])) {
           genData[i2-i1] <- spDistsN1(pts = matrix(c(x[i2-1],y[i2-1]),ncol=2),pt = c(x[i2],y[i2]),longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
         } 
       } 
