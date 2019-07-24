@@ -344,29 +344,31 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       if(!("obs" %in% obsPerLevel[[i]]$fieldsAll)) stop("'obsPerLevel' for individual ",i," must include a 'obs' field")
       if(!all(obsPerLevel[[i]]$Get("name",filterFun=function(x) x$level==2) %in% hierDist$Get("name",filterFun=function(x) x$level==2))) stop("'obsPerLevel' level types for individual ",i," can only include ",paste0(hierDist$Get("name",filterFun=function(x) x$level==2),collapse = ", "))
       #if(!all(obsPerLevel[[i]]$Get("name",filterFun=function(x) x$level==2) %in% paste0("level",1:obsPerLevel[[i]]$count))) stop("'obsPerLevel' level types for individual ",i," can only include ",paste0(paste0("level",1:obsPerLevel[[i]]$count),collapse = ", "))
+      tmpObs <- data.tree::Clone(obsPerLevel[[i]])
       for(j in obsPerLevel[[i]]$Get("name",filterFun=function(x) x$level==2)){
         if(length(which(obsPerLevel[[i]][[j]]$obs<1))>0)
           stop("obsPerLevel 'obs' field should have positive values.")
         if(length(obsPerLevel[[i]][[j]]$obs)==1)
-          obsPerLevel[[i]][[j]]$obs <- rep(obsPerLevel[[i]][[j]]$obs,2)
-        else if(length(obsPerLevel[[i]][[j]]$obs)!=2)
+          tmpObs[[j]]$obs <- rep(obsPerLevel[[i]][[j]]$obs,2)
+        else if(length(tmpObs[[j]]$obs)!=2)
           stop("obsPerLevel 'obs' field should be of length 1 or 2.")
       }
+      obsPerLevel[[i]] <- tmpObs
     }
   } else {
     if(!inherits(obsPerLevel,"Node")) stop("obsPerLevel must be a hierarchical Node")
     if(!("obs" %in% obsPerLevel$fieldsAll)) stop("'obsPerLevel' must include a 'obs' field")
     if(!all(obsPerLevel$Get("name",filterFun=function(x) x$level==2) %in% hierDist$Get("name",filterFun=function(x) x$level==2))) stop("'obsPerLevel' level types can only include ",paste0(hierDist$Get("name",filterFun=function(x) x$level==2),collapse = ", "))
     #if(!all(obsPerLevel$Get("name",filterFun=function(x) x$level==2) %in% paste0("level",1:obsPerLevel$count))) stop("'obsPerLevel' level types can only include ",paste0(paste0("level",1:obsPerLevel[[i]]$count),collapse = ", "))
+    tmpObs <- data.tree::Clone(obsPerLevel)
     for(j in obsPerLevel$Get("name",filterFun=function(x) x$level==2)){
       if(length(which(obsPerLevel[[j]]$obs<1))>0)
         stop("obsPerLevel 'obs' field should have positive values.")
       if(length(obsPerLevel[[j]]$obs)==1)
-        obsPerLevel[[j]]$obs <- rep(obsPerLevel[[j]]$obs,2)
-      else if(length(obsPerLevel[[j]]$obs)!=2)
+        tmpObs[[j]]$obs <- rep(obsPerLevel[[j]]$obs,2)
+      else if(length(tmpObs[[j]]$obs)!=2)
         stop("obsPerLevel 'obs' field should be of length 1 or 2.")
     }
-    tmpObs<-obsPerLevel
     obsPerLevel<-vector('list',nbAnimals)
     for(i in 1:nbAnimals){
       obsPerLevel[[i]]<-tmpObs
