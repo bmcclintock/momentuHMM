@@ -450,7 +450,7 @@ getPar0.hierarchical<-function(model,hierStates=model$conditions$hierStates,estA
   fixPar <- inputHierHMM$hFixPar
   stateNames <- inputHierHMM$stateNames
   
-  Par0 <- getPar0.default(model,nbStates,estAngleMean,circularAngleMean,formula,formulaDelta,mixtures,formulaPi,DM,betaRef,stateNames)
+  Par0 <- getPar0.default(model,nbStates,estAngleMean,circularAngleMean,formula,formulaDelta,FALSE,mixtures,formulaPi,DM,betaRef,stateNames)
   
   if(is.list(Par0$beta)){
     Pi <- Par0$beta$pi
