@@ -74,7 +74,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
     if(!is.momentuHMMData(data)){ 
       if(missing(nbStates)){
         if(all(c("hierStates","hierDist") %in% argNames)){
-          return(getTrProbs.hierarchical(data=data,hierStates=hierArgs$hierStates,hierBeta=hierArgs$hierBeta,workBounds=workBounds,hierFormula=hierArgs$hierFormula,mixtures=mixtures,hierDist=hierArgs$hierDist))
+          return(getTrProbs.hierarchical(data=data,hierStates=hierArgs$hierStates,hierBeta=hierArgs$hierBeta,workBounds=workBounds,hierFormula=hierArgs$hierFormula,mixtures=mixtures,hierDist=hierArgs$hierDist,covIndex=covIndex))
         }
       }
       if(!is.data.frame(data)) stop('data must be a data.frame')
@@ -107,6 +107,11 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
       if(!is.null(beta$g0)) g0 <- w2wn(beta$g0,workBounds$g0)
       if(!is.null(beta$theta)) theta <- w2wn(beta$theta,workBounds$theta)
       beta <- beta$beta
+    }
+    
+    if(!is.null(covIndex)) {
+      if(!is.numeric(covIndex) || any(covIndex<1 | covIndex>nrow(data$data))) stop("covIndex can only include integers between 1 and ",nrow(data))
+      data <- data[covIndex,,drop=FALSE]
     }
     
     reForm <- formatRecharge(nbStates,formula,data,par=list(g0=g0,theta=theta))
@@ -237,7 +242,7 @@ getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hie
     inputHierHMM <- formatHierHMM(data,hierStates=hierStates,hierDist=hierDist,hierBeta=hierBeta,hierDelta=NULL,hierFormula=hierFormula,mixtures=mixtures,workBounds=workBounds,checkData=FALSE)
     if(is.list(inputHierHMM$beta)) beta <- inputHierHMM$beta$beta
     else beta <- inputHierHMM$beta
-    trProbs <- getTrProbs.default(inputHierHMM$data,inputHierHMM$nbStates,beta,inputHierHMM$workBounds,inputHierHMM$newformula,mixtures,inputHierHMM$betaRef,inputHierHMM$stateNames)
+    trProbs <- getTrProbs.default(inputHierHMM$data,inputHierHMM$nbStates,beta,inputHierHMM$workBounds,inputHierHMM$newformula,mixtures,inputHierHMM$betaRef,inputHierHMM$stateNames,covIndex=covIndex)
     getCI <- FALSE
   }
   
