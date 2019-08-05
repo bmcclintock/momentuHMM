@@ -208,7 +208,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   }
   parmcols <- unlist(parmcols[parms])
   
-  miBeta <- miCombo <- mitools::MIcombine(results=betaCoeff,variances=betaVar)
+  miBeta <- mitools::MIcombine(results=betaCoeff,variances=betaVar)
   # account for betaCons
   if(nbStates>1){
     miBeta$variance[(parindex[["beta"]]+1:length(m$mle$beta))[duplicated(c(m$conditions$betaCons))],] <- 0
@@ -216,13 +216,12 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   }
   
   # multiple imputation results for working parameters
-  if(length(m$conditions$optInd)){
-    twb <- lapply(im,function(x) x$mod$wpar)
-    twb <- lapply(twb,function(x) {x[which(!is.finite(x))]<-NA; return(x)})
-    twvar <- lapply(im,function(x) x$mod$Sigma[-m$conditions$optInd,-m$conditions$optInd])
-    twvar <- lapply(twvar,function(x) {x[which(!is.finite(x))]<-NA; diag(x)[which(!is.finite(sqrt(diag(x))))]<-NA; return(x)})
-    miCombo <- mitools::MIcombine(results=twb,variances=twvar)
-  }
+  twb <- lapply(im,function(x) x$mod$wpar)
+  twb <- lapply(twb,function(x) {x[which(!is.finite(x))]<-NA; return(x)})
+  if(length(m$conditions$optInd)) twvar <- lapply(im,function(x) x$mod$Sigma[-m$conditions$optInd,-m$conditions$optInd])
+  else twvar <- lapply(im,function(x) x$mod$Sigma)
+  twvar <- lapply(twvar,function(x) {x[which(!is.finite(x))]<-NA; diag(x)[which(!is.finite(sqrt(diag(x))))]<-NA; return(x)})
+  miCombo <- mitools::MIcombine(results=twb,variances=twvar)
   
   for(parm in 1:nparms){
     
