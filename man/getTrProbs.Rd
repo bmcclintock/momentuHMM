@@ -57,7 +57,7 @@ The first column pertains to the lower bound and the second column the upper bou
 If \code{mixtures=1}, an array of dimension \code{nbStates} x \code{nbStates} x \code{nrow(data)} containing the t.p.m for each observation in \code{data}.
 If \code{mixtures>1}, a list of length \code{mixtures}, where each element is an array of dimension \code{nbStates} x \code{nbStates} x \code{nrow(data)} containing the t.p.m for each observation in \code{data}.
 
-If \code{getCI=TRUE} then a list of arrays is returned (with elements \code{est}, \code{se}, \code{lci}, and \code{uci}).
+If \code{getCI=TRUE} then a list of arrays is returned (with elements \code{est}, \code{se}, \code{lower}, and \code{upper}).
 
 If a hierarchical HMM structure is provided, then a hierarchical data structure containing the state transition probabilities for each time step at each level of the hierarchy ('gamma') is returned.
 }
@@ -83,9 +83,9 @@ for(i in 1:2){
     plot(trProbsSE$est[i,j,],type="l", 
          ylim=c(0,1), ylab=paste(i,"->",j))
     arrows(1:dim(trProbsSE$est)[3],
-           trProbsSE$lci[i,j,],
+           trProbsSE$lower[i,j,],
            1:dim(trProbsSE$est)[3],
-           trProbsSE$uci[i,j,],
+           trProbsSE$upper[i,j,],
            length=0.025, angle=90, code=3, col=gray(.5), lwd=1.3)
   }
 }

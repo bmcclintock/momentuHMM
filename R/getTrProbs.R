@@ -31,7 +31,7 @@ getTrProbs <- function(data, ...){
 #' @return If \code{mixtures=1}, an array of dimension \code{nbStates} x \code{nbStates} x \code{nrow(data)} containing the t.p.m for each observation in \code{data}.
 #' If \code{mixtures>1}, a list of length \code{mixtures}, where each element is an array of dimension \code{nbStates} x \code{nbStates} x \code{nrow(data)} containing the t.p.m for each observation in \code{data}.
 #' 
-#' If \code{getCI=TRUE} then a list of arrays is returned (with elements \code{est}, \code{se}, \code{lci}, and \code{uci}).
+#' If \code{getCI=TRUE} then a list of arrays is returned (with elements \code{est}, \code{se}, \code{lower}, and \code{upper}).
 #' 
 #' @examples
 #' m <- example$m
@@ -51,9 +51,9 @@ getTrProbs <- function(data, ...){
 #'     plot(trProbsSE$est[i,j,],type="l", 
 #'          ylim=c(0,1), ylab=paste(i,"->",j))
 #'     arrows(1:dim(trProbsSE$est)[3],
-#'            trProbsSE$lci[i,j,],
+#'            trProbsSE$lower[i,j,],
 #'            1:dim(trProbsSE$est)[3],
-#'            trProbsSE$uci[i,j,],
+#'            trProbsSE$upper[i,j,],
 #'            length=0.025, angle=90, code=3, col=gray(.5), lwd=1.3)
 #'   }
 #' }
@@ -183,7 +183,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
       quantSup<-qnorm(1-(1-alpha)/2)
       
       tmpSig <- Sigma[gamInd[unique(c(data$conditions$betaCons))],gamInd[unique(c(data$conditions$betaCons))]]
-      se <- lci <- uci <- array(NA,dim=dim(trMat[[mix]]))
+      se <- lower <- upper <- array(NA,dim=dim(trMat[[mix]]))
       cat("Computing SEs and ",alpha*100,"% CIs",ifelse(mixtures>1,paste0(" for mixture ",mix,"... "),"... "),sep="")
       for(i in 1:nbStates){
         for(j in 1:nbStates){
@@ -199,13 +199,13 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
               dN<-t(apply(desMat[ind,,drop=FALSE],1,function(x) tryCatch(numDeriv::grad(get_gamma,data$mod$estimate[gamInd[unique(c(data$conditions$betaCons))]],covs=matrix(x,1,dimnames=list(NULL,names(x))),nbStates=nbStates,i=i,j=j,betaRef=data$conditions$betaRef,betaCons=data$conditions$betaCons,workBounds=data$conditions$workBounds$beta,mixture=mix),error=function(e) NA)))
             }
             se[i,j,ind]<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%tmpSig%*%x)),error=function(e) NA)))
-            lci[i,j,ind]<-1/(1+exp(-(log(trMat[[mix]][i,j,ind]/(1-trMat[[mix]][i,j,ind]))-quantSup*(1/(trMat[[mix]][i,j,ind]-trMat[[mix]][i,j,ind]^2))*se[i,j,ind])))#trMat[[mix]][i,j,]-quantSup*se[i,j]
-            uci[i,j,ind]<-1/(1+exp(-(log(trMat[[mix]][i,j,ind]/(1-trMat[[mix]][i,j,ind]))+quantSup*(1/(trMat[[mix]][i,j,ind]-trMat[[mix]][i,j,ind]^2))*se[i,j,ind])))#trMat[[mix]][i,j,]+quantSup*se[i,j]
+            lower[i,j,ind]<-1/(1+exp(-(log(trMat[[mix]][i,j,ind]/(1-trMat[[mix]][i,j,ind]))-quantSup*(1/(trMat[[mix]][i,j,ind]-trMat[[mix]][i,j,ind]^2))*se[i,j,ind])))#trMat[[mix]][i,j,]-quantSup*se[i,j]
+            upper[i,j,ind]<-1/(1+exp(-(log(trMat[[mix]][i,j,ind]/(1-trMat[[mix]][i,j,ind]))+quantSup*(1/(trMat[[mix]][i,j,ind]-trMat[[mix]][i,j,ind]^2))*se[i,j,ind])))#trMat[[mix]][i,j,]+quantSup*se[i,j]
           }
         }
       }
       cat("DONE\n")
-      trMat[[mix]] <- list(est=trMat[[mix]],se=se,lci=lci,uci=uci)
+      trMat[[mix]] <- list(est=trMat[[mix]],se=se,lower=lower,upper=upper)
     }
   }
   
