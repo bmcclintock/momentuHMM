@@ -6,6 +6,7 @@
 #'
 #' @param model \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object
 #' @param covs Either a data frame or a design matrix of covariates. If \code{covs} is not provided, then the stationary probabilties are calculated based on the covariate data for each time step.
+#' @param covIndex Integer vector indicating specific rows of the data to be used in the calculations. This can be useful for reducing unnecessarily long computation times, e.g., when \code{formula} includes factor covariates (such as \code{ID}) but no temporal covariates. Ignored unless \code{covs} is missing.
 #'
 #' @return A list of length \code{model$conditions$mixtures} where each element is a matrix of stationary state probabilities for each mixture. For each matrix, each row corresponds to
 #' a row of covs, and each column corresponds to a state.
@@ -19,16 +20,19 @@
 #'
 #' # design matrix (each column corresponds to row of m$mle$beta)
 #' stationary(m, covs = matrix(c(1,0,cos(0)),1,3))
+#' 
+#' # get stationary distribution for first 3 observations
+#' stationary(m, covIndex = c(1,2,3))
 #'
 #' @export
 #'
-stationary <- function (model, covs) {
+stationary <- function (model, covs, covIndex) {
   UseMethod("stationary")
 }
 
 #' @method stationary momentuHMM
 #' @export
-stationary.momentuHMM <- function(model, covs)
+stationary.momentuHMM <- function(model, covs, covIndex = NULL)
 {
     model <- delta_bc(model)
     
@@ -44,6 +48,7 @@ stationary.momentuHMM <- function(model, covs)
     recharge <- newForm$recharge
     
     if(!missing(covs)){
+      if(!is.null(covIndex)) stop("Either 'covs' or 'covIndex' can be specified (not both)")
       if(is.data.frame(covs)){
         if(is.null(recharge)){
           if(!all(names(covs) %in% names(model$data))) stop('invalid covs specified')
@@ -117,20 +122,29 @@ stationary.momentuHMM <- function(model, covs)
         class(tmpSplineInputs$covs) <- append("hierarchical",class(tmpSplineInputs$covs))
       }
       covMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+      if(!is.null(covIndex)) {
+        if(!is.numeric(covIndex) || any(covIndex<1 | covIndex>nrow(covMat))) stop("covIndex can only include integers between 1 and ",nrow(covMat))
+      } else covIndex <- 1:nrow(covMat)
     }
     
     mixtures <- model$conditions$mixtures
   
     probs <- list()
-    
+      
     for(mix in 1:mixtures){
       # all transition matrices
       tmpbeta <- beta[(mix-1)*ncol(covMat)+1:ncol(covMat),,drop=FALSE]
-      if(is.null(recharge))
-        allMat <- trMatrix_rcpp(nbStates=nbStates, beta=tmpbeta, covs=covMat, betaRef=model$conditions$betaRef)
-      else {
+      if(is.null(recharge)){
+        if(!is.null(covIndex)) {
+          if(!is.numeric(covIndex) || any(covIndex<1 | covIndex>nrow(covMat))) stop("covIndex can only include integers between 1 and ",nrow(covMat))
+        } else covIndex <- 1:nrow(covMat)
+        allMat <- trMatrix_rcpp(nbStates=nbStates, beta=tmpbeta, covs=covMat[covIndex,,drop=FALSE], betaRef=model$conditions$betaRef)
+      } else {
+        if(!is.null(covIndex)) {
+          if(!is.numeric(covIndex) || any(covIndex<1 | covIndex>nrow(tmpSplineInputs$covs))) stop("covIndex can only include integers between 1 and ",nrow(tmpSplineInputs$covs))
+        } else covIndex <- 1:nrow(tmpSplineInputs$covs)
         gamInd<-(length(model$mod$estimate)-(nrow(tmpbeta))*nbStates*(nbStates-1)*mixtures+1):(length(model$mod$estimate))-(ncol(model$covsPi)*(mixtures-1))-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-ncol(model$covsDelta)*(nbStates-1)*(!model$conditions$stationary)*mixtures
-        allMat <- array(unlist(lapply(split(tmpSplineInputs$covs,1:nrow(tmpSplineInputs$covs)),function(x) tryCatch(get_gamma_recharge(model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(tmpSplineInputs$covs)))
+        allMat <- array(unlist(lapply(split(tmpSplineInputs$covs[covIndex,,drop=FALSE],covIndex),function(x) tryCatch(get_gamma_recharge(model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(tmpSplineInputs$covs)))
       }
       
       tryCatch({
@@ -147,7 +161,7 @@ stationary.momentuHMM <- function(model, covs)
                   
               if(j==1){
                 ref <- model$conditions$hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
-                probs[[mix]][["level1"]] <- getProbs(allMat[ref,ref,which(covMat[,colnames(covMat) %in% paste0("I((level == \"",j,"\") * 1)")]==1),drop=FALSE],names(ref))
+                probs[[mix]][["level1"]] <- getProbs(allMat[ref,ref,which(covMat[covIndex,colnames(covMat) %in% paste0("I((level == \"",j,"\") * 1)")]==1),drop=FALSE],names(ref))
               } else {
                 
                 t <- data.tree::Traverse(model$conditions$hierStates,filterFun=function(x) x$level==j)
@@ -158,7 +172,7 @@ stationary.momentuHMM <- function(model, covs)
                 for(k in names(t)){
                   ref <- t[[k]]$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
                   if(!is.null(ref)){
-                    probs[[mix]][[paste0("level",j)]][[k]] <- getProbs(allMat[ref,ref,which(covMat[,colnames(covMat) %in% paste0("I((level == \"",j,"\") * 1)")]==1),drop=FALSE],names(ref))
+                    probs[[mix]][[paste0("level",j)]][[k]] <- getProbs(allMat[ref,ref,which(covMat[covIndex,colnames(covMat) %in% paste0("I((level == \"",j,"\") * 1)")]==1),drop=FALSE],names(ref))
                   }
                 }  
               }
@@ -175,18 +189,18 @@ stationary.momentuHMM <- function(model, covs)
 
 #' @method stationary miSum
 #' @export
-stationary.miSum <- function(model, covs)
+stationary.miSum <- function(model, covs, covIndex)
 {
   model$mle <- lapply(model$Par$real,function(x) x$est)
   model$mle$beta <- model$Par$beta$beta$est
   model$mod <- list()
 
-  stationary(momentuHMM(model),covs)
+  stationary(momentuHMM(model),covs, covIndex)
 }
 
 #' @method stationary miHMM
 #' @export
-stationary.miHMM <- function(model, covs)
+stationary.miHMM <- function(model, covs, covIndex)
 {
   stationary(model$miSum,covs)
 }

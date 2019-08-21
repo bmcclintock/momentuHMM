@@ -238,6 +238,9 @@ getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hie
     hierDist <- data$conditions$hierDist
     if(is.momentuHierHMM(data) && (is.null(data$mod$hessian) | inherits(data$mod$Sigma,"error"))) getCI <- FALSE
     data <- data$data
+    if(!is.null(covIndex)) {
+      data <- data[covIndex,,drop=FALSE]
+    }
   } else {
     inputHierHMM <- formatHierHMM(data,hierStates=hierStates,hierDist=hierDist,hierBeta=hierBeta,hierDelta=NULL,hierFormula=hierFormula,mixtures=mixtures,workBounds=workBounds,checkData=FALSE)
     if(is.list(inputHierHMM$beta)) beta <- inputHierHMM$beta$beta
