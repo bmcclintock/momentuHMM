@@ -11,6 +11,32 @@ before_install:
  - sudo apt-get --yes --force-yes update -qq
  - sudo apt-get install --yes libudunits2-dev libproj-dev libgeos-dev libgdal-dev libprotobuf-dev protobuf-compiler libv8-3.14-dev libjq-dev
 
+r_binary_packages:
+  - Rcpp
+  - geosphere
+  - raster
+  - doParallel
+  - MASS
+  - car
+  - ggplot2
+  - mitools
+  - mvtnorm
+  - Brobdingnag
+  - dplyr
+  - lubridate
+  - nleqslv
+  - numDeriv
+  - foreach
+  - survival
+  - prodlim
+  - magrittr
+  - doRNG
+  - scatterplot3d
+  - RColorBrewer
+  - tmvtnorm
+  - extraDistr
+  - rlang
+  
 services:
   - xvfb
  
