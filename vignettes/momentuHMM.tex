@@ -2650,7 +2650,7 @@ Based on AIC, we find overwhelming support for the discrete-valued individual-le
 
 \subsection{Hierarchical HMMs}
 \label{sec:HHMMexamples}
-As we already noted in section \ref{sec:HHMM}, HMMs with hierarchical structures allow for data streams and/or state transitions to occur at multiple regular time scales. \cite{Leos-BarajasEtAl2017} provide two examples where state transitions are allowed to occur at both ``coarse'' and ``fine'' time scales, and here we demonstrate how both of these examples can be fitted in \verb|momentuHMM|. The key to fitting (and simulating) hierarchical hidden Markov models (HHMMs) in \verb|momentuHMM| is specifying certain \verb|fitHMM| (and \verb|simHierData|) arguments hierarchically using the \verb|data.tree| package \citep{Glur2018}. For HHMMs, instead of simply specifying the number of states (\verb|nbStates|), distributions (\verb|dist|), and a single t.p.m. (\verb|formula|) or initial distribution (\verb|formulaDelta|) formula, the \verb|hierStates| argument specifies the hierarchical nature of the states, the \verb|hierDist| argument specifies the hierarchical nature of the data streams, and the \verb|hierFormula| or \verb|hierFormulaDelta| arguments specify a t.p.m. or initial distribution formula for each level of the hierarchy. All are specified as \verb|Node| objects from the \verb|data.tree| package.  In the examples below, we focus on how to implement these HHMMs in \verb|momentuHMM| and refer readers to \cite{Leos-BarajasEtAl2017} for specific details about the data sets and the particular models being fitted.
+As we already noted in section \ref{sec:HHMM}, HMMs with hierarchical structures allow for data streams and/or state transitions to occur at multiple regular time scales. \cite{Leos-BarajasEtAl2017} provide two examples where state transitions are allowed to occur at both ``coarse'' and ``fine'' time scales, while \cite{AdamEtAl2019} provide two examples where both data streams and state transitions occur at both ``coarse'' and ``fine'' time scales. Here we demonstrate all four of these examples can be fitted in \verb|momentuHMM|. The key to fitting (and simulating) hierarchical hidden Markov models (HHMMs) in \verb|momentuHMM| is specifying certain \verb|fitHMM| (and \verb|simHierData|) arguments hierarchically using the \verb|data.tree| package \citep{Glur2018}. For HHMMs, instead of simply specifying the number of states (\verb|nbStates|), distributions (\verb|dist|), and a single t.p.m. (\verb|formula|) or initial distribution (\verb|formulaDelta|) formula, the \verb|hierStates| argument specifies the hierarchical nature of the states, the \verb|hierDist| argument specifies the hierarchical nature of the data streams, and the \verb|hierFormula| or \verb|hierFormulaDelta| arguments specify a t.p.m. or initial distribution formula for each level of the hierarchy. All are specified as \verb|Node| objects from the \verb|data.tree| package.  In the examples below, we focus on how to implement these HHMMs in \verb|momentuHMM| and refer readers to \cite{Leos-BarajasEtAl2017} and \cite{AdamEtAl2019} for specific details about the data sets and the particular models being fitted.
 
 \subsubsection{Harbor porpoise example}
 \label{sec:harborPorpoise}
@@ -3796,7 +3796,7 @@ Now let's fit our garter snake HHMM:
 ## I((level == "2i") * 1) -1.274323 2.327475
 ## 
 ##                          state 8    state 9
-## I((level == "2i") * 1) 0.3387745 -0.2607024
+## I((level == "2i") * 1) 0.3387744 -0.2607024
 ## 
 ## --------------------------------------------------
 ## 
@@ -3902,6 +3902,244 @@ As usual, we can check pseudo-residuals using \verb|plotPR| (Figure \ref{fig:sna
 \end{kframe}
 \end{knitrout}
 
+\subsubsection{Atlantic cod example}
+\label{sec:atlanticCod}
+Now we will demonstrate how HHMMs with data streams observed at multiple time scales can be fitted using \verb|momentuHMM|. In their Atlantic cod example, \cite{AdamEtAl2019} fit a 9-state HHMM to coarse-scale horizontal (i.e., step length and turn angle) and fine-scale vertical movement data. The coarse-scale states were ``resting/foraging'' (hereafter ``resForage''), ``mobile/foraging'' (hereafter ``mobForage''), and ``travelling/migrating'' (hereafter ``transit''), each of which was composed of three fine-scale states. To begin our analysis, we must first load and prepare the data \citep[available for download from][]{AdamEtAl2019}:
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# load the data from Adam et al }
+\hlkwd{load}\hlstd{(}\hlstr{"Atlantic_cod_data_set.RData"}\hlstd{)}
+
+\hlcom{# coarse-scale data}
+\hlstd{data} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(}\hlkwc{level}\hlstd{=}\hlstr{"1"}\hlstd{,}
+                   \hlkwc{step}\hlstd{=steps,}
+                   \hlkwc{angle}\hlstd{=angles,}
+                   \hlkwc{vertical}\hlstd{=}\hlnum{NA}\hlstd{,}
+                   \hlkwc{time}\hlstd{=}\hlnum{0}\hlstd{)}
+
+\hlcom{### add extra rows for fine-scale data}
+\hlcom{# level=1  indicates when coarse-scale behavior switching can occur }
+\hlcom{# level=2i indicates start of each fine-scale interval}
+\hlcom{# level=2  indicates when fine-scale behavior switching can occur}
+\hlstd{codData} \hlkwb{<-} \hlkwa{NULL}
+\hlstd{timeSeq} \hlkwb{<-} \hlkwd{seq}\hlstd{(}\hlkwc{from}\hlstd{=}\hlnum{0}\hlstd{,}\hlkwc{to}\hlstd{=}\hlnum{23}\hlopt{+}\hlnum{5}\hlopt{/}\hlnum{6}\hlstd{,}\hlkwc{length}\hlstd{=}\hlnum{144}\hlstd{)} \hlcom{# time of day covariate}
+\hlkwa{for}\hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{nrow}\hlstd{(data))\{}
+  \hlstd{fineInd} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(}\hlkwc{level}\hlstd{=}\hlstr{"2"}\hlstd{,}
+                        \hlkwc{step}\hlstd{=}\hlnum{NA}\hlstd{,}
+                        \hlkwc{angle}\hlstd{=}\hlnum{NA}\hlstd{,}
+                        \hlkwc{vertical}\hlstd{=verticals[[i]],}
+                        \hlkwc{time}\hlstd{=timeSeq)}
+  \hlstd{tmp} \hlkwb{<-} \hlkwd{rbind}\hlstd{(data[i,,}\hlkwc{drop}\hlstd{=}\hlnum{FALSE}\hlstd{],}
+               \hlkwd{data.frame}\hlstd{(}\hlkwc{level}\hlstd{=}\hlstr{"2i"}\hlstd{,}
+                          \hlkwc{step}\hlstd{=}\hlnum{NA}\hlstd{,}
+                          \hlkwc{angle}\hlstd{=}\hlnum{NA}\hlstd{,}
+                          \hlkwc{vertical}\hlstd{=}\hlnum{NA}\hlstd{,}
+                          \hlkwc{time}\hlstd{=}\hlnum{0}\hlstd{),}
+               \hlstd{fineInd)}
+  \hlstd{codData} \hlkwb{<-} \hlkwd{rbind}\hlstd{(codData,tmp)}
+\hlstd{\}}
+
+\hlcom{# prepare hierarchical data}
+\hlstd{codData} \hlkwb{<-} \hlkwd{prepData}\hlstd{(codData,} \hlkwc{coordNames}\hlstd{=}\hlkwa{NULL}\hlstd{,}
+                    \hlkwc{covNames}\hlstd{=}\hlstr{"time"}\hlstd{,}
+                    \hlkwc{hierLevels}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"1"}\hlstd{,}\hlstr{"2i"}\hlstd{,}\hlstr{"2"}\hlstd{))}
+\hlkwd{head}\hlstd{(codData)}
+\end{alltt}
+\begin{verbatim}
+##        ID level     step angle vertical      time
+## 1 Animal1     1 5.236266    NA       NA 0.0000000
+## 2 Animal1    2i       NA    NA       NA 0.0000000
+## 3 Animal1     2       NA    NA   0.1285 0.0000000
+## 4 Animal1     2       NA    NA   0.0499 0.1666667
+## 5 Animal1     2       NA    NA   0.1417 0.3333333
+## 6 Animal1     2       NA    NA   0.1713 0.5000000
+\end{verbatim}
+\begin{alltt}
+\hlcom{# data summary}
+\hlkwd{summary}\hlstd{(codData,}\hlkwc{dataNames}\hlstd{=}\hlkwd{names}\hlstd{(codData)[}\hlopt{-}\hlnum{1}\hlstd{])}
+\end{alltt}
+\begin{verbatim}
+## Hierarchical HMM data for 1 individual:
+## 
+## Animal1 -- 42486 observations
+## 
+## 
+## Data summaries:
+## 
+##  level           step           angle          vertical     
+##  1 :  291   Min.   : 0.21   Min.   :-3.12   Min.   : 0.000  
+##  2i:  291   1st Qu.: 2.86   1st Qu.:-0.36   1st Qu.: 0.083  
+##  2 :41904   Median : 5.49   Median : 0.01   Median : 0.182  
+##             Mean   : 8.24   Mean   :-0.03   Mean   : 0.418  
+##             3rd Qu.:11.89   3rd Qu.: 0.34   3rd Qu.: 0.440  
+##             Max.   :31.49   Max.   : 3.12   Max.   :18.223  
+##             NA's   :42196   NA's   :42197   NA's   :582     
+##       time     
+##  Min.   : 0.0  
+##  1st Qu.: 5.7  
+##  Median :11.8  
+##  Mean   :11.8  
+##  3rd Qu.:17.8  
+##  Max.   :23.8  
+## 
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
+From sections \ref{sec:harborPorpoise} and \ref{sec:garterSnake}, we should now be familiar with how to specify HHMMs with state transitions at multiple time scales. We will therefore focus on how to accommodate data streams that are observed at multiple time scales here, but complete details and code for fitting this model can be found in the ``codExample.R'' script in the \verb|momentuHMM| ``vignettes'' source directory (or at \url{https://github.com/bmcclintock/momentuHMM}). First we specify the hierarchical nature of the states as a \verb|data.tree| Node:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{### define hierarchical HMM}
+\hlcom{# states 1-3 = coarse state 1 (resident/foraging)}
+\hlcom{# states 4-6 = coarse state 2 (mobile/foraging)}
+\hlcom{# states 7-9 = coarse state 3 (travelling/migrating)}
+\hlstd{hierStates} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"cod HHMM states"}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"resForage"}\hlstd{)}   \hlcom{# resident/foraging}
+\hlstd{hierStates}\hlopt{$}\hlstd{resForage}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"rF1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{1}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlstd{resForage}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"rF2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{2}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlstd{resForage}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"rF3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{3}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"mobForage"}\hlstd{)}  \hlcom{# mobile/foraging}
+\hlstd{hierStates}\hlopt{$}\hlstd{mobForage}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"mF1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{4}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlstd{mobForage}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"mF2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{5}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlstd{mobForage}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"mF3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{6}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"transit"}\hlstd{)}    \hlcom{# travelling/migrating}
+\hlstd{hierStates}\hlopt{$}\hlstd{transit}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"t1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{7}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlstd{transit}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"t2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{8}\hlstd{)}
+\hlstd{hierStates}\hlopt{$}\hlstd{transit}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"t3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{9}\hlstd{)}
+
+\hlkwd{plot}\hlstd{(hierStates)}
+\end{alltt}
+\end{kframe}
+\includegraphics[width=\maxwidth]{figure/cod-2-1} 
+
+\end{knitrout}
+
+Next we specify the hierarchical nature of the data streams as a \verb|data.tree| Node:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# data stream distributions}
+\hlcom{# level 1 = coarse scale (step="gamma", angle="vm")}
+\hlcom{# level 2 = fine scale (vertical="gamma")}
+\hlstd{hierDist} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"cod HHMM dist"}\hlstd{)}
+\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{)}
+\hlstd{hierDist}\hlopt{$}\hlstd{level1}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"step"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
+\hlstd{hierDist}\hlopt{$}\hlstd{level1}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"angle"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"vm"}\hlstd{)}
+\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{)}
+\hlstd{hierDist}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"vertical"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
+
+\hlkwd{plot}\hlstd{(hierDist)}
+\end{alltt}
+\end{kframe}
+\includegraphics[width=\maxwidth]{figure/cod-3-1} 
+
+\end{knitrout}
+
+We then constrain the fine-scale states within each coarse-scale state to have the same parameters for the ``step'' and ``angle'' distributions using the \verb|DM| argument:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{nbStates} \hlkwb{<-} \hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlkwd{Get}\hlstd{(}\hlstr{"state"}\hlstd{,}\hlkwc{filterFun}\hlstd{=data.tree}\hlopt{::}\hlstd{isLeaf))}
+
+\hlcom{# constrain coarse-scale parameters for fine-scale states}
+\hlstd{DM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{kronecker}\hlstd{(}\hlkwd{diag}\hlstd{(}\hlnum{6}\hlstd{),}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{)),}
+                       \hlkwc{nrow}\hlstd{=}\hlnum{2}\hlopt{*}\hlstd{nbStates,}
+                       \hlkwc{ncol}\hlstd{=}\hlnum{6}\hlstd{,}
+                       \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"mean_"}\hlstd{,}\hlstr{"sd_"}\hlstd{),}\hlkwc{each}\hlstd{=nbStates)}
+                                            \hlstd{,}\hlnum{1}\hlopt{:}\hlstd{nbStates),}
+                                     \hlkwd{c}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"mean_"}\hlstd{,}\hlstr{"sd_"}\hlstd{),}\hlkwc{each}\hlstd{=}\hlnum{3}\hlstd{),}
+                                              \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{children),}
+                                              \hlstr{":(Intercept)"}\hlstd{)))))}
+\hlstd{DM}\hlopt{$}\hlstd{angle} \hlkwb{<-} \hlstd{DM}\hlopt{$}\hlstd{step}
+\hlkwd{dimnames}\hlstd{(DM}\hlopt{$}\hlstd{angle)} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"mean_"}\hlstd{,}\hlstr{"concentration_"}\hlstd{),}\hlkwc{each}\hlstd{=nbStates)}
+                                  \hlstd{,}\hlnum{1}\hlopt{:}\hlstd{nbStates),}
+                           \hlkwd{c}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"mean_"}\hlstd{,}\hlstr{"concentration_"}\hlstd{),}\hlkwc{each}\hlstd{=}\hlnum{3}\hlstd{),}
+                                    \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{children),}
+                                    \hlstr{":(Intercept)"}\hlstd{)))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\noindent and obtain starting values on the working scale using \verb|getParDM|:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{### defining start values based on those reported by Adam et al}
+\hlstd{hm.mu0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{5.482}\hlstd{,} \hlnum{6.786}\hlstd{,} \hlnum{14.914}\hlstd{)}
+\hlstd{hm.sigma0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{4.27}\hlstd{,} \hlnum{4.714}\hlstd{,} \hlnum{11.242}\hlstd{)}
+\hlstd{ha.mu0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.011}\hlstd{,} \hlopt{-}\hlnum{0.299}\hlstd{,} \hlnum{0.044}\hlstd{)}
+\hlstd{ha.kappa0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{1.571}\hlstd{,} \hlnum{1.426}\hlstd{,} \hlnum{2.15}\hlstd{)}
+\hlstd{vm.mu0} \hlkwb{<-} \hlstd{vm.sigma0} \hlkwb{<-} \hlstd{vm.pi0} \hlkwb{<-} \hlkwd{list}\hlstd{()}
+\hlstd{vm.mu0[[}\hlnum{1}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.116}\hlstd{,} \hlnum{0.303}\hlstd{,} \hlnum{0.691}\hlstd{)}
+\hlstd{vm.mu0[[}\hlnum{2}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.109}\hlstd{,} \hlnum{0.056}\hlstd{,} \hlnum{0.351}\hlstd{)}
+\hlstd{vm.mu0[[}\hlnum{3}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.125}\hlstd{,} \hlnum{0.514}\hlstd{,} \hlnum{1.987}\hlstd{)}
+\hlstd{vm.sigma0[[}\hlnum{1}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.096}\hlstd{,} \hlnum{0.261}\hlstd{,} \hlnum{0.636}\hlstd{)}
+\hlstd{vm.sigma0[[}\hlnum{2}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.043}\hlstd{,} \hlnum{0.047}\hlstd{,} \hlnum{0.342}\hlstd{)}
+\hlstd{vm.sigma0[[}\hlnum{3}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.109}\hlstd{,} \hlnum{0.462}\hlstd{,} \hlnum{1.878}\hlstd{)}
+\hlstd{vm.pi0[[}\hlnum{1}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.014}\hlstd{,} \hlnum{0.003}\hlstd{,} \hlnum{1.050e-06}\hlstd{)}
+\hlstd{vm.pi0[[}\hlnum{2}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{1.791e-08}\hlstd{,} \hlnum{0.035}\hlstd{,} \hlnum{0.002}\hlstd{)}
+\hlstd{vm.pi0[[}\hlnum{3}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.012}\hlstd{,} \hlnum{2.933e-04}\hlstd{,} \hlnum{3.462e-09}\hlstd{)}
+
+\hlstd{Par0} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=}\hlkwd{c}\hlstd{(}\hlkwd{rep}\hlstd{(hm.mu0,}\hlkwc{each}\hlstd{=}\hlnum{3}\hlstd{),}\hlkwd{rep}\hlstd{(hm.sigma0,}\hlkwc{each}\hlstd{=}\hlnum{3}\hlstd{)),}
+             \hlkwc{angle}\hlstd{=}\hlkwd{c}\hlstd{(}\hlkwd{rep}\hlstd{(ha.mu0,}\hlkwc{each}\hlstd{=}\hlnum{3}\hlstd{),}\hlkwd{rep}\hlstd{(ha.kappa0,}\hlkwc{each}\hlstd{=}\hlnum{3}\hlstd{)),}
+             \hlkwc{vertical}\hlstd{=}\hlkwd{c}\hlstd{(}\hlkwd{unlist}\hlstd{(vm.mu0),}\hlkwd{unlist}\hlstd{(vm.sigma0),}\hlkwd{unlist}\hlstd{(vm.pi0)))}
+
+\hlcom{# starting values for data stream parameters on the working scale}
+\hlstd{Par} \hlkwb{<-} \hlkwd{getParDM}\hlstd{(codData,}
+                \hlkwc{hierStates}\hlstd{=hierStates,}
+                \hlkwc{hierDist}\hlstd{=hierDist,}
+                \hlkwc{Par}\hlstd{=Par0,}
+                \hlkwc{DM}\hlstd{=DM,}
+                \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+\cite{AdamEtAl2019} included a periodic time-of-day covariate on the fine-scale state transition probabilities, and we specify this via the \verb|hierFormula| argument:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# define hierarchical t.p.m. formula(s)}
+\hlstd{hierFormula} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"cod HHMM formula"}\hlstd{)}
+\hlstd{hierFormula}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{,} \hlkwc{formula}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{)}
+\hlstd{hierFormula}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{,} \hlkwc{formula}\hlstd{=}\hlopt{~}\hlkwd{cosinor}\hlstd{(time,} \hlkwc{period}\hlstd{=}\hlnum{24}\hlstd{))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+All that remains is (optionally) specifying starting values for the initial distribution (\verb|hierDelta|) and t.p.m. (\verb|hierBeta|) parameters, and we are now ready to fit the HHMM:
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{hhmm} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(codData,}
+               \hlkwc{hierStates}\hlstd{=hierStates,}
+               \hlkwc{hierDist}\hlstd{=hierDist,}
+               \hlkwc{hierFormula}\hlstd{=hierFormula,}
+               \hlkwc{Par0}\hlstd{=Par,}
+               \hlkwc{hierBeta}\hlstd{=hierBeta,}
+               \hlkwc{hierDelta}\hlstd{=hierDelta,}
+               \hlkwc{DM}\hlstd{=DM,}
+               \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{))}
+
+\hlcom{# plot stationary distributions and CIs}
+\hlkwd{plotStationary}\hlstd{(hhmm,} \hlkwc{plotCI}\hlstd{=}\hlnum{TRUE}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+The resulting estimates are virtually identical to \cite{AdamEtAl2019}; the slight differences are attributable to: 1) the forward algorithm in \verb|momentuHMM| (Eq. \ref{eq:HMMlike}) includes a state transition between time steps $t=0$ and $t=1$; and 2) \verb|momentuHMM| uses the lowest fine-scale state index for each coarse-scale state as the mlogit-link reference state for the initial distribution and t.p.m.%; and 3) \cite{AdamEtAl2019} did not include the step length data for the first observation in their likelihood calculation. 
+Nevertheless, we can see that the estimated stationary probabilities as a function of time of day are very similar (Figure \ref{fig:codStat}).
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=.49\textwidth]{plot_codStationary001.pdf}
+  \includegraphics[width=.49\textwidth]{plot_codStationary002.pdf}
+  \includegraphics[width=.49\textwidth]{plot_codStationary003.pdf}
+  \caption{Stationary distributions of the fine-scale state processes for an Atlantic cod as a function of time of day for the coarse-scale states corresponding to ``resting/foraging'' (top-left panel), ``mobile/foraging'' (top-right panel), and ``travelling/migrating'' (bottom panel).}
+  \label{fig:codStat}
+\end{figure}
+
 \subsection{Simulating constrained movement}
 \label{sec:avoidLand}
 In section \ref{sec:turtle} we briefly demonstrated how potential functions can be used within a bivariate normal random walk to model loggerhead turtle movements relative to ocean surface currents. Here we'll show how this approach can be used in \verb|simData| to simulate movement data subject to barriers or other constraints (e.g. land for marine animals). To accomplish this, we'll rely on the \verb|forest| raster that is automatically loaded with \verb|momentuHMM|. We'll start by pretending that \verb|forest| cells with values $>0$ are ``land'' and all others are ``water''.  Then we'll create a new raster named \verb|boundary| containing the shortest distance from land to water using \verb|raster::distance|:
@@ -3976,7 +4214,7 @@ While \verb|momentuHMM| includes functions for drawing realizations of the posit
 There remain many potential avenues for refining and extending the capabilities of \verb|momentuHMM|. Computation times could likely be improved by further optimizing the R and C++ code for speed. Notable extensions include hidden semi-Markov models and random effects on data stream probability distribution parameters \citep{ZucchiniEtAl2016}. We would also like to incorporate additional parameters for change-point thresholds and the locations of activity centers instead of requiring that they be pre-specified (and potentially compared using AIC or other model selection criteria) as in grey seal example. Lastly, it is relatively straightforward to add additional probability distributions, and we are pleased to do so upon request. Practitioners interested in additional features for \verb|momentuHMM| are encouraged to contact the authors.
 
 \section*{Acknowledgments} 
-We are grateful to R. Scott, B. Godley, M. Godfrey, J. Sudre, and North Carolina Aquariums for providing the data used in our turtle example. We are also grateful to the many authors who made their data publicly available for use in our examples \citep{WallEtAl2014,IsojunnoEtAl2017,Leos-BarajasEtAl2017,PirottaEtAl2018}. The findings and conclusions in this vignette are those of the author(s) and do not necessarily represent the views of the National Marine Fisheries Service, NOAA. Any use of trade, product, or firm names does not imply an endorsement by the US Government.
+We are grateful to R. Scott, B. Godley, M. Godfrey, J. Sudre, and North Carolina Aquariums for providing the data used in our turtle example. We are also grateful to the many authors who made their data publicly available for use in our examples \citep{WallEtAl2014,PirottaEtAl2018,IsojunnoEtAl2017,Leos-BarajasEtAl2017,AdamEtAl2019}. The findings and conclusions in this vignette are those of the author(s) and do not necessarily represent the views of the National Marine Fisheries Service, NOAA. Any use of trade, product, or firm names does not imply an endorsement by the US Government.
 
 \bibliographystyle{mee}
 \bibliography{master}

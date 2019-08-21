@@ -373,6 +373,18 @@ dev.off()
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
 ###################################################
+### atlantic cod HHMM example
+###################################################
+#source(paste0(getwd(),"/examples/codExample.R"))
+load(paste0(example_wd,"codExample.RData"))
+hhmm3Par <- getPar(hhmm)
+append.RData(hhmm3Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+pdf(file=paste0(getwd(),"/plot_codStationary%03d.pdf"),width=5,height=5,onefile = FALSE)
+plotStationary(hhmm, plotCI=TRUE)
+dev.off()
+rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
+
+###################################################
 ### land constraint example
 ###################################################
 #source(paste0(getwd(),"/examples/landConstraintExample.R"))

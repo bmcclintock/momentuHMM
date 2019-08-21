@@ -5,9 +5,10 @@
 vignettes/nfsData.RData
 vignettes/turtleData.RData
 vignettes/greySealData.RData
-vignettes/pilotWhaleData.RData
 vignettes/coastUTM.RData
 vignettes/pilotWhaleData.RData
+vignettes/Atlantic_cod_data_set.RData
+vignettes/horn_shark_data_set.RData
 vignettes/sesData.csv
 vignettes/momentuHMM.pdf
 vignettes/momentuHMM.synctex.gz
