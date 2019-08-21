@@ -2198,11 +2198,15 @@ head(simHHMM)
 \subsubsection{Atlantic cod example}
 \label{sec:atlanticCod}
 Now we will demonstrate how HHMMs with data streams observed at multiple time scales can be fitted using \verb|momentuHMM|. In their Atlantic cod example, \cite{AdamEtAl2019} fit a 9-state HHMM to coarse-scale horizontal (i.e., step length and turn angle) and fine-scale vertical movement data. The coarse-scale states were ``resting/foraging'' (hereafter ``resForage''), ``mobile/foraging'' (hereafter ``mobForage''), and ``travelling/migrating'' (hereafter ``transit''), each of which was composed of three fine-scale states. To begin our analysis, we must first load and prepare the data \citep[available for download from][]{AdamEtAl2019}:
-
-<<cod-1, eval=TRUE, cache=TRUE>>=
+<<cod-0, eval=TRUE, echo=FALSE, cache=TRUE>>=
+## load data 
+load(url("https://raw.github.com/bmcclintock/momentuHMM/develop/vignettes/Atlantic_cod_data_set.RData"))
+@
+<<cod-1a, eval=FALSE>>=
 # load the data from Adam et al 
 load("Atlantic_cod_data_set.RData")
-
+@
+<<cod-1b, eval=TRUE, cache=TRUE>>=
 # coarse-scale data
 data <- data.frame(level="1",
                    step=steps,

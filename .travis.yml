@@ -13,6 +13,7 @@ before_install:
 
 r_binary_packages:
   - Rcpp
+  - RcppArmadillo
   - geosphere
   - raster
   - doParallel
