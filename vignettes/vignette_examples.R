@@ -385,6 +385,19 @@ dev.off()
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
 ###################################################
+### horn shark HHMM example
+###################################################
+#source(paste0(getwd(),"/examples/codExample.R"))
+load(paste0(example_wd,"hornSharkExample.RData"))
+hhmm4Par <- getPar(hhmm)
+append.RData(hhmm4Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+trProbs12 <- getTrProbs(hhmm,covIndex=c(1,3))
+append.RData(trProbs12,file=paste0(getwd(),"/vignette_inputs.RData"))
+stats12 <- stationary(hhmm,covIndex=c(1,3))
+append.RData(stats12,file=paste0(getwd(),"/vignette_inputs.RData"))
+rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
+
+###################################################
 ### land constraint example
 ###################################################
 #source(paste0(getwd(),"/examples/landConstraintExample.R"))
