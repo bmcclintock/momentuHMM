@@ -363,7 +363,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ###################################################
 ### garter snake HHMM example
 ###################################################
-#source(paste0(getwd(),"/examples/harborPorpoiseExample.R"))
+#source(paste0(getwd(),"/examples/garterSnakeExample.R"))
 load(paste0(example_wd,"garterSnakeExample.RData"))
 hhmm2Par <- getPar(hhmm)
 append.RData(hhmm2Par,file=paste0(getwd(),"/vignette_inputs.RData"))
@@ -379,15 +379,22 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 load(paste0(example_wd,"codExample.RData"))
 hhmm3Par <- getPar(hhmm)
 append.RData(hhmm3Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+pdf(file=paste0(getwd(),"/plot_codExample%03d.pdf"),width=5,height=5,onefile = FALSE)
+plot(hhmm, ask=FALSE)
+dev.off()
 pdf(file=paste0(getwd(),"/plot_codStationary%03d.pdf"),width=5,height=5,onefile = FALSE)
 plotStationary(hhmm, plotCI=TRUE)
 dev.off()
+
+for(plt in c(3,4,5,6))
+  unlink(paste0("plot_codExample00",plt,".pdf"))
+
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
 ###################################################
 ### horn shark HHMM example
 ###################################################
-#source(paste0(getwd(),"/examples/codExample.R"))
+#source(paste0(getwd(),"/examples/hornSharkExample.R"))
 load(paste0(example_wd,"hornSharkExample.RData"))
 hhmm4Par <- getPar(hhmm)
 append.RData(hhmm4Par,file=paste0(getwd(),"/vignette_inputs.RData"))

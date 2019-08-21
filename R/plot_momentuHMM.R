@@ -63,7 +63,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   m <- delta_bc(m)
   
   nbAnimals <- length(unique(m$data$ID))
-  nbStates <- length(m$stateNames)
+  stateNames <- m$stateNames
+  nbStates <- length(stateNames)
   
   distnames <- names(m$conditions$dist)
   
@@ -161,7 +162,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       cat("DONE\n")
       if(inherits(m,"hierarchical")){
         cat("Decoding hierarchical state sequence... ")
-        hstates <- viterbi(m,hierarchical = TRUE)
+        hStates <- viterbi(m,hierarchical = TRUE)
         cat("DONE\n")
       }
     }
@@ -180,10 +181,11 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           w[[i]][state] <- length(which(states==state))/length(states)
       }
       iStates[[i]] <- 1:nbStates
+      names(iStates[[i]]) <- stateNames
     } else {
       w[[i]] <- rep(0,nbStates)
-      iLev <- gsub(paste0(".",i),"",names(hierDist$leaves)[grepl(i,names(hierDist$leaves))])
-      iStates[[i]] <- hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==(as.numeric(gsub("level","",iLev))+1))
+      iLev <- gsub(paste0(".",i),"",names(m$conditions$hierDist$leaves)[grepl(i,names(m$conditions$hierDist$leaves))])
+      iStates[[i]] <- m$conditions$hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==(as.numeric(gsub("level","",iLev))+1))
       if(sepStates) {
         w[[i]][iStates[[i]]] <- 1
       } else {
@@ -319,7 +321,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   }
   
   # get pars for probability density plots
-  tmpInputs <- checkInputs(nbStates,tmpConditions$dist,tmpPar,tmpConditions$estAngleMean,tmpConditions$circularAngleMean,tmpConditions$zeroInflation,tmpConditions$oneInflation,tmpConditions$DM,tmpConditions$userBounds,tmpConditions$cons,tmpConditions$workcons,m$stateNames)
+  tmpInputs <- checkInputs(nbStates,tmpConditions$dist,tmpPar,tmpConditions$estAngleMean,tmpConditions$circularAngleMean,tmpConditions$zeroInflation,tmpConditions$oneInflation,tmpConditions$DM,tmpConditions$userBounds,tmpConditions$cons,tmpConditions$workcons,stateNames)
   tmpp <- tmpInputs$p
   
   splineInputs<-getSplineDM(distnames,tmpInputs$DM,m,covs)
@@ -338,7 +340,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   
   par <- w2n(wpar,tmpp$bounds,tmpp$parSize,nbStates,nbCovs,tmpInputs$estAngleMean,tmpInputs$circularAngleMean,tmpInputs$consensus,stationary=m$conditions$stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,tmpInputs$dist,tmpp$Bndind,nc,meanind,m$covsDelta,tmpConditions$workBounds,m$covsPi)
   
-  inputs <- checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
+  inputs <- checkInputs(nbStates,m$conditions$dist,Par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,stateNames)
   p <- inputs$p
   
   Fun <- lapply(inputs$dist,function(x) paste("d",x,sep=""))
@@ -347,12 +349,6 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   names(zeroMass)<-names(oneMass)<-distnames
   
   # text for legends
-  stateNames <- m$stateNames
-  if(is.null(stateNames)){
-    stateNames <- NULL
-    for(i in 1:nbStates)
-      stateNames <- c(stateNames,paste("state",i))
-  }
   legText <- stateNames
   
   tmpcovs<-covs
@@ -645,7 +641,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             se<-t(apply(dN[,1:parCount[[i]]],1,function(x) tryCatch(suppressWarnings(sqrt(x%*%Sigma[parindex[[i]]+1:parCount[[i]],parindex[[i]]+1:parCount[[i]]]%*%x)),error=function(e) NA)))
             uci<-est+qnorm(1-(1-alpha)/2)*se
             lci<-est-qnorm(1-(1-alpha)/2)*se
-            do.call(plot,c(list(tempCovs[,jj],est,ylim=range(c(lci,est,uci),na.rm=TRUE),xaxt="n",xlab=jj,ylab=paste(i,ifelse(j=="kappa","concentration",j),'parameter'),main=paste0(stateNames[state],ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]],collapse=", ")),"")),type="l",lwd=lwd,cex.main=cex.main),arg))            
+            do.call(plot,c(list(tempCovs[,jj],est,ylim=range(c(lci,est,uci),na.rm=TRUE),xaxt="n",xlab=jj,ylab=paste(i,ifelse(j=="kappa","concentration",j),'parameter'),main=paste0(names(iStates[[i]])[match(state,iStates[[i]])],ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]],collapse=", ")),"")),type="l",lwd=lwd,cex.main=cex.main),arg))            
             if(!all(is.na(se))){
               ciInd <- which(!is.na(se))
               
@@ -653,7 +649,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
                                          uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5), lwd=lwd),arg)),warning=muffWarn)
               
             }
-          } else do.call(plot,c(list(tempCovs[,jj],est,xaxt="n",xlab=jj,ylab=paste(i,ifelse(j=="kappa","concentration",j),'parameter'),main=paste0(stateNames[state],ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]],collapse=", ")),"")),type="l",lwd=lwd,cex.main=cex.main),arg)) 
+          } else do.call(plot,c(list(tempCovs[,jj],est,xaxt="n",xlab=jj,ylab=paste(i,ifelse(j=="kappa","concentration",j),'parameter'),main=paste0(names(iStates[[i]])[match(state,iStates[[i]])],ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]],collapse=", ")),"")),type="l",lwd=lwd,cex.main=cex.main),arg)) 
           if(is.factor(tempCovs[,jj])) do.call(axis,c(list(1,at=tempCovs[,jj],labels=tempCovs[,jj]),arg))
           else do.call(axis,c(list(1),arg))
           
@@ -674,17 +670,17 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             # loop over the states
             for(state in iStates[[i]]) {
               gen <- genData[[zoo]][which(states[which(m$data$ID==ID[zoo])]==state)]
-              message <- paste0("ID ",ID[zoo]," - ",stateNames[state],covmess)
+              message <- paste0("ID ",ID[zoo]," - ",names(iStates[[i]])[match(state,iStates[[i]])],covmess)
               
               # the function plotHist is defined below
-              plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,state,hist.ylim[[i]],col,legText[iStates[[i]]], cumul = cumul, iStates[[i]], ...)
+              plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,state,hist.ylim[[i]],col,names(iStates[[i]]), cumul = cumul, iStates[[i]], ...)
             }
             
           } else { # if !sepStates
             gen <- genData[[zoo]]
             message <- paste0("ID ",ID[zoo],covmess)
             
-            plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText[iStates[[i]]], cumul = cumul, iStates[[i]], ...)
+            plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,names(iStates[[i]]), cumul = cumul, iStates[[i]], ...)
           }
         }
       } else { # if !sepAnimals
@@ -693,10 +689,10 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           # loop over the states
           for(state in iStates[[i]]) {
             gen <- genData[which(states==state)]
-            if(nbAnimals>1) message <- paste0("All animals - ",stateNames[state],covmess)
-            else message <- paste0("ID ",ID," - ",stateNames[state],covmess)
+            if(nbAnimals>1) message <- paste0("All animals - ",names(iStates[[i]])[match(state,iStates[[i]])],covmess)
+            else message <- paste0("ID ",ID," - ",names(iStates[[i]])[match(state,iStates[[i]])],covmess)
             
-            plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,state,hist.ylim[[i]],col,legText[iStates[[i]]], cumul = cumul, iStates[[i]], ...)
+            plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,state,hist.ylim[[i]],col,names(iStates[[i]]), cumul = cumul, iStates[[i]], ...)
           }
           
         } else { # if !sepStates
@@ -704,7 +700,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           if(nbAnimals>1) message <- paste0("All animals",covmess)
           else message <- paste0("ID ",ID,covmess)
           
-          plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText[iStates[[i]]], cumul = cumul, iStates[[i]], ...)
+          plotHist(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,hist.ylim[[i]],col,names(iStates[[i]]), cumul = cumul, iStates[[i]], ...)
         }
       }
     } else if(inputs$dist[[i]]=="mvnorm2" || inputs$dist[[i]]=="rw_mvnorm2"){
@@ -720,17 +716,17 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             # loop over the states
             for(state in iStates[[i]]) {
               gen <- m$data[which(states==state & m$data$ID==ID[zoo]),datNames]
-              message <- paste0("ID ",ID[zoo]," - ",stateNames[state],covmess)
+              message <- paste0("ID ",ID[zoo]," - ",names(iStates[[i]])[match(state,iStates[[i]])],covmess)
               
               # the function plotHistMVN is defined below
-              plotHistMVN(gen,genDensities,inputs$dist[i],message,sepStates,breaks,state,col,legText[iStates[[i]]], cumul=cumul, iStates[[i]], ...)
+              plotHistMVN(gen,genDensities,inputs$dist[i],message,sepStates,breaks,state,col,names(iStates[[i]]), cumul=cumul, iStates[[i]], ...)
             }
             
           } else { # if !sepStates
             gen <- m$data[which(m$data$ID==ID[zoo]),datNames]
             message <- paste0("ID ",ID[zoo],covmess)
             
-            plotHistMVN(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,col,legText[iStates[[i]]], cumul=cumul, iStates[[i]], ...)
+            plotHistMVN(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,col,names(iStates[[i]]), cumul=cumul, iStates[[i]], ...)
           }
         }
       } else { # if !sepAnimals
@@ -739,10 +735,10 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           # loop over the states
           for(state in iStates[[i]]) {
             gen <- m$data[which(states==state),datNames]
-            if(nbAnimals>1) message <- paste0("All animals - ",stateNames[state],covmess)
-            else message <- paste0("ID ",ID," - ",stateNames[state],covmess)
+            if(nbAnimals>1) message <- paste0("All animals - ",names(iStates[[i]])[match(state,iStates[[i]])],covmess)
+            else message <- paste0("ID ",ID," - ",names(iStates[[i]])[match(state,iStates[[i]])],covmess)
 
-            plotHistMVN(gen,genDensities,inputs$dist[i],message,sepStates,breaks,state,col,legText[iStates[[i]]], cumul=cumul, iStates[[i]], ...)            
+            plotHistMVN(gen,genDensities,inputs$dist[i],message,sepStates,breaks,state,col,names(iStates[[i]]), cumul=cumul, iStates[[i]], ...)            
           }
           
         } else { # if !sepStates
@@ -750,7 +746,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           if(nbAnimals>1) message <- paste0("All animals",covmess)
           else message <- paste0("ID ",ID,covmess)
           
-          plotHistMVN(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,col,legText[iStates[[i]]], cumul=cumul, iStates[[i]], ...)
+          plotHistMVN(gen,genDensities,inputs$dist[i],message,sepStates,breaks,NULL,col,names(iStates[[i]]), cumul=cumul, iStates[[i]], ...)
         }
       }     
       # reset graphical parameters
@@ -791,17 +787,17 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
               # loop over the states
               for(state in iStates[[i]]) {
                 gen <- m$data[which(states==state & m$data$ID==ID[zoo]),datNames[j]]
-                message <- paste0("ID ",ID[zoo]," - ",stateNames[state],covmess)
+                message <- paste0("ID ",ID[zoo]," - ",names(iStates[[i]])[match(state,iStates[[i]])],covmess)
 
                 # the function plotHist is defined below
-                plotHist(gen,genDensities,tmpdist[datNames[j]],message,sepStates,breaks,state,hist.ylim[[i]],col,legText[iStates[[i]]], cumul = cumul, iStates[[i]], ...)
+                plotHist(gen,genDensities,tmpdist[datNames[j]],message,sepStates,breaks,state,hist.ylim[[i]],col,names(iStates[[i]]), cumul = cumul, iStates[[i]], ...)
               }
               
             } else { # if !sepStates
               gen <- m$data[which(m$data$ID==ID[zoo]),datNames[j]]
               message <- paste0("ID ",ID[zoo],covmess)
               
-              plotHist(gen,genDensities,tmpdist[datNames[j]],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText[iStates[[i]]], cumul = cumul, iStates[[i]], ...)
+              plotHist(gen,genDensities,tmpdist[datNames[j]],message,sepStates,breaks,NULL,hist.ylim[[i]],col,names(iStates[[i]]), cumul = cumul, iStates[[i]], ...)
             }
           }
         } else { # if !sepAnimals
@@ -810,10 +806,10 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             # loop over the states
             for(state in iStates[[i]]) {
               gen <- m$data[which(states==state),datNames[j]]
-              if(nbAnimals>1) message <- paste0("All animals - ",stateNames[state],covmess)
-              else message <- paste0("ID ",ID," - ",stateNames[state],covmess)
+              if(nbAnimals>1) message <- paste0("All animals - ",names(iStates[[i]])[match(state,iStates[[i]])],covmess)
+              else message <- paste0("ID ",ID," - ",names(iStates[[i]])[match(state,iStates[[i]])],covmess)
               
-              plotHist(gen,genDensities,tmpdist[datNames[j]],message,sepStates,breaks,state,hist.ylim[[i]],col,legText[iStates[[i]]], cumul = cumul, iStates[[i]], ...)
+              plotHist(gen,genDensities,tmpdist[datNames[j]],message,sepStates,breaks,state,hist.ylim[[i]],col,names(iStates[[i]]), cumul = cumul, iStates[[i]], ...)
             }
             
           } else { # if !sepStates
@@ -821,7 +817,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             if(nbAnimals>1) message <- paste0("All animals",covmess)
             else message <- paste0("ID ",ID,covmess)
             
-            plotHist(gen,genDensities,tmpdist[datNames[j]],message,sepStates,breaks,NULL,hist.ylim[[i]],col,legText[iStates[[i]]], cumul = cumul, iStates[[i]], ...)
+            plotHist(gen,genDensities,tmpdist[datNames[j]],message,sepStates,breaks,NULL,hist.ylim[[i]],col,names(iStates[[i]]), cumul = cumul, iStates[[i]], ...)
           }
         }
       }
@@ -1211,7 +1207,7 @@ plotHist <- function (gen,genDensities,dist,message,
         for (s in iStates[-1]) total[, 2] <- total[, 2] + genDensities[[s]][, 2]
         lines(total, lwd = lwd, lty = 2)
       }
-      legend(ifelse(is.null(legend.pos),"topright",legend.pos),legText,lwd=rep(lwd,nbStates),col=col[iStates],bty="n",cex=cex.legend)
+      legend(ifelse(is.null(legend.pos),"topright",legend.pos),legText,lwd=rep(lwd,nbStates),col=col[c(iStates,ifelse(cumul,length(col),0))],bty="n",cex=cex.legend)
     }  
   } else {
     
@@ -1262,7 +1258,7 @@ plotHist <- function (gen,genDensities,dist,message,
           for (s in iStates[-1]) total[, 2] <- total[, 2] + genDensities[[s]][, 2]
           lines(total, lwd = lwd, lty = 2)
         }
-        legend(ifelse(is.null(legend.pos),"topright",legend.pos),legText,lwd=rep(lwd,nbStates),col=col[iStates],bty="n",cex=cex.legend)
+        legend(ifelse(is.null(legend.pos),"topright",legend.pos),legText,lwd=rep(lwd,nbStates),col=col[c(iStates,ifelse(cumul,length(col),0))],bty="n",cex=cex.legend)
       }
     }
   }
@@ -1343,7 +1339,7 @@ plotHistMVN <- function(gen,genDensities,dist,message,sepStates,breaks="Sturges"
     par(mar=c(3,0,0.5,1))
     barplot(h2$counts, axes=F, xlim=c(0, top), space=0, horiz=TRUE,col="grey",border="white")
     plot.new()
-    if(!sepStates) legend(ifelse(is.null(legend.pos),"topright",legend.pos),legText,lwd=rep(lwd,nbStates),col=col[iStates],bty="n",cex=cex.legend)
+    if(!sepStates) legend(ifelse(is.null(legend.pos),"topright",legend.pos),legText,lwd=rep(lwd,nbStates),col=col[c(iStates,ifelse(cumul,length(col),0))],bty="n",cex=cex.legend)
   }
 }
 

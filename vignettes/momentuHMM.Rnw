@@ -397,7 +397,7 @@ HMM applications often assume the initial distribution and state transition prob
 
 \subsection{Hierarchical hidden Markov models}
 \label{sec:HHMM}
-Hierarchical hidden Markov models \citep[HHMMs; see][]{Leos-BarajasEtAl2017,AdamEtAl2019} can also be fitted in \verb|momentuHMM|. HMMs with hierarchical structures allow for data streams and/or state transitions to occur at multiple regular time scales. For example, biotelemetry data are often collected at different time scales (e.g. 1-hr intervals for one data stream and 1-min intervals for another data stream) or state transitions can be governed by both larger- and finer-scale behavioral processes. HHMMs are integrated into the workhorse functions of \verb|momentuHMM| and are specified via hierarchically-structured arguments for the data stream probability distributions (\verb|hierDist|), behavioral states (\verb|hierStates|), state transition probabilities (\verb|hierFormula|, \verb|hierBeta|), and initial distributions (\verb|hierFormulaDelta|, \verb|hierDelta|) using the \verb|data.tree| package \citep{Glur2018}. We demonstrate how the harbor porpoise and garter snake examples from \cite{Leos-BarajasEtAl2017} and the Atlantic cod and horn examples from \cite{AdamEtAl2019} can be fitted using \verb|momentuHMM| in section \ref{sec:HHMMexamples}.
+Hierarchical hidden Markov models \citep[HHMMs; see][]{Leos-BarajasEtAl2017,AdamEtAl2019} can also be fitted in \verb|momentuHMM|. HMMs with hierarchical structures allow for data streams and/or state transitions to occur at multiple regular time scales. For example, biotelemetry data are often collected at different time scales (e.g. 1-hr intervals for one data stream and 1-min intervals for another data stream) or state transitions can be governed by both larger- and finer-scale behavioral processes. HHMMs are integrated into the workhorse functions of \verb|momentuHMM| and are specified via hierarchically-structured arguments for the data stream probability distributions (\verb|hierDist|), behavioral states (\verb|hierStates|), state transition probabilities (\verb|hierFormula|, \verb|hierBeta|), and initial distributions (\verb|hierFormulaDelta|, \verb|hierDelta|) using the \verb|data.tree| package \citep{Glur2018}. We demonstrate how the HHMM harbor porpoise and garter snake examples from \cite{Leos-BarajasEtAl2017} and the Atlantic cod and horn shark examples from \cite{AdamEtAl2019} can be fitted using \verb|momentuHMM| in section \ref{sec:HHMMexamples}.
 
 \subsection{Random walk probability distributions}
 \label{sec:rw}
@@ -2373,11 +2373,22 @@ hhmm <- fitHMM(codData,
                DM=DM,
                estAngleMean = list(angle=TRUE))
 
+plot(hhmm,plotCI=TRUE,ask=FALSE)
+
 # plot stationary distributions and CIs
 plotStationary(hhmm, plotCI=TRUE)
 @
 The resulting estimates are virtually identical to \cite{AdamEtAl2019}; the slight differences are attributable to: 1) the forward algorithm in \verb|momentuHMM| (Eq. \ref{eq:HMMlike}) includes a state transition between time steps $t=0$ and $t=1$; and 2) \verb|momentuHMM| uses the lowest fine-scale state index for each coarse-scale state as the mlogit-link reference state for the initial distribution and t.p.m.%; and 3) \cite{AdamEtAl2019} did not include the step length data for the first observation in their likelihood calculation. 
-Nevertheless, we can see that the estimated stationary probabilities as a function of time of day are very similar (Figure \ref{fig:codStat}).
+Nevertheless, we can see that the estimated coarse-scale data stream probability distribution (Figure \ref{fig:codDist}) and fine-scale stationary probabilities as a function of time of day (Figure \ref{fig:codStat}) are very similar.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=.49\textwidth]{plot_codExample001.pdf}
+  \includegraphics[width=.49\textwidth]{plot_codExample002.pdf}
+  \caption{Estimated state-dependent distributions of coarse-scale step lengths (left panel) and turning angles (right panel) of an Atlantic
+cod.}
+  \label{fig:codDist}
+\end{figure}
+
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=.49\textwidth]{plot_codStationary001.pdf}
@@ -2502,7 +2513,7 @@ DM <- list(stepCat=matrix(cbind(c(rep(c(1,1,1),2),
                                                        1:(nCat-1),
                                                        "_3")),
                                               ":(Intercept)")))))
-head(DM$stepCat,9)
+head(DM$stepCat,nbStates)
 
 Par0 <- list(stepCat = probs0,
              odbas = c(mu0,sd0))
