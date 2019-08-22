@@ -523,22 +523,25 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     if(inputs$dist[[i]] %in% angledists) {
       grid <- seq(-pi,pi,length=1000)
     } else {
-      if(all(is.na(m$data[[i]])) || !is.finite(max(m$data[[i]],na.rm=TRUE))) next;
       
       if(inputs$dist[[i]] %in% integerdists){
+        if(all(is.na(m$data[[i]])) || !is.finite(max(m$data[[i]],na.rm=TRUE))) next;
         if(inputs$dist[[i]]=="cat"){
           dimCat <- as.numeric(gsub("cat","",m$conditions$dist[[i]]))
           grid <- seq(1,dimCat)
         }
         else grid <- seq(0,max(m$data[[i]],na.rm=TRUE))
       } else if(inputs$dist[[i]] %in% stepdists){
+        if(all(is.na(m$data[[i]])) || !is.finite(max(m$data[[i]],na.rm=TRUE))) next;
         grid <- seq(0,max(m$data[[i]],na.rm=TRUE),length=10000)
       } else if(inputs$dist[[i]] %in% mvndists){
         if(inputs$dist[[i]]=="mvnorm2" || inputs$dist[[i]]=="rw_mvnorm2"){
+          if(all(is.na(m$data[paste0(i,c(".x",".y"))])) || !is.finite(max(m$data[paste0(i,c(".x",".y"))],na.rm=TRUE))) next;
           grid <- c(seq(min(m$data[[paste0(i,".x")]],na.rm=TRUE), max(m$data[[paste0(i,".x")]],na.rm=TRUE), length=100),
                     seq(min(m$data[[paste0(i,".y")]],na.rm=TRUE), max(m$data[[paste0(i,".y")]],na.rm=TRUE), length=100))
-        }
+        } else if(all(is.na(m$data[paste0(i,c(".x",".y",".z"))])) || !is.finite(max(m$data[paste0(i,c(".x",".y",".z"))],na.rm=TRUE))) next;
       } else {
+        if(all(is.na(m$data[[i]])) || !is.finite(max(m$data[[i]],na.rm=TRUE))) next;
         grid <- seq(min(m$data[[i]],na.rm=TRUE),max(m$data[[i]],na.rm=TRUE),length=10000)
       }
     }
