@@ -11,13 +11,12 @@ prepData(data, ...)
 \method{prepData}{default}(data, type = c("UTM", "LL"),
   coordNames = c("x", "y"), covNames = NULL, spatialCovs = NULL,
   centers = NULL, centroids = NULL, angleCovs = NULL,
-  altCoordNames = NULL, vector_mask = NULL, ...)
+  altCoordNames = NULL, ...)
 
 \method{prepData}{hierarchical}(data, type = c("UTM", "LL"),
   coordNames = c("x", "y"), covNames = NULL, spatialCovs = NULL,
   centers = NULL, centroids = NULL, angleCovs = NULL,
-  altCoordNames = NULL, hierLevels, coordLevel, vector_mask = NULL,
-  ...)
+  altCoordNames = NULL, hierLevels, coordLevel, ...)
 }
 \arguments{
 \item{data}{Either a data frame of data streams or a \code{\link{crwData}} (or \code{\link{crwHierData}}) object (as returned by \code{\link{crawlWrap}}). If \code{data} is a data frame, it can optionally include a field \code{ID}
@@ -64,11 +63,6 @@ using \code{\link{circAngles}}.}
 
 \item{altCoordNames}{Character string indicating an alternative name for the returned location data. If provided, then \code{prepData} will return easting (or longitude) coordinate names as \code{paste0(altCoordNames,".x")} and northing (or latitude) as \code{paste0(altCoordNames,".y")} instead of \code{x} and \code{y}, respectively. This can be useful for location data that are intended to be modeled using a bivariate normal distribution (see \code{\link{fitHMM}}). Ignored unless \code{coordNames} are provided.}
 
-\item{vector_mask}{A \code{\link[sf]{sf}} for correcting coordinates that travel through a restricted area (e.g. inland for marine mammals). See \code{\link[crawl]{fix_path}}.
-When \code{vector_mask} is specified, then step lengths, turning angles, and covariates based on location are calculated from the corrected coordinates.
-When \code{data} includes tracks for multiple individuals, \code{vector_mask} may also be a list of length \code{unique(data$ID)}, where each element is a \code{sf} object for correcting the coordinates for each individual.
-Ignored unless \code{data} is a \code{crwData} or \code{crwHierData} object.}
-
 \item{hierLevels}{Character vector indicating the levels of the hierarchy and their order, from top (coarsest scale) to bottom (finest scale), that are included in \code{data$level}. For example, for a 2-level hierarchy then 
 \code{hierLevels=c("1","2i","2")} indicates \code{data$level} for each observation can be one of three factor levels: "1" (coarse scale), "2i" (initial fine scale), and "2" (fine scale).  Ignored if \code{data} is a \code{\link{crwHierData}} object.}
 
@@ -80,8 +74,6 @@ An object \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}}, i.e.
 \item{...}{Data streams (e.g., 'step', 'angle', etc.)}
 \item{x}{Either easting or longitude (if \code{coordNames} is specified or \code{data} is a \code{crwData} object)}
 \item{y}{Either norting or latitude (if \code{coordNames} is specified or \code{data} is a \code{crwData} object)}
-\item{x.orig}{Original uncorrected easting (if \code{vector_mask} is specified)}
-\item{y.orig}{Original uncorrected northing (if \code{vector_mask} is specified)}
 \item{...}{Covariates (if any)}
 }
 \description{
@@ -135,31 +127,6 @@ cov2 <- atan2(v,u)
 data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1,cov2=cov2)
 d <- prepData(data,coordNames=c("coord1","coord2"),covNames="cov1",
               angleCovs="cov2")
-         
-\dontrun{                   
-# use vector_mask based on `forest' spatial covariate
-res_raster <- forest
-res_raster[which(raster::getValues(forest)==0)]<-1
-res_raster[which(raster::getValues(forest)>0)]<-0
-
-r <- raster::rasterToPoints(res_raster, spatial = TRUE)
-vector_mask <- sf::st_as_sf(r) 
-
-set.seed(1,kind="Mersenne-Twister",normal.kind="Inversion")
-data <- data.frame(ID=1,time=1:100,
-                   x=rep(-10000,100)+rnorm(100),
-                   y=seq(35000,0,length=100)+rnorm(100))
-
-#plot original path
-plotSpatialCov(data,spatialCov=forest,col="#E69F00",ask=FALSE)
-
-crwOut <- crawlWrap(obsData=data,fixPar=c(NA,NA),timeStep=0.5)
-
-d <- prepData(crwOut,vector_mask=vector_mask)
-
-#plot new path
-plotSpatialCov(d,spatialCov=forest,col="#56B4E9",ask=FALSE)
-}
 
 }
 \seealso{

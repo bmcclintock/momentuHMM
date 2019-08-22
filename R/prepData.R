@@ -45,18 +45,12 @@ prepData <- function(data, ...) {
 #' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{data} or \code{spatialCovs} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 #' using \code{\link{circAngles}}.
 #' @param altCoordNames Character string indicating an alternative name for the returned location data. If provided, then \code{prepData} will return easting (or longitude) coordinate names as \code{paste0(altCoordNames,".x")} and northing (or latitude) as \code{paste0(altCoordNames,".y")} instead of \code{x} and \code{y}, respectively. This can be useful for location data that are intended to be modeled using a bivariate normal distribution (see \code{\link{fitHMM}}). Ignored unless \code{coordNames} are provided.
-#' @param vector_mask A \code{\link[sf]{sf}} for correcting coordinates that travel through a restricted area (e.g. inland for marine mammals). See \code{\link[crawl]{fix_path}}.  
-#' When \code{vector_mask} is specified, then step lengths, turning angles, and covariates based on location are calculated from the corrected coordinates.
-#' When \code{data} includes tracks for multiple individuals, \code{vector_mask} may also be a list of length \code{unique(data$ID)}, where each element is a \code{sf} object for correcting the coordinates for each individual.
-#' Ignored unless \code{data} is a \code{crwData} or \code{crwHierData} object.
 
 #' @return An object \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}}, i.e., a dataframe of:
 #' \item{ID}{The ID(s) of the observed animal(s)}
 #' \item{...}{Data streams (e.g., 'step', 'angle', etc.)}
 #' \item{x}{Either easting or longitude (if \code{coordNames} is specified or \code{data} is a \code{crwData} object)}
 #' \item{y}{Either norting or latitude (if \code{coordNames} is specified or \code{data} is a \code{crwData} object)}
-#' \item{x.orig}{Original uncorrected easting (if \code{vector_mask} is specified)}
-#' \item{y.orig}{Original uncorrected northing (if \code{vector_mask} is specified)}
 #' \item{...}{Covariates (if any)}
 #' 
 #' @details 
@@ -108,37 +102,11 @@ prepData <- function(data, ...) {
 #' data <- data.frame(coord1=coord1,coord2=coord2,cov1=cov1,cov2=cov2)
 #' d <- prepData(data,coordNames=c("coord1","coord2"),covNames="cov1",
 #'               angleCovs="cov2")
-#'          
-#' \dontrun{                   
-#' # use vector_mask based on `forest' spatial covariate
-#' res_raster <- forest
-#' res_raster[which(raster::getValues(forest)==0)]<-1
-#' res_raster[which(raster::getValues(forest)>0)]<-0
-#' 
-#' r <- raster::rasterToPoints(res_raster, spatial = TRUE)
-#' vector_mask <- sf::st_as_sf(r) 
-#' 
-#' set.seed(1,kind="Mersenne-Twister",normal.kind="Inversion")
-#' data <- data.frame(ID=1,time=1:100,
-#'                    x=rep(-10000,100)+rnorm(100),
-#'                    y=seq(35000,0,length=100)+rnorm(100))
-#' 
-#' #plot original path
-#' plotSpatialCov(data,spatialCov=forest,col="#E69F00",ask=FALSE)
-#' 
-#' crwOut <- crawlWrap(obsData=data,fixPar=c(NA,NA),timeStep=0.5)
-#' 
-#' d <- prepData(crwOut,vector_mask=vector_mask)
-#' 
-#' #plot new path
-#' plotSpatialCov(d,spatialCov=forest,col="#56B4E9",ask=FALSE)
-#' }
 #' 
 #' @export
 #' @importFrom sp spDistsN1
 #' @importFrom raster cellFromXY getValues getZ is.factor levels
-#' @importFrom crawl fix_path
-prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames=NULL, vector_mask=NULL, ...)
+prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames=NULL, ...)
 {
   if(is.crwData(data)){
     predData <- data$crwPredict
@@ -170,8 +138,6 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
     data <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p" | predData$locType=="f"),]
     type <- 'UTM'
     coordNames <- c("x","y")
-  } else {
-    vector_mask <- NULL
   }
   
   if(!is.null(coordNames)){
@@ -241,47 +207,17 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
     x <- data[,coordNames[1]]
     y <- data[,coordNames[2]]
     distnames<-c("step","angle",distnames[-which(distnames %in% coordNames)])
-    
-    if(!is.null(vector_mask)){
-      if(inherits(vector_mask,"sf")){
-        tmpvector_mask<-vector_mask
-        vector_mask<-list()
-        for(i in ids){
-          vector_mask[[i]] <- tmpvector_mask
-        } 
-      } else if(!all(names(vector_mask) %in% ids)) stop("vector_mask names must match ID")
-      vector_mask <- vector_mask[ids]
-    }
   }
   
   dataHMM <- data.frame(ID=character())
   
-  # check that each animal's observations are contiguous and fix path
+  # check that each animal's observations are contiguous
   for(i in 1:nbAnimals) {
     ind <- which(ID==ids[i])
     if(length(ind)!=length(ind[1]:ind[length(ind)]))
       stop("Each animal's obervations must be contiguous.")
     if(!is.null(coordNames))
       if(length(ind)<3) stop('each individual must have at least 3 observations to calculate step lengths and turning angles')
-    
-    # fix path
-    if(!is.null(vector_mask)){
-      if(type=="LL") stop("coordinate type must be UTM when vector_mask is specified")
-      tmpDat <- data[ind,]
-      if(is.null(tmpDat$time)) tmpDat$time <- 1:length(ind)
-      cat("\rFixing path for individual",ids[i],"...")
-      m <- tryCatch(crawl::fix_path(crw_object=predData[which(predData$ID==ids[i] & (predData$locType=="p" | predData$locType=="f")),],vector_mask=vector_mask[[ids[i]]],crwFit=crwFits[[ids[i]]]),error=function(e) e)
-      if(inherits(m,"error")){
-        cat("FAILED:",m$message,"\n")
-      } else {
-        if("time" %in% colnames(m)){
-          x[ind][match(tmpDat$time,m[,"time"],nomatch=0)] <- m[,"mu.x"]
-          y[ind][match(tmpDat$time,m[,"time"],nomatch=0)] <- m[,"mu.y"]
-          data$locType[ind][match(tmpDat$time,m[,"time"],nomatch=0)] <- m$locType
-        }
-        cat("DONE\n")
-      }
-    }
   }
   
   for(zoo in 1:nbAnimals) {
@@ -345,10 +281,6 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
   if(!is.null(coordNames)) {
     dataHMM[[outNames[1]]] <- x
     dataHMM[[outNames[2]]] <- y
-    if(!is.null(vector_mask)){
-      dataHMM[[paste0(outNames[1],".orig")]] <- data[,coordNames[1]]
-      dataHMM[[paste0(outNames[2],".orig")]] <- data[,coordNames[2]]
-    }
     class(dataHMM$angle)<-c(class(dataHMM$angle), "angle")
     if(nbSpatialCovs){
       spCovs<-numeric()
@@ -463,7 +395,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
 #' @export
 #' @importFrom sp spDistsN1
 #' @importFrom raster cellFromXY getValues getZ
-prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames = NULL, hierLevels, coordLevel, vector_mask = NULL, ...)
+prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames = NULL, hierLevels, coordLevel, ...)
 {
   if(is.crwHierData(data)){
     predData <- data$crwPredict
@@ -496,8 +428,6 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     hierLevels <- levels(data$crwPredict$level)
     coordLevel <- attr(data$crwPredict,"coordLevel")
     data <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(is.na(predData$locType) | predData$locType!="o"),]
-  } else {
-    vector_mask <- NULL
   }
   
   if(!is.null(coordNames)){
@@ -599,17 +529,6 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     dataHMM <- data[,c("ID",distnames[which(!(distnames %in% coordNames))])]
     dataHMM$step <- dataHMM$angle <- rep(NA,nrow(dataHMM))
     distnames<-c("step","angle",distnames[which(!(distnames %in% coordNames))])
-    
-    if(!is.null(vector_mask)){
-      if(inherits(vector_mask,"sf")){
-        tmpvector_mask<-vector_mask
-        vector_mask<-list()
-        for(i in ids){
-          vector_mask[[i]] <- tmpvector_mask
-        } 
-      } else if(!all(names(vector_mask) %in% ids)) stop("vector_mask names must match ID")
-      vector_mask <- vector_mask[ids]
-    }
   } else {
     dataHMM <- data[,c("ID",distnames)]
   }
@@ -626,24 +545,6 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
       ind <- which(levelData$ID==unique(levelData$ID)[zoo])
       nbObs <- length(ind)
       if(nbObs<3) stop('each individual must have at least 3 observations to calculate step lengths and turning angles')
-
-      # fix path
-      if(!is.null(vector_mask)){
-        if(type=="LL") stop("coordinate type must be UTM when vector_mask is specified")
-        tmpDat <- levelData[ind,]
-        if(is.null(tmpDat$time)) tmpDat$time <- 1:length(ind)
-        cat("\rFixing path for individual",ids[zoo],"...")
-        m <- tryCatch(crawl::fix_path(crw_object=predData[which(predData$ID==ids[zoo] & (is.na(predData$locType) | predData$locType!="o") & predData$level==coordLevel),],vector_mask=vector_mask[[ids[zoo]]],crwFit=crwFits[[ids[zoo]]]),error=function(e) e)
-        if(inherits(m,"error")){
-          cat("FAILED:",m$message,"\n")
-        } else {
-          if("time" %in% colnames(m)){
-            lx[ind][match(tmpDat$time,m[,"time"],nomatch=0)] <- x[which(data$ID==unique(data$ID)[zoo] & data$level==coordLevel)] <- m[,"mu.x"]
-            ly[ind][match(tmpDat$time,m[,"time"],nomatch=0)] <- y[which(data$ID==unique(data$ID)[zoo] & data$level==coordLevel)] <- m[,"mu.y"]
-          }
-          cat("DONE\n")
-        }
-      }
       
       # d = data for one individual
       d <- data.frame(ID=rep(unique(levelData$ID)[zoo],nbObs))
@@ -701,10 +602,6 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
   if(!is.null(coordNames)) {
     dataHMM[[outNames[1]]] <- x
     dataHMM[[outNames[2]]] <- y
-    if(!is.null(vector_mask)){
-      dataHMM[[paste0(outNames[1],".orig")]] <- data[,coordNames[1]]
-      dataHMM[[paste0(outNames[2],".orig")]] <- data[,coordNames[2]]
-    }
     if(nbSpatialCovs | !is.null(centers) | !is.null(centroids) | !is.null(angleCovs)){
       # temporarily fill in location data for other levels of the hierarchy to get spatial covariates
       for(zoo in 1:nbAnimals){
