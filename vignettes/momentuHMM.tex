@@ -3187,7 +3187,7 @@ Let's now examine our fitted HHMM:
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
-\noindent These estimates are nearly identical to those reported by \cite{Leos-BarajasEtAl2017}.  The very slight differences are attributable to \cite{Leos-BarajasEtAl2017} assuming that the initial distribution for each level of the hierarchy is equal to the stationary distribution. However, bbecause it constrains the t.p.m. based on \verb|level|, this stationarity assumption is not possible when fitting HHMMs in \verb|momentuHMM|.  
+\noindent These estimates are nearly identical to those reported by \cite{Leos-BarajasEtAl2017}.  The very slight differences are attributable to \cite{Leos-BarajasEtAl2017} assuming that the initial distribution for each level of the hierarchy is equal to the stationary distribution. However, because it constrains the t.p.m. based on \verb|level|, this stationarity assumption is not possible when fitting HHMMs in \verb|momentuHMM|.  
 
 As in a standard HMM, we can decode the most likely state sequence using the \verb|viterbi| function:
 \begin{knitrout}
@@ -4469,7 +4469,7 @@ All that remains is (optionally) specifying starting values for the initial dist
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-The resulting estimates are again very similar to \cite{AdamEtAl2019}, with the slight differences attributable to: 1) the forward algorithm in \verb|momentuHMM| (Eq. \ref{eq:HMMlike}) includes a state transition between time steps $t=0$ and $t=1$; and 2) \cite{AdamEtAl2019} assume the initial distributions for each level of the hierarchy are equal to the stationary distributions. Nevertheless, we can see that the estimated t.p.m. and stationary distributions are very similar:
+The resulting estimates are again very similar to \cite{AdamEtAl2019}, with the slight differences attributable to \cite{AdamEtAl2019} assuming the initial distributions for each level of the hierarchy are equal to the stationary distributions. Nevertheless, we can see that the estimated t.p.m. and stationary distributions are very similar:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
