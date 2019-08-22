@@ -189,20 +189,18 @@ stationary.momentuHMM <- function(model, covs, covIndex = NULL)
 
 #' @method stationary miSum
 #' @export
-stationary.miSum <- function(model, covs, covIndex)
+stationary.miSum <- function(model, covs, covIndex=NULL)
 {
-  model$mle <- lapply(model$Par$real,function(x) x$est)
-  model$mle$beta <- model$Par$beta$beta$est
-  model$mod <- list()
+  model <- formatmiSum(model)
 
-  stationary(momentuHMM(model),covs, covIndex)
+  stationary(momentuHMM(model), covs, covIndex)
 }
 
 #' @method stationary miHMM
 #' @export
-stationary.miHMM <- function(model, covs, covIndex)
+stationary.miHMM <- function(model, covs, covIndex=NULL)
 {
-  stationary(model$miSum,covs)
+  stationary(model$miSum, covs, covIndex)
 }
 
 getProbs <- function(allMat,stateNames){
