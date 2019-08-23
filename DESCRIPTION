@@ -53,7 +53,8 @@ Suggests:
     knitr,
     splines, 
     splines2 (>= 0.2.8),
-    webshot
+    webshot,
+    ctmcmove
 RoxygenNote: 6.1.1
 Encoding: UTF-8
 NeedsCompilation: yes

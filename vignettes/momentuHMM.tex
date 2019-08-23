@@ -196,7 +196,7 @@ While statisticians have been applying HMMs to telemetry data for decades, R \ci
 
 To address these deficiencies in existing software, we developed a user-friendly R package, \verb|momentuHMM| (Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models), intended for practitioners wishing to implement more flexible and realistic (multivariate) HMM analyses of animal movement while accounting for common challenges associated with telemetry data \citep{McClintockMichelot2018}. Features for multivariate HMM analyses in \verb|momentuHMM| include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states; 3) biased and correlated random walk movement models, including ``activity centers'' associated with attractive or repulsive forces \citep[e.g.][]{McClintockEtAl2012}; 4) user-specified design matrices and constraints for covariate modelling of state transition probability and probability distribution parameters using linear model formulas familiar to most R users; 5) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data \citep{HootenEtAl2017,McClintock2017}; 6) seamless integration of spatio-temporal environmental covariate data (e.g., wind direction, forest cover, sea ice concentration) using the \verb|raster| package \citep{Hijmans2016}; 7) cosinor \citep[e.g.][]{Cornelissen2014} and spline regression formulas for cyclical and other complicated behavioral patterns; 8) discrete individual-level random effects on state transition probabilities \citep[e.g.][]{DeRuiterEtAl2017}; 9) hierarchical hidden Markov models \citep[e.g.][]{Leos-BarajasEtAl2017,AdamEtAl2019} for data streams and/or state switching at multiple time scales; 10) ``recharge'' models for an aggregated physiological process associated with state switching in heterogeneous environments \citep{HootenEtAl2019}; 11) model checking and selection; and 12) data simulation capabilities for study design, power analyses and assessing model performance, including simulation of location data subject to movement constraints (e.g. land for marine animals), temporal irregularity, and/or measurement error. 
 
-In the following tutorial, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples, including an example of periodic cycles in African elephant movement, a 3-state (``resting'', ``foraging'', ``transit'') northern fur seal example incorporating auxiliary dive activity data \citep{McClintockEtAl2014b}, a loggerhead turtle example relating ``foraging'' and ``transit'' movements to ocean surface currents, a 5-state grey seal example incorporating biased movements toward haul-out and foraging locations \citep{McClintockEtAl2012}, a 4-state (``outbound'', ``searching'', ``foraging'', ``inbound'') southern elephant seal example with biased movements toward and away from a colony \citep{MichelotEtAl2017}, a 3-state (``resting'', ``foraging'', ``transit'') harbour seal example using population-level constraints on movement parameters \citep{McClintockEtAl2013c}, a 6-state northern fulmar example incorporating biased movements relative to both static (i.e. colony) and dynamic (i.e. fishing vessels) activity centers \citep{PirottaEtAl2018}, a 4-state long-finned pilot whale example including individual-level random effects on state transition probabilities \citep{IsojunnoEtAl2017}, and hierarchical HMMs fitted to harbor porpoise, garter snake, Atlantic cod, and horn shark data \citep{Leos-BarajasEtAl2017,AdamEtAl2019}. Using simulated data, we also demonstrate how the group dynamic model of \cite{LangrockEtAl2014} can be implemented using \verb|momentuHMM|. Finally, we demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using potential functions \citep[e.g.][]{BrillingerEtAl2012}. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics. While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs.  Additional information, including help files, data, examples, and package usage is available by downloading the \verb|momentuHMM| package from CRAN (\url{https://cran.r-project.org}) or Github (\url{https://github.com/bmcclintock/momentuHMM}). This article describes \verb|momentuHMM| version 1.5.0.
+In the following tutorial, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples, including an example of periodic cycles in African elephant movement, a 3-state (``resting'', ``foraging'', ``transit'') northern fur seal example incorporating auxiliary dive activity data \citep{McClintockEtAl2014b}, a loggerhead turtle example relating ``foraging'' and ``transit'' movements to ocean surface currents, a 5-state grey seal example incorporating biased movements toward haul-out and foraging locations \citep{McClintockEtAl2012}, a 4-state (``outbound'', ``searching'', ``foraging'', ``inbound'') southern elephant seal example with biased movements toward and away from a colony \citep{MichelotEtAl2017}, a 3-state (``resting'', ``foraging'', ``transit'') harbour seal example using population-level constraints on movement parameters \citep{McClintockEtAl2013c}, a 6-state northern fulmar example incorporating biased movements relative to both static (i.e. colony) and dynamic (i.e. fishing vessels) activity centers \citep{PirottaEtAl2018}, a 4-state long-finned pilot whale example including individual-level random effects on state transition probabilities \citep{IsojunnoEtAl2017}, and hierarchical HMMs fitted to harbor porpoise, garter snake, Atlantic cod, and horn shark data \citep{Leos-BarajasEtAl2017,AdamEtAl2019}, and a recharge dynamics model for African buffalo movements in a heterogeneous environment \citep{HootenEtAl2019}. Using simulated data, we also demonstrate how the group dynamic model of \cite{LangrockEtAl2014} can be implemented using \verb|momentuHMM|. Finally, we demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using potential functions \citep[e.g.][]{BrillingerEtAl2012}. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics. While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs.  Additional information, including help files, data, examples, and package usage is available by downloading the \verb|momentuHMM| package from CRAN (\url{https://cran.r-project.org}) or Github (\url{https://github.com/bmcclintock/momentuHMM}). This article describes \verb|momentuHMM| version 1.5.0.
 
 \section{momentuHMM overview}
 %Given the deliberately similar syntax between the two packages, 
@@ -234,7 +234,7 @@ Before delving into some of the finer details, we will first provide an overview
   \end{tabular}
 \end{table}
 
-One of the key features of \verb|momentuHMM| is the ability to include an unlimited number of HMM data streams (e.g.\ step length, turning angle, dive activity, heart rate) arising from a broad range of commonly used probability distributions (e.g.\ beta, categorical, gamma, normal, multivariate normal, Poisson, von Mises, Weibull), including (multivariate) normal random walks that can be particularly useful for modeling positions directly (instead of step lengths and turning angles). Any of the parameters of the probability distributions used for the observed data can be modelled as a function of environmental and individual covariates using link functions (Tables \ref{tab:unipdfs} and \ref{tab:multipdfs}). For any given ``natural scale'' (or ``real scale'') probability distribution parameter $\theta$, all of the link functions $(g)$ in \verb|momentuHMM| are of the general form $g({\boldsymbol \theta}) =  {\mathbf X}_\theta{\boldsymbol \beta}_\theta$, where ${\mathbf X}_\theta$ is the $T \times K$ design matrix (composed of $K$ covariates) and ${\boldsymbol \beta}_\theta$ is the correponding $K$-vector of ``working scale'' (or ``beta scale'') parameters for $\theta$. For example, suppose step length is assumed to have a gamma distribution, $l_t\mid S_t=s \sim \text{gamma}(\mu_s,\sigma_s)$. In \verb|momentuHMM|, the natural scale parameters for the gamma distribution are the (state-dependent) step length mean $(\mu_s>0)$ and standard deviation $(\sigma_s>0)$.  Because both of these parameters must be positive, the log link function is a natural choice for modelling these parameters as a function of covariates, e.g., $\log({\boldsymbol \mu}) =  {\mathbf X}_\mu  {\boldsymbol \beta}_\mu$ and $\log({\boldsymbol \sigma}) =  {\mathbf X}_\sigma  {\boldsymbol \beta}_\sigma$.
+One of the key features of \verb|momentuHMM| is the ability to include an unlimited number of HMM data streams (e.g.\ step length, turning angle, dive activity, heart rate) arising from a broad range of commonly used probability distributions (e.g.\ beta, categorical, gamma, normal, multivariate normal, Poisson, von Mises, Weibull), including (multivariate) normal random walks (section \ref{sec:rw}) that can be particularly useful for modeling positions directly (instead of step lengths and turning angles). Any of the parameters of the probability distributions used for the observed data can be modelled as a function of environmental and individual covariates using link functions (Tables \ref{tab:unipdfs} and \ref{tab:multipdfs}). For any given ``natural scale'' (or ``real scale'') probability distribution parameter $\theta$, all of the link functions $(g)$ in \verb|momentuHMM| are of the general form $g({\boldsymbol \theta}) =  {\mathbf X}_\theta{\boldsymbol \beta}_\theta$, where ${\mathbf X}_\theta$ is the $T \times K$ design matrix (composed of $K$ covariates) and ${\boldsymbol \beta}_\theta$ is the correponding $K$-vector of ``working scale'' (or ``beta scale'') parameters for $\theta$. For example, suppose step length is assumed to have a gamma distribution, $l_t\mid S_t=s \sim \text{gamma}(\mu_s,\sigma_s)$. In \verb|momentuHMM|, the natural scale parameters for the gamma distribution are the (state-dependent) step length mean $(\mu_s>0)$ and standard deviation $(\sigma_s>0)$.  Because both of these parameters must be positive, the log link function is a natural choice for modelling these parameters as a function of covariates, e.g., $\log({\boldsymbol \mu}) =  {\mathbf X}_\mu  {\boldsymbol \beta}_\mu$ and $\log({\boldsymbol \sigma}) =  {\mathbf X}_\sigma  {\boldsymbol \beta}_\sigma$.
 
 The state transition probabilities $({\mathbf \Gamma}^{(t)})$ and initial distribution $({\boldsymbol \delta}^{(0)})$ can also be modelled as functions of covariates, using a multinomial logit link, as described e.g.\ by \cite{MichelotEtAl2016}. Permissable R classes for covariates include \verb|numeric|, \verb|integer|, or \verb|factor|. Factors can be particularly useful for specifying models with individual- or group-level (e.g. sex or age class) effects on state transition and probability distribution parameters. Spatio-temporal covariates can also be of classes \verb|rasterLayer|, \verb|rasterStack|, or \verb|rasterBrick| \citep{Hijmans2016}, in which case \verb|momentuHMM| automatically extracts the appropriate covariate values from the raster based on the time and location of each observation (see example in section \ref{sec:turtle}).
 
@@ -457,7 +457,19 @@ Hierarchical hidden Markov models \citep[HHMMs; see][]{Leos-BarajasEtAl2017,Adam
 
 \subsection{Random walk probability distributions}
 \label{sec:rw}
-\verb|momentuHMM| includes several normal random walk probability distributions that can be specified in the \verb|dist| argument (see Tables \ref{tab:unipdfs} and \ref{tab:multipdfs}), including univariate (e.g. for modeling depths), bivariate (e.g. for modeling 2-D positions), and trivariate (e.g. for modeling 3-D positions) normal random walks. These can be particularly useful for modeling movement on positions directly instead of steps and turns. A random walk model assumes position at time $t$ is a function of the position at time $t-1$; in its simplest form without any covariates, we have $x_t \sim N(x_{t-1},\sigma^2)$ for the univariate case. We demonstrate use of the bivariate normal random walk model for loggerhead turtle movements relative to ocean surface currents in section \ref{sec:turtle}. We also demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using a bivariate normal random walk in section \ref{sec:avoidLand}.
+\verb|momentuHMM| includes several normal random walk probability distributions that can be specified in the \verb|dist| argument (see Tables \ref{tab:unipdfs} and \ref{tab:multipdfs}), including univariate (e.g. for modeling depths), bivariate (e.g. for modeling 2-D positions), and trivariate (e.g. for modeling 3-D positions) normal random walks. These can be particularly useful for modeling movement on positions directly instead of steps and turns. A random walk model assumes position at time $t$ is a function of the position at time $t-1$; in its simplest form without any covariates, we have $x_t \sim N(x_{t-1},\sigma^2)$ for the univariate case. 
+
+Multivariate normal distributions require some additonal book-keeping when preparing the data; the \verb|altCoordNames| argument in \verb|prepData| and \verb|MIfitHMM| and the \verb|mvnCoords| argument in \verb|fitHMM| and \verb|MIfitHMM| are designed to help properly format and identify multivariate coordinate data streams. For example, if a bivariate normal data stream name is ``loc'' (e.g. \verb|dist=list(loc="mvnorm2")|), then the data must include columns ``loc.x'' and ''loc.y'' for the x- and y- coordinates, respectively. When using a multivariate normal random walk distribution, the previous position can be referenced in \verb|DM| formulas or pseudo-design matrices. For example, for a bivariate normal random walk data stream named ``mu'' (e.g. \verb|dist=list(mu="rw_mvnorm2")|), the previous position can be refereced in \verb|DM| as ``mu.x\_tm1'' and ``mu.y\_tm1''. This allows for persistence in velocity to be included via the special formula function \verb|crw(x_tm1,lag)|, where argument \verb|x_tm1| is the previous position (e.g. ``mu.x\_tm1'' or ``mu.y\_tm1'') and argument \verb|lag| specifies the time lag for the persistence.
+
+We demonstrate use of the bivariate normal random walk model for loggerhead turtle movements relative to ocean surface currents in section \ref{sec:turtle} and for African buffalo recharge dynamics in section \ref{sec:buffalo}. We also demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using a bivariate normal random walk in section \ref{sec:avoidLand}.
+
+\subsection{Recharge dynamics}
+\label{sec:recharge}
+\cite{HootenEtAl2019} describe a novel way of modeling animal movement behavior based on an aggregated physiological process associated with decision making and movement in heterogeneous environments. In essence, their ``recharge'' model allows state switching to be a function of this process (i.e. the recharge function). For example, we can think of the recharge function as the gas tank of our car. When the gas tank is full, we are more-or-less free to drive wherever we want. However, when the tank gets low, we must eventually return to the same gas station (or find a new one) to refill our tank. In its simplest form, the recharge model associates ``good'' habitat with recharging (i.e. filling the tank) and less-suitable habitat with discharging (i.e. emptying the tank). The recharge function thus increases and decreases over time depending on the decision-making process of the individual, the resulting behavior, and the habitat conditions it encounters. By simply imbedding a recharge function into state transition probabilities, we can therefore begin to investigate models with an explicit, mechanistic connection to physiological dynamics! \cite{HootenEtAl2019} formulated their recharge model in continuous time, but its discrete-time analogue can be implemented in \verb|momentuHMM|. This is accomplished by including the \verb|recharge(g0, theta)| special function in the transition probability matrix \verb|formula|, where the arguments \verb|g0| and \verb|theta| are formulas for the initial recharge function at time $t=0$ $(g_0)$ and the recharge function coefficients $({\boldsymbol \theta})$, respectively. For example, if one were to specify \verb|formula = ~recharge(g0 = ~1, theta = ~cov1+cov2)| for a 2-state (e.g., state 1 = ``charged'' and state 2 = ``discharged'') model, the recharge function at time $t$ $(g_t)$ would be:
+\begin{equation*}
+  g_t = g_0 + \sum_{j=1}^t \theta_0 + \text{cov1}_j \theta_1 + \text{cov2}_j \theta_2,
+\end{equation*}
+where $\text{cov1}_j$ and $\text{cov2}_j$ are the corresponding habitat covariate values for the individual's location at time $j$. We demonstrate how to fit a discrete-time version of the African buffalo example from \cite{HootenEtAl2019} in section \ref{sec:recharge}. 
 
 \subsection{Multiple imputation}
 \label{sec:mi}
@@ -846,27 +858,29 @@ Still another option would be to use the von Mises consensus model, where the co
 \end{equation}
 If there were multiple turtles in this dataset, then individual-level effects could be included on $\mu^\phi$ by simply specifying \verb|angleFormula(d, strength = w, by = ID)| or \verb|angleFormula(d, by = ID)| (with no strength effects).
 
-One disadvantage of modeling steps and turns as above is that the fitted model cannot be properly simulated using \verb|simData|. This is because \verb|simData| is unable to calculate new realizations of the constructed covariate $\left({\text angle\_osc}=\cos(b_t-r_t)\right)$. However, we can implement a very similar model on the positions directly using a bivariate normal random walk.  While arguably more intuitive, modeling the positions directly also has the added benefit that the fitted model can be properly simulated using \verb|simData|. Similar to the continuous-time potential function approach of \cite{BrillingerEtAl2012} and \cite{HootenEtAl2019}, we can model the current position $(x_t, y_t)$ as a bivariate normal random walk where the position at time $t$ is a function of the position at time $t-1$ and the ocean surface current velocity vectors $u_{t-1}$ (easting) and $v_{t-1}$ (northing):
-
-\begin{eqnarray*}
-(x_t, y_t) \sim N \left( (\mu_{x,t},\mu_{y,t}),\Sigma \right),
-\end{eqnarray*}
-where
+One disadvantage of modeling steps and turns as above is that the fitted model cannot be properly simulated using \verb|simData|. This is because \verb|simData| is unable to calculate new realizations of the constructed covariate $\left({\text angle\_osc}=\cos(b_t-r_t)\right)$. However, we can implement a very similar model on the positions directly using a bivariate normal random walk.  While arguably more intuitive, modeling the positions directly also has the added benefit that the fitted model can be properly simulated using \verb|simData|. Similar to the continuous-time potential function approach of \cite{BrillingerEtAl2012} and \cite{HootenEtAl2019}, we can model the positions ${\boldsymbol \mu}=(\mu_x, \mu_y)$ as a bivariate normal random walk where the position at time $t$ is a function of the position at time $t-1$ and the ocean surface current velocity vectors $V({\boldsymbol \mu}_{t-1})=(u_{t-1},v_{t-1})$, where $u$ is easting and $v$ is northing:
 \begin{eqnarray}
- \label{eq:potFun}
-\mu_{x,t} &=& x_{t-1}+(x_{t-1}-x_{t-2}) \beta_1 + u_{t-1} \beta_2, \nonumber \\
-\mu_{y,t} &=& y_{t-1}+(y_{t-1}-y_{t-2}) \beta_1 + v_{t-1} \beta_2, 
+%(x_t, y_t) \sim N \left( (\mu_{x,t},\mu_{y,t}),\Sigma \right),
+\label{eq:potFun}
+{\boldsymbol \mu}_t \mid S_t = s \sim {\mathcal N} \left({\boldsymbol \mu}_{t-1}+({\boldsymbol \mu}_{t-1}-{\boldsymbol \mu}_{t-2})\beta_1 + V({\boldsymbol \mu}_{t-1})\beta_2 I(s=2),\sigma_s^2 {\mathbf I} \right),
 \end{eqnarray}
-and 
-\begin{equation*}
-  \Sigma = \begin{bmatrix}
-            \sigma_x^2    & 0    \\
-                     0    & \sigma_y^2        
-  \end{bmatrix}
-\end{equation*}
-This is analogous to state 2 in our model for steps and turns, where the terms $(x_{t-1}-x_{t-2})$ and $(y_{t-1}-y_{t-2})$ account for persistence in velocity. For state 1 we would simply remove the terms related to ocean surface current velocities ($u_t$ and $v_t$). 
+%where
+%\begin{eqnarray}
+% \label{eq:potFun}
+%\mu_{x,t} &=& x_{t-1}+(x_{t-1}-x_{t-2}) \beta_1 + u_{t-1} \beta_2, \nonumber \\
+%\mu_{y,t} &=& y_{t-1}+(y_{t-1}-y_{t-2}) \beta_1 + v_{t-1} \beta_2, 
+%\end{eqnarray}
+%and 
+%\begin{equation*}
+%  \Sigma = \begin{bmatrix}
+%            \sigma_x^2    & 0    \\
+%                     0    & \sigma_y^2        
+%  \end{bmatrix}
+%\end{equation*}
+where $I()$ is the indicator function and $\mathbf I$ is a $2 \times 2$ identity matrix. %This is analogous to state 2 in our model for steps and turns, where the terms $(x_{t-1}-x_{t-2})$ and $(y_{t-1}-y_{t-2})$ account for persistence in velocity. For state 1 we would simply remove the terms related to ocean surface current velocities ($u_t$ and $v_t$). 
+This is analogous to our model for steps and turns, where $({\boldsymbol \mu}_{t-1}-{\boldsymbol \mu}_{t-2})$ accounts for persistence in velocity. Thus when in state 1 (i.e., $S_t=1$) the movement model is a correlated random walk, but when in state 2 (i.e., $S_t=2$) the movement model includes a potential function surface based on ocean surface currents.
 
-Multivariate normal distributions require some additonal book-keeping when preparing the data; the \verb|altCoordNames| argument in \verb|prepData| and \verb|MIfitHMM| and the \verb|mvnCoords| argument in \verb|fitHMM| and \verb|MIfitHMM| are designed to help properly format and identify multivariate coordinate data streams. For example, if a bivariate normal data stream name is ``loc'' (e.g. \verb|dist=list(loc="mvnorm2")|), then the data must include columns ``loc.x'' and ''loc.y'' for the x- and y- coordinates, respectively.  When using a multivariate normal random walk distribution, the previous position can be referenced in \verb|DM| formulas or pseudo-design matrices. For example, for a bivariate normal random walk data stream named ``mu'' (e.g. \verb|dist=list(mu="rw_mvnorm2")|), the previous position can be refereced in \verb|DM| as ``mu.x\_tm1'' and ``mu.y\_tm1''. This allows for persistence in velocity to be included as in Eq. \ref{eq:potFun} via the special formula function \verb|crw(x_tm1,lag)|, where argument \verb|x_tm1| is the previous position (e.g. ``mu.x\_tm1'' or ``mu.y\_tm1'') and argument \verb|lag| specifies the time lag for the persistence (\verb|lag=1| in this example, but higher order lags could also be included). A complete demonstration of how to implement this bivariate normal random walk model can be found in the ``turtleExample\_rw\_mvnorm2.R'' script in the \verb|momentuHMM| ``vignettes'' source directory (or at \url{https://github.com/bmcclintock/momentuHMM}).
+Recall that multivariate normal distributions require some additonal book-keeping when preparing the data; the \verb|altCoordNames| argument in \verb|prepData| and \verb|MIfitHMM| and the \verb|mvnCoords| argument in \verb|fitHMM| and \verb|MIfitHMM| are designed to help properly format and identify multivariate coordinate data streams. For example, if a bivariate normal data stream name is ``loc'' (e.g. \verb|dist=list(loc="mvnorm2")|), then the data must include columns ``loc.x'' and ''loc.y'' for the x- and y- coordinates, respectively.  When using a multivariate normal random walk distribution, the previous position can be referenced in \verb|DM| formulas or pseudo-design matrices. For example, for a bivariate normal random walk data stream named ``mu'' (e.g. \verb|dist=list(mu="rw_mvnorm2")|), the previous position can be refereced in \verb|DM| as ``mu.x\_tm1'' and ``mu.y\_tm1''. This allows for persistence in velocity to be included as in Eq. \ref{eq:potFun} via the special formula function \verb|crw(x_tm1,lag)|, where argument \verb|x_tm1| is the previous position (e.g. ``mu.x\_tm1'' or ``mu.y\_tm1'') and argument \verb|lag| specifies the time lag for the persistence (\verb|lag=1| in this example, but higher order lags could also be included). A complete demonstration of how to implement this bivariate normal random walk model can be found in the ``turtleExample\_rw\_mvnorm2.R'' script in the \verb|momentuHMM| ``vignettes'' source directory (or at \url{https://github.com/bmcclintock/momentuHMM}).
 
 \subsection{Grey seal}
 \label{sec:greySeal}
@@ -2938,7 +2952,6 @@ Before fitting the HHMM, let's first check that everything is in order using the
 ##      zeromass_36:(Intercept)
 ## [1,]                -4.59512
 ## 
-## 
 ## ----------------------------------------------------------
 ## Regression coeffs for the transition probabilities (beta):
 ## ----------------------------------------------------------
@@ -4539,6 +4552,330 @@ The resulting estimates are again very similar to \cite{AdamEtAl2019}, with the 
 \end{alltt}
 \end{kframe}
 \end{knitrout}
+
+\subsection{African buffalo recharge dynamics}
+\label{sec:buffalo}
+Here we demonstrate how to fit a discrete-time version of the African buffalo recharge dynamics model from \cite{HootenEtAl2019} based only on surface water covariates. It is believed that water resources can strongly influence African buffalo space use, and surface water was therefore included in both the movement model (as distance to nearest surface water $d$) and the recharge function (as an indicator for being $<0.5$ km to nearest surface water $w$). The model includes $N=2$ states, where state 1 is the ``recharged'' state and state 2 is the ``discharged'' state. Conditional on the state $S_t \in \{1,2\}$, the discrete-time analogue to the continuous-time model of \cite{HootenEtAl2019} has the following bivariate normal random walk movement model for the locations $({\boldsymbol \mu}=(\mu_x,\mu_y))$ at time $t$:
+\begin{equation*}
+  {\boldsymbol \mu}_t \mid S_t=s \sim \mathcal{N}\left( {\boldsymbol \mu}_{t-1}+D({\boldsymbol \mu}_{t-1}){\boldsymbol \beta}^\mu I(s=2),\sigma_s^2 {\mathbf I} \right),
+\end{equation*}
+$I()$ is the indicator function, $\mathbf I$ is a $2 \times 2$ identity matrix, and $D({\boldsymbol \mu}_t)$ is the negative gradient of $d$ evaluated at location ${\boldsymbol \mu}_t$. %$-\left(\frac{\partial d}{\partial x}, \frac{\partial d}{\partial y}\right)$
+Thus when the animal is in the charged state (i.e. $S_t=1$), the movement model is a simple random walk. When the animal is in the discharged state (i.e. $S_t=2$), the movement model includes a potential function surface based on distance to nearest surface water \citep[for more on potential functions see][and sections \ref{sec:turtle} and \ref{sec:avoidLand}]{BrillingerEtAl2012,HootenEtAl2017,HootenEtAl2019}. In terms of $\Gamma^{(t)}$, the model for the state-switching dynamics is simply:
+\begin{equation}
+  {\mathbf \Gamma^{(t)}} = \begin{bmatrix}
+    \frac{1}{(1+\exp(-g_t))} & \frac{\exp(-g_t)}{(1+\exp(-g_t))}  \\
+    \frac{1}{(1+\exp(-g_t))} & \frac{\exp(-g_t)}{(1+\exp(-g_t))} 
+  \end{bmatrix},
+  \label{eq:rechargeTPM1}
+\end{equation}
+with recharge function
+\begin{equation*}
+  g_t = g_0 + \sum_{j=1}^t \theta_0 + w_j \theta_1,
+\end{equation*}
+where $w_j$ is the distance to nearest water indicator covariate at location ${\boldsymbol \mu}_j$. Thus the probability of being in the ``discharged'' state decreases as the recharge function $(g_t)$ increases. Note that there are no t.p.m. working parameter coefficients in Eq. \ref{eq:rechargeTPM1} and, because $\gamma_{11}=\gamma_{21}$ and $\gamma_{12}=\gamma_{22}$, the state switching in this model is not Markov (i.e., the state at time $t$ does not depend on the state at time $t-1$). 
+
+In order to fit this model, we must first load the data and format the covariate rasters:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{library}\hlstd{(raster)}
+
+\hlcom{## download buffalo data}
+\hlkwd{load}\hlstd{(}\hlkwd{url}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"https://github.com/henryrscharf/"}\hlstd{,}
+         \hlstr{"Hooten_et_al_EL_2018/raw/master/"}\hlstd{,}
+         \hlstr{"data/buffalo/buffalo_Cilla.RData"}\hlstd{)))}
+
+\hlcom{## download distance to water covariate raster}
+\hlkwd{load}\hlstd{(}\hlkwd{url}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"https://github.com/henryrscharf/"}\hlstd{,}
+                \hlstr{"Hooten_et_al_EL_2018/raw/master/"}\hlstd{,}
+                \hlstr{"data/buffalo/dist2sabie.RData"}\hlstd{)))}
+\hlkwd{names}\hlstd{(dist2sabie)} \hlkwb{<-} \hlstr{"dist2sabie"}
+
+\hlcom{## standardize dist2sabie based on slope of gradient}
+\hlstd{dist2sabie_scaled} \hlkwb{<-} \hlstd{dist2sabie} \hlopt{/} \hlkwd{mean}\hlstd{(}\hlkwd{values}\hlstd{(}\hlkwd{terrain}\hlstd{(dist2sabie,}
+                                                      \hlkwc{opt} \hlstd{=} \hlstr{"slope"}\hlstd{)),}
+                                       \hlkwc{na.rm} \hlstd{= T)}
+
+\hlcom{# calculate gradient}
+\hlstd{D_scaled} \hlkwb{<-} \hlstd{ctmcmove}\hlopt{::}\hlkwd{rast.grad}\hlstd{(dist2sabie_scaled)}
+
+\hlcom{## W (recharge function covariates)}
+\hlcom{# near_sabie = indicator for <500m from water}
+\hlstd{intercept} \hlkwb{<-} \hlkwd{raster}\hlstd{(dist2sabie)}
+\hlkwd{values}\hlstd{(intercept)} \hlkwb{<-} \hlnum{1}
+\hlstd{W} \hlkwb{<-} \hlkwd{stack}\hlstd{(}\hlkwd{list}\hlstd{(}\hlstr{"intercept"} \hlstd{= intercept,}
+                \hlstr{"near_sabie"} \hlstd{= dist2sabie} \hlopt{<} \hlnum{0.5e3}\hlstd{))}
+\hlstd{W_names} \hlkwb{<-} \hlkwd{names}\hlstd{(W)}
+
+\hlcom{## orthogonalize W based on locations ----}
+\hlstd{W_ortho} \hlkwb{<-} \hlstd{W}
+\hlstd{W_path} \hlkwb{<-} \hlkwd{extract}\hlstd{(}\hlkwc{x} \hlstd{= W,} \hlkwc{y} \hlstd{=} \hlkwd{matrix}\hlstd{(buffalo_proj}\hlopt{@}\hlkwc{coords}\hlstd{,} \hlkwc{ncol} \hlstd{=} \hlnum{2}\hlstd{))}
+\hlstd{obstimes} \hlkwb{<-} \hlkwd{as.numeric}\hlstd{(buffalo_proj}\hlopt{$}\hlstd{POSIX)} \hlopt{/} \hlnum{3600} \hlcom{# numeric hours}
+\hlstd{W_tilde} \hlkwb{<-} \hlkwd{apply}\hlstd{(W_path} \hlopt{*} \hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,} \hlkwd{diff}\hlstd{(obstimes)),} \hlnum{2}\hlstd{, cumsum)}
+\hlstd{W_tilde_svd} \hlkwb{<-} \hlkwd{svd}\hlstd{(W_tilde)}
+\hlstd{W_tilde_proj_mat} \hlkwb{<-} \hlstd{W_tilde_svd}\hlopt{$}\hlstd{v} \hlopt{%*%} \hlkwd{diag}\hlstd{(W_tilde_svd}\hlopt{$}\hlstd{d}\hlopt{^}\hlstd{(}\hlopt{-}\hlnum{1}\hlstd{))}
+\hlstd{W_mat} \hlkwb{<-} \hlkwd{as.matrix}\hlstd{(W)}
+\hlstd{W_mat_proj} \hlkwb{<-} \hlstd{W_mat} \hlopt{%*%} \hlstd{W_tilde_proj_mat}
+\hlkwa{for}\hlstd{(layer} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{ncol}\hlstd{(W_mat))\{}
+  \hlkwd{values}\hlstd{(W_ortho[[layer]])} \hlkwb{<-} \hlstd{W_mat_proj[, layer]}
+  \hlkwd{names}\hlstd{(W_ortho[[layer]])} \hlkwb{<-} \hlkwd{paste0}\hlstd{(}\hlstr{"svd"}\hlstd{, layer)}
+\hlstd{\}}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\noindent Note that to (presumably) help with numerical stability, \cite{HootenEtAl2019} orthogonalized the recharge function covariates as above; the resulting recharge function is now $g_t = g_0 + \sum_{j=1}^t w^*_{1,j} \theta_1 + w^*_{2,j} \theta_2$, where $w^*_{1,j}$ and $w^*_{2,j}$ are the transformed intercept and distance indicator covariates.
+
+The buffalo track data were collected from a GPS collar, but the roughly hourly observations were not perfectly regular.% (Figure \ref{fig:buffaloData}). 
+%\begin{figure}[htbp]
+%  \centering
+%  \includegraphics[width=\textwidth]{plot_buffaloData.pdf}
+%  \caption{Observed African buffalo locations relative to the distance to nearest surface water raster covariate (``dist2sabie'').}
+%  \label{fig:buffaloData}
+%\end{figure}
+We will therefore use \verb|crawlWrap| to predict the track at regular 15 min intervals \citep[the average interval used by][]{HootenEtAl2019} and assume a conservative 50 m isotropic error ellipse for the measurement error model.
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{lnError} \hlkwb{<-} \hlstd{crawl}\hlopt{::}\hlkwd{argosDiag2Cov}\hlstd{(}\hlnum{50}\hlstd{,}\hlnum{50}\hlstd{,}\hlnum{0}\hlstd{)} \hlcom{# 50m isotropic error ellipse}
+\hlstd{buffaloData} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(}\hlkwc{ID} \hlstd{=} \hlnum{1}\hlstd{,}
+                          \hlkwc{time} \hlstd{= obstimes,}
+                          \hlkwc{x} \hlstd{= buffalo_proj}\hlopt{@}\hlkwc{coords}\hlstd{[,} \hlnum{1}\hlstd{],}
+                          \hlkwc{y} \hlstd{= buffalo_proj}\hlopt{@}\hlkwc{coords}\hlstd{[,} \hlnum{2}\hlstd{],}
+                          \hlkwc{ln.sd.x} \hlstd{= lnError}\hlopt{$}\hlstd{ln.sd.x,}
+                          \hlkwc{ln.sd.y} \hlstd{= lnError}\hlopt{$}\hlstd{ln.sd.y,}
+                          \hlkwc{error.corr} \hlstd{= lnError}\hlopt{$}\hlstd{error.corr)}
+
+\hlstd{crwOut} \hlkwb{<-} \hlkwd{crawlWrap}\hlstd{(buffaloData,}
+                    \hlkwc{theta} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{6.5}\hlstd{,}\hlopt{-}\hlnum{.1}\hlstd{),}
+                    \hlkwc{fixPar} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{),}
+                    \hlkwc{err.model} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{x} \hlstd{=} \hlopt{~}\hlstd{ln.sd.x}\hlopt{-}\hlnum{1}\hlstd{,}
+                                     \hlkwc{y} \hlstd{=} \hlopt{~}\hlstd{ln.sd.y}\hlopt{-}\hlnum{1}\hlstd{,}
+                                     \hlkwc{rho} \hlstd{=} \hlopt{~}\hlstd{error.corr),}
+                    \hlkwc{timeStep} \hlstd{=} \hlnum{0.25}\hlstd{,} \hlcom{# predict at 15 min time steps}
+                    \hlkwc{attempts} \hlstd{=} \hlnum{10}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+Now we're ready to specify the recharge model. We'll first fit the model to the best predicted track from \verb|crawlWrap| and then use this model fit to specify starting values for $28$ multiple imputation fits:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{spatialCovs} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{W_intercept} \hlstd{= W_ortho}\hlopt{$}\hlstd{svd1,}
+                    \hlkwc{W_near_sabie} \hlstd{= W_ortho}\hlopt{$}\hlstd{svd2,}
+                    \hlkwc{dist2sabie} \hlstd{= dist2sabie,}
+                    \hlkwc{D.x} \hlstd{= D_scaled}\hlopt{$}\hlstd{rast.grad.x,}
+                    \hlkwc{D.y} \hlstd{= D_scaled}\hlopt{$}\hlstd{rast.grad.y)}
+
+\hlcom{# best predicted track data}
+\hlstd{hmmData} \hlkwb{<-} \hlkwd{prepData}\hlstd{(crwOut,}
+                    \hlkwc{spatialCovs} \hlstd{= spatialCovs,}
+                    \hlkwc{altCoordNames} \hlstd{=} \hlstr{"mu"}\hlstd{)}
+\hlkwd{head}\hlstd{(hmmData[,}\hlkwd{c}\hlstd{(}\hlstr{"ID"}\hlstd{,}\hlstr{"time"}\hlstd{,} \hlstr{"mu.x"}\hlstd{,} \hlstr{"mu.y"}\hlstd{,}
+                \hlstr{"W_intercept"}\hlstd{,}\hlstr{"W_near_sabie"}\hlstd{,}\hlstr{"dist2sabie"}\hlstd{,}
+                \hlstr{"D.x"}\hlstd{,}\hlstr{"D.y"}\hlstd{)])}
+\end{alltt}
+\begin{verbatim}
+##   ID     time     mu.x     mu.y   W_intercept W_near_sabie dist2sabie
+## 1  1 313344.4 384560.8 -2770752 -0.0001873081 -0.003616337   1323.424
+## 2  1 313344.7 384560.2 -2770750 -0.0001873081 -0.003616337   1323.424
+## 3  1 313344.9 384559.7 -2770749 -0.0001873081 -0.003616337   1323.424
+## 4  1 313345.2 384559.3 -2770747 -0.0001873081 -0.003616337   1323.424
+## 5  1 313345.4 384559.1 -2770744 -0.0001873081 -0.003616337   1323.424
+## 6  1 313345.7 384559.1 -2770742 -0.0001873081 -0.003616337   1323.424
+##          D.x       D.y
+## 1 -0.8709203 0.2576337
+## 2 -0.8709203 0.2576337
+## 3 -0.8709203 0.2576337
+## 4 -0.8709203 0.2576337
+## 5 -0.8709203 0.2576337
+## 6 -0.8709203 0.2576337
+\end{verbatim}
+\begin{alltt}
+\hlstd{nbStates} \hlkwb{<-} \hlnum{2}
+\hlstd{stateNames} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"charged"}\hlstd{,} \hlstr{"discharged"}\hlstd{)}
+\hlstd{dist} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mu} \hlstd{=} \hlstr{"rw_mvnorm2"}\hlstd{)} \hlcom{# bivariate normal random walk}
+
+\hlcom{# pseudo-design matrix for mu}
+\hlstd{DM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"mu.x_tm1"}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
+                       \hlstr{"mu.x_tm1"}\hlstd{,}         \hlnum{0}\hlstd{,}\hlstr{"D.x"}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
+                                \hlnum{0}\hlstd{,}\hlstr{"mu.y_tm1"}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
+                                \hlnum{0}\hlstd{,}\hlstr{"mu.y_tm1"}\hlstd{,}\hlstr{"D.y"}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
+                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
+                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}
+                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}
+                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}
+                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
+                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{),}
+                     \hlnum{5}\hlopt{*}\hlstd{nbStates,}
+                     \hlnum{6}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
+                     \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{c}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"mean."}\hlstd{,}\hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"x_"}\hlstd{,}\hlstr{"y_"}\hlstd{),}
+                                                        \hlkwc{each}\hlstd{=nbStates),}
+                                            \hlnum{1}\hlopt{:}\hlstd{nbStates),}
+                                     \hlkwd{paste0}\hlstd{(}\hlstr{"sigma."}\hlstd{,}\hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"x_"}\hlstd{,}\hlstr{"xy_"}\hlstd{,}\hlstr{"y_"}\hlstd{),}
+                                                         \hlkwc{each}\hlstd{=nbStates),}
+                                            \hlnum{1}\hlopt{:}\hlstd{nbStates)),}
+                                   \hlkwd{c}\hlstd{(}\hlstr{"x:x_tm1"}\hlstd{,}
+                                     \hlstr{"y:y_tm1"}\hlstd{,}
+                                     \hlstr{"xy:D"}\hlstd{,}
+                                     \hlstr{"sigma_1:(Intercept)"}\hlstd{,}
+                                     \hlstr{"sigma_2:(Intercept)"}\hlstd{,}
+                                     \hlstr{"sigma_12:(Intercept)"}\hlstd{))))}
+
+\hlcom{# starting values}
+\hlstd{Par0}\hlkwb{=}\hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,} \hlnum{1}\hlstd{,} \hlnum{0}\hlstd{,} \hlkwd{log}\hlstd{(}\hlnum{85872.66}\hlstd{),} \hlkwd{log}\hlstd{(}\hlnum{37753.53}\hlstd{),} \hlnum{0}\hlstd{))}
+\hlstd{g0} \hlkwb{<-} \hlnum{0} \hlcom{# recharge function at time 0}
+\hlstd{theta} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{)} \hlcom{# recharge function parameters}
+
+\hlcom{## specify recharge formula}
+\hlcom{# note that theta formula requires an 'intercept' term}
+\hlstd{formula} \hlkwb{<-} \hlopt{~} \hlkwd{recharge}\hlstd{(}\hlkwc{g0} \hlstd{=} \hlopt{~}\hlnum{1}\hlstd{,}
+                      \hlkwc{theta} \hlstd{=} \hlopt{~}\hlstd{W_intercept}\hlopt{+}\hlstd{W_near_sabie)}
+
+\hlcom{## remove Markov property}
+\hlstd{betaRef} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{)} \hlcom{# make state 1 the reference state}
+\hlstd{betaCons} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{2}\hlstd{),}\hlnum{2}\hlstd{,}\hlnum{2}\hlstd{)} \hlcom{# 1 -> 1 = 2 -> 1 and 1 -> 2 = 2 -> 2}
+
+\hlcom{## set fixed parameters}
+\hlstd{fixPar} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mu} \hlstd{=} \hlkwd{c}\hlstd{(Par0}\hlopt{$}\hlstd{mu[}\hlnum{1}\hlopt{:}\hlnum{2}\hlstd{],}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,Par0}\hlopt{$}\hlstd{mu[}\hlnum{6}\hlstd{]),}
+               \hlkwc{beta} \hlstd{=} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlopt{-}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlopt{-}\hlnum{1}\hlstd{),}\hlnum{2}\hlstd{,}\hlnum{2}\hlstd{),}
+               \hlkwc{delta} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{0.5}\hlstd{,}\hlnum{0.5}\hlstd{),}
+               \hlkwc{theta} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{))} \hlcom{# fix extra 'intercept' term to zero}
+
+\hlcom{# check recharge model specification}
+\hlkwd{checkPar0}\hlstd{(hmmData,} \hlkwc{nbStates} \hlstd{= nbStates,} \hlkwc{dist} \hlstd{= dist,}
+          \hlkwc{formula} \hlstd{= formula,} \hlkwc{Par0} \hlstd{= Par0,}
+          \hlkwc{beta0} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{beta} \hlstd{= fixPar}\hlopt{$}\hlstd{beta,}
+                       \hlkwc{g0} \hlstd{= g0,}
+                       \hlkwc{theta} \hlstd{= theta),}
+          \hlkwc{delta0} \hlstd{= fixPar}\hlopt{$}\hlstd{delta,} \hlkwc{fixPar} \hlstd{= fixPar,}
+          \hlkwc{DM} \hlstd{= DM,} \hlkwc{betaRef} \hlstd{= betaRef,} \hlkwc{betaCons} \hlstd{= betaCons,}
+          \hlkwc{stateNames} \hlstd{= stateNames)}
+\end{alltt}
+\begin{verbatim}
+## 
+## Regression coeffs for mu parameters:
+## ------------------------------------
+##      x:x_tm1 y:y_tm1 xy:D sigma_1:(Intercept) sigma_2:(Intercept)
+## [1,]       1       1    0            11.36062            10.53883
+##      sigma_12:(Intercept)
+## [1,]                    0
+## 
+## Regression coeffs for the transition probabilities (beta):
+## ----------------------------------------------------------
+##             1 -> 2 2 -> 2
+## (Intercept)      0      0
+## recharge        -1     -1
+## 
+## Initial distribution:
+## ---------------------
+##    charged discharged 
+##        0.5        0.5 
+## 
+## Initial recharge parameter (g0):
+## --------------------------------
+## (Intercept) 
+##           0 
+## 
+## Recharge function parameters (theta):
+## -------------------------------------
+##  (Intercept)  W_intercept W_near_sabie 
+##            0            0            0
+\end{verbatim}
+\begin{alltt}
+\hlcom{# fit to best predicted path to get starting values for multiple imputation}
+\hlstd{buffaloFit} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(hmmData,} \hlkwc{nbStates} \hlstd{= nbStates,} \hlkwc{dist} \hlstd{= dist,}
+                     \hlkwc{formula} \hlstd{= formula,} \hlkwc{Par0} \hlstd{= Par0,}
+                     \hlkwc{beta0} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{g0}\hlstd{=g0,}
+                                  \hlkwc{theta}\hlstd{=theta),}
+                     \hlkwc{fixPar} \hlstd{= fixPar,}
+                     \hlkwc{DM} \hlstd{= DM,} \hlkwc{betaRef} \hlstd{= betaRef,} \hlkwc{betaCons} \hlstd{= betaCons,}
+                     \hlkwc{stateNames} \hlstd{= stateNames,}
+                     \hlkwc{mvnCoords} \hlstd{=} \hlstr{"mu"}\hlstd{,}
+                     \hlkwc{optMethod} \hlstd{=} \hlstr{"Nelder-Mead"}\hlstd{,} \hlkwc{control} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{maxit}\hlstd{=}\hlnum{1000}\hlstd{))}
+\end{alltt}
+
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# Fitting HMM with 2 states and 1 data stream}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# -----------------------------------------------------------------------}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ mu \textasciitilde{} rw\_mvnorm2(mean.x: custom, mean.y: custom, sigma.x: custom, sigma.xy: custom, sigma.y: custom)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Transition probability matrix formula: \textasciitilde{}recharge(g0 = \textasciitilde{}1, theta = \textasciitilde{}W\_intercept + W\_near\_sabie)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Initial distribution formula: \textasciitilde{}1}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# DONE}}\begin{alltt}
+\hlcom{# extract starting values}
+\hlstd{bestPar} \hlkwb{<-} \hlkwd{getPar}\hlstd{(buffaloFit)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\noindent There are several things worth noting in the code above. When specifying normal random walk models using a pseudo-design matrix, we must include terms for the previous location in \verb|mean.x| and \verb|mean.y| (in this case ``mu.x\_tm1'' and ``mu.y\_tm1'', respectively), and we'll typically fix the corresponding coeffcients to $1$ using \verb|fixPar|. As in \cite{HootenEtAl2019}, we assume that the coefficients for the negative gradient $(D)$ are equal in the x- and y-directions (i.e., $\beta^\mu_x = \beta^\mu_y$; this constraint is specified in the third column of \verb|DM| above) and that the state-dependent \verb|sigma.x| and \verb|sigma.y| are equal. Similar to random effects models (section \ref{sec:pilotWhale}), note that for recharge models \verb|beta0| must now be specified as a list (consisting of objects named \verb|beta|, \verb|g0|, and/or \verb|theta|). \cite{HootenEtAl2019} assumed state transitions were non-Markov (Eq. \ref{eq:rechargeTPM1}), and we can accomplish this by setting the reference states for the t.p.m. working scale parameters to state 1 (i.e., \verb|betaRef <- c(1,1)|) and setting the columns within each row to be equal (i.e., \verb|betaCons <- matrix(c(1,2),2,2)|). With \verb|formula <- ~ recharge(g0 = ~1, theta = ~W_intercept+W_near_sabie)|, the resulting state transition probability matrix at time $t$ is:
+\begin{equation*}
+  {\mathbf \Gamma^{(t)}} = \begin{bmatrix}
+    \frac{1}{(1+\exp(\beta_0+g_t\beta_1))} & \frac{\exp(\beta_0+g_t\beta_1)}{(1+\exp(\beta_0+g_t\beta_1))}  \\
+    \frac{1}{(1+\exp(\beta_0+g_t\beta_1))} & \frac{\exp(\beta_0+g_t\beta_1)}{(1+\exp(\beta_0+g_t\beta_1))}   
+  \end{bmatrix},
+\end{equation*}
+where
+\begin{equation*}
+  g_t = g_0 + \sum_{j=1}^t \theta_0 + \text{W\_intercept}_j \theta_1 + \text{W\_near\_sabie}_j \theta_2.
+\end{equation*}
+Using \verb|fixPar|, we fixed $\beta_0=0$ and $\beta_1=-1$. Thus we have removed the Markov property from the state-switching dynamics and ensured that the probability of being in the ``discharged'' state (state 2) decreases as the recharge function $(g_t)$ increases. We also fix $\theta_0=0$ because we do not need the required intercept term in this particular case (an orthogonalized intercept term ``W\_intercept'' is already included as a covariate). With these parameters fixed, we have now specified the exact same state transition model as in Eq. \ref{eq:rechargeTPM1}.
+
+Now that we have our starting values (``bestPar''), let's fit $28$ imputations of the position process using \verb|MIfitHMM|:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{buffaloFits} \hlkwb{<-} \hlkwd{MIfitHMM}\hlstd{(crwOut,} \hlkwc{nSims}\hlstd{=}\hlnum{28}\hlstd{,}
+                        \hlkwc{spatialCovs} \hlstd{= spatialCovs,}
+                        \hlkwc{mvnCoords}\hlstd{=}\hlstr{"mu"}\hlstd{,} \hlkwc{altCoordNames} \hlstd{=} \hlstr{"mu"}\hlstd{,}
+                        \hlkwc{nbStates}\hlstd{=nbStates,} \hlkwc{dist}\hlstd{=dist,} \hlkwc{formula}\hlstd{=formula,}
+                        \hlkwc{Par0}\hlstd{=bestPar}\hlopt{$}\hlstd{Par,} \hlkwc{beta0}\hlstd{=bestPar}\hlopt{$}\hlstd{beta,}
+                        \hlkwc{fixPar}\hlstd{=fixPar,} \hlkwc{DM}\hlstd{=DM,}
+                        \hlkwc{betaRef}\hlstd{=betaRef,} \hlkwc{betaCons}\hlstd{=betaCons,}
+                        \hlkwc{stateNames} \hlstd{= stateNames,}
+                        \hlkwc{retryFits} \hlstd{=} \hlnum{3}\hlstd{,} \hlkwc{retrySD}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{3}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{),}
+                                                    \hlkwc{g0}\hlstd{=}\hlnum{1}\hlstd{,}
+                                                    \hlkwc{theta}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{)),}
+                        \hlkwc{optMethod} \hlstd{=} \hlstr{"Nelder-Mead"}\hlstd{,}
+                        \hlkwc{control} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{maxit}\hlstd{=}\hlnum{100000}\hlstd{))}
+
+\hlkwd{plot}\hlstd{(buffaloFits,}\hlkwc{plotCI}\hlstd{=}\hlnum{TRUE}\hlstd{,}\hlkwc{ask}\hlstd{=}\hlnum{FALSE}\hlstd{)}
+\hlkwd{plotSpatialCov}\hlstd{(buffaloFits,dist2sabie)}
+
+\hlcom{# plot estimates and CIs for Pr(discharged) at each time step}
+\hlstd{trProbs} \hlkwb{<-} \hlkwd{getTrProbs}\hlstd{(buffaloFits,} \hlkwc{getCI}\hlstd{=}\hlnum{TRUE}\hlstd{)}
+\hlkwd{plot}\hlstd{(trProbs}\hlopt{$}\hlstd{est[}\hlnum{1}\hlstd{,}\hlnum{2}\hlstd{,],}\hlkwc{type}\hlstd{=}\hlstr{"l"}\hlstd{,} \hlkwc{ylim}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{),}
+     \hlkwc{ylab}\hlstd{=}\hlstr{"Pr(discharged)"}\hlstd{,} \hlkwc{xlab}\hlstd{=}\hlstr{"t"}\hlstd{,}
+     \hlkwc{col}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"#E69F00"}\hlstd{,} \hlstr{"#56B4E9"}\hlstd{)[buffaloFits}\hlopt{$}\hlstd{miSum}\hlopt{$}\hlstd{Par}\hlopt{$}\hlstd{states])}
+\hlkwd{arrows}\hlstd{(}\hlnum{1}\hlopt{:}\hlkwd{dim}\hlstd{(trProbs}\hlopt{$}\hlstd{est)[}\hlnum{3}\hlstd{],}
+       \hlstd{trProbs}\hlopt{$}\hlstd{lower[}\hlnum{1}\hlstd{,}\hlnum{2}\hlstd{,],}
+       \hlnum{1}\hlopt{:}\hlkwd{dim}\hlstd{(trProbs}\hlopt{$}\hlstd{est)[}\hlnum{3}\hlstd{],}
+       \hlstd{trProbs}\hlopt{$}\hlstd{upper[}\hlnum{1}\hlstd{,}\hlnum{2}\hlstd{,],}
+       \hlkwc{length}\hlstd{=}\hlnum{0.025}\hlstd{,} \hlkwc{angle}\hlstd{=}\hlnum{90}\hlstd{,} \hlkwc{code}\hlstd{=}\hlnum{3}\hlstd{,}
+       \hlkwc{col}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"#E69F00"}\hlstd{,} \hlstr{"#56B4E9"}\hlstd{)[buffaloFits}\hlopt{$}\hlstd{miSum}\hlopt{$}\hlstd{Par}\hlopt{$}\hlstd{states],}
+       \hlkwc{lwd}\hlstd{=}\hlnum{1.3}\hlstd{)}
+\hlkwd{abline}\hlstd{(}\hlkwc{h}\hlstd{=}\hlnum{0.5}\hlstd{,}\hlkwc{lty}\hlstd{=}\hlnum{2}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\noindent As in \cite{HootenEtAl2019}, we found that the buffalo spent a majority of time steps in the discharged state ($73$\%, 95\% CI: $70-76\%$) and thus needed to recharge regularly near water resources. With estimated $g_0=-0.27$ (95\% CI: $-0.75-0.2$), $\theta_1=1.43$ (95\% CI: $-0.61-3.48$), and $\theta_2=2.52$ (95\% CI: $1.47-3.57$), the estimated recharge function and transition probabilities (Figure \ref{fig:recharge}) look very similar to those reported by \cite{HootenEtAl2019}. However, \cite{HootenEtAl2019} found some evidence that the buffalo orients
+toward surface water when in the discharged state, but our (non-Bayesian) discrete-time formulation based on multiple imputation did not find evidence of such biased movement ($\beta^\mu=0.88$, 95\% CI: $-3.2-4.96$). This difference could be attributable to several factors, including our formulation being in discrete time (instead of continuous time), our use of a 2-stage multiple imputation approach based on the CTCRW (instead of a single-stage model), and the lack of priors in our non-Bayesian model. Nevertheless, inferences about recharge and state-switching dynamics are essentially the same between our discrete-time formulation and the continuous-time model of \cite{HootenEtAl2019}.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.75\textwidth]{plot_buffaloStates.pdf}\\
+  \includegraphics[width=0.5\textwidth]{plot_buffaloExample011.pdf}\\
+  \includegraphics[width=0.5\textwidth]{plot_buffaloResults.pdf}\\
+  \caption{African buffalo estimated states (top), recharge function (middle), and probability of being in the discharged state (bottom) at each time step $(t)$.}
+  \label{fig:recharge}
+\end{figure}
 
 \subsection{Simulating constrained movement}
 \label{sec:avoidLand}

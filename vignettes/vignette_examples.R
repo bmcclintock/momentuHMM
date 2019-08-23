@@ -405,6 +405,41 @@ append.RData(stats12,file=paste0(getwd(),"/vignette_inputs.RData"))
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
 ###################################################
+### buffalo recharge example
+###################################################
+#source(paste0(getwd(),"/examples/buffaloExample.R"))
+load(paste0(example_wd,"buffaloExample.RData"))
+bufPar <- buffaloFits$miSum$Par$beta[c("mu","g0","theta")]
+bufPar$timeInStates <- buffaloFits$miSum$Par$timeInStates
+append.RData(bufPar,file=paste0(getwd(),"/vignette_inputs.RData"))
+
+pdf(file=paste0(getwd(),"/plot_buffaloExample%03d.pdf"),width=7.5,height=5,onefile = FALSE)
+plot(buffaloFits,plotCI=TRUE,ask=FALSE)
+dev.off()
+
+pdf(file="plot_buffaloStates.pdf",width=7.5,height=5)
+plotSpatialCov(buffaloFits,dist2sabie)
+dev.off()
+
+for(plt in c(1:10,12))
+  unlink(paste0("plot_buffaloExample0",ifelse(plt>9,"","0"),plt,".pdf"))
+
+#trProbs <- getTrProbs(buffaloFits, getCI=TRUE)
+# plot estimates and CIs for Pr(discharged) at each time step
+pdf(file=paste0(getwd(),"/plot_buffaloResults.pdf"),width=7.5,height=5)
+par(mar=c(5,4,4,2)-c(0,0,2,1)) # bottom, left, top, right
+plot(trProbs$est[1,2,],type="l", 
+     ylim=c(0,1), ylab="Pr(discharged)", xlab="t", col=c("#E69F00", "#56B4E9")[buffaloFits$miSum$Par$states])
+arrows(1:dim(trProbs$est)[3],
+       trProbs$lower[1,2,],
+       1:dim(trProbs$est)[3],
+       trProbs$upper[1,2,],
+       length=0.025, angle=90, code=3, col=c("#E69F00", "#56B4E9")[buffaloFits$miSum$Par$states], lwd=1.3)
+abline(h=0.5,lty=2)
+dev.off()
+rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
+
+###################################################
 ### land constraint example
 ###################################################
 #source(paste0(getwd(),"/examples/landConstraintExample.R"))
@@ -414,6 +449,7 @@ raster::plot(boundary$boundary,legend.width=1, legend.shrink=0.75,legend.args=li
 points(simBound$mu.x,simBound$mu.y,type="l")
 dev.off()
 rm(list=ls()[-which(ls()=="example_wd")])
+
 
 # reduce size of png files
 system(paste("pngquant -f --ext .png --speed=1 *.png"))
