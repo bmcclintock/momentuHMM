@@ -9,8 +9,8 @@
 MIfitHMM(miData, ...)
 
 \method{MIfitHMM}{default}(miData, nSims, ncores = 1,
-  poolEstimates = TRUE, alpha = 0.95, progressBar = FALSE, nbStates,
-  dist, Par0, beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
+  poolEstimates = TRUE, alpha = 0.95, nbStates, dist, Par0,
+  beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
   circularAngleMean = NULL, formula = ~1, formulaDelta = NULL,
   stationary = FALSE, mixtures = 1, formulaPi = NULL,
   verbose = NULL, nlmPar = NULL, fit = TRUE, useInitial = FALSE,
@@ -27,9 +27,9 @@ MIfitHMM(miData, ...)
   scalePostIS = 1, thetaSamp = NULL, ...)
 
 \method{MIfitHMM}{hierarchical}(miData, nSims, ncores = 1,
-  poolEstimates = TRUE, alpha = 0.95, progressBar = FALSE,
-  hierStates, hierDist, Par0, hierBeta = NULL, hierDelta = NULL,
-  estAngleMean = NULL, circularAngleMean = NULL, hierFormula = NULL,
+  poolEstimates = TRUE, alpha = 0.95, hierStates, hierDist, Par0,
+  hierBeta = NULL, hierDelta = NULL, estAngleMean = NULL,
+  circularAngleMean = NULL, hierFormula = NULL,
   hierFormulaDelta = NULL, mixtures = 1, formulaPi = NULL,
   nlmPar = NULL, fit = TRUE, useInitial = FALSE, DM = NULL,
   userBounds = NULL, workBounds = NULL, betaCons = NULL,
@@ -56,9 +56,6 @@ objects, \code{nSims} cannot exceed the length of \code{miData}.}
 \item{poolEstimates}{Logical indicating whether or not to calculate pooled parameter estimates across the \code{nSims} imputations using \code{\link{MIpool}}. Default: \code{TRUE}.}
 
 \item{alpha}{Significance level for calculating confidence intervals of pooled estimates when \code{poolEstimates=TRUE} (see \code{\link{MIpool}}). Default: 0.95.}
-
-\item{progressBar}{Logical indicating whether or not to show progress bars when using parallel processing. Default: \code{FALSE}. Ignored if \code{ncores=1} or \code{capabilities('tcltk')=FALSE} (progress bars require the \code{\link[tcltk:tcltk-package]{tcltk}} package).
-Ignored for HMM fitting if \code{ncores=nSims}. Ignored for crawl simulations if \code{miData} is a \code{crwData} object and \code{ncores=nbAnimals}, where \code{nbAnimals=length(unique(miData$crwPredict$ID))}.}
 
 \item{nbStates}{Number of states of the HMM. See \code{\link{fitHMM}}.}
 

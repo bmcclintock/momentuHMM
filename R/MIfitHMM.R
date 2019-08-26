@@ -32,8 +32,6 @@ MIfitHMM <- function(miData, ...) {
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param poolEstimates Logical indicating whether or not to calculate pooled parameter estimates across the \code{nSims} imputations using \code{\link{MIpool}}. Default: \code{TRUE}.
 #' @param alpha Significance level for calculating confidence intervals of pooled estimates when \code{poolEstimates=TRUE} (see \code{\link{MIpool}}). Default: 0.95.
-#' @param progressBar Logical indicating whether or not to show progress bars when using parallel processing. Default: \code{FALSE}. Ignored if \code{ncores=1} or \code{capabilities('tcltk')=FALSE} (progress bars require the \code{\link[tcltk:tcltk-package]{tcltk}} package).
-#' Ignored for HMM fitting if \code{ncores=nSims}. Ignored for crawl simulations if \code{miData} is a \code{crwData} object and \code{ncores=nbAnimals}, where \code{nbAnimals=length(unique(miData$crwPredict$ID))}.
 #' @param nbStates Number of states of the HMM. See \code{\link{fitHMM}}.
 #' @param dist A named list indicating the probability distributions of the data streams. See \code{\link{fitHMM}}.
 #' @param Par0 A named list containing vectors of initial state-dependent probability distribution parameters for 
@@ -193,12 +191,11 @@ MIfitHMM <- function(miData, ...) {
 #' @export
 #' @importFrom crawl crwPostIS crwSimulator
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
-#' @importFrom parallel makeCluster clusterExport stopCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
 #' @importFrom raster getZ
 #' @importFrom stats terms.formula
-MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, progressBar = FALSE,
+MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
                    nbStates, dist, 
                    Par0, beta0 = NULL, delta0 = NULL,
                    estAngleMean = NULL, circularAngleMean = NULL,
@@ -221,7 +218,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
           if(is.null(formulaDelta)) formulaDelta <- ~1
           if(length(attr(stats::terms.formula(formula),"term.labels"))>0 && is.null(hierArgs$hierFormula)) stop("hierFormula should be specified instead of formula")
           if(length(attr(stats::terms.formula(formulaDelta),"term.labels"))>0 && is.null(hierArgs$hierFormulaDelta)) stop("hierFormulaDelta should be specified instead of formulaDelta")
-          return(MIfitHMM.hierarchical(miData,nSims, ncores, poolEstimates, alpha, progressBar,
+          return(MIfitHMM.hierarchical(miData,nSims, ncores, poolEstimates, alpha,
                                        hierArgs$hierStates, hierArgs$hierDist, 
                                        Par0, hierArgs$hierBeta, hierArgs$hierDelta,
                                        estAngleMean, circularAngleMean,
@@ -248,18 +245,6 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     } else if(optMethod %in% fitMethods[-1] & !is.null(control$hessian)){
       if(!control$hessian) stop("estimates cannot be pooled unless hessian is calculated")
     }
-  }
-  
-  progressBar <- ifelse(ncores>1 && capabilities('tcltk'),progressBar,FALSE)
-  if(progressBar){
-    test_pb <- tryCatch(tcltk::tkProgressBar(),error=function(e) e)
-    if(inherits(test_pb,"error")){
-      warning("progressBar not possible: \n ",test_pb)
-      progressBar <- FALSE
-    } else {
-      close(test_pb)
-    }
-    rm(test_pb)
   }
   
   if(is.crwData(miData)){
@@ -303,41 +288,20 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
       cat('Drawing ',nSims,' realizations from the position process using crawl... ',ifelse(ncores>1 & length(ids)>1,"","\n"),sep="")
       
       nbAnimals <- length(ids)
-      if(nbAnimals>ncores && progressBar){
-        cl <- makeCluster(ncores)
-        registerDoParallel(cl)
-        clusterExport(cl, c("nbAnimals"), envir = environment())
-      } else {
-        registerDoParallel(cores=ncores)
-      }
+      registerDoParallel(cores=ncores)
       withCallingHandlers(crwSim <- foreach(i = 1:nbAnimals, .export="crwSimulator") %dorng% {
           cat("Simulating individual ",ids[i],"...\n",sep="")
-          if(nbAnimals>ncores && progressBar){
-            if(!exists("pb")) pb <- tcltk::tkProgressBar(paste0("crwSimulator core ",i," initiated ",Sys.time()), min=1, max=nbAnimals, initial=i)
-            tcltk::setTkProgressBar(pb, i, label=paste("simulating individual",ids[i]))
-          }
           crawl::crwSimulator(model_fits[[i]],predTime=predData[[Time.name]][which(predData$ID==ids[i] & predData$locType=="p")], method = method, parIS = parIS,
                                   df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, quad.ask = ifelse(ncores>1, FALSE, quad.ask), force.quad = force.quad)
       },warning=muffleRNGwarning)
-      if(nbAnimals>ncores && progressBar) stopCluster(cl)
-      else stopImplicitCluster()
+      stopImplicitCluster()
       names(crwSim) <- ids
       if(ncores==1) cat("DONE\n")
       
-      if(nSims>ncores && progressBar){
-        cl <- makeCluster(ncores)
-        registerDoParallel(cl)
-        clusterExport(cl, c("nSims"), envir = environment())
-      } else {
-        registerDoParallel(cores=ncores)
-      }
+      registerDoParallel(cores=ncores)
       withCallingHandlers(miData<-
         foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass") %dorng% {
           cat("\rDrawing imputation ",j,"... ",sep="")
-          if(nSims>ncores && progressBar){
-            if(!exists("pb")) pb <- tcltk::tkProgressBar(paste0("crwPostIS core ",j," initiated ",Sys.time()), min=1, max=nSims, initial=j)
-            tcltk::setTkProgressBar(pb, j, label=paste("drawing imputation",j))
-          }
           locs<-data.frame()
           for(i in 1:length(ids)){
               tmp<-tryCatch({crawl::crwPostIS(crwSim[[i]], fullPost = fullPost, df = dfPostIS, scale = scalePostIS, thetaSamp = thetaSamp)},error=function(e) e)
@@ -349,8 +313,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
           pD
         }
       ,warning=muffleRNGwarning)
-      if(nSims>ncores && progressBar) stopCluster(cl)
-      else stopImplicitCluster()
+      stopImplicitCluster()
       cat("DONE\n")
       for(i in which(unlist(lapply(miData,function(x) inherits(x,"error"))))){
         warning('prepData failed for imputation ',i,"; ",miData[[i]])
@@ -443,22 +406,12 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     delta0[parallelStart:nSims] <- list(tmpPar$delta)
   }
   
-  if((nSims-parallelStart+1)>ncores && progressBar){
-    cl <- makeCluster(ncores)
-    registerDoParallel(cl)
-    clusterExport(cl, c("nSims"), envir = environment())
-  } else {
-    registerDoParallel(cores=ncores)
-  }
+  registerDoParallel(cores=ncores)
   withCallingHandlers(fits[parallelStart:nSims] <-
     foreach(j = parallelStart:nSims, .export=c("fitHMM.momentuHMMData"), .errorhandling="pass") %dorng% {
       
       if(nSims>1) {
         cat("     \rImputation ",j,"... ",sep="")
-        if(nSims>ncores && progressBar){
-          if(!exists("pb")) pb <- tcltk::tkProgressBar(paste0("MIfitHMM core ",j-parallelStart+1," initiated ",Sys.time()), min=1, max=nSims, initial=j)
-          tcltk::setTkProgressBar(pb, j, label=paste("fitting imputation",j))#, label=paste(round((j-1)/nSims*100,0),"% done"))
-        }
       }
       tmpFit<-suppressMessages(fitHMM.momentuHMMData(miData[[j]],nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
                                       estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi, verbose,
@@ -468,8 +421,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
       tmpFit
     } 
   ,warning=muffleRNGwarning)
-  if(nSims>ncores && progressBar) stopCluster(cl)
-  else stopImplicitCluster()
+  stopImplicitCluster()
   cat("DONE\n")
   
   for(i in which(!unlist(lapply(fits,function(x) inherits(x,"momentuHMM"))))){
@@ -496,12 +448,11 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
 #' @export
 #' @importFrom crawl crwPostIS crwSimulator
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
-#' @importFrom parallel makeCluster clusterExport stopCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
 #' @importFrom raster getZ
 #' @importFrom data.tree Clone
-MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, progressBar = FALSE,
+MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
                        hierStates, hierDist, 
                        Par0, hierBeta = NULL, hierDelta = NULL,
                        estAngleMean = NULL, circularAngleMean = NULL,
@@ -522,18 +473,6 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     } else if(optMethod %in% fitMethods[-1] & !is.null(control$hessian)){
       if(!control$hessian) stop("estimates cannot be pooled unless hessian is calculated")
     }
-  }
-  
-  progressBar <- ifelse(ncores>1 && capabilities('tcltk'),progressBar,FALSE)
-  if(progressBar){
-    test_pb <- tryCatch(tcltk::tkProgressBar(),error=function(e) e)
-    if(inherits(test_pb,"error")){
-      warning("progressBar not possible: \n ",test_pb)
-      progressBar <- FALSE
-    } else {
-      close(test_pb)
-    }
-    rm(test_pb)
   }
   
   if(is.crwHierData(miData)){
@@ -578,41 +517,20 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
       cat('Drawing ',nSims,' realizations from the position process using crawl... ',ifelse(ncores>1 & length(ids)>1,"","\n"),sep="")
       
       nbAnimals <- length(ids)
-      if(nbAnimals>ncores && progressBar){
-        cl <- makeCluster(ncores)
-        registerDoParallel(cl)
-        clusterExport(cl, c("nbAnimals"), envir = environment())
-      } else {
-        registerDoParallel(cores=ncores)
-      }
-      withCallingHandlers(crwHierSim <- foreach(i = 1:length(ids), .export="crwSimulator") %dorng% {
+      registerDoParallel(cores=ncores)
+      withCallingHandlers(crwHierSim <- foreach(i = 1:nbAnimals, .export="crwSimulator") %dorng% {
         cat("Simulating individual ",ids[i],"...\n",sep="")
-        if(nbAnimals>ncores && progressBar){
-          if(!exists("pb")) pb <- tcltk::tkProgressBar(paste0("crwSimulator core ",i," initiated ",Sys.time()), min=1, max=nbAnimals, initial=i)
-          tcltk::setTkProgressBar(pb, i, label=paste("simulating individual",ids[i]))
-        }
         crawl::crwSimulator(model_fits[[i]],predTime=predData[[Time.name]][which(predData$ID==ids[i] & predData$locType=="p")], method = method, parIS = parIS,
                             df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, quad.ask = ifelse(ncores>1, FALSE, quad.ask), force.quad = force.quad)
       },warning=muffleRNGwarning)
-      if(nbAnimals>ncores && progressBar) stopCluster(cl)
-      else stopImplicitCluster()
+      stopImplicitCluster()
       names(crwHierSim) <- ids
       if(ncores==1) cat("DONE\n")
       
-      if(nSims>ncores && progressBar){
-        cl <- makeCluster(ncores)
-        registerDoParallel(cl)
-        clusterExport(cl, c("nSims"), envir = environment())
-      } else {
-        registerDoParallel(cores=ncores)
-      }
+      registerDoParallel(cores=ncores)
       withCallingHandlers(miData<-
                             foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass") %dorng% {
                               cat("\rDrawing imputation ",j,"... ",sep="")
-                              if(nSims>ncores && progressBar){
-                                if(!exists("pb")) pb <- tcltk::tkProgressBar(paste0("crwPostIS core ",j," initiated ",Sys.time()), min=1, max=nSims, initial=j)
-                                tcltk::setTkProgressBar(pb, j, label=paste("drawing imputation",j))
-                              }
                               locs<-data.frame()
                               for(i in 1:length(ids)){
                                 #if(!is.null(model_fits[[i]]$err.model)){
@@ -633,8 +551,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                               pD
                             }
                           ,warning=muffleRNGwarning)
-      if(nSims>ncores && progressBar) stopCluster(cl)
-      else stopImplicitCluster()
+      stopImplicitCluster()
       cat("DONE\n")
       for(i in which(unlist(lapply(miData,function(x) inherits(x,"error"))))){
         warning('prepData failed for imputation ',i,"; ",miData[[i]])
@@ -747,22 +664,12 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     beta0[parallelStart:nSims] <- list(tmpPar$beta)
     delta0[parallelStart:nSims] <- list(tmpPar$delta)
   }
-  if(nSims>ncores && progressBar){
-    cl <- makeCluster(ncores)
-    registerDoParallel(cl)
-    clusterExport(cl, c("nSims"), envir = environment())
-  } else {
-    registerDoParallel(cores=ncores)
-  }
+  registerDoParallel(cores=ncores)
   withCallingHandlers(fits[parallelStart:nSims] <-
                         foreach(j = parallelStart:nSims, .export=c("fitHMM.momentuHierHMMData"), .errorhandling="pass") %dorng% {
                           
                           if(nSims>1) {
                             cat("     \rImputation ",j,"... ",sep="")
-                            if(nSims>ncores && progressBar){
-                              if(!exists("pb")) pb <- tcltk::tkProgressBar(paste0("MIfitHMM core ",j-parallelStart+1," initiated ",Sys.time()), min=1, max=nSims, initial=j)
-                              tcltk::setTkProgressBar(pb, j, label=paste("fitting imputation",j))#, label=paste(round((j-1)/nSims*100,0),"% done"))
-                            }
                           }
                           tmpFit<-suppressMessages(fitHMM.momentuHierHMMData(miData[[j]], hierStates, hierDist, Par0[[j]], hierBeta[[j]], hierDelta[[j]],
                                                               estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
@@ -772,8 +679,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                           tmpFit
                         } 
                       ,warning=muffleRNGwarning)
-  if(nSims>ncores && progressBar) stopCluster(cl)
-  else stopImplicitCluster()
+  stopImplicitCluster()
   cat("DONE\n")
   
   for(i in which(!unlist(lapply(fits,function(x) inherits(x,"momentuHierHMM"))))){

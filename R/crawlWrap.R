@@ -20,7 +20,6 @@
 #' for all parameters of all individuals. Ignored unless \code{retryFits>0} (or \code{attempts>1}).
 #' @param retryParallel Logical indicating whether or not to perform \code{retryFits} attempts for each individual in parallel. Default: FALSE. Ignored unless \code{retryFits>0} and \code{ncores>1}.
 #' Note that when attempts are done in parallel (i.e. \code{retryParallel=TRUE}), the current value for the log-likelihood of each individual and warnings about convergence are not printed to the console.
-#' @param progressBar Logical indicating whether or not to show progress bars when using parallel processing. Default: \code{FALSE}. Ignored if \code{ncores=1}, \code{length(unique(obsData$ID))<=ncores}, or \code{capabilities('tcltk')=FALSE} (progress bars require the \code{\link[tcltk:tcltk-package]{tcltk}} package).
 #' @param mov.model List of mov.model objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one movement model is provided, then the same movement model is used
 #' for each individual.
 #' @param err.model List of err.model objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one error model is provided, then the same error model is used
@@ -102,7 +101,6 @@
 #' @export
 #' @importFrom crawl crwMLE crwPredict displayPar
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
-#' @importFrom parallel makeCluster clusterExport stopCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom lubridate with_tz
 #' @importFrom doRNG %dorng%
@@ -110,7 +108,7 @@
 #' @importFrom sp coordinates
 #' @importFrom utils capture.output
 
-crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1, retryParallel = FALSE, progressBar = FALSE,
+crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1, retryParallel = FALSE,
                     mov.model = ~1, err.model = NULL, activity = NULL, drift = NULL, 
                     coord = c("x", "y"), proj = NULL, Time.name = "time", time.scale = "hours", theta, fixPar, 
                     method = "L-BFGS-B", control = NULL, constr = NULL, 
@@ -160,14 +158,6 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   }
   
   nbAnimals <- length(ids)
-  progressBar <- ifelse(ncores>1 && nbAnimals>ncores && capabilities('tcltk'),progressBar,FALSE)
-  if(progressBar){
-    test_pb <- tryCatch(tcltk::tkProgressBar(),error=function(e) e)
-    if(inherits(test_pb,"error")){
-      warning("progressBar not possible: \n ",test_pb)
-      progressBar <- FALSE
-    }
-  }
   
   if(is.null(mov.model)){
     mov.model<-list()
@@ -405,20 +395,10 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   } else names(predTime) <- ids
   
   cat('Fitting',nbAnimals,'track(s) using crawl::crwMLE...',ifelse(nbAnimals>1 & ncores>1,"","\n"))
-  if(progressBar){
-    cl <- makeCluster(ncores)
-    registerDoParallel(cl)
-    clusterExport(cl, c("nbAnimals"), envir = environment())
-  } else {
-    registerDoParallel(cores=ncores)
-  }
+  registerDoParallel(cores=ncores)
   withCallingHandlers(model_fits <- 
     foreach(i = ids, .export="crwMLE", .errorhandling="pass", .final = function(x) stats::setNames(x, ids)) %dorng% {
       cat("Individual ",i,"...\n",sep="")
-      if(progressBar){
-        if(!exists("pb")) pb <- tcltk::tkProgressBar(paste0("crwMLE core ",which(i==ids)," initiated ",Sys.time()), min=1, max=nbAnimals, initial=which(i==ids))
-        tcltk::setTkProgressBar(pb, which(i==ids), label=paste("fitting individual",i))
-      }
       fit <- crawl::crwMLE(
         data = ind_data[[i]],
         mov.model =  mov.model[[i]],
@@ -443,8 +423,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
       )
     }
   ,warning=muffleRNGwarning)
-  if(progressBar) stopCluster(cl)
-  else stopImplicitCluster()
+  stopImplicitCluster()
   
   convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
   if(!length(convFits)) stop("crawl::crwMLE failed for all individuals.  Check crawl::crwMLE arguments and/or consult crawl documentation.\n")
@@ -463,13 +442,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   tmpcores <- ncores
   if(!retryParallel) tmpcores <- 1
   else if(ncores>1 & nbAnimals>1) cat("Attempting to achieve convergence and valid variance estimates for each individual in parallel.\n    Press 'esc' to force exit from 'crawlWrap'... ",sep="")
-  if(tmpcores>1 && progressBar){
-    cl <- makeCluster(tmpcores)
-    registerDoParallel(cl)
-    clusterExport(cl, c("nbAnimals"), envir = environment())
-  } else {
-    registerDoParallel(cores=tmpcores)
-  }
+  registerDoParallel(cores=tmpcores)
   withCallingHandlers(model_fits <- foreach(i = ids, .export=c("quietCrawl","crwMLE"), .errorhandling="pass", .final = function(x) stats::setNames(x, ids)) %dorng% {
     if(inherits(model_fits[[i]],"crwFit")){
       if((model_fits[[i]]$convergence | any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))]))) | retryFits){
@@ -484,10 +457,6 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
             cat('Attempting to achieve convergence and valid variance estimates for individual ',i,". Press 'esc' to force exit from 'crawlWrap'\n",sep="")
           } else {
             cat('Attempting to improve fit for individual ',i,". Press 'esc' to force exit from 'crawlWrap'\n",sep="")
-          }
-          if(tmpcores>1 && progressBar){
-            if(!exists("pb")) pb <- tcltk::tkProgressBar(paste0("crwMLE core ",which(i==ids)," initiated ",Sys.time()), min=1, max=nbAnimals, initial=which(i==ids))
-            tcltk::setTkProgressBar(pb, which(i==ids), label=paste("re-fitting individual",i))
           }
           curFit<-fit
           while(fitCount<retryFits){ # & (fit$convergence | any(is.na(fit$se[which(is.na(fixPar[[i]]))])))){
@@ -549,10 +518,8 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     }
     model_fits[[i]]
   },warning=muffleRNGwarning)
-  if(tmpcores>1 && progressBar) stopCluster(cl)
-  else stopImplicitCluster()
+  stopImplicitCluster()
   if(retryParallel & ncores>1 & nbAnimals>1) cat("DONE\n")
-  if(exists("pb")) rm(pb)
 
   convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
   if(!length(convFits)) stop("crawl::crwMLE failed for all individuals.  Check crawl::crwMLE arguments and/or consult crawl documentation.\n")
@@ -583,19 +550,9 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     ts <- 60
   }
   
-  if(progressBar){
-    cl <- makeCluster(ncores)
-    registerDoParallel(cl)
-    clusterExport(cl, c("nbAnimals"), envir = environment())
-  } else {
-    registerDoParallel(cores=ncores)
-  }
+  registerDoParallel(cores=ncores)
   withCallingHandlers(predData <- 
     foreach(i = convFits, .export="crwPredict", .combine = rbind, .errorhandling="remove") %dorng% {
-      if(length(convFits)>ncores && progressBar){
-        if(!exists("pb")) pb <- tcltk::tkProgressBar(paste0("crwPredict core ",which(i==convFits)," initiated ",Sys.time()), min=1, max=nbAnimals, initial=which(i==convFits))
-        tcltk::setTkProgressBar(pb, which(i==ids), label=paste("predicting individual",i))
-      }
       pD<-crawl::crwPredict(model_fits[[i]], predTime=predTime[[i]],return.type = "flat")
       if(inherits(ind_data[[i]][[Time.name]],"POSIXct") && attributes(pD[[Time.name]])$tzone != attributes(ind_data[[i]][[Time.name]])$tzone){
         pD[[Time.name]] <- lubridate::with_tz(pD[[Time.name]],tz=attributes(ind_data[[i]][[Time.name]])$tzone)
@@ -622,8 +579,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
       pD
     }
   ,warning=muffleRNGwarning)
-  if(progressBar) stopCluster(cl)
-  else stopImplicitCluster()
+  stopImplicitCluster()
   
   if(hierInd){
     

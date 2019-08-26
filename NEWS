@@ -18,8 +18,6 @@ NEW FEATURES
 
 * added getTrProbs function for calculating transition probabilities
 
-* progressBar argument has been added to crawlWrap and MIfitHMM
-
 
 momentuHMM 1.4.3 2018-11-21
 -----------------
