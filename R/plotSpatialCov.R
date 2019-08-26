@@ -168,7 +168,7 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   # prepare palette
   if(is.null(col)) {
     if(nbCol==1) {
-      pal <- "black"
+      pal <- "#E69F00"
     } else if(nbCol<8) {
       pal <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     } else {
@@ -193,13 +193,14 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   #################
   ## Plot tracks ##
   #################
-  par(ask=ask)
-  
   map.cov <- raster::rasterToPoints(spatialCov)
   dfcov <- data.frame(map.cov)
   colnames(dfcov) <- c("x", "y", names(spatialCov))
   
   if(!compact) {
+    
+    par(ask=ask)
+    
     #loop over tracks
     for(id in unique(data$ID)) {
       subData <- subset(data,ID==id)
@@ -210,7 +211,7 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
         theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
         geom_raster(data = dfcov,aes(fill=dfcov[[names(spatialCov)]])) +
         labs(fill = names(spatialCov)) +
-        geom_point(aes(x,y,col=col,shape=col),subData,alpha=alpha,size=size) +
+        geom_point(aes(x,y,col=col,shape=col),subData,alpha=alpha,size=size,show.legend=ifelse(nbCol>1,TRUE,FALSE)) +
         coord_equal()
       
       if(segments)
@@ -234,7 +235,7 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
       theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
       geom_raster(data = dfcov,aes(fill=dfcov[[names(spatialCov)]])) +
       labs(fill = names(spatialCov)) +
-      geom_point(aes(x,y,col=col,shape=col),data,alpha=alpha,size=size) +
+      geom_point(aes(x,y,col=col,shape=col),data,alpha=alpha,size=size,show.legend=ifelse(nbCol>1,TRUE,FALSE)) +
       coord_equal()
     
     if(segments)
