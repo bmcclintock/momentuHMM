@@ -434,7 +434,7 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
           } else if(!length(ind2)){
             p <- (solve(fullDM[[i]][gbInd,],tan(par/2))-workcons[[i]])^(1/cons[[i]])
           } else stop("sorry, the parameters for ",i," cannot have different bounds")
-        } else if(((length(ind21)>0) + (length(ind22)>0) + (length(ind23)>0))>1){ 
+        } else if(((length(ind21)>0) + (length(ind22)>0) + (length(ind23)>0) + (length(ind24)>0))>1){ 
           stop("sorry, getParDM requires the parameters for ",i," to have identical bounds when covariates are included in the design matrix")
         } else {
           if(length(ind21)){
