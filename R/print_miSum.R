@@ -37,18 +37,7 @@ print.miSum <- function(x,...)
   m <- x # the name "x" is for compatibility with the generic method
   m <- delta_bc(m)
   
-  m$mle <- lapply(x$Par$real,function(x) x$est)
-  m$mle$beta <- x$Par$beta$beta$est
-  m$mle$pi <- x$Par$real$pi$est
-  m$mle$delta <- x$Par$real$delta$est
-  m$mod <- list()
-  if(!is.null(m$conditions$recharge)){
-    nbRecovs <- ncol(m$g0covs) + ncol(m$reCovs)
-    m$mle$g0 <- c(m$Par$beta$g0$est)
-    names(m$mle$g0) <- colnames(m$Par$beta$g0$est)
-    m$mle$theta <- c(m$Par$beta$theta$est)
-    names(m$mle$theta) <- colnames(m$Par$beta$theta$est)
-  } else nbRecovs <- 0
+  m <- formatmiSum(m)
   m$CIbeta <- m$Par$beta
   m$CIreal <- m$Par$real
   
