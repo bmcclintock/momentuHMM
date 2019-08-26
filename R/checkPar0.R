@@ -386,23 +386,6 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
     
     if(!inherits(data,"hierarchical")){   
       
-      if(!is.null(m$conditions$recharge)){
-        cat("\n")
-        cat("Initial recharge parameter (g0):\n")
-        cat("--------------------------------\n")
-        tmpPar <- m$mle$g0
-        if(is.null(beta0$g0))
-          tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
-        print(tmpPar) 
-        cat("\n")
-        cat("Recharge function parameters (theta):\n")
-        cat("-------------------------------------\n")
-        tmpPar <- m$mle$theta
-        if(is.null(beta0$theta))
-          tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
-        print(tmpPar) 
-      }
-      
       #if(!is.null(m$mle$beta)) {
       cat("\n")
       cat("Regression coeffs for the transition probabilities (beta):\n")
@@ -442,6 +425,24 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
           print(tmpPar)
         }
       }
+      
+      if(!is.null(m$conditions$recharge)){
+        cat("\n")
+        cat("Initial recharge parameter (g0):\n")
+        cat("--------------------------------\n")
+        tmpPar <- m$mle$g0
+        if(is.null(beta0$g0))
+          tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
+        print(tmpPar) 
+        cat("\n")
+        cat("Recharge function parameters (theta):\n")
+        cat("-------------------------------------\n")
+        tmpPar <- m$mle$theta
+        if(is.null(beta0$theta))
+          tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
+        print(tmpPar) 
+      }
+      
     } else return(m)
   }
 }
@@ -505,33 +506,6 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
   }
   delta0 <- hier$hierDelta
   
-  if(!is.null(recharge)){
-    cat("\n\n")
-    cat("----------------------------------------------------------\n")
-    cat("Initial recharge parameter (g0):\n")
-    cat("----------------------------------------------------------\n")
-    for(j in names(recharge)){
-      cat("------------------------- ",j," -----------------------\n")
-      tmpPar <- hier$hierBeta[[j]]$g0
-      if(is.null(hierBeta))
-        tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
-      print(tmpPar) 
-    }
-    cat("----------------------------------------------------------\n")
-    cat("\n")
-    cat("----------------------------------------------------------\n")
-    cat("Recharge function parameters (theta):\n")
-    cat("----------------------------------------------------------\n")
-    for(j in names(recharge)){
-      cat("------------------------- ",j," -----------------------\n")
-      tmpPar <- hier$hierBeta[[j]]$theta
-      if(is.null(hierBeta))
-        tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
-      print(tmpPar) 
-    }
-    cat("----------------------------------------------------------\n")
-  } else cat("\n")
-  
   cat("\n")
   cat("----------------------------------------------------------\n")
   cat("Regression coeffs for the transition probabilities (beta):\n")
@@ -583,5 +557,32 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
     }
   }
   cat("----------------------------------------------------------\n")
+  
+  if(!is.null(recharge)){
+    cat("\n\n")
+    cat("----------------------------------------------------------\n")
+    cat("Initial recharge parameter (g0):\n")
+    cat("----------------------------------------------------------\n")
+    for(j in names(recharge)){
+      cat("------------------------- ",j," -----------------------\n")
+      tmpPar <- hier$hierBeta[[j]]$g0
+      if(is.null(hierBeta))
+        tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
+      print(tmpPar) 
+    }
+    cat("----------------------------------------------------------\n")
+    cat("\n")
+    cat("----------------------------------------------------------\n")
+    cat("Recharge function parameters (theta):\n")
+    cat("----------------------------------------------------------\n")
+    for(j in names(recharge)){
+      cat("------------------------- ",j," -----------------------\n")
+      tmpPar <- hier$hierBeta[[j]]$theta
+      if(is.null(hierBeta))
+        tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
+      print(tmpPar) 
+    }
+    cat("----------------------------------------------------------\n")
+  }
 
 }
