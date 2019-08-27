@@ -2749,11 +2749,13 @@ DM <- list(mu=matrix(c("mu.x_tm1",         0,    0,0,0,0,
                                 0,         0,    0,0,1,0),
                      5*nbStates,
                      6,byrow=TRUE,
-                     dimnames=list(c(paste0("mean.",rep(c("x_","y_"),
-                                                        each=nbStates),
+                     dimnames=list(c(paste0("mean.",
+                                            rep(c("x_","y_"),
+                                                each=nbStates),
                                             1:nbStates),
-                                     paste0("sigma.",rep(c("x_","xy_","y_"),
-                                                         each=nbStates),
+                                     paste0("sigma.",
+                                            rep(c("x_","xy_","y_"),
+                                                each=nbStates),
                                             1:nbStates)),
                                    c("x:x_tm1",
                                      "y:y_tm1",
@@ -2792,7 +2794,7 @@ checkPar0(hmmData, nbStates = nbStates, dist = dist,
           DM = DM, betaRef = betaRef, betaCons = betaCons,
           stateNames = stateNames)
 
-# fit to best predicted path to get starting values for multiple imputation
+# fit to best predicted path 
 buffaloFit <- fitHMM(hmmData, nbStates = nbStates, dist = dist,
                      formula = formula, Par0 = Par0,
                      beta0 = list(g0=g0,
@@ -2801,7 +2803,8 @@ buffaloFit <- fitHMM(hmmData, nbStates = nbStates, dist = dist,
                      DM = DM, betaRef = betaRef, betaCons = betaCons,
                      stateNames = stateNames,
                      mvnCoords = "mu",
-                     optMethod = "Nelder-Mead", control = list(maxit=1000))
+                     optMethod = "Nelder-Mead", 
+                     control = list(maxit=1000))
 
 # extract starting values
 bestPar <- getPar(buffaloFit)
@@ -2854,12 +2857,12 @@ arrows(1:dim(trProbs$est)[3],
 abline(h=0.5,lty=2)
 @
 \noindent As in \cite{HootenEtAl2019}, we found that the buffalo spent a majority of time steps in the discharged state ($\Sexpr{round(bufPar$timeInStates$est[2]*100,0)}$\%, 95\% CI: $\Sexpr{round(bufPar$timeInStates$lower[2]*100,0)}-\Sexpr{round(bufPar$timeInStates$upper[2]*100,0)}\%$) and thus needed to recharge regularly near water resources. With estimated $g_0=\Sexpr{round(bufPar$g0$est[1],2)}$ (95\% CI: $\Sexpr{round(bufPar$g0$lower[1],2)}-\Sexpr{round(bufPar$g0$upper[1],2)}$), $\theta_1=\Sexpr{round(bufPar$theta$est[2],2)}$ (95\% CI: $\Sexpr{round(bufPar$theta$lower[2],2)}-\Sexpr{round(bufPar$theta$upper[2],2)}$), and $\theta_2=\Sexpr{round(bufPar$theta$est[3],2)}$ (95\% CI: $\Sexpr{round(bufPar$theta$lower[3],2)}-\Sexpr{round(bufPar$theta$upper[3],2)}$), the estimated recharge function and transition probabilities (Figure \ref{fig:recharge}) look very similar to those reported by \cite{HootenEtAl2019}. However, \cite{HootenEtAl2019} found some evidence that the buffalo orients
-toward surface water when in the discharged state, but our (non-Bayesian) discrete-time formulation based on multiple imputation did not find evidence of such biased movement ($\beta^\mu=\Sexpr{round(bufPar$mu$est[3],2)}$, 95\% CI: $\Sexpr{round(bufPar$mu$lower[3],2)}-\Sexpr{round(bufPar$mu$upper[3],2)}$). This difference could be attributable to several factors, including our formulation being in discrete time (instead of continuous time), our use of a 2-stage multiple imputation approach based on the CTCRW (instead of a single-stage model), and the lack of priors in our non-Bayesian model. Nevertheless, inferences about recharge and state-switching dynamics are essentially the same between our discrete-time formulation and the continuous-time model of \cite{HootenEtAl2019}.
+toward surface water when in the discharged state, but our discrete-time formulation did not find evidence of such biased movement ($\beta^\mu=\Sexpr{round(bufPar$mu$est[3],2)}$, 95\% CI: $\Sexpr{round(bufPar$mu$lower[3],2)}-\Sexpr{round(bufPar$mu$upper[3],2)}$). This difference could be attributable to several factors, including our formulation being in discrete time (instead of continuous time), our use of a 2-stage multiple imputation approach based on the CTCRW (instead of a single-stage model), and the absence of prior distributions in our non-Bayesian model. Nevertheless, inferences about recharge and state-switching dynamics are essentially the same between our discrete-time formulation and the continuous-time model of \cite{HootenEtAl2019}.
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.75\textwidth]{plot_buffaloStates.pdf}\\
-  \includegraphics[width=0.5\textwidth]{plot_buffaloExample011.pdf}\\
-  \includegraphics[width=0.5\textwidth]{plot_buffaloResults.pdf}\\
+  \includegraphics[width=0.9\textwidth]{plot_buffaloStates.pdf}\\
+  \includegraphics[width=0.9\textwidth]{plot_buffaloExample011.pdf}\\
+  \includegraphics[width=0.9\textwidth]{plot_buffaloResults.pdf}\\
   \caption{African buffalo estimated states (top), recharge function (middle), and probability of being in the discharged state (bottom) at each time step $(t)$.}
   \label{fig:recharge}
 \end{figure}

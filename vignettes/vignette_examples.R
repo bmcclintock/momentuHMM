@@ -413,8 +413,8 @@ bufPar <- buffaloFits$miSum$Par$beta[c("mu","g0","theta")]
 bufPar$timeInStates <- buffaloFits$miSum$Par$timeInStates
 append.RData(bufPar,file=paste0(getwd(),"/vignette_inputs.RData"))
 
-pdf(file=paste0(getwd(),"/plot_buffaloExample%03d.pdf"),width=7.5,height=5,onefile = FALSE)
-plot(buffaloFits,plotCI=TRUE,ask=FALSE)
+pdf(file=paste0(getwd(),"/plot_buffaloExample%03d.pdf"),width=8,height=3,onefile = FALSE)
+plot(buffaloFits,plotCI=TRUE,legend.pos="bottom",ask=FALSE)
 dev.off()
 
 pdf(file="plot_buffaloStates.pdf",width=7.5,height=5)
@@ -426,7 +426,7 @@ for(plt in c(1:10,12))
 
 #trProbs <- getTrProbs(buffaloFits, getCI=TRUE)
 # plot estimates and CIs for Pr(discharged) at each time step
-pdf(file=paste0(getwd(),"/plot_buffaloResults.pdf"),width=7.5,height=5)
+pdf(file=paste0(getwd(),"/plot_buffaloResults.pdf"),width=8,height=3)
 par(mar=c(5,4,4,2)-c(0,0,2,1)) # bottom, left, top, right
 plot(trProbs$est[1,2,],type="l", 
      ylim=c(0,1), ylab="Pr(discharged)", xlab="t", col=c("#E69F00", "#56B4E9")[buffaloFits$miSum$Par$states])

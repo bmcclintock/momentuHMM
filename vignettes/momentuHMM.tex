@@ -4709,11 +4709,13 @@ Now we're ready to specify the recharge model. We'll first fit the model to the 
                                 \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{),}
                      \hlnum{5}\hlopt{*}\hlstd{nbStates,}
                      \hlnum{6}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
-                     \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{c}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"mean."}\hlstd{,}\hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"x_"}\hlstd{,}\hlstr{"y_"}\hlstd{),}
-                                                        \hlkwc{each}\hlstd{=nbStates),}
+                     \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{c}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"mean."}\hlstd{,}
+                                            \hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"x_"}\hlstd{,}\hlstr{"y_"}\hlstd{),}
+                                                \hlkwc{each}\hlstd{=nbStates),}
                                             \hlnum{1}\hlopt{:}\hlstd{nbStates),}
-                                     \hlkwd{paste0}\hlstd{(}\hlstr{"sigma."}\hlstd{,}\hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"x_"}\hlstd{,}\hlstr{"xy_"}\hlstd{,}\hlstr{"y_"}\hlstd{),}
-                                                         \hlkwc{each}\hlstd{=nbStates),}
+                                     \hlkwd{paste0}\hlstd{(}\hlstr{"sigma."}\hlstd{,}
+                                            \hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"x_"}\hlstd{,}\hlstr{"xy_"}\hlstd{,}\hlstr{"y_"}\hlstd{),}
+                                                \hlkwc{each}\hlstd{=nbStates),}
                                             \hlnum{1}\hlopt{:}\hlstd{nbStates)),}
                                    \hlkwd{c}\hlstd{(}\hlstr{"x:x_tm1"}\hlstd{,}
                                      \hlstr{"y:y_tm1"}\hlstd{,}
@@ -4783,7 +4785,7 @@ Now we're ready to specify the recharge model. We'll first fit the model to the 
 ##            0            0            0
 \end{verbatim}
 \begin{alltt}
-\hlcom{# fit to best predicted path to get starting values for multiple imputation}
+\hlcom{# fit to best predicted path }
 \hlstd{buffaloFit} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(hmmData,} \hlkwc{nbStates} \hlstd{= nbStates,} \hlkwc{dist} \hlstd{= dist,}
                      \hlkwc{formula} \hlstd{= formula,} \hlkwc{Par0} \hlstd{= Par0,}
                      \hlkwc{beta0} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{g0}\hlstd{=g0,}
@@ -4792,7 +4794,8 @@ Now we're ready to specify the recharge model. We'll first fit the model to the 
                      \hlkwc{DM} \hlstd{= DM,} \hlkwc{betaRef} \hlstd{= betaRef,} \hlkwc{betaCons} \hlstd{= betaCons,}
                      \hlkwc{stateNames} \hlstd{= stateNames,}
                      \hlkwc{mvnCoords} \hlstd{=} \hlstr{"mu"}\hlstd{,}
-                     \hlkwc{optMethod} \hlstd{=} \hlstr{"Nelder-Mead"}\hlstd{,} \hlkwc{control} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{maxit}\hlstd{=}\hlnum{1000}\hlstd{))}
+                     \hlkwc{optMethod} \hlstd{=} \hlstr{"Nelder-Mead"}\hlstd{,}
+                     \hlkwc{control} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{maxit}\hlstd{=}\hlnum{1000}\hlstd{))}
 \end{alltt}
 
 
@@ -4867,12 +4870,12 @@ Now that we have our starting values (``bestPar''), let's fit $28$ imputations o
 \end{kframe}
 \end{knitrout}
 \noindent As in \cite{HootenEtAl2019}, we found that the buffalo spent a majority of time steps in the discharged state ($73$\%, 95\% CI: $70-76\%$) and thus needed to recharge regularly near water resources. With estimated $g_0=-0.27$ (95\% CI: $-0.75-0.2$), $\theta_1=1.43$ (95\% CI: $-0.61-3.48$), and $\theta_2=2.52$ (95\% CI: $1.47-3.57$), the estimated recharge function and transition probabilities (Figure \ref{fig:recharge}) look very similar to those reported by \cite{HootenEtAl2019}. However, \cite{HootenEtAl2019} found some evidence that the buffalo orients
-toward surface water when in the discharged state, but our (non-Bayesian) discrete-time formulation based on multiple imputation did not find evidence of such biased movement ($\beta^\mu=0.88$, 95\% CI: $-3.2-4.96$). This difference could be attributable to several factors, including our formulation being in discrete time (instead of continuous time), our use of a 2-stage multiple imputation approach based on the CTCRW (instead of a single-stage model), and the lack of priors in our non-Bayesian model. Nevertheless, inferences about recharge and state-switching dynamics are essentially the same between our discrete-time formulation and the continuous-time model of \cite{HootenEtAl2019}.
+toward surface water when in the discharged state, but our discrete-time formulation did not find evidence of such biased movement ($\beta^\mu=0.88$, 95\% CI: $-3.2-4.96$). This difference could be attributable to several factors, including our formulation being in discrete time (instead of continuous time), our use of a 2-stage multiple imputation approach based on the CTCRW (instead of a single-stage model), and the absence of prior distributions in our non-Bayesian model. Nevertheless, inferences about recharge and state-switching dynamics are essentially the same between our discrete-time formulation and the continuous-time model of \cite{HootenEtAl2019}.
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.75\textwidth]{plot_buffaloStates.pdf}\\
-  \includegraphics[width=0.5\textwidth]{plot_buffaloExample011.pdf}\\
-  \includegraphics[width=0.5\textwidth]{plot_buffaloResults.pdf}\\
+  \includegraphics[width=0.9\textwidth]{plot_buffaloStates.pdf}\\
+  \includegraphics[width=0.9\textwidth]{plot_buffaloExample011.pdf}\\
+  \includegraphics[width=0.9\textwidth]{plot_buffaloResults.pdf}\\
   \caption{African buffalo estimated states (top), recharge function (middle), and probability of being in the discharged state (bottom) at each time step $(t)$.}
   \label{fig:recharge}
 \end{figure}
