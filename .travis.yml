@@ -33,8 +33,6 @@ r_binary_packages:
   - magrittr
   - doRNG
   - scatterplot3d
-  - RColorBrewer
-  - tmvtnorm
   - extraDistr
   - rlang
   

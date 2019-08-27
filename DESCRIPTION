@@ -38,8 +38,6 @@ Imports:
     magrittr,
     doRNG,
     scatterplot3d,
-    RColorBrewer,
-    tmvtnorm,
     data.tree,
     lubridate,
     extraDistr,

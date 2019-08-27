@@ -53,8 +53,6 @@
 #' @importFrom CircStats circ.mean
 #' @importFrom scatterplot3d scatterplot3d
 #' @importFrom MASS kde2d
-#' @importFrom RColorBrewer brewer.pal
-#' @importFrom tmvtnorm dtmvnorm.marginal
 
 plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
                             sepStates=FALSE,col=NULL,cumul=TRUE,plotTracks=TRUE,plotCI=FALSE,alpha=0.95,plotStationary=FALSE,...)
@@ -1321,7 +1319,7 @@ plotHistMVN <- function(gen,genDensities,dist,message,sepStates,breaks="Sturges"
     h2 <- hist(gen[[paste0(distname,".y")]], breaks=breaks, plot=FALSE)
     top <- max(h1$counts, h2$counts)
     k <- MASS::kde2d(gen[[paste0(distname,".x")]][!is.na(gen[[paste0(distname,".x")]])], gen[[paste0(distname,".y")]][!is.na(gen[[paste0(distname,".y")]])], n=25)
-    rf <- grDevices::colorRampPalette(rev(RColorBrewer::brewer.pal(11,'Spectral')))
+    rf <- grDevices::colorRampPalette(c("#5E4FA2", "#3288BD", "#66C2A5", "#ABDDA4", "#E6F598", "#FFFFBF", "#FEE08B", "#FDAE61", "#F46D43", "#D53E4F", "#9E0142")) # grDevices::colorRampPalette(rev(RColorBrewer::brewer.pal(11,'Spectral')))
     r <- rf(32)
     graphics::image(k, col=r,xlab=paste0(distname,".x"),ylab=paste0(distname,".y"),cex.lab=1.1) #plot the image
     # plot gen density over the histogram
@@ -1409,4 +1407,63 @@ getCovs <-function(m,covs,ID,checkHier=TRUE){
     }
   }
   covs
+}
+
+# get 1-dimensional marginal density from a multivariate normal density (modified from dtmvnorm::dtmvnorm.marginal)
+# xn	= Vector of quantiles to calculate the marginal density for.
+# n	= Index position (1..k) within the random vector x to calculate the one-dimensional marginal density for.
+# mean	 = Mean vector, default is rep(0, length = nrow(sigma)).
+# sigma = Covariance matrix, default is diag(length(mean)).
+# log	= Logical; if TRUE, densities d are given as log(d).
+#' @importFrom stats dnorm
+#' @importFrom mvtnorm pmvnorm
+dmvnorm.marginal <- function (xn, n = 1, mean = rep(0, nrow(sigma)), sigma = diag(length(mean)), log = FALSE) {
+  
+  if (NROW(sigma) != NCOL(sigma)) {
+    stop("sigma must be a square matrix")
+  }
+  if (length(mean) != NROW(sigma)) {
+    stop("mean and sigma have non-conforming size")
+  }
+  k <- length(mean)
+  if (n < 1 || n > length(mean) || !is.numeric(n) || length(n) > 
+      1 || !n %in% 1:length(mean)) {
+    stop("n must be an integer scalar in 1..length(mean)")
+  }
+  if (k == 1) {
+    density <- stats::dnorm(xn, mean = mean, sd = sqrt(sigma))
+    if (log == TRUE) {
+      return(log(density))
+    }
+    else {
+      return(density)
+    }
+  }
+  C <- sigma
+  A <- solve(sigma)
+  A_1 <- A[-n, -n]
+  A_1_inv <- solve(A_1)
+  C_1 <- C[-n, -n]
+  c_nn <- C[n, n]
+  c <- C[-n, n]
+  mu <- mean
+  mu_1 <- mean[-n]
+  mu_n <- mean[n]
+  p <- mvtnorm::pmvnorm(mean = mu, sigma = C)
+  f_xn <- c()
+  for (i in 1:length(xn)) {
+    if(is.infinite(xn[i])) {
+      f_xn[i] <- 0
+      next
+    }
+    m <- mu_1 + (xn[i] - mu_n) * c/c_nn
+    f_xn[i] <- exp(-0.5 * (xn[i] - mu_n)^2/c_nn) * mvtnorm::pmvnorm(mean = m, sigma = A_1_inv)
+  }
+  density <- 1/p * 1/sqrt(2 * pi * c_nn) * f_xn
+  if (log == TRUE) {
+    return(log(density))
+  }
+  else {
+    return(density)
+  }
 }
