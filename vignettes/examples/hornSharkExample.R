@@ -2,7 +2,7 @@ library(momentuHMM)
 library(data.tree)
 
 # load the data from Adam et al (available from https://doi.org/10.1111/2041-210X.13241)
-load("horn_shark_data_set.RData")
+load(url("https://raw.github.com/bmcclintock/momentuHMM/develop/vignettes/horn_shark_data_set.RData"))
 
 # coarse-scale data
 data <- data.frame(ID=unlist(mapply(function(x) rep(paste0("seg",x),nrow(steps[[x]])-1),1:length(steps))),
