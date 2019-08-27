@@ -1033,7 +1033,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
               if(!all(is.na(se))) {
                 ciInd <- which(!is.na(se))
                 
-                withCallingHandlers(do.call(arrows,c(list(1:length(ind)[ciInd], lci[ciInd], 1:length(ind)[ciInd], 
+                withCallingHandlers(do.call(arrows,c(list((1:length(ind))[ciInd], lci[ciInd], (1:length(ind))[ciInd], 
                                            uci[ciInd], length=0.025, angle=90, code=3, col=col[subStates], lwd=lwd),arg)),warning=muffWarn)
               }
             } else {
