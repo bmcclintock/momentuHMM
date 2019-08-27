@@ -2716,7 +2716,7 @@ crwOut <- crawlWrap(buffaloData,
                     attempts = 10)
 @
 
-Now we're ready to specify the recharge model. We'll first fit the model to the best predicted track from \verb|crawlWrap| and then use this model fit to specify starting values for $28$ multiple imputation fits:
+Now we're ready to specify the recharge model. We'll first fit the model to the best predicted track from \verb|crawlWrap| and then use this model fit to specify starting values for a multiple imputation analysis:
 <<recharge-3, echo=TRUE, eval=TRUE, cache=TRUE>>=
 spatialCovs <- list(W_intercept = W_ortho$svd1,
                     W_near_sabie = W_ortho$svd2,
@@ -2815,6 +2815,7 @@ bestPar <- getPar(buffaloFit)
     \frac{1}{(1+\exp(\beta_0+g_t\beta_1))} & \frac{\exp(\beta_0+g_t\beta_1)}{(1+\exp(\beta_0+g_t\beta_1))}  \\
     \frac{1}{(1+\exp(\beta_0+g_t\beta_1))} & \frac{\exp(\beta_0+g_t\beta_1)}{(1+\exp(\beta_0+g_t\beta_1))}   
   \end{bmatrix},
+  \label{eq:rechargeTPM2}
 \end{equation*}
 where
 \begin{equation*}
@@ -2863,7 +2864,7 @@ toward surface water when in the discharged state, but our discrete-time formula
   \includegraphics[width=0.9\textwidth]{plot_buffaloStates.pdf}\\
   \includegraphics[width=0.9\textwidth]{plot_buffaloExample011.pdf}\\
   \includegraphics[width=0.9\textwidth]{plot_buffaloResults.pdf}\\
-  \caption{African buffalo estimated states (top), recharge function (middle), and probability of being in the discharged state (bottom) at each time step $(t)$.}
+  \caption{African buffalo estimated states (top), recharge function (middle), and (non-Markov) transition probability to the discharged state (bottom) at each time step $(t)$.}
   \label{fig:recharge}
 \end{figure}
 
@@ -2876,7 +2877,7 @@ boundary[boundary>0] <- NA
 boundary <- raster::distance(boundary)
 names(boundary) <- "boundary"
 @
-Next we'll calculate the gradients in the x- and y-directions for inclusion as covariates in our potential function using \verb|ctmcmove::rast.grad|:
+Next we'll calculate the gradients of the potential function surface in the x- and y-directions using \verb|ctmcmove::rast.grad|:
 <<landConstraint-2, echo=TRUE, eval=FALSE>>=
 # boundary needs to have a CRS for ctmcmove::rast.grad
 proj4string(boundary) <- sp::CRS("+init=epsg:4326") 
@@ -2886,7 +2887,7 @@ grad <- ctmcmove::rast.grad(boundary)
 grad.x <- grad$rast.grad.x
 grad.y <- grad$rast.grad.y 
 @
-Now we're ready to simulate our bivariate normal random walk model including these gradients in the potential function:
+Now we're ready to simulate our bivariate normal random walk model including the gradients as covariates:
 <<landConstraint-3, echo=TRUE, eval=FALSE>>=
 dist <- list(mu="rw_mvnorm2") # bivariate normal random walk
 DM <- list(mu=list(mean.x=~mu.x_tm1+crw(mu.x_tm1,lag=1)+grad.x, 
@@ -2903,7 +2904,8 @@ names(Par$mu) <- c("mu.x_tm1","crw(mu.x_tm1,lag=1)","grad.x",
 
 # simulate and plot
 simBound <- simData(nbStates=1, obsPerAnimal = 10000, dist=dist, Par=Par, 
-                    DM=DM, spatialCovs=list(grad.x=grad.x,grad.y=grad.y), 
+                    DM=DM, spatialCovs=list(grad.x = grad.x,
+                                            grad.y = grad.y), 
                     mvnCoords="mu", initialPosition=c(25000,75000))
 plot(simBound,dataNames=c("mu.x","mu.y"),ask=FALSE)
 plot(boundary$boundary)

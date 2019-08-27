@@ -4657,7 +4657,7 @@ We will therefore use \verb|crawlWrap| to predict the track at regular 15 min in
 \end{kframe}
 \end{knitrout}
 
-Now we're ready to specify the recharge model. We'll first fit the model to the best predicted track from \verb|crawlWrap| and then use this model fit to specify starting values for $28$ multiple imputation fits:
+Now we're ready to specify the recharge model. We'll first fit the model to the best predicted track from \verb|crawlWrap| and then use this model fit to specify starting values for a multiple imputation analysis:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -4825,6 +4825,7 @@ Now we're ready to specify the recharge model. We'll first fit the model to the 
     \frac{1}{(1+\exp(\beta_0+g_t\beta_1))} & \frac{\exp(\beta_0+g_t\beta_1)}{(1+\exp(\beta_0+g_t\beta_1))}  \\
     \frac{1}{(1+\exp(\beta_0+g_t\beta_1))} & \frac{\exp(\beta_0+g_t\beta_1)}{(1+\exp(\beta_0+g_t\beta_1))}   
   \end{bmatrix},
+  \label{eq:rechargeTPM2}
 \end{equation*}
 where
 \begin{equation*}
@@ -4876,7 +4877,7 @@ toward surface water when in the discharged state, but our discrete-time formula
   \includegraphics[width=0.9\textwidth]{plot_buffaloStates.pdf}\\
   \includegraphics[width=0.9\textwidth]{plot_buffaloExample011.pdf}\\
   \includegraphics[width=0.9\textwidth]{plot_buffaloResults.pdf}\\
-  \caption{African buffalo estimated states (top), recharge function (middle), and probability of being in the discharged state (bottom) at each time step $(t)$.}
+  \caption{African buffalo estimated states (top), recharge function (middle), and (non-Markov) transition probability to the discharged state (bottom) at each time step $(t)$.}
   \label{fig:recharge}
 \end{figure}
 
@@ -4893,7 +4894,7 @@ In section \ref{sec:turtle} we briefly demonstrated how potential functions can 
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-Next we'll calculate the gradients in the x- and y-directions for inclusion as covariates in our potential function using \verb|ctmcmove::rast.grad|:
+Next we'll calculate the gradients of the potential function surface in the x- and y-directions using \verb|ctmcmove::rast.grad|:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -4907,7 +4908,7 @@ Next we'll calculate the gradients in the x- and y-directions for inclusion as c
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-Now we're ready to simulate our bivariate normal random walk model including these gradients in the potential function:
+Now we're ready to simulate our bivariate normal random walk model including the gradients as covariates:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -4926,7 +4927,8 @@ Now we're ready to simulate our bivariate normal random walk model including the
 
 \hlcom{# simulate and plot}
 \hlstd{simBound} \hlkwb{<-} \hlkwd{simData}\hlstd{(}\hlkwc{nbStates}\hlstd{=}\hlnum{1}\hlstd{,} \hlkwc{obsPerAnimal} \hlstd{=} \hlnum{10000}\hlstd{,} \hlkwc{dist}\hlstd{=dist,} \hlkwc{Par}\hlstd{=Par,}
-                    \hlkwc{DM}\hlstd{=DM,} \hlkwc{spatialCovs}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{grad.x}\hlstd{=grad.x,}\hlkwc{grad.y}\hlstd{=grad.y),}
+                    \hlkwc{DM}\hlstd{=DM,} \hlkwc{spatialCovs}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{grad.x} \hlstd{= grad.x,}
+                                            \hlkwc{grad.y} \hlstd{= grad.y),}
                     \hlkwc{mvnCoords}\hlstd{=}\hlstr{"mu"}\hlstd{,} \hlkwc{initialPosition}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{25000}\hlstd{,}\hlnum{75000}\hlstd{))}
 \hlkwd{plot}\hlstd{(simBound,}\hlkwc{dataNames}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"mu.x"}\hlstd{,}\hlstr{"mu.y"}\hlstd{),}\hlkwc{ask}\hlstd{=}\hlnum{FALSE}\hlstd{)}
 \hlkwd{plot}\hlstd{(boundary}\hlopt{$}\hlstd{boundary)}
