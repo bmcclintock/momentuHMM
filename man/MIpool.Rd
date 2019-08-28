@@ -4,7 +4,8 @@
 \alias{MIpool}
 \title{Calculate pooled parameter estimates and states across multiple imputations}
 \usage{
-MIpool(HMMfits, alpha = 0.95, ncores = 1, covs = NULL)
+MIpool(HMMfits, alpha = 0.95, ncores = 1, covs = NULL,
+  na.rm = FALSE)
 }
 \arguments{
 \item{HMMfits}{List comprised of \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} objects}
@@ -16,6 +17,8 @@ MIpool(HMMfits, alpha = 0.95, ncores = 1, covs = NULL)
 \item{covs}{Data frame consisting of a single row indicating the covariate values to be used in the calculation of pooled natural parameters. 
 For any covariates that are not specified using \code{covs}, the means of the covariate(s) across the imputations are used 
 (unless the covariate is a factor, in which case the first factor in the data is used). By default, no covariates are specified.}
+
+\item{na.rm}{Logical indicating whether or not to exclude model fits with \code{NA} parameter estimates or standard errors from pooling. Default: FALSE.}
 }
 \value{
 A \code{\link{miSum}} object, i.e., a list comprised of model and pooled parameter summaries, including \code{data} (averaged across imputations), \code{conditions}, \code{Par}, and \code{MIcombine} 

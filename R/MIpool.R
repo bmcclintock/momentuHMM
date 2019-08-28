@@ -7,6 +7,7 @@
 #' @param covs Data frame consisting of a single row indicating the covariate values to be used in the calculation of pooled natural parameters. 
 #' For any covariates that are not specified using \code{covs}, the means of the covariate(s) across the imputations are used 
 #' (unless the covariate is a factor, in which case the first factor in the data is used). By default, no covariates are specified.
+#' @param na.rm Logical indicating whether or not to exclude model fits with \code{NA} parameter estimates or standard errors from pooling. Default: FALSE.
 #' 
 #' @return A \code{\link{miSum}} object, i.e., a list comprised of model and pooled parameter summaries, including \code{data} (averaged across imputations), \code{conditions}, \code{Par}, and \code{MIcombine} 
 #' (as returned by \code{\link[mitools]{MIcombine}} for working parameters).
@@ -60,7 +61,7 @@
 #' @importFrom CircStats circ.mean
 #' @importFrom car dataEllipse
 #' @importFrom mitools MIcombine
-MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
+MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   
   im <- HMMfits
   goodIndex <- 1:length(im)
@@ -119,27 +120,33 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
   tmpVar1 <- which(unlist(lapply(betaCoeff,function(x) any(!is.finite(x)))))
   if(length(tmpVar1)){
-    warning("working parameter estimates are not finite for HMM fits ",paste0(goodIndex[tmpVar1],collapse=", "))#," and will not be included in pooling")
-    betaCoeff[tmpVar1] <- lapply(betaCoeff[tmpVar1],function(x) {x[which(!is.finite(x))]<-NA; return(x)})
-    #im[tmpVar1] <- NULL
-    #nsims <- length(im)
-    #if(nsims<2) stop("Pooling requires at least 2 valid HMM fits")
-    #m <- im[[1]]
-    #betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
-    #betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
-    #goodIndex <- goodIndex[-tmpVar1]
+    warning("working parameter estimates are not finite for HMM fits ",paste0(goodIndex[tmpVar1],collapse=", "),ifelse(na.rm," and will not be included in pooling",""))
+    if(na.rm){
+      im[tmpVar1] <- NULL
+      nsims <- length(im)
+      if(nsims<2) stop("Pooling requires at least 2 valid HMM fits")
+      m <- im[[1]]
+      betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
+      betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
+      goodIndex <- goodIndex[-tmpVar1]
+    } else {
+      betaCoeff[tmpVar1] <- lapply(betaCoeff[tmpVar1],function(x) {x[which(!is.finite(x))]<-NA; return(x)})
+    }
   }
   tmpVar2 <- unique(c(which(unlist(lapply(betaVar,function(x) any(!is.finite(x))))),which(unlist(lapply(betaVar,function(x) any(!is.finite(sqrt(diag(x)))))))))
   if(length(tmpVar2)){
-    warning("working parameter standard errors are not finite for HMM fits ",paste0(goodIndex[tmpVar2],collapse=", "))#," and will not be included in pooling")
-    betaVar[tmpVar2] <- suppressWarnings(lapply(betaVar[tmpVar2],function(x) {x[which(!is.finite(x))]<-NA; diag(x)[which(!is.finite(sqrt(diag(x))))]<-NA; return(x)}))
-    #im[tmpVar2] <- NULL
-    #nsims <- length(im)
-    #if(nsims<2) stop("Pooling requires at least 2 valid HMM fits")
-    #m <- im[[1]]
-    #betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
-    #betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
-    #goodIndex <- goodIndex[-tmpVar2]
+    warning("working parameter standard errors are not finite for HMM fits ",paste0(goodIndex[tmpVar2],collapse=", "),ifelse(na.rm," and will not be included in pooling"))
+    if(na.rm){
+      im[tmpVar2] <- NULL
+      nsims <- length(im)
+      if(nsims<2) stop("Pooling requires at least 2 valid HMM fits")
+      m <- im[[1]]
+      betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
+      betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
+      goodIndex <- goodIndex[-tmpVar2]
+    } else {
+      betaVar[tmpVar2] <- suppressWarnings(lapply(betaVar[tmpVar2],function(x) {x[which(!is.finite(x))]<-NA; diag(x)[which(!is.finite(sqrt(diag(x))))]<-NA; return(x)}))
+    }
   }
   
   data <- m$data

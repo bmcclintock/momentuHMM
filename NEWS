@@ -1,4 +1,4 @@
-momentuHMM 1.5.0 2019-08-21
+momentuHMM 1.5.0 2019-08-25
 -----------------
 NEW FEATURES
 
@@ -17,6 +17,8 @@ NEW FEATURES
 * circularAngleMean can now alternatively be used to specify the reference angle (i.e. directional persistence) coefficient in circular-circular regression models
 
 * added getTrProbs function for calculating transition probabilities
+
+* added na.rm argument to MIpool and MIfitHMM for excluding model fits with NA estimates or standard errors from pooling
 
 
 momentuHMM 1.4.3 2018-11-21

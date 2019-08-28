@@ -32,6 +32,7 @@ MIfitHMM <- function(miData, ...) {
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param poolEstimates Logical indicating whether or not to calculate pooled parameter estimates across the \code{nSims} imputations using \code{\link{MIpool}}. Default: \code{TRUE}.
 #' @param alpha Significance level for calculating confidence intervals of pooled estimates when \code{poolEstimates=TRUE} (see \code{\link{MIpool}}). Default: 0.95.
+#' @param na.rm Logical indicating whether or not to exclude model fits with \code{NA} parameter estimates or standard errors from pooling when \code{poolEstimates=TRUE} (see \code{\link{MIpool}}). Default: FALSE.
 #' @param nbStates Number of states of the HMM. See \code{\link{fitHMM}}.
 #' @param dist A named list indicating the probability distributions of the data streams. See \code{\link{fitHMM}}.
 #' @param Par0 A named list containing vectors of initial state-dependent probability distribution parameters for 
@@ -195,7 +196,7 @@ MIfitHMM <- function(miData, ...) {
 #' @importFrom doRNG %dorng%
 #' @importFrom raster getZ
 #' @importFrom stats terms.formula
-MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
+MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, na.rm = FALSE,
                    nbStates, dist, 
                    Par0, beta0 = NULL, delta0 = NULL,
                    estAngleMean = NULL, circularAngleMean = NULL,
@@ -430,7 +431,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
   
   fits <- HMMfits(fits)
   
-  if(poolEstimates & nSims>1) out <- miHMM(list(miSum=MIpool(fits,alpha=alpha,ncores=ncores),HMMfits=fits))
+  if(poolEstimates & nSims>1) out <- miHMM(list(miSum=MIpool(fits,alpha=alpha,ncores=ncores,na.rm=na.rm),HMMfits=fits))
     else out <- fits
   
   out
@@ -452,7 +453,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
 #' @importFrom doRNG %dorng%
 #' @importFrom raster getZ
 #' @importFrom data.tree Clone
-MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
+MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, na.rm = FALSE,
                        hierStates, hierDist, 
                        Par0, hierBeta = NULL, hierDelta = NULL,
                        estAngleMean = NULL, circularAngleMean = NULL,
@@ -690,7 +691,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
   class(fits) <- append(class(fits),"hierarchical")
   
   if(poolEstimates & nSims>1) {
-    out <- miHMM(list(miSum=MIpool(fits,alpha=alpha,ncores=ncores),HMMfits=fits))
+    out <- miHMM(list(miSum=MIpool(fits,alpha=alpha,ncores=ncores,na.rm=na.rm),HMMfits=fits))
     class(out) <- append(class(out),"hierarchical")
   } else out <- fits
   

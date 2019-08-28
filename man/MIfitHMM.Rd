@@ -9,8 +9,8 @@
 MIfitHMM(miData, ...)
 
 \method{MIfitHMM}{default}(miData, nSims, ncores = 1,
-  poolEstimates = TRUE, alpha = 0.95, nbStates, dist, Par0,
-  beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
+  poolEstimates = TRUE, alpha = 0.95, na.rm = FALSE, nbStates, dist,
+  Par0, beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
   circularAngleMean = NULL, formula = ~1, formulaDelta = NULL,
   stationary = FALSE, mixtures = 1, formulaPi = NULL,
   verbose = NULL, nlmPar = NULL, fit = TRUE, useInitial = FALSE,
@@ -27,9 +27,9 @@ MIfitHMM(miData, ...)
   scalePostIS = 1, thetaSamp = NULL, ...)
 
 \method{MIfitHMM}{hierarchical}(miData, nSims, ncores = 1,
-  poolEstimates = TRUE, alpha = 0.95, hierStates, hierDist, Par0,
-  hierBeta = NULL, hierDelta = NULL, estAngleMean = NULL,
-  circularAngleMean = NULL, hierFormula = NULL,
+  poolEstimates = TRUE, alpha = 0.95, na.rm = FALSE, hierStates,
+  hierDist, Par0, hierBeta = NULL, hierDelta = NULL,
+  estAngleMean = NULL, circularAngleMean = NULL, hierFormula = NULL,
   hierFormulaDelta = NULL, mixtures = 1, formulaPi = NULL,
   nlmPar = NULL, fit = TRUE, useInitial = FALSE, DM = NULL,
   userBounds = NULL, workBounds = NULL, betaCons = NULL,
@@ -56,6 +56,8 @@ objects, \code{nSims} cannot exceed the length of \code{miData}.}
 \item{poolEstimates}{Logical indicating whether or not to calculate pooled parameter estimates across the \code{nSims} imputations using \code{\link{MIpool}}. Default: \code{TRUE}.}
 
 \item{alpha}{Significance level for calculating confidence intervals of pooled estimates when \code{poolEstimates=TRUE} (see \code{\link{MIpool}}). Default: 0.95.}
+
+\item{na.rm}{Logical indicating whether or not to exclude model fits with \code{NA} parameter estimates or standard errors from pooling when \code{poolEstimates=TRUE} (see \code{\link{MIpool}}). Default: FALSE.}
 
 \item{nbStates}{Number of states of the HMM. See \code{\link{fitHMM}}.}
 
