@@ -135,7 +135,7 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   }
   tmpVar2 <- unique(c(which(unlist(lapply(betaVar,function(x) any(!is.finite(x))))),which(unlist(lapply(betaVar,function(x) any(!is.finite(sqrt(diag(x)))))))))
   if(length(tmpVar2)){
-    warning("working parameter standard errors are not finite for HMM fits ",paste0(goodIndex[tmpVar2],collapse=", "),ifelse(na.rm," and will not be included in pooling"))
+    warning("working parameter standard errors are not finite for HMM fits ",paste0(goodIndex[tmpVar2],collapse=", "),ifelse(na.rm," and will not be included in pooling",""))
     if(na.rm){
       im[tmpVar2] <- NULL
       nsims <- length(im)

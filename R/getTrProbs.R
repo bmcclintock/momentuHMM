@@ -129,6 +129,9 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
   } else {
     
     if(is.miHMM(data)) data <- data$miSum
+    
+    data <- delta_bc(data)
+    
     if(is.miSum(data)){
       data <- formatmiSum(data)
       if(length(data$conditions$optInd)){
