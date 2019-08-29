@@ -4087,15 +4087,19 @@ We then constrain the fine-scale states within each coarse-scale state to have t
 \hlcom{### defining start values based on those reported by Adam et al}
 \hlstd{hm.mu0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{5.482}\hlstd{,} \hlnum{6.786}\hlstd{,} \hlnum{14.914}\hlstd{)}
 \hlstd{hm.sigma0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{4.27}\hlstd{,} \hlnum{4.714}\hlstd{,} \hlnum{11.242}\hlstd{)}
+
 \hlstd{ha.mu0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.011}\hlstd{,} \hlopt{-}\hlnum{0.299}\hlstd{,} \hlnum{0.044}\hlstd{)}
 \hlstd{ha.kappa0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{1.571}\hlstd{,} \hlnum{1.426}\hlstd{,} \hlnum{2.15}\hlstd{)}
+
 \hlstd{vm.mu0} \hlkwb{<-} \hlstd{vm.sigma0} \hlkwb{<-} \hlstd{vm.pi0} \hlkwb{<-} \hlkwd{list}\hlstd{()}
 \hlstd{vm.mu0[[}\hlnum{1}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.116}\hlstd{,} \hlnum{0.303}\hlstd{,} \hlnum{0.691}\hlstd{)}
 \hlstd{vm.mu0[[}\hlnum{2}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.109}\hlstd{,} \hlnum{0.056}\hlstd{,} \hlnum{0.351}\hlstd{)}
 \hlstd{vm.mu0[[}\hlnum{3}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.125}\hlstd{,} \hlnum{0.514}\hlstd{,} \hlnum{1.987}\hlstd{)}
+
 \hlstd{vm.sigma0[[}\hlnum{1}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.096}\hlstd{,} \hlnum{0.261}\hlstd{,} \hlnum{0.636}\hlstd{)}
 \hlstd{vm.sigma0[[}\hlnum{2}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.043}\hlstd{,} \hlnum{0.047}\hlstd{,} \hlnum{0.342}\hlstd{)}
 \hlstd{vm.sigma0[[}\hlnum{3}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.109}\hlstd{,} \hlnum{0.462}\hlstd{,} \hlnum{1.878}\hlstd{)}
+
 \hlstd{vm.pi0[[}\hlnum{1}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.014}\hlstd{,} \hlnum{0.003}\hlstd{,} \hlnum{1.050e-06}\hlstd{)}
 \hlstd{vm.pi0[[}\hlnum{2}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{1.791e-08}\hlstd{,} \hlnum{0.035}\hlstd{,} \hlnum{0.002}\hlstd{)}
 \hlstd{vm.pi0[[}\hlnum{3}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.012}\hlstd{,} \hlnum{2.933e-04}\hlstd{,} \hlnum{3.462e-09}\hlstd{)}
@@ -4127,22 +4131,159 @@ We then constrain the fine-scale states within each coarse-scale state to have t
 \end{kframe}
 \end{knitrout}
 
-All that remains is (optionally) specifying starting values for the initial distribution (\verb|hierDelta|) and t.p.m. (\verb|hierBeta|) parameters, and we are now ready to fit the HHMM:
+All that remains is (optionally) specifying starting values for the initial distribution (\verb|hierDelta|) and t.p.m. (\verb|hierBeta|) parameters, which we'll base on those reported by \cite{AdamEtAl2019} to speed up the optimization:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{hierBeta} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"cod beta"}\hlstd{)}
+\hlstd{hierBeta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{,}
+          \hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{18.585}\hlstd{,} \hlopt{-}\hlnum{2.86}\hlstd{,} \hlopt{-}\hlnum{2.551}\hlstd{,} \hlopt{-}\hlnum{1.641}\hlstd{,} \hlopt{-}\hlnum{2.169}\hlstd{,} \hlopt{-}\hlnum{2.415}\hlstd{),}
+                      \hlkwc{nrow}\hlstd{=}\hlnum{1}\hlstd{,}
+                      \hlkwc{ncol}\hlstd{=}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{children)}
+                       \hlopt{*}\hlstd{(}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{children)}\hlopt{-}\hlnum{1}\hlstd{)))}
+\hlstd{hierBeta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{)}
+\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"resForage"}\hlstd{,}
+          \hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.562}\hlstd{,} \hlopt{-}\hlnum{3.403}\hlstd{,}  \hlnum{2.765}\hlstd{,} \hlopt{-}\hlnum{1.607}\hlstd{,}  \hlnum{2.273}\hlstd{,}  \hlnum{4.842}\hlstd{,}
+                        \hlopt{-}\hlnum{0.665}\hlstd{,}  \hlopt{-}\hlnum{0.26}\hlstd{,} \hlopt{-}\hlnum{0.681}\hlstd{,} \hlopt{-}\hlnum{0.149}\hlstd{,} \hlopt{-}\hlnum{2.728}\hlstd{,} \hlopt{-}\hlnum{2.798}\hlstd{,}
+                        \hlopt{-}\hlnum{0.027}\hlstd{,}   \hlnum{0.26}\hlstd{,}  \hlnum{0.191}\hlstd{,}  \hlnum{0.667}\hlstd{,}  \hlnum{0.123}\hlstd{,} \hlopt{-}\hlnum{0.262}\hlstd{),}
+                      \hlkwc{nrow}\hlstd{=}\hlnum{3}\hlstd{,}
+                      \hlkwc{ncol}\hlstd{=}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{resForage}\hlopt{$}\hlstd{children)}
+                       \hlopt{*}\hlstd{(}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{resForage}\hlopt{$}\hlstd{children)}\hlopt{-}\hlnum{1}\hlstd{),}
+                      \hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{))}
+\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"mobForage"}\hlstd{,}
+          \hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.156}\hlstd{,} \hlopt{-}\hlnum{3.662}\hlstd{,}   \hlnum{3.01}\hlstd{,}  \hlnum{0.597}\hlstd{,} \hlopt{-}\hlnum{0.313}\hlstd{,}  \hlnum{2.897}\hlstd{,}
+                         \hlnum{0.067}\hlstd{,}  \hlopt{-}\hlnum{1.22}\hlstd{,} \hlopt{-}\hlnum{0.799}\hlstd{,} \hlopt{-}\hlnum{0.797}\hlstd{,}   \hlnum{0.15}\hlstd{,}  \hlnum{0.379}\hlstd{,}
+                        \hlopt{-}\hlnum{0.112}\hlstd{,} \hlopt{-}\hlnum{0.195}\hlstd{,} \hlopt{-}\hlnum{0.269}\hlstd{,} \hlopt{-}\hlnum{0.215}\hlstd{,}  \hlnum{1.539}\hlstd{,}  \hlnum{0.728}\hlstd{),}
+                      \hlkwc{nrow}\hlstd{=}\hlnum{3}\hlstd{,}
+                      \hlkwc{ncol}\hlstd{=}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{mobForage}\hlopt{$}\hlstd{children)}
+                       \hlopt{*}\hlstd{(}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{mobForage}\hlopt{$}\hlstd{children)}\hlopt{-}\hlnum{1}\hlstd{),}
+                      \hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{))}
+\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"transit"}\hlstd{,}
+          \hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.53}\hlstd{,} \hlopt{-}\hlnum{4.279}\hlstd{,}  \hlnum{2.507}\hlstd{,} \hlopt{-}\hlnum{0.228}\hlstd{,} \hlnum{10.803}\hlstd{,} \hlnum{12.873}\hlstd{,}
+                        \hlopt{-}\hlnum{0.04}\hlstd{,}  \hlnum{1.221}\hlstd{,} \hlopt{-}\hlnum{0.301}\hlstd{,}  \hlnum{0.284}\hlstd{,} \hlopt{-}\hlnum{0.106}\hlstd{,} \hlopt{-}\hlnum{0.077}\hlstd{,}
+                        \hlnum{0.629}\hlstd{,} \hlopt{-}\hlnum{0.226}\hlstd{,} \hlopt{-}\hlnum{0.253}\hlstd{,} \hlopt{-}\hlnum{0.303}\hlstd{,}  \hlnum{0.011}\hlstd{,}  \hlnum{0.036}\hlstd{),}
+                      \hlkwc{nrow}\hlstd{=}\hlnum{3}\hlstd{,}
+                      \hlkwc{ncol}\hlstd{=}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{transit}\hlopt{$}\hlstd{children)}
+                       \hlopt{*}\hlstd{(}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{transit}\hlopt{$}\hlstd{children)}\hlopt{-}\hlnum{1}\hlstd{),}
+                      \hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{))}
+
+\hlstd{hierDelta} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"cod delta"}\hlstd{)}
+\hlstd{hierDelta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{,}\hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{15.776}\hlstd{,} \hlnum{4.78}\hlstd{),}\hlnum{1}\hlstd{))}
+\hlstd{hierDelta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{)}
+\hlstd{hierDelta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"resForage"}\hlstd{,}\hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{0.643}\hlstd{,} \hlopt{-}\hlnum{2.416}\hlstd{),}\hlnum{1}\hlstd{))}
+\hlstd{hierDelta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"mobForage"}\hlstd{,}\hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{1.181}\hlstd{,} \hlnum{0.46}\hlstd{),}\hlnum{1}\hlstd{))}
+\hlstd{hierDelta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"transit"}\hlstd{,}\hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{0.357}\hlstd{,} \hlopt{-}\hlnum{0.624}\hlstd{),}\hlnum{1}\hlstd{))}
+
+\hlcom{# check hierarchical model specification and parameters}
+\hlkwd{checkPar0}\hlstd{(codData,}
+          \hlkwc{hierStates} \hlstd{= hierStates,}
+          \hlkwc{hierDist} \hlstd{= hierDist,}
+          \hlkwc{hierFormula} \hlstd{= hierFormula,}
+          \hlkwc{Par0} \hlstd{= Par,} \hlkwc{hierBeta} \hlstd{= hierBeta,} \hlkwc{hierDelta} \hlstd{= hierDelta,}
+          \hlkwc{DM} \hlstd{= DM,}
+          \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{))}
+\end{alltt}
+\begin{verbatim}
+## 
+## Regression coeffs for step parameters:
+## --------------------------------------
+##      mean_1:(Intercept) mean_2:(Intercept) mean_3:(Intercept)
+## [1,]            1.70147           1.914862             2.7023
+##      sd_1:(Intercept) sd_2:(Intercept) sd_3:(Intercept)
+## [1,]         1.451614         1.550537         2.419657
+## 
+## Regression coeffs for angle parameters:
+## ---------------------------------------
+##      mean_1:(Intercept) mean_2:(Intercept) mean_3:(Intercept)
+## [1,]        0.005500055         -0.1506238         0.02200355
+##      concentration_1:(Intercept) concentration_2:(Intercept)
+## [1,]                   0.4517124                   0.3548733
+##      concentration_3:(Intercept)
+## [1,]                   0.7654678
+## 
+## vertical parameters:
+## --------------------
+##            rF1   rF2      rF3       mF1   mF2   mF3    t1        t2
+## mean     0.116 0.303 6.91e-01 1.090e-01 0.056 0.351 0.125 0.5140000
+## sd       0.096 0.261 6.36e-01 4.300e-02 0.047 0.342 0.109 0.4620000
+## zeromass 0.014 0.003 1.05e-06 1.791e-08 0.035 0.002 0.012 0.0002933
+##                 t3
+## mean     1.987e+00
+## sd       1.878e+00
+## zeromass 3.462e-09
+## 
+## ----------------------------------------------------------
+## Regression coeffs for the transition probabilities (beta):
+## ----------------------------------------------------------
+## -------------------------  level1  -----------------------
+##                        1 -> 4 1 -> 7 4 -> 1 4 -> 7 7 -> 1 7 -> 4
+## I((level == "1") * 1) -18.585  -2.86 -2.551 -1.641 -2.169 -2.415
+## 
+## -------------------------  level2  -----------------------
+##                                                   1 -> 2 1 -> 3 2 -> 2
+## I((level == "2") * 1)                             -2.562 -3.403  2.765
+## I((level == "2") * cosinorCos(time, period = 24)) -0.665 -0.260 -0.681
+## I((level == "2") * cosinorSin(time, period = 24)) -0.027  0.260  0.191
+##                                                   2 -> 3 3 -> 2 3 -> 3
+## I((level == "2") * 1)                             -1.607  2.273  4.842
+## I((level == "2") * cosinorCos(time, period = 24)) -0.149 -2.728 -2.798
+## I((level == "2") * cosinorSin(time, period = 24))  0.667  0.123 -0.262
+## 
+##                                                   4 -> 5 4 -> 6 5 -> 5
+## I((level == "2") * 1)                             -2.156 -3.662  3.010
+## I((level == "2") * cosinorCos(time, period = 24))  0.067 -1.220 -0.799
+## I((level == "2") * cosinorSin(time, period = 24)) -0.112 -0.195 -0.269
+##                                                   5 -> 6 6 -> 5 6 -> 6
+## I((level == "2") * 1)                              0.597 -0.313  2.897
+## I((level == "2") * cosinorCos(time, period = 24)) -0.797  0.150  0.379
+## I((level == "2") * cosinorSin(time, period = 24)) -0.215  1.539  0.728
+## 
+##                                                   7 -> 8 7 -> 9 8 -> 8
+## I((level == "2") * 1)                             -2.530 -4.279  2.507
+## I((level == "2") * cosinorCos(time, period = 24)) -0.040  1.221 -0.301
+## I((level == "2") * cosinorSin(time, period = 24))  0.629 -0.226 -0.253
+##                                                   8 -> 9 9 -> 8 9 -> 9
+## I((level == "2") * 1)                             -0.228 10.803 12.873
+## I((level == "2") * cosinorCos(time, period = 24))  0.284 -0.106 -0.077
+## I((level == "2") * cosinorSin(time, period = 24)) -0.303  0.011  0.036
+## 
+## ----------------------------------------------------------
+## 
+## ----------------------------------------------------------
+## Regression coeffs for the initial distribution (delta):
+## ----------------------------------------------------------
+## ------------------------  level1  ------------------------
+##             state 4 state 7
+## (Intercept)  15.776    4.78
+## 
+## ------------------------  level2  ------------------------
+##                        state 2 state 3
+## I((level == "2i") * 1)  -0.643  -2.416
+## 
+##                        state 5 state 6
+## I((level == "2i") * 1)   1.181    0.46
+## 
+##                        state 8 state 9
+## I((level == "2i") * 1)  -0.357  -0.624
+## 
+## ----------------------------------------------------------
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\noindent and we are now ready to fit the HHMM:
 
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlstd{hhmm} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(codData,}
-               \hlkwc{hierStates}\hlstd{=hierStates,}
-               \hlkwc{hierDist}\hlstd{=hierDist,}
-               \hlkwc{hierFormula}\hlstd{=hierFormula,}
-               \hlkwc{Par0}\hlstd{=Par,}
-               \hlkwc{hierBeta}\hlstd{=hierBeta,}
-               \hlkwc{hierDelta}\hlstd{=hierDelta,}
-               \hlkwc{DM}\hlstd{=DM,}
+               \hlkwc{hierStates} \hlstd{= hierStates,}
+               \hlkwc{hierDist} \hlstd{= hierDist,}
+               \hlkwc{hierFormula} \hlstd{= hierFormula,}
+               \hlkwc{Par0} \hlstd{= Par,} \hlkwc{hierBeta} \hlstd{= hierBeta,} \hlkwc{hierDelta} \hlstd{= hierDelta,}
+               \hlkwc{DM} \hlstd{= DM,}
                \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{))}
 
-\hlkwd{plot}\hlstd{(hhmm,}\hlkwc{plotCI}\hlstd{=}\hlnum{TRUE}\hlstd{,}\hlkwc{ask}\hlstd{=}\hlnum{FALSE}\hlstd{)}
+\hlkwd{plot}\hlstd{(hhmm,} \hlkwc{plotCI}\hlstd{=}\hlnum{TRUE}\hlstd{,} \hlkwc{ask}\hlstd{=}\hlnum{FALSE}\hlstd{)}
 
 \hlcom{# plot stationary distributions and CIs}
 \hlkwd{plotStationary}\hlstd{(hhmm,} \hlkwc{plotCI}\hlstd{=}\hlnum{TRUE}\hlstd{)}
@@ -4559,7 +4700,7 @@ Here we demonstrate how to fit a discrete-time version of the African buffalo re
 \begin{equation*}
   {\boldsymbol \mu}_t \mid S_t=s \sim \mathcal{N}\left( {\boldsymbol \mu}_{t-1}+D({\boldsymbol \mu}_{t-1}){\boldsymbol \beta}^\mu I(s=2),\sigma_s^2 {\mathbf I} \right),
 \end{equation*}
-$I()$ is the indicator function, $\mathbf I$ is a $2 \times 2$ identity matrix, and $D({\boldsymbol \mu}_t)$ is the negative gradient of $d$ evaluated at location ${\boldsymbol \mu}_t$. %$-\left(\frac{\partial d}{\partial x}, \frac{\partial d}{\partial y}\right)$
+where $I()$ is the indicator function, $\mathbf I$ is a $2 \times 2$ identity matrix, and $D({\boldsymbol \mu}_t)$ is the negative gradient of $d$ evaluated at location ${\boldsymbol \mu}_t$. %$-\left(\frac{\partial d}{\partial x}, \frac{\partial d}{\partial y}\right)$
 Thus when the animal is in the charged state (i.e. $S_t=1$), the movement model is a simple random walk. When the animal is in the discharged state (i.e. $S_t=2$), the movement model includes a potential function surface based on distance to nearest surface water \citep[for more on potential functions see][and sections \ref{sec:turtle} and \ref{sec:avoidLand}]{BrillingerEtAl2012,HootenEtAl2017,HootenEtAl2019}. In terms of $\Gamma^{(t)}$, the model for the state-switching dynamics is simply:
 \begin{equation}
   {\mathbf \Gamma^{(t)}} = \begin{bmatrix}
@@ -4623,7 +4764,7 @@ In order to fit this model, we must first load the data and format the covariate
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-\noindent Note that to (presumably) help with numerical stability, \cite{HootenEtAl2019} orthogonalized the recharge function covariates as above; the resulting recharge function is now $g_t = g_0 + \sum_{j=1}^t w^*_{1,j} \theta_1 + w^*_{2,j} \theta_2$, where $w^*_{1,j}$ and $w^*_{2,j}$ are the transformed intercept and distance indicator covariates.
+\noindent Note that to (presumably) help with numerical stability, \cite{HootenEtAl2019} orthogonalized the recharge function covariates as above; the resulting recharge function is now $g_t = g_0 + \sum_{j=1}^t w^*_{1,j} \theta_1 + w^*_{2,j} \theta_2$, where $w^*_{1,j}$ and $w^*_{2,j}$ are the transformed intercept and distance indicator covariates, respectively.
 
 The buffalo track data were collected from a GPS collar, but the roughly hourly observations were not perfectly regular.% (Figure \ref{fig:buffaloData}). 
 %\begin{figure}[htbp]
@@ -4825,13 +4966,12 @@ Now we're ready to specify the recharge model. We'll first fit the model to the 
     \frac{1}{(1+\exp(\beta_0+g_t\beta_1))} & \frac{\exp(\beta_0+g_t\beta_1)}{(1+\exp(\beta_0+g_t\beta_1))}  \\
     \frac{1}{(1+\exp(\beta_0+g_t\beta_1))} & \frac{\exp(\beta_0+g_t\beta_1)}{(1+\exp(\beta_0+g_t\beta_1))}   
   \end{bmatrix},
-  \label{eq:rechargeTPM2}
 \end{equation*}
 where
 \begin{equation*}
   g_t = g_0 + \sum_{j=1}^t \theta_0 + \text{W\_intercept}_j \theta_1 + \text{W\_near\_sabie}_j \theta_2.
 \end{equation*}
-Using \verb|fixPar|, we fixed $\beta_0=0$ and $\beta_1=-1$. Thus we have removed the Markov property from the state-switching dynamics and ensured that the probability of being in the ``discharged'' state (state 2) decreases as the recharge function $(g_t)$ increases. We also fix $\theta_0=0$ because we do not need the required intercept term in this particular case (an orthogonalized intercept term ``W\_intercept'' is already included as a covariate). With these parameters fixed, we have now specified the exact same state transition model as in Eq. \ref{eq:rechargeTPM1}.
+Using \verb|fixPar|, we fixed $\beta_0=0$ and $\beta_1=-1$. Thus we have removed the Markov property from the state-switching dynamics and ensured that the probability of being in the ``discharged'' state (state 2) decreases as the recharge function $(g_t)$ increases as in Eq. \ref{eq:rechargeTPM1}. We also fix $\theta_0=0$ because we do not need the required intercept term in this particular case (an orthogonalized intercept term ``W\_intercept'' is already included as a covariate). Because we have removed the Markov property from the state-switching dynamics, the initial distribution has no effect on the likelihood; we therefore fixed it (arbitrarily) to \verb|delta=c(0.5,0.5)|.
 
 Now that we have our starting values (``bestPar''), let's fit $28$ imputations of the position process using \verb|MIfitHMM|:
 \begin{knitrout}
