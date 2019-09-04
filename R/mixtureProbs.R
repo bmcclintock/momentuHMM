@@ -59,12 +59,18 @@ mixtureProbs <- function(m){
   # get probability that individual is in each mixture
   mixProbs <- lnum <- matrix(0,nbAnimals,mixtures)
   for(i in 1:nbAnimals){
+    pInd <- which(pie[i,]==0)
+    if(length(pInd)){
+      pie[i,pInd] <- 1.e-100
+      pie[i,-pInd] <- pie[i,-pInd] - (1.e-100*length(pInd))/(ncol(pie)-length(pInd))
+    }
     for(mix in 1:mixtures){
       c <- max(la[[mix]][aInd[i],]+log(pie[i,mix]))
       lnum[i,mix] <- c + log(sum(exp(la[[mix]][aInd[i],]+log(pie[i,mix])-c)))
     }
     c <- max(lnum[i,])
     mixProbs[i,] <- exp(lnum[i,] - c - log(sum(exp(lnum[i,]-c))))
+    mixProbs[i,pInd] <- 0
   }
   colnames(mixProbs) <- paste0("mix",1:mixtures)
   rownames(mixProbs) <- paste0("ID:",unique(m$data$ID))
