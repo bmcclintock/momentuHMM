@@ -293,7 +293,7 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
       deltaNames <- paste0(rep(deltaNames,mixtures),"_mix",rep(1:mixtures,each=length(deltaNames)))
         
       if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(model$conditions$formulaDelta) & is.null(formulaDelta) & model$conditions$mixtures==mixtures & !model$conditions$stationary){
-        Par$delta<-model$mle$delta[1,,drop=FALSE][,match(colnames(model$mle$delta),stateNames)]
+        Par$delta<-matrix(getPar(model)$delta,nrow=mixtures)[,match(colnames(model$mle$delta),stateNames)]
       } else {
         if(model$conditions$mixtures==1 & !model$conditions$stationary) rownames(model$CIbeta$delta$est) <- paste0(rep(rownames(model$CIbeta$delta$est),model$conditions$mixtures),"_mix",rep(1:model$conditions$mixtures,each=length(rownames(model$CIbeta$delta$est))))
         if(all(grepl("(Intercept)",deltaNames)) & is.null(formulaDelta)){
