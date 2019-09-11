@@ -59,7 +59,7 @@ mixtureProbs <- function(m){
   # get probability that individual is in each mixture
   mixProbs <- lnum <- matrix(0,nbAnimals,mixtures)
   for(i in 1:nbAnimals){
-    pInd <- which(pie[i,]==0)
+    pInd <- which(mapply(function(x) isTRUE(all.equal(x,0)),pie))
     if(length(pInd)){
       pie[i,pInd] <- 1.e-100
       pie[i,-pInd] <- pie[i,-pInd] - (1.e-100*length(pInd))/(ncol(pie)-length(pInd))
