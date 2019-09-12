@@ -54,8 +54,9 @@ crawlMerge.crwData<-function(crwData, data, Time.name){
   covNames <- names(data)[!(names(data) %in% dataNames)]
   #if(any(covNames %in% names(crwData$crwPredict)[!(names(crwData$crwPredict) %in% dataNames)])) stop("Data stream and/or covariate names in data cannot match column names in crwData$crwPredict")
   for(i in unique(crwData$crwPredict$ID)){
-    crInd <- which(crwData$crwPredict$ID==i)
+    crInd <- which(crwData$crwPredict$ID==i & crwData$crwPredict$locType=="p")
     tmp<-merge(crwData$crwPredict[crInd,!(names(crwData$crwPredict) %in% covNames)],data[which(data$ID==i),],by=Time.name,all.x=TRUE,all.y=FALSE,sort=TRUE)
+    if(nrow(tmp)!=length(crInd)) stop("multiple ",Time.name," matches found for individual ",i)
     crwData$crwPredict[crInd,covNames]<-tmp[covNames]
   }
   return(crwData)
@@ -73,8 +74,9 @@ crawlMerge.crwHierData<-function(crwData, data, Time.name){
   covNames <- names(data)[!(names(data) %in% dataNames)]
   #if(any(covNames %in% names(crwData$crwPredict)[!(names(crwData$crwPredict) %in% dataNames)])) stop("Data stream and/or covariate names in data cannot match column names in crwData$crwPredict")
   for(i in unique(crwData$crwPredict$ID)){
-    crInd <- which(crwData$crwPredict$ID==i)
+    crInd <- which(crwData$crwPredict$ID==i & crwData$crwPredict$locType=="p")
     tmp<-merge(crwData$crwPredict[crInd,!(names(crwData$crwPredict) %in% covNames)],data[which(data$ID==i),],by=Time.name,all.x=TRUE,all.y=FALSE,sort=TRUE)
+    if(nrow(tmp)!=length(crInd)) stop("multiple ",Time.name," matches found for individual ",i)
     crwData$crwPredict[crInd,covNames]<-tmp[covNames]
   }
   return(crwData)
