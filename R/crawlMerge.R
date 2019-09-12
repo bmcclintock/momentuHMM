@@ -52,9 +52,12 @@ crawlMerge.crwData<-function(crwData, data, Time.name){
   if(!(Time.name %in% names(data))) stop(Time.name," not found in data")
   dataNames <- c("ID",Time.name)
   covNames <- names(data)[!(names(data) %in% dataNames)]
-  if(any(covNames %in% names(crwData$crwPredict)[!(names(crwData$crwPredict) %in% dataNames)])) stop("Data stream and/or covariate names in data cannot match column names in crwData$crwPredict")
-  tmp<-merge(crwData$crwPredict,data,by=dataNames,all.x=TRUE,all.y=FALSE,sort=FALSE)
-  crwData$crwPredict[covNames]<-tmp[covNames]
+  #if(any(covNames %in% names(crwData$crwPredict)[!(names(crwData$crwPredict) %in% dataNames)])) stop("Data stream and/or covariate names in data cannot match column names in crwData$crwPredict")
+  for(i in unique(crwData$crwPredict$ID)){
+    crInd <- which(crwData$crwPredict$ID==i)
+    tmp<-merge(crwData$crwPredict[crInd,!(names(crwData$crwPredict) %in% covNames)],data[which(data$ID==i),],by=Time.name,all.x=TRUE,all.y=FALSE,sort=TRUE)
+    crwData$crwPredict[crInd,covNames]<-tmp[covNames]
+  }
   return(crwData)
 }
 
@@ -68,8 +71,11 @@ crawlMerge.crwHierData<-function(crwData, data, Time.name){
   if(!("level" %in% names(data))) stop("level not found in data")
   dataNames <- c("ID",Time.name,"level")
   covNames <- names(data)[!(names(data) %in% dataNames)]
-  if(any(covNames %in% names(crwData$crwPredict)[!(names(crwData$crwPredict) %in% dataNames)])) stop("Data stream and/or covariate names in data cannot match column names in crwData$crwPredict")
-  tmp<-merge(crwData$crwPredict,data,by=dataNames,all.x=TRUE,all.y=FALSE,sort=FALSE)
-  crwData$crwPredict[covNames]<-tmp[covNames]
+  #if(any(covNames %in% names(crwData$crwPredict)[!(names(crwData$crwPredict) %in% dataNames)])) stop("Data stream and/or covariate names in data cannot match column names in crwData$crwPredict")
+  for(i in unique(crwData$crwPredict$ID)){
+    crInd <- which(crwData$crwPredict$ID==i)
+    tmp<-merge(crwData$crwPredict[crInd,!(names(crwData$crwPredict) %in% covNames)],data[which(data$ID==i),],by=Time.name,all.x=TRUE,all.y=FALSE,sort=TRUE)
+    crwData$crwPredict[crInd,covNames]<-tmp[covNames]
+  }
   return(crwData)
 }

@@ -20,6 +20,10 @@ NEW FEATURES
 
 * added na.rm argument to MIpool and MIfitHMM for excluding model fits with NA estimates or standard errors from pooling
 
+BUG FIXES
+
+* crawlMerge did not properly sort the merged crwData object when time steps were missing in data; it now properly handles missing time steps in data
+
 
 momentuHMM 1.4.3 2018-11-21
 -----------------
