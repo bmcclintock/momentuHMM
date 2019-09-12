@@ -86,7 +86,8 @@ AIC(fitmix1,fitmix2,fitmix3,fitmix4,fitfix)
 AICweights(fitmix1,fitmix2,fitmix3,fitmix4,fitfix)
 
 ## calculate mixture probabilities for each individual
-round(mixtureProbs(fitmix3),3)
+mixProbs <- mixtureProbs(fitmix3,getCI=TRUE)
+round(mixProbs$est,3)
 
 ## calculate state transition probabilities for each mixture
 trProbs <- getTrProbs(fitmix3, covIndex=1)

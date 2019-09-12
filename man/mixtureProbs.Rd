@@ -4,10 +4,14 @@
 \alias{mixtureProbs}
 \title{Mixture probabilities}
 \usage{
-mixtureProbs(m)
+mixtureProbs(m, getCI = FALSE, alpha = 0.95)
 }
 \arguments{
-\item{m}{A \code{momentuHMM} object.}
+\item{m}{\code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object}
+
+\item{getCI}{Logical indicating whether to calculate standard errors and logit-transformed confidence intervals for fitted \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object. Default: FALSE.}
+
+\item{alpha}{Significance level of the confidence intervals (if \code{getCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).}
 }
 \value{
 The matrix of individual mixture probabilities, with element [i,j] the probability
@@ -15,6 +19,9 @@ of individual i being in mixture j
 }
 \description{
 For a fitted model, this function computes the probability of each individual being in a particular mixture
+}
+\details{
+When \code{getCI=TRUE}, it can take a while for large data sets and/or a large number of mixtures because the model likelihood for each individual must be repeatedly evaluated in order to numerically approximate the SEs.
 }
 \examples{
 \dontrun{
@@ -38,7 +45,7 @@ Par0 <- list(step=Par$step, angle=Par$angle[3:4])
 m.mix <- fitHMM(data.mix, nbStates=2, dist=dist, Par0 = Par0, 
                 beta0=beta,formulaPi=formulaPi,mixtures=2)
                 
-mixtureProbs(m.mix)
+mixProbs <- mixtureProbs(m.mix, getCI=TRUE)
 }
 }
 \references{

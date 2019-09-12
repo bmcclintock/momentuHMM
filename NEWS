@@ -16,7 +16,7 @@ NEW FEATURES
 
 * circularAngleMean can now alternatively be used to specify the reference angle (i.e. directional persistence) coefficient in circular-circular regression models
 
-* added getTrProbs function for calculating transition probabilities
+* added getTrProbs and mixtureProbs functions for calculating transition and mixture probabilities, respectively
 
 * added na.rm argument to MIpool and MIfitHMM for excluding model fits with NA estimates or standard errors from pooling
 

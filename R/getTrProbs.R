@@ -24,7 +24,7 @@ getTrProbs <- function(data, ...){
 #' @param mixtures Number of mixtures for the state transition probabilities.  Ignored unless \code{data} is a data frame.
 #' @param betaRef Indices of reference elements for t.p.m. multinomial logit link. Ignored unless \code{data} is a data frame.
 #' @param stateNames Optional character vector of length nbStates indicating state names. Ignored unless \code{data} is a data frame.
-#' @param getCI Logical indicating whether to calculate standard errors and confidence intervals based on fitted \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object. Default: FALSE.
+#' @param getCI Logical indicating whether to calculate standard errors and logit-transformed confidence intervals based on fitted \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object. Default: FALSE.
 #' @param covIndex Integer vector indicating specific rows of the data to be used in the calculations. This can be useful for reducing unnecessarily long computation times (paricularly when \code{getCI=TRUE}), e.g., when \code{formula} includes factor covariates (such as \code{ID}) but no temporal covariates. Ignored if \code{data} is not a \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miSum}}, or \code{\link{miHMM}} object.
 #' @param alpha Significance level of the confidence intervals (if \code{getCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).
 #' 
