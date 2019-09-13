@@ -58,8 +58,8 @@ mixtureProbs <- function(m, getCI=FALSE, alpha = 0.95){
   nbAnimals <- length(unique(m$data$ID))
   mixtures <- m$conditions$mixtures
   
-  if(mixtures==1)
-    stop("No mixtures to assign probabilities (mixtures=1)")
+  if(mixtures==1) getCI <- FALSE
+    #stop("No mixtures to assign probabilities (mixtures=1)")
   
   if(mixtures>1) pie <- m$mle$pi
   else pie <- matrix(1,nbAnimals,1)
