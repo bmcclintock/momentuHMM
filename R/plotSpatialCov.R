@@ -48,6 +48,9 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   #####################
   ## Check arguments ##
   #####################
+  if(!inherits(spatialCov,"RasterLayer")) 
+    stop("spatialCov should be of class 'RasterLayer'")
+  
   if(is.null(states) & inherits(data,c("momentuHMM","miHMM","miSum"))){
     if(inherits(data,"momentuHMM")) states <- viterbi(data)
     else if(inherits(data,"miHMM")) states <- data$miSum$Par$states
@@ -82,9 +85,6 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   
   if(!compact & return)
     stop("Cannot return plot if not compact. Either set 'compact=TRUE' or 'return=FALSE'.")
-  
-  if(!inherits(spatialCov,"RasterLayer")) 
-    stop("spatialCov should be of class 'RasterLayer'")
   
   if(is.null(data$ID))
     data$ID <- rep("Animal1",nrow(data)) # default ID if none provided

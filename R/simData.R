@@ -929,7 +929,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
         zname <- names(attributes(spatialCovs[[j]])$z)
         zvalues <- raster::getZ(spatialCovs[[j]])
-        spCov <- spCov[1,which(zvalues==covs[[zname]][1])]
+        spCov <- spCov[1,which(zvalues==tmpCovs[[zname]][1])]
       }
       tmpCovs[[spatialcovnames[j]]]<-spCov
     }
@@ -1159,7 +1159,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
               zname <- names(attributes(spatialCovs[[j]])$z)
               zvalues <- raster::getZ(spatialCovs[[j]])
-              spCov <- spCov[1,which(zvalues==covs[[zname]][1])]
+              spCov <- spCov[1,which(zvalues==subCovs[1,zname])]
             }
             subSpatialcovs[1,j]<-spCov
             if(spatialcovnames[j] %in% angleCovs) {
@@ -1365,7 +1365,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
               if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
                 zname <- names(attributes(spatialCovs[[j]])$z)
                 zvalues <- raster::getZ(spatialCovs[[j]])
-                spCov <- spCov[1,which(zvalues==covs[[zname]][k+1])]
+                spCov <- spCov[1,which(zvalues==subCovs[k+1,zname])]
               }
               subSpatialcovs[k+1,j]<-spCov
               if(spatialcovnames[j] %in% angleCovs) {

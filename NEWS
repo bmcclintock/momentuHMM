@@ -1,4 +1,4 @@
-momentuHMM 1.5.0 2019-08-25
+momentuHMM 1.5.0 2019-09-23
 -----------------
 NEW FEATURES
 
@@ -23,6 +23,8 @@ NEW FEATURES
 BUG FIXES
 
 * crawlMerge did not properly sort the merged crwData object when time steps were missing in data; it now properly handles missing time steps in data
+
+* simData now properly extracts z values from raster stacks when nbAnimals > 1
 
 
 momentuHMM 1.4.3 2018-11-21

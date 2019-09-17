@@ -702,7 +702,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
         zname <- names(attributes(spatialCovs[[j]])$z)
         zvalues <- raster::getZ(spatialCovs[[j]])
-        spCov <- spCov[1,which(zvalues==covs[[zname]][1])]
+        spCov <- spCov[1,which(zvalues==tmpCovs[[zname]][1])]
       }
       tmpCovs[[spatialcovnames[j]]]<-spCov
     }
