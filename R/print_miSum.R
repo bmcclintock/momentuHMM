@@ -6,6 +6,9 @@
 #' @param ... Currently unused. For compatibility with generic method.
 #'
 #' @examples
+#' \dontshow{
+#' set.seed(2,kind="Mersenne-Twister",normal.kind="Inversion")
+#' }
 #' \dontrun{
 #' # Extract data from miExample
 #' obsData <- miExample$obsData

@@ -130,7 +130,9 @@ MIfitHMM <- function(miData, ...) {
 #' @seealso \code{\link{crawlWrap}}, \code{\link[crawl]{crwPostIS}}, \code{\link[crawl]{crwSimulator}}, \code{\link{fitHMM}}, \code{\link{getParDM}}, \code{\link{MIpool}}, \code{\link{prepData}} 
 #' 
 #' @examples
-#' 
+#' \dontshow{
+#' set.seed(3,kind="Mersenne-Twister",normal.kind="Inversion")
+#' }
 #' # Don't run because it takes too long on a single core
 #' \dontrun{
 #' # extract simulated obsData from example data

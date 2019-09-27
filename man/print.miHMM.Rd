@@ -15,6 +15,9 @@
 Print \code{miHMM}
 }
 \examples{
+\dontshow{
+set.seed(2,kind="Mersenne-Twister",normal.kind="Inversion")
+}
 \dontrun{
 # Extract data from miExample
 obsData <- miExample$obsData

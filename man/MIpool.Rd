@@ -44,6 +44,9 @@ and, if applicable, are based on covariate means across all imputations (and/or 
 Note that pooled estimates for \code{timeInStates} and \code{stateProbs} do not include within-model uncertainty and are based entirely on across-model variability.
 }
 \examples{
+\dontshow{
+set.seed(2,kind="Mersenne-Twister",normal.kind="Inversion")
+}
 \dontrun{
 # Extract data and crawl inputs from miExample
 obsData <- miExample$obsData

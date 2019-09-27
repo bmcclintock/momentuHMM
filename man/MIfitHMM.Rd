@@ -237,7 +237,9 @@ If \code{miData} is a \code{\link{crwSim}} (or \code{\link{crwHierSim}}) object 
 and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} are ignored.
 }
 \examples{
-
+\dontshow{
+set.seed(3,kind="Mersenne-Twister",normal.kind="Inversion")
+}
 # Don't run because it takes too long on a single core
 \dontrun{
 # extract simulated obsData from example data
