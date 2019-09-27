@@ -73,22 +73,23 @@ miFits<-MIfitHMM(crwOut,nSims=4,nbStates=nbStates,Par0=bPar$Par,beta0=bPar$beta,
 
 miExample <- list(obsData=obsData,bPar=bPar)
 
-set.seed(3)
-buffer<-100000        # grid half-width
-res<-1000             # grid cell resolution
-xy <- expand.grid(seq(-buffer,buffer,res), seq(-buffer,buffer,res))
-names(xy) <- c("x","y")
-g <- gstat::gstat(formula=z~1, locations=~x+y, dummy=T, beta=1, model=gstat::vgm(psill=0.025,model="Exp",range=buffer), nmax=20)
-forest <- predict(g, newdata=xy, nsim=1)
-forest$sim1<-scale(forest$sim1,center=mean(forest$sim1))
-forest$sim1<-forest$sim1/max(forest$sim1)
-forest$sim1[which(forest$sim1<0)]<-0
-sp::gridded(forest) = ~x+y
-sp::spplot(forest[1])
-forest<-raster::raster(forest)
-names(forest)<-"forest"
+#set.seed(3)
+#buffer<-100000        # grid half-width
+#res<-1000             # grid cell resolution
+#xy <- expand.grid(seq(-buffer,buffer,res), seq(-buffer,buffer,res))
+#names(xy) <- c("x","y")
+#g <- gstat::gstat(formula=z~1, locations=~x+y, dummy=T, beta=1, model=gstat::vgm(psill=0.025,model="Exp",range=buffer), nmax=20)
+#forest <- predict(g, newdata=xy, nsim=1)
+#forest$sim1<-scale(forest$sim1,center=mean(forest$sim1))
+#forest$sim1<-forest$sim1/max(forest$sim1)
+#forest$sim1[which(forest$sim1<0)]<-0
+#sp::gridded(forest) = ~x+y
+#sp::spplot(forest[1])
+#forest<-raster::raster(forest)
+#names(forest)<-"forest"
 
-usethis::use_data(example,miExample,forest,compress="xz",overwrite=TRUE)
+#usethis::use_data(example,miExample,forest,compress="xz",overwrite=TRUE)
+usethis::use_data(example,miExample,compress="xz",overwrite=TRUE)
 
 setRNG::setRNG(oldRNG)
 

@@ -140,6 +140,8 @@ muffleRNGwarning <- function(w) {
 delta_bc <- function(m){
   
   if(is.momentuHMM(m) | is.miSum(m)){
+    if(!m$conditions$fit) warning("The given model hasn't been fitted.")
+    else m$conditions$fit <- TRUE
     if(is.null(m$conditions$workBounds)){
       distnames <- names(m$conditions$dist)
       

@@ -330,9 +330,8 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
   
   wpar <- n2w(par,p$bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind,inputs$dist)
   
-  m$mod <- list()
-  m$mod$estimate <- wpar
   m$mod$hessian <- matrix(0,length(wpar),length(wpar))
+  m$conditions$fit <- TRUE
   
   #m$CIreal<-CIreal(m)
   m$CIbeta<-CIbeta(m)

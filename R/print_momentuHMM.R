@@ -25,7 +25,7 @@ print.momentuHMM <- function(x,...)
     cat(rep("-",nchar(mess)),"------------\n\n",sep="")
   }
   
-  if(length(m$mod)>1)
+  if(!is.null(m$mod$minimum))
     cat("Value of the maximum log-likelihood:",-m$mod$minimum,"\n\n")
   
   for(i in distnames){
@@ -123,7 +123,7 @@ print.momentuHierHMM <- function(x,...)
     cat(rep("-",nchar(mess)),"------------\n\n",sep="")
   }
   
-  if(length(m$mod)>1)
+  if(!is.null(m$mod$minimum))
     cat("Value of the maximum log-likelihood:",-m$mod$minimum,"\n\n")
   
   for(i in distnames){

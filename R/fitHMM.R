@@ -759,6 +759,12 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   nc <- ncmean$nc
   meanind <- ncmean$meanind
   
+  optPar <- wpar
+  optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar$pi)+which(duplicated(c(deltaCons)))))
+  if(length(optInd)){
+    optPar <- wpar[-optInd]
+  }
+  
   # aInd = list of indices of first observation for each animal
   aInd <- NULL
   for(i in 1:nbAnimals){
@@ -800,12 +806,6 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
         stepmax <- ifelse(is.null(nlmPar$stepmax),defStepmax,nlmPar$stepmax)
         steptol <- ifelse(is.null(nlmPar$steptol),1e-6,nlmPar$steptol)
         iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
-  
-        optPar <- wpar
-        optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar$pi)+which(duplicated(c(deltaCons)))))
-        if(length(optInd)){
-          optPar <- wpar[-optInd]
-        }
         
         startTime <- proc.time()
   
@@ -889,7 +889,13 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     }
   }
   else {
-    mod <- NA
+    mod <- list()
+    mod$minimum <- nLogLike(optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
+                               inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
+                               stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
+                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd)
+    mod$estimate <- wpar
+    mod$wpar <- optPar
     mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
   }
   
@@ -985,7 +991,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
-                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=fixParIndex$ofixPar,wparIndex=fixParIndex$wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recharge=recharge,mvnCoords=mvnCoords,mixtures=mixtures,formulaPi=formulaPi)
+                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,cons=DMinputs$cons,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,workcons=DMinputs$workcons,fixPar=fixParIndex$ofixPar,wparIndex=fixParIndex$wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recharge=recharge,mvnCoords=mvnCoords,mixtures=mixtures,formulaPi=formulaPi,fit=fit)
 
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName,reCovs=recovsCol,g0covs=g0covsCol,covsPi=covsPi)
   
