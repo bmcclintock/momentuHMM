@@ -10,7 +10,7 @@ stateNames <- c("seaARS","seaTr","boatARS","boatTr","colonyARS","colonyTr")
 dist <- list(step="weibull",angle="wrpcauchy",d="lnorm") # distributions for step length ('step'), turning angle ('angle'), and distance to nearest boat ('d')
 
 # load data provided by Pirotta et al
-raw_data <- read.csv(url("https://datadryad.org/bitstream/handle/10255/dryad.174482/Fulmar_trackingData.csv?sequence=1"),stringsAsFactors = FALSE)
+raw_data <- read.csv(url("https://datadryad.org/stash/downloads/file_stream/45899"),stringsAsFactors = FALSE)
 
 raw_data$ID <- raw_data$tripID
 raw_data$Date <- as.POSIXct(raw_data$Date,tz="UTC",format="%d/%m/%Y %H:%M") # not sure these are actually UTC, but doesn't matter for this analysis

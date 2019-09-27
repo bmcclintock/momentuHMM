@@ -1,5 +1,3 @@
-devtools::install_github('NMML/crawl@devel')
-devtools::install_github('bmcclintock/momentuHMM@develop')
 library(momentuHMM)
 
 # load turtle data from github

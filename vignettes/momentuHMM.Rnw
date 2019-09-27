@@ -1240,9 +1240,8 @@ The data are provided in a Dryad repository, but these will require some additio
 library(sp)
 
 # load data provided by Pirotta et al
-fulmarURL <- "https://datadryad.org/bitstream/handle/10255/dryad.174482/"
-fileName <- "Fulmar_trackingData.csv?sequence=1"
-raw_data <- read.csv(url(paste0(fulmarURL,fileName)),
+fulmarURL <- "https://datadryad.org/stash/downloads/file_stream/45899"
+raw_data <- read.csv(url(fulmarURL),
                      stringsAsFactors = FALSE)
 
 raw_data$ID <- raw_data$tripID
