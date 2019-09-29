@@ -50,7 +50,7 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
   if(!is.momentuHMM(m))
     stop("'m' must be a momentuHMM object (as output by fitHMM)")
 
-  if(!m$conditions$fit)
+  if(!is.null(m$conditions$fit) && !m$conditions$fit)
     stop("The given model hasn't been fitted.")
 
   if(alpha<0 | alpha>1)
