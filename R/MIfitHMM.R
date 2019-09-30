@@ -433,10 +433,13 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
   
   fits <- HMMfits(fits)
   
-  if(poolEstimates & nSims>1) out <- miHMM(list(miSum=MIpool(fits,alpha=alpha,ncores=ncores,na.rm=na.rm),HMMfits=fits))
-    else out <- fits
+  if(poolEstimates & nSims>1){ 
+    mipool <- tryCatch(MIpool(fits,alpha=alpha,ncores=ncores,na.rm=na.rm),error=function(e) e)
+    if(!inherits(mipool,"error")) fits <- miHMM(list(miSum=mipool,HMMfits=fits))
+    else warning("MIpool failed: ",mipool)
+  }
   
-  out
+  return(fits)
 }
 
 #' @rdname MIfitHMM
@@ -692,10 +695,13 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
   fits <- HMMfits(fits)
   class(fits) <- append(class(fits),"hierarchical")
   
-  if(poolEstimates & nSims>1) {
-    out <- miHMM(list(miSum=MIpool(fits,alpha=alpha,ncores=ncores,na.rm=na.rm),HMMfits=fits))
-    class(out) <- append(class(out),"hierarchical")
-  } else out <- fits
+  if(poolEstimates & nSims>1){ 
+    mipool <- tryCatch(MIpool(fits,alpha=alpha,ncores=ncores,na.rm=na.rm),error=function(e) e)
+    if(!inherits(mipool,"error")) {
+      fits <- miHMM(list(miSum=mipool,HMMfits=fits))
+      class(fits) <- append(class(fits),"hierarchical")
+    } else warning("MIpool failed: ",mipool)
+  }
   
-  out
+  return(fits)
 }
