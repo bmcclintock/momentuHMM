@@ -147,6 +147,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   funMap["cat"] = dcat_rcpp;
   funMap["exp"] = dexp_rcpp;
   funMap["gamma"] = dgamma_rcpp;
+  funMap["logis"] = dlogis_rcpp;
   funMap["lnorm"] = dlnorm_rcpp;
   funMap["negbinom"] = dnbinom_rcpp;
   funMap["norm"] = dnorm_rcpp;

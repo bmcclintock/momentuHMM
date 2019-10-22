@@ -210,6 +210,19 @@ dnbinom_rcpp <- function(x, mu, size) {
     .Call('_momentuHMM_dnbinom_rcpp', PACKAGE = 'momentuHMM', x, mu, size)
 }
 
+#' logistic density function
+#'
+#' Probability density function of the logistic distribution (written in C++)
+#'
+#' @param x Vector of quantiles
+#' @param location mean of the distribution 
+#' @param scale Dispersion parameter
+#'
+#' @return Vector of densities
+dlogis_rcpp <- function(x, location, scale) {
+    .Call('_momentuHMM_dlogis_rcpp', PACKAGE = 'momentuHMM', x, location, scale)
+}
+
 #' Get design matrix
 #'
 #' Loop for creating full design matrix (X) from pseudo-design matrix (DM). Written in C++. Used in \code{getDM}.

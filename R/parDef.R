@@ -67,6 +67,12 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
              tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
              parNames[[i]]<-c("mean","sd")
            },
+           "logis"={
+             parSize[[i]] <- 2
+             tmpbounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates)),
+                                 ncol=2,byrow=TRUE)
+             parNames[[i]] <- c("location","scale")
+           },
            "lnorm"={
              parSize[[i]] <- 2 + zeroInflation[[i]]
              tmpbounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates*(1+zeroInflation[[i]]))),
