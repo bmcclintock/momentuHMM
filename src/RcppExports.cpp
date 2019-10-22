@@ -274,6 +274,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// dt_rcpp
+arma::colvec dt_rcpp(NumericVector x, arma::mat df, arma::mat ncp);
+RcppExport SEXP _momentuHMM_dt_rcpp(SEXP xSEXP, SEXP dfSEXP, SEXP ncpSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type df(dfSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type ncp(ncpSEXP);
+    rcpp_result_gen = Rcpp::wrap(dt_rcpp(x, df, ncp));
+    return rcpp_result_gen;
+END_RCPP
+}
 // getDM_rcpp
 arma::cube getDM_rcpp(arma::cube X, arma::mat covs, CharacterVector DM, unsigned int nr, unsigned int nc, CharacterVector cov, unsigned int nbObs);
 RcppExport SEXP _momentuHMM_getDM_rcpp(SEXP XSEXP, SEXP covsSEXP, SEXP DMSEXP, SEXP nrSEXP, SEXP ncSEXP, SEXP covSEXP, SEXP nbObsSEXP) {

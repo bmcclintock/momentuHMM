@@ -480,6 +480,30 @@ arma::colvec dlogis_rcpp(NumericVector x, arma::mat location, arma::mat scale)
   return res;
 }
 
+//' student t density function
+//'
+//' Probability density function of non-central student t (written in C++)
+//'
+//' @param x Vector of quantiles
+//' @param df degrees of freedom 
+//' @param ncp non-centrality parameter
+//'
+//' @return Vector of densities
+// [[Rcpp::export]]
+arma::colvec dt_rcpp(NumericVector x, arma::mat df, arma::mat ncp)
+{
+  arma::colvec res(x.size());
+  
+  for(int i=0;i<x.size();i++) {
+    if(!arma::is_finite(x(i)))
+      res(i) = 1; // if missing observation
+    else
+      res(i) = R::dnt(x(i),df(i),ncp(i),0);
+  }
+  
+  return res;
+}
+
 // used in nLogLike_rcpp to map the functions' names to the functions
 typedef arma::colvec (*FunPtr)(NumericVector, arma::mat, arma::mat);
 

@@ -66,6 +66,8 @@
 \usepackage{url}
 \usepackage{lscape}
 \usepackage[toc,page]{appendix}
+\usepackage{colortbl}
+\definecolor{Gray}{gray}{0.9}
 
 \newcommand{\stoptocwriting}{%
   \addtocontents{toc}{\protect\setcounter{tocdepth}{-5}}}
@@ -244,40 +246,42 @@ The state transition probabilities $({\mathbf \Gamma}^{(t)})$ and initial distri
 If circular-circular regression is specified for the mean of angular distributions (``vm'' and ``wrpcauchy''), then a link function based on \cite{RivestEtAl2016} is used. Users seeking additional univariate probability distributions are encouraged to contact the authors.}
   \begin{tabular}{llll}
   \toprule
-  Distribution & Support & Parameters & Link function\footnotemark \tabularnewline
+  Distribution                                & Support                       & Parameters                                      & Link function$^1$ \tabularnewline
   \midrule
-  Bernoulli (``\verb|bern|'')                 & $z_t\in\{0,1\}$               & $\verb|prob|\in(0,1)$            &  $\text{logit}$ \tabularnewline  
-  Beta (``\verb|beta|'')                      & $z_t\in(0,1)$                 & $\verb|shape1|>0$                &  $\log$ \tabularnewline  
-                                              &                               & $\verb|shape2|>0$                &  $\log$ \tabularnewline
-                                              &                               & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
-                                              &                               & $\verb|one-mass|\in(0,1)$        &  $\text{logit}$ \tabularnewline 
-  Categorical (``\verb|cat|'')                & $z_t\in\{1,\ldots,k\}$      & $\verb|prob|_1,\ldots,\verb|prob|_{k-1}\in(0,1)$           &  $\text{mlogit}$ \tabularnewline    
-  Exponential (``\verb|exp|'')                & $z_t>0$                       & $\verb|rate|>0$                  &  $\log$ \tabularnewline  
-                                              &                               & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
-  Gamma (``\verb|gamma|'')                    & $z_t>0$                       & $\verb|mean|>0$                  &  $\log$ \tabularnewline  
-                                              &                               & $\verb|sd|>0$                    &  $\log$ \tabularnewline  
-                                              &                               & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
-  Log normal (``\verb|lnorm|'')               & $z_t>0$                       & $\verb|location|\in{\rm I\!R}$   &  identity \tabularnewline  
-                                              &                               & $\verb|scale|>0$                 &  $\log$ \tabularnewline  
-                                              &                               & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
-  Logistic (``\verb|logis|'')                 & $z_t\in{\rm I\!R}$            & $\verb|location|\in{\rm I\!R}$   &  identity \tabularnewline  
-                                              &                               & $\verb|scale|>0$                 &  $\log$ \tabularnewline                
-  Negative binomial (``\verb|negbinom|'')     & $z_t\in\{0,1,\ldots\}$        & $\verb|mu|>0$                    &  $\log$ \tabularnewline  
-                                              &                               & $\verb|size|>0$                  &  $\log$ \tabularnewline  
-  Normal (``\verb|norm|'')                    & $z_t\in{\rm I\!R}$            & $\verb|mean|\in{\rm I\!R}$       &  identity \tabularnewline  
-                                              &                               & $\verb|sd|>0$                    &  $\log$ \tabularnewline 
-  Normal random walk (``\verb|rw_norm|'')     & $z_t\in{\rm I\!R}$            & $\verb|mean|\in{\rm I\!R}$       &  identity \tabularnewline  
-                                              &                               & $\verb|sd|>0$                    &  $\log$ \tabularnewline       
-  Poisson (``\verb|pois|'')                   & $z_t\in\{0,1,\ldots\}$        & $\verb|lambda|>0$                &  $\log$ \tabularnewline  
-  Von Mises (``\verb|vm|'')                   & $z_t\in(-\pi,\pi]$            & $\verb|mean|\in(-\pi,\pi]$       &  $\tan(\verb|mean|/2)$ \tabularnewline  
-                                              &                               & $\verb|concentration|>0$         &  $\log$ \tabularnewline 
-  Von Mises (``\verb|vmConsensus|'')          & $z_t\in(-\pi,\pi]$            & $\verb|mean|\in(-\pi,\pi]$       &  \citeauthor{RivestEtAl2016} \tabularnewline  
-                                              &                               & $\verb|kappa|>0$                 &  $\log$ \tabularnewline 
-  Weibull (``\verb|weibull|'')                & $z_t>0$                       & $\verb|shape|>0$                 &  $\log$ \tabularnewline  
-                                              &                               & $\verb|scale|>0$                 &  $\log$ \tabularnewline  
-                                              &                               & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
-  Wrapped Cauchy (``\verb|wrpcauchy|'')       & $z_t\in(-\pi,\pi]$            & $\verb|mean|\in(-\pi,\pi]$       &  $\tan(\verb|mean|/2)$ \tabularnewline  
-                                              &                               & $\verb|concentration|\in(0,1)$   &  $\text{logit}$ \tabularnewline 
+  \rowcolor{Gray} Bernoulli (``\verb|bern|'') & $z_t\in\{0,1\}$               & $\verb|prob|\in(0,1)$                           &  $\text{logit}$ \tabularnewline  
+  Beta (``\verb|beta|'')                      & $z_t\in(0,1)$                 & $\verb|shape1|>0$                               &  $\log$ \tabularnewline  
+                                              &                               & $\verb|shape2|>0$                               &  $\log$ \tabularnewline
+                                              &                               & $\verb|zero-mass|\in(0,1)$                      &  $\text{logit}$ \tabularnewline 
+                                              &                               & $\verb|one-mass|\in(0,1)$                       &  $\text{logit}$ \tabularnewline 
+  \rowcolor{Gray} Categorical (``\verb|cat|'')& $z_t\in\{1,\ldots,k\}$        & $\verb|prob|_1,\ldots,\verb|prob|_{k-1}\in(0,1)$&  $\text{mlogit}$ \tabularnewline    
+  Exponential (``\verb|exp|'')                & $z_t>0$                       & $\verb|rate|>0$                                 &  $\log$ \tabularnewline  
+                                              &                               & $\verb|zero-mass|\in(0,1)$                      &  $\text{logit}$ \tabularnewline 
+  \rowcolor{Gray} Gamma (``\verb|gamma|'')    & $z_t>0$                       & $\verb|mean|>0$                                 &  $\log$ \tabularnewline  
+  \rowcolor{Gray}                             &                               & $\verb|sd|>0$                                   &  $\log$ \tabularnewline  
+  \rowcolor{Gray}                             &                               & $\verb|zero-mass|\in(0,1)$                      &  $\text{logit}$ \tabularnewline 
+  Log normal (``\verb|lnorm|'')               & $z_t>0$                       & $\verb|location|\in{\rm I\!R}$                  &  identity \tabularnewline  
+                                              &                               & $\verb|scale|>0$                                &  $\log$ \tabularnewline  
+                                              &                               & $\verb|zero-mass|\in(0,1)$                      &  $\text{logit}$ \tabularnewline 
+  \rowcolor{Gray} Logistic (``\verb|logis|'') & $z_t\in{\rm I\!R}$            & $\verb|location|\in{\rm I\!R}$                  &  identity \tabularnewline  
+  \rowcolor{Gray}                             &                               & $\verb|scale|>0$                                &  $\log$ \tabularnewline                
+  Negative binomial (``\verb|negbinom|'')     & $z_t\in\{0,1,\ldots\}$        & $\verb|mu|>0$                                   &  $\log$ \tabularnewline  
+                                              &                               & $\verb|size|>0$                                 &  $\log$ \tabularnewline  
+  \rowcolor{Gray} Normal (``\verb|norm|'')    & $z_t\in{\rm I\!R}$            & $\verb|mean|\in{\rm I\!R}$                      &  identity \tabularnewline  
+  \rowcolor{Gray}                             &                               & $\verb|sd|>0$                                   &  $\log$ \tabularnewline 
+  Normal random walk (``\verb|rw_norm|'')     & $z_t\in{\rm I\!R}$            & $\verb|mean|\in{\rm I\!R}$                      &  identity \tabularnewline  
+                                              &                               & $\verb|sd|>0$                                   &  $\log$ \tabularnewline       
+  \rowcolor{Gray} Poisson (``\verb|pois|'')   & $z_t\in\{0,1,\ldots\}$        & $\verb|lambda|>0$                               &  $\log$ \tabularnewline  
+  Non-central t (``\verb|t|'')                & $z_t\in{\rm I\!R}$            & $\verb|df|>0$                                   &  $\log$ \tabularnewline  
+                                              &                               & $\verb|ncp|\in{\rm I\!R}$                       &  identity \tabularnewline 
+  \rowcolor{Gray} Von Mises (``\verb|vm|'')   & $z_t\in(-\pi,\pi]$            & $\verb|mean|\in(-\pi,\pi]$                      &  $\tan(\verb|mean|/2)$ \tabularnewline  
+  \rowcolor{Gray}                             &                               & $\verb|concentration|>0$                        &  $\log$ \tabularnewline 
+  Von Mises (``\verb|vmConsensus|'')          & $z_t\in(-\pi,\pi]$            & $\verb|mean|\in(-\pi,\pi]$                      &  \citeauthor{RivestEtAl2016} \tabularnewline  
+                                              &                               & $\verb|kappa|>0$                                &  $\log$ \tabularnewline 
+  \rowcolor{Gray} Weibull (``\verb|weibull|'')& $z_t>0$                       & $\verb|shape|>0$                                &  $\log$ \tabularnewline  
+  \rowcolor{Gray}                             &                               & $\verb|scale|>0$                                &  $\log$ \tabularnewline  
+  \rowcolor{Gray}                             &                               & $\verb|zero-mass|\in(0,1)$                      &  $\text{logit}$ \tabularnewline 
+  Wrapped Cauchy (``\verb|wrpcauchy|'')       & $z_t\in(-\pi,\pi]$            & $\verb|mean|\in(-\pi,\pi]$                      &  $\tan(\verb|mean|/2)$ \tabularnewline  
+                                              &                               & $\verb|concentration|\in(0,1)$                  &  $\text{logit}$ \tabularnewline 
   \bottomrule
   \end{tabular}
   \footnotesize{$^1$Link functions $(g)$ relate natural scale parameters $({\boldsymbol \theta})$ to a $T \times K$ design matrix $({\mathbf X})$ and $K-$vector of working scale parameters $(\boldsymbol{\beta}\in \mathbb{R}^K)$ such that $g({\boldsymbol \theta})={\mathbf X}\boldsymbol{\beta}$. %In circular-circular regression models for the mean of angular distributions, we have $\theta_t = {\text atan2}( \sum_{k=1}^K z_{t,k} \sin(x_{t,k} \beta_k),1+\sum_{k=1}^K z_{t,k} \cos(x_{t,k} \beta_k))$, where $Z$ is a $T \times K$ matrix of positive real covariates (e.g. wind speed) and $X$ is a $T \times K$ matrix composed of angular covariates (e.g. wind direction).
@@ -290,26 +294,29 @@ If circular-circular regression is specified for the mean of angular distributio
   \caption{\label{tab:multipdfs} Multivariate data stream $({\mathbf z})$ probability distributions, natural parameters, and default link functions for covariate modelling. If user-specified parameter bounds are provided, then custom link functions are used instead of the defaults (see package documentation for further details). Users seeking additional multivariate probability distributions are encouraged to contact the authors.}
   \begin{tabular}{llll}
   \toprule
-  Distribution & Support & Parameters & Link function\footnotemark \tabularnewline
+  Distribution                                          & Support                         & Parameters                       & Link function$^1$ \tabularnewline
   \midrule
-  Bivariate normal (``\verb|mvnorm2|'')                 & ${\mathbf z_t}\in{\rm I\!R}^2$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
-                                                        &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
-                                                        &                                 & $\verb|sigma.x|>0$               &  $\log$ \tabularnewline                                                                    &                                 & $\verb|sigma.xy|\in{\rm I\!R}$   &  identity \tabularnewline                                                                  &                                 & $\verb|sigma.y|>0$               &  $\log$ \tabularnewline  
+  \rowcolor{Gray} Bivariate normal (``\verb|mvnorm2|'') & ${\mathbf z_t}\in{\rm I\!R}^2$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
+  \rowcolor{Gray}                                       &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
+  \rowcolor{Gray}                                       &                                 & $\verb|sigma.x|>0$               &  $\log$ \tabularnewline                                                
+  \rowcolor{Gray}                                       &                                 & $\verb|sigma.xy|\in{\rm I\!R}$   &  identity \tabularnewline                                              
+  \rowcolor{Gray}                                       &                                 & $\verb|sigma.y|>0$               &  $\log$ \tabularnewline  
   Bivariate normal random walk (``\verb|rw_mvnorm2|'')  & ${\mathbf z_t}\in{\rm I\!R}^2$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
                                                         &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
-                                                        &                                 & $\verb|sigma.x|>0$               &  $\log$ \tabularnewline                                                                    &                                 & $\verb|sigma.xy|\in{\rm I\!R}$   &  identity \tabularnewline                                                                  &                                 & $\verb|sigma.y|>0$               &  $\log$ \tabularnewline
-  Trivariate normal (``\verb|mvnorm3|'')                & ${\mathbf z_t}\in{\rm I\!R}^3$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
-                                                        &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
-                                                        &                                 & $\verb|mean.z|\in{\rm I\!R}$     &  identity \tabularnewline  
-                                                        &                                 & $\verb|sigma.x|>0$               &  $\log$ \tabularnewline                                                                    &                                 & $\verb|sigma.xy|\in{\rm I\!R}$   &  identity \tabularnewline
-                                                        &                                 & $\verb|sigma.xz|\in{\rm I\!R}$   &  identity \tabularnewline          
-                                                        &                                 & $\verb|sigma.y|>0$               &  $\log$ \tabularnewline   
-                                                        &                                 & $\verb|sigma.yz|\in{\rm I\!R}$   &  identity \tabularnewline  
-                                                        &                                 & $\verb|sigma.z|>0$               &  $\log$ \tabularnewline
+                                                        &                                 & $\verb|sigma.x|>0$               &  $\log$ \tabularnewline                                                                                                                      &                                 & $\verb|sigma.xy|\in{\rm I\!R}$   &  identity \tabularnewline                                                                                                                    &                                 & $\verb|sigma.y|>0$               &  $\log$ \tabularnewline
+  \rowcolor{Gray} Trivariate normal (``\verb|mvnorm3|'')& ${\mathbf z_t}\in{\rm I\!R}^3$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
+  \rowcolor{Gray}                                       &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
+  \rowcolor{Gray}                                       &                                 & $\verb|mean.z|\in{\rm I\!R}$     &  identity \tabularnewline  
+  \rowcolor{Gray}                                       &                                 & $\verb|sigma.x|>0$               &  $\log$ \tabularnewline                                                
+  \rowcolor{Gray}                                       &                                 & $\verb|sigma.xy|\in{\rm I\!R}$   &  identity \tabularnewline
+  \rowcolor{Gray}                                       &                                 & $\verb|sigma.xz|\in{\rm I\!R}$   &  identity \tabularnewline          
+  \rowcolor{Gray}                                       &                                 & $\verb|sigma.y|>0$               &  $\log$ \tabularnewline   
+  \rowcolor{Gray}                                       &                                 & $\verb|sigma.yz|\in{\rm I\!R}$   &  identity \tabularnewline  
+  \rowcolor{Gray}                                       &                                 & $\verb|sigma.z|>0$               &  $\log$ \tabularnewline
   Trivariate normal random walk (``\verb|rw_mvnorm3|'') & ${\mathbf z_t}\in{\rm I\!R}^3$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
                                                         &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
                                                         &                                 & $\verb|mean.z|\in{\rm I\!R}$     &  identity \tabularnewline  
-                                                        &                                 & $\verb|sigma.x|>0$               &  $\log$ \tabularnewline                                                                    &                                 & $\verb|sigma.xy|\in{\rm I\!R}$   &  identity \tabularnewline    
+                                                        &                                 & $\verb|sigma.x|>0$               &  $\log$ \tabularnewline                                                                                                                      &                                 & $\verb|sigma.xy|\in{\rm I\!R}$   &  identity \tabularnewline    
                                                         &                                 & $\verb|sigma.xz|\in{\rm I\!R}$   &  identity \tabularnewline 
                                                         &                                 & $\verb|sigma.y|>0$               &  $\log$ \tabularnewline   
                                                         &                                 & $\verb|sigma.yz|\in{\rm I\!R}$   &  identity \tabularnewline  

@@ -157,6 +157,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   funMap["mvnorm3"] = dmvnorm_rcpp;
   funMap["rw_mvnorm3"] = dmvnorm_rcpp;
   funMap["pois"] = dpois_rcpp;
+  funMap["t"] = dt_rcpp;
   funMap["vm"] = dvm_rcpp;
   funMap["weibull"] = dweibull_rcpp;
   funMap["wrpcauchy"] = dwrpcauchy_rcpp;

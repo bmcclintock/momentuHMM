@@ -223,6 +223,19 @@ dlogis_rcpp <- function(x, location, scale) {
     .Call('_momentuHMM_dlogis_rcpp', PACKAGE = 'momentuHMM', x, location, scale)
 }
 
+#' student t density function
+#'
+#' Probability density function of non-central student t (written in C++)
+#'
+#' @param x Vector of quantiles
+#' @param df degrees of freedom 
+#' @param ncp non-centrality parameter
+#'
+#' @return Vector of densities
+dt_rcpp <- function(x, df, ncp) {
+    .Call('_momentuHMM_dt_rcpp', PACKAGE = 'momentuHMM', x, df, ncp)
+}
+
 #' Get design matrix
 #'
 #' Loop for creating full design matrix (X) from pseudo-design matrix (DM). Written in C++. Used in \code{getDM}.

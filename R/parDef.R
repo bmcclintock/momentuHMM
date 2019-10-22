@@ -131,6 +131,12 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
              tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
              parNames[[i]]<-"lambda"
            },
+          "t"={
+             parSize[[i]] <- 2
+             tmpbounds <- matrix(c(rep(c(0,Inf),nbStates),rep(c(-Inf,Inf),nbStates)),
+                                 ncol=2,byrow=TRUE)
+             parNames[[i]] <- c("df","ncp")
+           },
            "vm"={
              if(estAngleMean[[i]]) { # if the angle mean is estimated
                parSize[[i]] <- 2

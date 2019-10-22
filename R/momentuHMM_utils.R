@@ -1,4 +1,4 @@
-momentuHMMdists<-sort(c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm','norm','bern','vmConsensus','mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3','rw_norm','cat','negbinom','logis'))
+momentuHMMdists<-sort(c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm','norm','bern','vmConsensus','mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3','rw_norm','cat','negbinom','logis','t'))
 moveHMMdists<-sort(c('gamma','weibull','exp','lnorm','wrpcauchy','vm'))
 angledists<-sort(c('wrpcauchy','vm','vmConsensus'))
 stepdists<-sort(c('gamma','weibull','exp','lnorm'))
