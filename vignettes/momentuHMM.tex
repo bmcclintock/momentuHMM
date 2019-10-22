@@ -259,6 +259,8 @@ The state transition probabilities $({\mathbf \Gamma}^{(t)})$ and initial distri
   Log normal (``\verb|lnorm|'')               & $z_t>0$                       & $\verb|location|\in{\rm I\!R}$   &  identity \tabularnewline  
                                               &                               & $\verb|scale|>0$                 &  $\log$ \tabularnewline  
                                               &                               & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
+  Negative binomial (``\verb|negbinom|'')     & $z_t\in\{0,1,\ldots\}$        & $\verb|mu|>0$                    &  $\log$ \tabularnewline  
+                                              &                               & $\verb|size|>0$                  &  $\log$ \tabularnewline  
   Normal (``\verb|norm|'')                    & $z_t\in{\rm I\!R}$            & $\verb|mean|\in{\rm I\!R}$       &  identity \tabularnewline  
                                               &                               & $\verb|sd|>0$                    &  $\log$ \tabularnewline 
   Normal random walk (``\verb|rw_norm|'')     & $z_t\in{\rm I\!R}$            & $\verb|mean|\in{\rm I\!R}$       &  identity \tabularnewline  
@@ -2015,10 +2017,6 @@ Now we'll fit a model with $K=2$ mixtures of discrete-valued individual-level ra
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlstd{Par0_mix2} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(fitmix1,} \hlkwc{mixtures}\hlstd{=}\hlnum{2}\hlstd{)}
-\end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in !m\$conditions\$fit: invalid argument type}}\begin{alltt}
 \hlstd{Par0_mix2}\hlopt{$}\hlstd{beta}\hlopt{$}\hlstd{beta[}\hlnum{1}\hlstd{,]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.26}\hlstd{,} \hlopt{-}\hlnum{3.93}\hlstd{,} \hlopt{-}\hlnum{0.58}\hlstd{,}
                               \hlnum{0.03}\hlstd{,} \hlopt{-}\hlnum{2.25}\hlstd{,} \hlopt{-}\hlnum{0.26}\hlstd{,}
                              \hlopt{-}\hlnum{3.38}\hlstd{,} \hlopt{-}\hlnum{4.79}\hlstd{,} \hlopt{-}\hlnum{2.82}\hlstd{,}
@@ -2331,39 +2329,21 @@ Now let's fit a model with $K=3$ mixtures by setting some starting values with t
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlstd{Par0_mix3} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(fitmix2,} \hlkwc{mixtures}\hlstd{=}\hlnum{3}\hlstd{)}
-\end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in !m\$conditions\$fit: invalid argument type}}\begin{alltt}
 \hlstd{Par0_mix3}\hlopt{$}\hlstd{beta}\hlopt{$}\hlstd{beta[}\hlnum{1}\hlstd{,]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.15}\hlstd{,} \hlopt{-}\hlnum{4.31}\hlstd{,} \hlopt{-}\hlnum{1.09}\hlstd{,}
                               \hlnum{0.28}\hlstd{,} \hlopt{-}\hlnum{1.88}\hlstd{,}  \hlopt{-}\hlnum{0.3}\hlstd{,}
                               \hlopt{-}\hlnum{3.5}\hlstd{,} \hlopt{-}\hlnum{4.71}\hlstd{,} \hlopt{-}\hlnum{3.11}\hlstd{,}
                              \hlopt{-}\hlnum{0.68}\hlstd{,} \hlopt{-}\hlnum{2.49}\hlstd{,}  \hlopt{-}\hlnum{2.6}\hlstd{)}
-\end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in Par0\_mix3\$beta\$beta[1, ] <- c(-2.15, -4.31, -1.09, 0.28, -1.88, : object 'Par0\_mix3' not found}}\begin{alltt}
 \hlstd{Par0_mix3}\hlopt{$}\hlstd{beta}\hlopt{$}\hlstd{beta[}\hlnum{2}\hlstd{,]} \hlkwb{<-} \hlkwd{c}\hlstd{(}  \hlopt{-}\hlnum{2.5}\hlstd{,}  \hlopt{-}\hlnum{2.47}\hlstd{,}  \hlnum{0.63}\hlstd{,}
                              \hlopt{-}\hlnum{17.22}\hlstd{,} \hlopt{-}\hlnum{13.18}\hlstd{,}  \hlnum{0.59}\hlstd{,}
                               \hlopt{-}\hlnum{3.92}\hlstd{,} \hlopt{-}\hlnum{13.96}\hlstd{,} \hlopt{-}\hlnum{2.27}\hlstd{,}
                               \hlopt{-}\hlnum{1.25}\hlstd{,}  \hlopt{-}\hlnum{3.57}\hlstd{,} \hlopt{-}\hlnum{3.75}\hlstd{)}
-\end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in Par0\_mix3\$beta\$beta[2, ] <- c(-2.5, -2.47, 0.63, -17.22, -13.18, : object 'Par0\_mix3' not found}}\begin{alltt}
 \hlstd{Par0_mix3}\hlopt{$}\hlstd{beta}\hlopt{$}\hlstd{beta[}\hlnum{3}\hlstd{,]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.71}\hlstd{,} \hlopt{-}\hlnum{3.48}\hlstd{,} \hlopt{-}\hlnum{3.01}\hlstd{,}
                              \hlopt{-}\hlnum{0.35}\hlstd{,} \hlopt{-}\hlnum{1.12}\hlstd{,}  \hlopt{-}\hlnum{0.1}\hlstd{,}
                              \hlopt{-}\hlnum{96.8}\hlstd{,} \hlopt{-}\hlnum{2.98}\hlstd{,} \hlopt{-}\hlnum{1.53}\hlstd{,}
                              \hlopt{-}\hlnum{2.29}\hlstd{,} \hlopt{-}\hlnum{2.07}\hlstd{,} \hlopt{-}\hlnum{1.55}\hlstd{)}
-\end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in Par0\_mix3\$beta\$beta[3, ] <- c(-2.71, -3.48, -3.01, -0.35, -1.12, : object 'Par0\_mix3' not found}}\begin{alltt}
 \hlstd{Par0_mix3}\hlopt{$}\hlstd{beta}\hlopt{$}\hlstd{pi} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.4}\hlstd{,} \hlnum{0.4}\hlstd{,} \hlnum{0.2}\hlstd{)}
 \end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in Par0\_mix3\$beta\$pi <- c(0.4, 0.4, 0.2): object 'Par0\_mix3' not found}}\end{kframe}
+\end{kframe}
 \end{knitrout}
 \noindent and then calling \verb|fitHMM| with \verb|mixtures=3|:
 \begin{knitrout}
@@ -2659,14 +2639,26 @@ Based on AIC, we find overwhelming support for the discrete-valued individual-le
 \begin{alltt}
 \hlkwd{AIC}\hlstd{(fitmix1,fitmix2,fitmix3,fitmix4,fitfix)}
 \end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in !m\$conditions\$fit: invalid argument type}}\begin{alltt}
+\begin{verbatim}
+##     Model      AIC
+## 1 fitmix3 37086.29
+## 2 fitmix4 37098.24
+## 3 fitmix2 37132.58
+## 4 fitmix1 37164.80
+## 5  fitfix 37190.99
+\end{verbatim}
+\begin{alltt}
 \hlkwd{AICweights}\hlstd{(fitmix1,fitmix2,fitmix3,fitmix4,fitfix)}
 \end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in !m\$conditions\$fit: invalid argument type}}\end{kframe}
+\begin{verbatim}
+##     Model       weight
+## 1 fitmix3 9.974679e-01
+## 2 fitmix4 2.532142e-03
+## 3 fitmix2 8.825442e-11
+## 4 fitmix1 8.904782e-18
+## 5  fitfix 1.828650e-23
+\end{verbatim}
+\end{kframe}
 \end{knitrout}
 
 
@@ -3216,45 +3208,47 @@ As in a standard HMM, we can decode the most likely state sequence using the \ve
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlstd{states} \hlkwb{<-} \hlkwd{viterbi}\hlstd{(hhmm)}
-\end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in !m\$conditions\$fit: invalid argument type}}\begin{alltt}
 \hlkwd{length}\hlstd{(states)}
 \end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in eval(expr, envir, enclos): object 'states' not found}}\begin{alltt}
+\begin{verbatim}
+## [1] 8135
+\end{verbatim}
+\begin{alltt}
 \hlkwd{head}\hlstd{(states)}
 \end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in head(states): object 'states' not found}}\end{kframe}
+\begin{verbatim}
+## [1] 1 2 2 2 2 2
+\end{verbatim}
+\end{kframe}
 \end{knitrout}
 \noindent but we can also obtain the most likely state sequences at each level of the hierarchy by setting the argument \verb|hierarchical=TRUE|
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlstd{hStates} \hlkwb{<-} \hlkwd{viterbi}\hlstd{(hhmm,} \hlkwc{hierarchical}\hlstd{=}\hlnum{TRUE}\hlstd{)}
-\end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in !m\$conditions\$fit: invalid argument type}}\begin{alltt}
 \hlkwd{lapply}\hlstd{(hStates,length)}
 \end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in lapply(hStates, length): object 'hStates' not found}}\begin{alltt}
+\begin{verbatim}
+## $level1
+## [1] 275
+## 
+## $level2
+## [1] 7860
+\end{verbatim}
+\begin{alltt}
 \hlkwd{head}\hlstd{(hStates}\hlopt{$}\hlstd{level1)}
 \end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in head(hStates\$level1): object 'hStates' not found}}\begin{alltt}
+\begin{verbatim}
+## [1] "nonforaging" "nonforaging" "nonforaging" "foraging"    "foraging"   
+## [6] "foraging"
+\end{verbatim}
+\begin{alltt}
 \hlkwd{head}\hlstd{(hStates}\hlopt{$}\hlstd{level2)}
 \end{alltt}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in head(hStates\$level2): object 'hStates' not found}}\end{kframe}
+\begin{verbatim}
+## [1] "nf2" "nf2" "nf2" "nf2" "nf2" "nf2"
+\end{verbatim}
+\end{kframe}
 \end{knitrout}
 
 We can plot the estimated state probabilities for each level of the hierarchy (Figures \ref{fig:hpLevel1} and \ref{fig:hpLevel2}) using the \verb|plotStates| function:
@@ -3618,7 +3612,6 @@ Let's check our model specification:
 ##      sd_147:(Intercept) sd_258:(Intercept) sd_369:(Intercept)
 ## [1,]          -2.813411          -1.136314          -0.718465
 ## 
-## 
 ## ----------------------------------------------------------
 ## Regression coeffs for the transition probabilities (beta):
 ## ----------------------------------------------------------
@@ -3816,7 +3809,7 @@ Now let's fit our garter snake HHMM:
 ## I((level == "2i") * 1) -1.274323 2.327475
 ## 
 ##                          state 8    state 9
-## I((level == "2i") * 1) 0.3387744 -0.2607024
+## I((level == "2i") * 1) 0.3387745 -0.2607024
 ## 
 ## --------------------------------------------------
 ## 
@@ -4567,7 +4560,6 @@ All that remains is (optionally) specifying starting values for the initial dist
 ##         a1    a2    a3    r1    r2    r3    t1    t2    t3
 ## mean 0.191 0.323 0.721 0.084 0.150 0.228 0.094 0.191 0.390
 ## sd   0.047 0.051 0.248 0.021 0.025 0.033 0.026 0.039 0.159
-## 
 ## 
 ## ----------------------------------------------------------
 ## Regression coeffs for the transition probabilities (beta):

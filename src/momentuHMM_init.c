@@ -18,6 +18,7 @@ extern SEXP _momentuHMM_dexp_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dgamma_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dlnorm_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dmvnorm_rcpp(SEXP, SEXP, SEXP);
+extern SEXP _momentuHMM_dnbinom_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dnorm_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dpois_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dvm_rcpp(SEXP, SEXP, SEXP);
@@ -41,6 +42,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"_momentuHMM_dgamma_rcpp",     (DL_FUNC) &_momentuHMM_dgamma_rcpp,      3},
   {"_momentuHMM_dlnorm_rcpp",     (DL_FUNC) &_momentuHMM_dlnorm_rcpp,      3},
   {"_momentuHMM_dmvnorm_rcpp",    (DL_FUNC) &_momentuHMM_dmvnorm_rcpp,     3},
+  {"_momentuHMM_dnbinom_rcpp",    (DL_FUNC) &_momentuHMM_dnbinom_rcpp,     3},
   {"_momentuHMM_dnorm_rcpp",      (DL_FUNC) &_momentuHMM_dnorm_rcpp,       3},
   {"_momentuHMM_dpois_rcpp",      (DL_FUNC) &_momentuHMM_dpois_rcpp,       3},
   {"_momentuHMM_dvm_rcpp",        (DL_FUNC) &_momentuHMM_dvm_rcpp,         3},

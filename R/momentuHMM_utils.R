@@ -1,12 +1,12 @@
-momentuHMMdists<-sort(c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm','norm','bern','vmConsensus','mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3','rw_norm','cat'))
+momentuHMMdists<-sort(c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm','norm','bern','vmConsensus','mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3','rw_norm','cat','negbinom'))
 moveHMMdists<-sort(c('gamma','weibull','exp','lnorm','wrpcauchy','vm'))
 angledists<-sort(c('wrpcauchy','vm','vmConsensus'))
 stepdists<-sort(c('gamma','weibull','exp','lnorm'))
 singleParmdists<-sort(c('exp','pois','bern'))
-nonnegativedists<-sort(c('gamma','weibull','exp','lnorm','pois'))
+nonnegativedists<-sort(c('gamma','weibull','exp','lnorm','pois','negbinom'))
 zeroInflationdists<-sort(c('gamma','weibull','exp','lnorm','beta'))
 oneInflationdists<-sort(c('beta'))
-integerdists<-sort(c('bern','pois','cat'))
+integerdists<-sort(c('bern','pois','cat','negbinom'))
 mvndists <- c('mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3')
 rwdists <- c('rw_norm','rw_mvnorm2','rw_mvnorm3')
 splineList<-c("bs","ns","bSpline","mSpline","cSpline","iSpline")
@@ -31,6 +31,24 @@ pbern <- function (q, prob, lower.tail = TRUE, log.p = FALSE)
 rbern <- function (n, prob) 
 {
   return(stats::rbinom(n, 1, prob))
+}
+
+#' @importFrom stats dnbinom
+dnegbinom <- function (x, mu, size, log = FALSE) 
+{
+  return(stats::dnbinom(x, size = size, mu = mu, log = log))
+}
+
+#' @importFrom stats pnbinom
+pnegbinom <- function (q, mu, size, lower.tail = TRUE, log.p = FALSE) 
+{
+  return(stats::pnbinom(q, size = size, mu = mu, lower.tail = lower.tail, log.p = log.p))
+}
+
+#' @importFrom stats rnbinom
+rnegbinom<- function (n, mu, size) 
+{
+  return(stats::rnbinom(n, size = size, mu = mu))
 }
 
 dmvnorm2 <- dmvnorm3 <- drw_mvnorm2 <- drw_mvnorm3 <- function(x,mean,sigma){

@@ -215,6 +215,8 @@ The state transition probabilities $({\mathbf \Gamma}^{(t)})$ and initial distri
   Log normal (``\verb|lnorm|'')               & $z_t>0$                       & $\verb|location|\in{\rm I\!R}$   &  identity \tabularnewline  
                                               &                               & $\verb|scale|>0$                 &  $\log$ \tabularnewline  
                                               &                               & $\verb|zero-mass|\in(0,1)$       &  $\text{logit}$ \tabularnewline 
+  Negative binomial (``\verb|negbinom|'')     & $z_t\in\{0,1,\ldots\}$        & $\verb|mu|>0$                    &  $\log$ \tabularnewline  
+                                              &                               & $\verb|size|>0$                  &  $\log$ \tabularnewline  
   Normal (``\verb|norm|'')                    & $z_t\in{\rm I\!R}$            & $\verb|mean|\in{\rm I\!R}$       &  identity \tabularnewline  
                                               &                               & $\verb|sd|>0$                    &  $\log$ \tabularnewline 
   Normal random walk (``\verb|rw_norm|'')     & $z_t\in{\rm I\!R}$            & $\verb|mean|\in{\rm I\!R}$       &  identity \tabularnewline  

@@ -73,6 +73,11 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
                                   ncol=2,byrow=TRUE)
              parNames[[i]] <- c("location","scale")
            },
+           "negbinom"={
+             parSize[[i]] <- 2 
+             tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
+             parNames[[i]]<-c("mu","size")
+           },
            "norm"={
              parSize[[i]] <- 2
              tmpbounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates)),

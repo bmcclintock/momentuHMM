@@ -197,6 +197,19 @@ dcat_rcpp <- function(x, prob, foo) {
     .Call('_momentuHMM_dcat_rcpp', PACKAGE = 'momentuHMM', x, prob, foo)
 }
 
+#' negative binomial density function
+#'
+#' Probability density function of the negative binomial distribution (written in C++)
+#'
+#' @param x Vector of quantiles
+#' @param mu Mean of the distribution 
+#' @param size Dispersion parameter
+#'
+#' @return Vector of densities
+dnbinom_rcpp <- function(x, mu, size) {
+    .Call('_momentuHMM_dnbinom_rcpp', PACKAGE = 'momentuHMM', x, mu, size)
+}
+
 #' Get design matrix
 #'
 #' Loop for creating full design matrix (X) from pseudo-design matrix (DM). Written in C++. Used in \code{getDM}.
