@@ -17,11 +17,10 @@ vignettes/momentuHMM.toc
 vignettes/momentuHMM-concordance.tex
 vignettes/momentuHMM.bbl
 vignettes/momentuHMM.tex
-vignettes/vignette_examples.R
 vignettes/script.sh
 ^vignettes/figure$
 ^vignettes/cache$
-^vignettes/examples/exampleResults$
+^vignettes/vignetteResults$
 tests/testthat/Rplots.pdf
 tests/testthat/test_examples.R
 tests/testthat/test_extraExamples.R
