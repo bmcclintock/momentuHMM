@@ -1,6 +1,7 @@
 library(sp)
 library(doParallel)
 
+setwd("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/momentuHMM/vignettes")
 example_wd <- ("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/vignette examples/")
 
 append.RData <- function(x, file) {
@@ -16,7 +17,7 @@ load(paste0(example_wd,"elephantExample.RData"))
 
 activityBudgets<-table(viterbi(m3))/nrow(m3$data)
 
-save(activityBudgets,file=paste0(getwd(),"/vignette_inputs.RData"), version=2, compress="xz")
+save(activityBudgets,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"), version=2, compress="xz")
 
 #latlongDat<-as.data.frame(elephantData)
 #sp::coordinates(latlongDat)<-c("x","y")
@@ -48,7 +49,7 @@ load(paste0(example_wd,"nfsExample.RData"))
 
 nfsTimeInStates<-nfsFits$miSum$Par$timeInStates
 
-append.RData(nfsTimeInStates,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(nfsTimeInStates,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 
 pdf(file=paste0(getwd(),"/plot_nfsResults.pdf"),width=5,height=5)
 plot(nfsFits,ask=FALSE,legend.pos="topright")
@@ -63,7 +64,7 @@ load(paste0(example_wd,"turtleExample.RData"))
 
 turtle_miSum<-turtleFits$miSum[c("Par","data")]
 
-append.RData(turtle_miSum,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(turtle_miSum,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 
 library(TeachingDemos)
 library(raster)
@@ -111,7 +112,7 @@ load(paste0(example_wd,"greySealResults.RData"))
 
 greySealTimeInStates<-greySealPool$Par$timeInStates
 
-append.RData(greySealTimeInStates,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(greySealTimeInStates,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 
 pdf(file=paste0(getwd(),"/plot_greySealResults%03d.pdf"),onefile=FALSE)
 plot(greySealPool,plotCI=TRUE,ask=FALSE)
@@ -187,8 +188,8 @@ load(paste0(example_wd,"sesExample.RData"))
 
 sesCIbeta<-m3$CIbeta
 
-append.RData(tracks,file=paste0(getwd(),"/vignette_inputs.RData"))
-append.RData(sesCIbeta,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(tracks,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
+append.RData(sesCIbeta,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 
 pdf(file=paste0(getwd(),"/plot_sesResults%03d.pdf"),onefile=FALSE)
 plot(m3,plotCI=TRUE,ask=FALSE)
@@ -227,7 +228,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 #source(paste0(getwd(),"/examples/harbourSealExample.R"))
 load(paste0(example_wd,"harbourSealExample.RData"))
 
-append.RData(hsActivityBudgets,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(hsActivityBudgets,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 
 options(scipen=10)
 cx=0.9
@@ -281,11 +282,11 @@ load(paste0(example_wd,"northernFulmarExample.RData"))
 fulmarElapsedTime <- round(m2$mod$elapsedTime/60,0)
 timeIn1 <- timeInStates(m2)
 timeIn2 <- timeInStates(m2,by="birdID")
-append.RData(fulmarElapsedTime,file=paste0(getwd(),"/vignette_inputs.RData"))
-append.RData(timeIn1,file=paste0(getwd(),"/vignette_inputs.RData"))
-append.RData(timeIn2,file=paste0(getwd(),"/vignette_inputs.RData"))
-#append.RData(m2,file=paste0(getwd(),"/vignette_inputs.RData"))
-#append.RData(newProj,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(fulmarElapsedTime,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
+append.RData(timeIn1,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
+append.RData(timeIn2,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
+#append.RData(m2,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
+#append.RData(newProj,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 png(file=paste0(getwd(),"/plot_northernFulmarExample.png"),width=7.25,height=5,units="in",res=80)
 plotSat(m2,zoom=7,shape=c(17,1,17,1,17,1),size=2,col=rep(c("#E69F00", "#56B4E9", "#009E73"),each=2),stateNames=c("sea ARS","sea Transit","boat ARS","boat Transit","colony ARS","colony Transit"),projargs=newProj,ask=FALSE)
 dev.off()
@@ -322,7 +323,7 @@ for(plt in seq(1,nbAnimals+3)[-c(7,8)])
 #source(paste0(getwd(),"/examples/pilotWhaleExample.R"))
 load(paste0(example_wd,"pilotWhaleExample.RData"))
 fitmix1_Par <- getPar(fitmix1)
-append.RData(fitmix1_Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(fitmix1_Par,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 Par0_mix2 <- getPar0(fitmix1,mixtures=2)
 Par0_mix2$beta$beta[1,] <- c(-2.26, -3.93, -0.58, 
                               0.03, -2.25, -0.26, 
@@ -333,19 +334,19 @@ Par0_mix2$beta$beta[2,] <- c(-2.51, -3.32, -2.63,
                              -96.8, -3.62, -1.75, 
                              -1.76, -2.14, -1.38)
 Par0_mix2$beta$pi <- c(0.73, 0.27)
-append.RData(Par0_mix2,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(Par0_mix2,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 fitmix2_Par <- getPar(fitmix2)
-append.RData(fitmix2_Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(fitmix2_Par,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 fitmix3_Par <- getPar(fitmix3)
-append.RData(fitmix3_Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(fitmix3_Par,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 fitmix4_Par <- getPar(fitmix4)
-append.RData(fitmix4_Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(fitmix4_Par,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 fitfix_Par <- getPar(fitfix)
-append.RData(fitfix_Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(fitfix_Par,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 #pilotWhaleAIC <- AIC(fitmix1,fitmix2,fitmix3,fitfix)
-#append.RData(pilotWhaleAIC,file=paste0(getwd(),"/vignette_inputs.RData"))
+#append.RData(pilotWhaleAIC,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 #pilotWhaleAICweights <- AICweights(fitmix1,fitmix2,fitmix3,fitfix)
-#append.RData(pilotWhaleAICweights,file=paste0(getwd(),"/vignette_inputs.RData"))
+#append.RData(pilotWhaleAICweights,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
 ###################################################
@@ -354,7 +355,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 #source(paste0(getwd(),"/examples/harborPorpoiseExample.R"))
 load(paste0(example_wd,"harborPorpoiseExample.RData"))
 hhmmPar <- getPar(hhmm)
-append.RData(hhmmPar,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(hhmmPar,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 pdf(file=paste0(getwd(),"/plot_harborPorpoiseStates%03d.pdf"),width=8,height=11,onefile=FALSE)
 plotStates(hhmm,ask=FALSE)
 dev.off()
@@ -366,7 +367,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 #source(paste0(getwd(),"/examples/garterSnakeExample.R"))
 load(paste0(example_wd,"garterSnakeExample.RData"))
 hhmm2Par <- getPar(hhmm)
-append.RData(hhmm2Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(hhmm2Par,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 pdf(file=paste0(getwd(),"/plot_garterSnakePR.pdf"),width=5,height=2.5)
 plotPR(hhmm)
 dev.off()
@@ -378,7 +379,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 #source(paste0(getwd(),"/examples/codExample.R"))
 load(paste0(example_wd,"codExample.RData"))
 hhmm3Par <- getPar(hhmm)
-append.RData(hhmm3Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(hhmm3Par,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 pdf(file=paste0(getwd(),"/plot_codExample%03d.pdf"),width=5,height=5,onefile = FALSE)
 plot(hhmm, ask=FALSE)
 dev.off()
@@ -397,11 +398,11 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 #source(paste0(getwd(),"/examples/hornSharkExample.R"))
 load(paste0(example_wd,"hornSharkExample.RData"))
 hhmm4Par <- getPar(hhmm)
-append.RData(hhmm4Par,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(hhmm4Par,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 trProbs12 <- getTrProbs(hhmm,covIndex=c(1,3))
-append.RData(trProbs12,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(trProbs12,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 stats12 <- stationary(hhmm,covIndex=c(1,3))
-append.RData(stats12,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(stats12,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
 ###################################################
@@ -411,7 +412,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 load(paste0(example_wd,"buffaloExample.RData"))
 bufPar <- buffaloFits$miSum$Par$beta[c("mu","g0","theta")]
 bufPar$timeInStates <- buffaloFits$miSum$Par$timeInStates
-append.RData(bufPar,file=paste0(getwd(),"/vignette_inputs.RData"))
+append.RData(bufPar,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"))
 
 pdf(file=paste0(getwd(),"/plot_buffaloExample%03d.pdf"),width=8,height=3,onefile = FALSE)
 plot(buffaloFits,plotCI=TRUE,legend.pos="bottom",ask=FALSE)
