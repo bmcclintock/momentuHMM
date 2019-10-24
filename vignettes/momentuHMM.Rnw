@@ -443,15 +443,17 @@ The functions \verb|simData| (and \verb|simHierData|) can be used to simulate mu
   
 \section{Examples}
 \label{sec:example}
-We will now demonstrate some of the capabilities of \verb|momentuHMM| using real telemetry data. These examples are intended for demonstration purposes only, and we do not claim these example analyses represent improvements relative to previous or alternative analyses for these data sets. While only some of the key workflow elements are included here, complete R code and further details for these analyses are available in the ``vignettes'' source directory.
+We will now demonstrate some of the capabilities of \verb|momentuHMM| using real telemetry data. These examples are intended for demonstration purposes only, and we do not claim these example analyses represent improvements relative to previous or alternative analyses for these data sets. While only some of the key workflow elements are included here, complete R code and further details for these analyses are available in the ``vignettes/examples'' source directory and GitHub (\url{https://github.com/bmcclintock/momentuHMM/tree/develop/vignettes/examples}).
 
 <<load-vignette_inputs, results='hide', echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE>>=
 library(momentuHMM)
 #example_wd <- ("~/Dropbox/vignette examples/")
 example_wd <- ("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/vignette examples/")
 
-#source(paste0(getwd(),"/vignetteResults/vignette_inputs.R"))
+# workaround because direct load of "vignette_inputs.RData" via url results in error: the input does not start with a magic number compatible with loading from a connection
+utils::download.file(url="https://github.com/bmcclintock/momentuHMM/blob/develop/vignettes/vignetteResults/vignette_inputs.RData?raw=true",destfile="vignette_inputs.RData")
 load("vignette_inputs.RData")
+file.remove("vignette_inputs.RData")
 @
 \subsection{African elephant}
 \label{sec:elephant}

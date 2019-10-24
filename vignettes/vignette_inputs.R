@@ -6,7 +6,7 @@ example_wd <- ("~/Documents/Dropbox/current projects/moveHMM extension/momentuHM
 
 append.RData <- function(x, file) {
   old.objects <- load(file)
-  save(list = c(old.objects, deparse(substitute(x))), file = file, version=NULL, compress="xz") # version=2 covers R 1.40 to 3.5.0; if version>2 then produces CRAN warning about depenency on R >= 3.5.0
+  save(list = c(old.objects, deparse(substitute(x))), file = file, version=2, compress="xz") # version=2 covers R 1.40 to 3.5.0; if version>2 then produces CRAN warning about depenency on R >= 3.5.0
 }
 
 ###################################################
@@ -17,7 +17,7 @@ load(paste0(example_wd,"elephantExample.RData"))
 
 activityBudgets<-table(viterbi(m3))/nrow(m3$data)
 
-save(activityBudgets,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"), version=NULL, compress="xz")
+save(activityBudgets,file=paste0(getwd(),"/vignetteResults/vignette_inputs.RData"), version=2, compress="xz")
 
 #latlongDat<-as.data.frame(elephantData)
 #sp::coordinates(latlongDat)<-c("x","y")
