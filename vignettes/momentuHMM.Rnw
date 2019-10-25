@@ -2206,7 +2206,7 @@ lapply(iTrProbs$level2,function(x) x$gamma[,,1])
 @
 
 Now let's fit our garter snake HHMM:
-<<garterSnake-9, echo=c(4,5,6), eval=FALSE, cache=TRUE>>=
+<<garterSnake-9, echo=c(4,5,6,7), eval=FALSE, cache=TRUE>>=
 Par <- hhmm2Par$Par
 hierBeta <- hhmm2Par$hierBeta
 hierDelta <- hhmm2Par$hierDelta

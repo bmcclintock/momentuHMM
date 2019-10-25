@@ -3493,8 +3493,9 @@ Now let's fit our garter snake HHMM:
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlcom{# fit hierarchical HMM}
-hhmm <- \hlkwd{fitHMM}(snakeData,hierStates=hierStates,hierDist=hierDist,
-               Par0=Par,DM=DM,hierBeta=hierBeta,hierDelta=hierDelta,
+\hlstd{hhmm} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(snakeData,}\hlkwc{hierStates}\hlstd{=hierStates,}\hlkwc{hierDist}\hlstd{=hierDist,}
+               \hlkwc{Par0}\hlstd{=Par,}\hlkwc{DM}\hlstd{=DM,}\hlkwc{hierBeta}\hlstd{=hierBeta,}\hlkwc{hierDelta}\hlstd{=hierDelta,}
+               \hlkwc{nlmPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{hessian}\hlstd{=}\hlnum{FALSE}\hlstd{))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
