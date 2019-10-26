@@ -69,7 +69,8 @@ test_that("C++ and R density functions are identical",{
   x <- rcat(1000,prob=rep(1/10,10))
   expect_equal(dcat(x,rep(1/10,10)),c(dcat_rcpp(x,matrix(1/10,10,1000),matrix(0,1,2))),tolerance=1e-10)
   set.seed(1,kind="Mersenne-Twister",normal.kind="Inversion")
-  pr <- extraDistr::rdirichlet(1000,alpha=rep(1,10))
+  pr <- matrix(runif(1000*10),1000,10)
+  pr <- pr/rowSums(pr)
   expect_equal(dcat(x,pr),c(dcat_rcpp(x,t(pr),matrix(0,1,2))),tolerance=1e-10)
   
   # dnegbinom

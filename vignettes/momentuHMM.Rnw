@@ -450,7 +450,7 @@ library(momentuHMM)
 #example_wd <- ("~/Dropbox/vignette examples/")
 example_wd <- ("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/vignette examples/")
 
-# workaround because direct load of "vignette_inputs.RData" via url results in error: the input does not start with a magic number compatible with loading from a connection
+## workaround because direct load of "vignette_inputs.RData" via url results in error: the input does not start with a magic number compatible with loading from a connection
 #utils::download.file(url="https://github.com/bmcclintock/momentuHMM/blob/develop/vignettes/vignetteResults/vignette_inputs.RData?raw=true",destfile="vignette_inputs.RData")
 load("vignette_inputs.RData")
 #file.remove("vignette_inputs.RData")

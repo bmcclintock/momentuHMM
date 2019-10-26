@@ -22,7 +22,6 @@ vignettes/script.sh
 ^vignettes/figure$
 ^vignettes/cache$
 ^vignettes/vignetteResults$
-^tests$
 tests/testthat/Rplots.pdf
 tests/testthat/test_examples.R
 tests/testthat/test_extraExamples.R
