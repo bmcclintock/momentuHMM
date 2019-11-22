@@ -12,8 +12,8 @@
 #' @param covs data frame containing the beta model covariates (if any)
 #' @param estAngleMean Named list indicating whether or not to estimate the angle mean for data streams with angular 
 #' distributions ('vm' and 'wrpcauchy').
-#' @param circularAngleMean Named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
-#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.  
+#' @param circularAngleMean Named list indicating whether to use circular-linear or circular-circular 
+#' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. See \code{\link{fitHMM}}.
 #' @param consensus Named list indicating whether to use the circular-circular regression consensus model
 #' @param zeroInflation Named list of logicals indicating whether the probability distributions of the data streams are zero-inflated.
 #' @param oneInflation Named list of logicals indicating whether the probability distributions of the data streams are one-inflated.
@@ -38,7 +38,14 @@
 #' @param prior A function that returns the log-density of the working scale parameter prior distribution(s)
 #' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters.
 #' @param betaRef Indices of reference elements for t.p.m. multinomial logit link.
+#' @param deltaCons Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. 
 #' @param optInd indices of constrained parameters
+#' @param recovs data frame containing the recharge model theta covariates (if any)
+#' @param g0covs data frame containing the recharge model g0 covariates (if any)
+#' @param mixtures Number of mixtures for the state transition probabilities
+#' @param covsPi data frame containing the pi model covariates
+#' @param recharge recharge model specification (only used for hierarchical models)
+#' @param aInd vector of indices of first observation for each animal
 #'
 #' @return The negative log-likelihood of the parameters given the data.
 #'
@@ -55,9 +62,10 @@
 #'           m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,
 #'           m$stateNames)
 #' 
-#' wpar <- momentuHMM:::n2w(Par$Par,m$conditions$bounds,Par$beta,log(Par$delta[-1]/Par$delta[1]),
-#'         nbStates,m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,
-#'         m$conditions$Bndind)
+#' wpar <- momentuHMM:::n2w(Par$Par,m$conditions$bounds,list(beta=Par$beta),
+#'         log(Par$delta[-1]/Par$delta[1]),nbStates,m$conditions$estAngleMean,
+#'         m$conditions$DM,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,
+#'         m$conditions$dist)
 #' 
 #' l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,
 #'      inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
@@ -66,13 +74,13 @@
 #'      m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
 #'      m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),
 #'      m$conditions$wparIndex,covsDelta=m$covsDelta,workBounds=m$conditions$workBounds,
-#'      betaRef=m$conditions$betaRef)
+#'      betaRef=m$conditions$betaRef,covsPi=m$covsPi)
 #' }
 #'
 
 nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,
-                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,optInd=NULL)
+                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,deltaCons=NULL,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1,covsPi,recharge=NULL,aInd)
 {
   
   # check arguments
@@ -80,17 +88,35 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
 
   #covs <- model.matrix(formula,data)
   nbCovs <- ncol(covs)-1
+  if(!is.null(recovs)) {
+    nbRecovs <- ncol(recovs)-1
+    nbG0covs <- ncol(g0covs)-1
+  } else nbRecovs <- nbG0covs <- 0
   
   # convert the parameters back to their natural scale
-  wpar <- expandPar(optPar,optInd,fixPar,wparIndex,betaCons,nbStates,covsDelta,stationary,nbCovs)
-  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta,workBounds)
+  wpar <- expandPar(optPar,optInd,fixPar,wparIndex,betaCons,deltaCons,nbStates,ncol(covsDelta)-1,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,ncol(covsPi)-1)
+  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi)
 
-  nbAnimals <- length(unique(data$ID))
-
-  # aInd = list of indices of first observation for each animal
-  aInd <- NULL
-  for(i in 1:nbAnimals)
-    aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
+  if(nbRecovs){
+    for(i in 1:length(unique(data$ID))){
+      idInd <- which(data$ID==unique(data$ID)[i])
+      if(inherits(data,"hierarchical")) {
+        recLevels <- length(recharge)
+        recLevelNames <- names(recharge)
+        rechargeNames <- paste0("recharge",gsub("level","",recLevelNames))
+        colInd <- lapply(recLevelNames,function(x) which(grepl(paste0("I((level == \"",gsub("level","",x),"\")"),colnames(recovs),fixed=TRUE)))
+      } else {
+        recLevels <- 1
+        rechargeNames <- "recharge"
+        colInd <- list(1:ncol(recovs))
+      }
+      for(iLevel in 1:recLevels){
+        g0 <- par$g0 %*% t(g0covs[(i-1)*recLevels+iLevel,,drop=FALSE])
+        theta <- par$theta
+        covs[idInd,grepl(rechargeNames[iLevel],colnames(covs))] <- cumsum(c(g0,theta[colInd[[iLevel]]]%*%t(recovs[idInd[-length(idInd)],colInd[[iLevel]]])))
+      }
+    }
+  }
   
   if(is.null(knownStates)) knownStates <- -1
   else knownStates[which(is.na(knownStates))] <- 0
@@ -104,14 +130,17 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
     par$delta <- c(NA)
   if(nbStates==1) {
     par$beta <- matrix(NA)
+    #par$pi <- c(NA)
     par$delta <- c(NA)
     par[distnames] <- lapply(par[distnames],as.matrix)
   }
 
-  nllk <- nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,
+  nllk <- tryCatch(nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,
                         par,
-                        aInd,zeroInflation,oneInflation,stationary,knownStates,betaRef)
+                        aInd,zeroInflation,oneInflation,stationary,knownStates,betaRef,mixtures),error=function(e) e)
 
+  if(inherits(nllk,"error")) nllk <- NaN
+  
   if(!is.null(prior)) nllk <- nllk - prior(wpar)
   
   return(nllk)

@@ -2,9 +2,12 @@
 % Please edit documentation in R/print_momentuHMM.R
 \name{print.momentuHMM}
 \alias{print.momentuHMM}
+\alias{print.momentuHierHMM}
 \title{Print \code{momentuHMM}}
 \usage{
 \method{print}{momentuHMM}(x, ...)
+
+\method{print}{momentuHierHMM}(x, ...)
 }
 \arguments{
 \item{x}{A \code{momentuHMM} object.}

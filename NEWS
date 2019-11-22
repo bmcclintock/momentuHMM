@@ -1,3 +1,32 @@
+momentuHMM 1.5.0 2019-11-22
+-----------------
+NEW FEATURES
+
+* hierarchical HMMs can now be fitted and simulated using the fitHMM, MIfitHMM, and simHierData functions
+
+* discrete individual-level random effects now available on state transition probabilities via the 'mixtures' and 'formulaPi' arguments in fitHMM, MIfitHMM, simData, and simHierData
+
+* discrete-time version of Hooten et al (2019; <doi:10.1111/ele.13198>) recharge model has been added
+
+* 'mvnorm2' (bivariate normal) and 'mvnorm3' (trivariate normal) data stream distributions have been added
+
+* 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), and 'rw_mvnorm3' (trivariate normal random walk) data stream distributions have been added
+
+* 'cat' (categorical), 'logis' (logistic), 'negbinom' (negative binomial), and 't' (non-central t) data stream distributions have been added
+
+* circularAngleMean can now alternatively be used to specify the reference angle (i.e. directional persistence) coefficient in circular-circular regression models
+
+* added getTrProbs and mixtureProbs functions for calculating transition and mixture probabilities, respectively
+
+* added na.rm argument to MIpool and MIfitHMM for excluding model fits with NA estimates or standard errors from pooling
+
+BUG FIXES
+
+* crawlMerge did not properly sort the merged crwData object when time steps were missing in data
+
+* simData now properly extracts z values from raster stacks when nbAnimals > 1
+
+
 momentuHMM 1.4.3 2018-11-21
 -----------------
 NEW FEATURES

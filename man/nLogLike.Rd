@@ -8,7 +8,9 @@ nLogLike(optPar, nbStates, formula, bounds, parSize, data, dist, covs,
   estAngleMean, circularAngleMean, consensus, zeroInflation, oneInflation,
   stationary = FALSE, cons, fullDM, DMind, workcons, Bndind, knownStates,
   fixPar, wparIndex, nc, meanind, covsDelta, workBounds, prior = NULL,
-  betaCons = NULL, betaRef, optInd = NULL)
+  betaCons = NULL, betaRef, deltaCons = NULL, optInd = NULL,
+  recovs = NULL, g0covs = NULL, mixtures = 1, covsPi,
+  recharge = NULL, aInd)
 }
 \arguments{
 \item{optPar}{Vector of working parameters.}
@@ -31,8 +33,8 @@ distribution parameters for each data stream.}
 \item{estAngleMean}{Named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy').}
 
-\item{circularAngleMean}{Named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
-regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.}
+\item{circularAngleMean}{Named list indicating whether to use circular-linear or circular-circular 
+regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. See \code{\link{fitHMM}}.}
 
 \item{consensus}{Named list indicating whether to use the circular-circular regression consensus model}
 
@@ -77,7 +79,21 @@ model (if any).}
 
 \item{betaRef}{Indices of reference elements for t.p.m. multinomial logit link.}
 
+\item{deltaCons}{Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters.}
+
 \item{optInd}{indices of constrained parameters}
+
+\item{recovs}{data frame containing the recharge model theta covariates (if any)}
+
+\item{g0covs}{data frame containing the recharge model g0 covariates (if any)}
+
+\item{mixtures}{Number of mixtures for the state transition probabilities}
+
+\item{covsPi}{data frame containing the pi model covariates}
+
+\item{recharge}{recharge model specification (only used for hierarchical models)}
+
+\item{aInd}{vector of indices of first observation for each animal}
 }
 \value{
 The negative log-likelihood of the parameters given the data.
@@ -98,9 +114,10 @@ inputs <- momentuHMM:::checkInputs(nbStates,m$conditions$dist,Par$Par,m$conditio
           m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,
           m$stateNames)
 
-wpar <- momentuHMM:::n2w(Par$Par,m$conditions$bounds,Par$beta,log(Par$delta[-1]/Par$delta[1]),
-        nbStates,m$conditions$estAngleMean,m$conditions$DM,m$conditions$cons,m$conditions$workcons,
-        m$conditions$Bndind)
+wpar <- momentuHMM:::n2w(Par$Par,m$conditions$bounds,list(beta=Par$beta),
+        log(Par$delta[-1]/Par$delta[1]),nbStates,m$conditions$estAngleMean,
+        m$conditions$DM,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,
+        m$conditions$dist)
 
 l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,
      inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
@@ -109,7 +126,7 @@ l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bound
      m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
      m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),
      m$conditions$wparIndex,covsDelta=m$covsDelta,workBounds=m$conditions$workBounds,
-     betaRef=m$conditions$betaRef)
+     betaRef=m$conditions$betaRef,covsPi=m$covsPi)
 }
 
 }

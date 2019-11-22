@@ -34,6 +34,9 @@
 #' weighted by a factor 1/3, and in the second state by a factor 2/3.
 #'
 #' @examples
+#' \dontshow{
+#' set.seed(2,kind="Mersenne-Twister",normal.kind="Inversion")
+#' }
 #' \dontrun{
 #' # Extract data from miExample
 #' obsData <- miExample$obsData
@@ -66,15 +69,15 @@ plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.y
   m <- x # the name "x" is for compatibility with the generic method
   m <- delta_bc(m)
   
-  m$mle <- lapply(x$Par$real,function(x) x$est)
-  m$mle$beta <- x$Par$beta$beta$est
-  m$mle$delta <- x$Par$real$delta$est
-  m$mod <- list()
-  m$mod$estimate <- expandPar(m$MIcombine$coefficients,m$conditions$optInd,unlist(m$conditions$fixPar),m$conditions$wparIndex,m$conditions$betaCons,length(m$stateNames),m$covsDelta,m$conditions$stationary,nrow(m$Par$beta$beta$est)-1)
-  if(!is.null(m$mle$beta)) m$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(m$mle$beta),2,byrow=TRUE)
-  if(!is.null(m$Par$beta$delta$est)) m$conditions$workBoundsdelta<-matrix(c(-Inf,Inf),length(m$Par$beta$delta$est),2,byrow=TRUE)
+  m <- formatmiSum(m)
+  #if(!is.null(m$mle$beta)) m$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(m$mle$beta),2,byrow=TRUE)
+  #if(!is.null(m$Par$beta$pi$est)) m$conditions$workBounds$pi<-matrix(c(-Inf,Inf),length(m$Par$beta$pi$est),2,byrow=TRUE)
+  #if(!is.null(m$Par$beta$delta$est)) m$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(m$Par$beta$delta$est),2,byrow=TRUE)
+  #if(!is.null(m$mle$g0)) m$conditions$workBounds$g0<-matrix(c(-Inf,Inf),length(m$mle$g0),2,byrow=TRUE)
+  #if(!is.null(m$mle$theta)) m$conditions$workBounds$theta<-matrix(c(-Inf,Inf),length(m$mle$theta),2,byrow=TRUE)
   
-  m$plotEllipse <- plotEllipse
+  if(!is.null(m$errorEllipse)) m$plotEllipse <- plotEllipse
+  else m$plotEllipse <- FALSE
   
   m <- momentuHMM(m)
   

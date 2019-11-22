@@ -4,15 +4,17 @@
 \alias{stationary}
 \title{Stationary state probabilities}
 \usage{
-stationary(model, covs)
+stationary(model, covs, covIndex)
 }
 \arguments{
 \item{model}{\code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object}
 
 \item{covs}{Either a data frame or a design matrix of covariates. If \code{covs} is not provided, then the stationary probabilties are calculated based on the covariate data for each time step.}
+
+\item{covIndex}{Integer vector indicating specific rows of the data to be used in the calculations. This can be useful for reducing unnecessarily long computation times, e.g., when \code{formula} includes factor covariates (such as \code{ID}) but no temporal covariates. Ignored unless \code{covs} is missing.}
 }
 \value{
-Matrix of stationary state probabilities. Each row corresponds to
+A list of length \code{model$conditions$mixtures} where each element is a matrix of stationary state probabilities for each mixture. For each matrix, each row corresponds to
 a row of covs, and each column corresponds to a state.
 }
 \description{
@@ -28,5 +30,8 @@ stationary(m, covs = data.frame(cov1 = 0, cov2 = 0))
 
 # design matrix (each column corresponds to row of m$mle$beta)
 stationary(m, covs = matrix(c(1,0,cos(0)),1,3))
+
+# get stationary distribution for first 3 observations
+stationary(m, covIndex = c(1,2,3))
 
 }

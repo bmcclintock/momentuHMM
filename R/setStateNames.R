@@ -32,8 +32,8 @@ setStateNames.momentuHMM <- function(model, stateNames)
   }
   if(!is.null(model$mle$delta)) colnames(model$mle$delta) <- stateNames
   if(!is.null(model$mle$gamma)){
-    colnames(mle$gamma)<-stateNames
-    rownames(mle$gamma)<-stateNames
+    colnames(model$mle$gamma)<-stateNames
+    rownames(model$mle$gamma)<-stateNames
   }
   
   if(!is.null(model$CIbeta$delta)){

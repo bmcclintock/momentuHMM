@@ -27,7 +27,7 @@
 #' @param return If \code{TRUE}, the function returns a ggplot object (which can be edited and
 #' plotted manually). If \code{FALSE}, the function automatically plots the map (default).
 #' @param stateNames Optional character vector of length \code{max(states)} indicating state names. Ignored unless \code{states} is provided.
-#' @param projargs A character string of PROJ.4 projection arguments indicating the coordinate reference system for \code{data} and \code{location} coordinates (if not longitude and latitude). A \code{\link[sp]{CRS-class}} object is also permitted. If \code{projargs} is provided, the coordinates will be internally transformed to longitude and latitude for plotting.
+#' @param projargs A character string of PROJ.4 projection arguments indicating the coordinate reference system for \code{data} and \code{location} coordinates (if not longitude and latitude). A \code{\link[=CRS-class]{CRS}} object is also permitted. If \code{projargs} is provided, the coordinates will be internally transformed to longitude and latitude for plotting.
 #'
 #' @details If the plot displays the message "Sorry, we have no imagery here", try a
 #' lower level of zoom.
@@ -66,10 +66,17 @@ plotSat <- function(data,zoom=NULL,location=NULL,segments=TRUE,compact=TRUE,col=
   else if(inherits(data,"miSum")) data <- data$data
   else if(inherits(data,"HMMfits")) stop("data must be a data frame, momentuHMMData, momentuHMM, miHMM, or miSum object")
   
-  if(inherits(data,"momentuHMMData")) data <- as.data.frame(data)
+  if(inherits(data,"momentuHMMData") | inherits(data,"momentuHierHMMData")) data <- as.data.frame(data)
 
-  if(is.null(data$x) | is.null(data$y))
-    stop("Data should have fields data$x and data$y.")
+  coordNames <- c("x","y")
+  if(!is.null(attr(data,'coords'))) {
+    coordNames <- attr(data,'coords')
+  }
+  if(is.null(data[[coordNames[1]]]) | is.null(data[[coordNames[2]]]))
+    stop("Data should have fields data$",coordNames[1]," and data$",coordNames[2],".")
+  
+  data$x <- data[[coordNames[1]]]
+  data$y <- data[[coordNames[2]]]
   
   if(is.null(data$ID))
     data$ID <- rep("Animal1",nrow(data))

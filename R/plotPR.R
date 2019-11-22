@@ -4,7 +4,7 @@
 #' Plots time series, qq-plots (against the standard normal distribution), and sample
 #' ACF functions of the pseudo-residuals for each data stream
 #'
-#' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, \code{\link{HMMfits}}, or \code{\link{miSum}} object.
+#' @param m A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, \code{\link{HMMfits}}, or \code{\link{miSum}} object.
 #' @param lag.max maximum lag at which to calculate the acf.  See \code{\link[stats]{acf}}.
 #' @param ncores number of cores to use for parallel processing
 #'
@@ -34,6 +34,7 @@
 #'
 #' @export
 #' @importFrom stats acf na.pass qqnorm
+#' @importFrom car qqPlot
 
 plotPR <- function(m, lag.max = NULL, ncores = 1)
 {
@@ -70,45 +71,72 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
   # reduce top margin
   par(mar=c(5,4,4,2)-c(0,0,3,0)) # bottom, left, top, right
   
+  if(any(unlist(lapply(m,function(x) inherits(x,"hierarchical"))))){
+    for(i in distnames){
+      for(j in 1:nSims){
+        iLevel <- gsub("level","",m[[j]]$conditions$hierDist$Get("parent",filterFun=isLeaf)[[i]]$name)
+        pr[[j]][[paste0(i,"Res")]] <- pr[[j]][[paste0(i,"Res")]][which(m[[j]]$data$level==iLevel)]
+      }
+    }
+  }
+  
   for(i in distnames){
       # time series
-      ylim <- range(unlist(lapply(pr,function(x) x[[paste0(i,"Res")]])),na.rm=TRUE)
+      if(any(is.infinite(pr[[1]][[paste0(i,"Res")]]))){
+        warning("some pseudo-residuals for ",i," are infinite; these will be set to NA for plotting")
+        pr[[1]][[paste0(i,"Res")]][which(is.infinite(pr[[1]][[paste0(i,"Res")]]))] <- NA
+      }
+      if(all(is.na(pr[[1]][[paste0(i,"Res")]]))) next;
+      ylim <- range(unlist(lapply(pr,function(x) x[[paste0(i,"Res")]][which(is.finite(x[[paste0(i,"Res")]]))])),na.rm=TRUE)
       plot(pr[[1]][[paste0(i,"Res")]],type="l",xlab="Observation index",ylab=paste0(i," pseudo-residuals"),main="",ylim=ylim)
       if(nSims>1){
         for(j in 2:nSims){
+          if(any(is.infinite(pr[[j]][[paste0(i,"Res")]]))){
+            warning("some pseudo-residuals for ",i," are infinite; these will be set to NA for plotting")
+            pr[[j]][[paste0(i,"Res")]][which(is.infinite(pr[[j]][[paste0(i,"Res")]]))] <- NA
+          }
           lines(pr[[j]][[paste0(i,"Res")]],col=col[j])
         }
       }
       
       # qq-plot
-      qq <- lapply(pr,function(x) qqnorm(x[[paste0(i,"Res")]],plot=FALSE))
-      limInf <- min(min(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),min(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
-      limSup <- max(max(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),max(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
-      q <- qqnorm(pr[[1]][[paste0(i,"Res")]],main="",col="red",xlim=c(limInf,limSup),ylim=c(limInf,limSup))
-      if(nSims>1){
-        for(j in 2:nSims){
-          points(qq[[j]]$x,qq[[j]]$y,col=col[j])
-        }
-      }
-      
-      # add segments for zero inflation
-      for(j in 1:nSims){
-        if(m[[j]]$conditions$zeroInflation[[i]]) {
-          ind <- which(m[[j]]$data[[i]]==0)
-          x <- qq[[j]]$x[ind]
-          y <- qq[[j]]$y[ind]
-          segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
+      if(m[[1]]$conditions$dist[[i]] %in% mvndists){
+        tpr <- as.matrix(pr[[1]][[paste0(i,"Res")]])
+        if(m[[1]]$conditions$dist[[i]]=="mvnorm2" || m[[1]]$conditions$dist[[i]]=="mvnorm3") ndim <- as.numeric(gsub("mvnorm","",m[[1]]$conditions$dist[[i]] ))
+        else ndim <- as.numeric(gsub("rw_mvnorm","",m[[1]]$conditions$dist[[i]] ))
+        car::qqPlot(tpr, distribution = "chisq", df = ndim, 
+               lwd = 1, grid = FALSE, main = "Multi-normal Q-Q Plot", xlab = expression(chi^2 * " quantiles"), ylab = expression("Mahalanobis distances "^2))
+      } else {
+        qq <- lapply(pr,function(x) qqnorm(x[[paste0(i,"Res")]],plot=FALSE))
+        limInf <- min(min(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),min(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
+        limSup <- max(max(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),max(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
+        q <- qqnorm(pr[[1]][[paste0(i,"Res")]],main="",col="red",xlim=c(limInf,limSup),ylim=c(limInf,limSup))
+        if(nSims>1){
+          for(j in 2:nSims){
+            points(qq[[j]]$x,qq[[j]]$y,col=col[j])
+          }
         }
         
-        # add segments for one inflation
-        if(m[[j]]$conditions$oneInflation[[i]]) {
-          ind <- which(m[[j]]$data[[i]]==1)
-          x <- qq[[j]]$x[ind]
-          y <- qq[[j]]$y[ind]
-          segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
+        # add segments for zero inflation
+        for(j in 1:nSims){
+          if(m[[j]]$conditions$zeroInflation[[i]]) {
+            ind <- which(m[[j]]$data[[i]]==0)
+            x <- qq[[j]]$x[ind]
+            y <- qq[[j]]$y[ind]
+            segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
+          }
+          
+          # add segments for one inflation
+          if(m[[j]]$conditions$oneInflation[[i]]) {
+            ind <- which(m[[j]]$data[[i]]==1)
+            x <- qq[[j]]$x[ind]
+            y <- qq[[j]]$y[ind]
+            segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
+          }
         }
+        abline(0,1,lwd=2)
       }
-      abline(0,1,lwd=2)
+      
       
       # ACF functions
       ACF <- lapply(pr,function(x) acf(x[[paste0(i,"Res")]],lag.max=lag.max,na.action=na.pass,plot=FALSE))

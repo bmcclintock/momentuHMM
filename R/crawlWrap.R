@@ -5,7 +5,7 @@
 #'
 #' @param obsData data.frame object containing fields for animal ID ('ID'), time of observation (identified by \code{Time.name}, must be numeric or POSIXct), 
 #' and observed locations (x- and y- coordinates identified by \code{coord}), such as that returned by \code{\link{simData}} when temporally-irregular observed locations or
-#' measurement error are included. Alternatively, a 'SpatialPointsDataFrame' object from the package 'sp' will 
+#' measurement error are included. Alternatively, a \code{\link[sp]{SpatialPointsDataFrame}} or \code{\link[sf]{sf}} object will 
 #' also be accepted, in which case the \code{coord} values will be taken from the spatial data set and ignored in the arguments.  
 #' Note that \code{\link[crawl]{crwMLE}} requires that longitude/latitude coordinates be projected to UTM (i.e., easting/northing). For further details see \code{\link[crawl]{crwMLE}}.
 #' @param timeStep Length of the time step at which to predict regular locations from the fitted model. Unless \code{predTime} is specified, the sequence of times
@@ -13,14 +13,12 @@
 #' whether \code{obsData[[Time.name]]} is numeric or POSIXct) or a character string (if \code{obsData[[Time.name]]} is of class POSIXct) containing one of "sec", "min", "hour", "day", "DSTday", "week", "month", "quarter" or "year". 
 #' This can optionally be preceded by a positive integer and a space, or followed by "s" (e.g., ``2 hours''; see \code{\link[base]{seq.POSIXt}}). \code{timeStep} is not used for individuals for which \code{predTime} is specified.
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
-#' @param retryFits Number of times to attempt to achieve convergence and valid (i.e., not NaN) variance estimates after the initial model fit. \code{retryFits} differs
-#' from \code{attempts} because \code{retryFits} iteratively uses random perturbations of the current parameter estimates as the initial values for likelihood optimization, while 
-#' \code{attempts} uses the same initial values (\code{theta}) for each attempt. 
-#' @param retrySD An optional list of scalars or vectors for each individual indicating the standard deviation to use for normal perturbations of \code{theta} when \code{retryFits>0}. 
+#' @param retryFits Number of times to attempt to achieve convergence and valid (i.e., not NaN) variance estimates after the initial model fit.
+#' @param retrySD An optional list of scalars or vectors for each individual indicating the standard deviation to use for normal perturbations of \code{theta} when \code{retryFits>0} (or \code{attempts>1}). 
 #' Instead of a list object, \code{retrySD} can also be a scalar or a vector, in which case the same values are used for each each individual.
 #' If a scalar is provided, then the same value is used for each parameter. If a vector is provided, it must be of length \code{length(theta)} for the corresponding individual(s). Default: 1, i.e., a standard deviation of 1 is used
-#' for all parameters of all individuals. Ignored unless \code{retryFits>0}.
-#' @param retryParallel Logical indicating whether or not to perform \code{retryFits} attempts for each individual in parallel. Default: FALSE. Ignored unless \code{retryFits>0}.
+#' for all parameters of all individuals. Ignored unless \code{retryFits>0} (or \code{attempts>1}).
+#' @param retryParallel Logical indicating whether or not to perform \code{retryFits} attempts for each individual in parallel. Default: FALSE. Ignored unless \code{retryFits>0} and \code{ncores>1}.
 #' Note that when attempts are done in parallel (i.e. \code{retryParallel=TRUE}), the current value for the log-likelihood of each individual and warnings about convergence are not printed to the console.
 #' @param mov.model List of mov.model objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one movement model is provided, then the same movement model is used
 #' for each individual.
@@ -32,6 +30,9 @@
 #' for each individual.
 #' @param coord A 2-vector of character values giving the names of the "x" and
 #' "y" coordinates in \code{data}. See \code{\link[crawl]{crwMLE}}.
+#' @param proj A list of valid epsg integer codes or proj4string for \code{obsData} that does not
+#' inherit either 'sf' or 'sp'. A valid 'crs' list is also accepted. Otherwise, ignored. If only one proj is provided, then the same projection is used
+#' for each individual.
 #' @param Time.name Character indicating name of the location time column.  See \code{\link[crawl]{crwMLE}}.
 #' @param time.scale character. Scale for conversion of POSIX time to numeric for modeling. Defaults to "hours".
 #' @param theta List of theta objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one theta is provided, then the same starting values are used
@@ -49,16 +50,17 @@
 #' @param initialSANN Control list for \code{\link{optim}} when simulated
 #' annealing is used for obtaining start values. See details
 #' @param attempts The number of times likelihood optimization will be
-#' attempted using \code{theta} as the starting values.  Note this is not the same as \code{retryFits}.
+#' attempted in cases where the fit does not converge or is otherwise non-valid. Note this is not the same as \code{retryFits} because \code{attempts} only applies when the current fit clearly does not appear to have converged; \code{retryFits} will proceed with additional model fitting attempts regardless of the model output.
 #' @param predTime List of predTime objects (see \code{\link[crawl]{crwPredict}}) containing an element for each individual. \code{predTime} can 
 #' be specified as an alternative to the automatic sequences generated according to \code{timeStep}.  If only one predTime object is provided, then the same prediction times are used
 #' for each individual.
 #' @param fillCols Logical indicating whether or not to use the crawl::\code{\link[crawl]{fillCols}} function for filling in missing values in \code{obsData} for which
 #' there is a single unique value. Default: FALSE. If the output from \code{crawlWrap} is intended for analyses using \code{\link{fitHMM}} or \code{\link{MIfitHMM}}, 
 #' setting \code{fillCols=TRUE} should typically be avoided.
+#' @param coordLevel Character string indicating the level of the hierarchy for the location data. Ignored unless \code{obsData} includes a 'level' field.
 #' @param ... Additional arguments that are ignored.
 #' 
-#' @return A \code{\link{crwData}} object, i.e. a list of:
+#' @return A \code{\link{crwData}} or \code{\link{crwHierData}} object, i.e. a list of:
 #' \item{crwFits}{A list of \code{crwFit} objects returned by crawl::crwMLE. See \code{\link[crawl]{crwMLE}}}
 #' \item{crwPredict}{A \code{crwPredict} data frame with \code{obsData} merged with the predicted locations. See \code{\link[crawl]{crwPredict}}.}
 #' The \code{\link{crwData}} object is used in \code{\link{MIfitHMM}} analyses that account for temporal irregularity or location measurement error.
@@ -100,6 +102,7 @@
 #' @importFrom crawl crwMLE crwPredict displayPar
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
+#' @importFrom lubridate with_tz
 #' @importFrom doRNG %dorng%
 #' @importFrom stats formula setNames
 #' @importFrom sp coordinates
@@ -107,29 +110,54 @@
 
 crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1, retryParallel = FALSE,
                     mov.model = ~1, err.model = NULL, activity = NULL, drift = NULL, 
-                    coord = c("x", "y"), Time.name = "time", time.scale = "hours", theta, fixPar, 
+                    coord = c("x", "y"), proj = NULL, Time.name = "time", time.scale = "hours", theta, fixPar, 
                     method = "L-BFGS-B", control = NULL, constr = NULL, 
                     prior = NULL, need.hess = TRUE, initialSANN = list(maxit = 200), attempts = 1,
-                    predTime = NULL, fillCols = FALSE, ...)
+                    predTime = NULL, fillCols = FALSE, coordLevel = NULL, ...)
 {
   
   if(is.data.frame(obsData)){
-    if(!is.character(coord) | length(coord)!=2) stop('coord must be character vector of length 2')
-    if(any(!(c("ID",Time.name,coord) %in% names(obsData)))) stop('obsData is missing ',paste(c("ID",Time.name,coord)[!(c("ID",Time.name,coord) %in% names(obsData))],collapse=","))
+    if(!inherits(obsData,"sf")) {
+      if(!is.character(coord) | length(coord)!=2) stop('coord must be character vector of length 2')
+      if(any(!(c("ID",Time.name,coord) %in% names(obsData)))) stop('obsData is missing ',paste(c("ID",Time.name,coord)[!(c("ID",Time.name,coord) %in% names(obsData))],collapse=","))
+      if(any(coord %in% c("mu.x","nu.x","mu.y","nu.y","se.mu.x","se.nu.x","se.mu.y","se.nu.y","speed"))) stop("coordinates cannot include the following names: mu.x, nu.x, mu.y, nu.y, se.mu.x, se.nu.x, se.mu.y, se.nu.y, or speed \n   please choose different coord names")
+    } else {
+      if(any(!(c("ID",Time.name) %in% names(obsData)))) stop('obsData is missing ',paste(c("ID",Time.name)[!(c("ID",Time.name) %in% names(obsData))],collapse=","))
+    }
   } else if(inherits(obsData,"SpatialPoints")){
     if(any(!(c("ID",Time.name) %in% names(obsData)))) stop('obsData is missing ',paste(c("ID",Time.name)[!(c("ID",Time.name) %in% names(obsData))],collapse=","))
-    coord <- colnames(sp::coordinates(obsData))
+    coord <- colnames(sp::coordinates(obsData)) # c("x","y") 
   } else stop("obsData must be a data frame or a SpatialPointsDataFrame")
     
   if(retryFits<0) stop("retryFits must be non-negative")
+  if(attempts<1) stop("attempts must be >=1")
   
   ids = as.character(unique(obsData$ID))
   ind_data<-list()
   
+  hierInd <- FALSE
   for(i in ids){
     ind_data[[i]] = obsData[which(obsData$ID==i),]
     if(any(is.na(ind_data[[i]][[Time.name]]))) stop("obsData$",Time.name," cannot contain missing values")
+    #if(any(duplicated(ind_data[[i]][[Time.name]]))){
+    #  if(is.null(ind_data[[i]]$level) | is.null(coordLevel)) stop("duplicated times can only be included when coordLevel is specified and obsData includes a 'level' field")
+    #  if(!is.factor(ind_data[[i]]$level)) stop("'level' field must be a factor")
+    #  if(!(coordLevel %in% levels(ind_data[[i]]$level))) stop("'coordLevel' not found in 'level' field")
+    #  ind_data[[i]] <- obsData[which(obsData$ID==i & obsData$level==coordLevel),]
+    #  hierInd <- TRUE
+    #} else {
+      if(!is.null(ind_data[[i]]$level)){
+        if(is.factor(ind_data[[i]]$level) & is.null(coordLevel)) stop("'level' field cannot be a factor unless 'coordLevel' is specified")
+        if(!is.factor(ind_data[[i]]$level) & !is.null(coordLevel)) stop("'level' field must be a factor when 'coordLevel' is specified")
+        if(!is.character(coordLevel) | length(coordLevel)!=1) stop("coordLevel must be a character string")
+        if(!(coordLevel %in% levels(ind_data[[i]]$level))) stop("'coordLevel' not found in 'level' field")
+        ind_data[[i]] <- obsData[which(obsData$ID==i & obsData$level==coordLevel),]
+        hierInd <- TRUE
+      } else if(!is.null(coordLevel)) stop("coordLevel can not be specified unless obsData includes a 'level' field")
+    #}
   }
+  
+  nbAnimals <- length(ids)
   
   if(is.null(mov.model)){
     mov.model<-list()
@@ -149,7 +177,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   } else names(mov.model) <- ids
   
   if(is.null(err.model)){
-    err.model<-vector('list',length(ids))
+    err.model<-vector('list',nbAnimals)
     names(err.model)<-ids
   } else if(is.list(err.model)){
     if(all(unlist(lapply(err.model,is.formula)))){
@@ -166,7 +194,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   } else names(err.model) <- ids
   
   if(is.null(activity)){
-    activity<-vector('list',length(ids))
+    activity<-vector('list',nbAnimals)
     names(activity)<-ids
   } else if(is.formula(activity)){
     tmpactivity<-activity
@@ -245,7 +273,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     }     
   }
   
-  if(retryFits>0){
+  if(retryFits>0 | attempts>1){
     if(!is.list(retrySD)){
       tmpretrySD <- retrySD
       retrySD<-list()
@@ -262,7 +290,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
         if(!all(names(retrySD) %in% ids)) stop("retrySD names must match obsData$ID")
         retrySD <- retrySD[ids]
       } else {
-        if(length(retrySD)!=length(ids)) stop('when no list object names are provided, retrySD must be a list of length ',length(ids))
+        if(length(retrySD)!=nbAnimals) stop('when no list object names are provided, retrySD must be a list of length ',nbAnimals)
         names(retrySD) <- ids
       }
       for(i in ids){
@@ -279,6 +307,12 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
       }
     }
     retrySD <- retrySD[ids]
+  } else {
+    retrySD <- vector('list',nbAnimals)
+    names(retrySD) <- ids
+    for(i in ids){
+      retrySD[[i]] <- rep(1,length(theta[[i]]))
+    }
   }
   
   if(is.null(constr)){
@@ -303,7 +337,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   } else names(constr) <- ids
   
   if(is.null(prior)){
-    prior<-vector('list',length(ids))
+    prior<-vector('list',nbAnimals)
     names(prior)<-ids
   } else if(is.function(prior)){
     tmpprior<-prior
@@ -317,6 +351,21 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     prior <- prior[ids]
   } else names(prior) <- ids
   
+  if(is.null(proj)){
+    proj<-vector('list',nbAnimals)
+    names(proj)<-ids
+  } else if(!is.list(proj)){
+    tmpproj<-proj
+    proj<-list()
+    for(i in ids){
+      proj[[i]] <- tmpproj
+    }    
+  }
+  if(!is.null(names(proj))) {
+    if(!all(names(proj) %in% ids)) stop("proj names must match obsData$ID")
+    proj <- proj[ids]
+  } else names(proj) <- ids
+  
   if(is.null(predTime)){
     predTime<-list()
   }
@@ -329,8 +378,15 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   }
   for(i in ids){
     if(is.null(predTime[[i]])){
-      iTime <- range(obsData[which(obsData$ID==i),][[Time.name]])
-      predTime[[i]] <- seq(iTime[1],iTime[2],timeStep)
+      iTime <- range(ind_data[[i]][[Time.name]])
+      if(inherits(obsData[[Time.name]],"POSIXct")){
+        tzone <- attributes(obsData[[Time.name]])$tzone
+        predTime[[i]] <- as.POSIXct(seq(iTime[1],iTime[2],timeStep),tz=tzone)
+      } else {
+        tzone <- NULL
+        predTime[[i]] <- seq(iTime[1],iTime[2],timeStep)
+      }
+      attributes(predTime[[i]])$tzone <- tzone
     }
   }
   if(!is.null(names(predTime))) {
@@ -338,18 +394,19 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     predTime <- predTime[ids]
   } else names(predTime) <- ids
   
-  cat('Fitting',length(ids),'track(s) using crawl::crwMLE...',ifelse(ncores>1,"","\n"))
-  registerDoParallel(cores=ncores) 
+  cat('Fitting',nbAnimals,'track(s) using crawl::crwMLE...',ifelse(nbAnimals>1 & ncores>1,"","\n"))
+  registerDoParallel(cores=ncores)
   withCallingHandlers(model_fits <- 
     foreach(i = ids, .export="crwMLE", .errorhandling="pass", .final = function(x) stats::setNames(x, ids)) %dorng% {
       cat("Individual ",i,"...\n",sep="")
       fit <- crawl::crwMLE(
+        data = ind_data[[i]],
         mov.model =  mov.model[[i]],
         err.model = err.model[[i]],
         activity = activity[[i]],
         drift = drift[[i]],
-        data = ind_data[[i]],
         coord = coord,
+        proj = proj[[i]],
         Time.name = Time.name,
         time.scale = time.scale,
         theta = theta[[i]],
@@ -361,11 +418,16 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
         need.hess = need.hess,
         initialSANN = initialSANN,
         attempts = attempts, 
+        retrySD = retrySD[[i]],
         ... = ...
       )
     }
   ,warning=muffleRNGwarning)
   stopImplicitCluster()
+  
+  convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
+  if(!length(convFits)) stop("crawl::crwMLE failed for all individuals.  Check crawl::crwMLE arguments and/or consult crawl documentation.\n")
+    
   cat("DONE\n")
   if(retryFits>0) cat("\n\n")
   
@@ -379,8 +441,8 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   # Check crwFits and re-try based on retryFits
   tmpcores <- ncores
   if(!retryParallel) tmpcores <- 1
-  else if(ncores>1 & length(ids)>1) cat("Attempting to achieve convergence and valid variance estimates for each individual in parallel.\n    Press 'esc' to force exit from 'crawlWrap'... ",sep="")
-  registerDoParallel(cores=tmpcores) 
+  else if(ncores>1 & nbAnimals>1) cat("Attempting to achieve convergence and valid variance estimates for each individual in parallel.\n    Press 'esc' to force exit from 'crawlWrap'... ",sep="")
+  registerDoParallel(cores=tmpcores)
   withCallingHandlers(model_fits <- foreach(i = ids, .export=c("quietCrawl","crwMLE"), .errorhandling="pass", .final = function(x) stats::setNames(x, ids)) %dorng% {
     if(inherits(model_fits[[i]],"crwFit")){
       if((model_fits[[i]]$convergence | any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))]))) | retryFits){
@@ -401,12 +463,13 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
             cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",curFit$loglik,"  ...",sep="")
             tmpFun <- function(){
               tryCatch(suppressWarnings(suppressMessages(
-                crawl::crwMLE(mov.model =  mov.model[[i]],
+                crawl::crwMLE(data = ind_data[[i]],
+                              mov.model =  mov.model[[i]],
                               err.model = err.model[[i]],
                               activity = activity[[i]],
                               drift = drift[[i]],
-                              data = ind_data[[i]],
                               coord = coord,
+                              proj = proj[[i]],
                               Time.name = Time.name,
                               time.scale = time.scale,
                               theta = fit$estPar + rnorm(length(fit$estPar),0,retrySD[[i]]),
@@ -418,6 +481,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
                               need.hess = need.hess,
                               initialSANN = initialSANN,
                               attempts = 1, 
+                              retrySD = retrySD[[i]],
                               ... = ...))),error=function(e){e})}
             tmp <- NULL
             if(retryParallel){
@@ -455,9 +519,10 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     model_fits[[i]]
   },warning=muffleRNGwarning)
   stopImplicitCluster()
-  if(retryParallel & ncores>1 & length(ids)>1) cat("DONE\n")
+  if(retryParallel & ncores>1 & nbAnimals>1) cat("DONE\n")
 
   convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
+  if(!length(convFits)) stop("crawl::crwMLE failed for all individuals.  Check crawl::crwMLE arguments and/or consult crawl documentation.\n")
   model_fits <- model_fits[convFits]
   
   txt <- NULL
@@ -489,28 +554,77 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   withCallingHandlers(predData <- 
     foreach(i = convFits, .export="crwPredict", .combine = rbind, .errorhandling="remove") %dorng% {
       pD<-crawl::crwPredict(model_fits[[i]], predTime=predTime[[i]],return.type = "flat")
+      if(inherits(ind_data[[i]][[Time.name]],"POSIXct") && attributes(pD[[Time.name]])$tzone != attributes(ind_data[[i]][[Time.name]])$tzone){
+        pD[[Time.name]] <- lubridate::with_tz(pD[[Time.name]],tz=attributes(ind_data[[i]][[Time.name]])$tzone)
+      }
       if(length(predTime[[i]])>1){
         pD[[Time.name]][which(pD$locType=="p")]<-predTime[[i]][predTime[[i]]>=min(model_fits[[i]]$data[[Time.name]])]
       } else if(inherits(obsData[[Time.name]],"POSIXct")){
         pD[[Time.name]] <- as.POSIXct(pD$TimeNum*ts,origin="1970-01-01 00:00:00",tz=attributes(pD[[Time.name]])$tzone)
       }
       if(!fillCols){
+        # remove duplicated observation times (because this what crwPredict does)
+        dups <- duplicated(ind_data[[i]][[Time.name]])
+        tmpind_data <- as.data.frame(ind_data[[i]][!dups,,drop=FALSE])
         for(j in names(pD)[names(pD) %in% names(ind_data[[i]])]){
           if(!(j %in% c(Time.name,"ID",coord))){
-            if(!isTRUE(all.equal(pD[[j]],ind_data[[i]][[j]]))) {
-              pD[[j]][pD[[Time.name]] %in% ind_data[[i]][[Time.name]]] <- ind_data[[i]][[j]]
-              pD[[j]][!(pD[[Time.name]] %in% ind_data[[i]][[Time.name]])] <- NA
+            if(!isTRUE(all.equal(pD[[j]],tmpind_data[[j]]))) {
+              pD[[j]][pD[[Time.name]] %in% tmpind_data[[Time.name]]] <- tmpind_data[[j]]
+              pD[[j]][!(pD[[Time.name]] %in% tmpind_data[[Time.name]])] <- NA
             }
           }
         }
       }
+      if(!is.null(coordLevel)) pD$level <- coordLevel
       pD
     }
   ,warning=muffleRNGwarning)
   stopImplicitCluster()
-  cat("DONE\n")
   
-  return(crwData(list(crwFits=model_fits,crwPredict=predData)))
+  if(hierInd){
+    
+    pData <- predData
+    predData <- data.frame()
+    
+    for(i in convFits){
+      
+      ipData <- pData[which(pData$ID==i),]
+      ipData$level <- factor(ipData$level,levels=levels(obsData$level))
+      tmpData <- obsData[which(obsData$ID==i),]
+      #tmpData[[Time.name]] <- as.POSIXct(as.numeric(tmpData[[Time.name]]),origin="1970-01-01 00:00:00",tz=attributes(pData[[Time.name]])$tzone)
+      tmpData <- merge(tmpData,ipData[,c(Time.name,"level"),drop=FALSE],all=TRUE,by=c(Time.name,"level"))
+      tmpData$level[is.na(tmpData$level)] <- coordLevel
+      tmpData$ID[is.na(tmpData$ID)] <- i
+      
+      for(jj in names(tmpData)[!(names(tmpData) %in% names(ipData))]){
+        ipData[[jj]] <- rep(NA,nrow(ipData))
+      }
+      for(jj in names(ipData)[!(names(ipData) %in% names(tmpData))]){
+        tmpData[[jj]] <- rep(NA,nrow(tmpData))
+      }
+      
+      ipData <- ipData[,names(tmpData)]
+      
+      #for(jj in 1:nrow(ipData)){
+      #    tmpInd <- which(tmpData$time==ipData$time[jj] & tmpData$level==coordLevel)
+      #    tmpData[tmpInd,is.na(tmpData[tmpInd,])] <- ipData[jj,is.na(tmpData[tmpInd,])]
+      #}
+      tmpInd <- which(tmpData$time %in% ipData$time & tmpData$level==coordLevel)
+      tmpData[tmpInd,] <- Map(function(x,y) {x[is.na(x)] <- y[is.na(x)]; x}, tmpData[tmpInd,], ipData[ipData$time %in% tmpData$time,])
+      
+      predData<-rbind(predData,tmpData)
+    }
+    predData <- predData[,names(pData)]
+    attrNames <- names(attributes(pData))[!(names(attributes(pData)) %in% names(attributes(predData)))]
+    attributes(predData)[attrNames] <- attributes(pData)[attrNames]
+    attr(predData,"coordLevel") <- coordLevel
+    class(predData) <- append(c("crwPredict","hierarchical"),class(predData))
+    cat("DONE\n")
+    return(crwHierData(list(crwFits=model_fits,crwPredict=predData)))    
+  } else {
+    cat("DONE\n")
+    return(crwData(list(crwFits=model_fits,crwPredict=predData)))    
+  }
 }
 
 quietCrawl <- function(x) { 

@@ -7,7 +7,7 @@
 plotPR(m, lag.max = NULL, ncores = 1)
 }
 \arguments{
-\item{m}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, \code{\link{HMMfits}}, or \code{\link{miSum}} object.}
+\item{m}{A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, \code{\link{HMMfits}}, or \code{\link{miSum}} object.}
 
 \item{lag.max}{maximum lag at which to calculate the acf.  See \code{\link[stats]{acf}}.}
 

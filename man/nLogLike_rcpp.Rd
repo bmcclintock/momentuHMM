@@ -4,8 +4,8 @@
 \alias{nLogLike_rcpp}
 \title{Negative log-likelihood}
 \usage{
-nLogLike_rcpp(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation,
-  oneInflation, stationary, knownStates, betaRef)
+nLogLike_rcpp(nbStates, covs, data, dataNames, dist, Par, aInd,
+  zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures)
 }
 \arguments{
 \item{nbStates}{Number of states,}
@@ -36,6 +36,8 @@ of rows of 'data'; each element should either be an integer (the value of the kn
 the state is not known.}
 
 \item{betaRef}{Indices of reference elements for t.p.m. multinomial logit link.}
+
+\item{mixtures}{Number of mixtures for the state transition probabilities}
 }
 \value{
 Negative log-likelihood

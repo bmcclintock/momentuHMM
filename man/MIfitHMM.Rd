@@ -2,24 +2,51 @@
 % Please edit documentation in R/MIfitHMM.R
 \name{MIfitHMM}
 \alias{MIfitHMM}
+\alias{MIfitHMM.default}
+\alias{MIfitHMM.hierarchical}
 \title{Fit HMMs to multiple imputation data}
 \usage{
-MIfitHMM(miData, nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95,
-  nbStates, dist, Par0, beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
+MIfitHMM(miData, ...)
+
+\method{MIfitHMM}{default}(miData, nSims, ncores = 1,
+  poolEstimates = TRUE, alpha = 0.95, na.rm = FALSE, nbStates, dist,
+  Par0, beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
   circularAngleMean = NULL, formula = ~1, formulaDelta = NULL,
-  stationary = FALSE, verbose = NULL, nlmPar = NULL, fit = TRUE,
-  useInitial = FALSE, DM = NULL, cons = NULL, userBounds = NULL,
-  workBounds = NULL, workcons = NULL, betaCons = NULL, betaRef = NULL,
-  stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0,
-  retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL,
-  modelName = NULL, covNames = NULL, spatialCovs = NULL, centers = NULL,
-  centroids = NULL, angleCovs = NULL, method = "IS", parIS = 1000,
-  dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1,
-  quad.ask = FALSE, force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf,
-  scalePostIS = 1, thetaSamp = NULL)
+  stationary = FALSE, mixtures = 1, formulaPi = NULL,
+  verbose = NULL, nlmPar = NULL, fit = TRUE, useInitial = FALSE,
+  DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL,
+  workcons = NULL, betaCons = NULL, betaRef = NULL,
+  deltaCons = NULL, mvnCoords = NULL, stateNames = NULL,
+  knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL,
+  optMethod = "nlm", control = list(), prior = NULL,
+  modelName = NULL, covNames = NULL, spatialCovs = NULL,
+  centers = NULL, centroids = NULL, angleCovs = NULL,
+  altCoordNames = NULL, method = "IS", parIS = 1000, dfSim = Inf,
+  grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE,
+  force.quad = TRUE, fullPost = TRUE, dfPostIS = Inf,
+  scalePostIS = 1, thetaSamp = NULL, ...)
+
+\method{MIfitHMM}{hierarchical}(miData, nSims, ncores = 1,
+  poolEstimates = TRUE, alpha = 0.95, na.rm = FALSE, hierStates,
+  hierDist, Par0, hierBeta = NULL, hierDelta = NULL,
+  estAngleMean = NULL, circularAngleMean = NULL, hierFormula = NULL,
+  hierFormulaDelta = NULL, mixtures = 1, formulaPi = NULL,
+  nlmPar = NULL, fit = TRUE, useInitial = FALSE, DM = NULL,
+  userBounds = NULL, workBounds = NULL, betaCons = NULL,
+  deltaCons = NULL, mvnCoords = NULL, knownStates = NULL,
+  fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm",
+  control = list(), prior = NULL, modelName = NULL,
+  covNames = NULL, spatialCovs = NULL, centers = NULL,
+  centroids = NULL, angleCovs = NULL, altCoordNames = NULL,
+  method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1,
+  crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
+  fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,
+  thetaSamp = NULL, ...)
 }
 \arguments{
-\item{miData}{A \code{\link{crwData}} object, a \code{\link{crwSim}} object, or a list of \code{\link{momentuHMMData}} objects.}
+\item{miData}{A \code{\link{crwData}} object, a \code{\link{crwHierData}} object, a \code{\link{crwSim}} object, a \code{\link{crwHierSim}} object, a list of \code{\link{momentuHMMData}} objects, or a list of \code{\link{momentuHierHMMData}} objects.}
+
+\item{...}{further arguments passed to or from other methods}
 
 \item{nSims}{Number of imputations in which to fit the HMM using \code{\link{fitHMM}}. If \code{miData} is a list of \code{momentuHMMData} 
 objects, \code{nSims} cannot exceed the length of \code{miData}.}
@@ -29,6 +56,8 @@ objects, \code{nSims} cannot exceed the length of \code{miData}.}
 \item{poolEstimates}{Logical indicating whether or not to calculate pooled parameter estimates across the \code{nSims} imputations using \code{\link{MIpool}}. Default: \code{TRUE}.}
 
 \item{alpha}{Significance level for calculating confidence intervals of pooled estimates when \code{poolEstimates=TRUE} (see \code{\link{MIpool}}). Default: 0.95.}
+
+\item{na.rm}{Logical indicating whether or not to exclude model fits with \code{NA} parameter estimates or standard errors from pooling when \code{poolEstimates=TRUE} (see \code{\link{MIpool}}). Default: FALSE.}
 
 \item{nbStates}{Number of states of the HMM. See \code{\link{fitHMM}}.}
 
@@ -47,7 +76,7 @@ is the initial values for the initial distribution of the HMM for each imputatio
 \item{estAngleMean}{An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy'). See \code{\link{fitHMM}}.}
 
-\item{circularAngleMean}{An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
+\item{circularAngleMean}{An optional named list indicating whether to use circular-linear or circular-circular
 regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. See \code{\link{fitHMM}}.}
 
 \item{formula}{Regression formula for the transition probability covariates. See \code{\link{fitHMM}}.}
@@ -56,6 +85,10 @@ regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turn
 
 \item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. See \code{\link{fitHMM}}.}
+
+\item{mixtures}{Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.}
+
+\item{formulaPi}{Regression formula for the mixture distribution probabilities. See \code{\link{fitHMM}}.}
 
 \item{verbose}{Deprecated: please use \code{print.level} in \code{nlmPar} argument. Determines the print level of the \code{nlm} optimizer. The default value of 0 means that no
 printing occurs, a value of 1 means that the first and last iterations of the optimization are
@@ -70,7 +103,7 @@ object, then \code{MIfitHMM} returns a list containing a \code{\link{momentuHMMD
 
 \item{useInitial}{Logical indicating whether or not to use parameter estimates for the first model fit as initial values for all subsequent model fits.
 If \code{ncores>1} then the first model is fit on a single core and then used as the initial values for all subsequent model fits on each core 
-(in this case, the progress of the initial model fit can be followed using the \code{verbose} argument). Default: FALSE.}
+(in this case, the progress of the initial model fit can be followed using the \code{verbose} argument). Default: FALSE. Ignored if \code{nSims<2}.}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream. See \code{\link{fitHMM}}.}
@@ -89,6 +122,11 @@ each data stream. See \code{\link{fitHMM}}.}
 \item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See \code{\link{fitHMM}}.}
 
 \item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. See \code{\link{fitHMM}}.}
+
+\item{deltaCons}{Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}. See \code{\link{fitHMM}}.}
+
+\item{mvnCoords}{Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, 
+then \code{mvnCoords="mu"} needs to be specified in order for these data to be properly treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
@@ -114,8 +152,7 @@ initial values for likelihood optimization.  See \code{\link{fitHMM}}.}
 \item{covNames}{Names of any covariates in \code{miData$crwPredict} (if \code{miData} is a \code{\link{crwData}} object; otherwise 
 \code{covNames} is ignored). See \code{\link{prepData}}.}
 
-\item{spatialCovs}{List of raster layer(s) for any spatial covariates not included in \code{miData$crwPredict} (if \code{miData} is 
-a \code{\link{crwData}} object; otherwise \code{spatialCovs} is ignored). See \code{\link{prepData}}.}
+\item{spatialCovs}{List of raster layer(s) for any spatial covariates. See \code{\link{prepData}}.}
 
 \item{centers}{2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 centers of attraction or repulsion) from which distance and angle covariates will be calculated based on realizations of the position process. 
@@ -125,7 +162,9 @@ See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwDat
 from which distance and angle covariates will be calculated based on the location data. See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 
 \item{angleCovs}{Character vector indicating the names of any circular-circular regression angular covariates in \code{miData$crwPredict} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
-See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.}
+
+\item{altCoordNames}{Character string indicating an alternative name for the returned location data. See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.}
 
 \item{method}{Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 
@@ -155,6 +194,18 @@ of the quadrature method for large parameter vectors. See \code{\link[crawl]{crw
 \item{thetaSamp}{If multiple parameter samples are available in \code{\link[crawl]{crwSimulator}} objects,
 setting \code{thetaSamp=n} will use the nth sample. Defaults to the last. See \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}}. 
 Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+
+\item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHMM}}.}
+
+\item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. See \code{\link{fitHMM}}.}
+
+\item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of initial values for the regression coefficients of the transition probabilities at each level of the hierarchy ('beta'). See \code{\link{fitHMM}}.}
+
+\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of initial values for the regression coefficients of the initial distribution at each level of the hierarchy ('delta'). See \code{\link{fitHMM}}.}
+
+\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy. See \code{\link{fitHMM}}.}
+
+\item{hierFormulaDelta}{A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). See \code{\link{fitHMM}}.}
 }
 \value{
 If \code{nSims>1}, \code{poolEstimates=TRUE}, and \code{fit=TRUE}, a \code{\link{miHMM}} object, i.e., a list consisting of:
@@ -172,21 +223,23 @@ missing data, temporal-irregularity, or location measurement error in hidden Mar
 attributable to observation error.
 }
 \details{
-\code{miData} can either be a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} object (as returned by \code{MIfitHMM} when \code{fit=FALSE}), 
-or a list of \code{\link{momentuHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}}).
+\code{miData} can either be a \code{\link{crwData}} or \code{\link{crwHierData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} or \code{\link{crwHierSim}} object (as returned by \code{MIfitHMM} when \code{fit=FALSE}), 
+or a list of \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}}).
 
-If \code{miData} is a \code{crwData} object, \code{MIfitHMM} uses a combination of 
+If \code{miData} is a \code{crwData} (or \code{crwHierData}) object, \code{MIfitHMM} uses a combination of 
 \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, \code{\link{prepData}}, and \code{\link{fitHMM}} to draw \code{nSims} realizations of the position process
 and fit the specified HMM to each imputation of the data. The vast majority of \code{MIfitHMM} arguments are identical to the corresponding arguments from these functions.
 
-If \code{miData} is a \code{\link{crwData}} object, \code{nSims} determines both the number of realizations of the position process to draw 
+If \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object, \code{nSims} determines both the number of realizations of the position process to draw 
 (using \code{\link[crawl]{crwSimulator}} and \code{\link{crwPostIS}}) as well as the number of HMM fits.
 
-If \code{miData} is a \code{\link{crwSim}} object or a list of \code{\link{momentuHMMData}} object(s), the specified HMM will simply be fitted to each of the \code{momentuHMMData} objects
+If \code{miData} is a \code{\link{crwSim}} (or \code{\link{crwHierSim}}) object or a list of \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}) object(s), the specified HMM will simply be fitted to each of the \code{momentuHMMData} (or \code{momentuHierHMMData}) objects
 and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} are ignored.
 }
 \examples{
-
+\dontshow{
+set.seed(3,kind="Mersenne-Twister",normal.kind="Inversion")
+}
 # Don't run because it takes too long on a single core
 \dontrun{
 # extract simulated obsData from example data

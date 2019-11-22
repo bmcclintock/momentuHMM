@@ -2,47 +2,86 @@
 % Please edit documentation in R/getPar0.R
 \name{getPar0}
 \alias{getPar0}
-\title{Get starting values for new model from existing \code{momentuHMM} model fit}
+\alias{getPar0.default}
+\alias{getPar0.hierarchical}
+\title{Get starting values for new model from existing \code{momentuHMM} or \code{momentuHierHMM} model fit}
 \usage{
-getPar0(model, nbStates = length(model$stateNames),
+getPar0(model, ...)
+
+\method{getPar0}{default}(model, nbStates = length(model$stateNames),
   estAngleMean = model$conditions$estAngleMean,
   circularAngleMean = model$conditions$circularAngleMean,
   formula = model$conditions$formula,
-  formulaDelta = model$conditions$formulaDelta, DM = model$conditions$DM,
-  stateNames = model$stateNames)
+  formulaDelta = model$conditions$formulaDelta,
+  stationary = model$conditions$stationary,
+  mixtures = model$conditions$mixtures,
+  formulaPi = model$conditions$formulaPi, DM = model$conditions$DM,
+  betaRef = model$conditions$betaRef, stateNames = model$stateNames,
+  ...)
+
+\method{getPar0}{hierarchical}(model,
+  hierStates = model$conditions$hierStates,
+  estAngleMean = model$conditions$estAngleMean,
+  circularAngleMean = model$conditions$circularAngleMean,
+  hierFormula = model$conditions$hierFormula,
+  hierFormulaDelta = model$conditions$hierFormulaDelta,
+  mixtures = model$conditions$mixtures,
+  formulaPi = model$conditions$formulaPi, DM = model$conditions$DM,
+  ...)
 }
 \arguments{
-\item{model}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})}
+\item{model}{A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})}
+
+\item{...}{further arguments passed to or from other methods}
 
 \item{nbStates}{Number of states in the new model. Default: \code{nbStates=length(model$stateNames)}}
 
 \item{estAngleMean}{Named list indicating whether or not the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy') are to be estimated in the new model. Default: \code{estAngleMean=model$conditions$estAngleMean}}
 
-\item{circularAngleMean}{Named list indicating whether circular-linear (FALSE) or circular-circular (TRUE) 
-regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model. Default: \code{circularAngleMean=model$conditions$circularAngleMean}}
+\item{circularAngleMean}{Named list indicating whether circular-linear or circular-circular 
+regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model.  See \code{\link{fitHMM}}. Default: \code{circularAngleMean=model$conditions$circularAngleMean}}
 
 \item{formula}{Regression formula for the transition probability covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formula=model$conditions$formula}.}
 
 \item{formulaDelta}{Regression formula for the initial distribution covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formulaDelta=model$conditions$formulaDelta}.}
 
+\item{stationary}{FALSE if there are covariates in formula or formulaDelta. If TRUE, the initial distribution is considered equal to the stationary distribution. Default: FALSE.}
+
+\item{mixtures}{Number of mixtures for the state transition probabilities  (see \code{\link{fitHMM}}). Default: \code{formula=model$conditions$mixtures}.}
+
+\item{formulaPi}{Regression formula for the mixture distribution probabilities (see \code{\link{fitHMM}}). Default: \code{formula=model$conditions$formulaPi}.}
+
 \item{DM}{Named list indicating the design matrices to be used for the probability distribution parameters of each data stream in the new model (see \code{\link{fitHMM}}). Only parameters with design matrix column names that match those in model$conditions$fullDM are extracted, so care must be taken in naming columns if any elements of \code{DM}
 are specified as matrices instead of formulas. Default: \code{DM=model$conditions$DM}.}
 
+\item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: \code{formula=model$conditions$betaRef}.}
+
 \item{stateNames}{Character vector of length \code{nbStates} indicating the names and order of the states in the new model. Default: \code{stateNames=model$stateNames[1:nbStates]}.}
+
+\item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states (see \code{\link{fitHMM}}). Default: \code{hierStates=model$conditions$hierStates}.}
+
+\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy (see \code{\link{fitHMM}}). Default: \code{hierFormula=model$conditions$hierFormula}.}
+
+\item{hierFormulaDelta}{A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale).}
 }
 \value{
 A named list containing starting values suitable for \code{Par0} and \code{beta0} arguments in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}:
 \item{Par}{A list of vectors of state-dependent probability distribution parameters for 
 each data stream specified in \code{model$conditions$dist}}
 \item{beta}{Matrix of regression coefficients for the transition probabilities}
-\item{delta}{Initial distribution of the HMM. Only returned if \code{stateNames} has the same membership as the state names for \code{model}}.
-
-All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{userBounds}, \code{workBounds}, etc.) and \code{data} are assumed to be the same 
-for \code{model} and the new model (as specified by  \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{formulaDelta}, \code{DM}, and \code{stateNames}).
+\item{delta}{Initial distribution of the HMM. Only returned if \code{stateNames} has the same membership as the state names for \code{model}}
 }
 \description{
-For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}) from an existing \code{\link{momentuHMM}} model fit based on the provided arguments for the new model. Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
+For nested models, this function will extract starting parameter values (i.e., \code{Par0} in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}) from an existing \code{\link{momentuHMM}} or \code{momentuHierHMM} model fit based on the provided arguments for the new model. 
+Any parameters that are not in common between \code{model} and the new model (as specified by the arguments) are set to \code{0}. This function is intended to help users incrementally build and fit more complicated models from simpler nested models (and vice versa).
+}
+\details{
+All other \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model specifications (e.g., \code{dist}, \code{hierDist}, \code{userBounds}, \code{workBounds}, etc.) and \code{data} are assumed to be the same 
+for \code{model} and the new model (as specified by  \code{nbStates}, \code{hierStates}, \code{estAngleMean}, \code{circularAngleMean}, \code{formula}, \code{hierFormula}, \code{formulaDelta}, \code{hierFormulaDelta}, \code{DM}, etc.).
+
+Note that for hierarchical models, \code{getPar0} will return hierarchical data.tree objects (\code{hierBeta} and \code{hierDelta}) with the default values for \code{fixPar}, \code{betaCons}, and \code{deltaCons};
+if hierarchical t.p.m. or initial distribution parameters are subject to constraints, then these must be set manually on the list object returned by \code{getPar0}.
 }
 \examples{
 # model is a momentuHMM object, automatically loaded with the package

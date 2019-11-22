@@ -4,10 +4,11 @@
 \alias{MIpool}
 \title{Calculate pooled parameter estimates and states across multiple imputations}
 \usage{
-MIpool(HMMfits, alpha = 0.95, ncores = 1, covs = NULL)
+MIpool(HMMfits, alpha = 0.95, ncores = 1, covs = NULL,
+  na.rm = FALSE)
 }
 \arguments{
-\item{HMMfits}{List comprised of \code{\link{momentuHMM}} objects}
+\item{HMMfits}{List comprised of \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} objects}
 
 \item{alpha}{Significance level for calculating confidence intervals of pooled estimates (including location error ellipses). Default: 0.95.}
 
@@ -16,6 +17,8 @@ MIpool(HMMfits, alpha = 0.95, ncores = 1, covs = NULL)
 \item{covs}{Data frame consisting of a single row indicating the covariate values to be used in the calculation of pooled natural parameters. 
 For any covariates that are not specified using \code{covs}, the means of the covariate(s) across the imputations are used 
 (unless the covariate is a factor, in which case the first factor in the data is used). By default, no covariates are specified.}
+
+\item{na.rm}{Logical indicating whether or not to exclude model fits with \code{NA} parameter estimates or standard errors from pooling. Default: FALSE.}
 }
 \value{
 A \code{\link{miSum}} object, i.e., a list comprised of model and pooled parameter summaries, including \code{data} (averaged across imputations), \code{conditions}, \code{Par}, and \code{MIcombine} 
@@ -27,6 +30,8 @@ A \code{\link{miSum}} object, i.e., a list comprised of model and pooled paramet
 \item{timeInStates}{The proportion of time steps assigned to each state}
 \item{states}{The most freqent state assignment for each time step based on the \code{\link{viterbi}} algorithm for each model fit}
 \item{stateProbs}{Pooled state probability estimates for each time step}
+\item{mixtureProbs}{Pooled mixture probabilities for each individual (only applies if \code{mixtures>1})}
+\item{hierStateProbs}{Pooled state probability estimates for each time step at each level of the hierarchy (only applies if \code{HMMfits} is comprised of \code{\link{momentuHierHMM}} objects)}
 }
 \description{
 Calculate pooled parameter estimates and states across multiple imputations
@@ -39,6 +44,9 @@ and, if applicable, are based on covariate means across all imputations (and/or 
 Note that pooled estimates for \code{timeInStates} and \code{stateProbs} do not include within-model uncertainty and are based entirely on across-model variability.
 }
 \examples{
+\dontshow{
+set.seed(2,kind="Mersenne-Twister",normal.kind="Inversion")
+}
 \dontrun{
 # Extract data and crawl inputs from miExample
 obsData <- miExample$obsData

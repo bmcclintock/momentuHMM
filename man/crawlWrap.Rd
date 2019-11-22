@@ -4,18 +4,19 @@
 \alias{crawlWrap}
 \title{Fit and predict tracks for using crawl}
 \usage{
-crawlWrap(obsData, timeStep = 1, ncores = 1, retryFits = 0, retrySD = 1,
-  retryParallel = FALSE, mov.model = ~1, err.model = NULL,
-  activity = NULL, drift = NULL, coord = c("x", "y"),
-  Time.name = "time", time.scale = "hours", theta, fixPar,
-  method = "L-BFGS-B", control = NULL, constr = NULL, prior = NULL,
-  need.hess = TRUE, initialSANN = list(maxit = 200), attempts = 1,
-  predTime = NULL, fillCols = FALSE, ...)
+crawlWrap(obsData, timeStep = 1, ncores = 1, retryFits = 0,
+  retrySD = 1, retryParallel = FALSE, mov.model = ~1,
+  err.model = NULL, activity = NULL, drift = NULL, coord = c("x",
+  "y"), proj = NULL, Time.name = "time", time.scale = "hours", theta,
+  fixPar, method = "L-BFGS-B", control = NULL, constr = NULL,
+  prior = NULL, need.hess = TRUE, initialSANN = list(maxit = 200),
+  attempts = 1, predTime = NULL, fillCols = FALSE,
+  coordLevel = NULL, ...)
 }
 \arguments{
 \item{obsData}{data.frame object containing fields for animal ID ('ID'), time of observation (identified by \code{Time.name}, must be numeric or POSIXct), 
 and observed locations (x- and y- coordinates identified by \code{coord}), such as that returned by \code{\link{simData}} when temporally-irregular observed locations or
-measurement error are included. Alternatively, a 'SpatialPointsDataFrame' object from the package 'sp' will 
+measurement error are included. Alternatively, a \code{\link[sp]{SpatialPointsDataFrame}} or \code{\link[sf]{sf}} object will 
 also be accepted, in which case the \code{coord} values will be taken from the spatial data set and ignored in the arguments.  
 Note that \code{\link[crawl]{crwMLE}} requires that longitude/latitude coordinates be projected to UTM (i.e., easting/northing). For further details see \code{\link[crawl]{crwMLE}}.}
 
@@ -26,16 +27,14 @@ This can optionally be preceded by a positive integer and a space, or followed b
 
 \item{ncores}{Number of cores to use for parallel processing. Default: 1 (no parallel processing).}
 
-\item{retryFits}{Number of times to attempt to achieve convergence and valid (i.e., not NaN) variance estimates after the initial model fit. \code{retryFits} differs
-from \code{attempts} because \code{retryFits} iteratively uses random perturbations of the current parameter estimates as the initial values for likelihood optimization, while 
-\code{attempts} uses the same initial values (\code{theta}) for each attempt.}
+\item{retryFits}{Number of times to attempt to achieve convergence and valid (i.e., not NaN) variance estimates after the initial model fit.}
 
-\item{retrySD}{An optional list of scalars or vectors for each individual indicating the standard deviation to use for normal perturbations of \code{theta} when \code{retryFits>0}. 
+\item{retrySD}{An optional list of scalars or vectors for each individual indicating the standard deviation to use for normal perturbations of \code{theta} when \code{retryFits>0} (or \code{attempts>1}). 
 Instead of a list object, \code{retrySD} can also be a scalar or a vector, in which case the same values are used for each each individual.
 If a scalar is provided, then the same value is used for each parameter. If a vector is provided, it must be of length \code{length(theta)} for the corresponding individual(s). Default: 1, i.e., a standard deviation of 1 is used
-for all parameters of all individuals. Ignored unless \code{retryFits>0}.}
+for all parameters of all individuals. Ignored unless \code{retryFits>0} (or \code{attempts>1}).}
 
-\item{retryParallel}{Logical indicating whether or not to perform \code{retryFits} attempts for each individual in parallel. Default: FALSE. Ignored unless \code{retryFits>0}.
+\item{retryParallel}{Logical indicating whether or not to perform \code{retryFits} attempts for each individual in parallel. Default: FALSE. Ignored unless \code{retryFits>0} and \code{ncores>1}.
 Note that when attempts are done in parallel (i.e. \code{retryParallel=TRUE}), the current value for the log-likelihood of each individual and warnings about convergence are not printed to the console.}
 
 \item{mov.model}{List of mov.model objects (see \code{\link[crawl]{crwMLE}}) containing an element for each individual. If only one movement model is provided, then the same movement model is used
@@ -52,6 +51,10 @@ for each individual.}
 
 \item{coord}{A 2-vector of character values giving the names of the "x" and
 "y" coordinates in \code{data}. See \code{\link[crawl]{crwMLE}}.}
+
+\item{proj}{A list of valid epsg integer codes or proj4string for \code{obsData} that does not
+inherit either 'sf' or 'sp'. A valid 'crs' list is also accepted. Otherwise, ignored. If only one proj is provided, then the same projection is used
+for each individual.}
 
 \item{Time.name}{Character indicating name of the location time column.  See \code{\link[crawl]{crwMLE}}.}
 
@@ -80,7 +83,7 @@ the Hessian for parameter standard errors}
 annealing is used for obtaining start values. See details}
 
 \item{attempts}{The number of times likelihood optimization will be
-attempted using \code{theta} as the starting values.  Note this is not the same as \code{retryFits}.}
+attempted in cases where the fit does not converge or is otherwise non-valid. Note this is not the same as \code{retryFits} because \code{attempts} only applies when the current fit clearly does not appear to have converged; \code{retryFits} will proceed with additional model fitting attempts regardless of the model output.}
 
 \item{predTime}{List of predTime objects (see \code{\link[crawl]{crwPredict}}) containing an element for each individual. \code{predTime} can 
 be specified as an alternative to the automatic sequences generated according to \code{timeStep}.  If only one predTime object is provided, then the same prediction times are used
@@ -90,10 +93,12 @@ for each individual.}
 there is a single unique value. Default: FALSE. If the output from \code{crawlWrap} is intended for analyses using \code{\link{fitHMM}} or \code{\link{MIfitHMM}}, 
 setting \code{fillCols=TRUE} should typically be avoided.}
 
+\item{coordLevel}{Character string indicating the level of the hierarchy for the location data. Ignored unless \code{obsData} includes a 'level' field.}
+
 \item{...}{Additional arguments that are ignored.}
 }
 \value{
-A \code{\link{crwData}} object, i.e. a list of:
+A \code{\link{crwData}} or \code{\link{crwHierData}} object, i.e. a list of:
 \item{crwFits}{A list of \code{crwFit} objects returned by crawl::crwMLE. See \code{\link[crawl]{crwMLE}}}
 \item{crwPredict}{A \code{crwPredict} data frame with \code{obsData} merged with the predicted locations. See \code{\link[crawl]{crwPredict}}.}
 The \code{\link{crwData}} object is used in \code{\link{MIfitHMM}} analyses that account for temporal irregularity or location measurement error.

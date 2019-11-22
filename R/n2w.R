@@ -8,7 +8,7 @@
 #' @param par Named list of vectors containing the initial parameter values for each data stream.
 #' @param bounds Named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 #' distribution parameters for each data stream.
-#' @param beta Matrix of regression coefficients for the transition probabilities.
+#' @param beta List of regression coefficients for the transition probabilities.
 #' @param delta Initial distribution. Default: \code{NULL} ; if the initial distribution is not estimated.
 #' @param nbStates The number of states of the HMM.
 #' @param estAngleMean Named list indicating whether or not to estimate the angle mean for data streams with angular 
@@ -20,6 +20,7 @@
 #' @param workcons Named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 #' each data stream. 
 #' @param Bndind Named list indicating whether \code{DM} is NULL with default parameter bounds for each data stream.
+#' @param dist A named list indicating the probability distributions of the data streams.
 #' 
 #' @return A vector of unconstrained parameters.
 #'
@@ -35,8 +36,9 @@
 #' delta <- c(0.6,0.4)
 #' 
 #' #working parameters
-#' wpar <- momentuHMM:::n2w(par,bounds,beta,log(delta[-1]/delta[1]),nbStates,
-#' m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+#' wpar <- momentuHMM:::n2w(par,bounds,list(beta=beta),log(delta[-1]/delta[1]),nbStates,
+#' m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,
+#' m$conditions$dist)
 #' 
 #' #natural parameter
 #' p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
@@ -47,10 +49,9 @@
 #' workBounds=m$conditions$workBounds)
 #' }
 #'
-#' @importFrom boot logit
 #' @importFrom stats dunif
 
-n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcons,Bndind)
+n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcons,Bndind,dist)
 {
   wpar <- NULL
   for(i in names(par)){
@@ -81,17 +82,25 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcon
         y <- kappa * sin(angleMean)
         p[(foo - nbStates):(foo - 1)] <- x
         p[foo:length(p)] <- y
-      }
-      else p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],cons[[i]],workcons[[i]],nbStates)
+      } else if(grepl("cat",dist[[i]])){
+        dimCat <- length(par[[i]])/nbStates
+        for(j in 1:nbStates){
+          p[seq(j,dimCat*nbStates,nbStates)] <- log(par[[i]][seq(j,dimCat*nbStates,nbStates)]/(1-sum(par[[i]][seq(j,dimCat*nbStates,nbStates)])))
+        }
+      } else p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],cons[[i]],workcons[[i]],nbStates)
     }
     wpar <- c(wpar,p)
   }
 
-  wbeta <- as.vector(beta) # if beta is NULL, wbeta is NULL as well
+  wbeta <- as.vector(beta$beta) # if beta is NULL, wbeta is NULL as well
+  wpi <- as.vector(beta$pi)
+  wg0 <- as.vector(beta$g0)
+  wtheta <- as.vector(beta$theta)
   wdelta <- as.vector(delta)#log(delta[,-1,drop=FALSE]/delta[,1,drop=FALSE]) # if delta is NULL, wdelta is NULL as well
-  return(c(wpar,wbeta,wdelta))
+  return(c(wpar,wbeta,wpi,wdelta,wg0,wtheta))
 }
 
+#' @importFrom stats qlogis
 nw2w <-function(wpar,workBounds){
   
   ind1<-which(is.finite(workBounds[,1]) & is.infinite(workBounds[,2]))
@@ -99,13 +108,14 @@ nw2w <-function(wpar,workBounds){
   ind3<-which(is.infinite(workBounds[,1]) & is.finite(workBounds[,2]))
   
   wpar[ind1] <- log(wpar[ind1]-workBounds[ind1,1])
-  wpar[ind2] <- boot::logit((wpar[ind2]-workBounds[ind2,1])/(workBounds[ind2,2]-workBounds[ind2,1]))
+  wpar[ind2] <- stats::qlogis((wpar[ind2]-workBounds[ind2,1])/(workBounds[ind2,2]-workBounds[ind2,1]))
   wpar[ind3] <- -log(-wpar[ind3] + workBounds[ind3,2])
   
   wpar
   
 }
 
+#' @importFrom stats qlogis
 n2wDM<-function(bounds,DM,par,cons,workcons,nbStates){
   
   a<-bounds[,1]
@@ -139,7 +149,7 @@ n2wDM<-function(bounds,DM,par,cons,workcons,nbStates){
   ind33<-ind3[which(is.infinite(a[ind3]) & is.finite(b[ind3]))]
   
   p[ind31]<-(log(par[ind31]-a[ind31])-workcons[ind31])^(1/cons[ind31])
-  p[ind32]<-(boot::logit((par[ind32]-a[ind32])/(b[ind32]-a[ind32]))-workcons[ind32])^(1/cons[ind32])
+  p[ind32]<-(stats::qlogis((par[ind32]-a[ind32])/(b[ind32]-a[ind32]))-workcons[ind32])^(1/cons[ind32])
   p[ind33]<-(-log(-par[ind33]+b[ind33])-workcons[ind33])^(1/cons[ind33])
   
   p

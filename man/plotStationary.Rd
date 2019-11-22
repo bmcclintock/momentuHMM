@@ -8,7 +8,7 @@ plotStationary(model, covs = NULL, col = NULL, plotCI = FALSE,
   alpha = 0.95, ...)
 }
 \arguments{
-\item{model}{\code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object}
+\item{model}{\code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object}
 
 \item{covs}{Optional data frame consisting of a single row indicating the covariate values to be used in plots.
 If none are specified, the means of any covariates appearing in the model are used (unless covariate is a factor, in which case the first factor in the data is used).}

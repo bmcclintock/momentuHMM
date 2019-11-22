@@ -35,6 +35,12 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
   names(parSize) <- names(parNames) <- names(bounds) <- distnames
 
   for(i in distnames){
+    if(grepl("cat",dist[[i]])){
+      dimCat <- as.integer(gsub("cat","",dist[[i]]))
+      if(is.na(dimCat)) stop("categorical distributions must be specified using paste0('cat',k), where k is the number of categories (e.g. 'cat3', 'cat12', etc.)")
+      if(dimCat<2) stop("categorical distribution must have at least 2 categories")
+      dist[[i]] <- "cat"
+    }
     switch(dist[[i]],
            "bern"={
              parSize[[i]] <- 1
@@ -46,6 +52,11 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
              tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
              parNames[[i]]<-c("shape1","shape2")
            },
+           "cat"={
+             parSize[[i]] <- dimCat-1
+             tmpbounds <- matrix(rep(c(0,1),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
+             parNames[[i]]<-paste0("prob",1:parSize[[i]])
+           },
            "exp"={
              parSize[[i]] <- 1 + zeroInflation[[i]]
              tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
@@ -56,11 +67,22 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
              tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
              parNames[[i]]<-c("mean","sd")
            },
+           "logis"={
+             parSize[[i]] <- 2
+             tmpbounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates)),
+                                 ncol=2,byrow=TRUE)
+             parNames[[i]] <- c("location","scale")
+           },
            "lnorm"={
              parSize[[i]] <- 2 + zeroInflation[[i]]
              tmpbounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates*(1+zeroInflation[[i]]))),
                                   ncol=2,byrow=TRUE)
              parNames[[i]] <- c("location","scale")
+           },
+           "negbinom"={
+             parSize[[i]] <- 2 
+             tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
+             parNames[[i]]<-c("mu","size")
            },
            "norm"={
              parSize[[i]] <- 2
@@ -68,10 +90,52 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
                                   ncol=2,byrow=TRUE)
              parNames[[i]] <- c("mean","sd")
            },
+           "mvnorm2"={
+             parSize[[i]] <- 2 + 3
+             tmpbounds <- matrix(c(rep(rep(c(-Inf,Inf),nbStates),2),rep(c(0,Inf),nbStates),rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates)),
+                                 ncol=2,byrow=TRUE)
+             parNames[[i]] <- c("mean.x","mean.y","sigma.x","sigma.xy","sigma.y")
+           },
+           "mvnorm3"={
+             parSize[[i]] <- 3 + 6
+             tmpbounds <- matrix(c(rep(rep(c(-Inf,Inf),nbStates),3),rep(c(0,Inf),nbStates),
+                                                                    rep(rep(c(-Inf,Inf),nbStates),2),
+                                                                    rep(c(0,Inf),nbStates),
+                                                                    rep(c(-Inf,Inf),nbStates),
+                                                                    rep(c(0,Inf),nbStates)),ncol=2,byrow=TRUE)
+             parNames[[i]] <- c("mean.x","mean.y","mean.z","sigma.x","sigma.xy","sigma.xz","sigma.y","sigma.yz","sigma.z")
+           },
+           "rw_norm"={
+             parSize[[i]] <- 2
+             tmpbounds <- matrix(c(rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates)),
+                                 ncol=2,byrow=TRUE)
+             parNames[[i]] <- c("mean","sd")
+           },
+           "rw_mvnorm2"={
+             parSize[[i]] <- 2 + 3
+             tmpbounds <- matrix(c(rep(rep(c(-Inf,Inf),nbStates),2),rep(c(0,Inf),nbStates),rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates)),
+                                 ncol=2,byrow=TRUE)
+             parNames[[i]] <- c("mean.x","mean.y","sigma.x","sigma.xy","sigma.y")
+           },
+           "rw_mvnorm3"={
+             parSize[[i]] <- 3 + 6
+             tmpbounds <- matrix(c(rep(rep(c(-Inf,Inf),nbStates),3),rep(c(0,Inf),nbStates),
+                                   rep(rep(c(-Inf,Inf),nbStates),2),
+                                   rep(c(0,Inf),nbStates),
+                                   rep(c(-Inf,Inf),nbStates),
+                                   rep(c(0,Inf),nbStates)),ncol=2,byrow=TRUE)
+             parNames[[i]] <- c("mean.x","mean.y","mean.z","sigma.x","sigma.xy","sigma.xz","sigma.y","sigma.yz","sigma.z")
+           },
            "pois"={
              parSize[[i]] <- 1
              tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
              parNames[[i]]<-"lambda"
+           },
+          "t"={
+             parSize[[i]] <- 2
+             tmpbounds <- matrix(c(rep(c(0,Inf),nbStates),rep(c(-Inf,Inf),nbStates)),
+                                 ncol=2,byrow=TRUE)
+             parNames[[i]] <- c("df","ncp")
            },
            "vm"={
              if(estAngleMean[[i]]) { # if the angle mean is estimated
@@ -135,6 +199,14 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
       parNames[[i]] <- c(parNames[[i]],"onemass")
     } 
     rownames(tmpbounds) <- paste0(rep(parNames[[i]],each=nbStates),"_",1:nbStates)
+    #if(!(dist[[i]] %in% mvndists)) rownames(tmpbounds) <- paste0(rep(parNames[[i]],each=nbStates),"_",1:nbStates)
+    #else if(dist[[i]]=="mvnorm2" || dist[[i]]=="rw_mvnorm2"){
+    #  rownames(tmpbounds) <- c(paste0(rep(c("mean.x","mean.y"),each=nbStates),"_",1:nbStates),
+    #                           paste0(rep(c("sigma.x","sigma.xy","sigma.y"),each=nbStates),"_",1:nbStates))
+    #} else if(dist[[i]]=="mvnorm3" || dist[[i]]=="rw_mvnorm3"){
+    #  rownames(tmpbounds) <- c(paste0(rep(c("mean.x","mean.y","mean.z"),each=nbStates),"_",1:nbStates),
+    #                           paste0(rep(c("sigma.x","sigma.xy","sigma.xz","sigma.y","sigma.yz","sigma.z"),each=nbStates),"_",1:nbStates))
+    #}
     bounds[[i]] <- tmpbounds
   }
   

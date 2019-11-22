@@ -6,6 +6,92 @@
 
 using namespace Rcpp;
 
+// XBloop_rcpp
+arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned int nr, unsigned int nc, bool circularAngleMean, bool consensus, IntegerVector rindex, arma::mat cindex, int nbStates, double refCoeff);
+RcppExport SEXP _momentuHMM_XBloop_rcpp(SEXP DMSEXP, SEXP XvecSEXP, SEXP nbObsSEXP, SEXP nrSEXP, SEXP ncSEXP, SEXP circularAngleMeanSEXP, SEXP consensusSEXP, SEXP rindexSEXP, SEXP cindexSEXP, SEXP nbStatesSEXP, SEXP refCoeffSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< List >::type DM(DMSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type Xvec(XvecSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type nbObs(nbObsSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type nr(nrSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type nc(ncSEXP);
+    Rcpp::traits::input_parameter< bool >::type circularAngleMean(circularAngleMeanSEXP);
+    Rcpp::traits::input_parameter< bool >::type consensus(consensusSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type rindex(rindexSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type cindex(cindexSEXP);
+    Rcpp::traits::input_parameter< int >::type nbStates(nbStatesSEXP);
+    Rcpp::traits::input_parameter< double >::type refCoeff(refCoeffSEXP);
+    rcpp_result_gen = Rcpp::wrap(XBloop_rcpp(DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex, cindex, nbStates, refCoeff));
+    return rcpp_result_gen;
+END_RCPP
+}
+// combine
+NumericVector combine(const List& list);
+RcppExport SEXP _momentuHMM_combine(SEXP listSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const List& >::type list(listSEXP);
+    rcpp_result_gen = Rcpp::wrap(combine(list));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cbindmean2
+arma::mat cbindmean2(arma::mat x, arma::mat y);
+RcppExport SEXP _momentuHMM_cbindmean2(SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(cbindmean2(x, y));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cbindmean3
+arma::mat cbindmean3(arma::mat x, arma::mat y, arma::mat z);
+RcppExport SEXP _momentuHMM_cbindmean3(SEXP xSEXP, SEXP ySEXP, SEXP zSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type z(zSEXP);
+    rcpp_result_gen = Rcpp::wrap(cbindmean3(x, y, z));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cbindsigma2
+arma::mat cbindsigma2(arma::mat x, arma::mat xy, arma::mat y);
+RcppExport SEXP _momentuHMM_cbindsigma2(SEXP xSEXP, SEXP xySEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type xy(xySEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(cbindsigma2(x, xy, y));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cbindsigma3
+arma::mat cbindsigma3(arma::mat x, arma::mat xy, arma::mat xz, arma::mat y, arma::mat yz, arma::mat z);
+RcppExport SEXP _momentuHMM_cbindsigma3(SEXP xSEXP, SEXP xySEXP, SEXP xzSEXP, SEXP ySEXP, SEXP yzSEXP, SEXP zSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type xy(xySEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type xz(xzSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type yz(yzSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type z(zSEXP);
+    rcpp_result_gen = Rcpp::wrap(cbindsigma3(x, xy, xz, y, yz, z));
+    return rcpp_result_gen;
+END_RCPP
+}
 // dgamma_rcpp
 arma::colvec dgamma_rcpp(NumericVector x, arma::mat mu, arma::mat sigma);
 RcppExport SEXP _momentuHMM_dgamma_rcpp(SEXP xSEXP, SEXP muSEXP, SEXP sigmaSEXP) {
@@ -136,6 +222,71 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// dmvnorm_rcpp
+arma::colvec dmvnorm_rcpp(NumericVector x, const arma::mat mean, const arma::mat varcovM);
+RcppExport SEXP _momentuHMM_dmvnorm_rcpp(SEXP xSEXP, SEXP meanSEXP, SEXP varcovMSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::mat >::type mean(meanSEXP);
+    Rcpp::traits::input_parameter< const arma::mat >::type varcovM(varcovMSEXP);
+    rcpp_result_gen = Rcpp::wrap(dmvnorm_rcpp(x, mean, varcovM));
+    return rcpp_result_gen;
+END_RCPP
+}
+// dcat_rcpp
+arma::colvec dcat_rcpp(const NumericVector x, const arma::mat prob, const arma::mat foo);
+RcppExport SEXP _momentuHMM_dcat_rcpp(SEXP xSEXP, SEXP probSEXP, SEXP fooSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::mat >::type prob(probSEXP);
+    Rcpp::traits::input_parameter< const arma::mat >::type foo(fooSEXP);
+    rcpp_result_gen = Rcpp::wrap(dcat_rcpp(x, prob, foo));
+    return rcpp_result_gen;
+END_RCPP
+}
+// dnbinom_rcpp
+arma::colvec dnbinom_rcpp(NumericVector x, arma::mat mu, arma::mat size);
+RcppExport SEXP _momentuHMM_dnbinom_rcpp(SEXP xSEXP, SEXP muSEXP, SEXP sizeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type size(sizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(dnbinom_rcpp(x, mu, size));
+    return rcpp_result_gen;
+END_RCPP
+}
+// dlogis_rcpp
+arma::colvec dlogis_rcpp(NumericVector x, arma::mat location, arma::mat scale);
+RcppExport SEXP _momentuHMM_dlogis_rcpp(SEXP xSEXP, SEXP locationSEXP, SEXP scaleSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type location(locationSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type scale(scaleSEXP);
+    rcpp_result_gen = Rcpp::wrap(dlogis_rcpp(x, location, scale));
+    return rcpp_result_gen;
+END_RCPP
+}
+// dt_rcpp
+arma::colvec dt_rcpp(NumericVector x, arma::mat df, arma::mat ncp);
+RcppExport SEXP _momentuHMM_dt_rcpp(SEXP xSEXP, SEXP dfSEXP, SEXP ncpSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type df(dfSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type ncp(ncpSEXP);
+    rcpp_result_gen = Rcpp::wrap(dt_rcpp(x, df, ncp));
+    return rcpp_result_gen;
+END_RCPP
+}
 // getDM_rcpp
 arma::cube getDM_rcpp(arma::cube X, arma::mat covs, CharacterVector DM, unsigned int nr, unsigned int nc, CharacterVector cov, unsigned int nbObs);
 RcppExport SEXP _momentuHMM_getDM_rcpp(SEXP XSEXP, SEXP covsSEXP, SEXP DMSEXP, SEXP nrSEXP, SEXP ncSEXP, SEXP covSEXP, SEXP nbObsSEXP) {
@@ -154,8 +305,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // nLogLike_rcpp
-double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist, List Par, IntegerVector aInd, List zeroInflation, List oneInflation, bool stationary, IntegerVector knownStates, IntegerVector betaRef);
-RcppExport SEXP _momentuHMM_nLogLike_rcpp(SEXP nbStatesSEXP, SEXP covsSEXP, SEXP dataSEXP, SEXP dataNamesSEXP, SEXP distSEXP, SEXP ParSEXP, SEXP aIndSEXP, SEXP zeroInflationSEXP, SEXP oneInflationSEXP, SEXP stationarySEXP, SEXP knownStatesSEXP, SEXP betaRefSEXP) {
+double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist, List Par, IntegerVector aInd, List zeroInflation, List oneInflation, bool stationary, IntegerVector knownStates, IntegerVector betaRef, int mixtures);
+RcppExport SEXP _momentuHMM_nLogLike_rcpp(SEXP nbStatesSEXP, SEXP covsSEXP, SEXP dataSEXP, SEXP dataNamesSEXP, SEXP distSEXP, SEXP ParSEXP, SEXP aIndSEXP, SEXP zeroInflationSEXP, SEXP oneInflationSEXP, SEXP stationarySEXP, SEXP knownStatesSEXP, SEXP betaRefSEXP, SEXP mixturesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -171,7 +322,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type stationary(stationarySEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type knownStates(knownStatesSEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type betaRef(betaRefSEXP);
-    rcpp_result_gen = Rcpp::wrap(nLogLike_rcpp(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef));
+    Rcpp::traits::input_parameter< int >::type mixtures(mixturesSEXP);
+    rcpp_result_gen = Rcpp::wrap(nLogLike_rcpp(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -186,26 +338,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type covs(covsSEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type betaRef(betaRefSEXP);
     rcpp_result_gen = Rcpp::wrap(trMatrix_rcpp(nbStates, beta, covs, betaRef));
-    return rcpp_result_gen;
-END_RCPP
-}
-// XBloop_rcpp
-arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned int nr, unsigned int nc, bool circularAngleMean, bool consensus, IntegerVector rindex, arma::mat cindex, int nbStates);
-RcppExport SEXP _momentuHMM_XBloop_rcpp(SEXP DMSEXP, SEXP XvecSEXP, SEXP nbObsSEXP, SEXP nrSEXP, SEXP ncSEXP, SEXP circularAngleMeanSEXP, SEXP consensusSEXP, SEXP rindexSEXP, SEXP cindexSEXP, SEXP nbStatesSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< List >::type DM(DMSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type Xvec(XvecSEXP);
-    Rcpp::traits::input_parameter< unsigned int >::type nbObs(nbObsSEXP);
-    Rcpp::traits::input_parameter< unsigned int >::type nr(nrSEXP);
-    Rcpp::traits::input_parameter< unsigned int >::type nc(ncSEXP);
-    Rcpp::traits::input_parameter< bool >::type circularAngleMean(circularAngleMeanSEXP);
-    Rcpp::traits::input_parameter< bool >::type consensus(consensusSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type rindex(rindexSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type cindex(cindexSEXP);
-    Rcpp::traits::input_parameter< int >::type nbStates(nbStatesSEXP);
-    rcpp_result_gen = Rcpp::wrap(XBloop_rcpp(DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex, cindex, nbStates));
     return rcpp_result_gen;
 END_RCPP
 }

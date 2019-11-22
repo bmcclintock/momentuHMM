@@ -2,21 +2,36 @@
 % Please edit documentation in R/getParDM.R
 \name{getParDM}
 \alias{getParDM}
+\alias{getParDM.default}
+\alias{getParDM.hierarchical}
 \title{Get starting values on working scale based on design matrix and other parameter constraints}
 \usage{
-getParDM(data = data.frame(), nbStates, dist, Par, zeroInflation = NULL,
-  oneInflation = NULL, estAngleMean = NULL, circularAngleMean = NULL,
-  DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL,
-  workcons = NULL)
+getParDM(data, ...)
+
+\method{getParDM}{default}(data = data.frame(), nbStates, dist, Par,
+  zeroInflation = NULL, oneInflation = NULL, estAngleMean = NULL,
+  circularAngleMean = NULL, DM = NULL, cons = NULL,
+  userBounds = NULL, workBounds = NULL, workcons = NULL, ...)
+
+\method{getParDM}{hierarchical}(data = data.frame(), hierStates,
+  hierDist, Par, zeroInflation = NULL, oneInflation = NULL,
+  estAngleMean = NULL, circularAngleMean = NULL, DM = NULL,
+  userBounds = NULL, workBounds = NULL, ...)
 }
 \arguments{
-\item{data}{Optional \code{\link{momentuHMMData}} object or a data frame containing the covariate values. 
-\code{data} must be specified if covariates are included in \code{DM}.}
+\item{data}{Optional \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 
+\code{data} must be specified if covariates are included in \code{DM}.
+
+If a data frame is provided, then either \code{nbStates} and \code{dist} must be specified (for a regular HMM) or \code{hierStates} and \code{hierDist}
+must be specified (for a hierarchical HMM).}
+
+\item{...}{further arguments passed to or from other methods}
 
 \item{nbStates}{Number of states of the HMM.}
 
 \item{dist}{A named list indicating the probability distributions of the data streams. Currently
-supported distributions are 'gamma','weibull','exp','lnorm','beta','pois','wrpcauchy', and 'vm'. For example,
+supported distributions are 'bern', 'beta', 'exp', 'gamma', 'lnorm', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
+'pois', 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), 'rw_mvnorm3' (trivariate normal random walk), 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
 \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
 and their respective probability distributions ('gamma', 'vm', and 'pois').}
 
@@ -26,17 +41,17 @@ in the order expected by the pdfs of \code{dist}, and any zero-mass parameters s
 
 \item{zeroInflation}{A named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated. If \code{zeroInflation} is \code{TRUE} 
 for a given data stream, then values for the zero-mass parameters should be
-included in the corresponding element of \code{Par}. Ignored if \code{data} is a \code{\link{momentuHMMData}} object.}
+included in the corresponding element of \code{Par}. Ignored if \code{data} is a \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} object.}
 
 \item{oneInflation}{Named list of logicals indicating whether the probability distributions of the data streams are one-inflated. If \code{oneInflation} is \code{TRUE} 
 for a given data stream, then values for the one-mass parameters should be
-included in the corresponding element of \code{Par}. Ignored if \code{data} is a \code{\link{momentuHMMData}} object.}
+included in the corresponding element of \code{Par}. Ignored if \code{data} is a \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} object.}
 
 \item{estAngleMean}{An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy'). Any \code{estAngleMean} elements corresponding to data streams that do not have angular distributions are ignored.}
 
-\item{circularAngleMean}{An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
-regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. \code{circularAngleMean} elements corresponding to angular data 
+\item{circularAngleMean}{An optional named list indicating whether to use circular-linear or circular-circular 
+regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.  See \code{\link{fitHMM}}. \code{circularAngleMean} elements corresponding to angular data 
 streams are ignored unless the corresponding element of \code{estAngleMean} is \code{TRUE}. Any \code{circularAngleMean} elements 
 corresponding to data streams that do not have angular distributions are ignored.}
 
@@ -63,9 +78,13 @@ specifies (-1,1) bounds for the concentration parameters instead of the default 
 For data streams, each element of \code{workBounds} should be a k x 2 matrix with the same name of the corresponding element of 
 \code{Par0}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta0)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta0)}.}
 
-\item{workcons}{An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
+\item{workcons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
 each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
 through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.}
+
+\item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHMM}}.}
+
+\item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams. See \code{\link{fitHMM}}.}
 }
 \value{
 A list of parameter values that can be used as starting values (\code{Par0}) in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
@@ -94,16 +113,18 @@ anglePar0 <- c(0.7,1.5) # natural scale conentration_1, concentration_2
 stepDM <- matrix(c(1,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1),4,4,
           dimnames=list(NULL,c("mean:(Intercept)","mean_2",
                                "sd_1:(Intercept)","sd_2:(Intercept)")))
-stepcons <- c(1,2,1,1) # coefficient for 'mean_2' constrained to be positive
+stepworkBounds <- matrix(c(-Inf,Inf),4,2,byrow=TRUE,
+                         dimnames=list(colnames(stepDM),c("lower","upper")))
+stepworkBounds["mean_2","lower"] <- 0 #coefficient for 'mean_2' constrained to be positive
 wPar0 <- getParDM(nbStates=2,dist=list(step=stepDist),
                       Par=list(step=stepPar0),
-                      DM=list(step=stepDM),cons=list(step=stepcons))
+                      DM=list(step=stepDM),workBounds=list(step=stepworkBounds))
 
 \dontrun{
 # Fit HMM using wPar0 as initial values for the step data stream
 mPar <- fitHMM(data,nbStates=2,dist=list(step=stepDist,angle=angleDist),
                Par0=list(step=wPar0$step,angle=anglePar0),
-               DM=list(step=stepDM),cons=list(step=stepcons))
+               DM=list(step=stepDM),workBounds=list(step=stepworkBounds))
 }
 
 # get working parameters for 'DM' using 'cov1' and 'cov2' covariates

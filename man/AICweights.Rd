@@ -7,7 +7,7 @@
 AICweights(..., k = 2, n = NULL)
 }
 \arguments{
-\item{...}{\code{\link{momentuHMM}}, \code{\link{HMMfits}}, or \code{\link{miHMM}} objects, to compare AIC weights of the different models.}
+\item{...}{\code{\link{momentuHMM}}, \code{\link{HMMfits}}, or \code{\link{miHMM}} objects, to compare AIC weights of the different models. The first object must be a \code{\link{momentuHMM}}, \code{\link{HMMfits}}, or \code{\link{miHMM}} object, but additional model objects can be passed as a list using the \code{!!!} operator (see \code{\link[=quasiquotation]{rlang}}).}
 
 \item{k}{Penalty per parameter. Default: 2 ; for classical AIC.}
 
@@ -52,6 +52,16 @@ mod2 <- fitHMM(example$m$data,nbStates=nbStates,dist=list(step=stepDist,angle=an
                 formula=formula,estAngleMean=list(angle=TRUE))
                 
 AICweights(mod1,mod2)
+
+Par0nA <- getPar0(mod1,estAngleMean=list(angle=FALSE))                 
+mod3 <- fitHMM(example$m$data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+                Par0=Par0nA$Par,beta0=Par0nA$beta,
+                formula=~1)
+ 
+AICweights(mod1,mod2,mod3)
+
+# add'l models provided as a list using the !!! operator                               
+AICweights(mod1, !!!list(mod2,mod3))
 }
 
 }

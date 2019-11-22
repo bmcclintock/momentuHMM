@@ -4,9 +4,9 @@
 \alias{w2n}
 \title{Scaling function: working to natural parameters}
 \usage{
-w2n(wpar, bounds, parSize, nbStates, nbCovs, estAngleMean, circularAngleMean,
-  consensus, stationary, cons, fullDM, DMind, workcons, nbObs, dist, Bndind, nc,
-  meanind, covsDelta, workBounds)
+w2n(wpar, bounds, parSize, nbStates, nbCovs, estAngleMean,
+  circularAngleMean, consensus, stationary, cons, fullDM, DMind, workcons,
+  nbObs, dist, Bndind, nc, meanind, covsDelta, workBounds, covsPi)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}
@@ -23,8 +23,8 @@ distribution parameters for each data stream.}
 \item{estAngleMean}{Named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy').}
 
-\item{circularAngleMean}{Named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
-regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.}
+\item{circularAngleMean}{Named list indicating whether to use circular-linear or circular-circular
+regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. See \code{\link{fitHMM}}.}
 
 \item{consensus}{Named list indicating whether to use the circular-circular regression consensus model}
 
@@ -52,9 +52,11 @@ each data stream.}
 
 \item{meanind}{index for circular-circular regression mean angles with at least one non-zero entry in fullDM}
 
-\item{covsDelta}{data frame containing the delta model covariates (if any)}
+\item{covsDelta}{data frame containing the delta model covariates}
 
 \item{workBounds}{named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters}
+
+\item{covsPi}{data frame containing the pi model covariates}
 }
 \value{
 A list of:
@@ -78,8 +80,9 @@ beta <- matrix(rnorm(6),ncol=2,nrow=3)
 delta <- c(0.6,0.4)
 
 #working parameters
-wpar <- momentuHMM:::n2w(par,bounds,beta,log(delta[-1]/delta[1]),nbStates,
-m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind)
+wpar <- momentuHMM:::n2w(par,bounds,list(beta=beta),log(delta[-1]/delta[1]),nbStates,
+m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,
+m$conditions$dist)
 
 #natural parameter
 p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,

@@ -2,16 +2,32 @@
 % Please edit documentation in R/checkPar0.R
 \name{checkPar0}
 \alias{checkPar0}
+\alias{checkPar0.default}
+\alias{checkPar0.hierarchical}
 \title{Check parameter length and order for a \code{\link{fitHMM}} (or \code{\link{MIfitHMM}}) model}
 \usage{
-checkPar0(data, nbStates, dist, Par0 = NULL, beta0 = NULL, delta0 = NULL,
-  estAngleMean = NULL, circularAngleMean = NULL, formula = ~1,
-  formulaDelta = NULL, stationary = FALSE, DM = NULL, cons = NULL,
-  userBounds = NULL, workBounds = NULL, workcons = NULL,
-  betaCons = NULL, betaRef = NULL, stateNames = NULL, fixPar = NULL)
+checkPar0(data, ...)
+
+\method{checkPar0}{default}(data, nbStates, dist, Par0 = NULL,
+  beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
+  circularAngleMean = NULL, formula = ~1, formulaDelta = NULL,
+  stationary = FALSE, mixtures = 1, formulaPi = NULL, DM = NULL,
+  cons = NULL, userBounds = NULL, workBounds = NULL,
+  workcons = NULL, betaCons = NULL, betaRef = NULL,
+  deltaCons = NULL, stateNames = NULL, fixPar = NULL, prior = NULL,
+  ...)
+
+\method{checkPar0}{hierarchical}(data, hierStates, hierDist, Par0 = NULL,
+  hierBeta = NULL, hierDelta = NULL, estAngleMean = NULL,
+  circularAngleMean = NULL, hierFormula = NULL,
+  hierFormulaDelta = NULL, mixtures = 1, formulaPi = NULL,
+  DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL,
+  deltaCons = NULL, fixPar = NULL, prior = NULL, ...)
 }
 \arguments{
-\item{data}{\code{\link{momentuHMMData}} object or a data frame containing the data stream and covariate values}
+\item{data}{\code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the data stream and covariate values}
+
+\item{...}{further arguments passed to or from other methods}
 
 \item{nbStates}{Number of states of the HMM.}
 
@@ -27,7 +43,7 @@ each data stream specified in \code{dist}.  If \code{Par0} is not provided, then
 \item{estAngleMean}{An optional named list indicating whether or not to estimate the angle mean for data streams with angular 
 distributions ('vm' and 'wrpcauchy').}
 
-\item{circularAngleMean}{An optional named list indicating whether to use circular-linear (FALSE) or circular-circular (TRUE) 
+\item{circularAngleMean}{An optional named list indicating whether to use circular-linear or circular-circular
 regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles.}
 
 \item{formula}{Regression formula for the transition probability covariates.}
@@ -35,7 +51,12 @@ regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turn
 \item{formulaDelta}{Regression formula for the initial distribution.}
 
 \item{stationary}{\code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
-equal to the stationary distribution. Default: \code{FALSE}.}
+equal to the stationary distribution.}
+
+\item{mixtures}{Number of mixtures for the state transition probabilities.}
+
+\item{formulaPi}{Regression formula for the mixture distribution probabilities. 
+Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilties).}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream.}
@@ -55,9 +76,25 @@ each data stream.}
 
 \item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link.}
 
+\item{deltaCons}{Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}.}
+
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
 
 \item{fixPar}{An optional list of vectors indicating parameters which are assumed known prior to fitting the model.}
+
+\item{prior}{A function that returns the log-density of the working scale parameter prior distribution(s).}
+
+\item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See \code{\link{fitHMM}}.}
+
+\item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). See \code{\link{fitHMM}}.}
+
+\item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial matrix of regression coefficients for the transition probabilities at each level of the hierarchy ('beta'). See \code{\link{fitHMM}}.}
+
+\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial values for the initial distribution at each level of the hierarchy ('delta'). See \code{\link{fitHMM}}.}
+
+\item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). See \code{\link{fitHMM}}.}
+
+\item{hierFormulaDelta}{A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). See \code{\link{fitHMM}}. Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale).}
 }
 \description{
 Prints parameters with labels based on \code{DM}, \code{formula}, and/or \code{formulaDelta}.  See \code{\link{fitHMM}} for 

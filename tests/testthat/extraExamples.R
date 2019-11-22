@@ -112,21 +112,24 @@ wstepPar0 <- log(c(stepPar[1],1.1,stepPar[2],1.1,stepPar[3:6]))
 # angle DM (using circular-circular regression on mean angle)
 angleDM <- matrix(c("haulout.angle",0,0,0,0,0,0,"fish.angle",0,0,0,0,0,0,0,1,0,0,0,0,0,"log1p(haulout.dist)",0,0,0,0,0,0,1,0,0,0,0,0,"log1p(fish.dist)",0,0,0,0,0,0,1),6,7)
 # angle working parameters
-wanglePar0 <- c(10,10,boot::logit(c(0.01,anglePar[1],0.01,anglePar[2],anglePar[3])))
+wanglePar0 <- c(1,1,stats::qlogis(c(0.01,anglePar[1],0.01,anglePar[2],anglePar[3])))
 
 centersPar <- list(step=wstepPar0,angle=wanglePar0)
 centersDM <- list(step=stepDM,angle=angleDM)
 
 # takes a while to simulate...
-data7<-simData(nbAnimals=4,nbStates=nbStates,beta=betaCenters,formula=formula,Par=centersPar,DM=centersDM,circularAngleMean=list(angle=TRUE),centers=activityCenters,dist=list(step="gamma",angle="wrpcauchy"),states=TRUE)
+data7<-simData(nbAnimals=4,obsPerAnimal=400,nbStates=nbStates,beta=betaCenters,formula=formula,Par=centersPar,DM=centersDM,circularAngleMean=list(angle=0),centers=activityCenters,dist=list(step="gamma",angle="wrpcauchy"),states=TRUE)
 plot(data7,ask=FALSE)
 
 # get Par0
 covs<-data.frame(haulout.dist=0,fish.dist=0,haulout.angle=CircStats::circ.mean(data7$haulout.angle),fish.angle=CircStats::circ.mean(data7$fish.angle))
 Par0<-getParDM(data=covs,nbStates=nbStates,dist=list(step="gamma",angle="wrpcauchy"),Par=list(step=stepPar,angle=c(atan2(sin(CircStats::circ.mean(data7$haulout.angle)),1+cos(CircStats::circ.mean(data7$haulout.angle))),atan2(sin(CircStats::circ.mean(data7$fish.angle)),1+cos(CircStats::circ.mean(data7$fish.angle))),0,0.01,0.01,0.5)),DM=centersDM,estAngleMean=list(angle=TRUE),circularAngleMean=list(angle=TRUE))
 
+# fix bias terms because only one angular covariate per angle mean (and no directional persistence with circularAngleMean=list(angle=0))
+fixPar <- list(angle=c(1,1,NA,NA,NA,NA,NA))
+
 # takes a while to fit...
-mod7 <- fitHMM(data7,nbStates=nbStates,Par=Par0,DM=list(step=stepDM,angle=angleDM),estAngleMean=list(angle=TRUE),circularAngleMean=list(angle=TRUE),dist=list(step="gamma",angle="wrpcauchy"))
+mod7 <- fitHMM(data7,nbStates=nbStates,Par=Par0,fixPar=fixPar,DM=list(step=stepDM,angle=angleDM),estAngleMean=list(angle=TRUE),circularAngleMean=list(angle=0),dist=list(step="gamma",angle="wrpcauchy"))
 plot(mod7,plotCI=TRUE,ask=FALSE)
 
 ### 8. Same activity centers model, but with temporal irregularity and location measurement error
@@ -144,17 +147,18 @@ plot(crwOut,ask=FALSE)
 
 # fit best predicted locations
 bestData <- prepData(crwOut,centers=activityCenters)
-bestFit <- fitHMM(bestData,nbStates=nbStates,Par=Par0,DM=list(step=stepDM,angle=angleDM),estAngleMean=list(angle=TRUE),circularAngleMean=list(angle=TRUE),dist=list(step="gamma",angle="wrpcauchy"))
+bestFit <- fitHMM(bestData,nbStates=nbStates,Par=Par0,fixPar=fixPar,DM=list(step=stepDM,angle=angleDM),estAngleMean=list(angle=TRUE),circularAngleMean=list(angle=0),dist=list(step="gamma",angle="wrpcauchy"))
 bestFit
 plot(bestFit,plotCI=TRUE,ask=FALSE)
 plotStates(bestFit,ask=FALSE)
 
 # fit 4 realizations of the position process using multiple imputation
+setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=10)
 miSims <- MIfitHMM(crwOut,nSims=4,fit=FALSE)
 
 miFits <- list()
 miFits$HMMfits <- MIfitHMM(miSims$miData,nSims=4,ncores=4,poolEstimates=FALSE,
-                           nbStates=nbStates,Par=Par0,DM=list(step=stepDM,angle=angleDM),estAngleMean=list(angle=TRUE),circularAngleMean=list(angle=TRUE),dist=list(step="gamma",angle="wrpcauchy"),
+                           nbStates=nbStates,Par=Par0,fixPar=fixPar,DM=list(step=stepDM,angle=angleDM),estAngleMean=list(angle=TRUE),circularAngleMean=list(angle=0),dist=list(step="gamma",angle="wrpcauchy"),
                            centers=activityCenters,
                            parIS=0,fullPost=FALSE)
 withCallingHandlers(miFits$miSum <-  MIpool(miFits$HMMfits),warning=function(w){if(any(grepl("working parameter standard errors are not finite for",w)) | any(grepl("NaNs produced",w)) | any(grepl("Hessian is singular",w))) invokeRestart("muffleWarning")})
@@ -175,7 +179,7 @@ angleDM2 <- list(mean=~state1(haulout.angle)+state2(fish.angle),concentration=~s
 centersDM2 <- list(step=stepDM2,angle=angleDM2)
 
 # fit best predicted locations
-bestFit2<-fitHMM(bestData,nbStates=nbStates,Par=Par0,DM=centersDM2,estAngleMean=list(angle=TRUE),circularAngleMean=list(angle=TRUE),dist=list(step="gamma",angle="wrpcauchy"))
+bestFit2<-fitHMM(bestData,nbStates=nbStates,Par=Par0,fixPar=fixPar,DM=centersDM2,estAngleMean=list(angle=TRUE),circularAngleMean=list(angle=0),dist=list(step="gamma",angle="wrpcauchy"))
 
 if(!all.equal(bestFit$mod$minimum,bestFit2$mod$minimum)) stop("bestFit and bestFit2 minimum do not match")
 if(!all.equal(bestFit$mod$estimate,bestFit2$mod$estimate)) stop("bestFit and bestFit2 estimate do not match")

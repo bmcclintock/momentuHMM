@@ -1,12 +1,13 @@
 #'
 #' Calculate pooled parameter estimates and states across multiple imputations
 #' 
-#' @param HMMfits List comprised of \code{\link{momentuHMM}} objects
+#' @param HMMfits List comprised of \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} objects
 #' @param alpha Significance level for calculating confidence intervals of pooled estimates (including location error ellipses). Default: 0.95.
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param covs Data frame consisting of a single row indicating the covariate values to be used in the calculation of pooled natural parameters. 
 #' For any covariates that are not specified using \code{covs}, the means of the covariate(s) across the imputations are used 
 #' (unless the covariate is a factor, in which case the first factor in the data is used). By default, no covariates are specified.
+#' @param na.rm Logical indicating whether or not to exclude model fits with \code{NA} parameter estimates or standard errors from pooling. Default: FALSE.
 #' 
 #' @return A \code{\link{miSum}} object, i.e., a list comprised of model and pooled parameter summaries, including \code{data} (averaged across imputations), \code{conditions}, \code{Par}, and \code{MIcombine} 
 #' (as returned by \code{\link[mitools]{MIcombine}} for working parameters).
@@ -17,6 +18,8 @@
 #' \item{timeInStates}{The proportion of time steps assigned to each state}
 #' \item{states}{The most freqent state assignment for each time step based on the \code{\link{viterbi}} algorithm for each model fit}
 #' \item{stateProbs}{Pooled state probability estimates for each time step}
+#' \item{mixtureProbs}{Pooled mixture probabilities for each individual (only applies if \code{mixtures>1})}
+#' \item{hierStateProbs}{Pooled state probability estimates for each time step at each level of the hierarchy (only applies if \code{HMMfits} is comprised of \code{\link{momentuHierHMM}} objects)}
 #' 
 #' @details
 #' Pooled estimates, standard errors, and confidence intervals are calculated using standard multiple imputation formulas. Working scale parameters are pooled
@@ -26,6 +29,9 @@
 #' Note that pooled estimates for \code{timeInStates} and \code{stateProbs} do not include within-model uncertainty and are based entirely on across-model variability.
 #' 
 #' @examples
+#' \dontshow{
+#' set.seed(2,kind="Mersenne-Twister",normal.kind="Inversion")
+#' }
 #' \dontrun{
 #' # Extract data and crawl inputs from miExample
 #' obsData <- miExample$obsData
@@ -55,11 +61,10 @@
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
 #' @importFrom stats median var qt
-#' @importFrom boot logit inv.logit
 #' @importFrom CircStats circ.mean
 #' @importFrom car dataEllipse
 #' @importFrom mitools MIcombine
-MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
+MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   
   im <- HMMfits
   goodIndex <- 1:length(im)
@@ -82,7 +87,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   ident <- !unlist(lapply(checksims,function(x) isTRUE(all.equal(x,checksims[[1]]))))
   if(any(ident)){
     # check that only differences are in the design matrix covariate values
-    checksims2 <- lapply(checksims, function(x) x$conditions[-match("fullDM",names(x$conditions))])
+    checksims2 <- lapply(checksims, function(x) x$conditions[-match(c("fullDM","hierBeta","hierDelta"),names(x$conditions),nomatch=0)])
     ident2 <- !unlist(lapply(checksims2,function(x) isTRUE(all.equal(x,checksims2[[1]]))))
     if(any(ident2)) stop("Model conditions for each imputation must be identical. Imputations that do not match the first: ",paste(which(ident),collapse=", "))
   }
@@ -99,6 +104,7 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     warning("ginv of the hessian failed for HMM fit(s): ",paste0(goodIndex[tmpVar],collapse=", "))
     im[tmpVar] <- NULL
     nsims <- length(im)
+    if(nsims<2) stop("Pooling requires at least 2 valid HMM fits")
     goodIndex <- goodIndex[-tmpVar]
   }
   
@@ -117,27 +123,38 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
   tmpVar1 <- which(unlist(lapply(betaCoeff,function(x) any(!is.finite(x)))))
   if(length(tmpVar1)){
-    warning("working parameter estimates are not finite for HMM fits ",paste0(goodIndex[tmpVar1],collapse=", ")," and will not be included in pooling")
-    im[tmpVar1] <- NULL
-    m <- im[[1]]
-    nsims <- length(im)
-    betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
-    betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
-    goodIndex <- goodIndex[-tmpVar1]
+    warning("working parameter estimates are not finite for HMM fits ",paste0(goodIndex[tmpVar1],collapse=", "),ifelse(na.rm," and will not be included in pooling",""))
+    if(na.rm){
+      im[tmpVar1] <- NULL
+      nsims <- length(im)
+      if(nsims<2) stop("Pooling requires at least 2 valid HMM fits")
+      m <- im[[1]]
+      betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
+      betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
+      goodIndex <- goodIndex[-tmpVar1]
+    } else {
+      betaCoeff[tmpVar1] <- lapply(betaCoeff[tmpVar1],function(x) {x[which(!is.finite(x))]<-NA; return(x)})
+    }
   }
   tmpVar2 <- unique(c(which(unlist(lapply(betaVar,function(x) any(!is.finite(x))))),which(unlist(lapply(betaVar,function(x) any(!is.finite(sqrt(diag(x)))))))))
   if(length(tmpVar2)){
-    warning("working parameter standard errors are not finite for HMM fits ",paste0(goodIndex[tmpVar2],collapse=", ")," and will not be included in pooling")
-    im[tmpVar2] <- NULL
-    m <- im[[1]]
-    nsims <- length(im)
-    betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
-    betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
-    goodIndex <- goodIndex[-tmpVar2]
+    warning("working parameter standard errors are not finite for HMM fits ",paste0(goodIndex[tmpVar2],collapse=", "),ifelse(na.rm," and will not be included in pooling",""))
+    if(na.rm){
+      im[tmpVar2] <- NULL
+      nsims <- length(im)
+      if(nsims<2) stop("Pooling requires at least 2 valid HMM fits")
+      m <- im[[1]]
+      betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
+      betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
+      goodIndex <- goodIndex[-tmpVar2]
+    } else {
+      betaVar[tmpVar2] <- suppressWarnings(lapply(betaVar[tmpVar2],function(x) {x[which(!is.finite(x))]<-NA; diag(x)[which(!is.finite(sqrt(diag(x))))]<-NA; return(x)}))
+    }
   }
   
   data <- m$data
   nbStates <- length(m$stateNames)
+  nbAnimals <- length(unique(m$data$ID))
   dist <- m$conditions$dist
   distnames <- names(dist)
   estAngleMean <- m$conditions$estAngleMean
@@ -148,15 +165,23 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   
   p <- parDef(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,m$conditions$bounds)
   
+  mixtures <- m$conditions$mixtures
+  
   if(nbStates>1) {
     cat("Decoding state sequences and probabilities for each imputation... ")
     registerDoParallel(cores=ncores)
     withCallingHandlers(im_states <- foreach(i = 1:nsims, .combine = rbind) %dorng% {momentuHMM::viterbi(im[[i]])},warning=muffleRNGwarning)
     stopImplicitCluster()
-    states <- apply(im_states,2,function(x) which.max(hist(x,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts))
+    if(nsims>1) states <- apply(im_states,2,function(x) which.max(hist(x,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts))
+    else states <- im_states
     registerDoParallel(cores=ncores)
     withCallingHandlers(im_stateProbs <- foreach(i = 1:nsims) %dorng% {momentuHMM::stateProbs(im[[i]])},warning=muffleRNGwarning)
     stopImplicitCluster()
+    if(mixtures>1){
+      registerDoParallel(cores=ncores)
+      withCallingHandlers(mixProbs <- foreach(i = 1:nsims) %dorng% {mixtureProbs(im[[i]])},warning=muffleRNGwarning)
+      stopImplicitCluster()
+    }
     cat("DONE\n")
   } else states <- rep(1,nrow(data))
   
@@ -165,29 +190,48 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   nparms <- length(parms)
   xmat <- xbar <- xvar <- W_m <- B_m <- MI_se <- lower <- upper <- list()
   parCount <- lapply(m$conditions$fullDM,ncol)#
-  for(i in distnames[unlist(m$conditions$circularAngleMean)]){
+  for(i in distnames[!unlist(lapply(m$conditions$circularAngleMean,isFALSE))]){
     parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]])))))
   }
+  
   parmcols <- parCount
   parmcols$beta <- ncol(m$mle$beta)
+  parmcols$pi <- mixtures-1
   parmcols$delta <- nbStates-1
-  parmcols <- unlist(parmcols[parms])
   
-  parindex <- c(0,cumsum(c(unlist(parCount),length(m$mle$beta),ncol(m$covsDelta)*(nbStates-1))))
+  if(mixtures==1) piInd <- NULL
+  else piInd <- 1
+  
+  parindex <- c(0,cumsum(c(unlist(parCount),length(m$mle$beta),piInd*ncol(m$covsPi)*(mixtures-1),ncol(m$covsDelta)*(nbStates-1)*mixtures)))
   names(parindex)[1:length(distnames)] <- distnames
   if(nbStates>1) {
     names(parindex)[length(distnames)+1] <- "beta"
+    if(mixtures>1) names(parindex)[length(distnames)+2] <- "pi"
     names(parindex)[length(parindex)-1] <- "delta"
+    if(!is.null(m$conditions$recharge)){
+      parindex <- c(0,cumsum(c(unlist(parCount),length(m$mle$beta),piInd*ncol(m$covsPi)*(mixtures-1),ncol(m$covsDelta)*(nbStates-1)*mixtures,length(m$mle$g0),length(m$mle$theta))))
+      if(mixtures>1) names(parindex)[1:(length(parindex)-1)] <- c(distnames,"beta","pi","delta","g0","theta")
+      else names(parindex)[1:(length(parindex)-1)] <- c(distnames,"beta","delta","g0","theta")
+      parmcols$g0 <- length(m$mle$g0)
+      parmcols$theta <- length(m$mle$theta)
+    }
+  }
+  parmcols <- unlist(parmcols[parms])
+  
+  miBeta <- mitools::MIcombine(results=betaCoeff,variances=betaVar)
+  # account for betaCons
+  if(nbStates>1){
+    miBeta$variance[(parindex[["beta"]]+1:length(m$mle$beta))[duplicated(c(m$conditions$betaCons))],] <- 0
+    miBeta$variance[,(parindex[["beta"]]+1:length(m$mle$beta))[duplicated(c(m$conditions$betaCons))]] <- 0
   }
   
-  miBeta <- miCombo <- mitools::MIcombine(results=betaCoeff,variances=betaVar)
-  # account for betaCons
-  miBeta$variance[(parindex[["beta"]]+1:length(m$mle$beta))[duplicated(c(m$conditions$betaCons))],] <- 0
-  miBeta$variance[,(parindex[["beta"]]+1:length(m$mle$beta))[duplicated(c(m$conditions$betaCons))]] <- 0
-  
   # multiple imputation results for working parameters
-  if(length(m$conditions$optInd))
-    miCombo <- mitools::MIcombine(results=lapply(im,function(x) x$mod$wpar),variances=lapply(im,function(x) x$mod$Sigma[-m$conditions$optInd,-m$conditions$optInd]))
+  twb <- lapply(im,function(x) x$mod$wpar)
+  twb <- lapply(twb,function(x) {x[which(!is.finite(x))]<-NA; return(x)})
+  if(length(m$conditions$optInd)) twvar <- lapply(im,function(x) x$mod$Sigma[-m$conditions$optInd,-m$conditions$optInd])
+  else twvar <- lapply(im,function(x) x$mod$Sigma)
+  twvar <- lapply(twvar,function(x) {x[which(!is.finite(x))]<-NA; diag(x)[which(!is.finite(sqrt(diag(x))))]<-NA; return(x)})
+  miCombo <- mitools::MIcombine(results=twb,variances=twvar)
   
   for(parm in 1:nparms){
     
@@ -223,21 +267,30 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     Par$beta[[i]] <- mi_parm_list(xbar[[i]],MI_se[[i]],lower[[i]],upper[[i]],m$CIbeta[[i]]$est)
   }
   # fill in t.p.m. constraints based on betaCons
-  Par$beta$beta <- lapply(Par$beta$beta,function(x) matrix(x[c(m$conditions$betaCons)],dim(x),dimnames=list(rownames(x),colnames(x))))
+  if(nbStates>1) Par$beta$beta <- lapply(Par$beta$beta,function(x) matrix(x[c(m$conditions$betaCons)],dim(x),dimnames=list(rownames(x),colnames(x))))
   
   #average all numeric variables in imputed data
   mhdata<-m$data
   for(i in distnames){
     if(dist[[i]] %in% angledists) {
       mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,CircStats::circ.mean)
+      class(mhdata[[i]]) <- c("angle",class(mhdata[[i]]))
     } else if(dist[[i]] %in% "pois"){
       mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,median)     
+    } else if(dist[[i]] %in% mvndists){
+      mhdata[[paste0(i,".x")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".x")]])),ncol=length(m$data[[paste0(i,".x")]]),byrow=TRUE),2,median)
+      mhdata[[paste0(i,".y")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".y")]])),ncol=length(m$data[[paste0(i,".y")]]),byrow=TRUE),2,median)
+      if(dist[[i]]=="mvnorm3" || dist[[i]]=="rw_mvnorm3")
+        mhdata[[paste0(i,".z")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".z")]])),ncol=length(m$data[[paste0(i,".z")]]),byrow=TRUE),2,median)
     } else {
       mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,mean)
     }
   }
   for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansListNoTime))) & !(names(m$data) %in% distnames))]){
-    mhdata[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[j]])),ncol=length(m$data[[j]]),byrow=TRUE),2,mean)
+    if(inherits(m$data[[j]],"angle")) {
+      mhdata[[j]] <- apply(matrix(unlist(lapply(im,function(x) x$data[[j]])),ncol=length(m$data[[j]]),byrow=TRUE),2,CircStats::circ.mean)
+      class(mhdata[[j]]) <- c("angle",class(mhdata[[j]]))
+    } else mhdata[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[j]])),ncol=length(m$data[[j]]),byrow=TRUE),2,mean)
   }
   mhrawCovs<-m$rawCovs
   if(length(mhrawCovs)){
@@ -272,12 +325,12 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   }
   
   tmPar <- lapply(m$mle[distnames],function(x) c(t(x)))
-  parindex <- c(0,cumsum(unlist(parCount))[-length(m$conditions$fullDM)])
-  names(parindex) <- distnames
+  #parindex <- c(0,cumsum(unlist(parCount))[-length(m$conditions$fullDM)])
+  #names(parindex) <- distnames
   for(i in distnames){
     if(!is.null(m$conditions$DM[[i]])){# & m$conditions$DMind[[i]]){
       tmPar[[i]] <- m$mod$estimate[parindex[[i]]+1:parCount[[i]]]
-      if(m$conditions$circularAngleMean[[i]]){
+      if(!isFALSE(m$conditions$circularAngleMean[[i]])){
         names(tmPar[[i]]) <- unique(gsub("cos","",gsub("sin","",colnames(m$conditions$fullDM[[i]]))))
       } else names(tmPar[[i]])<-colnames(m$conditions$fullDM[[i]])
     } else if((dist[[i]] %in% angledists) & (!m$conditions$estAngleMean[[i]])){
@@ -293,31 +346,22 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   #DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
   #fullDM<-DMinputs$fullDM
   
-  formula<-m$conditions$formula
-  newForm <- newFormulas(formula,nbStates)
-  formulaStates <- newForm$formulaStates
-  formterms <- newForm$formterms
-  newformula <- newForm$newformula
-  
-  nbCovs <- ncol(model.matrix(newformula,m$data))-1 # substract intercept column
+  # identify covariates
+  reForm <- formatRecharge(nbStates,m$conditions$formula,mhdata,covs=tempCovs,par=lapply(Par$beta,function(x) x$est))
+  mhdata[colnames(reForm$newdata)] <- reForm$newdata
+  attr(mhdata,'coords') <- attr(m$data,'coords')
+  attr(mhdata,'coordLevel') <- attr(m$data,'coordLevel')
+  recharge <- reForm$recharge
+  hierRecharge <- reForm$hierRecharge
+  newformula <- reForm$newformula
+  tempCovs <- reForm$covs
+  nbCovs <- reForm$nbCovs
   
   #miBeta <- mitools::MIcombine(results=lapply(im,function(x) x$mod$estimate),variances=lapply(im,function(x) x$mod$Sigma))
   
-  nc <- meanind <- vector('list',length(distnames))
-  names(nc) <- names(meanind) <- distnames
-  for(i in distnames){
-    nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(m$conditions$circularAngleMean[[i]]) {
-      meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
-      # deal with angular covariates that are exactly zero
-      if(length(meanind[[i]])){
-        angInd <- which(is.na(match(gsub("cos","",gsub("sin","",colnames(nc[[i]]))),colnames(nc[[i]]),nomatch=NA)))
-        sinInd <- colnames(nc[[i]])[which(grepl("sin",colnames(nc[[i]])[angInd]))]
-        nc[[i]][meanind[[i]],sinInd]<-ifelse(nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)])
-        nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)]<-ifelse(nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],sinInd])
-      }
-    }
-  }
+  ncmean <- get_ncmean(distnames,fullDM,m$conditions$circularAngleMean,nbStates)
+  nc <- ncmean$nc
+  meanind <- ncmean$meanind
   
   Par$real<-list()
   for(i in distnames){
@@ -325,13 +369,13 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     tmpParNames[which(p$parNames[[i]]=="kappa")] <- "concentration"
     
     DMind[[i]] <- FALSE
-    par <- c(w2n(miBeta$coefficients,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean[i],inputs$consensus[i],m$conditions$stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta,NULL)[[i]])
-
+    par <- c(w2n(miBeta$coefficients,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean[i],inputs$consensus[i],m$conditions$stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta,list(beta=matrix(rep(c(-Inf,Inf),length(m$mle$beta)),length(m$mle$beta),2,byrow=TRUE)),m$covsPi)[[i]])
+    
     if(!(inputs$dist[[i]] %in% angledists) | (inputs$dist[[i]] %in% angledists & m$conditions$estAngleMean[[i]] & !m$conditions$Bndind[[i]])) {
-      Par$real[[i]] <- get_CI(miBeta$coefficients,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],DMinputs$cons[[i]],DMinputs$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],NULL)
+      Par$real[[i]] <- get_CI(miBeta$coefficients,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],DMinputs$cons[[i]],DMinputs$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],NULL,inputs$dist[[i]])
     } else {
       if(!m$conditions$estAngleMean[[i]]){
-        Par$real[[i]] <- get_CI(miBeta$coefficients,par[-(1:nbStates)],m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],DMinputs$cons[[i]],DMinputs$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],NULL)
+        Par$real[[i]] <- get_CI(miBeta$coefficients,par[-(1:nbStates)],m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],DMinputs$cons[[i]],DMinputs$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],NULL,inputs$dist[[i]])
         Par$real[[i]]$est <- matrix(c(rep(0,nbStates),Par$real[[i]]$est),ncol=nbStates,byrow=T)
         Par$real[[i]]$se <- matrix(c(rep(NA,nbStates),Par$real[[i]]$se),ncol=nbStates,byrow=T)
         Par$real[[i]]$lower <- matrix(c(rep(NA,nbStates),Par$real[[i]]$lower),ncol=nbStates,byrow=T)
@@ -339,73 +383,115 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
         dimnames(Par$real[[i]]$est) <- dimnames(Par$real[[i]]$se) <- dimnames(Par$real[[i]]$lower) <- dimnames(Par$real[[i]]$upper) <- list(c("mean",tmpParNames),m$stateNames)
       } else {
         if(m$conditions$Bndind[[i]]){
-          Par$real[[i]] <- CI_angle(miBeta$coefficients,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],DMinputs$cons[[i]],DMinputs$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],NULL)
+          Par$real[[i]] <- CI_angle(miBeta$coefficients,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],DMinputs$cons[[i]],DMinputs$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],NULL,inputs$dist[[i]])
         }
       }
     }
   }
   
   quantSup<-qnorm(1-(1-alpha)/2)
-    
+  
   # pooled gamma estimates
   if(nbStates>1){
-    gamInd<-(length(miBeta$coefficients)-(nbCovs+1)*nbStates*(nbStates-1)+1):(length(miBeta$coefficients))-ncol(m$covsDelta)*(nbStates-1)*(1-m$conditions$stationary)
+    gamInd <- (parindex[["beta"]]+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures))[unique(c(m$conditions$betaCons))]
     tmpSplineInputs<-getSplineFormula(newformula,mhdata,tempCovs)
     tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
-    est <- get_gamma(miBeta$coefficients[gamInd][unique(c(m$conditions$betaCons))],tempCovMat,nbStates,1:nbStates,1:nbStates,m$conditions$betaRef,m$conditions$betaCons)
-    lower<-upper<-se<-matrix(0,nrow(est),ncol(est))
-    for(i in 1:nrow(est)){
-      for(j in 1:ncol(est)){
-        dN<-numDeriv::grad(get_gamma,miBeta$coefficients[gamInd][unique(c(m$conditions$betaCons))],covs=model.matrix(newformula,mhdata),nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons)
-        se[i,j]<-suppressWarnings(sqrt(dN%*%miBeta$variance[gamInd[unique(c(m$conditions$betaCons))],gamInd[unique(c(m$conditions$betaCons))]]%*%dN))
-        lower[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))-quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]-quantSup*se[i,j]
-        upper[i,j]<-1/(1+exp(-(log(est[i,j]/(1-est[i,j]))+quantSup*(1/(est[i,j]-est[i,j]^2))*se[i,j])))#est[i,j]+quantSup*se[i,j]
+    
+    est<-lower<-upper<-se<-matrix(NA,nbStates*mixtures,nbStates)
+    
+    for(mix in 1:mixtures){
+      if(is.null(recharge)){
+        wpar <- miBeta$coefficients[gamInd]
+        est[(mix-1)*nbStates+1:nbStates,] <- get_gamma(wpar,tempCovMat,nbStates,1:nbStates,1:nbStates,m$conditions$betaRef,m$conditions$betaCons,mixture=mix)
+        tmpSig <- miBeta$variance[gamInd,gamInd]
+      } else {
+        wpar <- c(miBeta$coefficients[gamInd],miBeta$coefficients[length(miBeta$coefficients)-reForm$nbRecovs:0])
+        est[(mix-1)*nbStates+1:nbStates,] <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,hierRecharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix)
+        tmpSig <- miBeta$variance[c(gamInd,length(miBeta$coefficients)-reForm$nbRecovs:0),c(gamInd,length(miBeta$coefficients)-reForm$nbRecovs:0)]
+      }
+      for(i in 1:nbStates){
+        for(j in 1:nbStates){
+          if(is.null(recharge)){
+            dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix)
+          } else {
+            dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix)
+          }  
+          se[(mix-1)*nbStates+i,j]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
+          lower[(mix-1)*nbStates+i,j]<-1/(1+exp(-(log(est[(mix-1)*nbStates+i,j]/(1-est[(mix-1)*nbStates+i,j]))-quantSup*(1/(est[(mix-1)*nbStates+i,j]-est[(mix-1)*nbStates+i,j]^2))*se[(mix-1)*nbStates+i,j])))#est[(mix-1)*nbStates+i,j]-quantSup*se[(mix-1)*nbStates+i,j]
+          upper[(mix-1)*nbStates+i,j]<-1/(1+exp(-(log(est[(mix-1)*nbStates+i,j]/(1-est[(mix-1)*nbStates+i,j]))+quantSup*(1/(est[(mix-1)*nbStates+i,j]-est[(mix-1)*nbStates+i,j]^2))*se[(mix-1)*nbStates+i,j])))#est[(mix-1)*nbStates+i,j]+quantSup*se[(mix-1)*nbStates+i,j]
+        }
       }
     }
     Par$real$gamma <- list(est=est,se=se,lower=lower,upper=upper)
-    dimnames(Par$real$gamma$est) <- dimnames(Par$real$gamma$se) <- dimnames(Par$real$gamma$lower) <- dimnames(Par$real$gamma$upper) <- list(m$stateNames,m$stateNames)
+    dimnames(Par$real$gamma$est) <- dimnames(Par$real$gamma$se) <- dimnames(Par$real$gamma$lower) <- dimnames(Par$real$gamma$upper) <- list(rep(m$stateNames,mixtures),m$stateNames)
+    if(mixtures>1) dimnames(Par$real$gamma$est) <- dimnames(Par$real$gamma$se) <- dimnames(Par$real$gamma$lower) <- dimnames(Par$real$gamma$upper) <- list(paste0(rep(m$stateNames,mixtures),"_mix",rep(1:mixtures,each=nbStates)),m$stateNames)
+  }
+  
+  # pooled pi estimates
+  if(mixtures>1 & nbStates>1){
+    piInd <- parindex[["beta"]]+((nbCovs+1)*nbStates*(nbStates-1)*mixtures)+1:(ncol(m$covsPi)*(mixtures-1))
+    pie <- matrix(miBeta$coefficients[piInd],nrow=ncol(m$covsPi),ncol=mixtures-1)
+    est<-lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsPi),ncol=mixtures)
+    for(j in 1:nrow(m$covsPi)){
+      est[j,] <- get_delta(pie,m$covsPi[j,,drop=FALSE],i=1:mixtures)
+      for(i in 1:mixtures){
+        dN<-numDeriv::grad(get_delta,pie,covsDelta=m$covsPi[j,,drop=FALSE],i=i)
+        se[j,i]<-suppressWarnings(sqrt(dN%*%miBeta$variance[piInd,piInd]%*%dN))
+        lower[j,i] <- probCI(est[j,i],se[j,i],quantSup,bound="lower")
+        upper[j,i] <- probCI(est[j,i],se[j,i],quantSup,bound="upper")
+      }
+    }
+    Par$real$pi <- list(est=est,se=se,lower=lower,upper=upper)
+    colnames(Par$real$pi$est) <- colnames(Par$real$pi$se) <- colnames(Par$real$pi$lower) <- colnames(Par$real$pi$upper) <- paste0("mix",1:mixtures)
+    rownames(Par$real$pi$est) <- rownames(Par$real$pi$se) <- rownames(Par$real$pi$lower) <- rownames(Par$real$pi$upper) <- paste0("ID:",unique(m$data$ID))
   }
   
   # pooled delta estimates
   if(!m$conditions$stationary & nbStates>1){
     nbCovsDelta <- ncol(m$covsDelta)-1
-    deltInd <- (length(miBeta$coefficients)-(nbCovsDelta+1)*(nbStates-1)+1):length(miBeta$coefficients)
-    delta <- matrix(miBeta$coefficients[deltInd],nrow=nbCovsDelta+1)
-    est<-lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsDelta),ncol=nbStates)
-    for(j in 1:nrow(m$covsDelta)){
-      est[j,] <- get_delta(delta,m$covsDelta[j,,drop=FALSE],1:nbStates)
-      for(i in 1:nbStates){
-        dN<-numDeriv::grad(get_delta,delta,covsDelta=m$covsDelta[j,,drop=FALSE],i=i)
-        se[j,i]<-suppressWarnings(sqrt(dN%*%miBeta$variance[deltInd,deltInd]%*%dN))
-        lower[j,i] <- probCI(est[j,i],se[j,i],quantSup,bound="lower")
-        upper[j,i] <- probCI(est[j,i],se[j,i],quantSup,bound="upper")
+    foo <- length(miBeta$coefficients)-ifelse(reForm$nbRecovs,(reForm$nbRecovs+1)+(reForm$nbG0covs+1),0)-(nbCovsDelta+1)*(nbStates-1)*mixtures
+    deltInd <- foo+1:((nbCovsDelta+1)*(nbStates-1)*mixtures)
+    delta <- matrix(miBeta$coefficients[deltInd],nrow=(nbCovsDelta+1)*mixtures,ncol=nbStates-1)
+    est<-lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsDelta)*mixtures,ncol=nbStates)
+    for(mix in 1:mixtures){
+      for(j in 1:nrow(m$covsDelta)){
+        est[(mix-1)*nrow(m$covsDelta)+j,] <- get_delta(delta,m$covsDelta[j,,drop=FALSE],1:nbStates,mixture=mix)
+        for(i in 1:nbStates){
+          dN<-numDeriv::grad(get_delta,delta,covsDelta=m$covsDelta[j,,drop=FALSE],i=i,mixture=mix)
+          se[(mix-1)*nrow(m$covsDelta)+j,i]<-suppressWarnings(sqrt(dN%*%miBeta$variance[deltInd,deltInd]%*%dN))
+          lower[(mix-1)*nrow(m$covsDelta)+j,i] <- probCI(est[(mix-1)*nrow(m$covsDelta)+j,i],se[(mix-1)*nrow(m$covsDelta)+j,i],quantSup,bound="lower")
+          upper[(mix-1)*nrow(m$covsDelta)+j,i] <- probCI(est[(mix-1)*nrow(m$covsDelta)+j,i],se[(mix-1)*nrow(m$covsDelta)+j,i],quantSup,bound="upper")
+        }
       }
     }
   } else {
     if(nbStates>1){
       covs<-model.matrix(newformula,tempCovs)
-      statFun<-function(beta,nbStates,covs,i){
-        gamma <- trMatrix_rcpp(nbStates,beta,covs,m$conditions$betaRef)[,,1]
+      statFun<-function(beta,nbStates,covs,i,mixture=1){
+        gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,m$conditions$betaRef)[,,1]
         tryCatch(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i],error = function(e) {
           "A problem occurred in the calculation of the stationary distribution."})
       }
-      delta <- statFun(matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),nbStates,covs,1:nbStates)
-      est <- matrix(delta,nrow=nrow(m$covsDelta),ncol=nbStates,byrow=TRUE)
-      lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsDelta),ncol=nbStates)
-      for(k in 1:nbStates){
-        dN<-numDeriv::grad(statFun,matrix(miBeta$coefficients[gamInd],nrow=nbCovs+1),nbStates=nbStates,covs=covs,i=k)
-        se[,k]<-suppressWarnings(sqrt(dN%*%miBeta$variance[gamInd,gamInd]%*%dN))
-        lower[,k] <- probCI(est[,k],se[,k],quantSup,bound="lower")
-        upper[,k] <- probCI(est[,k],se[,k],quantSup,bound="upper")
+      est <- lower <- upper <- se <- matrix(NA,nbAnimals*mixtures,nbStates)
+      for(mix in 1:mixtures){
+        delta <- statFun(matrix(miBeta$coefficients[gamInd],nrow=(nbCovs+1)*mixtures),nbStates,covs,1:nbStates,mixture=mix)
+        est[nbAnimals*(mix-1)+1:nbAnimals,] <- matrix(delta,nrow=nbAnimals,ncol=nbStates,byrow=TRUE)
+        for(k in 1:nbStates){
+          dN<-numDeriv::grad(statFun,matrix(miBeta$coefficients[gamInd],nrow=(nbCovs+1)*mixtures),nbStates=nbStates,covs=covs,i=k,mixture=mix)
+          se[nbAnimals*(mix-1)+1:nbAnimals,k]<-suppressWarnings(sqrt(dN%*%miBeta$variance[gamInd,gamInd]%*%dN))
+          lower[nbAnimals*(mix-1)+1:nbAnimals,k] <- probCI(est[nbAnimals*(mix-1)+1:nbAnimals,k],se[nbAnimals*(mix-1)+1:nbAnimals,k],quantSup,bound="lower")
+          upper[nbAnimals*(mix-1)+1:nbAnimals,k] <- probCI(est[nbAnimals*(mix-1)+1:nbAnimals,k],se[nbAnimals*(mix-1)+1:nbAnimals,k],quantSup,bound="upper")
+        }
       }
     } else {
-      est <- matrix(1,nrow(m$covsDelta))
+      est <- matrix(1,nrow(m$covsDelta)*mixtures)
       lower <- upper <- se <- matrix(NA,nrow(m$covsDelta))
     }
   }
   Par$real$delta <- list(est=est,se=se,lower=lower,upper=upper)
   colnames(Par$real$delta$est) <- colnames(Par$real$delta$se) <- colnames(Par$real$delta$lower) <- colnames(Par$real$delta$upper) <- m$stateNames
-  rownames(Par$real$delta$est) <- rownames(Par$real$delta$se) <- rownames(Par$real$delta$lower) <- rownames(Par$real$delta$upper) <- paste0("ID:",unique(m$data$ID))
+  rownames(Par$real$delta$est) <- rownames(Par$real$delta$se) <- rownames(Par$real$delta$lower) <- rownames(Par$real$delta$upper) <- paste0("ID:",rep(unique(m$data$ID),mixtures))
+  if(mixtures>1) rownames(Par$real$delta$est) <- rownames(Par$real$delta$se) <- rownames(Par$real$delta$lower) <- rownames(Par$real$delta$upper) <- paste0("ID:",rep(unique(m$data$ID),mixtures),"_mix",rep(1:mixtures,each=nbAnimals))
   
   xmat <- xbar <- xvar <- W_m <- B_m <- MI_se <- lower <- upper <- list()
   
@@ -445,26 +531,54 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
     
     lower[["timeInStates"]] <- probCI(xbar[["timeInStates"]],MI_se[["timeInStates"]],quantSup,"lower")
     upper[["timeInStates"]] <- probCI(xbar[["timeInStates"]],MI_se[["timeInStates"]],quantSup,"upper")
+    
+    if(mixtures>1){
+      xmat[["mixtureProbs"]] <- array(unlist(mixProbs),c(nbAnimals,mixtures,nsims))
+      xvar[["mixtureProbs"]] <- array(0,c(nbAnimals,mixtures,nsims)) # don't have se's; might be a way to get these but probably quite complicated
+      n <- apply(!(is.na(xmat[["mixtureProbs"]])+is.na(xvar[["mixtureProbs"]])),1:2,sum)
+      
+      if(any(n<2)) warning("need at least 2 simulations with valid point and variance estimates for mixtureProbs")
+      
+      xbar[["mixtureProbs"]] <-   apply( xmat[["mixtureProbs"]] , 1:2 , mean,na.rm=TRUE)
+      B_m[["mixtureProbs"]] <-   apply( xmat[["mixtureProbs"]] , 1:2 , var,na.rm=TRUE)
+      
+      W_m[["mixtureProbs"]] <- apply( xvar[["mixtureProbs"]] , 1:2 , mean,na.rm=TRUE)
+      MI_se[["mixtureProbs"]] <- sqrt(W_m[["mixtureProbs"]] + (n+1)/n * B_m[["mixtureProbs"]])
+      
+      dfs<-(n-1)*(1+1/(n+1)*W_m[["mixtureProbs"]]/B_m[["mixtureProbs"]])^2
+      quantSup<-qt(1-(1-alpha)/2,df=dfs)
+      
+      lower[["mixtureProbs"]] <- suppressWarnings(probCI(xbar[["mixtureProbs"]],MI_se[["mixtureProbs"]],quantSup,"lower"))
+      upper[["mixtureProbs"]] <- suppressWarnings(probCI(xbar[["mixtureProbs"]],MI_se[["mixtureProbs"]],quantSup,"upper"))
+    }
   }
-
+  
   if(nbStates>1) {
     Par$timeInStates <- list(est=xbar$timeInStates,se=MI_se$timeInStates,lower=lower$timeInStates,upper=upper$timeInStates)
-    names(Par$timeInStates$est) <- m$stateNames
-    names(Par$timeInStates$se) <- m$stateNames
-    names(Par$timeInStates$lower) <- m$stateNames
-    names(Par$timeInStates$upper) <- m$stateNames
+    Par$timeInStates <- lapply(Par$timeInStates,function(x){ names(x) = m$stateNames;x})
     
     Par$states <- states
     
     Par$stateProbs <- list(est=xbar$stateProbs,se=MI_se$stateProbs,lower=lower$stateProbs,upper=upper$stateProbs)
-    rownames(Par$stateProbs$est) <- data$ID
-    rownames(Par$stateProbs$se) <- data$ID
-    rownames(Par$stateProbs$lower) <- data$ID
-    rownames(Par$stateProbs$upper) <- data$ID
-    colnames(Par$stateProbs$est) <- m$stateNames
-    colnames(Par$stateProbs$se) <- m$stateNames
-    colnames(Par$stateProbs$lower) <- m$stateNames
-    colnames(Par$stateProbs$upper) <- m$stateNames
+    Par$stateProbs <- lapply(Par$stateProbs,function(x) {rownames(x) = data$ID;x})
+    Par$stateProbs <- lapply(Par$stateProbs,function(x) {colnames(x) = m$stateNames;x})
+    
+    if(mixtures>1){
+      Par$mixtureProbs <- list(est=xbar$mixtureProbs,se=MI_se$mixtureProbs,lower=lower$mixtureProbs,upper=upper$mixtureProbs)
+      Par$mixtureProbs <- lapply(Par$mixtureProbs,function(x) {rownames(x)=paste0("ID:",unique(data$ID));x})
+      Par$mixtureProbs <- lapply(Par$mixtureProbs,function(x) {colnames(x)=paste0("mix",1:mixtures);x})
+    }
+  }
+  
+  if(inherits(im[[1]],"hierarchical")){
+    tmp<-lapply(Par$stateProbs,function(x) hierStateProbs(im[[1]],x))
+    Par$hierStateProbs <- list()
+    for(j in names(tmp$est)){
+      Par$hierStateProbs[[j]] <- list()
+      for(jj in names(tmp)){
+        Par$hierStateProbs[[j]][[jj]] <- tmp[[jj]][[j]]
+      }
+    }
   }
   
   mh <- im[[1]]
@@ -475,19 +589,41 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   mh$CIbeta <- NULL
   if(any(ident)) mh$conditions$fullDM <- fullDM
   
-  mh$data<-mhdata
+  mh$data<-mhdata[!(colnames(mhdata) %in% colnames(reForm$newdata))]
   mh$rawCovs<-mhrawCovs
-
+  
+  # get fixPar$delta in working scale format so expandPar works correctly in post-analysis
+  if(!is.momentuHierHMM(im[[1]]) & !mh$conditions$stationary & nbStates>1) {
+    if(any(!is.na(mh$conditions$fixPar$delta))){
+      tmp <- which(!is.na(mh$conditions$fixPar$delta))
+      if(!nbCovsDelta){
+        delta0 <- mh$conditions$fixPar$delta
+        delta0 <- matrix(delta0,mixtures,nbStates)
+        delta0 <- matrix(apply(delta0,1,function(x) log(x[-1]/x[1])),(nbCovsDelta+1)*mixtures,nbStates-1)
+        mh$conditions$fixPar$delta <- as.vector(delta0)
+      }
+    } else mh$conditions$fixPar$delta <- rep(NA,length(deltInd))
+  }
+  
+  coordNames <- attr(m$data,"coords")
+  
+  mvnorm2Ind <- 1
+  if(!is.null(m$conditions$mvnCoords)){
+    coordNames <- c("x","y")
+    if(m$conditions$dist[[m$conditions$mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) mvnorm2Ind <- 0#coordNames <- c("x","y","z")
+    coordNames <- paste0(m$conditions$mvnCoords,".",coordNames)
+  } else if(is.null(coordNames)) coordNames <- c("x","y")
+  
   errorEllipse<-NULL
-  if(all(c("x","y") %in% names(mh$data))){
-    checkerrs <- lapply(im,function(x) x$data[match(c("x","y"),names(x$data))])
+  if(all(coordNames %in% names(mh$data)) & mvnorm2Ind){
+    checkerrs <- lapply(im,function(x) x$data[match(coordNames,names(x$data))])
     ident <- !unlist(lapply(checkerrs,function(x) isTRUE(all.equal(x,checkerrs[[1]]))))
     if(any(ident)){
       # calculate location alpha% error ellipses
       cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
       registerDoParallel(cores=ncores)
       withCallingHandlers(errorEllipse<-foreach(i = 1:nrow(mh$data)) %dorng% {
-        tmp <- cbind(unlist(lapply(im,function(x) x$data$x[i])),unlist(lapply(im,function(x) x$data$y[i])))
+        tmp <- cbind(unlist(lapply(im,function(x) x$data[[coordNames[1]]][i])),unlist(lapply(im,function(x) x$data[[coordNames[2]]][i])))
         if(length(unique(tmp[,1]))>1 | length(unique(tmp[,2]))>1)
           ellip <- car::dataEllipse(tmp,levels=alpha,draw=FALSE,segments=100)
         else ellip <- matrix(tmp[1,],101,2,byrow=TRUE)
@@ -500,7 +636,21 @@ MIpool<-function(HMMfits,alpha=0.95,ncores=1,covs=NULL){
   mh$Par <- Par
   mh$MIcombine <- miCombo
   
-  return(miSum(mh))
+  mh <- miSum(mh)
+  if(is.momentuHierHMM(im[[1]])) class(mh) <- append(class(mh),"hierarchical")
+  
+  if(inherits(mh,"hierarchical")){
+    inputHierHMM <- formatHierHMM(mh$data,mh$conditions$hierStates,mh$conditions$hierDist,hierBeta=NULL,hierDelta=NULL,mh$conditions$hierFormula,mh$conditions$hierFormulaDelta,mh$conditions$mixtures)
+    hier <- mapHier(list(beta=mh$Par$beta$beta$est,g0=mh$Par$beta$g0$est,theta=mh$Par$beta$theta$est),mh$Par$beta$pi$est,mh$Par$beta$delta$est,mh$conditions$hierBeta,mh$conditions$hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,mh$conditions$hierStates,inputHierHMM$newformula,mh$conditions$formulaDelta,inputHierHMM$data,mh$conditions$mixtures,inputHierHMM$recharge)
+    mh$conditions$hierBeta <- hier$hierBeta
+    mh$conditions$hierDelta <- hier$hierDelta
+    
+    mh$Par$real <- CIreal.hierarchical(mh)
+  }
+  
+  attr(mh$data,"coords") <- coordNames
+  
+  return(mh)
 }
 
 mi_parm_list<-function(est,se,lower,upper,m){
@@ -509,10 +659,11 @@ mi_parm_list<-function(est,se,lower,upper,m){
   Par
 }
 
+#' @importFrom stats plogis qlogis
 probCI<-function(x,se,z,bound="lower"){
   if(bound=="lower")
-    ci<-boot::inv.logit(boot::logit(x)-z*(1/(x-x^2))*se) 
+    ci<-stats::plogis(stats::qlogis(x)-z*(1/(x-x^2))*se) 
   else if(bound=="upper")
-    ci<-boot::inv.logit(boot::logit(x)+z*(1/(x-x^2))*se) 
+    ci<-stats::plogis(stats::qlogis(x)+z*(1/(x-x^2))*se) 
   ci
 }

@@ -37,11 +37,11 @@
 #' Chapman & Hall (London).
 #'
 #' @export
-#' @importFrom stats integrate qnorm
-#' @importFrom LaplacesDemon pbern
+#' @importFrom stats integrate qnorm qchisq mahalanobis
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
+#' @importFrom extraDistr pcat
 
 pseudoRes <- function(m, ncores = 1)
 {
@@ -64,6 +64,7 @@ pseudoRes <- function(m, ncores = 1)
   data <- m$data
   nbObs <- nrow(data)
   nbStates <- length(m$stateNames)
+  nbAnimals <- length(unique(m$data$ID))
   dist <- m$conditions$dist
   distnames <- names(dist)
   
@@ -80,21 +81,33 @@ pseudoRes <- function(m, ncores = 1)
       m$conditions$workcons[[i]]<-rep(0,length(m$conditions$workcons[[i]]))
       m$conditions$workBounds[[i]]<-matrix(c(-Inf,Inf),nrow(m$conditions$workBounds[[i]]),2,byrow=TRUE)
     }
-    if(!is.null(m$mle$beta)) m$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(m$mle$beta),2,byrow=TRUE)
+    
+    Par<-lapply(Par[distnames],function(x) c(t(x)))
+    beta <- m$Par$beta$beta$est
+    pie <- m$Par$real$pi$est
+    delta <- m$Par$real$delta$est
+    if(!is.null(beta)) m$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(beta),2,byrow=TRUE)
+    if(!is.null(pie)) m$conditions$workBounds$pi <- matrix(c(-Inf,Inf),length(m$Par$beta$pi$est),2,byrow=TRUE)
     if(!is.null(m$Par$beta$delta$est)) m$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(m$Par$beta$delta$est),2,byrow=TRUE)
     
-    Par<-lapply(Par,function(x) c(t(x)))
-    Par<-Par[distnames]
-    beta <- m$Par$beta$beta$est
-    delta <- m$Par$real$delta$est
+    g0 <- c(m$Par$beta$g0$est)
+    theta <- c(m$Par$beta$theta$est)
+    if(!is.null(g0)) m$conditions$workBounds$g0<-matrix(c(-Inf,Inf),length(g0),2,byrow=TRUE)
+    if(!is.null(theta)) m$conditions$workBounds$theta<-matrix(c(-Inf,Inf),length(theta),2,byrow=TRUE)
+    
+    m$mle <- list(g0=g0,theta=theta)
+    
     inputs <- checkInputs(nbStates,dist,Par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,m$stateNames)
     p <- inputs$p
     DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
     m$conditions$fullDM <- DMinputs$fullDM
-    m$mod$estimate <- n2w(Par,p$bounds,beta,m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind)
+    m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,pi=m$Par$beta$pi$est,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind,inputs$dist)
   } else {
     beta <- m$mle$beta
+    pie <- m$mle$pi
     delta <- m$mle$delta
+    g0 <- m$mle$g0
+    theta <- m$mle$theta
   }
   
   consensus <- vector('list',length(distnames))
@@ -106,6 +119,7 @@ pseudoRes <- function(m, ncores = 1)
       dist[[i]] <- gsub("Consensus","",dist[[i]])
     } else consensus[[i]] <- FALSE
   }
+  dist <- lapply(dist,function(x) ifelse(grepl("cat",x),"cat",x))
   
   Fun <- lapply(dist,function(x) paste("p",x,sep=""))
   for(j in which(dist %in% angledists)){
@@ -118,48 +132,62 @@ pseudoRes <- function(m, ncores = 1)
   la <- logAlpha(m)
   
   # identify covariates
-  formula<-m$conditions$formula
-  newForm <- newFormulas(formula,nbStates)
-  formulaStates <- newForm$formulaStates
-  formterms <- newForm$formterms
-  newformula <- newForm$newformula
+  reForm <- formatRecharge(nbStates,m$conditions$formula,data,par=list(g0=g0,theta=theta))
+  recharge <- reForm$recharge
+  hierRecharge <- reForm$hierRecharge
+  newformula <- reForm$newformula
+  if(!is.null(recharge)) data[colnames(reForm$newdata)] <- reForm$newdata
+  covs <- reForm$covs
+  nbCovs <- reForm$nbCovs
+  aInd <- reForm$aInd
   
-  covs <- model.matrix(newformula,data)
-  nbCovs <- ncol(covs)-1 # substract intercept column
+  mixtures <- m$conditions$mixtures
+  if(mixtures==1) pie <- matrix(1,nbAnimals,1)
   
-  aInd <- NULL
-  for(i in 1:length(unique(m$data$ID)))
-    aInd <- c(aInd,which(m$data$ID==unique(m$data$ID)[i])[1])
+  ncmean <- get_ncmean(distnames,m$conditions$fullDM,m$conditions$circularAngleMean,nbStates)
+  nc <- ncmean$nc
+  meanind <- ncmean$meanind
   
-  nc <- meanind <- vector('list',length(distnames))
-  names(nc) <- names(meanind) <- distnames
-  for(i in distnames){
-    nc[[i]] <- apply(m$conditions$fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-    if(m$conditions$circularAngleMean[[i]]) {
-      meanind[[i]] <- which((apply(m$conditions$fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
-      # deal with angular covariates that are exactly zero
-      if(length(meanind[[i]])){
-        angInd <- which(is.na(match(gsub("cos","",gsub("sin","",colnames(nc[[i]]))),colnames(nc[[i]]),nomatch=NA)))
-        sinInd <- colnames(nc[[i]])[which(grepl("sin",colnames(nc[[i]])[angInd]))]
-        nc[[i]][meanind[[i]],sinInd]<-ifelse(nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)])
-        nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)]<-ifelse(nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],sinInd])
+  par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds,m$covsPi)
+  
+  trMat <- list()
+  for(mix in 1:mixtures){
+    if(nbStates>1){
+      if(is.null(recharge)){
+        trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*(nbCovs+1)+1:(nbCovs+1),,drop=FALSE],as.matrix(covs),m$conditions$betaRef)
+      } else {
+        gamInd<-(length(m$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures+1):(length(m$mod$estimate))-(ncol(m$covsPi)*(mixtures-1))-ifelse(reForm$nbRecovs,reForm$nbRecovs+1+reForm$nbG0covs+1,0)-ncol(m$covsDelta)*(nbStates-1)*(!m$conditions$stationary)*mixtures
+        trMat[[mix]] <- array(unlist(lapply(split(data,1:nrow(data)),function(x) tryCatch(get_gamma_recharge(m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-reForm$nbRecovs:0)],covs=x,formula=newformula,hierRecharge=hierRecharge,nbStates=nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(data))) 
       }
-    }
+    } else trMat[[mix]] <- array(1,dim=c(1,1,nbObs))
   }
   
-  par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds)
-  
-  if(nbStates>1)
-    trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs),m$conditions$betaRef)
-  else
-    trMat <- array(1,dim=c(1,1,nbObs))
-
   genRes <- list()
   for(j in distnames){
-    genRes[[paste0(j,"Res")]] <- rep(NA,nbObs)
+    genRes[[paste0(j,"Res")]] <- rep(0,nbObs)
     pgenMat <- pgenMat2 <- matrix(NA,nbObs,nbStates)
     sp <- par[[j]]
-    genInd <- which(!is.na(data[[j]]))
+    
+    if(dist[[j]] %in% mvndists){
+      if(dist[[j]]=="mvnorm2" || dist[[j]]=="rw_mvnorm2"){
+        genData <- c(data[[paste0(j,".x")]],data[[paste0(j,".y")]])
+        if(dist[[j]]=="mvnorm2") ndim <- as.numeric(gsub("mvnorm","",dist[[j]]))
+        else ndim <- as.numeric(gsub("rw_mvnorm","",dist[[j]]))
+      } else if(dist[[j]]=="mvnorm3" || dist[[j]]=="rw_mvnorm3"){
+        genData <- c(data[[paste0(j,".x")]],data[[paste0(j,".y")]],data[[paste0(j,".z")]])
+        if(dist[[j]]=="mvnorm3") ndim <- as.numeric(gsub("mvnorm","",dist[[j]]))
+        else ndim <- as.numeric(gsub("rw_mvnorm","",dist[[j]]))
+      }
+      
+      # define function for calculating chi square probs based on mahalanobis distance
+      d2<-function(q,mean,sigma){
+        stats::pchisq(stats::mahalanobis(q,mean,matrix(sigma,length(mean),length(mean))),df=ndim)
+      }
+      
+    } else {
+      genData <- data[[j]]
+    }
+    genInd <- which(!is.na(genData[1:nbObs]))
     zeroInflation <- m$conditions$zeroInflation[[j]]
     oneInflation <- m$conditions$oneInflation[[j]]
   
@@ -169,7 +197,7 @@ pseudoRes <- function(m, ncores = 1)
       
       if(!(dist[[j]] %in% angledists)){
         
-        genArgs <- list(data[[j]][genInd])
+        genArgs <- list(genData[which(!is.na(genData))])
         
         zeromass <- 0
         onemass <- 0
@@ -178,8 +206,40 @@ pseudoRes <- function(m, ncores = 1)
           if(oneInflation) onemass <- genPar[nrow(genPar)-nbStates+state,genInd]
           genPar <- genPar[-(nrow(genPar)-(nbStates*(zeroInflation+oneInflation)-1):0),]
         }
-        for(k in 1:(nrow(genPar)/nbStates))
-          genArgs[[k+1]] <- genPar[(k-1)*nbStates+state,genInd]
+        
+        if(dist[[j]] %in% mvndists){
+          if(dist[[j]]=="mvnorm2" || dist[[j]]=="rw_mvnorm2"){
+            genArgs[[1]] <- as.list(as.data.frame(matrix(genArgs[[1]],nrow=ndim,byrow=TRUE)))
+            genArgs[[2]] <- as.list(as.data.frame(rbind(genPar[state,genInd],
+                                  genPar[nbStates+state,genInd])))
+            genArgs[[3]] <- as.list(as.data.frame(
+                                  rbind(genPar[nbStates*2+state,genInd], #x
+                                        genPar[nbStates*3+state,genInd], #xy
+                                        genPar[nbStates*3+state,genInd], #xy
+                                        genPar[nbStates*4+state,genInd]))) #y
+          } else if(dist[[j]]=="mvnorm3" || dist[[j]]=="rw_mvnorm3"){
+            genArgs[[1]] <- as.list(as.data.frame(matrix(genArgs[[1]],nrow=ndim,byrow=TRUE)))
+            genArgs[[2]] <- as.list(as.data.frame(rbind(genPar[state,genInd],
+                                  genPar[nbStates+state,genInd],
+                                  genPar[2*nbStates+state,genInd])))
+            genArgs[[3]] <- as.list(as.data.frame(
+                                  rbind(genPar[nbStates*3+state,genInd], #x
+                                        genPar[nbStates*4+state,genInd], #xy
+                                        genPar[nbStates*5+state,genInd], #xz
+                                        genPar[nbStates*4+state,genInd], #xy
+                                        genPar[nbStates*6+state,genInd], #y
+                                        genPar[nbStates*7+state,genInd], #yz
+                                        genPar[nbStates*5+state,genInd], #xz
+                                        genPar[nbStates*7+state,genInd], #yz
+                                        genPar[nbStates*8+state,genInd]))) #z          
+          }
+        } else if(dist[[j]]=="cat"){
+          dimCat <- as.numeric(gsub("cat","",m$conditions$dist[[j]]))
+          genArgs[[2]] <- t(genPar[seq(state,dimCat*nbStates,nbStates),genInd])
+        } else {
+          for(k in 1:(nrow(genPar)/nbStates))
+            genArgs[[k+1]] <- genPar[(k-1)*nbStates+state,genInd]
+        }
         
         if(dist[[j]]=="gamma") {
           shape <- genArgs[[2]]^2/genArgs[[3]]^2
@@ -190,79 +250,78 @@ pseudoRes <- function(m, ncores = 1)
         
         if(zeroInflation | oneInflation) {
           if(zeroInflation & !oneInflation){
-            pgenMat[genInd,state] <- ifelse(data[[j]][genInd]==0,
+            pgenMat[genInd,state] <- ifelse(genData[genInd]==0,
                                       zeromass, # if gen==0
                                       zeromass + (1-zeromass)*do.call(Fun[[j]],genArgs)) # if gen != 0
           } else if(oneInflation & !zeroInflation){
-            pgenMat[genInd,state] <- ifelse(data[[j]][genInd]==1,
+            pgenMat[genInd,state] <- ifelse(genData[genInd]==1,
                                       onemass, # if gen==1
                                       onemass + (1-onemass)*do.call(Fun[[j]],genArgs)) # if gen != 1           
           } else {
-            pgenMat[genInd,state][data[[j]][genInd]==0] <- zeromass[data[[j]][genInd]==0] # if gen==0
-            pgenMat[genInd,state][data[[j]][genInd]==1] <- onemass[data[[j]][genInd]==1]  # if gen==1
-            pgenMat[genInd,state][data[[j]][genInd]>0 & data[[j]][genInd]<1] <- zeromass[data[[j]][genInd]>0 & data[[j]][genInd]<1] + onemass[data[[j]][genInd]>0 & data[[j]][genInd]<1] + (1.-zeromass[data[[j]][genInd]>0 & data[[j]][genInd]<1]-onemass[data[[j]][genInd]>0 & data[[j]][genInd]<1]) * do.call(Fun[[j]],genArgs)[data[[j]][genInd]>0 & data[[j]][genInd]<1] # if gen !=0 and gen!=1
+            pgenMat[genInd,state][genData[genInd]==0] <- zeromass[genData[genInd]==0] # if gen==0
+            pgenMat[genInd,state][genData[genInd]==1] <- onemass[genData[genInd]==1]  # if gen==1
+            pgenMat[genInd,state][genData[genInd]>0 & genData[genInd]<1] <- zeromass[genData[genInd]>0 & genData[genInd]<1] + onemass[genData[genInd]>0 & genData[genInd]<1] + (1.-zeromass[genData[genInd]>0 & genData[genInd]<1]-onemass[genData[genInd]>0 & genData[genInd]<1]) * do.call(Fun[[j]],genArgs)[genData[genInd]>0 & genData[genInd]<1] # if gen !=0 and gen!=1
           }
         }
         else {
-          pgenMat[genInd,state] <- do.call(Fun[[j]],genArgs)
+          if(dist[[j]] %in% mvndists){
+            names(genArgs) <- c("q","mean","sigma")
+            pgenMat[genInd,state] <- mapply(d2,q=genArgs$q,mean=genArgs$mean,sigma=genArgs$sigma)
+          } else pgenMat[genInd,state] <- do.call(Fun[[j]],genArgs)
           if(dist[[j]] %in% integerdists){
             genArgs[[1]] <- genArgs[[1]] - 1
             pgenMat2[genInd,state] <- do.call(Fun[[j]],genArgs)
           }
         }
         
-        #pgenMat[genInd,state] <- zeromass+(1-zeromass)*do.call(Fun[[j]],genArgs)
-        #for(i in 1:nbObs) {
-        #  if(!is.na(data[[j]][i])) {
-        #    genArgs[[1]] <- data[[j]][i]
-        #    pgenMat[i,state] <- zeromass+(1-zeromass)*do.call(Fun[[j]],genArgs)
-        #  }
-        #}
       } else {
         
-        genpiInd <- which(data[[j]]!=pi & !is.na(data[[j]]))
+        genpiInd <- which(genData!=pi & !is.na(genData))
         
-        genArgs <- list(Fun[[j]],-pi,data[[j]][1]) # to pass to function "integrate" below
+        genArgs <- list(Fun[[j]],-pi,genData[1]) # to pass to function "integrate" below
   
         for(i in genpiInd){
-          genArgs[[3]]<-data[[j]][i]
+          genArgs[[3]]<-genData[i]
           for(k in 1:(nrow(genPar)/nbStates))
             genArgs[[k+3]] <- genPar[(k-1)*nbStates+state,i]
           
           pgenMat[i,state] <- do.call(integrate,genArgs)$value
         }
-        #for(i in 1:nbObs) {
-        #  if(!is.na(data[[j]][i])) {
-        #    # angle==pi => residual=Inf
-        #    if(data[[j]][i]!=pi) {
-        #      genArgs[[3]] <- data[[j]][i]
-        #      pgenMat[i,state] <- do.call(integrate,genArgs)$value
-        #    }
-        #  }
-        #}
       }
     }
-  
+    
     k <- 1
     for(i in 1:nbObs) {
-      if(!is.na(data[[j]][i])){
-        if(any(i==aInd)){
-          genRes[[paste0(j,"Res")]][i] <- (delta[k,]%*%trMat[,,i])%*%pgenMat[i,]
-          if(dist[[j]] %in% integerdists)
-            genRes[[paste0(j,"Res")]][i] <- (genRes[[paste0(j,"Res")]][i] + (delta[k,]%*%trMat[,,i])%*%pgenMat2[i,])/2
-          genRes[[paste0(j,"Res")]][i] <- qnorm(genRes[[paste0(j,"Res")]][i])
-          k <- k + 1
-        } else {
-          gamma <- trMat[,,i]
-          c <- max(la[i-1,]) # cancels below ; prevents numerical errors
-          a <- exp(la[i-1,]-c)
-          
-          genRes[[paste0(j,"Res")]][i] <- t(a)%*%(gamma/sum(a))%*%pgenMat[i,]
-          if(dist[[j]] %in% integerdists)
-            genRes[[paste0(j,"Res")]][i] <- (genRes[[paste0(j,"Res")]][i] + t(a)%*%(gamma/sum(a))%*%pgenMat2[i,])/2
-          genRes[[paste0(j,"Res")]][i] <- qnorm(genRes[[paste0(j,"Res")]][i])
-        }
+      if(any(i==aInd)) {
+        iPi <- pie[k,]
+        kInd <- k
+        k <- k + 1
       }
+      if(!is.na(genData[i])){
+        for(mix in 1:mixtures){
+          if(any(i==aInd)){
+            #iPi <- pie[k,]
+            if(dist[[j]] %in% integerdists)
+              genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] + ((delta[(mix-1)*nbAnimals+kInd,]%*%trMat[[mix]][,,i])%*%pgenMat[i,] + (delta[(mix-1)*nbAnimals+kInd,]%*%trMat[[mix]][,,i])%*%pgenMat2[i,])/2 * iPi[mix]
+            else
+              genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] + (delta[(mix-1)*nbAnimals+kInd,]%*%trMat[[mix]][,,i])%*%pgenMat[i,] * iPi[mix]
+          } else {
+            gamma <- trMat[[mix]][,,i]
+            #c <- max(la[i-1,]) # cancels below ; prevents numerical errors
+            #a <- exp(la[i-1,]-c)
+            c <- max(la[[mix]][i-1,])
+            a <- exp(la[[mix]][i-1,]-c)
+            
+            if(dist[[j]] %in% integerdists)
+              genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] + (t(a)%*%(gamma/sum(a))%*%pgenMat[i,] + t(a)%*%(gamma/sum(a))%*%pgenMat2[i,])/2 * iPi[mix]
+            else
+              genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] + t(a)%*%(gamma/sum(a))%*%pgenMat[i,] * iPi[mix]
+          }
+        }
+        if(dist[[j]] %in% mvndists){
+          genRes[[paste0(j,"Res")]][i] <- stats::qchisq(genRes[[paste0(j,"Res")]][i],df=ndim)
+        } else genRes[[paste0(j,"Res")]][i] <- stats::qnorm(genRes[[paste0(j,"Res")]][i])
+      } else genRes[[paste0(j,"Res")]][i] <- NA
     }
   }
 

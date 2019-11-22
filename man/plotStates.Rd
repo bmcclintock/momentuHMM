@@ -7,7 +7,7 @@
 plotStates(m, animals = NULL, ask = TRUE)
 }
 \arguments{
-\item{m}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object}
+\item{m}{A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object}
 
 \item{animals}{Vector of indices or IDs of animals for which states will be plotted.}
 

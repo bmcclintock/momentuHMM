@@ -261,6 +261,249 @@ arma::colvec dbern_rcpp(NumericVector x, arma::mat prob, arma::mat foo)
   return res;
 }
 
+const double log2pi2 = log(2.0 * M_PI)/2.0;
+
+//' C++ implementation of multivariate Normal probability density function for multiple inputs
+//'
+//'@param x data matrix of dimension \code{p x n}, \code{p} being the dimension of the
+//'data and n the number of data points.
+//'@param mean mean vectors matrix of dimension \code{p x n}
+//'@param varcovM list of length \code{n} of variance-covariance matrices,
+//'each of dimensions \code{p x p}.
+//'
+//'@return matrix of densities of dimension \code{K x n}.
+// [[Rcpp::export]]
+arma::colvec dmvnorm_rcpp(NumericVector x,
+                       const arma::mat mean,
+                       const arma::mat varcovM){
+  
+  //const bool & Log=true;
+  int p = mean.n_rows;
+  int n = mean.n_cols;
+  arma::vec xvec(p);
+  arma::vec out(n);
+  arma::mat sigma(p,p);
+  double constant = - p*log2pi2;
+  
+  for (int i=0; i < n; i++) {
+    for(int k=0; k < p; k++){
+      sigma(k,k) = varcovM(k*p+k,i);
+      for(int j=0; j < k; j++){
+        sigma(k,j) = varcovM(k*p+j,i);
+        sigma(j,k) = varcovM(k*p+j,i);
+      }
+      xvec(k) = x(k*n+i);
+    }
+    arma::mat Rinv = inv(trimatu(chol(sigma)));
+    //mat R = chol(as<arma::mat>(varcovM[i]));
+    double logSqrtDetvarcovM = sum(log(Rinv.diag()));
+    arma::colvec mtemp = mean.col(i);
+    arma::colvec x_i = xvec - mtemp;
+    arma::rowvec xRinv = trans(x_i)*Rinv;
+    //vec xRinv = solve(trimatl(R.t()), x_i);
+    double quadform = sum(xRinv%xRinv);
+    //if (!Log) {
+      out(i) = exp(-0.5*quadform + logSqrtDetvarcovM + constant);
+    //} else{
+    //  out(i) = -0.5*quadform + logSqrtDetvarcovM + constant;
+    //}
+    //Rprintf("i %d x %f y %f mean %f %f sigma %f %f %f %f out %f \n",i,xvec(0),xvec(1),mtemp(0),mtemp(1),sigma(0,0),sigma(1,0),sigma(0,1),sigma(1,1),out(i));
+  }
+  
+  return out;
+  
+}
+
+bool isInteger(double x, bool warn = true) {
+  if (ISNAN(x))
+    return false;
+  if (((x < 0.0) ? std::ceil(x) : std::floor(x)) != x) {
+    if (warn) {
+      char msg[55];
+      std::snprintf(msg, sizeof(msg), "non-integer: %f", x);
+      Rcpp::warning(msg);
+    }
+    return false;
+  }
+  return true;
+}
+
+inline bool is_large_int(double x) {
+  if (x > std::numeric_limits<int>::max())
+    return true;
+  return false;
+}
+
+inline double to_dbl(int x) {
+  return static_cast<double>(x);
+}
+
+inline int to_pos_int(double x) {
+  if (x < 0.0 || ISNAN(x))
+    Rcpp::stop("value cannot be coerced to integer");
+  if (is_large_int(x))
+    Rcpp::stop("value out of integer range");
+  return static_cast<int>(x);
+}
+
+//bool isInteger(double x, bool warn = true);
+//inline bool is_large_int(double x); 
+//inline double to_dbl(int x);
+//inline int to_pos_int(double x);
+
+#define GETV(x, i)      x[i % x.size()]    // wrapped indexing of vector
+#define GETM(x, i, j)   x(i % x.n_rows, j)   // wrapped indexing of matrix
+
+//' Categorical density function
+//'
+//' Probability density function of the categorical distribution (written in C++)
+//'
+//' @param x Vector of quantiles
+//' @param prob success probability
+//' @param foo Unused (for compatibility with template)
+//'
+//' @return Vector of densities
+// [[Rcpp::export]]
+arma::colvec dcat_rcpp(const NumericVector x, const arma::mat prob, const arma::mat foo) 
+{
+  
+  if (x.size() < 1 || prob.n_rows < 1) {
+    return NumericVector(0);
+  }
+  
+  int Nmax = std::max(
+    static_cast<int>(x.size()),
+    static_cast<int>(prob.n_cols)
+  );
+  int k = prob.n_rows;
+  arma::colvec p(Nmax);
+  double p_tot;
+  
+  bool throw_warning = false;
+  
+  //if (k < 2)
+  //  Rcpp::stop("number of columns in prob is < 2");
+  
+  arma::mat prob_tab = prob.t();
+  
+  for (int i = 0; i < prob.n_cols; i++) {
+    p_tot = 0.0;
+    for (int j = 0; j < k; j++) {
+      p_tot += prob_tab(i, j);
+#ifdef IEEE_754
+      if (ISNAN(p_tot))
+        break;
+#endif
+      if (prob_tab(i, j) < 0.0) {
+        p_tot = NAN;
+        throw_warning = true;
+        break;
+      }
+    }
+    for (int j = 0; j < k; j++)
+      prob_tab(i, j) /= p_tot;
+  }
+  
+  for (int i = 0; i < Nmax; i++) {
+#ifdef IEEE_754
+    if (ISNAN(GETV(x, i))) {
+      p[i] = GETV(x, i);
+      continue;
+    }
+#endif
+    if (!isInteger(GETV(x, i)) || GETV(x, i) < 1.0 ||
+        GETV(x, i) > to_dbl(k)) {
+      p[i] = 0.0;
+      continue;
+    }
+    if (is_large_int(GETV(x, i))) {
+      //Rcpp::warning("NAs introduced by coercion to integer range in dcat_rcpp");
+      p[i] = NA_REAL;
+    }
+    p[i] = GETM(prob_tab, i, to_pos_int(GETV(x, i)) - 1);
+  }
+  
+  //if (log_prob)
+  //  p = Rcpp::log(p);
+  
+  //if (throw_warning)
+  //  Rcpp::warning("NaNs produced in dcat_rcpp");
+  
+  return p;
+}
+
+//' negative binomial density function
+//'
+//' Probability density function of the negative binomial distribution (written in C++)
+//'
+//' @param x Vector of quantiles
+//' @param mu Mean of the distribution 
+//' @param size Dispersion parameter
+//'
+//' @return Vector of densities
+// [[Rcpp::export]]
+arma::colvec dnbinom_rcpp(NumericVector x, arma::mat mu, arma::mat size)
+{
+  arma::colvec res(x.size());
+  
+  for(int i=0;i<x.size();i++) {
+    if(!arma::is_finite(x(i)))
+      res(i) = 1; // if missing observation
+    else
+      res(i) = R::dnbinom_mu(x(i),size(i),mu(i),0);
+  }
+  
+  return res;
+}
+
+//' logistic density function
+//'
+//' Probability density function of the logistic distribution (written in C++)
+//'
+//' @param x Vector of quantiles
+//' @param location mean of the distribution 
+//' @param scale Dispersion parameter
+//'
+//' @return Vector of densities
+// [[Rcpp::export]]
+arma::colvec dlogis_rcpp(NumericVector x, arma::mat location, arma::mat scale)
+{
+  arma::colvec res(x.size());
+  
+  for(int i=0;i<x.size();i++) {
+    if(!arma::is_finite(x(i)))
+      res(i) = 1; // if missing observation
+    else
+      res(i) = R::dlogis(x(i),location(i),scale(i),0);
+  }
+  
+  return res;
+}
+
+//' student t density function
+//'
+//' Probability density function of non-central student t (written in C++)
+//'
+//' @param x Vector of quantiles
+//' @param df degrees of freedom 
+//' @param ncp non-centrality parameter
+//'
+//' @return Vector of densities
+// [[Rcpp::export]]
+arma::colvec dt_rcpp(NumericVector x, arma::mat df, arma::mat ncp)
+{
+  arma::colvec res(x.size());
+  
+  for(int i=0;i<x.size();i++) {
+    if(!arma::is_finite(x(i)))
+      res(i) = 1; // if missing observation
+    else
+      res(i) = R::dnt(x(i),df(i),ncp(i),0);
+  }
+  
+  return res;
+}
+
 // used in nLogLike_rcpp to map the functions' names to the functions
 typedef arma::colvec (*FunPtr)(NumericVector, arma::mat, arma::mat);
 

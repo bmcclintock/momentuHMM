@@ -2,7 +2,7 @@ getXB<-function(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,consensus,nb
   Xvec<-wpar^cons+workcons
   nrw <- nrow(DM)
   ncl <- ncol(DM)
-  if(!circularAngleMean){
+  if(isFALSE(circularAngleMean)){
     if(DMind){
       XB <- DM%*%Xvec
     } else {
@@ -10,7 +10,7 @@ getXB<-function(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,consensus,nb
     }
   } else {
     if(length(meanind)) {
-      XB<-XBloop_rcpp(DM,Xvec,nbObs,nrw,ncl,TRUE,consensus,meanind-1,nc,nbStates)
+      XB<-XBloop_rcpp(DM,Xvec,nbObs,nrw,ncl,TRUE,consensus,meanind-1,nc,nbStates,as.numeric(circularAngleMean))
       if(consensus) {
         l_t <- matrix(1,nrow(XB),ncol(XB))
         l_t[nbStates+meanind,] <- XB[nbStates+meanind,]

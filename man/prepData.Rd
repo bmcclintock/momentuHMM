@@ -2,20 +2,32 @@
 % Please edit documentation in R/prepData.R
 \name{prepData}
 \alias{prepData}
+\alias{prepData.default}
+\alias{prepData.hierarchical}
 \title{Preprocessing of the data streams and covariates}
 \usage{
-prepData(data, type = c("UTM", "LL"), coordNames = c("x", "y"),
-  covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL,
-  angleCovs = NULL)
+prepData(data, ...)
+
+\method{prepData}{default}(data, type = c("UTM", "LL"),
+  coordNames = c("x", "y"), covNames = NULL, spatialCovs = NULL,
+  centers = NULL, centroids = NULL, angleCovs = NULL,
+  altCoordNames = NULL, ...)
+
+\method{prepData}{hierarchical}(data, type = c("UTM", "LL"),
+  coordNames = c("x", "y"), covNames = NULL, spatialCovs = NULL,
+  centers = NULL, centroids = NULL, angleCovs = NULL,
+  altCoordNames = NULL, hierLevels, coordLevel, ...)
 }
 \arguments{
-\item{data}{Either a data frame of data streams or a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}). If \code{data} is a data frame, it can optionally include a field \code{ID}
+\item{data}{Either a data frame of data streams or a \code{\link{crwData}} (or \code{\link{crwHierData}}) object (as returned by \code{\link{crawlWrap}}). If \code{data} is a data frame, it can optionally include a field \code{ID}
 (identifiers for the observed individuals), coordinates from which step length ('step') 
 and turning angle ('angle') are calculated, and any covariates (with names matching \code{covNames} and/or \code{angleCovs}). 
 If step length and turning angle are to be calculated from coordinates, the \code{coordNames} argument 
-must identify the names for the x- (longitunal) and y- (latitudinal) coordinates.
-With the exception of \code{ID} and \code{coordNames}, all variables in \code{data} are treated as data streams unless identified
+must identify the names for the x- (longitunal) and y- (latitudinal) coordinates, and, for hierarchical data, the \code{coordLevel} argument must identify the level of the hierarchy at which the location data are obtained.
+With the exception of \code{ID}, \code{coordNames}, and, for hierarchical data, \code{level}, all variables in \code{data} are treated as data streams unless identified
 as covariates in \code{covNames} and/or \code{angleCovs}.}
+
+\item{...}{further arguments passed to or from other methods}
 
 \item{type}{\code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude. If \code{type='LL'} then step lengths are calculated in kilometers and turning angles are based on initial bearings (see \code{\link{turnAngle}}).
 Ignored if \code{data} is a \code{\link{crwData}} object.}
@@ -26,7 +38,7 @@ and location covariates (i.e., those specified by \code{spatialCovs}, \code{cent
 \item{covNames}{Character vector indicating the names of any covariates in \code{data} dataframe. Any variables in \code{data} (other than \code{ID}) that are not identified in 
 \code{covNames} and/or \code{angleCovs} are assumed to be data streams (i.e., missing values will not be accounted for).}
 
-\item{spatialCovs}{List of \code{\link[raster]{Raster-class}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
+\item{spatialCovs}{List of \code{\link[=Raster-class]{raster}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
 layer(s) based on the location data (and the z values for a raster \code{\link[raster]{stack}} 
 or \code{\link[raster]{brick}}) for each time step.  If an element of \code{spatialCovs} is a raster \code{\link[raster]{stack}} or \code{\link[raster]{brick}}, 
 then z values must be set using \code{\link[raster]{setZ}} and \code{data} must include column(s) of the corresponding z value(s) for each observation (e.g., 'time').}
@@ -48,22 +60,34 @@ or \code{\link{MIfitHMM}}.}
 
 \item{angleCovs}{Character vector indicating the names of any circular-circular regression angular covariates in \code{data} or \code{spatialCovs} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 using \code{\link{circAngles}}.}
+
+\item{altCoordNames}{Character string indicating an alternative name for the returned location data. If provided, then \code{prepData} will return easting (or longitude) coordinate names as \code{paste0(altCoordNames,".x")} and northing (or latitude) as \code{paste0(altCoordNames,".y")} instead of \code{x} and \code{y}, respectively. This can be useful for location data that are intended to be modeled using a bivariate normal distribution (see \code{\link{fitHMM}}). Ignored unless \code{coordNames} are provided.}
+
+\item{hierLevels}{Character vector indicating the levels of the hierarchy and their order, from top (coarsest scale) to bottom (finest scale), that are included in \code{data$level}. For example, for a 2-level hierarchy then 
+\code{hierLevels=c("1","2i","2")} indicates \code{data$level} for each observation can be one of three factor levels: "1" (coarse scale), "2i" (initial fine scale), and "2" (fine scale).  Ignored if \code{data} is a \code{\link{crwHierData}} object.}
+
+\item{coordLevel}{Character string indicating the level of the hierarchy for the location data. If specified, then \code{data} must include a 'level' field indicating the level of the hierarchy for each observation.  Ignored if \code{coordNames} is \code{NULL} or \code{data} is a \code{\link{crwHierData}} object.}
 }
 \value{
-An object \code{\link{momentuHMMData}}, i.e., a dataframe of:
+An object \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}}, i.e., a dataframe of:
 \item{ID}{The ID(s) of the observed animal(s)}
 \item{...}{Data streams (e.g., 'step', 'angle', etc.)}
 \item{x}{Either easting or longitude (if \code{coordNames} is specified or \code{data} is a \code{crwData} object)}
 \item{y}{Either norting or latitude (if \code{coordNames} is specified or \code{data} is a \code{crwData} object)}
 \item{...}{Covariates (if any)}
-
-If \code{data} is a \code{\link{crwData}} object, the \code{\link{momentuHMMData}} object created by \code{prepData} includes step lengths and turning angles calculated from the best predicted 
-locations (\code{crwData$crwPredict$mu.x} and \code{crwData$crwPredict$mu.y}). Prior to using \code{prepData}, additional data streams or covariates unrelated to location (including z-values associated with
-\code{spatialCovs} raster stacks or bricks) can be merged with the \code{crwData} object using \code{\link{crawlMerge}}.
 }
 \description{
 Preprocessing of the data streams, including calculation of step length, turning angle, and covariates from location data to be suitable for
-analysis using \code{\link{fitHMM}}
+analysis using \code{\link{fitHMM}}.
+}
+\details{
+\itemize{
+\item If \code{data} is a \code{\link{crwData}} (or \code{\link{crwHierData}}) object, the \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}) object created by \code{prepData} includes step lengths and turning angles calculated from the best predicted 
+locations (i.e., \code{crwData$crwPredict$mu.x} and \code{crwData$crwPredict$mu.y}). Prior to using \code{prepData}, additional data streams or covariates unrelated to location (including z-values associated with
+\code{spatialCovs} raster stacks or bricks) can be merged with the \code{crwData} (or \code{crwHierData}) object using \code{\link{crawlMerge}}.
+
+\item For hierarchical data, \code{data} must include a 'level' field indicating the level of the hierarchy for each observation, and, for location data identified by \code{coordNames}, the \code{coordLevel} argument must indicate the level of the hierarchy at which the location data are obtained.
+}
 }
 \examples{
 coord1 <- c(1,2,3,4,5,6,7,8,9,10)
@@ -107,4 +131,6 @@ d <- prepData(data,coordNames=c("coord1","coord2"),covNames="cov1",
 }
 \seealso{
 \code{\link{crawlMerge}}, \code{\link{crawlWrap}}, \code{\link{crwData}}
+
+\code{\link{crwHierData}}
 }

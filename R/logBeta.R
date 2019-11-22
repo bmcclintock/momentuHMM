@@ -5,7 +5,7 @@
 #'
 #' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.
 #'
-#' @return The matrix of backward log-probabilities.
+#' @return A list of length \code{model$conditions$mixtures} where each element is a matrix of backward log-probabilities for each mixture.
 #'
 #' @examples
 #' \dontrun{
@@ -27,31 +27,37 @@ logBeta <- function(m)
   if(is.miSum(m)){
     beta<-m$Par$beta$beta$est
     delta<-m$Par$real$delta$est
+    g0<-m$Par$beta$g0$est
+    theta<-m$Par$beta$theta$est
   } else {
     beta <- m$mle$beta
     delta <- m$mle$delta
+    g0 <- m$mle$g0
+    theta <- m$mle$theta
   }
   
   nbStates <- length(m$stateNames)
   nbAnimals <- length(unique(m$data$ID))
   nbObs <- nrow(m$data)
   lbeta <- matrix(NA,nbObs,nbStates)
-
+  
   # identify covariates
-  formula<-m$conditions$formula
-  newForm <- newFormulas(formula,nbStates)
-  formulaStates <- newForm$formulaStates
-  formterms <- newForm$formterms
-  newformula <- newForm$newformula
+  reForm <- formatRecharge(nbStates,m$conditions$formula,m$data,par=m$mle)
+  covs <- reForm$covs
   
-  covs <- model.matrix(newformula,m$data)
+  probs <- allProbs(m)
   
-  probs <- allProbs(m,nbStates)
+  mixtures <- m$conditions$mixtures
   
-  if(nbStates>1)
-    trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs),m$conditions$betaRef)
-  else
-    trMat <- array(1,dim=c(1,1,nbObs))
+  trMat <- lbeta <- list()
+  lbeta[1:mixtures] <- list(matrix(NA,nbObs,nbStates))
+  
+  for(mix in 1:mixtures){
+    if(nbStates>1)
+      trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),m$conditions$betaRef)
+    else
+      trMat[[mix]] <- array(1,dim=c(1,1,nbObs))
+  }
   
   aInd <- NULL
   #aInd2 <- NULL
@@ -59,24 +65,26 @@ logBeta <- function(m)
     aInd <- c(aInd,max(which(m$data$ID==unique(m$data$ID)[i])))
     #aInd2 <- c(aInd2,which(m$data$ID==unique(m$data$ID)[i])[1])
   }
-
-  for(i in nbObs:1) {
-    
-    if(any(i==aInd)){
+  
+  for(mix in 1:mixtures){
+    for(i in nbObs:1) {
+      
+      if(any(i==aInd)){
         foo <- rep(1,nbStates)
         lscale <- 0
-    } else {
-      gamma <- trMat[,,i+1]
-      #if(any(i==aInd2)){
-      #  gamma <- delta %*% gamma
-      #}
-      foo <- gamma%*%(probs[i+1,]*foo)
+      } else {
+        gamma <- trMat[[mix]][,,i+1]
+        #if(any(i==aInd2)){
+        #  gamma <- delta %*% gamma
+        #}
+        foo <- gamma%*%(probs[i+1,]*foo)
+      }
+      lbeta[[mix]][i,] <- log(foo)+lscale
+      sumfoo <- sum(foo)
+      foo <- foo/sumfoo
+      lscale <- lscale+log(sumfoo)
     }
-    lbeta[i,] <- log(foo)+lscale
-    sumfoo <- sum(foo)
-    foo <- foo/sumfoo
-    lscale <- lscale+log(sumfoo)
   }
-
+  
   return(lbeta)
 }

@@ -1,7 +1,7 @@
 
 #' Calculate Akaike information criterion model weights 
 #'
-#' @param ... \code{\link{momentuHMM}}, \code{\link{HMMfits}}, or \code{\link{miHMM}} objects, to compare AIC weights of the different models.
+#' @param ... \code{\link{momentuHMM}}, \code{\link{HMMfits}}, or \code{\link{miHMM}} objects, to compare AIC weights of the different models. The first object must be a \code{\link{momentuHMM}}, \code{\link{HMMfits}}, or \code{\link{miHMM}} object, but additional model objects can be passed as a list using the \code{!!!} operator (see \code{\link[=quasiquotation]{rlang}}).
 #' @param k Penalty per parameter. Default: 2 ; for classical AIC.
 #' @param n Optional sample size. If specified, the small sample correction AIC is used (i.e., \code{AICc = AIC + kp(p+1)/(n-p-1)} where p is the number of parameters).
 #'
@@ -40,6 +40,16 @@
 #'                 formula=formula,estAngleMean=list(angle=TRUE))
 #'                 
 #' AICweights(mod1,mod2)
+#' 
+#' Par0nA <- getPar0(mod1,estAngleMean=list(angle=FALSE))                 
+#' mod3 <- fitHMM(example$m$data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+#'                 Par0=Par0nA$Par,beta0=Par0nA$beta,
+#'                 formula=~1)
+#'  
+#' AICweights(mod1,mod2,mod3)
+#' 
+#' # add'l models provided as a list using the !!! operator                               
+#' AICweights(mod1, !!!list(mod2,mod3))
 #' }
 #' 
 #' @export
@@ -50,10 +60,11 @@ AICweights <- function (..., k=2, n=NULL) {
 }
 
 #' @method AICweights momentuHMM
+#' @importFrom rlang list2
 #' @export
 AICweights.momentuHMM <- function(..., k=2, n=NULL)
 {
-  models <- list(...)
+  models <- rlang::list2(...)
   
   modNames <- all.vars(match.call()) # store the names of the models given as arguments
   
@@ -89,10 +100,11 @@ AICweights.momentuHMM <- function(..., k=2, n=NULL)
 }
 
 #' @method AICweights miHMM
+#' @importFrom rlang list2
 #' @export
 AICweights.miHMM <- function(...,k=2, n=NULL)
 {
-  models <- list(...)
+  models <- rlang::list2(...)
   
   modNames <- all.vars(match.call()) # store the names of the models given as arguments
   

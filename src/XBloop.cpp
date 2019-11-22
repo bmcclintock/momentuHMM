@@ -18,10 +18,11 @@ using namespace std;
 //' @param rindex row index for design matrix
 //' @param cindex column index for design matrix
 //' @param nbStates number of states
+//' @param refCoeff intercept coefficient for circular-circular regression model
 //'
 //' @return XB matrix
 // [[Rcpp::export]]
-arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned int nr, unsigned int nc, bool circularAngleMean, bool consensus, IntegerVector rindex, arma::mat cindex, int nbStates)
+arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned int nr, unsigned int nc, bool circularAngleMean, bool consensus, IntegerVector rindex, arma::mat cindex, int nbStates, double refCoeff = 1.0)
 {
   unsigned int i;
   unsigned int j;
@@ -64,8 +65,8 @@ arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned 
       Xcount += 1;
     }
     if(circularAngleMean){
-      XB.row(rindex[i]) = atan2(XB1.row(rindex[i]),1.+XB2.row(rindex[i]));
-      if(consensus) XB.row(rindex[i]+nbStates) = sqrt(pow(XB1.row(rindex[i]),2.)+pow(1.+XB2.row(rindex[i]),2.));
+      XB.row(rindex[i]) = atan2(XB1.row(rindex[i]),refCoeff+XB2.row(rindex[i]));
+      if(consensus) XB.row(rindex[i]+nbStates) = sqrt(pow(XB1.row(rindex[i]),2.)+pow(refCoeff+XB2.row(rindex[i]),2.));
     }
   }
   return XB;

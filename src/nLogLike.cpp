@@ -1,4 +1,5 @@
 #include "densities.h"
+#include "combine.h"
 
 //' Negative log-likelihood
 //'
@@ -21,13 +22,14 @@
 //' of rows of 'data'; each element should either be an integer (the value of the known states) or NA if
 //' the state is not known.
 //' @param betaRef Indices of reference elements for t.p.m. multinomial logit link.
+//' @param mixtures Number of mixtures for the state transition probabilities
 //' 
 //' @return Negative log-likelihood
 // [[Rcpp::export]]
 double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist,
                      List Par,
                      IntegerVector aInd, List zeroInflation, List oneInflation,
-                     bool stationary, IntegerVector knownStates, IntegerVector betaRef)
+                     bool stationary, IntegerVector knownStates, IntegerVector betaRef, int mixtures)
 {
   int nbObs = data.nrows();
 
@@ -35,99 +37,102 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   // 1. Computation of transition probability matrix trMat //
   //=======================================================//
 
-  arma::cube trMat(nbStates,nbStates,nbObs);
-  trMat.zeros();
+  std::vector<arma::cube> trMat(mixtures);
+  for(int mix=0; mix<mixtures; mix++){
+    trMat[mix] = arma::cube(nbStates,nbStates,nbObs);
+    trMat[mix].zeros();
+  }
+
   arma::mat rowSums(nbStates,nbObs);
   rowSums.zeros();
 
   arma::mat g(nbObs,nbStates*(nbStates-1));
   
-  arma::mat beta = Par["beta"];
+  arma::mat betaMix = Par["beta"];
   //arma::mat delta = Par["delta"];
-  NumericVector genData(nbObs);
+  NumericVector genData;
+  List L;
   arma::mat genPar;
   std::string genDist;
   std::string genname;
   
   if(nbStates>1) {
-    g = covs*beta;
-
-    for(int k=0;k<nbObs;k++) {
-      int cpt=0; // counter for diagonal elements
-      for(int i=0;i<nbStates;i++) {
-        for(int j=0;j<nbStates;j++) {
-          if(j==(betaRef(i)-1)) {
-            // if reference element, set to one and increment counter
-            trMat(i,j,k)=1;
-            cpt++;
+    
+    int nbCovs = betaMix.n_rows * betaMix.n_cols / (mixtures * nbStates * (nbStates-1)) - 1;
+    arma::mat beta(nbCovs+1,nbStates*(nbStates-1));
+    
+    for(int mix=0; mix<mixtures; mix++){    
+      
+      beta = betaMix.rows(mix*(nbCovs+1)+0,mix*(nbCovs+1)+nbCovs);
+      g = covs*beta;
+  
+      for(int k=0;k<nbObs;k++) {
+        int cpt=0; // counter for diagonal elements
+        for(int i=0;i<nbStates;i++) {
+          for(int j=0;j<nbStates;j++) {
+            if(j==(betaRef(i)-1)) {
+              // if reference element, set to one and increment counter
+              trMat[mix](i,j,k)=1;
+              cpt++;
+            }
+            else
+              trMat[mix](i,j,k) = exp(g(k,i*nbStates+j-cpt));
+  
+            // keep track of row sums, to normalize in the end
+            rowSums(i,k)=rowSums(i,k)+trMat[mix](i,j,k);
           }
-          else
-            trMat(i,j,k) = exp(g(k,i*nbStates+j-cpt));
-
-          // keep track of row sums, to normalize in the end
-          rowSums(i,k)=rowSums(i,k)+trMat(i,j,k);
         }
       }
+  
+      // normalization
+      for(int k=0;k<nbObs;k++)
+        for(int i=0;i<nbStates;i++)
+          for(int j=0;j<nbStates;j++)
+            trMat[mix](i,j,k) = trMat[mix](i,j,k)/rowSums(i,k);
+      
+      rowSums.zeros();
     }
-
-    // normalization
-    for(int k=0;k<nbObs;k++)
-      for(int i=0;i<nbStates;i++)
-        for(int j=0;j<nbStates;j++)
-          trMat(i,j,k) = trMat(i,j,k)/rowSums(i,k);
   }
   
   //=======================================================//
   // 1. Computation of initial distribution(s)             //
   //=======================================================//
   unsigned int nbAnimals = aInd.size();
-  arma::mat delta(nbAnimals,nbStates);
+  std::vector<arma::mat> delta(mixtures);
+  for(int mix=0; mix<mixtures; mix++)
+    delta[mix] = arma::mat(nbAnimals,nbStates);
   
-  if(nbStates==1)
-    delta.ones(); // no distribution if only one state
-  else if(stationary) {
+  if(nbStates==1){
+    for(int mix=0; mix<mixtures; mix++)
+      delta[mix].ones(); // no distribution if only one state
+  } else if(stationary) {
     // compute stationary distribution delta
-    
+  
     arma::mat diag(nbStates,nbStates);
     diag.eye(); // diagonal of ones
-    arma::mat Gamma = trMat.slice(0).t(); // all slices are identical if stationary
+    arma::mat Gamma(nbStates,nbStates); // all slices are identical if stationary
     arma::colvec v(nbStates);
     v.ones(); // vector of ones
     arma::rowvec deltatmp(nbStates);
-    try {
-      deltatmp = arma::solve(diag-Gamma+1,v).t();
-    }
-    catch(...) {
-      throw std::runtime_error("A problem occurred in the calculation of "
-                                 "the stationary distribution. You may want to "
-                                 "try different initial values and/or the option "
-                                 "stationary=FALSE");
-    }
-    for(unsigned int k=0; k<nbAnimals; k++){
-      delta.row(k) = deltatmp;
+    for(int mix=0; mix<mixtures; mix++){
+      Gamma = trMat[mix].slice(0).t(); // all slices are identical if stationary
+      try {
+        deltatmp = arma::solve(diag-Gamma+1,v).t();
+      }
+      catch(...) {
+        throw std::runtime_error("A problem occurred in the calculation of "
+                                   "the stationary distribution. You may want to "
+                                   "try different initial values and/or the option "
+                                   "stationary=FALSE");
+      }
+      for(unsigned int k=0; k<nbAnimals; k++){
+        delta[mix].row(k) = deltatmp;
+      }
     }
   } else {
     arma::mat init = Par["delta"];
-    delta = init;
-    //arma::mat d(nbAnimals,nbStates);
-    //arma::rowvec drowSums(nbAnimals);
-    //drowSums.zeros();
-    
-    //d = covsDelta*init;
-    
-    //for(unsigned int k=0;k<nbAnimals;k++) {
-    //  for(int i=0;i<nbStates;i++) {
-    //    delta(k,i) = exp(d(k,i));
-          
-    //    // keep track of row sums, to normalize in the end
-    //    drowSums(k) = drowSums(k) + delta(k,i);
-    //  }
-    //}
-    
-    //// normalization
-    //for(unsigned int k=0;k<nbAnimals;k++) 
-    //  for(int i=0;i<nbStates;i++) 
-    //    delta(k,i) = delta(k,i)/drowSums(k);
+    for(int mix=0; mix<mixtures; mix++)
+      delta[mix] = init.rows(mix*nbAnimals,mix*nbAnimals+nbAnimals-1);
   }
 
   //==========================================================//
@@ -139,11 +144,20 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   map<std::string,FunPtr> funMap;
   funMap["bern"] = dbern_rcpp;
   funMap["beta"] = dbeta_rcpp;
+  funMap["cat"] = dcat_rcpp;
   funMap["exp"] = dexp_rcpp;
   funMap["gamma"] = dgamma_rcpp;
+  funMap["logis"] = dlogis_rcpp;
   funMap["lnorm"] = dlnorm_rcpp;
+  funMap["negbinom"] = dnbinom_rcpp;
   funMap["norm"] = dnorm_rcpp;
+  funMap["rw_norm"] = dnorm_rcpp;
+  funMap["mvnorm2"] = dmvnorm_rcpp;
+  funMap["rw_mvnorm2"] = dmvnorm_rcpp;
+  funMap["mvnorm3"] = dmvnorm_rcpp;
+  funMap["rw_mvnorm3"] = dmvnorm_rcpp;
   funMap["pois"] = dpois_rcpp;
+  funMap["t"] = dt_rcpp;
   funMap["vm"] = dvm_rcpp;
   funMap["weibull"] = dweibull_rcpp;
   funMap["wrpcauchy"] = dwrpcauchy_rcpp;
@@ -169,13 +183,26 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   double NAvalue = -99999999; // value designating NAs in data
   int zeroInd = 0;
   int oneInd = 0;
+  bool mvn = false;
   
   unsigned int nDists = dist.size();
 
   for(unsigned int k=0;k<nDists;k++){
     genname = as<std::string>(dataNames[k]);
-    genData = as<NumericVector>(data[genname]);
     genDist = as<std::string>(dist[genname]);
+    if(genDist=="mvnorm2" || genDist=="rw_mvnorm2"){
+      L = List::create(as<NumericVector>(data[genname+".x"]) ,as<NumericVector>(data[genname+".y"]));
+      //NumericVector genData = combine(L);
+      mvn = true;
+    } else if(genDist=="mvnorm3" || genDist=="rw_mvnorm3"){
+      L = List::create(as<NumericVector>(data[genname+".x"]) ,as<NumericVector>(data[genname+".y"]),as<NumericVector>(data[genname+".z"]));
+      //NumericVector genData = combine(L);
+      mvn = true;
+    } else {
+      L = List::create(as<NumericVector>(data[genname]));
+      mvn = false;
+    }
+    //genData = combine(L);
     genPar = as<arma::mat>(Par[genname]);
     genzeroInflation = as<bool>(zeroInflation[genname]);
     genoneInflation = as<bool>(oneInflation[genname]);
@@ -191,12 +218,19 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       zeroInd = 0;
     
     // remove the NAs from step (impossible to subset a vector with NAs)
-    for(int i=0;i<nbObs;i++) {
-      if(!arma::is_finite(genData(i))) {
-        genData(i) = NAvalue;
+    NumericVector tmpL;
+    for(int l=0; l<L.size(); l++){
+      tmpL = L[l];
+      for(int i=0;i<nbObs;i++) {
+        if(!arma::is_finite(tmpL(i))) {
+          //genData(i) = NAvalue;
+          tmpL(i) = NAvalue;
+        }
       }
+      L[l] = tmpL;
     }
-    arma::uvec noNAs = arma::find(as<arma::vec>(genData)!=NAvalue);
+    arma::uvec noNAs = arma::find(as<arma::vec>(tmpL)!=NAvalue);
+    genData = combine(L);
     
     // extract zero-mass and one-mass parameters if necessary
     if(genzeroInflation || genoneInflation) {
@@ -224,9 +258,32 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       
       genProb.ones();
       
-      genArgs1 = genPar.row(state); //genPar(arma::span(0),arma::span(state),arma::span());
-      genArgs2 = genPar.row(genPar.n_rows - nbStates + state); //genPar(arma::span(genPar.n_rows-1),arma::span(state),arma::span());
-    
+      if(mvn){
+        if(genDist=="mvnorm2" || genDist=="rw_mvnorm2"){
+          genArgs1 = cbindmean2(genPar.row(state),genPar.row(nbStates+state));
+          genArgs2 = cbindsigma2(genPar.row(nbStates*2+state),genPar.row(nbStates*3+state),genPar.row(nbStates*4+state));
+          //for(int i=0; i<genArgs1.n_cols; i++){
+            //for(int j=0; j<genArgs1.n_rows; j++){
+              //Rprintf("i %d (%f,%f) mean(%f,%f) sigma(%f,%f,%f,%f) noNAs %d \n",i,genData(i),genData(nbObs+i),genArgs1(0,i),genArgs1(1,i),genArgs2(0,i),genArgs2(1,i),genArgs2(2,i),genArgs2(3,i));
+            //}
+          //}
+        } else if(genDist=="mvnorm3" || genDist=="rw_mvnorm3"){
+          genArgs1 = cbindmean3(genPar.row(state),genPar.row(nbStates+state),genPar.row(nbStates*2+state));
+          genArgs2 = cbindsigma3(genPar.row(nbStates*3+state),genPar.row(nbStates*4+state),genPar.row(nbStates*5+state),genPar.row(nbStates*6+state),genPar.row(nbStates*7+state),genPar.row(nbStates*8+state));          
+        }
+      } else if(genDist=="cat"){
+        int catDim = genPar.n_rows / nbStates;
+        arma::mat tmpPar1(catDim,nbObs);
+        for(int l=0; l<catDim; l++){
+          tmpPar1.row(l) = genPar.row(l*nbStates+state);
+        }
+        genArgs1 = tmpPar1;
+        genArgs2 = tmpPar1;
+      } else {
+        genArgs1 = genPar.row(state); //genPar(arma::span(0),arma::span(state),arma::span());
+        genArgs2 = genPar.row(genPar.n_rows - nbStates + state); //genPar(arma::span(genPar.n_rows-1),arma::span(state),arma::span());
+      }
+      
       if(genzeroInflation && !genoneInflation) {
         
         zerom = zeromass.row(state);
@@ -262,16 +319,22 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         genProb.elem(nbOnes) = onem.elem(nbOnes);
         
       } else {
-        
-        genProb.elem(noNAs) = funMap[genDist](genData[genData!=NAvalue],genArgs1.elem(noNAs),genArgs2.elem(noNAs));
-        
+        genProb.elem(noNAs) = funMap[genDist](genData[genData!=NAvalue],genArgs1.cols(noNAs),genArgs2.cols(noNAs));
       }
       
       allProbs.col(state) = allProbs.col(state) % genProb;
+      //for(int i=0; i<nbObs; i++){
+      //  Rprintf("allProbs state %d i %d %f \n",state,i,allProbs(i,state));
+      //}
     }
     
     // put the NAs back
-    genData[genData==NAvalue] = NA_REAL;
+    for(int l=0; l<L.size(); l++){
+      tmpL = L[l];
+      tmpL[tmpL==NAvalue] = NA_REAL;
+      L[l] = tmpL;
+    }
+    genData = combine(L);
   }
   
   // deal with states known a priori
@@ -292,29 +355,48 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   //======================//
 
   arma::mat Gamma(nbStates,nbStates); // transition probability matrix
-  double lscale = 0; // scaled log-likelihood
+  arma::rowvec mixlscale(mixtures);
+  mixlscale.zeros();
   unsigned int k=0; // animal index
-  arma::rowvec alpha(nbStates);
+  arma::mat alpha(mixtures,nbStates);
   arma::rowvec delt(nbStates);
+  arma::mat pie = Par["pi"];
+  
+  double A; 
+  double lscale = 0.0;
+  arma::rowvec maxscale(mixtures);
+  
   for(unsigned int i=0;i<allProbs.n_rows;i++) {
-    
-    if(nbStates>1)
-      Gamma = trMat.slice(i);
-    else
-      Gamma = 1; // no transition if only one state
-    
-    if(k<aInd.size() && i==(unsigned)(aInd(k)-1)) {
-      // if 'i' is the 'k'-th element of 'aInd', switch to the next animal
-      delt = delta.row(k);
-      alpha = (delt * Gamma) % allProbs.row(i);
-      k++;
-    } else {
-      alpha = (alpha * Gamma) % allProbs.row(i);
+      
+    for(int mix=0; mix<mixtures; mix++){
+      
+      if(nbStates>1)
+        Gamma = trMat[mix].slice(i);
+      else
+        Gamma = 1; // no transition if only one state
+      
+      if(k<aInd.size() && i==(unsigned)(aInd(k)-1)) {
+        // if 'i' is the 'k'-th element of 'aInd', switch to the next animal
+        delt = delta[mix].row(k);
+        alpha.row(mix) = (delt * Gamma) % allProbs.row(i);
+        mixlscale(mix) = 0;
+        //if(mix==(mixtures-1)) k++;
+      } else {
+        alpha.row(mix) = (alpha.row(mix) * Gamma) % allProbs.row(i);
+      }
+      
+      mixlscale(mix) += log(sum(alpha.row(mix)));
+      alpha.row(mix) = alpha.row(mix)/sum(alpha.row(mix));
     }
-    
-    lscale = lscale + log(sum(alpha));
-    alpha = alpha/sum(alpha);
+    if((k+1<aInd.size() && i==(unsigned)(aInd(k+1)-2)) || (i==(allProbs.n_rows-1))){
+      maxscale = mixlscale + log(pie.row(k));
+      A = maxscale.max(); // cancels out below; helps prevent numerical issues
+      lscale += A + log(sum(exp(maxscale - A)));
+      k++;
+    }
   }
+  //mixlscale += log(pie) * aInd.size();
+
 
   return -lscale;
 }

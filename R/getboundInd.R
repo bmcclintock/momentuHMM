@@ -3,7 +3,8 @@ getboundInd<-function(DM=NULL){
   if(is.null(DM)){
     Ind<-NULL
   } else if(length(dim(DM))){
-    Ind<-apply(apply(DM,1,function(x) apply(unique(DM),1,function(y) all(y==x))),2,function(x) which(x))
+    uniDM <- matrix(unique(DM),ncol=dim(DM)[2])
+    Ind<-apply(matrix(apply(DM,1,function(x) apply(uniDM,1,function(y) all(y==x))),dim(uniDM)[1],dim(DM)[1]),2,function(x) which(x))
   }
   Ind
 }

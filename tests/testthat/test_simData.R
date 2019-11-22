@@ -58,11 +58,11 @@ test_that("The right slots are defined",{
   nbCovs <- 2
   data <- simData(1,2,dist=list(step="gamma",angle="vm"),Par=list(step=stepPar,angle=anglePar),nbCovs=2,zeroInflation=list(step=TRUE))
 
-  expect_that(!is.null(data$ID),is_true())
-  expect_that(!is.null(data$x),is_true())
-  expect_that(!is.null(data$y),is_true())
-  expect_that(!is.null(data$step),is_true())
-  expect_that(!is.null(data$angle),is_true())
+  expect_true(!is.null(data$ID))
+  expect_true(!is.null(data$x))
+  expect_true(!is.null(data$y))
+  expect_true(!is.null(data$step))
+  expect_true(!is.null(data$angle))
 
   expect_equal(length(which(names(data)!="ID" & names(data)!="x" & names(data)!="y" &
                               names(data)!="step" & names(data)!="angle")),nbCovs)

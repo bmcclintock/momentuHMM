@@ -1,3 +1,4 @@
+#' @importFrom stats predict
 #' @importFrom qdapRegex rm_between
 getSplineDM<-function(distnames,DM,m,covs){
   splineInd<-list()
@@ -14,7 +15,7 @@ getSplineDM<-function(distnames,DM,m,covs){
         for(j in names(DM[[i]])){
           splineInd[[i]][[j]]<-FALSE
           splineCovs[[i]][[j]]<-character()
-          formulaStates<-stateFormulas(DM[[i]][[j]],nbStates,angleMean=(j=="mean" & m$conditions$circularAngleMean[[i]]))
+          formulaStates<-stateFormulas(DM[[i]][[j]],nbStates,angleMean=(j=="mean" & !isFALSE(m$conditions$circularAngleMean[[i]])))
           tmpDM<-list()
           for(state in 1:nbStates){
             tmpDM[[state]]<-character()

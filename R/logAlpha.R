@@ -5,7 +5,7 @@
 #'
 #' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.
 #'
-#' @return The matrix of forward log-probabilities.
+#' @return A list of length \code{model$conditions$mixtures} where each element is a matrix of forward log-probabilities for each mixture.
 #'
 #' @examples
 #' \dontrun{
@@ -27,51 +27,53 @@ logAlpha <- function(m)
   if(is.miSum(m)){
     beta<-m$Par$beta$beta$est
     delta<-m$Par$real$delta$est
+    g0<-m$Par$beta$g0$est
+    theta<-m$Par$beta$theta$est
   } else {
     beta <- m$mle$beta
     delta <- m$mle$delta
+    g0 <- m$mle$g0
+    theta <- m$mle$theta
   }
   
   nbStates <- length(m$stateNames)
   nbAnimals <- length(unique(m$data$ID))
   nbObs <- nrow(m$data)
-  lalpha <- matrix(NA,nbObs,nbStates)
-
+  
   # identify covariates
-  formula<-m$conditions$formula
-  newForm <- newFormulas(formula,nbStates)
-  formulaStates <- newForm$formulaStates
-  formterms <- newForm$formterms
-  newformula <- newForm$newformula
+  reForm <- formatRecharge(nbStates,m$conditions$formula,m$data,par=m$mle)
+  covs <- reForm$covs
+  aInd <- reForm$aInd
   
-  covs <- model.matrix(newformula,m$data)
-  nbCovs <- ncol(covs)-1 # substract intercept column
-
-  probs <- allProbs(m,nbStates)
+  probs <- allProbs(m)
   
-  aInd <- NULL
-  for(i in 1:nbAnimals)
-    aInd <- c(aInd,which(m$data$ID==unique(m$data$ID)[i])[1])
+  mixtures <- m$conditions$mixtures
   
-  if(nbStates>1)
-    trMat <- trMatrix_rcpp(nbStates,beta,as.matrix(covs),m$conditions$betaRef)
-  else
-    trMat <- array(1,dim=c(1,1,nbObs))
-
-  k <- 1
-  for(i in 1:nbObs) {
-    gamma <- trMat[,,i]
-    if(any(i==aInd)){
-      foo <- (delta[k,] %*% gamma)*probs[i,]
-      lscale <- 0
-      k <- k + 1
-    } else {
-      foo <- (foo %*% gamma)*probs[i,]
-    }
-    lscale <- lscale+log(sum(foo))
-    foo <- foo/sum(foo)
-    lalpha[i,] <- log(foo)+lscale
+  trMat <- lalpha <- list()
+  lalpha[1:mixtures] <- list(matrix(NA,nbObs,nbStates))
+  
+  for(mix in 1:mixtures){
+    if(nbStates>1)
+      trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),m$conditions$betaRef)
+    else
+      trMat[[mix]] <- array(1,dim=c(1,1,nbObs))
   }
-
+  
+  for(mix in 1:mixtures){
+    k <- 1
+    for(i in 1:nbObs) {
+      gamma <- trMat[[mix]][,,i]
+      if(any(i==aInd)){
+        foo <- (delta[(mix-1)*nbAnimals+k,] %*% gamma)*probs[i,]
+        lscale <- 0
+        k <- k + 1
+      } else {
+        foo <- (foo %*% gamma)*probs[i,]
+      }
+      lscale <- lscale+log(sum(foo))
+      foo <- foo/sum(foo)
+      lalpha[[mix]][i,] <- log(foo)+lscale
+    }
+  }
   return(lalpha)
 }

@@ -1,5 +1,5 @@
 #' @importFrom stats formula terms.formula
-getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInflation,oneInflation,circularAngleMean,ParChecks=TRUE){
+getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInflation,oneInflation,circularAngleMean,ParChecks=TRUE,wlag=FALSE){
   
   distnames<-names(dist)
   fullDM <- vector('list',length(dist))
@@ -9,9 +9,11 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
   nbObs<-nrow(data)
   parSize<-lapply(parNames,length)
   #parCount <- vector('list',length(dist))
+  lag <- 0
   
   for(i in distnames){
     if(is.null(DM[[i]])){
+      if(dist[[i]] %in% rwdists) stop("DM$",i," must be specified")
       tmpDM <- diag(parSize[[i]]*nbStates)
       tmpDM <- array(tmpDM,dim=c(nrow(tmpDM),ncol(tmpDM),nbObs))
       DMnames <- paste0(rep(parNames[[i]],each=nbStates),"_",1:nbStates,":(Intercept)")
@@ -29,17 +31,26 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       
       formulaStates <- vector('list',length(parNames[[i]]))
       names(formulaStates) <- parNames[[i]]
-      for(j in parNames[[i]])
-        formulaStates[[j]]<- stateFormulas(DM[[i]][[j]],nbStates,angleMean=(j=="mean" & circularAngleMean[[i]]),data=data)
-      
+      for(j in parNames[[i]]){
+        formulaStates[[j]]<- stateFormulas(DM[[i]][[j]],nbStates,angleMean=(j=="mean" & !isFALSE(circularAngleMean[[i]])),data=data)
+        if(dist[[i]] %in% rwdists){
+          #if(dist[[i]] %in% mvndists){
+          for(k in 1:nbStates){
+            formterms<-attr(terms.formula(formulaStates[[j]][[k]]),"term.labels")
+            if(grepl("mean",j)) formulaStates[[j]][[k]] <- as.formula(paste("~ + 0 + ",paste(c(paste0(i,gsub("mean","",j),"_tm1"),formterms),collapse=" + ")))
+          }
+          #}
+        }
+      }
       #if(circularAngleMean[[i]]){
       tmpCov <- vector('list',length(parNames[[i]]))
       names(tmpCov) <- parNames[[i]]
       for(j in names(DM[[i]])){
         tmpCov[[j]] <- vector('list',nbStates)
         for(state in 1:nbStates){
+          if(wlag) lag <- get_crwlag(formulaStates[[j]][[state]],lag)
           tmpCov[[j]][[state]]<-model.matrix(formulaStates[[j]][[state]],data)
-          if(circularAngleMean[[i]]){
+          if(!isFALSE(circularAngleMean[[i]])){
             if(j=="mean"){
               if(attr(terms.formula(formulaStates[[j]][[state]]),"intercept")) tmpCov[[j]][[state]] <- tmpCov[[j]][[state]][,-1,drop=FALSE]
               cnames <- colnames(tmpCov[[j]][[state]])
@@ -74,7 +85,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       if(is.null(DMnames)) DMnames<-paste0(i,"Beta",1:ncol(DM[[i]]))
       DMterms<-unique(DM[[i]][suppressWarnings(which(is.na(as.numeric(DM[[i]]))))])
       meanind <- NULL
-      if(!circularAngleMean[[i]]){
+      if(isFALSE(circularAngleMean[[i]])){
         tmpDM<-suppressWarnings(array(as.numeric(DM[[i]]),dim=c(nrow(DM[[i]]),ncol(DM[[i]]),nbObs)))
         newDM <- DM[[i]]
       } else {
@@ -124,10 +135,13 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
           for(j in 1:length(tmpcov)){
             tmpcovj <- gsub(factorcovs[factorvar][j],tmpcov[j],tmpcovj)
           }
-          tmpcovs<-model.matrix(formula(paste("~ 0 + ",tmpcovj)),data)
+          tform <- formula(paste("~ 0 + ",tmpcovj))
+          if(wlag) lag <- get_crwlag(tform,lag)
+          tmpcovs<-model.matrix(tform,data)
           tmpcovs<-tmpcovs[,which(gsub(" ","",colnames(tmpcovs)) %in% gsub(" ","",cov))]
           covs<-cbind(covs,tmpcovs)
         } else {
+          if(wlag) lag <- get_crwlag(form,lag)
           tmpcovs<-model.matrix(form,data)[,2]
           covs<-cbind(covs,tmpcovs)
         }
@@ -137,7 +151,8 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
       #parCount[[i]] <- ncol(tmpDM)
     }
     colnames(tmpDM)<-DMnames
-    fullDM[[i]]<-tmpDM
+    if(!wlag) fullDM[[i]]<-tmpDM
+    else fullDM[[i]]<-tmpDM[,,dim(tmpDM)[3],drop=FALSE]
   }
   tmp<-simpDM<-lapply(fullDM,function(x) apply(x,1:2,unique))
   for(i in distnames){
@@ -151,7 +166,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
   simpDM<-simpDM[distnames]
   
   parCount<- lapply(simpDM,ncol)
-  for(i in distnames[unlist(circularAngleMean)]){
+  for(i in distnames[!unlist(lapply(circularAngleMean,isFALSE))]){
     parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(simpDM[[i]])))))
   }
 
@@ -164,7 +179,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
         stop(paste0(error,". Should one inflation parameters be included?"))
       else stop(error)
     }
-    #if(!circularAngleMean[[i]]) parCount[[i]] <- ncol(simpDM[[i]])
+    #if(isFALSE(circularAngleMean[[i]])) parCount[[i]] <- ncol(simpDM[[i]])
   }
   parCount <- parCount[distnames]
   
@@ -224,11 +239,20 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
     #  getbndInd <- getboundInd(fullDM[[i]][,,1])
     #  #getbndInd <- apply(fullDM[[i]],3,getboundInd)
     #}
-    getbndInd <- getboundInd(fullDM[[i]][,,1])
+    getbndInd <- getboundInd(matrix(fullDM[[i]][,,1],dim(fullDM[[i]])[1],dim(fullDM[[i]])[2]))
     bndInd <- which(!duplicated(getbndInd))
-    if(any(bounds[[i]]!=bounds[[i]][bndInd,,drop=FALSE][getbndInd,,drop=FALSE])) stop('userBounds not consistent with DM for ',i)
+    if(any(c(t(bounds[[i]]))!=c(t(bounds[[i]][bndInd,,drop=FALSE][getbndInd,,drop=FALSE])))) stop('userBounds not consistent with DM for ',i)
     rownames(simpDM[[i]]) <- rownames(bounds[[i]])
   }
   
-  return(list(fullDM=simpDM,DMind=DMind,cons=cons,workcons=workcons))
+  return(list(fullDM=simpDM,DMind=DMind,cons=cons,workcons=workcons,lag=lag))
+}
+
+get_crwlag <- function(form,clag){
+  lag <- 0
+  if(length(attr(terms(form, specials="crw"),"specials")$crw)){
+    Terms <- terms(form,specials="crw")
+    lag <- as.numeric(unlist(attr(prodlim::strip.terms(Terms[attr(Terms,"specials")$crw],specials="crw",arguments=list(crw=list("lag"=1))),"stripped.arguments")))
+  }
+  max(c(clag,lag))
 }

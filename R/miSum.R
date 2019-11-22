@@ -10,7 +10,7 @@
 miSum <- function(m)
 {
   if(is.null(m$data) | is.null(m$Par) | is.null(m$conditions) | is.null(m$MIcombine))
-    stop("Can't construct momentuHMM object: fields are missing")
+    stop("Can't construct miSum object: fields are missing")
   
   obj <- m
   

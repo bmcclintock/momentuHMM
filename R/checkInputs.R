@@ -3,7 +3,14 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
   distnames<-names(dist)
   
   for(i in distnames){
-    dist[[i]]<-match.arg(dist[[i]],momentuHMMdists)
+    if(grepl("cat",dist[[i]])){
+      errMess <- "categorical distributions must be specified using paste0('cat',k), where k is the number of categories (e.g. 'cat3', 'cat12', etc.)"
+      if(dist[[i]]=="cat") stop(errMess)
+      dist[[i]]<-tryCatch(match.arg(dist[[i]],paste0("cat",1:1.e3)),error = function(e) e)
+      if(inherits("error",dist[[i]])) stop(errMess)
+    } else {
+      dist[[i]]<-match.arg(dist[[i]],momentuHMMdists)
+    }
   }
 
   if(nbStates<0)
@@ -38,13 +45,14 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
   for(i in distnames){
     if(dist[[i]]=="vmConsensus"){
       consensus[[i]] <- TRUE
-      estAngleMean[[i]] <- circularAngleMean[[i]] <- TRUE
+      estAngleMean[[i]] <- TRUE
+      if(is.null(circularAngleMean[[i]]) | isFALSE(circularAngleMean[[i]])) circularAngleMean[[i]] <- TRUE
       if(is.null(DM[[i]])) stop("DM$",i," must be specified when dist$",i,"=vmConsensus")
       ndist[[i]] <- gsub("Consensus","",dist[[i]])
     } else consensus[[i]] <- FALSE
     if(is.null(circularAngleMean[[i]]) | !estAngleMean[[i]]) circularAngleMean[[i]] <- FALSE
-    if(!is.logical(circularAngleMean[[i]])) stop("circularAngleMean$",i," must be logical")
-    if(circularAngleMean[[i]] & is.null(DM[[i]])) stop("DM$",i," must be specified when circularAngleMean$",i,"=TRUE")
+    if(!is.logical(circularAngleMean[[i]]) & !is.numeric(circularAngleMean[[i]]) | length(circularAngleMean[[i]])!=1) stop("circularAngleMean$",i," must be logical or numeric scalar")
+    if(!isFALSE(circularAngleMean[[i]]) & is.null(DM[[i]])) stop("DM$",i," must be specified when circularAngleMean$",i," = ",circularAngleMean[[i]])
   }
   circularAngleMean<-circularAngleMean[distnames]
   consensus<-consensus[distnames]
@@ -66,11 +74,17 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
   }
   
   for(i in distnames){
-    if(is.null(DM[[i]]) & length(Par[[i]])!=(parSize[[i]]*nbStates)){
-      error<-paste0("Wrong number of initial parameters -- there should be ",parSize[[i]]*nbStates," initial ",i," parameters")
-      if(zeroInflation[[i]]) error<-paste0(error," -- zero-mass parameters should be included")
-      if(oneInflation[[i]]) error<-paste0(error," -- one-mass parameters should be included")
-      stop(error)
+    if(is.null(DM[[i]])){
+      if(dist[[i]] %in% mvndists){
+        if(dist[[i]]=="mvnorm2" || dist[[i]]=="mvnorm3") ndim <- as.numeric(gsub("mvnorm","",dist[[i]]))
+        else ndim <- as.numeric(gsub("rw_mvnorm","",dist[[i]]))
+        if(length(Par[[i]])!=(ndim*nbStates+sum(lower.tri(matrix(0,ndim,ndim),diag=TRUE))*nbStates)) stop("Wrong number of initial parameters -- there should be ",ndim*nbStates + sum(lower.tri(matrix(0,ndim,ndim),diag=TRUE))*nbStates," initial ",i," parameters")
+      } else if(length(Par[[i]])!=(parSize[[i]]*nbStates)){
+        error<-paste0("Wrong number of initial parameters -- there should be ",parSize[[i]]*nbStates," initial ",i," parameters")
+        if(zeroInflation[[i]]) error<-paste0(error," -- zero-mass parameters should be included")
+        if(oneInflation[[i]]) error<-paste0(error," -- one-mass parameters should be included")
+        stop(error)
+      }
     }
     if(checkInflation & zeroInflation[[i]] & oneInflation[[i]]){
       ztmp <- p$bounds[[i]][(parSize[[i]] * nbStates)-nbStates*oneInflation[[i]]-nbStates:1+1,,drop=FALSE]
@@ -81,6 +95,10 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
       p$bounds[[i]][(parSize[[i]] * nbStates)-nbStates*oneInflation[[i]]-nbStates:1+1,2] <- p$bounds[[i]][(parSize[[i]] * nbStates)-nbStates:1+1,2] <- 1
     }
     #if(!is.null(DM[[i]]) !is.null(userBounds[[i]])) stop("either userBounds$",i," or DM$",i," must be NULL")
+    
+    if(grepl("cat",dist[[i]])){
+      ndist[[i]] <- "cat"
+    }
   }
 
   return(list(p=p,dist=ndist,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,consensus=consensus,DM=DM,cons=cons,workcons=workcons))

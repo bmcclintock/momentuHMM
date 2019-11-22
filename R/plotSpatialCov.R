@@ -4,7 +4,7 @@
 #'
 #' @param data Data frame or \code{\link{momentuHMMData}} object, with necessary fields 'x' (longitudinal direction) and 'y' (latitudinal direction).  A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object is also permitted, from which the data will be extracted.
 #' If \code{states=NULL} and a \code{momentuHMM}, \code{miHMM}, or \code{miSum} object is provided, the decoded states are automatically plotted.
-#' @param spatialCov \code{\link[raster]{RasterLayer-class}} object on which to plot the location data
+#' @param spatialCov \code{\link[=RasterLayer-class]{RasterLayer}} object on which to plot the location data
 #' @param segments \code{TRUE} if segments should be plotted between the observations (default),
 #' \code{FALSE} otherwise.
 #' @param compact \code{FALSE} if tracks should be plotted separately, \code{TRUE}
@@ -48,6 +48,9 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   #####################
   ## Check arguments ##
   #####################
+  if(!inherits(spatialCov,"RasterLayer")) 
+    stop("spatialCov should be of class 'RasterLayer'")
+  
   if(is.null(states) & inherits(data,c("momentuHMM","miHMM","miSum"))){
     if(inherits(data,"momentuHMM")) states <- viterbi(data)
     else if(inherits(data,"miHMM")) states <- data$miSum$Par$states
@@ -65,19 +68,23 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   else if(inherits(data,"miSum")) data <- data$data
   else if(inherits(data,"HMMfits")) stop("data must be a data frame, momentuHMMData, momentuHMM, miHMM, or miSum object")
   
-  if(inherits(data,"momentuHMMData")) data <- as.data.frame(data)
+  if(inherits(data,"momentuHMMData") | inherits(data,"momentuHierHMMData")) data <- as.data.frame(data)
   
-  if(is.null(data$x) | is.null(data$y))
-    stop("Data should have fields data$x and data$y.")
+  coordNames <- c("x","y")
+  if(!is.null(attr(data,'coords'))) {
+    coordNames <- attr(data,'coords')
+  }
+  if(is.null(data[[coordNames[1]]]) | is.null(data[[coordNames[2]]]))
+    stop("Data should have fields data$",coordNames[1]," and data$",coordNames[2],".")
+  
+  data$x <- data[[coordNames[1]]]
+  data$y <- data[[coordNames[2]]]
   
   if(length(alpha)!=1)
     stop("'alpha' should be of length 1")
   
   if(!compact & return)
     stop("Cannot return plot if not compact. Either set 'compact=TRUE' or 'return=FALSE'.")
-  
-  if(!inherits(spatialCov,"RasterLayer")) 
-    stop("spatialCov should be of class 'RasterLayer'")
   
   if(is.null(data$ID))
     data$ID <- rep("Animal1",nrow(data)) # default ID if none provided
@@ -161,7 +168,7 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   # prepare palette
   if(is.null(col)) {
     if(nbCol==1) {
-      pal <- "black"
+      pal <- "#E69F00"
     } else if(nbCol<8) {
       pal <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     } else {
@@ -186,13 +193,14 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   #################
   ## Plot tracks ##
   #################
-  par(ask=ask)
-  
   map.cov <- raster::rasterToPoints(spatialCov)
   dfcov <- data.frame(map.cov)
   colnames(dfcov) <- c("x", "y", names(spatialCov))
   
   if(!compact) {
+    
+    par(ask=ask)
+    
     #loop over tracks
     for(id in unique(data$ID)) {
       subData <- subset(data,ID==id)
@@ -203,7 +211,7 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
         theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
         geom_raster(data = dfcov,aes(fill=dfcov[[names(spatialCov)]])) +
         labs(fill = names(spatialCov)) +
-        geom_point(aes(x,y,col=col,shape=col),subData,alpha=alpha,size=size) +
+        geom_point(aes(x,y,col=col,shape=col),subData,alpha=alpha,size=size,show.legend=ifelse(nbCol>1,TRUE,FALSE)) +
         coord_equal()
       
       if(segments)
@@ -227,7 +235,7 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
       theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
       geom_raster(data = dfcov,aes(fill=dfcov[[names(spatialCov)]])) +
       labs(fill = names(spatialCov)) +
-      geom_point(aes(x,y,col=col,shape=col),data,alpha=alpha,size=size) +
+      geom_point(aes(x,y,col=col,shape=col),data,alpha=alpha,size=size,show.legend=ifelse(nbCol>1,TRUE,FALSE)) +
       coord_equal()
     
     if(segments)
