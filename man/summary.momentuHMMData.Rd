@@ -5,11 +5,9 @@
 \alias{summary.momentuHierHMMData}
 \title{Summary \code{momentuHMMData}}
 \usage{
-\method{summary}{momentuHMMData}(object, dataNames = c("step", "angle"),
-  animals = NULL, ...)
+\method{summary}{momentuHMMData}(object, dataNames = c("step", "angle"), animals = NULL, ...)
 
-\method{summary}{momentuHierHMMData}(object, dataNames = c("step",
-  "angle", "level"), animals = NULL, ...)
+\method{summary}{momentuHierHMMData}(object, dataNames = c("step", "angle", "level"), animals = NULL, ...)
 }
 \arguments{
 \item{object}{A \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} object.}

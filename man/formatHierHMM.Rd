@@ -4,10 +4,21 @@
 \alias{formatHierHMM}
 \title{Convert hierarchical HMM structure to a conventional HMM}
 \usage{
-formatHierHMM(data, hierStates, hierDist, hierBeta = NULL,
-  hierDelta = NULL, hierFormula = NULL, hierFormulaDelta = NULL,
-  mixtures = 1, workBounds = NULL, betaCons = NULL,
-  deltaCons = NULL, fixPar = NULL, checkData = TRUE)
+formatHierHMM(
+  data,
+  hierStates,
+  hierDist,
+  hierBeta = NULL,
+  hierDelta = NULL,
+  hierFormula = NULL,
+  hierFormulaDelta = NULL,
+  mixtures = 1,
+  workBounds = NULL,
+  betaCons = NULL,
+  deltaCons = NULL,
+  fixPar = NULL,
+  checkData = TRUE
+)
 }
 \arguments{
 \item{data}{\code{\link{momentuHierHMMData}} object or a data frame containing the data streams and covariates.}

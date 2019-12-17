@@ -4,9 +4,21 @@
 \alias{plotSpatialCov}
 \title{Plot observations on raster image}
 \usage{
-plotSpatialCov(data, spatialCov, segments = TRUE, compact = TRUE,
-  col = NULL, alpha = 1, size = 1, shape = 16, states = NULL,
-  animals = NULL, ask = TRUE, return = FALSE, stateNames = NULL)
+plotSpatialCov(
+  data,
+  spatialCov,
+  segments = TRUE,
+  compact = TRUE,
+  col = NULL,
+  alpha = 1,
+  size = 1,
+  shape = 16,
+  states = NULL,
+  animals = NULL,
+  ask = TRUE,
+  return = FALSE,
+  stateNames = NULL
+)
 }
 \arguments{
 \item{data}{Data frame or \code{\link{momentuHMMData}} object, with necessary fields 'x' (longitudinal direction) and 'y' (latitudinal direction).  A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object is also permitted, from which the data will be extracted.

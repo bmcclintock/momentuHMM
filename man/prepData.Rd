@@ -8,15 +8,33 @@
 \usage{
 prepData(data, ...)
 
-\method{prepData}{default}(data, type = c("UTM", "LL"),
-  coordNames = c("x", "y"), covNames = NULL, spatialCovs = NULL,
-  centers = NULL, centroids = NULL, angleCovs = NULL,
-  altCoordNames = NULL, ...)
+\method{prepData}{default}(
+  data,
+  type = c("UTM", "LL"),
+  coordNames = c("x", "y"),
+  covNames = NULL,
+  spatialCovs = NULL,
+  centers = NULL,
+  centroids = NULL,
+  angleCovs = NULL,
+  altCoordNames = NULL,
+  ...
+)
 
-\method{prepData}{hierarchical}(data, type = c("UTM", "LL"),
-  coordNames = c("x", "y"), covNames = NULL, spatialCovs = NULL,
-  centers = NULL, centroids = NULL, angleCovs = NULL,
-  altCoordNames = NULL, hierLevels, coordLevel, ...)
+\method{prepData}{hierarchical}(
+  data,
+  type = c("UTM", "LL"),
+  coordNames = c("x", "y"),
+  covNames = NULL,
+  spatialCovs = NULL,
+  centers = NULL,
+  centroids = NULL,
+  angleCovs = NULL,
+  altCoordNames = NULL,
+  hierLevels,
+  coordLevel,
+  ...
+)
 }
 \arguments{
 \item{data}{Either a data frame of data streams or a \code{\link{crwData}} (or \code{\link{crwHierData}}) object (as returned by \code{\link{crawlWrap}}). If \code{data} is a data frame, it can optionally include a field \code{ID}

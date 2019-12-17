@@ -4,10 +4,23 @@
 \alias{plot.momentuHMM}
 \title{Plot \code{momentuHMM}}
 \usage{
-\method{plot}{momentuHMM}(x, animals = NULL, covs = NULL, ask = TRUE,
-  breaks = "Sturges", hist.ylim = NULL, sepAnimals = FALSE,
-  sepStates = FALSE, col = NULL, cumul = TRUE, plotTracks = TRUE,
-  plotCI = FALSE, alpha = 0.95, plotStationary = FALSE, ...)
+\method{plot}{momentuHMM}(
+  x,
+  animals = NULL,
+  covs = NULL,
+  ask = TRUE,
+  breaks = "Sturges",
+  hist.ylim = NULL,
+  sepAnimals = FALSE,
+  sepStates = FALSE,
+  col = NULL,
+  cumul = TRUE,
+  plotTracks = TRUE,
+  plotCI = FALSE,
+  alpha = 0.95,
+  plotStationary = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{Object \code{momentuHMM}}

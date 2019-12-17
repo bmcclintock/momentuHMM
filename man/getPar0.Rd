@@ -8,26 +8,34 @@
 \usage{
 getPar0(model, ...)
 
-\method{getPar0}{default}(model, nbStates = length(model$stateNames),
+\method{getPar0}{default}(
+  model,
+  nbStates = length(model$stateNames),
   estAngleMean = model$conditions$estAngleMean,
   circularAngleMean = model$conditions$circularAngleMean,
   formula = model$conditions$formula,
   formulaDelta = model$conditions$formulaDelta,
   stationary = model$conditions$stationary,
   mixtures = model$conditions$mixtures,
-  formulaPi = model$conditions$formulaPi, DM = model$conditions$DM,
-  betaRef = model$conditions$betaRef, stateNames = model$stateNames,
-  ...)
+  formulaPi = model$conditions$formulaPi,
+  DM = model$conditions$DM,
+  betaRef = model$conditions$betaRef,
+  stateNames = model$stateNames,
+  ...
+)
 
-\method{getPar0}{hierarchical}(model,
+\method{getPar0}{hierarchical}(
+  model,
   hierStates = model$conditions$hierStates,
   estAngleMean = model$conditions$estAngleMean,
   circularAngleMean = model$conditions$circularAngleMean,
   hierFormula = model$conditions$hierFormula,
   hierFormulaDelta = model$conditions$hierFormulaDelta,
   mixtures = model$conditions$mixtures,
-  formulaPi = model$conditions$formulaPi, DM = model$conditions$DM,
-  ...)
+  formulaPi = model$conditions$formulaPi,
+  DM = model$conditions$DM,
+  ...
+)
 }
 \arguments{
 \item{model}{A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object (as returned by \code{\link{fitHMM}}, \code{\link{MIfitHMM}}, or \code{\link{MIpool}})}

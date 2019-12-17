@@ -4,8 +4,15 @@
 \alias{parDef}
 \title{Parameters definition}
 \usage{
-parDef(dist, nbStates, estAngleMean, zeroInflation, oneInflation, DM,
-  userBounds = NULL)
+parDef(
+  dist,
+  nbStates,
+  estAngleMean,
+  zeroInflation,
+  oneInflation,
+  DM,
+  userBounds = NULL
+)
 }
 \arguments{
 \item{dist}{Named list indicating the probability distributions of the data streams.}

@@ -4,11 +4,24 @@
 \alias{plot.miHMM}
 \title{Plot \code{miHMM}}
 \usage{
-\method{plot}{miHMM}(x, animals = NULL, covs = NULL, ask = TRUE,
-  breaks = "Sturges", hist.ylim = NULL, sepAnimals = FALSE,
-  sepStates = FALSE, col = NULL, cumul = TRUE, plotTracks = TRUE,
-  plotCI = FALSE, alpha = 0.95, plotStationary = FALSE,
-  plotEllipse = TRUE, ...)
+\method{plot}{miHMM}(
+  x,
+  animals = NULL,
+  covs = NULL,
+  ask = TRUE,
+  breaks = "Sturges",
+  hist.ylim = NULL,
+  sepAnimals = FALSE,
+  sepStates = FALSE,
+  col = NULL,
+  cumul = TRUE,
+  plotTracks = TRUE,
+  plotCI = FALSE,
+  alpha = 0.95,
+  plotStationary = FALSE,
+  plotEllipse = TRUE,
+  ...
+)
 }
 \arguments{
 \item{x}{Object \code{miHMM} (as returned by \code{\link{MIfitHMM}})}

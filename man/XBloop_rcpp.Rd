@@ -4,8 +4,19 @@
 \alias{XBloop_rcpp}
 \title{Get XB}
 \usage{
-XBloop_rcpp(DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex,
-  cindex, nbStates, refCoeff = 1)
+XBloop_rcpp(
+  DM,
+  Xvec,
+  nbObs,
+  nr,
+  nc,
+  circularAngleMean,
+  consensus,
+  rindex,
+  cindex,
+  nbStates,
+  refCoeff = 1
+)
 }
 \arguments{
 \item{DM}{design matrix}

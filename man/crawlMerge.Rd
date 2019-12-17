@@ -22,7 +22,7 @@ and/or covariates that are unrelated to location.
 }
 \details{
 Specifically, the function merges the \code{crwData$crwPredict} data frame with \code{data}
-based on the \code{ID}, \code{Time.name}, and, if \code{crwData} is hierarchical, \code{level} columns.  Thus \code{data} must contain \code{ID}, \code{Time.name}, and, if \code{crwData} is hierarchical, \code{level} columns.
+based on the \code{ID}, \code{Time.name}, and, if \code{crwData} is hierarchical, \code{level} columns.  Thus \code{data} must contain \code{ID}, \code{Time.name}, and, if \code{crwData} is hierarchical, \code{level} columns. 
 
 Only rows of \code{data} with \code{ID}, \code{Time.name}, and, if \code{crwData} is hierarchical, \code{level} values that exactly match \code{crwData$crwPredict} are merged. Typically, the \code{Time.name} column
 in \code{data} should match predicted times of locations in \code{crwData$crwPredict} (i.e. those corresponding to \code{crwData$crwPredict$locType=="p"})

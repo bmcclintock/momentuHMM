@@ -5,9 +5,15 @@
 \alias{plot.momentuHierHMMData}
 \title{Plot \code{momentuHMMData} or \code{momentuHierHMMData}}
 \usage{
-\method{plot}{momentuHMMData}(x, dataNames = c("step", "angle"),
-  animals = NULL, compact = FALSE, ask = TRUE, breaks = "Sturges",
-  ...)
+\method{plot}{momentuHMMData}(
+  x,
+  dataNames = c("step", "angle"),
+  animals = NULL,
+  compact = FALSE,
+  ask = TRUE,
+  breaks = "Sturges",
+  ...
+)
 }
 \arguments{
 \item{x}{An object \code{momentuHMMData} or \code{momentuHierHMMData}}

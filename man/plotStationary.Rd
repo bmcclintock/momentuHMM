@@ -4,8 +4,14 @@
 \alias{plotStationary}
 \title{Plot stationary state probabilities}
 \usage{
-plotStationary(model, covs = NULL, col = NULL, plotCI = FALSE,
-  alpha = 0.95, ...)
+plotStationary(
+  model,
+  covs = NULL,
+  col = NULL,
+  plotCI = FALSE,
+  alpha = 0.95,
+  ...
+)
 }
 \arguments{
 \item{model}{\code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object}
