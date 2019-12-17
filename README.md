@@ -2,7 +2,7 @@
 
 R package for Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models 
 
-Get started with the vignette: [Guide to using momentuHMM](https://github.com/bmcclintock/momentuHMM/tree/master/vignettes/momentuHMM.pdf)
+Get started with the vignette: [Guide to using momentuHMM](https://cran.r-project.org/package=momentuHMM/vignettes/momentuHMM.pdf)
 
 ## Installation instructions
 
