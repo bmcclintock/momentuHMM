@@ -4,8 +4,19 @@
 \alias{n2w}
 \title{Scaling function: natural to working parameters.}
 \usage{
-n2w(par, bounds, beta, delta = NULL, nbStates, estAngleMean, DM, cons,
-  workcons, Bndind, dist)
+n2w(
+  par,
+  bounds,
+  beta,
+  delta = NULL,
+  nbStates,
+  estAngleMean,
+  DM,
+  cons,
+  workcons,
+  Bndind,
+  dist
+)
 }
 \arguments{
 \item{par}{Named list of vectors containing the initial parameter values for each data stream.}

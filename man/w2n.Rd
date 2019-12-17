@@ -4,9 +4,29 @@
 \alias{w2n}
 \title{Scaling function: working to natural parameters}
 \usage{
-w2n(wpar, bounds, parSize, nbStates, nbCovs, estAngleMean,
-  circularAngleMean, consensus, stationary, cons, fullDM, DMind, workcons,
-  nbObs, dist, Bndind, nc, meanind, covsDelta, workBounds, covsPi)
+w2n(
+  wpar,
+  bounds,
+  parSize,
+  nbStates,
+  nbCovs,
+  estAngleMean,
+  circularAngleMean,
+  consensus,
+  stationary,
+  cons,
+  fullDM,
+  DMind,
+  workcons,
+  nbObs,
+  dist,
+  Bndind,
+  nc,
+  meanind,
+  covsDelta,
+  workBounds,
+  covsPi
+)
 }
 \arguments{
 \item{wpar}{Vector of working parameters.}

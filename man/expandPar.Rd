@@ -4,9 +4,21 @@
 \alias{expandPar}
 \title{Expand vector of free working parameters to vector of all working parameters including any fixed parameters (used in fitHMM.R and nLogLike.R)}
 \usage{
-expandPar(optPar, optInd, fixPar, wparIndex, betaCons, deltaCons, nbStates,
-  nbCovsDelta, stationary, nbCovs, nbRecovs = 0, mixtures = 1,
-  nbCovsPi = 0)
+expandPar(
+  optPar,
+  optInd,
+  fixPar,
+  wparIndex,
+  betaCons,
+  deltaCons,
+  nbStates,
+  nbCovsDelta,
+  stationary,
+  nbCovs,
+  nbRecovs = 0,
+  mixtures = 1,
+  nbCovsPi = 0
+)
 }
 \arguments{
 \item{optPar}{vector of free working parameters}

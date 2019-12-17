@@ -9,11 +9,9 @@
 \usage{
 timeInStates(m, by = NULL, alpha = 0.95, ncores = 1)
 
-\method{timeInStates}{momentuHMM}(m, by = NULL, alpha = 0.95,
-  ncores = 1)
+\method{timeInStates}{momentuHMM}(m, by = NULL, alpha = 0.95, ncores = 1)
 
-\method{timeInStates}{HMMfits}(m, by = NULL, alpha = 0.95,
-  ncores = 1)
+\method{timeInStates}{HMMfits}(m, by = NULL, alpha = 0.95, ncores = 1)
 
 \method{timeInStates}{miHMM}(m, by = NULL, alpha = 0.95, ncores = 1)
 }

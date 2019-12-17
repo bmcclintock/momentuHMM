@@ -8,21 +8,56 @@
 \usage{
 checkPar0(data, ...)
 
-\method{checkPar0}{default}(data, nbStates, dist, Par0 = NULL,
-  beta0 = NULL, delta0 = NULL, estAngleMean = NULL,
-  circularAngleMean = NULL, formula = ~1, formulaDelta = NULL,
-  stationary = FALSE, mixtures = 1, formulaPi = NULL, DM = NULL,
-  cons = NULL, userBounds = NULL, workBounds = NULL,
-  workcons = NULL, betaCons = NULL, betaRef = NULL,
-  deltaCons = NULL, stateNames = NULL, fixPar = NULL, prior = NULL,
-  ...)
+\method{checkPar0}{default}(
+  data,
+  nbStates,
+  dist,
+  Par0 = NULL,
+  beta0 = NULL,
+  delta0 = NULL,
+  estAngleMean = NULL,
+  circularAngleMean = NULL,
+  formula = ~1,
+  formulaDelta = NULL,
+  stationary = FALSE,
+  mixtures = 1,
+  formulaPi = NULL,
+  DM = NULL,
+  cons = NULL,
+  userBounds = NULL,
+  workBounds = NULL,
+  workcons = NULL,
+  betaCons = NULL,
+  betaRef = NULL,
+  deltaCons = NULL,
+  stateNames = NULL,
+  fixPar = NULL,
+  prior = NULL,
+  ...
+)
 
-\method{checkPar0}{hierarchical}(data, hierStates, hierDist, Par0 = NULL,
-  hierBeta = NULL, hierDelta = NULL, estAngleMean = NULL,
-  circularAngleMean = NULL, hierFormula = NULL,
-  hierFormulaDelta = NULL, mixtures = 1, formulaPi = NULL,
-  DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL,
-  deltaCons = NULL, fixPar = NULL, prior = NULL, ...)
+\method{checkPar0}{hierarchical}(
+  data,
+  hierStates,
+  hierDist,
+  Par0 = NULL,
+  hierBeta = NULL,
+  hierDelta = NULL,
+  estAngleMean = NULL,
+  circularAngleMean = NULL,
+  hierFormula = NULL,
+  hierFormulaDelta = NULL,
+  mixtures = 1,
+  formulaPi = NULL,
+  DM = NULL,
+  userBounds = NULL,
+  workBounds = NULL,
+  betaCons = NULL,
+  deltaCons = NULL,
+  fixPar = NULL,
+  prior = NULL,
+  ...
+)
 }
 \arguments{
 \item{data}{\code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the data stream and covariate values}

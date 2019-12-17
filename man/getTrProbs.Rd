@@ -8,13 +8,34 @@
 \usage{
 getTrProbs(data, ...)
 
-\method{getTrProbs}{default}(data, nbStates, beta, workBounds = NULL,
-  formula = ~1, mixtures = 1, betaRef = NULL, stateNames = NULL,
-  getCI = FALSE, covIndex = NULL, alpha = 0.95, ...)
+\method{getTrProbs}{default}(
+  data,
+  nbStates,
+  beta,
+  workBounds = NULL,
+  formula = ~1,
+  mixtures = 1,
+  betaRef = NULL,
+  stateNames = NULL,
+  getCI = FALSE,
+  covIndex = NULL,
+  alpha = 0.95,
+  ...
+)
 
-\method{getTrProbs}{hierarchical}(data, hierStates, hierBeta,
-  workBounds = NULL, hierFormula = NULL, mixtures = 1, hierDist,
-  getCI = FALSE, covIndex = NULL, alpha = 0.95, ...)
+\method{getTrProbs}{hierarchical}(
+  data,
+  hierStates,
+  hierBeta,
+  workBounds = NULL,
+  hierFormula = NULL,
+  mixtures = 1,
+  hierDist,
+  getCI = FALSE,
+  covIndex = NULL,
+  alpha = 0.95,
+  ...
+)
 }
 \arguments{
 \item{data}{\code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{miSum}} object, \code{\link{miHMM}} object, \code{\link{momentuHMMData}} object, \code{\link{momentuHierHMMData}} object, or a data frame containing the covariate values. 
