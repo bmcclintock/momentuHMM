@@ -10,7 +10,6 @@ vignettes/pilotWhaleData.RData
 vignettes/Atlantic_cod_data_set.RData
 vignettes/horn_shark_data_set.RData
 vignettes/sesData.csv
-^tests$
 vignettes/momentuHMM.synctex.gz
 vignettes/momentuHMM.log
 vignettes/momentuHMM.toc
