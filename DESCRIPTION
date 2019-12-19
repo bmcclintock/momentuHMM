@@ -46,11 +46,8 @@ LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,
     setRNG,
-    knitr,
     splines, 
     splines2 (>= 0.2.8),
-    webshot,
-    ctmcmove,
     R.rsp
 RoxygenNote: 7.0.2
 Encoding: UTF-8
