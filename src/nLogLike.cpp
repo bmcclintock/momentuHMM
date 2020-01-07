@@ -55,10 +55,11 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   arma::mat genPar;
   std::string genDist;
   std::string genname;
+  int nbCovs = 0;
   
   if(nbStates>1) {
     
-    int nbCovs = betaMix.n_rows * betaMix.n_cols / (mixtures * nbStates * (nbStates-1)) - 1;
+    nbCovs = betaMix.n_rows * betaMix.n_cols / (mixtures * nbStates * (nbStates-1)) - 1;
     arma::mat beta(nbCovs+1,nbStates*(nbStates-1));
     
     for(int mix=0; mix<mixtures; mix++){    
@@ -115,18 +116,34 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
     v.ones(); // vector of ones
     arma::rowvec deltatmp(nbStates);
     for(int mix=0; mix<mixtures; mix++){
-      Gamma = trMat[mix].slice(0).t(); // all slices are identical if stationary
-      try {
-        deltatmp = arma::solve(diag-Gamma+1,v).t();
-      }
-      catch(...) {
-        throw std::runtime_error("A problem occurred in the calculation of "
-                                   "the stationary distribution. You may want to "
-                                   "try different initial values and/or the option "
-                                   "stationary=FALSE");
-      }
-      for(unsigned int k=0; k<nbAnimals; k++){
-        delta[mix].row(k) = deltatmp;
+      if(!nbCovs){
+        Gamma = trMat[mix].slice(0).t(); // all slices are identical if stationary
+        try {
+          deltatmp = arma::solve(diag-Gamma+1,v).t();
+        }
+        catch(...) {
+          throw std::runtime_error("A problem occurred in the calculation of "
+                                     "the stationary distribution. You may want to "
+                                     "try different initial values and/or the option "
+                                     "stationary=FALSE");
+        }
+        for(unsigned int k=0; k<nbAnimals; k++){
+          delta[mix].row(k) = deltatmp;
+        }
+      } else{
+        for(unsigned int k=0; k<nbAnimals; k++){
+          Gamma = trMat[mix].slice(aInd[k]).t(); // all slices are identical if stationary
+          try {
+            deltatmp = arma::solve(diag-Gamma+1,v).t();
+          }
+          catch(...) {
+            throw std::runtime_error("A problem occurred in the calculation of "
+                                       "the stationary distribution. You may want to "
+                                       "try different initial values and/or the option "
+                                       "stationary=FALSE");
+          }
+          delta[mix].row(k) = deltatmp;
+        }
       }
     }
   } else {

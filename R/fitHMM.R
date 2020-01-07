@@ -66,7 +66,7 @@ fitHMM <- function(data, ...) {
 #' @param formulaDelta Regression formula for the initial distribution. Default for \code{fitHMM.momentuHMMData}: \code{NULL} (no covariate effects; both \code{delta0} and \code{fixPar$delta} are specified on the real scale). 
 #' Default for \code{fitHMM.momentuHierHMMData}: \code{~1} (both \code{delta0} and \code{fixPar$delta} are specified on the working scale).
 #' Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{delta0} and \code{fixPar$delta} are specified on the working scale.
-#' @param stationary \code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
+#' @param stationary \code{FALSE} if there are covariates in \code{formula} (other than `\code{ID}') or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.
 #' @param formulaPi Regression formula for the mixture distribution probabilities. Default: \code{NULL} (no covariate effects; both \code{beta0$pi} and \code{fixPar$pi} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{beta0$pi} and \code{fixPar$pi} are specified on the working scale.
@@ -646,7 +646,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   
   # check that stationary==FALSE if there are covariates
   if(nbCovs>0 & stationary==TRUE)
-    stop("stationary can't be set to TRUE if there are covariates in formula.")
+    if(!all(attr(terms.formula(formula),"term.labels") %in% "ID")) stop("stationary can't be set to TRUE if there are covariates in formula.")
   if(nbCovsDelta>0 & stationary==TRUE)
     stop("stationary can't be set to TRUE if there are covariates in formulaDelta.")
 
@@ -955,17 +955,21 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     mle$delta <- matrix(0,nbAnimals*mixtures,nbStates)
     
     for(mix in 1:mixtures){
-      gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,fixParIndex$betaRef)[,,1]
-  
-      # error if singular system
-      tryCatch(
-        mle$delta[nbAnimals*(mix-1)+1:nbAnimals,] <- matrix(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates)),nrow=nbAnimals,ncol=nbStates,byrow=TRUE),
-        error = function(e) {
-          stop(paste("A problem occurred in the calculation of the stationary",
-                     "distribution. You may want to try different initial values",
-                     "and/or the option stationary=FALSE."))
-        }
-      )
+      
+      for(i in 1:nbAnimals){
+        
+        gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,fixParIndex$betaRef)[,,aInd[i]]
+    
+        # error if singular system
+        tryCatch(
+          mle$delta[nbAnimals*(mix-1)+i,] <- solve(t(diag(nbStates)-gamma+1),rep(1,nbStates)),
+          error = function(e) {
+            stop(paste("A problem occurred in the calculation of the stationary",
+                       "distribution. You may want to try different initial values",
+                       "and/or the option stationary=FALSE."))
+          }
+        )
+      }
     }
   }
 

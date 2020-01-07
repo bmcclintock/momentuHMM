@@ -1,3 +1,10 @@
+momentuHMM 1.5.0 2020-01-06
+-----------------
+CHANGES
+
+* stationary argument in fitHMM and MIfitHMM can now be set to TRUE when 'ID' is the only covariate included in formula; in this case the initial distribution is calculated independently for each individual
+
+
 momentuHMM 1.5.0 2019-12-17
 -----------------
 NEW FEATURES
