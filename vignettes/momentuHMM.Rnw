@@ -1683,7 +1683,7 @@ fitmix4 <- fitHMM(pilotData, nbStates=4, dist=dist,
 
 For comparison to the null and random effects models, let's also fit a model including individual-level fixed effects:
 <<pilotWhale-11, echo=-2, eval=FALSE, cache=TRUE>>=
-Par0_fix <- getPar0(fitmix4,formula=~0+ID)
+Par0_fix <- getPar0(fitmix4,formula=~0+ID,mixtures=1)
 Par0_fix <- fitfix_Par
 
 fitfix <- fitHMM(pilotData, nbStates=4, dist=dist,

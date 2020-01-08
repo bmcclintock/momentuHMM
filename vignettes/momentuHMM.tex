@@ -2404,7 +2404,7 @@ For comparison to the null and random effects models, let's also fit a model inc
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{Par0_fix} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(fitmix4,}\hlkwc{formula}\hlstd{=}\hlopt{~}\hlnum{0}\hlopt{+}\hlstd{ID)}
+\hlstd{Par0_fix} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(fitmix4,}\hlkwc{formula}\hlstd{=}\hlopt{~}\hlnum{0}\hlopt{+}\hlstd{ID,}\hlkwc{mixtures}\hlstd{=}\hlnum{1}\hlstd{)}
 
 \hlstd{fitfix} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(pilotData,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=dist,}
                   \hlkwc{formula} \hlstd{=} \hlopt{~}\hlnum{0}\hlopt{+}\hlstd{ID,} \hlkwc{stationary}\hlstd{=}\hlnum{TRUE}\hlstd{,}
