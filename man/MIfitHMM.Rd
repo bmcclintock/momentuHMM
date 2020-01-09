@@ -166,7 +166,7 @@ regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turn
 
 \item{formulaDelta}{Regression formula for the initial distribution. See \code{\link{fitHMM}}.}
 
-\item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
+\item{stationary}{\code{FALSE} if there are time-varying covariates in \code{formula} or any covariates in \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. See \code{\link{fitHMM}}.}
 
 \item{mixtures}{Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.}

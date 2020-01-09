@@ -15,7 +15,7 @@
 //' @param aInd Vector of indices of the rows at which the data switches to another animal
 //' @param zeroInflation Named list of logicals indicating whether the probability distributions of the data streams are zero-inflated.
 //' @param oneInflation Named list of logicals indicating whether the probability distributions of the data streams are one-inflated.
-//' @param stationary \code{false} if there are covariates. If \code{true}, the initial distribution is considered
+//' @param stationary \code{false} if there are time-varying covariates in \code{formula} or any covariates in \code{formulaDelta}. If \code{true}, the initial distribution is considered
 //' equal to the stationary distribution. Default: \code{false}.
 //' @param knownStates Vector of values of the state process which are known prior to fitting the
 //' model (if any). Default: NULL (states are not known). This should be a vector with length the number
@@ -132,7 +132,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         }
       } else{
         for(unsigned int k=0; k<nbAnimals; k++){
-          Gamma = trMat[mix].slice(aInd[k]).t(); // all slices are identical if stationary
+          Gamma = trMat[mix].slice(aInd[k]).t(); // all slices are identical for each individual if stationary
           try {
             deltatmp = arma::solve(diag-Gamma+1,v).t();
           }

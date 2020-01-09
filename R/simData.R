@@ -897,7 +897,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   #  else formula <- formula(~1)
   #}
   
-  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating")
+  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",FALSE)
   
   if(length(all.vars(formula)))
     if(!all(all.vars(formula) %in% c("ID",names(allCovs),centerNames,centroidNames,spatialcovnames)))

@@ -1,4 +1,4 @@
-printMessage <- function(nbStates,dist,p,DM,formula,formulaDelta,formulaPi,mixtures,what="Fitting",hierarchical=FALSE){
+printMessage <- function(nbStates,dist,p,DM,formula,formulaDelta,formulaPi,mixtures,what="Fitting",stationary,hierarchical=FALSE){
   distnames <- names(dist)
   message("=======================================================================")
   if(!hierarchical) message(what," HMM with ",nbStates," state",ifelse(nbStates>1,"s","")," and ",length(distnames)," data stream",ifelse(length(distnames)>1,"s",""))
@@ -17,7 +17,7 @@ printMessage <- function(nbStates,dist,p,DM,formula,formulaDelta,formulaPi,mixtu
     } else message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,": custom",collapse=", "),")")
   }
   message("\n Transition probability matrix formula: ",paste0(formula,collapse=""))
-  message("\n Initial distribution formula: ",paste0(formulaDelta,collapse=""))
+  message("\n Initial distribution formula: ",ifelse(stationary,"stationary",paste0(formulaDelta,collapse="")))
   if(mixtures>1) {
     message("\n Number of mixtures: ",mixtures)
     message(" Mixture probability formula: ",paste0(formulaPi,collapse=""))

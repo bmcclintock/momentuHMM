@@ -8,7 +8,7 @@
 #' @param deltaCons Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. 
 #' @param nbStates Number of states of the HMM
 #' @param nbCovsDelta Number of initial distribution covariates
-#' @param stationary \code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
+#' @param stationary \code{FALSE} if there are time-varying covariates in \code{formula} or any covariates in \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param nbCovs Number of t.p.m. covariates
 #' @param nbRecovs Number of recharge covariates

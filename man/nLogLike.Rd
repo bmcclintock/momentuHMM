@@ -74,7 +74,7 @@ regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turn
 
 \item{oneInflation}{Named list of logicals indicating whether the probability distributions of the data streams are one-inflated.}
 
-\item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
+\item{stationary}{\code{FALSE} if there are time-varying covariates in \code{formula} or any covariates in \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
 
 \item{cons}{Named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 

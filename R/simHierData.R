@@ -857,7 +857,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   mix <- rep(1,nbAnimals)
   
   
-  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",hierarchical=TRUE)
+  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",FALSE,hierarchical=TRUE)
   
   if(!nbSpatialCovs | !retrySims){
     
