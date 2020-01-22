@@ -249,6 +249,9 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
     tmpPar <- matrix(0,length(betaNames),nbStates*(nbStates-1))
     #betaRef <- model$conditions$betaRef
     #if(length(model$stateNames)==1) tmpPar[1,] <- rep(-1.5,nbStates*(nbStates-1))
+    
+    if(length(betaRef)!=nbStates) stop("dimension mismatch between nbStates and betaRef")
+    
     columns <- NULL
     for(i in 1:nbStates){
       for(j in 1:nbStates) {
@@ -260,8 +263,6 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
     }
     colnames(tmpPar) <- columns
     rownames(tmpPar) <- betaNames
-    
-    if(length(betaRef)!=nbStates) stop("dimension mismatch between nbStates and betaRef")
     
     if(length(which(model$stateNames %in% stateNames))>1){
       for(i in match(model$stateNames,stateNames,nomatch=0)){#which(model$stateNames %in% stateNames)){
