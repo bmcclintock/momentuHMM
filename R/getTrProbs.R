@@ -186,7 +186,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
       quantSup<-qnorm(1-(1-alpha)/2)
       
       tmpSig <- Sigma[gamInd[unique(c(data$conditions$betaCons))],gamInd[unique(c(data$conditions$betaCons))]]
-      se <- lower <- upper <- array(NA,dim=dim(trMat[[mix]]))
+      se <- lower <- upper <- array(NA,dim=dim(trMat[[mix]]),dimnames=list(stateNames,stateNames,NULL))
       cat("Computing SEs and ",alpha*100,"% CIs",ifelse(mixtures>1,paste0(" for mixture ",mix,"... "),"... "),sep="")
       for(i in 1:nbStates){
         for(j in 1:nbStates){
