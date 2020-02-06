@@ -14,6 +14,8 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
       if(any(abs(as.integer(deltaCons)-deltaCons)!=0)) stop("deltaCons must be a matrix composed of integers")
       if(min(deltaCons)<1 | max(deltaCons)>(nbCovsDelta+1)*mixtures*(nbStates-1)) stop("deltaCons must be composed of integers between 1 and ",(nbCovsDelta+1)*mixtures**(nbStates-1))
     }
+  } else {
+    fixPar$beta <- fixPar$delta <- NULL
   }
   
   if(!is.null(betaRef)){
