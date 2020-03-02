@@ -41,7 +41,7 @@ logAlpha <- function(m)
   nbObs <- nrow(m$data)
   
   # identify covariates
-  reForm <- formatRecharge(nbStates,m$conditions$formula,m$data,par=m$mle)
+  reForm <- formatRecharge(nbStates,m$conditions$formula,m$conditions$betaRef,m$data,par=m$mle)
   covs <- reForm$covs
   aInd <- reForm$aInd
   

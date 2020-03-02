@@ -350,7 +350,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     Par0[1:nSims]<-list(tmpPar0)
   } else if(length(Par0)<nSims) stop("Par0 must be a list of length >=",nSims)
   
-  newForm <- newFormulas(formula,nbStates)
+  newForm <- newFormulas(formula,nbStates,betaRef)
   recharge <- newForm$recharge
   
   if(is.null(recharge) & mixtures==1){
@@ -594,7 +594,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     Par0[1:nSims]<-list(tmpPar0)
   } else if(length(Par0)<nSims) stop("Par0 must be a list of length >=",nSims)
   
-  #newForm <- newFormulas(formula,nbStates)
+  #newForm <- newFormulas(formula,nbStates,betaRef)
   #recharge <- newForm$recharge
   
   if(mixtures==1){

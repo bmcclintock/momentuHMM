@@ -42,7 +42,7 @@ logBeta <- function(m)
   lbeta <- matrix(NA,nbObs,nbStates)
   
   # identify covariates
-  reForm <- formatRecharge(nbStates,m$conditions$formula,m$data,par=m$mle)
+  reForm <- formatRecharge(nbStates,m$conditions$formula,m$conditions$betaRef,m$data,par=m$mle)
   covs <- reForm$covs
   
   probs <- allProbs(m)

@@ -567,7 +567,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     data$knownStates <- NULL
   }
   
-  newForm <- newFormulas(formula,nbStates,hierarchical = TRUE)
+  newForm <- newFormulas(formula,nbStates,betaRef,hierarchical = TRUE)
   formulaStates <- newForm$formulaStates
   newformula <- newForm$newformula
   recharge <- newForm$recharge
@@ -595,7 +595,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   
   # build design matrix for recharge model
   if(!is.null(recharge)){
-    reForm <- formatRecharge(nbStates,formula,data=data)
+    reForm <- formatRecharge(nbStates,formula,betaRef,data=data)
     formulaStates <- reForm$formulaStates
     newformula <- reForm$newformula
     recharge <- reForm$recharge

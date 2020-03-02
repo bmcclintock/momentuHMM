@@ -114,7 +114,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
       data <- data[covIndex,,drop=FALSE]
     }
     
-    reForm <- formatRecharge(nbStates,formula,data,par=list(g0=g0,theta=theta))
+    reForm <- formatRecharge(nbStates,formula,betaRef,data,par=list(g0=g0,theta=theta))
     covs <- reForm$covs
     
     if(!is.matrix(beta)) stop("'beta' must be a matrix")
@@ -156,7 +156,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
     formula <- data$conditions$formula
     mixtures <- data$conditions$mixtures
     betaRef <- data$conditions$betaRef
-    reForm <- formatRecharge(nbStates,formula,data$data,par=data$mle)
+    reForm <- formatRecharge(nbStates,formula,betaRef,data$data,par=data$mle)
     covs <- reForm$covs
     hierRecharge <- reForm$hierRecharge
     nbG0covs <- reForm$nbG0covs

@@ -347,7 +347,7 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   #fullDM<-DMinputs$fullDM
   
   # identify covariates
-  reForm <- formatRecharge(nbStates,m$conditions$formula,mhdata,covs=tempCovs,par=lapply(Par$beta,function(x) x$est))
+  reForm <- formatRecharge(nbStates,m$conditions$formula,m$conditions$betaRef,mhdata,covs=tempCovs,par=lapply(Par$beta,function(x) x$est))
   mhdata[colnames(reForm$newdata)] <- reForm$newdata
   attr(mhdata,'coords') <- attr(m$data,'coords')
   attr(mhdata,'coordLevel') <- attr(m$data,'coordLevel')

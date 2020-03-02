@@ -227,7 +227,7 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
   }
   
   if(nbStates>1){
-    reForm <- formatRecharge(nbStates,formula,model$data)
+    reForm <- formatRecharge(nbStates,formula,model$conditions$betaRef,model$data)
     formulaStates <- reForm$formulaStates
     formterms <- reForm$formterms
     newformula <- reForm$newformula

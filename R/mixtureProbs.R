@@ -109,7 +109,7 @@ get_mixProbs <- function(optPar,mod,mixture){
   formula <- mod$conditions$formula
   knownStates <- mod$conditions$knownStates
   
-  newForm <- newFormulas(formula,nbStates,hierarchical = TRUE)
+  newForm <- newFormulas(formula,nbStates,mod$conditions$betaRef,hierarchical = TRUE)
   formulaStates <- newForm$formulaStates
   newformula <- newForm$newformula
   recharge <- newForm$recharge
@@ -120,7 +120,7 @@ get_mixProbs <- function(optPar,mod,mixture){
   
   # build design matrix for recharge model
   if(!is.null(recharge)){
-    reForm <- formatRecharge(nbStates,formula,data=data)
+    reForm <- formatRecharge(nbStates,formula,mod$conditions$betaRef,data=data)
     formulaStates <- reForm$formulaStates
     newformula <- reForm$newformula
     recharge <- reForm$recharge

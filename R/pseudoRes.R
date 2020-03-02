@@ -132,7 +132,7 @@ pseudoRes <- function(m, ncores = 1)
   la <- logAlpha(m)
   
   # identify covariates
-  reForm <- formatRecharge(nbStates,m$conditions$formula,data,par=list(g0=g0,theta=theta))
+  reForm <- formatRecharge(nbStates,m$conditions$formula,m$conditions$betaRef,data,par=list(g0=g0,theta=theta))
   recharge <- reForm$recharge
   hierRecharge <- reForm$hierRecharge
   newformula <- reForm$newformula

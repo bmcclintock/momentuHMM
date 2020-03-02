@@ -77,7 +77,7 @@ formatHierHMM <- function(data,hierStates,hierDist,
       rePar <- list(g0=g0,theta=theta)
     } else rePar <- NULL
     
-    reForm <- formatRecharge(nbStates,formula,data=data,par=rePar)
+    reForm <- formatRecharge(nbStates,formula,betaRef,data=data,par=rePar)
     newformula <- reForm$newformula
     coords <- attr(data,"coords")
     coordLevel <- attr(data,"coordLevel")

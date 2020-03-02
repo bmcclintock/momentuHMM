@@ -69,7 +69,7 @@ allProbs <- function(m)
     theta <- m$mle$theta
   }
   
-  reForm <- formatRecharge(nbStates,m$conditions$formula,data,par=m$mle)
+  reForm <- formatRecharge(nbStates,m$conditions$formula,m$conditions$betaRef,data,par=m$mle)
   data <- cbind(data,reForm$newdata)
   nbCovs <- reForm$nbCovs
   
