@@ -131,7 +131,7 @@ MIfitHMM <- function(miData, ...) {
 #' 
 #' @examples
 #' \dontshow{
-#' set.seed(3,kind="Mersenne-Twister",normal.kind="Inversion")
+#' set.seed(5,kind="Mersenne-Twister",normal.kind="Inversion")
 #' }
 #' # Don't run because it takes too long on a single core
 #' \dontrun{
