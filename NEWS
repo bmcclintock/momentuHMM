@@ -1,3 +1,18 @@
+momentuHMM 1.5.1 2020-03-04
+-----------------
+CHANGES
+
+* stationary argument in fitHMM and MIfitHMM can now be set to TRUE when there are no time-varying covariates included in formula; in this case the initial distribution is calculated independently for each individual
+
+* in prepData, data streams can now be named 'step' and/or 'angle' when coordNames=NULL
+
+BUG FIXES
+
+* fitHMM and MIfitHMM argument 'retryFits' failed to randomly perturb parameter values in momentuHMM 1.5.0
+
+* 'toState' special formula did not account for non-default values in 'betaRef' argument
+
+
 momentuHMM 1.5.0 2019-12-17
 -----------------
 NEW FEATURES

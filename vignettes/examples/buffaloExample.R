@@ -1,5 +1,6 @@
 library(momentuHMM)
 library(raster)
+library(ctmcmove)
 
 ## download buffalo data
 load(url("https://github.com/henryrscharf/Hooten_et_al_EL_2018/raw/master/data/buffalo/buffalo_Cilla.RData"))

@@ -114,7 +114,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
       data <- data[covIndex,,drop=FALSE]
     }
     
-    reForm <- formatRecharge(nbStates,formula,data,par=list(g0=g0,theta=theta))
+    reForm <- formatRecharge(nbStates,formula,betaRef,data,par=list(g0=g0,theta=theta))
     covs <- reForm$covs
     
     if(!is.matrix(beta)) stop("'beta' must be a matrix")
@@ -156,7 +156,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
     formula <- data$conditions$formula
     mixtures <- data$conditions$mixtures
     betaRef <- data$conditions$betaRef
-    reForm <- formatRecharge(nbStates,formula,data$data,par=data$mle)
+    reForm <- formatRecharge(nbStates,formula,betaRef,data$data,par=data$mle)
     covs <- reForm$covs
     hierRecharge <- reForm$hierRecharge
     nbG0covs <- reForm$nbG0covs
@@ -186,7 +186,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
       quantSup<-qnorm(1-(1-alpha)/2)
       
       tmpSig <- Sigma[gamInd[unique(c(data$conditions$betaCons))],gamInd[unique(c(data$conditions$betaCons))]]
-      se <- lower <- upper <- array(NA,dim=dim(trMat[[mix]]))
+      se <- lower <- upper <- array(NA,dim=dim(trMat[[mix]]),dimnames=list(stateNames,stateNames,NULL))
       cat("Computing SEs and ",alpha*100,"% CIs",ifelse(mixtures>1,paste0(" for mixture ",mix,"... "),"... "),sep="")
       for(i in 1:nbStates){
         for(j in 1:nbStates){

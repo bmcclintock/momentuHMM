@@ -77,9 +77,8 @@ Par0_mix4$beta$pi <- c(0.33, 0.4, 0.2, 0.07)
 fitmix4 <- fitHMM(pilotData,nbStates=4,dist=dist,Par0=Par0_mix4$Par,beta0=Par0_mix4$beta,stationary=TRUE,mixtures=4,stateNames=stateNames,nlmPar=list(print.level=2))
 
 ## fixed effects model
-Par0_fix <- getPar0(fitmix1,formula=~ID,formulaDelta=~ID)
-Par0_fix$delta[1,] <- log(fitmix1$mle$delta[1,-1]/fitmix1$mle$delta[1,1])
-fitfix <- fitHMM(pilotData,nbStates=4,dist=dist,formula=~ID,formulaDelta=~ID,Par0=Par0_fix$Par,beta0=Par0_fix$beta,delta0=Par0_fix$delta,stateNames=stateNames,nlmPar=list(print.level=2))
+Par0_fix <- getPar0(fitmix4,formula=~0+ID,mixtures=1)
+fitfix <- fitHMM(pilotData,nbStates=4,dist=dist,formula=~0+ID,stationary=TRUE,Par0=Par0_fix$Par,stateNames=stateNames,nlmPar=list(print.level=2))
 
 ## calculate AIC and AIC weights
 AIC(fitmix1,fitmix2,fitmix3,fitmix4,fitfix)

@@ -149,7 +149,7 @@ print.momentuHMM.version <- function()
 
 # suppress RNG warning when using %dorng%
 muffleRNGwarning <- function(w) {
-  if(any(grepl("Foreach loop had changed the current RNG type: RNG was restored to same type, next state",w)))
+  if(any(grepl("Foreach loop \\(doParallelMC\\) had changed the current RNG type: RNG was restored to same type, next state",w)))
     invokeRestart("muffleWarning")
 }
 

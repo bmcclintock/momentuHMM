@@ -736,7 +736,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   betaRef <- inputHierHMM$betaRef
   stateNames <- inputHierHMM$stateNames
   
-  newForm <- newFormulas(formula,nbStates)
+  newForm <- newFormulas(formula,nbStates,betaRef)
   formulaStates <- newForm$formulaStates
   formterms <- newForm$formterms
   newformula <- newForm$newformula
@@ -744,7 +744,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   # build design matrix for recharge model
   if(!is.null(recharge)){
-    reForm <- formatRecharge(nbStates,formula,data=tmpCovs)
+    reForm <- formatRecharge(nbStates,formula,betaRef,data=tmpCovs)
     formulaStates <- reForm$formulaStates
     formterms <- newForm$formterms
     tmpCovs[colnames(reForm$newdata)] <- reForm$newdata
@@ -857,7 +857,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   mix <- rep(1,nbAnimals)
   
   
-  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",hierarchical=TRUE)
+  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",FALSE,hierarchical=TRUE)
   
   if(!nbSpatialCovs | !retrySims){
     
@@ -920,7 +920,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd) & !length(angleCovs) & !rwInd) {
         if(!is.null(recharge)){
           for(j in rechargeNames){
-            subCovs[[j]] <- formatRecharge(nbStates,formula,data=subCovs,par=list(g0=wng0,theta=wntheta))$newdata[[j]]
+            subCovs[[j]] <- formatRecharge(nbStates,formula,betaRef,data=subCovs,par=list(g0=wng0,theta=wntheta))$newdata[[j]]
           }
         }
         DMcov <- model.matrix(newformula,subCovs)
@@ -990,7 +990,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
           tmpSubSpatCovs <- tmpSubSpatCovs[rep(1,length(lLevels[[1]])),,drop=FALSE]
           tmpSubSpatCovs$level <- factor(lLevels[[1]],levels=lLevels[[1]])
           for(j in rechargeNames){
-            subCovs[1,j] <- formatRecharge(nbStates,formula,data=tmpSubSpatCovs,par=list(g0=wng0,theta=wntheta))$newdata[[j]][1]
+            subCovs[1,j] <- formatRecharge(nbStates,formula,betaRef,data=tmpSubSpatCovs,par=list(g0=wng0,theta=wntheta))$newdata[[j]][1]
           }
           #g0 <- model.matrix(recharge$g0,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wng0
           #subCovs[1,"recharge"] <- g0 #+ model.matrix(recharge$theta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wntheta

@@ -218,7 +218,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   covs <- getCovs(m,covs,ID)
   
   # identify covariates
-  reForm <- formatRecharge(nbStates,m$conditions$formula,m$data,par=m$mle)
+  reForm <- formatRecharge(nbStates,m$conditions$formula,m$conditions$betaRef,m$data,par=m$mle)
   recharge <- reForm$recharge
   hierRecharge <- reForm$hierRecharge
   newformula <- reForm$newformula

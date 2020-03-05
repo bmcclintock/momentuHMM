@@ -187,7 +187,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
   stateFormula
 }
 
-newFormulas<-function(formula,nbStates,hierarchical=FALSE)
+newFormulas<-function(formula,nbStates,betaRef,hierarchical=FALSE)
 {
   stateForms<- terms(formula, specials = c(paste0(rep(c("state","toState"),each=nbStates),1:nbStates),"recharge"))
   newformula<-formula
@@ -210,7 +210,7 @@ newFormulas<-function(formula,nbStates,hierarchical=FALSE)
         }
         if(!is.null(attr(stateForms,"specials")[[paste0("toState",i)]])){
           betaInd<-matrix(0,nbStates,nbStates,byrow=TRUE)
-          diag(betaInd)<-NA
+          betaInd[cbind(betaRef,1:nbStates)] <- NA #diag(betaInd)<-NA
           betaInd[!is.na(betaInd)] <- seq(1:(nbStates*(nbStates-1)))
           betaInd<-t(betaInd)[,i]
           betaInd<-betaInd[!is.na(betaInd)]

@@ -89,7 +89,9 @@ getPar<-function(m){
     }
     if(nbStates>1){
       beta <- unname(matrix(m$mod$estimate[parindex[["beta"]]+1:length(m$mle$beta)],nrow(m$mle$beta),ncol(m$mle$beta)))#unname(nw2w(m$mle$beta,m$conditions$workBounds$beta))
-      if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
+      if(m$conditions$stationary & length(attr(terms.formula(m$conditions$formula),"term.labels"))>0){
+        delta <- unname(m$mle$delta)
+      } else if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
         delta <- unname(m$mle$delta[seq(1,nrow(m$mle$delta),nrow(m$mle$delta)/m$conditions$mixtures),])
       } else {
         delta <- unname(matrix(m$mod$estimate[parindex[["beta"]]+length(m$mle$beta)+length(m$CIbeta$pi$est)+1:length(m$CIbeta$delta$est)],nrow(m$CIbeta$delta$est),ncol(m$CIbeta$delta$est)))#unname(nw2w(m$CIbeta$delta$est,m$conditions$workBounds$delta))

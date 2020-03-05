@@ -311,7 +311,7 @@ Once a \verb|momentuHMMData| object has been created using \verb|prepData|, then
   \item{\verb|dist|} A named list indicating the probability distributions of the data streams.
   \item{\verb|estAngleMean|} An optional named list indicating whether or not to estimate the angle mean for data streams with angular distributions (e.g. turning angle). If not estimated (the default), the angle mean is fixed to 0.
   \item{\verb|formula|} Regression formula for the transition probability covariates
-  \item{\verb|stationary|} Logical indicating whether or not the initial distribution is considered equal to the stationary distribution (must be \verb|FALSE| if \verb|formula| includes covariates) 
+  \item{\verb|stationary|} Logical indicating whether or not the initial distribution is considered equal to the stationary distribution (must be \verb|FALSE| if \verb|formula| includes time-varying covariates) 
   \item{\verb|Par0|} A named list containing vectors of starting values for the state-dependent probability distribution parameters of each data stream
 \end{itemize}
 These seven arguments are all that are needed in order to fit the HMMs currently supported in \verb|moveHMM| \citep{MichelotEtAl2016}. For example, here is how the analysis of 15 ``wild haggis'' tracks described in \cite{MichelotEtAl2016} would be implemented using \verb|momentuHMM|:
@@ -405,7 +405,7 @@ See section \ref{sec:turtle} for example code using \verb|angleFormula| and the 
 
 \subsection{Individual-level random effects}
 \label{sec:randomEffects}
-HMM applications often assume the initial distribution and state transition probability matrix is the same for all individuals (i.e. ``complete pooling'' of the individuals' time series). But in reality, individuals often do not exhibit the same state-switching dynamics and there is individual-level variation.  Individual heterogeneity can often be well explained by covariates (e.g., sex, age class) and included in \verb|formula|, but it is not always possible to identify (and/or measure) all of the important covariates that drive this variation. One option is to include separate state-switching dynamics for each individual (i.e. ``no pooling'') by specifying \verb|formulaDelta = ~ID| and \verb|formula = ~ID|, but this ``fixed'' effect approach can result in many additional parameters to estimate (it also doesn't explain very much about potential factors driving individual heterogeneity). Alternatively, generic individual heterogeneity in state-switching dynamics can be modeled as a ``random'' effect. While continuous-valued individual-level random effects can be computationally demanding, discrete-valued random effects are more computationally feasible and can be effective in ``mopping up'' individual heterogeneity in the initial distribution and state transition probabilities that is not explained by measurable covariates. Discrete-valued random effects have recently been used in HHMs of animal movement \citep[e.g.][]{McKellarEtAl2014,TownerEtAl2016,DeRuiterEtAl2017,IsojunnoEtAl2017}, and these ``mixed'' HMMs can be fitted with \verb|fitHMM| (or \verb|MIfitHMM|) through the \verb|mixtures| and \verb|formulaPi| arguments.  The \verb|mixtures| argument specifies the number of mixtures $(K)$ in the model, where each mixture represents a possible initial distribution and transition probability matrix, and each individual time series is assumed to be driven by exactly one of these mixtures. For $K$ mixtures, the mixture weight $(\pi_k; k=1,\ldots,K)$ is the probability that the $k$th mixture underlies the state-switching dynamics for a given individual, and a model formula for ${\boldsymbol \pi}$ can be specified using the \verb|formulaPi| argument. For example, \cite{TownerEtAl2016} found support for $K=3$ mixtures and a sex covariate on ${\boldsymbol \pi}$ in their HMM for white shark movement, indicating that each of the three possible state-switching dynamics were exhibited differently for males and females; the random effects component of their model would be specified in \verb|fitHMM| (or \verb|MIfitHMM|) by simply setting \verb|mixtures = 3| and \verb|formulaPi = ~sex|. Note that because $\sum_{k=1}^K \pi_k = 1$, \verb|momentuHMM| uses a multinomial logit link function for ${\boldsymbol \pi}$ when covariates are included in \verb|formulaPi|. We demonstrate how to fit discrete-valued individual-level random effects on the initial distribution and state transition probabilities using the long-finned pilot whale example from \cite{IsojunnoEtAl2017} in section \ref{sec:pilotWhale}.
+HMM applications often assume the initial distribution and state transition probability matrix is the same for all individuals (i.e. ``complete pooling'' of the individuals' time series). But in reality, individuals often do not exhibit the same state-switching dynamics and there is individual-level variation.  Individual heterogeneity can often be well explained by covariates (e.g., sex, age class) and included in \verb|formula|, but it is not always possible to identify (and/or measure) all of the important covariates that drive this variation. One option is to include separate state-switching dynamics for each individual (i.e. ``no pooling'') by specifying \verb|formulaDelta = ~ID| and \verb|formula = ~ID|, but this ``fixed'' effect approach can result in many additional parameters to estimate (it also doesn't explain very much about potential factors driving individual heterogeneity). Alternatively, generic individual heterogeneity in state-switching dynamics can be modeled as a ``random'' effect. While continuous-valued individual-level random effects can be computationally demanding, discrete-valued random effects are more computationally feasible and can be effective in ``mopping up'' individual heterogeneity in the initial distribution and state transition probabilities that is not explained by measurable covariates. Discrete-valued random effects have recently been used in HMMs of animal movement \citep[e.g.][]{McKellarEtAl2014,TownerEtAl2016,DeRuiterEtAl2017,IsojunnoEtAl2017}, and these ``mixed'' HMMs can be fitted with \verb|fitHMM| (or \verb|MIfitHMM|) through the \verb|mixtures| and \verb|formulaPi| arguments.  The \verb|mixtures| argument specifies the number of mixtures $(K)$ in the model, where each mixture represents a possible initial distribution and transition probability matrix, and each individual time series is assumed to be driven by exactly one of these mixtures. For $K$ mixtures, the mixture weight $(\pi_k; k=1,\ldots,K)$ is the probability that the $k$th mixture underlies the state-switching dynamics for a given individual, and a model formula for ${\boldsymbol \pi}$ can be specified using the \verb|formulaPi| argument. For example, \cite{TownerEtAl2016} found support for $K=3$ mixtures and a sex covariate on ${\boldsymbol \pi}$ in their HMM for white shark movement, indicating that each of the three possible state-switching dynamics were exhibited differently for males and females; the random effects component of their model would be specified in \verb|fitHMM| (or \verb|MIfitHMM|) by simply setting \verb|mixtures = 3| and \verb|formulaPi = ~sex|. Note that because $\sum_{k=1}^K \pi_k = 1$, \verb|momentuHMM| uses a multinomial logit link function for ${\boldsymbol \pi}$ when covariates are included in \verb|formulaPi|. We demonstrate how to fit discrete-valued individual-level random effects on the initial distribution and state transition probabilities using the long-finned pilot whale example from \cite{IsojunnoEtAl2017} in section \ref{sec:pilotWhale}.
 
 \subsection{Hierarchical hidden Markov models}
 \label{sec:HHMM}
@@ -425,7 +425,7 @@ We demonstrate use of the bivariate normal random walk model for loggerhead turt
 \begin{equation*}
   g_t = g_0 + \sum_{j=1}^t \theta_0 + \text{cov1}_j \theta_1 + \text{cov2}_j \theta_2,
 \end{equation*}
-where $\text{cov1}_j$ and $\text{cov2}_j$ are the corresponding habitat covariate values for the individual's location at time $j$. We demonstrate how to fit a discrete-time version of the African buffalo example from \cite{HootenEtAl2019} in section \ref{sec:recharge}. 
+where $\text{cov1}_j$ and $\text{cov2}_j$ are the corresponding habitat covariate values for the individual's location at time $j$. We demonstrate how to fit a discrete-time version of the African buffalo example from \cite{HootenEtAl2019} in section \ref{sec:buffalo}. 
 
 \subsection{Multiple imputation}
 \label{sec:mi}
@@ -1524,14 +1524,14 @@ plotSat(m2, zoom = 7, shape = c(17,1,17,1,17,1), size = 2,
 \label{sec:pilotWhale}
 <<pilotWhale-1, echo=FALSE, eval=TRUE, cache=TRUE>>=
 ## load data 
-load(url("https://github.com/bmcclintock/momentuHMM/blob/master/vignettes/vignetteResults/pilotWhaleExample.RData?raw=true"))
+load(url("https://github.com/bmcclintock/momentuHMM/blob/develop/vignettes/vignetteResults/pilotWhaleExample.RData?raw=true"))
 #load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/pilotWhaleData.RData"))
 
 ## prepare data
 #names(data.keep)[1] <- "ID"
 #pilotData <- prepData(data.keep,coordNames = NULL)
 @
-Here we demonstrate how to include individual heterogeneity in state-switching dynamics via discrete-valued random effects by fitting the 4-state (``exploratory'', ``foraging'', ``crowded'', ``directed'') mixed HHM for long-finned pilot whales described in \cite{IsojunnoEtAl2017}.  The pilot whale data consist of 11 data streams collected from 15 individuals, and, as usual, we must first prepare the data for \verb|fitHMM| using \verb|prepData|. Let's summarize our prepared data using the \verb|summary| function:
+Here we demonstrate how to include individual heterogeneity in state-switching dynamics via discrete-valued random effects by fitting the 4-state (``exploratory'', ``foraging'', ``crowded'', ``directed'') mixed HMM for long-finned pilot whales described in \cite{IsojunnoEtAl2017}.  The pilot whale data consist of 11 data streams collected from 15 individuals, and, as usual, we must first prepare the data for \verb|fitHMM| using \verb|prepData|. Let's summarize our prepared data using the \verb|summary| function:
 <<pilotWhale-2, echo=TRUE, eval=TRUE>>=
 summary(pilotData, dataNames=names(pilotData)[-1])
 @
@@ -1682,15 +1682,13 @@ fitmix4 <- fitHMM(pilotData, nbStates=4, dist=dist,
 @
 
 For comparison to the null and random effects models, let's also fit a model including individual-level fixed effects:
-<<pilotWhale-11, echo=-3, eval=FALSE, cache=TRUE>>=
-Par0_fix <- getPar0(fitmix1, formula= ~ID, formulaDelta= ~ID)
-Par0_fix$delta[1,] <- log(fitmix1$mle$delta[1,-1]/fitmix1$mle$delta[1,1])
+<<pilotWhale-11, echo=-2, eval=FALSE, cache=TRUE>>=
+Par0_fix <- getPar0(fitmix4,formula=~0+ID,mixtures=1)
 Par0_fix <- fitfix_Par
 
 fitfix <- fitHMM(pilotData, nbStates=4, dist=dist,
-                  formula = ~ID, formulaDelta = ~ID,
-                  Par0=Par0_fix$Par, beta0=Par0_fix$beta, 
-                  delta0=Par0_fix$delta,
+                  formula = ~0+ID, stationary=TRUE,
+                  Par0=Par0_fix$Par, beta0=Par0_fix$beta,
                   stateNames=stateNames,
                   nlmPar=list(hessian=FALSE))
 @

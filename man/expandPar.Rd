@@ -37,7 +37,7 @@ expandPar(
 
 \item{nbCovsDelta}{Number of initial distribution covariates}
 
-\item{stationary}{\code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
+\item{stationary}{\code{FALSE} if there are time-varying covariates in \code{formula} or any covariates in \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
 
 \item{nbCovs}{Number of t.p.m. covariates}

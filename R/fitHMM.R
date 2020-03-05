@@ -66,7 +66,7 @@ fitHMM <- function(data, ...) {
 #' @param formulaDelta Regression formula for the initial distribution. Default for \code{fitHMM.momentuHMMData}: \code{NULL} (no covariate effects; both \code{delta0} and \code{fixPar$delta} are specified on the real scale). 
 #' Default for \code{fitHMM.momentuHierHMMData}: \code{~1} (both \code{delta0} and \code{fixPar$delta} are specified on the working scale).
 #' Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{delta0} and \code{fixPar$delta} are specified on the working scale.
-#' @param stationary \code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
+#' @param stationary \code{FALSE} if there are time-varying covariates in \code{formula} or any covariates in \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.
 #' @param formulaPi Regression formula for the mixture distribution probabilities. Default: \code{NULL} (no covariate effects; both \code{beta0$pi} and \code{fixPar$pi} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{beta0$pi} and \code{fixPar$pi} are specified on the working scale.
@@ -567,7 +567,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     data$knownStates <- NULL
   }
   
-  newForm <- newFormulas(formula,nbStates,hierarchical = TRUE)
+  newForm <- newFormulas(formula,nbStates,betaRef,hierarchical = TRUE)
   formulaStates <- newForm$formulaStates
   newformula <- newForm$newformula
   recharge <- newForm$recharge
@@ -595,7 +595,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   
   # build design matrix for recharge model
   if(!is.null(recharge)){
-    reForm <- formatRecharge(nbStates,formula,data=data)
+    reForm <- formatRecharge(nbStates,formula,betaRef,data=data)
     formulaStates <- reForm$formulaStates
     newformula <- reForm$newformula
     recharge <- reForm$recharge
@@ -646,7 +646,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   
   # check that stationary==FALSE if there are covariates
   if(nbCovs>0 & stationary==TRUE)
-    stop("stationary can't be set to TRUE if there are covariates in formula.")
+    if(nbAnimals!=nrow(unique(covs))) stop("stationary can't be set to TRUE if there are time-varying covariates in formula.")
   if(nbCovsDelta>0 & stationary==TRUE)
     stop("stationary can't be set to TRUE if there are covariates in formulaDelta.")
 
@@ -753,7 +753,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
       invokeRestart("muffleWarning")
   }
   
-  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,hierarchical=inherits(data,"hierarchical"))
+  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,stationary=stationary,hierarchical=inherits(data,"hierarchical"))
   
   ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
   nc <- ncmean$nc
@@ -806,6 +806,12 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
         stepmax <- ifelse(is.null(nlmPar$stepmax),defStepmax,nlmPar$stepmax)
         steptol <- ifelse(is.null(nlmPar$steptol),1e-6,nlmPar$steptol)
         iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
+        
+        optPar <- wpar
+        optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar$pi)+which(duplicated(c(deltaCons)))))
+        if(length(optInd)){
+          optPar <- wpar[-optInd]
+        }
         
         startTime <- proc.time()
   
@@ -955,17 +961,21 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     mle$delta <- matrix(0,nbAnimals*mixtures,nbStates)
     
     for(mix in 1:mixtures){
-      gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,fixParIndex$betaRef)[,,1]
-  
-      # error if singular system
-      tryCatch(
-        mle$delta[nbAnimals*(mix-1)+1:nbAnimals,] <- matrix(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates)),nrow=nbAnimals,ncol=nbStates,byrow=TRUE),
-        error = function(e) {
-          stop(paste("A problem occurred in the calculation of the stationary",
-                     "distribution. You may want to try different initial values",
-                     "and/or the option stationary=FALSE."))
-        }
-      )
+      
+      for(i in 1:nbAnimals){
+        
+        gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,fixParIndex$betaRef)[,,aInd[i]]
+    
+        # error if singular system
+        tryCatch(
+          mle$delta[nbAnimals*(mix-1)+i,] <- solve(t(diag(nbStates)-gamma+1),rep(1,nbStates)),
+          error = function(e) {
+            stop(paste("A problem occurred in the calculation of the stationary",
+                       "distribution. You may want to try different initial values",
+                       "and/or the option stationary=FALSE."))
+          }
+        )
+      }
     }
   }
 

@@ -1,9 +1,9 @@
-formatRecharge <- function(nbStates,formula,data,covs=NULL,par=NULL){
+formatRecharge <- function(nbStates,formula,betaRef,data,covs=NULL,par=NULL){
   
   nbAnimals <- length(unique(data$ID))
   dataNames <- colnames(data)
   
-  newForm <- newFormulas(formula,nbStates)
+  newForm <- newFormulas(formula,nbStates,betaRef)
   newformula <- newForm$newformula
   formulaStates <- newForm$formulaStates
   recharge <- hierRecharge <- newForm$recharge

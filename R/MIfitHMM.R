@@ -48,7 +48,7 @@ MIfitHMM <- function(miData, ...) {
 #' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. See \code{\link{fitHMM}}.
 #' @param formula Regression formula for the transition probability covariates. See \code{\link{fitHMM}}.
 #' @param formulaDelta Regression formula for the initial distribution. See \code{\link{fitHMM}}.
-#' @param stationary \code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
+#' @param stationary \code{FALSE} if there are time-varying covariates in \code{formula} or any covariates in \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. See \code{\link{fitHMM}}.
 #' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.
 #' @param formulaPi Regression formula for the mixture distribution probabilities. See \code{\link{fitHMM}}.
@@ -131,7 +131,7 @@ MIfitHMM <- function(miData, ...) {
 #' 
 #' @examples
 #' \dontshow{
-#' set.seed(3,kind="Mersenne-Twister",normal.kind="Inversion")
+#' set.seed(5,kind="Mersenne-Twister",normal.kind="Inversion")
 #' }
 #' # Don't run because it takes too long on a single core
 #' \dontrun{
@@ -350,7 +350,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     Par0[1:nSims]<-list(tmpPar0)
   } else if(length(Par0)<nSims) stop("Par0 must be a list of length >=",nSims)
   
-  newForm <- newFormulas(formula,nbStates)
+  newForm <- newFormulas(formula,nbStates,betaRef)
   recharge <- newForm$recharge
   
   if(is.null(recharge) & mixtures==1){
@@ -594,7 +594,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     Par0[1:nSims]<-list(tmpPar0)
   } else if(length(Par0)<nSims) stop("Par0 must be a list of length >=",nSims)
   
-  #newForm <- newFormulas(formula,nbStates)
+  #newForm <- newFormulas(formula,nbStates,betaRef)
   #recharge <- newForm$recharge
   
   if(mixtures==1){

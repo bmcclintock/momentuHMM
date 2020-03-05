@@ -68,7 +68,7 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
     }
 
     formula<-model$conditions$formula
-    newForm <- newFormulas(formula,nbStates,hierarchical=TRUE)
+    newForm <- newFormulas(formula,nbStates,model$conditions$betaRef,hierarchical=TRUE)
     newformula <- newForm$newformula
     recharge <- hierRecharge <- newForm$recharge
     
@@ -81,7 +81,7 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
     }
     
     if(!is.null(recharge)){
-      reForm <- formatRecharge(nbStates,formula,data=data,covs=covs,par=list(g0=model$mle$g0,theta=model$mle$theta))
+      reForm <- formatRecharge(nbStates,formula,model$conditions$betaRef,data=data,covs=covs,par=list(g0=model$mle$g0,theta=model$mle$theta))
       newformula <- reForm$newformula
       recharge <- reForm$recharge
       hierRecharge <- reForm$hierRecharge

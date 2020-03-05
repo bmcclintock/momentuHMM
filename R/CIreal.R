@@ -71,7 +71,7 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
   tempCovs <- getCovs(m,covs,unique(m$data$ID),checkHier=FALSE)[1,]
   
   # identify covariates
-  reForm <- formatRecharge(nbStates,m$conditions$formula,m$data,covs=tempCovs,par=m$mle)
+  reForm <- formatRecharge(nbStates,m$conditions$formula,m$conditions$betaRef,m$data,covs=tempCovs,par=m$mle)
   m$data <- cbind(m$data,reForm$newdata)
   recharge <- reForm$recharge
   hierRecharge <- reForm$hierRecharge

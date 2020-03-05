@@ -897,7 +897,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   #  else formula <- formula(~1)
   #}
   
-  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating")
+  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",FALSE)
   
   if(length(all.vars(formula)))
     if(!all(all.vars(formula) %in% c("ID",names(allCovs),centerNames,centroidNames,spatialcovnames)))
@@ -910,7 +910,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       stop("'formulaDelta' covariate(s) not found")
   if(("ID" %in% all.vars(formula) | "ID" %in% all.vars(formPi) | "ID" %in% all.vars(formDelta)) & nbAnimals<2) stop("ID cannot be a covariate when nbAnimals=1")
   
-  newForm <- newFormulas(formula,nbStates)
+  newForm <- newFormulas(formula,nbStates,betaRef)
   formulaStates <- newForm$formulaStates
   formterms <- newForm$formterms
   newformula <- newForm$newformula

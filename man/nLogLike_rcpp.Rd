@@ -40,7 +40,7 @@ for the transition probabilities ('beta'), and initial distribution ('delta').}
 
 \item{oneInflation}{Named list of logicals indicating whether the probability distributions of the data streams are one-inflated.}
 
-\item{stationary}{\code{false} if there are covariates. If \code{true}, the initial distribution is considered
+\item{stationary}{\code{false} if there are time-varying covariates in \code{formula} or any covariates in \code{formulaDelta}. If \code{true}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{false}.}
 
 \item{knownStates}{Vector of values of the state process which are known prior to fitting the

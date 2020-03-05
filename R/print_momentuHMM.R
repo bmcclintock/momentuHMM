@@ -98,7 +98,7 @@ print.momentuHMM <- function(x,...)
     if(is.null(m$conditions$formulaDelta)) {
       formDelta <- ~1
     } else formDelta <- m$conditions$formulaDelta
-    if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
+    if((!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)) & !(m$conditions$stationary & length(attr(terms.formula(m$conditions$formula),"term.labels"))>0)){
       tmp <- m$mle$delta[seq(1,nrow(m$mle$delta),nrow(m$mle$delta)/m$conditions$mixtures),]
       if(m$conditions$mixtures==1) rownames(tmp)<-NULL
       else rownames(tmp) <- paste0("mix",1:m$conditions$mixtures)

@@ -228,7 +228,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
       genData <- rep(NA,nbObs)
       i1 <- which(ID==unique(ID)[zoo])[1]
       i2 <- i1+nbObs-1
-      if(!(j %in% c("step","angle"))){
+      if(!(j %in% c("step","angle")) | is.null(coordNames)){
         genData <- data[[j]][i1:i2]
       } else if(!is.null(coordNames)){
         for(i in (i1+1):(i2-1)) {

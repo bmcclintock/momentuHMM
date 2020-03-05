@@ -19,7 +19,8 @@ getPar0 <- function(model, ...) {
 #' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles are to be used in the new model.  See \code{\link{fitHMM}}. Default: \code{circularAngleMean=model$conditions$circularAngleMean}
 #' @param formula Regression formula for the transition probability covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formula=model$conditions$formula}.
 #' @param formulaDelta Regression formula for the initial distribution covariates of the new model (see \code{\link{fitHMM}}).  Default: \code{formulaDelta=model$conditions$formulaDelta}.
-#' @param stationary FALSE if there are covariates in formula or formulaDelta. If TRUE, the initial distribution is considered equal to the stationary distribution. Default: FALSE.
+#' @param stationary \code{FALSE} if there are time-varying covariates in \code{formula} or any covariates in \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
+#' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param mixtures Number of mixtures for the state transition probabilities  (see \code{\link{fitHMM}}). Default: \code{formula=model$conditions$mixtures}.
 #' @param formulaPi Regression formula for the mixture distribution probabilities (see \code{\link{fitHMM}}). Default: \code{formula=model$conditions$formulaPi}. 
 #' @param DM Named list indicating the design matrices to be used for the probability distribution parameters of each data stream in the new model (see \code{\link{fitHMM}}). Only parameters with design matrix column names that match those in model$conditions$fullDM are extracted, so care must be taken in naming columns if any elements of \code{DM}
@@ -109,6 +110,7 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
     model$CIbeta <- tryCatch(CIbeta(model),error=function(e) e)
   }
   
+  nbAnimals <- length(unique(model$data$ID))
   dist<-model$conditions$dist
   Par<-model$mle
   zeroInflation<-model$conditions$zeroInflation
@@ -225,7 +227,7 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
   }
   
   if(nbStates>1){
-    reForm <- formatRecharge(nbStates,formula,model$data)
+    reForm <- formatRecharge(nbStates,formula,model$conditions$betaRef,model$data)
     formulaStates <- reForm$formulaStates
     formterms <- reForm$formterms
     newformula <- reForm$newformula
@@ -238,8 +240,7 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
     }
     betaNames <- colnames(model.matrix(newformula,model$data))
     
-    if((length(betaNames)-1) | (ncol(model.matrix(formDelta,model$data))-1)) stationary <- FALSE
-    else if(is.null(stationary)) stationary <- model$conditions$stationary
+    if(((length(betaNames)-1) | (ncol(model.matrix(formDelta,model$data))-1)) & !(nbAnimals==nrow(unique(reForm$covs)) & stationary)) stationary <- FALSE
     
     betaNames <- paste0(rep(betaNames,mixtures),"_mix",rep(1:mixtures,each=length(betaNames)))
     
@@ -248,6 +249,9 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
     tmpPar <- matrix(0,length(betaNames),nbStates*(nbStates-1))
     #betaRef <- model$conditions$betaRef
     #if(length(model$stateNames)==1) tmpPar[1,] <- rep(-1.5,nbStates*(nbStates-1))
+    
+    if(length(betaRef)!=nbStates) stop("dimension mismatch between nbStates and betaRef")
+    
     columns <- NULL
     for(i in 1:nbStates){
       for(j in 1:nbStates) {
@@ -259,8 +263,6 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
     }
     colnames(tmpPar) <- columns
     rownames(tmpPar) <- betaNames
-    
-    if(length(betaRef)!=nbStates) stop("dimension mismatch between nbStates and betaRef")
     
     if(length(which(model$stateNames %in% stateNames))>1){
       for(i in match(model$stateNames,stateNames,nomatch=0)){#which(model$stateNames %in% stateNames)){

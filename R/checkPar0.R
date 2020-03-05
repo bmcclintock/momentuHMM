@@ -25,8 +25,8 @@ checkPar0 <- function(data, ...) {
 #' regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turning angles. 
 #' @param formula Regression formula for the transition probability covariates. 
 #' @param formulaDelta Regression formula for the initial distribution. 
-#' @param stationary \code{FALSE} if there are covariates in \code{formula} or \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
-#' equal to the stationary distribution.
+#' @param stationary \code{FALSE} if there are time-varying covariates in \code{formula} or any covariates in \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
+#' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param mixtures Number of mixtures for the state transition probabilities.
 #' @param formulaPi Regression formula for the mixture distribution probabilities. 
 #' Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilties).

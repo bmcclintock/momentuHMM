@@ -17,7 +17,7 @@
 #' @param consensus Named list indicating whether to use the circular-circular regression consensus model
 #' @param zeroInflation Named list of logicals indicating whether the probability distributions of the data streams are zero-inflated.
 #' @param oneInflation Named list of logicals indicating whether the probability distributions of the data streams are one-inflated.
-#' @param stationary \code{FALSE} if there are covariates. If \code{TRUE}, the initial distribution is considered
+#' @param stationary \code{FALSE} if there are time-varying covariates in \code{formula} or any covariates in \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param cons Named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
 #' for each data stream. 
