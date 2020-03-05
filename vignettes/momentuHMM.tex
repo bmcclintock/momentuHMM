@@ -355,7 +355,7 @@ Once a \verb|momentuHMMData| object has been created using \verb|prepData|, then
   \item{\verb|dist|} A named list indicating the probability distributions of the data streams.
   \item{\verb|estAngleMean|} An optional named list indicating whether or not to estimate the angle mean for data streams with angular distributions (e.g. turning angle). If not estimated (the default), the angle mean is fixed to 0.
   \item{\verb|formula|} Regression formula for the transition probability covariates
-  \item{\verb|stationary|} Logical indicating whether or not the initial distribution is considered equal to the stationary distribution (must be \verb|FALSE| if \verb|formula| includes covariates) 
+  \item{\verb|stationary|} Logical indicating whether or not the initial distribution is considered equal to the stationary distribution (must be \verb|FALSE| if \verb|formula| includes time-varying covariates) 
   \item{\verb|Par0|} A named list containing vectors of starting values for the state-dependent probability distribution parameters of each data stream
 \end{itemize}
 These seven arguments are all that are needed in order to fit the HMMs currently supported in \verb|moveHMM| \citep{MichelotEtAl2016}. For example, here is how the analysis of 15 ``wild haggis'' tracks described in \cite{MichelotEtAl2016} would be implemented using \verb|momentuHMM|:
@@ -2461,11 +2461,17 @@ In the harbor porpoise example from \cite{Leos-BarajasEtAl2017}, there are only 
 \hlkwd{load}\hlstd{(}\hlkwd{url}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"https://static-content.springer.com/esm/"}\hlstd{,}
                 \hlstr{"art%3A10.1007%2Fs13253-017-0282-9/MediaObjects/"}\hlstd{,}
                 \hlstr{"13253_2017_282_MOESM2_ESM.rdata"}\hlstd{)))}
+\end{alltt}
 
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in load(url(paste0("{}https://static-content.springer.com/esm/"{}, "{}art\%3A10.1007\%2Fs13253-017-0282-9/MediaObjects/"{}, : ReadItem: unknown type 0, perhaps written by later version of R}}\begin{alltt}
 \hlcom{# convert date_time to POSIX}
 \hlstd{data} \hlkwb{<-} \hlkwd{lapply}\hlstd{(data,}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{)}
                 \hlstd{\{x}\hlopt{$}\hlstd{date_time} \hlkwb{<-} \hlkwd{as.POSIXct}\hlstd{(x}\hlopt{$}\hlstd{date_time,}\hlkwc{tz}\hlstd{=}\hlstr{"UTC"}\hlstd{); x\})}
+\end{alltt}
 
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in x\$date\_time: \$ operator is invalid for atomic vectors}}\begin{alltt}
 \hlstd{porpoiseData} \hlkwb{<-} \hlkwa{NULL}
 \hlkwa{for}\hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(data))\{}
   \hlstd{coarseInd} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(}\hlkwc{date_time}\hlstd{=}\hlkwd{as.POSIXct}\hlstd{(}\hlkwd{format}\hlstd{(data[[i]]}\hlopt{$}\hlstd{date_time[}\hlnum{1}\hlstd{],}
@@ -2478,17 +2484,14 @@ In the harbor porpoise example from \cite{Leos-BarajasEtAl2017}, there are only 
   \hlstd{tmp} \hlkwb{<-} \hlkwd{rbind}\hlstd{(coarseInd,}\hlkwd{data.frame}\hlstd{(data[[i]],}\hlkwc{level}\hlstd{=}\hlstr{"2"}\hlstd{))}
   \hlstd{porpoiseData} \hlkwb{<-} \hlkwd{rbind}\hlstd{(porpoiseData,tmp)}
 \hlstd{\}}
+\end{alltt}
 
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error: \$ operator is invalid for atomic vectors}}\begin{alltt}
 \hlkwd{head}\hlstd{(porpoiseData)}
 \end{alltt}
 \begin{verbatim}
-##             date_time level dive_duration maximum_depth dive_wiggliness
-## 1 2015-11-02 14:43:00     1            NA            NA              NA
-## 2 2015-11-02 14:43:00    2i            NA            NA              NA
-## 3 2015-11-02 14:43:11     2            28          8.19            5.50
-## 4 2015-11-02 14:44:08     2            18          8.19            3.00
-## 5 2015-11-02 14:44:35     2            14          6.19            5.25
-## 6 2015-11-02 14:44:58     2            17          7.44            2.50
+## NULL
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -2502,34 +2505,16 @@ Now that we have labeled each observation in our data with a \verb|level| factor
 \hlstd{porpoiseData} \hlkwb{<-} \hlkwd{prepData}\hlstd{(}\hlkwc{data} \hlstd{= porpoiseData,}
                          \hlkwc{coordNames} \hlstd{=} \hlkwa{NULL}\hlstd{,}
                          \hlkwc{hierLevels} \hlstd{=} \hlkwd{c}\hlstd{(}\hlstr{"1"}\hlstd{,} \hlstr{"2i"}\hlstd{,} \hlstr{"2"}\hlstd{))}
+\end{alltt}
 
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in prepData.default(data = porpoiseData, coordNames = NULL, hierLevels = c("{}1"{}, : data must be a data frame}}\begin{alltt}
 \hlcom{# summarize prepared data}
 \hlkwd{summary}\hlstd{(porpoiseData,} \hlkwc{dataNames} \hlstd{=} \hlkwd{names}\hlstd{(porpoiseData)[}\hlopt{-}\hlnum{1}\hlstd{])}
 \end{alltt}
 \begin{verbatim}
-## Hierarchical HMM data for 1 individual:
-## 
-## Animal1 -- 8135 observations
-## 
-## 
-## Data summaries:
-## 
-##    date_time                   level     dive_duration maximum_depth  
-##  Min.   :2015-11-02 14:43:00   1 : 275   Min.   :  1   Min.   :  2.2  
-##  1st Qu.:2015-11-06 02:01:24   2i: 275   1st Qu.: 15   1st Qu.:  7.2  
-##  Median :2015-11-08 14:14:28   2 :7585   Median : 43   Median : 16.2  
-##  Mean   :2015-11-08 11:59:48             Mean   : 58   Mean   : 22.2  
-##  3rd Qu.:2015-11-11 04:43:07             3rd Qu.: 90   3rd Qu.: 30.2  
-##  Max.   :2015-11-14 00:58:50             Max.   :248   Max.   :169.4  
-##                                          NA's   :550   NA's   :550    
-##  dive_wiggliness
-##  Min.   :  0.0  
-##  1st Qu.:  3.8  
-##  Median : 15.0  
-##  Mean   : 23.4  
-##  3rd Qu.: 36.0  
-##  Max.   :253.5  
-##  NA's   :562
+## Length  Class   Mode 
+##      0   NULL   NULL
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -2543,7 +2528,7 @@ Now that we have labeled each observation in our data with a \verb|level| factor
 \end{alltt}
 
 
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in prepData.hierarchical(data = porpoiseData, coordNames = NULL, : hierLevels must be ordered factors of the form:\\\#\#\ \ \ \ \ \ '1', '2i', '2', ..., 'Mi', 'M' where M is the number of levels in the hierarchy}}\end{kframe}
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in prepData.default(data = porpoiseData, coordNames = NULL, hierLevels = c("{}1"{}, : data must be a data frame}}\end{kframe}
 \end{knitrout}
 \noindent Note that because there are no location data in this example, we have set \verb|coordNames| to \verb|NULL|. Also note that in this example there are no data streams observed at the coarse time scale (\verb|level=1|), but these could be easily included (if available; see sections \ref{sec:atlanticCod} and \ref{sec:hornShark}). By definition there are no data streams observed at the initial fine scale (\verb|level=2i|), but covariates (if available) could be included here for modeling the fine-scale initial distributions or state transition probabilities.
 

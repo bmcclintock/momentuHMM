@@ -311,7 +311,7 @@ Once a \verb|momentuHMMData| object has been created using \verb|prepData|, then
   \item{\verb|dist|} A named list indicating the probability distributions of the data streams.
   \item{\verb|estAngleMean|} An optional named list indicating whether or not to estimate the angle mean for data streams with angular distributions (e.g. turning angle). If not estimated (the default), the angle mean is fixed to 0.
   \item{\verb|formula|} Regression formula for the transition probability covariates
-  \item{\verb|stationary|} Logical indicating whether or not the initial distribution is considered equal to the stationary distribution (must be \verb|FALSE| if \verb|formula| includes covariates) 
+  \item{\verb|stationary|} Logical indicating whether or not the initial distribution is considered equal to the stationary distribution (must be \verb|FALSE| if \verb|formula| includes time-varying covariates) 
   \item{\verb|Par0|} A named list containing vectors of starting values for the state-dependent probability distribution parameters of each data stream
 \end{itemize}
 These seven arguments are all that are needed in order to fit the HMMs currently supported in \verb|moveHMM| \citep{MichelotEtAl2016}. For example, here is how the analysis of 15 ``wild haggis'' tracks described in \cite{MichelotEtAl2016} would be implemented using \verb|momentuHMM|:
