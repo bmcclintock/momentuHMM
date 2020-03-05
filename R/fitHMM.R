@@ -807,6 +807,12 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
         steptol <- ifelse(is.null(nlmPar$steptol),1e-6,nlmPar$steptol)
         iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
         
+        optPar <- wpar
+        optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar$pi)+which(duplicated(c(deltaCons)))))
+        if(length(optInd)){
+          optPar <- wpar[-optInd]
+        }
+        
         startTime <- proc.time()
   
         # call to optimizer nlm

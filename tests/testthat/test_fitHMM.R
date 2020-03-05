@@ -331,3 +331,25 @@ test_that("equivalent models with and without dummy covariate match",{
   setRNG::setRNG(oldRNG)
   
 })
+
+test_that("retryFits works",{
+  data <- example$m$data
+  simPar <- example$simPar
+  par0 <- example$par0
+  par0$Par$step <- c(60.39849, 2316.51195,   70.13456,   18.51266)
+  par0$Par$angle <- c(-0.1811843,  1.0969285,  1.1738157,  2.5099845)
+  par0$beta0 <- matrix(c(-50.397203, -11.051239,
+                        4.751330,-13.734779,
+                        -2.345075,  -1.895257),3,2,byrow=TRUE)
+  par0$delta0 <- c(1-3.774067e-14,3.774067e-14)
+  
+  setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=3)
+  mod1 <- fitHMM(data=data,nbStates=simPar$nbStates,Par=par0$Par,
+                  beta0=par0$beta0,delta0=par0$delta0,formula=par0$formula,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean)
+  
+  Par0 <- getPar(mod1)
+  mod2 <- fitHMM(data=data,nbStates=simPar$nbStates,Par=Par0$Par,
+                 beta0=Par0$beta,delta0=Par0$delta,formula=par0$formula,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,retryFits=5,retrySD=list(step=5,beta=20,delta=20))
+  expect_equal(isTRUE(all.equal(mod1$mod$estimate,mod2$mod$estimate)),FALSE)
+  
+})
