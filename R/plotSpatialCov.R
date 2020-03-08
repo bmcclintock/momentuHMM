@@ -209,7 +209,7 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
         theme(panel.background = element_rect(fill=NA)) +
         theme(panel.border = element_rect(colour = "black",fill=NA)) +
         theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-        geom_raster(data = dfcov,aes(fill=dfcov[[names(spatialCov)]])) +
+        geom_raster(data = dfcov,aes(fill=.data[[names(spatialCov)]])) +
         labs(fill = names(spatialCov)) +
         geom_point(aes(x,y,col=col,shape=col),subData,alpha=alpha,size=size,show.legend=ifelse(nbCol>1,TRUE,FALSE)) +
         coord_equal()
@@ -233,7 +233,7 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
       theme(panel.background = element_rect(fill=NA)) +
       theme(panel.border = element_rect(colour = "black",fill=NA)) +
       theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-      geom_raster(data = dfcov,aes(fill=dfcov[[names(spatialCov)]])) +
+      geom_raster(data = dfcov,aes(fill=.data[[names(spatialCov)]])) +
       labs(fill = names(spatialCov)) +
       geom_point(aes(x,y,col=col,shape=col),data,alpha=alpha,size=size,show.legend=ifelse(nbCol>1,TRUE,FALSE)) +
       coord_equal()
