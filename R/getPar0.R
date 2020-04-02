@@ -339,6 +339,9 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
       }
     } else {
       Par$delta<-NULL
+      if(nbStates>1 & !stationary){
+        warning("delta could not be specified; set manually if so desired")
+      }
     }
     if(!is.null(recharge)){
       parmNames <- names(model$mle$g0)

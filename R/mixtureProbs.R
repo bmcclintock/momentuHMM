@@ -221,7 +221,7 @@ get_mixProbs <- function(optPar,mod,mixture){
   mixProbs <- lnum <- la <- numeric(mixtures)
   for(mix in 1:mixtures){
     par$beta <- beta[(mix-1)*(nbCovs+1)+1:(nbCovs+1),,drop=FALSE]
-    if(!mod$conditions$stationary) par$delta <- delta[(mix-1)*(nbCovsDelta+1)+1:(nbCovsDelta+1),,drop=FALSE]
+    if(!mod$conditions$stationary) par$delta <- delta[mix,,drop=FALSE]
     la[mix] <- nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,
                              par,
                              1,mod$conditions$zeroInflation,mod$conditions$oneInflation,mod$conditions$stationary,knownStates,mod$conditions$betaRef,1)
