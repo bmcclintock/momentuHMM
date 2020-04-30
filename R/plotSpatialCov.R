@@ -197,6 +197,8 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   dfcov <- data.frame(map.cov)
   colnames(dfcov) <- c("x", "y", names(spatialCov))
   
+  .data <- NULL # gets rid of no visible binding for global variable '.data' NOTE in R cmd check
+  
   if(!compact) {
     
     par(ask=ask)
