@@ -61,8 +61,8 @@ mixtureProbs <- function(m, getCI=FALSE, alpha = 0.95){
   if(mixtures==1) getCI <- FALSE
     #stop("No mixtures to assign probabilities (mixtures=1)")
   
-  if(mixtures>1) pie <- m$mle$pi
-  else pie <- matrix(1,nbAnimals,1)
+  #if(mixtures>1) pie <- m$mle$pi
+  #else pie <- matrix(1,nbAnimals,1)
   
   quantSup<-qnorm(1-(1-alpha)/2)
     
@@ -70,11 +70,7 @@ mixtureProbs <- function(m, getCI=FALSE, alpha = 0.95){
   colnames(est) <- colnames(se) <- colnames(lower) <- colnames(upper) <- paste0("mix",1:mixtures)
   rownames(est) <- rownames(se) <- rownames(lower) <- rownames(upper) <- paste0("ID:",unique(m$data$ID))
   for(k in 1:nbAnimals){
-    pInd <- which(mapply(function(x) isTRUE(all.equal(x,0)),pie[k,]))
-    if(length(pInd)){
-      pie[k,pInd] <- 1.e-100
-      pie[k,-pInd] <- pie[k,-pInd] - (1.e-100*length(pInd))/(ncol(pie)-length(pInd))
-    }
+    #pInd <- which(mapply(function(x) isTRUE(all.equal(x,0)),pie[k,]))
     ind <- which(m$data$ID==unique(m$data$ID)[k])
     tmp <- m
     tmp$data <- m$data[ind,]
@@ -82,7 +78,7 @@ mixtureProbs <- function(m, getCI=FALSE, alpha = 0.95){
     tmp$covsPi <- m$covsPi[k,,drop=FALSE]
     tmp$conditions$knownStates <- rep(NA,nrow(tmp$data))
     est[k,] <- get_mixProbs(tmp$mod$wpar,mod=tmp,mixture=1:mixtures)
-    est[k,pInd] <- 0
+    #est[k,pInd] <- 0
     if(getCI){
       cat("\rComputing SEs and ",alpha*100,"% CIs for individual ",unique(m$data$ID)[k],"... ",sep="")
       for(mix in 1:mixtures){
@@ -216,6 +212,11 @@ get_mixProbs <- function(optPar,mod,mixture){
   beta <- par$beta
   delta <- par$delta
   pie <- par$pi
+  pInd <- which(mapply(function(x) isTRUE(all.equal(x,0)), pie))
+  if (length(pInd)) {
+    pie[pInd] <- 1e-100
+    pie[-pInd] <- pie[-pInd] - (1e-100 * length(pInd))/(ncol(pie) - length(pInd))
+  }
   par$pi <- matrix(1,1,1)
   
   mixProbs <- lnum <- la <- numeric(mixtures)

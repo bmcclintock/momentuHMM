@@ -1,8 +1,10 @@
-momentuHMM 1.5.2 2020-04-01
+momentuHMM 1.5.2 2020-04-30
 -----------------
 BUG FIXES
 
 * mixtureProbs function produced an error when initial distribution formula includes covariates
+
+* avoid numerical underflow in mixtureProbs when a mixture probability is zero
 
 
 momentuHMM 1.5.1 2020-03-04

@@ -64,7 +64,7 @@ stateProbs <- function(m, hierarchical=FALSE)
         if(mix==mixtures) k <- k + 1
       }
       stateProb[[mix]] <- exp(la[[mix]][i,]+lb[[mix]][i,]-llk)
-      if(!sum(stateProb[[mix]])) {
+      if(!is.finite(stateProb[[mix]]) | !sum(stateProb[[mix]])) {
         stateProb[[mix]] <- Brobdingnag::brob(la[[mix]][i,]+lb[[mix]][i,]-llk)
         stateProbs[i,] <- stateProbs[i,] + as.numeric(stateProb[[mix]]/Brobdingnag::sum(stateProb[[mix]]) * ieta[mix])
       } else {
