@@ -14,7 +14,7 @@ plotPR(m, lag.max = NULL, ncores = 1)
 \item{ncores}{number of cores to use for parallel processing}
 }
 \description{
-Plots time series, qq-plots (against the standard normal distribution), and sample
+Plots time series, qq-plots (against the standard normal distribution) using \code{\link[car]{qqPlot}}, and sample
 ACF functions of the pseudo-residuals for each data stream
 }
 \details{

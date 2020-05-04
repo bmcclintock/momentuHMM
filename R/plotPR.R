@@ -1,7 +1,7 @@
 
 #' Plot pseudo-residuals
 #'
-#' Plots time series, qq-plots (against the standard normal distribution), and sample
+#' Plots time series, qq-plots (against the standard normal distribution) using \code{\link[car]{qqPlot}}, and sample
 #' ACF functions of the pseudo-residuals for each data stream
 #'
 #' @param m A \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miHMM}}, \code{\link{HMMfits}}, or \code{\link{miSum}} object.
@@ -104,13 +104,13 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
         tpr <- as.matrix(pr[[1]][[paste0(i,"Res")]])
         if(m[[1]]$conditions$dist[[i]]=="mvnorm2" || m[[1]]$conditions$dist[[i]]=="mvnorm3") ndim <- as.numeric(gsub("mvnorm","",m[[1]]$conditions$dist[[i]] ))
         else ndim <- as.numeric(gsub("rw_mvnorm","",m[[1]]$conditions$dist[[i]] ))
-        car::qqPlot(tpr, distribution = "chisq", df = ndim, 
-               lwd = 1, grid = FALSE, main = "Multi-normal Q-Q Plot", xlab = expression(chi^2 * " quantiles"), ylab = expression("Mahalanobis distances "^2))
+        q <- car::qqPlot(tpr, distribution = "chisq", df = ndim, 
+               lwd = 1, grid = FALSE, col="red",col.lines="black", main = "Multi-normal Q-Q Plot", xlab = expression(chi^2 * " quantiles"), ylab = expression("Mahalanobis distances "^2))
       } else {
         qq <- lapply(pr,function(x) qqnorm(x[[paste0(i,"Res")]],plot=FALSE))
         limInf <- min(min(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),min(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
         limSup <- max(max(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),max(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
-        q <- qqnorm(pr[[1]][[paste0(i,"Res")]],main="",col="red",xlim=c(limInf,limSup),ylim=c(limInf,limSup))
+        q <- car::qqPlot(pr[[1]][[paste0(i,"Res")]],col="red",col.lines="black",main="",lwd=1,grid=FALSE,ylim=c(limInf,limSup),xlab="Theoretical Quantiles",ylab="Sample Quantiles")
         if(nSims>1){
           for(j in 2:nSims){
             points(qq[[j]]$x,qq[[j]]$y,col=col[j])
@@ -134,7 +134,7 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
             segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
           }
         }
-        abline(0,1,lwd=2)
+        #abline(0,1,lwd=2)
       }
       
       
