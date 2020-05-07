@@ -89,14 +89,28 @@ AIC.momentuHMM <- function(object,...,k=2,n=NULL)
     aic <- rep(NA,length(models))
 
     for(i in 1:length(models)) {
-      aic[i] <- getAIC(models[[i]],k,n)
+      if(!inherits(models[[i]],"randomEffects")) aic[i] <- getAIC(models[[i]],k,n)
+      else {
+        if(!is.null(models[[i]]$conditions$fit) && !models[[i]]$conditions$fit) stop("The given model hasn't been fitted.")
+        nbPar <- sum(unlist(models[[i]]$traceG))+length(models[[i]]$mod$wpar)
+        maxLogLike <- -models[[i]]$mod$minimum
+        aic[i] <- -2*maxLogLike+k*nbPar
+        if(!is.null(n)) aic[i] <- aic[i] + k*nbPar*(nbPar+1)/(n-nbPar-1)
+      }
     }
 
     ord <- order(aic) # order models by increasing AIC
     return(data.frame(Model=modNames[ord],AIC=aic[ord]))
   }
   else { # if only one model is provided
-    aic <- getAIC(object,k,n)
+    if(!inherits(object,"randomEffects")) aic <- getAIC(object,k,n)
+    else {
+      if(!is.null(object$conditions$fit) && !object$conditions$fit) stop("The given model hasn't been fitted.")
+      nbPar <- sum(unlist(object$traceG))+length(object$mod$wpar)
+      maxLogLike <- -object$mod$minimum
+      aic <- -2*maxLogLike+k*nbPar
+      if(!is.null(n)) aic <- aic + k*nbPar*(nbPar+1)/(n-nbPar-1)
+    }
     return(aic)
   }
 }

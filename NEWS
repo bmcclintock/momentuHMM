@@ -1,5 +1,9 @@
-momentuHMM 1.5.2 2020-05-04
+momentuHMM 1.5.2 2020-05-06
 -----------------
+NEW FEATURES
+
+* Approximate individual-level random effects estimation for the state transition probabilities based on Burnham & White (2002) can now be implemented via the randomEffects function
+
 CHANGES
 
 * plotPR now uses car::qqPlot for pseudo-residual qq-plots

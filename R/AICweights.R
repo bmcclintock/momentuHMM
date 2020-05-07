@@ -171,3 +171,4 @@ AICweights.miHMM <- function(...,k=2, n=NULL)
 #' @method AICweights HMMfits
 #' @export
 AICweights.HMMfits <- AICweights.miHMM
+

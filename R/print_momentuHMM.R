@@ -90,6 +90,19 @@ print.momentuHMM <- function(x,...)
       cat("---------------------------------------------------------------\n")
       print(m$CIreal$gamma$est)    
     }
+      
+    if(inherits(m,"randomEffects")){
+      cat("\n")
+      cat("Transition probability random effect parameters:\n")
+      cat("------------------------------------------------\n")
+      muParms <- matrix(unlist(lapply(m$varcomp,function(x) x$mu$est)),ncol=length(m$stateNames)*(length(m$stateNames)-1))
+      colnames(muParms) <- colnames(m$mle$beta)
+      rownames(muParms) <- paste0("mu:",names(m$varcomp[[1]]$mu$est))
+      sigParms <- matrix(unlist(lapply(m$varcomp,function(x) x$sigma$est)),ncol=length(m$stateNames)*(length(m$stateNames)-1))
+      colnames(sigParms) <- colnames(m$mle$beta)
+      rownames(sigParms) <- "sigma"
+      print(rbind(muParms,sigParms))
+    }
   
     cat("\n")
     cat("Initial distribution:\n")
