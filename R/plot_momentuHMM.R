@@ -51,7 +51,7 @@
 #' @importFrom grDevices adjustcolor gray hcl colorRampPalette
 #' @importFrom stats as.formula
 #' @importFrom CircStats circ.mean
-#' @importFrom scatterplot3d scatterplot3d
+# @importFrom scatterplot3d scatterplot3d
 #' @importFrom MASS kde2d
 
 plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
@@ -1063,6 +1063,12 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
                   do.call(lines,c(list(errorEllipse[[zoo]][[i]],col=adjustcolor(col[subStates[i]],alpha.f=0.25),cex=cex),arg))
               }
             } else {
+              
+              if (!requireNamespace("scatterplot3d", quietly = TRUE)) {
+                warning("Package \"scatterplot3d\" needed to plot tracks. Please install it.",
+                       call. = FALSE)
+              }
+              
               z[[zoo]] <- z[[zoo]][remNA]
               ## interactive 3d plot
               #do.call(plotly::plot_ly,list(x=x[[zoo]],y=y[[zoo]],z=z[[zoo]],type='scatter3d',mode='lines',

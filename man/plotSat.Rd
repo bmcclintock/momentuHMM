@@ -26,7 +26,7 @@ plotSat(
 \item{data}{Data frame or \code{\link{momentuHMMData}} object, with necessary fields 'x' (longitudinal direction) and 'y' (latitudinal direction).  A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object is also permitted, from which the data will be extracted.
 If \code{states=NULL} and a \code{momentuHMM}, \code{miHMM}, or \code{miSum} object is provided, the decoded states are automatically plotted.}
 
-\item{zoom}{The zoom level, as defined for \code{\link{get_map}}. Integer value between
+\item{zoom}{The zoom level, as defined for \code{\link[ggmap]{get_map}}. Integer value between
 3 (continent) and 21 (building).}
 
 \item{location}{Location of the center of the map to be plotted (this must be in the same coordinate reference system as \code{data}).}
@@ -39,11 +39,11 @@ otherwise (default).}
 
 \item{col}{Palette of colours to use for the dots and segments. If not specified, uses default palette.}
 
-\item{alpha}{Transparency argument for \code{\link{geom_point}}.}
+\item{alpha}{Transparency argument for \code{\link[ggplot2]{geom_point}}.}
 
-\item{size}{Size argument for \code{\link{geom_point}}.}
+\item{size}{Size argument for \code{\link[ggplot2]{geom_point}}.}
 
-\item{shape}{Shape argument for \code{\link{geom_point}}. If \code{states} is provided, then \code{shape} must either be a scalar or a vector of length \code{length(unique(states))}.
+\item{shape}{Shape argument for \code{\link[ggplot2]{geom_point}}. If \code{states} is provided, then \code{shape} must either be a scalar or a vector of length \code{length(unique(states))}.
 If \code{states=NULL}, then \code{shape} must either be a scalar or a vector consisting of a value for each individual to be plotted.}
 
 \item{states}{A sequence of integers, corresponding to the decoded states for these data

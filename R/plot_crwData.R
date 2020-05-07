@@ -41,7 +41,7 @@
 #'
 #' @importFrom grDevices gray adjustcolor
 #' @importFrom graphics abline axis hist mtext par plot points legend title
-#' @importFrom conicfit calculateEllipse
+# @importFrom conicfit calculateEllipse
 #' @importFrom crawl crwPredictPlot
 
 #' @method plot crwData
@@ -50,6 +50,12 @@
 plot.crwData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,plotEllipse=TRUE,crawlPlot=FALSE,...)
 {
   # check arguments
+  if(plotEllipse){
+    if (!requireNamespace("conicfit", quietly = TRUE)) {
+      stop("Package \"conicfit\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
+  }
   if(length(x)<1 | any(dim(x)<1))
     stop("The data input is empty.")
   
@@ -329,5 +335,5 @@ plot.crwHierData <- function(x,animals=NULL,compact=FALSE,ask=TRUE,plotEllipse=T
 }
 
 getEllipse<-function(x,y,M,m,r){
-  calculateEllipse(x,y,M,m,90-r) #calculateEllipse angle runs counterclockwise from east but Argos error ellipse runs clockwise from north
+  conicfit::calculateEllipse(x,y,M,m,90-r) #calculateEllipse angle runs counterclockwise from east but Argos error ellipse runs clockwise from north
 }

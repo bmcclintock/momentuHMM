@@ -60,7 +60,6 @@ simObsData <- function(data, lambda, errorEllipse, ...) {
 #' obsData2 <- simObsData(data,lambda=lambda,errorEllipse=errorEllipse)
 #' 
 #' @importFrom mvtnorm rmvnorm
-#' @importFrom argosfilter radian
 #' @importFrom crawl argosDiag2Cov
 #' @importFrom stats rexp
 #' @export
@@ -126,7 +125,7 @@ simObsData.momentuHMMData<-function(data,lambda,errorEllipse,...){
       error_semimajor_axis[which(tmpM<tmpm)]<-tmpm[which(tmpM<tmpm)]
       error_semiminor_axis[which(tmpM<tmpm)]<-tmpM[which(tmpM<tmpm)]
       error_ellipse_orientation<-runif(nobs,r[1],r[2])
-      rad<-argosfilter::radian(error_ellipse_orientation)
+      rad<-radian(error_ellipse_orientation)
         
       #calculate bivariate normal error variance-covariance matrix (Sigma)
       sigma2x<-(error_semimajor_axis/sqrt(2))^2*sin(rad)^2+(error_semiminor_axis/sqrt(2))^2*cos(rad)^2 # x measurement error term
@@ -164,7 +163,6 @@ simObsData.momentuHMMData<-function(data,lambda,errorEllipse,...){
 #' @seealso \code{\link{simHierData}}
 #' 
 #' @importFrom mvtnorm rmvnorm
-#' @importFrom argosfilter radian
 #' @importFrom crawl argosDiag2Cov
 #' @importFrom stats rexp
 #' @export
@@ -231,7 +229,7 @@ simObsData.momentuHierHMMData<-function(data,lambda,errorEllipse,coordLevel,...)
       error_semimajor_axis[which(tmpM<tmpm)]<-tmpm[which(tmpM<tmpm)]
       error_semiminor_axis[which(tmpM<tmpm)]<-tmpM[which(tmpM<tmpm)]
       error_ellipse_orientation<-runif(nobs,r[1],r[2])
-      rad<-argosfilter::radian(error_ellipse_orientation)
+      rad<-radian(error_ellipse_orientation)
       
       #calculate bivariate normal error variance-covariance matrix (Sigma)
       sigma2x<-(error_semimajor_axis/sqrt(2))^2*sin(rad)^2+(error_semiminor_axis/sqrt(2))^2*cos(rad)^2 # x measurement error term

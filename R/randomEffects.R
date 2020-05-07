@@ -69,20 +69,27 @@
 #' AIC(nullFit,covFit,fixFit,reFit,reCovFit, n=nrow(reData))
 #' }
 #' @references
-#' Burnham, K.P. and White, G.C., 2002. Evaluation of some random effects methodology applicable to bird ringing data. Journal of Applied Statistics 29: 245-264.
+#' Burnham, K.P. and White, G.C. 2002. Evaluation of some random effects methodology applicable to bird ringing data. Journal of Applied Statistics 29: 245-264.
 #'
 #' @export
 #' @importFrom MASS ginv
-#' @importFrom BB BBsolve 
+# @importFrom BB BBsolve 
 #' @importFrom stats optimise get_all_vars
-#' @importFrom expm sqrtm
-#' @importFrom matrixcalc matrix.trace
+# @importFrom expm sqrtm
+# @importFrom matrixcalc matrix.trace
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
 
 randomEffects <- function(m, Xformula = ~1, alpha = 0.95, ncores = 1, nlmPar = list(), fit = TRUE, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), modelName = NULL, ...)
 {
+  
+  for(pkg in c("BB","expm","matrixcalc")){
+    if (!requireNamespace(pkg, quietly = TRUE)) {
+      stop("Package \"",pkg,"\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
+  }
   
   modelterms <- colnames(stats::get_all_vars(m$conditions$formula,m$data))
   if(!("ID" %in% modelterms)) stop("'ID' must be included in the state transition probability formula of the model")

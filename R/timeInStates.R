@@ -37,8 +37,8 @@ timeInStates.momentuHMM <- function(m, by = NULL, alpha = 0.95, ncores = 1){
 #' @method timeInStates HMMfits
 #' @export
 #' @rdname timeInStates
-#' @importFrom magrittr %>%
-#' @importFrom dplyr funs group_by_at summarise_at
+# @importFrom magrittr %>%
+# @importFrom dplyr funs group_by_at summarise_at
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
 timeInStates.HMMfits <- function(m, by = NULL, alpha = 0.95, ncores = 1){
@@ -59,6 +59,15 @@ timeInStates.HMMfits <- function(m, by = NULL, alpha = 0.95, ncores = 1){
   nbStates <- length(stateNames)
   if(any(!(by %in% names(m[[1]]$data)))) stop(by[which(!(by %in% names(m[[1]]$data)))]," not found in data")
   
+  if(!is.null(by)){
+    for(pkg in c("dplyr","magrittr")){
+      if (!requireNamespace(pkg, quietly = TRUE)) {
+        stop("Package \"",pkg,"\" needed for this function to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+  }
+  
   cat("Decoding state sequences and probabilities for each imputation... ")
   registerDoParallel(cores=ncores)
   withCallingHandlers(im_states <- foreach(i = 1:nsims) %dorng% {momentuHMM::viterbi(m[[i]])},warning=muffleRNGwarning)
@@ -73,32 +82,34 @@ timeInStates.HMMfits <- function(m, by = NULL, alpha = 0.95, ncores = 1){
   
   if(!is.null(by)){
     
+    `%>%` <- magrittr::`%>%`
+    
     n <- as.data.frame(
       xmat %>%
-        group_by_at(by) %>%
-        summarise_at(stateNames, funs(sum(!is.na(.)))))
+        dplyr::group_by_at(by) %>%
+        dplyr::summarise_at(stateNames, dplyr::funs(sum(!is.na(.)))))
     
     if(any(n[,stateNames]<2)) warning("need at least 2 simulations for each 'by' combination with valid point and variance estimates")
     
     xbar <- as.data.frame(
       xmat %>%
-          group_by_at(by) %>%
-          summarise_at(stateNames, funs(mean(., na.rm=TRUE))))
+          dplyr::group_by_at(by) %>%
+          dplyr::summarise_at(stateNames, dplyr::funs(mean(., na.rm=TRUE))))
   
     MI_se <- as.data.frame(
       xmat %>%
-        group_by_at(by) %>%
-        summarise_at(stateNames, funs(sqrt((sum(!is.na(.))+1)/sum(!is.na(.)) * var(., na.rm=TRUE)))))
+        dplyr::group_by_at(by) %>%
+        dplyr::summarise_at(stateNames, dplyr::funs(sqrt((sum(!is.na(.))+1)/sum(!is.na(.)) * var(., na.rm=TRUE)))))
     
     lower <- as.data.frame(
       xmat %>%
-        group_by_at(by) %>%
-        summarise_at(stateNames, funs(probCI(mean(., na.rm=TRUE),sqrt((sum(!is.na(.))+1)/sum(!is.na(.)) * var(., na.rm=TRUE)),qt(1-(1-alpha)/2,df=sum(!is.na(.))-1),"lower"))))
+        dplyr::group_by_at(by) %>%
+        dplyr::summarise_at(stateNames, dplyr::funs(probCI(mean(., na.rm=TRUE),sqrt((sum(!is.na(.))+1)/sum(!is.na(.)) * var(., na.rm=TRUE)),qt(1-(1-alpha)/2,df=sum(!is.na(.))-1),"lower"))))
     
     upper <- as.data.frame(
       xmat %>%
-        group_by_at(by) %>%
-        summarise_at(stateNames, funs(probCI(mean(., na.rm=TRUE),sqrt((sum(!is.na(.))+1)/sum(!is.na(.)) * var(., na.rm=TRUE)),qt(1-(1-alpha)/2,df=sum(!is.na(.))-1),"upper"))))
+        dplyr::group_by_at(by) %>%
+        dplyr::summarise_at(stateNames, dplyr::funs(probCI(mean(., na.rm=TRUE),sqrt((sum(!is.na(.))+1)/sum(!is.na(.)) * var(., na.rm=TRUE)),qt(1-(1-alpha)/2,df=sum(!is.na(.))-1),"upper"))))
     
     combins <- list(est=xbar,se=MI_se,lower=lower,upper=upper)
   

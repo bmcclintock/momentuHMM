@@ -126,9 +126,21 @@ RWdata <- function(dist,data,knownStates){
   newdata
 }
 
-#' @importFrom dplyr lag
+# @importFrom dplyr lag
 crw <- function(x_tm1,lag=1){
+  for(pkg in c("dplyr")){
+    if (!requireNamespace(pkg, quietly = TRUE)) {
+      stop("Package \"",pkg,"\" needed for crw function to work. Please install it.",
+           call. = FALSE)
+    }
+  }
   dplyr::lag(x_tm1,n=lag-1,default=x_tm1[1])-dplyr::lag(x_tm1,n=lag,default=x_tm1[1])
+}
+
+radian <- function(degree) 
+{
+  radian <- degree * (pi/180)
+  radian
 }
 
 # startup message

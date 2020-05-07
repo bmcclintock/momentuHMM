@@ -10,9 +10,9 @@
 #' @param compact \code{FALSE} if tracks should be plotted separately, \code{TRUE}
 #' otherwise (default).
 #' @param col Palette of colours to use for the dots and segments. If not specified, uses default palette.
-#' @param alpha Transparency argument for \code{\link{geom_point}}.
-#' @param size Size argument for \code{\link{geom_point}}.
-#' @param shape Shape argument for \code{\link{geom_point}}. If \code{states} is provided, then \code{shape} must either be a scalar or a vector of length \code{length(unique(states))}.
+#' @param alpha Transparency argument for \code{\link[ggplot2]{geom_point}}.
+#' @param size Size argument for \code{\link[ggplot2]{geom_point}}.
+#' @param shape Shape argument for \code{\link[ggplot2]{geom_point}}. If \code{states} is provided, then \code{shape} must either be a scalar or a vector of length \code{length(unique(states))}.
 #' If \code{states=NULL}, then \code{shape} must either be a scalar or a vector consisting of a value for each individual to be plotted.
 #' @param states A sequence of integers, corresponding to the decoded states for these data. If
 #' specified, the observations are colored by states.
@@ -37,8 +37,8 @@
 #' 
 #' plotSpatialCov(data,forest,states=data$states)
 #'
-#' @importFrom ggplot2 ggplot geom_point geom_path aes geom_raster guides guide_legend theme
-#' @importFrom ggplot2 element_rect element_blank scale_color_manual scale_shape_manual coord_equal labs
+# @importFrom ggplot2 ggplot geom_point geom_path aes geom_raster guides theme
+# @importFrom ggplot2 element_rect element_blank scale_color_manual scale_shape_manual coord_equal labs
 #' @importFrom raster rasterToPoints
 #' @export
 
@@ -48,6 +48,11 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   #####################
   ## Check arguments ##
   #####################
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("Package \"ggplot2\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+  
   if(!inherits(spatialCov,"RasterLayer")) 
     stop("spatialCov should be of class 'RasterLayer'")
   
@@ -207,48 +212,48 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
     for(id in unique(data$ID)) {
       subData <- subset(data,ID==id)
       
-      mapMove <- ggplot(dfcov, aes(x=x, y=y)) + 
-        theme(panel.background = element_rect(fill=NA)) +
-        theme(panel.border = element_rect(colour = "black",fill=NA)) +
-        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-        geom_raster(data = dfcov,aes(fill=.data[[names(spatialCov)]])) +
-        labs(fill = names(spatialCov)) +
-        geom_point(aes(x,y,col=col,shape=col),subData,alpha=alpha,size=size,show.legend=ifelse(nbCol>1,TRUE,FALSE)) +
-        coord_equal()
+      mapMove <- ggplot2::ggplot(dfcov, ggplot2::aes(x=x, y=y)) + 
+        ggplot2::theme(panel.background = ggplot2::element_rect(fill=NA)) +
+        ggplot2::theme(panel.border = ggplot2::element_rect(colour = "black",fill=NA)) +
+        ggplot2::theme(panel.grid.major = ggplot2::element_blank(), panel.grid.minor = ggplot2::element_blank()) +
+        ggplot2::geom_raster(data = dfcov,ggplot2::aes(fill=.data[[names(spatialCov)]])) +
+        ggplot2::labs(fill = names(spatialCov)) +
+        ggplot2::geom_point(ggplot2::aes(x,y,col=col,shape=col),subData,alpha=alpha,size=size,show.legend=ifelse(nbCol>1,TRUE,FALSE)) +
+        ggplot2::coord_equal()
       
       if(segments)
-        mapMove <- mapMove + geom_path(aes(x,y,col=col,group=ID),subData,alpha=alpha)
+        mapMove <- mapMove + ggplot2::geom_path(ggplot2::aes(x,y,col=col,group=ID),subData,alpha=alpha)
       
       if(nbCol==1) # no legend if only one color
-        mapMove <- mapMove + scale_color_manual(values=pal) + scale_shape_manual(values=shape) + guides(col=FALSE)
+        mapMove <- mapMove + ggplot2::scale_color_manual(values=pal) + ggplot2::scale_shape_manual(values=shape) + ggplot2::guides(col=FALSE)
       else if(!is.null(stateNames)){
         stateInd <- sort(unique(subData$states))
-        mapMove <- mapMove + scale_color_manual(name = colname,labels = stateNames[stateInd],values = pal[stateInd]) + scale_shape_manual(name = colname,labels = stateNames[stateInd],values = shape[stateInd])
+        mapMove <- mapMove + ggplot2::scale_color_manual(name = colname,labels = stateNames[stateInd],values = pal[stateInd]) + ggplot2::scale_shape_manual(name = colname,labels = stateNames[stateInd],values = shape[stateInd])
       } else {
-        mapMove <- mapMove + scale_color_manual(name = colname,labels = animals,values = pal) + scale_shape_manual(name = colname,labels = animals,values = shape)
+        mapMove <- mapMove + ggplot2::scale_color_manual(name = colname,labels = animals,values = pal) + ggplot2::scale_shape_manual(name = colname,labels = animals,values = shape)
       }
       
       plot(mapMove)
     }
   } else {
-    mapMove <- ggplot(dfcov, aes(x=x, y=y)) + 
-      theme(panel.background = element_rect(fill=NA)) +
-      theme(panel.border = element_rect(colour = "black",fill=NA)) +
-      theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-      geom_raster(data = dfcov,aes(fill=.data[[names(spatialCov)]])) +
-      labs(fill = names(spatialCov)) +
-      geom_point(aes(x,y,col=col,shape=col),data,alpha=alpha,size=size,show.legend=ifelse(nbCol>1,TRUE,FALSE)) +
-      coord_equal()
+    mapMove <- ggplot2::ggplot(dfcov, ggplot2::aes(x=x, y=y)) + 
+      ggplot2::theme(panel.background = ggplot2::element_rect(fill=NA)) +
+      ggplot2::theme(panel.border = ggplot2::element_rect(colour = "black",fill=NA)) +
+      ggplot2::theme(panel.grid.major = ggplot2::element_blank(), panel.grid.minor = ggplot2::element_blank()) +
+      ggplot2::geom_raster(data = dfcov,ggplot2::aes(fill=.data[[names(spatialCov)]])) +
+      ggplot2::labs(fill = names(spatialCov)) +
+      ggplot2::geom_point(ggplot2::aes(x,y,col=col,shape=col),data,alpha=alpha,size=size,show.legend=ifelse(nbCol>1,TRUE,FALSE)) +
+      ggplot2::coord_equal()
     
     if(segments)
-      mapMove <- mapMove + geom_path(aes(x,y,col=col,group=ID),data,alpha=alpha)
+      mapMove <- mapMove + ggplot2::geom_path(ggplot2::aes(x,y,col=col,group=ID),data,alpha=alpha)
     
     if(nbCol==1) # no legend if only one color
-      mapMove <- mapMove + scale_color_manual(values=pal) + scale_shape_manual(values=shape) + guides(col=FALSE)
+      mapMove <- mapMove + ggplot2::scale_color_manual(values=pal) + ggplot2::scale_shape_manual(values=shape) + ggplot2::guides(col=FALSE)
     else if(!is.null(stateNames)){
-      mapMove <- mapMove + scale_color_manual(name = colname,labels = stateNames,values = pal) + scale_shape_manual(name = colname,labels = stateNames,values = shape)
+      mapMove <- mapMove + ggplot2::scale_color_manual(name = colname,labels = stateNames,values = pal) + ggplot2::scale_shape_manual(name = colname,labels = stateNames,values = shape)
     } else {
-      mapMove <- mapMove + scale_color_manual(name = colname,labels = animals,values = pal) + scale_shape_manual(name = colname,labels = animals,values = shape)
+      mapMove <- mapMove + ggplot2::scale_color_manual(name = colname,labels = animals,values = pal) + ggplot2::scale_shape_manual(name = colname,labels = animals,values = shape)
     }
     
     if(return) {

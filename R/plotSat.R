@@ -7,7 +7,7 @@
 #'
 #' @param data Data frame or \code{\link{momentuHMMData}} object, with necessary fields 'x' (longitudinal direction) and 'y' (latitudinal direction).  A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object is also permitted, from which the data will be extracted.
 #' If \code{states=NULL} and a \code{momentuHMM}, \code{miHMM}, or \code{miSum} object is provided, the decoded states are automatically plotted.
-#' @param zoom The zoom level, as defined for \code{\link{get_map}}. Integer value between
+#' @param zoom The zoom level, as defined for \code{\link[ggmap]{get_map}}. Integer value between
 #' 3 (continent) and 21 (building).
 #' @param location Location of the center of the map to be plotted (this must be in the same coordinate reference system as \code{data}).
 #' @param segments \code{TRUE} if segments should be plotted between the observations (default),
@@ -15,9 +15,9 @@
 #' @param compact \code{FALSE} if tracks should be plotted separately, \code{TRUE}
 #' otherwise (default).
 #' @param col Palette of colours to use for the dots and segments. If not specified, uses default palette.
-#' @param alpha Transparency argument for \code{\link{geom_point}}.
-#' @param size Size argument for \code{\link{geom_point}}.
-#' @param shape Shape argument for \code{\link{geom_point}}. If \code{states} is provided, then \code{shape} must either be a scalar or a vector of length \code{length(unique(states))}.
+#' @param alpha Transparency argument for \code{\link[ggplot2]{geom_point}}.
+#' @param size Size argument for \code{\link[ggplot2]{geom_point}}.
+#' @param shape Shape argument for \code{\link[ggplot2]{geom_point}}. If \code{states} is provided, then \code{shape} must either be a scalar or a vector of length \code{length(unique(states))}.
 #' If \code{states=NULL}, then \code{shape} must either be a scalar or a vector consisting of a value for each individual to be plotted.
 #' @param states A sequence of integers, corresponding to the decoded states for these data
 #' (such that the observations are colored by states).
@@ -37,8 +37,8 @@
 #' The R Journal, 5(1), 144-161.
 #' URL: http://journal.r-project.org/archive/2013-1/kahle-wickham.pdf
 #'
-#' @importFrom ggmap get_map ggmap
-#' @importFrom ggplot2 geom_point geom_path aes guides scale_color_manual scale_shape_manual
+# @importFrom ggmap get_map ggmap
+# @importFrom ggplot2 geom_point geom_path aes guides scale_color_manual scale_shape_manual
 #' @importFrom sp coordinates proj4string spTransform CRS
 #' @export
 
@@ -48,6 +48,13 @@ plotSat <- function(data,zoom=NULL,location=NULL,segments=TRUE,compact=TRUE,col=
   #####################
   ## Check arguments ##
   #####################
+  
+  for(pkg in c("ggmap","ggplot2")){
+    if (!requireNamespace(pkg, quietly = TRUE)) {
+      stop("Package \"",pkg,"\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
+  }
   
   if(is.null(states) & inherits(data,c("momentuHMM","miHMM","miSum"))){
     if(inherits(data,"momentuHMM")) states <- viterbi(data)
@@ -240,21 +247,21 @@ plotSat <- function(data,zoom=NULL,location=NULL,segments=TRUE,compact=TRUE,col=
       }
       
       # get map of the study region (from google)
-      map <- get_map(location=c(lon=midLon, lat=midLat), zoom=zoom, maptype="satellite",
+      map <- ggmap::get_map(location=c(lon=midLon, lat=midLat), zoom=zoom, maptype="satellite",
                      source="google")
       
-      mapMove <- ggmap(map) + geom_point(aes(x,y,col=col,shape=col),subData,size=size,alpha=alpha)
+      mapMove <- ggmap::ggmap(map) + ggplot2::geom_point(ggplot2::aes(x,y,col=col,shape=col),subData,size=size,alpha=alpha)
       
       if(segments)
-        mapMove <- mapMove + geom_path(aes(x,y,col=col,group=ID),subData,alpha=alpha)
+        mapMove <- mapMove + ggplot2::geom_path(ggplot2::aes(x,y,col=col,group=ID),subData,alpha=alpha)
       
       if(nbCol==1) # no legend if only one colour
-        mapMove <- mapMove + scale_color_manual(values=pal) + scale_shape_manual(values=shape) + guides(col=FALSE,shape=FALSE)
+        mapMove <- mapMove + ggplot2::scale_color_manual(values=pal) + ggplot2::scale_shape_manual(values=shape) + ggplot2::guides(col=FALSE,shape=FALSE)
       else if(!is.null(stateNames)){
         stateInd <- sort(unique(subData$states))
-        mapMove <- mapMove + scale_color_manual(name = colname,labels = stateNames[stateInd],values = pal[stateInd]) + scale_shape_manual(name = colname,labels = stateNames[stateInd],values = shape[stateInd])
+        mapMove <- mapMove + ggplot2::scale_color_manual(name = colname,labels = stateNames[stateInd],values = pal[stateInd]) + ggplot2::scale_shape_manual(name = colname,labels = stateNames[stateInd],values = shape[stateInd])
       } else {
-        mapMove <- mapMove + scale_color_manual(name = colname,labels = animals,values = pal) + scale_shape_manual(name = colname,labels = animals,values = shape)
+        mapMove <- mapMove + ggplot2::scale_color_manual(name = colname,labels = animals,values = pal) + ggplot2::scale_shape_manual(name = colname,labels = animals,values = shape)
       }
       plot(mapMove) # plot map
     }
@@ -266,20 +273,20 @@ plotSat <- function(data,zoom=NULL,location=NULL,segments=TRUE,compact=TRUE,col=
     }
     
     # get map of the study region (from google)
-    map <- get_map(location=c(lon=midLon, lat=midLat), zoom=zoom, maptype="satellite",
+    map <- ggmap::get_map(location=c(lon=midLon, lat=midLat), zoom=zoom, maptype="satellite",
                    source="google")
     
-    mapMove <- ggmap(map) + geom_point(aes(x,y,col=col,shape=col),data,size=size,alpha=alpha)
+    mapMove <- ggmap::ggmap(map) + ggplot2::geom_point(ggplot2::aes(x,y,col=col,shape=col),data,size=size,alpha=alpha)
     
     if(segments)
-      mapMove <- mapMove + geom_path(aes(x,y,col=col,group=ID),data,alpha=alpha)
+      mapMove <- mapMove + ggplot2::geom_path(ggplot2::aes(x,y,col=col,group=ID),data,alpha=alpha)
     
     if(nbCol==1) # no legend if only one colour
-      mapMove <- mapMove + scale_color_manual(values=pal) + scale_shape_manual(values=shape) + guides(col=FALSE,shape=FALSE)
+      mapMove <- mapMove + ggplot2::scale_color_manual(values=pal) + ggplot2::scale_shape_manual(values=shape) + ggplot2::guides(col=FALSE,shape=FALSE)
       else if(!is.null(stateNames)){
-        mapMove <- mapMove + scale_color_manual(name = colname,labels = stateNames,values = pal) + scale_shape_manual(name = colname,labels = stateNames,values = shape)
+        mapMove <- mapMove + ggplot2::scale_color_manual(name = colname,labels = stateNames,values = pal) + ggplot2::scale_shape_manual(name = colname,labels = stateNames,values = shape)
       } else {
-        mapMove <- mapMove + scale_color_manual(name = colname,labels = animals,values = pal) + scale_shape_manual(name = colname,labels = animals,values = shape)
+        mapMove <- mapMove + ggplot2::scale_color_manual(name = colname,labels = animals,values = pal) + ggplot2::scale_shape_manual(name = colname,labels = animals,values = shape)
       }
     if(return) {
       par(ask=FALSE)

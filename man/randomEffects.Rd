@@ -102,5 +102,5 @@ AIC(nullFit,covFit,fixFit,reFit,reCovFit, n=nrow(reData))
 }
 }
 \references{
-Burnham, K.P. and White, G.C., 2002. Evaluation of some random effects methodology applicable to bird ringing data. Journal of Applied Statistics 29: 245-264.
+Burnham, K.P. and White, G.C. 2002. Evaluation of some random effects methodology applicable to bird ringing data. Journal of Applied Statistics 29: 245-264.
 }

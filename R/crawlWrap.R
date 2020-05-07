@@ -102,7 +102,7 @@
 #' @importFrom crawl crwMLE crwPredict displayPar
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
-#' @importFrom lubridate with_tz
+# @importFrom lubridate with_tz
 #' @importFrom doRNG %dorng%
 #' @importFrom stats formula setNames
 #' @importFrom sp coordinates
@@ -555,6 +555,10 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     foreach(i = convFits, .export="crwPredict", .combine = rbind, .errorhandling="remove") %dorng% {
       pD<-crawl::crwPredict(model_fits[[i]], predTime=predTime[[i]],return.type = "flat")
       if(inherits(ind_data[[i]][[Time.name]],"POSIXct") && attributes(pD[[Time.name]])$tzone != attributes(ind_data[[i]][[Time.name]])$tzone){
+        if (!requireNamespace("lubridate", quietly = TRUE)) {
+          stop("Package \"lubridate\" needed for this function to work. Please install it.",
+                  call. = FALSE)
+        }
         pD[[Time.name]] <- lubridate::with_tz(pD[[Time.name]],tz=attributes(ind_data[[i]][[Time.name]])$tzone)
       }
       if(length(predTime[[i]])>1){
