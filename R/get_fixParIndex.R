@@ -177,7 +177,7 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     beta0$beta[which(is.na(beta0$beta))] <- 0
     if(length(fixPar$beta)!=length(beta0$beta)) stop("fixPar$beta must be of length ",length(beta0$beta))
     tmp <- which(!is.na(fixPar$beta))
-    if(!all(fixPar$beta == fixPar$beta[betaCons],na.rm=TRUE)) stop("fixPar$beta not consistent with betaCons")
+    if(!all(fixPar$beta == fixPar$beta[c(betaCons)],na.rm=TRUE)) stop("fixPar$beta not consistent with betaCons")
     beta0$beta[tmp]<-fixPar$beta[tmp]
     wparIndex <- c(wparIndex,parindex[["beta"]]+tmp)
     
