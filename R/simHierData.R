@@ -40,7 +40,7 @@
 #'
 #' @export
 #' @importFrom stats rnorm runif rmultinom step terms.formula
-#' @importFrom raster cellFromXY getValues
+# @importFrom raster cellFromXY getValues
 #' @importFrom CircStats rvm
 #' @importFrom Brobdingnag as.brob sum
 #' @importFrom mvtnorm rmvnorm
@@ -320,6 +320,10 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     if(is.null(mvnCoords)){
       if(!("step" %in% distnames)) stop("spatialCovs can only be included when 'step' distribution is specified") 
       else if(!(inputs$dist[["step"]] %in% stepdists)) stop("spatialCovs can only be included when valid 'step' distributions are specified") 
+    }
+    if (!requireNamespace("raster", quietly = TRUE)) {
+      stop("Package \"raster\" needed for spatial covariates. Please install it.",
+              call. = FALSE)
     }
     for(j in 1:nbSpatialCovs){
       if(!inherits(spatialCovs[[j]],c("RasterLayer","RasterBrick","RasterStack"))) stop("spatialCovs$",spatialcovnames[j]," must be of class 'RasterLayer', 'RasterStack', or 'RasterBrick'")

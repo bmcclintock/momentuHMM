@@ -18,7 +18,7 @@
 #' @importFrom sp spDistsN1
 
 distAngle<-function(x,y,z,type='UTM',angleCov=TRUE){
-  dist <- spDistsN1(pts = matrix(y,ncol=2),
+  dist <- sp::spDistsN1(pts = matrix(y,ncol=2),
                     pt = z,
                     longlat = (type=='LL'))
   angle <- turnAngle(x,y,z,type,angleCov)

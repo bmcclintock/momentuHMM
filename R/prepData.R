@@ -25,7 +25,7 @@ prepData <- function(data, ...) {
 #' and location covariates (i.e., those specified by \code{spatialCovs}, \code{centers}, and \code{angleCovs}) are not calculated. Ignored if \code{data} is a \code{\link{crwData}} object.
 #' @param covNames Character vector indicating the names of any covariates in \code{data} dataframe. Any variables in \code{data} (other than \code{ID}) that are not identified in 
 #' \code{covNames} and/or \code{angleCovs} are assumed to be data streams (i.e., missing values will not be accounted for).
-#' @param spatialCovs List of \code{\link[=Raster-class]{raster}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
+#' @param spatialCovs List of \code{\link[raster:Raster-class]{raster}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
 #' layer(s) based on the location data (and the z values for a raster \code{\link[raster]{stack}} 
 #' or \code{\link[raster]{brick}}) for each time step.  If an element of \code{spatialCovs} is a raster \code{\link[raster]{stack}} or \code{\link[raster]{brick}}, 
 #' then z values must be set using \code{\link[raster]{setZ}} and \code{data} must include column(s) of the corresponding z value(s) for each observation (e.g., 'time').
@@ -105,7 +105,7 @@ prepData <- function(data, ...) {
 #' 
 #' @export
 #' @importFrom sp spDistsN1
-#' @importFrom raster cellFromXY getValues getZ is.factor levels
+# @importFrom raster cellFromXY getValues getZ is.factor levels
 prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames=NULL, ...)
 {
   if(is.crwData(data)){
@@ -183,6 +183,10 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
     spatialcovnames<-names(spatialCovs)
     if(is.null(spatialcovnames)) stop('spatialCovs must be a named list')
     nbSpatialCovs<-length(spatialcovnames)
+    if (!requireNamespace("raster", quietly = TRUE)) {
+      stop("Package \"raster\" needed for spatial covariates. Please install it.",
+           call. = FALSE)
+    }
     for(j in 1:nbSpatialCovs){
       if(!inherits(spatialCovs[[j]],c("RasterLayer","RasterBrick","RasterStack"))) stop("spatialCovs$",spatialcovnames[j]," must be of class 'RasterLayer', 'RasterStack', or 'RasterBrick'")
       if(any(is.na(raster::getValues(spatialCovs[[j]])))) stop("missing values are not permitted in spatialCovs$",spatialcovnames[j])
@@ -234,7 +238,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
         for(i in (i1+1):(i2-1)) {
           if(j=="step" & !is.na(x[i-1]) & !is.na(x[i]) & !is.na(y[i-1]) & !is.na(y[i])) {
             # step length
-            genData[i-i1] <- spDistsN1(pts = matrix(c(x[i-1],y[i-1]),ncol=2),
+            genData[i-i1] <- sp::spDistsN1(pts = matrix(c(x[i-1],y[i-1]),ncol=2),
                                        pt = c(x[i],y[i]),
                                        longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
           } else if(j=="angle" & !is.na(x[i-1]) & !is.na(x[i]) & !is.na(x[i+1]) & !is.na(y[i-1]) & !is.na(y[i]) & !is.na(y[i+1])) {
@@ -245,7 +249,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
           }
         }
         if(j=="step" & !is.na(x[i2-1]) & !is.na(x[i2]) & !is.na(y[i2-1]) & !is.na(y[i2])) {
-          genData[i2-i1] <- spDistsN1(pts = matrix(c(x[i2-1],y[i2-1]),ncol=2),pt = c(x[i2],y[i2]),longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
+          genData[i2-i1] <- sp::spDistsN1(pts = matrix(c(x[i2-1],y[i2-1]),ncol=2),pt = c(x[i2],y[i2]),longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
         } 
       } 
       d[[j]] <- genData
@@ -394,7 +398,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
 #'
 #' @export
 #' @importFrom sp spDistsN1
-#' @importFrom raster cellFromXY getValues getZ
+# @importFrom raster cellFromXY getValues getZ
 prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames = NULL, hierLevels, coordLevel, ...)
 {
   if(is.crwHierData(data)){
@@ -504,6 +508,10 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     spatialcovnames<-names(spatialCovs)
     if(is.null(spatialcovnames)) stop('spatialCovs must be a named list')
     nbSpatialCovs<-length(spatialcovnames)
+    if (!requireNamespace("raster", quietly = TRUE)) {
+      stop("Package \"raster\" needed for spatial covariates. Please install it.",
+           call. = FALSE)
+    }
     for(j in 1:nbSpatialCovs){
       if(!inherits(spatialCovs[[j]],c("RasterLayer","RasterBrick","RasterStack"))) stop("spatialCovs$",spatialcovnames[j]," must be of class 'RasterLayer', 'RasterStack', or 'RasterBrick'")
       if(any(is.na(raster::getValues(spatialCovs[[j]])))) stop("missing values are not permitted in spatialCovs$",spatialcovnames[j])
@@ -556,7 +564,7 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
         for(i in (i1+1):(i2-1)) {
           if(j=="step" & !is.na(lx[i-1]) & !is.na(lx[i]) & !is.na(ly[i-1]) & !is.na(ly[i])) {
             # step length
-            genData[i-i1] <- spDistsN1(pts = matrix(c(lx[i-1],ly[i-1]),ncol=2),
+            genData[i-i1] <- sp::spDistsN1(pts = matrix(c(lx[i-1],ly[i-1]),ncol=2),
                                        pt = c(lx[i],ly[i]),
                                        longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
           } else if(j=="angle" & !is.na(lx[i-1]) & !is.na(lx[i]) & !is.na(lx[i+1]) & !is.na(ly[i-1]) & !is.na(ly[i]) & !is.na(ly[i+1])) {
@@ -567,7 +575,7 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
           }
         }
         if(j=="step" & !is.na(lx[i2-1]) & !is.na(lx[i2]) & !is.na(ly[i2-1]) & !is.na(ly[i2])) {
-          genData[i2-i1] <- spDistsN1(pts = matrix(c(lx[i2-1],ly[i2-1]),ncol=2),pt = c(lx[i2],ly[i2]),longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
+          genData[i2-i1] <- sp::spDistsN1(pts = matrix(c(lx[i2-1],ly[i2-1]),ncol=2),pt = c(lx[i2],ly[i2]),longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
         }
         dataHMM[which(ID==unique(ID)[zoo] & dataHMM$level==coordLevel),j] <- genData
       } 

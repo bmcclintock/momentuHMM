@@ -36,7 +36,7 @@
 #' \code{covs} to \code{NULL} (the default), and specifying \code{nbCovs>0}.
 #' @param nbCovs Number of covariates to simulate (0 by default). Does not need to be specified if
 #' \code{covs} is specified. Simulated covariates are provided generic names (e.g., 'cov1' and 'cov2' for \code{nbCovs=2}) and can be included in \code{formula} and/or \code{DM}.
-#' @param spatialCovs List of \code{\link[=Raster-class]{raster}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
+#' @param spatialCovs List of \code{\link[raster:Raster-class]{raster}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
 #' layer(s) based on any simulated location data (and the z values for a raster \code{\link[raster]{stack}} 
 #' or \code{\link[raster]{brick}}) for each time step.  If an element of \code{spatialCovs} is a raster \code{\link[raster]{stack}} or \code{\link[raster]{brick}}, 
 #' then z values must be set using \code{\link[raster]{setZ}} and \code{covs} must include column(s) of the corresponding z value(s) for each observation (e.g., 'time').
@@ -345,7 +345,7 @@
 #'
 #' @export
 #' @importFrom stats rnorm runif rmultinom step terms.formula
-#' @importFrom raster cellFromXY getValues is.factor levels
+# @importFrom raster cellFromXY getValues is.factor levels
 #' @importFrom moveHMM simData
 #' @importFrom CircStats rvm
 #' @importFrom Brobdingnag as.brob sum
@@ -628,6 +628,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(is.null(mvnCoords)){
       if(!("step" %in% distnames)) stop("spatialCovs can only be included when 'step' distribution is specified") 
       else if(!(inputs$dist[["step"]] %in% stepdists)) stop("spatialCovs can only be included when valid 'step' distributions are specified") 
+    }
+    if (!requireNamespace("raster", quietly = TRUE)) {
+      stop("Package \"raster\" needed for spatial covariates. Please install it.",
+           call. = FALSE)
     }
     for(j in 1:nbSpatialCovs){
       if(!inherits(spatialCovs[[j]],c("RasterLayer","RasterBrick","RasterStack"))) stop("spatialCovs$",spatialcovnames[j]," must be of class 'RasterLayer', 'RasterStack', or 'RasterBrick'")

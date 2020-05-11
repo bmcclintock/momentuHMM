@@ -4,7 +4,7 @@
 #'
 #' @param data Data frame or \code{\link{momentuHMMData}} object, with necessary fields 'x' (longitudinal direction) and 'y' (latitudinal direction).  A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object is also permitted, from which the data will be extracted.
 #' If \code{states=NULL} and a \code{momentuHMM}, \code{miHMM}, or \code{miSum} object is provided, the decoded states are automatically plotted.
-#' @param spatialCov \code{\link[=RasterLayer-class]{RasterLayer}} object on which to plot the location data
+#' @param spatialCov \code{\link[raster:RasterLayer-class]{RasterLayer}} object on which to plot the location data
 #' @param segments \code{TRUE} if segments should be plotted between the observations (default),
 #' \code{FALSE} otherwise.
 #' @param compact \code{FALSE} if tracks should be plotted separately, \code{TRUE}
@@ -39,7 +39,7 @@
 #'
 # @importFrom ggplot2 ggplot geom_point geom_path aes geom_raster guides theme
 # @importFrom ggplot2 element_rect element_blank scale_color_manual scale_shape_manual coord_equal labs
-#' @importFrom raster rasterToPoints
+# @importFrom raster rasterToPoints
 #' @export
 
 plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,alpha=1,size=1,shape=16,
@@ -48,9 +48,11 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   #####################
   ## Check arguments ##
   #####################
-  if (!requireNamespace("ggplot2", quietly = TRUE)) {
-    stop("Package \"ggplot2\" needed for this function to work. Please install it.",
-         call. = FALSE)
+  for(pkg in c("raster","ggplot2")){
+    if (!requireNamespace(pkg, quietly = TRUE)) {
+      stop("Package \"",pkg,"\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
   }
   
   if(!inherits(spatialCov,"RasterLayer")) 

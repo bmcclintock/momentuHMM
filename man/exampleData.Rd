@@ -32,5 +32,5 @@ other functions to keep them as short as possible.
 \item \code{bPar} initial parameter estimates for \code{MIfitHMM} examples
 }
 
-\code{forest} is a simulated spatial covariate raster layer
+\code{forest} is a simulated spatial covariate \code{\link[raster:RasterLayer-class]{RasterLayer}}
 }

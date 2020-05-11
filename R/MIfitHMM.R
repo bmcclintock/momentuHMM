@@ -196,7 +196,7 @@ MIfitHMM <- function(miData, ...) {
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
-#' @importFrom raster getZ
+# @importFrom raster getZ
 #' @importFrom stats terms.formula
 MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, na.rm = FALSE,
                    nbStates, dist, 
@@ -456,7 +456,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
-#' @importFrom raster getZ
+# @importFrom raster getZ
 #' @importFrom data.tree Clone
 MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, na.rm = FALSE,
                        hierStates, hierDist, 

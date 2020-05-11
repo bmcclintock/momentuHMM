@@ -18,7 +18,7 @@
 #' \item \code{bPar} initial parameter estimates for \code{MIfitHMM} examples
 #' }
 #' 
-#' \code{forest} is a simulated spatial covariate raster layer
+#' \code{forest} is a simulated spatial covariate \code{\link[raster:RasterLayer-class]{RasterLayer}}
 #'
 #' @aliases example miExample forest
 #' @name exampleData
