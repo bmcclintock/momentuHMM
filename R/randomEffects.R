@@ -95,6 +95,7 @@ randomEffects <- function(m, Xformula = ~1, alpha = 0.95, ncores = 1, nlmPar = l
   if(!("ID" %in% modelterms)) stop("'ID' must be included in the state transition probability formula of the model")
   if(!all(modelterms=="ID")) stop("Only 'ID' is permitted in the state transition probability formula of the model")
 
+  mName <- deparse(substitute(m))
   m <- delta_bc(m)
   
   nbStates <- length(m$stateNames)
@@ -117,6 +118,9 @@ randomEffects <- function(m, Xformula = ~1, alpha = 0.95, ncores = 1, nlmPar = l
   if(any(mapply(function(x) nrow(unique(X[which(m$data$ID==x),,drop=FALSE]))>1,unique(m$data$ID))))
     stop("time-varying covariates are not permitted in Xformula")
   X <- X[aInd,,drop=FALSE]
+  
+  trProbs <- getTrProbs(m,covIndex=aInd)
+  if(any(trProbs<0.01) | any(trProbs>0.99)) warning("estimated state transition probabilites for ",mName," appear to be near a boundary; proceed with caution")
   
   registerDoParallel(cores=ncores)
   varcomp <- withCallingHandlers(foreach(j=1:nbRE) %dorng% {
