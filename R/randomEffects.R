@@ -171,7 +171,7 @@ randomEffects <- function(m, Xformula = ~1, alpha = 0.95, ncores = 1, nlmPar = l
            suppressMessages(fitHMM(m$data,nbStates=nbStates,dist=m$conditions$dist,
            Par0=Par0$Par,beta0=betaFix,delta0=Par0$delta,
            estAngleMean=m$conditions$estAngleMean,circularAngleMean=m$conditions$circularAngleMean,
-           formula=m$conditions$formula,formulaDelta=m$conditions$formulaDelta,
+           formula=m$conditions$formula,formulaDelta=m$conditions$formulaDelta,stationary=m$conditions$stationary,
            nlmPar=nlmPar,fit=fit,
            DM=m$conditions$DM,userBounds=m$conditions$userBounds,workBounds=m$conditions$workBounds,
            betaCons=m$conditions$betaCons,betaRef=m$conditions$betaRef,deltaCons=m$conditions$deltaCons,

@@ -72,7 +72,7 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     } 
   }
   
-  if(!is.null(delta0)){
+  if(!stationary && !is.null(delta0)){
     if(!nbCovsDelta & is.null(formulaDelta)){
       if(mixtures==1){
         if(length(delta0) != (nbCovsDelta+1)*nbStates)
