@@ -646,7 +646,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   
   # check that stationary==FALSE if there are covariates
   if(nbCovs>0 & stationary==TRUE)
-    if(nbAnimals!=nrow(unique(covs))) stop("stationary can't be set to TRUE if there are time-varying covariates in formula.")
+    if(nbAnimals!=sum(mapply(function(x) nrow(unique(covs[which(data$ID==x),,drop=FALSE])),unique(data$ID)))) stop("stationary can't be set to TRUE if there are time-varying covariates in formula.")
   if(nbCovsDelta>0 & stationary==TRUE)
     stop("stationary can't be set to TRUE if there are covariates in formulaDelta.")
 
