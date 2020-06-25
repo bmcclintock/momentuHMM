@@ -1,4 +1,4 @@
-momentuHMM 1.5.2 2020-05-07
+momentuHMM 1.5.2 2020-06-24
 -----------------
 NEW FEATURES
 
@@ -15,6 +15,8 @@ BUG FIXES
 * mixtureProbs function produced an error when initial distribution formula includes covariates
 
 * avoid numerical underflow in mixtureProbs when a mixture probability is zero
+
+* overly restrictive check for time-varying covariates in fitHMM when stationary=TRUE
 
 
 momentuHMM 1.5.1 2020-03-04

@@ -59,7 +59,7 @@ and location covariates (i.e., those specified by \code{spatialCovs}, \code{cent
 \item{spatialCovs}{List of \code{\link[raster:Raster-class]{raster}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
 layer(s) based on the location data (and the z values for a raster \code{\link[raster]{stack}} 
 or \code{\link[raster]{brick}}) for each time step.  If an element of \code{spatialCovs} is a raster \code{\link[raster]{stack}} or \code{\link[raster]{brick}}, 
-then z values must be set using \code{\link[raster]{setZ}} and \code{data} must include column(s) of the corresponding z value(s) for each observation (e.g., 'time').}
+then z values must be set using \code{\link[raster:getZ]{setZ}} and \code{data} must include column(s) of the corresponding z value(s) for each observation (e.g., 'time').}
 
 \item{centers}{2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 centers of attraction or repulsion) from which distance and angle covariates will be calculated based on the location data. If no row names are provided, then generic names are generated 
