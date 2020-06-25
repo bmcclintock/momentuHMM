@@ -36,10 +36,10 @@
 #' \code{covs} to \code{NULL} (the default), and specifying \code{nbCovs>0}.
 #' @param nbCovs Number of covariates to simulate (0 by default). Does not need to be specified if
 #' \code{covs} is specified. Simulated covariates are provided generic names (e.g., 'cov1' and 'cov2' for \code{nbCovs=2}) and can be included in \code{formula} and/or \code{DM}.
-#' @param spatialCovs List of \code{\link[raster:Raster-class]{raster}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
+#' @param spatialCovs List of \code{\link[raster]{raster}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
 #' layer(s) based on any simulated location data (and the z values for a raster \code{\link[raster]{stack}} 
 #' or \code{\link[raster]{brick}}) for each time step.  If an element of \code{spatialCovs} is a raster \code{\link[raster]{stack}} or \code{\link[raster]{brick}}, 
-#' then z values must be set using \code{\link[raster:getZ]{setZ}} and \code{covs} must include column(s) of the corresponding z value(s) for each observation (e.g., 'time').
+#' then z values must be set using \code{\link[raster]{setZ}} and \code{covs} must include column(s) of the corresponding z value(s) for each observation (e.g., 'time').
 #' The names of the raster layer(s) can be included in 
 #' \code{formula} and/or \code{DM}.  Note that \code{simData} usually takes longer to generate simulated data when \code{spatialCovs} is specified.
 #' @param zeroInflation A named list of logicals indicating whether the probability distributions of the data streams should be zero-inflated. If \code{zeroInflation} is \code{TRUE} 

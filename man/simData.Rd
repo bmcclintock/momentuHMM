@@ -121,10 +121,10 @@ be included in \code{formula} and/or \code{DM}. Covariates can also be simulated
 \item{nbCovs}{Number of covariates to simulate (0 by default). Does not need to be specified if
 \code{covs} is specified. Simulated covariates are provided generic names (e.g., 'cov1' and 'cov2' for \code{nbCovs=2}) and can be included in \code{formula} and/or \code{DM}.}
 
-\item{spatialCovs}{List of \code{\link[raster:Raster-class]{raster}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
+\item{spatialCovs}{List of \code{\link[raster]{raster}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
 layer(s) based on any simulated location data (and the z values for a raster \code{\link[raster]{stack}} 
 or \code{\link[raster]{brick}}) for each time step.  If an element of \code{spatialCovs} is a raster \code{\link[raster]{stack}} or \code{\link[raster]{brick}}, 
-then z values must be set using \code{\link[raster:getZ]{setZ}} and \code{covs} must include column(s) of the corresponding z value(s) for each observation (e.g., 'time').
+then z values must be set using \code{\link[raster]{setZ}} and \code{covs} must include column(s) of the corresponding z value(s) for each observation (e.g., 'time').
 The names of the raster layer(s) can be included in 
 \code{formula} and/or \code{DM}.  Note that \code{simData} usually takes longer to generate simulated data when \code{spatialCovs} is specified.}
 

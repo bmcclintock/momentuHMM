@@ -7,7 +7,7 @@
 #' @param col Vector or colors for the states (one color per state).
 #' @param plotCI Logical indicating whether to include confidence intervals in plots (default: FALSE)
 #' @param alpha Significance level of the confidence intervals (if \code{plotCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).
-#' @param ... Additional arguments passed to \code{\link[graphics:plot]{plot}}. These can currently include \code{cex.axis}, \code{cex.lab}, \code{cex.legend}, \code{cex.main}, \code{legend.pos}, and \code{lwd}. See \code{\link[graphics]{par}}. \code{legend.pos} can be a single keyword from the list ``bottomright'', ``bottom'', ``bottomleft'', ``left'', ``topleft'', ``top'', ``topright'', ``right'', and ``center''.
+#' @param ... Additional arguments passed to \code{graphics::plot}. These can currently include \code{cex.axis}, \code{cex.lab}, \code{cex.legend}, \code{cex.main}, \code{legend.pos}, and \code{lwd}. See \code{\link[graphics]{par}}. \code{legend.pos} can be a single keyword from the list ``bottomright'', ``bottom'', ``bottomleft'', ``left'', ``topleft'', ``top'', ``topright'', ``right'', and ``center''.
 #'
 #' @examples
 #' # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
