@@ -4,7 +4,7 @@
 library(momentuHMM)
 
 ## load data 
-load(url("https://raw.github.com/bmcclintock/momentuHMM/develop/vignettes/pilotWhaleData.RData"))
+load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/pilotWhaleData.RData"))
 
 ## prepare data
 names(data.keep)[1] <- "ID"

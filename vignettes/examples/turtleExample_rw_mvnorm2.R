@@ -1,7 +1,7 @@
 library(momentuHMM)
 
 # load turtle data from github
-load(url("https://raw.github.com/bmcclintock/momentuHMM/develop/vignettes/turtleData.RData"))
+load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/turtleData.RData"))
 
 nSims <- 100 # number of imputatons
 ncores <- 7  # number of CPU cores

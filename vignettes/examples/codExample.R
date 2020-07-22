@@ -2,7 +2,7 @@ library(momentuHMM)
 library(data.tree)
 
 # load the data from Adam et al (available from https://doi.org/10.1111/2041-210X.13241)
-load(url("https://raw.github.com/bmcclintock/momentuHMM/develop/vignettes/Atlantic_cod_data_set.RData"))
+load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/Atlantic_cod_data_set.RData"))
 
 # coarse-scale data
 data <- data.frame(level="1",step=steps,angle=angles,vertical=NA,time=0)

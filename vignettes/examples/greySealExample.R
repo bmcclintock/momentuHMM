@@ -7,7 +7,7 @@ oldRNG<-setRNG::setRNG()
 setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=10)
 
 # load grey seal data from github
-load(url("https://raw.github.com/bmcclintock/momentuHMM/develop/vignettes/greySealData.RData"))
+load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/greySealData.RData"))
 
 nSims <- 400 # number of imputatons
 ncores <- 7 # number of CPU cores
