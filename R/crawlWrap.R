@@ -146,7 +146,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     #  ind_data[[i]] <- obsData[which(obsData$ID==i & obsData$level==coordLevel),]
     #  hierInd <- TRUE
     #} else {
-      if(!is.null(ind_data[[i]]$level)){
+      if(!is.null(suppressWarnings(ind_data[[i]]$level))){
         if(is.factor(ind_data[[i]]$level) & is.null(coordLevel)) stop("'level' field cannot be a factor unless 'coordLevel' is specified")
         if(!is.factor(ind_data[[i]]$level) & !is.null(coordLevel)) stop("'level' field must be a factor when 'coordLevel' is specified")
         if(!is.character(coordLevel) | length(coordLevel)!=1) stop("coordLevel must be a character string")
