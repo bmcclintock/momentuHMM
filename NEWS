@@ -12,9 +12,9 @@ CHANGES
 
 * suppress 'Unknown or uninitialised column' warning in crawlWrap when obsData is an sf object
 
-* removed SANN optimization when using retryFits in crawlWrap
+* removed initial SANN optimization when using retryFits in crawlWrap
 
-* reduced worker memory pressure in crawlWrap when retryParallel=TRUE
+* reduced worker memory pressure in crawlWrap when running in parallel
 
 BUG FIXES
 
