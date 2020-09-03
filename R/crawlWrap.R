@@ -397,10 +397,10 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   cat('Fitting',nbAnimals,'track(s) using crawl::crwMLE...',ifelse(nbAnimals>1 & ncores>1,"","\n"))
   registerDoParallel(cores=ncores)
   withCallingHandlers(model_fits <- 
-    foreach(i = ids, .export="crwMLE", .errorhandling="pass", .final = function(x) stats::setNames(x, ids)) %dorng% {
+    foreach(id = ind_data, i=ids, .export="crwMLE", .errorhandling="pass", .final = function(x) stats::setNames(x, ids)) %dorng% {
       cat("Individual ",i,"...\n",sep="")
       fit <- crawl::crwMLE(
-        data = ind_data[[i]],
+        data = id,
         mov.model =  mov.model[[i]],
         err.model = err.model[[i]],
         activity = activity[[i]],
@@ -425,6 +425,8 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   ,warning=muffleRNGwarning)
   stopImplicitCluster()
   
+  rm(ind_data)
+  
   convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
   if(!length(convFits)) stop("crawl::crwMLE failed for all individuals.  Check crawl::crwMLE arguments and/or consult crawl documentation.\n")
     
@@ -443,27 +445,27 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   if(!retryParallel) tmpcores <- 1
   else if(ncores>1 & nbAnimals>1) cat("Attempting to achieve convergence and valid variance estimates for each individual in parallel.\n    Press 'esc' to force exit from 'crawlWrap'... ",sep="")
   registerDoParallel(cores=tmpcores)
-  withCallingHandlers(model_fits <- foreach(i = ids, .export=c("quietCrawl","crwMLE"), .errorhandling="pass", .final = function(x) stats::setNames(x, ids)) %dorng% {
-    if(inherits(model_fits[[i]],"crwFit")){
-      if((model_fits[[i]]$convergence | any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))]))) | retryFits){
+  withCallingHandlers(model_fits <- foreach(mf = model_fits, i = ids, .export=c("quietCrawl","crwMLE"), .errorhandling="pass", .final = function(x) stats::setNames(x, ids)) %dorng% {
+    if(inherits(mf,"crwFit")){
+      if((mf$convergence | any(is.na(mf$se[which(is.na(fixPar[[i]]))]))) | retryFits){
         if(retryFits){
           fitCount<-0
-          fit <- model_fits[[i]]
-          if(model_fits[[i]]$convergence | any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))]))){
-            if(model_fits[[i]]$convergence)
-              cat('\ncrawl::crwMLE for individual',i,'has suspect convergence: ',model_fits[[i]]$message,"\n")
-            if(any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))])))
+          fitPar <- mf$estPar
+          if(mf$convergence | any(is.na(mf$se[which(is.na(fixPar[[i]]))]))){
+            if(mf$convergence)
+              cat('\ncrawl::crwMLE for individual',i,'has suspect convergence: ',mf$message,"\n")
+            if(any(is.na(mf$se[which(is.na(fixPar[[i]]))])))
               cat('\ncrawl::crwMLE for individual',i,'has NaN variance estimate(s)\n')
             cat('Attempting to achieve convergence and valid variance estimates for individual ',i,". Press 'esc' to force exit from 'crawlWrap'\n",sep="")
           } else {
             cat('Attempting to improve fit for individual ',i,". Press 'esc' to force exit from 'crawlWrap'\n",sep="")
           }
-          curFit<-fit
+          #curFit<-fit
           while(fitCount<retryFits){ # & (fit$convergence | any(is.na(fit$se[which(is.na(fixPar[[i]]))])))){
-            cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",curFit$loglik,"  ...",sep="")
+            cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",mf$loglik,"  ...",sep="")
             tmpFun <- function(){
               tryCatch(suppressWarnings(suppressMessages(
-                crawl::crwMLE(data = ind_data[[i]],
+                crawl::crwMLE(data = mf$data,
                               mov.model =  mov.model[[i]],
                               err.model = err.model[[i]],
                               activity = activity[[i]],
@@ -472,16 +474,15 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
                               proj = proj[[i]],
                               Time.name = Time.name,
                               time.scale = time.scale,
-                              theta = fit$estPar + rnorm(length(fit$estPar),0,retrySD[[i]]),
+                              theta = fitPar + rnorm(length(fitPar),0,retrySD[[i]]),
                               fixPar = fixPar[[i]],
                               method = method,
                               control = control,
                               constr = constr[[i]],
                               prior = prior[[i]],
                               need.hess = need.hess,
-                              initialSANN = initialSANN,
-                              attempts = 1, 
-                              retrySD = retrySD[[i]],
+                              initialSANN = list(maxit = 0, trace = 0),
+                              attempts = 1,
                               ... = ...))),error=function(e){e})}
             tmp <- NULL
             if(retryParallel){
@@ -492,31 +493,32 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
             }
             if(inherits(tmp,"crwFit")){
               if(tmp$convergence==0){
-                if(tmp$loglik > curFit$loglik | all(!is.na(tmp$se[which(is.na(fixPar[[i]]))])))
-                  fit<-tmp
-                if(tmp$loglik >= curFit$loglik & all(!is.na(tmp$se[which(is.na(fixPar[[i]]))])))
-                  curFit<-tmp
+                if(tmp$loglik > mf$loglik | all(!is.na(tmp$se[which(is.na(fixPar[[i]]))])))
+                  fitPar <- tmp$estPar
+                if(tmp$loglik >= mf$loglik & all(!is.na(tmp$se[which(is.na(fixPar[[i]]))])))
+                  mf<-tmp
               }
+              rm(tmp)
             }
             fitCount <- fitCount + 1
           }
-          if(curFit$convergence | any(is.na(curFit$se[which(is.na(fixPar[[i]]))]))){
+          if(mf$convergence | any(is.na(mf$se[which(is.na(fixPar[[i]]))]))){
             message("FAILED\n")
           } else {
             cat("DONE\n")
           }
-          model_fits[[i]]<-curFit
+          #mf<-curFit
         } else {
-          if(model_fits[[i]]$convergence)
-            warning('crawl::crwMLE for individual ',i,' has suspect convergence: ',model_fits[[i]]$message)
-          if(any(is.na(model_fits[[i]]$se[which(is.na(fixPar[[i]]))])))
+          if(mf$convergence)
+            warning('crawl::crwMLE for individual ',i,' has suspect convergence: ',mf$message)
+          if(any(is.na(mf$se[which(is.na(fixPar[[i]]))])))
             warning('crawl::crwMLE for individual ',i,' has NaN variance estimate(s)')
         }
       }
     } else {
-      warning('\ncrawl::crwMLE for individual ',i,' failed;\n',model_fits[[i]],"   Check crawl::crwMLE arguments and/or consult crawl documentation.\n")
+      warning('\ncrawl::crwMLE for individual ',i,' failed;\n',mf,"   Check crawl::crwMLE arguments and/or consult crawl documentation.\n")
     }
-    model_fits[[i]]
+    mf
   },warning=muffleRNGwarning)
   stopImplicitCluster()
   if(retryParallel & ncores>1 & nbAnimals>1) cat("DONE\n")
@@ -552,25 +554,25 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   
   registerDoParallel(cores=ncores)
   withCallingHandlers(predData <- 
-    foreach(i = convFits, .export="crwPredict", .combine = rbind, .errorhandling="remove") %dorng% {
-      pD<-crawl::crwPredict(model_fits[[i]], predTime=predTime[[i]],return.type = "flat")
-      if(inherits(ind_data[[i]][[Time.name]],"POSIXct") && attributes(pD[[Time.name]])$tzone != attributes(ind_data[[i]][[Time.name]])$tzone){
+    foreach(mf = model_fits[convFits], i = convFits, .export="crwPredict", .combine = rbind, .errorhandling="remove") %dorng% {
+      pD<-crawl::crwPredict(mf, predTime=predTime[[i]],return.type = "flat")
+      if(inherits(mf$data[[Time.name]],"POSIXct") && attributes(pD[[Time.name]])$tzone != attributes(mf$data[[Time.name]])$tzone){
         if (!requireNamespace("lubridate", quietly = TRUE)) {
           stop("Package \"lubridate\" needed for this function to work. Please install it.",
                   call. = FALSE)
         }
-        pD[[Time.name]] <- lubridate::with_tz(pD[[Time.name]],tz=attributes(ind_data[[i]][[Time.name]])$tzone)
+        pD[[Time.name]] <- lubridate::with_tz(pD[[Time.name]],tz=attributes(mf$data[[Time.name]])$tzone)
       }
       if(length(predTime[[i]])>1){
-        pD[[Time.name]][which(pD$locType=="p")]<-predTime[[i]][predTime[[i]]>=min(model_fits[[i]]$data[[Time.name]])]
-      } else if(inherits(obsData[[Time.name]],"POSIXct")){
+        pD[[Time.name]][which(pD$locType=="p")]<-predTime[[i]][predTime[[i]]>=min(mf$data[[Time.name]])]
+      } else if(inherits(mf$data[[Time.name]],"POSIXct")){
         pD[[Time.name]] <- as.POSIXct(pD$TimeNum*ts,origin="1970-01-01 00:00:00",tz=attributes(pD[[Time.name]])$tzone)
       }
       if(!fillCols){
         # remove duplicated observation times (because this what crwPredict does)
-        dups <- duplicated(ind_data[[i]][[Time.name]])
-        tmpind_data <- as.data.frame(ind_data[[i]][!dups,,drop=FALSE])
-        for(j in names(pD)[names(pD) %in% names(ind_data[[i]])]){
+        dups <- duplicated(mf$data[[Time.name]])
+        tmpind_data <- as.data.frame(mf$data[!dups,,drop=FALSE])
+        for(j in names(pD)[names(pD) %in% names(mf$data)]){
           if(!(j %in% c(Time.name,"ID",coord))){
             if(!isTRUE(all.equal(pD[[j]],tmpind_data[[j]]))) {
               pD[[j]][pD[[Time.name]] %in% tmpind_data[[Time.name]]] <- tmpind_data[[j]]

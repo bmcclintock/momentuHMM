@@ -142,7 +142,7 @@ data8<-simObsData(data7,lambda,errorEllipse) # alternatively, lambda and errorEl
 err.model <- list(x=~ln.sd.x-1, y=~ln.sd.y-1, rho=~error.corr) # error ellipse model
 
 setRNG::setRNG(kind="L'Ecuyer-CMRG",normal.kind="Inversion",seed=10)
-crwOut<-crawlWrap(data8,ncores=4,retryFits=2,retryParallel=TRUE,err.model=err.model,theta=c(4,0),fixPar=c(1,1,NA,NA),attempts=100)
+crwOut<-crawlWrap(data8,ncores=4,retryFits=3,retryParallel=TRUE,err.model=err.model,theta=c(4,0),fixPar=c(1,1,NA,NA),attempts=100)
 plot(crwOut,ask=FALSE)
 
 # fit best predicted locations
