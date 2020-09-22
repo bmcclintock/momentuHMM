@@ -144,7 +144,7 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
   if(nbStates>1){
     if(!is.null(newdata)) data <- cbind(data,newdata)
     for(state in 1:(nbStates*(nbStates-1))){
-      noBeta<-which(match(colnames(model.matrix(newformula,data)),colnames(model.matrix(formulaStates[[state]],data)),nomatch=0)==0)
+      noBeta<-which(match(colnames(stats::model.matrix(newformula,data)),colnames(stats::model.matrix(formulaStates[[state]],data)),nomatch=0)==0)
       if(length(noBeta)) {
         for(mix in 1:mixtures){
           beta0$beta[noBeta+(nbCovs+1)*(mix-1),state] <- NA

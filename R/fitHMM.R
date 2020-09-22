@@ -494,9 +494,9 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   if(nbStates<1) stop('nbStates must be >0')
 
   # check that there is no response variable in the formula
-  if(attr(terms(formula),"response")!=0)
+  if(attr(stats::terms(formula),"response")!=0)
     stop("The response variable should not be specified in formula.")
-  if(!is.null(formulaDelta) && attr(terms(formulaDelta),"response")!=0)
+  if(!is.null(formulaDelta) && attr(stats::terms(formulaDelta),"response")!=0)
     stop("The response variable should not be specified in formulaDelta.")
   
   if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
@@ -552,11 +552,11 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   recharge <- newForm$recharge
   
   # build design matrix for t.p.m.
-  covsCol <- get_all_vars(newformula,data)#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+  covsCol <- get_all_vars(newformula,data)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
   if(!all(names(covsCol) %in% names(data))){
     covsCol <- covsCol[,names(covsCol) %in% names(data),drop=FALSE]
   }
-  covs <- model.matrix(newformula,data)
+  covs <- stats::model.matrix(newformula,data)
   if(nrow(covs)!=nrow(data)) stop("covariates cannot contain missing values")
   nbCovs <- ncol(covs)-1 # substract intercept column
   
@@ -584,17 +584,17 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     nbG0covs <- ncol(g0covs)-1
     recovs <- reForm$recovs
     nbRecovs <- ncol(recovs)-1
-    if(!nbRecovs | (!inherits(data,"hierarchical") && !attributes(terms(recharge$theta))$intercept)) stop("invalid recharge model -- theta must include an intercept and at least 1 covariate")
+    if(!nbRecovs | (!inherits(data,"hierarchical") && !attributes(stats::terms(recharge$theta))$intercept)) stop("invalid recharge model -- theta must include an intercept and at least 1 covariate")
     covs <- reForm$covs
     nbCovs <- ncol(covs)-1
     if(!is.null(beta0)){
       if(!is.list(beta0)) stop("beta0 must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
     }
-    recovsCol <- get_all_vars(recharge$theta,data)#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+    recovsCol <- get_all_vars(recharge$theta,data)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
     if(!all(names(recovsCol) %in% names(data))){
       recovsCol <- recovsCol[,names(recovsCol) %in% names(data),drop=FALSE]
     }
-    g0covsCol <- get_all_vars(recharge$g0,data)#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+    g0covsCol <- get_all_vars(recharge$g0,data)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
     if(!all(names(g0covsCol) %in% names(data))){
       g0covsCol <- g0covsCol[,names(g0covsCol) %in% names(data),drop=FALSE]
     }
@@ -611,7 +611,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   if(is.null(formulaDelta)){
     formDelta <- ~1
   } else formDelta <- formulaDelta
-  covsDelta <- model.matrix(formDelta,data[aInd,,drop=FALSE])
+  covsDelta <- stats::model.matrix(formDelta,data[aInd,,drop=FALSE])
   if(nrow(covsDelta)!=nrow(data[aInd,,drop=FALSE])) stop("covariates cannot contain missing values")
   nbCovsDelta <- ncol(covsDelta)-1 # substract intercept column
   
@@ -619,7 +619,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   if(is.null(formulaPi)){
     formPi <- ~1
   } else formPi <- formulaPi
-  covsPi <- model.matrix(formPi,data[aInd,,drop=FALSE])
+  covsPi <- stats::model.matrix(formPi,data[aInd,,drop=FALSE])
   if(nrow(covsPi)!=nrow(data[aInd,,drop=FALSE])) stop("covariates cannot contain missing values")
   nbCovsPi <- ncol(covsPi)-1 # substract intercept column
   
@@ -631,7 +631,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
 
   if(length(covsCol)>0 | !is.null(recharge)) {
     if(!is.null(recharge)){
-      covsCol <- cbind(covsCol,get_all_vars(recharge$g0,data),get_all_vars(recharge$theta,data))#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+      covsCol <- cbind(covsCol,get_all_vars(recharge$g0,data),get_all_vars(recharge$theta,data))#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
     }  
     if(!all(names(covsCol) %in% names(data))){
         covsCol <- covsCol[,names(covsCol) %in% names(data),drop=FALSE]
@@ -668,7 +668,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   zeroInflation <- inflation$zeroInflation
   oneInflation <- inflation$oneInflation
 
-  mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(terms.formula(newformula),"term.labels")) & !length(attr(terms.formula(formDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior) & is.null(betaCons) & is.null(betaRef) & is.null(deltaCons) & is.null(mvnCoords) & mixtures==1) # indicator for moveHMMwrap below
+  mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(stats::terms.formula(newformula),"term.labels")) & !length(attr(stats::terms.formula(formDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior) & is.null(betaCons) & is.null(betaRef) & is.null(deltaCons) & is.null(mvnCoords) & mixtures==1) # indicator for moveHMMwrap below
   
   inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,stateNames,checkInflation = TRUE)
   p <- inputs$p
@@ -914,7 +914,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   }
 
   if(!is.null(mle$beta)) {
-    rownames(mle$beta) <- rep(colnames(covs),mixtures)#c("(Intercept)",attr(terms(formula),"term.labels"))
+    rownames(mle$beta) <- rep(colnames(covs),mixtures)#c("(Intercept)",attr(stats::terms(formula),"term.labels"))
     columns <- NULL
     for(i in 1:nbStates)
       for(j in 1:nbStates) {

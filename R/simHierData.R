@@ -194,7 +194,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       if(length(covsCol)){
         for(jj in 1:length(covsCol)){
           cov<-covsCol[jj]
-          form<-formula(paste("~",cov))
+          form<-stats::formula(paste("~",cov))
           varform<-all.vars(form)
           if(any(varform %in% factorcovs) && !all(varform %in% factorterms)){
             factorvar<-factorcovs %in% (varform[!(varform %in% factorterms)])
@@ -670,8 +670,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   rwInd <- any(unlist(dist) %in% rwdists)
   
   #if(is.null(formula)) {
-  #  if(allNbCovs) formula <- formula(paste0("~",paste0(c(colnames(allCovs),spatialcovnames),collapse="+")))
-  #  else formula <- formula(~1)
+  #  if(allNbCovs) formula <- stats::formula(paste0("~",paste0(c(colnames(allCovs),spatialcovnames),collapse="+")))
+  #  else formula <- stats::formula(~1)
   #}
   
   if(length(all.vars(formula)))
@@ -770,7 +770,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       beta0 <- list(beta=beta)
   } else beta0 <- beta
   
-  nbBetaCovs <- ncol(model.matrix(newformula,tmpCovs))
+  nbBetaCovs <- ncol(stats::model.matrix(newformula,tmpCovs))
   
   if(is.null(beta0$beta)){
     beta0$beta <- matrix(rnorm(nbStates*(nbStates-1)*nbBetaCovs*mixtures)[inputHierHMM$betaCons],nrow=nbBetaCovs*mixtures)
@@ -788,12 +788,12 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   }
   if(nbStates>1){
     for(state in 1:(nbStates*(nbStates-1))){
-      noBeta<-which(match(colnames(model.matrix(newformula,tmpCovs)),colnames(model.matrix(formulaStates[[state]],tmpCovs)),nomatch=0)==0)
+      noBeta<-which(match(colnames(stats::model.matrix(newformula,tmpCovs)),colnames(stats::model.matrix(formulaStates[[state]],tmpCovs)),nomatch=0)==0)
       if(length(noBeta)) beta0$beta[noBeta,state] <- 0
     }
   }
   
-  covsPi <- model.matrix(formPi,tmpCovs)
+  covsPi <- stats::model.matrix(formPi,tmpCovs)
   nbCovsPi <- ncol(covsPi)-1
   if(!nbCovsPi & is.null(formulaPi)){
     if(is.null(beta0$pi)){
@@ -811,7 +811,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                  mixtures-1,"columns."))
   }
   
-  covsDelta <- model.matrix(formDelta,tmpCovs)
+  covsDelta <- stats::model.matrix(formDelta,tmpCovs)
   nbCovsDelta <- ncol(covsDelta)-1
   # initial state distribution
   if(is.null(delta)) {
@@ -919,7 +919,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
             subCovs[[j]] <- formatRecharge(nbStates,formula,betaRef,data=subCovs,par=list(g0=wng0,theta=wntheta))$newdata[[j]]
           }
         }
-        DMcov <- model.matrix(newformula,subCovs)
+        DMcov <- stats::model.matrix(newformula,subCovs)
         
         # format parameters
         DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean)
@@ -932,8 +932,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         nc <- ncmean$nc
         meanind <- ncmean$meanind
         
-        covsDelta <- model.matrix(formDelta,subCovs[1,,drop=FALSE])
-        covsPi <- model.matrix(formPi,subCovs[1,,drop=FALSE])
+        covsDelta <- stats::model.matrix(formDelta,subCovs[1,,drop=FALSE])
+        covsPi <- stats::model.matrix(formPi,subCovs[1,,drop=FALSE])
         fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta,wworkBounds,covsPi)
         
         pie <- fullsubPar$pi
@@ -988,8 +988,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
           for(j in rechargeNames){
             subCovs[1,j] <- formatRecharge(nbStates,formula,betaRef,data=tmpSubSpatCovs,par=list(g0=wng0,theta=wntheta))$newdata[[j]][1]
           }
-          #g0 <- model.matrix(recharge$g0,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wng0
-          #subCovs[1,"recharge"] <- g0 #+ model.matrix(recharge$theta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wntheta
+          #g0 <- stats::model.matrix(recharge$g0,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wng0
+          #subCovs[1,"recharge"] <- g0 #+ stats::model.matrix(recharge$theta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wntheta
         }
         
         for(i in distnames){
@@ -1008,14 +1008,14 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         # get max crw lag
         maxlag <- getDM(cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE)$lag
         
-        covsPi <- model.matrix(formPi,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
+        covsPi <- stats::model.matrix(formPi,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
         pie <- mlogit(wnpi,covsPi,nbCovsPi,1,mixtures)
         
         # assign individual to mixture
         if(mixtures>1) mix[zoo] <- sample.int(mixtures,1,prob=pie)
         
-        g <- model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
-        covsDelta <- model.matrix(formDelta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
+        g <- stats::model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
+        covsDelta <- stats::model.matrix(formDelta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
         
         delta0 <- mlogit(deltaB[(mix[zoo]-1)*(nbCovsDelta+1)+1:(nbCovsDelta+1),,drop=FALSE],covsDelta,nbCovsDelta,1,nbStates)
         #delta0 <- c(rep(0,nbCovsDelta+1),deltaB[(mix[zoo]-1)*(nbCovsDelta+1)+1:(nbCovsDelta+1),])
@@ -1059,7 +1059,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
           #  if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
           #    subCovs[k,which(colnames(subCovs)!="level")] <- subCovs[k-1,which(colnames(subCovs)!="level"),drop=FALSE]
           #    subSpatialcovs[k,] <- subSpatialcovs[k-1,,drop=FALSE]
-          #    g <- model.matrix(newformula,cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
+          #    g <- stats::model.matrix(newformula,cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
           #  } else {
           #    g <- gFull[k,,drop=FALSE]
           #  }
@@ -1248,15 +1248,15 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                   tmpSubCovs <- cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])
                   if(subCovs[k+1,"level"]==gsub("level","",recLevelNames[j]) & match(subCovs[k,"level"],levels(subCovs$level))>=match(subCovs[k+1,"level"],levels(subCovs$level))){
                     tmpSubCovs$level <- subCovs[k+1,"level"]
-                    subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]] + model.matrix(recharge$theta,tmpSubCovs)[,colInd[[j]],drop=FALSE] %*% wntheta[colInd[[j]]]
+                    subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]] + stats::model.matrix(recharge$theta,tmpSubCovs)[,colInd[[j]],drop=FALSE] %*% wntheta[colInd[[j]]]
                   } else if(match(subCovs[k,"level"],levels(subCovs$level))>match(subCovs[k+1,"level"],levels(subCovs$level))){
                     #tmpSubCovs$level <- subCovs[k,"level"]
-                    subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]] + model.matrix(recharge$theta,tmpSubCovs)[,colInd[[j]],drop=FALSE] %*% wntheta[colInd[[j]]]
+                    subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]] + stats::model.matrix(recharge$theta,tmpSubCovs)[,colInd[[j]],drop=FALSE] %*% wntheta[colInd[[j]]]
                   } else {
                     subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]]
                   }
                 }
-                #subCovs[k+1,"recharge"] <- subCovs[k,"recharge"] + model.matrix(recharge$theta,cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])) %*% wntheta
+                #subCovs[k+1,"recharge"] <- subCovs[k,"recharge"] + stats::model.matrix(recharge$theta,cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])) %*% wntheta
               }
               for(i in distnames){
                 if(dist[[i]] %in% rwdists){
@@ -1264,7 +1264,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                   else if(dist[[i]] %in% c("rw_mvnorm3")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1",".z_tm1"))] <- X[k+1,]
                 }
               }
-              g <- model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
+              g <- stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
             } else {
               g <- gFull[k+1,,drop=FALSE]
             }

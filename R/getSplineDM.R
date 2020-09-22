@@ -19,17 +19,17 @@ getSplineDM<-function(distnames,DM,m,covs){
           tmpDM<-list()
           for(state in 1:nbStates){
             tmpDM[[state]]<-character()
-            Terms<-terms(formulaStates[[state]],specials=splineList)
+            Terms<-stats::terms(formulaStates[[state]],specials=splineList)
             factors<-attr(Terms,"factors")
             specials<-rownames(factors)[unlist(attr(Terms,"specials"))]
             for(k in rownames(factors)){
               if(k %in% specials){
                 splineInd[[i]][[j]]<-TRUE
-                splineCovs[[i]][[j]]<-unique(c(splineCovs[[i]][[j]],all.vars(as.formula(paste0("~",k)))))
+                splineCovs[[i]][[j]]<-unique(c(splineCovs[[i]][[j]],all.vars(stats::as.formula(paste0("~",k)))))
                 splineExpr<-qdapRegex::rm_between(k, "(", ",", extract=TRUE)[[1]]
                 sp<-eval(substitute(eval(parse(text=k))),m$data,parent.frame())
                 tmpcovs<-predict(sp,eval(substitute(eval(parse(text=splineExpr))),covs,parent.frame()))
-                tmp<-colnames(model.matrix(as.formula(paste0("~",k)),m$data)[,-1])
+                tmp<-colnames(stats::model.matrix(stats::as.formula(paste0("~",k)),m$data)[,-1])
                 tmp<-gsub("[()]","",tmp)
                 tmp<-gsub(" ","_",tmp)
                 tmp<-gsub(",","_",tmp)
@@ -40,7 +40,7 @@ getSplineDM<-function(distnames,DM,m,covs){
                 newcovs<-cbind(newcovs,tmpcovs)
                 for(l in colnames(factors)){
                   if(factors[k,l]){
-                    newcols<-model.matrix(as.formula(paste0("~",l)),m$data)[,-1]
+                    newcols<-stats::model.matrix(stats::as.formula(paste0("~",l)),m$data)[,-1]
                     tmp<-colnames(newcols)
                     tmp<-gsub("[()]","",tmp)
                     tmp<-gsub(" ","_",tmp)
@@ -73,7 +73,7 @@ getSplineDM<-function(distnames,DM,m,covs){
               if(length(tmpDM[[state]]))
                 tmpterms<-c(tmpterms,paste0("state",state,"(",paste0(tmpDM[[state]],collapse="+"),")"))
             }
-            newDM[[i]][[j]] <- as.formula(paste0("~",paste0(attr(DM[[i]][[j]],"intercept"),tmpterms,collapse="+")))
+            newDM[[i]][[j]] <- stats::as.formula(paste0("~",paste0(attr(DM[[i]][[j]],"intercept"),tmpterms,collapse="+")))
           }
         }
       }
@@ -87,17 +87,17 @@ getSplineFormula<-function(formula,data,covs){
   splineInd<-FALSE
   splineCovs<-character()
   newformula<-character()
-  Terms<-terms(formula,specials=splineList)
+  Terms<-stats::terms(formula,specials=splineList)
   factors<-attr(Terms,"factors")
   specials<-rownames(factors)[unlist(attr(Terms,"specials"))]
   for(k in rownames(factors)){
     if(k %in% specials){
       splineInd<-TRUE
-      splineCovs<-unique(c(splineCovs,all.vars(as.formula(paste0("~",k)))))
+      splineCovs<-unique(c(splineCovs,all.vars(stats::as.formula(paste0("~",k)))))
       splineExpr<-qdapRegex::rm_between(k, "(", ",", extract=TRUE)[[1]]
       sp<-eval(substitute(eval(parse(text=k))),data,parent.frame())
       tmpcovs<-predict(sp,eval(substitute(eval(parse(text=splineExpr))),covs,parent.frame()))
-      tmp<-colnames(model.matrix(as.formula(paste0("~",k)),data)[,-1])
+      tmp<-colnames(stats::model.matrix(stats::as.formula(paste0("~",k)),data)[,-1])
       tmp<-gsub("[()]","",tmp)
       tmp<-gsub(" ","_",tmp)
       tmp<-gsub(",","_",tmp)
@@ -106,7 +106,7 @@ getSplineFormula<-function(formula,data,covs){
       newcovs<-cbind(newcovs,tmpcovs)
       for(l in colnames(factors)){
         if(factors[k,l]){
-          tmp<-colnames(model.matrix(as.formula(paste0("~",l)),data))[-1]
+          tmp<-colnames(stats::model.matrix(stats::as.formula(paste0("~",l)),data))[-1]
           tmp<-gsub("[()]","",tmp)
           tmp<-gsub(" ","_",tmp)
           tmp<-gsub(",","_",tmp)
@@ -129,7 +129,7 @@ getSplineFormula<-function(formula,data,covs){
     }
   }
   if(!splineInd) newformula <- formula
-  else newformula <- as.formula(paste0("~",paste0(unique(newformula),collapse="+")))
+  else newformula <- stats::as.formula(paste0("~",paste0(unique(newformula),collapse="+")))
 
   return(list(formula=newformula,covs=newcovs))
 }

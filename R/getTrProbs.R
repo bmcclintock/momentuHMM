@@ -179,7 +179,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
       Sigma <- data$mod$Sigma
       
       tmpSplineInputs<-getSplineFormula(reForm$newformula,data$data,cbind(data$data,reForm$newdata))
-      desMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+      desMat <- stats::model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
       
       nbCovs <- ncol(covs) - 1
       gamInd<-(length(data$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures+1):(length(data$mod$estimate))-(ncol(data$covsPi)*(mixtures-1))-ifelse(nbRecovs,nbRecovs+1+nbG0covs+1,0)-ncol(data$covsDelta)*(nbStates-1)*(!data$conditions$stationary)*mixtures
@@ -308,8 +308,8 @@ get_TrProbs_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,j,bet
   
   recharge <- expandRechargeFormulas(hierRecharge)
   
-  recovs <- model.matrix(recharge$theta,allCovs)
-  g0covs <- model.matrix(recharge$g0,allCovs[1,,drop=FALSE])
+  recovs <- stats::model.matrix(recharge$theta,allCovs)
+  g0covs <- stats::model.matrix(recharge$g0,allCovs[1,,drop=FALSE])
   
   tmpBeta <- rep(NA,length(betaCons))
   tmpBeta[unique(c(betaCons))] <- beta[1:(length(beta)-(ncol(recovs)+ncol(g0covs)))]
@@ -333,7 +333,7 @@ get_TrProbs_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,j,bet
     covs[,rechargeNames[iLevel]] <- g0 + sum(theta[colInd[[iLevel]]]%*%t(recovs[,colInd[[iLevel]],drop=FALSE])) #covs[,rechargeNames[iLevel],drop=FALSE] + theta[colInd[[iLevel]]]%*%t(recovs[,colInd[[iLevel]],drop=FALSE]) # g0  + theta%*%t(recovs)
   }
   
-  newcovs <- model.matrix(formula,covs)
+  newcovs <- stats::model.matrix(formula,covs)
   beta <- matrix(beta[1:(length(beta)-(ncol(recovs)+ncol(g0covs)))],ncol=nbStates*(nbStates-1))
   gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(newcovs)+1:ncol(newcovs),,drop=FALSE],newcovs,betaRef)[,,1]
   gamma[i,j]

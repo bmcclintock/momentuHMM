@@ -385,7 +385,7 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   if(nbStates>1){
     gamInd <- (parindex[["beta"]]+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures))[unique(c(m$conditions$betaCons))]
     tmpSplineInputs<-getSplineFormula(newformula,mhdata,tempCovs)
-    tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+    tempCovMat <- stats::model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
     
     est<-lower<-upper<-se<-matrix(NA,nbStates*mixtures,nbStates)
     
@@ -456,7 +456,7 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     }
   } else {
     if(nbStates>1){
-      covs<-model.matrix(newformula,tempCovs)
+      covs<-stats::model.matrix(newformula,tempCovs)
       statFun<-function(beta,nbStates,covs,i,mixture=1){
         gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,m$conditions$betaRef)[,,1]
         tryCatch(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i],error = function(e) {

@@ -300,7 +300,7 @@ getVC <- function(m){
   if(!inherits(Sigma,"error")){
     
     tmpSplineInputs <- getSplineFormula(reForm$newformula,m$data,cbind(m$data,reForm$newdata))
-    desMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+    desMat <- stats::model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
     
     VC <- Sigma[gamInd[unique(c(m$conditions$betaCons))],gamInd[unique(c(m$conditions$betaCons))]]
     

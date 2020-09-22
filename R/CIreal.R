@@ -157,7 +157,7 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
       
       quantSup <- qnorm(1-(1-alpha)/2)
       tmpSplineInputs<-getSplineFormula(newformula,m$data,tempCovs)
-      tempCovMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+      tempCovMat <- stats::model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
       
       est<-lower<-upper<-se<-matrix(NA,nbStates*mixtures,nbStates)
       for(mix in 1:mixtures){
@@ -310,8 +310,8 @@ get_gamma_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,j,betaR
   
   recharge <- expandRechargeFormulas(hierRecharge)
   
-  recovs <- model.matrix(recharge$theta,covs)
-  g0covs <- model.matrix(recharge$g0,covs)
+  recovs <- stats::model.matrix(recharge$theta,covs)
+  g0covs <- stats::model.matrix(recharge$g0,covs)
   
   tmpBeta <- rep(NA,length(betaCons))
   tmpBeta[unique(c(betaCons))] <- beta[1:(length(beta)-(ncol(recovs)))]
@@ -335,7 +335,7 @@ get_gamma_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,j,betaR
     covs[,rechargeNames[iLevel]] <- covs[,rechargeNames[iLevel],drop=FALSE] + theta[colInd[[iLevel]]]%*%t(recovs[,colInd[[iLevel]],drop=FALSE]) # g0  + theta%*%t(recovs)
   }
 
-  newcovs <- model.matrix(formula,covs)
+  newcovs <- stats::model.matrix(formula,covs)
   beta <- matrix(beta[1:(length(beta)-(ncol(recovs)))],ncol=nbStates*(nbStates-1))
   gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(newcovs)+1:ncol(newcovs),,drop=FALSE],newcovs,betaRef)[,,1]
   gamma[i,j]

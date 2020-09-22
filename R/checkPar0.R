@@ -361,7 +361,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
       if(is.null(m$conditions$formulaPi)) {
         formPi <- ~1
       } else formPi <- m$conditions$formulaPi
-      if(!length(attr(terms.formula(formPi),"term.labels")) & is.null(m$conditions$formulaPi)){
+      if(!length(attr(stats::terms.formula(formPi),"term.labels")) & is.null(m$conditions$formulaPi)){
         tmpPar <- m$mle$pi[1,]
         rownames(tmpPar)<-NULL
         if(is.null(beta0$pi))
@@ -402,7 +402,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
         if(is.null(m$conditions$formulaDelta)) {
           formDelta <- ~1
         } else formDelta <- m$conditions$formulaDelta
-        if(!length(attr(terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
+        if(!length(attr(stats::terms.formula(formDelta),"term.labels")) & is.null(m$conditions$formulaDelta)){
           tmpPar <- m$mle$delta[1:mixtures,]
           if(mixtures==1) rownames(tmpPar)<-NULL
           else rownames(tmpPar) <- paste0("mix",1:mixtures)

@@ -111,7 +111,7 @@ get_mixProbs <- function(optPar,mod,mixture){
   recharge <- newForm$recharge
   
   # build design matrix for t.p.m.
-  covs <- model.matrix(newformula,data)
+  covs <- stats::model.matrix(newformula,data)
   nbCovs <- ncol(covs)-1 # substract intercept column
   
   # build design matrix for recharge model
@@ -128,11 +128,11 @@ get_mixProbs <- function(optPar,mod,mixture){
     nbRecovs <- ncol(recovs)-1
     covs <- reForm$covs
     nbCovs <- ncol(covs)-1
-    recovsCol <- get_all_vars(recharge$theta,data)#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+    recovsCol <- get_all_vars(recharge$theta,data)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
     if(!all(names(recovsCol) %in% names(data))){
       recovsCol <- recovsCol[,names(recovsCol) %in% names(data),drop=FALSE]
     }
-    g0covsCol <- get_all_vars(recharge$g0,data)#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+    g0covsCol <- get_all_vars(recharge$g0,data)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
     if(!all(names(g0covsCol) %in% names(data))){
       g0covsCol <- g0covsCol[,names(g0covsCol) %in% names(data),drop=FALSE]
     }
@@ -147,7 +147,7 @@ get_mixProbs <- function(optPar,mod,mixture){
   # check arguments
   distnames<-names(dist)
   
-  #covs <- model.matrix(formula,data)
+  #covs <- stats::model.matrix(formula,data)
   nbCovs <- ncol(covs)-1
   if(!is.null(recovs)) {
     nbRecovs <- ncol(recovs)-1

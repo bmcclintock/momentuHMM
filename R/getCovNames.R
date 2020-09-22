@@ -25,12 +25,12 @@ getCovNames<-function(m,p,distname){
       for(j in 1:length(p$parNames[[distname]])){
         for(jj in 1:nbStates){
           if(length(DMparterms[[p$parNames[[distname]][j]]][[jj]])){
-            DMparterms[[p$parNames[[distname]][j]]][[jj]]<-all.vars(as.formula(paste0("~",paste0(DMparterms[[p$parNames[[distname]][j]]][[jj]],collapse="+"))))
+            DMparterms[[p$parNames[[distname]][j]]][[jj]]<-all.vars(stats::as.formula(paste0("~",paste0(DMparterms[[p$parNames[[distname]][j]]][[jj]],collapse="+"))))
           }
         }
       }
       if(length(DMterms))
-        DMterms<-all.vars(as.formula(paste0("~",paste0(DMterms,collapse="+"))))
+        DMterms<-all.vars(stats::as.formula(paste0("~",paste0(DMterms,collapse="+"))))
     } else {
       m$conditions$DM[[distname]]<-m$conditions$DM[[distname]][p$parNames[[distname]]]
       for(j in 1:length(p$parNames[[distname]])){
@@ -39,8 +39,8 @@ getCovNames<-function(m,p,distname){
         #if(dist[[i]] %in% mvndists){
         for(jj in 1:nbStates){
           if(m$conditions$dist[[distname]] %in% rwdists){
-            formterms<-attr(terms.formula(formulaStates[[jj]]),"term.labels")
-            if(grepl("mean",p$parNames[[distname]][[j]])) formulaStates[[jj]] <- as.formula(paste("~ + 0 + ",paste(c(paste0(distname,gsub("mean","",p$parNames[[distname]][[j]]),"_tm1"),formterms),collapse=" + ")))
+            formterms<-attr(stats::terms.formula(formulaStates[[jj]]),"term.labels")
+            if(grepl("mean",p$parNames[[distname]][[j]])) formulaStates[[jj]] <- stats::as.formula(paste("~ + 0 + ",paste(c(paste0(distname,gsub("mean","",p$parNames[[distname]][[j]]),"_tm1"),formterms),collapse=" + ")))
           }
           else {
             tmpparnames<-all.vars(formulaStates[[jj]])

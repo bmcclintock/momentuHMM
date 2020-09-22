@@ -25,23 +25,23 @@ formatHierFormula <- function(data,hierFormula,hierStates){
           if(is.null(data)) recTerms <- paste0("I((level=='",gsub("level","",j),"')*1):",as.character(recharge[[j]][[parm]])[-1])
           else recTerms <- getFactorTerms(rechargeTerms,factorTerms,recharge[[j]][[parm]],data,j)
         } else {
-          if(parm=="theta" & !attributes(terms(recharge[[j]]$theta))$intercept) stop("invalid recharge model for ",j," -- theta must include an intercept and at least 1 covariate")
+          if(parm=="theta" & !attributes(stats::terms(recharge[[j]]$theta))$intercept) stop("invalid recharge model for ",j," -- theta must include an intercept and at least 1 covariate")
           recTerms <- paste0("I((level=='",gsub("level","",j),"')*1)")
         }
         form <- paste0("~0+",paste0(unlist(recTerms),collapse = " + "))
-        recharge[[j]][[parm]] <- as.formula(form)
+        recharge[[j]][[parm]] <- stats::as.formula(form)
       }
       formTerms[[j]] <- c(formTerms[[j]],paste0("I((level=='",gsub("level","",j),"')*1):recharge(g0=~",as.character(recharge[[j]]$g0)[-1],", theta=~",as.character(recharge[[j]]$theta)[-1],")"))
       if(!is.null(data)) data[[paste0("recharge",gsub("level","",j))]] <- rep(0,nrow(data))
     }
   }
   form <- paste0("~ 0 + ",paste0(unlist(formTerms),collapse = " + "))
-  form <- as.formula(form)
+  form <- stats::as.formula(form)
   return(list(formula=form,data=data,recharge=recharge))
 }
 
 getFactorTerms <- function(formulaTerms,factorTerms,formula,data,level){
-  mm<-model.matrix(formula,data)
+  mm<-stats::model.matrix(formula,data)
   as <- attr(mm,"assign")
   colmm <- colnames(mm)
   for(jj in 1:length(colmm)){

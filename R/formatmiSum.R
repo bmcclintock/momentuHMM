@@ -6,8 +6,8 @@ formatmiSum <- function(miSum){
   miSum$mle$delta <- miSum$Par$real$delta$est
   miSum$mod <- list()
   if(!is.null(miSum$conditions$recharge)){
-    nbRecovs <- ncol(model.matrix(miSum$conditions$recharge$g0,miSum$g0covs))-1
-    nbG0covs <- ncol(model.matrix(miSum$conditions$recharge$theta,miSum$reCovs))-1
+    nbRecovs <- ncol(stats::model.matrix(miSum$conditions$recharge$g0,miSum$g0covs))-1
+    nbG0covs <- ncol(stats::model.matrix(miSum$conditions$recharge$theta,miSum$reCovs))-1
     miSum$mle$g0 <- c(miSum$Par$beta$g0$est)
     names(miSum$mle$g0) <- colnames(miSum$Par$beta$g0$est)
     miSum$mle$theta <- c(miSum$Par$beta$theta$est)

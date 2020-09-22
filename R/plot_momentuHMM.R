@@ -232,14 +232,14 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   if(!is.null(recharge)){
     rechargeNames <- colnames(reForm$newdata)
     m$data[rechargeNames] <- reForm$newdata
-    g0covs <- model.matrix(recharge$g0,covs)
+    g0covs <- stats::model.matrix(recharge$g0,covs)
     g0 <- m$mle$g0 %*% t(g0covs)
-    recovs <- model.matrix(recharge$theta,covs)
+    recovs <- stats::model.matrix(recharge$theta,covs)
     for(j in rechargeNames){
       if(is.null(covs[[j]])) covs[[j]] <- mean(m$data[[j]])
     }
     #if(is.null(covs$recharge)) covs$recharge <- mean(m$data$recharge) #g0 + theta%*%t(recovs)
-    covsCol <- cbind(get_all_vars(newformula,m$data),get_all_vars(recharge$theta,m$data))#rownames(attr(terms(formula),"factors"))#attr(terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+    covsCol <- cbind(get_all_vars(newformula,m$data),get_all_vars(recharge$theta,m$data))#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
     if(!all(names(covsCol) %in% names(m$data))){
       covsCol <- covsCol[,names(covsCol) %in% names(m$data),drop=FALSE]
     }
@@ -481,7 +481,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     if(length(DMterms)){
       for(jj in 1:length(DMterms)){
         cov<-DMterms[jj]
-        form<-formula(paste("~",cov))
+        form<-stats::formula(paste("~",cov))
         varform<-all.vars(form)
         if(any(varform %in% factorcovs) && !all(varform %in% factorterms)){
           factorvar<-factorcovs %in% (varform[!(varform %in% factorterms)])
@@ -497,7 +497,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           if(length(DMparterms[[ii]][[state]])){
             for(jj in 1:length(DMparterms[[ii]][[state]])){
               cov<-DMparterms[[ii]][[state]][jj]
-              form<-formula(paste("~",cov))
+              form<-stats::formula(paste("~",cov))
               varform<-all.vars(form)
               if(any(varform %in% factorcovs) && !all(varform %in% factorterms)){
                 factorvar<-factorcovs %in% (varform[!(varform %in% factorterms)])
@@ -903,7 +903,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         if(inherits(m$data,"hierarchical")) class(tempCovs) <- append("hierarchical",class(tempCovs))
         
         tmpSplineInputs<-getSplineFormula(newformula,m$data,tempCovs)
-        desMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+        desMat <- stats::model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
         
         for(mix in 1:mixtures){
           
@@ -1012,8 +1012,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           
           for(j in 1:length(rechargeNames)){
             if(plotCI){
-              irecovs <- model.matrix(recharge$theta,m$data[ind,])
-              ig0covs <- model.matrix(recharge$g0,m$data[ind,])
+              irecovs <- stats::model.matrix(recharge$theta,m$data[ind,])
+              ig0covs <- stats::model.matrix(recharge$g0,m$data[ind,])
               rechargeSigma <- Sigma[length(m$mod$estimate)-(nbRecovs+nbG0covs+1):0,length(m$mod$estimate)-(nbRecovs+nbG0covs+1):0]
               dN<-t(mapply(function(x) tryCatch(numDeriv::grad(get_recharge,m$mod$estimate[length(m$mod$estimate)-(nbRecovs+nbG0covs+1):0],recovs=irecovs,g0covs=ig0covs,recharge=recharge,hierRecharge=hierRecharge,rechargeName=rechargeNames[j],covs=m$data[ind,],workBounds=m$conditions$workBounds,k=x),error=function(e) NA),1:length(ind)))
               if(any(!is.finite(sqrt(diag(rechargeSigma))))) se <-NA

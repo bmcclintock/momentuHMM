@@ -26,7 +26,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
       if(!zeroInflation[[i]] & "zeromass" %in% names(DM[[i]])) stop('zeromass should not be included in DM$',i)
       if(!oneInflation[[i]] & "onemass" %in% names(DM[[i]])) stop('onemass should not be included in DM$',i)
       DM[[i]]<-DM[[i]][parNames[[i]]]
-      if(any(unlist(lapply(DM[[i]],function(x) attr(terms(x),"response")!=0))))
+      if(any(unlist(lapply(DM[[i]],function(x) attr(stats::terms(x),"response")!=0))))
         stop("The response variable should not be specified in the DM formula for ",i)
       
       formulaStates <- vector('list',length(parNames[[i]]))
@@ -36,8 +36,8 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
         if(dist[[i]] %in% rwdists){
           #if(dist[[i]] %in% mvndists){
           for(k in 1:nbStates){
-            formterms<-attr(terms.formula(formulaStates[[j]][[k]]),"term.labels")
-            if(grepl("mean",j)) formulaStates[[j]][[k]] <- as.formula(paste("~ + 0 + ",paste(c(paste0(i,gsub("mean","",j),"_tm1"),formterms),collapse=" + ")))
+            formterms<-attr(stats::terms.formula(formulaStates[[j]][[k]]),"term.labels")
+            if(grepl("mean",j)) formulaStates[[j]][[k]] <- stats::as.formula(paste("~ + 0 + ",paste(c(paste0(i,gsub("mean","",j),"_tm1"),formterms),collapse=" + ")))
           }
           #}
         }
@@ -49,10 +49,10 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
         tmpCov[[j]] <- vector('list',nbStates)
         for(state in 1:nbStates){
           if(wlag) lag <- get_crwlag(formulaStates[[j]][[state]],lag)
-          tmpCov[[j]][[state]]<-model.matrix(formulaStates[[j]][[state]],data)
+          tmpCov[[j]][[state]]<-stats::model.matrix(formulaStates[[j]][[state]],data)
           if(!isFALSE(circularAngleMean[[i]])){
             if(j=="mean"){
-              if(attr(terms.formula(formulaStates[[j]][[state]]),"intercept")) tmpCov[[j]][[state]] <- tmpCov[[j]][[state]][,-1,drop=FALSE]
+              if(attr(stats::terms.formula(formulaStates[[j]][[state]]),"intercept")) tmpCov[[j]][[state]] <- tmpCov[[j]][[state]][,-1,drop=FALSE]
               cnames <- colnames(tmpCov[[j]][[state]])
               # make sure columns are arranged in sin/cos pairs
               tmpCov[[j]][[state]] <- tmpCov[[j]][[state]][,cnames[order(match(gsub("cos","",gsub("sin","",cnames)),unique(gsub("cos","",gsub("sin","",cnames)))))],drop=FALSE]
@@ -61,7 +61,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
           }
         }
       }
-      #} else tmpCov<-lapply(DM[[i]],function(x) model.matrix(x,data))
+      #} else tmpCov<-lapply(DM[[i]],function(x) stats::model.matrix(x,data))
       parSizeDM<-unlist(lapply(tmpCov,function(x) lapply(x,ncol)))
       tmpDM<-array(0,dim=c(parSize[[i]]*nbStates,sum(parSizeDM),nbObs))
       DMnames<-character(sum(parSizeDM))
@@ -101,7 +101,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
             tmpcolname <- colnames(newDM)[seq(1,length(meanind)*2-1,2)[j]]
             for(jj in 1:nbStates){
               if(DM[[i]][jj,j]!=0){
-                terms <- sort(attr(terms(stateFormulas(formula(paste0("~",DM[[i]][jj,j])),nbStates,angleMean=TRUE,data=data)[[jj]]),"term.labels"),decreasing=TRUE)
+                terms <- sort(attr(stats::terms(stateFormulas(formula(paste0("~",DM[[i]][jj,j])),nbStates,angleMean=TRUE,data=data)[[jj]]),"term.labels"),decreasing=TRUE)
                 newDM[jj,seq(1,length(meanind)*2-1,2)[j]]<-terms[1]
                 colnames(newDM)[seq(1,length(meanind)*2-1,2)[j]]<-paste0(tmpcolname,"sin")
                 newDM[jj,seq(1,length(meanind)*2-1,2)[j]+1]<-terms[2]
@@ -122,7 +122,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
       factorcovs<-paste0(rep(factorterms,times=unlist(lapply(data[factorterms],nlevels))),unlist(lapply(data[factorterms],levels)))
       covs<-numeric()
       for(cov in DMterms){
-        form<-formula(paste("~",cov))
+        form<-stats::formula(paste("~",cov))
         varform<-all.vars(form)
         if(!all((varform %in% names(data)) | (varform %in% factorcovs))){
           varform <- varform[(varform %in% names(data)) | (varform %in% factorcovs)]
@@ -135,14 +135,14 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
           for(j in 1:length(tmpcov)){
             tmpcovj <- gsub(factorcovs[factorvar][j],tmpcov[j],tmpcovj)
           }
-          tform <- formula(paste("~ 0 + ",tmpcovj))
+          tform <- stats::formula(paste("~ 0 + ",tmpcovj))
           if(wlag) lag <- get_crwlag(tform,lag)
-          tmpcovs<-model.matrix(tform,data)
+          tmpcovs<-stats::model.matrix(tform,data)
           tmpcovs<-tmpcovs[,which(gsub(" ","",colnames(tmpcovs)) %in% gsub(" ","",cov))]
           covs<-cbind(covs,tmpcovs)
         } else {
           if(wlag) lag <- get_crwlag(form,lag)
-          tmpcovs<-model.matrix(form,data)[,2]
+          tmpcovs<-stats::model.matrix(form,data)[,2]
           covs<-cbind(covs,tmpcovs)
         }
         if(length(tmpcovs)!=nbObs) stop("covariates cannot contain missing values")
@@ -213,8 +213,8 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
 
 get_crwlag <- function(form,clag){
   lag <- 0
-  if(length(attr(terms(form, specials="crw"),"specials")$crw)){
-    Terms <- terms(form,specials="crw")
+  if(length(attr(stats::terms(form, specials="crw"),"specials")$crw)){
+    Terms <- stats::terms(form,specials="crw")
     lag <- as.numeric(unlist(attr(prodlim::strip.terms(Terms[attr(Terms,"specials")$crw],specials="crw",arguments=list(crw=list("lag"=1))),"stripped.arguments")))
   }
   max(c(clag,lag))

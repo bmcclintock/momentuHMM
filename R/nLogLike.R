@@ -82,7 +82,7 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
   # check arguments
   distnames<-names(dist)
 
-  #covs <- model.matrix(formula,data)
+  #covs <- stats::model.matrix(formula,data)
   nbCovs <- ncol(covs)-1
   if(!is.null(recovs)) {
     nbRecovs <- ncol(recovs)-1

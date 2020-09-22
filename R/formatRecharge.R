@@ -22,19 +22,19 @@ formatRecharge <- function(nbStates,formula,betaRef,data,covs=NULL,par=NULL){
       recLevels <- length(hierRecharge)
       recLevelNames <- names(hierRecharge)
       
-      tmpg0covs <- model.matrix(recharge$g0,data)
+      tmpg0covs <- stats::model.matrix(recharge$g0,data)
       g0covs <- tmpg0covs[rep(aInd,each=recLevels)+rep(0:(recLevels-1),nbAnimals),,drop=FALSE]
       for(i in 1:nbAnimals){
         for(iLevel in 1:recLevels){
           g0covs[(i-1)*recLevels+iLevel,] <- tmpg0covs[which(data$level==iLevel & data$ID==unique(data$ID)[i])[1],,drop=FALSE]
         }
       }
-      recovs <- model.matrix(recharge$theta,data)
+      recovs <- stats::model.matrix(recharge$theta,data)
       rechargeNames <- paste0("recharge",gsub("level","",recLevelNames))
       colInd <- lapply(recLevelNames,function(x) which(grepl(paste0("I((level == \"",gsub("level","",x),"\")"),colnames(recovs),fixed=TRUE)))
     } else {
-      g0covs <- model.matrix(recharge$g0,data[aInd,])
-      recovs <- model.matrix(recharge$theta,data)
+      g0covs <- stats::model.matrix(recharge$g0,data[aInd,])
+      recovs <- stats::model.matrix(recharge$theta,data)
       recLevels <- 1
       rechargeNames <- "recharge"
       colInd <- list(1:ncol(recovs))
@@ -56,7 +56,7 @@ formatRecharge <- function(nbStates,formula,betaRef,data,covs=NULL,par=NULL){
         }
       }
     }
-    #if(is.null(hierRecharge)) newformula <- as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
+    #if(is.null(hierRecharge)) newformula <- stats::as.formula(paste0(Reduce( paste, deparse(newformula) ),"+recharge"))
     if(!is.null(covs)){
       covs[rechargeNames] <- lapply(data[rechargeNames],mean)
     }
@@ -67,7 +67,7 @@ formatRecharge <- function(nbStates,formula,betaRef,data,covs=NULL,par=NULL){
     recovs <- NULL
   }
   
-  tmpCovs <- model.matrix(newformula,data)
+  tmpCovs <- stats::model.matrix(newformula,data)
   if(is.null(covs)) {
     covs <- tmpCovs
   }
@@ -92,8 +92,8 @@ expandRechargeFormulas <- function(recharge){
         g0form <- c(g0form,as.character(g0forms[[i]][-1]))
         thetaform <- c(thetaform,as.character(thetaforms[[i]][-1]))
       }
-      g0form <- as.formula(paste0("~",paste0(g0form,collapse="+")))
-      thetaform <- as.formula(paste0("~",paste0(thetaform,collapse="+")))
+      g0form <- stats::as.formula(paste0("~",paste0(g0form,collapse="+")))
+      thetaform <- stats::as.formula(paste0("~",paste0(thetaform,collapse="+")))
     } else {
       g0form <- recharge$g0
       thetaform <- recharge$theta

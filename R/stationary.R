@@ -100,8 +100,8 @@ stationary.momentuHMM <- function(model, covs, covIndex = NULL)
         testCovs$level <- model$data$level[1]
       }
       # check that all covariates are provided
-      ck1 <- tryCatch(model.matrix(recharge$theta,testCovs),error=function(e) e)
-      ck2 <- tryCatch(model.matrix(tmpSplineInputs$formula,testCovs),error=function(e) e)
+      ck1 <- tryCatch(stats::model.matrix(recharge$theta,testCovs),error=function(e) e)
+      ck2 <- tryCatch(stats::model.matrix(tmpSplineInputs$formula,testCovs),error=function(e) e)
       if(inherits(ck1,"error")) stop("covs not specified correctly -- ",ck1)
       if(inherits(ck2,"error")) stop("covs not specified correctly -- ",ck2)
     } else {
@@ -121,7 +121,7 @@ stationary.momentuHMM <- function(model, covs, covIndex = NULL)
         tmpSplineInputs$covs <- data.frame(tmpSplineInputs$covs[rep(1:nrow(tmpSplineInputs$covs),nlevels(model$data$level)),,drop=FALSE],level=rep(levels(model$data$level),each=nrow(tmpSplineInputs$covs)))
         class(tmpSplineInputs$covs) <- append("hierarchical",class(tmpSplineInputs$covs))
       }
-      covMat <- model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+      covMat <- stats::model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
       if(!is.null(covIndex)) {
         if(!is.numeric(covIndex) || any(covIndex<1 | covIndex>nrow(covMat))) stop("covIndex can only include integers between 1 and ",nrow(covMat))
       } else covIndex <- 1:nrow(covMat)
