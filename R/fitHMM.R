@@ -71,12 +71,11 @@ fitHMM <- function(data, ...) {
 #' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.
 #' @param formulaPi Regression formula for the mixture distribution probabilities. Default: \code{NULL} (no covariate effects; both \code{beta0$pi} and \code{fixPar$pi} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{beta0$pi} and \code{fixPar$pi} are specified on the working scale.
 #' Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilties).
-#' @param verbose Deprecated: please use \code{print.level} in \code{nlmPar} argument. Determines the print level of the \code{nlm} optimizer. The default value of 0 means that no
-#' printing occurs, a value of 1 means that the first and last iterations of the optimization are
-#' detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.
 #' @param nlmPar List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
 #' \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
-#' for more detail). Ignored unless \code{optMethod="nlm"}.
+#' for more detail). For \code{print.level}, the default value of 0 means that no
+#' printing occurs, a value of 1 means that the first and last iterations of the optimization are
+#' detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.
 #' @param fit \code{TRUE} if an HMM should be fitted to the data, \code{FALSE} otherwise.
 #' If fit=\code{FALSE}, a model is returned with the MLE replaced by the initial parameters given in
 #' input. This option can be used to assess the initial parameters, parameter bounds, etc. Default: \code{TRUE}.
@@ -470,7 +469,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                    Par0,beta0=NULL,delta0=NULL,
                    estAngleMean=NULL,circularAngleMean=NULL,
                    formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,
-                   verbose=NULL,nlmPar=list(),fit=TRUE,
+                   nlmPar=list(),fit=TRUE,
                    DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,betaRef=NULL,deltaCons=NULL,
                    mvnCoords=NULL,stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, ...)
 {
@@ -478,16 +477,6 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   #####################
   ## Check arguments ##
   #####################
-  
-  if(!is.null(verbose)) {
-    warning("verbose argument is deprecated in momentuHMM >= 1.4.0. Please use print.level in nlmPar argument instead")
-    if(is.null(nlmPar$print.level)){
-      nlmPar$print.level <- verbose
-    } else stop("nlmPar$print.level cannot be specified when using deprecated argument verbose")
-  } else verbose <- 0
-  if(is.null(nlmPar$print.level)){
-    nlmPar$print.level <- verbose
-  } 
   
   # check that the data is a momentuHMMData object
   if(!is.momentuHMMData(data))
@@ -1046,7 +1035,7 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
   hfit <- fitHMM.momentuHMMData(momentuHMMData(data),inputHierHMM$nbStates,inputHierHMM$dist,Par0,inputHierHMM$beta,inputHierHMM$delta,
                 estAngleMean,circularAngleMean,
                 formula=inputHierHMM$formula,inputHierHMM$formulaDelta,stationary=FALSE,mixtures,formulaPi,
-                verbose=NULL,nlmPar,fit,
+                nlmPar,fit,
                 DM,userBounds,workBounds=inputHierHMM$workBounds,inputHierHMM$betaCons,inputHierHMM$betaRef,deltaCons=inputHierHMM$deltaCons,
                 mvnCoords,inputHierHMM$stateNames,knownStates,inputHierHMM$fixPar,retryFits,retrySD,optMethod,control,prior,modelName)
   

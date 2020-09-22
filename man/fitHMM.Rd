@@ -22,7 +22,6 @@ fitHMM(data, ...)
   stationary = FALSE,
   mixtures = 1,
   formulaPi = NULL,
-  verbose = NULL,
   nlmPar = list(),
   fit = TRUE,
   DM = NULL,
@@ -151,13 +150,11 @@ equal to the stationary distribution. Default: \code{FALSE}.}
 \item{formulaPi}{Regression formula for the mixture distribution probabilities. Default: \code{NULL} (no covariate effects; both \code{beta0$pi} and \code{fixPar$pi} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{beta0$pi} and \code{fixPar$pi} are specified on the working scale.
 Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilties).}
 
-\item{verbose}{Deprecated: please use \code{print.level} in \code{nlmPar} argument. Determines the print level of the \code{nlm} optimizer. The default value of 0 means that no
-printing occurs, a value of 1 means that the first and last iterations of the optimization are
-detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.}
-
 \item{nlmPar}{List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
 \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
-for more detail). Ignored unless \code{optMethod="nlm"}.}
+for more detail). For \code{print.level}, the default value of 0 means that no
+printing occurs, a value of 1 means that the first and last iterations of the optimization are
+detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.}
 
 \item{fit}{\code{TRUE} if an HMM should be fitted to the data, \code{FALSE} otherwise.
 If fit=\code{FALSE}, a model is returned with the MLE replaced by the initial parameters given in

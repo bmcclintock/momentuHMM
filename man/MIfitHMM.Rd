@@ -27,7 +27,6 @@ MIfitHMM(miData, ...)
   stationary = FALSE,
   mixtures = 1,
   formulaPi = NULL,
-  verbose = NULL,
   nlmPar = NULL,
   fit = TRUE,
   useInitial = FALSE,
@@ -171,20 +170,18 @@ equal to the stationary distribution. See \code{\link{fitHMM}}.}
 
 \item{formulaPi}{Regression formula for the mixture distribution probabilities. See \code{\link{fitHMM}}.}
 
-\item{verbose}{Deprecated: please use \code{print.level} in \code{nlmPar} argument. Determines the print level of the \code{nlm} optimizer. The default value of 0 means that no
-printing occurs, a value of 1 means that the first and last iterations of the optimization are
-detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.}
-
 \item{nlmPar}{List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
 \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
-for more detail). Ignored unless \code{optMethod="nlm"}.}
+for more detail). For \code{print.level}, the default value of 0 means that no
+printing occurs, a value of 1 means that the first and last iterations of the optimization are
+detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.}
 
 \item{fit}{\code{TRUE} if the HMM should be fitted to the data, \code{FALSE} otherwise. See \code{\link{fitHMM}}. If \code{fit=FALSE} and \code{miData} is a \code{\link{crwData}}
 object, then \code{MIfitHMM} returns a list containing a \code{\link{momentuHMMData}} object (if \code{nSims=1}) or, if \code{nSims>1}, a \code{\link{crwSim}} object.}
 
 \item{useInitial}{Logical indicating whether or not to use parameter estimates for the first model fit as initial values for all subsequent model fits.
 If \code{ncores>1} then the first model is fit on a single core and then used as the initial values for all subsequent model fits on each core 
-(in this case, the progress of the initial model fit can be followed using the \code{verbose} argument). Default: FALSE. Ignored if \code{nSims<2}.}
+(in this case, the progress of the initial model fit can be followed using the \code{print.level} option in \code{nlmPar}). Default: FALSE. Ignored if \code{nSims<2}.}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream. See \code{\link{fitHMM}}.}

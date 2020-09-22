@@ -16,7 +16,9 @@ CHANGES
 
 * reduced worker memory pressure in crawlWrap when running in parallel
 
-* deprecated arguments cons and workcons are now defunct
+* deprecated cons and workcons arguments are now defunct; please use workBounds instead
+
+* deprecated verbose argument in fitHMM and MIfitHMM is now defunct; please use nlmPar instead
 
 BUG FIXES
 
