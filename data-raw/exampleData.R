@@ -41,7 +41,7 @@ kappa0 <- c(1,1)
 stepPar0 <- c(mu0,sigma0)
 anglePar0 <- c(-pi/2,pi/2,kappa0)
 formula <- ~cov1+cos(cov2)
-nbCovs <- length(attr(terms(formula), "term.labels"))
+nbCovs <- length(attr(stats::terms(formula), "term.labels"))
 
 beta0 <- matrix(c(rep(-1.5,nbStates*(nbStates-1)),rep(0,nbStates*(nbStates-1)*nbCovs)),
                 nrow=nbCovs+1,byrow=TRUE)
