@@ -178,7 +178,7 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
     if(is.null(DM[[i]])) Par[[i]]<-c(t(model$mle[[i]][,which(colnames(model$mle[[i]]) %in% stateNames)]))
   }
   
-  DMinputs<-getDM(model$data,DM,dist,nbStates,p$parNames,p$bounds,Par,cons=NULL,workcons=NULL,zeroInflation,oneInflation,circularAngleMean,FALSE)$fullDM
+  DMinputs<-getDM(model$data,DM,dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,circularAngleMean,FALSE)$fullDM
   
   parCount<- lapply(model$conditions$fullDM,ncol)
   for(i in distnames[!unlist(lapply(model$conditions$circularAngleMean,isFALSE))]){
@@ -206,7 +206,7 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
       }
       if(any(newparmNames %in% parmNames)){
         if(is.miSum(model))
-          tmpPar[match(parmNames,newparmNames,nomatch=0)] <- nw2w((model$CIbeta[[i]]$est-model$conditions$workcons[[i]])^(1/model$conditions$cons[[i]]),model$conditions$workBounds[[i]])[parmNames %in% newparmNames]#model$CIbeta[[i]]$est[parmNames %in% newparmNames]
+          tmpPar[match(parmNames,newparmNames,nomatch=0)] <- nw2w(model$CIbeta[[i]]$est,model$conditions$workBounds[[i]])[parmNames %in% newparmNames]#model$CIbeta[[i]]$est[parmNames %in% newparmNames]
         else
           tmpPar[match(parmNames,newparmNames,nomatch=0)] <- model$mod$estimate[parindex[[i]]+1:parCount[[i]]][parmNames %in% newparmNames]
       }

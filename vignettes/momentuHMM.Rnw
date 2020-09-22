@@ -1084,8 +1084,7 @@ Before we demonstrate how to implement these constraints, we should first provid
 {\boldsymbol \theta} &=&  \left({\mathbf U}_\theta - {\mathbf L}_\theta \right) g^{-1} \left( {\mathbf X}_\theta  {\boldsymbol \beta}_\theta^* \right) + {\mathbf L}_\theta, \nonumber
 %A^{\circ\frac12}
 \end{eqnarray}
-where %${\mathbf W}_\theta$ is a $K$-vector of \verb|workcons| values, ${\mathbf C}_\theta$ is a $K$-vector of \verb|cons| values specifying the element-wise power to which to raise each of the working scale parameters $({\boldsymbol \beta}_\theta)$, 
-${\mathbf L}_\theta$ is the lower bound on the natural scale and ${\mathbf U}_\theta$ is the upper bound on the natural scale.  Note that ${\boldsymbol \beta}_\theta^*={\boldsymbol \beta}_\theta$ under the default values for \verb|workBounds|. For natural scale parameters with finite lower bounds and infinite upper bounds, we have
+where ${\mathbf L}_\theta$ is the lower bound on the natural scale and ${\mathbf U}_\theta$ is the upper bound on the natural scale.  Note that ${\boldsymbol \beta}_\theta^*={\boldsymbol \beta}_\theta$ under the default values for \verb|workBounds|. For natural scale parameters with finite lower bounds and infinite upper bounds, we have
 \begin{eqnarray*}
 {\boldsymbol \theta} =  g^{-1} \left( {\mathbf X}_\theta  {\boldsymbol \beta}_\theta^* \right) + {\mathbf L}_\theta.
 %A^{\circ\frac12}

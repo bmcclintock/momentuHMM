@@ -32,10 +32,8 @@ MIfitHMM(miData, ...)
   fit = TRUE,
   useInitial = FALSE,
   DM = NULL,
-  cons = NULL,
   userBounds = NULL,
   workBounds = NULL,
-  workcons = NULL,
   betaCons = NULL,
   betaRef = NULL,
   deltaCons = NULL,
@@ -191,16 +189,10 @@ If \code{ncores>1} then the first model is fit on a single core and then used as
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream. See \code{\link{fitHMM}}.}
 
-\item{cons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
-for each data stream. See \code{\link{fitHMM}}.}
-
 \item{userBounds}{An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 distribution parameters for each data stream. See \code{\link{fitHMM}}.}
 
 \item{workBounds}{An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. See \code{\link{fitHMM}}.}
-
-\item{workcons}{Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
-each data stream. See \code{\link{fitHMM}}.}
 
 \item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See \code{\link{fitHMM}}.}
 

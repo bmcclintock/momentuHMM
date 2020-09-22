@@ -19,13 +19,9 @@
 #' @param oneInflation Named list of logicals indicating whether the probability distributions of the data streams are one-inflated.
 #' @param stationary \code{FALSE} if there are time-varying covariates in \code{formula} or any covariates in \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
-#' @param cons Named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
-#' for each data stream. 
 #' @param fullDM Named list containing the full (i.e. not shorthand) design matrix for each data stream.
 #' @param DMind Named list indicating whether \code{fullDM} includes individual- and/or temporal-covariates for each data stream
 #' specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.
-#' @param workcons Named list of vectors specifying constants to add to the regression coefficients on the working scale for 
-#' each data stream. 
 #' @param Bndind Named list indicating whether \code{DM} is NULL with default parameter bounds for each data stream.
 #' @param knownStates Vector of values of the state process which are known prior to fitting the
 #' model (if any).
@@ -59,19 +55,19 @@
 #' 
 #' inputs <- momentuHMM:::checkInputs(nbStates,m$conditions$dist,Par$Par,m$conditions$estAngleMean,
 #'           m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,
-#'           m$conditions$DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,
+#'           m$conditions$DM,m$conditions$userBounds,
 #'           m$stateNames)
 #' 
 #' wpar <- momentuHMM:::n2w(Par$Par,m$conditions$bounds,list(beta=Par$beta),
 #'         log(Par$delta[-1]/Par$delta[1]),nbStates,m$conditions$estAngleMean,
-#'         m$conditions$DM,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,
+#'         m$conditions$DM,m$conditions$Bndind,
 #'         m$conditions$dist)
 #' 
 #' l <- momentuHMM:::nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,
 #'      inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
 #'      m$conditions$estAngleMean,m$conditions$circularAngleMean,inputs$consensus,
 #'      m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$stationary,
-#'      m$conditions$cons,m$conditions$fullDM,m$conditions$DMind,m$conditions$workcons,
+#'      m$conditions$fullDM,m$conditions$DMind,
 #'      m$conditions$Bndind,m$knownStates,unlist(m$conditions$fixPar),
 #'      m$conditions$wparIndex,covsDelta=m$covsDelta,workBounds=m$conditions$workBounds,
 #'      betaRef=m$conditions$betaRef,covsPi=m$covsPi)
@@ -80,7 +76,7 @@
 
 nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,
-                     stationary=FALSE,cons,fullDM,DMind,workcons,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,deltaCons=NULL,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1,covsPi,recharge=NULL,aInd)
+                     stationary=FALSE,fullDM,DMind,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,deltaCons=NULL,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1,covsPi,recharge=NULL,aInd)
 {
   
   # check arguments
@@ -95,7 +91,7 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
   
   # convert the parameters back to their natural scale
   wpar <- expandPar(optPar,optInd,fixPar,wparIndex,betaCons,deltaCons,nbStates,ncol(covsDelta)-1,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,ncol(covsPi)-1)
-  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nrow(data),dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+  par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,fullDM,DMind,nrow(data),dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi)
 
   if(nbRecovs){
     for(i in 1:length(unique(data$ID))){

@@ -14,10 +14,8 @@ w2n(
   circularAngleMean,
   consensus,
   stationary,
-  cons,
   fullDM,
   DMind,
-  workcons,
   nbObs,
   dist,
   Bndind,
@@ -51,16 +49,10 @@ regression on the mean of circular distributions ('vm' and 'wrpcauchy') for turn
 \item{stationary}{\code{FALSE} if there are time-varying covariates in \code{formula} or any covariates in \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 equal to the stationary distribution. Default: \code{FALSE}.}
 
-\item{cons}{Named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
-for each data stream.}
-
 \item{fullDM}{Named list containing the full (i.e. not shorthand) design matrix for each data stream.}
 
 \item{DMind}{Named list indicating whether \code{fullDM} includes individual- and/or temporal-covariates for each data stream
 specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.}
-
-\item{workcons}{Named list of vectors specifying constants to add to the regression coefficients on the working scale for 
-each data stream.}
 
 \item{nbObs}{Number of observations in the data.}
 
@@ -101,14 +93,14 @@ delta <- c(0.6,0.4)
 
 #working parameters
 wpar <- momentuHMM:::n2w(par,bounds,list(beta=beta),log(delta[-1]/delta[1]),nbStates,
-m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,
+m$conditions$estAngleMean,NULL,m$conditions$Bndind,
 m$conditions$dist)
 
 #natural parameter
 p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
 m$conditions$circularAngleMean,lapply(m$conditions$dist,function(x) x=="vmConsensus"),
-m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
-m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,
+m$conditions$stationary,m$conditions$fullDM,
+m$conditions$DMind,1,m$conditions$dist,m$conditions$Bndind,
 matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta,
 workBounds=m$conditions$workBounds)
 }

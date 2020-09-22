@@ -1,4 +1,4 @@
-checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames,checkInflation=FALSE)
+checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,stateNames,checkInflation=FALSE)
 {
   distnames<-names(dist)
   
@@ -66,8 +66,8 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
   bounds <- p$bounds
 
   if(is.null(DM)){
-    DM <- cons <- workcons <- vector('list',length(distnames))
-    names(DM) <- names(cons) <- names(workcons) <- distnames
+    DM <- vector('list',length(distnames))
+    names(DM) <- distnames
   } else {
     if(!is.list(DM) | is.null(names(DM))) stop("'DM' must be a named list")
     if(!any(names(DM) %in% distnames)) stop("DM names must include at least one of: ",paste0(distnames,collapse=", "))
@@ -101,5 +101,5 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
     }
   }
 
-  return(list(p=p,dist=ndist,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,consensus=consensus,DM=DM,cons=cons,workcons=workcons))
+  return(list(p=p,dist=ndist,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,consensus=consensus,DM=DM))
 }

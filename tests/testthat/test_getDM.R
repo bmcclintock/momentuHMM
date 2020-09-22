@@ -5,7 +5,7 @@ test_that("Exception is thrown",{
   
   m<-example$m
   p<-parDef(m$conditions$dist,length(m$stateNames),m$conditions$estAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds)
-  expect_error(getDM(m$data,m$conditions$DM,m$conditions$dist,length(m$stateNames),p$parNames,p$bounds,getPar(m)$Par,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean,ParChecks=TRUE),
+  expect_error(getDM(m$data,m$conditions$DM,m$conditions$dist,length(m$stateNames),p$parNames,p$bounds,getPar(m)$Par,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean,ParChecks=TRUE),
               NA)
 })
 

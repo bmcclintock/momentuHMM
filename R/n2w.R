@@ -15,10 +15,6 @@
 #' distributions ('vm' and 'wrpcauchy').
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 #' stream. Each element of \code{DM} can either be a named list of linear regression formulas or a matrix.  
-#' @param cons Named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
-#' for each data stream. 
-#' @param workcons Named list of vectors specifying constants to add to the regression coefficients on the working scale for 
-#' each data stream. 
 #' @param Bndind Named list indicating whether \code{DM} is NULL with default parameter bounds for each data stream.
 #' @param dist A named list indicating the probability distributions of the data streams.
 #' 
@@ -37,21 +33,21 @@
 #' 
 #' #working parameters
 #' wpar <- momentuHMM:::n2w(par,bounds,list(beta=beta),log(delta[-1]/delta[1]),nbStates,
-#' m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,
+#' m$conditions$estAngleMean,NULL,m$conditions$Bndind,
 #' m$conditions$dist)
 #' 
 #' #natural parameter
 #' p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
 #' m$conditions$circularAngleMean,lapply(m$conditions$dist,function(x) x=="vmConsensus"),
-#' m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
-#' m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,
+#' m$conditions$stationary,m$conditions$fullDM,
+#' m$conditions$DMind,1,m$conditions$dist,m$conditions$Bndind,
 #' matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta,
 #' workBounds=m$conditions$workBounds)
 #' }
 #'
 #' @importFrom stats dunif
 
-n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcons,Bndind,dist)
+n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,Bndind,dist)
 {
   wpar <- NULL
   for(i in names(par)){
@@ -73,7 +69,7 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcon
         bounds[[i]][,1] <- -Inf
         bounds[[i]][which(bounds[[i]][,2]!=1),2] <- Inf
         
-        p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],cons[[i]],workcons[[i]],nbStates)
+        p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],nbStates)
         
         foo <- length(p) - nbStates + 1
         angleMean <- p[(foo - nbStates):(foo - 1)]
@@ -87,7 +83,7 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,cons,workcon
         for(j in 1:nbStates){
           p[seq(j,dimCat*nbStates,nbStates)] <- log(par[[i]][seq(j,dimCat*nbStates,nbStates)]/(1-sum(par[[i]][seq(j,dimCat*nbStates,nbStates)])))
         }
-      } else p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],cons[[i]],workcons[[i]],nbStates)
+      } else p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],nbStates)
     }
     wpar <- c(wpar,p)
   }
@@ -116,7 +112,7 @@ nw2w <-function(wpar,workBounds){
 }
 
 #' @importFrom stats qlogis
-n2wDM<-function(bounds,DM,par,cons,workcons,nbStates){
+n2wDM<-function(bounds,DM,par,nbStates){
   
   a<-bounds[,1]
   b<-bounds[,2]
@@ -132,7 +128,7 @@ n2wDM<-function(bounds,DM,par,cons,workcons,nbStates){
 
   p<-numeric(nrow(DM))
   
-  if(length(ind1)) p[ind1] <- (tan(par[ind1]/2)-workcons[ind1])^(1/cons[ind1])
+  if(length(ind1)) p[ind1] <- tan(par[ind1]/2)
   if(length(ind2)){
     for(j in 1:nbStates){
       zoParInd <- which(grepl(paste0("zeromass_",j),rownames(bounds)) | grepl(paste0("onemass_",j),rownames(bounds)))
@@ -148,9 +144,9 @@ n2wDM<-function(bounds,DM,par,cons,workcons,nbStates){
   ind32<-ind3[which(is.finite(a[ind3]) & is.finite(b[ind3]))]
   ind33<-ind3[which(is.infinite(a[ind3]) & is.finite(b[ind3]))]
   
-  p[ind31]<-(log(par[ind31]-a[ind31])-workcons[ind31])^(1/cons[ind31])
-  p[ind32]<-(stats::qlogis((par[ind32]-a[ind32])/(b[ind32]-a[ind32]))-workcons[ind32])^(1/cons[ind32])
-  p[ind33]<-(-log(-par[ind33]+b[ind33])-workcons[ind33])^(1/cons[ind33])
+  p[ind31] <- log(par[ind31]-a[ind31])
+  p[ind32] <- stats::qlogis((par[ind32]-a[ind32])/(b[ind32]-a[ind32]))
+  p[ind33] <- -log(-par[ind33]+b[ind33])
   
   p
 }     

@@ -12,7 +12,7 @@ test_that("Exception is thrown",{
   beta <- matrix(rnorm(6),ncol=2,nrow=3)
   delta <- c(0.6,0.4)
   
-  expect_that(n2w(par,bounds,list(beta=beta),delta,nbStates,list(step=FALSE),NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind),
+  expect_that(n2w(par,bounds,list(beta=beta),delta,nbStates,list(step=FALSE),NULL,m$conditions$Bndind),
               throws_error())
 })
 
@@ -27,6 +27,6 @@ test_that("Lengths of input and output are the same",{
   beta <- matrix(rnorm(6),ncol=2,nrow=3)
   delta <- c(0.6,0.4)
 
-  expect_equal(length(n2w(par,bounds,list(beta=beta),log(delta[-1]/delta[1]),nbStates,list(step=FALSE),NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,m$conditions$dist)),
+  expect_equal(length(n2w(par,bounds,list(beta=beta),log(delta[-1]/delta[1]),nbStates,list(step=FALSE),NULL,m$conditions$Bndind,m$conditions$dist)),
                length(par$step)+length(beta)+length(delta)-1)
 })

@@ -4,19 +4,7 @@
 \alias{n2w}
 \title{Scaling function: natural to working parameters.}
 \usage{
-n2w(
-  par,
-  bounds,
-  beta,
-  delta = NULL,
-  nbStates,
-  estAngleMean,
-  DM,
-  cons,
-  workcons,
-  Bndind,
-  dist
-)
+n2w(par, bounds, beta, delta = NULL, nbStates, estAngleMean, DM, Bndind, dist)
 }
 \arguments{
 \item{par}{Named list of vectors containing the initial parameter values for each data stream.}
@@ -35,12 +23,6 @@ distributions ('vm' and 'wrpcauchy').}
 
 \item{DM}{An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 stream. Each element of \code{DM} can either be a named list of linear regression formulas or a matrix.}
-
-\item{cons}{Named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
-for each data stream.}
-
-\item{workcons}{Named list of vectors specifying constants to add to the regression coefficients on the working scale for 
-each data stream.}
 
 \item{Bndind}{Named list indicating whether \code{DM} is NULL with default parameter bounds for each data stream.}
 
@@ -67,14 +49,14 @@ delta <- c(0.6,0.4)
 
 #working parameters
 wpar <- momentuHMM:::n2w(par,bounds,list(beta=beta),log(delta[-1]/delta[1]),nbStates,
-m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,
+m$conditions$estAngleMean,NULL,m$conditions$Bndind,
 m$conditions$dist)
 
 #natural parameter
 p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
 m$conditions$circularAngleMean,lapply(m$conditions$dist,function(x) x=="vmConsensus"),
-m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
-m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,
+m$conditions$stationary,m$conditions$fullDM,
+m$conditions$DMind,1,m$conditions$dist,m$conditions$Bndind,
 matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta,
 workBounds=m$conditions$workBounds)
 }

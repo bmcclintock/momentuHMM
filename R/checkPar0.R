@@ -32,13 +32,9 @@ checkPar0 <- function(data, ...) {
 #' Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilties).
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 #' stream.
-#' @param cons Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
-#' for each data stream. 
 #' @param userBounds An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 #' distribution parameters for each data stream. 
 #' @param workBounds An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. 
-#' @param workcons Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
-#' each data stream. 
 #' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters.
 #' @param betaRef Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link.
 #' @param deltaCons Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}. 
@@ -89,7 +85,7 @@ checkPar0 <- function(data, ...) {
 #'           circularAngleMean=list(angle=TRUE))                
 #' }
 #' @export
-checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL,betaCons=NULL,betaRef=NULL,deltaCons=NULL,stateNames=NULL,fixPar=NULL,prior=NULL,...)
+checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,betaRef=NULL,deltaCons=NULL,stateNames=NULL,fixPar=NULL,prior=NULL,...)
 {
   
   hierArgs <- list(...)
@@ -198,7 +194,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
     }
     p <- parDef(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds)
     nPar <- lapply(p$bounds,function(x) runif(nrow(x),ifelse(is.finite(x[,1]),x[,1],0),ifelse(is.finite(x[,2]),x[,2],max(x[,1]+1,1.e+6))))
-    inputs <- checkInputs(nbStates,dist,nPar,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames=NULL,checkInflation = TRUE)
+    inputs <- checkInputs(nbStates,dist,nPar,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,stateNames=NULL,checkInflation = TRUE)
     
     # convert RW data
     if(any(unlist(dist) %in% rwdists)){
@@ -208,7 +204,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
     }
     
     tempCovs <- data[1,]
-    DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,nPar,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)
+    DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,nPar,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)
     fullDM <- DMinputs$fullDM
     nc <- meanind <- vector('list',length(distnames))
     names(nc) <- names(meanind) <- distnames
@@ -221,7 +217,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
             tmpCov <- tempCovs
             for(jj in levels(tempCovs[[j]])){
               tmpCov[[j]] <- factor(jj,levels=levels(tempCovs[[j]]))
-              tmpgDM<-getDM(tmpCov,inputs$DM[i],inputs$dist[i],nbStates,inputs$p$parNames[i],inputs$p$bounds[i],nPar[i],inputs$cons[i],inputs$workcons[i],zeroInflation[i],oneInflation[i],inputs$circularAngleMean[i],FALSE)$fullDM[[i]]
+              tmpgDM<-getDM(tmpCov,inputs$DM[i],inputs$dist[i],nbStates,inputs$p$parNames[i],inputs$p$bounds[i],nPar[i],zeroInflation[i],oneInflation[i],inputs$circularAngleMean[i],FALSE)$fullDM[[i]]
               nc[[i]] <- nc[[i]] + apply(tmpgDM,1:2,function(x) !all(unlist(x)==0))
             }
           }
@@ -243,20 +239,20 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
       bInd <- getboundInd(nc[[i]])
       nPar[[i]] <- nPar[[i]][which(!duplicated(bInd))[bInd]]
     }
-    par <- getParDM.default(data=data,nbStates=nbStates,dist=dist,Par=nPar,zeroInflation=zeroInflation,oneInflation=oneInflation,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,DM=DM,cons=cons,userBounds=userBounds,workBounds=workBounds,workcons=workcons)
+    par <- getParDM.default(data=data,nbStates=nbStates,dist=dist,Par=nPar,zeroInflation=zeroInflation,oneInflation=oneInflation,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,DM=DM,userBounds=userBounds,workBounds=workBounds)
     
   } else par <- Par0
   m<-suppressMessages(fitHMM(data=data,nbStates=nbStates,dist=dist,
                              Par0=par,beta0=beta0,delta0=delta0,
                              estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
                              formula=formula,formulaDelta=formulaDelta,stationary=stationary,mixtures=mixtures,formulaPi=formulaPi,
-                             DM=DM,cons=cons,userBounds=userBounds,workBounds=workBounds,workcons=workcons,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,fit=FALSE,
+                             DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,fit=FALSE,
                              stateNames=stateNames,fixPar=fixPar,prior=prior))
   
-  inputs <- checkInputs(nbStates,dist,par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,DM,m$conditions$userBounds,m$conditions$cons,m$conditions$workcons,stateNames,checkInflation = TRUE)
+  inputs <- checkInputs(nbStates,dist,par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,DM,m$conditions$userBounds,stateNames,checkInflation = TRUE)
   p <- inputs$p
   par <- par[names(inputs$dist)]
-  DMinputs<-getDM(m$data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,par,inputs$cons,inputs$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,inputs$circularAngleMean)
+  DMinputs<-getDM(m$data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,par,m$conditions$zeroInflation,m$conditions$oneInflation,inputs$circularAngleMean)
   
   for(i in names(fixPar)){
     if(i %in% names(m$conditions$dist)){
@@ -328,7 +324,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
     delta <- matrix(0,nrow=(nbCovsDelta+1)*mixtures,ncol=nbStates-1)
   }
   
-  wpar <- n2w(par,p$bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,DMinputs$cons,DMinputs$workcons,p$Bndind,inputs$dist)
+  wpar <- n2w(par,p$bounds,beta,delta,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
   
   m$mod$hessian <- matrix(0,length(wpar),length(wpar))
   m$conditions$fit <- TRUE
@@ -485,7 +481,7 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
   fixPar <- inputHierHMM$fixPar
   recharge <- inputHierHMM$recharge
   
-  m <- checkPar0.default(data=data,nbStates=nbStates,dist=dist,Par0=Par0,beta0=beta0,delta0=delta0,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,formula=formula,formulaDelta=formulaDelta,stationary=FALSE,mixtures=mixtures,formulaPi=formulaPi,DM=DM,cons=NULL,userBounds=userBounds,workBounds=workBounds,workcons=NULL,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,stateNames=stateNames,fixPar=fixPar,prior=prior)
+  m <- checkPar0.default(data=data,nbStates=nbStates,dist=dist,Par0=Par0,beta0=beta0,delta0=delta0,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,formula=formula,formulaDelta=formulaDelta,stationary=FALSE,mixtures=mixtures,formulaPi=formulaPi,DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,stateNames=stateNames,fixPar=fixPar,prior=prior)
   
   hier <- mapHier(list(beta=m$mle$beta,g0=m$mle$g0,theta=m$mle$theta),m$mle$pi,m$CIbeta$delta$est,hierBeta=hierBeta,hierDelta=hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,hierStates,inputHierHMM$newformula,m$conditions$formulaDelta,inputHierHMM$data,m$conditions$mixtures,recharge,fill=TRUE)
   

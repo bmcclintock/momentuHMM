@@ -52,10 +52,6 @@ getParDM <- function(data, ...) {
 #' \code{DM=list(step=matrix(c(1,0,0,0,'cov1',0,0,0,0,1,0,0,0,'cov1',0,0,0,0,1,0,0,0,0,1),4,6))}
 #' where the 4 rows correspond to the state-dependent paramaters (mean_1,mean_2,sd_1,sd_2) and the 6 columns correspond to the regression 
 #' coefficients. 
-#' @param cons Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
-#' for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
-#' \code{cons=list(step=c(1,2,1,1))} raises the second parameter to the second power. Default=NULL, which simply raises all parameters to 
-#' the power of 1. \code{cons} is ignored for any given data stream unless \code{DM} is specified.
 #' @param userBounds An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 #' distribution parameters for each data stream. For example, for a 2-state model using the wrapped Cauchy ('wrpcauchy') distribution for 
 #' a data stream named 'angle' with \code{estAngleMean$angle=TRUE)}, \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2))} 
@@ -63,9 +59,6 @@ getParDM <- function(data, ...) {
 #' @param workBounds An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. For each matrix, the first column pertains to the lower bound and the second column the upper bound.
 #' For data streams, each element of \code{workBounds} should be a k x 2 matrix with the same name of the corresponding element of 
 #' \code{Par0}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta0)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta0)}.
-#' @param workcons Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
-#' each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
-#' through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.
 #'
 #' @return A list of parameter values that can be used as starting values (\code{Par0}) in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
 #' 
@@ -80,7 +73,7 @@ getParDM <- function(data, ...) {
 #' stepPar0 <- c(15,50,10,20) # natural scale mean_1, mean_2, sd_1, sd_2
 #' anglePar0 <- c(0.7,1.5) # natural scale conentration_1, concentration_2
 #' 
-#' # get working parameters for 'DM' and 'cons' that constrain step length mean_1 < mean_2
+#' # get working parameters for 'DM' that constrains step length mean_1 < mean_2
 #' stepDM <- matrix(c(1,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1),4,4,
 #'           dimnames=list(NULL,c("mean:(Intercept)","mean_2",
 #'                                "sd_1:(Intercept)","sd_2:(Intercept)")))
@@ -121,7 +114,7 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
                  oneInflation=NULL,
                  estAngleMean=NULL,
                  circularAngleMean=NULL,
-                 DM=NULL,cons=NULL,userBounds=NULL,workBounds=NULL,workcons=NULL, ...){
+                 DM=NULL,userBounds=NULL,workBounds=NULL, ...){
   
   hierArgs <- list(...)
   argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist"))]
@@ -139,10 +132,6 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
     if(any(c("hierStates","hierDist") %in% argNames))
       stop("Either nbStates and dist must be specified (for a regular HMM) or hierStates and hierDist must be specified (for a hierarchical HMM)")
   }
-  
-  if(!is.null(cons)) warning("cons argument is deprecated in momentuHMM >= 1.4.0.  Please use workBounds instead.")
-  if(!is.null(workcons)) warning("workcons argument is deprecated in momentuHMM >= 1.4.0.  Please use workBounds instead.")
-  if(!is.null(workBounds) & (!is.null(cons) | !is.null(workcons))) stop("workBounds cannot be specified when using deprecated arguments cons or workcons; either workBounds or both cons and workcons must be NULL")
   
   if(nbStates<1) stop('nbStates must be >0')
   
@@ -234,15 +223,13 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
       else tempCovs[[j]]<-mean(data[[j]],na.rm=TRUE)
     }
   }
-  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,cons,workcons,stateNames=NULL,checkInflation = TRUE)
+  inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,stateNames=NULL,checkInflation = TRUE)
   
-  DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)
+  DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)
   fullDM <- DMinputs$fullDM
   if(length(data))
-    DMind <- getDM(data,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,inputs$cons,inputs$workcons,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)$DMind
+    DMind <- getDM(data,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)$DMind
   else DMind <- DMinputs$DMind
-    cons <- DMinputs$cons
-  workcons <- DMinputs$workcons
   
   nc <- meanind <- vector('list',length(distnames))
   names(nc) <- names(meanind) <- distnames
@@ -255,7 +242,7 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
           tmpCov <- tempCovs
           for(jj in levels(tempCovs[[j]])){
             tmpCov[[j]] <- factor(jj,levels=levels(tempCovs[[j]]))
-            tmpgDM<-getDM(tmpCov,inputs$DM[i],inputs$dist[i],nbStates,inputs$p$parNames[i],inputs$p$bounds[i],Par[i],inputs$cons[i],inputs$workcons[i],zeroInflation[i],oneInflation[i],inputs$circularAngleMean[i],FALSE)$fullDM[[i]]
+            tmpgDM<-getDM(tmpCov,inputs$DM[i],inputs$dist[i],nbStates,inputs$p$parNames[i],inputs$p$bounds[i],Par[i],zeroInflation[i],oneInflation[i],inputs$circularAngleMean[i],FALSE)$fullDM[[i]]
             nc[[i]] <- nc[[i]] + apply(tmpgDM,1:2,function(x) !all(unlist(x)==0))
           }
         }
@@ -304,7 +291,7 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
         
         p<-numeric(length(bndInd))
         if(length(ind1)){
-          if(isFALSE(inputs$circularAngleMean[[i]])) p[ind1] <- (solve(unique(fullDM[[i]])[ind1,ind1],tan(par[ind1]/2))-workcons[[i]][ind1])^(1/cons[[i]][ind1])
+          if(isFALSE(inputs$circularAngleMean[[i]])) p[ind1] <- solve(unique(fullDM[[i]])[ind1,ind1],tan(par[ind1]/2))
           else stop("sorry, circular angle mean parameters are not supported by getParDM")
         }
         
@@ -313,10 +300,10 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
         ind23<-ind2[which(is.infinite(a[ind2]) & is.finite(b[ind2]))]
         ind24<-ind2[which(is.infinite(a[ind2]) & is.infinite(b[ind2]))]
         
-        if(length(ind21)) p[ind21]<-(solve(unique(fullDM[[i]])[ind21,ind21],log(par[ind21]-a[ind21]))-workcons[[i]][ind21])^(1/cons[[i]][ind21])
-        if(length(ind22)) p[ind22]<-(solve(unique(fullDM[[i]])[ind22,ind22],stats::qlogis((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][ind22])^(1/cons[[i]][ind22])
-        if(length(ind23)) p[ind23]<-(solve(unique(fullDM[[i]])[ind23,ind23],-log(-par[ind23]+b[ind23]))-workcons[[i]][ind23])^(1/cons[[i]][ind23])
-        if(length(ind24)) p[ind24]<-(solve(unique(fullDM[[i]])[ind24,ind24],par[ind24])-workcons[[i]][ind24])^(1/cons[[i]][ind24])
+        if(length(ind21)) p[ind21]<-solve(unique(fullDM[[i]])[ind21,ind21],log(par[ind21]-a[ind21]))
+        if(length(ind22)) p[ind22]<-solve(unique(fullDM[[i]])[ind22,ind22],stats::qlogis((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))
+        if(length(ind23)) p[ind23]<-solve(unique(fullDM[[i]])[ind23,ind23],-log(-par[ind23]+b[ind23]))
+        if(length(ind24)) p[ind24]<-solve(unique(fullDM[[i]])[ind24,ind24],par[ind24])
  
       } else {
         
@@ -359,31 +346,31 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
               
               asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind1,meanind,drop=FALSE])
               adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-              p[meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% tan(par[ind1]/2))-workcons[[i]][meanind])^(1/cons[[i]][meanind])
-              #p[meanind] <- (solve(unique(fullDM[[i]])[ind1,meanind],tan(par[ind1]/2))-workcons[[i]][meanind])^(1/cons[[i]][meanind])
+              p[meanind] <- asvd$v %*% adiag %*% t(asvd$u) %*% tan(par[ind1]/2)
+              #p[meanind] <- solve(unique(fullDM[[i]])[ind1,meanind],tan(par[ind1]/2))
 
               if(length(ind21)){
                 asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind21,-meanind,drop=FALSE])
                 adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-                p[-meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% log(par[ind21]-a[ind21]))-workcons[[i]][-meanind])^(1/cons[[i]][-meanind])
+                p[-meanind] <- asvd$v %*% adiag %*% t(asvd$u) %*% log(par[ind21]-a[ind21])
               }
               
               if(length(ind22)){
                 asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind22,-meanind,drop=FALSE])
                 adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-                p[-meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% stats::qlogis((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][-meanind])^(1/cons[[i]][-meanind])
+                p[-meanind] <- asvd$v %*% adiag %*% t(asvd$u) %*% stats::qlogis((par[ind22]-a[ind22])/(b[ind22]-a[ind22]))
               }
               
               if(length(ind23)){
                 asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind23,-meanind,drop=FALSE])
                 adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-                p[-meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23])))-workcons[[i]][-meanind])^(1/cons[[i]][-meanind])
+                p[-meanind] <- asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23]))
               }
               
               if(length(ind24)){
                 asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind24,-meanind,drop=FALSE])
                 adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-                p[-meanind] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (par[ind24]))-workcons[[i]][-meanind])^(1/cons[[i]][-meanind])
+                p[-meanind] <- asvd$v %*% adiag %*% t(asvd$u) %*% par[ind24]
               }
             } else {
               
@@ -396,43 +383,42 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
               #xmat <- fullDM[[i]][gbInd,,drop=FALSE][meanind1,meanind2,drop=FALSE]
               ##nc<-apply(xmat,1:2,function(x) !all(unlist(x)==0))
               
-              solveatan2<-function(x,theta,covs,cons,workcons,nbStates,nc,meanind,oparms,circularAngleMean){
-                #Xvec <- x^cons+workcons
-                XB<-getXB(covs,1,c(x,rep(1,oparms)),cons,workcons,TRUE,circularAngleMean,FALSE,nbStates,nc,meanind)[meanind,]
+              solveatan2<-function(x,theta,covs,nbStates,nc,meanind,oparms,circularAngleMean){
+                XB<-getXB(covs,1,c(x,rep(1,oparms)),TRUE,circularAngleMean,FALSE,nbStates,nc,meanind)[meanind,]
                 c(abs(theta - XB),rep(0,max(0,length(x)-length(theta))))
               }
 
-              if(length(meanind1)) p[1:(length(meanind2)/2)] <- nleqslv::nleqslv(x=rep(1,length(meanind2)/2),fn=solveatan2,theta=par[meanind1],covs=fullDM[[i]],cons=cons[[i]],workcons=workcons[[i]],nbStates=nbStates,nc=nc[[i]],meanind=meanind1,oparms=parCount[[i]]-length(meanind2)/2,circularAngleMean=inputs$circularAngleMean[[i]],control=list(allowSingular=TRUE))$x[1:(length(meanind2)/2)]
+              if(length(meanind1)) p[1:(length(meanind2)/2)] <- nleqslv::nleqslv(x=rep(1,length(meanind2)/2),fn=solveatan2,theta=par[meanind1],covs=fullDM[[i]],nbStates=nbStates,nc=nc[[i]],meanind=meanind1,oparms=parCount[[i]]-length(meanind2)/2,circularAngleMean=inputs$circularAngleMean[[i]],control=list(allowSingular=TRUE))$x[1:(length(meanind2)/2)]
               
               meanind<-which((apply(fullDM[[i]][nbStates+1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
               
               if(length(ind21)){
                 asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind21,meanind,drop=FALSE])
                 adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-                p[meanind-length(meanind2)/2] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% log(par[ind21]-a[ind21]))-workcons[[i]][meanind-length(meanind2)/2])^(1/cons[[i]][meanind-length(meanind2)/2])
+                p[meanind-length(meanind2)/2] <- asvd$v %*% adiag %*% t(asvd$u) %*% log(par[ind21]-a[ind21])
               }
               
               if(length(ind22)){
                 asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind22,meanind,drop=FALSE])
                 adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-                p[meanind-length(meanind2)/2] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% stats::qlogis((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]][meanind-length(meanind2)/2])^(1/cons[[i]][meanind-length(meanind2)/2])
+                p[meanind-length(meanind2)/2] <- asvd$v %*% adiag %*% t(asvd$u) %*% stats::qlogis((par[ind22]-a[ind22])/(b[ind22]-a[ind22]))
               }
               
               if(length(ind23)){
                 asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind23,meanind,drop=FALSE])
                 adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-                p[meanind-length(meanind2)/2] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23])))-workcons[[i]][meanind-length(meanind2)/2])^(1/cons[[i]][meanind-length(meanind2)/2])
+                p[meanind-length(meanind2)/2] <- asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23]))
               }
               
               if(length(ind24)){
                 asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind24,meanind,drop=FALSE])
                 adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-                p[meanind-length(meanind2)/2] <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (par[ind24]))-workcons[[i]][meanind-length(meanind2)/2])^(1/cons[[i]][meanind-length(meanind2)/2])
+                p[meanind-length(meanind2)/2] <- asvd$v %*% adiag %*% t(asvd$u) %*% par[ind24]
               }
             
             }
           } else if(!length(ind2)){
-            p <- (solve(fullDM[[i]][gbInd,],tan(par/2))-workcons[[i]])^(1/cons[[i]])
+            p <- solve(fullDM[[i]][gbInd,],tan(par/2))
           } else stop("sorry, the parameters for ",i," cannot have different bounds")
         } else if(((length(ind21)>0) + (length(ind22)>0) + (length(ind23)>0) + (length(ind24)>0))>1){ 
           stop("sorry, getParDM requires the parameters for ",i," to have identical bounds when covariates are included in the design matrix")
@@ -440,25 +426,25 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
           if(length(ind21)){
             asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind21,,drop=FALSE])
             adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-            p <- ((asvd$v %*% adiag %*% t(asvd$u) %*% log(par[ind21]-a[ind21]))-workcons[[i]])^(1/cons[[i]])
+            p <- asvd$v %*% adiag %*% t(asvd$u) %*% log(par[ind21]-a[ind21])
           }
           
           if(length(ind22)){
             asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind22,,drop=FALSE])
             adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-            p <- ((asvd$v %*% adiag %*% t(asvd$u) %*% stats::qlogis((par[ind22]-a[ind22])/(b[ind22]-a[ind22])))-workcons[[i]])^(1/cons[[i]])
+            p <- asvd$v %*% adiag %*% t(asvd$u) %*% stats::qlogis((par[ind22]-a[ind22])/(b[ind22]-a[ind22]))
           }
           
           if(length(ind23)){
             asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind23,,drop=FALSE])
             adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-            p <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23])))-workcons[[i]])^(1/cons[[i]])
+            p <- asvd$v %*% adiag %*% t(asvd$u) %*% (-log(-par[ind23]+b[ind23]))
           }
 
           if(length(ind24)){
             asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind24,,drop=FALSE])
             adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
-            p <- ((asvd$v %*% adiag %*% t(asvd$u) %*% (par[ind24]))-workcons[[i]])^(1/cons[[i]])
+            p <- asvd$v %*% adiag %*% t(asvd$u) %*% par[ind24]
           }
         }
       }
@@ -501,5 +487,5 @@ getParDM.hierarchical<-function(data=data.frame(), hierStates, hierDist,
   nbStates <- nbHierStates(hierStates)$nbStates
   dist <- getHierDist(hierDist,data=NULL,checkData=FALSE)
   
-  return(getParDM.default(data,nbStates,dist,Par,zeroInflation,oneInflation,estAngleMean,circularAngleMean,DM,cons=NULL,userBounds,workBounds,workcons=NULL))
+  return(getParDM.default(data,nbStates,dist,Par,zeroInflation,oneInflation,estAngleMean,circularAngleMean,DM,userBounds,workBounds))
 }

@@ -88,11 +88,11 @@ CIbeta <- function(m,alpha=0.95)
   
   Par <- list()
   for(i in distnames){
-    est <- w2wn(wpar[parindex[[i]]+1:parCount[[i]]]^m$conditions$cons[[i]]+m$conditions$workcons[[i]],m$conditions$workBounds[[i]])
+    est <- w2wn(wpar[parindex[[i]]+1:parCount[[i]]],m$conditions$workBounds[[i]])
     
     pnames <- colnames(fullDM[[i]])
     if(!isFALSE(m$conditions$circularAngleMean[[i]])) pnames <- unique(gsub("cos","",gsub("sin","",pnames)))
-    Par[[i]] <- get_CIwb(wpar[parindex[[i]]+1:parCount[[i]]],est,parindex[[i]]+1:parCount[[i]],Sigma,alpha,m$conditions$workBounds[[i]],cnames=pnames,cons=m$conditions$cons[[i]])
+    Par[[i]] <- get_CIwb(wpar[parindex[[i]]+1:parCount[[i]]],est,parindex[[i]]+1:parCount[[i]],Sigma,alpha,m$conditions$workBounds[[i]],cnames=pnames)
 
   }
   
@@ -103,7 +103,7 @@ CIbeta <- function(m,alpha=0.95)
     
     est <- w2wn(wpar[tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)],m$conditions$workBounds$beta)
     
-    Par$beta <- get_CIwb(wpar[tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)],est,tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures),Sigma,alpha,m$conditions$workBounds$beta,rnames=rownames(m$mle$beta),cnames=colnames(m$mle$beta),cons=rep(1,length(est)))
+    Par$beta <- get_CIwb(wpar[tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)],est,tail(cumsum(unlist(parCount)),1)+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures),Sigma,alpha,m$conditions$workBounds$beta,rnames=rownames(m$mle$beta),cnames=colnames(m$mle$beta))
     
     # fill in constraints based on betaCons
     Par$beta <- lapply(Par$beta,function(x) matrix(x[c(m$conditions$betaCons)],dim(x),dimnames=list(rownames(x),colnames(x))))
@@ -120,7 +120,7 @@ CIbeta <- function(m,alpha=0.95)
     
     est <- w2wn(wpar[piInd],m$conditions$workBounds$pi)
     
-    Par$pi <- get_CIwb(wpar[piInd],est,piInd,Sigma,alpha,m$conditions$workBounds$pi,rnames=colnames(m$covsPi),cnames=paste0("mix",2:mixtures),cons=rep(1,length(est)))
+    Par$pi <- get_CIwb(wpar[piInd],est,piInd,Sigma,alpha,m$conditions$workBounds$pi,rnames=colnames(m$covsPi),cnames=paste0("mix",2:mixtures))
   }
   
   # group CIs for initial distribution
@@ -133,7 +133,7 @@ CIbeta <- function(m,alpha=0.95)
     
     rnames <- rep(colnames(m$covsDelta),mixtures)
     if(mixtures>1) rnames <- paste0(rep(colnames(m$covsDelta),mixtures),"_mix",rep(1:mixtures,each=length(colnames(m$covsDelta))))
-    Par$delta <- get_CIwb(wpar[foo:dInd],est,foo:dInd,Sigma,alpha,m$conditions$workBounds$delta,rnames=rnames,cnames=m$stateNames[-1],cons=rep(1,length(est)))
+    Par$delta <- get_CIwb(wpar[foo:dInd],est,foo:dInd,Sigma,alpha,m$conditions$workBounds$delta,rnames=rnames,cnames=m$stateNames[-1])
     
   }
   
@@ -142,37 +142,37 @@ CIbeta <- function(m,alpha=0.95)
     ind <- tail(cumsum(unlist(parCount)),1)+(nbCovs+1)*nbStates*(nbStates-1)+(nbCovsDelta+1)*(nbStates-1)+1:(reForm$nbG0covs+1)
     est <- w2wn(wpar[ind],m$conditions$workBounds$g0)
     
-    Par$g0 <- get_CIwb(wpar[ind],est,ind,Sigma,alpha,m$conditions$workBounds$g0,rnames="[1,]",cnames=colnames(reForm$g0covs),cons=rep(1,length(est)))
+    Par$g0 <- get_CIwb(wpar[ind],est,ind,Sigma,alpha,m$conditions$workBounds$g0,rnames="[1,]",cnames=colnames(reForm$g0covs))
     
     ind <- tail(cumsum(unlist(parCount)),1)+(nbCovs+1)*nbStates*(nbStates-1)+(nbCovsDelta+1)*(nbStates-1)+reForm$nbG0covs+1+1:(reForm$nbRecovs+1)
     est <- w2wn(wpar[ind],m$conditions$workBounds$theta)
     
-    Par$theta <- get_CIwb(wpar[ind],est,ind,Sigma,alpha,m$conditions$workBounds$theta,rnames="[1,]",cnames=colnames(reForm$recovs),cons=rep(1,length(est)))
+    Par$theta <- get_CIwb(wpar[ind],est,ind,Sigma,alpha,m$conditions$workBounds$theta,rnames="[1,]",cnames=colnames(reForm$recovs))
     
   }
   return(Par)
 }
 
-get_gradwb<-function(wpar,workBounds,cons){
+get_gradwb<-function(wpar,workBounds){
   ind1<-which(is.finite(workBounds[,1]) & is.infinite(workBounds[,2]))
   ind2<-which(is.finite(workBounds[,1]) & is.finite(workBounds[,2]))
   ind3<-which(is.infinite(workBounds[,1]) & is.finite(workBounds[,2]))
   
-  dN <- diag(cons*(wpar^(cons-1)))
+  dN <- diag(length(wpar))
   dN[cbind(ind1,ind1)] <- exp(wpar[ind1])
   dN[cbind(ind2,ind2)] <- (workBounds[ind2,2]-workBounds[ind2,1])*exp(wpar[ind2])/(1+exp(wpar[ind2]))^2 
   dN[cbind(ind3,ind3)] <- exp(-wpar[ind3])
   dN
 }
 
-get_CIwb<-function(wpar,Par,ind,Sigma,alpha,workBounds,rnames="[1,]",cnames,cons){
+get_CIwb<-function(wpar,Par,ind,Sigma,alpha,workBounds,rnames="[1,]",cnames){
   
   npar <- length(wpar)
   bRow <- (rnames=="[1,]")
   lower<-upper<-se<-rep(NA,npar)
   
   if(!is.null(Sigma)){
-    dN <- get_gradwb(wpar,workBounds,cons)
+    dN <- get_gradwb(wpar,workBounds)
     
     se <- suppressWarnings(sqrt(diag(dN%*%Sigma[ind,ind]%*%t(dN))))
     lower <- Par - qnorm(1-(1-alpha)/2) * se

@@ -207,8 +207,6 @@ delta_bc <- function(m){
       ####### compatability hack for change to MIcombine in momentuHMM >= 1.4.3 ######
       if(is.null(m$conditions$optInd)){
         for(i in names(m$conditions$dist)){
-          m$conditions$cons[[i]]<-rep(1,length(m$conditions$cons[[i]]))
-          m$conditions$workcons[[i]]<-rep(0,length(m$conditions$workcons[[i]]))
           m$conditions$workBounds[[i]]<-matrix(c(-Inf,Inf),nrow(m$conditions$workBounds[[i]]),2,byrow=TRUE)
         }
       }

@@ -17,13 +17,9 @@
 #' @param consensus Named list indicating whether to use the circular-circular regression consensus model
 #' @param stationary \code{FALSE} if there are time-varying covariates in \code{formula} or any covariates in \code{formulaDelta}. If \code{TRUE}, the initial distribution is considered
 #' equal to the stationary distribution. Default: \code{FALSE}.
-#' @param cons Named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
-#' for each data stream. 
 #' @param fullDM Named list containing the full (i.e. not shorthand) design matrix for each data stream.
 #' @param DMind Named list indicating whether \code{fullDM} includes individual- and/or temporal-covariates for each data stream
 #' specifies (-1,1) bounds for the concentration parameters instead of the default [0,1) bounds.
-#' @param workcons Named list of vectors specifying constants to add to the regression coefficients on the working scale for 
-#' each data stream. 
 #' @param nbObs Number of observations in the data.
 #' @param dist Named list indicating the probability distributions of the data streams. 
 #' @param Bndind Named list indicating whether \code{DM} is NULL with default parameter bounds for each data stream.
@@ -51,14 +47,14 @@
 #' 
 #' #working parameters
 #' wpar <- momentuHMM:::n2w(par,bounds,list(beta=beta),log(delta[-1]/delta[1]),nbStates,
-#' m$conditions$estAngleMean,NULL,m$conditions$cons,m$conditions$workcons,m$conditions$Bndind,
+#' m$conditions$estAngleMean,NULL,m$conditions$Bndind,
 #' m$conditions$dist)
 #' 
 #' #natural parameter
 #' p <-   momentuHMM:::w2n(wpar,bounds,parSize,nbStates,nbCovs,m$conditions$estAngleMean,
 #' m$conditions$circularAngleMean,lapply(m$conditions$dist,function(x) x=="vmConsensus"),
-#' m$conditions$stationary,m$conditions$cons,m$conditions$fullDM,
-#' m$conditions$DMind,m$conditions$workcons,1,m$conditions$dist,m$conditions$Bndind,
+#' m$conditions$stationary,m$conditions$fullDM,
+#' m$conditions$DMind,1,m$conditions$dist,m$conditions$Bndind,
 #' matrix(1,nrow=length(unique(m$data$ID)),ncol=1),covsDelta=m$covsDelta,
 #' workBounds=m$conditions$workBounds)
 #' }
@@ -66,7 +62,7 @@
 #'
 #' @importFrom Brobdingnag as.brob sum
 
-w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,cons,fullDM,DMind,workcons,nbObs,dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,fullDM,DMind,nbObs,dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi)
 {
   
   # identify recharge parameters
@@ -146,7 +142,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
       tmpwpar[(foo - nbStates):(foo - 1)] <- angleMean
       tmpwpar[foo:length(tmpwpar)] <- kappa
     }
-    parlist[[i]]<-w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],cons[[i]],workcons[[i]],nbObs,circularAngleMean[[i]],consensus[[i]],nbStates,0,nc[[i]],meanind[[i]],workBounds[[i]],dist[[i]])
+    parlist[[i]]<-w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],nbObs,circularAngleMean[[i]],consensus[[i]],nbStates,0,nc[[i]],meanind[[i]],workBounds[[i]],dist[[i]])
     
     if((dist[[i]] %in% angledists) & !estAngleMean[[i]]){
       tmp<-matrix(0,nrow=(parSize[[i]]+1)*nbStates,ncol=nbObs)
@@ -181,7 +177,7 @@ w2wn <- function(wpar,workBounds,k=0){
 }
 
 #' @importFrom stats plogis
-w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,consensus,nbStates,k=0,nc,meanind,workBounds,dist){
+w2nDM<-function(wpar,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbStates,k=0,nc,meanind,workBounds,dist){
   
   wpar <- w2wn(wpar,workBounds)
   
@@ -198,10 +194,10 @@ w2nDM<-function(wpar,bounds,DM,DMind,cons,workcons,nbObs,circularAngleMean,conse
   ind3<-which(!piInd & !zoInd)
   
   if(!consensus){
-    XB <- p <- getXB(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,consensus,nbStates,nc,meanind)
+    XB <- p <- getXB(DM,nbObs,wpar,DMind,circularAngleMean,consensus,nbStates,nc,meanind)
     l_t <- matrix(1,nrow(XB),ncol(XB))
   } else {
-    tmpXB <- getXB(DM,nbObs,wpar,cons,workcons,DMind,circularAngleMean,consensus,nbStates,nc,meanind)
+    tmpXB <- getXB(DM,nbObs,wpar,DMind,circularAngleMean,consensus,nbStates,nc,meanind)
     XB <- p <- tmpXB$XB
     l_t <- matrix(tmpXB$l_t,nrow(XB),ncol(XB))
   }

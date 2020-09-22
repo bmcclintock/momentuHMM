@@ -28,10 +28,8 @@ simData(
   obsPerAnimal = c(500, 1500),
   initialPosition = c(0, 0),
   DM = NULL,
-  cons = NULL,
   userBounds = NULL,
   workBounds = NULL,
-  workcons = NULL,
   betaRef = NULL,
   mvnCoords = NULL,
   stateNames = NULL,
@@ -189,11 +187,6 @@ Design matrices specified using formulas allow standard functions in R formulas
 (\code{\link[splines]{bs}}, \code{\link[splines]{ns}}, \code{\link[splines2]{bSpline}}, \code{\link[splines2]{cSpline}}, \code{\link[splines2]{iSpline}}, and \code{\link[splines2]{mSpline}}), 
 \code{angleFormula(cov,strength,by)} for the angle mean of circular-circular regression models, and state-specific formulas (see details). Any formula terms that are not state-specific are included on the parameters for all \code{nbStates} states.}
 
-\item{cons}{Deprecated. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
-for each data stream. While there could be other uses, primarily intended to constrain specific parameters to be positive. For example, 
-\code{cons=list(step=c(1,2,1,1))} raises the second parameter to the second power. Default=NULL, which simply raises all parameters to 
-the power of 1. \code{cons} is ignored for any given data stream unless \code{DM} is specified.}
-
 \item{userBounds}{An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 distribution parameters for each data stream. For example, for a 2-state model using the wrapped Cauchy ('wrpcauchy') distribution for 
 a data stream named 'angle' with \code{estAngleMean$angle=TRUE)}, \code{userBounds=list(angle=matrix(c(-pi,-pi,-1,-1,pi,pi,1,1),4,2,dimnames=list(c("mean_1",
@@ -204,10 +197,6 @@ specifies (-1,1) bounds for the concentration parameters instead of the default 
 For data streams, each element of \code{workBounds} should be a k x 2 matrix with the same name of the corresponding element of 
 \code{Par}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta)}.
 \code{workBounds} is ignored for any given data stream unless \code{DM} is also specified.}
-
-\item{workcons}{Deprecated. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
-each data stream. Warning: use of \code{workcons} is recommended only for advanced users implementing unusual parameter constraints 
-through a combination of \code{DM}, \code{cons}, and \code{workcons}. \code{workcons} is ignored for any given data stream unless \code{DM} is specified.}
 
 \item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
 the diagonal elements of the t.p.m. are the reference. See \code{\link{fitHMM}}.}

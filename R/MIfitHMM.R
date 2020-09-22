@@ -65,13 +65,9 @@ MIfitHMM <- function(miData, ...) {
 #' (in this case, the progress of the initial model fit can be followed using the \code{verbose} argument). Default: FALSE. Ignored if \code{nSims<2}.
 #' @param DM An optional named list indicating the design matrices to be used for the probability distribution parameters of each data 
 #' stream. See \code{\link{fitHMM}}.
-#' @param cons Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying a power to raise parameters corresponding to each column of the design matrix 
-#' for each data stream. See \code{\link{fitHMM}}.
 #' @param userBounds An optional named list of 2-column matrices specifying bounds on the natural (i.e, real) scale of the probability 
 #' distribution parameters for each data stream. See \code{\link{fitHMM}}.
 #' @param workBounds An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. See \code{\link{fitHMM}}.
-#' @param workcons Deprecated: please use \code{workBounds} instead. An optional named list of vectors specifying constants to add to the regression coefficients on the working scale for 
-#' each data stream. See \code{\link{fitHMM}}.
 #' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See \code{\link{fitHMM}}.
 #' @param betaRef Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. See \code{\link{fitHMM}}. 
 #' @param deltaCons Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}. See \code{\link{fitHMM}}.
@@ -204,7 +200,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
                    estAngleMean = NULL, circularAngleMean = NULL,
                    formula = ~1, formulaDelta = NULL, stationary = FALSE, mixtures = 1, formulaPi = NULL,
                    verbose = NULL, nlmPar = NULL, fit = TRUE, useInitial = FALSE,
-                   DM = NULL, cons = NULL, userBounds = NULL, workBounds = NULL, workcons = NULL, betaCons = NULL, betaRef = NULL, deltaCons = NULL,
+                   DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL, betaRef = NULL, deltaCons = NULL,
                    mvnCoords = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
                    covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL, 
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
@@ -382,8 +378,8 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
   #check HMM inputs and print model message
   test<-fitHMM.momentuHMMData(miData[[ind[1]]],nbStates, dist, Par0[[ind[1]]], beta0[[ind[1]]], delta0[[ind[1]]],
            estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi, verbose,
-           nlmPar, fit = FALSE, DM, cons,
-           userBounds, workBounds, workcons, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[ind[1]]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName)
+           nlmPar, fit = FALSE, DM,
+           userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[ind[1]]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName)
   
   # fit HMM(s)
   fits <- list()
@@ -396,8 +392,8 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     
     fits[[1]]<-suppressMessages(fitHMM.momentuHMMData(miData[[1]],nbStates, dist, Par0[[1]], beta0[[1]], delta0[[1]],
                                     estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi, verbose,
-                                    nlmPar, fit, DM, cons,
-                                    userBounds, workBounds, workcons, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[1]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
+                                    nlmPar, fit, DM,
+                                    userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[1]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
     if(retryFits>=1){
       cat("\n")
     }
@@ -418,8 +414,8 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
       }
       tmpFit<-suppressMessages(fitHMM.momentuHMMData(miData[[j]],nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
                                       estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi, verbose,
-                                      nlmPar, fit, DM, cons,
-                                      userBounds, workBounds, workcons, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
+                                      nlmPar, fit, DM,
+                                      userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
       if(retryFits>=1) cat("\n")
       tmpFit
     } 

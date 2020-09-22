@@ -163,7 +163,7 @@
 
 \noindent \textbf{Summary}\\
 \textbf{1.} Discrete-time hidden Markov models (HMMs) have become an immensely popular tool for inferring latent animal behaviors from telemetry data, largely because they are relatively fast and easy to implement when data streams are observed without error and at regular time intervals. While movement HMMs typically rely solely on location data, auxiliary biotelemetry and environmental data are powerful and readily-available resources for incorporating much more behavioral realism and inferring ecological relationships that would otherwise be difficult or impossible to infer from location data alone.  However, there is a paucity of generalized user-friendly software available for implementing (multivariate) HMMs of animal movement. Furthermore, location measurement error, temporal irregularity, and other forms of missing data are often pervasive in telemetry studies (particularly in marine systems).\\ %and the incorporation of uncertainty attributable to location measurement error or missing data typically requires fitting HMMs using custom and computationally-demanding model fitting techniques, such as Markov chain Monte Carlo.\\ 
-\textbf{2.} Here we provide a guide to using an open-source R package, \verb|momentuHMM| version 1.5.1%(Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models)
+\textbf{2.} Here we provide a guide to using an open-source R package, \verb|momentuHMM| version 1.5.2%(Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models)
 , that addresses many of the deficiencies in existing software.  Features for multivariate HMMs in \verb|momentuHMM| (pronounced ``momentum'') include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states, such as those based on location (e.g., step length, turning angle) and auxiliary biotelemetry data (e.g., from pressure, conductivity, heart rate, or motion sensors); 3) biased and correlated random walk movement models, including ``activity centers'' associated with attractive or repulsive forces; 4) user-specified design matrices and constraints for covariate modelling of initial distribution, state transition probability, and probability distribution parameters using linear model formulas familiar to most R users; 5) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data; 6) seamless integration of spatio-temporal covariate raster data; 7) cosinor and spline regression formulas for cyclical (e.g., daily, seasonal) and other complicated patterns; 8) discrete individual-level random effects on state transition probabilities; 9) hierarchical hidden Markov models for data streams and/or state switching at multiple time scales; 10) ``recharge'' models for an aggregated physiological process associated with state switching in heterogeneous environments; 11) model checking and selection; and 12) data simulation capabilities for study design, power analyses and assessing model performance, including simulation of location data subject to movement constraints (e.g. land for marine animals), temporal irregularity, and/or measurement error.\\ 
 \textbf{3.} After providing a brief introduction to (multivariate) HMMs for telemetry data, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics.\\
 \textbf{4.} While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs. Practitioners interested in additional features for \verb|momentuHMM| are encouraged to contact the authors.\\
@@ -198,7 +198,7 @@ While statisticians have been applying HMMs to telemetry data for decades, R \ci
 
 To address these deficiencies in existing software, we developed a user-friendly R package, \verb|momentuHMM| (Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models), intended for practitioners wishing to implement more flexible and realistic (multivariate) HMM analyses of animal movement while accounting for common challenges associated with telemetry data \citep{McClintockMichelot2018}. Features for multivariate HMM analyses in \verb|momentuHMM| include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states; 3) biased and correlated random walk movement models, including ``activity centers'' associated with attractive or repulsive forces \citep[e.g.][]{McClintockEtAl2012}; 4) user-specified design matrices and constraints for covariate modelling of state transition probability and probability distribution parameters using linear model formulas familiar to most R users; 5) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data \citep{HootenEtAl2017,McClintock2017}; 6) seamless integration of spatio-temporal environmental covariate data (e.g., wind direction, forest cover, sea ice concentration) using the \verb|raster| package \citep{Hijmans2016}; 7) cosinor \citep[e.g.][]{Cornelissen2014} and spline regression formulas for cyclical and other complicated behavioral patterns; 8) discrete individual-level random effects on state transition probabilities \citep[e.g.][]{DeRuiterEtAl2017}; 9) hierarchical hidden Markov models \citep[e.g.][]{Leos-BarajasEtAl2017,AdamEtAl2019} for data streams and/or state switching at multiple time scales; 10) ``recharge'' models for an aggregated physiological process associated with state switching in heterogeneous environments \citep{HootenEtAl2019}; 11) model checking and selection; and 12) data simulation capabilities for study design, power analyses and assessing model performance, including simulation of location data subject to movement constraints (e.g. land for marine animals), temporal irregularity, and/or measurement error. 
 
-In the following tutorial, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples, including an example of periodic cycles in African elephant movement, a 3-state (``resting'', ``foraging'', ``transit'') northern fur seal example incorporating auxiliary dive activity data \citep{McClintockEtAl2014b}, a loggerhead turtle example relating ``foraging'' and ``transit'' movements to ocean surface currents, a 5-state grey seal example incorporating biased movements toward haul-out and foraging locations \citep{McClintockEtAl2012}, a 4-state (``outbound'', ``searching'', ``foraging'', ``inbound'') southern elephant seal example with biased movements toward and away from a colony \citep{MichelotEtAl2017}, a 3-state (``resting'', ``foraging'', ``transit'') harbour seal example using population-level constraints on movement parameters \citep{McClintockEtAl2013c}, a 6-state northern fulmar example incorporating biased movements relative to both static (i.e. colony) and dynamic (i.e. fishing vessels) activity centers \citep{PirottaEtAl2018}, a 4-state long-finned pilot whale example including individual-level random effects on state transition probabilities \citep{IsojunnoEtAl2017}, and hierarchical HMMs fitted to harbor porpoise, garter snake, Atlantic cod, and horn shark data \citep{Leos-BarajasEtAl2017,AdamEtAl2019}, and a recharge dynamics model for African buffalo movements in a heterogeneous environment \citep{HootenEtAl2019}. Using simulated data, we also demonstrate how the group dynamic model of \cite{LangrockEtAl2014} can be implemented using \verb|momentuHMM|. Finally, we demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using potential functions \citep[e.g.][]{BrillingerEtAl2012}. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics. While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs.  Additional information, including help files, data, examples, and package usage is available by downloading the \verb|momentuHMM| package from CRAN (\url{https://cran.r-project.org}) or GitHub (\url{https://github.com/bmcclintock/momentuHMM}). We ask that users please submit bug reports, questions, and other issues to GitHub (\url{https://github.com/bmcclintock/momentuHMM/issues}). This article describes \verb|momentuHMM| version 1.5.1.
+In the following tutorial, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples, including an example of periodic cycles in African elephant movement, a 3-state (``resting'', ``foraging'', ``transit'') northern fur seal example incorporating auxiliary dive activity data \citep{McClintockEtAl2014b}, a loggerhead turtle example relating ``foraging'' and ``transit'' movements to ocean surface currents, a 5-state grey seal example incorporating biased movements toward haul-out and foraging locations \citep{McClintockEtAl2012}, a 4-state (``outbound'', ``searching'', ``foraging'', ``inbound'') southern elephant seal example with biased movements toward and away from a colony \citep{MichelotEtAl2017}, a 3-state (``resting'', ``foraging'', ``transit'') harbour seal example using population-level constraints on movement parameters \citep{McClintockEtAl2013c}, a 6-state northern fulmar example incorporating biased movements relative to both static (i.e. colony) and dynamic (i.e. fishing vessels) activity centers \citep{PirottaEtAl2018}, a 4-state long-finned pilot whale example including individual-level random effects on state transition probabilities \citep{IsojunnoEtAl2017}, and hierarchical HMMs fitted to harbor porpoise, garter snake, Atlantic cod, and horn shark data \citep{Leos-BarajasEtAl2017,AdamEtAl2019}, and a recharge dynamics model for African buffalo movements in a heterogeneous environment \citep{HootenEtAl2019}. Using simulated data, we also demonstrate how the group dynamic model of \cite{LangrockEtAl2014} can be implemented using \verb|momentuHMM|. Finally, we demonstrate how to simulate movement subject to barriers or other constraints (e.g. land for marine animals) using potential functions \citep[e.g.][]{BrillingerEtAl2012}. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics. While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs.  Additional information, including help files, data, examples, and package usage is available by downloading the \verb|momentuHMM| package from CRAN (\url{https://cran.r-project.org}) or GitHub (\url{https://github.com/bmcclintock/momentuHMM}). We ask that users please submit bug reports, questions, and other issues to GitHub (\url{https://github.com/bmcclintock/momentuHMM/issues}). This article describes \verb|momentuHMM| version 1.5.2.
 
 \section{momentuHMM overview}
 %Given the deliberately similar syntax between the two packages, 
@@ -1293,8 +1293,7 @@ Before we demonstrate how to implement these constraints, we should first provid
 {\boldsymbol \theta} &=&  \left({\mathbf U}_\theta - {\mathbf L}_\theta \right) g^{-1} \left( {\mathbf X}_\theta  {\boldsymbol \beta}_\theta^* \right) + {\mathbf L}_\theta, \nonumber
 %A^{\circ\frac12}
 \end{eqnarray}
-where %${\mathbf W}_\theta$ is a $K$-vector of \verb|workcons| values, ${\mathbf C}_\theta$ is a $K$-vector of \verb|cons| values specifying the element-wise power to which to raise each of the working scale parameters $({\boldsymbol \beta}_\theta)$, 
-${\mathbf L}_\theta$ is the lower bound on the natural scale and ${\mathbf U}_\theta$ is the upper bound on the natural scale.  Note that ${\boldsymbol \beta}_\theta^*={\boldsymbol \beta}_\theta$ under the default values for \verb|workBounds|. For natural scale parameters with finite lower bounds and infinite upper bounds, we have
+where ${\mathbf L}_\theta$ is the lower bound on the natural scale and ${\mathbf U}_\theta$ is the upper bound on the natural scale.  Note that ${\boldsymbol \beta}_\theta^*={\boldsymbol \beta}_\theta$ under the default values for \verb|workBounds|. For natural scale parameters with finite lower bounds and infinite upper bounds, we have
 \begin{eqnarray*}
 {\boldsymbol \theta} =  g^{-1} \left( {\mathbf X}_\theta  {\boldsymbol \beta}_\theta^* \right) + {\mathbf L}_\theta.
 %A^{\circ\frac12}
@@ -2461,11 +2460,17 @@ In the harbor porpoise example from \cite{Leos-BarajasEtAl2017}, there are only 
 \hlkwd{load}\hlstd{(}\hlkwd{url}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"https://static-content.springer.com/esm/"}\hlstd{,}
                 \hlstr{"art%3A10.1007%2Fs13253-017-0282-9/MediaObjects/"}\hlstd{,}
                 \hlstr{"13253_2017_282_MOESM2_ESM.rdata"}\hlstd{)))}
+\end{alltt}
 
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in load(url(paste0("{}https://static-content.springer.com/esm/"{}, "{}art\%3A10.1007\%2Fs13253-017-0282-9/MediaObjects/"{}, : ReadItem: unknown type 49, perhaps written by later version of R}}\begin{alltt}
 \hlcom{# convert date_time to POSIX}
 \hlstd{data} \hlkwb{<-} \hlkwd{lapply}\hlstd{(data,}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{)}
                 \hlstd{\{x}\hlopt{$}\hlstd{date_time} \hlkwb{<-} \hlkwd{as.POSIXct}\hlstd{(x}\hlopt{$}\hlstd{date_time,}\hlkwc{tz}\hlstd{=}\hlstr{"UTC"}\hlstd{); x\})}
+\end{alltt}
 
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in x\$date\_time: \$ operator is invalid for atomic vectors}}\begin{alltt}
 \hlstd{porpoiseData} \hlkwb{<-} \hlkwa{NULL}
 \hlkwa{for}\hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(data))\{}
   \hlstd{coarseInd} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(}\hlkwc{date_time}\hlstd{=}\hlkwd{as.POSIXct}\hlstd{(}\hlkwd{format}\hlstd{(data[[i]]}\hlopt{$}\hlstd{date_time[}\hlnum{1}\hlstd{],}
@@ -2478,17 +2483,14 @@ In the harbor porpoise example from \cite{Leos-BarajasEtAl2017}, there are only 
   \hlstd{tmp} \hlkwb{<-} \hlkwd{rbind}\hlstd{(coarseInd,}\hlkwd{data.frame}\hlstd{(data[[i]],}\hlkwc{level}\hlstd{=}\hlstr{"2"}\hlstd{))}
   \hlstd{porpoiseData} \hlkwb{<-} \hlkwd{rbind}\hlstd{(porpoiseData,tmp)}
 \hlstd{\}}
+\end{alltt}
 
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error: \$ operator is invalid for atomic vectors}}\begin{alltt}
 \hlkwd{head}\hlstd{(porpoiseData)}
 \end{alltt}
 \begin{verbatim}
-##             date_time level dive_duration maximum_depth dive_wiggliness
-## 1 2015-11-02 14:43:00     1            NA            NA              NA
-## 2 2015-11-02 14:43:00    2i            NA            NA              NA
-## 3 2015-11-02 14:43:11     2            28          8.19            5.50
-## 4 2015-11-02 14:44:08     2            18          8.19            3.00
-## 5 2015-11-02 14:44:35     2            14          6.19            5.25
-## 6 2015-11-02 14:44:58     2            17          7.44            2.50
+## NULL
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -2502,34 +2504,16 @@ Now that we have labeled each observation in our data with a \verb|level| factor
 \hlstd{porpoiseData} \hlkwb{<-} \hlkwd{prepData}\hlstd{(}\hlkwc{data} \hlstd{= porpoiseData,}
                          \hlkwc{coordNames} \hlstd{=} \hlkwa{NULL}\hlstd{,}
                          \hlkwc{hierLevels} \hlstd{=} \hlkwd{c}\hlstd{(}\hlstr{"1"}\hlstd{,} \hlstr{"2i"}\hlstd{,} \hlstr{"2"}\hlstd{))}
+\end{alltt}
 
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in prepData.default(data = porpoiseData, coordNames = NULL, hierLevels = c("{}1"{}, : data must be a data frame}}\begin{alltt}
 \hlcom{# summarize prepared data}
 \hlkwd{summary}\hlstd{(porpoiseData,} \hlkwc{dataNames} \hlstd{=} \hlkwd{names}\hlstd{(porpoiseData)[}\hlopt{-}\hlnum{1}\hlstd{])}
 \end{alltt}
 \begin{verbatim}
-## Hierarchical HMM data for 1 individual:
-## 
-## Animal1 -- 8135 observations
-## 
-## 
-## Data summaries:
-## 
-##    date_time                   level     dive_duration maximum_depth  
-##  Min.   :2015-11-02 14:43:00   1 : 275   Min.   :  1   Min.   :  2.2  
-##  1st Qu.:2015-11-06 02:01:24   2i: 275   1st Qu.: 15   1st Qu.:  7.2  
-##  Median :2015-11-08 14:14:28   2 :7585   Median : 43   Median : 16.2  
-##  Mean   :2015-11-08 11:59:48             Mean   : 58   Mean   : 22.2  
-##  3rd Qu.:2015-11-11 04:43:07             3rd Qu.: 90   3rd Qu.: 30.2  
-##  Max.   :2015-11-14 00:58:50             Max.   :248   Max.   :169.4  
-##                                          NA's   :550   NA's   :550    
-##  dive_wiggliness
-##  Min.   :  0.0  
-##  1st Qu.:  3.8  
-##  Median : 15.0  
-##  Mean   : 23.4  
-##  3rd Qu.: 36.0  
-##  Max.   :253.5  
-##  NA's   :562
+## Length  Class   Mode 
+##      0   NULL   NULL
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -2543,7 +2527,7 @@ Now that we have labeled each observation in our data with a \verb|level| factor
 \end{alltt}
 
 
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in prepData.hierarchical(data = porpoiseData, coordNames = NULL, : hierLevels must be ordered factors of the form:\\\#\#\ \ \ \ \ \ '1', '2i', '2', ..., 'Mi', 'M' where M is the number of levels in the hierarchy}}\end{kframe}
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in prepData.default(data = porpoiseData, coordNames = NULL, hierLevels = c("{}1"{}, : data must be a data frame}}\end{kframe}
 \end{knitrout}
 \noindent Note that because there are no location data in this example, we have set \verb|coordNames| to \verb|NULL|. Also note that in this example there are no data streams observed at the coarse time scale (\verb|level=1|), but these could be easily included (if available; see sections \ref{sec:atlanticCod} and \ref{sec:hornShark}). By definition there are no data streams observed at the initial fine scale (\verb|level=2i|), but covariates (if available) could be included here for modeling the fine-scale initial distributions or state transition probabilities.
 
@@ -2718,64 +2702,9 @@ Before fitting the HHMM, let's first check that everything is in order using the
           \hlkwc{hierFormula}\hlstd{=hierFormula,}\hlkwc{hierFormulaDelta}\hlstd{=hierFormulaDelta,}
           \hlkwc{DM}\hlstd{=DM,}\hlkwc{hierBeta}\hlstd{=hierBeta,}\hlkwc{hierDelta}\hlstd{=hierDelta)}
 \end{alltt}
-\begin{verbatim}
-## 
-## Regression coeffs for dive_duration parameters:
-## -----------------------------------------------
-##      mean_14:(Intercept) mean_25:(Intercept) mean_36:(Intercept)
-## [1,]            1.609438            3.401197             4.60517
-##      sd_14:(Intercept) sd_25:(Intercept) sd_36:(Intercept)
-## [1,]          1.609438           2.70805          3.688879
-## 
-## Regression coeffs for maximum_depth parameters:
-## -----------------------------------------------
-##      mean_14:(Intercept) mean_25:(Intercept) mean_36:(Intercept)
-## [1,]            1.609438             2.70805            3.688879
-##      sd_14:(Intercept) sd_25:(Intercept) sd_36:(Intercept)
-## [1,]         0.6931472          1.609438          2.995732
-## 
-## Regression coeffs for dive_wiggliness parameters:
-## -------------------------------------------------
-##      mean_14:(Intercept) mean_25:(Intercept) mean_36:(Intercept)
-## [1,]           0.6931472            2.302585            3.688879
-##      sd_14:(Intercept) sd_25:(Intercept) sd_36:(Intercept)
-## [1,]         0.6931472          2.302585          2.995732
-##      zeromass_14:(Intercept) zeromass_25:(Intercept) zeromass_36:(Intercept)
-## [1,]               -1.386294                -4.59512                -4.59512
-## 
-## ----------------------------------------------------------
-## Regression coeffs for the transition probabilities (beta):
-## ----------------------------------------------------------
-## -------------------------  level1  -----------------------
-##                       1 -> 4 4 -> 1
-## I((level == "1") * 1)     -1     -1
-## 
-## -------------------------  level2  -----------------------
-##                       1 -> 2 1 -> 3 2 -> 2 2 -> 3 3 -> 2 3 -> 3
-## I((level == "2") * 1)      0     -1      1      0      1      1
-## 
-##                       4 -> 5 4 -> 6 5 -> 5 5 -> 6 6 -> 5 6 -> 6
-## I((level == "2") * 1)     -1      1      1      2      0      3
-## 
-## ----------------------------------------------------------
-## 
-## ----------------------------------------------------------
-## Regression coeffs for the initial distribution (delta):
-## ----------------------------------------------------------
-## ------------------------  level1  ------------------------
-##             state 4
-## (Intercept)       0
-## 
-## ------------------------  level2  ------------------------
-##                        state 2 state 3
-## I((level == "2i") * 1)      30      30
-## 
-##                        state 5 state 6
-## I((level == "2i") * 1)      -6       2
-## 
-## ----------------------------------------------------------
-\end{verbatim}
-\end{kframe}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in str\_sub(nms, 1, 1): could not find function "{}str\_sub"{}}}\end{kframe}
 \end{knitrout}
 \noindent Note that for HHMMs, the reference states for the t.p.m. are determined by the lowest index for each state at the coarsest level in the hierarchy; in this case, the reference states are state 1 for ``nonforaging'' and state 4 for ``foraging''. This differs from standard HMMs fitted with \verb|fitHMM| (where the reference states can be user-specified with the \verb|betaRef| argument).  
 
@@ -4246,26 +4175,9 @@ The resulting estimates are again very similar to \cite{AdamEtAl2019}, with the 
 \hlcom{# t.p.m.}
 \hlkwd{lapply}\hlstd{(trProbs12}\hlopt{$}\hlstd{level2,}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{)} \hlkwd{round}\hlstd{(x}\hlopt{$}\hlstd{gamma[,,}\hlnum{1}\hlstd{],}\hlnum{3}\hlstd{))}
 \end{alltt}
-\begin{verbatim}
-## $activity
-##       a1    a2    a3
-## a1 0.948 0.052 0.000
-## a2 0.044 0.944 0.011
-## a3 0.000 0.028 0.972
-## 
-## $resting
-##       r1    r2    r3
-## r1 0.963 0.037 0.000
-## r2 0.041 0.907 0.052
-## r3 0.000 0.069 0.931
-## 
-## $transit
-##       t1    t2    t3
-## t1 0.961 0.039 0.000
-## t2 0.030 0.954 0.016
-## t3 0.000 0.040 0.960
-\end{verbatim}
-\begin{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in round(x\$gamma[, , 1], 3): non-numeric argument to mathematical function}}\begin{alltt}
 \hlcom{# stationary distribution}
 \hlkwd{lapply}\hlstd{(stats12[[}\hlnum{1}\hlstd{]]}\hlopt{$}\hlstd{level2,}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{)} \hlkwd{round}\hlstd{(x[}\hlnum{1}\hlstd{,],}\hlnum{3}\hlstd{))}
 \end{alltt}
@@ -4679,7 +4591,7 @@ Now we're ready to simulate our bivariate normal random walk model including the
 The model specified in \verb|DM| is identical to Eq. \ref{eq:potFun}, except we have replaced the ocean surface current velocities with the gradients for shortest distance to water in the x- and y-directions (\verb|grad.x| and \verb|grad.y|, respectively). As we can see in Figure \ref{fig:landConstraint}, the track is repelled from ``land'' and tends to stay in the ``water''. This strong attraction to water owes to the large negative values for the coefficients corresponding to \verb|grad.x| and \verb|grad.y|. 
 
 \section{Discussion}
-Here we have introduced version 1.5.1 of the R package \verb|momentuHMM| and demonstrated some of its capabilities for conducting multivariate HMM analyses with animal location, auxiliary biotelemetry, and environmental data. The package allows for fitting (and simulating from) a suite of biased and correlated random walk movement process models \citep[e.g.][]{McClintockEtAl2012}, can be used for an unlimited number of data streams and latent behavior states, includes multiple imputation methods to account for measurement error, temporal irregularity, and other forms of missing data that would otherwise be prohibitive to maximum likelihood analysis, and integrates seamlessly with rasters to facilitate spatio-temporal covariate modelling. Because the package incorporates biased random walks, it can also be used to implement group dynamic models \cite[e.g.][]{LangrockEtAl2014}. The package therefore greatly expands on available software and facilitates the incorporation of more ecological and behavioral realism for hypothesis-driven analyses of animal movement that account for many of the challenges commonly associated with telemetry data. While many of the features of \verb|momentuHMM| were motivated by animal movement data, we note that the package is not limited to location data and can be used for analyzing any type of data that is amenable to (multivariate) HMMs.
+Here we have introduced version 1.5.2 of the R package \verb|momentuHMM| and demonstrated some of its capabilities for conducting multivariate HMM analyses with animal location, auxiliary biotelemetry, and environmental data. The package allows for fitting (and simulating from) a suite of biased and correlated random walk movement process models \citep[e.g.][]{McClintockEtAl2012}, can be used for an unlimited number of data streams and latent behavior states, includes multiple imputation methods to account for measurement error, temporal irregularity, and other forms of missing data that would otherwise be prohibitive to maximum likelihood analysis, and integrates seamlessly with rasters to facilitate spatio-temporal covariate modelling. Because the package incorporates biased random walks, it can also be used to implement group dynamic models \cite[e.g.][]{LangrockEtAl2014}. The package therefore greatly expands on available software and facilitates the incorporation of more ecological and behavioral realism for hypothesis-driven analyses of animal movement that account for many of the challenges commonly associated with telemetry data. While many of the features of \verb|momentuHMM| were motivated by animal movement data, we note that the package is not limited to location data and can be used for analyzing any type of data that is amenable to (multivariate) HMMs.
 
 Model fitting in \verb|momentuHMM| is relatively fast because the forward algorithm (Eq. \ref{eq:HMMlike}) is coded in C++. Because multiple imputations are completely parallelizable, with sufficient processing power computation times for analyses that account for measurement error, temporal irregularity, or other forms of missing data need not be longer than that required to fit a single HMM.  However, computation times will necessarily be longer as the number of states and/or parameters increase. For example, \verb|momentuHMM| required about 1 hr to fit a single HMM with $N=6$ states, seven data streams, and $T=7414$ time steps \citep{McClintock2017}. 
 

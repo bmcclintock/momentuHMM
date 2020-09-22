@@ -111,16 +111,11 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   im <- lapply(im,delta_bc)
   m <- im[[1]]
   
-  tempcons<-rep(1,length(m$mod$estimate))
-  tempworkcons<-rep(0,length(m$mod$estimate))
-  tempcons[1:length(unlist(m$conditions$cons))]<-unlist(m$conditions$cons)
-  tempworkcons[1:length(unlist(m$conditions$workcons))]<-unlist(m$conditions$workcons)
-  
   wBounds <- cbind(unlist(lapply(m$conditions$workBounds,function(x) x[,1])),unlist(lapply(m$conditions$workBounds,function(x) x[,2])))
   
   # check for finite coefficients and standard errors
-  betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
-  betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
+  betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds)))
+  betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate,wBounds))
   tmpVar1 <- which(unlist(lapply(betaCoeff,function(x) any(!is.finite(x)))))
   if(length(tmpVar1)){
     warning("working parameter estimates are not finite for HMM fits ",paste0(goodIndex[tmpVar1],collapse=", "),ifelse(na.rm," and will not be included in pooling",""))
@@ -129,8 +124,8 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
       nsims <- length(im)
       if(nsims<2) stop("Pooling requires at least 2 valid HMM fits")
       m <- im[[1]]
-      betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
-      betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
+      betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds)))
+      betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate,wBounds))
       goodIndex <- goodIndex[-tmpVar1]
     } else {
       betaCoeff[tmpVar1] <- lapply(betaCoeff[tmpVar1],function(x) {x[which(!is.finite(x))]<-NA; return(x)})
@@ -144,8 +139,8 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
       nsims <- length(im)
       if(nsims<2) stop("Pooling requires at least 2 valid HMM fits")
       m <- im[[1]]
-      betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate^tempcons+tempworkcons,wBounds))
-      betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds,tempcons)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds,tempcons)))
+      betaCoeff <- lapply(im,function(x) w2wn(x$mod$estimate,wBounds))
+      betaVar <- lapply(im,function(x) get_gradwb(x$mod$estimate,wBounds)%*%x$mod$Sigma%*%t(get_gradwb(x$mod$estimate,wBounds)))
       goodIndex <- goodIndex[-tmpVar2]
     } else {
       betaVar[tmpVar2] <- suppressWarnings(lapply(betaVar[tmpVar2],function(x) {x[which(!is.finite(x))]<-NA; diag(x)[which(!is.finite(sqrt(diag(x))))]<-NA; return(x)}))
@@ -236,13 +231,8 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   for(parm in 1:nparms){
     
     parnames <- rownames(m$CIbeta[[parms[parm]]]$est)
-    #if(parms[parm] %in% distnames){
-    #  coeffs <- matrix(miBeta$coefficients[(parindex[parm]+1):parindex[parm+1]]^m$conditions$cons[[parms[parm]]]+m$conditions$workcons[[parms[parm]]],nrow=length(parnames),dimnames=list(parnames))
-    #  vars <- matrix(((m$conditions$cons[[parms[parm]]]*(miBeta$coefficients[(parindex[parm]+1):parindex[parm+1]]^(m$conditions$cons[[parms[parm]]]-1)))^2)*(diag(miBeta$variance)[(parindex[parm]+1):parindex[parm+1]]),nrow=length(parnames),dimnames=list(parnames))
-    #} else {
     coeffs <- matrix(miBeta$coefficients[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
     vars <- matrix(diag(miBeta$variance)[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
-    #}
     dfs <- matrix(miBeta$df[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
     
     xbar[[parms[parm]]] <- matrix(NA,nrow=length(parnames),ncol=parmcols[parm])
@@ -338,12 +328,12 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     }
   }
   
-  inputs <- checkInputs(nbStates,dist,tmPar,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,NULL,NULL,m$stateNames)
+  inputs <- checkInputs(nbStates,dist,tmPar,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$stateNames)
   p<-inputs$p
   splineInputs<-getSplineDM(distnames,inputs$DM,m,tempCovs)
-  DMinputs<-getDM(splineInputs$covs,splineInputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,tmPar,NULL,NULL,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+  DMinputs<-getDM(splineInputs$covs,splineInputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
   fullDM <- DMinputs$fullDM
-  #DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$cons,m$conditions$workcons,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+  #DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
   #fullDM<-DMinputs$fullDM
   
   # identify covariates
@@ -369,13 +359,13 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     tmpParNames[which(p$parNames[[i]]=="kappa")] <- "concentration"
     
     DMind[[i]] <- FALSE
-    par <- c(w2n(miBeta$coefficients,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean[i],inputs$consensus[i],m$conditions$stationary,DMinputs$cons,fullDM,DMind,DMinputs$workcons,1,inputs$dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta,list(beta=matrix(rep(c(-Inf,Inf),length(m$mle$beta)),length(m$mle$beta),2,byrow=TRUE)),m$covsPi)[[i]])
+    par <- c(w2n(miBeta$coefficients,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean[i],inputs$consensus[i],m$conditions$stationary,fullDM,DMind,1,inputs$dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta,list(beta=matrix(rep(c(-Inf,Inf),length(m$mle$beta)),length(m$mle$beta),2,byrow=TRUE)),m$covsPi)[[i]])
     
     if(!(inputs$dist[[i]] %in% angledists) | (inputs$dist[[i]] %in% angledists & m$conditions$estAngleMean[[i]] & !m$conditions$Bndind[[i]])) {
-      Par$real[[i]] <- get_CI(miBeta$coefficients,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],DMinputs$cons[[i]],DMinputs$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],NULL,inputs$dist[[i]])
+      Par$real[[i]] <- get_CI(miBeta$coefficients,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],NULL,inputs$dist[[i]])
     } else {
       if(!m$conditions$estAngleMean[[i]]){
-        Par$real[[i]] <- get_CI(miBeta$coefficients,par[-(1:nbStates)],m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],DMinputs$cons[[i]],DMinputs$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],NULL,inputs$dist[[i]])
+        Par$real[[i]] <- get_CI(miBeta$coefficients,par[-(1:nbStates)],m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],NULL,inputs$dist[[i]])
         Par$real[[i]]$est <- matrix(c(rep(0,nbStates),Par$real[[i]]$est),ncol=nbStates,byrow=T)
         Par$real[[i]]$se <- matrix(c(rep(NA,nbStates),Par$real[[i]]$se),ncol=nbStates,byrow=T)
         Par$real[[i]]$lower <- matrix(c(rep(NA,nbStates),Par$real[[i]]$lower),ncol=nbStates,byrow=T)
@@ -383,7 +373,7 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
         dimnames(Par$real[[i]]$est) <- dimnames(Par$real[[i]]$se) <- dimnames(Par$real[[i]]$lower) <- dimnames(Par$real[[i]]$upper) <- list(c("mean",tmpParNames),m$stateNames)
       } else {
         if(m$conditions$Bndind[[i]]){
-          Par$real[[i]] <- CI_angle(miBeta$coefficients,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],DMinputs$cons[[i]],DMinputs$workcons[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],NULL,inputs$dist[[i]])
+          Par$real[[i]] <- CI_angle(miBeta$coefficients,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],miBeta$variance,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],NULL,inputs$dist[[i]])
         }
       }
     }

@@ -1,5 +1,5 @@
 #' @importFrom stats formula terms.formula
-getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInflation,oneInflation,circularAngleMean,ParChecks=TRUE,wlag=FALSE){
+getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInflation,circularAngleMean,ParChecks=TRUE,wlag=FALSE){
   
   distnames<-names(dist)
   fullDM <- vector('list',length(dist))
@@ -193,43 +193,6 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
     }
   }
   
-  if(is.null(cons)){
-    cons <- vector('list',length(distnames))
-    names(cons) <- distnames
-  } else {
-    if(!is.list(cons) | is.null(names(cons))) stop("'cons' must be a named list")
-  }
-  for(i in distnames){
-    if(is.null(cons[[i]])) cons[[i]] <- rep(1,parCount[[i]])
-  }
-  cons<-cons[distnames]
-  if(ParChecks){
-    if(any(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))) 
-      stop("Length mismatch between Par and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(lapply(Par,length)))),collapse=", "))
-  } else {
-    if(any(unlist(lapply(cons,length))!=unlist(parCount))) 
-      stop("Length mismatch between DM and cons for: ",paste(names(which(unlist(lapply(cons,length))!=unlist(parCount))),collapse=", "))    
-  }
-  if(is.null(workcons)){
-    workcons <- vector('list',length(distnames))
-    names(workcons) <- distnames
-  } else {
-    if(!is.list(workcons) | is.null(names(workcons))) stop("'workcons' must be a named list")
-  }
-  for(i in distnames){
-    if(is.null(workcons[[i]])) workcons[[i]] <- rep(0,parCount[[i]])
-  }
-  #for(i in which(!(dist %in% "wrpcauchy"))){
-  #  workcons[[distnames[i]]]<-rep(0,ncol(simpDM[[distnames[i]]]))
-  #}
-  workcons<-workcons[distnames]
-  if(ParChecks){
-    if(any(unlist(lapply(workcons,length))!=unlist(lapply(Par,length)))) 
-      stop("Length mismatch between Par and workcons for: ",paste(names(which(unlist(lapply(workcons,length))!=unlist(lapply(Par,length)))),collapse=", "))
-  } else {
-    if(any(unlist(lapply(workcons,length))!=unlist(parCount))) 
-      stop("Length mismatch between DM and workcons for: ",paste(names(which(unlist(lapply(workcons,length))!=unlist(parCount))),collapse=", "))      
-  }
   DMind <- lapply(simpDM,function(x) all(unlist(apply(x,1,function(y) lapply(y,length)))==1))
   
   for(i in distnames){
@@ -245,7 +208,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,cons,workcons,zeroInfl
     rownames(simpDM[[i]]) <- rownames(bounds[[i]])
   }
   
-  return(list(fullDM=simpDM,DMind=DMind,cons=cons,workcons=workcons,lag=lag))
+  return(list(fullDM=simpDM,DMind=DMind,lag=lag))
 }
 
 get_crwlag <- function(form,clag){

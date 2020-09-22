@@ -22,8 +22,6 @@ test_that("Zero-inflation works",{
   m$conditions$zeroInflation$step<-TRUE
   m$mod$estimate<-c(m$mod$estimate[1:(2*nbStates)],stats::qlogis(c(0.2,0.3)),m$mod$estimate[-(1:(2*nbStates))])
   m$conditions$fullDM$step<-diag(3*nbStates)
-  m$conditions$cons$step<-rep(1,3*nbStates)
-  m$conditions$workcons$step<-rep(0,3*nbStates)
   m$conditions$bounds$step<-rbind(m$conditions$bounds$step,matrix(c(0,1),nbStates,2,byrow=TRUE))
 
   expect_error(allProbs(m),NA)
