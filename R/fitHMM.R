@@ -668,7 +668,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   zeroInflation <- inflation$zeroInflation
   oneInflation <- inflation$oneInflation
 
-  mHind <- (is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(stats::terms.formula(newformula),"term.labels")) & !length(attr(stats::terms.formula(formDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior) & is.null(betaCons) & is.null(betaRef) & is.null(deltaCons) & is.null(mvnCoords) & mixtures==1) # indicator for moveHMMwrap below
+  mHind <- (requireNamespace("moveHMM", quietly = TRUE) && is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(stats::terms.formula(newformula),"term.labels")) & !length(attr(stats::terms.formula(formDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior) & is.null(betaCons) & is.null(betaRef) & is.null(deltaCons) & is.null(mvnCoords) & mixtures==1) # indicator for moveHMMwrap below
   
   inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,stateNames,checkInflation = TRUE)
   p <- inputs$p

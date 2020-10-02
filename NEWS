@@ -1,4 +1,4 @@
-momentuHMM 1.5.2 2020-09-22
+momentuHMM 1.5.2 2020-10-01
 -----------------
 NEW FEATURES
 
@@ -8,7 +8,7 @@ CHANGES
 
 * plotPR now uses car::qqPlot for pseudo-residual qq-plots
 
-* the following packages have been moved to 'Suggests' and are now used conditionally: BB, conicfit, dplyr, expm, ggmap, ggplot2, lubridate, magrittr, matrixcalc, raster, and scatterplot3d. If any of these are packages needed, users will be prompted to install.
+* the following packages have been moved to 'Suggests' and are now used conditionally: BB, conicfit, dplyr, expm, ggmap, ggplot2, lubridate, magrittr, matrixcalc, moveHMM, raster, and scatterplot3d. If any of these are packages needed, users will be prompted to install.
 
 * suppress 'Unknown or uninitialised column' warning in crawlWrap when obsData is an sf object
 

@@ -1,5 +1,5 @@
 # wrapper for calling moveHMM::fitHMM when appropriate models are specified
-#' @importFrom moveHMM fitHMM
+# @importFrom moveHMM fitHMM
 moveHMMwrap<-function(data,nbStates,dist,Par,beta0,delta0,estAngleMean,formula,stationary,nlmPar,fit,nbAnimals,knownStates){
   data <- moveData(data)
   distnames<-names(dist)
