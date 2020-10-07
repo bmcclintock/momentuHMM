@@ -1,4 +1,4 @@
-momentuHMM 1.5.2 2020-10-01
+momentuHMM 1.5.2 2020-10-07
 -----------------
 NEW FEATURES
 
@@ -23,6 +23,8 @@ CHANGES
 BUG FIXES
 
 * mixtureProbs function produced an error when initial distribution formula includes covariates
+
+* crawlWrap now internally deals with a long-standing bug in crawl::crwPredict when predTime argument includes prediction times before the first observation
 
 * avoid numerical underflow in mixtureProbs when a mixture probability is zero
 

@@ -324,7 +324,8 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   registerDoParallel(cores=ncores)
   withCallingHandlers(predData <- 
     foreach(mf = model_fits[convFits], i = convFits, .export="crwPredict", .combine = rbind, .errorhandling="remove") %dorng% {
-      pD<-crawl::crwPredict(mf, predTime=crawlArgs$predTime[[i]],return.type = "flat")
+      #pD<-crawl::crwPredict(mf, predTime=crawlArgs$predTime[[i]],return.type = "flat")
+      pD<-crawl::crwPredict(mf, predTime=crawlArgs$predTime[[i]][crawlArgs$predTime[[i]]>=min(mf$data[[Time.name]])],return.type = "flat") # deals with bug in crawl:crwPredict 2.2.1
       if(inherits(mf$data[[Time.name]],"POSIXct") && attributes(pD[[Time.name]])$tzone != attributes(mf$data[[Time.name]])$tzone){
         if (!requireNamespace("lubridate", quietly = TRUE)) {
           stop("Package \"lubridate\" needed for this function to work. Please install it.",
@@ -332,9 +333,10 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
         }
         pD[[Time.name]] <- lubridate::with_tz(pD[[Time.name]],tz=attributes(mf$data[[Time.name]])$tzone)
       }
-      if(length(crawlArgs$predTime[[i]])>1){
-        pD[[Time.name]][which(pD$locType=="p")]<-crawlArgs$predTime[[i]][crawlArgs$predTime[[i]]>=min(mf$data[[Time.name]])]
-      } else if(inherits(mf$data[[Time.name]],"POSIXct")){
+      #if(length(crawlArgs$predTime[[i]])>1){
+      #  pD[[Time.name]][which(pD$locType=="p")]<-crawlArgs$predTime[[i]][crawlArgs$predTime[[i]]>=min(mf$data[[Time.name]])]
+      #} else 
+      if(length(crawlArgs$predTime[[i]])==1 && inherits(mf$data[[Time.name]],"POSIXct")){
         pD[[Time.name]] <- as.POSIXct(pD$TimeNum*ts,origin="1970-01-01 00:00:00",tz=attributes(pD[[Time.name]])$tzone)
       }
       if(!fillCols){
