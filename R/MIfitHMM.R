@@ -235,7 +235,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
       stop("Either nbStates and dist must be specified (for a regular HMM) or hierStates and hierDist must be specified (for a hierarchical HMM)")
   }
   
-  j <- NULL #gets rid of no visible binding for global variable 'j' NOTE in R cmd check
+  j <- mf <- mD <- NULL #gets rid of no visible binding for global variable NOTE in R cmd check
   
   if(poolEstimates){
     if(optMethod=="nlm" & !is.null(nlmPar$hessian)){
@@ -286,10 +286,12 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
       cat('Drawing ',nSims,' realizations from the position process using crawl... ',ifelse(ncores>1 & length(ids)>1,"","\n"),sep="")
       
       nbAnimals <- length(ids)
+      predTimes <- lapply(ids,function(x) predData[[Time.name]][which(predData$ID==x & predData$locType=="p")])
+      names(predTimes) <- ids
       registerDoParallel(cores=ncores)
-      withCallingHandlers(crwSim <- foreach(i = 1:nbAnimals, .export="crwSimulator") %dorng% {
-          cat("Simulating individual ",ids[i],"...\n",sep="")
-          crawl::crwSimulator(model_fits[[i]],predTime=predData[[Time.name]][which(predData$ID==ids[i] & predData$locType=="p")], method = method, parIS = parIS,
+      withCallingHandlers(crwSim <- foreach(mf = model_fits, i = ids, .export="crwSimulator") %dorng% {
+          cat("Simulating individual ",i,"...\n",sep="")
+          crawl::crwSimulator(mf,predTime=predTimes[[i]], method = method, parIS = parIS,
                                   df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, quad.ask = ifelse(ncores>1, FALSE, quad.ask), force.quad = force.quad)
       },warning=muffleRNGwarning)
       stopImplicitCluster()
@@ -406,12 +408,12 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
   
   registerDoParallel(cores=ncores)
   withCallingHandlers(fits[parallelStart:nSims] <-
-    foreach(j = parallelStart:nSims, .export=c("fitHMM.momentuHMMData"), .errorhandling="pass") %dorng% {
+    foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitHMM.momentuHMMData"), .errorhandling="pass") %dorng% {
       
       if(nSims>1) {
         cat("     \rImputation ",j,"... ",sep="")
       }
-      tmpFit<-suppressMessages(fitHMM.momentuHMMData(miData[[j]],nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
+      tmpFit<-suppressMessages(fitHMM.momentuHMMData(mD,nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
                                       estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi,
                                       nlmPar, fit, DM,
                                       userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
@@ -466,7 +468,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                        fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, ...)
 {
   
-  j <- NULL #gets rid of no visible binding for global variable 'j' NOTE in R cmd check
+  j <- mf <- mD <- NULL #gets rid of no visible binding for global variable NOTE in R cmd check
   
   if(poolEstimates){
     if(optMethod=="nlm" & !is.null(nlmPar$hessian)){
@@ -518,10 +520,12 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
       cat('Drawing ',nSims,' realizations from the position process using crawl... ',ifelse(ncores>1 & length(ids)>1,"","\n"),sep="")
       
       nbAnimals <- length(ids)
+      predTimes <- lapply(ids,function(x) predData[[Time.name]][which(predData$ID==x & predData$locType=="p")])
+      names(predTimes) <- ids
       registerDoParallel(cores=ncores)
-      withCallingHandlers(crwHierSim <- foreach(i = 1:nbAnimals, .export="crwSimulator") %dorng% {
+      withCallingHandlers(crwHierSim <- foreach(mf=model_fits, i=ids, .export="crwSimulator") %dorng% {
         cat("Simulating individual ",ids[i],"...\n",sep="")
-        crawl::crwSimulator(model_fits[[i]],predTime=predData[[Time.name]][which(predData$ID==ids[i] & predData$locType=="p")], method = method, parIS = parIS,
+        crawl::crwSimulator(mf,predTime=predTimes[[i]], method = method, parIS = parIS,
                             df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, quad.ask = ifelse(ncores>1, FALSE, quad.ask), force.quad = force.quad)
       },warning=muffleRNGwarning)
       stopImplicitCluster()
@@ -667,12 +671,12 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
   }
   registerDoParallel(cores=ncores)
   withCallingHandlers(fits[parallelStart:nSims] <-
-                        foreach(j = parallelStart:nSims, .export=c("fitHMM.momentuHierHMMData"), .errorhandling="pass") %dorng% {
+                        foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitHMM.momentuHierHMMData"), .errorhandling="pass") %dorng% {
                           
                           if(nSims>1) {
                             cat("     \rImputation ",j,"... ",sep="")
                           }
-                          tmpFit<-suppressMessages(fitHMM.momentuHierHMMData(miData[[j]], hierStates, hierDist, Par0[[j]], hierBeta[[j]], hierDelta[[j]],
+                          tmpFit<-suppressMessages(fitHMM.momentuHierHMMData(mD, hierStates, hierDist, Par0[[j]], hierBeta[[j]], hierDelta[[j]],
                                                               estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                                                               nlmPar, fit, DM, 
                                                               userBounds, workBounds, betaCons, deltaCons, mvnCoords, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))

@@ -1,4 +1,4 @@
-momentuHMM 1.5.2 2020-10-07
+momentuHMM 1.5.2 2020-11-10
 -----------------
 NEW FEATURES
 
@@ -14,7 +14,7 @@ CHANGES
 
 * removed initial SANN optimization when using retryFits in crawlWrap
 
-* reduced worker memory pressure in crawlWrap when running in parallel
+* reduced worker memory pressure when running crawlWrap or MIfitHMM in parallel
 
 * deprecated cons and workcons arguments are now defunct; please use workBounds instead
 
