@@ -9,6 +9,7 @@ vignettes/coastUTM.RData
 vignettes/pilotWhaleData.RData
 vignettes/Atlantic_cod_data_set.RData
 vignettes/horn_shark_data_set.RData
+vignettes/caracaraExample.RData
 vignettes/sesData.csv
 vignettes/momentuHMM.synctex.gz
 vignettes/momentuHMM.log
@@ -81,6 +82,7 @@ vignettes/script.sh
 ^vignettes/figure$
 ^vignettes/cache$
 ^vignettes/vignetteResults$
+vignettes/examples/caracaraExample.R
 tests/testthat/Rplots.pdf
 tests/testthat/test_examples.R
 tests/testthat/test_extraExamples.R

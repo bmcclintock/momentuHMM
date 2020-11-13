@@ -38,7 +38,7 @@ timeInStates.momentuHMM <- function(m, by = NULL, alpha = 0.95, ncores = 1){
 #' @export
 #' @rdname timeInStates
 # @importFrom magrittr %>%
-# @importFrom dplyr funs group_by_at summarise_at
+# @importFrom dplyr group_by_at summarise_at
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
 timeInStates.HMMfits <- function(m, by = NULL, alpha = 0.95, ncores = 1){
@@ -87,29 +87,29 @@ timeInStates.HMMfits <- function(m, by = NULL, alpha = 0.95, ncores = 1){
     n <- as.data.frame(
       xmat %>%
         dplyr::group_by_at(by) %>%
-        dplyr::summarise_at(stateNames, dplyr::funs(sum(!is.na(.)))))
+        dplyr::summarise_at(stateNames, ~sum(!is.na(.))))
     
     if(any(n[,stateNames]<2)) warning("need at least 2 simulations for each 'by' combination with valid point and variance estimates")
     
     xbar <- as.data.frame(
       xmat %>%
           dplyr::group_by_at(by) %>%
-          dplyr::summarise_at(stateNames, dplyr::funs(mean(., na.rm=TRUE))))
+          dplyr::summarise_at(stateNames, ~mean(., na.rm=TRUE)))
   
     MI_se <- as.data.frame(
       xmat %>%
         dplyr::group_by_at(by) %>%
-        dplyr::summarise_at(stateNames, dplyr::funs(sqrt((sum(!is.na(.))+1)/sum(!is.na(.)) * var(., na.rm=TRUE)))))
+        dplyr::summarise_at(stateNames, ~sqrt((sum(!is.na(.))+1)/sum(!is.na(.)) * var(., na.rm=TRUE))))
     
     lower <- as.data.frame(
       xmat %>%
         dplyr::group_by_at(by) %>%
-        dplyr::summarise_at(stateNames, dplyr::funs(probCI(mean(., na.rm=TRUE),sqrt((sum(!is.na(.))+1)/sum(!is.na(.)) * var(., na.rm=TRUE)),qt(1-(1-alpha)/2,df=sum(!is.na(.))-1),"lower"))))
+        dplyr::summarise_at(stateNames, ~probCI(mean(., na.rm=TRUE),sqrt((sum(!is.na(.))+1)/sum(!is.na(.)) * var(., na.rm=TRUE)),qt(1-(1-alpha)/2,df=sum(!is.na(.))-1),"lower")))
     
     upper <- as.data.frame(
       xmat %>%
         dplyr::group_by_at(by) %>%
-        dplyr::summarise_at(stateNames, dplyr::funs(probCI(mean(., na.rm=TRUE),sqrt((sum(!is.na(.))+1)/sum(!is.na(.)) * var(., na.rm=TRUE)),qt(1-(1-alpha)/2,df=sum(!is.na(.))-1),"upper"))))
+        dplyr::summarise_at(stateNames, ~probCI(mean(., na.rm=TRUE),sqrt((sum(!is.na(.))+1)/sum(!is.na(.)) * var(., na.rm=TRUE)),qt(1-(1-alpha)/2,df=sum(!is.na(.))-1),"upper")))
     
     combins <- list(est=xbar,se=MI_se,lower=lower,upper=upper)
   
