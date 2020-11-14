@@ -406,6 +406,12 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     delta0[parallelStart:nSims] <- list(tmpPar$delta)
   }
   
+  # suppress printing of optimization progress if in parallel
+  if(nSims>1 & ncores>1){
+    if(!is.null(nlmPar)) nlmPar$print.level <- 0
+    if(!is.null(control)) control$trace <- 0
+  }
+  
   registerDoParallel(cores=ncores)
   withCallingHandlers(fits[parallelStart:nSims] <-
     foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitHMM.momentuHMMData"), .errorhandling="pass") %dorng% {
@@ -669,6 +675,13 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     beta0[parallelStart:nSims] <- list(tmpPar$beta)
     delta0[parallelStart:nSims] <- list(tmpPar$delta)
   }
+  
+  # suppress printing of optimization progress if in parallel
+  if(nSims>1 & ncores>1){
+    if(!is.null(nlmPar)) nlmPar$print.level <- 0
+    if(!is.null(control)) control$trace <- 0
+  }
+  
   registerDoParallel(cores=ncores)
   withCallingHandlers(fits[parallelStart:nSims] <-
                         foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitHMM.momentuHierHMMData"), .errorhandling="pass") %dorng% {
