@@ -1718,7 +1718,7 @@ As we already noted in section \ref{sec:HHMM}, HMMs with hierarchical structures
 In order to replicate the harbor porpoise HHMM example from \cite{Leos-BarajasEtAl2017} in \verb|momentuHMM|, we must first use \verb|prepData| to prepare our hierarchical data. This requires an additional field named \verb|level| to be included in \verb|data| that identifies the level of the hierarchy for each observation. These levels must be ordered from the coarsest to finest time scales, and must also indicate the initial observations at each level of the hierarchy (except for the coarsest level).  For example, if there are $M=3$ time scales in the hierarchy (e.g. ``coarse'', ``medium'', and ``fine'' scales), then the \verb|level| field must include $2M-1=5$ ordered factors: ``\verb|1|'' (corresponding to coarse-scale observations), ``\verb|2i|'' (initial medium-scale observations), ``\verb|2|'' (medium-scale observations), ``\verb|3i|'' (initial fine-scale observations), and ``\verb|3|'' (fine-scale observations). Regardless of the number of levels in the hierarchy, note that for each individual the \verb|level| field for the first observation must always be ``\verb|1|'', the second obervation must always be ``\verb|2i|'', the third observation must always be ``\verb|2|'', and the last observation must always be from level $M$. Also note that every ``\verb|1|'' observation must be followed by ``\verb|2i|'', every ``\verb|2i|'' must be followed by one or more ``\verb|2|'', every ``\verb|3i|'' must be preceded by ``\verb|2|'' and followed by one or more ``\verb|3|'', and, after the first observation, every ``\verb|1|'' must be preceded by an observation from level $M$.
 
 In the harbor porpoise example from \cite{Leos-BarajasEtAl2017}, there are only $M=2$ levels in the hierarchy so the $2M-1=3$ ordered \verb|level| factors are ``\verb|1|'' (coarse level), ``\verb|2i|'' (initial fine level), and ``\verb|2|'' (fine level).  After downloading the data, we can manually add the \verb|level| field to our data frame as follows:
-<<harborPorpoise-1a, echo=TRUE, eval=TRUE>>=
+<<harborPorpoise-1a, echo=TRUE, eval=TRUE, cache=TRUE>>=
 # load harbor porpoise data from Leos-Barajas et al
 load(url(paste0("https://static-content.springer.com/esm/",
                 "art%3A10.1007%2Fs13253-017-0282-9/MediaObjects/",
@@ -1764,7 +1764,7 @@ prepData(data = porpoiseData,
 \noindent Note that because there are no location data in this example, we have set \verb|coordNames| to \verb|NULL|. Also note that in this example there are no data streams observed at the coarse time scale (\verb|level=1|), but these could be easily included (if available; see sections \ref{sec:atlanticCod} and \ref{sec:hornShark}). By definition there are no data streams observed at the initial fine scale (\verb|level=2i|), but covariates (if available) could be included here for modeling the fine-scale initial distributions or state transition probabilities.
 
 <<harborPorpoise-2c, echo=FALSE, eval=TRUE>>=
-load(url("https://github.com/bmcclintock/momentuHMM/blob/master/vignettes/vignetteResults/harborPorpoiseExample.RData?raw=true"))
+load(url("https://github.com/bmcclintock/momentuHMM/blob/develop/vignettes/vignetteResults/harborPorpoiseExample.RData?raw=true"))
 @
 
 Now that our hierarchical data are prepared, we are ready to specify the HHMM.  We will start with the hierarchical nature of the states, which is specified using the \verb|hierStates| argument in \verb|fitHMM|:
@@ -2027,7 +2027,7 @@ snakeData <- prepData(snakeData,coordNames=NULL,hierLevels=c("1","2i","2"))
 summary(snakeData)
 @
 <<garterSnake-1a, echo=FALSE, eval=TRUE>>=
-load(url("https://github.com/bmcclintock/momentuHMM/blob/master/vignettes/vignetteResults/garterSnakeExample.RData?raw=true"))
+load(url("https://github.com/bmcclintock/momentuHMM/blob/develop/vignettes/vignetteResults/garterSnakeExample.RData?raw=true"))
 @
 \noindent The sole data stream for this example is step length at the fine-scale level, and no coordinates are provided (hence \verb|coordNames=NULL|). As in section \ref{sec:harborPorpoise}, this example has no data streams observed at the coarse-scale level, but these could be easily included (if available; see sections \ref{sec:atlanticCod} and \ref{sec:hornShark}). Let's now specify the probability distribution for the fine-scale step length data stream via the \verb|hierDist| data tree Node (Figure \ref{fig:garterSnakeDist}):
 <<garterSnake-4, echo=TRUE, eval=FALSE, cache=TRUE>>=
@@ -2257,7 +2257,7 @@ head(simHHMM)
 Now we will demonstrate how HHMMs with data streams observed at multiple time scales can be fitted using \verb|momentuHMM|. In their Atlantic cod example, \cite{AdamEtAl2019} fit a 9-state HHMM to coarse-scale horizontal (i.e., step length and turn angle) and fine-scale vertical movement data. The coarse-scale states were ``resting/foraging'' (hereafter ``resForage''), ``mobile/foraging'' (hereafter ``mobForage''), and ``travelling/migrating'' (hereafter ``transit''), each of which was composed of three fine-scale states. To begin our analysis, we must first load and prepare the data \citep[available for download from][]{AdamEtAl2019}:
 <<cod-0, eval=TRUE, echo=FALSE>>=
 ## load data 
-load(url("https://github.com/bmcclintock/momentuHMM/blob/master/vignettes/vignetteResults/codExample.RData?raw=true"))
+load(url("https://github.com/bmcclintock/momentuHMM/blob/develop/vignettes/vignetteResults/codExample.RData?raw=true"))
 @
 <<cod-1a, eval=FALSE, echo=TRUE>>=
 # load the data from Adam et al 
@@ -2527,7 +2527,7 @@ For our final HHMM example, we'll quickly demonstrate how the horn shark example
 First we load and prepare the data \citep[available for download from][]{AdamEtAl2019}:
 <<shark-0, eval=TRUE, echo=FALSE>>=
 ## load data 
-load(url("https://github.com/bmcclintock/momentuHMM/blob/master/vignettes/vignetteResults/hornSharkExample.RData?raw=true"))
+load(url("https://github.com/bmcclintock/momentuHMM/blob/develop/vignettes/vignetteResults/hornSharkExample.RData?raw=true"))
 @
 <<shark-1a, eval=FALSE, echo=TRUE>>=
 # load the data from Adam et al 
