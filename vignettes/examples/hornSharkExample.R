@@ -118,25 +118,25 @@ fineStates <- hStates$level2
 ######################################################
 
 # transition probabilities
-trProbs <- getTrProbs(hhmm,covIndex=c(1,3))
+trProbs12 <- getTrProbs(hhmm,covIndex=c(1,3))
 
 # stationary distributions
-stats <- stationary(hhmm,covIndex=c(1,3))
+stats12 <- stationary(hhmm,covIndex=c(1,3))
 
 ### coarse scale #####################################
 # t.p.m.
-round(trProbs$level1$gamma[,,1],3)
+round(trProbs12$level1$gamma[,,1],3)
 
 # stationary distribution
-round(stats[[1]]$level1[1,],3)
+round(stats12[[1]]$level1[1,],3)
 ######################################################
 
 ### fine scale #######################################
 # t.p.m.
-lapply(trProbs$level2,function(x) round(x$gamma[,,1],3))
+lapply(trProbs12$level2,function(x) round(x$gamma[,,1],3))
 
 # stationary distribution
-lapply(stats[[1]]$level2,function(x) round(x[1,],3))
+lapply(stats12[[1]]$level2,function(x) round(x[1,],3))
 ######################################################
 
 ### Simulate from fitted model ##############################
