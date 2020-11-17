@@ -337,7 +337,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     if(length(obsPerLevel)!=nbAnimals) stop("obsPerLevel must be a list of length ",nbAnimals," where each element is a hierarchical Node")
     for(i in 1:length(obsPerLevel)){
       if(!inherits(obsPerLevel[[i]],"Node")) stop("obsPerLevel for individual ",i," must be a hierarchical Node")
-      if(!("obs" %in% obsPerLevel[[i]]$fieldsAll)) stop("'obsPerLevel' for individual ",i," must include a 'obs' field")
+      if(!("obs" %in% obsPerLevel[[i]]$attributesAll)) stop("'obsPerLevel' for individual ",i," must include a 'obs' field")
       if(!all(obsPerLevel[[i]]$Get("name",filterFun=function(x) x$level==2) %in% hierDist$Get("name",filterFun=function(x) x$level==2))) stop("'obsPerLevel' level types for individual ",i," can only include ",paste0(hierDist$Get("name",filterFun=function(x) x$level==2),collapse = ", "))
       #if(!all(obsPerLevel[[i]]$Get("name",filterFun=function(x) x$level==2) %in% paste0("level",1:obsPerLevel[[i]]$count))) stop("'obsPerLevel' level types for individual ",i," can only include ",paste0(paste0("level",1:obsPerLevel[[i]]$count),collapse = ", "))
       tmpObs <- data.tree::Clone(obsPerLevel[[i]])
@@ -353,7 +353,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
   } else {
     if(!inherits(obsPerLevel,"Node")) stop("obsPerLevel must be a hierarchical Node")
-    if(!("obs" %in% obsPerLevel$fieldsAll)) stop("'obsPerLevel' must include a 'obs' field")
+    if(!("obs" %in% obsPerLevel$attributesAll)) stop("'obsPerLevel' must include a 'obs' field")
     if(!all(obsPerLevel$Get("name",filterFun=function(x) x$level==2) %in% hierDist$Get("name",filterFun=function(x) x$level==2))) stop("'obsPerLevel' level types can only include ",paste0(hierDist$Get("name",filterFun=function(x) x$level==2),collapse = ", "))
     #if(!all(obsPerLevel$Get("name",filterFun=function(x) x$level==2) %in% paste0("level",1:obsPerLevel$count))) stop("'obsPerLevel' level types can only include ",paste0(paste0("level",1:obsPerLevel[[i]]$count),collapse = ", "))
     tmpObs <- data.tree::Clone(obsPerLevel)
@@ -403,7 +403,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
   } else {
     if(!inherits(nbHierCovs,"Node")) stop("'nbHierCovs' must be of class Node; see ?data.tree::Node")
-    if(!("nbCovs" %in% nbHierCovs$fieldsAll)) stop("'nbHierCovs' must include a 'nbCovs' field")
+    if(!("nbCovs" %in% nbHierCovs$attributesAll)) stop("'nbHierCovs' must include a 'nbCovs' field")
     if(!data.tree::AreNamesUnique(nbHierCovs)) stop("node names in 'nbHierCovs' must be unique")
     if(nbHierCovs$height!=2) stop("'nbHierCovs' hierarchy must contain 1 level")
     

@@ -447,7 +447,7 @@ formatHierHMM <- function(data,hierStates,hierDist,
 nbHierStates <- function(hierStates){
   
   if(!inherits(hierStates,"Node")) stop("'hierStates' must be of class Node; see ?data.tree::Node")
-  if(!("state" %in% hierStates$fieldsAll)) stop("'hierStates' must include a 'state' field")
+  if(!("state" %in% hierStates$attributesAll)) stop("'hierStates' must include a 'state' field")
   
   hdf <- data.tree::ToDataFrameTypeCol(hierStates, "state")
   if(any(is.na(hdf$state))) stop("'state' field in 'hierStates' cannot contain NAs")
@@ -471,7 +471,7 @@ nbHierStates <- function(hierStates){
 getHierDist <- function(hierDist,data,checkData){
   
   if(!inherits(hierDist,"Node")) stop("'hierDist' must be of class Node; see ?data.tree::Node")
-  if(!("dist" %in% hierDist$fieldsAll)) stop("'hierDist' must include a 'dist' field")
+  if(!("dist" %in% hierDist$attributesAll)) stop("'hierDist' must include a 'dist' field")
   if(!data.tree::AreNamesUnique(hierDist)) stop("node names in 'hierDist' must be unique")
   if(hierDist$height!=3) stop("'hierDist' hierarchy must contain 2 levels below root (i.e., hierDist$height must be 3)")
   if(!all(hierDist$Get("name",filterFun=function(x) x$level==2)==paste0("level",1:hierDist$count))) stop("hierDist level names from top to bottom should be ",paste0("'level",paste0(1:hierDist$count,"'"),collapse=", ")," (not ",paste0(paste0("'",hierDist$Get("name",filterFun=function(x) x$level==2),"'"),collapse=", "),")")
@@ -555,7 +555,7 @@ checkHierFormula <- function(data,hierFormula,hierStates,hierDist,checkData,what
     }
   } else {
     if(!inherits(hierFormula,"Node")) stop(ifelse(what=="formula","'hierFormula'","'hierFormulaDelta'")," must be of class Node; see ?data.tree::Node")
-    if(!(what %in% hierFormula$fieldsAll)) stop(ifelse(what=="formula","'hierFormula'","'hierFormulaDelta'")," must include a ",ifelse(what=="formula","'formula'","'formulaDelta'")," field")
+    if(!(what %in% hierFormula$attributesAll)) stop(ifelse(what=="formula","'hierFormula'","'hierFormulaDelta'")," must include a ",ifelse(what=="formula","'formula'","'formulaDelta'")," field")
     if(!data.tree::AreNamesUnique(hierFormula)) stop("node names in ",ifelse(what=="formula","'hierFormula'","'hierFormulaDelta'")," must be unique")
     if(hierFormula$height!=2) stop(ifelse(what=="formula","'hierFormula'","'hierFormulaDelta'")," hierarchy must contain 1 level (i.e., ",ifelse(what=="formula","hierFormula","hierFormulaDelta"),"$height must be 2)")
     
@@ -649,7 +649,7 @@ mapCons <- function(hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,form
   
   betaRef <- rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
   
-  if("betaCons" %in% hierBeta$fieldsAll){
+  if("betaCons" %in% hierBeta$attributesAll){
     what <- "hierBeta"
     field <- "betaCons"
     for(j in 1:(hierStates$height-1)){
@@ -664,7 +664,7 @@ mapCons <- function(hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,form
 
     }
   }
-  if("deltaCons" %in% hierDelta$fieldsAll){
+  if("deltaCons" %in% hierDelta$attributesAll){
     what <- "hierDelta"
     field <- "deltaCons"
     for(j in 1:(hierStates$height-1)){
@@ -701,7 +701,7 @@ mapPar <- function(hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,formu
     beta <- fixPar$beta
     delta <- fixPar$delta
   }
-  if(field %in% hierBeta$fieldsAll){
+  if(field %in% hierBeta$attributesAll){
     beta <- fixPar$beta
     what <- "hierBeta"
     for(j in 1:(hierStates$height-1)){
@@ -715,7 +715,7 @@ mapPar <- function(hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,formu
     }
   }
   field <- ifelse(field=="beta","delta",field)
-  if(field %in% hierDelta$fieldsAll){
+  if(field %in% hierDelta$attributesAll){
     if(is.null(beta)) beta <- fixPar$beta
     delta <- fixPar$delta
     what <- "hierDelta"
@@ -755,7 +755,7 @@ mapBounds <- function(hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,fo
   
   beta <- delta <- NULL
   
-  if(field %in% hierBeta$fieldsAll){
+  if(field %in% hierBeta$attributesAll){
     betaLower <- matrix(-Inf,nrow(fixPar$beta),ncol(fixPar$beta),dimnames = dimnames(fixPar$beta))
     betaUpper <- matrix(Inf,nrow(fixPar$beta),ncol(fixPar$beta),dimnames = dimnames(fixPar$beta))
     what <- "hierBeta"
@@ -777,7 +777,7 @@ mapBounds <- function(hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,fo
     beta <- cbind(betaLower[betaCons],betaUpper[betaCons])
   }
 
-  if(field %in% hierDelta$fieldsAll){
+  if(field %in% hierDelta$attributesAll){
     if(is.null(beta)) {
       betaLower <- matrix(-Inf,nrow(fixPar$beta),ncol(fixPar$beta),dimnames = dimnames(fixPar$beta))
       betaUpper <- matrix(Inf,nrow(fixPar$beta),ncol(fixPar$beta),dimnames = dimnames(fixPar$beta))
