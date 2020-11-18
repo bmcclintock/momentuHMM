@@ -77,6 +77,7 @@ mixtureProbs <- function(m, getCI=FALSE, alpha = 0.95){
     tmp$covsDelta <- m$covsDelta[k,,drop=FALSE]
     tmp$covsPi <- m$covsPi[k,,drop=FALSE]
     tmp$conditions$knownStates <- rep(NA,nrow(tmp$data))
+    tmp$conditions$fullDM <- lapply(m$conditions$fullDM,function(y) matrix(mapply(function(x){if(length(x)>1){return(x[ind])} else {return(x)}},y,SIMPLIFY = TRUE),nrow(y),ncol(y),dimnames=dimnames(y)))
     est[k,] <- get_mixProbs(tmp$mod$wpar,mod=tmp,mixture=1:mixtures)
     #est[k,pInd] <- 0
     if(getCI){

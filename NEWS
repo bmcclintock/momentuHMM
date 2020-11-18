@@ -1,4 +1,4 @@
-momentuHMM 1.5.2 2020-11-16
+momentuHMM 1.5.2 2020-11-18
 -----------------
 NEW FEATURES
 
@@ -22,11 +22,13 @@ CHANGES
 
 BUG FIXES
 
+* mixtureProbs function did not properly account for individual covariates in DM argument when mixtures>1; hence estimated mixture and state probabilities were incorrect for discrete random effect models in momentuHMM <= 1.5.1 if individual covariates were included on any data stream distribution parameters
+
 * mixtureProbs function produced an error when initial distribution formula includes covariates
 
-* crawlWrap now internally deals with a long-standing bug in crawl::crwPredict when predTime argument includes prediction times before the first observation
-
 * avoid numerical underflow in mixtureProbs when a mixture probability is zero
+
+* crawlWrap now internally deals with a long-standing bug in crawl::crwPredict when predTime argument includes prediction times before the first observation
 
 * overly restrictive check for time-varying covariates in fitHMM when stationary=TRUE
 
