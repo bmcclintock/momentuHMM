@@ -253,7 +253,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
       predData <- miData$crwPredict
   
       Time.name<-attr(predData,"Time.name")
-      ids = unique(predData$ID)
+      ids = as.character(unique(predData$ID))
       
       if(!is.null(covNames) | !is.null(angleCovs)){
         covNames <- unique(c(covNames,angleCovs[!(angleCovs %in% names(spatialCovs))]))
@@ -530,7 +530,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
       names(predTimes) <- ids
       registerDoParallel(cores=ncores)
       withCallingHandlers(crwHierSim <- foreach(mf=model_fits, i=ids, .export="crwSimulator") %dorng% {
-        cat("Simulating individual ",ids[i],"...\n",sep="")
+        cat("Simulating individual ",i,"...\n",sep="")
         crawl::crwSimulator(mf,predTime=predTimes[[i]], method = method, parIS = parIS,
                             df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, quad.ask = ifelse(ncores>1, FALSE, quad.ask), force.quad = force.quad)
       },warning=muffleRNGwarning)
