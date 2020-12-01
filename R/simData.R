@@ -127,6 +127,7 @@
 #' \code{runif(1,min(errorEllipse$m),max(errorEllipse$m))}, and \code{runif(1,min(errorEllipse$r),max(errorEllipse$r))}. If only a single value is provided for any of the 
 #' error ellipse elements, then the corresponding component is fixed to this value for each location. Only the 'step' and 'angle' data streams are subject to location measurement error;
 #' any other data streams are observed without error.  Ignored unless a valid distribution for the 'step' data stream is specified.
+#' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' 
 #' @return If the simulated data are temporally regular (i.e., \code{lambda=NULL}) with no measurement error (i.e., \code{errorEllipse=NULL}), an object \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}), 
 #' i.e., a dataframe of:
@@ -362,7 +363,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     model=NULL,states=FALSE,
                     retrySims=0,
                     lambda=NULL,
-                    errorEllipse=NULL)
+                    errorEllipse=NULL,
+                    ncores=1)
 {
   
   ##############################
@@ -791,7 +793,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       else centerNames <- paste0(rep(rownames(centers),each=2),".",rep(c("dist","angle"),length(centerInd)))
       centerCovs <- data.frame(matrix(NA,nrow=sum(allNbObs),ncol=length(centerInd)*2,dimnames=list(NULL,centerNames)))
     }  
-  } else centerNames <- NULL
+  } else centerNames <- centerCovs <- NULL
   
   centroidInd<-NULL
   if(!is.null(centroids)){
@@ -810,7 +812,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     centroidCovs <- data.frame(matrix(NA,nrow=sum(allNbObs),ncol=length(centroidNames),dimnames=list(NULL,centroidNames)))
     centroidInd <- length(centroidNames)/2
       #}  
-  } else centroidNames <- NULL
+  } else centroidNames <- centroidCovs <- NULL
   
   if(!is.null(model) & length(centerInd)){
     cInd <- which(!(colnames(allCovs) %in% centerNames))
@@ -1055,8 +1057,11 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     ###########################
     ## Loop over the animals ##
     ###########################
-    for (zoo in 1:nbAnimals) {
-  
+    registerDoParallel(cores=ncores)
+    withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.combine='comb') %dorng% {
+      
+      cat("\r        Simulating individual ",zoo,"... ",sep="")
+      
       # number of observations for animal zoo
       nbObs <- allNbObs[zoo]
       d <- data.frame(ID=factor(rep(zoo,nbObs)))
@@ -1395,10 +1400,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         gamma <- gamma/apply(gamma,1,sum)
         Z[k+1] <- sample(1:nbStates,size=1,prob=gamma[Z[k],])  
       }
-      allStates <- c(allStates,Z)
-      if(nbSpatialCovs>0) {
-        allSpatialcovs <- rbind(allSpatialcovs,subSpatialcovs)
-      }
+      #allStates <- c(allStates,Z)
+      #if(nbSpatialCovs>0) {
+        #allSpatialcovs <- rbind(allSpatialcovs,subSpatialcovs)
+      #}
       
       if("angle" %in% distnames){ 
         if(inputs$dist[["angle"]] %in% angledists & ("step" %in% distnames))
@@ -1423,55 +1428,59 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       }
       for(j in angleCovs[which(angleCovs %in% names(subCovs))])
         allCovs[cumNbObs[zoo]+1:nbObs,j] <- subCovs[,j]
-      if(length(centerInd)) centerCovs[cumNbObs[zoo]+1:nbObs,] <- subCovs[,centerNames]
-      if(length(centroidInd)) centroidCovs[cumNbObs[zoo]+1:nbObs,] <- subCovs[,centroidNames]
-      data <- rbind(data,d)
+      if(length(centerInd)) centerCovs <- subCovs[,centerNames]
+      if(length(centroidInd)) centroidCovs <- subCovs[,centroidNames]
+      #data <- rbind(data,d)
+      return(list(data=d,allCovs=allCovs[cumNbObs[zoo]+1:nbObs,,drop=FALSE],allSpatialcovs=subSpatialcovs,centerCovs=centerCovs,centroidCovs=centroidCovs,allStates=matrix(Z,ncol=1)))
     }
+    ,warning=muffleRNGwarning)
+    stopImplicitCluster()
+    if(ncores==1) cat("DONE\n")
     
     if(nbCovs>0)
-      data <- cbind(data,allCovs)
+      simDat$data <- cbind(simDat$data,simDat$allCovs)
     
     if(nbSpatialCovs>0){
-      colnames(allSpatialcovs)<-spatialcovnames
+      colnames(simDat$allSpatialcovs)<-spatialcovnames
       for(j in spatialcovnames){
         if(any(raster::is.factor(spatialCovs[[j]]))){
-          allSpatialcovs[[j]] <- factor(allSpatialcovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
+          simDat$allSpatialcovs[[j]] <- factor(simDat$allSpatialcovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
         }
       }
-      data <- cbind(data,allSpatialcovs)
+      simDat$data <- cbind(simDat$data,simDat$allSpatialcovs)
     }
     
     if(length(centerInd)){
-      data <- cbind(data,centerCovs)
-      for(j in which(grepl(".angle",names(data)))){
-        if(names(data[j]) %in% centerNames)
-          class(data[[j]]) <- c(class(data[[j]]), "angle")
+      simDat$data <- cbind(simDat$data,simDat$centerCovs)
+      for(j in which(grepl(".angle",names(simDat$data)))){
+        if(names(simDat$data[j]) %in% centerNames)
+          class(simDat$data[[j]]) <- c(class(simDat$data[[j]]), "angle")
       }
     }
     
     if(length(centroidInd)){
-      data <- cbind(data,centroidCovs)
-      for(j in which(grepl(".angle",names(data)))){
-        if(names(data[j]) %in% centroidNames)
-          class(data[[j]]) <- c(class(data[[j]]), "angle")
+      simDat$data <- cbind(simDat$data,simDat$centroidCovs)
+      for(j in which(grepl(".angle",names(simDat$data)))){
+        if(names(simDat$data[j]) %in% centroidNames)
+          class(simDat$data[[j]]) <- c(class(simDat$data[[j]]), "angle")
       }
     }
     
     # include states sequence in the data
     if(states)
-      data <- cbind(data,states=allStates)
+      simDat$data <- cbind(simDat$data,states=simDat$allStates)
     
     for(i in distnames){
       if(inputs$dist[[i]] %in% angledists)
-        class(data[[i]]) <- c(class(data[[i]]), "angle")
+        class(simDat$data[[i]]) <- c(class(simDat$data[[i]]), "angle")
     }
     
     for(i in angleCovs){
-      class(data[[i]]) <- c(class(data[[i]]), "angle")
+      class(simDat$data[[i]]) <- c(class(simDat$data[[i]]), "angle")
     }
     
     if(!is.null(mvnCoords)){
-      attr(data,'coords') <- paste0(mvnCoords,c(".x",".y"))
+      attr(simDat$data,'coords') <- paste0(mvnCoords,c(".x",".y"))
       #tmpNames <- colnames(data)[-which(colnames(data)=="ID")]
       #prepDat <- prepData(data,coordNames = paste0(mvnCoords,c(".x",".y")))
       #data$step <- prepDat$step
@@ -1482,7 +1491,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
     
     # account for observation error (if any)
-    out<-simObsData(momentuHMMData(data),lambda,errorEllipse)
+    out<-simObsData(momentuHMMData(simDat$data),lambda,errorEllipse)
     
     message("DONE")
     return(out)
@@ -1490,7 +1499,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     simCount <- 0
     cat("Attempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simData'\n",sep="")
     while(simCount < retrySims){
-      cat("\r    Attempt ",simCount+1," of ",retrySims,"...",sep="")
+      if(ncores==1) cat("    Attempt ",simCount+1," of ",retrySims,"...\n",sep="")
+      else cat("\r    Attempt ",simCount+1," of ",retrySims,"...",sep="")
       tmp<-suppressMessages(tryCatch(simData(nbAnimals,nbStates,dist,
                           Par,beta,delta,
                           formula,formulaDelta,mixtures,formulaPi,
@@ -1508,17 +1518,21 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                           model,states,
                           retrySims=0,
                           lambda,
-                          errorEllipse),error=function(e) e))
+                          errorEllipse,
+                          ncores),error=function(e) e))
       if(inherits(tmp,"error")){
+        if(ncores==1) cat("FAILED\n")
         if(grepl("Try expanding the extent of the raster",tmp)) simCount <- simCount+1
         else stop(tmp)
       } else {
         simCount <- retrySims
-        cat("DONE\n")
+        if(ncores>1) message("\nDONE")
+        else message("DONE")
         return(tmp)
       }
     }
-    cat("FAILED\n")
+    if(ncores>1) message("\nFAILED")
+    else message("FAILED")
     stop(tmp)
   }
 }

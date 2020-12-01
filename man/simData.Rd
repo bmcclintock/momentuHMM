@@ -37,7 +37,8 @@ simData(
   states = FALSE,
   retrySims = 0,
   lambda = NULL,
-  errorEllipse = NULL
+  errorEllipse = NULL,
+  ncores = 1
 )
 
 simHierData(
@@ -70,7 +71,8 @@ simHierData(
   states = FALSE,
   retrySims = 0,
   lambda = NULL,
-  errorEllipse = NULL
+  errorEllipse = NULL,
+  ncores = 1
 )
 }
 \arguments{
@@ -229,6 +231,8 @@ in McClintock et al. (2015), where the components of the error ellipse for each 
 \code{runif(1,min(errorEllipse$m),max(errorEllipse$m))}, and \code{runif(1,min(errorEllipse$r),max(errorEllipse$r))}. If only a single value is provided for any of the 
 error ellipse elements, then the corresponding component is fixed to this value for each location. Only the 'step' and 'angle' data streams are subject to location measurement error;
 any other data streams are observed without error.  Ignored unless a valid distribution for the 'step' data stream is specified.}
+
+\item{ncores}{Number of cores to use for parallel processing. Default: 1 (no parallel processing).}
 
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See details.}
 

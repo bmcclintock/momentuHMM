@@ -1,8 +1,10 @@
-momentuHMM 1.5.2 2020-11-18
+momentuHMM 1.5.2 2020-12-01
 -----------------
 NEW FEATURES
 
 * Approximate individual-level random effects estimation for the state transition probabilities based on Burnham & White (2002) can now be implemented via the randomEffects function
+
+* ncores argument added to simData and simHierData for simulating individual tracks in parallel
 
 CHANGES
 
