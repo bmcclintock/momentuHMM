@@ -10,6 +10,8 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
   parSize<-lapply(parNames,length)
   #parCount <- vector('list',length(dist))
   lag <- 0
+  lanInd <- vector('list',length(dist))
+  names(lanInd) <- distnames
   
   for(i in distnames){
     if(is.null(DM[[i]])){
@@ -75,6 +77,14 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
           parInd<-sum(parSizeDM[1:((j-1)*nbStates+state)])
         }
       }
+      for(j in DMnames){
+        if(grepl("langevin\\(",j)) {
+          if(!(dist[[i]] %in% rwdists)) stop("langevin() special formula can only be used for normal random walk data stream distributions")
+          if(!grepl("mean",j))
+            stop("langevin() special formula can only be used for the means of normal random walk data stream distributions")
+          lanInd[[i]] <- c(lanInd[[i]],j)
+        }
+      }
       #parCount[[i]]<-ncol(tmpDM)
       #if(circularAngleMean[[i]]) parCount[[i]] <- parCount[[i]] - sum(parSizeDM[grepl("mean",names(parSizeDM))])/2
       #if(parCount[[i]]!=length(Par[[i]]) & ParChecks) stop("Based on DM$",i,", Par$",i," must be of length ",ncol(tmpDM))
@@ -122,6 +132,12 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
       factorcovs<-paste0(rep(factorterms,times=unlist(lapply(data[factorterms],nlevels))),unlist(lapply(data[factorterms],levels)))
       covs<-numeric()
       for(cov in DMterms){
+        if(grepl("langevin\\(",cov)) {
+          if(!(dist[[i]] %in% rwdists)) stop("langevin() special formula can only be used for normal random walk data stream distributions")
+          if(!all(grepl("mean",rownames(bounds[[i]])[which(apply(DM[[i]],1,function(x) any(grepl("langevin\\(",x))))])))
+            stop("langevin() special formula can only be used for the means of normal random walk data stream distributions")
+          lanInd[[i]] <- c(lanInd[[i]],cov)
+        }
         form<-stats::formula(paste("~",cov))
         varform<-all.vars(form)
         if(!all((varform %in% names(data)) | (varform %in% factorcovs))){
@@ -160,6 +176,13 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
     if(length(k)){
       for(j in 1:nrow(k)){
         simpDM[[i]][[k[j,1],k[j,2]]]<-fullDM[[i]][k[j,1],k[j,2],]
+      }
+    }
+    if(!is.null(lanInd[[i]])){
+      if(is.list(DM[[i]])){
+        comment(simpDM[[i]]) <- paste0("langevin",which(grepl("langevin\\(",colnames(simpDM[[i]]))))
+      } else {
+        comment(simpDM[[i]]) <- paste0("langevin",which(apply(DM[[i]],2,function(x) any(grepl("langevin\\(",x)))))
       }
     }
   }

@@ -245,6 +245,27 @@ w2nDM<-function(wpar,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbStates,
     p[ind31,] <- (l_t[ind31,,drop=FALSE] * exp(XB[ind31,,drop=FALSE])+a[ind31])
     p[ind32,] <- ((b[ind32]-a[ind32])*(l_t[ind32,,drop=FALSE] * stats::plogis(XB[ind32,,drop=FALSE]))+a[ind32])
     p[ind33,] <- -(exp(-XB[ind33,,drop=FALSE]) - b[ind33])
+    
+    # adjust for means for langevin diffusion
+    if(!is.null(comment(DM))){
+      for(i in 1:nbStates){
+        for(j in as.integer(gsub("langevin","",comment(DM)))){
+          DMx <- DM[paste0("mean.x_",i),j][[1]]
+          DMy <- DM[paste0("mean.y_",i),j][[1]]
+          if(any(grepl("mean.z",rownames(DM)))){
+            DMz <- DM[paste0("mean.z_",i),j][[1]]
+            DM[paste0("mean.x_",i),j][[1]] <- DMx * p[which(rownames(bounds)==paste0("sigma.x_",i)),]/2 + DMy * p[which(rownames(bounds)==paste0("sigma.xy_",i)),]/2 + DMz * p[which(rownames(bounds)==paste0("sigma.xz_",i)),]/2
+            DM[paste0("mean.y_",i),j][[1]] <- DMy * p[which(rownames(bounds)==paste0("sigma.y_",i)),]/2 + DMx * p[which(rownames(bounds)==paste0("sigma.xy_",i)),]/2 + DMz * p[which(rownames(bounds)==paste0("sigma.yz_",i)),]/2
+            DM[paste0("mean.z_",i),j][[1]] <- DMz * p[which(rownames(bounds)==paste0("sigma.z_",i)),]/2 + DMx * p[which(rownames(bounds)==paste0("sigma.xz_",i)),]/2 + DMy * p[which(rownames(bounds)==paste0("sigma.yz_",i)),]/2
+          } else {
+            DM[paste0("mean.x_",i),j][[1]] <- DMx * p[which(rownames(bounds)==paste0("sigma.x_",i)),]/2 + DMy * p[which(rownames(bounds)==paste0("sigma.xy_",i)),]/2
+            DM[paste0("mean.y_",i),j][[1]] <- DMy * p[which(rownames(bounds)==paste0("sigma.y_",i)),]/2 + DMx * p[which(rownames(bounds)==paste0("sigma.xy_",i)),]/2
+          }
+        }
+      }
+      mInd <- which(grepl("mean",rownames(DM)))
+      XB[mInd,] <- p[mInd,] <- getXB(DM[mInd,],nbObs,wpar,DMind,circularAngleMean,consensus,nbStates,nc[mInd,],meanind)
+    }
   }
   
   if(!any(is.na(p))){ 

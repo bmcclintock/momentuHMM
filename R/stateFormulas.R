@@ -18,6 +18,10 @@ recharge<-function(g0=~1, theta){
   return(list(g0=g0,theta=theta))
 }
 
+langevin<-function(x){
+  return(x)
+}
+
 stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL){
   
   Terms <- stats::terms(formula, specials = c(paste0(spec,1:nbStates),"cosinor","angleFormula","recharge"))
