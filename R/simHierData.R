@@ -864,7 +864,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     registerDoParallel(cores=ncores)
     withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.combine='comb') %dorng% {
       
-      cat("\r        Simulating individual ",zoo,"... ",sep="")
+      message("\r        Simulating individual ",zoo,"... ",sep="")
       
       # number of observations for animal zoo
       nbObs <- allNbObs[zoo]
@@ -1326,7 +1326,6 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
     ,warning=muffleRNGwarning)
     stopImplicitCluster()
-    if(ncores==1) cat("DONE\n")
     
     if(nbCovs>0)
       simDat$data <- cbind(simDat$data,simDat$allCovs)
