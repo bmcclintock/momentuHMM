@@ -46,8 +46,7 @@ viterbi <- function(m, hierarchical=FALSE)
   
   probs <- allProbs(m)
   mixtures <- m$conditions$mixtures
-  if(mixtures==1) pie <- 1
-  else pie <- m$mle$pi
+  mixProbs <- mixtureProbs(m)
   
   trMat <- list()
   for(mix in 1:mixtures){
@@ -84,12 +83,12 @@ viterbi <- function(m, hierarchical=FALSE)
     
     stSeq <- rep(NA,nbObs)
     for(mix in 1:mixtures){
-      tmxi[nbObs,] <- tmxi[nbObs,] + xi_mix[mix,nbObs,]*pie[mix]
+      tmxi[nbObs,] <- tmxi[nbObs,] + xi_mix[mix,nbObs,]*mixProbs[zoo,mix]
     }
     stSeq[nbObs] <- which.max(tmxi[nbObs,])
     for(i in (nbObs-1):1){
       for(mix in 1:mixtures){
-        tmxi[i,] <- tmxi[i,] + tm[[mix]][,stSeq[i+1],i+1]*xi_mix[mix,i,]*pie[mix]
+        tmxi[i,] <- tmxi[i,] + tm[[mix]][,stSeq[i+1],i+1]*xi_mix[mix,i,]*mixProbs[zoo,mix]
       }
       stSeq[i] <- which.max(tmxi[i,])
     }

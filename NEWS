@@ -1,4 +1,4 @@
-momentuHMM 1.5.2 2020-12-01
+momentuHMM 1.5.2 2020-12-11
 -----------------
 NEW FEATURES
 
@@ -7,6 +7,8 @@ NEW FEATURES
 * ncores argument added to simData and simHierData for simulating individual tracks in parallel
 
 CHANGES
+
+* Viterbi algorithm for discrete random effect models (with mixtures>1) now uses individual mixture probabilities instead of overall mixture probabilities
 
 * plotPR now uses car::qqPlot for pseudo-residual qq-plots
 
