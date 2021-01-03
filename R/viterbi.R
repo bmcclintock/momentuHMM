@@ -54,41 +54,35 @@ viterbi <- function(m, hierarchical=FALSE)
   }
   
   allStates <- NULL
-  tm <- list()
+  
   for(zoo in 1:nbAnimals) {
     
     nbObs <- length(which(data$ID==unique(data$ID)[zoo])) # nb of observations for animal zoo
     tmxi <- matrix(0,nbObs,nbStates)
-    xi_mix <- array(NA,dim=c(mixtures,nbObs,nbStates))
+    xi_mix <- matrix(0,nbObs,nbStates)
     
-    for(mix in 1:mixtures){
-      
-      if(zoo!=nbAnimals) {
-        p <- probs[aInd[zoo]:(aInd[zoo+1]-1),]
-        tm[[mix]] <- trMat[[mix]][,,aInd[zoo]:(aInd[zoo+1]-1)]
-      }
-      else {
-        p <- probs[aInd[zoo]:nrow(probs),]
-        tm[[mix]] <- trMat[[mix]][,,aInd[zoo]:nrow(probs)]
-      }
-      
-      foo <- (delta[(mix-1)*nbAnimals+zoo,]%*%tm[[mix]][,,1])*p[1,]
-      xi_mix[mix,1,] <- foo/sum(foo)
-      for(i in 2:nbObs) {
-        foo <- apply(xi_mix[mix,i-1,]*tm[[mix]][,,i],2,max)*p[i,]
-        xi_mix[mix,i,] <- foo/sum(foo)
-      }
+    if(zoo!=nbAnimals) {
+      tm <- lapply(trMat,function(x) x[,,aInd[zoo]:(aInd[zoo+1]-1)])
+      p <- probs[aInd[zoo]:(aInd[zoo+1]-1),]
+    } else {
+      tm <- lapply(trMat,function(x) x[,,aInd[zoo]:nrow(probs)])
+      p <- probs[aInd[zoo]:nrow(probs),]
     }
+    foo <- rowSums(mapply(function(mix) mixProbs[zoo,mix]*delta[(mix-1)*nbAnimals+zoo,]%*%tm[[mix]][,,1]*p[1,],1:mixtures))
+    xi_mix[1,] <- foo/sum(foo)
     
+    for(i in 2:nbObs) {
+      foo <- Reduce("+",mapply(function(mix) mixProbs[zoo,mix]*xi_mix[i-1,]*tm[[mix]][,,i],1:mixtures,SIMPLIFY = FALSE))
+      foo <- apply(foo,2,max)*p[i,]
+      xi_mix[i,] <- foo/sum(foo)
+    }
     
     stSeq <- rep(NA,nbObs)
-    for(mix in 1:mixtures){
-      tmxi[nbObs,] <- tmxi[nbObs,] + xi_mix[mix,nbObs,]*mixProbs[zoo,mix]
-    }
+    tmxi[nbObs,] <- xi_mix[nbObs,]
     stSeq[nbObs] <- which.max(tmxi[nbObs,])
     for(i in (nbObs-1):1){
       for(mix in 1:mixtures){
-        tmxi[i,] <- tmxi[i,] + tm[[mix]][,stSeq[i+1],i+1]*xi_mix[mix,i,]*mixProbs[zoo,mix]
+        tmxi[i,] <- tmxi[i,] + xi_mix[i,]*mixProbs[zoo,mix]*tm[[mix]][,stSeq[i+1],i+1]
       }
       stSeq[i] <- which.max(tmxi[i,])
     }
