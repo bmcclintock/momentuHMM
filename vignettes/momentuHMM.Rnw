@@ -1529,8 +1529,7 @@ plotSat(m2, zoom = 7, shape = c(17,1,17,1,17,1), size = 2,
 \label{sec:pilotWhale}
 <<pilotWhale-1, echo=FALSE, eval=TRUE, cache=TRUE>>=
 ## load data 
-load(url("https://github.com/bmcclintock/momentuHMM/blob/develop/vignettes/vignetteResults/pilotWhaleExample.RData?raw=true"))
-#load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/pilotWhaleData.RData"))
+load(url("https://github.com/bmcclintock/momentuHMM/blob/master/vignettes/vignetteResults/pilotWhaleExample.RData?raw=true"))
 
 ## prepare data
 #names(data.keep)[1] <- "ID"
@@ -1764,7 +1763,7 @@ prepData(data = porpoiseData,
 \noindent Note that because there are no location data in this example, we have set \verb|coordNames| to \verb|NULL|. Also note that in this example there are no data streams observed at the coarse time scale (\verb|level=1|), but these could be easily included (if available; see sections \ref{sec:atlanticCod} and \ref{sec:hornShark}). By definition there are no data streams observed at the initial fine scale (\verb|level=2i|), but covariates (if available) could be included here for modeling the fine-scale initial distributions or state transition probabilities.
 
 <<harborPorpoise-2c, echo=FALSE, eval=TRUE>>=
-load(url("https://github.com/bmcclintock/momentuHMM/blob/develop/vignettes/vignetteResults/harborPorpoiseExample.RData?raw=true"))
+load(url("https://github.com/bmcclintock/momentuHMM/blob/master/vignettes/vignetteResults/harborPorpoiseExample.RData?raw=true"))
 @
 
 Now that our hierarchical data are prepared, we are ready to specify the HHMM.  We will start with the hierarchical nature of the states, which is specified using the \verb|hierStates| argument in \verb|fitHMM|:
@@ -2027,7 +2026,7 @@ snakeData <- prepData(snakeData,coordNames=NULL,hierLevels=c("1","2i","2"))
 summary(snakeData)
 @
 <<garterSnake-1a, echo=FALSE, eval=TRUE>>=
-load(url("https://github.com/bmcclintock/momentuHMM/blob/develop/vignettes/vignetteResults/garterSnakeExample.RData?raw=true"))
+load(url("https://github.com/bmcclintock/momentuHMM/blob/master/vignettes/vignetteResults/garterSnakeExample.RData?raw=true"))
 @
 \noindent The sole data stream for this example is step length at the fine-scale level, and no coordinates are provided (hence \verb|coordNames=NULL|). As in section \ref{sec:harborPorpoise}, this example has no data streams observed at the coarse-scale level, but these could be easily included (if available; see sections \ref{sec:atlanticCod} and \ref{sec:hornShark}). Let's now specify the probability distribution for the fine-scale step length data stream via the \verb|hierDist| data tree Node (Figure \ref{fig:garterSnakeDist}):
 <<garterSnake-4, echo=TRUE, eval=FALSE, cache=TRUE>>=
@@ -2257,7 +2256,7 @@ head(simHHMM)
 Now we will demonstrate how HHMMs with data streams observed at multiple time scales can be fitted using \verb|momentuHMM|. In their Atlantic cod example, \cite{AdamEtAl2019} fit a 9-state HHMM to coarse-scale horizontal (i.e., step length and turn angle) and fine-scale vertical movement data. The coarse-scale states were ``resting/foraging'' (hereafter ``resForage''), ``mobile/foraging'' (hereafter ``mobForage''), and ``travelling/migrating'' (hereafter ``transit''), each of which was composed of three fine-scale states. To begin our analysis, we must first load and prepare the data \citep[available for download from][]{AdamEtAl2019}:
 <<cod-0, eval=TRUE, echo=FALSE>>=
 ## load data 
-load(url("https://github.com/bmcclintock/momentuHMM/blob/develop/vignettes/vignetteResults/codExample.RData?raw=true"))
+load(url("https://github.com/bmcclintock/momentuHMM/blob/master/vignettes/vignetteResults/codExample.RData?raw=true"))
 @
 <<cod-1a, eval=FALSE, echo=TRUE>>=
 # load the data from Adam et al 
@@ -2527,7 +2526,7 @@ For our final HHMM example, we'll quickly demonstrate how the horn shark example
 First we load and prepare the data \citep[available for download from][]{AdamEtAl2019}:
 <<shark-0, eval=TRUE, echo=FALSE>>=
 ## load data 
-load(url("https://github.com/bmcclintock/momentuHMM/blob/develop/vignettes/vignetteResults/hornSharkExample.RData?raw=true"))
+load(url("https://github.com/bmcclintock/momentuHMM/blob/master/vignettes/vignetteResults/hornSharkExample.RData?raw=true"))
 @
 <<shark-1a, eval=FALSE, echo=TRUE>>=
 # load the data from Adam et al 
