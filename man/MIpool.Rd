@@ -44,7 +44,7 @@ Note that pooled estimates for \code{timeInStates} and \code{stateProbs} do not 
 }
 \examples{
 \dontshow{
-set.seed(2,kind="Mersenne-Twister",normal.kind="Inversion")
+set.seed(3,kind="Mersenne-Twister",normal.kind="Inversion")
 }
 \dontrun{
 # Extract data and crawl inputs from miExample

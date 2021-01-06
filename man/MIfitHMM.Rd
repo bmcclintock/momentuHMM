@@ -310,7 +310,7 @@ and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[craw
 }
 \examples{
 \dontshow{
-set.seed(5,kind="Mersenne-Twister",normal.kind="Inversion")
+set.seed(1,kind="Mersenne-Twister",normal.kind="Inversion")
 }
 # Don't run because it takes too long on a single core
 \dontrun{

@@ -7,7 +7,7 @@
 #'
 #' @examples
 #' \dontshow{
-#' set.seed(2,kind="Mersenne-Twister",normal.kind="Inversion")
+#' set.seed(3,kind="Mersenne-Twister",normal.kind="Inversion")
 #' }
 #' \dontrun{
 #' # Extract data from miExample

@@ -73,7 +73,7 @@ weighted by a factor 1/3, and in the second state by a factor 2/3.
 }
 \examples{
 \dontshow{
-set.seed(2,kind="Mersenne-Twister",normal.kind="Inversion")
+set.seed(3,kind="Mersenne-Twister",normal.kind="Inversion")
 }
 \dontrun{
 # Extract data from miExample
