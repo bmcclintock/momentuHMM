@@ -1530,7 +1530,6 @@ plotSat(m2, zoom = 7, shape = c(17,1,17,1,17,1), size = 2,
 <<pilotWhale-1, echo=FALSE, eval=TRUE, cache=TRUE>>=
 ## load data 
 load(url("https://github.com/bmcclintock/momentuHMM/blob/develop/vignettes/vignetteResults/pilotWhaleExample.RData?raw=true"))
-#load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/pilotWhaleData.RData"))
 
 ## prepare data
 #names(data.keep)[1] <- "ID"
