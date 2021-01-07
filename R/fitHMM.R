@@ -254,7 +254,7 @@ fitHMM <- function(data, ...) {
 #'
 #' print(m)
 #' 
-#' \dontrun{
+#' \donttest{
 #' ### 2. fit the exact same model to the simulated data using DM formulas
 #' # Get initial values for the parameters on working scale
 #' Par0 <- getParDM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
