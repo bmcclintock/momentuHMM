@@ -254,7 +254,7 @@ fitHMM <- function(data, ...) {
 #'
 #' print(m)
 #' 
-#' \dontrun{
+#' \donttest{
 #' ### 2. fit the exact same model to the simulated data using DM formulas
 #' # Get initial values for the parameters on working scale
 #' Par0 <- getParDM(data=data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
@@ -382,7 +382,7 @@ fitHMM <- function(data, ...) {
 #' m.spline<-fitHMM(data.spline,nbStates=1,dist=dist,Par0=Par0,
 #'                  DM=list(step=stepDM,
 #'                          angle=angleDM["concentration"]))  
-#'   
+#' 
 #' ### 10. Initial state (delta) based on covariate                       
 #' nObs <- 100
 #' dist <- list(step="gamma",angle="vm")
