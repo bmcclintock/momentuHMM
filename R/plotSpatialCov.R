@@ -24,6 +24,7 @@
 #' @param stateNames Optional character vector of length \code{max(states)} indicating state names. Ignored unless \code{states} is provided.
 #' 
 #' @examples 
+#' \dontrun{
 #' stepDist <- "gamma"
 #' angleDist <- "vm"
 #' 
@@ -36,7 +37,7 @@
 #'                 obsPerAnimal=225,states=TRUE)
 #' 
 #' plotSpatialCov(data,forest,states=data$states)
-#'
+#' }
 # @importFrom ggplot2 ggplot geom_point geom_path aes geom_raster guides theme
 # @importFrom ggplot2 element_rect element_blank scale_color_manual scale_shape_manual coord_equal labs
 # @importFrom raster rasterToPoints

@@ -363,6 +363,7 @@ m <- example$m
 obsPerAnimal=c(50,100)
 data <- simData(model=m,obsPerAnimal=obsPerAnimal)
 
+\dontrun{
 # 2. Pass the parameters of the model to simulate from
 stepPar <- c(1,10,1,5,0.2,0.3) # mean_1, mean_2, sd_1, sd_2, zeromass_1, zeromass_2
 anglePar <- c(pi,0,0.5,2) # mean_1, mean_2, concentration_1, concentration_2
@@ -471,7 +472,7 @@ delta <- matrix(c(-100,100),2,1,dimnames=list(c("sexF","sexM"),"state 2"))
 data.delta<-simData(nbAnimals=2,obsPerAnimal=nObs,nbStates=2,dist=dist,Par=Par,
                     delta=delta,formulaDelta=formulaDelta,covs=cov,
                     beta=matrix(-1.5,1,2),states=TRUE)        
-                
+}                
 }
 \references{
 Cornelissen, G. 2014. Cosinor-based rhythmometry. Theoretical Biology and Medical Modelling 11:16.
