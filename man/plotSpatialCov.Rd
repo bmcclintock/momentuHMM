@@ -58,6 +58,7 @@ plotted manually). If \code{FALSE}, the function automatically plots the map (de
 Plot tracking data over a raster layer.
 }
 \examples{
+\dontrun{
 stepDist <- "gamma"
 angleDist <- "vm"
 
@@ -70,5 +71,5 @@ data <- simData(nbAnimals=2,nbStates=2,dist=list(step=stepDist,angle=angleDist),
                 obsPerAnimal=225,states=TRUE)
 
 plotSpatialCov(data,forest,states=data$states)
-
+}
 }

@@ -363,6 +363,7 @@ m <- example$m
 obsPerAnimal=c(50,100)
 data <- simData(model=m,obsPerAnimal=obsPerAnimal)
 
+\dontrun{
 # 2. Pass the parameters of the model to simulate from
 stepPar <- c(1,10,1,5,0.2,0.3) # mean_1, mean_2, sd_1, sd_2, zeromass_1, zeromass_2
 anglePar <- c(pi,0,0.5,2) # mean_1, mean_2, concentration_1, concentration_2
@@ -445,16 +446,16 @@ data.cos<-simData(nbStates=nbStates,dist=dist,Par=Par,
                   beta=beta,formula=formula,covs=covs)     
                   
 # 8. Piecewise constant B-spline on step length mean and angle concentration
-# library(splines2)
-# nObs <- 1000 # length of simulated track
-# cov <- data.frame(time=1:nObs) # time covariate for splines
-# dist <- list(step="gamma",angle="vm")
-# stepDM <- list(mean=~bSpline(time,df=2,degree=0),sd=~1)
-# angleDM <- list(mean=~1,concentration=~bSpline(time,df=2,degree=0))
-# DM <- list(step=stepDM,angle=angleDM)
-# Par <- list(step=c(log(1000),1,-1,log(100)),angle=c(0,log(10),2,-5))
-#
-# data.spline<-simData(obsPerAnimal=nObs,nbStates=1,dist=dist,Par=Par,DM=DM,covs=cov)        
+library(splines2)
+nObs <- 1000 # length of simulated track
+cov <- data.frame(time=1:nObs) # time covariate for splines
+dist <- list(step="gamma",angle="vm")
+stepDM <- list(mean=~bSpline(time,df=2,degree=0),sd=~1)
+angleDM <- list(mean=~1,concentration=~bSpline(time,df=2,degree=0))
+DM <- list(step=stepDM,angle=angleDM)
+Par <- list(step=c(log(1000),1,-1,log(100)),angle=c(0,log(10),2,-5))
+
+data.spline<-simData(obsPerAnimal=nObs,nbStates=1,dist=dist,Par=Par,DM=DM,covs=cov)        
 
 # 9. Initial state (delta) based on covariate
 nObs <- 100
@@ -471,7 +472,7 @@ delta <- matrix(c(-100,100),2,1,dimnames=list(c("sexF","sexM"),"state 2"))
 data.delta<-simData(nbAnimals=2,obsPerAnimal=nObs,nbStates=2,dist=dist,Par=Par,
                     delta=delta,formulaDelta=formulaDelta,covs=cov,
                     beta=matrix(-1.5,1,2),states=TRUE)        
-                
+}                
 }
 \references{
 Cornelissen, G. 2014. Cosinor-based rhythmometry. Theoretical Biology and Medical Modelling 11:16.
