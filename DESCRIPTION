@@ -50,7 +50,8 @@ Suggests:
     BB,
     expm,
     matrixcalc,
-    moveHMM
+    moveHMM,
+    ctmcmove
 RoxygenNote: 7.1.1
 Encoding: UTF-8
 NeedsCompilation: yes

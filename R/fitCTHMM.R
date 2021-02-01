@@ -185,25 +185,30 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
   if("dt" %in% names(data)) stop("'dt' is reserved and cannot be used as a field name in 'data'; please choose a different name") 
   data$dt <- 0
   
-  for(i in unique(data$ID)){
-    if(inherits(data,"hierarchical")){
-      for(iLevel in levels(data$level)){
-        iDat <- which(data$ID==i & data$level==iLevel)
-        if(!grepl("i",iLevel)){
-          if(inherits(data[[Time.name]],"POSIXt")) {
-            tmpTime <- difftime(data[[Time.name]][iDat][-1],data[[Time.name]][iDat][-length(iDat)],units=Time.unit)
-            Time.unit <- units(tmpTime)
-            data$dt[iDat] <- c(tmpTime,0)
-          } else data$dt[iDat] <- c(diff(data[[Time.name]][iDat]),0)
-        } else data$dt[iDat] <- 1
+  if(inherits(data,"ctds")){
+    data$dt <- data$tau
+    data$tau <- NULL
+  } else {
+    for(i in unique(data$ID)){
+      if(inherits(data,"hierarchical")){
+        for(iLevel in levels(data$level)){
+          iDat <- which(data$ID==i & data$level==iLevel)
+          if(!grepl("i",iLevel)){
+            if(inherits(data[[Time.name]],"POSIXt")) {
+              tmpTime <- difftime(data[[Time.name]][iDat][-1],data[[Time.name]][iDat][-length(iDat)],units=Time.unit)
+              Time.unit <- units(tmpTime)
+              data$dt[iDat] <- c(tmpTime,0)
+            } else data$dt[iDat] <- c(diff(data[[Time.name]][iDat]),0)
+          } else data$dt[iDat] <- 1
+        }
+      } else {
+        iDat <- which(data$ID==i)
+        if(inherits(data[[Time.name]],"POSIXt")) {
+          tmpTime <- difftime(data[[Time.name]][iDat][-1],data[[Time.name]][iDat][-length(iDat)],units=Time.unit)
+          Time.unit <- units(tmpTime)
+          data$dt[iDat] <- c(tmpTime,0)
+        } else data$dt[iDat] <- c(diff(data[[Time.name]][iDat]),0)
       }
-    } else {
-      iDat <- which(data$ID==i)
-      if(inherits(data[[Time.name]],"POSIXt")) {
-        tmpTime <- difftime(data[[Time.name]][iDat][-1],data[[Time.name]][iDat][-length(iDat)],units=Time.unit)
-        Time.unit <- units(tmpTime)
-        data$dt[iDat] <- c(tmpTime,0)
-      } else data$dt[iDat] <- c(diff(data[[Time.name]][iDat]),0)
     }
   }
   
