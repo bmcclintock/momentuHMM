@@ -951,9 +951,14 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     } else mle$pi <- NULL
   }
   
-  if(isTRUE(list(...)$CT)) dt <- data$dt
-  else dt <- rep(1,nrow(data))
-
+  if(isTRUE(list(...)$CT)){
+    dt <- data$dt
+    if(inherits(data,"ctds")) itTPM <- data$itTPM
+    else itTPM <- integer()
+  } else {
+    dt <- rep(1,nrow(data))
+    itTPM <- integer()
+  }
   # compute stationary distribution
   if(stationary) {
     mle$delta <- matrix(0,nbAnimals*mixtures,nbStates)
@@ -962,7 +967,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
       
       for(i in 1:nbAnimals){
         
-        gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,fixParIndex$betaRef,isTRUE(list(...)$CT),dt)[,,aInd[i]]
+        gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,fixParIndex$betaRef,isTRUE(list(...)$CT),dt,itTPM)[,,aInd[i]]
     
         # error if singular system
         tryCatch(
@@ -987,7 +992,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   if(nbCovs==0 & nbStates>1) {
     mle$gamma <- matrix(0,nbStates*mixtures,nbStates)
     for(mix in 1:mixtures){
-      trMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,fixParIndex$betaRef,isTRUE(list(...)$CT),dt)
+      trMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,fixParIndex$betaRef,isTRUE(list(...)$CT),dt,itTPM)
       mle$gamma[nbStates*(mix-1)+1:nbStates,] <- trMat[,,1]
     }
     colnames(mle$gamma)<-stateNames

@@ -276,10 +276,11 @@ getDM_rcpp <- function(X, covs, DM, nr, nc, cov, nbObs) {
 #' @param betaRef Indices of reference elements for t.p.m. multinomial logit link.
 #' @param mixtures Number of mixtures for the state transition probabilities
 #' @param CT logical indicating whether to fit discrete-time approximation of a continuous-time model
+#' @param itTPM iterator indicator for TPM (needed for CTDS models)
 #' 
 #' @return Negative log-likelihood
-nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, CT) {
-    .Call('_momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, CT)
+nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, CT, itTPM = as.integer( c())) {
+    .Call('_momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, CT, itTPM)
 }
 
 #' Transition probability matrix
@@ -293,10 +294,11 @@ nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zero
 #' @param betaRef Indices of reference elements for t.p.m. multinomial logit link.
 #' @param CT logical indicating discrete-time approximation of a continuous-time model
 #' @param dt numeric vector of length \code{nrow(covs)} indicating the time difference between observations. Ignored unless \code{CT=TRUE}.
+#' @param itTPM iterator indicator for TPM (needed for CTDS models)
 #'
 #' @return Three dimensional array \code{trMat}, such that \code{trMat[,,t]} is the transition matrix at
 #' time t.
-trMatrix_rcpp <- function(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric( c())) {
-    .Call('_momentuHMM_trMatrix_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs, betaRef, CT, dt)
+trMatrix_rcpp <- function(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric( c()), itTPM = as.integer( c())) {
+    .Call('_momentuHMM_trMatrix_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs, betaRef, CT, dt, itTPM)
 }
 

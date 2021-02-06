@@ -15,11 +15,12 @@ using namespace std;
 //' @param betaRef Indices of reference elements for t.p.m. multinomial logit link.
 //' @param CT logical indicating discrete-time approximation of a continuous-time model
 //' @param dt numeric vector of length \code{nrow(covs)} indicating the time difference between observations. Ignored unless \code{CT=TRUE}.
+//' @param itTPM iterator indicator for TPM (needed for CTDS models)
 //'
 //' @return Three dimensional array \code{trMat}, such that \code{trMat[,,t]} is the transition matrix at
 //' time t.
 // [[Rcpp::export]]
-arma::cube trMatrix_rcpp(int nbStates, arma::mat beta, arma::mat covs, IntegerVector betaRef, bool CT = false, NumericVector dt = NumericVector::create())
+arma::cube trMatrix_rcpp(int nbStates, arma::mat beta, arma::mat covs, IntegerVector betaRef, bool CT = false, NumericVector dt = NumericVector::create(), IntegerVector itTPM = IntegerVector::create())
 {
   int nbObs = covs.n_rows;
   arma::cube trMat(nbStates,nbStates,nbObs);
@@ -35,29 +36,35 @@ arma::cube trMatrix_rcpp(int nbStates, arma::mat beta, arma::mat covs, IntegerVe
   if(CT){
     g = exp(g);
     for(int k=0;k<nbObs;k++) {
-      Gamma.zeros();
-      int cpt=0; // counter for diagonal elements
-      for(int i=0;i<nbStates;i++) {
-        for(int j=0;j<nbStates;j++) {
-          if(j==(betaRef(i)-1)) {
-            if(i!=j){
-              for(int l=0;l<(nbStates-1);l++){
-                Gamma(i,j) +=  g(k,i*nbStates+l-cpt) * dt(k);
+      if(itTPM(k)){
+        Gamma.zeros();
+        int cpt=0; // counter for diagonal elements
+        for(int i=0;i<nbStates;i++) {
+          for(int j=0;j<nbStates;j++) {
+            if(j==(betaRef(i)-1)) {
+              if(i!=j){
+                for(int l=0;l<(nbStates-1);l++){
+                  Gamma(i,j) +=  g(k,i*nbStates+l-cpt) * dt(k);
+                }
               }
+              cpt++;
+            } else {
+              if(i!=j) Gamma(i,j) = g(k,i*nbStates+j-cpt) * dt(k);
             }
-            cpt++;
-          } else {
-            if(i!=j) Gamma(i,j) = g(k,i*nbStates+j-cpt) * dt(k);
+          }
+          for(int l=0;l<nbStates;l++){
+            if(i!=l) Gamma(i,i) -= Gamma(i,l);
           }
         }
-        for(int l=0;l<nbStates;l++){
-          if(i!=l) Gamma(i,i) -= Gamma(i,l);
+        Gamma = arma::expmat(Gamma);
+        for(int i=0;i<nbStates;i++) {
+          for(int j=0;j<nbStates;j++) {
+            trMat(i,j,k) = Gamma(i,j);
+          }
         }
-      }
-      Gamma = arma::expmat(Gamma);
-      for(int i=0;i<nbStates;i++) {
-        for(int j=0;j<nbStates;j++) {
-          trMat(i,j,k) = Gamma(i,j);
+      } else {
+        for(int i=0;i<nbStates;i++) {
+          trMat(i,i,k) = 1.;
         }
       }
     }  

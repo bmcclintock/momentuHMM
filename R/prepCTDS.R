@@ -34,7 +34,7 @@ prepCTDS <- function(data, rast, directions=4, zero.idx=integer(), print.iter=FA
   if(is.null(data$x) | is.null(data$y) | is.null(data$time))
     stop("data must contain 'x', 'y', and 'time' fields")
   
-  if(any(names(data) %in% c("x.current","y.current","z"))) stop("'x.current', 'y.current', and 'z' are reserved and cannot be fields in data")
+  if(any(names(data) %in% c("x.current","y.current","z","itTPM"))) stop("'x.current', 'y.current', 'z', and 'itTPM' are reserved and cannot be fields in data")
   if(!is.null(covNames)){
     if(any(covNames %in% c(c("ID","time","x","y")))) stop("covNames cannot include 'ID', 'time', 'x', or 'y'")
   }

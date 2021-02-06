@@ -94,6 +94,7 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
   wpar <- expandPar(optPar,optInd,fixPar,wparIndex,betaCons,deltaCons,nbStates,ncol(covsDelta)-1,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,ncol(covsPi)-1)
   par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,fullDM,DMind,nrow(data),dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi)
 
+  itTPM <- integer()
   if(CT){
     for(i in distnames){
       if(dist[[i]] %in% rwdists){
@@ -109,7 +110,12 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
         par[[i]] <- t(apply(par[[i]],1,function(x) x*data$dt))
       }
     }
+    if(inherits(data,"ctds")){
+      itTPM <- data$itTPM
+    } else itTPM <- rep(1,nrow(data))
   }
+  
+  
   
   if(nbRecovs){
     for(i in 1:length(unique(data$ID))){
@@ -152,7 +158,7 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
 
   nllk <- tryCatch(nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,
                         par,
-                        aInd,zeroInflation,oneInflation,stationary,knownStates,betaRef,mixtures,CT),error=function(e) e)
+                        aInd,zeroInflation,oneInflation,stationary,knownStates,betaRef,mixtures,CT,itTPM),error=function(e) e)
 
   if(inherits(nllk,"error")) nllk <- NaN
   

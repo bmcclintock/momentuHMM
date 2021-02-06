@@ -18,7 +18,8 @@ nLogLike_rcpp(
   knownStates,
   betaRef,
   mixtures,
-  CT
+  CT,
+  itTPM = as.integer(c())
 )
 }
 \arguments{
@@ -54,6 +55,8 @@ the state is not known.}
 \item{mixtures}{Number of mixtures for the state transition probabilities}
 
 \item{CT}{logical indicating whether to fit discrete-time approximation of a continuous-time model}
+
+\item{itTPM}{iterator indicator for TPM (needed for CTDS models)}
 }
 \value{
 Negative log-likelihood
