@@ -124,7 +124,6 @@ path2ctds<-function (xy, t, rast, directions = 4, zero.idx = integer(),
   ec = ec.all[1]
   current.cell = ec
   rt = integer()
-  current.rt = 0
   cellCross <- integer()
   current.cr <- 0
   if (print.iter) {
@@ -135,7 +134,6 @@ path2ctds<-function (xy, t, rast, directions = 4, zero.idx = integer(),
       cat(i, " ")
     }
     if (ec.all[i] == current.cell) {
-      current.rt = (t[i] - t[i - 1])
       rt <- c(rt,(t[i] - t[i - 1]))
       ec = c(ec, ec.all[i])
       cellCross <- c(cellCross,0)
@@ -148,8 +146,7 @@ path2ctds<-function (xy, t, rast, directions = 4, zero.idx = integer(),
         sl.cells = raster::cellFromXY(rast, slc)
         t.in.each.cell = (t[i] - t[i - 1])/length(sl.cells)
         rt = c(rt, rep(t.in.each.cell, length(sl.cells)))
-        current.rt = t.in.each.cell
-        ec = c(ec, sl.cells)
+        ec = c(ec, sl.cells[-1],sl.cells[length(sl.cells)])
         current.cell = ec[length(ec)]
         current.cr <- current.cr + 1
         cellCross <- c(cellCross,rep(current.cr,length(sl.cells)))
@@ -157,7 +154,6 @@ path2ctds<-function (xy, t, rast, directions = 4, zero.idx = integer(),
       if (method == "LinearInterp") {
         if (A[current.cell, ec.all[i]] == 1) {
           rt = c(rt, (t[i] - t[i - 1]))
-          current.rt = 0
           ec = c(ec, ec.all[i])
           current.cell = ec.all[i]
           cellCross <- c(cellCross,0)
@@ -184,7 +180,6 @@ path2ctds<-function (xy, t, rast, directions = 4, zero.idx = integer(),
           transition.times.approx = tapprox[transition.idx.approx]
           rt.approx = diff(transition.times.approx)#diff(c(t[i-1],transition.times.approx))#
           rt = c(rt, rt.approx)
-          current.rt = rt.approx[length(rt.approx)]
           ec = c(ec, ec.approx[-1],ec.approx[length(ec.approx)])
           current.cell = ec[length(ec)]
           current.cr <- current.cr + 1
