@@ -20,11 +20,12 @@
 #' @param normalize.gradients	Logical. Default is FALSE. If TRUE, then all gradient covariates for \code{spatialCovs.grad} are normalized by dividing by the length of the gradient vector at each point.
 #' @param grad.point.decreasing	Logical. If TRUE, then the gradient covariates are positive in the direction of decreasing values of the covariate. If FALSE, then the gradient covariates are positive in the direction of increasing values of the covariate (like a true gradient).
 #' @param covNames Character vector indicating the names of any covariates in \code{data}. Any variables in \code{data} (other than \code{ID}, \code{x}, \code{y}, and \code{time}) that are not identified in covNames are assumed to be additional data streams (i.e., missing values will not be accounted for).
+#' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @return A \code{\link{momentuHMMData}} object
 #' @export
 prepCTDS <- function(data, rast, directions=4, zero.idx=integer(), print.iter=FALSE, method="ShortestPath",
                      spatialCovs=NULL, spatialCovs.grad=NULL, crw = TRUE, normalize.gradients = FALSE, grad.point.decreasing = TRUE,
-                     covNames=NULL) {
+                     covNames=NULL, ncores=1) {
   
   if (!requireNamespace("ctmcmove", quietly = TRUE)) {
     stop("Package \"ctmcmove\" needed for this function to work. Please install it.",
@@ -47,37 +48,36 @@ prepCTDS <- function(data, rast, directions=4, zero.idx=integer(), print.iter=FA
   check2 <- prepData(data[1:3,],spatialCovs=spatialCovs.grad)
   if(any(names(spatialCovs) %in% names(spatialCovs.grad))) stop("'spatialCovs' and 'spatialCovs.grad' names must be unique")
   
-  ctdsglm <- list()
-  for(i in unique(data$ID)){
-    ctds <- path2ctds(xy=as.matrix(data[which(data$ID==i & !is.na(data$x) & !is.na(data$y)),c("x","y")]),t=data$time[which(data$ID==i & !is.na(data$x) & !is.na(data$y))],rast=rast,directions=directions,zero.idx=zero.idx,print.iter=print.iter,method=method)
-    ctdsglm[[i]] <- ctds2glm(data[which(data$ID==i & !is.na(data$x) & !is.na(data$y)),], ctds,rast = rast, directions=directions, spatialCovs = spatialCovs, spatialCovs.grad=spatialCovs.grad, crw=crw, normalize.gradients = normalize.gradients, grad.point.decreasing = grad.point.decreasing, include.cell.locations = TRUE, zero.idx=zero.idx, covNames = covNames)
-    ## add back initial time so dt can be correctly calculated in fitCTHMM (and covariates can be drawn based on the initial position)
-    #tmp <- ctdsglm[[i]][1:directions,]
-    #tmp$t <- data[which(data$ID==i),"time"][1]
-    #tmp$z <- NA
-    #tmp[,c("x.current","y.current")] <- rep(xyFromCell(int,cellFromXY(int,data[which(data$ID==i)[1],c("x","y")])),each=directions)
-    #ctdsglm[[i]] <- rbind(tmp,ctdsglm[[i]])
+  registerDoParallel(cores=ncores)
+  #ctdsglm <- list()
+  #for(i in unique(data$ID)){
+  ctdsglm <- foreach(iDat=mapply(function(x) data[which(data$ID==x),],unique(data$ID),SIMPLIFY = FALSE), .combine = 'rbind') %dorng% {
+    ctds <- path2ctds(xy=as.matrix(iDat[which(!is.na(iDat$x) & !is.na(iDat$y)),c("x","y")]),t=iDat$time[which(!is.na(iDat$x) & !is.na(iDat$y))],rast=rast,directions=directions,zero.idx=zero.idx,print.iter=print.iter,method=method)
+    ctdsglm <- ctds2glm(iDat[which(!is.na(iDat$x) & !is.na(iDat$y)),], ctds,rast = rast, directions=directions, spatialCovs = spatialCovs, spatialCovs.grad=spatialCovs.grad, crw=crw, normalize.gradients = normalize.gradients, grad.point.decreasing = grad.point.decreasing, include.cell.locations = TRUE, zero.idx=zero.idx, covNames = covNames)
     if(length(dataStreams)){
-      multiCellMove <- which(ctdsglm[[i]]$cellCross>0)
+      multiCellMove <- which(ctdsglm$cellCross>0)
       if(length(multiCellMove)){
         warning("There are moves across multiple cells within a time step: \n",
         "   -- any spatial covariates for ",paste0(dataStreams,collapse=", ")," pertain to the initial cell for these time step(s) \n",
         "   -- during model fitting, the state(s) for ",paste0(dataStreams,collapse=", ")," are assumed to be the initial state(s) at the start of these time step(s)")
-        for(j in unique(ctdsglm[[i]]$cellCross[multiCellMove])){
-          crInd <- which(ctdsglm[[i]]$cellCross==j)
-          tmp <- ctdsglm[[i]][crInd,][1:directions,]
-          tmp$tau <- sum(ctdsglm[[i]][which(ctdsglm[[i]]$cellCross==j),"tau"])/directions
+        for(j in unique(ctdsglm$cellCross[multiCellMove])){
+          crInd <- which(ctdsglm$cellCross==j)
+          tmp <- ctdsglm[crInd,][1:directions,]
+          tmp$tau <- sum(ctdsglm[which(ctdsglm$cellCross==j),"tau"])/directions
           tmp$z <- NA
-          ctdsglm[[i]][which(ctdsglm[[i]]$cellCross==j),dataStreams] <- NA
-          ctdsglm[[i]] <- rbind(ctdsglm[[i]][1:(crInd[1]-1),],tmp,ctdsglm[[i]][-(1:(crInd[1]-1)),])
+          ctdsglm[which(ctdsglm$cellCross==j),dataStreams] <- NA
+          ctdsglm <- rbind(ctdsglm[1:(crInd[1]-1),],tmp,ctdsglm[-(1:(crInd[1]-1)),])
         }
       }
-      ctdsglm[[i]][(1:nrow(ctdsglm[[i]]))[-seq(1,nrow(ctdsglm[[i]]),directions)],dataStreams] <- NA
+      ctdsglm[(1:nrow(ctdsglm))[-seq(1,nrow(ctdsglm),directions)],dataStreams] <- NA
     }
-    names(ctdsglm[[i]])[which(names(ctdsglm[[i]])=="t")] <- "time"
+    names(ctdsglm)[which(names(ctdsglm)=="t")] <- "time"
+    return(ctdsglm)
   }
-  ctdsglm <- do.call(rbind,ctdsglm)
-  rownames(ctdsglm) <- NULL
+  stopImplicitCluster()
+  #}
+  #ctdsglm <- do.call(rbind,ctdsglm)
+  #rownames(ctdsglm) <- NULL
   
   ctdsglm <- ctdsglm[,which(!colnames(ctdsglm) %in% c("x.adj","y.adj"))]
   #ctdsOut <- ctdsglm[seq(1,nrow(ctdsglm),directions),]
@@ -90,7 +90,7 @@ prepCTDS <- function(data, rast, directions=4, zero.idx=integer(), print.iter=FA
   
   # add non-gradient spatial covariates for current position (e.g. for inclusion in TPM)
   #ctdsOut <- prepData(ctdsOut,coordNames=c("x.current","y.current"),spatialCovs=spatialCovs,altCoordNames = "current")
-  names(spatialCovs) <- paste0(names(spatialCovs),".cur")
+  if(!is.null(spatialCovs)) names(spatialCovs) <- paste0(names(spatialCovs),".cur")
   ctdsOut <- prepData(ctdsglm,coordNames=c("x.current","y.current"),spatialCovs=spatialCovs)
   ctdsOut <- ctdsOut[,c("ID","time","x","y","z",dataStreams,covNames,names(ctdsOut)[which(!names(ctdsOut) %in% c("ID","time","x","y","step","angle","z",dataStreams,covNames))])]
   
