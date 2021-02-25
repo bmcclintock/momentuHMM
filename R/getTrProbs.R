@@ -178,7 +178,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
     nbRecovs <- reForm$nbRecovs
     newformula <- reForm$newformula
   }
-  wnbeta <- w2wn(beta,workBounds$beta)
+  if(nbStates>1) wnbeta <- w2wn(beta,workBounds$beta)
   
   trMat <- list()
   
@@ -186,10 +186,10 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
     if(nbStates>1)
       trMat[[mix]] <- trMatrix_rcpp(nbStates,wnbeta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),betaRef,CT,dt)
     else
-      trMat[[mix]] <- array(1,dim=c(1,1,nrow(data)))
+      trMat[[mix]] <- array(1,dim=c(1,1,length(dt)))
     dimnames(trMat[[mix]]) <- list(stateNames,stateNames,NULL)
     
-    if(getCI){
+    if(getCI & nbStates>1){
       
       Sigma <- data$mod$Sigma
       

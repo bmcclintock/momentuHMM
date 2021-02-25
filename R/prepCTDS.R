@@ -353,10 +353,20 @@ get.grad <- function(moveData,covNames,directions,start.cells,v.adj,spatialCovs.
                            zvalues <- raster::getZ(x)
                            if(inherits(x,"RasterBrick")) x <- raster::setZ(raster::stack(x),zvalues,zname)
                            grad <- ctmcmove::rast.grad(x[[1]])
+                           if (normalize.gradients) {
+                             lengths = sqrt(grad$rast.grad.x^2 + grad$rast.grad.y^2)
+                             grad$rast.grad.x <- grad$rast.grad.x/lengths
+                             grad$rast.grad.y <- grad$rast.grad.y/lengths
+                           }
                            gradx <- raster::stack(grad$rast.grad.x)
                            grady <- raster::stack(grad$rast.grad.y)
                            for(i in 2:raster::nlayers(x)){
                              grad <- ctmcmove::rast.grad(x[[i]])
+                             if (normalize.gradients) {
+                               lengths = sqrt(grad$rast.grad.x^2 + grad$rast.grad.y^2)
+                               grad$rast.grad.x <- grad$rast.grad.x/lengths
+                               grad$rast.grad.y <- grad$rast.grad.y/lengths
+                             }
                              gradx <- raster::stack(gradx,grad$rast.grad.x)
                              grady <- raster::stack(grady,grad$rast.grad.y)
                            }

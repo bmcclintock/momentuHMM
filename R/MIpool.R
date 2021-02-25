@@ -379,8 +379,8 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     }
   }
   
-  if(isTRUE(m$conditions$CT)) dt <- m$data$dt
-  else dt <- rep(1,nrow(m$data))
+  if(isTRUE(m$conditions$CT)) dt <- mean(m$data$dt)
+  else dt <- 1
   
   quantSup<-qnorm(1-(1-alpha)/2)
   
@@ -645,6 +645,15 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   if(isTRUE(attr(im[[1]]$data,"CT"))) {
     attr(mh$data,"CT") <- TRUE
     class(mh) <- append(class(mh),"CTHMM")
+  }
+  if(inherits(im[[1]],"ctds")){
+    class(mh) <- append(class(mh),"ctds")
+    class(mh$data) <- class(im[[1]]$data)
+    attr(mh$data,"directions") <- attr(im[[1]]$data,"directions")
+    attr(mh$data,"coords") <- attr(im[[1]]$data,"coords")
+    attr(mh$data,"prodPois") <- attr(im[[1]]$data,"prodPois")
+    attr(mh$data,"normalize.gradients") <- attr(im[[1]]$data,"normalize.gradients")
+    attr(mh$data,"grad.point.decreasing") <- attr(im[[1]]$data,"grad.point.decreasing")
   }
   return(mh)
 }

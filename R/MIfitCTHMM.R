@@ -389,6 +389,8 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
     else warning("MIpool failed: ",mipool)
   }
   
+  if(any(unlist(lapply(dist,function(x) x=="ctds")))) class(fits) <- append(class(fits),"ctds")
+  
   return(fits)
 }
 

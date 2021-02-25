@@ -16,6 +16,11 @@ ctdsUD <- function (ctds, spatialCovs, spatialCovs.grad, zero.idx = integer(), m
 {
   if(!inherits(ctds,"ctds")) stop("ctds must be a 'ctds' object")
   
+  if(inherits(ctds,"miHMM")) ctds <- ctds$miSum
+  if(inherits(ctds,"miSum")){
+    ctds <- formatmiSum(ctds)
+    ctds$CIbeta <- ctds$Par$beta
+  }
   if(missing(spatialCovs)) spatialCovs <- NULL
   if(missing(spatialCovs.grad)) spatialCovs.grad <- NULL
   
