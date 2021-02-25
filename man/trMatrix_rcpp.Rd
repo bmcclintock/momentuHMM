@@ -4,15 +4,7 @@
 \alias{trMatrix_rcpp}
 \title{Transition probability matrix}
 \usage{
-trMatrix_rcpp(
-  nbStates,
-  beta,
-  covs,
-  betaRef,
-  CT = FALSE,
-  dt = as.numeric(c()),
-  itTPM = as.integer(c())
-)
+trMatrix_rcpp(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric(c()))
 }
 \arguments{
 \item{nbStates}{Number of states}
@@ -26,8 +18,6 @@ trMatrix_rcpp(
 \item{CT}{logical indicating discrete-time approximation of a continuous-time model}
 
 \item{dt}{numeric vector of length \code{nrow(covs)} indicating the time difference between observations. Ignored unless \code{CT=TRUE}.}
-
-\item{itTPM}{iterator indicator for TPM (needed for CTDS models)}
 }
 \value{
 Three dimensional array \code{trMat}, such that \code{trMat[,,t]} is the transition matrix at

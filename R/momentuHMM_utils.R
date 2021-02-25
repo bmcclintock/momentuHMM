@@ -1,4 +1,4 @@
-momentuHMMdists<-sort(c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm','norm','bern','vmConsensus','mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3','rw_norm','cat','negbinom','logis','t'))
+momentuHMMdists<-sort(c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm','norm','bern','vmConsensus','mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3','rw_norm','cat','negbinom','logis','t','ctds'))
 moveHMMdists<-sort(c('gamma','weibull','exp','lnorm','wrpcauchy','vm'))
 angledists<-sort(c('wrpcauchy','vm','vmConsensus'))
 stepdists<-sort(c('gamma','weibull','exp','lnorm'))
@@ -6,10 +6,10 @@ singleParmdists<-sort(c('exp','pois','bern'))
 nonnegativedists<-sort(c('gamma','weibull','exp','lnorm','pois','negbinom'))
 zeroInflationdists<-sort(c('gamma','weibull','exp','lnorm','beta'))
 oneInflationdists<-sort(c('beta'))
-integerdists<-sort(c('bern','pois','cat','negbinom'))
+integerdists<-sort(c('bern','pois','cat','negbinom','ctds'))
 mvndists <- c('mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3')
 rwdists <- c('rw_norm','rw_mvnorm2','rw_mvnorm3')
-CTHMMdists <- momentuHMMdists[which(!momentuHMMdists %in% c('bern','cat',angledists))]
+CTHMMdists <- c(momentuHMMdists[which(!momentuHMMdists %in% c('bern','cat',angledists))],"ctds")
 splineList<-c("bs","ns","bSpline","mSpline","cSpline","iSpline")
 meansList<-c("matrix","numeric","integer","logical","Date","POSIXlt","POSIXct","difftime")
 meansListNoTime<-c("numeric","integer","logical")
@@ -60,6 +60,10 @@ rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- mvtnorm::rmvnorm
 
 drw_norm <- stats::dnorm
 rrw_norm <- stats::rnorm
+
+dctds <- extraDistr::dcat
+rctds <- extraDistr::rcat
+pctds <- extraDistr::pcat
 
 RWdata <- function(dist,data,knownStates){
   distnames <- names(dist)
@@ -144,6 +148,41 @@ radian <- function(degree)
   radian
 }
 
+ctPar <- function(par,dist,nbStates,data){
+  for(i in names(dist)){
+    if(dist[[i]] %in% rwdists){
+      par[[i]][1:nbStates,] <- t(apply(par[[i]][1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".x_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".x_tm1")]],each=nbStates)
+      par[[i]][nbStates+1:nbStates,] <- t(apply(par[[i]][nbStates+1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".y_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".y_tm1")]],each=nbStates)
+      if(dist[[i]]=="rw_mvnorm3"){
+        par[[i]][2*nbStates+1:nbStates,] <- t(apply(par[[i]][2*nbStates+1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".z_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".z_tm1")]],each=nbStates)
+        par[[i]][3*nbStates+1:(3*nbStates),] <- t(apply(par[[i]][3*nbStates+1:(3*nbStates),,drop=FALSE],1,function(x) x*data$dt))
+      } else {
+        par[[i]][2*nbStates+1:(3*nbStates),] <- t(apply(par[[i]][2*nbStates+1:(3*nbStates),,drop=FALSE],1,function(x) x*data$dt))
+      }
+    } else if(dist[[i]]=="ctds"){
+      p <- matrix(0,nrow(par[[i]])+nbStates,ncol(par[[i]]))
+      par[[i]] <- matrix(t(apply(log(par[[i]]),1,function(x) x+log(data$dt))),ncol=ncol(par[[i]]))
+      for(j in 1:nbStates){
+        catInd <- seq(j,nrow(par[[i]]),nbStates)
+        probPar <- rbind(par[[i]][catInd,,drop=FALSE],rep(0,ncol(par[[i]])))
+        expPar <- exp(probPar)
+        prob <- expPar/rep(colSums(expPar),each=length(catInd)+1)
+        #for(k in which(!is.finite(colSums(prob)))){
+        #  tmp <- exp(Brobdingnag::as.brob(probPar[,k]))
+        #  prob[,k] <- as.numeric(tmp/Brobdingnag::sum(tmp))
+        #}
+        p[seq(j,nrow(par[[i]])+nbStates,nbStates),] <- prob
+      }
+      par[[i]] <- p
+    } else {
+      par[[i]] <- matrix(t(apply(par[[i]],1,function(x) x*data$dt)),ncol=ncol(par[[i]]))
+      #par[[i]] <- t(apply(par[[i]],1,function(x) x*data$dt))
+      #par[[i]] <- matrix(apply(par[[i]],1,function(x) x*data$dt),ncol=ncol(par[[i]]))
+    }
+  }
+  par
+}
+
 # startup message
 #' @importFrom utils packageDescription available.packages
 print.momentuHMM.version <- function()
@@ -164,6 +203,7 @@ print.momentuHMM.version <- function()
 muffleRNGwarning <- function(w) {
   if(any(grepl("Foreach loop \\(doParallelMC\\) had changed the current RNG type: RNG was restored to same type, next state",w)))
     invokeRestart("muffleWarning")
+  else w
 }
 
 # .combine function for multiple rbinds in foreach

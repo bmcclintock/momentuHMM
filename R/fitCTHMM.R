@@ -188,11 +188,6 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
   if(inherits(data,"ctds")){
     data$dt <- data$tau
     data$tau <- NULL
-    tpmInd <- seq(1,nrow(data),attr(data,"directions"))
-    if(any(is.na(data[[attr(data,"prodPois")]]))) tpmInd <- tpmInd[-which(is.na(data[[attr(data,"prodPois")]][tpmInd]))]
-    itTPM <- integer(nrow(data))
-    itTPM[tpmInd] <- as.integer(1)
-    data$itTPM <- itTPM
   } else {
     for(i in unique(data$ID)){
       if(inherits(data,"hierarchical")){
@@ -236,6 +231,8 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
     class(mfit) <- append(class(mfit),"ctds")
     attr(mfit$data,"directions") <- attr(data,"directions")
     attr(mfit$data,"prodPois") <- attr(data,"prodPois")
+    attr(mfit$data,"normalize.gradients") <- attr(data,"normalize.gradients")
+    attr(mfit$data,"grad.point.decreasing") <- attr(data,"grad.point.decreasing")
   }
   if(fit) mfit$CIreal <- CIreal(mfit)
   mfit$conditions$Time.name <- Time.name

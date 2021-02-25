@@ -9,7 +9,9 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
       dist[[i]]<-tryCatch(match.arg(dist[[i]],paste0("cat",1:1.e3)),error = function(e) e)
       if(inherits("error",dist[[i]])) stop(errMess)
     } else {
+      attr <- attributes(dist[[i]])
       dist[[i]]<-match.arg(dist[[i]],momentuHMMdists)
+      attributes(dist[[i]]) <- attr
     }
   }
 

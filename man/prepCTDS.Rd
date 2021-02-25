@@ -16,7 +16,8 @@ prepCTDS(
   crw = TRUE,
   normalize.gradients = FALSE,
   grad.point.decreasing = TRUE,
-  covNames = NULL
+  covNames = NULL,
+  ncores = 1
 )
 }
 \arguments{
@@ -35,7 +36,7 @@ prepCTDS(
 \item{spatialCovs}{List of \code{\link[raster]{raster}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
 layer(s) based on the location data (and the z values for a raster \code{\link[raster]{stack}} 
 or \code{\link[raster]{brick}}) for each time step.  If an element of \code{spatialCovs} is a raster \code{\link[raster]{stack}} or \code{\link[raster]{brick}}, 
-then z values must be set using \code{raster::setZ} and \code{data} must include column(s) of the corresponding z value(s) for each observation (e.g., 'Date'). In the \code{\link{momentuHMMData}} object returned by \code{prepCTDS}, covariates for the current position (e.g.\ for use in \code{formula} or \code{DM}) are named with a \code{.cur} suffix (e.g. \code{cov1.cur}).}
+then z values must be set using \code{raster::setZ} and \code{data} must include column(s) of the corresponding z value(s) for each observation (e.g., 'Date').}
 
 \item{spatialCovs.grad}{List of \code{\link[raster]{raster}} objects for spatio-temporally referenced covariates, where a directional gradient is to be calculated internally using \code{\link[ctmcmove]{rast.grad}}. Gradient-based covariates specified by \code{spatialCovs.grad} are extracted from the raster 
 layer(s) based on the location data (and the z values for a raster \code{\link[raster]{stack}} or \code{\link[raster]{brick}}) for each time step.  If an element of \code{spatialCovs.grad} is a raster \code{\link[raster]{stack}} or \code{\link[raster]{brick}}, 
@@ -48,10 +49,12 @@ then z values must be set using \code{raster::setZ} and \code{data} must include
 \item{grad.point.decreasing}{Logical. If TRUE, then the gradient covariates are positive in the direction of decreasing values of the covariate. If FALSE, then the gradient covariates are positive in the direction of increasing values of the covariate (like a true gradient).}
 
 \item{covNames}{Character vector indicating the names of any covariates in \code{data}. Any variables in \code{data} (other than \code{ID}, \code{x}, \code{y}, and \code{time}) that are not identified in covNames are assumed to be additional data streams (i.e., missing values will not be accounted for).}
+
+\item{ncores}{Number of cores to use for parallel processing. Default: 1 (no parallel processing).}
 }
 \value{
 A \code{\link{momentuHMMData}} object
 }
 \description{
-This wrapper function for \code{\link[ctmcmove]{path2ctmc}} and \code{\link[ctmcmove]{ctmc2glm}} converts a \code{data.frame} of coordinates, other data streams, and non-spatial covariates to a \code{\link{momentuHMMData}} object that can be passed directly to \code{\link{fitCTMM}} (or as a list to \code{\link{MIfitCTHMM}}).
+This wrapper function for \code{\link[ctmcmove]{path2ctmc}} and \code{\link[ctmcmove]{ctmc2glm}} converts a \code{data.frame} of coordinates, other data streams, and non-spatial covariates to a \code{\link{momentuHMMData}} object that can be passed directly to \code{\link{fitCTHMM}} (or as a list to \code{\link{MIfitCTHMM}}).
 }

@@ -51,7 +51,9 @@ Suggests:
     expm,
     matrixcalc,
     moveHMM,
-    ctmcmove
+    ctmcmove,
+    Matrix,
+    gdistance
 RoxygenNote: 7.1.1
 Encoding: UTF-8
 NeedsCompilation: yes

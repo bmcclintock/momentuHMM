@@ -94,28 +94,7 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
   wpar <- expandPar(optPar,optInd,fixPar,wparIndex,betaCons,deltaCons,nbStates,ncol(covsDelta)-1,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,ncol(covsPi)-1)
   par <- w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,fullDM,DMind,nrow(data),dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi)
 
-  itTPM <- integer()
-  if(CT){
-    for(i in distnames){
-      if(dist[[i]] %in% rwdists){
-        par[[i]][1:nbStates,] <- t(apply(par[[i]][1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".x_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".x_tm1")]],each=nbStates)
-        par[[i]][nbStates+1:nbStates,] <- t(apply(par[[i]][nbStates+1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".y_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".y_tm1")]],each=nbStates)
-        if(dist[[i]]=="rw_mvnorm3"){
-          par[[i]][2*nbStates+1:nbStates,] <- t(apply(par[[i]][2*nbStates+1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".z_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".z_tm1")]],each=nbStates)
-          par[[i]][3*nbStates+1:(3*nbStates),] <- t(apply(par[[i]][3*nbStates+1:(3*nbStates),,drop=FALSE],1,function(x) x*data$dt))
-        } else {
-          par[[i]][2*nbStates+1:(3*nbStates),] <- t(apply(par[[i]][2*nbStates+1:(3*nbStates),,drop=FALSE],1,function(x) x*data$dt))
-        }
-      } else {
-        par[[i]] <- t(apply(par[[i]],1,function(x) x*data$dt))
-      }
-    }
-    if(inherits(data,"ctds")){
-      itTPM <- data$itTPM
-    } else itTPM <- rep(1,nrow(data))
-  }
-  
-  
+  if(CT) par <- ctPar(par,dist,nbStates,data)
   
   if(nbRecovs){
     for(i in 1:length(unique(data$ID))){
@@ -158,7 +137,7 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
 
   nllk <- tryCatch(nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,
                         par,
-                        aInd,zeroInflation,oneInflation,stationary,knownStates,betaRef,mixtures,CT,itTPM),error=function(e) e)
+                        aInd,zeroInflation,oneInflation,stationary,knownStates,betaRef,mixtures,CT),error=function(e) e)
 
   if(inherits(nllk,"error")) nllk <- NaN
   

@@ -10,6 +10,7 @@ printMessage <- function(nbStates,dist,p,DM,formula,formulaDelta,formulaPi,mixtu
     #pNames[1]<-paste0("circular ",pNames[1])
     #if(inputs$consensus[[i]]) pNames[2]<-paste0("consensus ",pNames[2])
     #}
+    if(dist[[i]]=="ctds") pNames <- "lambda"
     if(is.null(DM[[i]])){
       message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,"=~1",collapse=", "),")")
     } else if(is.list(DM[[i]])){

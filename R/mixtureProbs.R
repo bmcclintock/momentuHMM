@@ -170,23 +170,8 @@ get_mixProbs <- function(optPar,mod,mixture){
   wpar <- expandPar(optPar,mod$conditions$optInd,mod$mod$estimate,mod$conditions$wparIndex,mod$conditions$betaCons,mod$conditions$deltaCons,nbStates,ncol(mod$covsDelta)-1,mod$conditions$stationary,nbCovs,nbRecovs+nbG0covs,mixtures,ncol(mod$covsPi)-1)
   par <- w2n(wpar,mod$conditions$bounds,lapply(mod$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,mod$conditions$estAngleMean,mod$conditions$circularAngleMean,consensus,mod$conditions$stationary,mod$conditions$fullDM,mod$conditions$DMind,nrow(mod$data),dist,mod$conditions$Bndind,nc,meanind,mod$covsDelta,mod$conditions$workBounds,mod$covsPi)
   
-  if(isTRUE(mod$conditions$CT)){
-    for(i in distnames){
-      if(dist[[i]] %in% rwdists){
-        par[[i]][1:nbStates,] <- t(apply(par[[i]][1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".x_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".x_tm1")]],each=nbStates)
-        par[[i]][nbStates+1:nbStates,] <- t(apply(par[[i]][nbStates+1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".y_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".y_tm1")]],each=nbStates)
-        if(dist[[i]]=="rw_mvnorm3"){
-          par[[i]][2*nbStates+1:nbStates,] <- t(apply(par[[i]][2*nbStates+1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".z_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".z_tm1")]],each=nbStates)
-          par[[i]][3*nbStates+1:(3*nbStates),] <- t(apply(par[[i]][3*nbStates+1:(3*nbStates),,drop=FALSE],1,function(x) x*data$dt))
-        } else {
-          par[[i]][2*nbStates+1:(3*nbStates),] <- t(apply(par[[i]][2*nbStates+1:(3*nbStates),,drop=FALSE],1,function(x) x*data$dt))
-        }
-      } else {
-        par[[i]] <- t(apply(par[[i]],1,function(x) x*data$dt))
-      }
-    }
-  }
-  
+  if(isTRUE(mod$conditions$CT)) par <- ctPar(par,dist,nbStates,data)
+
   if(nbRecovs){
     for(i in 1:length(unique(data$ID))){
       idInd <- which(data$ID==unique(data$ID)[i])

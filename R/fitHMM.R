@@ -681,8 +681,15 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   if(isTRUE(list(...)$CT)){
     for(i in distnames){
       if(zeroInflation[[i]] | oneInflation[[i]]) stop("Sorry, zero and/or one inflation is not supported in fitCTHMM")
+      if(inherits(data,"ctds")){
+        if(dist[[i]]=="ctds"){
+          if(i!=attr(data,"prodPois")) stop("'ctds' distribution can only apply to the '",attr(data,"prodPois"),"' data stream")
+          if(is.null(DM[[i]])) stop("DM$",i," must be specified as a list with a formula for parameter 'lambda'")
+          attr(dist[[i]],"directions") <- attr(data,"directions")
+        }
+      }
     }
-  }
+  } else if(any(unlist(dist)=="ctds")) stop("fitHMM cannot be used for ctds models; use fitCTHMM instead")
 
   mHind <- (requireNamespace("moveHMM", quietly = TRUE) && is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(stats::terms.formula(newformula),"term.labels")) & !length(attr(stats::terms.formula(formDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior) & is.null(betaCons) & is.null(betaRef) & is.null(deltaCons) & is.null(mvnCoords) & mixtures==1) # indicator for moveHMMwrap below
   
@@ -951,14 +958,9 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     } else mle$pi <- NULL
   }
   
-  if(isTRUE(list(...)$CT)){
-    dt <- data$dt
-    if(inherits(data,"ctds")) itTPM <- data$itTPM
-    else itTPM <- integer()
-  } else {
-    dt <- rep(1,nrow(data))
-    itTPM <- integer()
-  }
+  if(isTRUE(list(...)$CT)) dt <- data$dt
+  else dt <- rep(1,nrow(data))
+
   # compute stationary distribution
   if(stationary) {
     mle$delta <- matrix(0,nbAnimals*mixtures,nbStates)
@@ -967,7 +969,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
       
       for(i in 1:nbAnimals){
         
-        gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,fixParIndex$betaRef,isTRUE(list(...)$CT),dt,itTPM)[,,aInd[i]]
+        gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,fixParIndex$betaRef,isTRUE(list(...)$CT),dt)[,,aInd[i]]
     
         # error if singular system
         tryCatch(
@@ -992,7 +994,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   if(nbCovs==0 & nbStates>1) {
     mle$gamma <- matrix(0,nbStates*mixtures,nbStates)
     for(mix in 1:mixtures){
-      trMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,fixParIndex$betaRef,isTRUE(list(...)$CT),dt,itTPM)
+      trMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,fixParIndex$betaRef,isTRUE(list(...)$CT),dt)
       mle$gamma[nbStates*(mix-1)+1:nbStates,] <- trMat[,,1]
     }
     colnames(mle$gamma)<-stateNames

@@ -223,6 +223,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     
     nbStates <- inputHierHMM$nbStates
     dist <- inputHierHMM$dist
+    if(any(unlist(dist)=="ctds")) stop("hierarchical 'ctds' distributions are not currently supported")
     beta <- inputHierHMM$beta
     delta <- inputHierHMM$delta
     formula <- inputHierHMM$formula
