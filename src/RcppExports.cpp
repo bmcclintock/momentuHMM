@@ -287,6 +287,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// expmatrix_rcpp
+arma::mat expmatrix_rcpp(arma::mat x);
+RcppExport SEXP _momentuHMM_expmatrix_rcpp(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(expmatrix_rcpp(x));
+    return rcpp_result_gen;
+END_RCPP
+}
 // getDM_rcpp
 arma::cube getDM_rcpp(arma::cube X, arma::mat covs, CharacterVector DM, unsigned int nr, unsigned int nc, CharacterVector cov, unsigned int nbObs);
 RcppExport SEXP _momentuHMM_getDM_rcpp(SEXP XSEXP, SEXP covsSEXP, SEXP DMSEXP, SEXP nrSEXP, SEXP ncSEXP, SEXP covSEXP, SEXP nbObsSEXP) {

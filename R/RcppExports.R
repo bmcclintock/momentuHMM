@@ -236,6 +236,17 @@ dt_rcpp <- function(x, df, ncp) {
     .Call('_momentuHMM_dt_rcpp', PACKAGE = 'momentuHMM', x, df, ncp)
 }
 
+#' Matrix Exponential
+#'
+#' This function computes the exponential of a square matrix \code{A}, defined as the sum from \code{r=0} to infinity of \code{A^r/r!}, using the default method of \code{\link[expm]{expm}}.
+#'
+#' @param x a square matrix.
+#'
+#' @return The matrix exponential of x.
+expmatrix_rcpp <- function(x) {
+    .Call('_momentuHMM_expmatrix_rcpp', PACKAGE = 'momentuHMM', x)
+}
+
 #' Get design matrix
 #'
 #' Loop for creating full design matrix (X) from pseudo-design matrix (DM). Written in C++. Used in \code{getDM}.

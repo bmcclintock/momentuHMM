@@ -62,6 +62,7 @@ getTrProbs <- function(data, ...){
 #' trProbsSE_10 <- getTrProbs(m, getCI=TRUE, covIndex=1:10)
 #' }
 #' 
+#' @importFrom expm expm
 #' @export
 getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mixtures=1,betaRef=NULL,stateNames=NULL, getCI=FALSE, covIndex=NULL, alpha = 0.95, ...)
 {  

@@ -31,7 +31,8 @@ Imports:
     doRNG,
     data.tree (>= 1.0.0),
     extraDistr,
-    rlang
+    rlang,
+    expm
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,
@@ -48,7 +49,6 @@ Suggests:
     magrittr,
     scatterplot3d,
     BB,
-    expm,
     matrixcalc,
     moveHMM,
     ctmcmove,

@@ -1,5 +1,6 @@
 #include <RcppArmadillo.h>
 #include <iostream>
+#include "expmatrix.h"
 // [[Rcpp::depends(RcppArmadillo)]]
 using namespace Rcpp;
 using namespace std;
@@ -54,12 +55,12 @@ arma::cube trMatrix_rcpp(int nbStates, arma::mat beta, arma::mat covs, IntegerVe
           if(i!=l) Gamma(i,i) -= Gamma(i,l);
         }
       }
-      Gamma = arma::expmat(Gamma);
-      for(int i=0;i<nbStates;i++) {
-        for(int j=0;j<nbStates;j++) {
-          trMat(i,j,k) = Gamma(i,j);
-        }
-      }
+      trMat.slice(k) = expmatrix_rcpp(Gamma);
+      //for(int i=0;i<nbStates;i++) {
+      //  for(int j=0;j<nbStates;j++) {
+      //    trMat(i,j,k) = Gamma(i,j);
+      //  }
+      //}
     }  
   } else {
     for(int k=0;k<nbObs;k++) {

@@ -1,5 +1,6 @@
 #include "densities.h"
 #include "combine.h"
+#include "expmatrix.h"
 
 //' Negative log-likelihood
 //'
@@ -419,8 +420,14 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       
       if(nbStates>1){
         //Rprintf("i %d trMat %f %f %f %f \n",i,trMat[mix](0,0,i),trMat[mix](0,1,i),trMat[mix](1,0,i),trMat[mix](1,1,i));
-        if(CT) Gamma = arma::expmat(trMat[mix].slice(i));
-        else Gamma = trMat[mix].slice(i);
+        if(CT) {
+          try {
+            Gamma = expmatrix_rcpp(trMat[mix].slice(i));
+          }
+          catch(std::exception &ex) {	
+            forward_exception_to_r(ex);
+          }
+        } else Gamma = trMat[mix].slice(i);
         //Rprintf("i %d Gamma %f %f %f %f \n",i,Gamma(0,0),Gamma(0,1),Gamma(1,0),Gamma(1,1));
       } else
         Gamma = 1; // no transition if only one state
