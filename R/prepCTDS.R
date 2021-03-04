@@ -19,13 +19,13 @@
 #' then z values must be set using \code{raster::setZ} and \code{data} must include column(s) of the corresponding z value(s) for each observation (e.g., 'Date').
 #' @param crw	Logical. If TRUE (default), an autocovariate is created for each cell visited in the CTMC movement path. The autocovariate is a unit-length directional vector pointing from the center of the most recent grid cell to the center of the current grid cell.
 #' @param normalize.gradients	Logical. Default is FALSE. If TRUE, then all gradient covariates for \code{spatialCovs.grad} are normalized by dividing by the length of the gradient vector at each point.
-#' @param grad.point.decreasing	Logical. If TRUE, then the gradient covariates are positive in the direction of decreasing values of the covariate. If FALSE, then the gradient covariates are positive in the direction of increasing values of the covariate (like a true gradient).
+#' @param grad.point.decreasing	Logical. Default is FALSE. If TRUE, then the gradient covariates are positive in the direction of decreasing values of the covariate. If FALSE, then the gradient covariates are positive in the direction of increasing values of the covariate (like a true gradient).
 #' @param covNames Character vector indicating the names of any covariates in \code{data}. Any variables in \code{data} (other than \code{ID}, \code{x}, \code{y}, and \code{time}) that are not identified in covNames are assumed to be additional data streams (i.e., missing values will not be accounted for).
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @return A \code{\link{momentuHMMData}} object
 #' @export
 prepCTDS <- function(data, rast, directions=4, zero.idx=integer(), print.iter=FALSE, method="ShortestPath",
-                     spatialCovs=NULL, spatialCovs.grad=NULL, crw = TRUE, normalize.gradients = FALSE, grad.point.decreasing = TRUE,
+                     spatialCovs=NULL, spatialCovs.grad=NULL, crw = TRUE, normalize.gradients = FALSE, grad.point.decreasing = FALSE,
                      covNames=NULL, ncores=1) {
   
   if (!requireNamespace("ctmcmove", quietly = TRUE)) {
@@ -61,14 +61,15 @@ prepCTDS <- function(data, rast, directions=4, zero.idx=integer(), print.iter=FA
       ctds <- path2ctds(xy=as.matrix(iDat[which(!is.na(iDat$x) & !is.na(iDat$y)),c("x","y")]),t=iDat$time[which(!is.na(iDat$x) & !is.na(iDat$y))],rast=rast,directions=directions,zero.idx=zero.idx,print.iter=print.iter,method=method)
       ctdsglm <- ctds2glm(iDat[which(!is.na(iDat$x) & !is.na(iDat$y)),], ctds,rast = rast, directions=directions, spatialCovs = spatialCovs, spatialCovs.grad=spatialCovs.grad, crw=crw, normalize.gradients = normalize.gradients, grad.point.decreasing = grad.point.decreasing, include.cell.locations = TRUE, zero.idx=zero.idx, covNames = covNames)
       ctdsglm$ID <- id
-      if(length(dataStreams)){
+      if(length(dataStreams) | !is.null(covNames)){
         multiCellMove <- which(ctdsglm$cellCross>0)
         if(length(multiCellMove)){
-          warning("There were ",length(unique(ctdsglm$cellCross[multiCellMove]))," move(s) across multiple cells within a time step: \n",
-          #"   -- any spatial covariates for ",paste0(dataStreams,collapse=", ")," pertain to the initial cell for these time step(s) \n",
+          warning("There were ",length(unique(ctdsglm$cellCross[multiCellMove]))," move(s) across multiple cells within a time step:\n",
+          #"   -- any spatial covariates for ",paste0(dataStreams,collapse=", ")," pertain to the initial cell for these time step(s)\n",
           #"   -- during model fitting, the state(s) for ",paste0(dataStreams,collapse=", ")," are assumed to be the initial state(s) at the start of these time step(s)")
-          "   -- '",paste0(dataStreams,collapse="', '"),"' data stream(s) were set to NA for these time step(s) \n",
-          "   -- values must be manually set based on the time spent in each cell if these are to be included in subsequent analysis \n",
+          ifelse(length(dataStreams),paste0("   -- '",paste0(dataStreams,collapse="', '"),"' data stream(s) were set to NA for these time step(s)\n"),""),
+          ifelse(length(dataStreams),"   -- data stream values must be manually set based on the time spent in each cell if these are to be included in subsequent analysis\n",""),
+          ifelse(!is.null(covNames),"   -- time-varying spatial covariates set based on the z-value for the initial cell and, if different, must be set manually based on z-value(s) at the time cell(s) were crossed\n",""),
           "   -- these instances are indicated wherever the 'cellCross' field is > 0")
           #for(j in unique(ctdsglm$cellCross[multiCellMove])){
             #crInd <- which(ctdsglm$cellCross==j)
@@ -90,7 +91,6 @@ prepCTDS <- function(data, rast, directions=4, zero.idx=integer(), print.iter=FA
   #}
   #ctdsglm <- do.call(rbind,ctdsglm)
   #rownames(ctdsglm) <- NULL
-  if(!any(ctdsglm$cellCross>0)) ctdsglm$cellCross <- NULL
   
   ctdsglm <- ctdsglm[,which(!colnames(ctdsglm) %in% c("x.adj","y.adj"))]
   ctdsOut <- ctdsglm[seq(1,nrow(ctdsglm),directions),]
@@ -104,7 +104,7 @@ prepCTDS <- function(data, rast, directions=4, zero.idx=integer(), print.iter=FA
   # add non-gradient spatial covariates for current position (e.g. for inclusion in TPM)
   #if(!is.null(spatialCovs)) names(spatialCovs) <- paste0(names(spatialCovs),".cur")
   #ctdsOut <- prepData(ctdsOut,coordNames=c("x.current","y.current"),spatialCovs=spatialCovs)
-  ctdsOut <- prepData(ctdsOut,coordNames=c("x.current","y.current"))
+  ctdsOut <- prepData(ctdsOut,coordNames=c("x.current","y.current"),spatialCovs=spatialCovs)
   #ctdsOut <- prepData(ctdsglm,coordNames=c("x.current","y.current"),spatialCovs=spatialCovs)
   zMat <- as.matrix(ctdsOut[,paste0("z.",1:directions)])
   zMat <- cbind(zMat,1-rowSums(zMat))
@@ -112,6 +112,7 @@ prepCTDS <- function(data, rast, directions=4, zero.idx=integer(), print.iter=FA
   ctdsOut$z[which(!is.na(ctdsOut$z.1))] <- unlist(apply(zMat,1,which.max))
   ctdsOut[paste0("z.",1:directions)] <- NULL
   ctdsOut <- ctdsOut[,c("ID","time","x","y","z",dataStreams,"tau","cellCross",covNames,names(ctdsOut)[which(!names(ctdsOut) %in% c("ID","time","x","y","step","angle","z",dataStreams,"tau","cellCross",covNames))])]
+  if(!any(ctdsOut$cellCross>0)) ctdsOut$cellCross <- NULL
   
   class(ctdsOut) <- unique(append(c("momentuHMMData","ctds"),class(ctdsOut)))
   attr(ctdsOut,"directions") <- directions
@@ -132,11 +133,11 @@ path2ctds<-function (xy, t, rast, directions = 4, zero.idx = integer(),
   raster::values(rast)[zero.idx] <- 0
   trans = gdistance::transition(rast, prod, directions = directions)
   ncell = raster::ncell(rast)
-  if (method == "LinearInterp") {
+  #if (method == "LinearInterp") {
     A = Matrix::Matrix(0, nrow = ncell, ncol = ncell, sparse = TRUE)
     adj = raster::adjacent(rast, 1:ncell)
     A[adj] <- 1
-  }
+  #}
   path = cbind(xy, t)
   tidx = sort(t, index.return = T)$ix
   path = path[tidx, ]
@@ -160,7 +161,12 @@ path2ctds<-function (xy, t, rast, directions = 4, zero.idx = integer(),
       cellCross <- c(cellCross,0)
     }
     else {
-      if (method == "ShortestPath") {
+      if (A[current.cell, ec.all[i]] == 1) {
+        rt = c(rt, (t[i] - t[i - 1]))
+        ec = c(ec, ec.all[i])
+        current.cell = ec.all[i]
+        cellCross <- c(cellCross,0)
+      } else if (method == "ShortestPath") {
         sl = gdistance::shortestPath(trans, as.numeric(xy[i - 1, 
         ]), as.numeric(xy[i, ]), "SpatialLines")
         slc = raster::coordinates(sl)[[1]][[1]]
@@ -171,42 +177,33 @@ path2ctds<-function (xy, t, rast, directions = 4, zero.idx = integer(),
         current.cell = ec[length(ec)]
         current.cr <- current.cr + 1
         cellCross <- c(cellCross,rep(current.cr,length(sl.cells)))
-      }
-      if (method == "LinearInterp") {
-        if (A[current.cell, ec.all[i]] == 1) {
-          rt = c(rt, (t[i] - t[i - 1]))
-          ec = c(ec, ec.all[i])
-          current.cell = ec.all[i]
-          cellCross <- c(cellCross,0)
-        }
-        else {
-          xyt.1 = path[i - 1, ]
-          xyt.2 = path[i, ]
-          d = sqrt(sum((xyt.1[-3] - xyt.2[-3])^2))
-          rast.res = raster::res(rast)[1]
-          xapprox = stats::approx(c(xyt.1[3], xyt.2[3]), c(xyt.1[1], 
-                                                    xyt.2[1]), n = max(100, round(d/rast.res * 
-                                                                                    100)))
-          yapprox = stats::approx(c(xyt.1[3], xyt.2[3]), c(xyt.1[2], 
-                                                    xyt.2[2]), n = max(100, round(d/rast.res * 
-                                                                                    100)))
-          tapprox = xapprox$x
-          xapprox = xapprox$y
-          yapprox = yapprox$y
-          xycell.approx = raster::cellFromXY(rast, cbind(xapprox, 
-                                                 yapprox))
-          rle.out = rle(xycell.approx)
-          ec.approx = rle.out$values
-          transition.idx.approx = c(1,cumsum(rle.out$lengths))
-          transition.times.approx = tapprox[transition.idx.approx]
-          rt.approx = diff(transition.times.approx)#diff(c(t[i-1],transition.times.approx))#
-          rt = c(rt, rt.approx)
-          ec = c(ec, ec.approx[-1],ec.approx[length(ec.approx)])
-          current.cell = ec[length(ec)]
-          current.cr <- current.cr + 1
-          cellCross <- c(cellCross,rep(current.cr,length(rt.approx)))
-        }
-      }
+      } else if (method == "LinearInterp") {
+        xyt.1 = path[i - 1, ]
+        xyt.2 = path[i, ]
+        d = sqrt(sum((xyt.1[-3] - xyt.2[-3])^2))
+        rast.res = raster::res(rast)[1]
+        xapprox = stats::approx(c(xyt.1[3], xyt.2[3]), c(xyt.1[1], 
+                                                  xyt.2[1]), n = max(100, round(d/rast.res * 
+                                                                                  100)))
+        yapprox = stats::approx(c(xyt.1[3], xyt.2[3]), c(xyt.1[2], 
+                                                  xyt.2[2]), n = max(100, round(d/rast.res * 
+                                                                                  100)))
+        tapprox = xapprox$x
+        xapprox = xapprox$y
+        yapprox = yapprox$y
+        xycell.approx = raster::cellFromXY(rast, cbind(xapprox, 
+                                               yapprox))
+        rle.out = rle(xycell.approx)
+        ec.approx = rle.out$values
+        transition.idx.approx = c(1,cumsum(rle.out$lengths))
+        transition.times.approx = tapprox[transition.idx.approx]
+        rt.approx = diff(transition.times.approx)#diff(c(t[i-1],transition.times.approx))#
+        rt = c(rt, rt.approx)
+        ec = c(ec, ec.approx[-1],ec.approx[length(ec.approx)])
+        current.cell = ec[length(ec)]
+        current.cr <- current.cr + 1
+        cellCross <- c(cellCross,rep(current.cr,length(rt.approx)))
+      } else stop("method must be 'ShortestPath' or 'LinearInterp'")
     }
   }
   list(ec = ec, rt = c(diff(c(t[1],t[1] + cumsum(rt))),0), trans.times = c(t[1],t[1] + cumsum(rt)), cellCross=c(cellCross,0))
@@ -228,6 +225,10 @@ ctds2glm <- function (data, ctmc, rast, spatialCovs=NULL, spatialCovs.grad=NULL,
   }
   adj = raster::adjacent(examplerast, locs, pairs = TRUE, sorted = TRUE, 
                          id = TRUE, directions = directions, target = notzero.idx)
+  
+  adjCount <- c(unname(table(adj[,"id"])))
+  if(!all(adjCount==directions)) stop("locations cannot reside in cells along the edge of the raster; please expand the extent of 'rast' accordingly")
+  
   adj.cells = adj[, 3]
   rr = rle(adj[, 1])
   time.idx = rep(rr$values, times = rr$lengths)
@@ -255,7 +256,7 @@ ctds2glm <- function (data, ctmc, rast, spatialCovs=NULL, spatialCovs.grad=NULL,
   v.adj = (xy.adj - xy.cell)/sqrt(apply((xy.cell - xy.adj)^2, 
                                         1, sum))
   
-  moveData <- merge(data.frame(ID=data$ID[1],time=ctmc$trans.times),data,by=c("ID","time"),all=TRUE)
+  moveData <- merge(data.frame(ID=data$ID[1],time=ctmc$trans.times),data,by=c("time","ID"),all=TRUE)
   moveData <- suppressWarnings(prepData(moveData,coordNames=NULL,covNames=covNames))
   moveData <- moveData[which(moveData$time %in% ctmc$trans.times),]
   dataStreams <- names(moveData)[which(!names(moveData) %in% c("ID","time","x","y",covNames))]
@@ -289,7 +290,7 @@ ctds2glm <- function (data, ctmc, rast, spatialCovs=NULL, spatialCovs.grad=NULL,
       X.crw[(zInd[i]*directions+1):((zInd[i+1]-1)*directions)] <- rep(matrix(X.crw,ncol=directions,byrow=TRUE)[zInd[i+1],],(zInd[i+1]-1)-zInd[i])
     }
   }
-  X.crw[((zInd[length(zInd)])*directions+1):length(X.crw)] <- matrix(X.crw,ncol=directions,byrow=TRUE)[zInd[i+1],]
+  X.crw[((zInd[i])*directions+1):length(X.crw)] <- matrix(X.crw,ncol=directions,byrow=TRUE)[zInd[i+1],]
   
   if (crw == FALSE & p.grad > 0) {
     X = cbind(X.static, X.grad)
@@ -325,15 +326,15 @@ checkRast <- function(data,spatialCovs,spatialCovs.grad){
   if(any(names(spatialCovs) %in% names(spatialCovs.grad))) stop("'spatialCovs' and 'spatialCovs.grad' names must be unique")
 }
 
-insertRow <- function(existingDF, newrow, r) {
-  existingDF[seq(r+1,nrow(existingDF)+1),] <- existingDF[seq(r,nrow(existingDF)),]
-  existingDF[r,] <- newrow
-  existingDF
-}
+#insertRow <- function(existingDF, newrow, r) {
+#  existingDF[seq(r+1,nrow(existingDF)+1),] <- existingDF[seq(r,nrow(existingDF)),]
+#  existingDF[r,] <- newrow
+#  existingDF
+#}
 
-get.grad <- function(moveData,covNames,directions,start.cells,v.adj,spatialCovs.grad,normalize.gradients,grad.point.decreasing)
+get.grad <- function(moveData,covNames,directions,start.cells,v.adj,spatialCovs.grad,normalize.gradients,grad.point.decreasing,gradMat=TRUE)
 {
-  X.grad <- do.call(cbind,lapply(spatialCovs.grad,
+  X.grad <- do.call(ifelse(gradMat,"cbind","list"),lapply(spatialCovs.grad,
                        function(x){
                          if(inherits(x,"RasterLayer")){
                            x = ctmcmove::rast.grad(x)
@@ -375,13 +376,17 @@ get.grad <- function(moveData,covNames,directions,start.cells,v.adj,spatialCovs.
                            grady <- raster::setZ(grady,zvalues,zname)
                            fullx <- gradx[start.cells]
                            fully <- grady[start.cells]
-                           tmpspCovs.x <- tmpspCovs.y <- numeric(length(start.cells))
-                           if((!zname %in% covNames) & zname!="time") stop("z-value name '",zname,"' must be included in covNames")
-                           for(ii in 1:length(zvalues)){
-                             tmpspCovs.x[which(rep(moveData[[zname]],each=directions)==zvalues[ii])] <- fullx[which(rep(moveData[[zname]],each=directions)==zvalues[ii]),ii]
-                             tmpspCovs.y[which(rep(moveData[[zname]],each=directions)==zvalues[ii])] <- fully[which(rep(moveData[[zname]],each=directions)==zvalues[ii]),ii]
+                           if(gradMat){
+                             tmpspCovs.x <- tmpspCovs.y <- numeric(length(start.cells))
+                             if((!zname %in% covNames) & zname!="time") stop("z-value name '",zname,"' must be included in covNames")
+                             for(ii in 1:length(zvalues)){
+                               tmpspCovs.x[which(rep(moveData[[zname]],each=directions)==zvalues[ii])] <- fullx[which(rep(moveData[[zname]],each=directions)==zvalues[ii]),ii]
+                               tmpspCovs.y[which(rep(moveData[[zname]],each=directions)==zvalues[ii])] <- fully[which(rep(moveData[[zname]],each=directions)==zvalues[ii]),ii]
+                             }
+                             return(v.adj[, 1] * tmpspCovs.x + v.adj[, 2] * tmpspCovs.y)
+                           } else {
+                             return(v.adj[, 1] * fullx + v.adj[, 2] * fully)
                            }
-                           return(v.adj[, 1] * tmpspCovs.x + v.adj[, 2] * tmpspCovs.y)
                          }
                        }))
   

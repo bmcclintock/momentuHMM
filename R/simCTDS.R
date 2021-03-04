@@ -190,7 +190,12 @@ simCTDS <- function(nbAnimals=1,nbStates=2,dist,
   if(!is.null(spatialCovs)){
     for(i in names(spatialCovs)){
       raster::compareRaster(rast,spatialCovs[[i]])
-      spatialCovs[[i]] <- raster::extend(spatialCovs[[i]],1,value=0)
+      if(raster::nlayers(spatialCovs[[i]])>1){
+        zname <- names(attributes(spatialCovs[[i]])$z)
+        zvalues <- raster::getZ(spatialCovs[[i]])
+        spatialCovs[[i]] <- raster::extend(spatialCovs[[i]],1,value=0)
+        spatialCovs[[i]] <- raster::setZ(spatialCovs[[i]],zvalues,zname)
+      } else spatialCovs[[i]] <- raster::extend(spatialCovs[[i]],1,value=0)
       attr(spatialCovs[[i]],"nograd") <- TRUE
     }
   }
@@ -218,7 +223,7 @@ simCTDS <- function(nbAnimals=1,nbStates=2,dist,
     xy.cell = raster::xyFromCell(rast, adj[,2])
     xy.adj = raster::xyFromCell(rast, adj[,3])
     v.adj = (xy.adj - xy.cell)/sqrt(apply((xy.cell - xy.adj)^2, 1, sum))
-    gradMat <- get.grad(directions=directions, start.cells =  adj[,1] ,v.adj = v.adj, spatialCovs.grad = spatialCovs.grad, normalize.gradients = normalize.gradients, grad.point.decreasing = grad.point.decreasing)
+    gradMat <- get.grad(directions=directions, start.cells =  adj[,1] ,v.adj = v.adj, spatialCovs.grad = spatialCovs.grad, normalize.gradients = normalize.gradients, grad.point.decreasing = grad.point.decreasing, gradMat = FALSE)
     #if(any(!is.finite(gradMat))){
     #  warning("some gradients were not finite and were set to zero")
     #  gradMat[which(!is.finite(gradMat))] <- 0
@@ -227,9 +232,19 @@ simCTDS <- function(nbAnimals=1,nbStates=2,dist,
     for(i in names(spatialCovs.grad)){
       for(j in 1:directions){
         spatialCovs[[paste0(i,".",j)]] <- spatialCovs.grad[[i]]
-        raster::values(spatialCovs[[paste0(i,".",j)]]) <- gradMat[seq(j,nrow(gradMat),directions),i]
-        names(spatialCovs[[paste0(i,".",j)]]) <- paste0(i,".",j)
-        spatialCovs[[paste0(i,".",j)]] <- raster::extend(spatialCovs[[paste0(i,".",j)]],1,value=0)
+        names(spatialCovs[[paste0(i,".",j)]]) <- paste0(names(spatialCovs[[paste0(i,".",j)]]),".",j)
+        if(raster::nlayers(spatialCovs[[paste0(i,".",j)]])>1){
+          for(l in 1:raster::nlayers(spatialCovs[[paste0(i,".",j)]])){
+            raster::values(spatialCovs[[paste0(i,".",j)]][[l]]) <- gradMat[[i]][seq(j,raster::ncell(spatialCovs.grad[[i]])*directions,directions),l]
+          }
+          spatialCovs[[paste0(i,".",j)]] <- raster::extend(spatialCovs[[paste0(i,".",j)]],1,value=0)
+          zname <- names(attributes(spatialCovs.grad[[i]])$z)
+          zvalues <- raster::getZ(spatialCovs.grad[[i]])
+          spatialCovs[[paste0(i,".",j)]] <- raster::setZ(spatialCovs[[paste0(i,".",j)]],zvalues,zname)
+        } else {
+          raster::values(spatialCovs[[paste0(i,".",j)]]) <- gradMat[[i]][seq(j,raster::ncell(spatialCovs.grad[[i]])*directions,directions)]
+          spatialCovs[[paste0(i,".",j)]] <- raster::extend(spatialCovs[[paste0(i,".",j)]],1,value=0)
+        }
         attr(spatialCovs[[paste0(i,".",j)]],"grad") <- TRUE
       }
     }

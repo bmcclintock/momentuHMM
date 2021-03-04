@@ -275,8 +275,14 @@ checkCTDS <- function(i,DM,dist,data,nbStates){
       for(te in ctdsTerms){
         for(va in ctdsVars){
           if(all.vars(stats::as.formula(paste0("~",te)))==va){
-            for(j in 1:directions){
-              ctdsDM[[paste0("lambda",j)]][[state]] <- append(ctdsDM[[paste0("lambda",j)]][[state]],gsub(va,paste0(va,".",j),te))
+            if(all(paste0(va,".",1:directions) %in% names(data))){
+              for(j in 1:directions){
+                ctdsDM[[paste0("lambda",j)]][[state]] <- append(ctdsDM[[paste0("lambda",j)]][[state]],gsub(va,paste0(va,".",j),te))
+              }
+            } else {
+              for(j in 1:directions){
+                ctdsDM[[paste0("lambda",j)]][[state]] <- append(ctdsDM[[paste0("lambda",j)]][[state]],te)
+              }
             }
           }
         }

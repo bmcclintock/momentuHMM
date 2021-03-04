@@ -15,7 +15,7 @@ prepCTDS(
   spatialCovs.grad = NULL,
   crw = TRUE,
   normalize.gradients = FALSE,
-  grad.point.decreasing = TRUE,
+  grad.point.decreasing = FALSE,
   covNames = NULL,
   ncores = 1
 )
@@ -46,7 +46,7 @@ then z values must be set using \code{raster::setZ} and \code{data} must include
 
 \item{normalize.gradients}{Logical. Default is FALSE. If TRUE, then all gradient covariates for \code{spatialCovs.grad} are normalized by dividing by the length of the gradient vector at each point.}
 
-\item{grad.point.decreasing}{Logical. If TRUE, then the gradient covariates are positive in the direction of decreasing values of the covariate. If FALSE, then the gradient covariates are positive in the direction of increasing values of the covariate (like a true gradient).}
+\item{grad.point.decreasing}{Logical. Default is FALSE. If TRUE, then the gradient covariates are positive in the direction of decreasing values of the covariate. If FALSE, then the gradient covariates are positive in the direction of increasing values of the covariate (like a true gradient).}
 
 \item{covNames}{Character vector indicating the names of any covariates in \code{data}. Any variables in \code{data} (other than \code{ID}, \code{x}, \code{y}, and \code{time}) that are not identified in covNames are assumed to be additional data streams (i.e., missing values will not be accounted for).}
 

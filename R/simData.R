@@ -617,13 +617,14 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         attr(dist[[i]],"directions") <- directions
       }
     }
-  } else ctdsCRW <- FALSE
+  }
   
   inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,stateNames,checkInflation = TRUE)
   p <- inputs$p
   parSize <- p$parSize
   bounds <- p$bounds
   
+  ctdsCRW <- FALSE
   if(isTRUE(list(...)$ctds)){
     if("crw" %in% all.vars(DM[[i]]$lambda)) ctdsCRW <- TRUE
     if(!is.null(covs)){ 
@@ -817,9 +818,12 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   if(nbSpatialCovs>0 & isTRUE(list(...)$ctds)){
     tmpSpNames <- NULL
     for(j in spatialcovnames){
-      if(is.null(spatialCovs[[j]]) || isTRUE(attr(spatialCovs[[j]],"nograd"))){
-        if(j %in% all.vars(DM$z$lambda)) tmpSpNames <- c(tmpSpNames,paste0(rep(j,each=directions),".",1:directions))
-        else tmpSpNames <- c(tmpSpNames,j)
+      if(j=="crw" & ctdsCRW){
+        tmpSpNames <- c(tmpSpNames,paste0(rep(j,each=directions),".",1:directions))
+      } else if(isTRUE(attr(spatialCovs[[j]],"nograd"))){
+        #if(j %in% all.vars(DM$z$lambda)) 
+          tmpSpNames <- c(tmpSpNames,j,paste0(rep(j,each=directions),".",1:directions))
+        #else tmpSpNames <- c(tmpSpNames,j)
       } else tmpSpNames <- c(tmpSpNames,j)
     }
   }
@@ -994,7 +998,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         zvalues <- raster::getZ(spatialCovs[[j]])
         spCov <- spCov[1,which(zvalues==tmpCovs[[zname]][1])]
       }
-      if(isTRUE(list(...)$ctds) && isTRUE(attr(spatialCovs[[j]],"nograd")) && spatialcovnames[j] %in% all.vars(DM$z$lambda)) tmpCovs[,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))]<- spCov
+      if(isTRUE(list(...)$ctds) && isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
+         ) tmpCovs[,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))]<- spCov
       else tmpCovs[,spatialcovnames[j]] <- spCov
     }
     if(ctdsCRW) tmpCovs[,paste0("crw.",1:directions)] <- 0
@@ -1240,7 +1245,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
               zvalues <- raster::getZ(spatialCovs[[j]])
               spCov <- spCov[1,which(zvalues==subCovs[1,zname])]
             }
-            if(isTRUE(list(...)$ctds) && isTRUE(attr(spatialCovs[[j]],"nograd")) && spatialcovnames[j] %in% all.vars(DM$z$lambda)) subSpatialcovs[1,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
+            if(isTRUE(list(...)$ctds) && isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
+               ) subSpatialcovs[1,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
             else subSpatialcovs[1,spatialcovnames[j]]<-spCov
             if(spatialcovnames[j] %in% angleCovs) {
               subAnglecovs[1,spatialcovnames[j]] <- subSpatialcovs[1,j]
@@ -1459,11 +1465,12 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                   zname <- names(attributes(spatialCovs[[j]])$z)
                   zvalues <- raster::getZ(spatialCovs[[j]])
                   spCov <- spCov[1,which(zvalues==subCovs[k+1,zname])]
-                  if(isTRUE(attr(spatialCovs[[j]],"nograd")) && spatialcovnames[j] %in% all.vars(DM$z$lambda)) subSpatialcovs[k+1,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
-                  else subSpatialcovs[k+1,j]<-spCov
+                  if(isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
+                     ) subSpatialcovs[k+1,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
+                  else subSpatialcovs[k+1,spatialcovnames[j]]<-spCov
                   if(spatialcovnames[j] %in% angleCovs) {
                     subAnglecovs[k+1,spatialcovnames[j]] <- subSpatialcovs[k+1,j]
-                    subSpatialcovs[k+1,j] <- circAngles(subAnglecovs[k:(k+1),spatialcovnames[j]],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
+                    subSpatialcovs[k+1,spatialcovnames[j]] <- circAngles(subAnglecovs[k:(k+1),spatialcovnames[j]],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
                   }
                 }
               }
@@ -1478,11 +1485,12 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                   zvalues <- raster::getZ(spatialCovs[[j]])
                   spCov <- spCov[1,which(zvalues==subCovs[k+1,zname])]
                 }
-                if(isTRUE(attr(spatialCovs[[j]],"nograd")) && spatialcovnames[j] %in% all.vars(DM$z$lambda)) subSpatialcovs[k+1,paste0(c(spatialcovnames[j],spatialcovnames[j],".",1:directions))] <- spCov
+                if(isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
+                   ) subSpatialcovs[k+1,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
                 else subSpatialcovs[k+1,spatialcovnames[j]]<-spCov
                 if(spatialcovnames[j] %in% angleCovs) {
                   subAnglecovs[k+1,spatialcovnames[j]] <- subSpatialcovs[k+1,j]
-                  subSpatialcovs[k+1,j] <- circAngles(subAnglecovs[k:(k+1),spatialcovnames[j]],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
+                  subSpatialcovs[k+1,spatialcovnames[j]] <- circAngles(subAnglecovs[k:(k+1),spatialcovnames[j]],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
                 }
               }
               if(ctdsCRW){
