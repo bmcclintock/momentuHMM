@@ -135,7 +135,7 @@ path2ctds<-function (xy, t, rast, directions = 4, zero.idx = integer(),
   ncell = raster::ncell(rast)
   #if (method == "LinearInterp") {
     A = Matrix::Matrix(0, nrow = ncell, ncol = ncell, sparse = TRUE)
-    adj = raster::adjacent(rast, 1:ncell)
+    adj = raster::adjacent(rast, 1:ncell, directions=directions)
     A[adj] <- 1
   #}
   path = cbind(xy, t)
@@ -159,6 +159,7 @@ path2ctds<-function (xy, t, rast, directions = 4, zero.idx = integer(),
       rt <- c(rt,(t[i] - t[i - 1]))
       ec = c(ec, ec.all[i])
       cellCross <- c(cellCross,0)
+      current.rt <- rt[length(rt)]
     }
     else {
       if (A[current.cell, ec.all[i]] == 1) {
@@ -173,10 +174,11 @@ path2ctds<-function (xy, t, rast, directions = 4, zero.idx = integer(),
         sl.cells = raster::cellFromXY(rast, slc)
         t.in.each.cell = (t[i] - t[i - 1])/length(sl.cells)
         rt = c(rt, rep(t.in.each.cell, length(sl.cells)))
-        ec = c(ec, sl.cells[-1],sl.cells[length(sl.cells)])
+        ec = c(ec, sl.cells)
         current.cell = ec[length(ec)]
         current.cr <- current.cr + 1
         cellCross <- c(cellCross,rep(current.cr,length(sl.cells)))
+        current.rt <- t.in.each.cell
       } else if (method == "LinearInterp") {
         xyt.1 = path[i - 1, ]
         xyt.2 = path[i, ]
@@ -198,11 +200,18 @@ path2ctds<-function (xy, t, rast, directions = 4, zero.idx = integer(),
         transition.idx.approx = c(1,cumsum(rle.out$lengths))
         transition.times.approx = tapprox[transition.idx.approx]
         rt.approx = diff(transition.times.approx)#diff(c(t[i-1],transition.times.approx))#
+        if(!rt.approx[1]>0){
+          #ec <- ec[-length(ec)]
+          rt.approx <- rt.approx[-1]
+          ec.approx <- ec.approx[-1]
+          #ec.approx <- c(ec.approx,ec.approx[length(ec.approx)])
+        }
         rt = c(rt, rt.approx)
-        ec = c(ec, ec.approx[-1],ec.approx[length(ec.approx)])
+        ec = c(ec, ec.approx)
         current.cell = ec[length(ec)]
         current.cr <- current.cr + 1
         cellCross <- c(cellCross,rep(current.cr,length(rt.approx)))
+        current.rt <- rt.approx[length(rt.approx)]
       } else stop("method must be 'ShortestPath' or 'LinearInterp'")
     }
   }
