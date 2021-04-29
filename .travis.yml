@@ -3,11 +3,11 @@ r:
  - release
  - devel
 cache: packages
-cran: https://cran.rstudio.com/
+cran: https://cloud.r-project.org
 
 before_install:
- - tlmgr install psfrag
- - echo "options(repos = c(CRAN='https://cran.rstudio.com'))" >> ~/.Rprofile
+# - tlmgr install psfrag
+# - echo "options(repos = c(CRAN='https://cran.rstudio.com'))" >> ~/.Rprofile
  - sudo apt-get --yes --force-yes update -qq
  - sudo apt-get install --yes libudunits2-dev libproj-dev libgeos-dev libgdal-dev libprotobuf-dev protobuf-compiler libv8-3.14-dev libjq-dev
 
@@ -36,14 +36,17 @@ before_install:
 #  - extraDistr
 #  - rlang
   
-services:
-  - xvfb
+#services:
+#  - xvfb
  
-r_build_args: --compact-vignettes="gs+qpdf"
+#r_build_args: --compact-vignettes="gs+qpdf"
 
 r_check_args: --as-cran
 
-addons:
-  apt:
-    packages: 
-      - ghostscript
+pandoc: false
+latex: false
+
+#addons:
+#  apt:
+#    packages: 
+#      - ghostscript
