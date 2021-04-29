@@ -243,6 +243,10 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     } else if(optMethod %in% fitMethods[-1] & !is.null(control$hessian)){
       if(!control$hessian) stop("estimates cannot be pooled unless hessian is calculated")
     }
+    if (!requireNamespace("mitools", quietly = TRUE)) {
+      stop("Package \"mitools\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
   }
   
   if(is.crwData(miData)){
@@ -481,6 +485,10 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
       if(!nlmPar$hessian) stop("estimates cannot be pooled unless hessian is calculated")
     } else if(optMethod %in% fitMethods[-1] & !is.null(control$hessian)){
       if(!control$hessian) stop("estimates cannot be pooled unless hessian is calculated")
+    }
+    if (!requireNamespace("mitools", quietly = TRUE)) {
+      stop("Package \"mitools\" needed for this function to work. Please install it.",
+           call. = FALSE)
     }
   }
   

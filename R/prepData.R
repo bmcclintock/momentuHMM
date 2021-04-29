@@ -204,6 +204,12 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
   
   # check arguments
   type <- match.arg(type)
+  if(type=="LL"){
+    if (!requireNamespace("geosphere", quietly = TRUE)) {
+      stop("Package \"geosphere\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
+  }
   if(!is.null(coordNames)){
     if(length(which(coordNames %in% names(data)))<2)
       stop("coordNames not found in data")
@@ -526,6 +532,12 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
   
   # check arguments
   type <- match.arg(type)
+  if(type=="LL"){
+    if (!requireNamespace("geosphere", quietly = TRUE)) {
+      stop("Package \"geosphere\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
+  }
   if(!is.null(coordNames)){
     if(length(which(coordNames %in% names(data)))<2)
       stop("coordNames not found in data")

@@ -17,7 +17,6 @@ Imports:
     numDeriv,
     CircStats,
     crawl (>= 2.2.1),
-    mitools,
     car,
     mvtnorm,
     sp,
@@ -26,7 +25,6 @@ Imports:
     nleqslv,
     survival,
     qdapRegex,
-    geosphere,
     prodlim,
     doRNG,
     data.tree (>= 1.0.0),
@@ -50,7 +48,9 @@ Suggests:
     BB,
     expm,
     matrixcalc,
-    moveHMM
+    moveHMM,
+    geosphere,
+    mitools
 RoxygenNote: 7.1.1
 Encoding: UTF-8
 NeedsCompilation: yes

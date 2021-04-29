@@ -63,7 +63,7 @@
 #' @importFrom stats median var qt
 #' @importFrom CircStats circ.mean
 #' @importFrom car dataEllipse
-#' @importFrom mitools MIcombine
+# #' @importFrom mitools MIcombine
 MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   
   im <- HMMfits
@@ -71,6 +71,11 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   simind <- which((unlist(lapply(im,is.momentuHMM))))
   nsims <- length(simind)
   if(nsims<1) stop("'HMMfits' must be a list comprised of momentuHMM objects")
+  
+  if (!requireNamespace("mitools", quietly = TRUE)) {
+    stop("Package \"mitools\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
   
   checkmove <- which(!(unlist(lapply(im,is.momentuHMM))))
   if(length(checkmove)) {

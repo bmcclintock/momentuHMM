@@ -20,7 +20,7 @@
 #' z <- c(10,7)
 #' momentuHMM:::turnAngle(x,y,z)
 #' }
-#' @importFrom geosphere bearing
+# #' @importFrom geosphere bearing
 
 turnAngle <- function(x,y,z,type='UTM',angleCov=FALSE)
 {
