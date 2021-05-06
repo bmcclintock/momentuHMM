@@ -89,7 +89,7 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,Bndind,dist)
   }
 
   wbeta <- as.vector(beta$beta) # if beta is NULL, wbeta is NULL as well
-  wpi <- as.vector(beta$pi)
+  wpi <- as.vector(beta[["pi"]])
   wg0 <- as.vector(beta$g0)
   wtheta <- as.vector(beta$theta)
   wdelta <- as.vector(delta)#log(delta[,-1,drop=FALSE]/delta[,1,drop=FALSE]) # if delta is NULL, wdelta is NULL as well

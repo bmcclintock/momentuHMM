@@ -14,6 +14,7 @@ meansList<-c("matrix","numeric","integer","logical","Date","POSIXlt","POSIXct","
 meansListNoTime<-c("numeric","integer","logical")
 plotArgs <- c("cex","cex.main","cex.lab","cex.axis","cex.legend","lwd","asp","legend.pos")
 fitMethods<-c("nlm","Nelder-Mead","SANN")
+badNames <- c("beta", "delta", "pi", "g0", "theta")
 
 #' @importFrom stats dbinom
 dbern <- function (x, prob, log = FALSE) 

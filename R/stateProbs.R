@@ -48,7 +48,7 @@ stateProbs <- function(m, hierarchical=FALSE)
     aInd <- c(aInd,max(which(data$ID==unique(data$ID)[i])))
   
   mixtures <- m$conditions$mixtures
-  if(mixtures>1) pie <- m$mle$pi
+  if(mixtures>1) pie <- m$mle[["pi"]]
   else pie <- matrix(1,nbAnimals,1)
     
   eta <- mixtureProbs(m)

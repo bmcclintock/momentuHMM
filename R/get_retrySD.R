@@ -34,15 +34,15 @@ get_retrySD <- function(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStat
           }
         }
         if(mixtures>1){
-          if(is.null(retrySD$pi)) {
-            retrySD$pi <- rep(10,length(beta0$pi))
+          if(is.null(retrySD[["pi"]])) {
+            retrySD[["pi"]] <- rep(10,length(beta0[["pi"]]))
           } else {
-            if(any(!is.numeric(retrySD$pi))) stop("retrySD$pi must be numeric")
-            if(any(retrySD$pi<0)) stop("retrySD$pi must be non-negative")
-            if(length(retrySD$pi)==1){
-              retrySD$pi <- rep(retrySD$pi,length(beta0$pi))
-            } else if(length(retrySD$pi)!=length(beta0$pi)){
-              stop("retrySD$pi must be of length 1 or ",length(beta0$pi))
+            if(any(!is.numeric(retrySD[["pi"]]))) stop("retrySD$pi must be numeric")
+            if(any(retrySD[["pi"]]<0)) stop("retrySD$pi must be non-negative")
+            if(length(retrySD[["pi"]])==1){
+              retrySD[["pi"]] <- rep(retrySD[["pi"]],length(beta0[["pi"]]))
+            } else if(length(retrySD[["pi"]])!=length(beta0[["pi"]])){
+              stop("retrySD$pi must be of length 1 or ",length(beta0[["pi"]]))
             }              
           }
         }

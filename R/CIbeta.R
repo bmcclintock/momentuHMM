@@ -118,9 +118,9 @@ CIbeta <- function(m,alpha=0.95)
     nbCovsPi <- ncol(m$covsPi)-1
     piInd <- tail(cumsum(unlist(parCount)),1) + ((nbCovs+1)*nbStates*(nbStates-1)*mixtures) + 1:((nbCovsPi+1)*(mixtures-1))
     
-    est <- w2wn(wpar[piInd],m$conditions$workBounds$pi)
+    est <- w2wn(wpar[piInd],m$conditions$workBounds[["pi"]])
     
-    Par$pi <- get_CIwb(wpar[piInd],est,piInd,Sigma,alpha,m$conditions$workBounds$pi,rnames=colnames(m$covsPi),cnames=paste0("mix",2:mixtures))
+    Par[["pi"]] <- get_CIwb(wpar[piInd],est,piInd,Sigma,alpha,m$conditions$workBounds[["pi"]],rnames=colnames(m$covsPi),cnames=paste0("mix",2:mixtures))
   }
   
   # group CIs for initial distribution

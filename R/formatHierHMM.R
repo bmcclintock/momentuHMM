@@ -336,7 +336,7 @@ formatHierHMM <- function(data,hierStates,hierDist,
       if(mixtures>1){
         #if(!is.list(hierBeta) || !all(names(hierBeta) %in% c("beta","pi","g0","theta"))) stop("hierBeta must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
         if(!is.list(hierBeta) || !all(names(hierBeta) %in% c("beta","pi"))) stop("hierBeta must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
-        Pi <- hierBeta$pi
+        Pi <- hierBeta[["pi"]]
       }
       if(!is.null(recharge)){
         #  if(!is.list(hierBeta) || !all(names(hierBeta) %in% c("beta","pi","g0","theta"))) stop("hierBeta must be a list with elements named 'beta', 'g0', and/or 'theta' when including a recharge model")
@@ -420,7 +420,7 @@ formatHierHMM <- function(data,hierStates,hierDist,
     
     if(mixtures>1 | !is.null(recharge)){
       beta0 <- list(beta=beta0)
-      if(mixtures>1) beta0$pi <- Pi
+      if(mixtures>1) beta0[["pi"]] <- Pi
       if(!is.null(recharge)){
         beta0$g0 <- g0
         beta0$theta <- theta

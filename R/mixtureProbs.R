@@ -61,7 +61,7 @@ mixtureProbs <- function(m, getCI=FALSE, alpha = 0.95){
   if(mixtures==1) getCI <- FALSE
     #stop("No mixtures to assign probabilities (mixtures=1)")
   
-  #if(mixtures>1) pie <- m$mle$pi
+  #if(mixtures>1) pie <- m$mle[["pi"]]
   #else pie <- matrix(1,nbAnimals,1)
   
   quantSup<-qnorm(1-(1-alpha)/2)
@@ -203,7 +203,7 @@ get_mixProbs <- function(optPar,mod,mixture){
     par$delta <- c(NA)
   if(nbStates==1) {
     par$beta <- matrix(NA)
-    #par$pi <- c(NA)
+    #par[["pi"]] <- c(NA)
     par$delta <- c(NA)
     par[distnames] <- lapply(par[distnames],as.matrix)
   }
@@ -212,13 +212,13 @@ get_mixProbs <- function(optPar,mod,mixture){
     
   beta <- par$beta
   delta <- par$delta
-  pie <- par$pi
+  pie <- par[["pi"]]
   pInd <- which(mapply(function(x) isTRUE(all.equal(x,0)), pie))
   if (length(pInd)) {
     pie[pInd] <- 1e-100
     pie[-pInd] <- pie[-pInd] - (1e-100 * length(pInd))/(ncol(pie) - length(pInd))
   }
-  par$pi <- matrix(1,1,1)
+  par[["pi"]] <- matrix(1,1,1)
   
   mixProbs <- lnum <- la <- numeric(mixtures)
   for(mix in 1:mixtures){

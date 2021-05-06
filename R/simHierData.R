@@ -88,7 +88,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     if(is.miSum(model)){
       model <- formatmiSum(model)
       if(!is.null(model$mle$beta)) model$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(model$mle$beta),2,byrow=TRUE)
-      if(!is.null(model$Par$beta$pi$est)) model$conditions$workBounds$pi<-matrix(c(-Inf,Inf),length(model$Par$beta$pi$est),2,byrow=TRUE)
+      if(!is.null(model$Par$beta[["pi"]]$est)) model$conditions$workBounds[["pi"]]<-matrix(c(-Inf,Inf),length(model$Par$beta[["pi"]]$est),2,byrow=TRUE)
       if(!is.null(model$Par$beta$delta$est)) model$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(model$Par$beta$delta$est),2,byrow=TRUE)
       if(!is.null(model$mle$g0)) model$conditions$workBounds$g0<-matrix(c(-Inf,Inf),length(model$mle$g0),2,byrow=TRUE)
       if(!is.null(model$mle$theta)) model$conditions$workBounds$theta<-matrix(c(-Inf,Inf),length(model$mle$theta),2,byrow=TRUE)
@@ -163,8 +163,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       nbCovsPi <- ncol(model$covsPi)-1
       foo <- length(model$mod$estimate)-length(g0)-length(theta)-(nbCovsDelta+1)*(nbStates-1)*mixtures-(nbCovsPi+1)*(mixtures-1)+1:((nbCovsPi+1)*(mixtures-1))
       pie <- matrix(model$mod$estimate[foo],nrow=nbCovsPi+1,ncol=mixtures-1)
-      #pie <- model$mle$pi
-      #workBounds$pi <- NULL
+      #pie <- model$mle[["pi"]]
+      #workBounds[["pi"]] <- NULL
     } else {
       pie <- NULL
       nbCovsPi <- 0
@@ -797,17 +797,17 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   covsPi <- stats::model.matrix(formPi,tmpCovs)
   nbCovsPi <- ncol(covsPi)-1
   if(!nbCovsPi & is.null(formulaPi)){
-    if(is.null(beta0$pi)){
-      beta0$pi <- matrix(1/mixtures,(nbCovsPi+1),mixtures)
+    if(is.null(beta0[["pi"]])){
+      beta0[["pi"]] <- matrix(1/mixtures,(nbCovsPi+1),mixtures)
     } else {
-      beta0$pi <- matrix(beta0$pi,(nbCovsPi+1),mixtures)
+      beta0[["pi"]] <- matrix(beta0[["pi"]],(nbCovsPi+1),mixtures)
     }
-    if(length(beta0$pi) != (nbCovsPi+1)*mixtures)
+    if(length(beta0[["pi"]]) != (nbCovsPi+1)*mixtures)
       stop(paste("beta$pi has the wrong length: it should have",mixtures,"elements."))
-    beta0$pi <- matrix(log(beta0$pi[-1]/beta0$pi[1]),nbCovsPi+1,mixtures-1)
+    beta0[["pi"]] <- matrix(log(beta0[["pi"]][-1]/beta0[["pi"]][1]),nbCovsPi+1,mixtures-1)
   } else {
-    if(is.null(beta0$pi)) beta0$pi <- matrix(0,nrow=(nbCovsPi+1),ncol=mixtures-1)
-    if(is.null(dim(beta0$pi)) || (ncol(beta0$pi)!=mixtures-1 | nrow(beta0$pi)!=(nbCovsPi+1)))
+    if(is.null(beta0[["pi"]])) beta0[["pi"]] <- matrix(0,nrow=(nbCovsPi+1),ncol=mixtures-1)
+    if(is.null(dim(beta0[["pi"]])) || (ncol(beta0[["pi"]])!=mixtures-1 | nrow(beta0[["pi"]])!=(nbCovsPi+1)))
       stop(paste("beta$pi has wrong dimensions: it should have",(nbCovsPi+1),"rows and",
                  mixtures-1,"columns."))
   }
@@ -845,7 +845,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   wworkBounds <- getWorkBounds(wworkBounds,distnames,unlist(Par[distnames]),parindex,parCount,inputs$DM,beta0,deltaB)
   
   wnbeta <- w2wn(beta0$beta,wworkBounds$beta)
-  wnpi <- w2wn(beta0$pi,wworkBounds$pi)
+  wnpi <- w2wn(beta0[["pi"]],wworkBounds[["pi"]])
   if(!is.null(recharge)){
     wng0 <- w2wn(beta0$g0,wworkBounds$g0)
     wntheta <- w2wn(beta0$theta,wworkBounds$theta)
@@ -940,7 +940,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         covsPi <- stats::model.matrix(formPi,subCovs[1,,drop=FALSE])
         fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta,wworkBounds,covsPi)
         
-        pie <- fullsubPar$pi
+        pie <- fullsubPar[["pi"]]
         
         # assign individual to mixture
         if(mixtures>1) mix[zoo] <- sample.int(mixtures,1,prob=pie)

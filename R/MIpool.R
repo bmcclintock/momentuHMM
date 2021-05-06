@@ -196,7 +196,7 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   
   parmcols <- parCount
   parmcols$beta <- ncol(m$mle$beta)
-  parmcols$pi <- mixtures-1
+  parmcols[["pi"]] <- mixtures-1
   parmcols$delta <- nbStates-1
   
   if(mixtures==1) piInd <- NULL
@@ -436,9 +436,9 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
         upper[j,i] <- probCI(est[j,i],se[j,i],quantSup,bound="upper")
       }
     }
-    Par$real$pi <- list(est=est,se=se,lower=lower,upper=upper)
-    colnames(Par$real$pi$est) <- colnames(Par$real$pi$se) <- colnames(Par$real$pi$lower) <- colnames(Par$real$pi$upper) <- paste0("mix",1:mixtures)
-    rownames(Par$real$pi$est) <- rownames(Par$real$pi$se) <- rownames(Par$real$pi$lower) <- rownames(Par$real$pi$upper) <- paste0("ID:",unique(m$data$ID))
+    Par$real[["pi"]] <- list(est=est,se=se,lower=lower,upper=upper)
+    colnames(Par$real[["pi"]]$est) <- colnames(Par$real[["pi"]]$se) <- colnames(Par$real[["pi"]]$lower) <- colnames(Par$real[["pi"]]$upper) <- paste0("mix",1:mixtures)
+    rownames(Par$real[["pi"]]$est) <- rownames(Par$real[["pi"]]$se) <- rownames(Par$real[["pi"]]$lower) <- rownames(Par$real[["pi"]]$upper) <- paste0("ID:",unique(m$data$ID))
   }
   
   # pooled delta estimates
@@ -636,7 +636,7 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   
   if(inherits(mh,"hierarchical")){
     inputHierHMM <- formatHierHMM(mh$data,mh$conditions$hierStates,mh$conditions$hierDist,hierBeta=NULL,hierDelta=NULL,mh$conditions$hierFormula,mh$conditions$hierFormulaDelta,mh$conditions$mixtures)
-    hier <- mapHier(list(beta=mh$Par$beta$beta$est,g0=mh$Par$beta$g0$est,theta=mh$Par$beta$theta$est),mh$Par$beta$pi$est,mh$Par$beta$delta$est,mh$conditions$hierBeta,mh$conditions$hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,mh$conditions$hierStates,inputHierHMM$newformula,mh$conditions$formulaDelta,inputHierHMM$data,mh$conditions$mixtures,inputHierHMM$recharge)
+    hier <- mapHier(list(beta=mh$Par$beta$beta$est,g0=mh$Par$beta$g0$est,theta=mh$Par$beta$theta$est),mh$Par$beta[["pi"]]$est,mh$Par$beta$delta$est,mh$conditions$hierBeta,mh$conditions$hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,mh$conditions$hierStates,inputHierHMM$newformula,mh$conditions$formulaDelta,inputHierHMM$data,mh$conditions$mixtures,inputHierHMM$recharge)
     mh$conditions$hierBeta <- hier$hierBeta
     mh$conditions$hierDelta <- hier$hierDelta
     

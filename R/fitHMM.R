@@ -70,7 +70,7 @@ fitHMM <- function(data, ...) {
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.
 #' @param formulaPi Regression formula for the mixture distribution probabilities. Default: \code{NULL} (no covariate effects; both \code{beta0$pi} and \code{fixPar$pi} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{beta0$pi} and \code{fixPar$pi} are specified on the working scale.
-#' Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilties).
+#' Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilities).
 #' @param nlmPar List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
 #' \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
 #' for more detail). For \code{print.level}, the default value of 0 means that no
@@ -709,7 +709,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
 
   retrySD <- get_retrySD(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStates,fixParIndex$beta0,mixtures,recharge,fixParIndex$delta0)
   
-  optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar$pi)+which(duplicated(c(deltaCons)))))
+  optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar[["pi"]])+which(duplicated(c(deltaCons)))))
   
   if(!is.null(prior)){
     if(!is.function(prior)) stop("prior must be a function")
@@ -739,7 +739,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   meanind <- ncmean$meanind
   
   optPar <- wpar
-  optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar$pi)+which(duplicated(c(deltaCons)))))
+  optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar[["pi"]])+which(duplicated(c(deltaCons)))))
   if(length(optInd)){
     optPar <- wpar[-optInd]
   }
@@ -787,7 +787,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
         iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
         
         optPar <- wpar
-        optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar$pi)+which(duplicated(c(deltaCons)))))
+        optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar[["pi"]])+which(duplicated(c(deltaCons)))))
         if(length(optInd)){
           optPar <- wpar[-optInd]
         }
@@ -930,9 +930,9 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     }
     if(mixtures>1){
       rownames(mle$beta) <- paste0(rownames(mle$beta),"_mix",rep(1:mixtures,each=length(colnames(covs))))
-      colnames(mle$pi) <- paste0("mix",1:mixtures)
-      rownames(mle$pi) <- paste0("ID:",data$ID[aInd])
-    } else mle$pi <- NULL
+      colnames(mle[["pi"]]) <- paste0("mix",1:mixtures)
+      rownames(mle[["pi"]]) <- paste0("ID:",data$ID[aInd])
+    } else mle[["pi"]] <- NULL
   }
 
   # compute stationary distribution
@@ -1044,7 +1044,7 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
     par <- getPar(hfit)
     if(is.list(par$beta)){
       beta <- par$beta$beta
-      Pi <- par$beta$pi
+      Pi <- par$beta[["pi"]]
       g0 <- par$beta$g0
       names(g0) <- names(hfit$mle$g0)
       theta <- par$beta$theta

@@ -199,11 +199,11 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
       tmpSig <- Sigma[i3+1:(ncol(m$covsPi)*(mixtures-1)),i3+1:(ncol(m$covsPi)*(mixtures-1))]
       quantSup <- qnorm(1-(1-alpha)/2)
       lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsPi),ncol=mixtures)
-      est<-matrix(m$mle$pi,nrow=nrow(m$covsPi),ncol=mixtures)
+      est<-matrix(m$mle[["pi"]],nrow=nrow(m$covsPi),ncol=mixtures)
       if(!is.null(Sigma)){
         for(j in 1:nrow(m$covsPi)){
           for(i in 1:mixtures){
-            dN<-numDeriv::grad(get_delta,pie,covsDelta=m$covsPi[j,,drop=FALSE],i=i,workBounds=m$conditions$workBounds$pi)
+            dN<-numDeriv::grad(get_delta,pie,covsDelta=m$covsPi[j,,drop=FALSE],i=i,workBounds=m$conditions$workBounds[["pi"]])
             se[j,i]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
             lower[j,i]<-1/(1+exp(-(log(est[j,i]/(1-est[j,i]))-quantSup*(1/(est[j,i]-est[j,i]^2))*se[j,i])))
             upper[j,i]<-1/(1+exp(-(log(est[j,i]/(1-est[j,i]))+quantSup*(1/(est[j,i]-est[j,i]^2))*se[j,i])))
@@ -211,9 +211,9 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
         }
       }
 
-      Par$pi <- list(est=est,se=se,lower=lower,upper=upper)  
-      colnames(Par$pi$est) <- colnames(Par$pi$se) <- colnames(Par$pi$lower) <- colnames(Par$pi$upper) <- paste0("mix",1:mixtures)
-      rownames(Par$pi$est) <- rownames(Par$pi$se) <- rownames(Par$pi$lower) <- rownames(Par$pi$upper) <- paste0("ID:",unique(m$data$ID))
+      Par[["pi"]] <- list(est=est,se=se,lower=lower,upper=upper)  
+      colnames(Par[["pi"]]$est) <- colnames(Par[["pi"]]$se) <- colnames(Par[["pi"]]$lower) <- colnames(Par[["pi"]]$upper) <- paste0("mix",1:mixtures)
+      rownames(Par[["pi"]]$est) <- rownames(Par[["pi"]]$se) <- rownames(Par[["pi"]]$lower) <- rownames(Par[["pi"]]$upper) <- paste0("ID:",unique(m$data$ID))
     }
   }   
   

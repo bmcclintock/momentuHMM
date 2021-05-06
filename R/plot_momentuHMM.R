@@ -288,9 +288,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   }
   
   if(mixtures>1){
-    if(!m$conditions$stationary) beta$pi <- m$mod$estimate[length(m$mod$estimate)-ncol(m$covsPi)*(mixtures-1)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-(nbCovsDelta+1)*(nbStates-1)*mixtures+1:(ncol(m$covsPi)*(mixtures-1))]
-    else beta$pi <- m$mod$estimate[length(m$mod$estimate)-ncol(m$covsPi)*(mixtures-1)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)+1:(ncol(m$covsPi)*(mixtures-1))]
-  } else beta$pi <- NULL
+    if(!m$conditions$stationary) beta[["pi"]] <- m$mod$estimate[length(m$mod$estimate)-ncol(m$covsPi)*(mixtures-1)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-(nbCovsDelta+1)*(nbStates-1)*mixtures+1:(ncol(m$covsPi)*(mixtures-1))]
+    else beta[["pi"]] <- m$mod$estimate[length(m$mod$estimate)-ncol(m$covsPi)*(mixtures-1)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)+1:(ncol(m$covsPi)*(mixtures-1))]
+  } else beta[["pi"]] <- NULL
   
   tmpPar <- Par
   tmpConditions <- m$conditions
@@ -634,9 +634,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           gradfun<-function(wpar,k) {
             w2n(wpar,p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary=TRUE,fullDM,DMind,gridLength,inputs$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta,m$conditions$workBounds[c(i,"beta")],m$covsPi)[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,k]
           }
-          est<-w2n(c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta$beta,beta$pi),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary=TRUE,fullDM,DMind,gridLength,inputs$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta,m$conditions$workBounds[c(i,"beta")],m$covsPi)[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,]
+          est<-w2n(c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta$beta,beta[["pi"]]),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary=TRUE,fullDM,DMind,gridLength,inputs$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta,m$conditions$workBounds[c(i,"beta")],m$covsPi)[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,]
           if(plotCI){
-            dN<-t(mapply(function(x) tryCatch(numDeriv::grad(gradfun,c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta$beta,beta$pi),k=x),error=function(e) NA),1:gridLength))
+            dN<-t(mapply(function(x) tryCatch(numDeriv::grad(gradfun,c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta$beta,beta[["pi"]]),k=x),error=function(e) NA),1:gridLength))
             se<-t(apply(dN[,1:parCount[[i]]],1,function(x) tryCatch(suppressWarnings(sqrt(x%*%Sigma[parindex[[i]]+1:parCount[[i]],parindex[[i]]+1:parCount[[i]]]%*%x)),error=function(e) NA)))
             uci<-est+qnorm(1-(1-alpha)/2)*se
             lci<-est-qnorm(1-(1-alpha)/2)*se

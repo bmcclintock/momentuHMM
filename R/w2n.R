@@ -104,7 +104,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
     if(mixtures>1){
       nbCovsPi <- ncol(covsPi)-1 # substract intercept column
       foo <- length(wpar)-(nbCovsPi+1)*(mixtures-1)+1
-      tmpwpar <- matrix(w2wn(wpar[foo:length(wpar)],workBounds$pi),(nbCovsPi+1),mixtures-1)
+      tmpwpar <- matrix(w2wn(wpar[foo:length(wpar)],workBounds[["pi"]]),(nbCovsPi+1),mixtures-1)
       pie <- mlogit(tmpwpar,covsPi,nbCovsPi,nbAnimals,mixtures)
       wpar <- wpar[-(foo:length(wpar))]
     }

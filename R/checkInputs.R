@@ -11,6 +11,12 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
     } else {
       dist[[i]]<-match.arg(dist[[i]],momentuHMMdists)
     }
+    if(i %in% badNames) stop("data streams cannot be named ",paste0(paste0("'",badNames[-length(badNames)],"'"),collapse=", "),", or '",badNames[length(badNames)],"'")
+    else {
+      for(j in badNames){
+        if(j!="pi" && grepl(paste0("^",badNames[j]),i)) stop("data stream names cannot begin with '",j,"'")
+      }
+    }
   }
 
   if(nbStates<0)

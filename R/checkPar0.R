@@ -275,21 +275,21 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
       beta <- list(beta=beta0$beta)
     }
     if(mixtures>1){
-      pie <- beta0$pi
+      pie <- beta0[["pi"]]
       nbCovsPi <- ncol(m$covsPi)-1
       if(!nbCovsPi){
-        if(is.null(beta0$pi)){
-          if(!is.null(fixPar$pi)) stop("fixPar$pi cannot be specified unless beta0$pi is specified")
+        if(is.null(beta0[["pi"]])){
+          if(!is.null(fixPar[["pi"]])) stop("fixPar$pi cannot be specified unless beta0$pi is specified")
           pie <- matrix(1/mixtures,(nbCovsPi+1),mixtures)
         } else {
           pie <- matrix(pie,(nbCovsPi+1),mixtures)
         }
         pie <- log(pie[-1]/pie[1])
-      } else if(is.null(beta0$pi)){
-        if(!is.null(fixPar$pi)) stop("fixPar$pi cannot be specified unless beta0$pi is specified")
+      } else if(is.null(beta0[["pi"]])){
+        if(!is.null(fixPar[["pi"]])) stop("fixPar$pi cannot be specified unless beta0$pi is specified")
         pie <- matrix(0,nrow=(nbCovsPi+1),ncol=mixtures-1)
       }
-      beta$pi <- pie
+      beta[["pi"]] <- pie
     }
     if(!is.null(m$conditions$recharge)){
       if(is.null(beta0$g0) & nbStates>1) {
@@ -362,9 +362,9 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
         formPi <- ~1
       } else formPi <- m$conditions$formulaPi
       if(!length(attr(stats::terms.formula(formPi),"term.labels")) & is.null(m$conditions$formulaPi)){
-        tmpPar <- m$mle$pi[1,]
+        tmpPar <- m$mle[["pi"]][1,]
         rownames(tmpPar)<-NULL
-        if(is.null(beta0$pi))
+        if(is.null(beta0[["pi"]]))
           tmpPar[1:length(tmpPar)] <- 1:length(tmpPar)
         cat("Mixture probabilities (pi):\n")
         cat("---------------------------\n")
@@ -372,8 +372,8 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
       } else {
         cat("Regression coeffs for the mixture probabilities:\n")
         cat("------------------------------------------------\n")
-        tmpPar <- m$CIbeta$pi$est
-        if(is.null(beta0$pi))
+        tmpPar <- m$CIbeta[["pi"]]$est
+        if(is.null(beta0[["pi"]]))
           tmpPar <- matrix(1:length(tmpPar),nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
         print(tmpPar)
       }
@@ -483,7 +483,7 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
   
   m <- checkPar0.default(data=data,nbStates=nbStates,dist=dist,Par0=Par0,beta0=beta0,delta0=delta0,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,formula=formula,formulaDelta=formulaDelta,stationary=FALSE,mixtures=mixtures,formulaPi=formulaPi,DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,stateNames=stateNames,fixPar=fixPar,prior=prior)
   
-  hier <- mapHier(list(beta=m$mle$beta,g0=m$mle$g0,theta=m$mle$theta),m$mle$pi,m$CIbeta$delta$est,hierBeta=hierBeta,hierDelta=hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,hierStates,inputHierHMM$newformula,m$conditions$formulaDelta,inputHierHMM$data,m$conditions$mixtures,recharge,fill=TRUE)
+  hier <- mapHier(list(beta=m$mle$beta,g0=m$mle$g0,theta=m$mle$theta),m$mle[["pi"]],m$CIbeta$delta$est,hierBeta=hierBeta,hierDelta=hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,hierStates,inputHierHMM$newformula,m$conditions$formulaDelta,inputHierHMM$data,m$conditions$mixtures,recharge,fill=TRUE)
   
   if(!is.null(recharge)){
     g0 <- m$mle$g0

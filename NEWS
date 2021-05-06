@@ -1,8 +1,14 @@
-momentuHMM 1.5.3 2021-04-28
+momentuHMM 1.5.3 2021-05-06
 -----------------
 NEW FEATURES
 
 * 'return' argument added to plotStationary function
+
+CHANGES
+
+* data stream names can no longer be 'beta', 'delta', 'pi', 'g0', or 'theta'
+
+* data stream names can no longer begin with 'beta', 'delta', 'g0', or 'theta'
 
 
 momentuHMM 1.5.2 2021-01-06
