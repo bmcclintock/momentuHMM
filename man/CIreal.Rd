@@ -2,15 +2,9 @@
 % Please edit documentation in R/CIreal.R
 \name{CIreal}
 \alias{CIreal}
-\alias{CIreal.default}
-\alias{CIreal.hierarchical}
 \title{Confidence intervals for the natural (i.e., real) parameters}
 \usage{
 CIreal(m, alpha = 0.95, covs = NULL, parms = NULL)
-
-\method{CIreal}{default}(m, alpha = 0.95, covs = NULL, parms = NULL)
-
-\method{CIreal}{hierarchical}(m, alpha = 0.95, covs = NULL, parms = NULL)
 }
 \arguments{
 \item{m}{A \code{momentuHMM}, \code{momentuHierHMM}, or \code{miSum} object}

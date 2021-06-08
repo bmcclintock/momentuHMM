@@ -39,8 +39,7 @@ fitHMM(data, ...)
   optMethod = "nlm",
   control = list(),
   prior = NULL,
-  modelName = NULL,
-  ...
+  modelName = NULL
 )
 
 \method{fitHMM}{momentuHierHMMData}(
@@ -71,8 +70,7 @@ fitHMM(data, ...)
   optMethod = "nlm",
   control = list(),
   prior = NULL,
-  modelName = NULL,
-  ...
+  modelName = NULL
 )
 }
 \arguments{

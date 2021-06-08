@@ -151,9 +151,18 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
   
   # for directing hierarchical data to prepData.hierarchical
   hierArgs <- list(...)
+  argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierLevels", "coordLevel"))]
+  badArgs <- names(hierArgs)[which(!(names(hierArgs) %in% c("hierLevels", "coordLevel")))]
+  if(length(badArgs)){
+    stop("unused argument",ifelse(length(badArgs)>1,"s",""),": ",paste0(badArgs,collapse=", "))
+  }
   if("hierLevels" %in% names(hierArgs)){
-    return(prepData.hierarchical(data, type, coordNames, covNames, spatialCovs, centers, centroids, angleCovs, ...))
+    return(prepData.hierarchical(data, type, coordNames, covNames, spatialCovs, centers, centroids, angleCovs, altCoordNames, ...))
   } else if("coordLevel" %in% names(hierArgs)) stop("'coordLevel' cannot be specified unless 'hierLevels' is also specified")
+  
+  if(length(argNames)){
+    stop("unused argument",ifelse(length(argNames)>1,"s",""),": ",paste0(argNames,collapse=", "))
+  }
   
   distnames<-names(data)
   if(any(c("step","angle") %in% distnames) & !is.null(coordNames)) stop("data objects cannot be named 'step' or 'angle';\n  these names are reserved for step lengths and turning angles calculated from coordinates")
@@ -405,7 +414,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
 #' @export
 #' @importFrom sp spDistsN1
 # @importFrom raster cellFromXY getValues getZ
-prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames = NULL, hierLevels, coordLevel, ...)
+prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames = NULL, hierLevels, coordLevel)
 {
   if(is.crwHierData(data)){
     predData <- data$crwPredict

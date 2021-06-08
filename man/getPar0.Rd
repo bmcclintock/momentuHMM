@@ -20,8 +20,7 @@ getPar0(model, ...)
   formulaPi = model$conditions$formulaPi,
   DM = model$conditions$DM,
   betaRef = model$conditions$betaRef,
-  stateNames = model$stateNames,
-  ...
+  stateNames = model$stateNames
 )
 
 \method{getPar0}{hierarchical}(
@@ -33,8 +32,7 @@ getPar0(model, ...)
   hierFormulaDelta = model$conditions$hierFormulaDelta,
   mixtures = model$conditions$mixtures,
   formulaPi = model$conditions$formulaPi,
-  DM = model$conditions$DM,
-  ...
+  DM = model$conditions$DM
 )
 }
 \arguments{

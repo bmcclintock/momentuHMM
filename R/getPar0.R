@@ -96,7 +96,7 @@ getPar0 <- function(model, ...) {
 #' }
 #' 
 #' @export
-getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,formula=model$conditions$formula,formulaDelta=model$conditions$formulaDelta,stationary=model$conditions$stationary,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM,betaRef=model$conditions$betaRef,stateNames=model$stateNames,...){
+getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,formula=model$conditions$formula,formulaDelta=model$conditions$formulaDelta,stationary=model$conditions$stationary,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM,betaRef=model$conditions$betaRef,stateNames=model$stateNames){
   
   if(!is.momentuHMM(model) & !is.miHMM(model) & !is.miSum(model))
     stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
@@ -428,8 +428,11 @@ getPar0.miSum <- function(model,...){
     model$CIbeta <- model$Par$beta
     model$CIreal <- model$Par$real
     
-    getPar0.default(model,...)
-
+    if(!inherits(model,"hierarchical")){
+      getPar0.default(model,...)
+    } else {
+      getPar0.hierarchical(model,...)
+    }
 }
 
 #' @rdname getPar0
@@ -443,7 +446,7 @@ getPar0.miSum <- function(model,...){
 #' if hierarchical t.p.m. or initial distribution parameters are subject to constraints, then these must be set manually on the list object returned by \code{getPar0}.
 #' 
 #' @export
-getPar0.hierarchical<-function(model,hierStates=model$conditions$hierStates,estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,hierFormula=model$conditions$hierFormula,hierFormulaDelta=model$conditions$hierFormulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM,...){
+getPar0.hierarchical<-function(model,hierStates=model$conditions$hierStates,estAngleMean=model$conditions$estAngleMean,circularAngleMean=model$conditions$circularAngleMean,hierFormula=model$conditions$hierFormula,hierFormulaDelta=model$conditions$hierFormulaDelta,mixtures=model$conditions$mixtures,formulaPi=model$conditions$formulaPi,DM=model$conditions$DM){
   
   inputHierHMM <- formatHierHMM(data=model$data,hierStates=hierStates,hierDist=model$conditions$hierDist,hierFormula=hierFormula,hierFormulaDelta=hierFormulaDelta,mixtures=mixtures)
   nbStates <- inputHierHMM$nbStates

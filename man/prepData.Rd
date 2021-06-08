@@ -32,8 +32,7 @@ prepData(data, ...)
   angleCovs = NULL,
   altCoordNames = NULL,
   hierLevels,
-  coordLevel,
-  ...
+  coordLevel
 )
 }
 \arguments{

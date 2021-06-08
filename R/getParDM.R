@@ -118,7 +118,11 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
   
   hierArgs <- list(...)
   argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist"))]
-
+  badArgs <- names(hierArgs)[which(!(names(hierArgs) %in% c("hierStates","hierDist")))]
+  if(length(badArgs)){
+    stop("unused argument",ifelse(length(badArgs)>1,"s",""),": ",paste0(badArgs,collapse=", "))
+  }
+  
   ## check that the data is a momentuHMMData object or valid data frame
   if(!is.momentuHMMData(data)){ 
     if(missing(nbStates) & missing(dist)){
@@ -131,6 +135,10 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
   if(!missing(nbStates) | !missing(dist)){
     if(any(c("hierStates","hierDist") %in% argNames))
       stop("Either nbStates and dist must be specified (for a regular HMM) or hierStates and hierDist must be specified (for a hierarchical HMM)")
+  }
+  
+  if(length(argNames)){
+    stop("unused argument",ifelse(length(argNames)>1,"s",""),": ",paste0(argNames,collapse=", "))
   }
   
   if(nbStates<1) stop('nbStates must be >0')
@@ -475,7 +483,7 @@ getParDM.hierarchical<-function(data=data.frame(), hierStates, hierDist,
                        oneInflation=NULL,
                        estAngleMean=NULL,
                        circularAngleMean=NULL,
-                       DM=NULL, userBounds=NULL, workBounds=NULL, ...){
+                       DM=NULL, userBounds=NULL, workBounds=NULL){
   
   ## check that the data is a momentuHierHMMData object or valid data frame
   if(!is.momentuHierHMMData(data)){

@@ -11,8 +11,7 @@
   animals = NULL,
   compact = FALSE,
   ask = TRUE,
-  breaks = "Sturges",
-  ...
+  breaks = "Sturges"
 )
 }
 \arguments{
@@ -29,8 +28,6 @@ Default: \code{NULL} ; all animals are plotted.}
 \item{ask}{If \code{TRUE}, the execution pauses between each plot.}
 
 \item{breaks}{Histogram parameter. See \code{hist} documentation.}
-
-\item{...}{Currently unused. For compatibility with generic method.}
 }
 \description{
 Plot \code{momentuHMMData} or \code{momentuHierHMMData}

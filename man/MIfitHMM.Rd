@@ -119,8 +119,7 @@ MIfitHMM(miData, ...)
   fullPost = TRUE,
   dfPostIS = Inf,
   scalePostIS = 1,
-  thetaSamp = NULL,
-  ...
+  thetaSamp = NULL
 )
 }
 \arguments{

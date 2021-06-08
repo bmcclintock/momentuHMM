@@ -34,8 +34,7 @@ getParDM(data, ...)
   circularAngleMean = NULL,
   DM = NULL,
   userBounds = NULL,
-  workBounds = NULL,
-  ...
+  workBounds = NULL
 )
 }
 \arguments{

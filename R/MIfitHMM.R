@@ -209,6 +209,10 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
   # for directing list of momentuHierHMMData objects to MIfitHMM.hierarchical
   hierArgs <- list(...)
   argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist","hierBeta","hierDelta","hierFormula","hierFormulaDelta"))]
+  badArgs <- names(hierArgs)[which(!(names(hierArgs) %in% c("hierStates","hierDist","hierBeta","hierDelta","hierFormula","hierFormulaDelta")))]
+  if(length(badArgs)){
+    stop("unused argument",ifelse(length(badArgs)>1,"s",""),": ",paste0(badArgs,collapse=", "))
+  }
   
   if(is.list(miData) & !is.crwData(miData) & !is.crwSim(miData)){
     if(missing(nbStates) & missing(dist)){
@@ -233,6 +237,10 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
   if(!missing(nbStates) | !missing(dist)){
     if(any(c("hierStates","hierDist") %in% argNames))
       stop("Either nbStates and dist must be specified (for a regular HMM) or hierStates and hierDist must be specified (for a hierarchical HMM)")
+  }
+  
+  if(length(argNames)){
+    stop("unused argument",ifelse(length(argNames)>1,"s",""),": ",paste0(argNames,collapse=", "))
   }
   
   j <- mf <- mD <- NULL #gets rid of no visible binding for global variable NOTE in R cmd check
@@ -475,7 +483,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                        mvnCoords = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
                        covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL,
                        method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
-                       fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, ...)
+                       fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL)
 {
   
   j <- mf <- mD <- NULL #gets rid of no visible binding for global variable NOTE in R cmd check

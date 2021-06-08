@@ -38,7 +38,6 @@ CIreal <- function(m,alpha=0.95,covs=NULL,parms=NULL) {
   UseMethod("CIreal")
 }
 
-#' @rdname CIreal
 #' @method CIreal default
 #' @importFrom numDeriv grad
 #' @importFrom utils tail
@@ -436,7 +435,6 @@ w2nDMangle<-function(w,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbState
   w2nDM(w,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbStates,k,nc,meanind,workBounds,dist)
 }
 
-#' @rdname CIreal
 #' @method CIreal hierarchical
 #' @importFrom numDeriv grad
 #' @importFrom utils tail
