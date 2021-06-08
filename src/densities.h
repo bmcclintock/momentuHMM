@@ -376,17 +376,18 @@ arma::colvec dcat_rcpp(const NumericVector x, const arma::mat prob, const arma::
     static_cast<int>(prob.n_cols)
   );
   int k = prob.n_rows;
+  int l = prob.n_cols;
   arma::colvec p(Nmax);
   double p_tot;
   
-  bool throw_warning = false;
+  //bool throw_warning = false;
   
   //if (k < 2)
   //  Rcpp::stop("number of columns in prob is < 2");
   
   arma::mat prob_tab = prob.t();
   
-  for (int i = 0; i < prob.n_cols; i++) {
+  for (int i = 0; i < l; i++) {
     p_tot = 0.0;
     for (int j = 0; j < k; j++) {
       p_tot += prob_tab(i, j);
@@ -396,7 +397,7 @@ arma::colvec dcat_rcpp(const NumericVector x, const arma::mat prob, const arma::
 #endif
       if (prob_tab(i, j) < 0.0) {
         p_tot = NAN;
-        throw_warning = true;
+        //throw_warning = true;
         break;
       }
     }
