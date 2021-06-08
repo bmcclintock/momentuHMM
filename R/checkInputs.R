@@ -106,6 +106,21 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
       ndist[[i]] <- "cat"
     }
   }
+  
+  checkNames(distnames,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,zeroInflation=zeroInflation,oneInflation=oneInflation,DM=DM,userBounds=userBounds)
 
   return(list(p=p,dist=ndist,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,consensus=consensus,DM=DM))
+}
+
+checkNames <- function(distnames,...){
+  checkArgs <- list(...)
+  argNames <- names(checkArgs)
+  for(j in argNames){
+    if(length(checkArgs[[j]])){
+      if(length(which(!(names(checkArgs[[j]]) %in% distnames)))){
+        if(j!="workBounds") stop("Names for '",j,"' must match those of 'dist': ",paste0(distnames,collapse=", "))
+        else stop("The following names for '",j,"' are invalid: ",paste0(names(checkArgs[[j]])[which(!(names(checkArgs[[j]]) %in% distnames))],collapse=", "))
+      }
+    }
+  }
 }

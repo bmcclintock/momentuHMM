@@ -1,5 +1,7 @@
 getWorkBounds <- function(workBounds,distnames,wpar,parindex,parCount,DM,beta=NULL,delta=NULL){
   
+  checkNames(c(distnames,"beta","pi","delta","g0","theta"),workBounds=workBounds)
+  
   for(i in distnames){
     if(is.null(workBounds[[i]]) | is.null(DM[[i]])){
       workBounds[[i]] <- matrix(c(-Inf,Inf),parCount[[i]],2,byrow=TRUE)

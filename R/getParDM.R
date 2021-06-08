@@ -275,6 +275,8 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
     names(workBounds) <- distnames
   }
   
+  checkNames(distnames,workBounds=workBounds)
+  
   wpar <- Par
   for(i in distnames){
     if(!is.null(DM[[i]])){
