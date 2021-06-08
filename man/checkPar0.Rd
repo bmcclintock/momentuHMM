@@ -53,7 +53,8 @@ checkPar0(data, ...)
   betaCons = NULL,
   deltaCons = NULL,
   fixPar = NULL,
-  prior = NULL
+  prior = NULL,
+  ...
 )
 }
 \arguments{

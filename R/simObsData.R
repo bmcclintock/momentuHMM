@@ -63,9 +63,11 @@ simObsData <- function(data, lambda, errorEllipse, ...) {
 #' @importFrom crawl argosDiag2Cov
 #' @importFrom stats rexp
 #' @export
-simObsData.momentuHMMData<-function(data,lambda,errorEllipse){
+simObsData.momentuHMMData<-function(data,lambda,errorEllipse,...){
   
   if(!is.momentuHMMData(data)) stop("data must be a momentuHMMData object")
+  
+  chkDots(...)
   
   coordNames <- c("x","y")
   if(!is.null(attr(data,'coords'))) coordNames <- attr(data,'coords')
@@ -166,9 +168,11 @@ simObsData.momentuHMMData<-function(data,lambda,errorEllipse){
 #' @importFrom crawl argosDiag2Cov
 #' @importFrom stats rexp
 #' @export
-simObsData.momentuHierHMMData<-function(data,lambda,errorEllipse,coordLevel){
+simObsData.momentuHierHMMData<-function(data,lambda,errorEllipse,coordLevel,...){
   
   if(!is.momentuHierHMMData(data)) stop("data must be a momentuHierHMMData object")
+  
+  chkDots(...)
   
   coordNames <- c("x","y")
   if(!is.null(attr(data,'coords'))) coordNames <- attr(data,'coords')

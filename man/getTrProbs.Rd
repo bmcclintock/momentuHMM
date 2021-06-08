@@ -33,7 +33,8 @@ getTrProbs(data, ...)
   hierDist,
   getCI = FALSE,
   covIndex = NULL,
-  alpha = 0.95
+  alpha = 0.95,
+  ...
 )
 }
 \arguments{

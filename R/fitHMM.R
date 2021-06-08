@@ -471,7 +471,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                    formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,
                    nlmPar=list(),fit=TRUE,
                    DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,betaRef=NULL,deltaCons=NULL,
-                   mvnCoords=NULL,stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL)
+                   mvnCoords=NULL,stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, ...)
 {
   
   #####################
@@ -492,6 +492,8 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     stop("Check the argument 'formulaDelta'.")
   
   if(nbStates<1) stop('nbStates must be >0')
+  
+  chkDots(...)
 
   # check that there is no response variable in the formula
   if(attr(stats::terms(formula),"response")!=0)
@@ -1025,12 +1027,14 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
                        hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,
                        nlmPar=list(),fit=TRUE,
                        DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,deltaCons=NULL,
-                       mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL)
+                       mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, ...)
 {
   
   if(!inherits(data,"momentuHierHMMData")) stop("data must be a momentuHierHMMData object (as returned by prepData or simHierData)")
   
   inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,betaCons,deltaCons,fixPar)
+  
+  chkDots(...)
   
   hfit <- fitHMM.momentuHMMData(momentuHMMData(data),inputHierHMM$nbStates,inputHierHMM$dist,Par0,inputHierHMM$beta,inputHierHMM$delta,
                 estAngleMean,circularAngleMean,

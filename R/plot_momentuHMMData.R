@@ -9,6 +9,7 @@
 #' (default -- one individual at a time).
 #' @param ask If \code{TRUE}, the execution pauses between each plot.
 #' @param breaks Histogram parameter. See \code{hist} documentation.
+#' @param ... Currently unused. For compatibility with generic method.
 #'
 #' @examples
 #' # data is a momentuHMMData object (as returned by prepData), automatically loaded with the package
@@ -21,7 +22,7 @@
 #' @export
 #' @importFrom graphics abline axis hist mtext par plot points
 #' @method plot momentuHMMData
-plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compact=FALSE,ask=TRUE,breaks="Sturges")
+plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compact=FALSE,ask=TRUE,breaks="Sturges",...)
 {
   data <- x
   # check arguments
@@ -216,7 +217,7 @@ plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compa
 
 #' @method plot momentuHierHMMData
 #' @export
-plot.momentuHierHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compact=FALSE,ask=TRUE,breaks="Sturges")
+plot.momentuHierHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compact=FALSE,ask=TRUE,breaks="Sturges",...)
 {
-  plot(momentuHMMData(x),dataNames=dataNames,animals=animals,compact=compact,ask=ask,breaks=breaks)
+  plot(momentuHMMData(x),dataNames=dataNames,animals=animals,compact=compact,ask=ask,breaks=breaks,...)
 }

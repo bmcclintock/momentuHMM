@@ -90,10 +90,6 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
   
   hierArgs <- list(...)
   argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist","hierBeta","hierDelta","hierFormula","hierFormulaDelta"))]
-  badArgs <- names(hierArgs)[which(!(names(hierArgs) %in% c("hierStates","hierDist","hierBeta","hierDelta","hierFormula","hierFormulaDelta")))]
-  if(length(badArgs)){
-    stop("unused argument",ifelse(length(badArgs)>1,"s",""),": ",paste0(badArgs,collapse=", "))
-  }
   
   ## check that the data is a momentuHMMData object or valid data frame
   if(!is.momentuHMMData(data)){
@@ -114,9 +110,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
       stop("Either nbStates and dist must be specified (for a regular HMM) or hierStates and hierDist must be specified (for a hierarchical HMM)")
   }
   
-  if(length(argNames)){
-    stop("unused argument",ifelse(length(argNames)>1,"s",""),": ",paste0(argNames,collapse=", "))
-  }
+  chkDots(...)
   
   if(is.null(Par0)){
     
@@ -460,7 +454,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
 #' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). See \code{\link{fitHMM}}. Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). 
 #' 
 #' @export
-checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=NULL,hierDelta=NULL,estAngleMean=NULL,circularAngleMean=NULL,hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,deltaCons=NULL,fixPar=NULL,prior=NULL)
+checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=NULL,hierDelta=NULL,estAngleMean=NULL,circularAngleMean=NULL,hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,deltaCons=NULL,fixPar=NULL,prior=NULL,...)
 {
   
   ## check that the data is a momentuHierHMMData object or valid data frame
@@ -473,6 +467,8 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
   
   if(is.null(hierBeta) & !is.null(fixPar$beta)) stop("fixPar$beta cannot be specified unless hierBeta is specified")
   if(is.null(hierDelta) & !is.null(fixPar$delta)) stop("fixPar$delta cannot be specified unless hierDelta is specified")
+  
+  chkDots(...)
   
   inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,betaCons,deltaCons,fixPar)
   nbStates <- inputHierHMM$nbStates

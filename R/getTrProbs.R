@@ -69,16 +69,12 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
   if(!is.momentuHMM(data) & !is.miSum(data) & !is.miHMM(data)){
     hierArgs <- list(...)
     argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist","hierBeta","hierFormula"))]
-    badArgs <- names(hierArgs)[which(!(names(hierArgs) %in% c("hierStates","hierDist","hierBeta","hierFormula")))]
-    if(length(badArgs)){
-      stop("unused argument",ifelse(length(badArgs)>1,"s",""),": ",paste0(badArgs,collapse=", "))
-    }
     
     ## check that the data is a momentuHMMData object or valid data frame
     if(!is.momentuHMMData(data)){ 
       if(missing(nbStates)){
         if(all(c("hierStates","hierDist") %in% argNames)){
-          return(getTrProbs.hierarchical(data=data,hierStates=hierArgs$hierStates,hierBeta=hierArgs$hierBeta,workBounds=workBounds,hierFormula=hierArgs$hierFormula,mixtures=mixtures,hierDist=hierArgs$hierDist,covIndex=covIndex,alpha=alpha))
+          return(getTrProbs.hierarchical(data=data,workBounds=workBounds,mixtures=mixtures,covIndex=covIndex,alpha=alpha,...))
         }
       }
       if(!is.data.frame(data)) stop('data must be a data.frame')
@@ -86,10 +82,6 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
     if(!missing(nbStates)){
       if(any(c("hierStates","hierDist","hierFormula","hierBeta") %in% argNames))
         stop("Either nbStates must be specified (for a regular HMM) or hierStates and hierDist must be specified (for a hierarchical HMM)")
-    }
-    
-    if(length(argNames)){
-      stop("unused argument",ifelse(length(argNames)>1,"s",""),": ",paste0(argNames,collapse=", "))
     }
     
     if(!is.null(betaRef)){
@@ -171,6 +163,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
     nbRecovs <- reForm$nbRecovs
     newformula <- reForm$newformula
   }
+  chkDots(...)
   wnbeta <- w2wn(beta,workBounds$beta)
   
   trMat <- list()
@@ -238,7 +231,9 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
 #' If a hierarchical HMM structure is provided, then a hierarchical data structure containing the state transition probabilities for each time step at each level of the hierarchy ('gamma') is returned.
 #' 
 #' @export
-getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hierFormula=NULL,mixtures=1,hierDist, getCI=FALSE, covIndex=NULL, alpha = 0.95){
+getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hierFormula=NULL,mixtures=1,hierDist, getCI=FALSE, covIndex=NULL, alpha = 0.95, ...){
+  
+  chkDots(...)
   
   if(is.momentuHierHMM(data) | is.miSum(data) | is.miHMM(data)){
     trProbs <- getTrProbs.default(data,getCI=getCI,covIndex=covIndex,alpha=alpha)

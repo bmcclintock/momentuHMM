@@ -8,9 +8,9 @@
 \usage{
 simObsData(data, lambda, errorEllipse, ...)
 
-\method{simObsData}{momentuHMMData}(data, lambda, errorEllipse)
+\method{simObsData}{momentuHMMData}(data, lambda, errorEllipse, ...)
 
-\method{simObsData}{momentuHierHMMData}(data, lambda, errorEllipse, coordLevel)
+\method{simObsData}{momentuHierHMMData}(data, lambda, errorEllipse, coordLevel, ...)
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} object with necessary fields 'x' (easting/longitudinal coordinates) and 'y' (northing/latitudinal coordinates)}
