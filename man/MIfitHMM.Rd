@@ -222,7 +222,7 @@ initial values for likelihood optimization.  See \code{\link{fitHMM}}.}
 \item{modelName}{An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions.}
 
 \item{covNames}{Names of any covariates in \code{miData$crwPredict} (if \code{miData} is a \code{\link{crwData}} object; otherwise 
-\code{covNames} is ignored). See \code{\link{prepData}}.}
+\code{covNames} is ignored). See \code{\link{prepData}}. If \code{miData} is a \code{\link{crwData}} object, any covariate in \code{miData$crwPredict} that is used in \code{formula}, \code{formulaDelta}, \code{formulaPi}, or \code{DM} must be included in \code{covNames}.}
 
 \item{spatialCovs}{List of raster layer(s) for any spatial covariates. See \code{\link{prepData}}.}
 

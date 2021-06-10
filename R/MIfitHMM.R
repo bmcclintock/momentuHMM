@@ -85,7 +85,7 @@ MIfitHMM <- function(miData, ...) {
 #' @param prior A function that returns the log-density of the working scale parameter prior distribution(s).  See \code{\link{fitHMM}}.
 #' @param modelName An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions. 
 #' @param covNames Names of any covariates in \code{miData$crwPredict} (if \code{miData} is a \code{\link{crwData}} object; otherwise 
-#' \code{covNames} is ignored). See \code{\link{prepData}}. 
+#' \code{covNames} is ignored). See \code{\link{prepData}}. If \code{miData} is a \code{\link{crwData}} object, any covariate in \code{miData$crwPredict} that is used in \code{formula}, \code{formulaDelta}, \code{formulaPi}, or \code{DM} must be included in \code{covNames}.
 #' @param spatialCovs List of raster layer(s) for any spatial covariates. See \code{\link{prepData}}. 
 #' @param centers 2-column matrix providing the x-coordinates (column 1) and y-coordinates (column 2) for any activity centers (e.g., potential 
 #' centers of attraction or repulsion) from which distance and angle covariates will be calculated based on realizations of the position process. 

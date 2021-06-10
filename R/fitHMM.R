@@ -554,8 +554,19 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   recharge <- newForm$recharge
   
   # build design matrix for t.p.m.
-  covsCol <- get_all_vars(newformula,data)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+  covsCol <- tryCatch(stats::get_all_vars(newformula,data=data),error=function(e) e)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+  if(inherits(covsCol,"error")){
+    if(grepl("MIfitHMM",deparse(sys.calls()[[sys.nframe()-1]])[1])){
+      stop(covsCol$message,"\n     -- has MIfitHMM 'covNames' argument been correctly specified?")
+    } else stop(covsCol)
+  }
   if(!all(names(covsCol) %in% names(data))){
+    for(j in names(covsCol)[which(!names(covsCol) %in% names(data))]){
+      if(exists(j)) stop("'",j,"' covariate not found in data, but a variable named '",j,"' is present in the environment (this can cause major problems!)",
+                         ifelse(grepl("MIfitHMM",deparse(sys.calls()[[sys.nframe()-1]])[1]),
+                                " \n       -- has MIfitHMM 'covNames' argument been correctly specified?",
+                                ""))
+    }
     covsCol <- covsCol[,names(covsCol) %in% names(data),drop=FALSE]
   }
   covs <- stats::model.matrix(newformula,data)
