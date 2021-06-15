@@ -251,11 +251,11 @@ simObsData.momentuHierHMMData<-function(data,lambda,errorEllipse,coordLevel,...)
       tmpobsData[[coordNames[2]]] <- xy[,2]
       
       newTimes <- rep(0,nrow(indDat))
-      newTimes[1] <- 1
       levels <- indDat$level
-      for(k in 2:nrow(indDat)){
+      newTimes[1:nlevels(levels)] <- 1
+      for(k in (nlevels(levels)+1):nrow(indDat)){
         newTimes[k] <- newTimes[k-1]
-        if(coordLevel==levels[k-1]){
+        if(coordLevel==levels[k]){
           newTimes[k] <- newTimes[k-1] + 1
         }
       }
@@ -280,8 +280,11 @@ simObsData.momentuHierHMMData<-function(data,lambda,errorEllipse,coordLevel,...)
         tmpobsData[which(t==tmpData$time[jj]),is.na(tmpobsData[which(t==tmpData$time[jj]),])] <- tmpData[jj,is.na(tmpobsData[which(t==tmpData$time[jj]),])]
       }
       
-      tmpData <- merge(tmpobsData,tmpData,all=TRUE)
+      knames <- c("ID","time","level",coordNames,"mux","muy")
+      if(!is.null(errorEllipse)) knames <- c(knames,"error_semimajor_axis","error_semiminor_axis","error_ellipse_orientation","ln.sd.x","ln.sd.y","error.corr","diag.check")
+      tmpData <- merge(tmpobsData[,knames],tmpData,all=TRUE)
       
+      tmpData <- tmpData[,unique(c("ID","time","level",coordNames,distnames,"mux","muy",knames[!(knames %in% c("ID","time","level",coordNames,distnames,"mux","muy"))]))]
       out<-rbind(out,tmpData)
     }
   }

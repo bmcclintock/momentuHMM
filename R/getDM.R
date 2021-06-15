@@ -222,10 +222,10 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
   parCount <- parCount[distnames]
   
   if(ParChecks){
-    if(any(unlist(lapply(Par,length))!=unlist(parCount)))
-      stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(parCount))),collapse=", "))
+    if(any(unlist(lapply(Par[distnames],length))!=unlist(parCount)))
+      stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par[distnames],length))!=unlist(parCount))),collapse=", "))
     
-    if(sum((unlist(parSize)>0)*unlist(parCount))!=length(unlist(Par))) {
+    if(sum((unlist(parSize)>0)*unlist(parCount))!=length(unlist(Par[distnames]))) {
       error <- "Wrong number of initial parameters"
       stop(error)
     }
