@@ -41,7 +41,12 @@ formatHierFormula <- function(data,hierFormula,hierStates){
 }
 
 getFactorTerms <- function(formulaTerms,factorTerms,formula,data,level){
-  mm<-stats::model.matrix(formula,data)
+  mm<-tryCatch(stats::model.matrix(formula,data),error=function(e) e)
+  if(inherits(mm,"error")){
+    if(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))){
+      stop(mm$message,"\n     -- has MIfitHMM 'covNames' argument been correctly specified?")
+    } else stop(mm)
+  }
   as <- attr(mm,"assign")
   colmm <- colnames(mm)
   for(jj in 1:length(colmm)){

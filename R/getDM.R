@@ -160,14 +160,14 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
           if(wlag) lag <- get_crwlag(form,lag)
           tmpCol <- tryCatch(stats::get_all_vars(form,data),error=function(e) e)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
           if(inherits(tmpCol,"error")){
-            if(grepl("MIfitHMM",deparse(sys.calls()[[sys.nframe()-2]])[1])){
+            if(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))){
               stop(tmpCol$message,"\n     -- has MIfitHMM 'covNames' argument been correctly specified?")
             } else stop(tmpCol)
           }
           if(!all(names(tmpCol) %in% names(data))){
             for(j in names(tmpCol)[which(!names(tmpCol) %in% names(data))]){
               if(exists(j)) stop("'",j,"' covariate not found in data, but a variable named '",j,"' is present in the environment (this can cause major problems!)",
-                                 ifelse(grepl("MIfitHMM",deparse(sys.calls()[[sys.nframe()-2]])[1]),
+                                 ifelse(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1])))),
                                         " \n       -- has MIfitHMM 'covNames' argument been correctly specified?",
                                         ""))
             }

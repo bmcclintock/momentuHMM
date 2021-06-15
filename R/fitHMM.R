@@ -556,14 +556,14 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   # build design matrix for t.p.m.
   covsCol <- tryCatch(stats::get_all_vars(newformula,data=data),error=function(e) e)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
   if(inherits(covsCol,"error")){
-    if(grepl("MIfitHMM",deparse(sys.calls()[[sys.nframe()-1]])[1])){
+    if(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))){
       stop(covsCol$message,"\n     -- has MIfitHMM 'covNames' argument been correctly specified?")
     } else stop(covsCol)
   }
   if(!all(names(covsCol) %in% names(data))){
     for(j in names(covsCol)[which(!names(covsCol) %in% names(data))]){
       if(exists(j)) stop("'",j,"' covariate not found in data, but a variable named '",j,"' is present in the environment (this can cause major problems!)",
-                         ifelse(grepl("MIfitHMM",deparse(sys.calls()[[sys.nframe()-1]])[1]),
+                         ifelse(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1])))),
                                 " \n       -- has MIfitHMM 'covNames' argument been correctly specified?",
                                 ""))
     }
