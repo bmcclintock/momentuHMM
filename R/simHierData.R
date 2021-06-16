@@ -906,7 +906,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       
       for(i in distnames){
         if(inputs$dist[[i]] %in% mvndists){
-          genData[[i]] <- matrix(NA,nbObs,ncol(X))
+          genData[[i]] <- matrix(NA,nbObs,as.numeric(sub("mvnorm","",sub("rw_mvnorm","",dist[[i]]))))
         } else genData[[i]] <- rep(NA,nbObs)
         genArgs[[i]] <- list(1)  # first argument = 1 (one random draw)
       }
