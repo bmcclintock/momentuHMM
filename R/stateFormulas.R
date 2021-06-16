@@ -182,8 +182,10 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
         mp <- character()
       }
       stateFormula[[j]]<-stats::as.formula(paste("~",paste(c(attr(tmp,"intercept"),mainpart,mp),collapse = " + "),collapse=" + "))
+      splineCheck(stateFormula[[j]])
     }
   } else {
+    splineCheck(formula)
     for(j in 1:nbStates){
       stateFormula[[j]] <- formula
     }
@@ -273,4 +275,22 @@ newFormulas<-function(formula,nbStates,betaRef,hierarchical=FALSE)
     }
   }  
   return(list(formulaStates=formulaStates,formterms=formterms,newformula=newformula,recharge=recharge))
+}
+
+splineCheck <- function(stateForm){
+  splineNames <- names(unlist(attributes(stats::terms(stateForm,specials = splineList))$specials))
+  if(length(splineNames)){
+    if(any(splineNames %in% c("ns","bs"))){
+      if (!requireNamespace("splines", quietly = TRUE)) {
+        stop("Package \"splines\" needed for this function to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+    if(any(splineNames %in% c("bSpline","cSpline","iSpline","mSpline"))){
+      if (!requireNamespace("splines2", quietly = TRUE)) {
+        stop("Package \"splines2\" needed for this function to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+  }
 }
