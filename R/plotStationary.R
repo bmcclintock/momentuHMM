@@ -125,7 +125,7 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
     #gamInd <- gamInd[model$conditions$betaCons]
     
     CIout <- vector('list',length(covIndex))
-    names(CIout) <- names(rawCovs)
+    names(CIout) <- names(rawCovs)[covIndex]
     
     # loop over covariates
     for(cov in covIndex) {
@@ -239,6 +239,7 @@ statPlot<-function(model,Sigma,nbStates,formula,covs,tempCovs,tmpcovs,cov,hierRe
       desMat <- stats::model.matrix(formula,data=covs)
       probs <- stationary(model, covs=desMat)
     } else {
+      desMat <- tempCovs
       if(inherits(model,"hierarchical")) covs$level <- NULL
       probs <- stationary(model, covs=covs)
     }
@@ -257,8 +258,8 @@ statPlot<-function(model,Sigma,nbStates,formula,covs,tempCovs,tmpcovs,cov,hierRe
           if(j==1) {
             # only plot if there is variation in stationary state proabilities
             if(!all(apply(probs[[mix]][["level1"]],2,function(x) all( abs(x - mean(x)) < 1.e-6 )))){
-              ref <- model$conditions$hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
-              out[[mix]][[paste0("level",j)]] <- plotCall(cov,tempCovs[which(tempCovs$level==j),],probs[[mix]][["level1"]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,NULL,mix,Sigma,gamInd,alpha,ref,names(ref),formula)
+              ref <- model$conditions$hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
+              out[[mix]][[paste0("level",j)]] <- plotCall(cov,tempCovs[which(tempCovs$level==j),],probs[[mix]][["level1"]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,desMat[which(tempCovs$level==j),],mix,Sigma,gamInd,alpha,ref,names(ref),formula)
               if(length(covnames[-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))])) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j,": ",paste(covnames[-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))]," = ",tmpcovs[which(tmpcovs$level==j),-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
               else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
             }
@@ -268,10 +269,10 @@ statPlot<-function(model,Sigma,nbStates,formula,covs,tempCovs,tmpcovs,cov,hierRe
             out[[mix]][[paste0("level",j)]] <- vector('list',length(names(t)))
             names(out[[mix]][[paste0("level",j)]]) <- names(t)
             for(k in names(t)){
-              ref <- t[[k]]$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
+              ref <- t[[k]]$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
               # only plot if jth node has children and there is variation in stationary state proabilities
               if(!is.null(ref) && !all(apply(probs[[mix]][[paste0("level",j)]][[k]],2,function(x) all( abs(x - mean(x)) < 1.e-6 )))){
-                out[[mix]][[paste0("level",j)]][[k]] <- plotCall(cov,tempCovs[which(tempCovs$level==j),],probs[[mix]][[paste0("level",j)]][[k]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,NULL,mix,Sigma,gamInd,alpha,ref,names(ref),formula)
+                out[[mix]][[paste0("level",j)]][[k]] <- plotCall(cov,tempCovs[which(tempCovs$level==j),],probs[[mix]][[paste0("level",j)]][[k]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,desMat[which(tempCovs$level==j),],mix,Sigma,gamInd,alpha,ref,names(ref),formula)
                 if(length(covnames[-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))])) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j," ",k,": ",paste(covnames[-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))]," = ",tmpcovs[which(tmpcovs$level==j),-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
                 else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j," ",k),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
               }

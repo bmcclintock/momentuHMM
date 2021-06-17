@@ -89,9 +89,10 @@ simObsData.momentuHMMData<-function(data,lambda,errorEllipse,...){
     } else {
       M<-m<-r<-c(0,0)
     }
-    if(!is.null(lambda))
+    if(!is.null(lambda)){
       if(lambda<=0) stop('lambda must be >0')
-  
+      if(any(names(data) %in% "time")) stop("covariates cannot be named `time' when lambda is specified")
+    }
     distnames<-names(data)[which(!(names(data) %in% c("ID",coordNames,"step","angle")))]
     
     #Get observed data based on sampling rate (lambda) and measurement error (M,m, and r)
@@ -102,7 +103,7 @@ simObsData.momentuHMMData<-function(data,lambda,errorEllipse,...){
       X<-idat[[coordNames[1]]]
       Y<-idat[[coordNames[2]]]
       if(!is.null(lambda)){
-        t<-cumsum(c(1,rexp(2*nbObs*lambda,lambda)))
+        t<-cumsum(c(1,stats::rexp(2*nbObs*lambda,lambda)))
         t<-t[which(t<nbObs)]
         tind<-floor(t)
         mux<-X[tind]*(1-(t-tind))+X[tind+1]*(t-tind)
@@ -194,8 +195,10 @@ simObsData.momentuHierHMMData<-function(data,lambda,errorEllipse,coordLevel,...)
     } else {
       M<-m<-r<-c(0,0)
     }
-    if(!is.null(lambda))
+    if(!is.null(lambda)){
       if(lambda<=0) stop('lambda must be >0')
+      if(any(names(data) %in% "time")) stop("covariates cannot be named `time' when lambda is specified")
+    }
     
     distnames<-names(data)[which(!(names(data) %in% c("ID",coordNames,"step","angle")))]
     
