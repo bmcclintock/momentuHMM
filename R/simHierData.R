@@ -44,7 +44,7 @@
 #' @importFrom CircStats rvm
 #' @importFrom Brobdingnag as.brob sum
 #' @importFrom mvtnorm rmvnorm
-#' @importFrom data.tree Node Get Aggregate isLeaf Clone
+# #' @importFrom data.tree Node Get Aggregate isLeaf Clone
 
 simHierData <- function(nbAnimals=1,hierStates,hierDist,
                     Par,hierBeta=NULL,hierDelta=NULL,
@@ -66,6 +66,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                     errorEllipse=NULL,
                     ncores=1)
 {
+  
+  installDataTree()
   
   ##############################
   ## Check if !is.null(model) ##
@@ -396,7 +398,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   }
   
   if(is.null(nbHierCovs)){
-    wnbHierCovs <- data.tree::Node$new(hierDist$Get("name",filterFun=isRoot))
+    wnbHierCovs <- data.tree::Node$new(hierDist$Get("name",filterFun=data.tree::isRoot))
     wnbHierCovs$AddChild(hierDist$Get("name",filterFun=function(x) x$level==2)[1],nbCovs=0)
     for(j in hierDist$Get("name",filterFun=function(x) x$level==2)[-1]){
       #wnbHierCovs$AddChild(paste0(j,"i"),nbCovs=0)
@@ -431,7 +433,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   if(!all(sort(wnbHierCovs$Get("name",filterFun=function(x) x$level==2))==sort(hierDist$Get("name",filterFun=function(x) x$level==2)))) 
     stop("'nbHierCovs' level types can only include ",paste(hierDist$Get("name",filterFun=function(x) x$level==2),collapse=", "))
   
-  nbCovs <- data.tree::Aggregate(wnbHierCovs,"nbCovs",sum,filterFun=isLeaf)
+  nbCovs <- data.tree::Aggregate(wnbHierCovs,"nbCovs",sum,filterFun=data.tree::isLeaf)
   
   if(is.null(model)){
     if(!is.null(covs) & nbCovs>0) {
@@ -645,22 +647,22 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   if("angle" %in% distnames){ 
     if(inputs$dist[["angle"]] %in% angledists & ("step" %in% distnames))
       if(inputs$dist[["step"]] %in% stepdists){
-        if(hierDist$Get("parent",filterFun=isLeaf)$step$name != hierDist$Get("parent",filterFun=isLeaf)$angle$name) stop("step and angle must be in the same level of the hierarchy")
+        if(hierDist$Get("parent",filterFun=data.tree::isLeaf)$step$name != hierDist$Get("parent",filterFun=data.tree::isLeaf)$angle$name) stop("step and angle must be in the same level of the hierarchy")
         data$x<-numeric()
         data$y<-numeric()
-        coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=isLeaf)$step$name)
+        coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=data.tree::isLeaf)$step$name)
       }
   } else if("step" %in% distnames){
     if(inputs$dist[["step"]] %in% stepdists){
       data$x<-numeric()
       data$y<-numeric()
-      coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=isLeaf)$step$name)
+      coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=data.tree::isLeaf)$step$name)
     }    
   } else if(!is.null(mvnCoords)){
     data[[paste0(mvnCoords,".x")]]<-numeric()
     data[[paste0(mvnCoords,".y")]]<-numeric()
     if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) data[[paste0(mvnCoords,".z")]]<-numeric()
-    coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=isLeaf)[[mvnCoords]]$name)
+    coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=data.tree::isLeaf)[[mvnCoords]]$name)
   } else {
     if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs)) stop("spatialCovs, angleCovs, centers, and/or centroids cannot be specified without valid step length and turning angle distributions")
     coordLevel <- NULL

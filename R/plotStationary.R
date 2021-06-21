@@ -36,6 +36,7 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
         stop("No covariate effect to plot")
     else if(inherits(model,"hierarchical")){
       if(nrow(beta)/model$conditions$mixtures==nlevels(model$data$level)) stop("No covariate effect to plot")
+      installDataTree()
     }
     
     # prepare colors for the states

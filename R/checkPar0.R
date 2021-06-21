@@ -470,6 +470,8 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
   
   chkDots(...)
   
+  installDataTree()
+  
   inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,betaCons,deltaCons,fixPar)
   nbStates <- inputHierHMM$nbStates
   dist <- inputHierHMM$dist

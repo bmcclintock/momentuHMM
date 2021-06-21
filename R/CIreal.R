@@ -454,6 +454,8 @@ CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){
     m <- momentuHMM(m)
   } else if(!inherits(m,"momentuHierHMM")) stop("m must be a momentuHierHMM or hierarchical miSum object")
   
+  installDataTree()
+  
   if(!is.null(covs)){
     ci <- CIreal.default(m=m,alpha=alpha,covs=covs,parms=parms)
     tmpcovs <- covs
@@ -472,7 +474,7 @@ CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){
   
   mixtures <- m$conditions$mixtures
   
-  ref <- hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2)
+  ref <- hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==2)
   mixref <- rep(seq(0,mixtures*length(m$stateNames)-1,length(m$stateNames)),each=length(ref))+ref
   if(mixtures>1) nameref <- paste0(rep(names(ref),mixtures),"_mix",rep(1:mixtures,each=length(ref)))
   else nameref <- names(ref)
@@ -492,10 +494,10 @@ CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){
     CIgamma$AddChild(paste0("level",j),gamma=list())
     CIdelta$AddChild(paste0("level",j),delta=list())
     
-    ref <- hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j)
+    ref <- hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j)
     
     for(k in names(t)){
-      levelStates <- t[[k]]$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
+      levelStates <- t[[k]]$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
       if(!is.null(levelStates)){
         mixref <- rep(seq(0,mixtures*length(m$stateNames)-1,length(m$stateNames)),each=length(levelStates))+levelStates
         if(mixtures>1) nameref <- paste0(rep(names(levelStates),mixtures),"_mix",rep(1:mixtures,each=length(levelStates)))

@@ -129,6 +129,8 @@ print.momentuHierHMM <- function(x,...)
   distnames <- names(m$conditions$dist)
   DMind <- m$conditions$DMind
   
+  installDataTree()
+  
   if(!is.null(m$modelName)) {
     mess <- paste("Model:",m$modelName)
     cat(rep("-",nchar(mess)),"------------\n",sep="")

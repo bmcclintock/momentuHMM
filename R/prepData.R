@@ -450,6 +450,8 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
   
   chkDots(...)
   
+  installDataTree()
+  
   if(!is.data.frame(data)) stop("data must be a data frame")
   if(any(dim(data)==0)) stop("data is empty")
   distnames<-names(data)#[which(!(names(data) %in% "level"))]

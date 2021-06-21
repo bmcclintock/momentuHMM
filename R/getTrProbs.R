@@ -235,6 +235,8 @@ getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hie
   
   chkDots(...)
   
+  installDataTree()
+  
   if(is.momentuHierHMM(data) | is.miSum(data) | is.miHMM(data)){
     trProbs <- getTrProbs.default(data,getCI=getCI,covIndex=covIndex,alpha=alpha)
     hierStates <- data$conditions$hierStates
@@ -259,7 +261,7 @@ getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hie
   
   beta <- data.tree::Node$new("getTrProbs")
   
-  ref1 <- hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2)
+  ref1 <- hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==2)
   
   beta$AddChild("level1",gamma=list())
 
@@ -285,7 +287,7 @@ getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hie
     beta$AddChild(paste0("level",j))
     
     for(k in names(t)){
-      ref <- t[[k]]$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
+      ref <- t[[k]]$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
       if(!is.null(ref)){
         beta[[paste0("level",j)]]$AddChild(k,gamma=list())
         for(mix in 1:mixtures){

@@ -466,7 +466,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
 # @importFrom raster getZ
-#' @importFrom data.tree Clone
+# #' @importFrom data.tree Clone
 MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, na.rm = FALSE,
                        hierStates, hierDist, 
                        Par0, hierBeta = NULL, hierDelta = NULL,
@@ -495,6 +495,8 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
   }
   
   chkDots(...)
+  
+  installDataTree()
   
   if(is.crwHierData(miData)){
     
@@ -618,7 +620,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     if(!is.list(hierBeta)){
       if(!inherits(hierBeta,"Node"))
         tmphierBeta<-hierBeta
-      else tmphierBeta <- Clone(hierBeta)
+      else tmphierBeta <- data.tree::Clone(hierBeta)
       hierBeta<-vector('list',nSims)
       if(!is.null(tmphierBeta))
         hierBeta[1:nSims]<-list(tmphierBeta)

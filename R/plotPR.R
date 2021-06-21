@@ -72,9 +72,10 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
   par(mar=c(5,4,4,2)-c(0,0,3,0)) # bottom, left, top, right
   
   if(any(unlist(lapply(m,function(x) inherits(x,"hierarchical"))))){
+    installDataTree()
     for(i in distnames){
       for(j in 1:nSims){
-        iLevel <- gsub("level","",m[[j]]$conditions$hierDist$Get("parent",filterFun=isLeaf)[[i]]$name)
+        iLevel <- gsub("level","",m[[j]]$conditions$hierDist$Get("parent",filterFun=data.tree::isLeaf)[[i]]$name)
         pr[[j]][[paste0(i,"Res")]] <- pr[[j]][[paste0(i,"Res")]][which(m[[j]]$data$level==iLevel)]
       }
     }

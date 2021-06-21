@@ -30,7 +30,7 @@ plot(snakeData,dataNames="step",ask=FALSE)
 mixtures <- 1
 
 ### define hierarchical HMM: states 1-3 = coarse state 1; states 4-6 = coarse state 2; states 7-9 = coarse state 3
-hierStates <- Node$new("garter snake HHMM states")
+hierStates <- data.tree::Node$new("garter snake HHMM states")
 hierStates$AddChild("internalState1")
 hierStates$internalState1$AddChild("mo1", state=1) # motionless
 hierStates$internalState1$AddChild("ex1", state=2) # slow exploratory
@@ -54,7 +54,7 @@ print(hierStates,"state")
 nbStates <- length(hierStates$Get("state",filterFun=data.tree::isLeaf))
 
 # data stream distributions: level 1 = coarse level (no data streams); level 2 = fine level (step="gamma")
-hierDist <- Node$new("garter snake HHMM dist")
+hierDist <- data.tree::Node$new("garter snake HHMM dist")
 hierDist$AddChild("level1")
 hierDist$AddChild("level2")
 hierDist$level2$AddChild("step", dist="gamma")
@@ -83,7 +83,7 @@ DM <- list(step=matrix(cbind(kronecker(c(1,1,1,0,0,0),diag(3)),
 Par <- getParDM(snakeData,hierStates=hierStates,hierDist=hierDist,Par=Par0,DM=DM)
 
 # define hierarchical t.p.m. formulas (same as default)
-hierFormula <- Node$new("garter snake formula")
+hierFormula <- data.tree::Node$new("garter snake formula")
 hierFormula$AddChild("level1", formula=~1)
 hierFormula$AddChild("level2", formula=~1)
 # equivalent
@@ -92,7 +92,7 @@ hierFormula$AddChild("level2", formula=~1)
 #                           level2=list(formula=~1)))
 
 # define hierarchical initial distribution formulas (same as default)
-hierFormulaDelta <- Node$new("garter snake formulaDelta")
+hierFormulaDelta <- data.tree::Node$new("garter snake formulaDelta")
 hierFormulaDelta$AddChild("level1", formulaDelta=~1)
 hierFormulaDelta$AddChild("level2", formulaDelta=~1)
 # equivalent
@@ -102,11 +102,11 @@ hierFormulaDelta$AddChild("level2", formulaDelta=~1)
 
 # initial values ('beta') and constraints ('betaCons') for t.p.m. at each level of hierarchy
 # when mixtures>1, this will only include mixture at top level (via the betaCons argument)
-level1states <- hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2) # reference states for level1
+level1states <- hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==2) # reference states for level1
 level1covNames <- colnames(model.matrix(hierFormula$level1$formula,snakeData))                        # covariate names for level1
 level1dimNames <- list(paste0(level1covNames,"_mix",rep(1:mixtures,each=length(level1covNames))),
                        c(sapply(level1states,function(x) paste(rep(x,each=hierStates$count-1),"->",level1states[-which(level1states==x)]))))
-hierBeta <- Node$new("garter snake beta")
+hierBeta <- data.tree::Node$new("garter snake beta")
 hierBeta$AddChild("level1")
 hierBeta$AddChild("level2")
 hierBeta$level2$AddChild("internalState1")
@@ -136,8 +136,8 @@ beta0_level2$internalState3 <- c(-5.10, -17.69, 5.76, -11.34, 33.39, 37.37)
 covNames <- colnames(model.matrix(hierFormula$level2$formula,snakeData)) # covariate names for level2
 for(jj in 1:hierStates$count){
   j <-  names(hierStates$children)[jj]
-  ref <- hierStates[[j]]$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2) # reference states for internalState j
-  states <- hierStates[[j]]$Get("state",filterFun = isLeaf)                                         # states for internalState j
+  ref <- hierStates[[j]]$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==2) # reference states for internalState j
+  states <- hierStates[[j]]$Get("state",filterFun = data.tree::isLeaf)                                         # states for internalState j
   dimNames <- list(paste0(covNames,"_mix",rep(1:mixtures,each=length(covNames))),paste0(rep(states,each=hierStates[[j]]$count-1)," -> ",states[-which(states==ref)]))
   hierBeta$level2[[j]]$beta <- matrix(beta0_level2[[j]],
                                           nrow=length(covNames)*mixtures,
@@ -172,7 +172,7 @@ delta0_level2$internalState3 <- c(0.34, -0.26)
 level2DeltaCovNames <- colnames(model.matrix(hierFormulaDelta$level2$formulaDelta,snakeData)) # delta covariate names for level2
 for(jj in 1:hierStates$count){
   j <- paste0("internalState",jj)
-  states <- hierStates[[j]]$Get("state",filterFun = isLeaf) # states for internalState j
+  states <- hierStates[[j]]$Get("state",filterFun = data.tree::isLeaf) # states for internalState j
   deltaDimNames <- list(paste0(level2DeltaCovNames,"_mix",rep(1:mixtures,each=length(level2DeltaCovNames))),names(states)[-1])
   hierDelta$level2[[j]]$delta <- matrix(delta0_level2[[j]],
                                           nrow=length(level2DeltaCovNames)*mixtures,
@@ -225,12 +225,12 @@ lapply(stats[[1]]$level2,function(x) x[1,])
 ######################################################
 
 ### Simulate from fitted model ##############################
-obsPerLevel<-Node$new("simHierData")
+obsPerLevel<-data.tree::Node$new("simHierData")
 obsPerLevel$AddChild("level1",obs=M)               # number of level 1 observations
 obsPerLevel$AddChild("level2",obs=dim(dataAr)[1])  # number of level 2 observations that follow each level 1 observation
 
 simHHMM <- simHierData(nbAnimals=W,model=hhmm, obsPerLevel = obsPerLevel, states = TRUE)
-plot(simHHMM,dataNames=hierDist$Get("name",filterFun=isLeaf),ask=FALSE)
+plot(simHHMM,dataNames=hierDist$Get("name",filterFun=data.tree::isLeaf),ask=FALSE)
 #############################################################
 
 save.image("garterSnakeExample.RData")

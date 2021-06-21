@@ -1043,6 +1043,8 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
   
   if(!inherits(data,"momentuHierHMMData")) stop("data must be a momentuHierHMMData object (as returned by prepData or simHierData)")
   
+  installDataTree()
+  
   inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,betaCons,deltaCons,fixPar)
   
   chkDots(...)

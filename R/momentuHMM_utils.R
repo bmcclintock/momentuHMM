@@ -171,6 +171,13 @@ comb <- function(x, ...) {
     mapply(rbind,x,...,SIMPLIFY=FALSE)
 }
 
+installDataTree <- function(){
+  if (!requireNamespace("data.tree", quietly = TRUE)) {
+    stop("Package \"data.tree\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+}
+
 #' @importFrom MASS ginv
 # this function maintains backwards compatibility with momentuHMM versions <1.4.0 (workBounds), <1.4.3 (betaCons), and <1.5.0 (mixtures)
 delta_bc <- function(m){

@@ -27,7 +27,6 @@ Imports:
     qdapRegex,
     prodlim,
     doRNG,
-    data.tree (>= 1.0.0),
     extraDistr,
     rlang
 LinkingTo: Rcpp, RcppArmadillo
@@ -49,6 +48,7 @@ Suggests:
     expm,
     matrixcalc,
     moveHMM,
+    data.tree (>= 1.0.0),
     geosphere,
     mitools
 RoxygenNote: 7.1.1

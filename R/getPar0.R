@@ -449,6 +449,8 @@ getPar0.hierarchical<-function(model,hierStates=model$conditions$hierStates,estA
   
   chkDots(...)
   
+  installDataTree()
+  
   inputHierHMM <- formatHierHMM(data=model$data,hierStates=hierStates,hierDist=model$conditions$hierDist,hierFormula=hierFormula,hierFormulaDelta=hierFormulaDelta,mixtures=mixtures)
   nbStates <- inputHierHMM$nbStates
   formula <- inputHierHMM$formula

@@ -490,6 +490,8 @@ getParDM.hierarchical<-function(data=data.frame(), hierStates, hierDist,
   
   chkDots(...)
   
+  installDataTree()
+  
   nbStates <- nbHierStates(hierStates)$nbStates
   dist <- getHierDist(hierDist,data=NULL,checkData=FALSE)
   
