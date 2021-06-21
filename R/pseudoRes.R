@@ -41,7 +41,7 @@
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
-#' @importFrom extraDistr pcat
+# #' @importFrom extraDistr pcat
 
 pseudoRes <- function(m, ncores = 1)
 {
@@ -232,6 +232,10 @@ pseudoRes <- function(m, ncores = 1)
                                         genPar[nbStates*8+state,genInd]))) #z          
           }
         } else if(dist[[j]]=="cat"){
+          if (!requireNamespace("extraDistr", quietly = TRUE)) {
+            stop("Package \"extraDistr\" needed for categorical distribution. Please install it.",
+                 call. = FALSE)
+          }
           dimCat <- as.numeric(gsub("cat","",m$conditions$dist[[j]]))
           genArgs[[2]] <- t(genPar[seq(state,dimCat*nbStates,nbStates),genInd])
         } else {

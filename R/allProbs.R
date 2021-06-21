@@ -12,7 +12,7 @@
 #' P <- momentuHMM:::allProbs(m=example$m)
 #' }
 #' 
-#' @importFrom extraDistr dcat
+# #' @importFrom extraDistr dcat
 allProbs <- function(m)
 {
   

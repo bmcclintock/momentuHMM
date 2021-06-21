@@ -8,6 +8,10 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
       if(dist[[i]]=="cat") stop(errMess)
       dist[[i]]<-tryCatch(match.arg(dist[[i]],paste0("cat",1:1.e3)),error = function(e) e)
       if(inherits("error",dist[[i]])) stop(errMess)
+      if (!requireNamespace("extraDistr", quietly = TRUE)) {
+        stop("Package \"extraDistr\" needed for categorical distribution. Please install it.",
+             call. = FALSE)
+      }
     } else {
       dist[[i]]<-match.arg(dist[[i]],momentuHMMdists)
     }

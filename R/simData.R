@@ -345,7 +345,7 @@
 #' @importFrom CircStats rvm
 #' @importFrom Brobdingnag as.brob sum
 #' @importFrom mvtnorm rmvnorm
-#' @importFrom extraDistr rcat
+# #' @importFrom extraDistr rcat
 
 simData <- function(nbAnimals=1,nbStates=2,dist,
                     Par,beta=NULL,delta=NULL,

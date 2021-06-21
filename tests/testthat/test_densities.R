@@ -66,12 +66,12 @@ test_that("C++ and R density functions are identical",{
   expect_equal(mvtnorm::dmvnorm(x,mean=c(-100,100),sigma=matrix(c(100,-5,-5,100),2,2)),c(dmvnorm2(x,matrix(c(-100,100),2,1000),matrix(c(10,-5,-5,10),4,2*1000))),tolerance=1e-10)
   
   #dcat
-  x <- rcat(1000,prob=rep(1/10,10))
-  expect_equal(dcat(x,rep(1/10,10)),c(dcat_rcpp(x,matrix(1/10,10,1000),matrix(0,1,2))),tolerance=1e-10)
+  x <- extraDistr::rcat(1000,prob=rep(1/10,10))
+  expect_equal(extraDistr::dcat(x,rep(1/10,10)),c(dcat_rcpp(x,matrix(1/10,10,1000),matrix(0,1,2))),tolerance=1e-10)
   set.seed(1,kind="Mersenne-Twister",normal.kind="Inversion")
   pr <- matrix(runif(1000*10),1000,10)
   pr <- pr/rowSums(pr)
-  expect_equal(dcat(x,pr),c(dcat_rcpp(x,t(pr),matrix(0,1,2))),tolerance=1e-10)
+  expect_equal(extraDistr::dcat(x,pr),c(dcat_rcpp(x,t(pr),matrix(0,1,2))),tolerance=1e-10)
   
   # dnegbinom
   x <- seq(0,999)
