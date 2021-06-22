@@ -52,9 +52,10 @@ pseudoRes <- function(m, ncores = 1)
     if(!is.miHMM(m) & !is.HMMfits(m)) stop("'m' must be a momentuHMM, HMMfits, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
     else {
       if(is.miHMM(m)) m <- m$HMMfits
+      mInd <- which(unlist(lapply(m,is.momentuHMM)))
       registerDoParallel(cores=ncores)
-      withCallingHandlers(genRes <- foreach(i=which(unlist(lapply(m,is.momentuHMM)))) %dorng% {
-        pseudoRes(m[[i]])
+      withCallingHandlers(genRes <- foreach(i=m[mInd]) %dorng% {
+        pseudoRes(i)
       },warning=muffleRNGwarning)
       stopImplicitCluster()
       return(genRes)

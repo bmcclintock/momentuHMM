@@ -43,7 +43,7 @@ timeInStates.momentuHMM <- function(m, by = NULL, alpha = 0.95, ncores = 1){
 #' @importFrom doRNG %dorng%
 timeInStates.HMMfits <- function(m, by = NULL, alpha = 0.95, ncores = 1){
   
-  i <- . <- NULL #gets rid of no visible binding for global variable 'i' and '.' NOTE in R cmd check
+  i <- ii <- . <- NULL #gets rid of no visible binding for global variable 'i' and '.' NOTE in R cmd check
   
   simind <- unlist(lapply(m,is.momentuHMM))
   nsims <- length(which(simind))
@@ -70,13 +70,13 @@ timeInStates.HMMfits <- function(m, by = NULL, alpha = 0.95, ncores = 1){
   
   cat("Decoding state sequences and probabilities for each imputation... ")
   registerDoParallel(cores=ncores)
-  withCallingHandlers(im_states <- foreach(i = 1:nsims) %dorng% {momentuHMM::viterbi(m[[i]])},warning=muffleRNGwarning)
+  withCallingHandlers(im_states <- foreach(i = m) %dorng% {momentuHMM::viterbi(i)},warning=muffleRNGwarning)
   stopImplicitCluster()
   cat("DONE\n")
   
   registerDoParallel(cores=ncores)
-  withCallingHandlers(xmat <- foreach(i = 1:nsims, .combine = rbind) %dorng% {
-    get_combins(m[[i]],im_states[[i]],by)
+  withCallingHandlers(xmat <- foreach(i = m, ii=im_states, .combine = rbind) %dorng% {
+    get_combins(i,ii,by)
   },warning=muffleRNGwarning)
   stopImplicitCluster()
   
