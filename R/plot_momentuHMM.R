@@ -341,6 +341,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   p <- inputs$p
   
   Fun <- lapply(inputs$dist,function(x) paste("d",x,sep=""))
+  for(i in names(Fun)){
+    if(Fun[[i]]=="dcat") dcat <- extraDistr::dcat
+  }
   
   zeroMass<-oneMass<-vector('list',length(inputs$dist))
   names(zeroMass)<-names(oneMass)<-distnames

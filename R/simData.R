@@ -604,6 +604,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   bounds <- p$bounds
   
   Fun <- lapply(inputs$dist,function(x) paste("r",x,sep=""))
+  for(i in names(Fun)){
+    if(Fun[[i]]=="rcat") rcat <- extraDistr::rcat
+  }
 
   spatialcovnames<-NULL
   if(!is.null(spatialCovs)){

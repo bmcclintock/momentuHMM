@@ -125,6 +125,9 @@ pseudoRes <- function(m, ncores = 1)
     if(length(which(data[[distnames[j]]]==pi))>0)
       message("Note: Some ",distnames[j],"s are equal to pi, and the corresponding pseudo-residuals are not included")
   }
+  for(i in names(Fun)){
+    if(Fun[[i]]=="pcat") pcat <- extraDistr::pcat
+  }
 
   # forward log-probabilities
   la <- logAlpha(m)

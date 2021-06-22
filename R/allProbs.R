@@ -86,7 +86,9 @@ allProbs <- function(m)
   par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$fullDM,m$conditions$DMind,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds,m$covsPi)
   
   Fun <- lapply(dist,function(x) paste("d",x,sep=""))
-  
+  for(i in names(Fun)){
+    if(Fun[[i]]=="dcat") dcat <- extraDistr::dcat
+  }
 
   probs <- matrix(1,nrow=nbObs,ncol=nbStates)
   
