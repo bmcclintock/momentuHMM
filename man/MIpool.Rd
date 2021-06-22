@@ -4,10 +4,10 @@
 \alias{MIpool}
 \title{Calculate pooled parameter estimates and states across multiple imputations}
 \usage{
-MIpool(HMMfits, alpha = 0.95, ncores = 1, covs = NULL, na.rm = FALSE)
+MIpool(im, alpha = 0.95, ncores = 1, covs = NULL, na.rm = FALSE)
 }
 \arguments{
-\item{HMMfits}{List comprised of \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} objects}
+\item{im}{List comprised of \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} objects}
 
 \item{alpha}{Significance level for calculating confidence intervals of pooled estimates (including location error ellipses). Default: 0.95.}
 
@@ -30,7 +30,7 @@ A \code{\link{miSum}} object, i.e., a list comprised of model and pooled paramet
 \item{states}{The most freqent state assignment for each time step based on the \code{\link{viterbi}} algorithm for each model fit}
 \item{stateProbs}{Pooled state probability estimates for each time step}
 \item{mixtureProbs}{Pooled mixture probabilities for each individual (only applies if \code{mixtures>1})}
-\item{hierStateProbs}{Pooled state probability estimates for each time step at each level of the hierarchy (only applies if \code{HMMfits} is comprised of \code{\link{momentuHierHMM}} objects)}
+\item{hierStateProbs}{Pooled state probability estimates for each time step at each level of the hierarchy (only applies if \code{im} is comprised of \code{\link{momentuHierHMM}} objects)}
 }
 \description{
 Calculate pooled parameter estimates and states across multiple imputations

@@ -1,7 +1,7 @@
 #'
 #' Calculate pooled parameter estimates and states across multiple imputations
 #' 
-#' @param HMMfits List comprised of \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} objects
+#' @param im List comprised of \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} objects
 #' @param alpha Significance level for calculating confidence intervals of pooled estimates (including location error ellipses). Default: 0.95.
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param covs Data frame consisting of a single row indicating the covariate values to be used in the calculation of pooled natural parameters. 
@@ -19,7 +19,7 @@
 #' \item{states}{The most freqent state assignment for each time step based on the \code{\link{viterbi}} algorithm for each model fit}
 #' \item{stateProbs}{Pooled state probability estimates for each time step}
 #' \item{mixtureProbs}{Pooled mixture probabilities for each individual (only applies if \code{mixtures>1})}
-#' \item{hierStateProbs}{Pooled state probability estimates for each time step at each level of the hierarchy (only applies if \code{HMMfits} is comprised of \code{\link{momentuHierHMM}} objects)}
+#' \item{hierStateProbs}{Pooled state probability estimates for each time step at each level of the hierarchy (only applies if \code{im} is comprised of \code{\link{momentuHierHMM}} objects)}
 #' 
 #' @details
 #' Pooled estimates, standard errors, and confidence intervals are calculated using standard multiple imputation formulas. Working scale parameters are pooled
@@ -64,9 +64,8 @@
 #' @importFrom CircStats circ.mean
 #' @importFrom car dataEllipse
 # #' @importFrom mitools MIcombine
-MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
+MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   
-  im <- HMMfits
   goodIndex <- 1:length(im)
   simind <- which((unlist(lapply(im,is.momentuHMM))))
   nsims <- length(simind)
@@ -167,19 +166,21 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   
   mixtures <- m$conditions$mixtures
   
+  fm <- NULL
+  
   if(nbStates>1) {
     cat("Decoding state sequences and probabilities for each imputation... ")
     registerDoParallel(cores=ncores)
-    withCallingHandlers(im_states <- foreach(i = 1:nsims, .combine = rbind) %dorng% {momentuHMM::viterbi(im[[i]])},warning=muffleRNGwarning)
+    withCallingHandlers(im_states <- foreach(fm = im, .combine = rbind) %dorng% {momentuHMM::viterbi(fm)},warning=muffleRNGwarning)
     stopImplicitCluster()
     if(nsims>1) states <- apply(im_states,2,function(x) which.max(hist(x,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts))
     else states <- im_states
     registerDoParallel(cores=ncores)
-    withCallingHandlers(im_stateProbs <- foreach(i = 1:nsims) %dorng% {momentuHMM::stateProbs(im[[i]])},warning=muffleRNGwarning)
+    withCallingHandlers(im_stateProbs <- foreach(fm = im) %dorng% {momentuHMM::stateProbs(fm)},warning=muffleRNGwarning)
     stopImplicitCluster()
     if(mixtures>1){
       registerDoParallel(cores=ncores)
-      withCallingHandlers(mixProbs <- foreach(i = 1:nsims) %dorng% {mixtureProbs(im[[i]])},warning=muffleRNGwarning)
+      withCallingHandlers(mixProbs <- foreach(fm = im) %dorng% {mixtureProbs(fm)},warning=muffleRNGwarning)
       stopImplicitCluster()
     }
     cat("DONE\n")
@@ -616,9 +617,11 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     if(any(ident)){
       # calculate location alpha% error ellipses
       cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
+      tmpx<-matrix(unlist(lapply(im,function(x) x$data[[coordNames[1]]])),nrow(mh$data))
+      tmpy<-matrix(unlist(lapply(im,function(x) x$data[[coordNames[2]]])),nrow(mh$data))
       registerDoParallel(cores=ncores)
       withCallingHandlers(errorEllipse<-foreach(i = 1:nrow(mh$data)) %dorng% {
-        tmp <- cbind(unlist(lapply(im,function(x) x$data[[coordNames[1]]][i])),unlist(lapply(im,function(x) x$data[[coordNames[2]]][i])))
+        tmp <- cbind(tmpx[i,],tmpy[i,])
         if(length(unique(tmp[,1]))>1 | length(unique(tmp[,2]))>1)
           ellip <- car::dataEllipse(tmp,levels=alpha,draw=FALSE,segments=100)
         else ellip <- matrix(tmp[1,],101,2,byrow=TRUE)
