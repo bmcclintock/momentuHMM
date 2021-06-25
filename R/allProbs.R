@@ -87,7 +87,12 @@ allProbs <- function(m)
   
   Fun <- lapply(dist,function(x) paste("d",x,sep=""))
   for(i in names(Fun)){
-    if(Fun[[i]]=="dcat") dcat <- extraDistr::dcat
+    if(Fun[[i]]=="dcat"){
+      if (!requireNamespace("extraDistr", quietly = TRUE))
+        stop("Package \"extraDistr\" needed for categorical distribution. Please install it.",
+             call. = FALSE)
+      dcat <- extraDistr::dcat
+    }
   }
 
   probs <- matrix(1,nrow=nbObs,ncol=nbStates)

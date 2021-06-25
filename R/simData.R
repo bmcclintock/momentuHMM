@@ -605,7 +605,12 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   
   Fun <- lapply(inputs$dist,function(x) paste("r",x,sep=""))
   for(i in names(Fun)){
-    if(Fun[[i]]=="rcat") rcat <- extraDistr::rcat
+    if(Fun[[i]]=="rcat"){
+      if (!requireNamespace("extraDistr", quietly = TRUE))
+        stop("Package \"extraDistr\" needed for categorical distribution. Please install it.",
+             call. = FALSE)
+      rcat <- extraDistr::rcat
+    }
   }
 
   spatialcovnames<-NULL

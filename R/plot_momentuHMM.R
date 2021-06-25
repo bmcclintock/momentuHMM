@@ -342,7 +342,12 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   
   Fun <- lapply(inputs$dist,function(x) paste("d",x,sep=""))
   for(i in names(Fun)){
-    if(Fun[[i]]=="dcat") dcat <- extraDistr::dcat
+    if(Fun[[i]]=="dcat"){
+      if (!requireNamespace("extraDistr", quietly = TRUE))
+        stop("Package \"extraDistr\" needed for categorical distribution. Please install it.",
+             call. = FALSE) 
+      dcat <- extraDistr::dcat
+    }
   }
   
   zeroMass<-oneMass<-vector('list',length(inputs$dist))

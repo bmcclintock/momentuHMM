@@ -127,7 +127,13 @@ pseudoRes <- function(m, ncores = 1)
       message("Note: Some ",distnames[j],"s are equal to pi, and the corresponding pseudo-residuals are not included")
   }
   for(i in names(Fun)){
-    if(Fun[[i]]=="pcat") pcat <- extraDistr::pcat
+    if(Fun[[i]]=="pcat") {
+      if (!requireNamespace("extraDistr", quietly = TRUE)) {
+        stop("Package \"extraDistr\" needed for categorical distribution. Please install it.",
+             call. = FALSE)
+      }
+      pcat <- extraDistr::pcat
+    }
   }
 
   # forward log-probabilities
@@ -236,10 +242,6 @@ pseudoRes <- function(m, ncores = 1)
                                         genPar[nbStates*8+state,genInd]))) #z          
           }
         } else if(dist[[j]]=="cat"){
-          if (!requireNamespace("extraDistr", quietly = TRUE)) {
-            stop("Package \"extraDistr\" needed for categorical distribution. Please install it.",
-                 call. = FALSE)
-          }
           dimCat <- as.numeric(gsub("cat","",m$conditions$dist[[j]]))
           genArgs[[2]] <- t(genPar[seq(state,dimCat*nbStates,nbStates),genInd])
         } else {
