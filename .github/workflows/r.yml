@@ -70,7 +70,14 @@ jobs:
       - name: Install dependencies
         run: |
           remotes::install_deps(dependencies = TRUE)
+          remotes::install_cran("devtools")
           remotes::install_cran("rcmdcheck")
+        shell: Rscript {0}
+        
+      - name: Preinstall momentuHMM on windows
+        if: runner.os == 'Windows'
+        run: |
+          devtools::install(reload=TRUE,quick=FALSE,build=TRUE,dependencies=FALSE,build_vignettes=FALSE)
         shell: Rscript {0}
 
       - name: Check
@@ -87,3 +94,9 @@ jobs:
         with:
           name: ${{ runner.os }}-r${{ matrix.config.r }}-results
           path: check
+          
+      - name: Don't use tar from old Rtools to store the cache
+        if: ${{ runner.os == 'Windows' && startsWith(steps.install-r.outputs.installed-r-version, '3.6' ) }}
+        shell: bash
+        run: echo "C:/Program Files/Git/usr/bin" >> $GITHUB_PATH
+        

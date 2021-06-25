@@ -19,7 +19,7 @@ library(remotes)
 install_github("bmcclintock/momentuHMM")
 ```
 
-To install the latest (**unstable**) version of the package from Github:
+To install the latest (**unstable**) version of the package from Github: [![R-CMD-check](https://github.com/bmcclintock/momentuHMM/actions/workflows/r.yml/badge.svg?branch=develop)](https://github.com/bmcclintock/momentuHMM/actions/workflows/r.yml)
 ``` R
 library(remotes)
 install_github("bmcclintock/momentuHMM@develop")
