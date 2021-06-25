@@ -1,4 +1,4 @@
-# momentuHMM  [![Travis-CI Build Status](https://api.travis-ci.org/bmcclintock/momentuHMM.svg?branch=master)](https://travis-ci.org/bmcclintock/momentuHMM) [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![CRAN_Downloads](https://cranlogs.r-pkg.org/badges/momentuHMM)](https://cran.r-project.org/package=momentuHMM) [![CRAN_Downloads](https://cranlogs.r-pkg.org/badges/grand-total/momentuHMM)](https://cran.r-project.org/package=momentuHMM)
+# momentuHMM  [![R-CMD-check](https://github.com/bmcclintock/momentuHMM/workflows/R-CMD-check/badge.svg)](https://github.com/bmcclintock/momentuHMM/actions) [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![CRAN_Downloads](https://cranlogs.r-pkg.org/badges/momentuHMM)](https://cran.r-project.org/package=momentuHMM) [![CRAN_Downloads](https://cranlogs.r-pkg.org/badges/grand-total/momentuHMM)](https://cran.r-project.org/package=momentuHMM)
 
 R package for Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models 
 
@@ -13,13 +13,13 @@ install.packages("momentuHMM")
 ```
 
 ### Install from Github
-To install the latest (stable) version of the package from Github: [![Travis-CI Build Status](https://api.travis-ci.org/bmcclintock/momentuHMM.svg?branch=master)](https://travis-ci.org/bmcclintock/momentuHMM)
+To install the latest (stable) version of the package from Github: [![R-CMD-check](https://github.com/bmcclintock/momentuHMM/workflows/R-CMD-check/badge.svg)](https://github.com/bmcclintock/momentuHMM/actions)
 ``` R
 library(remotes)
 install_github("bmcclintock/momentuHMM")
 ```
 
-To install the latest (**unstable**) version of the package from Github: [![Travis-CI Build Status](https://api.travis-ci.org/bmcclintock/momentuHMM.svg?branch=develop)](https://travis-ci.org/bmcclintock/momentuHMM)
+To install the latest (**unstable**) version of the package from Github: [![R-CMD-check](https://github.com/bmcclintock/momentuHMM/actions/workflows/r.yml/badge.svg?branch=develop)](https://github.com/bmcclintock/momentuHMM/actions/workflows/r.yml)
 ``` R
 library(remotes)
 install_github("bmcclintock/momentuHMM@develop")
