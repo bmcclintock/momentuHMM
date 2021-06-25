@@ -77,7 +77,7 @@ jobs:
       - name: Preinstall momentuHMM on windows
         if: runner.os == 'Windows'
         run: |
-          devtools::install(reload=FALSE,quick=TRUE,build=TRUE,dependencies=FALSE,build_vignettes=FALSE)
+          devtools::install(reload=TRUE,quick=FALSE,build=TRUE,dependencies=FALSE,build_vignettes=FALSE)
         shell: Rscript {0}
 
       - name: Check

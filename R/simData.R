@@ -1059,7 +1059,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     ## Loop over the animals ##
     ###########################
     registerDoParallel(cores=ncores)
-    withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.combine='comb',.packages="momentuHMM") %dorng% {
+    withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.combine='comb') %dorng% {
       
       message("\r        Simulating individual ",zoo,"... ",sep="")
       
