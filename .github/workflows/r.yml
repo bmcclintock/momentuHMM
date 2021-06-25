@@ -70,7 +70,14 @@ jobs:
       - name: Install dependencies
         run: |
           remotes::install_deps(dependencies = TRUE)
+          remotes::install_cran("devtools")
           remotes::install_cran("rcmdcheck")
+        shell: Rscript {0}
+        
+      - name: Preinstall momentuHMM on windows
+        if: runner.os == 'Windows'
+        run: |
+          devtools::install(reload=FALSE,quick=TRUE,build=TRUE,dependencies=FALSE,build_vignettes=FALSE)
         shell: Rscript {0}
 
       - name: Check
