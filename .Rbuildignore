@@ -90,3 +90,4 @@ tests/testthat/test_extraExamples.R
 tests/testthat/extraExamples.R
 tests/testthat/extraExamples.RData
 ^manuscript$
+^\.github$
