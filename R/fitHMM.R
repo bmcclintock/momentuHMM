@@ -367,7 +367,6 @@ fitHMM <- function(data, ...) {
 #' m.cosinor    
 #' 
 #' ### 9. Piecewise constant B-spline on step length mean and angle concentration
-#' library(splines2)
 #' nObs <- 1000 # length of simulated track
 #' cov <- data.frame(time=1:nObs) # time covariate for splines
 #' dist <- list(step="gamma",angle="vm")

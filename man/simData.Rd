@@ -446,7 +446,6 @@ data.cos<-simData(nbStates=nbStates,dist=dist,Par=Par,
                   beta=beta,formula=formula,covs=covs)     
                   
 # 8. Piecewise constant B-spline on step length mean and angle concentration
-library(splines2)
 nObs <- 1000 # length of simulated track
 cov <- data.frame(time=1:nObs) # time covariate for splines
 dist <- list(step="gamma",angle="vm")
