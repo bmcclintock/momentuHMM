@@ -78,9 +78,6 @@
 #' @importFrom stats optimise get_all_vars
 # @importFrom expm sqrtm
 # @importFrom matrixcalc matrix.trace
-#' @importFrom doParallel registerDoParallel stopImplicitCluster
-#' @importFrom foreach foreach %dopar%
-#' @importFrom doRNG %dorng%
 
 randomEffects <- function(m, Xformula = ~1, alpha = 0.95, ncores = 1, nlmPar = list(), fit = TRUE, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), modelName = NULL, ...)
 {
@@ -123,14 +120,32 @@ randomEffects <- function(m, Xformula = ~1, alpha = 0.95, ncores = 1, nlmPar = l
   trProbs <- getTrProbs(m,covIndex=aInd)
   if(any(trProbs<0.01) | any(trProbs>0.99)) warning("estimated state transition probabilites for ",mName," appear to be near a boundary; proceed with caution")
   
-  registerDoParallel(cores=ncores)
-  varcomp <- withCallingHandlers(foreach(j=1:nbRE) %dorng% {
+  if(ncores>1 & nbRE>1){
+    for(pkg in c("doFuture","future")){
+      if (!requireNamespace(pkg, quietly = TRUE)) {
+        stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+    oldDoPar <- doFuture::registerDoFuture()
+    on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
+    future::plan(future::multisession, workers = ncores)
+    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
+    getZtilde <- getZtilde
+    progBar <- progBar
+    pkgs <- c("momentuHMM")
+  } else { 
+    doParallel::registerDoParallel(cores=ncores)
+    pkgs <- NULL
+  }
+  varcomp <- withCallingHandlers(foreach(j=1:nbRE,.packages = pkgs) %dorng% {
     cat("Random effect for state transition ",colnames(m$mle$beta)[j]," ...\n",sep="")
     getZtilde(W=VC[(j-1)*nbAnimals+1:nbAnimals,(j-1)*nbAnimals+1:nbAnimals],betahat=c(m$mle$beta[,j]),X=X,alpha)
   }
   ,warning=muffleRNGwarning)
-  stopImplicitCluster()
-  if(ncores==1) cat("DONE\n")
+  if(!((ncores>1 & nbRE>1))) doParallel::stopImplicitCluster()
+  else future::plan(future::sequential)
+  cat("DONE\n")
   
   betaFix <- matrix(NA,nrow(m$mle$beta),ncol(m$mle$beta))
   for(j in 1:nbRE){

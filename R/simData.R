@@ -301,16 +301,16 @@
 #'                   beta=beta,formula=formula,covs=covs)     
 #'                   
 #' # 8. Piecewise constant B-spline on step length mean and angle concentration
-#' # library(splines2)
-#' # nObs <- 1000 # length of simulated track
-#' # cov <- data.frame(time=1:nObs) # time covariate for splines
-#' # dist <- list(step="gamma",angle="vm")
-#' # stepDM <- list(mean=~bSpline(time,df=2,degree=0),sd=~1)
-#' # angleDM <- list(mean=~1,concentration=~bSpline(time,df=2,degree=0))
-#' # DM <- list(step=stepDM,angle=angleDM)
-#' # Par <- list(step=c(log(1000),1,-1,log(100)),angle=c(0,log(10),2,-5))
-#' #
-#' # data.spline<-simData(obsPerAnimal=nObs,nbStates=1,dist=dist,Par=Par,DM=DM,covs=cov)        
+#' library(splines2)
+#' nObs <- 1000 # length of simulated track
+#' cov <- data.frame(time=1:nObs) # time covariate for splines
+#' dist <- list(step="gamma",angle="vm")
+#' stepDM <- list(mean=~splines2::bSpline(time,df=2,degree=0),sd=~1)
+#' angleDM <- list(mean=~1,concentration=~splines2::bSpline(time,df=2,degree=0))
+#' DM <- list(step=stepDM,angle=angleDM)
+#' Par <- list(step=c(log(1000),1,-1,log(100)),angle=c(0,log(10),2,-5))
+#' 
+#' data.spline<-simData(obsPerAnimal=nObs,nbStates=1,dist=dist,Par=Par,DM=DM,covs=cov)        
 #' 
 #' # 9. Initial state (delta) based on covariate
 #' nObs <- 100
@@ -346,6 +346,7 @@
 #' @importFrom Brobdingnag as.brob sum
 #' @importFrom mvtnorm rmvnorm
 # #' @importFrom extraDistr rcat
+#' @importFrom doParallel registerDoParallel stopImplicitCluster
 
 simData <- function(nbAnimals=1,nbStates=2,dist,
                     Par,beta=NULL,delta=NULL,
@@ -367,6 +368,52 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     errorEllipse=NULL,
                     ncores=1)
 {
+  
+  if(ncores>1 & nbAnimals>1){
+    for(pkg in c("doFuture","future")){
+      if (!requireNamespace(pkg, quietly = TRUE)) {
+        stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+    oldDoPar <- doFuture::registerDoFuture()
+    on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
+    future::plan(future::multisession, workers = ncores)
+    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (frowned upon by CRAN)
+    progBar <- progBar
+    mvndists <- mvndists
+    getDM <- getDM
+    n2w <- n2w
+    get_ncmean <- get_ncmean
+    w2n <- w2n
+    angledists <- angledists
+    stepdists <- stepdists
+    rwdists <- rwdists
+    rmvnorm2 <- rmvnorm2
+    rmvnorm3 <- rmvnorm3
+    rvm <- CircStats::rvm
+    rwrpcauchy <- CircStats::rwrpcauchy
+    rcat <- extraDistr::rcat
+    rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- mvtnorm::rmvnorm
+    rrw_norm <- stats::rnorm
+    mlogit <- mlogit
+    distAngle <- distAngle
+    circAngles <- circAngles
+    if (requireNamespace("splines", quietly = TRUE)){
+      ns <- splines::ns
+      bs <- splines::bs
+    }
+    if (requireNamespace("splines2", quietly = TRUE)){
+      bSpline <- splines2::bSpline
+      mSpline <- splines2::mSpline
+      cSpline <- splines2::cSpline
+      iSpline <- splines2::iSpline
+    }
+    pkgs <- c("momentuHMM")
+  } else { 
+    doParallel::registerDoParallel(cores=ncores)
+    pkgs <- NULL
+  }
   
   ##############################
   ## Check if !is.null(model) ##
@@ -1061,15 +1108,17 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   
   mix <- rep(1,nbAnimals)
   
+  if(ncores>1 & nbAnimals>1) message("        Simulating ",nbAnimals," individuals in parallel... ",sep="")
+  
   if(!nbSpatialCovs | !retrySims){
   
     ###########################
     ## Loop over the animals ##
     ###########################
-    registerDoParallel(cores=ncores)
-    withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.combine='comb') %dorng% {
+    withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.export=ls(),.packages=pkgs,.combine='comb') %dorng% {
       
-      message("\r        Simulating individual ",zoo,"... ",sep="")
+      if(ncores==1 | nbAnimals==1) message("        Simulating individual ",zoo,"... ",sep="")
+      else progBar(zoo, nbAnimals)
       
       # number of observations for animal zoo
       nbObs <- allNbObs[zoo]
@@ -1238,6 +1287,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       
       for (k in 1:(nbObs-1)){
         
+        if(ncores==1 | nbAnimals==1) progBar(k, nbObs-1)
+        
         if(nbSpatialCovs |  length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
           # format parameters
           DMinputs<-getDM(cbind(subCovs[k-maxlag:0,,drop=FALSE],subSpatialcovs[k-maxlag:0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE)
@@ -1334,7 +1385,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             }
       
             probs <- c(1.-zeroMass[[i]][Z[k]]-oneMass[[i]][Z[k]],zeroMass[[i]][Z[k]],oneMass[[i]][Z[k]])
-            rU <- which(rmultinom(1,1,prob=probs)==1)
+            rU <- which(stats::rmultinom(1,1,prob=probs)==1)
             if(rU==1){
               if(inputs$dist[[i]] %in% mvndists){
                 genData[[i]][k,] <- do.call(Fun[[i]],genArgs[[i]])
@@ -1440,10 +1491,14 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(length(centerInd)) centerCovs <- subCovs[,centerNames]
       if(length(centroidInd)) centroidCovs <- subCovs[,centroidNames]
       #data <- rbind(data,d)
+      
+      #if(ncores==1 | nbAnimals==1) message("\n")
+        
       return(list(data=d,allCovs=allCovs[cumNbObs[zoo]+1:nbObs,,drop=FALSE],allSpatialcovs=subSpatialcovs,centerCovs=centerCovs,centroidCovs=centroidCovs,allStates=matrix(Z,ncol=1)))
     }
     ,warning=muffleRNGwarning)
-    stopImplicitCluster()
+    if(!((ncores>1 & nbAnimals>1))) doParallel::stopImplicitCluster()
+    else future::plan(future::sequential)
     
     if(nbCovs>0)
       simDat$data <- cbind(simDat$data,simDat$allCovs)
@@ -1501,14 +1556,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     # account for observation error (if any)
     out<-simObsData(momentuHMMData(simDat$data),lambda,errorEllipse)
     
-    message("DONE")
     return(out)
   } else {
     simCount <- 0
-    cat("Attempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simData'\n",sep="")
+    message("\nAttempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simData'\n",sep="")
     while(simCount < retrySims){
-      if(ncores==1) cat("    Attempt ",simCount+1," of ",retrySims,"...\n",sep="")
-      else cat("\r    Attempt ",simCount+1," of ",retrySims,"...",sep="")
+      if(ncores==1) cat("\r    Attempt ",simCount+1," of ",retrySims,"... ",sep="")
+      else cat("\r    Attempt ",simCount+1," of ",retrySims,"... ",sep="")
       tmp<-suppressMessages(tryCatch(simData(nbAnimals,nbStates,dist,
                           Par,beta,delta,
                           formula,formulaDelta,mixtures,formulaPi,
@@ -1529,18 +1583,15 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                           errorEllipse,
                           ncores),error=function(e) e))
       if(inherits(tmp,"error")){
-        if(ncores==1) cat("FAILED\n")
         if(grepl("Try expanding the extent of the raster",tmp)) simCount <- simCount+1
         else stop(tmp)
       } else {
         simCount <- retrySims
-        if(ncores>1) message("\nDONE")
-        else message("DONE")
+        message("DONE\n")
         return(tmp)
       }
     }
-    if(ncores>1) message("\nFAILED")
-    else message("FAILED")
+    message("FAILED\n")
     stop(tmp)
   }
 }

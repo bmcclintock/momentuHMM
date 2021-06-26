@@ -38,9 +38,6 @@
 #'
 #' @export
 #' @importFrom stats integrate qnorm qchisq mahalanobis
-#' @importFrom doParallel registerDoParallel stopImplicitCluster
-#' @importFrom foreach foreach %dopar%
-#' @importFrom doRNG %dorng%
 # #' @importFrom extraDistr pcat
 
 pseudoRes <- function(m, ncores = 1)
@@ -51,13 +48,30 @@ pseudoRes <- function(m, ncores = 1)
   if(!is.momentuHMM(m) & !is.miSum(m)){
     if(!is.miHMM(m) & !is.HMMfits(m)) stop("'m' must be a momentuHMM, HMMfits, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
     else {
+      mod <- ii <- NULL # get rid of no visible binding for global variable 
       if(is.miHMM(m)) m <- m$HMMfits
+      if (ncores>1) {
+        for(pkg in c("doFuture","future")){
+          if (!requireNamespace(pkg, quietly = TRUE)) {
+            stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
+                 call. = FALSE)
+          }
+        }
+        oldDoPar <- doFuture::registerDoFuture()
+        future::plan(future::multisession, workers = ncores)
+        on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
+        # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
+        progBar <- progBar
+      } else {
+        doParallel::registerDoParallel(cores=ncores)
+      }
       mInd <- which(unlist(lapply(m,is.momentuHMM)))
-      registerDoParallel(cores=ncores)
-      withCallingHandlers(genRes <- foreach(i=m[mInd]) %dorng% {
-        pseudoRes(i)
+      withCallingHandlers(genRes <- foreach(mod=m[mInd], ii=mInd, .packages="momentuHMM") %dorng% {
+        progBar(ii, length(mInd))
+        pseudoRes(mod)
       },warning=muffleRNGwarning)
-      stopImplicitCluster()
+      if(ncores==1) doParallel::stopImplicitCluster()
+      else future::plan(future::sequential)
       return(genRes)
     }
   }

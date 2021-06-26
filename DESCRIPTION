@@ -50,10 +50,13 @@ Suggests:
     extraDistr,
     data.tree (>= 1.0.0),
     geosphere,
-    mitools
+    mitools,
+    doFuture,
+    future
 RoxygenNote: 7.1.1
 Encoding: UTF-8
 NeedsCompilation: yes
 VignetteBuilder: R.rsp
-URL: https://github.com/bmcclintock/momentuHMM
+URL: https://github.com/bmcclintock/momentuHMM,
+    https://github.com/bmcclintock/momentuHMM/discussions
 BugReports: https://github.com/bmcclintock/momentuHMM/issues

@@ -45,6 +45,7 @@
 #' @importFrom Brobdingnag as.brob sum
 #' @importFrom mvtnorm rmvnorm
 # #' @importFrom data.tree Node Get Aggregate isLeaf Clone
+#' @importFrom doParallel registerDoParallel stopImplicitCluster
 
 simHierData <- function(nbAnimals=1,hierStates,hierDist,
                     Par,hierBeta=NULL,hierDelta=NULL,
@@ -68,6 +69,52 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
 {
   
   installDataTree()
+  
+  if(ncores>1 & nbAnimals>1){
+    for(pkg in c("doFuture","future")){
+      if (!requireNamespace(pkg, quietly = TRUE)) {
+        stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+    oldDoPar <- doFuture::registerDoFuture()
+    on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
+    future::plan(future::multisession, workers = ncores)
+    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (frowned upon by CRAN)
+    progBar <- progBar
+    mvndists <- mvndists
+    getDM <- getDM
+    n2w <- n2w
+    get_ncmean <- get_ncmean
+    w2n <- w2n
+    angledists <- angledists
+    stepdists <- stepdists
+    rwdists <- rwdists
+    rmvnorm2 <- rmvnorm2
+    rmvnorm3 <- rmvnorm3
+    rvm <- CircStats::rvm
+    rwrpcauchy <- CircStats::rwrpcauchy
+    rcat <- extraDistr::rcat
+    rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- mvtnorm::rmvnorm
+    rrw_norm <- stats::rnorm
+    mlogit <- mlogit
+    distAngle <- distAngle
+    circAngles <- circAngles
+    pkgs <- c("momentuHMM")
+    if (requireNamespace("splines", quietly = TRUE)){
+      ns <- splines::ns
+      bs <- splines::bs
+    }
+    if (requireNamespace("splines2", quietly = TRUE)){
+      bSpline <- splines2::bSpline
+      mSpline <- splines2::mSpline
+      cSpline <- splines2::cSpline
+      iSpline <- splines2::iSpline
+    }
+  } else { 
+    doParallel::registerDoParallel(cores=ncores)
+    pkgs <- NULL
+  }
   
   ##############################
   ## Check if !is.null(model) ##
@@ -866,15 +913,17 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",FALSE,hierarchical=TRUE)
   
+  if(ncores>1 & nbAnimals>1) message("\nSimulating ",nbAnimals," individuals in parallel... ",sep="")
+  
   if(!nbSpatialCovs | !retrySims){
     
     ###########################
     ## Loop over the animals ##
     ###########################
-    registerDoParallel(cores=ncores)
-    withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.combine='comb') %dorng% {
+    withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.export=ls(),.packages=pkgs,.combine='comb') %dorng% {
       
-      message("\r        Simulating individual ",zoo,"... ",sep="")
+      if(ncores==1 | nbAnimals==1) message("        Simulating individual ",zoo,"... ",sep="")
+      else progBar(zoo, nbAnimals)
       
       # number of observations for animal zoo
       nbObs <- allNbObs[zoo]
@@ -1069,6 +1118,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       
         for (k in 1:nbObs){
           
+          if(ncores==1 | nbAnimals==1) progBar(k, nbObs)
+          
           #if(level[[zoo]][k] %in% lLevels[[zoo]][seq(2,length(lLevels[[zoo]]),2)]){
           #  if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
           #    subCovs[k,which(colnames(subCovs)!="level")] <- subCovs[k-1,which(colnames(subCovs)!="level"),drop=FALSE]
@@ -1195,7 +1246,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                 }
                 
                 probs <- c(1.-zeroMass[[i]][Z[k]]-oneMass[[i]][Z[k]],zeroMass[[i]][Z[k]],oneMass[[i]][Z[k]])
-                rU <- which(rmultinom(1,1,prob=probs)==1)
+                rU <- which(stats::rmultinom(1,1,prob=probs)==1)
                 if(rU==1){
                   if(inputs$dist[[i]] %in% mvndists){
                     genData[[i]][k,] <- do.call(Fun[[i]],genArgs[[i]])
@@ -1332,10 +1383,14 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       if(length(centerInd)) centerCovs <- subCovs[,centerNames]
       if(length(centroidInd)) centroidCovs <- subCovs[,centroidNames]
       #data <- rbind(data,d)
+      
+      #if(ncores==1 | nbAnimals==1) message("\n")
+      
       return(list(data=d,allCovs=allCovs[cumNbObs[zoo]+1:nbObs,,drop=FALSE],allSpatialcovs=subSpatialcovs,centerCovs=centerCovs,centroidCovs=centroidCovs,allStates=matrix(Z,ncol=1)))
     }
     ,warning=muffleRNGwarning)
-    stopImplicitCluster()
+    if(!((ncores>1 & nbAnimals>1))) doParallel::stopImplicitCluster()
+    else future::plan(future::sequential)
     
     if(nbCovs>0)
       simDat$data <- cbind(simDat$data,simDat$allCovs)
@@ -1410,14 +1465,13 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     # account for observation error (if any)
     out<-simObsData(momentuHierHMMData(simDat$data),lambda,errorEllipse,coordLevel)
     
-    message("DONE")
     return(out)
   } else {
     simCount <- 0
-    cat("Attempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simHierData'\n",sep="")
+    message("Attempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simHierData'\n",sep="")
     while(simCount < retrySims){
-      if(ncores==1) cat("    Attempt ",simCount+1," of ",retrySims,"...\n",sep="")
-      else cat("\r    Attempt ",simCount+1," of ",retrySims,"...",sep="")
+      if(ncores==1) message("    Attempt ",simCount+1," of ",retrySims,"...\n",sep="")
+      else message("\r    Attempt ",simCount+1," of ",retrySims,"...",sep="")
       tmp<-suppressMessages(tryCatch(simHierData(nbAnimals,hierStates,hierDist,
                                              Par,hierBeta,hierDelta,
                                              hierFormula,hierFormulaDelta,mixtures,formulaPi,
@@ -1438,18 +1492,15 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                                              errorEllipse,
                                              ncores),error=function(e) e))
       if(inherits(tmp,"error")){
-        if(ncores==1) cat("FAILED\n")
         if(grepl("Try expanding the extent of the raster",tmp)) simCount <- simCount+1
         else stop(tmp)
       } else {
         simCount <- retrySims
-        if(ncores>1) message("\nDONE")
-        else message("DONE")
+        message("DONE")
         return(tmp)
       }
     }
-    if(ncores>1) message("\nFAILED")
-    else message("FAILED")
+    message("FAILED")
     stop(tmp)
   }
 }

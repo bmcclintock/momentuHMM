@@ -88,9 +88,9 @@ vignettes/script.sh
 ^vignettes/vignetteResults$
 vignettes/examples/caracaraExample.R
 tests/testthat/Rplots.pdf
-tests/testthat/test_examples.R
 tests/testthat/test_extraExamples.R
 tests/testthat/extraExamples.R
 tests/testthat/extraExamples.RData
 ^manuscript$
 ^\.github$
+

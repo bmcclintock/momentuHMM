@@ -171,6 +171,23 @@ comb <- function(x, ...) {
     mapply(rbind,x,...,SIMPLIFY=FALSE)
 }
 
+# #' @importFrom doFuture registerDoFuture
+#' @importFrom doRNG %dorng%
+#' @importFrom foreach %dopar% foreach
+# #' @importFrom future multisession plan
+# #' @importFrom iterators icount
+progBar <- function(kk, N, per = 1) {
+  if (kk %in% seq(1, N, per)) {
+    x <- round(kk * 100 / N)
+    message("[ ", 
+            paste(rep("=", x), collapse = ""),
+            paste(rep("-", 100 - x), collapse = ""), 
+            " ] ", x, "%", "\r",
+            appendLF = FALSE)
+    if (kk == N) message("\n")
+  }
+}
+
 installDataTree <- function(){
   if (!requireNamespace("data.tree", quietly = TRUE)) {
     stop("Package \"data.tree\" needed for this function to work. Please install it.",

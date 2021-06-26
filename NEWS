@@ -4,7 +4,11 @@ NEW FEATURES
 
 * 'return' argument added to plotStationary function for returning stationary probabilities, standards errors, and confidence intervals as a list
 
+* progress bar added when using doFuture parallel backend
+
 CHANGES
+
+* doFuture is now the default parallel backend; to run functions with ncores>1, the doFuture and future packages must be installed
 
 * data stream names can no longer be 'beta', 'delta', 'pi', 'g0', or 'theta'
 

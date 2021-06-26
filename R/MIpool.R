@@ -57,9 +57,6 @@
 #' print(miSum)
 #' }
 #' @export
-#' @importFrom doParallel registerDoParallel stopImplicitCluster
-#' @importFrom foreach foreach %dopar%
-#' @importFrom doRNG %dorng%
 #' @importFrom stats median var qt
 #' @importFrom CircStats circ.mean
 #' @importFrom car dataEllipse
@@ -70,6 +67,24 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   simind <- which((unlist(lapply(im,is.momentuHMM))))
   nsims <- length(simind)
   if(nsims<1) stop("'HMMfits' must be a list comprised of momentuHMM objects")
+  
+  if(ncores>1){
+    for(pkg in c("doFuture","future")){
+      if (!requireNamespace(pkg, quietly = TRUE)) {
+        stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+    oldDoPar <- doFuture::registerDoFuture()
+    on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
+    future::plan(future::multisession, workers = ncores)
+    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
+    progBar <- progBar
+    pkgs <- c("momentuHMM")
+  } else { 
+    doParallel::registerDoParallel(cores=ncores)
+    pkgs <- NULL
+  }
   
   if (!requireNamespace("mitools", quietly = TRUE)) {
     stop("Package \"mitools\" needed for this function to work. Please install it.",
@@ -169,22 +184,29 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   fm <- NULL
   
   if(nbStates>1) {
-    cat("Decoding state sequences and probabilities for each imputation... ")
-    registerDoParallel(cores=ncores)
-    withCallingHandlers(im_states <- foreach(fm = im, .combine = rbind) %dorng% {momentuHMM::viterbi(fm)},warning=muffleRNGwarning)
-    stopImplicitCluster()
+    cat("Decoding state sequences for each imputation... \n")
+    withCallingHandlers(im_states <- foreach(fm = im, i=seq_along(im), .combine = rbind) %dorng% {
+      progBar(i,nsims)
+      momentuHMM::viterbi(fm)
+    },warning=muffleRNGwarning)
     if(nsims>1) states <- apply(im_states,2,function(x) which.max(hist(x,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts))
     else states <- im_states
-    registerDoParallel(cores=ncores)
-    withCallingHandlers(im_stateProbs <- foreach(fm = im) %dorng% {momentuHMM::stateProbs(fm)},warning=muffleRNGwarning)
-    stopImplicitCluster()
+    cat("Decoding state probabilities for each imputation... \n")
+    withCallingHandlers(im_stateProbs <- foreach(fm = im, i=seq_along(im)) %dorng% {
+      progBar(i,nsims)
+      momentuHMM::stateProbs(fm)
+    },warning=muffleRNGwarning)
     if(mixtures>1){
-      registerDoParallel(cores=ncores)
-      withCallingHandlers(mixProbs <- foreach(fm = im) %dorng% {mixtureProbs(fm)},warning=muffleRNGwarning)
-      stopImplicitCluster()
+      cat("Decoding mixture probabilities for each imputation... \n")
+      withCallingHandlers(mixProbs <- foreach(fm = im, i=seq_along(im)) %dorng% {
+        progBar(i,nsims)
+        momentuHMM::mixtureProbs(fm)
+      },warning=muffleRNGwarning)
     }
-    cat("DONE\n")
+    #cat("DONE\n")
   } else states <- rep(1,nrow(data))
+  if(ncores==1) doParallel::stopImplicitCluster()
+  else future::plan(future::sequential)
   
   # pool estimates on working scale
   parms <- names(m$CIbeta)
@@ -615,21 +637,27 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     checkerrs <- lapply(im,function(x) x$data[match(coordNames,names(x$data))])
     ident <- !unlist(lapply(checkerrs,function(x) isTRUE(all.equal(x,checkerrs[[1]]))))
     if(any(ident)){
+      if(ncores>1){
+        future::plan(future::multisession, workers = ncores)
+      } else { 
+        doParallel::registerDoParallel(cores=ncores)
+      }
       # calculate location alpha% error ellipses
       cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
       tmpx<-matrix(unlist(lapply(im,function(x) x$data[[coordNames[1]]])),nrow(mh$data))
       tmpy<-matrix(unlist(lapply(im,function(x) x$data[[coordNames[2]]])),nrow(mh$data))
-      registerDoParallel(cores=ncores)
       withCallingHandlers(errorEllipse<-foreach(i = 1:nrow(mh$data)) %dorng% {
         tmp <- cbind(tmpx[i,],tmpy[i,])
         if(length(unique(tmp[,1]))>1 | length(unique(tmp[,2]))>1)
           ellip <- car::dataEllipse(tmp,levels=alpha,draw=FALSE,segments=100)
         else ellip <- matrix(tmp[1,],101,2,byrow=TRUE)
       },warning=muffleRNGwarning)
-      stopImplicitCluster()
+      if(ncores==1) doParallel::stopImplicitCluster()
+      else future::plan(future::sequential)
       cat("DONE\n")
     }
   }
+  
   mh$errorEllipse <- errorEllipse
   mh$Par <- Par
   mh$MIcombine <- miCombo

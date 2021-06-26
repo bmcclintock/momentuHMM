@@ -54,9 +54,8 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
     }
   } else distnames <- names(m$conditions$dist)
 
-  cat("Computing pseudo-residuals",ifelse(nSims>1,paste0(" for ",nSims," model fits... "),"... "),sep="")
+  cat("Computing pseudo-residuals",ifelse(nSims>1,paste0(" for ",nSims," model fits... \n"),"... "),sep="")
   pr <- pseudoRes(m, ncores = ncores)
-  cat("DONE\n")
   
   if(nSims==1){
     pr <- list(pr)

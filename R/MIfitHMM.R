@@ -188,9 +188,6 @@ MIfitHMM <- function(miData, ...) {
 #' 
 #' @export
 #' @importFrom crawl crwPostIS crwSimulator
-#' @importFrom doParallel registerDoParallel stopImplicitCluster
-#' @importFrom foreach foreach %dopar%
-#' @importFrom doRNG %dorng%
 # @importFrom raster getZ
 #' @importFrom stats terms.formula
 MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, na.rm = FALSE,
@@ -251,6 +248,24 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     }
   }
   
+  if(ncores>1){
+    for(pkg in c("doFuture","future")){
+      if (!requireNamespace(pkg, quietly = TRUE)) {
+        stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+    oldDoPar <- doFuture::registerDoFuture()
+    on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
+    future::plan(future::multisession, workers = ncores)
+    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
+    progBar <- progBar
+    pkgs <- c("momentuHMM")
+  } else { 
+    doParallel::registerDoParallel(cores=ncores)
+    pkgs <- c("momentuHMM")
+  }
+  
   if(is.crwData(miData)){
     
     if(nSims>=1) {
@@ -289,25 +304,27 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
       } else {
         distnames <- tmpdistnames <- names(predData)[which(!(names(predData) %in% c("ID",Time.name,c("mu.x","mu.y"),covNames,znames)))]
       }
-      cat('Drawing ',nSims,' realizations from the position process using crawl... ',ifelse(ncores>1 & length(ids)>1,"","\n"),sep="")
-      
+      cat('Drawing ',nSims,' realizations from the position process using crawl... \n',sep="")
+      if(ncores>1) message("Running simulator in parallel... ")
       nbAnimals <- length(ids)
       predTimes <- lapply(ids,function(x) predData[[Time.name]][which(predData$ID==x & predData$locType=="p")])
       names(predTimes) <- ids
-      registerDoParallel(cores=ncores)
-      withCallingHandlers(crwSim <- foreach(mf = model_fits, i = ids, .export="crwSimulator") %dorng% {
-          cat("Simulating individual ",i,"...\n",sep="")
-          crawl::crwSimulator(mf,predTime=predTimes[[i]], method = method, parIS = parIS,
-                                  df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, quad.ask = ifelse(ncores>1, FALSE, quad.ask), force.quad = force.quad)
+      withCallingHandlers(crwSim <- foreach(mf = model_fits, i = ids, .export="crwSimulator", .packages=pkgs) %dorng% {
+          if(ncores==1) message("Running simulator for individual ",i,"... ",sep="")
+          else progBar(which(ids==i), length(ids))
+          crSim <- suppressMessages(crawl::crwSimulator(mf,predTime=predTimes[[i]], method = method, parIS = parIS,
+                                  df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, quad.ask = ifelse(ncores>1, FALSE, quad.ask), force.quad = force.quad))
+          return(crSim)
       },warning=muffleRNGwarning)
-      stopImplicitCluster()
-      names(crwSim) <- ids
       if(ncores==1) cat("DONE\n")
+      names(crwSim) <- ids
       
-      registerDoParallel(cores=ncores)
+      
+      if(ncores>1) message("Drawing imputations in parallel... ",sep="")
       withCallingHandlers(miData<-
-        foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass") %dorng% {
-          cat("\rDrawing imputation ",j,"... ",sep="")
+        foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass", .packages=pkgs) %dorng% {
+          if(ncores==1) message("\rDrawing imputation ",j,"... ",sep="")
+          else progBar(j, nSims)
           locs<-data.frame()
           for(i in 1:length(ids)){
               tmp<-tryCatch({crawl::crwPostIS(crwSim[[i]], fullPost = fullPost, df = dfPostIS, scale = scalePostIS, thetaSamp = thetaSamp)},error=function(e) e)
@@ -315,12 +332,12 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
               locs<-rbind(locs,tmp$alpha.sim[,c("mu.x","mu.y")])
           }
           df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",Time.name,tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
-          pD <- tryCatch(prepData.default(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames),error=function(e) e)
-          pD
+          pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames),error=function(e) e)
+          return(pD)
         }
       ,warning=muffleRNGwarning)
-      stopImplicitCluster()
-      cat("DONE\n")
+      if(ncores==1) cat("DONE\n")
+      
       for(i in which(unlist(lapply(miData,function(x) inherits(x,"error"))))){
         warning('prepData failed for imputation ',i,"; ",miData[[i]])
       }
@@ -396,6 +413,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     parallelStart <- 2
 
     cat("\rImputation ",1,"... ",sep="")
+    if(retryFits>=1) cat("\n")
     
     fits[[1]]<-suppressMessages(fitHMM.momentuHMMData(miData[[1]],nbStates, dist, Par0[[1]], beta0[[1]], delta0[[1]],
                                     estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi,
@@ -404,7 +422,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     if(retryFits>=1){
       cat("\n")
     }
-    cat("DONE\nFitting remaining imputations... \n")
+    cat("DONE\n")
 
     tmpPar <- getPar0(fits[[1]])
     Par0[parallelStart:nSims] <- list(tmpPar$Par)
@@ -418,14 +436,18 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     if(!is.null(control)) control$trace <- 0
   }
   
-  registerDoParallel(cores=ncores)
+  if(useInitial | ncores>1) cat("Fitting ",ifelse(useInitial,"remaining ",""),length(parallelStart:nSims)," imputation",ifelse(length(parallelStart:nSims)>1,"s",""),ifelse(ncores>1," in parallel",""),"... \n",sep="")
+  
   withCallingHandlers(fits[parallelStart:nSims] <-
-    foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitHMM.momentuHMMData"), .errorhandling="pass") %dorng% {
+    foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitHMM"), .errorhandling="pass", .packages=pkgs) %dorng% {
       
-      if(nSims>1) {
+      if(nSims==1 | ncores==1 | retryFits>=1) {
         cat("     \rImputation ",j,"... ",sep="")
+        if(retryFits>=1) cat("\n")
+      } else {
+        if(retryFits<1) progBar(j,nSims)
       }
-      tmpFit<-suppressMessages(fitHMM.momentuHMMData(mD,nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
+      tmpFit<-suppressMessages(fitHMM(mD,nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
                                       estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi,
                                       nlmPar, fit, DM,
                                       userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
@@ -433,8 +455,10 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
       tmpFit
     } 
   ,warning=muffleRNGwarning)
-  stopImplicitCluster()
-  cat("DONE\n")
+  if((nSims>1 & ncores==1) | retryFits>=1) cat("DONE\n")
+  
+  if(ncores==1) doParallel::stopImplicitCluster()
+  else future::plan(future::sequential)
   
   for(i in which(!unlist(lapply(fits,function(x) inherits(x,"momentuHMM"))))){
     warning('Fit #',i,' failed; ',fits[[i]])
@@ -462,9 +486,6 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
 #' 
 #' @export
 #' @importFrom crawl crwPostIS crwSimulator
-#' @importFrom doParallel registerDoParallel stopImplicitCluster
-#' @importFrom foreach foreach %dopar%
-#' @importFrom doRNG %dorng%
 # @importFrom raster getZ
 # #' @importFrom data.tree Clone
 MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, na.rm = FALSE,
@@ -497,6 +518,24 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
   chkDots(...)
   
   installDataTree()
+  
+  if(ncores>1){
+    for(pkg in c("doFuture","future")){
+      if (!requireNamespace(pkg, quietly = TRUE)) {
+        stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+    oldDoPar <- doFuture::registerDoFuture()
+    on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
+    future::plan(future::multisession, workers = ncores)
+    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
+    progBar <- progBar
+    pkgs <- c("momentuHMM","data.tree")
+  } else { 
+    doParallel::registerDoParallel(cores=ncores)
+    pkgs <- NULL
+  }
   
   if(is.crwHierData(miData)){
     
@@ -537,25 +576,26 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
       } else {
         distnames <- tmpdistnames <- names(predData)[which(!(names(predData) %in% c("ID",Time.name,"level","locType",c("mu.x","mu.y"),covNames,znames)))]
       }
-      cat('Drawing ',nSims,' realizations from the position process using crawl... ',ifelse(ncores>1 & length(ids)>1,"","\n"),sep="")
-      
+      cat('Drawing ',nSims,' realizations from the position process using crawl... \n',sep="")
+      if(ncores>1) message("Running simulator in parallel... ")
       nbAnimals <- length(ids)
       predTimes <- lapply(ids,function(x) predData[[Time.name]][which(predData$ID==x & predData$locType=="p")])
       names(predTimes) <- ids
-      registerDoParallel(cores=ncores)
-      withCallingHandlers(crwHierSim <- foreach(mf=model_fits, i=ids, .export="crwSimulator") %dorng% {
-        cat("Simulating individual ",i,"...\n",sep="")
-        crawl::crwSimulator(mf,predTime=predTimes[[i]], method = method, parIS = parIS,
-                            df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, quad.ask = ifelse(ncores>1, FALSE, quad.ask), force.quad = force.quad)
+      withCallingHandlers(crwHierSim <- foreach(mf=model_fits, i=ids, .export="crwSimulator", .packages = pkgs) %dorng% {
+        if(ncores==1) message("Running simulator for individual ",i,"... ",sep="")
+        else progBar(which(ids==i), length(ids))
+        crSim <- suppressMessages(crawl::crwSimulator(mf,predTime=predTimes[[i]], method = method, parIS = parIS,
+                            df = dfSim, grid.eps = grid.eps, crit = crit, scale = scaleSim, quad.ask = ifelse(ncores>1, FALSE, quad.ask), force.quad = force.quad))
+        return(crSim)
       },warning=muffleRNGwarning)
-      stopImplicitCluster()
-      names(crwHierSim) <- ids
       if(ncores==1) cat("DONE\n")
+      names(crwHierSim) <- ids
       
-      registerDoParallel(cores=ncores)
+      if(ncores>1) message("Drawing imputations in parallel... ",sep="")
       withCallingHandlers(miData<-
-                            foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass") %dorng% {
-                              cat("\rDrawing imputation ",j,"... ",sep="")
+                            foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass", .packages=pkgs) %dorng% {
+                              if(ncores==1) message("\rDrawing imputation ",j,"... ",sep="")
+                              else progBar(j, nSims)
                               locs<-data.frame()
                               for(i in 1:length(ids)){
                                 #if(!is.null(model_fits[[i]]$err.model)){
@@ -572,12 +612,12 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                               df[which(df$locType=="p"),"x"] <- locs[which(locs$locType=="p"),"x"]
                               df[which(df$locType=="p"),"y"] <- locs[which(locs$locType=="p"),"y"]
                               df$locType <- NULL
-                              pD <- tryCatch(prepData.hierarchical(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,hierLevels=levels(predData$level),coordLevel=attr(predData,"coordLevel")),error=function(e) e)
-                              pD
+                              pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,hierLevels=levels(predData$level),coordLevel=attr(predData,"coordLevel")),error=function(e) e)
+                              return(pD)
                             }
                           ,warning=muffleRNGwarning)
-      stopImplicitCluster()
-      cat("DONE\n")
+      if(ncores==1) cat("DONE\n")
+      
       for(i in which(unlist(lapply(miData,function(x) inherits(x,"error"))))){
         warning('prepData failed for imputation ',i,"; ",miData[[i]])
       }
@@ -694,25 +734,29 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
   if(nSims>1 & ncores>1){
     if(!is.null(nlmPar)) nlmPar$print.level <- 0
     if(!is.null(control)) control$trace <- 0
+    message("        Fitting ",length(parallelStart:nSims)," imputation",ifelse(length(parallelStart:nSims)>1,"s","")," in parallel... ",sep="")
   }
   
-  registerDoParallel(cores=ncores)
   withCallingHandlers(fits[parallelStart:nSims] <-
-                        foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitHMM.momentuHierHMMData"), .errorhandling="pass") %dorng% {
+                        foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitHMM"), .errorhandling="pass", .packages = pkgs) %dorng% {
                           
-                          if(nSims>1) {
+                          if(nSims==1 & ncores==1) {
                             cat("     \rImputation ",j,"... ",sep="")
+                          } else {
+                            progBar(j,nSims)
                           }
-                          tmpFit<-suppressMessages(fitHMM.momentuHierHMMData(mD, hierStates, hierDist, Par0[[j]], hierBeta[[j]], hierDelta[[j]],
+                          tmpFit<-suppressMessages(fitHMM(mD, hierStates, hierDist, Par0[[j]], hierBeta[[j]], hierDelta[[j]],
                                                               estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                                                               nlmPar, fit, DM, 
                                                               userBounds, workBounds, betaCons, deltaCons, mvnCoords, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
-                          if(retryFits>=1) cat("\n")
+                          if(retryFits>=1 & ncores==1) cat("\n")
                           tmpFit
                         } 
                       ,warning=muffleRNGwarning)
-  stopImplicitCluster()
-  cat("DONE\n")
+  if(nSims>1 & ncores==1) cat("DONE\n")
+  
+  if(ncores==1) doParallel::stopImplicitCluster()
+  else future::plan(future::sequential)
   
   for(i in which(!unlist(lapply(fits,function(x) inherits(x,"momentuHierHMM"))))){
     warning('Fit #',i,' failed; ',fits[[i]])
