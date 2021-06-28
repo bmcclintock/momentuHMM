@@ -19,8 +19,6 @@ vignettes/momentuHMM.bbl
 vignettes/momentuHMM.out
 vignettes/momentuHMM.aux
 vignettes/momentuHMM.tex
-vignettes/momentuHMM.out
-vignettes/momentuHMM.aux
 vignettes/momentuHMM.Rnw
 vignettes/codDist.pdf
 vignettes/codStates.pdf
@@ -88,6 +86,9 @@ vignettes/script.sh
 ^vignettes/vignetteResults$
 vignettes/examples/caracaraExample.R
 tests/testthat/Rplots.pdf
+tests/testthat/test_extraExamples.R
+tests/testthat/extraExamples.R
+tests/testthat/extraExamples.RData
 ^manuscript$
 ^\.github$
 
