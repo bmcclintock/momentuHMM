@@ -94,7 +94,9 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     rmvnorm3 <- rmvnorm3
     rvm <- CircStats::rvm
     rwrpcauchy <- CircStats::rwrpcauchy
-    rcat <- extraDistr::rcat
+    if (requireNamespace("extraDistr", quietly = TRUE)){
+      rcat <- extraDistr::rcat
+    }
     rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- mvtnorm::rmvnorm
     rrw_norm <- stats::rnorm
     mlogit <- mlogit
