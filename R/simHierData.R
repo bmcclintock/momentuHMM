@@ -1467,6 +1467,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     
     return(out)
   } else {
+    if(!((ncores>1 & nbAnimals>1))) doParallel::stopImplicitCluster()
+    else future::plan(future::sequential)
     simCount <- 0
     message("Attempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simHierData'\n",sep="")
     while(simCount < retrySims){

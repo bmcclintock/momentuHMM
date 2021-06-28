@@ -578,6 +578,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     mHind <- (requireNamespace("moveHMM", quietly = TRUE) && is.null(DM) & is.null(userBounds) & is.null(workBounds) & is.null(spatialCovs) & is.null(centers) & is.null(centroids) & ("step" %in% names(dist)) & all(unlist(initialPosition)==c(0,0)) & is.null(lambda) & is.null(errorEllipse) & !is.list(obsPerAnimal) & is.null(covs) & !nbCovs & !length(attr(stats::terms.formula(formula),"term.labels")) & !length(attr(stats::terms.formula(formDelta),"term.labels")) & is.null(delta) & is.null(betaRef) & is.null(mvnCoords) & mixtures==1 & ncores==1) # indicator for moveHMM::simData
 
     if(all(names(dist) %in% c("step","angle")) & all(unlist(dist) %in% moveHMMdists) & mHind){
+      doParallel::stopImplicitCluster()
       zi <- FALSE
       if(!is.null(zeroInflation$step)) zi <- zeroInflation$step
       if(is.null(dist$angle)) dist$angle<-"none"
@@ -1557,6 +1558,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     
     return(out)
   } else {
+    if(!((ncores>1 & nbAnimals>1))) doParallel::stopImplicitCluster()
+    else future::plan(future::sequential)
     simCount <- 0
     message("\nAttempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simData'\n",sep="")
     while(simCount < retrySims){

@@ -343,7 +343,11 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
       }
       ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))
       if(fit) cat('Fitting',length(ind),'realizations of the position process using fitHMM... \n')
-      else return(crwSim(list(miData=miData,crwSimulator=crwSim)))
+      else {
+        if(ncores==1) doParallel::stopImplicitCluster()
+        else future::plan(future::sequential)
+        return(crwSim(list(miData=miData,crwSimulator=crwSim)))
+      }
     } else stop("nSims must be >0")
     
   } else {
@@ -623,7 +627,11 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
       }
       ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHierHMMData"))))
       if(fit) cat('Fitting',length(ind),'realizations of the position process using fitHMM... \n')
-      else return(crwHierSim(list(miData=miData,crwSimulator=crwHierSim)))
+      else {
+        if(ncores==1) doParallel::stopImplicitCluster()
+        else future::plan(future::sequential)
+        return(crwHierSim(list(miData=miData,crwSimulator=crwHierSim)))
+      }
     } else stop("nSims must be >0")
     
   } else {
