@@ -71,7 +71,7 @@
 #' @references
 #' Burnham, K.P. and White, G.C. 2002. Evaluation of some random effects methodology applicable to bird ringing data. Journal of Applied Statistics 29: 245-264.
 #' 
-#' McClintock, B.T. 2020. Worth the effort? A practical examination of random effects in hidden Markov models for animal telemetry data. bioRxiv doi:10.1101/2020.07.10.196410
+#' McClintock, B.T. 2021. Worth the effort? A practical examination of random effects in hidden Markov models for animal telemetry data. Methods in Ecology and Evolution \url{https://doi.org/10.1111/2041-210X.13619}.
 #' @export
 #' @importFrom MASS ginv
 # @importFrom BB BBsolve 
@@ -95,6 +95,8 @@ randomEffects <- function(m, Xformula = ~1, alpha = 0.95, ncores = 1, nlmPar = l
 
   mName <- deparse(substitute(m))
   m <- delta_bc(m)
+  
+  chkDots(...)
   
   nbStates <- length(m$stateNames)
   nbRE <- nbStates*(nbStates-1)
