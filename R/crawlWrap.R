@@ -174,6 +174,11 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   } else {
     doParallel::registerDoParallel(cores=ncores)
   }
+  
+  # hack to work around Windows not allowing missing arguments in calling function when using foreach
+  if(missing(theta)) theta <- NULL
+  if(missing(fixPar)) fixPar <- NULL
+  
   withCallingHandlers(model_fits <- 
     foreach(id = ind_data, i=ids, .errorhandling="pass", .packages="crawl", .final = function(x) stats::setNames(x, ids)) %dorng% {
       cat("Individual ",i,"...\n",sep="")
