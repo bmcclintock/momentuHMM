@@ -67,6 +67,8 @@ simObsData.momentuHMMData<-function(data,lambda,errorEllipse,...){
   
   if(!is.momentuHMMData(data)) stop("data must be a momentuHMMData object")
   
+  chkDots(...)
+  
   coordNames <- c("x","y")
   if(!is.null(attr(data,'coords'))) coordNames <- attr(data,'coords')
   
@@ -87,9 +89,10 @@ simObsData.momentuHMMData<-function(data,lambda,errorEllipse,...){
     } else {
       M<-m<-r<-c(0,0)
     }
-    if(!is.null(lambda))
+    if(!is.null(lambda)){
       if(lambda<=0) stop('lambda must be >0')
-  
+      if(any(names(data) %in% "time")) stop("covariates cannot be named `time' when lambda is specified")
+    }
     distnames<-names(data)[which(!(names(data) %in% c("ID",coordNames,"step","angle")))]
     
     #Get observed data based on sampling rate (lambda) and measurement error (M,m, and r)
@@ -100,7 +103,7 @@ simObsData.momentuHMMData<-function(data,lambda,errorEllipse,...){
       X<-idat[[coordNames[1]]]
       Y<-idat[[coordNames[2]]]
       if(!is.null(lambda)){
-        t<-cumsum(c(1,rexp(2*nbObs*lambda,lambda)))
+        t<-cumsum(c(1,stats::rexp(2*nbObs*lambda,lambda)))
         t<-t[which(t<nbObs)]
         tind<-floor(t)
         mux<-X[tind]*(1-(t-tind))+X[tind+1]*(t-tind)
@@ -170,6 +173,8 @@ simObsData.momentuHierHMMData<-function(data,lambda,errorEllipse,coordLevel,...)
   
   if(!is.momentuHierHMMData(data)) stop("data must be a momentuHierHMMData object")
   
+  chkDots(...)
+  
   coordNames <- c("x","y")
   if(!is.null(attr(data,'coords'))) coordNames <- attr(data,'coords')
   
@@ -190,8 +195,10 @@ simObsData.momentuHierHMMData<-function(data,lambda,errorEllipse,coordLevel,...)
     } else {
       M<-m<-r<-c(0,0)
     }
-    if(!is.null(lambda))
+    if(!is.null(lambda)){
       if(lambda<=0) stop('lambda must be >0')
+      if(any(names(data) %in% "time")) stop("covariates cannot be named `time' when lambda is specified")
+    }
     
     distnames<-names(data)[which(!(names(data) %in% c("ID",coordNames,"step","angle")))]
     
@@ -247,11 +254,11 @@ simObsData.momentuHierHMMData<-function(data,lambda,errorEllipse,coordLevel,...)
       tmpobsData[[coordNames[2]]] <- xy[,2]
       
       newTimes <- rep(0,nrow(indDat))
-      newTimes[1] <- 1
       levels <- indDat$level
-      for(k in 2:nrow(indDat)){
+      newTimes[1:nlevels(levels)] <- 1
+      for(k in (nlevels(levels)+1):nrow(indDat)){
         newTimes[k] <- newTimes[k-1]
-        if(coordLevel==levels[k-1]){
+        if(coordLevel==levels[k]){
           newTimes[k] <- newTimes[k-1] + 1
         }
       }
@@ -276,8 +283,11 @@ simObsData.momentuHierHMMData<-function(data,lambda,errorEllipse,coordLevel,...)
         tmpobsData[which(t==tmpData$time[jj]),is.na(tmpobsData[which(t==tmpData$time[jj]),])] <- tmpData[jj,is.na(tmpobsData[which(t==tmpData$time[jj]),])]
       }
       
-      tmpData <- merge(tmpobsData,tmpData,all=TRUE)
+      knames <- c("ID","time","level",coordNames,"mux","muy")
+      if(!is.null(errorEllipse)) knames <- c(knames,"error_semimajor_axis","error_semiminor_axis","error_ellipse_orientation","ln.sd.x","ln.sd.y","error.corr","diag.check")
+      tmpData <- merge(tmpobsData[,knames],tmpData,all=TRUE)
       
+      tmpData <- tmpData[,unique(c("ID","time","level",coordNames,distnames,"mux","muy",knames[!(knames %in% c("ID","time","level",coordNames,distnames,"mux","muy"))]))]
       out<-rbind(out,tmpData)
     }
   }

@@ -1,3 +1,30 @@
+momentuHMM 1.5.3 2021-07-06
+-----------------
+NEW FEATURES
+
+* 'return' argument added to plotStationary function for returning stationary probabilities, standards errors, and confidence intervals as a list
+
+* progress bar added when using doFuture parallel backend
+
+CHANGES
+
+* doFuture is now the default parallel backend; to run functions with ncores>1, the doFuture and future packages must be installed
+
+* data stream names can no longer be 'beta', 'delta', 'pi', 'g0', or 'theta'
+
+* data stream names can no longer begin with 'beta', 'delta', 'g0', or 'theta'
+
+* added additional checks for unused arguments passed down from a calling function (e.g. fitHMM, prepData); these were previously ignored
+
+* added additional checks for undefined data stream or parameter names in common list arguments (e.g. DM, workBounds, userBounds); these were previously ignored
+
+* the following packages have been moved to 'Suggests' and are now used conditionally: car, data.tree, extraDistr, geosphere, mitools, nleqslv, prodlim, qdapRegex, and survival. If any of these are packages needed, users will be prompted to install.
+
+BUG FIXES
+
+* In fitHMM and MIfitHMM, an error is now triggered if a covariate (e.g. 'cov1') used in formula, formulaDelta, formulaPi, or DM is missing from the data and a variable with the same name (e.g. 'cov1') exists in the (global) environment. In momentuHMM <=1.5.2, internal calls to stats::model.matrix(formula, data) with missing covariates in the data would attempt to use the (global) environment variable with no warning or error, which could be problematic.
+
+
 momentuHMM 1.5.2 2021-01-06
 -----------------
 NEW FEATURES

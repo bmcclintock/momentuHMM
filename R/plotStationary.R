@@ -7,6 +7,7 @@
 #' @param col Vector or colors for the states (one color per state).
 #' @param plotCI Logical indicating whether to include confidence intervals in plots (default: FALSE)
 #' @param alpha Significance level of the confidence intervals (if \code{plotCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).
+#' @param return Logical indicating whether to return a list containing estimates, SEs, CIs, and covariate values used to create the plots for each mixture and state. Ignored if \code{plotCI=FALSE}. Default: \code{FALSE}.
 #' @param ... Additional arguments passed to \code{graphics::plot}. These can currently include \code{cex.axis}, \code{cex.lab}, \code{cex.legend}, \code{cex.main}, \code{legend.pos}, and \code{lwd}. See \code{\link[graphics]{par}}. \code{legend.pos} can be a single keyword from the list ``bottomright'', ``bottom'', ``bottomleft'', ``left'', ``topleft'', ``top'', ``topright'', ``right'', and ``center''.
 #'
 #' @examples
@@ -17,13 +18,13 @@
 #'
 #' @export
 #'
-plotStationary <- function (model, covs = NULL, col=NULL, plotCI=FALSE, alpha=0.95, ...) {
+plotStationary <- function (model, covs = NULL, col=NULL, plotCI=FALSE, alpha=0.95, return=FALSE, ...) {
   UseMethod("plotStationary")
 }
 
 #' @method plotStationary momentuHMM
 #' @export
-plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE, alpha=0.95, ...)
+plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE, alpha=0.95, return=FALSE, ...)
 {
     model <- delta_bc(model)
 
@@ -35,6 +36,7 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
         stop("No covariate effect to plot")
     else if(inherits(model,"hierarchical")){
       if(nrow(beta)/model$conditions$mixtures==nlevels(model$data$level)) stop("No covariate effect to plot")
+      installDataTree()
     }
     
     # prepare colors for the states
@@ -123,6 +125,9 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
     gamInd<-(length(model$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures+1):(length(model$mod$estimate))-(ncol(model$covsPi)*(mixtures-1))-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-ncol(model$covsDelta)*(nbStates-1)*(!model$conditions$stationary)*mixtures
     #gamInd <- gamInd[model$conditions$betaCons]
     
+    CIout <- vector('list',length(covIndex))
+    names(CIout) <- names(rawCovs)[covIndex]
+    
     # loop over covariates
     for(cov in covIndex) {
 
@@ -178,8 +183,9 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
           class(tempCovs) <- append("hierarchical",class(tempCovs))
           class(tmpSplineInputs$covs) <- append("hierarchical",class(tmpSplineInputs$covs))
         }
-        statPlot(model,Sigma,nbStates,tmpSplineInputs$formula,tmpSplineInputs$covs,tempCovs,tmpcovs,cov,hierRecharge,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
+        CIout[[names(rawCovs)[cov]]] <- statPlot(model,Sigma,nbStates,tmpSplineInputs$formula,tmpSplineInputs$covs,tempCovs,tmpcovs,cov,hierRecharge,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
     }
+    if(plotCI && return) return(CIout)
 }
 
 # for differentiation in delta method
@@ -234,35 +240,40 @@ statPlot<-function(model,Sigma,nbStates,formula,covs,tempCovs,tmpcovs,cov,hierRe
       desMat <- stats::model.matrix(formula,data=covs)
       probs <- stationary(model, covs=desMat)
     } else {
+      desMat <- tempCovs
       if(inherits(model,"hierarchical")) covs$level <- NULL
       probs <- stationary(model, covs=covs)
     }
     
     mixtures <- model$conditions$mixtures
-    
+    out <- vector('list',mixtures)
     for(mix in 1:mixtures){
       if(!inherits(model,"hierarchical")){
-        plotCall(cov,tempCovs,probs[[mix]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,desMat,mix,Sigma,gamInd,alpha,1:nbStates,model$stateNames,formula)
+        out[[mix]] <- plotCall(cov,tempCovs,probs[[mix]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,desMat,mix,Sigma,gamInd,alpha,1:nbStates,model$stateNames,formula)
         if(length(covnames)>1) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities: ",paste(covnames[-cov]," = ",tmpcovs[-cov],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
         else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities"),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
       } else {
+        out[[mix]] <- vector('list',model$conditions$hierStates$height-1)
+        names(out[[mix]]) <- paste0("level",1:(model$conditions$hierStates$height-1))
         for(j in 1:(model$conditions$hierStates$height-1)){
           if(j==1) {
             # only plot if there is variation in stationary state proabilities
             if(!all(apply(probs[[mix]][["level1"]],2,function(x) all( abs(x - mean(x)) < 1.e-6 )))){
-              ref <- model$conditions$hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
-              plotCall(cov,tempCovs[which(tempCovs$level==j),],probs[[mix]][["level1"]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,desMat[which(tempCovs$level==j),],mix,Sigma,gamInd,alpha,ref,names(ref),formula)
+              ref <- model$conditions$hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
+              out[[mix]][[paste0("level",j)]] <- plotCall(cov,tempCovs[which(tempCovs$level==j),],probs[[mix]][["level1"]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,desMat[which(tempCovs$level==j),],mix,Sigma,gamInd,alpha,ref,names(ref),formula)
               if(length(covnames[-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))])) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j,": ",paste(covnames[-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))]," = ",tmpcovs[which(tmpcovs$level==j),-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
               else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
             }
           } else {
             t <- data.tree::Traverse(model$conditions$hierStates,filterFun=function(x) x$level==j)
             names(t) <- model$conditions$hierStates$Get("name",filterFun=function(x) x$level==j)
+            out[[mix]][[paste0("level",j)]] <- vector('list',length(names(t)))
+            names(out[[mix]][[paste0("level",j)]]) <- names(t)
             for(k in names(t)){
-              ref <- t[[k]]$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
+              ref <- t[[k]]$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
               # only plot if jth node has children and there is variation in stationary state proabilities
               if(!is.null(ref) && !all(apply(probs[[mix]][[paste0("level",j)]][[k]],2,function(x) all( abs(x - mean(x)) < 1.e-6 )))){
-                plotCall(cov,tempCovs[which(tempCovs$level==j),],probs[[mix]][[paste0("level",j)]][[k]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,desMat[which(tempCovs$level==j),],mix,Sigma,gamInd,alpha,ref,names(ref),formula)
+                out[[mix]][[paste0("level",j)]][[k]] <- plotCall(cov,tempCovs[which(tempCovs$level==j),],probs[[mix]][[paste0("level",j)]][[k]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,desMat[which(tempCovs$level==j),],mix,Sigma,gamInd,alpha,ref,names(ref),formula)
                 if(length(covnames[-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))])) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j," ",k,": ",paste(covnames[-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))]," = ",tmpcovs[which(tmpcovs$level==j),-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
                 else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j," ",k),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
               }
@@ -271,6 +282,8 @@ statPlot<-function(model,Sigma,nbStates,formula,covs,tempCovs,tmpcovs,cov,hierRe
         }
       }
     }
+    if(plotCI && mixtures==1) out <- out[[1]]
+    return(out)
 }
 
 plotCall <- function(cov,tempCovs,pr,model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,desMat,mix,Sigma,gamInd,alpha,ref=1:nbStates,stateNames,formula){
@@ -286,6 +299,9 @@ plotCall <- function(cov,tempCovs,pr,model,nbStates,covnames,lwd,arg,col,legend.
   legend(ifelse(is.null(legend.pos),"topleft",legend.pos),stateNames,lwd=rep(lwd,length(ref)),col=col[ref],lty=1,bty="n",cex=cex.legend)
   
   if(plotCI) {
+    
+    out <- vector('list',length(ref))
+    names(out) <- stateNames
     
     # this function is used to muffle the warning "zero-length arrow is of indeterminate angle and so skipped" when plotCI=TRUE
     muffWarn <- function(w) {
@@ -324,13 +340,17 @@ plotCall <- function(cov,tempCovs,pr,model,nbStates,covnames,lwd,arg,col,legend.
       withCallingHandlers(do.call(arrows,c(list(as.numeric(tempCovs[ciInd,cov]), lci[ciInd,state], as.numeric(tempCovs[ciInd,cov]),
                                                 uci[ciInd,state], length=0.025, angle=90, code=3, col=col[ref[state]], lwd=lwd),arg)),warning=muffWarn)
       
+      out[[stateNames[state]]] <- data.frame(est=pr[,state],se=c(se),lci=lci[,state],uci=uci[,state])
+      out[[stateNames[state]]]$cov <- tempCovs[,cov]
+      
     }
+    return(out)
   }
 }
 
 #' @method plotStationary miSum
 #' @export
-plotStationary.miSum <- function(model, covs = NULL, col=NULL, plotCI=FALSE, alpha=0.95, ...)
+plotStationary.miSum <- function(model, covs = NULL, col=NULL, plotCI=FALSE, alpha=0.95, return=FALSE, ...)
 {
   model <- delta_bc(model)
   model <- formatmiSum(model)
@@ -339,7 +359,7 @@ plotStationary.miSum <- function(model, covs = NULL, col=NULL, plotCI=FALSE, alp
 
 #' @method plotStationary miHMM
 #' @export
-plotStationary.miHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE, alpha=0.95, ...)
+plotStationary.miHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE, alpha=0.95, return=FALSE, ...)
 {
   plotStationary(model$miSum,covs,col,plotCI,alpha,...)
 }

@@ -1,7 +1,7 @@
 #'
 #' Calculate pooled parameter estimates and states across multiple imputations
 #' 
-#' @param HMMfits List comprised of \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} objects
+#' @param im List comprised of \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} objects
 #' @param alpha Significance level for calculating confidence intervals of pooled estimates (including location error ellipses). Default: 0.95.
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param covs Data frame consisting of a single row indicating the covariate values to be used in the calculation of pooled natural parameters. 
@@ -19,12 +19,14 @@
 #' \item{states}{The most freqent state assignment for each time step based on the \code{\link{viterbi}} algorithm for each model fit}
 #' \item{stateProbs}{Pooled state probability estimates for each time step}
 #' \item{mixtureProbs}{Pooled mixture probabilities for each individual (only applies if \code{mixtures>1})}
-#' \item{hierStateProbs}{Pooled state probability estimates for each time step at each level of the hierarchy (only applies if \code{HMMfits} is comprised of \code{\link{momentuHierHMM}} objects)}
+#' \item{hierStateProbs}{Pooled state probability estimates for each time step at each level of the hierarchy (only applies if \code{im} is comprised of \code{\link{momentuHierHMM}} objects)}
 #' 
 #' @details
 #' Pooled estimates, standard errors, and confidence intervals are calculated using standard multiple imputation formulas. Working scale parameters are pooled
 #' using \code{\link[mitools]{MIcombine}} and t-distributed confidence intervals. Natural scale parameters and normally-distributed confidence intervals are calculated by transforming the pooled working scale parameters 
 #' and, if applicable, are based on covariate means across all imputations (and/or values specified in \code{covs}).
+#' 
+#' The calculation of pooled error ellipses uses \code{\link[car]{dataEllipse}} from the \code{car} package. The suggested package \code{car} is not automatically imported by \code{momentuHMM} and must be installed in order to calculate error ellipses. A warning will be triggered if the \code{car} package is required but not installed.
 #' 
 #' Note that pooled estimates for \code{timeInStates} and \code{stateProbs} do not include within-model uncertainty and are based entirely on across-model variability.
 #' 
@@ -57,20 +59,39 @@
 #' print(miSum)
 #' }
 #' @export
-#' @importFrom doParallel registerDoParallel stopImplicitCluster
-#' @importFrom foreach foreach %dopar%
-#' @importFrom doRNG %dorng%
 #' @importFrom stats median var qt
 #' @importFrom CircStats circ.mean
-#' @importFrom car dataEllipse
-#' @importFrom mitools MIcombine
-MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
+# #' @importFrom car dataEllipse
+# #' @importFrom mitools MIcombine
+MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   
-  im <- HMMfits
   goodIndex <- 1:length(im)
   simind <- which((unlist(lapply(im,is.momentuHMM))))
   nsims <- length(simind)
   if(nsims<1) stop("'HMMfits' must be a list comprised of momentuHMM objects")
+  
+  if(ncores>1){
+    for(pkg in c("doFuture","future")){
+      if (!requireNamespace(pkg, quietly = TRUE)) {
+        stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+    oldDoPar <- doFuture::registerDoFuture()
+    on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
+    future::plan(future::multisession, workers = ncores)
+    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
+    progBar <- progBar
+    pkgs <- c("momentuHMM")
+  } else { 
+    doParallel::registerDoParallel(cores=ncores)
+    pkgs <- NULL
+  }
+  
+  if (!requireNamespace("mitools", quietly = TRUE)) {
+    stop("Package \"mitools\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
   
   checkmove <- which(!(unlist(lapply(im,is.momentuHMM))))
   if(length(checkmove)) {
@@ -162,23 +183,32 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   
   mixtures <- m$conditions$mixtures
   
+  fm <- NULL
+  
   if(nbStates>1) {
-    cat("Decoding state sequences and probabilities for each imputation... ")
-    registerDoParallel(cores=ncores)
-    withCallingHandlers(im_states <- foreach(i = 1:nsims, .combine = rbind) %dorng% {momentuHMM::viterbi(im[[i]])},warning=muffleRNGwarning)
-    stopImplicitCluster()
+    cat("Decoding state sequences for each imputation... \n")
+    withCallingHandlers(im_states <- foreach(fm = im, i=seq_along(im), .combine = rbind) %dorng% {
+      progBar(i,nsims)
+      momentuHMM::viterbi(fm)
+    },warning=muffleRNGwarning)
     if(nsims>1) states <- apply(im_states,2,function(x) which.max(hist(x,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts))
     else states <- im_states
-    registerDoParallel(cores=ncores)
-    withCallingHandlers(im_stateProbs <- foreach(i = 1:nsims) %dorng% {momentuHMM::stateProbs(im[[i]])},warning=muffleRNGwarning)
-    stopImplicitCluster()
+    cat("Decoding state probabilities for each imputation... \n")
+    withCallingHandlers(im_stateProbs <- foreach(fm = im, i=seq_along(im)) %dorng% {
+      progBar(i,nsims)
+      momentuHMM::stateProbs(fm)
+    },warning=muffleRNGwarning)
     if(mixtures>1){
-      registerDoParallel(cores=ncores)
-      withCallingHandlers(mixProbs <- foreach(i = 1:nsims) %dorng% {mixtureProbs(im[[i]])},warning=muffleRNGwarning)
-      stopImplicitCluster()
+      cat("Decoding mixture probabilities for each imputation... \n")
+      withCallingHandlers(mixProbs <- foreach(fm = im, i=seq_along(im)) %dorng% {
+        progBar(i,nsims)
+        momentuHMM::mixtureProbs(fm)
+      },warning=muffleRNGwarning)
     }
-    cat("DONE\n")
+    #cat("DONE\n")
   } else states <- rep(1,nrow(data))
+  if(ncores==1) doParallel::stopImplicitCluster()
+  else future::plan(future::sequential)
   
   # pool estimates on working scale
   parms <- names(m$CIbeta)
@@ -191,7 +221,7 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   
   parmcols <- parCount
   parmcols$beta <- ncol(m$mle$beta)
-  parmcols$pi <- mixtures-1
+  parmcols[["pi"]] <- mixtures-1
   parmcols$delta <- nbStates-1
   
   if(mixtures==1) piInd <- NULL
@@ -431,9 +461,9 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
         upper[j,i] <- probCI(est[j,i],se[j,i],quantSup,bound="upper")
       }
     }
-    Par$real$pi <- list(est=est,se=se,lower=lower,upper=upper)
-    colnames(Par$real$pi$est) <- colnames(Par$real$pi$se) <- colnames(Par$real$pi$lower) <- colnames(Par$real$pi$upper) <- paste0("mix",1:mixtures)
-    rownames(Par$real$pi$est) <- rownames(Par$real$pi$se) <- rownames(Par$real$pi$lower) <- rownames(Par$real$pi$upper) <- paste0("ID:",unique(m$data$ID))
+    Par$real[["pi"]] <- list(est=est,se=se,lower=lower,upper=upper)
+    colnames(Par$real[["pi"]]$est) <- colnames(Par$real[["pi"]]$se) <- colnames(Par$real[["pi"]]$lower) <- colnames(Par$real[["pi"]]$upper) <- paste0("mix",1:mixtures)
+    rownames(Par$real[["pi"]]$est) <- rownames(Par$real[["pi"]]$se) <- rownames(Par$real[["pi"]]$lower) <- rownames(Par$real[["pi"]]$upper) <- paste0("ID:",unique(m$data$ID))
   }
   
   # pooled delta estimates
@@ -610,18 +640,31 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     ident <- !unlist(lapply(checkerrs,function(x) isTRUE(all.equal(x,checkerrs[[1]]))))
     if(any(ident)){
       # calculate location alpha% error ellipses
-      cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
-      registerDoParallel(cores=ncores)
-      withCallingHandlers(errorEllipse<-foreach(i = 1:nrow(mh$data)) %dorng% {
-        tmp <- cbind(unlist(lapply(im,function(x) x$data[[coordNames[1]]][i])),unlist(lapply(im,function(x) x$data[[coordNames[2]]][i])))
-        if(length(unique(tmp[,1]))>1 | length(unique(tmp[,2]))>1)
-          ellip <- car::dataEllipse(tmp,levels=alpha,draw=FALSE,segments=100)
-        else ellip <- matrix(tmp[1,],101,2,byrow=TRUE)
-      },warning=muffleRNGwarning)
-      stopImplicitCluster()
-      cat("DONE\n")
+      if (!requireNamespace("car", quietly = TRUE)) {
+        warning("Package \"car\" needed for calculating error ellipses. Please install it.",
+             call. = FALSE)
+      } else {
+        if(ncores>1){
+          future::plan(future::multisession, workers = ncores)
+        } else { 
+          doParallel::registerDoParallel(cores=ncores)
+        }
+        cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
+        tmpx<-matrix(unlist(lapply(im,function(x) x$data[[coordNames[1]]])),nrow(mh$data))
+        tmpy<-matrix(unlist(lapply(im,function(x) x$data[[coordNames[2]]])),nrow(mh$data))
+        withCallingHandlers(errorEllipse<-foreach(i = 1:nrow(mh$data)) %dorng% {
+          tmp <- cbind(tmpx[i,],tmpy[i,])
+          if(length(unique(tmp[,1]))>1 | length(unique(tmp[,2]))>1)
+            ellip <- car::dataEllipse(tmp,levels=alpha,draw=FALSE,segments=100)
+          else ellip <- matrix(tmp[1,],101,2,byrow=TRUE)
+        },warning=muffleRNGwarning)
+        if(ncores==1) doParallel::stopImplicitCluster()
+        else future::plan(future::sequential)
+        cat("DONE\n")
+      }
     }
   }
+  
   mh$errorEllipse <- errorEllipse
   mh$Par <- Par
   mh$MIcombine <- miCombo
@@ -631,7 +674,7 @@ MIpool<-function(HMMfits, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   
   if(inherits(mh,"hierarchical")){
     inputHierHMM <- formatHierHMM(mh$data,mh$conditions$hierStates,mh$conditions$hierDist,hierBeta=NULL,hierDelta=NULL,mh$conditions$hierFormula,mh$conditions$hierFormulaDelta,mh$conditions$mixtures)
-    hier <- mapHier(list(beta=mh$Par$beta$beta$est,g0=mh$Par$beta$g0$est,theta=mh$Par$beta$theta$est),mh$Par$beta$pi$est,mh$Par$beta$delta$est,mh$conditions$hierBeta,mh$conditions$hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,mh$conditions$hierStates,inputHierHMM$newformula,mh$conditions$formulaDelta,inputHierHMM$data,mh$conditions$mixtures,inputHierHMM$recharge)
+    hier <- mapHier(list(beta=mh$Par$beta$beta$est,g0=mh$Par$beta$g0$est,theta=mh$Par$beta$theta$est),mh$Par$beta[["pi"]]$est,mh$Par$beta$delta$est,mh$conditions$hierBeta,mh$conditions$hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,mh$conditions$hierStates,inputHierHMM$newformula,mh$conditions$formulaDelta,inputHierHMM$data,mh$conditions$mixtures,inputHierHMM$recharge)
     mh$conditions$hierBeta <- hier$hierBeta
     mh$conditions$hierDelta <- hier$hierDelta
     

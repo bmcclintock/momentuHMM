@@ -2,7 +2,7 @@
 formatmiSum <- function(miSum){
   miSum$mle <- lapply(miSum$Par$real,function(x) x$est)
   miSum$mle$beta <- miSum$Par$beta$beta$est
-  miSum$mle$pi <- miSum$Par$real$pi$est
+  miSum$mle[["pi"]] <- miSum$Par$real[["pi"]]$est
   miSum$mle$delta <- miSum$Par$real$delta$est
   miSum$mod <- list()
   if(!is.null(miSum$conditions$recharge)){

@@ -48,7 +48,7 @@ stateProbs <- function(m, hierarchical=FALSE)
     aInd <- c(aInd,max(which(data$ID==unique(data$ID)[i])))
   
   mixtures <- m$conditions$mixtures
-  if(mixtures>1) pie <- m$mle$pi
+  if(mixtures>1) pie <- m$mle[["pi"]]
   else pie <- matrix(1,nbAnimals,1)
     
   eta <- mixtureProbs(m)
@@ -80,10 +80,13 @@ stateProbs <- function(m, hierarchical=FALSE)
 }
 
 hierStateProbs <- function(m, stateProbs){
+  
+  installDataTree()
+  
   out <- list()
   for(j in 1:(m$conditions$hierStates$height-1)){
     if(j==m$conditions$hierStates$height-1) ref <- m$conditions$hierStates$Get("state",filterFun=data.tree::isLeaf)
-    else ref <- m$conditions$hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
+    else ref <- m$conditions$hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
     out[[paste0("level",j)]] <- stateProbs[which(m$data$level %in% c(j,paste0(j,"i"))),ref]
     colnames(out[[paste0("level",j)]]) <- names(ref)
   }

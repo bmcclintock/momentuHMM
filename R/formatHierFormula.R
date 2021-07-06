@@ -1,10 +1,13 @@
 #' @importFrom stats terms
-#' @importFrom data.tree Get
+# #' @importFrom data.tree Get
 formatHierFormula <- function(data,hierFormula,hierStates){
+  
+  installDataTree()
+  
   lLevels <- sort(hierFormula$Get("name",filterFun=function(x) x$level==2))[c(1,1+rep(2:1,hierStates$height-2)+rep(seq(0,(hierStates$height-3)*2,2),each=2))]
   formulaTerms <- formTerms <- recTerms <- list()
   recharge <- NULL
-  betaRef <- rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
+  betaRef <- rep(hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
   if(!is.null(data)) factorTerms <- names(data)[which(unlist(lapply(data,function(x) inherits(x,"factor"))))]
   for(j in lLevels){
     newForm <- newFormulas(hierFormula[[j]]$formula, length(hierStates$Get("state",filterFun=data.tree::isLeaf)), betaRef, hierarchical=TRUE)
@@ -41,7 +44,12 @@ formatHierFormula <- function(data,hierFormula,hierStates){
 }
 
 getFactorTerms <- function(formulaTerms,factorTerms,formula,data,level){
-  mm<-stats::model.matrix(formula,data)
+  mm<-tryCatch(stats::model.matrix(formula,data),error=function(e) e)
+  if(inherits(mm,"error")){
+    if(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))){
+      stop(mm$message,"\n     -- has MIfitHMM 'covNames' argument been correctly specified?")
+    } else stop(mm)
+  }
   as <- attr(mm,"assign")
   colmm <- colnames(mm)
   for(jj in 1:length(colmm)){

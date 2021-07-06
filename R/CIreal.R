@@ -199,11 +199,11 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
       tmpSig <- Sigma[i3+1:(ncol(m$covsPi)*(mixtures-1)),i3+1:(ncol(m$covsPi)*(mixtures-1))]
       quantSup <- qnorm(1-(1-alpha)/2)
       lower<-upper<-se<-matrix(NA,nrow=nrow(m$covsPi),ncol=mixtures)
-      est<-matrix(m$mle$pi,nrow=nrow(m$covsPi),ncol=mixtures)
+      est<-matrix(m$mle[["pi"]],nrow=nrow(m$covsPi),ncol=mixtures)
       if(!is.null(Sigma)){
         for(j in 1:nrow(m$covsPi)){
           for(i in 1:mixtures){
-            dN<-numDeriv::grad(get_delta,pie,covsDelta=m$covsPi[j,,drop=FALSE],i=i,workBounds=m$conditions$workBounds$pi)
+            dN<-numDeriv::grad(get_delta,pie,covsDelta=m$covsPi[j,,drop=FALSE],i=i,workBounds=m$conditions$workBounds[["pi"]])
             se[j,i]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
             lower[j,i]<-1/(1+exp(-(log(est[j,i]/(1-est[j,i]))-quantSup*(1/(est[j,i]-est[j,i]^2))*se[j,i])))
             upper[j,i]<-1/(1+exp(-(log(est[j,i]/(1-est[j,i]))+quantSup*(1/(est[j,i]-est[j,i]^2))*se[j,i])))
@@ -211,9 +211,9 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
         }
       }
 
-      Par$pi <- list(est=est,se=se,lower=lower,upper=upper)  
-      colnames(Par$pi$est) <- colnames(Par$pi$se) <- colnames(Par$pi$lower) <- colnames(Par$pi$upper) <- paste0("mix",1:mixtures)
-      rownames(Par$pi$est) <- rownames(Par$pi$se) <- rownames(Par$pi$lower) <- rownames(Par$pi$upper) <- paste0("ID:",unique(m$data$ID))
+      Par[["pi"]] <- list(est=est,se=se,lower=lower,upper=upper)  
+      colnames(Par[["pi"]]$est) <- colnames(Par[["pi"]]$se) <- colnames(Par[["pi"]]$lower) <- colnames(Par[["pi"]]$upper) <- paste0("mix",1:mixtures)
+      rownames(Par[["pi"]]$est) <- rownames(Par[["pi"]]$se) <- rownames(Par[["pi"]]$lower) <- rownames(Par[["pi"]]$upper) <- paste0("ID:",unique(m$data$ID))
     }
   }   
   
@@ -454,6 +454,8 @@ CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){
     m <- momentuHMM(m)
   } else if(!inherits(m,"momentuHierHMM")) stop("m must be a momentuHierHMM or hierarchical miSum object")
   
+  installDataTree()
+  
   if(!is.null(covs)){
     ci <- CIreal.default(m=m,alpha=alpha,covs=covs,parms=parms)
     tmpcovs <- covs
@@ -472,7 +474,7 @@ CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){
   
   mixtures <- m$conditions$mixtures
   
-  ref <- hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2)
+  ref <- hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==2)
   mixref <- rep(seq(0,mixtures*length(m$stateNames)-1,length(m$stateNames)),each=length(ref))+ref
   if(mixtures>1) nameref <- paste0(rep(names(ref),mixtures),"_mix",rep(1:mixtures,each=length(ref)))
   else nameref <- names(ref)
@@ -492,10 +494,10 @@ CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){
     CIgamma$AddChild(paste0("level",j),gamma=list())
     CIdelta$AddChild(paste0("level",j),delta=list())
     
-    ref <- hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j)
+    ref <- hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j)
     
     for(k in names(t)){
-      levelStates <- t[[k]]$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
+      levelStates <- t[[k]]$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
       if(!is.null(levelStates)){
         mixref <- rep(seq(0,mixtures*length(m$stateNames)-1,length(m$stateNames)),each=length(levelStates))+levelStates
         if(mixtures>1) nameref <- paste0(rep(names(levelStates),mixtures),"_mix",rep(1:mixtures,each=length(levelStates)))

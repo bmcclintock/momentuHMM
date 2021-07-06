@@ -1,8 +1,8 @@
 Package: momentuHMM
 Type: Package
 Title: Maximum Likelihood Analysis of Animal Movement Behavior Using Multivariate Hidden Markov Models
-Version: 1.5.2
-Date: 2021-01-06
+Version: 1.5.3
+Date: 2021-07-06
 Depends:
     R (>= 2.10)
 Author: Brett McClintock, Theo Michelot
@@ -17,20 +17,11 @@ Imports:
     numDeriv,
     CircStats,
     crawl (>= 2.2.1),
-    mitools,
-    car,
     mvtnorm,
     sp,
     MASS,
     Brobdingnag,
-    nleqslv,
-    survival,
-    qdapRegex,
-    geosphere,
-    prodlim,
     doRNG,
-    data.tree (>= 1.0.0),
-    extraDistr,
     rlang
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
@@ -50,10 +41,22 @@ Suggests:
     BB,
     expm,
     matrixcalc,
-    moveHMM
+    moveHMM,
+    extraDistr,
+    data.tree (>= 1.0.0),
+    geosphere,
+    mitools,
+    doFuture,
+    future,
+    car,
+    survival,
+    prodlim,
+    nleqslv,
+    qdapRegex
 RoxygenNote: 7.1.1
 Encoding: UTF-8
 NeedsCompilation: yes
 VignetteBuilder: R.rsp
-URL: https://github.com/bmcclintock/momentuHMM
+URL: https://github.com/bmcclintock/momentuHMM,
+    https://github.com/bmcclintock/momentuHMM/discussions
 BugReports: https://github.com/bmcclintock/momentuHMM/issues

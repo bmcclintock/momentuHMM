@@ -74,7 +74,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
     if(!is.momentuHMMData(data)){ 
       if(missing(nbStates)){
         if(all(c("hierStates","hierDist") %in% argNames)){
-          return(getTrProbs.hierarchical(data=data,hierStates=hierArgs$hierStates,hierBeta=hierArgs$hierBeta,workBounds=workBounds,hierFormula=hierArgs$hierFormula,mixtures=mixtures,hierDist=hierArgs$hierDist,covIndex=covIndex))
+          return(getTrProbs.hierarchical(data=data,workBounds=workBounds,mixtures=mixtures,covIndex=covIndex,alpha=alpha,...))
         }
       }
       if(!is.data.frame(data)) stop('data must be a data.frame')
@@ -163,6 +163,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
     nbRecovs <- reForm$nbRecovs
     newformula <- reForm$newformula
   }
+  chkDots(...)
   wnbeta <- w2wn(beta,workBounds$beta)
   
   trMat <- list()
@@ -232,6 +233,10 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
 #' @export
 getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hierFormula=NULL,mixtures=1,hierDist, getCI=FALSE, covIndex=NULL, alpha = 0.95, ...){
   
+  chkDots(...)
+  
+  installDataTree()
+  
   if(is.momentuHierHMM(data) | is.miSum(data) | is.miHMM(data)){
     trProbs <- getTrProbs.default(data,getCI=getCI,covIndex=covIndex,alpha=alpha)
     hierStates <- data$conditions$hierStates
@@ -256,7 +261,7 @@ getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hie
   
   beta <- data.tree::Node$new("getTrProbs")
   
-  ref1 <- hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2)
+  ref1 <- hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==2)
   
   beta$AddChild("level1",gamma=list())
 
@@ -282,7 +287,7 @@ getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hie
     beta$AddChild(paste0("level",j))
     
     for(k in names(t)){
-      ref <- t[[k]]$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
+      ref <- t[[k]]$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
       if(!is.null(ref)){
         beta[[paste0("level",j)]]$AddChild(k,gamma=list())
         for(mix in 1:mixtures){

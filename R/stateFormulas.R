@@ -1,5 +1,5 @@
-#' @importFrom survival untangle.specials
-#' @importFrom prodlim strip.terms
+# #' @importFrom survival untangle.specials
+# #' @importFrom prodlim strip.terms
 cosinorCos<-function(x,period){
   cos(2*pi*x/period)
 }
@@ -32,6 +32,10 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
   
   stateFormula<-list()
   if(length(unlist(attr(Terms,"specials"))) | angleMean){
+    if (!requireNamespace("survival", quietly = TRUE)) {
+      stop("Package \"survival\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
     varnames <- attr(Terms,"term.labels")
     mainpart <- varnames
     cosInd <- survival::untangle.specials(Terms,"cosinor",order=1:10)$terms
@@ -61,6 +65,10 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
     for(j in varnames[recInd])
       mainpart<-c(mainpart,paste0(gsub(")\\s*$","",gsub("recharge\\(","",j))))
     if(length(angInd)){
+      if (!requireNamespace("prodlim", quietly = TRUE)) {
+        stop("Package \"prodlim\" needed for this function to work. Please install it.",
+             call. = FALSE)
+      }
       stmp <- prodlim::strip.terms(Terms[attr(Terms,"specials")$angleFormula],specials="angleFormula",arguments=list(angleFormula=list("strength"=NULL,"by"=NULL)))
       if(any(grepl("cos",attr(stmp,"term.labels"))) | any(grepl("sin",attr(stmp,"term.labels")))) stop("sorry, the strings 'cos' and 'sin' are reserved and cannot appear in mean angle formulas and/or covariate names")
       for(jj in attr(stmp,"term.labels")){
@@ -147,6 +155,10 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
           for(i in tmpnames[recInd])
             mp<-c(mp,paste0(gsub(")\\s*$","",gsub("recharge\\(","",i))))
           if(length(angInd)){
+            if (!requireNamespace("prodlim", quietly = TRUE)) {
+              stop("Package \"prodlim\" needed for this function to work. Please install it.",
+                   call. = FALSE)
+            }
             stmp <- prodlim::strip.terms(tmp[attr(tmp,"specials")$angleFormula],specials="angleFormula",arguments=list(angleFormula=list("strength"=NULL,"by"=NULL)))
             if(any(grepl("cos",attr(stmp,"term.labels"))) | any(grepl("sin",attr(stmp,"term.labels")))) stop("sorry, the strings 'cos' and 'sin' are reserved and cannot appear in mean angle formulas and/or covariate names")
             for(jj in attr(stmp,"term.labels")){
@@ -182,8 +194,10 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
         mp <- character()
       }
       stateFormula[[j]]<-stats::as.formula(paste("~",paste(c(attr(tmp,"intercept"),mainpart,mp),collapse = " + "),collapse=" + "))
+      splineCheck(stateFormula[[j]])
     }
   } else {
+    splineCheck(formula)
     for(j in 1:nbStates){
       stateFormula[[j]] <- formula
     }
@@ -273,4 +287,22 @@ newFormulas<-function(formula,nbStates,betaRef,hierarchical=FALSE)
     }
   }  
   return(list(formulaStates=formulaStates,formterms=formterms,newformula=newformula,recharge=recharge))
+}
+
+splineCheck <- function(stateForm){
+  splineNames <- names(unlist(attributes(stats::terms(stateForm,specials = splineList))$specials))
+  if(length(splineNames)){
+    if(any(splineNames %in% c("ns","bs"))){
+      if (!requireNamespace("splines", quietly = TRUE)) {
+        stop("Package \"splines\" needed for this function to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+    if(any(splineNames %in% c("bSpline","cSpline","iSpline","mSpline"))){
+      if (!requireNamespace("splines2", quietly = TRUE)) {
+        stop("Package \"splines2\" needed for this function to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+  }
 }

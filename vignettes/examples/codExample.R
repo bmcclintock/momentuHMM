@@ -5,22 +5,22 @@ library(data.tree)
 load(url("https://raw.github.com/bmcclintock/momentuHMM/master/vignettes/Atlantic_cod_data_set.RData"))
 
 # coarse-scale data
-data <- data.frame(level="1",step=steps,angle=angles,vertical=NA,time=0)
+data <- data.frame(level="1",step=steps,angle=angles,vertical=NA,hour=0)
 
 ### add extra rows for fine-scale data
 # level=1  covariate indicates when coarse scale behavior switching can occur (i.e., coarse scale t.p.m. used when level=1)
 # level=2i covariate indicates start of each fine scale interval (i.e., fine scale initial distribution used when level=2i)
 # level=2  otherwise (i.e., fine scale t.p.m used when level=2)
 codData <- NULL
-timeSeq <- seq(from=0,to=23+5/6,length=144) # time of day covariate
+hourSeq <- seq(from=0,to=23+5/6,length=144) # hour of day covariate
 for(i in 1:nrow(data)){
-  fineInd <- data.frame(level="2",step=NA,angle=NA,vertical=verticals[[i]],time=timeSeq)
-  tmp <- rbind(data[i,,drop=FALSE],data.frame(level="2i",step=NA,angle=NA,vertical=NA,time=0),fineInd)
+  fineInd <- data.frame(level="2",step=NA,angle=NA,vertical=verticals[[i]],hour=hourSeq)
+  tmp <- rbind(data[i,,drop=FALSE],data.frame(level="2i",step=NA,angle=NA,vertical=NA,hour=0),fineInd)
   codData <- rbind(codData,tmp)
 }
 
 # prepare hierarchical data
-codData <- prepData(codData,coordNames=NULL,covNames="time",hierLevels=c("1","2i","2"))
+codData <- prepData(codData,coordNames=NULL,covNames="hour",hierLevels=c("1","2i","2"))
 
 # data summary
 summary(codData,dataNames=names(codData)[-1])
@@ -95,7 +95,7 @@ Par <- getParDM(codData,hierStates=hierStates,hierDist=hierDist,Par=Par0,DM=DM,e
 # define hierarchical t.p.m. formula(s)
 hierFormula <- data.tree::Node$new("cod HHMM formula")
 hierFormula$AddChild("level1", formula=~1)
-hierFormula$AddChild("level2", formula=~cosinor(time, period=24))
+hierFormula$AddChild("level2", formula=~cosinor(hour, period=24))
 
 hierBeta <- data.tree::Node$new("cod beta")
 hierBeta$AddChild("level1",beta=matrix(c(-18.585, -2.86, -2.551, -1.641, -2.169, -2.415),1,length(hierStates$children)*(length(hierStates$children)-1)))
@@ -144,7 +144,7 @@ fineStates <- hStates$level2
 ######################################################
 
 # stationary distributions
-stats <- stationary(hhmm, covs=data.frame(time=timeSeq))
+stats <- stationary(hhmm, covs=data.frame(hour=hourSeq))
 
 ### coarse scale #####################################
 # stationary distribution
@@ -155,8 +155,17 @@ stats[[1]]$level1[1,]
 # stationary distribution
 stats[[1]]$level2
 
-# plot stationary distribution as function of time of day
+# plot stationary distribution as function of hour of day
 plotStationary(hhmm, plotCI=TRUE)
 ######################################################
+
+# simulate from model
+obsPerLevel <- data.tree::Node$new("cod HHMM obsPerLevel")
+obsPerLevel$AddChild("level1", obs=table(codData$level)[1])
+obsPerLevel$AddChild("level2", obs=length(hourSeq))
+simhhmm <- simHierData(model=hhmm, obsPerLevel = obsPerLevel, covs=data.frame(hour=c(rep(0,nlevels(codData$level)-1),hourSeq)))
+
+# simulate from model with temporal irregularity and location measurement error
+simObshhmm <- simHierData(model=hhmm, obsPerLevel = obsPerLevel, covs=data.frame(hour=c(rep(0,nlevels(codData$level)-1),hourSeq)), lambda=1, errorEllipse = list(M=1,m=1,r=0))
 
 save.image("codExample.RData")

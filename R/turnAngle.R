@@ -6,7 +6,7 @@
 #' @param x First point
 #' @param y Second point
 #' @param z Third point
-#' @param type \code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude.
+#' @param type \code{'UTM'} if easting/northing provided (the default), \code{'LL'} if longitude/latitude. If \code{type='LL'} then the \code{\link[geosphere]{geosphere}} package must be installed.
 #' @param angleCov logical indicating to not return NA when x=y or y=z. Default: FALSE (i.e. NA is returned if x=y or y=z).
 #'
 #' @return The angle between vectors (x,y) and (y,z).  
@@ -20,7 +20,7 @@
 #' z <- c(10,7)
 #' momentuHMM:::turnAngle(x,y,z)
 #' }
-#' @importFrom geosphere bearing
+# #' @importFrom geosphere bearing
 
 turnAngle <- function(x,y,z,type='UTM',angleCov=FALSE)
 {
@@ -33,6 +33,10 @@ turnAngle <- function(x,y,z,type='UTM',angleCov=FALSE)
     w <- c(z[1]-y[1],z[2]-y[2])
     angle <- atan2(w[2],w[1])-atan2(v[2],v[1])
   } else {
+    #if (!requireNamespace("geosphere", quietly = TRUE)) {
+    #  stop("Package \"geosphere\" needed for this function to work. Please install it.",
+    #       call. = FALSE)
+    #}
     angle <- (geosphere::bearing(x,y)-geosphere::bearing(y,z))*pi/180
   }
   while(angle<=(-pi)) angle <- angle + 2*pi

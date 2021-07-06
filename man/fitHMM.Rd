@@ -148,7 +148,7 @@ equal to the stationary distribution. Default: \code{FALSE}.}
 \item{mixtures}{Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.}
 
 \item{formulaPi}{Regression formula for the mixture distribution probabilities. Default: \code{NULL} (no covariate effects; both \code{beta0$pi} and \code{fixPar$pi} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{beta0$pi} and \code{fixPar$pi} are specified on the working scale.
-Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilties).}
+Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilities).}
 
 \item{nlmPar}{List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
 \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
@@ -485,12 +485,11 @@ m.cosinor<-fitHMM(data.cos,nbStates=nbStates,dist=dist,Par0=Par,formula=formula)
 m.cosinor    
 
 ### 9. Piecewise constant B-spline on step length mean and angle concentration
-library(splines2)
 nObs <- 1000 # length of simulated track
 cov <- data.frame(time=1:nObs) # time covariate for splines
 dist <- list(step="gamma",angle="vm")
-stepDM <- list(mean=~bSpline(time,df=2,degree=0),sd=~1)
-angleDM <- list(mean=~1,concentration=~bSpline(time,df=2,degree=0))
+stepDM <- list(mean=~splines2::bSpline(time,df=2,degree=0),sd=~1)
+angleDM <- list(mean=~1,concentration=~splines2::bSpline(time,df=2,degree=0))
 DM <- list(step=stepDM,angle=angleDM)
 Par <- list(step=c(log(1000),1,-1,log(100)),angle=c(0,log(10),2,-5))
 

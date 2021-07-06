@@ -44,7 +44,8 @@
 #' @importFrom CircStats rvm
 #' @importFrom Brobdingnag as.brob sum
 #' @importFrom mvtnorm rmvnorm
-#' @importFrom data.tree Node Get Aggregate isLeaf Clone
+# #' @importFrom data.tree Node Get Aggregate isLeaf Clone
+#' @importFrom doParallel registerDoParallel stopImplicitCluster
 
 simHierData <- function(nbAnimals=1,hierStates,hierDist,
                     Par,hierBeta=NULL,hierDelta=NULL,
@@ -67,6 +68,56 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                     ncores=1)
 {
   
+  installDataTree()
+  
+  if(ncores>1 & nbAnimals>1){
+    for(pkg in c("doFuture","future")){
+      if (!requireNamespace(pkg, quietly = TRUE)) {
+        stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+    oldDoPar <- doFuture::registerDoFuture()
+    on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
+    future::plan(future::multisession, workers = ncores)
+    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (frowned upon by CRAN)
+    progBar <- progBar
+    mvndists <- mvndists
+    getDM <- getDM
+    n2w <- n2w
+    get_ncmean <- get_ncmean
+    w2n <- w2n
+    angledists <- angledists
+    stepdists <- stepdists
+    rwdists <- rwdists
+    rmvnorm2 <- rmvnorm2
+    rmvnorm3 <- rmvnorm3
+    rvm <- CircStats::rvm
+    rwrpcauchy <- CircStats::rwrpcauchy
+    if (requireNamespace("extraDistr", quietly = TRUE)){
+      rcat <- extraDistr::rcat
+    }
+    rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- mvtnorm::rmvnorm
+    rrw_norm <- stats::rnorm
+    mlogit <- mlogit
+    distAngle <- distAngle
+    circAngles <- circAngles
+    pkgs <- c("momentuHMM")
+    if (requireNamespace("splines", quietly = TRUE)){
+      ns <- splines::ns
+      bs <- splines::bs
+    }
+    if (requireNamespace("splines2", quietly = TRUE)){
+      bSpline <- splines2::bSpline
+      mSpline <- splines2::mSpline
+      cSpline <- splines2::cSpline
+      iSpline <- splines2::iSpline
+    }
+  } else { 
+    doParallel::registerDoParallel(cores=ncores)
+    pkgs <- NULL
+  }
+  
   ##############################
   ## Check if !is.null(model) ##
   ##############################
@@ -88,7 +139,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     if(is.miSum(model)){
       model <- formatmiSum(model)
       if(!is.null(model$mle$beta)) model$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(model$mle$beta),2,byrow=TRUE)
-      if(!is.null(model$Par$beta$pi$est)) model$conditions$workBounds$pi<-matrix(c(-Inf,Inf),length(model$Par$beta$pi$est),2,byrow=TRUE)
+      if(!is.null(model$Par$beta[["pi"]]$est)) model$conditions$workBounds[["pi"]]<-matrix(c(-Inf,Inf),length(model$Par$beta[["pi"]]$est),2,byrow=TRUE)
       if(!is.null(model$Par$beta$delta$est)) model$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(model$Par$beta$delta$est),2,byrow=TRUE)
       if(!is.null(model$mle$g0)) model$conditions$workBounds$g0<-matrix(c(-Inf,Inf),length(model$mle$g0),2,byrow=TRUE)
       if(!is.null(model$mle$theta)) model$conditions$workBounds$theta<-matrix(c(-Inf,Inf),length(model$mle$theta),2,byrow=TRUE)
@@ -163,8 +214,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       nbCovsPi <- ncol(model$covsPi)-1
       foo <- length(model$mod$estimate)-length(g0)-length(theta)-(nbCovsDelta+1)*(nbStates-1)*mixtures-(nbCovsPi+1)*(mixtures-1)+1:((nbCovsPi+1)*(mixtures-1))
       pie <- matrix(model$mod$estimate[foo],nrow=nbCovsPi+1,ncol=mixtures-1)
-      #pie <- model$mle$pi
-      #workBounds$pi <- NULL
+      #pie <- model$mle[["pi"]]
+      #workBounds[["pi"]] <- NULL
     } else {
       pie <- NULL
       nbCovsPi <- 0
@@ -303,6 +354,14 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   bounds <- p$bounds
   
   Fun <- lapply(inputs$dist,function(x) paste("r",x,sep=""))
+  for(i in names(Fun)){
+    if(Fun[[i]]=="rcat") {
+      if (!requireNamespace("extraDistr", quietly = TRUE))
+        stop("Package \"extraDistr\" needed for categorical distribution. Please install it.",
+             call. = FALSE)
+      rcat <- extraDistr::rcat
+    }
+  }
   
   spatialcovnames<-NULL
   if(!is.null(spatialCovs)){
@@ -396,7 +455,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   }
   
   if(is.null(nbHierCovs)){
-    wnbHierCovs <- data.tree::Node$new(hierDist$Get("name",filterFun=isRoot))
+    wnbHierCovs <- data.tree::Node$new(hierDist$Get("name",filterFun=data.tree::isRoot))
     wnbHierCovs$AddChild(hierDist$Get("name",filterFun=function(x) x$level==2)[1],nbCovs=0)
     for(j in hierDist$Get("name",filterFun=function(x) x$level==2)[-1]){
       #wnbHierCovs$AddChild(paste0(j,"i"),nbCovs=0)
@@ -431,7 +490,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   if(!all(sort(wnbHierCovs$Get("name",filterFun=function(x) x$level==2))==sort(hierDist$Get("name",filterFun=function(x) x$level==2)))) 
     stop("'nbHierCovs' level types can only include ",paste(hierDist$Get("name",filterFun=function(x) x$level==2),collapse=", "))
   
-  nbCovs <- data.tree::Aggregate(wnbHierCovs,"nbCovs",sum,filterFun=isLeaf)
+  nbCovs <- data.tree::Aggregate(wnbHierCovs,"nbCovs",sum,filterFun=data.tree::isLeaf)
   
   if(is.null(model)){
     if(!is.null(covs) & nbCovs>0) {
@@ -645,22 +704,22 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   if("angle" %in% distnames){ 
     if(inputs$dist[["angle"]] %in% angledists & ("step" %in% distnames))
       if(inputs$dist[["step"]] %in% stepdists){
-        if(hierDist$Get("parent",filterFun=isLeaf)$step$name != hierDist$Get("parent",filterFun=isLeaf)$angle$name) stop("step and angle must be in the same level of the hierarchy")
+        if(hierDist$Get("parent",filterFun=data.tree::isLeaf)$step$name != hierDist$Get("parent",filterFun=data.tree::isLeaf)$angle$name) stop("step and angle must be in the same level of the hierarchy")
         data$x<-numeric()
         data$y<-numeric()
-        coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=isLeaf)$step$name)
+        coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=data.tree::isLeaf)$step$name)
       }
   } else if("step" %in% distnames){
     if(inputs$dist[["step"]] %in% stepdists){
       data$x<-numeric()
       data$y<-numeric()
-      coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=isLeaf)$step$name)
+      coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=data.tree::isLeaf)$step$name)
     }    
   } else if(!is.null(mvnCoords)){
     data[[paste0(mvnCoords,".x")]]<-numeric()
     data[[paste0(mvnCoords,".y")]]<-numeric()
     if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) data[[paste0(mvnCoords,".z")]]<-numeric()
-    coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=isLeaf)[[mvnCoords]]$name)
+    coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=data.tree::isLeaf)[[mvnCoords]]$name)
   } else {
     if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs)) stop("spatialCovs, angleCovs, centers, and/or centroids cannot be specified without valid step length and turning angle distributions")
     coordLevel <- NULL
@@ -797,17 +856,17 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   covsPi <- stats::model.matrix(formPi,tmpCovs)
   nbCovsPi <- ncol(covsPi)-1
   if(!nbCovsPi & is.null(formulaPi)){
-    if(is.null(beta0$pi)){
-      beta0$pi <- matrix(1/mixtures,(nbCovsPi+1),mixtures)
+    if(is.null(beta0[["pi"]])){
+      beta0[["pi"]] <- matrix(1/mixtures,(nbCovsPi+1),mixtures)
     } else {
-      beta0$pi <- matrix(beta0$pi,(nbCovsPi+1),mixtures)
+      beta0[["pi"]] <- matrix(beta0[["pi"]],(nbCovsPi+1),mixtures)
     }
-    if(length(beta0$pi) != (nbCovsPi+1)*mixtures)
+    if(length(beta0[["pi"]]) != (nbCovsPi+1)*mixtures)
       stop(paste("beta$pi has the wrong length: it should have",mixtures,"elements."))
-    beta0$pi <- matrix(log(beta0$pi[-1]/beta0$pi[1]),nbCovsPi+1,mixtures-1)
+    beta0[["pi"]] <- matrix(log(beta0[["pi"]][-1]/beta0[["pi"]][1]),nbCovsPi+1,mixtures-1)
   } else {
-    if(is.null(beta0$pi)) beta0$pi <- matrix(0,nrow=(nbCovsPi+1),ncol=mixtures-1)
-    if(is.null(dim(beta0$pi)) || (ncol(beta0$pi)!=mixtures-1 | nrow(beta0$pi)!=(nbCovsPi+1)))
+    if(is.null(beta0[["pi"]])) beta0[["pi"]] <- matrix(0,nrow=(nbCovsPi+1),ncol=mixtures-1)
+    if(is.null(dim(beta0[["pi"]])) || (ncol(beta0[["pi"]])!=mixtures-1 | nrow(beta0[["pi"]])!=(nbCovsPi+1)))
       stop(paste("beta$pi has wrong dimensions: it should have",(nbCovsPi+1),"rows and",
                  mixtures-1,"columns."))
   }
@@ -845,7 +904,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   wworkBounds <- getWorkBounds(wworkBounds,distnames,unlist(Par[distnames]),parindex,parCount,inputs$DM,beta0,deltaB)
   
   wnbeta <- w2wn(beta0$beta,wworkBounds$beta)
-  wnpi <- w2wn(beta0$pi,wworkBounds$pi)
+  wnpi <- w2wn(beta0[["pi"]],wworkBounds[["pi"]])
   if(!is.null(recharge)){
     wng0 <- w2wn(beta0$g0,wworkBounds$g0)
     wntheta <- w2wn(beta0$theta,wworkBounds$theta)
@@ -856,15 +915,17 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",FALSE,hierarchical=TRUE)
   
+  if(ncores>1 & nbAnimals>1) message("\nSimulating ",nbAnimals," individuals in parallel... ",sep="")
+  
   if(!nbSpatialCovs | !retrySims){
     
     ###########################
     ## Loop over the animals ##
     ###########################
-    registerDoParallel(cores=ncores)
-    withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.combine='comb') %dorng% {
+    withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.export=ls(),.packages=pkgs,.combine='comb') %dorng% {
       
-      message("\r        Simulating individual ",zoo,"... ",sep="")
+      if(ncores==1 | nbAnimals==1) message("        Simulating individual ",zoo,"... ",sep="")
+      else progBar(zoo, nbAnimals)
       
       # number of observations for animal zoo
       nbObs <- allNbObs[zoo]
@@ -906,7 +967,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       
       for(i in distnames){
         if(inputs$dist[[i]] %in% mvndists){
-          genData[[i]] <- matrix(NA,nbObs,ncol(X))
+          genData[[i]] <- matrix(NA,nbObs,as.numeric(sub("mvnorm","",sub("rw_mvnorm","",dist[[i]]))))
         } else genData[[i]] <- rep(NA,nbObs)
         genArgs[[i]] <- list(1)  # first argument = 1 (one random draw)
       }
@@ -940,7 +1001,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         covsPi <- stats::model.matrix(formPi,subCovs[1,,drop=FALSE])
         fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta,wworkBounds,covsPi)
         
-        pie <- fullsubPar$pi
+        pie <- fullsubPar[["pi"]]
         
         # assign individual to mixture
         if(mixtures>1) mix[zoo] <- sample.int(mixtures,1,prob=pie)
@@ -1058,6 +1119,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         if(!is.null(coordLevel)) coordNA <- which(level[[zoo]]==coordLevel)[sum(level[[zoo]]==coordLevel)]
       
         for (k in 1:nbObs){
+          
+          if(ncores==1 | nbAnimals==1) progBar(k, nbObs)
           
           #if(level[[zoo]][k] %in% lLevels[[zoo]][seq(2,length(lLevels[[zoo]]),2)]){
           #  if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
@@ -1185,7 +1248,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                 }
                 
                 probs <- c(1.-zeroMass[[i]][Z[k]]-oneMass[[i]][Z[k]],zeroMass[[i]][Z[k]],oneMass[[i]][Z[k]])
-                rU <- which(rmultinom(1,1,prob=probs)==1)
+                rU <- which(stats::rmultinom(1,1,prob=probs)==1)
                 if(rU==1){
                   if(inputs$dist[[i]] %in% mvndists){
                     genData[[i]][k,] <- do.call(Fun[[i]],genArgs[[i]])
@@ -1322,10 +1385,14 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       if(length(centerInd)) centerCovs <- subCovs[,centerNames]
       if(length(centroidInd)) centroidCovs <- subCovs[,centroidNames]
       #data <- rbind(data,d)
+      
+      #if(ncores==1 | nbAnimals==1) message("\n")
+      
       return(list(data=d,allCovs=allCovs[cumNbObs[zoo]+1:nbObs,,drop=FALSE],allSpatialcovs=subSpatialcovs,centerCovs=centerCovs,centroidCovs=centroidCovs,allStates=matrix(Z,ncol=1)))
     }
     ,warning=muffleRNGwarning)
-    stopImplicitCluster()
+    if(!((ncores>1 & nbAnimals>1))) doParallel::stopImplicitCluster()
+    else future::plan(future::sequential)
     
     if(nbCovs>0)
       simDat$data <- cbind(simDat$data,simDat$allCovs)
@@ -1400,14 +1467,15 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     # account for observation error (if any)
     out<-simObsData(momentuHierHMMData(simDat$data),lambda,errorEllipse,coordLevel)
     
-    message("DONE")
     return(out)
   } else {
+    if(!((ncores>1 & nbAnimals>1))) doParallel::stopImplicitCluster()
+    else future::plan(future::sequential)
     simCount <- 0
-    cat("Attempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simHierData'\n",sep="")
+    message("Attempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simHierData'\n",sep="")
     while(simCount < retrySims){
-      if(ncores==1) cat("    Attempt ",simCount+1," of ",retrySims,"...\n",sep="")
-      else cat("\r    Attempt ",simCount+1," of ",retrySims,"...",sep="")
+      if(ncores==1) message("    Attempt ",simCount+1," of ",retrySims,"...\n",sep="")
+      else message("\r    Attempt ",simCount+1," of ",retrySims,"...",sep="")
       tmp<-suppressMessages(tryCatch(simHierData(nbAnimals,hierStates,hierDist,
                                              Par,hierBeta,hierDelta,
                                              hierFormula,hierFormulaDelta,mixtures,formulaPi,
@@ -1428,18 +1496,15 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                                              errorEllipse,
                                              ncores),error=function(e) e))
       if(inherits(tmp,"error")){
-        if(ncores==1) cat("FAILED\n")
         if(grepl("Try expanding the extent of the raster",tmp)) simCount <- simCount+1
         else stop(tmp)
       } else {
         simCount <- retrySims
-        if(ncores>1) message("\nDONE")
-        else message("DONE")
+        message("DONE")
         return(tmp)
       }
     }
-    if(ncores>1) message("\nFAILED")
-    else message("FAILED")
+    message("FAILED")
     stop(tmp)
   }
 }

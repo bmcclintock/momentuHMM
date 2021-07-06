@@ -181,9 +181,10 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       iStates[[i]] <- 1:nbStates
       names(iStates[[i]]) <- stateNames
     } else {
+      installDataTree()
       w[[i]] <- rep(0,nbStates)
       iLev <- gsub(paste0(".",i),"",names(m$conditions$hierDist$leaves)[grepl(i,names(m$conditions$hierDist$leaves))])
-      iStates[[i]] <- m$conditions$hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==(as.numeric(gsub("level","",iLev))+1))
+      iStates[[i]] <- m$conditions$hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==(as.numeric(gsub("level","",iLev))+1))
       if(sepStates) {
         w[[i]][iStates[[i]]] <- 1
       } else {
@@ -288,9 +289,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   }
   
   if(mixtures>1){
-    if(!m$conditions$stationary) beta$pi <- m$mod$estimate[length(m$mod$estimate)-ncol(m$covsPi)*(mixtures-1)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-(nbCovsDelta+1)*(nbStates-1)*mixtures+1:(ncol(m$covsPi)*(mixtures-1))]
-    else beta$pi <- m$mod$estimate[length(m$mod$estimate)-ncol(m$covsPi)*(mixtures-1)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)+1:(ncol(m$covsPi)*(mixtures-1))]
-  } else beta$pi <- NULL
+    if(!m$conditions$stationary) beta[["pi"]] <- m$mod$estimate[length(m$mod$estimate)-ncol(m$covsPi)*(mixtures-1)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-(nbCovsDelta+1)*(nbStates-1)*mixtures+1:(ncol(m$covsPi)*(mixtures-1))]
+    else beta[["pi"]] <- m$mod$estimate[length(m$mod$estimate)-ncol(m$covsPi)*(mixtures-1)-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)+1:(ncol(m$covsPi)*(mixtures-1))]
+  } else beta[["pi"]] <- NULL
   
   tmpPar <- Par
   tmpConditions <- m$conditions
@@ -340,6 +341,14 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   p <- inputs$p
   
   Fun <- lapply(inputs$dist,function(x) paste("d",x,sep=""))
+  for(i in names(Fun)){
+    if(Fun[[i]]=="dcat"){
+      if (!requireNamespace("extraDistr", quietly = TRUE))
+        stop("Package \"extraDistr\" needed for categorical distribution. Please install it.",
+             call. = FALSE) 
+      dcat <- extraDistr::dcat
+    }
+  }
   
   zeroMass<-oneMass<-vector('list',length(inputs$dist))
   names(zeroMass)<-names(oneMass)<-distnames
@@ -634,9 +643,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           gradfun<-function(wpar,k) {
             w2n(wpar,p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary=TRUE,fullDM,DMind,gridLength,inputs$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta,m$conditions$workBounds[c(i,"beta")],m$covsPi)[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,k]
           }
-          est<-w2n(c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta$beta,beta$pi),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary=TRUE,fullDM,DMind,gridLength,inputs$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta,m$conditions$workBounds[c(i,"beta")],m$covsPi)[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,]
+          est<-w2n(c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta$beta,beta[["pi"]]),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary=TRUE,fullDM,DMind,gridLength,inputs$dist[i],p$Bndind[i],nc[i],meanind[i],m$covsDelta,m$conditions$workBounds[c(i,"beta")],m$covsPi)[[i]][(which(tmpp$parNames[[i]]==j)-1)*nbStates+state,]
           if(plotCI){
-            dN<-t(mapply(function(x) tryCatch(numDeriv::grad(gradfun,c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta$beta,beta$pi),k=x),error=function(e) NA),1:gridLength))
+            dN<-t(mapply(function(x) tryCatch(numDeriv::grad(gradfun,c(m$mod$estimate[parindex[[i]]+1:parCount[[i]]],beta$beta,beta[["pi"]]),k=x),error=function(e) NA),1:gridLength))
             se<-t(apply(dN[,1:parCount[[i]]],1,function(x) tryCatch(suppressWarnings(sqrt(x%*%Sigma[parindex[[i]]+1:parCount[[i]],parindex[[i]]+1:parCount[[i]]]%*%x)),error=function(e) NA)))
             uci<-est+qnorm(1-(1-alpha)/2)*se
             lci<-est-qnorm(1-(1-alpha)/2)*se
@@ -937,7 +946,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
               
               if(j==1) {
 
-                ref <- m$conditions$hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
+                ref <- m$conditions$hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
                 
                 # only plot if there is variation in stationary state proabilities
                 if(!all(apply(trMat[ref,ref,which(tempCovs$level==j)],1:2,function(x) all( abs(x - mean(x)) < 1.e-6 )))){
@@ -954,7 +963,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
                 t <- data.tree::Traverse(m$conditions$hierStates,filterFun=function(x) x$level==j)
                 names(t) <- m$conditions$hierStates$Get("name",filterFun=function(x) x$level==j)
                 for(k in names(t)){
-                  ref <- t[[k]]$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
+                  ref <- t[[k]]$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
                   # only plot if jth node has children and there is variation in stationary state proabilities
                   if(!is.null(ref) && !all(apply(trMat[ref,ref,which(tempCovs$level==j)],1:2,function(x) all( abs(x - mean(x)) < 1.e-6 )))){
                     

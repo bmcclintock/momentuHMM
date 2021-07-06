@@ -104,5 +104,5 @@ AIC(nullFit,covFit,fixFit,reFit,reCovFit, n=nrow(reData))
 \references{
 Burnham, K.P. and White, G.C. 2002. Evaluation of some random effects methodology applicable to bird ringing data. Journal of Applied Statistics 29: 245-264.
 
-McClintock, B.T. 2020. Worth the effort? A practical examination of random effects in hidden Markov models for animal telemetry data. bioRxiv doi:10.1101/2020.07.10.196410
+McClintock, B.T. 2021. Worth the effort? A practical examination of random effects in hidden Markov models for animal telemetry data. Methods in Ecology and Evolution \doi{10.1111/2041-210X.13619}.
 }

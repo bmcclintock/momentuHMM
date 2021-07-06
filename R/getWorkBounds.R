@@ -1,5 +1,7 @@
 getWorkBounds <- function(workBounds,distnames,wpar,parindex,parCount,DM,beta=NULL,delta=NULL){
   
+  checkNames(c(distnames,"beta","pi","delta","g0","theta"),workBounds=workBounds)
+  
   for(i in distnames){
     if(is.null(workBounds[[i]]) | is.null(DM[[i]])){
       workBounds[[i]] <- matrix(c(-Inf,Inf),parCount[[i]],2,byrow=TRUE)
@@ -23,12 +25,12 @@ getWorkBounds <- function(workBounds,distnames,wpar,parindex,parCount,DM,beta=NU
     #if(any(beta<workBounds$beta[,1] | beta>workBounds$beta[,2])) stop("beta0 do not satisfy workBounds")
     outBounds <- workBounds[c(distnames,"beta")]
   }
-  if(length(beta$pi)){
-    if(is.null(workBounds$pi)){
-      workBounds$pi <- matrix(c(-Inf,Inf),length(beta$pi),2,byrow=TRUE)
+  if(length(beta[["pi"]])){
+    if(is.null(workBounds[["pi"]])){
+      workBounds[["pi"]] <- matrix(c(-Inf,Inf),length(beta[["pi"]]),2,byrow=TRUE)
     } else {
-      if(!is.matrix(workBounds$pi)) stop("workBounds$pi must be a matrix")
-      if(!all(dim(workBounds$pi)==c(length(beta$pi),2))) stop("workBounds$pi must be a ",length(beta$pi)," x 2 matrix")
+      if(!is.matrix(workBounds[["pi"]])) stop("workBounds$pi must be a matrix")
+      if(!all(dim(workBounds[["pi"]])==c(length(beta[["pi"]]),2))) stop("workBounds$pi must be a ",length(beta[["pi"]])," x 2 matrix")
     }
     outBounds <- workBounds[c(distnames,"beta","pi")]
   }

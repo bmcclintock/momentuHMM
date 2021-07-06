@@ -152,8 +152,10 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
   # for directing hierarchical data to prepData.hierarchical
   hierArgs <- list(...)
   if("hierLevels" %in% names(hierArgs)){
-    return(prepData.hierarchical(data, type, coordNames, covNames, spatialCovs, centers, centroids, angleCovs, ...))
+    return(prepData.hierarchical(data, type, coordNames, covNames, spatialCovs, centers, centroids, angleCovs, altCoordNames, ...))
   } else if("coordLevel" %in% names(hierArgs)) stop("'coordLevel' cannot be specified unless 'hierLevels' is also specified")
+  
+  chkDots(...)
   
   distnames<-names(data)
   if(any(c("step","angle") %in% distnames) & !is.null(coordNames)) stop("data objects cannot be named 'step' or 'angle';\n  these names are reserved for step lengths and turning angles calculated from coordinates")
@@ -204,6 +206,12 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
   
   # check arguments
   type <- match.arg(type)
+  if(type=="LL"){
+    if (!requireNamespace("geosphere", quietly = TRUE)) {
+      stop("Package \"geosphere\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
+  }
   if(!is.null(coordNames)){
     if(length(which(coordNames %in% names(data)))<2)
       stop("coordNames not found in data")
@@ -440,6 +448,10 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     if(!is.null(altCoordNames)) outNames <- paste0(altCoordNames,".",outNames)
   }
   
+  chkDots(...)
+  
+  installDataTree()
+  
   if(!is.data.frame(data)) stop("data must be a data frame")
   if(any(dim(data)==0)) stop("data is empty")
   distnames<-names(data)#[which(!(names(data) %in% "level"))]
@@ -526,6 +538,12 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
   
   # check arguments
   type <- match.arg(type)
+  if(type=="LL"){
+    if (!requireNamespace("geosphere", quietly = TRUE)) {
+      stop("Package \"geosphere\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
+  }
   if(!is.null(coordNames)){
     if(length(which(coordNames %in% names(data)))<2)
       stop("coordNames not found in data")

@@ -11,8 +11,7 @@ test_that("Exceptions are thrown",{
   
   # temporally irregular data
   obsData <- simData(model=example$m,lambda=2)
-  fixPar<-c(NA,NA)
-  expect_error(crawlWrap(obsData,theta=theta,fixPar=fixPar,attempts=100,retryFits=0),NA)
+  expect_error(crawlWrap(obsData,theta=theta,attempts=100,retryFits=0),NA)
   
   # measurement error
   obsData <- simData(model=example$m,errorEllipse=list(M=50,m=50,r=0))
@@ -34,8 +33,7 @@ test_that("Exceptions are thrown",{
   
   # temporally regular data without measurement error data
   obsData <- simData(model=example$m)
-  fixPar<-c(NA,NA)
-  expect_error(crawlWrap(obsData,theta=theta,fixPar=fixPar))
+  expect_error(crawlWrap(obsData))
   
   setRNG::setRNG(oldRNG)
   

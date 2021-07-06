@@ -39,11 +39,9 @@ timeInStates.momentuHMM <- function(m, by = NULL, alpha = 0.95, ncores = 1){
 #' @rdname timeInStates
 # @importFrom magrittr %>%
 # @importFrom dplyr group_by_at summarise_at
-#' @importFrom foreach foreach %dopar%
-#' @importFrom doRNG %dorng%
 timeInStates.HMMfits <- function(m, by = NULL, alpha = 0.95, ncores = 1){
   
-  i <- . <- NULL #gets rid of no visible binding for global variable 'i' and '.' NOTE in R cmd check
+  i <- ii <- . <- NULL #gets rid of no visible binding for global variable 'i' and '.' NOTE in R cmd check
   
   simind <- unlist(lapply(m,is.momentuHMM))
   nsims <- length(which(simind))
@@ -68,17 +66,34 @@ timeInStates.HMMfits <- function(m, by = NULL, alpha = 0.95, ncores = 1){
     }
   }
   
-  cat("Decoding state sequences and probabilities for each imputation... ")
-  registerDoParallel(cores=ncores)
-  withCallingHandlers(im_states <- foreach(i = 1:nsims) %dorng% {momentuHMM::viterbi(m[[i]])},warning=muffleRNGwarning)
-  stopImplicitCluster()
-  cat("DONE\n")
-  
-  registerDoParallel(cores=ncores)
-  withCallingHandlers(xmat <- foreach(i = 1:nsims, .combine = rbind) %dorng% {
-    get_combins(m[[i]],im_states[[i]],by)
+  message("Decoding state sequences and probabilities for each imputation... ")
+  if (ncores>1) {
+    for(pkg in c("doFuture","future")){
+      if (!requireNamespace(pkg, quietly = TRUE)) {
+        stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+    oldDoPar <- doFuture::registerDoFuture()
+    on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
+    future::plan(future::multisession, workers = ncores)
+    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
+    progBar <- progBar
+    get_combins <- get_combins
+  } else {
+    doParallel::registerDoParallel(cores=ncores)
+  }
+  withCallingHandlers(im_states <- foreach(i = m, ii=seq_along(m), .packages="momentuHMM") %dorng% {
+    progBar(ii, nsims)
+    viterbi(i)
   },warning=muffleRNGwarning)
-  stopImplicitCluster()
+  
+  withCallingHandlers(xmat <- foreach(i = m, ii=im_states, .packages="momentuHMM", .combine = rbind) %dorng% {
+    get_combins(i,ii,by)
+  },warning=muffleRNGwarning)
+  
+  if(ncores==1) doParallel::stopImplicitCluster()
+  else future::plan(future::sequential)
   
   if(!is.null(by)){
     

@@ -126,7 +126,7 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
     par$delta <- c(NA)
   if(nbStates==1) {
     par$beta <- matrix(NA)
-    #par$pi <- c(NA)
+    #par[["pi"]] <- c(NA)
     par$delta <- c(NA)
     par[distnames] <- lapply(par[distnames],as.matrix)
   }

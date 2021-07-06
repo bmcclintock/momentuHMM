@@ -30,13 +30,15 @@
 #' \item{stateNames}{See \code{\link{fitHMM}}.}
 #' 
 #' @export
-#' @importFrom data.tree Node Get Do ToDataFrameTypeCol Traverse Aggregate AreNamesUnique isRoot isLeaf Clone
+# #' @importFrom data.tree Node Get Do ToDataFrameTypeCol Traverse Aggregate AreNamesUnique isRoot isLeaf Clone
 #' @importFrom stats terms
 formatHierHMM <- function(data,hierStates,hierDist,
                           hierBeta=NULL,hierDelta=NULL,
                           hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,
                           workBounds=NULL,betaCons=NULL,deltaCons=NULL,fixPar=NULL,
                           checkData=TRUE){
+  
+  installDataTree()
   
   if(is.null(data)) checkData <- FALSE
   
@@ -64,7 +66,7 @@ formatHierHMM <- function(data,hierStates,hierDist,
   #if(length(recharge)>1) stop("sorry, only 1 recharge model is currently supported")
   
   # set t.p.m. reference states based on top level
-  betaRef <- rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
+  betaRef <- rep(hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
 
   beta0 <- delta0 <- NULL
   
@@ -336,7 +338,7 @@ formatHierHMM <- function(data,hierStates,hierDist,
       if(mixtures>1){
         #if(!is.list(hierBeta) || !all(names(hierBeta) %in% c("beta","pi","g0","theta"))) stop("hierBeta must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
         if(!is.list(hierBeta) || !all(names(hierBeta) %in% c("beta","pi"))) stop("hierBeta must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
-        Pi <- hierBeta$pi
+        Pi <- hierBeta[["pi"]]
       }
       if(!is.null(recharge)){
         #  if(!is.list(hierBeta) || !all(names(hierBeta) %in% c("beta","pi","g0","theta"))) stop("hierBeta must be a list with elements named 'beta', 'g0', and/or 'theta' when including a recharge model")
@@ -420,7 +422,7 @@ formatHierHMM <- function(data,hierStates,hierDist,
     
     if(mixtures>1 | !is.null(recharge)){
       beta0 <- list(beta=beta0)
-      if(mixtures>1) beta0$pi <- Pi
+      if(mixtures>1) beta0[["pi"]] <- Pi
       if(!is.null(recharge)){
         beta0$g0 <- g0
         beta0$theta <- theta
@@ -463,7 +465,7 @@ nbHierStates <- function(hierStates){
   
   if(hierStates$height<=2) stop("'hierStates' must contain at least 2 levels below root (i.e., hierStates$height must be > 2)")
   
-  if(any(unlist(lapply(Traverse(hierStates,traversal="level",filterFun=function(x) !isLeaf(x)),function(x) x$count))<2)) stop("each node in 'hierStates' must have at least 2 children")
+  if(any(unlist(lapply(data.tree::Traverse(hierStates,traversal="level",filterFun=function(x) !data.tree::isLeaf(x)),function(x) x$count))<2)) stop("each node in 'hierStates' must have at least 2 children")
   
   list(nbStates=nbStates,stateNames=stateNames)
 }
@@ -503,7 +505,7 @@ getHierDist <- function(hierDist,data,checkData){
       stop("'hierDist' level types can only include ",paste(paste0("level",levels(data$level)[seq(1,nlevels(data$level),2)]),collapse=", "))
     
     for(j in gsub("level","",hierDist$Get("name",filterFun=function(x) x$level==2))){
-      jDist <- hierDist[[paste0("level",j)]]$Get("dist",filterFun=isLeaf)
+      jDist <- hierDist[[paste0("level",j)]]$Get("dist",filterFun=data.tree::isLeaf)
       if(any(!is.na(jDist))){
         dist <- jDist[!is.na(jDist)]
         distnames <- tmpdistnames <- names(dist)
@@ -543,7 +545,7 @@ getHierDist <- function(hierDist,data,checkData){
 
 checkHierFormula <- function(data,hierFormula,hierStates,hierDist,checkData,what="formula"){
   if(is.null(hierFormula)){
-    whierFormula <- data.tree::Node$new(hierStates$Get("name",filterFun=isRoot))
+    whierFormula <- data.tree::Node$new(hierStates$Get("name",filterFun=data.tree::isRoot))
     whierFormula$AddChild(hierDist$Get("name",filterFun=function(x) x$level==2)[1])
     whierFormula[[hierDist$Get("name",filterFun=function(x) x$level==2)[1]]][[what]] <- ~1
     for(j in hierDist$Get("name",filterFun=function(x) x$level==2)[-1]){
@@ -595,7 +597,7 @@ checkField <- function(what,field,level,hierBeta,hierStates,betaRef,nbCovs,mixtu
     for(jj in hierStates$Get("name",filterFun=function(x) x$level==level)){
       inits <- whierBeta[[paste0("level",level)]][[jj]][[field]]
       nlStates <- hierStates$Get("count",filterFun=function(x) x$level==level)[jj]
-      jRef <- sum(!(rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==level)[jj],times=hierStates$Get("leafCount",filterFun=function(x) x$level==level)[jj]) %in% betaRef))
+      jRef <- sum(!(rep(hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==level)[jj],times=hierStates$Get("leafCount",filterFun=function(x) x$level==level)[jj]) %in% betaRef))
       pCount <- ifelse(initial,(nlStates-1),nlStates*(nlStates-1))
       if(is.null(inits) & nlStates) {
         if(check) stop(what,"$level",level,"$",jj,"$",field," are missing")
@@ -616,7 +618,7 @@ checkField <- function(what,field,level,hierBeta,hierStates,betaRef,nbCovs,mixtu
       }
       if(nlStates) count <- count + nbCovs*mixtures*pCount*ifelse(jRef,jRef,1)
     }
-    inits <- whierBeta[[paste0("level",level)]]$Get(field,filterFun=isLeaf,simplify=FALSE)[hierStates$Get("name",filterFun=function(x) x$level==level)]
+    inits <- whierBeta[[paste0("level",level)]]$Get(field,filterFun=data.tree::isLeaf,simplify=FALSE)[hierStates$Get("name",filterFun=function(x) x$level==level)]
     if(!bounds) inits <- unlist(inits)
   } else {
     inits <- whierBeta[[paste0("level",level)]][[field]]
@@ -647,7 +649,7 @@ mapCons <- function(hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,form
   bc <- betaCons
   dc <- deltaCons
   
-  betaRef <- rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
+  betaRef <- rep(hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
   
   if("betaCons" %in% hierBeta$attributesAll){
     what <- "hierBeta"
@@ -694,7 +696,7 @@ mapPar <- function(hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,formu
   
   match.arg(field,c("beta","fixPar"))
   
-  betaRef <- rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
+  betaRef <- rep(hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
   
   if(field=="beta") beta <- delta <- NULL
   else {
@@ -751,7 +753,7 @@ mapBounds <- function(hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,fo
   
   match.arg(field,"workBounds")
   
-  betaRef <- rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
+  betaRef <- rep(hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
   
   beta <- delta <- NULL
   
@@ -849,7 +851,7 @@ getRechargeParms <- function(recharge,data,hierBeta){
 mapHier <- function(beta,Pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,hierStates,formula,formulaDelta,data,mixtures,recharge=NULL,fill=FALSE){
   
   if(is.null(hierBeta)){
-    hierBeta <- Node$new("hierBeta")
+    hierBeta <- data.tree::Node$new("hierBeta")
     hierBeta$AddChild(paste0("level1"))
     for(j in 2:(hierStates$height-1)){
       hierBeta$AddChild(paste0("level",j))
@@ -859,7 +861,7 @@ mapHier <- function(beta,Pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,h
     }
   }
   if(is.null(hierDelta)){
-    hierDelta <- Node$new("hierDelta")
+    hierDelta <- data.tree::Node$new("hierDelta")
     hierDelta$AddChild(paste0("level1"))
     for(j in 2:(hierStates$height-1)){
       hierDelta$AddChild(paste0("level",j))
@@ -877,7 +879,7 @@ mapHier <- function(beta,Pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,h
   }  
   if(is.null(delta)) delta <- matrix(0,nrow(fixPar$delta),ncol(fixPar$delta),dimnames=dimnames(fixPar$delta))
   
-  betaRef <- rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
+  betaRef <- rep(hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
   
   whierBeta <- NULL
   if(is.list(hierBeta)){
@@ -900,7 +902,7 @@ mapHier <- function(beta,Pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,h
         names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
         for(jj in names(t)){
           nStates <- t[[jj]]$count#length(t[[jj]]$Get("state",filterFun = data.tree::isLeaf))
-          jRef <- sum(!(rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j)[jj],times=hierStates$Get("leafCount",filterFun=function(x) x$level==j)[jj]) %in% betaRef))
+          jRef <- sum(!(rep(hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j)[jj],times=hierStates$Get("leafCount",filterFun=function(x) x$level==j)[jj]) %in% betaRef))
           pCount <- nStates*(nStates-1)*ifelse(jRef,jRef,1)
           if(nStates){
             if(is.null(whierBeta[[paste0("level",j)]][[jj]]$betaCons)) {
@@ -961,7 +963,7 @@ mapHier <- function(beta,Pi,delta,hierBeta,hierDelta,fixPar,betaCons,deltaCons,h
         names(t) <- hierStates$Get("name",filterFun=function(x) x$level==j)
         for(jj in names(t)){
           nStates <- t[[jj]]$count#length(t[[jj]]$Get("state",filterFun = data.tree::isLeaf))
-          jRef <- sum(!(rep(hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j)[jj],times=hierStates$Get("leafCount",filterFun=function(x) x$level==j)[jj]) %in% betaRef))
+          jRef <- sum(!(rep(hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j)[jj],times=hierStates$Get("leafCount",filterFun=function(x) x$level==j)[jj]) %in% betaRef))
           pCount <- (nStates-1)*ifelse(jRef,jRef,1)
           if(nStates){
             if(is.null(whierDelta[[paste0("level",j)]][[jj]]$deltaCons)) {

@@ -36,8 +36,8 @@ estimates and the means of the data values across all imputations (and therefore
 # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
 m <- example$m
 res <- pseudoRes(m)
-qqnorm(res$stepRes)
-qqnorm(res$angleRes)
+stats::qqnorm(res$stepRes)
+stats::qqnorm(res$angleRes)
 
 }
 \references{

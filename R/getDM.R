@@ -158,6 +158,21 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
           covs<-cbind(covs,tmpcovs)
         } else {
           if(wlag) lag <- get_crwlag(form,lag)
+          tmpCol <- tryCatch(stats::get_all_vars(form,data),error=function(e) e)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+          if(inherits(tmpCol,"error")){
+            if(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))){
+              stop(tmpCol$message,"\n     -- has MIfitHMM 'covNames' argument been correctly specified?")
+            } else stop(tmpCol)
+          }
+          if(!all(names(tmpCol) %in% names(data))){
+            for(j in names(tmpCol)[which(!names(tmpCol) %in% names(data))]){
+              if(exists(j)) stop("'",j,"' covariate not found in data, but a variable named '",j,"' is present in the environment (this can cause major problems!)",
+                                 ifelse(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1])))),
+                                        " \n       -- has MIfitHMM 'covNames' argument been correctly specified?",
+                                        ""))
+            }
+          }
+          rm(tmpCol)
           tmpcovs<-stats::model.matrix(form,data)[,2]
           covs<-cbind(covs,tmpcovs)
         }
@@ -207,10 +222,10 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
   parCount <- parCount[distnames]
   
   if(ParChecks){
-    if(any(unlist(lapply(Par,length))!=unlist(parCount)))
-      stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par,length))!=unlist(parCount))),collapse=", "))
+    if(any(unlist(lapply(Par[distnames],length))!=unlist(parCount)))
+      stop("Dimension mismatch between Par and DM for: ",paste(names(which(unlist(lapply(Par[distnames],length))!=unlist(parCount))),collapse=", "))
     
-    if(sum((unlist(parSize)>0)*unlist(parCount))!=length(unlist(Par))) {
+    if(sum((unlist(parSize)>0)*unlist(parCount))!=length(unlist(Par[distnames]))) {
       error <- "Wrong number of initial parameters"
       stop(error)
     }
@@ -237,6 +252,10 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
 get_crwlag <- function(form,clag){
   lag <- 0
   if(length(attr(stats::terms(form, specials="crw"),"specials")$crw)){
+    if (!requireNamespace("prodlim", quietly = TRUE)) {
+      stop("Package \"prodlim\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
     Terms <- stats::terms(form,specials="crw")
     lag <- as.numeric(unlist(attr(prodlim::strip.terms(Terms[attr(Terms,"specials")$crw],specials="crw",arguments=list(crw=list("lag"=1))),"stripped.arguments")))
   }

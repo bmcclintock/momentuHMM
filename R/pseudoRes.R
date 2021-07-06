@@ -26,8 +26,8 @@
 #' # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
 #' m <- example$m
 #' res <- pseudoRes(m)
-#' qqnorm(res$stepRes)
-#' qqnorm(res$angleRes)
+#' stats::qqnorm(res$stepRes)
+#' stats::qqnorm(res$angleRes)
 #'
 #' @references
 #' Harte, D. 2017. HiddenMarkov: Hidden Markov Models. R package version 1.8-8.
@@ -38,10 +38,7 @@
 #'
 #' @export
 #' @importFrom stats integrate qnorm qchisq mahalanobis
-#' @importFrom doParallel registerDoParallel stopImplicitCluster
-#' @importFrom foreach foreach %dopar%
-#' @importFrom doRNG %dorng%
-#' @importFrom extraDistr pcat
+# #' @importFrom extraDistr pcat
 
 pseudoRes <- function(m, ncores = 1)
 {
@@ -51,12 +48,30 @@ pseudoRes <- function(m, ncores = 1)
   if(!is.momentuHMM(m) & !is.miSum(m)){
     if(!is.miHMM(m) & !is.HMMfits(m)) stop("'m' must be a momentuHMM, HMMfits, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
     else {
+      mod <- ii <- NULL # get rid of no visible binding for global variable 
       if(is.miHMM(m)) m <- m$HMMfits
-      registerDoParallel(cores=ncores)
-      withCallingHandlers(genRes <- foreach(i=which(unlist(lapply(m,is.momentuHMM)))) %dorng% {
-        pseudoRes(m[[i]])
+      if (ncores>1) {
+        for(pkg in c("doFuture","future")){
+          if (!requireNamespace(pkg, quietly = TRUE)) {
+            stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
+                 call. = FALSE)
+          }
+        }
+        oldDoPar <- doFuture::registerDoFuture()
+        future::plan(future::multisession, workers = ncores)
+        on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
+        # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
+        progBar <- progBar
+      } else {
+        doParallel::registerDoParallel(cores=ncores)
+      }
+      mInd <- which(unlist(lapply(m,is.momentuHMM)))
+      withCallingHandlers(genRes <- foreach(mod=m[mInd], ii=mInd, .packages="momentuHMM") %dorng% {
+        progBar(ii, length(mInd))
+        pseudoRes(mod)
       },warning=muffleRNGwarning)
-      stopImplicitCluster()
+      if(ncores==1) doParallel::stopImplicitCluster()
+      else future::plan(future::sequential)
       return(genRes)
     }
   }
@@ -82,10 +97,10 @@ pseudoRes <- function(m, ncores = 1)
     
     Par<-lapply(Par[distnames],function(x) c(t(x)))
     beta <- m$Par$beta$beta$est
-    pie <- m$Par$real$pi$est
+    pie <- m$Par$real[["pi"]]$est
     delta <- m$Par$real$delta$est
     if(!is.null(beta)) m$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(beta),2,byrow=TRUE)
-    if(!is.null(pie)) m$conditions$workBounds$pi <- matrix(c(-Inf,Inf),length(m$Par$beta$pi$est),2,byrow=TRUE)
+    if(!is.null(pie)) m$conditions$workBounds[["pi"]] <- matrix(c(-Inf,Inf),length(m$Par$beta[["pi"]]$est),2,byrow=TRUE)
     if(!is.null(m$Par$beta$delta$est)) m$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(m$Par$beta$delta$est),2,byrow=TRUE)
     
     g0 <- c(m$Par$beta$g0$est)
@@ -99,10 +114,10 @@ pseudoRes <- function(m, ncores = 1)
     p <- inputs$p
     DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
     m$conditions$fullDM <- DMinputs$fullDM
-    m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,pi=m$Par$beta$pi$est,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
+    m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,pi=m$Par$beta[["pi"]]$est,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
   } else {
     beta <- m$mle$beta
-    pie <- m$mle$pi
+    pie <- m$mle[["pi"]]
     delta <- m$mle$delta
     g0 <- m$mle$g0
     theta <- m$mle$theta
@@ -124,6 +139,15 @@ pseudoRes <- function(m, ncores = 1)
     Fun[[j]] <- paste0("d",dist[[j]])
     if(length(which(data[[distnames[j]]]==pi))>0)
       message("Note: Some ",distnames[j],"s are equal to pi, and the corresponding pseudo-residuals are not included")
+  }
+  for(i in names(Fun)){
+    if(Fun[[i]]=="pcat") {
+      if (!requireNamespace("extraDistr", quietly = TRUE)) {
+        stop("Package \"extraDistr\" needed for categorical distribution. Please install it.",
+             call. = FALSE)
+      }
+      pcat <- extraDistr::pcat
+    }
   }
 
   # forward log-probabilities

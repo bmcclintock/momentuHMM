@@ -34,7 +34,7 @@
 #'
 #' @export
 #' @importFrom stats acf na.pass qqnorm
-#' @importFrom car qqPlot
+# #' @importFrom car qqPlot
 
 plotPR <- function(m, lag.max = NULL, ncores = 1)
 {
@@ -54,9 +54,8 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
     }
   } else distnames <- names(m$conditions$dist)
 
-  cat("Computing pseudo-residuals",ifelse(nSims>1,paste0(" for ",nSims," model fits... "),"... "),sep="")
+  cat("Computing pseudo-residuals",ifelse(nSims>1,paste0(" for ",nSims," model fits... \n"),"... "),sep="")
   pr <- pseudoRes(m, ncores = ncores)
-  cat("DONE\n")
   
   if(nSims==1){
     pr <- list(pr)
@@ -72,9 +71,10 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
   par(mar=c(5,4,4,2)-c(0,0,3,0)) # bottom, left, top, right
   
   if(any(unlist(lapply(m,function(x) inherits(x,"hierarchical"))))){
+    installDataTree()
     for(i in distnames){
       for(j in 1:nSims){
-        iLevel <- gsub("level","",m[[j]]$conditions$hierDist$Get("parent",filterFun=isLeaf)[[i]]$name)
+        iLevel <- gsub("level","",m[[j]]$conditions$hierDist$Get("parent",filterFun=data.tree::isLeaf)[[i]]$name)
         pr[[j]][[paste0(i,"Res")]] <- pr[[j]][[paste0(i,"Res")]][which(m[[j]]$data$level==iLevel)]
       }
     }
@@ -104,13 +104,24 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
         tpr <- as.matrix(pr[[1]][[paste0(i,"Res")]])
         if(m[[1]]$conditions$dist[[i]]=="mvnorm2" || m[[1]]$conditions$dist[[i]]=="mvnorm3") ndim <- as.numeric(gsub("mvnorm","",m[[1]]$conditions$dist[[i]] ))
         else ndim <- as.numeric(gsub("rw_mvnorm","",m[[1]]$conditions$dist[[i]] ))
-        q <- car::qqPlot(tpr, distribution = "chisq", df = ndim, 
-               lwd = 1, grid = FALSE, col="red",col.lines="black", main = "Multi-normal Q-Q Plot", xlab = expression(chi^2 * " quantiles"), ylab = expression("Mahalanobis distances "^2))
+        if (!requireNamespace("car", quietly = TRUE)) {
+          stop("Package \"car\" needed for QQ plot of mutivariate normal distributions. Please install it.",
+               call. = FALSE)
+        } else {
+          q <- car::qqPlot(tpr, distribution = "chisq", df = ndim, 
+                 lwd = 1, grid = FALSE, col="red",col.lines="black", main = "Multi-normal Q-Q Plot", xlab = expression(chi^2 * " quantiles"), ylab = expression("Mahalanobis distances "^2))
+        }
       } else {
-        qq <- lapply(pr,function(x) qqnorm(x[[paste0(i,"Res")]],plot=FALSE))
+        qq <- lapply(pr,function(x) stats::qqnorm(x[[paste0(i,"Res")]],plot=FALSE))
         limInf <- min(min(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),min(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
         limSup <- max(max(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),max(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
-        q <- car::qqPlot(pr[[1]][[paste0(i,"Res")]],col="red",col.lines="black",main="",lwd=1,grid=FALSE,ylim=c(limInf,limSup),xlab="Theoretical Quantiles",ylab="Sample Quantiles")
+        if (!requireNamespace("car", quietly = TRUE)) {
+          q <- stats::qqnorm(pr[[1]][[paste0(i,"Res")]],main="",col="red",xlim=c(limInf,limSup),ylim=c(limInf,limSup))
+          warning("Package \"car\" not installed. If pseudo-residual QQ plots using car::qqPlot are desired, please install it.",
+               call. = FALSE)
+        } else {
+          q <- car::qqPlot(pr[[1]][[paste0(i,"Res")]],col="red",col.lines="black",main="",lwd=1,grid=FALSE,ylim=c(limInf,limSup),xlab="Theoretical Quantiles",ylab="Sample Quantiles")
+        }
         if(nSims>1){
           for(j in 2:nSims){
             points(qq[[j]]$x,qq[[j]]$y,col=col[j])
@@ -134,7 +145,9 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
             segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
           }
         }
-        #abline(0,1,lwd=2)
+        if (!requireNamespace("car", quietly = TRUE)) {
+          abline(0,1,lwd=2)
+        }
       }
       
       

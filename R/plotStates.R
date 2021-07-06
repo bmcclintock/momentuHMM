@@ -23,8 +23,10 @@ plotStates <- function(m,animals=NULL,ask=TRUE)
   
   if(is.miHMM(m)) m <- m$miSum
   
-  if(inherits(m,"hierarchical")) hierarchical <- TRUE
-  else hierarchical <- FALSE
+  if(inherits(m,"hierarchical")) {
+    hierarchical <- TRUE
+    installDataTree()
+  } else hierarchical <- FALSE
   
   nbAnimals <- length(unique(m$data$ID))
   nbStates <- length(m$stateNames)#ifelse(is.momentuHMM(m),ncol(m$mle$stepPar),ncol(m$Par$stepPar$est))

@@ -65,7 +65,7 @@ print.momentuHMM <- function(x,...)
       print(m$mle$beta)
     #}
       
-    if(!is.null(m$mle$pi)){
+    if(!is.null(m$mle[["pi"]])){
       cat("\n")
       cat("Mixture probabilities:\n")
       cat("----------------------\n")
@@ -73,10 +73,10 @@ print.momentuHMM <- function(x,...)
         formPi <- ~1
       } else formPi <- m$conditions$formulaPi
       if(!length(attr(stats::terms.formula(formPi),"term.labels")) & is.null(m$conditions$formulaPi)){
-        tmp <- m$mle$pi[1,]
+        tmp <- m$mle[["pi"]][1,]
         names(tmp) <- paste0("mix",1:m$conditions$mixtures)
         print(tmp)
-      } else print(m$mle$pi)
+      } else print(m$mle[["pi"]])
     }
   
     if(!is.null(m$mle$gamma)) {
@@ -129,6 +129,8 @@ print.momentuHierHMM <- function(x,...)
   distnames <- names(m$conditions$dist)
   DMind <- m$conditions$DMind
   
+  installDataTree()
+  
   if(!is.null(m$modelName)) {
     mess <- paste("Model:",m$modelName)
     cat(rep("-",nchar(mess)),"------------\n",sep="")
@@ -161,7 +163,7 @@ print.momentuHierHMM <- function(x,...)
   
   if(length(m$stateNames)>1){
     
-    if(!is.null(m$mle$pi)){
+    if(!is.null(m$mle[["pi"]])){
       cat("\n")
       cat("Mixture probabilities:\n")
       cat("----------------------\n")
@@ -169,10 +171,10 @@ print.momentuHierHMM <- function(x,...)
         formPi <- ~1
       } else formPi <- m$conditions$formulaPi
       if(!length(attr(stats::terms.formula(formPi),"term.labels")) & is.null(m$conditions$formulaPi)){
-        tmp <- m$mle$pi[1,]
+        tmp <- m$mle[["pi"]][1,]
         names(tmp) <- paste0("mix",1:m$conditions$mixtures)
         print(tmp)
-      } else print(m$mle$pi)
+      } else print(m$mle[["pi"]])
     }
     
     hierStates <- m$conditions$hierStates

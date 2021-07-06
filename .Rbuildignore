@@ -9,6 +9,7 @@ vignettes/coastUTM.RData
 vignettes/pilotWhaleData.RData
 vignettes/Atlantic_cod_data_set.RData
 vignettes/horn_shark_data_set.RData
+vignettes/caracaraExample.RData
 vignettes/sesData.csv
 ^tests$
 vignettes/momentuHMM.synctex.gz
@@ -16,9 +17,9 @@ vignettes/momentuHMM.log
 vignettes/momentuHMM.toc
 vignettes/momentuHMM-concordance.tex
 vignettes/momentuHMM.bbl
-vignettes/momentuHMM.tex
 vignettes/momentuHMM.out
 vignettes/momentuHMM.aux
+vignettes/momentuHMM.tex
 vignettes/momentuHMM.Rnw
 vignettes/codDist.pdf
 vignettes/codStates.pdf
@@ -84,10 +85,11 @@ vignettes/script.sh
 ^vignettes/figure$
 ^vignettes/cache$
 ^vignettes/vignetteResults$
+vignettes/examples/caracaraExample.R
 tests/testthat/Rplots.pdf
-tests/testthat/test_examples.R
 tests/testthat/test_extraExamples.R
 tests/testthat/extraExamples.R
 tests/testthat/extraExamples.RData
 ^manuscript$
 ^\.github$
+

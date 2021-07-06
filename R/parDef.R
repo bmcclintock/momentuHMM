@@ -53,6 +53,10 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
              parNames[[i]]<-c("shape1","shape2")
            },
            "cat"={
+             if (!requireNamespace("extraDistr", quietly = TRUE)) {
+               stop("Package \"extraDistr\" needed for categorical distribution. Please install it.",
+                    call. = FALSE)
+             }
              parSize[[i]] <- dimCat-1
              tmpbounds <- matrix(rep(c(0,1),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
              parNames[[i]]<-paste0("prob",1:parSize[[i]])

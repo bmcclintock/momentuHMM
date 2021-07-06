@@ -5,7 +5,7 @@
 #'
 #' @param obsData data.frame object containing fields for animal ID ('ID'), time of observation (identified by \code{Time.name}, must be numeric or POSIXct), 
 #' and observed locations (x- and y- coordinates identified by \code{coord}), such as that returned by \code{\link{simData}} when temporally-irregular observed locations or
-#' measurement error are included. Alternatively, a \code{\link[sp:SpatialPoints]{SpatialPointsDataFrame}} or \code{\link[sf]{sf}} object will 
+#' measurement error are included. Alternatively, a \code{\link[sp:SpatialPoints]{SpatialPointsDataFrame}} or \code{sf} object will 
 #' also be accepted, in which case the \code{coord} values will be taken from the spatial data set and ignored in the arguments.  
 #' Note that \code{\link[crawl]{crwMLE}} requires that longitude/latitude coordinates be projected to UTM (i.e., easting/northing). For further details see \code{\link[crawl]{crwMLE}}.
 #' @param timeStep Length of the time step at which to predict regular locations from the fitted model. Unless \code{predTime} is specified, the sequence of times
@@ -100,10 +100,7 @@
 #' 
 #' @export
 #' @importFrom crawl crwMLE crwPredict displayPar
-#' @importFrom doParallel registerDoParallel stopImplicitCluster
-#' @importFrom foreach foreach %dopar%
 # @importFrom lubridate with_tz
-#' @importFrom doRNG %dorng%
 #' @importFrom stats formula setNames
 #' @importFrom sp coordinates
 #' @importFrom utils capture.output
@@ -163,10 +160,27 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   
   id <- NULL # get rid of no visible binding for global variable ‘id’
   
-  cat('Fitting',nbAnimals,'track(s) using crawl::crwMLE...',ifelse(nbAnimals>1 & ncores>1,"","\n"))
-  registerDoParallel(cores=ncores)
+  cat('Fitting',nbAnimals,'track(s) using crawl::crwMLE...\n')
+  if(ncores>1){
+    for(pkg in c("doFuture","future")){
+      if (!requireNamespace(pkg, quietly = TRUE)) {
+        stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+    oldDoPar <- doFuture::registerDoFuture()
+    future::plan(future::multisession, workers = ncores)
+    on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
+  } else {
+    doParallel::registerDoParallel(cores=ncores)
+  }
+  
+  # hack to work around Windows not allowing missing arguments in calling function when using foreach
+  if(missing(theta)) theta <- NULL
+  if(missing(fixPar)) fixPar <- NULL
+  
   withCallingHandlers(model_fits <- 
-    foreach(id = ind_data, i=ids, .export="crwMLE", .errorhandling="pass", .final = function(x) stats::setNames(x, ids)) %dorng% {
+    foreach(id = ind_data, i=ids, .errorhandling="pass", .packages="crawl", .final = function(x) stats::setNames(x, ids)) %dorng% {
       cat("Individual ",i,"...\n",sep="")
       fit <- crawl::crwMLE(
         data = id,
@@ -187,12 +201,13 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
         need.hess = need.hess,
         initialSANN = initialSANN,
         attempts = attempts, 
-        retrySD = crawlArgs$retrySD[[i]],
+        #retrySD = crawlArgs$retrySD[[i]],
         ... = ...
       )
-    }
-  ,warning=muffleRNGwarning)
-  stopImplicitCluster()
+    },warning=muffleRNGwarning)
+  
+  if(ncores==1) doParallel::stopImplicitCluster()
+  else future::plan(future::sequential)
   
   rm(ind_data)
   
@@ -200,7 +215,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   if(!length(convFits)) stop("crawl::crwMLE failed for all individuals.  Check crawl::crwMLE arguments and/or consult crawl documentation.\n")
     
   cat("DONE\n")
-  if(retryFits>0) cat("\n\n")
+  if((ncores==1 & !retryFits) | retryFits | ncores>1) cat("\n")
   
   if(retryParallel & ncores>1){
     for(i in ids){
@@ -210,11 +225,15 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   }
   
   # Check crwFits and re-try based on retryFits
-  tmpcores <- ncores
-  if(!retryParallel) tmpcores <- 1
-  else if(ncores>1 & nbAnimals>1) cat("Attempting to achieve convergence and valid variance estimates for each individual in parallel.\n    Press 'esc' to force exit from 'crawlWrap'... ",sep="")
-  registerDoParallel(cores=tmpcores)
-  withCallingHandlers(model_fits <- foreach(mf = model_fits, i = ids, .export=c("quietCrawl","crwMLE"), .errorhandling="pass", .final = function(x) stats::setNames(x, ids)) %dorng% {
+  if(ncores>1 & nbAnimals>1 & retryFits & retryParallel){
+    doFuture::registerDoFuture()
+    future::plan(future::multisession, workers = ncores)
+    if(retryParallel) cat("Attempting to achieve convergence and valid variance estimates for each individual in parallel.\n    Press 'esc' to force exit from 'crawlWrap'... \n",sep="")
+  } else {
+    doParallel::registerDoParallel(cores=1)
+  }
+    
+  withCallingHandlers(model_fits <- foreach(mf = model_fits, i = ids, .export=c("quietCrawl"), .errorhandling="pass", .packages="crawl", .final = function(x) stats::setNames(x, ids)) %dorng% {
     if(inherits(mf,"crwFit")){
       if((mf$convergence | any(is.na(mf$se[which(is.na(crawlArgs$fixPar[[i]]))]))) | retryFits){
         if(retryFits){
@@ -289,9 +308,17 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     }
     mf
   },warning=muffleRNGwarning)
-  stopImplicitCluster()
-  if(retryParallel & ncores>1 & nbAnimals>1) cat("DONE\n")
-
+  if(!(ncores>1 & nbAnimals>1 & retryFits & retryParallel)){
+    doParallel::stopImplicitCluster()
+  } else future::plan(future::sequential)
+  
+  if(ncores>1){
+    doFuture::registerDoFuture()
+    future::plan(future::multisession, workers = ncores)
+  } else {
+    doParallel::registerDoParallel(cores=ncores)
+  }
+  
   convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
   if(!length(convFits)) stop("crawl::crwMLE failed for all individuals.  Check crawl::crwMLE arguments and/or consult crawl documentation.\n")
   model_fits <- model_fits[convFits]
@@ -309,7 +336,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     if(length(unique(td))==1) txt <- paste('at',td[[1]],'time steps')
   }
   if(retryFits>0) cat("\n")
-  cat('\nPredicting locations (and uncertainty)',txt,'for',length(convFits),'track(s) using crawl::crwPredict... ')
+  cat('Predicting locations (and uncertainty)',txt,'for',length(convFits),'track(s) using crawl::crwPredict... ')
   
   if (time.scale %in% c("hours", "hour")) {
     ts <- 60 * 60
@@ -321,9 +348,8 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     ts <- 60
   }
   
-  registerDoParallel(cores=ncores)
   withCallingHandlers(predData <- 
-    foreach(mf = model_fits[convFits], i = convFits, .export="crwPredict", .combine = rbind, .errorhandling="remove") %dorng% {
+    foreach(mf = model_fits[convFits], i = convFits, .combine = rbind, .errorhandling="remove", .packages="crawl") %dorng% {
       #pD<-crawl::crwPredict(mf, predTime=crawlArgs$predTime[[i]],return.type = "flat")
       pD<-crawl::crwPredict(mf, predTime=crawlArgs$predTime[[i]][crawlArgs$predTime[[i]]>=min(mf$data[[Time.name]])],return.type = "flat") # deals with bug in crawl:crwPredict 2.2.1
       if(inherits(mf$data[[Time.name]],"POSIXct") && attributes(pD[[Time.name]])$tzone != attributes(mf$data[[Time.name]])$tzone){
@@ -354,9 +380,10 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
       }
       if(!is.null(coordLevel)) pD$level <- coordLevel
       pD
-    }
-  ,warning=muffleRNGwarning)
-  stopImplicitCluster()
+    },warning=muffleRNGwarning)
+  
+  if(ncores==1) doParallel::stopImplicitCluster()
+  else future::plan(future::sequential)
   
   if(hierInd){
     

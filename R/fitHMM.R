@@ -70,7 +70,7 @@ fitHMM <- function(data, ...) {
 #' equal to the stationary distribution. Default: \code{FALSE}.
 #' @param mixtures Number of mixtures for the state transition probabilities  (i.e. discrete random effects *sensu* DeRuiter et al. 2017). Default: \code{mixtures=1}.
 #' @param formulaPi Regression formula for the mixture distribution probabilities. Default: \code{NULL} (no covariate effects; both \code{beta0$pi} and \code{fixPar$pi} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{beta0$pi} and \code{fixPar$pi} are specified on the working scale.
-#' Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilties).
+#' Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilities).
 #' @param nlmPar List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
 #' \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
 #' for more detail). For \code{print.level}, the default value of 0 means that no
@@ -367,12 +367,11 @@ fitHMM <- function(data, ...) {
 #' m.cosinor    
 #' 
 #' ### 9. Piecewise constant B-spline on step length mean and angle concentration
-#' library(splines2)
 #' nObs <- 1000 # length of simulated track
 #' cov <- data.frame(time=1:nObs) # time covariate for splines
 #' dist <- list(step="gamma",angle="vm")
-#' stepDM <- list(mean=~bSpline(time,df=2,degree=0),sd=~1)
-#' angleDM <- list(mean=~1,concentration=~bSpline(time,df=2,degree=0))
+#' stepDM <- list(mean=~splines2::bSpline(time,df=2,degree=0),sd=~1)
+#' angleDM <- list(mean=~1,concentration=~splines2::bSpline(time,df=2,degree=0))
 #' DM <- list(step=stepDM,angle=angleDM)
 #' Par <- list(step=c(log(1000),1,-1,log(100)),angle=c(0,log(10),2,-5))
 #' 
@@ -492,6 +491,8 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     stop("Check the argument 'formulaDelta'.")
   
   if(nbStates<1) stop('nbStates must be >0')
+  
+  chkDots(...)
 
   # check that there is no response variable in the formula
   if(attr(stats::terms(formula),"response")!=0)
@@ -552,8 +553,19 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   recharge <- newForm$recharge
   
   # build design matrix for t.p.m.
-  covsCol <- get_all_vars(newformula,data)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+  covsCol <- tryCatch(stats::get_all_vars(newformula,data=data),error=function(e) e)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+  if(inherits(covsCol,"error")){
+    if(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))){
+      stop(covsCol$message,"\n     -- has MIfitHMM 'covNames' argument been correctly specified?")
+    } else stop(covsCol)
+  }
   if(!all(names(covsCol) %in% names(data))){
+    for(j in names(covsCol)[which(!names(covsCol) %in% names(data))]){
+      if(exists(j)) stop("'",j,"' covariate not found in data, but a variable named '",j,"' is present in the environment (this can cause major problems!)",
+                         ifelse(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1])))),
+                                " \n       -- has MIfitHMM 'covNames' argument been correctly specified?",
+                                ""))
+    }
     covsCol <- covsCol[,names(covsCol) %in% names(data),drop=FALSE]
   }
   covs <- stats::model.matrix(newformula,data)
@@ -709,7 +721,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
 
   retrySD <- get_retrySD(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStates,fixParIndex$beta0,mixtures,recharge,fixParIndex$delta0)
   
-  optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar$pi)+which(duplicated(c(deltaCons)))))
+  optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar[["pi"]])+which(duplicated(c(deltaCons)))))
   
   if(!is.null(prior)){
     if(!is.function(prior)) stop("prior must be a function")
@@ -739,7 +751,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   meanind <- ncmean$meanind
   
   optPar <- wpar
-  optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar$pi)+which(duplicated(c(deltaCons)))))
+  optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar[["pi"]])+which(duplicated(c(deltaCons)))))
   if(length(optInd)){
     optPar <- wpar[-optInd]
   }
@@ -787,7 +799,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
         iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
         
         optPar <- wpar
-        optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar$pi)+which(duplicated(c(deltaCons)))))
+        optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar[["pi"]])+which(duplicated(c(deltaCons)))))
         if(length(optInd)){
           optPar <- wpar[-optInd]
         }
@@ -930,9 +942,9 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     }
     if(mixtures>1){
       rownames(mle$beta) <- paste0(rownames(mle$beta),"_mix",rep(1:mixtures,each=length(colnames(covs))))
-      colnames(mle$pi) <- paste0("mix",1:mixtures)
-      rownames(mle$pi) <- paste0("ID:",data$ID[aInd])
-    } else mle$pi <- NULL
+      colnames(mle[["pi"]]) <- paste0("mix",1:mixtures)
+      rownames(mle[["pi"]]) <- paste0("ID:",data$ID[aInd])
+    } else mle[["pi"]] <- NULL
   }
 
   # compute stationary distribution
@@ -1030,7 +1042,11 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
   
   if(!inherits(data,"momentuHierHMMData")) stop("data must be a momentuHierHMMData object (as returned by prepData or simHierData)")
   
+  installDataTree()
+  
   inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,betaCons,deltaCons,fixPar)
+  
+  chkDots(...)
   
   hfit <- fitHMM.momentuHMMData(momentuHMMData(data),inputHierHMM$nbStates,inputHierHMM$dist,Par0,inputHierHMM$beta,inputHierHMM$delta,
                 estAngleMean,circularAngleMean,
@@ -1044,7 +1060,7 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
     par <- getPar(hfit)
     if(is.list(par$beta)){
       beta <- par$beta$beta
-      Pi <- par$beta$pi
+      Pi <- par$beta[["pi"]]
       g0 <- par$beta$g0
       names(g0) <- names(hfit$mle$g0)
       theta <- par$beta$theta

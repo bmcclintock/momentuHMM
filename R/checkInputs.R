@@ -8,8 +8,18 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
       if(dist[[i]]=="cat") stop(errMess)
       dist[[i]]<-tryCatch(match.arg(dist[[i]],paste0("cat",1:1.e3)),error = function(e) e)
       if(inherits("error",dist[[i]])) stop(errMess)
+      if (!requireNamespace("extraDistr", quietly = TRUE)) {
+        stop("Package \"extraDistr\" needed for categorical distribution. Please install it.",
+             call. = FALSE)
+      }
     } else {
       dist[[i]]<-match.arg(dist[[i]],momentuHMMdists)
+    }
+    if(i %in% badNames) stop("data streams cannot be named ",paste0(paste0("'",badNames[-length(badNames)],"'"),collapse=", "),", or '",badNames[length(badNames)],"'")
+    else {
+      for(j in badNames){
+        if(j!="pi" && grepl(paste0("^",badNames[j]),i)) stop("data stream names cannot begin with '",j,"'")
+      }
     }
   }
 
@@ -100,6 +110,21 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
       ndist[[i]] <- "cat"
     }
   }
+  
+  checkNames(distnames,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,zeroInflation=zeroInflation,oneInflation=oneInflation,DM=DM,userBounds=userBounds)
 
   return(list(p=p,dist=ndist,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,consensus=consensus,DM=DM))
+}
+
+checkNames <- function(distnames,...){
+  checkArgs <- list(...)
+  argNames <- names(checkArgs)
+  for(j in argNames){
+    if(length(checkArgs[[j]])){
+      if(length(which(!(names(checkArgs[[j]]) %in% distnames) & !is.na(names(checkArgs[[j]]))))){
+        if(j!="workBounds") stop("Names for '",j,"' must match those of 'dist': ",paste0(distnames,collapse=", "))
+        else stop("The following names for '",j,"' are invalid: ",paste0(names(checkArgs[[j]])[which(!(names(checkArgs[[j]]) %in% distnames))],collapse=", "))
+      }
+    }
+  }
 }

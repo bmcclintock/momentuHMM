@@ -14,6 +14,7 @@ meansList<-c("matrix","numeric","integer","logical","Date","POSIXlt","POSIXct","
 meansListNoTime<-c("numeric","integer","logical")
 plotArgs <- c("cex","cex.main","cex.lab","cex.axis","cex.legend","lwd","asp","legend.pos")
 fitMethods<-c("nlm","Nelder-Mead","SANN")
+badNames <- c("beta", "delta", "pi", "g0", "theta")
 
 #' @importFrom stats dbinom
 dbern <- function (x, prob, log = FALSE) 
@@ -161,13 +162,38 @@ print.momentuHMM.version <- function()
 
 # suppress RNG warning when using %dorng%
 muffleRNGwarning <- function(w) {
-  if(any(grepl("Foreach loop \\(doParallelMC\\) had changed the current RNG type: RNG was restored to same type, next state",w)))
+  if(any(grepl("Foreach loop \\(doParallelMC\\) had changed the current RNG type: RNG was restored to same type, next state",w))
+     | any(grepl("already exporting variable\\(s\\):",w)))
     invokeRestart("muffleWarning")
 }
 
 # .combine function for multiple rbinds in foreach
 comb <- function(x, ...) {  
     mapply(rbind,x,...,SIMPLIFY=FALSE)
+}
+
+# #' @importFrom doFuture registerDoFuture
+#' @importFrom doRNG %dorng%
+#' @importFrom foreach %dopar% foreach
+# #' @importFrom future multisession plan
+# #' @importFrom iterators icount
+progBar <- function(kk, N, per = 1) {
+  if (kk %in% seq(1, N, per)) {
+    x <- round(kk * 100 / N)
+    message("[ ", 
+            paste(rep("=", x), collapse = ""),
+            paste(rep("-", 100 - x), collapse = ""), 
+            " ] ", x, "%", "\r",
+            appendLF = FALSE)
+    if (kk == N) message("\n")
+  }
+}
+
+installDataTree <- function(){
+  if (!requireNamespace("data.tree", quietly = TRUE)) {
+    stop("Package \"data.tree\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
 }
 
 #' @importFrom MASS ginv

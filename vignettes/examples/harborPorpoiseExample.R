@@ -28,7 +28,7 @@ porpoiseData <- prepData(porpoiseData,coordNames=NULL,hierLevels=c("1","2i","2")
 summary(porpoiseData,dataNames=names(porpoiseData)[-1])
 
 ### define hierarchical HMM: states 1-3 = coarse state 1 (nonforaging); states 4-6 = coarse state 2 (foraging)
-hierStates <- Node$new("harbor porpoise HHMM states")
+hierStates <- data.tree::Node$new("harbor porpoise HHMM states")
 hierStates$AddChild("nonforaging")
 hierStates$nonforaging$AddChild("nf1", state=1)
 hierStates$nonforaging$AddChild("nf2", state=2)
@@ -38,7 +38,7 @@ hierStates$foraging$AddChild("f1", state=4)
 hierStates$foraging$AddChild("f2", state=5)
 hierStates$foraging$AddChild("f3", state=6)
 # equivalent
-#hierStates <- as.Node(list(name="harbor porpoise HHMM states",
+#hierStates <- data.tree::as.Node(list(name="harbor porpoise HHMM states",
 #                           nonforaging=list(nf1=list(state=1),nf2=list(state=2),nf3=list(state=3)),
 #                           foraging=list(f1=list(state=4),f2=list(state=5),f3=list(state=6))))
 
@@ -47,7 +47,7 @@ print(hierStates,"state")
 nbStates <- length(hierStates$Get("state",filterFun=data.tree::isLeaf))
 
 # data stream distributions: level 1 = coarse level (no data streams); level 2 = fine level (dive_duration="gamma", maximum_depth="gamma", dive_wiggliness="gamma")
-hierDist <- Node$new("harbor porpoise HHMM dist")
+hierDist <- data.tree::Node$new("harbor porpoise HHMM dist")
 hierDist$AddChild("level1")
 hierDist$AddChild("level2")
 hierDist$level2$AddChild("dive_duration", dist="gamma")
@@ -90,16 +90,16 @@ DM <- list(dive_duration=dw_DM[1:(2*nbStates),1:6],
 Par <- getParDM(porpoiseData,hierStates=hierStates,hierDist=hierDist,Par=Par0,DM=DM)
 
 # define hierarchical t.p.m. formula(s)
-hierFormula <- Node$new("harbor porpoise HHMM formula")
+hierFormula <- data.tree::Node$new("harbor porpoise HHMM formula")
 hierFormula$AddChild("level1", formula=~1)
 hierFormula$AddChild("level2", formula=~1)
 # equivalent
-#hierFormula <- as.Node(list(name="harbor porpoise HHMM formula",
+#hierFormula <- data.tree::as.Node(list(name="harbor porpoise HHMM formula",
 #                           level1=list(formula=~1),
 #                           level2=list(formula=~1)))
 
 # define hierarchical initial distribution formula(s)
-hierFormulaDelta <- Node$new("harbor porpoise HHMM formulaDelta")
+hierFormulaDelta <- data.tree::Node$new("harbor porpoise HHMM formulaDelta")
 hierFormulaDelta$AddChild("level1", formulaDelta=~1)
 hierFormulaDelta$AddChild("level2", formulaDelta=~1)
 
@@ -107,7 +107,7 @@ hierFormulaDelta$AddChild("level2", formulaDelta=~1)
 ## set initial values for beta and delta to nudge coarse state 1 to "nonforaging" and coarse state 2 to "foraging"
 
 # initial values ('beta') for t.p.m. at each level of hierarchy
-hierBeta <- Node$new("harbor porpoise beta")
+hierBeta <- data.tree::Node$new("harbor porpoise beta")
 hierBeta$AddChild("level1",beta=matrix(c(-1, -1),1))
 hierBeta$AddChild("level2")
 hierBeta$level2$AddChild("nonforaging",beta=matrix(c(0,-1,1,0,1,1),1))
@@ -115,7 +115,7 @@ hierBeta$level2$AddChild("foraging",beta=matrix(c(-1,1,1,2,0,3),1))
 print(hierBeta,"beta")
 
 # initial values ('delta') for initial distribution at each level of hierarchy
-hierDelta <- Node$new("harbor porpoise delta")
+hierDelta <- data.tree::Node$new("harbor porpoise delta")
 hierDelta$AddChild("level1",delta=matrix(0,1))
 hierDelta$AddChild("level2")
 hierDelta$level2$AddChild("nonforaging",delta=matrix(c(30, 30),1))
@@ -160,12 +160,12 @@ lapply(stats[[1]]$level2,function(x) x[1,])
 ######################################################
 
 ### Simulate from fitted model ##############################
-obsPerLevel<-Node$new("simHierData")
+obsPerLevel<-data.tree::Node$new("simHierData")
 obsPerLevel$AddChild("level1",obs=100) # number of level 1 observations
 obsPerLevel$AddChild("level2",obs=25)  # number of level 2 observations that follow each level 1 observation
 
 simHHMM <- simHierData(model=hhmm, obsPerLevel = obsPerLevel, states = TRUE)
-plot(simHHMM,dataNames=hierDist$Get("name",filterFun=isLeaf),ask=FALSE)
+plot(simHHMM,dataNames=hierDist$Get("name",filterFun=data.tree::isLeaf),ask=FALSE)
 #############################################################
 
 save.image("harborPorpoiseExample.RData")

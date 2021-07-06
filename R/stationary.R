@@ -41,6 +41,8 @@ stationary.momentuHMM <- function(model, covs, covIndex = NULL)
 
     if(nbStates==1)
         stop("No state probabilities (1-state model).")
+    
+    if(inherits(model,"hierarchical")) installDataTree()
 
     formula<-model$conditions$formula
     newForm <- newFormulas(formula,nbStates,model$conditions$betaRef,hierarchical=TRUE)
@@ -160,7 +162,7 @@ stationary.momentuHMM <- function(model, covs, covIndex = NULL)
             for(j in 1:(model$conditions$hierStates$height-1)){
                   
               if(j==1){
-                ref <- model$conditions$hierStates$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
+                ref <- model$conditions$hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
                 probs[[mix]][["level1"]] <- getProbs(allMat[ref,ref,which(covMat[covIndex,colnames(covMat) %in% paste0("I((level == \"",j,"\") * 1)")]==1),drop=FALSE],names(ref))
               } else {
                 
@@ -170,7 +172,7 @@ stationary.momentuHMM <- function(model, covs, covIndex = NULL)
                 if(length(names(t))) probs[[mix]][[paste0("level",j)]] <- list()
                 
                 for(k in names(t)){
-                  ref <- t[[k]]$Get(function(x) Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
+                  ref <- t[[k]]$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
                   if(!is.null(ref)){
                     probs[[mix]][[paste0("level",j)]][[k]] <- getProbs(allMat[ref,ref,which(covMat[covIndex,colnames(covMat) %in% paste0("I((level == \"",j,"\") * 1)")]==1),drop=FALSE],names(ref))
                   }

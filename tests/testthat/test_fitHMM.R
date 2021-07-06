@@ -142,8 +142,8 @@ test_that("equivalent momentuHMM and moveHMM models match",{
   #moveHMM called from within momentuHMM
   momentuHMM_fit2<-fitHMM(data=data,nbStates=nbStates,Par=list(step=par0$Par$step,angle=par0$Par$angle),stationary=TRUE,
                          beta0=par0$beta0[1,,drop=FALSE],delta0=par0$delta0,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean)
-  expect_equal(momentuHMM_fit2$mod$estimate,moveHMM_fit$mod$estimate)
-  expect_equal(momentuHMM_fit2$mod$minimum,moveHMM_fit$mod$minimum)
+  expect_equal(abs(momentuHMM_fit2$mod$estimate-moveHMM_fit$mod$estimate)<1.e-6,rep(TRUE,length(momentuHMM_fit2$mod$estimate)))
+  expect_equal(abs(momentuHMM_fit2$mod$minimum-moveHMM_fit$mod$minimum)<1.e-6,TRUE)
   
   #zeroInflation
   nbAnimals <- 2
@@ -183,8 +183,8 @@ test_that("equivalent momentuHMM and moveHMM models match",{
   #moveHMM called from within momentuHMM
   momentuHMM_fit2<-fitHMM(data=data,nbStates=nbStates,Par0=list(step=stepPar0,angle=anglePar0),stationary=TRUE,
                          beta0=beta0,delta0=example$par0$delta0,dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE))
-  expect_equal(momentuHMM_fit2$mod$estimate,moveHMM_fit$mod$estimate)
-  expect_equal(momentuHMM_fit2$mod$minimum,moveHMM_fit$mod$minimum)
+  expect_equal(abs(momentuHMM_fit2$mod$estimate-moveHMM_fit$mod$estimate)<1.e-6,rep(TRUE,length(momentuHMM_fit2$mod$estimate)))
+  expect_equal(abs(momentuHMM_fit2$mod$minimum-moveHMM_fit$mod$minimum)<1.e-6,TRUE)
   
   setRNG::setRNG(oldRNG)
   

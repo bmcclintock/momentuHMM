@@ -71,7 +71,7 @@ plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.y
   
   m <- formatmiSum(m)
   #if(!is.null(m$mle$beta)) m$conditions$workBounds$beta<-matrix(c(-Inf,Inf),length(m$mle$beta),2,byrow=TRUE)
-  #if(!is.null(m$Par$beta$pi$est)) m$conditions$workBounds$pi<-matrix(c(-Inf,Inf),length(m$Par$beta$pi$est),2,byrow=TRUE)
+  #if(!is.null(m$Par$beta[["pi"]]$est)) m$conditions$workBounds[["pi"]]<-matrix(c(-Inf,Inf),length(m$Par$beta[["pi"]]$est),2,byrow=TRUE)
   #if(!is.null(m$Par$beta$delta$est)) m$conditions$workBounds$delta<-matrix(c(-Inf,Inf),length(m$Par$beta$delta$est),2,byrow=TRUE)
   #if(!is.null(m$mle$g0)) m$conditions$workBounds$g0<-matrix(c(-Inf,Inf),length(m$mle$g0),2,byrow=TRUE)
   #if(!is.null(m$mle$theta)) m$conditions$workBounds$theta<-matrix(c(-Inf,Inf),length(m$mle$theta),2,byrow=TRUE)

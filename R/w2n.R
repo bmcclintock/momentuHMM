@@ -91,7 +91,8 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
     
     tmpwpar <- matrix(w2wn(wpar[foo:length(wpar)],workBounds$delta),(nbCovsDelta+1)*mixtures,nbStates-1)
     
-    delta <- mlogit(tmpwpar,covsDelta,nbCovsDelta,nbAnimals,nbStates,mixtures)
+    delta <- tryCatch(mlogit(tmpwpar,covsDelta,nbCovsDelta,nbAnimals,nbStates,mixtures),error=function(e) e)
+    if(inherits(delta,"error")) stop("\nFailed to calculate initial distribution parameters: ",delta,"\n     check initial values, workBounds, userBounds, nlmPar or control, etc.")
     
     wpar <- wpar[-(foo:length(wpar))]
   }
@@ -104,8 +105,9 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
     if(mixtures>1){
       nbCovsPi <- ncol(covsPi)-1 # substract intercept column
       foo <- length(wpar)-(nbCovsPi+1)*(mixtures-1)+1
-      tmpwpar <- matrix(w2wn(wpar[foo:length(wpar)],workBounds$pi),(nbCovsPi+1),mixtures-1)
-      pie <- mlogit(tmpwpar,covsPi,nbCovsPi,nbAnimals,mixtures)
+      tmpwpar <- matrix(w2wn(wpar[foo:length(wpar)],workBounds[["pi"]]),(nbCovsPi+1),mixtures-1)
+      pie <- tryCatch(mlogit(tmpwpar,covsPi,nbCovsPi,nbAnimals,mixtures),error=function(e) e)
+      if(inherits(pie,"error")) stop("\nFailed to calculate mixture probability parameters: ",pie,"\n     check initial values, workBounds, userBounds, nlmPar or control, etc.")
       wpar <- wpar[-(foo:length(wpar))]
     }
     
@@ -142,7 +144,8 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
       tmpwpar[(foo - nbStates):(foo - 1)] <- angleMean
       tmpwpar[foo:length(tmpwpar)] <- kappa
     }
-    parlist[[i]]<-w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],nbObs,circularAngleMean[[i]],consensus[[i]],nbStates,0,nc[[i]],meanind[[i]],workBounds[[i]],dist[[i]])
+    parlist[[i]] <- tryCatch(w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],nbObs,circularAngleMean[[i]],consensus[[i]],nbStates,0,nc[[i]],meanind[[i]],workBounds[[i]],dist[[i]]),error=function(e) e)
+    if(inherits(parlist[[i]],"error")) stop("\nFailed to calculate '",i,"' natural scale parameters: ",parlist[[i]],"\n     check initial values, workBounds, userBounds, nlmPar or control, etc.")
     
     if((dist[[i]] %in% angledists) & !estAngleMean[[i]]){
       tmp<-matrix(0,nrow=(parSize[[i]]+1)*nbStates,ncol=nbObs)

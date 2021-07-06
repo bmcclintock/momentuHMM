@@ -162,7 +162,7 @@ miFits$HMMfits <- MIfitHMM(miSims$miData,nSims=4,ncores=4,poolEstimates=FALSE,
                            centers=activityCenters,
                            parIS=0,fullPost=FALSE)
 withCallingHandlers(miFits$miSum <-  MIpool(miFits$HMMfits),warning=function(w){if(any(grepl("working parameter standard errors are not finite for",w)) | any(grepl("NaNs produced",w)) | any(grepl("Hessian is singular",w))) invokeRestart("muffleWarning")})
-miFits <- miHMM(miFits)
+miFits <- momentuHMM:::miHMM(miFits)
 
 # print pooled estimates
 miFits
