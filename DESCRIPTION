@@ -21,10 +21,6 @@ Imports:
     sp,
     MASS,
     Brobdingnag,
-    nleqslv,
-    survival,
-    qdapRegex,
-    prodlim,
     doRNG,
     rlang
 LinkingTo: Rcpp, RcppArmadillo
@@ -52,7 +48,11 @@ Suggests:
     mitools,
     doFuture,
     future,
-    car
+    car,
+    survival,
+    prodlim,
+    nleqslv,
+    qdapRegex
 RoxygenNote: 7.1.1
 Encoding: UTF-8
 NeedsCompilation: yes

@@ -1,5 +1,5 @@
-#' @importFrom survival untangle.specials
-#' @importFrom prodlim strip.terms
+# #' @importFrom survival untangle.specials
+# #' @importFrom prodlim strip.terms
 cosinorCos<-function(x,period){
   cos(2*pi*x/period)
 }
@@ -32,6 +32,10 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
   
   stateFormula<-list()
   if(length(unlist(attr(Terms,"specials"))) | angleMean){
+    if (!requireNamespace("survival", quietly = TRUE)) {
+      stop("Package \"survival\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
     varnames <- attr(Terms,"term.labels")
     mainpart <- varnames
     cosInd <- survival::untangle.specials(Terms,"cosinor",order=1:10)$terms
@@ -61,6 +65,10 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
     for(j in varnames[recInd])
       mainpart<-c(mainpart,paste0(gsub(")\\s*$","",gsub("recharge\\(","",j))))
     if(length(angInd)){
+      if (!requireNamespace("prodlim", quietly = TRUE)) {
+        stop("Package \"prodlim\" needed for this function to work. Please install it.",
+             call. = FALSE)
+      }
       stmp <- prodlim::strip.terms(Terms[attr(Terms,"specials")$angleFormula],specials="angleFormula",arguments=list(angleFormula=list("strength"=NULL,"by"=NULL)))
       if(any(grepl("cos",attr(stmp,"term.labels"))) | any(grepl("sin",attr(stmp,"term.labels")))) stop("sorry, the strings 'cos' and 'sin' are reserved and cannot appear in mean angle formulas and/or covariate names")
       for(jj in attr(stmp,"term.labels")){
@@ -147,6 +155,10 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
           for(i in tmpnames[recInd])
             mp<-c(mp,paste0(gsub(")\\s*$","",gsub("recharge\\(","",i))))
           if(length(angInd)){
+            if (!requireNamespace("prodlim", quietly = TRUE)) {
+              stop("Package \"prodlim\" needed for this function to work. Please install it.",
+                   call. = FALSE)
+            }
             stmp <- prodlim::strip.terms(tmp[attr(tmp,"specials")$angleFormula],specials="angleFormula",arguments=list(angleFormula=list("strength"=NULL,"by"=NULL)))
             if(any(grepl("cos",attr(stmp,"term.labels"))) | any(grepl("sin",attr(stmp,"term.labels")))) stop("sorry, the strings 'cos' and 'sin' are reserved and cannot appear in mean angle formulas and/or covariate names")
             for(jj in attr(stmp,"term.labels")){

@@ -1,5 +1,5 @@
 #' @importFrom stats predict
-#' @importFrom qdapRegex rm_between
+# #' @importFrom qdapRegex rm_between
 getSplineDM<-function(distnames,DM,m,covs){
   splineInd<-list()
   splineCovs<-list()
@@ -26,6 +26,10 @@ getSplineDM<-function(distnames,DM,m,covs){
               if(k %in% specials){
                 splineInd[[i]][[j]]<-TRUE
                 splineCovs[[i]][[j]]<-unique(c(splineCovs[[i]][[j]],all.vars(stats::as.formula(paste0("~",k)))))
+                if (!requireNamespace("qdapRegex", quietly = TRUE)) {
+                  stop("Package \"qdapRegex\" needed for this function to work. Please install it.",
+                       call. = FALSE)
+                }
                 splineExpr<-qdapRegex::rm_between(k, "(", ",", extract=TRUE)[[1]]
                 sp<-eval(substitute(eval(parse(text=k))),m$data,parent.frame())
                 tmpcovs<-predict(sp,eval(substitute(eval(parse(text=splineExpr))),covs,parent.frame()))
@@ -94,6 +98,10 @@ getSplineFormula<-function(formula,data,covs){
     if(k %in% specials){
       splineInd<-TRUE
       splineCovs<-unique(c(splineCovs,all.vars(stats::as.formula(paste0("~",k)))))
+      if (!requireNamespace("qdapRegex", quietly = TRUE)) {
+        stop("Package \"qdapRegex\" needed for this function to work. Please install it.",
+             call. = FALSE)
+      }
       splineExpr<-qdapRegex::rm_between(k, "(", ",", extract=TRUE)[[1]]
       sp<-eval(substitute(eval(parse(text=k))),data,parent.frame())
       tmpcovs<-predict(sp,eval(substitute(eval(parse(text=splineExpr))),covs,parent.frame()))

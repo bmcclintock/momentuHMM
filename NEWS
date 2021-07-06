@@ -18,7 +18,7 @@ CHANGES
 
 * added additional checks for undefined data stream or parameter names in common list arguments (e.g. DM, workBounds, userBounds); these were previously ignored
 
-* the following packages have been moved to 'Suggests' and are now used conditionally: car, data.tree, extraDistr, geosphere, and mitools. If any of these are packages needed, users will be prompted to install.
+* the following packages have been moved to 'Suggests' and are now used conditionally: car, data.tree, extraDistr, geosphere, mitools, nleqslv, prodlim, qdapRegex, and survival. If any of these are packages needed, users will be prompted to install.
 
 BUG FIXES
 

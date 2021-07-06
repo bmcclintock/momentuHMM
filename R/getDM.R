@@ -252,6 +252,10 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
 get_crwlag <- function(form,clag){
   lag <- 0
   if(length(attr(stats::terms(form, specials="crw"),"specials")$crw)){
+    if (!requireNamespace("prodlim", quietly = TRUE)) {
+      stop("Package \"prodlim\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
     Terms <- stats::terms(form,specials="crw")
     lag <- as.numeric(unlist(attr(prodlim::strip.terms(Terms[attr(Terms,"specials")$crw],specials="crw",arguments=list(crw=list("lag"=1))),"stripped.arguments")))
   }

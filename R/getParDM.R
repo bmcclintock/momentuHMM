@@ -105,7 +105,7 @@ getParDM <- function(data, ...) {
 #' }
 #'
 #' @importFrom CircStats circ.mean
-#' @importFrom nleqslv nleqslv
+# #' @importFrom nleqslv nleqslv
 #' @importFrom stats plogis
 #' @export
 getParDM.default<-function(data=data.frame(),nbStates,dist,
@@ -392,8 +392,13 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
                 c(abs(theta - XB),rep(0,max(0,length(x)-length(theta))))
               }
 
-              if(length(meanind1)) p[1:(length(meanind2)/2)] <- nleqslv::nleqslv(x=rep(1,length(meanind2)/2),fn=solveatan2,theta=par[meanind1],covs=fullDM[[i]],nbStates=nbStates,nc=nc[[i]],meanind=meanind1,oparms=parCount[[i]]-length(meanind2)/2,circularAngleMean=inputs$circularAngleMean[[i]],control=list(allowSingular=TRUE))$x[1:(length(meanind2)/2)]
-              
+              if(length(meanind1)) {
+                if (!requireNamespace("nleqslv", quietly = TRUE)) {
+                  stop("Package \"nleqslv\" needed for this function to work. Please install it.",
+                       call. = FALSE)
+                }
+                p[1:(length(meanind2)/2)] <- nleqslv::nleqslv(x=rep(1,length(meanind2)/2),fn=solveatan2,theta=par[meanind1],covs=fullDM[[i]],nbStates=nbStates,nc=nc[[i]],meanind=meanind1,oparms=parCount[[i]]-length(meanind2)/2,circularAngleMean=inputs$circularAngleMean[[i]],control=list(allowSingular=TRUE))$x[1:(length(meanind2)/2)]
+              }
               meanind<-which((apply(fullDM[[i]][nbStates+1:nbStates,,drop=FALSE],2,function(x) !all(unlist(x)==0))))
               
               if(length(ind21)){
