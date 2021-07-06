@@ -40,6 +40,8 @@ Pooled estimates, standard errors, and confidence intervals are calculated using
 using \code{\link[mitools]{MIcombine}} and t-distributed confidence intervals. Natural scale parameters and normally-distributed confidence intervals are calculated by transforming the pooled working scale parameters 
 and, if applicable, are based on covariate means across all imputations (and/or values specified in \code{covs}).
 
+The calculation of pooled error ellipses uses \code{\link[car]{dataEllipse}} from the \code{car} package. The suggested package \code{car} is not automatically imported by \code{momentuHMM} and must be installed in order to calculate error ellipses. A warning will be triggered if the \code{car} package is required but not installed.
+
 Note that pooled estimates for \code{timeInStates} and \code{stateProbs} do not include within-model uncertainty and are based entirely on across-model variability.
 }
 \examples{

@@ -26,8 +26,8 @@
 #' # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
 #' m <- example$m
 #' res <- pseudoRes(m)
-#' qqnorm(res$stepRes)
-#' qqnorm(res$angleRes)
+#' stats::qqnorm(res$stepRes)
+#' stats::qqnorm(res$angleRes)
 #'
 #' @references
 #' Harte, D. 2017. HiddenMarkov: Hidden Markov Models. R package version 1.8-8.

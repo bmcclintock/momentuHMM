@@ -26,6 +26,8 @@
 #' using \code{\link[mitools]{MIcombine}} and t-distributed confidence intervals. Natural scale parameters and normally-distributed confidence intervals are calculated by transforming the pooled working scale parameters 
 #' and, if applicable, are based on covariate means across all imputations (and/or values specified in \code{covs}).
 #' 
+#' The calculation of pooled error ellipses uses \code{\link[car]{dataEllipse}} from the \code{car} package. The suggested package \code{car} is not automatically imported by \code{momentuHMM} and must be installed in order to calculate error ellipses. A warning will be triggered if the \code{car} package is required but not installed.
+#' 
 #' Note that pooled estimates for \code{timeInStates} and \code{stateProbs} do not include within-model uncertainty and are based entirely on across-model variability.
 #' 
 #' @examples
@@ -59,7 +61,7 @@
 #' @export
 #' @importFrom stats median var qt
 #' @importFrom CircStats circ.mean
-#' @importFrom car dataEllipse
+# #' @importFrom car dataEllipse
 # #' @importFrom mitools MIcombine
 MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   
@@ -637,24 +639,29 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     checkerrs <- lapply(im,function(x) x$data[match(coordNames,names(x$data))])
     ident <- !unlist(lapply(checkerrs,function(x) isTRUE(all.equal(x,checkerrs[[1]]))))
     if(any(ident)){
-      if(ncores>1){
-        future::plan(future::multisession, workers = ncores)
-      } else { 
-        doParallel::registerDoParallel(cores=ncores)
-      }
       # calculate location alpha% error ellipses
-      cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
-      tmpx<-matrix(unlist(lapply(im,function(x) x$data[[coordNames[1]]])),nrow(mh$data))
-      tmpy<-matrix(unlist(lapply(im,function(x) x$data[[coordNames[2]]])),nrow(mh$data))
-      withCallingHandlers(errorEllipse<-foreach(i = 1:nrow(mh$data)) %dorng% {
-        tmp <- cbind(tmpx[i,],tmpy[i,])
-        if(length(unique(tmp[,1]))>1 | length(unique(tmp[,2]))>1)
-          ellip <- car::dataEllipse(tmp,levels=alpha,draw=FALSE,segments=100)
-        else ellip <- matrix(tmp[1,],101,2,byrow=TRUE)
-      },warning=muffleRNGwarning)
-      if(ncores==1) doParallel::stopImplicitCluster()
-      else future::plan(future::sequential)
-      cat("DONE\n")
+      if (!requireNamespace("car", quietly = TRUE)) {
+        warning("Package \"car\" needed for calculating error ellipses. Please install it.",
+             call. = FALSE)
+      } else {
+        if(ncores>1){
+          future::plan(future::multisession, workers = ncores)
+        } else { 
+          doParallel::registerDoParallel(cores=ncores)
+        }
+        cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
+        tmpx<-matrix(unlist(lapply(im,function(x) x$data[[coordNames[1]]])),nrow(mh$data))
+        tmpy<-matrix(unlist(lapply(im,function(x) x$data[[coordNames[2]]])),nrow(mh$data))
+        withCallingHandlers(errorEllipse<-foreach(i = 1:nrow(mh$data)) %dorng% {
+          tmp <- cbind(tmpx[i,],tmpy[i,])
+          if(length(unique(tmp[,1]))>1 | length(unique(tmp[,2]))>1)
+            ellip <- car::dataEllipse(tmp,levels=alpha,draw=FALSE,segments=100)
+          else ellip <- matrix(tmp[1,],101,2,byrow=TRUE)
+        },warning=muffleRNGwarning)
+        if(ncores==1) doParallel::stopImplicitCluster()
+        else future::plan(future::sequential)
+        cat("DONE\n")
+      }
     }
   }
   
