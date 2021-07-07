@@ -431,6 +431,15 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
           } else stop("sorry, the parameters for ",i," cannot have different bounds")
         } else if(((length(ind21)>0) + (length(ind22)>0) + (length(ind23)>0) + (length(ind24)>0))>1){ 
           stop("sorry, getParDM requires the parameters for ",i," to have identical bounds when covariates are included in the design matrix")
+        } else if(inputs$dist[[i]]=="cat"){
+          asvd<-svd(fullDM[[i]])
+          adiag <- diag(x=1/asvd$d,nrow=ifelse(length(asvd$d)>1,length(asvd$d),1),ncol=ifelse(length(asvd$d)>1,length(asvd$d),1))
+          dimCat <- length(Par[[i]])/nbStates
+          wPar <- Par[[i]]
+          for(j in 1:nbStates){
+            wPar[seq(j,dimCat*nbStates,nbStates)] <- log(Par[[i]][seq(j,dimCat*nbStates,nbStates)]/(1-sum(Par[[i]][seq(j,dimCat*nbStates,nbStates)])))
+          }
+          p <- asvd$v %*% adiag %*% t(asvd$u) %*% wPar
         } else {
           if(length(ind21)){
             asvd<-svd(fullDM[[i]][gbInd,,drop=FALSE][ind21,,drop=FALSE])

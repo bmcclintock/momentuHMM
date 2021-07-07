@@ -6,13 +6,11 @@ on:
       - master
       - develop
       - fitCTHMM
-      - doFuture
   pull_request:
     branches:
       - master
       - develop
       - fitCTHMM
-      - doFuture
 
 name: R-CMD-check
 
