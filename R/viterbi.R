@@ -48,9 +48,13 @@ viterbi <- function(m, hierarchical=FALSE)
   mixtures <- m$conditions$mixtures
   mixProbs <- mixtureProbs(m)
   
+  if(isTRUE(m$conditions$CT)){
+    dt <- m$data$dt
+  } else dt <- rep(1,nrow(m$data))
+  
   trMat <- list()
   for(mix in 1:mixtures){
-    trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),m$conditions$betaRef)
+    trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),m$conditions$betaRef,isTRUE(m$conditions$CT),dt)
   }
   
   allStates <- NULL

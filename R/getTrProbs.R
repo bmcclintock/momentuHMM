@@ -62,6 +62,7 @@ getTrProbs <- function(data, ...){
 #' trProbsSE_10 <- getTrProbs(m, getCI=TRUE, covIndex=1:10)
 #' }
 #' 
+#' @importFrom expm expm
 #' @export
 getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mixtures=1,betaRef=NULL,stateNames=NULL, getCI=FALSE, covIndex=NULL, alpha = 0.95, ...)
 {  
@@ -126,9 +127,19 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
     
     getCI <- FALSE
     
+    dt <- data$dt
+    if(!is.null(dt)) {
+      CT <- TRUE
+      warning("'dt' field in data will be treated as the time difference between observations in a continuous-time HMM;\n   rename this field if continuous time is not desired")
+    } else {
+      CT <- FALSE
+      dt <- rep(1,nrow(data))
+    }
   } else {
     
     if(is.miHMM(data)) data <- data$miSum
+    
+    CT <- isTRUE(attr(data$data,"CT"))
     
     data <- delta_bc(data)
     
@@ -147,6 +158,11 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
       if(!is.numeric(covIndex) || any(covIndex<1 | covIndex>nrow(data$data))) stop("covIndex can only include integers between 1 and ",nrow(data$data))
       data$data <- data$data[covIndex,,drop=FALSE]
     }
+    
+    attr(data$data,"CT") <- CT
+    if(CT) dt <- data$data$dt
+    else dt <- rep(1,nrow(data$data))
+    
     stateNames <- data$stateNames
     nbStates <- length(stateNames)
     beta <- data$mle$beta
@@ -163,19 +179,20 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
     nbRecovs <- reForm$nbRecovs
     newformula <- reForm$newformula
   }
+
   chkDots(...)
-  wnbeta <- w2wn(beta,workBounds$beta)
+  if(nbStates>1) wnbeta <- w2wn(beta,workBounds$beta)
   
   trMat <- list()
   
   for(mix in 1:mixtures){
     if(nbStates>1)
-      trMat[[mix]] <- trMatrix_rcpp(nbStates,wnbeta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),betaRef)
+      trMat[[mix]] <- trMatrix_rcpp(nbStates,wnbeta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),betaRef,CT,dt)
     else
-      trMat[[mix]] <- array(1,dim=c(1,1,nrow(data)))
+      trMat[[mix]] <- array(1,dim=c(1,1,length(dt)))
     dimnames(trMat[[mix]]) <- list(stateNames,stateNames,NULL)
     
-    if(getCI){
+    if(getCI & nbStates>1){
       
       Sigma <- data$mod$Sigma
       
@@ -197,10 +214,11 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
               tmpSig <- Sigma[c(gamInd[unique(c(data$conditions$betaCons))],length(data$mod$estimate)-(nbRecovs+nbG0covs+1):0),c(gamInd[unique(c(data$conditions$betaCons))],length(data$mod$estimate)-(nbRecovs+nbG0covs+1):0)]
               allCovs <- cbind(data$data,reForm$newdata)
               if(inherits(data,"hierarchical")) class(allCovs) <- append("hierarchical",class(allCovs))
+              if(isTRUE(attr(data$data,"CT"))) attr(allCovs,"CT") <- TRUE
               spl <- split(allCovs[ind,,drop=FALSE],1:nrow(desMat[ind,,drop=FALSE]))
               dN<-t(mapply(function(x) tryCatch(numDeriv::grad(get_TrProbs_recharge,data$mod$estimate[c(gamInd[unique(c(data$conditions$betaCons))],length(data$mod$estimate)-(nbRecovs+nbG0covs+1):0)],covs=spl[[x]],formula=newformula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=data$conditions$betaRef,betaCons=data$conditions$betaCons,workBounds=rbind(data$conditions$workBounds$beta,data$conditions$workBounds$theta),mixture=mix,allCovs=allCovs[ind,,drop=FALSE][1:x,,drop=FALSE]),error=function(e) NA),1:length(spl)))
             } else {
-              dN<-t(apply(desMat[ind,,drop=FALSE],1,function(x) tryCatch(numDeriv::grad(get_gamma,data$mod$estimate[gamInd[unique(c(data$conditions$betaCons))]],covs=matrix(x,1,dimnames=list(NULL,names(x))),nbStates=nbStates,i=i,j=j,betaRef=data$conditions$betaRef,betaCons=data$conditions$betaCons,workBounds=data$conditions$workBounds$beta,mixture=mix),error=function(e) NA)))
+              dN<-t(mapply(function(x) tryCatch(numDeriv::grad(get_gamma,data$mod$estimate[gamInd[unique(c(data$conditions$betaCons))]],covs=desMat[x,,drop=FALSE],nbStates=nbStates,i=i,j=j,betaRef=data$conditions$betaRef,betaCons=data$conditions$betaCons,workBounds=data$conditions$workBounds$beta,mixture=mix,CT=isTRUE(attr(data$data,"CT")),dt=data$data$dt[x]),error=function(e) NA),ind))
             }
             se[i,j,ind]<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%tmpSig%*%x)),error=function(e) NA)))
             lower[i,j,ind]<-1/(1+exp(-(log(trMat[[mix]][i,j,ind]/(1-trMat[[mix]][i,j,ind]))-quantSup*(1/(trMat[[mix]][i,j,ind]-trMat[[mix]][i,j,ind]^2))*se[i,j,ind])))#trMat[[mix]][i,j,]-quantSup*se[i,j]
@@ -324,6 +342,9 @@ get_TrProbs_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,j,bet
   g0 <- beta[length(beta)-(ncol(recovs)+ncol(g0covs))+1:ncol(g0covs)] %*% t(g0covs)
   theta <- beta[length(beta)-(ncol(recovs)-1):0]
   
+  if(isTRUE(attr(allCovs,"CT"))) dt <- allCovs$dt
+  else dt <- rep(1,nrow(allCovs))
+  
   if(inherits(allCovs,"hierarchical")){
     recLevels <- length(hierRecharge)
     recLevelNames <- names(hierRecharge)
@@ -335,11 +356,11 @@ get_TrProbs_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,j,bet
     colInd <- list(1:ncol(recovs))
   }
   for(iLevel in 1:recLevels){
-    covs[,rechargeNames[iLevel]] <- g0 + sum(theta[colInd[[iLevel]]]%*%t(recovs[,colInd[[iLevel]],drop=FALSE])) #covs[,rechargeNames[iLevel],drop=FALSE] + theta[colInd[[iLevel]]]%*%t(recovs[,colInd[[iLevel]],drop=FALSE]) # g0  + theta%*%t(recovs)
+    covs[,rechargeNames[iLevel]] <- g0 + sum((theta[colInd[[iLevel]]]%*%t(recovs[,colInd[[iLevel]],drop=FALSE]))*dt) #covs[,rechargeNames[iLevel],drop=FALSE] + theta[colInd[[iLevel]]]%*%t(recovs[,colInd[[iLevel]],drop=FALSE]) # g0  + theta%*%t(recovs)
   }
   
   newcovs <- stats::model.matrix(formula,covs)
   beta <- matrix(beta[1:(length(beta)-(ncol(recovs)+ncol(g0covs)))],ncol=nbStates*(nbStates-1))
-  gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(newcovs)+1:ncol(newcovs),,drop=FALSE],newcovs,betaRef)[,,1]
+  gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(newcovs)+1:ncol(newcovs),,drop=FALSE],newcovs,betaRef,isTRUE(attr(allCovs,"CT")),tail(dt,1))[,,1]
   gamma[i,j]
 }

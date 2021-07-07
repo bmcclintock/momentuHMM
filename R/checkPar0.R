@@ -194,6 +194,14 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
       }
       else oneInflation[[i]]<-FALSE
     }
+    if(inherits(data,"ctds")){
+      for(i in distnames){
+        if(dist[[i]]=="ctds"){
+          if(i!=attr(data,"ctdsData")) stop("'ctds' distribution can only apply to the '",attr(data,"ctdsData"),"' data stream")
+          attr(dist[[i]],"directions") <- attr(data,"directions")
+        }
+      }
+    }
     p <- parDef(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds)
     nPar <- lapply(p$bounds,function(x) runif(nrow(x),ifelse(is.finite(x[,1]),x[,1],0),ifelse(is.finite(x[,2]),x[,2],max(x[,1]+1,1.e+6))))
     inputs <- checkInputs(nbStates,dist,nPar,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,stateNames=NULL,checkInflation = TRUE)
@@ -244,13 +252,22 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
     par <- getParDM.default(data=data,nbStates=nbStates,dist=dist,Par=nPar,zeroInflation=zeroInflation,oneInflation=oneInflation,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,DM=DM,userBounds=userBounds,workBounds=workBounds)
     
   } else par <- Par0
-  m<-suppressMessages(fitHMM(data=data,nbStates=nbStates,dist=dist,
-                             Par0=par,beta0=beta0,delta0=delta0,
-                             estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
-                             formula=formula,formulaDelta=formulaDelta,stationary=stationary,mixtures=mixtures,formulaPi=formulaPi,
-                             DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,fit=FALSE,
-                             stateNames=stateNames,fixPar=fixPar,prior=prior))
-  
+  if(inherits(data,"ctds")){
+    m<-suppressMessages(fitCTHMM(data=data,nbStates=nbStates,dist=dist,
+                               Par0=par,beta0=beta0,delta0=delta0,
+                               estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
+                               formula=formula,formulaDelta=formulaDelta,stationary=stationary,mixtures=mixtures,formulaPi=formulaPi,
+                               DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,fit=FALSE,
+                               stateNames=stateNames,fixPar=fixPar,prior=prior))   
+    dist <- m$conditions$dist
+  } else {
+    m<-suppressMessages(fitHMM(data=data,nbStates=nbStates,dist=dist,
+                               Par0=par,beta0=beta0,delta0=delta0,
+                               estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
+                               formula=formula,formulaDelta=formulaDelta,stationary=stationary,mixtures=mixtures,formulaPi=formulaPi,
+                               DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,fit=FALSE,
+                               stateNames=stateNames,fixPar=fixPar,prior=prior))
+  }
   inputs <- checkInputs(nbStates,dist,par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,DM,m$conditions$userBounds,stateNames,checkInflation = TRUE)
   p <- inputs$p
   par <- par[names(inputs$dist)]

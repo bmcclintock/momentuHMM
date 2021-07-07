@@ -225,6 +225,14 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
       else tempCovs[[j]]<-mean(data[[j]],na.rm=TRUE)
     }
   }
+  if(inherits(data,"ctds")){
+    for(i in distnames){
+      if(dist[[i]]=="ctds"){
+        if(i!=attr(data,"ctdsData")) stop("'ctds' distribution can only apply to the '",attr(data,"ctdsData"),"' data stream")
+        attr(dist[[i]],"directions") <- attr(data,"directions")
+      }
+    }
+  }
   inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,stateNames=NULL,checkInflation = TRUE)
   
   DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)

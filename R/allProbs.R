@@ -85,13 +85,16 @@ allProbs <- function(m)
 
   par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$fullDM,m$conditions$DMind,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds,m$covsPi)
   
+  if(isTRUE(m$conditions$CT)) par <- ctPar(par,dist,nbStates,data)
+  
   Fun <- lapply(dist,function(x) paste("d",x,sep=""))
   for(i in names(Fun)){
-    if(Fun[[i]]=="dcat"){
-      if (!requireNamespace("extraDistr", quietly = TRUE))
+    if(Fun[[i]] %in% c("dcat","dctds")) {
+      if (!requireNamespace("extraDistr", quietly = TRUE)) {
         stop("Package \"extraDistr\" needed for categorical distribution. Please install it.",
              call. = FALSE)
-      dcat <- extraDistr::dcat
+      }
+      dcat <- dctds <- extraDistr::dcat
     }
   }
 
@@ -151,6 +154,9 @@ allProbs <- function(m)
         }
       } else if(dist[[i]]=="cat"){
         dimCat <- as.numeric(gsub("cat","",m$conditions$dist[[i]]))
+        genArgs[[2]] <- t(genPar[seq(state,dimCat*nbStates,nbStates),genInd])
+      } else if(dist[[i]]=="ctds"){
+        dimCat <- attr(m$data,"directions")+1
         genArgs[[2]] <- t(genPar[seq(state,dimCat*nbStates,nbStates),genInd])
       } else {
         for(j in 1:(nrow(genPar)/nbStates))

@@ -2,8 +2,12 @@
 #include <Rinternals.h>
 #include <stdlib.h> // for NULL
 #include <R_ext/Rdynload.h>
+#include "expm.h"
 
-// Generated with tools::package_native_routine_registration_skeleton (R 3.6)
+// Mostly generated with tools::package_native_routine_registration_skeleton (R 4.0)
+// additionally requires: 
+// #include "expm.h" in header
+// expm = (void (*) (double*, int, double*, precond_type)) R_GetCCallable("expm", "expm"); in R_init_momentuHMM
 
 /* .Call calls */
 extern SEXP _momentuHMM_cbindmean2(SEXP, SEXP);
@@ -26,9 +30,10 @@ extern SEXP _momentuHMM_dt_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dvm_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dweibull_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dwrpcauchy_rcpp(SEXP, SEXP, SEXP);
+extern SEXP _momentuHMM_expmatrix_rcpp(SEXP);
 extern SEXP _momentuHMM_getDM_rcpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP _momentuHMM_nLogLike_rcpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP _momentuHMM_trMatrix_rcpp(SEXP, SEXP, SEXP, SEXP);
+extern SEXP _momentuHMM_nLogLike_rcpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP _momentuHMM_trMatrix_rcpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_XBloop_rcpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
@@ -52,9 +57,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_momentuHMM_dvm_rcpp",        (DL_FUNC) &_momentuHMM_dvm_rcpp,         3},
     {"_momentuHMM_dweibull_rcpp",   (DL_FUNC) &_momentuHMM_dweibull_rcpp,    3},
     {"_momentuHMM_dwrpcauchy_rcpp", (DL_FUNC) &_momentuHMM_dwrpcauchy_rcpp,  3},
+    {"_momentuHMM_expmatrix_rcpp",  (DL_FUNC) &_momentuHMM_expmatrix_rcpp,   1},
     {"_momentuHMM_getDM_rcpp",      (DL_FUNC) &_momentuHMM_getDM_rcpp,       7},
-    {"_momentuHMM_nLogLike_rcpp",   (DL_FUNC) &_momentuHMM_nLogLike_rcpp,   13},
-    {"_momentuHMM_trMatrix_rcpp",   (DL_FUNC) &_momentuHMM_trMatrix_rcpp,    4},
+    {"_momentuHMM_nLogLike_rcpp",   (DL_FUNC) &_momentuHMM_nLogLike_rcpp,   14},
+    {"_momentuHMM_trMatrix_rcpp",   (DL_FUNC) &_momentuHMM_trMatrix_rcpp,    6},
     {"_momentuHMM_XBloop_rcpp",     (DL_FUNC) &_momentuHMM_XBloop_rcpp,     11},
     {NULL, NULL, 0}
 };
@@ -63,4 +69,5 @@ void R_init_momentuHMM(DllInfo *dll)
 {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
+    expm = (void (*) (double*, int, double*, precond_type)) R_GetCCallable("expm", "expm");
 }

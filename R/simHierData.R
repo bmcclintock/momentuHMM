@@ -274,6 +274,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     
     nbStates <- inputHierHMM$nbStates
     dist <- inputHierHMM$dist
+    if(any(unlist(dist)=="ctds")) stop("hierarchical 'ctds' distributions are not currently supported")
     beta <- inputHierHMM$beta
     delta <- inputHierHMM$delta
     formula <- inputHierHMM$formula
@@ -355,11 +356,12 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   Fun <- lapply(inputs$dist,function(x) paste("r",x,sep=""))
   for(i in names(Fun)){
-    if(Fun[[i]]=="rcat") {
-      if (!requireNamespace("extraDistr", quietly = TRUE))
+    if(Fun[[i]] %in% c("rcat","rctds")) {
+      if (!requireNamespace("extraDistr", quietly = TRUE)) {
         stop("Package \"extraDistr\" needed for categorical distribution. Please install it.",
              call. = FALSE)
-      rcat <- extraDistr::rcat
+      }
+      rcat <- rctds <- extraDistr::rcat
     }
   }
   

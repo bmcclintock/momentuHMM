@@ -183,20 +183,29 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   
   mixtures <- m$conditions$mixtures
   
+  if(inherits(m$data,"ctds")){
+    inTime <- lapply(im,function(y) which(y$data$time %in% Reduce(intersect, lapply(im,function(x) x$data$time))))
+  } else inTime <- lapply(im, function(y) 1:nrow(y$data))
+  if(any(unlist(lapply(inTime,length))!=nrow(m$data))) {
+    if(inherits(m$data,"ctds")){
+      warning("Imputed datasets have differing number of rows; only times common to all imputed datasets are used in averaging data across imputations.\n  Note the mode is used for averaging the ctds data stream '",attr(m$data,"ctdsData"),"' at each common time step across imputed data sets")
+    } else stop("Imputed datasets have differing number of rows, so data cannot be averaged across imputations")
+  }
+
   fm <- NULL
   
   if(nbStates>1) {
     cat("Decoding state sequences for each imputation... \n")
     withCallingHandlers(im_states <- foreach(fm = im, i=seq_along(im), .combine = rbind) %dorng% {
       progBar(i,nsims)
-      momentuHMM::viterbi(fm)
+      momentuHMM::viterbi(fm)[inTime[[i]]]
     },warning=muffleRNGwarning)
     if(nsims>1) states <- apply(im_states,2,function(x) which.max(hist(x,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts))
     else states <- im_states
     cat("Decoding state probabilities for each imputation... \n")
     withCallingHandlers(im_stateProbs <- foreach(fm = im, i=seq_along(im)) %dorng% {
       progBar(i,nsims)
-      momentuHMM::stateProbs(fm)
+      momentuHMM::stateProbs(fm)[inTime[[i]],]
     },warning=muffleRNGwarning)
     if(mixtures>1){
       cat("Decoding mixture probabilities for each imputation... \n")
@@ -290,32 +299,47 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   if(nbStates>1) Par$beta$beta <- lapply(Par$beta$beta,function(x) matrix(x[c(m$conditions$betaCons)],dim(x),dimnames=list(rownames(x),colnames(x))))
   
   #average all numeric variables in imputed data
-  mhdata<-m$data
+  mhdata <- m$data[inTime[[1]],]
   for(i in distnames){
-    if(dist[[i]] %in% angledists) {
-      mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,CircStats::circ.mean)
-      class(mhdata[[i]]) <- c("angle",class(mhdata[[i]]))
-    } else if(dist[[i]] %in% "pois"){
-      mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,median)     
-    } else if(dist[[i]] %in% mvndists){
-      mhdata[[paste0(i,".x")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".x")]])),ncol=length(m$data[[paste0(i,".x")]]),byrow=TRUE),2,median)
-      mhdata[[paste0(i,".y")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".y")]])),ncol=length(m$data[[paste0(i,".y")]]),byrow=TRUE),2,median)
-      if(dist[[i]]=="mvnorm3" || dist[[i]]=="rw_mvnorm3")
-        mhdata[[paste0(i,".z")]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[paste0(i,".z")]])),ncol=length(m$data[[paste0(i,".z")]]),byrow=TRUE),2,median)
+    if(inherits(mhdata,"ctds") && i==attr(mhdata,"ctdsData")){
+      mhdata[[i]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$data[[i]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,function(y) which.max(tabulate(y)))
     } else {
-      mhdata[[i]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[i]])),ncol=length(m$data[[i]]),byrow=TRUE),2,mean)
+      if(dist[[i]] %in% angledists) {
+        mhdata[[i]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$data[[i]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,CircStats::circ.mean)
+        class(mhdata[[i]]) <- c("angle",class(mhdata[[i]]))
+      } else if(dist[[i]] %in% "pois"){
+        mhdata[[i]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$data[[i]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,median)     
+      } else if(dist[[i]] %in% mvndists){
+        mhdata[[paste0(i,".x")]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$data[[paste0(i,".x")]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,median)
+        mhdata[[paste0(i,".y")]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$data[[paste0(i,".y")]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,median)
+        if(dist[[i]]=="mvnorm3" || dist[[i]]=="rw_mvnorm3")
+          mhdata[[paste0(i,".z")]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$data[[paste0(i,".z")]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,median)
+      } else {
+        mhdata[[i]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$data[[i]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,mean)
+      }
     }
   }
+  crwInd <- 1
   for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansListNoTime))) & !(names(m$data) %in% distnames))]){
-    if(inherits(m$data[[j]],"angle")) {
-      mhdata[[j]] <- apply(matrix(unlist(lapply(im,function(x) x$data[[j]])),ncol=length(m$data[[j]]),byrow=TRUE),2,CircStats::circ.mean)
-      class(mhdata[[j]]) <- c("angle",class(mhdata[[j]]))
-    } else mhdata[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$data[[j]])),ncol=length(m$data[[j]]),byrow=TRUE),2,mean)
+    if(inherits(mhdata,"ctds") & (grepl("crw.",j) | j=="cellCross" | j=="dt")){
+      if(grepl("crw.",j)) {
+        mhdata[[j]] <- 0
+        if(crwInd) warning("It is not possible to include 'crw' when pooling; this term has been set to zero")
+        crwInd <- 0
+      }
+      else if(j=="cellCross") mhdata[[j]] <- NULL
+      else if(j=="dt") mhdata[[j]][1:(nrow(mhdata)-1)] <- diff(mhdata$time)
+    } else {
+      if(inherits(m$data[[j]],"angle")) {
+        mhdata[[j]] <- apply(matrix(unlist(mapply(function(x) im[[x]]$data[[j]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,CircStats::circ.mean)
+        class(mhdata[[j]]) <- c("angle",class(mhdata[[j]]))
+      } else mhdata[[j]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$data[[j]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,mean)
+    }
   }
   mhrawCovs<-m$rawCovs
   if(length(mhrawCovs)){
     for(j in names(m$rawCovs)[which(unlist(lapply(m$rawCovs,function(x) any(class(x) %in% meansListNoTime))))]){
-      mhrawCovs[[j]]<-apply(matrix(unlist(lapply(im,function(x) x$rawCovs[[j]])),ncol=length(m$rawCovs[[j]]),byrow=TRUE),2,mean)
+      mhrawCovs[[j]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$rawCovs[[j]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(im,function(x) nrow(x$rawCovs)))),byrow=TRUE),2,mean)
     }
   }
   
@@ -409,6 +433,11 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     }
   }
   
+  if(isTRUE(m$conditions$CT)){
+    if(inherits(m,"ctds")) dt <- mean(mhdata$dt)
+    else dt <- mean(m$data$dt)
+  } else dt <- 1
+  
   quantSup<-qnorm(1-(1-alpha)/2)
   
   # pooled gamma estimates
@@ -422,19 +451,19 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     for(mix in 1:mixtures){
       if(is.null(recharge)){
         wpar <- miBeta$coefficients[gamInd]
-        est[(mix-1)*nbStates+1:nbStates,] <- get_gamma(wpar,tempCovMat,nbStates,1:nbStates,1:nbStates,m$conditions$betaRef,m$conditions$betaCons,mixture=mix)
+        est[(mix-1)*nbStates+1:nbStates,] <- get_gamma(wpar,tempCovMat,nbStates,1:nbStates,1:nbStates,m$conditions$betaRef,m$conditions$betaCons,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt)
         tmpSig <- miBeta$variance[gamInd,gamInd]
       } else {
         wpar <- c(miBeta$coefficients[gamInd],miBeta$coefficients[length(miBeta$coefficients)-reForm$nbRecovs:0])
-        est[(mix-1)*nbStates+1:nbStates,] <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,hierRecharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix)
+        est[(mix-1)*nbStates+1:nbStates,] <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,hierRecharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt)
         tmpSig <- miBeta$variance[c(gamInd,length(miBeta$coefficients)-reForm$nbRecovs:0),c(gamInd,length(miBeta$coefficients)-reForm$nbRecovs:0)]
       }
       for(i in 1:nbStates){
         for(j in 1:nbStates){
           if(is.null(recharge)){
-            dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix)
+            dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt)
           } else {
-            dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix)
+            dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt)
           }  
           se[(mix-1)*nbStates+i,j]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
           lower[(mix-1)*nbStates+i,j]<-1/(1+exp(-(log(est[(mix-1)*nbStates+i,j]/(1-est[(mix-1)*nbStates+i,j]))-quantSup*(1/(est[(mix-1)*nbStates+i,j]-est[(mix-1)*nbStates+i,j]^2))*se[(mix-1)*nbStates+i,j])))#est[(mix-1)*nbStates+i,j]-quantSup*se[(mix-1)*nbStates+i,j]
@@ -488,7 +517,7 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     if(nbStates>1){
       covs<-stats::model.matrix(newformula,tempCovs)
       statFun<-function(beta,nbStates,covs,i,mixture=1){
-        gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,m$conditions$betaRef)[,,1]
+        gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,m$conditions$betaRef,isTRUE(m$conditions$CT),dt)[,,1]
         tryCatch(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i],error = function(e) {
           "A problem occurred in the calculation of the stationary distribution."})
       }
@@ -650,12 +679,12 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
           doParallel::registerDoParallel(cores=ncores)
         }
         cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
-        tmpx<-matrix(unlist(lapply(im,function(x) x$data[[coordNames[1]]])),nrow(mh$data))
-        tmpy<-matrix(unlist(lapply(im,function(x) x$data[[coordNames[2]]])),nrow(mh$data))
+        tmpx<-matrix(unlist(mapply(function(x) im[[x]]$data[[coordNames[1]]][inTime[[x]][i]],1:length(im))),nrow(mh$data))
+        tmpy<-matrix(unlist(mapply(function(x) im[[x]]$data[[coordNames[2]]][inTime[[x]][i]],1:length(im))),nrow(mh$data))
         withCallingHandlers(errorEllipse<-foreach(i = 1:nrow(mh$data)) %dorng% {
           tmp <- cbind(tmpx[i,],tmpy[i,])
           if(length(unique(tmp[,1]))>1 | length(unique(tmp[,2]))>1)
-            ellip <- car::dataEllipse(tmp,levels=alpha,draw=FALSE,segments=100)
+            ellip <- suppressWarnings(car::dataEllipse(tmp,levels=alpha,draw=FALSE,segments=100))
           else ellip <- matrix(tmp[1,],101,2,byrow=TRUE)
         },warning=muffleRNGwarning)
         if(ncores==1) doParallel::stopImplicitCluster()
@@ -682,7 +711,19 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   }
   
   attr(mh$data,"coords") <- coordNames
-  
+  if(isTRUE(attr(im[[1]]$data,"CT"))) {
+    attr(mh$data,"CT") <- TRUE
+    class(mh) <- append(class(mh),"CTHMM")
+  }
+  if(inherits(im[[1]],"ctds")){
+    class(mh) <- append(class(mh),"ctds")
+    class(mh$data) <- class(im[[1]]$data)
+    attr(mh$data,"directions") <- attr(im[[1]]$data,"directions")
+    attr(mh$data,"coords") <- attr(im[[1]]$data,"coords")
+    attr(mh$data,"ctdsData") <- attr(im[[1]]$data,"ctdsData")
+    attr(mh$data,"normalize.gradients") <- attr(im[[1]]$data,"normalize.gradients")
+    attr(mh$data,"grad.point.decreasing") <- attr(im[[1]]$data,"grad.point.decreasing")
+  }
   return(mh)
 }
 

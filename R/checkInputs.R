@@ -13,7 +13,9 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
              call. = FALSE)
       }
     } else {
+      attr <- attributes(dist[[i]])
       dist[[i]]<-match.arg(dist[[i]],momentuHMMdists)
+      attributes(dist[[i]]) <- attr
     }
     if(i %in% badNames) stop("data streams cannot be named ",paste0(paste0("'",badNames[-length(badNames)],"'"),collapse=", "),", or '",badNames[length(badNames)],"'")
     else {

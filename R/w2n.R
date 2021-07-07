@@ -184,6 +184,10 @@ w2nDM<-function(wpar,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbStates,
   
   wpar <- w2wn(wpar,workBounds)
   
+  if(any(!is.finite(wpar))){
+    stop(dist," working parameter(s) not finite")
+  }
+  
   a<-bounds[,1]
   b<-bounds[,2]
   

@@ -39,7 +39,8 @@ nLogLike(
   mixtures = 1,
   covsPi,
   recharge = NULL,
-  aInd
+  aInd = aInd,
+  CT = FALSE
 )
 }
 \arguments{
@@ -118,6 +119,8 @@ model (if any).}
 \item{recharge}{recharge model specification (only used for hierarchical models)}
 
 \item{aInd}{vector of indices of first observation for each animal}
+
+\item{CT}{logical indicating whether to fit discrete-time approximation of a continuous-time model}
 }
 \value{
 The negative log-likelihood of the parameters given the data.

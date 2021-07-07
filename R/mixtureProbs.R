@@ -170,6 +170,8 @@ get_mixProbs <- function(optPar,mod,mixture){
   wpar <- expandPar(optPar,mod$conditions$optInd,mod$mod$estimate,mod$conditions$wparIndex,mod$conditions$betaCons,mod$conditions$deltaCons,nbStates,ncol(mod$covsDelta)-1,mod$conditions$stationary,nbCovs,nbRecovs+nbG0covs,mixtures,ncol(mod$covsPi)-1)
   par <- w2n(wpar,mod$conditions$bounds,lapply(mod$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,mod$conditions$estAngleMean,mod$conditions$circularAngleMean,consensus,mod$conditions$stationary,mod$conditions$fullDM,mod$conditions$DMind,nrow(mod$data),dist,mod$conditions$Bndind,nc,meanind,mod$covsDelta,mod$conditions$workBounds,mod$covsPi)
   
+  if(isTRUE(mod$conditions$CT)) par <- ctPar(par,dist,nbStates,data)
+
   if(nbRecovs){
     for(i in 1:length(unique(data$ID))){
       idInd <- which(data$ID==unique(data$ID)[i])
@@ -186,7 +188,8 @@ get_mixProbs <- function(optPar,mod,mixture){
       for(iLevel in 1:recLevels){
         g0 <- par$g0 %*% t(g0covs[(i-1)*recLevels+iLevel,,drop=FALSE])
         theta <- par$theta
-        covs[idInd,grepl(rechargeNames[iLevel],colnames(covs))] <- cumsum(c(g0,theta[colInd[[iLevel]]]%*%t(recovs[idInd[-length(idInd)],colInd[[iLevel]]])))
+        if(isTRUE(mod$conditions$CT)) covs[idInd,grepl(rechargeNames[iLevel],colnames(covs))] <- cumsum(c(g0,(theta[colInd[[iLevel]]]%*%t(recovs[idInd[-length(idInd)],colInd[[iLevel]]]))*mod$data$dt[idInd[-length(idInd)]]))
+        else covs[idInd,grepl(rechargeNames[iLevel],colnames(covs))] <- cumsum(c(g0,theta[colInd[[iLevel]]]%*%t(recovs[idInd[-length(idInd)],colInd[[iLevel]]])))
       }
     }
   }
@@ -226,7 +229,7 @@ get_mixProbs <- function(optPar,mod,mixture){
     if(!mod$conditions$stationary) par$delta <- delta[mix,,drop=FALSE]
     la[mix] <- nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,
                              par,
-                             1,mod$conditions$zeroInflation,mod$conditions$oneInflation,mod$conditions$stationary,knownStates,mod$conditions$betaRef,1)
+                             1,mod$conditions$zeroInflation,mod$conditions$oneInflation,mod$conditions$stationary,knownStates,mod$conditions$betaRef,1,isTRUE(mod$conditions$CT))
     if(!is.null(mod$prior)) la[mix] <- la[mix] - mod$prior(wpar)
     c <- max(-la[mix]+log(pie[mix]))
     lnum[mix] <- c + log(sum(exp(-la[mix]+log(pie[mix])-c)))  

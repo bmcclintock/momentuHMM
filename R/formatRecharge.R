@@ -44,6 +44,9 @@ formatRecharge <- function(nbStates,formula,betaRef,data,covs=NULL,par=NULL){
     nbRecovs <- ncol(recovs)-1
     data[rechargeNames]<- list(rep(0,nrow(data)))
     
+    if(isTRUE(attr(data,"CT"))) dt <- data$dt
+    else dt <- rep(1,nrow(data))
+    
     if(is.null(par)) par <- list(g0=rep(0,nbG0covs+1),theta=rep(0,nbRecovs+1))
     for(i in 1:nbAnimals){
       for(iLevel in 1:recLevels){
@@ -52,7 +55,7 @@ formatRecharge <- function(nbStates,formula,betaRef,data,covs=NULL,par=NULL){
           if(!all(names(par$theta)==colnames(recovs)) | !all(names(par$g0)==colnames(g0covs))) stop("column name mismatch in hierarchical recharge model -- please report to brett.mcclintock@noaa.gov")
           g0 <- par$g0 %*% t(g0covs[(i-1)*recLevels+iLevel,,drop=FALSE])
           theta <- par$theta
-          data[[rechargeNames[iLevel]]][idInd] <- cumsum(c(g0,theta[colInd[[iLevel]]]%*%t(recovs[idInd[-length(idInd)],colInd[[iLevel]]])))
+          data[[rechargeNames[iLevel]]][idInd] <- cumsum(c(g0,(theta[colInd[[iLevel]]]%*%t(recovs[idInd[-length(idInd)],colInd[[iLevel]]]))*dt[idInd[-length(idInd)]]))
         }
       }
     }

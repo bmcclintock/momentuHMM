@@ -132,6 +132,9 @@ stationary.momentuHMM <- function(model, covs, covIndex = NULL)
     mixtures <- model$conditions$mixtures
   
     probs <- list()
+    
+    if(isTRUE(model$conditions$CT)) dt <- model$data$dt
+    else dt <- rep(1,nrow(model$data))
       
     for(mix in 1:mixtures){
       # all transition matrices
@@ -140,13 +143,13 @@ stationary.momentuHMM <- function(model, covs, covIndex = NULL)
         if(!is.null(covIndex)) {
           if(!is.numeric(covIndex) || any(covIndex<1 | covIndex>nrow(covMat))) stop("covIndex can only include integers between 1 and ",nrow(covMat))
         } else covIndex <- 1:nrow(covMat)
-        allMat <- trMatrix_rcpp(nbStates=nbStates, beta=tmpbeta, covs=covMat[covIndex,,drop=FALSE], betaRef=model$conditions$betaRef)
+        allMat <- trMatrix_rcpp(nbStates=nbStates, beta=tmpbeta, covs=covMat[covIndex,,drop=FALSE], betaRef=model$conditions$betaRef, CT=isTRUE(model$conditions$CT), dt = dt)
       } else {
         if(!is.null(covIndex)) {
           if(!is.numeric(covIndex) || any(covIndex<1 | covIndex>nrow(tmpSplineInputs$covs))) stop("covIndex can only include integers between 1 and ",nrow(tmpSplineInputs$covs))
         } else covIndex <- 1:nrow(tmpSplineInputs$covs)
         gamInd<-(length(model$mod$estimate)-(nrow(tmpbeta))*nbStates*(nbStates-1)*mixtures+1):(length(model$mod$estimate))-(ncol(model$covsPi)*(mixtures-1))-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-ncol(model$covsDelta)*(nbStates-1)*(!model$conditions$stationary)*mixtures
-        allMat <- array(unlist(lapply(split(tmpSplineInputs$covs[covIndex,,drop=FALSE],covIndex),function(x) tryCatch(get_gamma_recharge(model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(tmpSplineInputs$covs)))
+        allMat <- array(unlist(lapply(split(tmpSplineInputs$covs[covIndex,,drop=FALSE],covIndex),function(x) tryCatch(get_gamma_recharge(model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta),mixture=mix,CT=isTRUE(model$conditions$CT),dt=x$dt),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(tmpSplineInputs$covs)))
       }
       
       tryCatch({

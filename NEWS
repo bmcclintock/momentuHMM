@@ -1,3 +1,18 @@
+momentuHMM 1.6.0 2021-07-07
+-----------------
+NEW FEATURES
+
+* continuous-time hidden Markov models can now be fitted using fitCTHMM (and MIfitCTHMM) and simulated using simCTHMM
+
+* new data stream for (multistate) continuous-time discrete-space ("ctds") movement models
+
+* special pseudo-design matrix function 'langevin' has been added for fitting (multistate) Langevin diffusion models
+
+BUG FIXES
+
+* getParDM did not properly calculate working scale parameters for categorical distribution parameters when DM included covariates or constraints
+
+
 momentuHMM 1.5.3 2021-07-06
 -----------------
 NEW FEATURES

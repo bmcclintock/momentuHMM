@@ -32,6 +32,7 @@ getCovNames<-function(m,p,distname){
       if(length(DMterms))
         DMterms<-all.vars(stats::as.formula(paste0("~",paste0(DMterms,collapse="+"))))
     } else {
+      m$conditions$DM[[distname]] <- checkCTDS(distname,m$conditions$DM[[distname]],m$conditions$dist[[distname]],m$data,nbStates)
       m$conditions$DM[[distname]]<-m$conditions$DM[[distname]][p$parNames[[distname]]]
       for(j in 1:length(p$parNames[[distname]])){
         DMparterms[[p$parNames[[distname]][j]]] <- vector('list',nbStates)

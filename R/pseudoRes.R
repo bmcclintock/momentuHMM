@@ -141,12 +141,12 @@ pseudoRes <- function(m, ncores = 1)
       message("Note: Some ",distnames[j],"s are equal to pi, and the corresponding pseudo-residuals are not included")
   }
   for(i in names(Fun)){
-    if(Fun[[i]]=="pcat") {
+    if(Fun[[i]] %in% c("pcat","pctds")) {
       if (!requireNamespace("extraDistr", quietly = TRUE)) {
         stop("Package \"extraDistr\" needed for categorical distribution. Please install it.",
              call. = FALSE)
       }
-      pcat <- extraDistr::pcat
+      pcat <- pctds <- extraDistr::pcat
     }
   }
 
@@ -172,17 +172,13 @@ pseudoRes <- function(m, ncores = 1)
   
   par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$fullDM,m$conditions$DMind,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds,m$covsPi)
   
-  trMat <- list()
-  for(mix in 1:mixtures){
-    if(nbStates>1){
-      if(is.null(recharge)){
-        trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*(nbCovs+1)+1:(nbCovs+1),,drop=FALSE],as.matrix(covs),m$conditions$betaRef)
-      } else {
-        gamInd<-(length(m$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures+1):(length(m$mod$estimate))-(ncol(m$covsPi)*(mixtures-1))-ifelse(reForm$nbRecovs,reForm$nbRecovs+1+reForm$nbG0covs+1,0)-ncol(m$covsDelta)*(nbStates-1)*(!m$conditions$stationary)*mixtures
-        trMat[[mix]] <- array(unlist(lapply(split(data,1:nrow(data)),function(x) tryCatch(get_gamma_recharge(m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-reForm$nbRecovs:0)],covs=x,formula=newformula,hierRecharge=hierRecharge,nbStates=nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(data))) 
-      }
-    } else trMat[[mix]] <- array(1,dim=c(1,1,nbObs))
-  }
+  if(isTRUE(m$conditions$CT)){
+    par <- ctPar(par,dist,nbStates,m$data)
+    dt <- m$data$dt
+  } else dt <- rep(1,nrow(m$data))
+  
+  trMat <- getTrProbs(m)
+  if(m$conditions$mixtures==1) trMat <- list(trMat)
   
   genRes <- list()
   for(j in distnames){
@@ -257,6 +253,9 @@ pseudoRes <- function(m, ncores = 1)
           }
         } else if(dist[[j]]=="cat"){
           dimCat <- as.numeric(gsub("cat","",m$conditions$dist[[j]]))
+          genArgs[[2]] <- t(genPar[seq(state,dimCat*nbStates,nbStates),genInd])
+        } else if(dist[[j]]=="ctds"){
+          dimCat <- attr(m$data,"directions")+1
           genArgs[[2]] <- t(genPar[seq(state,dimCat*nbStates,nbStates),genInd])
         } else {
           for(k in 1:(nrow(genPar)/nbStates))

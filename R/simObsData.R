@@ -67,6 +67,10 @@ simObsData.momentuHMMData<-function(data,lambda,errorEllipse,...){
   
   if(!is.momentuHMMData(data)) stop("data must be a momentuHMMData object")
   
+  if("CT" %in% names(list(...)) && !any(grepl("simCTHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))) | 
+                                        grepl("simCTDS",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))) stop(sprintf("In %s :\n extra argument 'CT' is invalid", 
+                                                                                                                              paste(deparse(sys.call()[[1]], control = c()), 
+                                                                                                                                    collapse = "\n")), call. = FALSE, domain = NA)
   chkDots(...)
   
   coordNames <- c("x","y")
@@ -90,7 +94,7 @@ simObsData.momentuHMMData<-function(data,lambda,errorEllipse,...){
       M<-m<-r<-c(0,0)
     }
     if(!is.null(lambda)){
-      if(lambda<=0) stop('lambda must be >0')
+      if(length(lambda)>1 || lambda<=0) stop('lambda must be a scalar and >0')
       if(any(names(data) %in% "time")) stop("covariates cannot be named `time' when lambda is specified")
     }
     distnames<-names(data)[which(!(names(data) %in% c("ID",coordNames,"step","angle")))]
@@ -146,15 +150,21 @@ simObsData.momentuHMMData<-function(data,lambda,errorEllipse,...){
       tmpobsData[[coordNames[2]]] <- xy[,2]
       
       if(!is.null(lambda)) {
-        tmpobsData<-merge(tmpobsData,data.frame(idat[,c("ID",distnames),drop=FALSE],time=1:nbObs,mux=idat[[coordNames[1]]],muy=idat[[coordNames[2]]]),all = TRUE,by=c("ID","time","mux","muy"))
+        if(!isTRUE(list(...)$CT)) tmpobsData<-merge(tmpobsData,data.frame(idat[,c("ID",distnames),drop=FALSE],time=1:nbObs,mux=idat[[coordNames[1]]],muy=idat[[coordNames[2]]]),all = TRUE,by=c("ID","time","mux","muy"))
+        else {
+          tmpobsData<-merge(tmpobsData,data.frame(idat[,c("ID",distnames),drop=FALSE],mux=idat[[coordNames[1]]],muy=idat[[coordNames[2]]]),all = TRUE,by=c("ID","time","mux","muy"))
+        }
       } else if(length(distnames)){
-        tmpobsData<-cbind(tmpobsData,idat[,distnames,drop=FALSE])
+        if(!isTRUE(list(...)$CT)) tmpobsData<-cbind(tmpobsData,idat[,distnames,drop=FALSE])
+        else {
+          if(length(distnames)>1) tmpobsData<-cbind(tmpobsData[which(!names(tmpobsData) %in% "time")],idat[,distnames,drop=FALSE])
+        }
       }
       #tmpobsData <- tmpobsData[order(tmpobsData$time),]
       obsData<-rbind(obsData,tmpobsData)
     }
     dnames <- names(obsData)
-    out <- obsData[,c("ID","time",coordNames,distnames,"mux","muy",dnames[!(dnames %in% c("ID","time",coordNames,distnames,"mux","muy"))])]
+    out <- obsData[,c("ID","time",coordNames,distnames[which(!distnames %in% "time")],"mux","muy",dnames[!(dnames %in% c("ID","time",coordNames,distnames,"mux","muy"))])]
   }
   return(out)
 }

@@ -1,8 +1,8 @@
-printMessage <- function(nbStates,dist,p,DM,formula,formulaDelta,formulaPi,mixtures,what="Fitting",stationary,hierarchical=FALSE){
+printMessage <- function(nbStates,dist,p,DM,formula,formulaDelta,formulaPi,mixtures,what="Fitting",stationary,hierarchical=FALSE,CT=FALSE){
   distnames <- names(dist)
   message("=======================================================================")
-  if(!hierarchical) message(what," HMM with ",nbStates," state",ifelse(nbStates>1,"s","")," and ",length(distnames)," data stream",ifelse(length(distnames)>1,"s",""))
-  else message(what," hierarchical HMM with ",nbStates," state",ifelse(nbStates>1,"s","")," and ",length(distnames)," data stream",ifelse(length(distnames)>1,"s",""))
+  if(!hierarchical) message(what,ifelse(CT," continuous-time","")," HMM with ",nbStates," state",ifelse(nbStates>1,"s","")," and ",length(distnames)," data stream",ifelse(length(distnames)>1,"s",""))
+  else message(what," hierarchical ",ifelse(CT,"continuous-time","")," HMM with ",nbStates," state",ifelse(nbStates>1,"s","")," and ",length(distnames)," data stream",ifelse(length(distnames)>1,"s",""))
   message("-----------------------------------------------------------------------\n")
   for(i in distnames){
     pNames<-p$parNames[[i]]
@@ -10,6 +10,7 @@ printMessage <- function(nbStates,dist,p,DM,formula,formulaDelta,formulaPi,mixtu
     #pNames[1]<-paste0("circular ",pNames[1])
     #if(inputs$consensus[[i]]) pNames[2]<-paste0("consensus ",pNames[2])
     #}
+    if(dist[[i]]=="ctds") pNames <- "lambda"
     if(is.null(DM[[i]])){
       message(" ",i," ~ ",dist[[i]],"(",paste0(pNames,"=~1",collapse=", "),")")
     } else if(is.list(DM[[i]])){

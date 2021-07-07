@@ -14,12 +14,18 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
   names(lanInd) <- distnames
   
   for(i in distnames){
+    if(dist[[i]]=="ctds" && #i==attr(data,"ctdsData") && 
+       (is.null(DM[[i]]) || !is.list(DM[[i]]))) stop("DM$",i," must be specified as a list with a formula for parameter 'lambda'")
     if(is.null(DM[[i]])){
       if(dist[[i]] %in% rwdists) stop("DM$",i," must be specified")
       tmpDM <- diag(parSize[[i]]*nbStates)
       tmpDM <- array(tmpDM,dim=c(nrow(tmpDM),ncol(tmpDM),nbObs))
       DMnames <- paste0(rep(parNames[[i]],each=nbStates),"_",1:nbStates,":(Intercept)")
+      ctdsInd <- FALSE
     } else if(is.list(DM[[i]])){
+      DM[[i]] <- checkCTDS(i,DM[[i]],dist[[i]],data,nbStates)
+      ctdsInd <- attr(DM[[i]],"ctdsInd")
+      directions <- attr(dist[[i]],"directions")
       if(!all(parNames[[i]] %in% names(DM[[i]])) | !all(unlist(lapply(DM[[i]],is.formula)))) stop('DM$',i,' must include formula for ',paste(parNames[[i]],collapse=" and "))
       if(!all(names(DM[[i]]) %in% parNames[[i]])){
         err <- paste0('DM$',i,' should only include formula for ',paste(parNames[[i]],collapse=" and ")," parameter(s)")
@@ -85,10 +91,20 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
           lanInd[[i]] <- c(lanInd[[i]],j)
         }
       }
+      if(ctdsInd){
+        collapseDM <- array(0,dim=c(nrow(tmpDM),ncol(tmpDM)/directions,dim(tmpDM)[3]))
+        for(j in 1:directions){
+          for(state in 1:nbStates){
+            collapseDM[(j-1)*nbStates+state,,] <- tmpDM[(j-1)*nbStates+state,(j-1)*ncol(collapseDM)+1:ncol(collapseDM),]
+          }
+        }
+        tmpDM <- collapseDM
+      }
       #parCount[[i]]<-ncol(tmpDM)
       #if(circularAngleMean[[i]]) parCount[[i]] <- parCount[[i]] - sum(parSizeDM[grepl("mean",names(parSizeDM))])/2
       #if(parCount[[i]]!=length(Par[[i]]) & ParChecks) stop("Based on DM$",i,", Par$",i," must be of length ",ncol(tmpDM))
     } else {
+      ctdsInd <- FALSE
       if(is.null(dim(DM[[i]]))) stop("DM for ",i," is not specified correctly")
       if(nrow(DM[[i]])!=parSize[[i]]*nbStates) stop("DM$",i," should consist of ",parSize[[i]]*nbStates," rows")
       DMnames<-colnames(DM[[i]])
@@ -181,7 +197,8 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
       if(length(DMterms)) tmpDM<-getDM_rcpp(tmpDM,covs,c(newDM),nrow(tmpDM),ncol(tmpDM),DMterms,nbObs)
       #parCount[[i]] <- ncol(tmpDM)
     }
-    colnames(tmpDM)<-DMnames
+    if(ctdsInd) colnames(tmpDM) <- gsub("\\.1","",gsub("lambda1","lambda",DMnames[1:ncol(tmpDM)]))
+    else colnames(tmpDM)<-DMnames
     if(!wlag) fullDM[[i]]<-tmpDM
     else fullDM[[i]]<-tmpDM[,,dim(tmpDM)[3],drop=FALSE]
   }
@@ -260,4 +277,55 @@ get_crwlag <- function(form,clag){
     lag <- as.numeric(unlist(attr(prodlim::strip.terms(Terms[attr(Terms,"specials")$crw],specials="crw",arguments=list(crw=list("lag"=1))),"stripped.arguments")))
   }
   max(c(clag,lag))
+}
+
+checkCTDS <- function(i,DM,dist,data,nbStates){
+  if(dist=="ctds" #&& i==attr(data,"ctdsData") 
+     && length(names(DM))==1 && names(DM)=="lambda"){
+    intInd <- attr(stats::terms(DM$lambda),"intercept")
+    directions <- attr(dist,"directions")
+    ctdsDM <- vector('list',directions)
+    names(ctdsDM) <- paste0("lambda",1:directions)
+    ctdsDM[] <- list(vector('list',nbStates))
+    formulaStates <- stateFormulas(DM$lambda,nbStates)
+    for(state in 1:nbStates){
+      if(!attr(stats::terms(formulaStates[[state]]),"intercept")){
+        for(j in 1:directions){
+          ctdsDM[[paste0("lambda",j)]][[state]] <- "0"
+        }
+      } 
+      ctdsTerms <- attr(stats::terms(formulaStates[[state]]),"term.labels")
+      ctdsVars <- all.vars(formulaStates[[state]])
+      for(te in ctdsTerms){
+        for(va in ctdsVars){
+          if(all.vars(stats::as.formula(paste0("~",te)))==va){
+            if(all(paste0(va,".",1:directions) %in% names(data))){
+              for(j in 1:directions){
+                ctdsDM[[paste0("lambda",j)]][[state]] <- append(ctdsDM[[paste0("lambda",j)]][[state]],gsub(va,paste0(va,".",j),te))
+              }
+            } else {
+              for(j in 1:directions){
+                ctdsDM[[paste0("lambda",j)]][[state]] <- append(ctdsDM[[paste0("lambda",j)]][[state]],te)
+              }
+            }
+          }
+        }
+      }
+      for(j in 1:directions){
+        if(!is.null(ctdsDM[[paste0("lambda",j)]][[state]])) ctdsDM[[paste0("lambda",j)]][[state]] <- stats::as.formula(paste0("~state",state,"(",paste0(ctdsDM[[paste0("lambda",j)]][[state]],collapse="+"),")"))
+      }
+    }
+    DM <- lapply(ctdsDM,function(x) {
+      form <- NULL
+      for(state in 1:nbStates){
+        if(!attr(stats::terms(formulaStates[[state]]),"intercept")) form <- "0"
+        if(!is.null(x[[state]])) form <- append(form,attr(stats::terms(x[[state]]),"term.labels"))
+      }
+      if(is.null(form)) return(~1)
+      else return(stats::as.formula(paste0("~",ifelse(intInd,"","0+"),paste0(form,collapse="+"))))
+      })
+    attr(DM,"ctdsInd") <- TRUE
+    attr(DM,"directions") <- directions
+  } else attr(DM,"ctdsInd") <- FALSE
+  return(DM)
 }

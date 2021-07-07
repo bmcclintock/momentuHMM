@@ -38,7 +38,8 @@ simData(
   retrySims = 0,
   lambda = NULL,
   errorEllipse = NULL,
-  ncores = 1
+  ncores = 1,
+  ...
 )
 
 simHierData(
@@ -233,6 +234,8 @@ error ellipse elements, then the corresponding component is fixed to this value 
 any other data streams are observed without error.  Ignored unless a valid distribution for the 'step' data stream is specified.}
 
 \item{ncores}{Number of cores to use for parallel processing. Default: 1 (no parallel processing).}
+
+\item{...}{further arguments passed to or from other methods}
 
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See details.}
 

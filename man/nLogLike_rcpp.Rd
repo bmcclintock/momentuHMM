@@ -17,7 +17,8 @@ nLogLike_rcpp(
   stationary,
   knownStates,
   betaRef,
-  mixtures
+  mixtures,
+  CT = FALSE
 )
 }
 \arguments{
@@ -51,6 +52,8 @@ the state is not known.}
 \item{betaRef}{Indices of reference elements for t.p.m. multinomial logit link.}
 
 \item{mixtures}{Number of mixtures for the state transition probabilities}
+
+\item{CT}{logical indicating whether to fit discrete-time approximation of a continuous-time model}
 }
 \value{
 Negative log-likelihood

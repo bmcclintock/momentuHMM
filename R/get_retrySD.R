@@ -6,14 +6,15 @@ get_retrySD <- function(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStat
       retrySD[1:parmInd] <- 1
     } else if(!is.list(retrySD)){
       if(length(retrySD)>1) stop('retrySD must be a scalar or list')
+      if(!is.numeric(retrySD) & retrySD!="adapt") stop("retrySD must be numeric or 'adapt'")
       retrySD <- rep(retrySD,length(wpar))
     } else {
       for(i in distnames){
         if(is.null(retrySD[[i]])){
           retrySD[[i]] <- rep(1,parCount[[i]])
         } else {
-          if(any(!is.numeric(retrySD[[i]]))) stop("retrySD$",i," must be numeric")
-          if(any(retrySD[[i]]<0)) stop("retrySD$",i," must be non-negative")
+          if(any(!is.numeric(retrySD[[i]]) & retrySD[[i]]!="adapt")) stop("retrySD$",i," must be numeric or 'adapt'")
+          if(any(retrySD[[i]]!="adapt" && retrySD[[i]]<0)) stop("retrySD$",i," must be non-negative")
           if(length(retrySD[[i]])==1){
             retrySD[[i]] <- rep(retrySD[[i]],parCount[[i]])
           } else if(length(retrySD[[i]])!=parCount[[i]]){
@@ -25,8 +26,8 @@ get_retrySD <- function(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStat
         if(is.null(retrySD$beta)){
           retrySD$beta <- rep(10,length(beta0$beta))
         } else {
-          if(any(!is.numeric(retrySD$beta))) stop("retrySD$beta must be numeric")
-          if(any(retrySD$beta<0)) stop("retrySD$beta must be non-negative")
+          if(any(!is.numeric(retrySD$beta) & retrySD$beta!="adapt")) stop("retrySD$beta must be numeric or 'adapt'")
+          if(any(retrySD$beta!="adapt" && retrySD$beta<0)) stop("retrySD$beta must be non-negative")
           if(length(retrySD$beta)==1){
             retrySD$beta <- rep(retrySD$beta,length(beta0$beta))
           } else if(length(retrySD$beta)!=length(beta0$beta)){
@@ -37,8 +38,8 @@ get_retrySD <- function(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStat
           if(is.null(retrySD[["pi"]])) {
             retrySD[["pi"]] <- rep(10,length(beta0[["pi"]]))
           } else {
-            if(any(!is.numeric(retrySD[["pi"]]))) stop("retrySD$pi must be numeric")
-            if(any(retrySD[["pi"]]<0)) stop("retrySD$pi must be non-negative")
+            if(any(!is.numeric(retrySD[["pi"]]) & retrySD[["pi"]]!="adapt")) stop("retrySD$pi must be numeric or 'adapt'")
+            if(any(retrySD[["pi"]]!="adapt" && retrySD[["pi"]]<0)) stop("retrySD$pi must be non-negative")
             if(length(retrySD[["pi"]])==1){
               retrySD[["pi"]] <- rep(retrySD[["pi"]],length(beta0[["pi"]]))
             } else if(length(retrySD[["pi"]])!=length(beta0[["pi"]])){
@@ -51,8 +52,8 @@ get_retrySD <- function(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStat
             if(is.null(retrySD[[j]])) {
               retrySD[[j]] <- rep(10,length(beta0[[j]]))
             } else {
-              if(any(!is.numeric(retrySD[[j]]))) stop("retrySD$",j," must be numeric")
-              if(any(retrySD[[j]]<0)) stop("retrySD$",j," must be non-negative")
+              if(any(!is.numeric(retrySD[[j]]) & retrySD[[j]]!="adapt")) stop("retrySD$",j," must be numeric or 'adapt'")
+              if(any(retrySD[[j]]!="adapt" && retrySD[[j]]<0)) stop("retrySD$",j," must be non-negative")
               if(length(retrySD[[j]])==1){
                 retrySD[[j]] <- rep(retrySD[[j]],length(beta0[[j]]))
               } else if(length(retrySD[[j]])!=length(beta0[[j]])){
@@ -64,8 +65,8 @@ get_retrySD <- function(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStat
         if(is.null(retrySD$delta)){
           retrySD$delta <- rep(10,length(delta0))
         } else {
-          if(any(!is.numeric(retrySD$delta))) stop("retrySD$delta must be numeric")
-          if(any(retrySD$delta<0)) stop("retrySD$delta must be non-negative")
+          if(any(!is.numeric(retrySD$delta) & retrySD$delta!="adapt")) stop("retrySD$delta must be numeric or 'adapt'")
+          if(any(retrySD$delta!="adapt" && retrySD$delta<0)) stop("retrySD$delta must be non-negative")
           if(length(retrySD$delta)==1){
             retrySD$delta <- rep(retrySD$delta,length(delta0))
           } else if(length(retrySD$delta)!=length(delta0)){
