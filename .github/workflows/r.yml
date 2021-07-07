@@ -5,12 +5,10 @@ on:
     branches:
       - master
       - develop
-      - fitCTHMM
   pull_request:
     branches:
       - master
       - develop
-      - fitCTHMM
 
 name: R-CMD-check
 
