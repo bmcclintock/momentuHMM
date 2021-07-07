@@ -109,11 +109,29 @@ prepCTDS <- function(data, Time.unit="auto", rast, directions=4, zero.idx=intege
   }
   
   iDat <- id <- NULL # get rid of no visible binding for global variable warning
-  registerDoParallel(cores=ncores)
+  if(ncores>1){
+    for(pkg in c("doFuture","future")){
+      if (!requireNamespace(pkg, quietly = TRUE)) {
+        stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+    oldDoPar <- doFuture::registerDoFuture()
+    on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
+    future::plan(future::multisession, workers = ncores)
+    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
+    progBar <- progBar
+    pkgs <- c("momentuHMM")
+  } else { 
+    doParallel::registerDoParallel(cores=ncores)
+    pkgs <- c("momentuHMM")
+  }
   #ctdsglm <- list()
   #for(i in unique(data$ID)){
+  ids <- unique(data$ID)
   withCallingHandlers(
-    ctdsglm <- foreach(iDat=mapply(function(x) data[which(data$ID==x),],unique(data$ID),SIMPLIFY = FALSE), id=unique(data$ID), .combine = 'rbind') %dorng% {
+    ctdsglm <- foreach(iDat=mapply(function(x) data[which(data$ID==x),],unique(data$ID),SIMPLIFY = FALSE), id=ids, .combine = 'rbind') %dorng% {
+      progBar(which(ids==id), length(ids))
       ctds <- path2ctds(xy=as.matrix(iDat[which(!is.na(iDat$x) & !is.na(iDat$y)),c("x","y")]),t=iDat$time[which(!is.na(iDat$x) & !is.na(iDat$y))],rast=rast,directions=directions,zero.idx=zero.idx,print.iter=print.iter,method=interpMethod,Time.unit=Time.unit)
       ctdsglm <- ctds2glm(iDat[which(!is.na(iDat$x) & !is.na(iDat$y)),], ctds,rast = rast, directions=directions, spatialCovs = spatialCovs, spatialCovs.grad=spatialCovs.grad, crw=crw, normalize.gradients = normalize.gradients, grad.point.decreasing = grad.point.decreasing, include.cell.locations = TRUE, zero.idx=zero.idx, covNames = covNames)
       ctdsglm$ID <- id
@@ -143,7 +161,8 @@ prepCTDS <- function(data, Time.unit="auto", rast, directions=4, zero.idx=intege
       return(ctdsglm)
     },
   warning=muffleRNGwarning)
-  stopImplicitCluster()
+  if(ncores==1) doParallel::stopImplicitCluster()
+  else future::plan(future::sequential)
   #}
   #ctdsglm <- do.call(rbind,ctdsglm)
   #rownames(ctdsglm) <- NULL

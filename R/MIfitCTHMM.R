@@ -283,9 +283,12 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
       names(crwSim) <- ids
       
       
-      if(ncores>1) message("Drawing imputations in parallel... ",sep="")
+      if(ncores>1) {
+        message("Drawing imputations in parallel... ",sep="")
+        messInd <- FALSE
+      } else messInd <- TRUE
       withCallingHandlers(miData<-
-        foreach(j = 1:nSims, .export=c("crwPostIS","prepData","prepCTDS"), .errorhandling="pass", .packages=pkgs) %dorng% {
+        foreach(j = 1:nSims, .export=c("crwPostIS","prepData","prepCTDS","messInd"), .errorhandling="pass", .packages=pkgs) %dorng% {
           if(ncores==1) message("\rDrawing imputation ",j,"... ",sep="")
           else progBar(j, nSims)
           locs<-data.frame()
@@ -306,7 +309,6 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
           pD
         }
       ,warning=muffleRNGwarning)
-      if(ncores==1) cat("DONE\n")
       
       for(i in which(unlist(lapply(miData,function(x) inherits(x,"error"))))){
         warning('prepData failed for imputation ',i,"; ",miData[[i]])
@@ -569,9 +571,12 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
       if(ncores==1) cat("DONE\n")
       names(crwHierSim) <- ids
       
-      if(ncores>1) message("Drawing imputations in parallel... ",sep="")
+      if(ncores>1) {
+        message("Drawing imputations in parallel... ",sep="")
+        messInd <- FALSE
+      } else messInd <- TRUE
       withCallingHandlers(miData<-
-                            foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass", .packages=pkgs) %dorng% {
+                            foreach(j = 1:nSims, .export=c("crwPostIS","prepData","prepCTDS","messInd"), .errorhandling="pass", .packages=pkgs) %dorng% {
                               if(ncores==1) message("\rDrawing imputation ",j,"... ",sep="")
                               else progBar(j, nSims)
                               locs<-data.frame()
@@ -594,7 +599,6 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
                               pD
                             }
                           ,warning=muffleRNGwarning)
-      if(ncores==1) cat("DONE\n")
       
       for(i in which(unlist(lapply(miData,function(x) inherits(x,"error"))))){
         warning('prepData failed for imputation ',i,"; ",miData[[i]])
