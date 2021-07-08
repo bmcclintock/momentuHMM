@@ -128,10 +128,14 @@ prepCTDS <- function(data, Time.unit="auto", rast, directions=4, zero.idx=intege
   }
   #ctdsglm <- list()
   #for(i in unique(data$ID)){
+  if(!exists("messInd")) messInd <- TRUE # message indicator exported from MIfitCTHMM foreach call
   ids <- unique(data$ID)
   withCallingHandlers(
-    ctdsglm <- foreach(iDat=mapply(function(x) data[which(data$ID==x),],unique(data$ID),SIMPLIFY = FALSE), id=ids, .combine = 'rbind') %dorng% {
-      progBar(which(ids==id), length(ids))
+    ctdsglm <- foreach(iDat=mapply(function(x) data[which(data$ID==x),],unique(data$ID),SIMPLIFY = FALSE), id=ids, .combine = 'rbind', .export="messInd") %dorng% {
+      if(messInd){
+        if(ncores==1) message("\rIndividual ",which(ids==id),"... ",sep="")
+        else progBar(which(ids==id), length(ids))
+      }
       ctds <- path2ctds(xy=as.matrix(iDat[which(!is.na(iDat$x) & !is.na(iDat$y)),c("x","y")]),t=iDat$time[which(!is.na(iDat$x) & !is.na(iDat$y))],rast=rast,directions=directions,zero.idx=zero.idx,print.iter=print.iter,method=interpMethod,Time.unit=Time.unit)
       ctdsglm <- ctds2glm(iDat[which(!is.na(iDat$x) & !is.na(iDat$y)),], ctds,rast = rast, directions=directions, spatialCovs = spatialCovs, spatialCovs.grad=spatialCovs.grad, crw=crw, normalize.gradients = normalize.gradients, grad.point.decreasing = grad.point.decreasing, include.cell.locations = TRUE, zero.idx=zero.idx, covNames = covNames)
       ctdsglm$ID <- id
@@ -161,7 +165,10 @@ prepCTDS <- function(data, Time.unit="auto", rast, directions=4, zero.idx=intege
       return(ctdsglm)
     },
   warning=muffleRNGwarning)
-  if(ncores==1) doParallel::stopImplicitCluster()
+  if(ncores==1) {
+    doParallel::stopImplicitCluster()
+    if(messInd) cat("DONE\n")
+  }
   else future::plan(future::sequential)
   #}
   #ctdsglm <- do.call(rbind,ctdsglm)
