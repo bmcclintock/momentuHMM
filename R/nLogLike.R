@@ -97,7 +97,8 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
   if(inherits(par,"error")){
     return(NaN)
   } else {
-    if(CT) par <- ctPar(par,dist,nbStates,data)
+    if(CT) par <- tryCatch(ctPar(par,dist,nbStates,data),error=function(e) e)
+    if(inherits(par,"error")) return(NaN)
     
     if(nbRecovs){
       for(i in 1:length(unique(data$ID))){
