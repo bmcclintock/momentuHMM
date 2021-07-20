@@ -177,6 +177,7 @@ pseudoRes <- function(m, ncores = 1)
     dt <- m$data$dt
   } else dt <- rep(1,nrow(m$data))
   
+  if(inherits(m,"hierarchical")) class(m) <- class(m)[which(!(class(m) %in% "hierarchical"))]
   trMat <- getTrProbs(m)
   if(m$conditions$mixtures==1) trMat <- list(trMat)
   

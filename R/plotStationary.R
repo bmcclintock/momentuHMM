@@ -62,7 +62,7 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
       } else {
         Sigma <- model$MIcombine$variance
       }
-    } else if(!is.null(model$mod$hessian) & plotCI){
+    } else if(!is.null(model$mod$hessian) && !inherits(model$mod$Sigma,"error") && plotCI){
         Sigma <- model$mod$Sigma
     } else {
         Sigma <- NULL
@@ -185,8 +185,14 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
         }
         if(isTRUE(model$conditions$CT)){
           if(!("dt" %in% names(tmpSplineInputs$covs))){
-            tmpSplineInputs$covs$dt <- covs$dt # set to mean(dt)
+            if(inherits(model,"hierarchical")){
+              tmpSplineInputs$covs$dt <- 0
+              for(iL in tmpcovs$level){
+                tmpSplineInputs$covs$dt[which(tmpSplineInputs$covs$level==iL)] <- mean(model$data$dt[which(model$data$level==iL)])
+              }
+            } else tmpSplineInputs$covs$dt <- covs$dt # set to mean(dt)
           }
+          model$conditions$dtIndex <- 1:nrow(tmpSplineInputs$covs)
         }
         CIout[[names(rawCovs)[cov]]] <- statPlot(model,Sigma,nbStates,tmpSplineInputs$formula,tmpSplineInputs$covs,tempCovs,tmpcovs,cov,hierRecharge,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
     }
@@ -196,14 +202,16 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
 # for differentiation in delta method
 get_stat <- function(beta,covs,nbStates,i,betaRef,betaCons,workBounds=matrix(c(-Inf,Inf),length(betaCons),2,byrow=TRUE),mixture=1,ref=1:nbStates,CT=FALSE,dt=NULL) {
   #dt <- ifelse(is.null(dt),1,mean(dt))
-  gamma <- get_gamma(beta,covs,nbStates,1:nbStates,1:nbStates,betaRef,betaCons,workBounds,mixture,CT,dt)
-  solve(t(diag(length(ref))-gamma[ref,ref]+1),rep(1,length(ref)))[i]
+  gamma <- get_gamma(beta,covs,nbStates,1:nbStates,1:nbStates,betaRef,betaCons,workBounds,mixture,CT,dt,rateMatrix=TRUE)
+  if(!CT) return(solve(t(diag(length(ref))-gamma[ref,ref]+1),rep(1,length(ref)))[i])
+  else return(stationary_rcpp(gamma)[i])
 }
 
 get_stat_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,betaRef,betaCons,workBounds=matrix(c(-Inf,Inf),length(betaCons)+length(beta[(max(betaCons)+1):length(beta)]),2,byrow=TRUE),mixture=1,ref=1:nbStates,CT=FALSE,dt=NULL){
   #dt <- ifelse(is.null(dt),1,mean(dt))
-  gamma <- get_gamma_recharge(beta,covs,formula,hierRecharge,nbStates,1:nbStates,1:nbStates,betaRef,betaCons,workBounds,mixture,CT,dt)
-  solve(t(diag(length(ref))-gamma[ref,ref]+1),rep(1,length(ref)))[i]
+  gamma <- get_gamma_recharge(beta,covs,formula,hierRecharge,nbStates,1:nbStates,1:nbStates,betaRef,betaCons,workBounds,mixture,CT,dt,rateMatrix=TRUE)
+  if(!CT) return(solve(t(diag(length(ref))-gamma[ref,ref]+1),rep(1,length(ref)))[i])
+  else return(stationary_rcpp(gamma)[i])
 }
 
 statPlot<-function(model,Sigma,nbStates,formula,covs,tempCovs,tmpcovs,cov,hierRecharge,alpha,gridLength,gamInd,covnames,col,plotCI,...){
@@ -248,7 +256,15 @@ statPlot<-function(model,Sigma,nbStates,formula,covs,tempCovs,tmpcovs,cov,hierRe
       probs <- stationary(model, covs=desMat)
     } else {
       desMat <- tempCovs
-      if(inherits(model,"hierarchical")) covs$level <- NULL
+      if(inherits(model,"hierarchical")) {
+        if(isTRUE(model$conditions$CT)){
+          recLevels <- length(hierRecharge)
+          if(recLevels>1) stop("With multiple recharge models, both 'dt' and 'level' must be specified in 'covs'")
+          recLevelNames <- gsub("level","",names(hierRecharge))
+          covs$dt <- mean(model$data$dt[which(model$data$level==recLevelNames)])
+        }
+        covs$level <- NULL
+      } 
       probs <- stationary(model, covs=covs)
     }
     

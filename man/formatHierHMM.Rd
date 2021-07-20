@@ -17,7 +17,8 @@ formatHierHMM(
   betaCons = NULL,
   deltaCons = NULL,
   fixPar = NULL,
-  checkData = TRUE
+  checkData = TRUE,
+  ...
 )
 }
 \arguments{
@@ -46,6 +47,8 @@ formatHierHMM(
 \item{fixPar}{A list with elements named \code{'beta'} and/or \code{'delta'}, where each element is a hierarchical data structure \code{\link[data.tree]{Node}} indicating t.p.m. and initial distribution parameters in \code{hierBeta} and \code{hierDelta}, respectively, which are assumed known.}
 
 \item{checkData}{logical indicating whether or not to check the suitability of \code{data} for the specified hierarchy. Ignored unless \code{data} is provided. Default: TRUE.}
+
+\item{...}{further arguments passed to or from other methods}
 }
 \value{
 A list of arguments needed for specifying a hierarchical HMM as a conventional HMM in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}, including:

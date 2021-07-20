@@ -43,6 +43,7 @@
 #' @param recharge recharge model specification (only used for hierarchical models)
 #' @param aInd vector of indices of first observation for each animal
 #' @param CT logical indicating whether to fit discrete-time approximation of a continuous-time model
+#' @param dtIndex time difference index for calculating transition probabilities of hierarchical continuous-time models
 #'
 #' @return The negative log-likelihood of the parameters given the data.
 #'
@@ -77,7 +78,7 @@
 
 nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,
-                     stationary=FALSE,fullDM,DMind,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,deltaCons=NULL,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1,covsPi,recharge=NULL,aInd=aInd,CT=FALSE)
+                     stationary=FALSE,fullDM,DMind,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,deltaCons=NULL,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1,covsPi,recharge=NULL,aInd=aInd,CT=FALSE,dtIndex=NULL)
 {
   
   # check arguments
@@ -118,6 +119,10 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
           theta <- par$theta
           if(CT) covs[idInd,grepl(rechargeNames[iLevel],colnames(covs))] <- cumsum(c(g0,(theta[colInd[[iLevel]]]%*%t(recovs[idInd[-length(idInd)],colInd[[iLevel]]]))*data$dt[idInd[-length(idInd)]]))
           else covs[idInd,grepl(rechargeNames[iLevel],colnames(covs))] <- cumsum(c(g0,theta[colInd[[iLevel]]]%*%t(recovs[idInd[-length(idInd)],colInd[[iLevel]]])))
+          if(inherits(data,"hierarchical")){
+            otherlevelInd <- which(apply(covs[idInd,!grepl(paste0("I((level == \"",gsub("level","",recLevelNames[iLevel]),"\")"),colnames(covs),fixed=TRUE)],1,function(x) any(x>0)))
+            covs[idInd[otherlevelInd],grepl(rechargeNames[iLevel],colnames(covs))] <- 0
+          }
         }
       }
     }
@@ -141,7 +146,7 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
   
     nllk <- tryCatch(nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,
                           par,
-                          aInd,zeroInflation,oneInflation,stationary,knownStates,betaRef,mixtures,CT),error=function(e) e)
+                          aInd,zeroInflation,oneInflation,stationary,knownStates,betaRef,mixtures,dtIndex-1,CT),error=function(e) e)
   
     if(inherits(nllk,"error")) nllk <- NaN
     

@@ -394,6 +394,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     rmvnorm3 <- rmvnorm3
     rvm <- CircStats::rvm
     rwrpcauchy <- CircStats::rwrpcauchy
+    trMatrix_rcpp <- trMatrix_rcpp
+    ctPar <- ctPar
     if (requireNamespace("extraDistr", quietly = TRUE)){
       rcat <- extraDistr::rcat
     }
@@ -845,6 +847,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       obsTimes[[zoo]] <- 1:allNbObs[zoo]
       dt[[zoo]] <- diff(obsTimes[[zoo]])
     }
+    dt[[zoo]] <- c(dt[[zoo]],0)
   }
 
   # extend covs if not enough covariate values
@@ -1388,7 +1391,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         gamma <- t(gamma)
         gamma <- gamma/apply(gamma,1,sum)
       } else {
-        gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])), betaRef, TRUE, mean(dt[[zoo]]))[,,1],nbStates,nbStates),error=function(e) e) # diag(nbStates)
+        gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])), betaRef, TRUE, 0, aInd=1)[,,1],nbStates,nbStates),error=function(e) e) # diag(nbStates)
         if(inherits(gamma,"error") || any(gamma<0)){
           stop("initial TPM exponential could not be calculated for individual ",zoo,": ",ifelse(inherits(gamma,"error"),gamma,"negative probability"))
         }
@@ -1633,9 +1636,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           gamma <- gamma/apply(gamma,1,sum)
         } else {
           if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
-            gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])), betaRef, TRUE, dt[[zoo]][k])[,,1],nbStates,nbStates),error=function(e) e)
+            gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])), betaRef, TRUE, dt[[zoo]][k], aInd=1)[,,1],nbStates,nbStates),error=function(e) e)
           } else {
-            gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], DMcov[k+1,,drop=FALSE], betaRef, TRUE, dt[[zoo]][k])[,,1],nbStates,nbStates),error=function(e) e)
+            gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], DMcov[k+1,,drop=FALSE], betaRef, TRUE, dt[[zoo]][k], aInd=1)[,,1],nbStates,nbStates),error=function(e) e)
           }
           if(inherits(gamma,"error") || any(gamma<0)){
             warning("TPM exponential could not be calculated for individual ",zoo,"; terminating at observation ",k,": ",ifelse(inherits(gamma,"error"),gamma,"negative probability"))
@@ -1682,7 +1685,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       simDat <- list(data=d,allCovs=allCovs[cumNbObs[zoo]+1:nbObs,,drop=FALSE],allSpatialcovs=subSpatialcovs,centerCovs=centerCovs,centroidCovs=centroidCovs,allStates=matrix(Z,ncol=1))
       if(isTRUE(list(...)$ctds)){
         simDat$data$time <- obsTimes[[zoo]]
-        simDat$data$tau <- c(dt[[zoo]],0)
+        simDat$data$tau <- dt[[zoo]]
         simDat <- lapply(simDat,function(x) if(!is.null(x)) x[1:k,,drop=FALSE])
       }
       return(simDat)

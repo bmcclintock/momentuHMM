@@ -87,6 +87,7 @@ MIfitCTHMM(miData, ...)
   na.rm = FALSE,
   Time.name = "time",
   Time.unit = "auto",
+  CTDS = FALSE,
   hierStates,
   hierDist,
   Par0,
@@ -133,6 +134,14 @@ MIfitCTHMM(miData, ...)
   dfPostIS = Inf,
   scalePostIS = 1,
   thetaSamp = NULL,
+  rast,
+  directions = 4,
+  zero.idx = integer(),
+  interpMethod = "ShortestPath",
+  spatialCovs.grad = NULL,
+  crw = TRUE,
+  normalize.gradients = FALSE,
+  grad.point.decreasing = FALSE,
   ...
 )
 }
@@ -327,7 +336,8 @@ object, then \code{MIfitCTHMM} returns a \code{\link{crwSim}} object, i.e., a li
 \description{
 Fit an approximate continuous-time (multivariate) hidden Markov model to multiple imputation data. Multiple imputation is a method for accommodating 
 missing data, temporal-irregularity, or location measurement error in hidden Markov models, where pooled parameter estimates reflect uncertainty
-attributable to observation error.
+attributable to observation error. The discrete-time approximation of the continuous-time model improves as the time between observations decreases. 
+Note that only a single state transition can occur between observations and any time-varying covariates are assumed piece-wise constant between observations.
 }
 \details{
 \code{miData} can either be a \code{\link{crwData}} or \code{\link{crwHierData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} or \code{\link{crwHierSim}} object (as returned by \code{MIfitCTHMM} when \code{fit=FALSE}), 

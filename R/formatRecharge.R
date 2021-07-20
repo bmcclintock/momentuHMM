@@ -1,6 +1,7 @@
 formatRecharge <- function(nbStates,formula,betaRef,data,covs=NULL,par=NULL){
   
   nbAnimals <- length(unique(data$ID))
+  if(!nbAnimals) stop("'ID' not found in data")
   dataNames <- colnames(data)
   
   newForm <- newFormulas(formula,nbStates,betaRef)
@@ -50,7 +51,11 @@ formatRecharge <- function(nbStates,formula,betaRef,data,covs=NULL,par=NULL){
     if(is.null(par)) par <- list(g0=rep(0,nbG0covs+1),theta=rep(0,nbRecovs+1))
     for(i in 1:nbAnimals){
       for(iLevel in 1:recLevels){
-        idInd <- which(data$ID==unique(data$ID)[i])
+        if(!inherits(data,"hierarchical")){
+          idInd <- which(data$ID==unique(data$ID)[i])
+        } else {
+          idInd <- which(data$ID==unique(data$ID)[i] & data$level==gsub("level","",recLevelNames[iLevel]))
+        }
         if(nbRecovs){
           if(!all(names(par$theta)==colnames(recovs)) | !all(names(par$g0)==colnames(g0covs))) stop("column name mismatch in hierarchical recharge model -- please report to brett.mcclintock@noaa.gov")
           g0 <- par$g0 %*% t(g0covs[(i-1)*recLevels+iLevel,,drop=FALSE])
@@ -75,6 +80,13 @@ formatRecharge <- function(nbStates,formula,betaRef,data,covs=NULL,par=NULL){
     covs <- tmpCovs
   }
   nbCovs <- ncol(tmpCovs)-1 # substract intercept column
+  
+  #if(!is.null(recharge) & inherits(data,"hierarchical")){
+  #  for(iLevel in 1:recLevels){
+  #    NAind <- which(covs[,paste0("I((level == \"",gsub("level","",recLevelNames[iLevel]),"\") * 1)")]==0)
+  #    covs[NAind,grepl(rechargeNames[iLevel],colnames(covs))] <- data[[rechargeNames[iLevel]]][NAind]
+  #  }
+  #}
   
   list(newdata=data[,which(!(names(data) %in% dataNames)),drop=FALSE],newformula=newformula,formulaStates=formulaStates,recharge=recharge,hierRecharge=hierRecharge,covs=covs,nbCovs=nbCovs,nbG0covs=nbG0covs,nbRecovs=nbRecovs,g0covs=g0covs,recovs=recovs,aInd=aInd)
 }

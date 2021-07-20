@@ -73,7 +73,8 @@ simHierData(
   retrySims = 0,
   lambda = NULL,
   errorEllipse = NULL,
-  ncores = 1
+  ncores = 1,
+  ...
 )
 }
 \arguments{

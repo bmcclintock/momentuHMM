@@ -1,6 +1,6 @@
 #' Simulation tool
 #'
-#' Simulates data from a (multivariate) continuous-time hidden Markov model. Note that only a single state transition can occur between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
+#' Simulates data from a (multivariate) continuous-time hidden Markov model. Note that only a single state transition can occur between observations and time-varying covariates are assumed piece-wise constant between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
 #'
 #' @param nbAnimals Number of observed individuals to simulate.
 #' @param nbStates Number of behavioural states to simulate.
@@ -58,7 +58,7 @@
 #' Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
 #' \code{obsPerAnimal}, \code{states}, \code{initialPosition}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
 #' \code{covs}, and \code{spatialCovs}. It is not appropriate to simulate movement data from a \code{model} that was fitted to latitude/longitude data (because \code{simData} assumes Cartesian coordinates).
-#' @param matchModelObs If \code{model} is provided, logical indicating whether to match \code{nbAnimals}, \code{obsPerAnimal}, and observation times to the fitted model data. If \code{TRUE}, then \code{nbAnimals}, \code{obsPerAnimal}, and \code{lambda} are ignored. Default: \code{TRUE}.
+#' @param matchModelObs If \code{model} is provided, logical indicating whether to match \code{nbAnimals}, \code{obsPerAnimal} (or \code{obsPerLevel} if \code{model} is a \code{momentuHierHMM} object), and observation times to the fitted model data. If \code{TRUE}, then \code{nbAnimals}, \code{obsPerAnimal}, and \code{lambda} are ignored. Default: \code{TRUE}.
 #' @param states \code{TRUE} if the simulated states should be returned, \code{FALSE} otherwise (default).
 #' @param retrySims Number of times to attempt to simulate data within the spatial extent of \code{spatialCovs}. If \code{retrySims=0} (the default), an
 #' error is returned if the simulated tracks(s) move beyond the extent(s) of the raster layer(s). Instead of relying on \code{retrySims}, in many cases
@@ -131,8 +131,8 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
     if(is.miHMM(model)){
       model <- model$miSum
     } 
-    if(inherits(model,"momentuHierHMM") | inherits(model,"hierarchical")) stop("model can not be a 'momentuHierHMM' or 'hierarchical' object")
-    if(!inherits(model,"CTHMM")) stop("model must be of class 'CTHMM'")
+    if(!inherits(model,"CTHMM")) stop("model must be of class 'CTHMM'; use simData instead")
+    if(inherits(model,"momentuHierHMM") | inherits(model,"hierarchical")) stop("model can not be a 'momentuHierHMM' or 'hierarchical' object; use simHierCTHMM instead")
     attributes(model)$class <- attributes(model)$class[which(!attributes(model)$class %in% "CTHMM")]
     mvnCoords <- model$conditions$mvnCoords
     if(matchModelObs){
@@ -141,9 +141,9 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
       obsPerAnimal <- as.list(table(model$data$ID)+ifelse(rwInd,1,0))
       lambda <- list()
       for(zoo in 1:nbAnimals){
-       lambda[[zoo]] <- model$data[[model$conditions$Time.name]][which(model$data$ID==unique(model$data$ID)[zoo])]
-       if(rwInd) lambda[[zoo]] <- c(lambda[[zoo]],tail(lambda[[zoo]],1)+model$data$dt[tail(which(model$data$ID==unique(model$data$ID)[zoo]),1)])
-       if(inherits(lambda[[zoo]] ,"POSIXt")) attr(lambda[[zoo]],"units") <- model$conditions$Time.unit
+        lambda[[zoo]] <- model$data[[model$conditions$Time.name]][which(model$data$ID==unique(model$data$ID)[zoo])]
+        if(rwInd) lambda[[zoo]] <- c(lambda[[zoo]][1]-model$data$dt[which(model$data$ID==unique(model$data$ID)[zoo])[1]],lambda[[zoo]])
+        if(inherits(lambda[[zoo]] ,"POSIXt")) attr(lambda[[zoo]],"units") <- model$conditions$Time.unit
       }
     }
   } else {
@@ -156,30 +156,32 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
   }
   
   withCallingHandlers(out <- simData(nbAnimals,nbStates,dist,
-                 Par,beta,delta,
-                 formula,formulaDelta,mixtures,formulaPi,
-                 covs,nbCovs,
-                 spatialCovs,
-                 zeroInflation=NULL,
-                 oneInflation=NULL,
-                 circularAngleMean=NULL,
-                 centers=NULL,
-                 centroids=NULL,
-                 angleCovs=NULL,
-                 obsPerAnimal,
-                 initialPosition,
-                 DM,userBounds,workBounds,betaRef,mvnCoords,stateNames,
-                 model,states,
-                 retrySims,
-                 lambda,
-                 errorEllipse,
-                 ncores,
-                 CT=TRUE),warning=muffleCTwarning)
+                                     Par,beta,delta,
+                                     formula,formulaDelta,mixtures,formulaPi,
+                                     covs,nbCovs,
+                                     spatialCovs,
+                                     zeroInflation=NULL,
+                                     oneInflation=NULL,
+                                     circularAngleMean=NULL,
+                                     centers=NULL,
+                                     centroids=NULL,
+                                     angleCovs=NULL,
+                                     obsPerAnimal,
+                                     initialPosition,
+                                     DM,userBounds,workBounds,betaRef,mvnCoords,stateNames,
+                                     model,states,
+                                     retrySims,
+                                     lambda,
+                                     errorEllipse,
+                                     ncores,
+                                     CT=TRUE),warning=muffleCTwarning)
   
   out<- out[,c("ID","time",colnames(out)[which(!colnames(out) %in% c("ID","time"))])]
   if(!is.null(mvnCoords)){
     attr(out,'coords') <- paste0(mvnCoords,c(".x",".y"))
   }
+  attr(out,"CT") <- TRUE
+  attr(out,"Time.name") <- "time"
   return(out)
   
 }

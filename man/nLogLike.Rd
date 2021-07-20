@@ -40,7 +40,8 @@ nLogLike(
   covsPi,
   recharge = NULL,
   aInd = aInd,
-  CT = FALSE
+  CT = FALSE,
+  dtIndex = NULL
 )
 }
 \arguments{
@@ -121,6 +122,8 @@ model (if any).}
 \item{aInd}{vector of indices of first observation for each animal}
 
 \item{CT}{logical indicating whether to fit discrete-time approximation of a continuous-time model}
+
+\item{dtIndex}{time difference index for calculating transition probabilities of hierarchical continuous-time models}
 }
 \value{
 The negative log-likelihood of the parameters given the data.

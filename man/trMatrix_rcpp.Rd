@@ -4,7 +4,16 @@
 \alias{trMatrix_rcpp}
 \title{Transition probability matrix}
 \usage{
-trMatrix_rcpp(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric(c()))
+trMatrix_rcpp(
+  nbStates,
+  beta,
+  covs,
+  betaRef,
+  CT = FALSE,
+  dt = as.numeric(c()),
+  rateMatrix = FALSE,
+  aInd = as.integer(c())
+)
 }
 \arguments{
 \item{nbStates}{Number of states}
@@ -18,6 +27,10 @@ trMatrix_rcpp(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric(c()))
 \item{CT}{logical indicating discrete-time approximation of a continuous-time model}
 
 \item{dt}{numeric vector of length \code{nrow(covs)} indicating the time difference between observations. Ignored unless \code{CT=TRUE}.}
+
+\item{rateMatrix}{logical indicating whether or not to return the transition rate matrix. Ignored unless \code{CT=TRUE}.}
+
+\item{aInd}{Vector of indices of the rows at which the data (i.e. \code{covs}) switches to another animal. Ignored unless \code{CT=TRUE}.}
 }
 \value{
 Three dimensional array \code{trMat}, such that \code{trMat[,,t]} is the transition matrix at

@@ -213,7 +213,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
           if(is.null(formulaDelta)) formulaDelta <- ~1
           if(length(attr(stats::terms.formula(formula),"term.labels"))>0 && is.null(hierArgs$hierFormula)) stop("hierFormula should be specified instead of formula")
           if(length(attr(stats::terms.formula(formulaDelta),"term.labels"))>0 && is.null(hierArgs$hierFormulaDelta)) stop("hierFormulaDelta should be specified instead of formulaDelta")
-          return(MIfitHMM.hierarchical(miData,nSims, ncores, poolEstimates, alpha,
+          return(MIfitHMM.hierarchical(miData,nSims, ncores, poolEstimates, alpha, na.rm,
                                        hierArgs$hierStates, hierArgs$hierDist, 
                                        Par0, hierArgs$hierBeta, hierArgs$hierDelta,
                                        estAngleMean, circularAngleMean,

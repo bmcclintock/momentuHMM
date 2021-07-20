@@ -202,6 +202,7 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     },warning=muffleRNGwarning)
     if(nsims>1) states <- apply(im_states,2,function(x) which.max(hist(x,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts))
     else states <- im_states
+    if(inherits(m,"hierarchical")) hStates <- hierViterbi(m,states)
     cat("Decoding state probabilities for each imputation... \n")
     withCallingHandlers(im_stateProbs <- foreach(fm = im, i=seq_along(im)) %dorng% {
       progBar(i,nsims)
@@ -302,7 +303,7 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   mhdata <- m$data[inTime[[1]],]
   for(i in distnames){
     if(inherits(mhdata,"ctds") && i==attr(mhdata,"ctdsData")){
-      mhdata[[i]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$data[[i]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,function(y) which.max(tabulate(y)))
+      mhdata[[i]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$data[[i]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,function(y) ifelse(all(is.na(y)),NA,which.max(tabulate(y))))
     } else {
       if(dist[[i]] %in% angledists) {
         mhdata[[i]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$data[[i]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,CircStats::circ.mean)
@@ -321,14 +322,14 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   }
   crwInd <- 1
   for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% meansListNoTime))) & !(names(m$data) %in% distnames))]){
-    if(inherits(mhdata,"ctds") & (grepl("crw.",j) | j=="cellCross" | j=="dt")){
+    if(inherits(mhdata,"ctds") & (grepl("crw.",j) | j=="cellCross")){# | j=="dt")){
       if(grepl("crw.",j)) {
         mhdata[[j]] <- 0
         if(crwInd) warning("It is not possible to include 'crw' when pooling; this term has been set to zero")
         crwInd <- 0
       }
       else if(j=="cellCross") mhdata[[j]] <- NULL
-      else if(j=="dt") mhdata[[j]][1:(nrow(mhdata)-1)] <- diff(mhdata$time)
+      #else if(j=="dt") mhdata[[j]][1:(nrow(mhdata)-1)] <- diff(mhdata$time)
     } else {
       if(inherits(m$data[[j]],"angle")) {
         mhdata[[j]] <- apply(matrix(unlist(mapply(function(x) im[[x]]$data[[j]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,CircStats::circ.mean)
@@ -434,8 +435,10 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   }
   
   if(isTRUE(m$conditions$CT)){
-    if(inherits(m,"ctds")) dt <- mean(mhdata$dt)
-    else dt <- mean(m$data$dt)
+    dt <- mean(m$data$dt)
+    if(inherits(m,"hierarchical")){
+      dt <- mean(m$data$dt[which(m$data$level==tempCovs$level)])
+    }
   } else dt <- 1
   
   quantSup<-qnorm(1-(1-alpha)/2)
@@ -517,7 +520,7 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     if(nbStates>1){
       covs<-stats::model.matrix(newformula,tempCovs)
       statFun<-function(beta,nbStates,covs,i,mixture=1){
-        gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,m$conditions$betaRef,isTRUE(m$conditions$CT),dt)[,,1]
+        gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,m$conditions$betaRef,isTRUE(m$conditions$CT),dt,aInd=1)[,,1]
         tryCatch(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i],error = function(e) {
           "A problem occurred in the calculation of the stationary distribution."})
       }
@@ -607,6 +610,7 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     Par$timeInStates <- lapply(Par$timeInStates,function(x){ names(x) = m$stateNames;x})
     
     Par$states <- states
+    if(inherits(m,"hierarchical")) Par$hStates <- hStates
     
     Par$stateProbs <- list(est=xbar$stateProbs,se=MI_se$stateProbs,lower=lower$stateProbs,upper=upper$stateProbs)
     Par$stateProbs <- lapply(Par$stateProbs,function(x) {rownames(x) = data$ID;x})
@@ -679,8 +683,8 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
           doParallel::registerDoParallel(cores=ncores)
         }
         cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
-        tmpx<-matrix(unlist(mapply(function(x) im[[x]]$data[[coordNames[1]]][inTime[[x]][i]],1:length(im))),nrow(mh$data))
-        tmpy<-matrix(unlist(mapply(function(x) im[[x]]$data[[coordNames[2]]][inTime[[x]][i]],1:length(im))),nrow(mh$data))
+        tmpx<-matrix(unlist(mapply(function(x) im[[x]]$data[[coordNames[1]]][inTime[[x]]],1:length(im))),nrow(mh$data))
+        tmpy<-matrix(unlist(mapply(function(x) im[[x]]$data[[coordNames[2]]][inTime[[x]]],1:length(im))),nrow(mh$data))
         withCallingHandlers(errorEllipse<-foreach(i = 1:nrow(mh$data)) %dorng% {
           tmp <- cbind(tmpx[i,],tmpy[i,])
           if(length(unique(tmp[,1]))>1 | length(unique(tmp[,2]))>1)
@@ -699,7 +703,7 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   mh$MIcombine <- miCombo
   
   mh <- miSum(mh)
-  if(is.momentuHierHMM(im[[1]])) class(mh) <- append(class(mh),"hierarchical")
+  if(is.momentuHierHMM(im[[1]])) class(mh) <- append(class(mh),c("momentuHierHMM","hierarchical"))
   
   if(inherits(mh,"hierarchical")){
     inputHierHMM <- formatHierHMM(mh$data,mh$conditions$hierStates,mh$conditions$hierDist,hierBeta=NULL,hierDelta=NULL,mh$conditions$hierFormula,mh$conditions$hierFormulaDelta,mh$conditions$mixtures)

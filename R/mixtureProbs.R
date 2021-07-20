@@ -176,8 +176,8 @@ get_mixProbs <- function(optPar,mod,mixture){
     for(i in 1:length(unique(data$ID))){
       idInd <- which(data$ID==unique(data$ID)[i])
       if(inherits(data,"hierarchical")) {
-        recLevels <- length(recharge)
-        recLevelNames <- names(recharge)
+        recLevels <- length(hierRecharge)
+        recLevelNames <- names(hierRecharge)
         rechargeNames <- paste0("recharge",gsub("level","",recLevelNames))
         colInd <- lapply(recLevelNames,function(x) which(grepl(paste0("I((level == \"",gsub("level","",x),"\")"),colnames(recovs),fixed=TRUE)))
       } else {
@@ -229,7 +229,7 @@ get_mixProbs <- function(optPar,mod,mixture){
     if(!mod$conditions$stationary) par$delta <- delta[mix,,drop=FALSE]
     la[mix] <- nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,
                              par,
-                             1,mod$conditions$zeroInflation,mod$conditions$oneInflation,mod$conditions$stationary,knownStates,mod$conditions$betaRef,1,isTRUE(mod$conditions$CT))
+                             1,mod$conditions$zeroInflation,mod$conditions$oneInflation,mod$conditions$stationary,knownStates,mod$conditions$betaRef,1,mod$conditions$dtIndex-1,isTRUE(mod$conditions$CT))
     if(!is.null(mod$prior)) la[mix] <- la[mix] - mod$prior(wpar)
     c <- max(-la[mix]+log(pie[mix]))
     lnum[mix] <- c + log(sum(exp(-la[mix]+log(pie[mix])-c)))  

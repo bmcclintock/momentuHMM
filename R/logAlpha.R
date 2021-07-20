@@ -52,13 +52,12 @@ logAlpha <- function(m)
   trMat <- lalpha <- list()
   lalpha[1:mixtures] <- list(matrix(NA,nbObs,nbStates))
   
-  
-  if(isTRUE(m$conditions$CT)) dt <- m$data$dt
+  if(isTRUE(m$conditions$CT)) dt <- m$data$dt[m$conditions$dtIndex]
   else dt <- rep(1,nrow(m$data))
   
   for(mix in 1:mixtures){
     if(nbStates>1)
-      trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),m$conditions$betaRef,isTRUE(m$conditions$CT),dt)
+      trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),m$conditions$betaRef,isTRUE(m$conditions$CT),dt,aInd=aInd)
     else
       trMat[[mix]] <- array(1,dim=c(1,1,nbObs))
   }

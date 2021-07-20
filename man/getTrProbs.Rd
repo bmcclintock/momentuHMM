@@ -20,6 +20,8 @@ getTrProbs(data, ...)
   getCI = FALSE,
   covIndex = NULL,
   alpha = 0.95,
+  Time.name = NULL,
+  Time.unit = "auto",
   ...
 )
 
@@ -34,6 +36,8 @@ getTrProbs(data, ...)
   getCI = FALSE,
   covIndex = NULL,
   alpha = 0.95,
+  Time.name = NULL,
+  Time.unit = "auto",
   ...
 )
 }
@@ -65,6 +69,10 @@ The first column pertains to the lower bound and the second column the upper bou
 \item{covIndex}{Integer vector indicating specific rows of the data to be used in the calculations. This can be useful for reducing unnecessarily long computation times (paricularly when \code{getCI=TRUE}), e.g., when \code{formula} includes factor covariates (such as \code{ID}) but no temporal covariates. Ignored if \code{data} is not a \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miSum}}, or \code{\link{miHMM}} object.}
 
 \item{alpha}{Significance level of the confidence intervals (if \code{getCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).}
+
+\item{Time.name}{Character string indicating name of the time column in \code{data} (for continuous-time HMMs). Default: 'NULL' (discrete time). Ignored unless \code{data} is a \code{data.frame}, \code{\link{momentuHMMData}} object, or \code{\link{momentuHierHMMData}} object (i.e. not a \code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{miSum}} object, or a \code{\link{miHMM}} object).}
+
+\item{Time.unit}{Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{data[[Time.name]]} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto'.  Ignored if \code{data} is a \code{ctds} object returned by \code{\link{prepCTDS}}.}
 
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See \code{\link{fitHMM}}.}
 

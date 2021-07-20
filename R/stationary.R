@@ -130,26 +130,40 @@ stationary.momentuHMM <- function(model, covs, covIndex = NULL)
     }
     
     mixtures <- model$conditions$mixtures
+    
+    if(is.null(recharge)){
+      if(!is.null(covIndex)) {
+        if(!is.numeric(covIndex) || any(covIndex<1 | covIndex>nrow(covMat))) stop("covIndex can only include integers between 1 and ",nrow(covMat))
+      } else covIndex <- 1:nrow(covMat)
+    } else {
+      if(!is.null(covIndex)) {
+        if(!is.numeric(covIndex) || any(covIndex<1 | covIndex>nrow(tmpSplineInputs$covs))) stop("covIndex can only include integers between 1 and ",nrow(tmpSplineInputs$covs))
+      } else covIndex <- 1:nrow(tmpSplineInputs$covs)
+    }
   
     probs <- list()
     
-    if(isTRUE(model$conditions$CT)) dt <- model$data$dt
-    else dt <- rep(1,nrow(model$data))
+    if(isTRUE(model$conditions$CT)){
+      dt <- model$data$dt[model$conditions$dtIndex][covIndex]
+    } else dt <- rep(1,length(covIndex))
       
     for(mix in 1:mixtures){
       # all transition matrices
       tmpbeta <- beta[(mix-1)*ncol(covMat)+1:ncol(covMat),,drop=FALSE]
       if(is.null(recharge)){
-        if(!is.null(covIndex)) {
-          if(!is.numeric(covIndex) || any(covIndex<1 | covIndex>nrow(covMat))) stop("covIndex can only include integers between 1 and ",nrow(covMat))
-        } else covIndex <- 1:nrow(covMat)
-        allMat <- trMatrix_rcpp(nbStates=nbStates, beta=tmpbeta, covs=covMat[covIndex,,drop=FALSE], betaRef=model$conditions$betaRef, CT=isTRUE(model$conditions$CT), dt = dt)
+        allMat <- trMatrix_rcpp(nbStates=nbStates, beta=tmpbeta, covs=covMat[covIndex,,drop=FALSE], betaRef=model$conditions$betaRef, CT=isTRUE(model$conditions$CT), dt = dt, rateMatrix = isTRUE(model$conditions$CT), aInd=aInd)
+        #for(k in aInd[which(aInd %in% covIndex)]){
+        #  allMat[,,k] <- trMatrix_rcpp(nbStates=nbStates, beta=tmpbeta, covs=covMat[k,,drop=FALSE], betaRef=model$conditions$betaRef, CT=isTRUE(model$conditions$CT), dt = dt[k])
+        #}
       } else {
-        if(!is.null(covIndex)) {
-          if(!is.numeric(covIndex) || any(covIndex<1 | covIndex>nrow(tmpSplineInputs$covs))) stop("covIndex can only include integers between 1 and ",nrow(tmpSplineInputs$covs))
-        } else covIndex <- 1:nrow(tmpSplineInputs$covs)
         gamInd<-(length(model$mod$estimate)-(nrow(tmpbeta))*nbStates*(nbStates-1)*mixtures+1):(length(model$mod$estimate))-(ncol(model$covsPi)*(mixtures-1))-ifelse(nbRecovs,(nbRecovs+1)+(nbG0covs+1),0)-ncol(model$covsDelta)*(nbStates-1)*(!model$conditions$stationary)*mixtures
-        allMat <- array(unlist(lapply(split(tmpSplineInputs$covs[covIndex,,drop=FALSE],covIndex),function(x) tryCatch(get_gamma_recharge(model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta),mixture=mix,CT=isTRUE(model$conditions$CT),dt=x$dt),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(tmpSplineInputs$covs)))
+        if(isTRUE(model$conditions$CT)){
+          if(is.null(tmpSplineInputs$covs$dt)){
+            tmpSplineInputs$covs$dt <- 0
+            tmpSplineInputs$covs[covIndex,]$dt <- dt
+          } else tmpSplineInputs$covs[covIndex,]$dt <- tmpSplineInputs$covs$dt[covIndex]#[model$conditions$dtIndex[covIndex]]
+        } else tmpSplineInputs$covs$dt <- 1
+        allMat <- array(unlist(lapply(split(tmpSplineInputs$covs[covIndex,,drop=FALSE],covIndex),function(x) tryCatch(get_gamma_recharge(model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta),mixture=mix,CT=isTRUE(model$conditions$CT),dt=x$dt,rateMatrix = isTRUE(model$conditions$CT)),error=function(e) NA))),dim=c(nbStates,nbStates,length(covIndex)))
       }
       
       tryCatch({
@@ -157,7 +171,7 @@ stationary.momentuHMM <- function(model, covs, covIndex = NULL)
           # for each transition matrix, derive corresponding stationary distribution
           if(!inherits(model,"hierarchical")){
 
-            probs[[mix]] <- getProbs(allMat,model$stateNames)
+            probs[[mix]] <- getProbs(allMat,model$stateNames,isTRUE(model$conditions$CT))
           
           } else {
             
@@ -166,7 +180,7 @@ stationary.momentuHMM <- function(model, covs, covIndex = NULL)
                   
               if(j==1){
                 ref <- model$conditions$hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
-                probs[[mix]][["level1"]] <- getProbs(allMat[ref,ref,which(covMat[covIndex,colnames(covMat) %in% paste0("I((level == \"",j,"\") * 1)")]==1),drop=FALSE],names(ref))
+                probs[[mix]][["level1"]] <- getProbs(allMat[ref,ref,which(covMat[covIndex,colnames(covMat) %in% paste0("I((level == \"",j,"\") * 1)")]==1),drop=FALSE],names(ref),isTRUE(model$conditions$CT))
               } else {
                 
                 t <- data.tree::Traverse(model$conditions$hierStates,filterFun=function(x) x$level==j)
@@ -177,7 +191,7 @@ stationary.momentuHMM <- function(model, covs, covIndex = NULL)
                 for(k in names(t)){
                   ref <- t[[k]]$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
                   if(!is.null(ref)){
-                    probs[[mix]][[paste0("level",j)]][[k]] <- getProbs(allMat[ref,ref,which(covMat[covIndex,colnames(covMat) %in% paste0("I((level == \"",j,"\") * 1)")]==1),drop=FALSE],names(ref))
+                    probs[[mix]][[paste0("level",j)]][[k]] <- getProbs(allMat[ref,ref,which(covMat[covIndex,colnames(covMat) %in% paste0("I((level == \"",j,"\") * 1)")]==1),drop=FALSE],names(ref),isTRUE(model$conditions$CT))
                   }
                 }  
               }
@@ -208,13 +222,21 @@ stationary.miHMM <- function(model, covs, covIndex=NULL)
   stationary(model$miSum, covs, covIndex)
 }
 
-getProbs <- function(allMat,stateNames){
+getProbs <- function(allMat,stateNames,CT=FALSE){
   
   nbStates <- length(stateNames)
   
   probs <- apply(allMat, 3,
-                 function(gamma)
-                     solve(t(diag(nbStates)-gamma+1),rep(1,nbStates)))
+                 function(gamma){
+                   if(isTRUE(all.equal(gamma,diag(nbStates)))){
+                     pr <- rep(NA,nbStates)
+                   } else {
+                     if(!CT) pr <- solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))
+                     else pr <- stationary_rcpp(gamma)
+                   }
+                   pr
+                 })
+  
   probs <- t(probs)
   
   colnames(probs) <- stateNames

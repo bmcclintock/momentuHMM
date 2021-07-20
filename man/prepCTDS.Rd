@@ -2,9 +2,13 @@
 % Please edit documentation in R/prepCTDS.R
 \name{prepCTDS}
 \alias{prepCTDS}
+\alias{prepCTDS.default}
+\alias{prepCTDS.hierarchical}
 \title{Preprocessing of continuous-time discrete-space (CTDS) movement HMMs using ctmcmove}
 \usage{
-prepCTDS(
+prepCTDS(data, ...)
+
+\method{prepCTDS}{default}(
   data,
   Time.unit = "auto",
   rast,
@@ -18,11 +22,34 @@ prepCTDS(
   normalize.gradients = FALSE,
   grad.point.decreasing = FALSE,
   covNames = NULL,
-  ncores = 1
+  ncores = 1,
+  ...
+)
+
+\method{prepCTDS}{hierarchical}(
+  data,
+  Time.unit = "auto",
+  rast,
+  directions = 4,
+  zero.idx = integer(),
+  print.iter = FALSE,
+  interpMethod = "ShortestPath",
+  spatialCovs = NULL,
+  spatialCovs.grad = NULL,
+  crw = TRUE,
+  normalize.gradients = FALSE,
+  grad.point.decreasing = FALSE,
+  covNames = NULL,
+  ncores = 1,
+  hierLevels,
+  coordLevel,
+  ...
 )
 }
 \arguments{
-\item{data}{Either a \code{data.frame} of data streams or a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}). If a \code{data.frame}, it must include entries for the x coordinate (\code{x}), y coordinate (\code{y}), and time stamp (\code{time}). An \code{ID} entry must also be included if \code{data} includes multiple individuals.}
+\item{data}{Either a \code{data.frame} of data streams or a \code{\link{crwData}} (or \code{\link{crwHierData}}) object (as returned by \code{\link{crawlWrap}}). If a \code{data.frame}, it must include entries for the x coordinate (\code{x}), y coordinate (\code{y}), and time stamp (\code{time}). An \code{ID} entry must also be included if \code{data} includes multiple individuals.}
+
+\item{...}{further arguments passed to or from other methods}
 
 \item{Time.unit}{Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{data$time} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto', but note that if there are multiple individuals, then the units are determined based on the time stamps for the first individual.}
 
@@ -54,6 +81,11 @@ then z values must be set using \code{raster::setZ} and \code{data} must include
 \item{covNames}{Character vector indicating the names of any covariates in \code{data}. Any variables in \code{data} (other than \code{ID}, \code{x}, \code{y}, and \code{time}) that are not identified in covNames are assumed to be additional data streams (i.e., missing values will not be accounted for).}
 
 \item{ncores}{Number of cores to use for parallel processing. Default: 1 (no parallel processing).}
+
+\item{hierLevels}{Character vector indicating the levels of the hierarchy and their order, from top (coarsest scale) to bottom (finest scale), that are included in \code{data$level}. For example, for a 2-level hierarchy then 
+\code{hierLevels=c("1","2i","2")} indicates \code{data$level} for each observation can be one of three factor levels: "1" (coarse scale), "2i" (initial fine scale), and "2" (fine scale).  Ignored if \code{data} is a \code{\link{crwHierData}} object.}
+
+\item{coordLevel}{Character string indicating the level of the hierarchy for the location data. If specified, then \code{data} must include a 'level' field indicating the level of the hierarchy for each observation.  Ignored if \code{coordNames} is \code{NULL} or \code{data} is a \code{\link{crwHierData}} object.}
 }
 \value{
 A \code{\link{momentuHMMData}} object of class \code{ctds} that can be passed to \code{\link{fitCTHMM}} (or as a list to \code{\link{MIfitCTHMM}}), where:

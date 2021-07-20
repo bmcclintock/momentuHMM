@@ -546,7 +546,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   
   # convert RW data
   if(any(unlist(dist) %in% rwdists)){
-    data <- RWdata(dist,data,knownStates)
+    data <- RWdata(dist,data,knownStates,...)
     knownStates <- data$knownStates
     data$knownStates <- NULL
   }
@@ -790,6 +790,29 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     aInd <- c(aInd,idInd[1])
   }
   
+  dtIndex <- 1:nrow(data)
+  if(isTRUE(list(...)$CT) & inherits(data,"hierarchical")){
+    dtr <- data$dt
+    for(i in unique(data$ID)){
+      for(iLevel in levels(data$level)){
+        iDat <- which(data$ID==i & data$level==iLevel)
+        if(!grepl("i",iLevel)){
+          if(iLevel=="1") {
+            if(iLevel=="1") dtr[iDat[-1]-1] <- data$dt[iDat[-length(iDat)]]
+          } else {
+            idatInd <- which(data$level[iDat[-length(iDat)]+1]!="1")
+            dtr[iDat[idatInd]] <- data$dt[iDat[idatInd]]
+          }
+        } else {
+          dtr[iDat] <- 0
+          dtr[iDat-1] <- 1
+        }
+      }
+    }
+    dtIndex <- match(dtr,data$dt)
+  }
+  
+  
   if(fit) {
     
     hessian <- TRUE
@@ -840,14 +863,14 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
           curmod$minimum <- nLogLike(optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                     inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                     stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                    nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT))
+                                    nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex)
           curmod$estimate <- numeric()
           
         } else if(optMethod=="nlm"){
           withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),
+                                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,
                                                print.level=print.level,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
                                                iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)),error=function(e) e),warning=h)
@@ -855,7 +878,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
           withCallingHandlers(curmod <- tryCatch(optim(optPar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                      inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                      stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),
+                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,
                                                      method=optMethod,control=control,hessian=hessian),error=function(e) e),warning=h)
         }
         endTime <- proc.time()-startTime
@@ -918,7 +941,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     mod$minimum <- nLogLike(optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT))
+                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex)
     mod$estimate <- wpar
     mod$wpar <- optPar
     mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,fullDM,DMind,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
@@ -975,7 +998,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     } else mle[["pi"]] <- NULL
   }
   
-  if(isTRUE(list(...)$CT)) dt <- data$dt
+  if(isTRUE(list(...)$CT)) dt <- data$dt[dtIndex]
   else dt <- rep(1,nrow(data))
 
   # compute stationary distribution
@@ -986,17 +1009,29 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
       
       for(i in 1:nbAnimals){
         
-        gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,fixParIndex$betaRef,isTRUE(list(...)$CT),dt)[,,aInd[i]]
-    
-        # error if singular system
-        tryCatch(
-          mle$delta[nbAnimals*(mix-1)+i,] <- solve(t(diag(nbStates)-gamma+1),rep(1,nbStates)),
-          error = function(e) {
-            stop(paste("A problem occurred in the calculation of the stationary",
-                       "distribution. You may want to try different initial values",
-                       "and/or the option stationary=FALSE."))
-          }
-        )
+        if(!isTRUE(list(...)$CT)){
+          gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[aInd[i],,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),dt)[,,1]
+          # error if singular system
+          tryCatch(
+            mle$delta[nbAnimals*(mix-1)+i,] <- solve(t(diag(nbStates)-gamma+1),rep(1,nbStates)),
+            error = function(e) {
+              stop(paste("A problem occurred in the calculation of the stationary",
+                         "distribution. You may want to try different initial values",
+                         "and/or the option stationary=FALSE."))
+            }
+          )
+        } else {
+          gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[aInd[i],,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),dt,TRUE,aInd=1)[,,1]
+          # error if singular system
+          tryCatch(
+            mle$delta[nbAnimals*(mix-1)+i,] <- stationary_rcpp(gamma),
+            error = function(e) {
+              stop(paste("A problem occurred in the calculation of the stationary",
+                         "distribution. You may want to try different initial values",
+                         "and/or the option stationary=FALSE."))
+            }
+          )
+        }
       }
     }
   }
@@ -1011,7 +1046,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   if(nbCovs==0 & nbStates>1) {
     mle$gamma <- matrix(0,nbStates*mixtures,nbStates)
     for(mix in 1:mixtures){
-      trMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs,fixParIndex$betaRef,isTRUE(list(...)$CT),dt)
+      trMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[1,,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),mean(dt), aInd=1)
       mle$gamma[nbStates*(mix-1)+1:nbStates,] <- trMat[,,1]
     }
     colnames(mle$gamma)<-stateNames
@@ -1025,6 +1060,8 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
                      estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,fixPar=fixParIndex$ofixPar,wparIndex=fixParIndex$wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recharge=recharge,mvnCoords=mvnCoords,mixtures=mixtures,formulaPi=formulaPi,fit=fit)
 
+  if(isTRUE(list(...)$CT)) conditions$dtIndex <- dtIndex
+  
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName,reCovs=recovsCol,g0covs=g0covsCol,covsPi=covsPi)
   
   #compute SEs and CIs on natural and working scale
@@ -1075,7 +1112,7 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
   
   installDataTree()
   
-  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,betaCons,deltaCons,fixPar)
+  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,betaCons,deltaCons,fixPar,checkData = TRUE, ...)
   
   if("CT" %in% names(list(...)) && !grepl("fitCTHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1])))) stop(sprintf("In %s :\n extra argument 'CT' is invalid", 
                                                                                                               paste(deparse(sys.call()[[1]], control = c()), 

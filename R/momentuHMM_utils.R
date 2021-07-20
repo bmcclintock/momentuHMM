@@ -10,6 +10,7 @@ integerdists<-sort(c('bern','pois','cat','negbinom','ctds'))
 mvndists <- c('mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3')
 rwdists <- c('rw_norm','rw_mvnorm2','rw_mvnorm3')
 CTHMMdists <- c(momentuHMMdists[which(!momentuHMMdists %in% c(angledists))])
+CTHMMdepdists <- c(rwdists, "ctds","pois") # CTHMM distributions where observations and parameters depend on dt
 splineList<-c("bs","ns","bSpline","mSpline","cSpline","iSpline")
 meansList<-c("matrix","numeric","integer","logical","Date","POSIXlt","POSIXct","difftime")
 meansListNoTime<-c("numeric","integer","logical")
@@ -62,8 +63,10 @@ rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- mvtnorm::rmvnorm
 drw_norm <- stats::dnorm
 rrw_norm <- stats::rnorm
 
-RWdata <- function(dist,data,knownStates){
+RWdata <- function(dist,data,knownStates,...){
   distnames <- names(dist)
+  CT <- isTRUE(list(...)$CT)
+  Time.name <- list(...)$Time.name
   if(any(unlist(dist) %in% rwdists)){
     newdata <- NULL
     colInd <- NULL
@@ -78,48 +81,54 @@ RWdata <- function(dist,data,knownStates){
         if(dist[[i]] %in% rwdists){
           tmpdata <- ldata <- data[jInd,,drop=FALSE]
           lInd <- 1:nrow(tmpdata)
+          if(inherits(data,"hierarchical")){
+            iLevel <- attr(data,"coordLevel")
+            lInd <- which(tmpdata$level==iLevel)
+            ldata <- tmpdata[lInd,]
+            colInd <- NULL
+          }
           if(dist[[i]] %in% mvndists){
-            if(inherits(data,"hierarchical")){
-              iLevel <- attr(data,"coordLevel")
-              lInd <- which(tmpdata$level==iLevel)
-              ldata <- tmpdata[lInd,]
-              colInd <- NULL
-            }
             tmpdata[[paste0(i,".x_tm1")]] <- tmpdata[[paste0(i,".x")]]
             tmpdata[[paste0(i,".y_tm1")]] <- tmpdata[[paste0(i,".y")]]
             ldata[[paste0(i,".x_tm1")]] <- ldata[[paste0(i,".x")]]
             ldata[[paste0(i,".y_tm1")]] <- ldata[[paste0(i,".y")]]
             if(dist[[i]]=="rw_mvnorm2"){
-              colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(distnames[which(!(distnames %in% i))],paste0(i,".x"),paste0(i,".y"))))]))
+              #if(!CT) 
+              colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(paste0(i,".x"),paste0(i,".y"))))]))
+              ##else if(inherits(data,"hierarchical")) colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(Time.name,"dt",paste0(i,".x"),paste0(i,".y"))))]))
+              #else colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(Time.name,paste0(i,".x"),paste0(i,".y"))))]))
             } else if(dist[[i]]=="rw_mvnorm3"){
               tmpdata[[paste0(i,".z_tm1")]] <- tmpdata[[paste0(i,".z")]]
               ldata[[paste0(i,".z_tm1")]] <- ldata[[paste0(i,".z")]]
-              colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(distnames[which(!(distnames %in% i))],paste0(i,".x"),paste0(i,".y"),paste0(i,".z"))))]))
+              #if(!CT) 
+              colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(paste0(i,".x"),paste0(i,".y"),paste0(i,".z"))))]))
+              ##else if(inherits(data,"hierarchical")) colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(Time.name,"dt",paste0(i,".x"),paste0(i,".y"),paste0(i,".z"))))]))
+              #else colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(Time.name,paste0(i,".x"),paste0(i,".y"),paste0(i,".z"))))]))
             }
           } else {
-            if(inherits(data,"hierarchical")){
-              iLevel <- attr(data,"coordLevel")
-              lInd <- which(tmpdata$level==iLevel)
-              ldata <- tmpdata[lInd,]
-              colInd <- NULL
-            }
             tmpdata[[paste0(i,"_tm1")]] <- tmpdata[[i]]
             ldata[[paste0(i,"_tm1")]][lInd] <- ldata[[i]]
+            #if(!CT) 
             colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% distnames))]))
+            ##else if(inherits(data,"hierarchical")) colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(distnames,Time.name,"dt")))]))
+            #else colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(distnames,Time.name)))]))
           }
           if(inherits(data,"hierarchical")){
+            ##if(CT) tmpdata$dt[lInd[1]] <- 0
             ldata[,colInd] <- rbind(rep(NA,length(colInd)),ldata[-nrow(ldata),colInd])
             ldata <- ldata[-1,,drop=FALSE]
-            tmpdata[lInd,colInd] <- rbind(rep(NA,length(colInd)),tmpdata[lInd[-length(lInd)],colInd])
-            tmpdata <- tmpdata[-lInd[1],,drop=FALSE]
-            tmpdata[lInd[-1]-1,colnames(tmpdata)] <- ldata[,colnames(tmpdata)]
-            tmpdata[which(tmpdata$level!=iLevel),paste0(colnames(tmpdata)[!colnames(tmpdata) %in% colInd],"_tm1")] <- 0 # can't have NAs in covariates
+            tmpdata[lInd[-length(lInd)],colnames(tmpdata)] <- ldata[,colnames(tmpdata)]
+            tmpdata[lInd[length(lInd)],colnames(tmpdata)[which(!(colnames(tmpdata) %in% colInd))]] <- NA
+            tmpdata[which(tmpdata$level!=iLevel),paste0(colnames(tmpdata)[!colnames(tmpdata) %in% c(Time.name,"dt",colInd,distnames[which(!(distnames %in% i))])],"_tm1")] <- 0 # can't have NAs in covariates
           }
         }
       }
       if(!inherits(data,"hierarchical")){
+        lastRow <- tmpdata[nrow(tmpdata),]
         tmpdata[,colInd] <- rbind(rep(NA,length(colInd)),tmpdata[-nrow(tmpdata),colInd])
         tmpdata <- tmpdata[-1,,drop=FALSE]
+        tmpdata <- rbind(tmpdata,lastRow)
+        tmpdata[nrow(tmpdata),colnames(tmpdata)[which(!(colnames(tmpdata) %in% colInd))]] <- NA
       }
       newdata <- rbind(newdata,tmpdata)
     }
@@ -171,7 +180,7 @@ ctPar <- function(par,dist,nbStates,data){
         p[seq(j,nrow(par[[i]])+nbStates,nbStates),] <- prob
       }
       par[[i]] <- p
-    } else if(dist[[i]] %in% CTHMMdists) {
+    } else if(dist[[i]] %in% CTHMMdepdists) {
       par[[i]] <- matrix(t(apply(par[[i]],1,function(x) x*data$dt)),ncol=ncol(par[[i]]))
       #par[[i]] <- t(apply(par[[i]],1,function(x) x*data$dt))
       #par[[i]] <- matrix(apply(par[[i]],1,function(x) x*data$dt),ncol=ncol(par[[i]]))
@@ -207,7 +216,8 @@ muffleRNGwarning <- function(w) {
 # suppress CT argument warning
 muffleCTwarning <- function(w) {
   q <- iconv(c(intToUtf8(8216), intToUtf8(8217)),"UTF-8", "")
-  if(any(grepl(paste0("extra argument ",q[1],"CT",q[2]," will be disregarded"),w)))
+  if(any(grepl(paste0("extra argument ",q[1],"CT",q[2]," will be disregarded"),w)) |
+     any(grepl(paste0("extra arguments ",q[1],"CT",q[2],", ",q[1],"Time.name",q[2]," will be disregarded"),w)))
     invokeRestart("muffleWarning")
   else w
 }
@@ -223,17 +233,17 @@ muffleCTDSwarning <- function(w) {
 }
 
 chkDotsCT <- function(...){
-  if("CT" %in% names(list(...)) && !any(grepl("simCTHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))) | 
-                                        grepl("simCTDS",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))) stop(sprintf("In %s :\n extra argument 'CT' is invalid", 
+  if("CT" %in% names(list(...)) && !any(grepl("CTHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))) | 
+                                        grepl("CTDS",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))) stop(sprintf("In %s :\n extra argument 'CT' is invalid", 
                                                                                                                               paste(deparse(sys.call()[[1]], control = c()), 
                                                                                                                                     collapse = "\n")), call. = FALSE, domain = NA)
-  if("ctds" %in% names(list(...)) && !any(grepl("simCTDS",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))) stop(sprintf("In %s :\n extra argument 'ctds' is invalid", 
+  if("ctds" %in% names(list(...)) && !any(grepl("CTDS",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))) stop(sprintf("In %s :\n extra argument 'ctds' is invalid", 
                                                                                                                                 paste(deparse(sys.call()[[1]], control = c()), 
                                                                                                                                       collapse = "\n")), call. = FALSE, domain = NA)
-  if("rast" %in% names(list(...)) && !any(grepl("simCTDS",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))) stop(sprintf("In %s :\n extra argument 'rast' is invalid", 
+  if("rast" %in% names(list(...)) && !any(grepl("CTDS",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))) stop(sprintf("In %s :\n extra argument 'rast' is invalid", 
                                                                                                                                 paste(deparse(sys.call()[[1]], control = c()), 
                                                                                                                                       collapse = "\n")), call. = FALSE, domain = NA) 
-  if("directions" %in% names(list(...)) && !any(grepl("simCTDS",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))) stop(sprintf("In %s :\n extra argument 'directions' is invalid", 
+  if("directions" %in% names(list(...)) && !any(grepl("CTDS",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))) stop(sprintf("In %s :\n extra argument 'directions' is invalid", 
                                                                                                                                       paste(deparse(sys.call()[[1]], control = c()), 
                                                                                                                                             collapse = "\n")), call. = FALSE, domain = NA) 
 }

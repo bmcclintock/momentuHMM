@@ -14,6 +14,7 @@
 #' @param deltaCons A hierarchical data structure \code{\link[data.tree]{Node}} indicating initial distribution constraints ('deltaCons') among parameters in \code{hierDelta} at each level of the hierarchy.
 #' @param fixPar A list with elements named \code{'beta'} and/or \code{'delta'}, where each element is a hierarchical data structure \code{\link[data.tree]{Node}} indicating t.p.m. and initial distribution parameters in \code{hierBeta} and \code{hierDelta}, respectively, which are assumed known.
 #' @param checkData logical indicating whether or not to check the suitability of \code{data} for the specified hierarchy. Ignored unless \code{data} is provided. Default: TRUE.
+#' @param ... further arguments passed to or from other methods
 #' 
 #' @return A list of arguments needed for specifying a hierarchical HMM as a conventional HMM in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}, including:
 #' \item{nbStates}{See \code{\link{fitHMM}}.}
@@ -36,7 +37,7 @@ formatHierHMM <- function(data,hierStates,hierDist,
                           hierBeta=NULL,hierDelta=NULL,
                           hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,
                           workBounds=NULL,betaCons=NULL,deltaCons=NULL,fixPar=NULL,
-                          checkData=TRUE){
+                          checkData=TRUE,...){
   
   installDataTree()
   
@@ -332,6 +333,8 @@ formatHierHMM <- function(data,hierStates,hierDist,
     }
     fixInd <- which(hFixPar$beta==-1.e+10)
     if(length(fixInd)) hBetaCons[fixInd] <- fixInd[1]
+    fixInd <- which(hFixPar$beta==0)
+    if(length(fixInd)) hBetaCons[fixInd] <- fixInd[1]
     
     Pi <- NULL
     if(!is.null(hierBeta)){
@@ -434,6 +437,35 @@ formatHierHMM <- function(data,hierStates,hierDist,
     whierBeta <- hier$hierBeta
     whierDelta <- hier$hierDelta
     
+    if(isTRUE(list(...)$CT)){
+      for(i in 1:nbStates){
+        for(j in which(colnames(cons$betaCons)==paste0(i," -> ",i))){
+          for(lev in levels(data$level)){
+            rowInd <- match(paste0("I((level == \"",lev,"\") * 1)"),rownames(cons$betaCons))
+            if(!is.na(fixPar$beta[rowInd,j])){
+              if(!grepl("i",lev)){
+                cons$betaCons[rowInd,j] <- ifelse(fixPar$beta[rowInd,j]==-1.e+10,matrix(1:length(fixPar$beta),nrow(fixPar$beta),ncol(fixPar$beta))[rowInd,j],cons$betaCons[rowInd,j])
+                fixPar$beta[rowInd,j] <- ifelse(fixPar$beta[rowInd,j]==-1.e+10,-log(1.e+10),fixPar$beta[rowInd,j])
+                if(!is.null(beta0)){
+                  if(is.null(recharge)) beta0[rowInd,j] <- ifelse(fixPar$beta[rowInd,j]==-1.e+10,-log(1.e+10),fixPar$beta[rowInd,j])
+                  else beta0$beta[rowInd,j] <- ifelse(fixPar$beta[rowInd,j]==-1.e+10,-log(1.e+10),fixPar$beta[rowInd,j])
+                }
+              } else {
+                cons$betaCons[rowInd,j] <- ifelse(fixPar$beta[rowInd,j]==-1.e+10,matrix(1:length(fixPar$beta),nrow(fixPar$beta),ncol(fixPar$beta))[rowInd,j],cons$betaCons[rowInd,j])
+                fixPar$beta[rowInd,j] <- ifelse(fixPar$beta[rowInd,j]==-1.e+10,1.e+10,fixPar$beta[rowInd,j])
+                if(!is.null(beta0)){
+                  if(is.null(recharge))  beta0[rowInd,j] <- ifelse(fixPar$beta[rowInd,j]==-1.e+10,1.e+10,fixPar$beta[rowInd,j])
+                  else beta0$beta[rowInd,j] <- ifelse(fixPar$beta[rowInd,j]==-1.e+10,1.e+10,fixPar$beta[rowInd,j])
+                }
+              }
+            }
+          }
+        }
+      }
+      naInd<-is.na(fixPar$beta)
+      cons$betaCons[!naInd] <- unique(cons$betaCons[!naInd])[match(fixPar$beta[!naInd],unique(fixPar$beta[!naInd]))]
+    }
+    
   } else {
     data <- newForm$data
     whierBeta <- hierBeta
@@ -441,6 +473,7 @@ formatHierHMM <- function(data,hierStates,hierDist,
     newformula <- hBetaCons <- hDeltaCons <- hFixPar <- workBounds <- cons <- fixPar <- NULL
   }
   if(all(unlist(lapply(recharge,is.null)))) recharge <- NULL
+  if(isTRUE(list(...)$CT)) attr(data,"CT") <- TRUE
 
   return(list(data=data,nbStates=nbStates,dist=dist,formula=formula,newformula=newformula,formulaDelta=formulaDelta,beta=beta0,delta=delta0,hierBeta=whierBeta,hierDelta=whierDelta,betaRef=betaRef,betaCons=cons$betaCons,deltaCons=cons$deltaCons,fixPar=fixPar,workBounds=workBounds,stateNames=stateNames,hBetaCons=hBetaCons,hDeltaCons=hDeltaCons,hFixPar=hFixPar,recharge=recharge))
 

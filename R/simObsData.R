@@ -67,8 +67,8 @@ simObsData.momentuHMMData<-function(data,lambda,errorEllipse,...){
   
   if(!is.momentuHMMData(data)) stop("data must be a momentuHMMData object")
   
-  if("CT" %in% names(list(...)) && !any(grepl("simCTHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))) | 
-                                        grepl("simCTDS",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))) stop(sprintf("In %s :\n extra argument 'CT' is invalid", 
+  if("CT" %in% names(list(...)) && !any(grepl("CTHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))) | 
+                                        grepl("CTDS",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))) stop(sprintf("In %s :\n extra argument 'CT' is invalid", 
                                                                                                                               paste(deparse(sys.call()[[1]], control = c()), 
                                                                                                                                     collapse = "\n")), call. = FALSE, domain = NA)
   chkDots(...)
@@ -183,6 +183,10 @@ simObsData.momentuHierHMMData<-function(data,lambda,errorEllipse,coordLevel,...)
   
   if(!is.momentuHierHMMData(data)) stop("data must be a momentuHierHMMData object")
   
+  if("CT" %in% names(list(...)) && !any(grepl("CTHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))) | 
+                                        grepl("CTDS",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))) stop(sprintf("In %s :\n extra argument 'CT' is invalid", 
+                                                                                                                           paste(deparse(sys.call()[[1]], control = c()), 
+                                                                                                                                 collapse = "\n")), call. = FALSE, domain = NA)
   chkDots(...)
   
   coordNames <- c("x","y")

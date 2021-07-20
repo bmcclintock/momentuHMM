@@ -65,7 +65,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                     retrySims=0,
                     lambda=NULL,
                     errorEllipse=NULL,
-                    ncores=1)
+                    ncores=1,
+                    ...)
 {
   
   installDataTree()
@@ -94,6 +95,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     rmvnorm3 <- rmvnorm3
     rvm <- CircStats::rvm
     rwrpcauchy <- CircStats::rwrpcauchy
+    trMatrix_rcpp <- trMatrix_rcpp
+    ctPar <- ctPar
     if (requireNamespace("extraDistr", quietly = TRUE)){
       rcat <- extraDistr::rcat
     }
@@ -102,6 +105,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     mlogit <- mlogit
     distAngle <- distAngle
     circAngles <- circAngles
+    formatRecharge <- formatRecharge
     pkgs <- c("momentuHMM")
     if (requireNamespace("splines", quietly = TRUE)){
       ns <- splines::ns
@@ -124,6 +128,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   if(!is.null(model)) {
     
     if(!inherits(model,"momentuHierHMM") & !inherits(model,"hierarchical")) stop("model must be a 'momentuHierHMM' and/or 'hierarchical' object")
+    if(inherits(model,"CTHMM")) stop("model can not be of class 'CTHMM'; use simHierCTHMM instead")
     
     if(is.miHMM(model)){
       model <- model$miSum
@@ -263,7 +268,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         covs[[paste0(mvnCoords,".x_tm1")]] <- NULL
         covs[[paste0(mvnCoords,".y_tm1")]] <- NULL
         if(dist[[mvnCoords]]=="rw_mvnorm3") covs[[paste0(mvnCoords,".z_tm1")]] <- NULL
-        if(!ncol(covs)) covs <- NULL
+        if(is.null(covs) || !ncol(covs)) covs <- NULL
       }
     }
     # else, allow user to enter new values for covariates
@@ -274,7 +279,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     
     nbStates <- inputHierHMM$nbStates
     dist <- inputHierHMM$dist
-    if(any(unlist(dist)=="ctds")) stop("hierarchical 'ctds' distributions are not currently supported")
+    #if(any(unlist(dist)=="ctds")) stop("hierarchical 'ctds' distributions are not currently supported")
     beta <- inputHierHMM$beta
     delta <- inputHierHMM$delta
     formula <- inputHierHMM$formula
@@ -292,6 +297,9 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     } else formPi <- formulaPi
     formDelta <- formulaDelta
   }
+  
+  chkDotsCT(...)
+  chkDots(...)
   
   if(nbAnimals<1)
     stop("nbAnimals should be at least 1.")
@@ -332,6 +340,13 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       stop(dist[[i]]," distribution cannot be one inflated")
   }
   
+  if(!isTRUE(list(...)$ctds)){
+    if(any(unlist(dist)=="ctds")){
+      if(isTRUE(list(...)$CT)) stop("simHierCTHMM cannot be used for ctds models; use simHierCTDS instead")
+      else stop("simHierData cannot be used for ctds models; use simHierCTDS instead")
+    }
+  }
+  
   if(!is.null(mvnCoords)){
     if(length(mvnCoords)>1 | !is.character(mvnCoords)) stop("mvnCoords must be a character string")
     if(!(mvnCoords %in% distnames)) stop("mvnCoords not found. Permitted values are: ",paste0(distnames,collapse=", "))
@@ -349,10 +364,32 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     else estAngleMean[[i]]<-FALSE
   }
   
+  if(isTRUE(list(...)$ctds)){
+    directions <- list(...)$directions
+    for(i in distnames){
+      if(dist[[i]]=="ctds"){
+        if(is.null(DM[[i]])) stop("DM$",i," must be specified as a list with a formula for parameter 'lambda'")
+        attr(dist[[i]],"directions") <- directions
+      }
+    }
+  }
+  
   inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,stateNames,checkInflation = TRUE)
+  Par <- Par[distnames]
   p <- inputs$p
   parSize <- p$parSize
   bounds <- p$bounds
+  
+  ctdsCRW <- FALSE
+  if(isTRUE(list(...)$ctds)){
+    for(i in distnames){
+      if(dist[[i]]=="ctds")
+        if("crw" %in% all.vars(DM[[i]]$lambda)) ctdsCRW <- TRUE
+    }
+    if(!is.null(covs)){ 
+      if("crw" %in% names(covs)) stop("'crw' cannot be the name of a covariate in 'covs'")
+    }
+  }
   
   Fun <- lapply(inputs$dist,function(x) paste("r",x,sep=""))
   for(i in names(Fun)){
@@ -371,7 +408,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     spatialcovnames<-names(spatialCovs)
     if(is.null(spatialcovnames)) stop('spatialCovs must be a named list')
     nbSpatialCovs<-length(spatialcovnames)
-    if(is.null(mvnCoords)){
+    if(ctdsCRW) spatialcovnames <- c(spatialcovnames,"crw")
+    if(is.null(mvnCoords) & !isTRUE(list(...)$ctds)){
       if(!("step" %in% distnames)) stop("spatialCovs can only be included when 'step' distribution is specified") 
       else if(!(inputs$dist[["step"]] %in% stepdists)) stop("spatialCovs can only be included when valid 'step' distributions are specified") 
     }
@@ -395,41 +433,44 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
   } else nbSpatialCovs <- 0
   
-  if(is.list(obsPerLevel)){
-    if(length(obsPerLevel)!=nbAnimals) stop("obsPerLevel must be a list of length ",nbAnimals," where each element is a hierarchical Node")
-    for(i in 1:length(obsPerLevel)){
-      if(!inherits(obsPerLevel[[i]],"Node")) stop("obsPerLevel for individual ",i," must be a hierarchical Node")
-      if(!("obs" %in% obsPerLevel[[i]]$attributesAll)) stop("'obsPerLevel' for individual ",i," must include a 'obs' field")
-      if(!all(obsPerLevel[[i]]$Get("name",filterFun=function(x) x$level==2) %in% hierDist$Get("name",filterFun=function(x) x$level==2))) stop("'obsPerLevel' level types for individual ",i," can only include ",paste0(hierDist$Get("name",filterFun=function(x) x$level==2),collapse = ", "))
-      #if(!all(obsPerLevel[[i]]$Get("name",filterFun=function(x) x$level==2) %in% paste0("level",1:obsPerLevel[[i]]$count))) stop("'obsPerLevel' level types for individual ",i," can only include ",paste0(paste0("level",1:obsPerLevel[[i]]$count),collapse = ", "))
-      tmpObs <- data.tree::Clone(obsPerLevel[[i]])
-      for(j in obsPerLevel[[i]]$Get("name",filterFun=function(x) x$level==2)){
-        if(length(which(obsPerLevel[[i]][[j]]$obs<1))>0)
+  obsInd <- (!isTRUE(list(...)$CT) | (isTRUE(list(...)$CT) & !is.null(obsPerLevel)))
+  if(obsInd){
+    if(is.list(obsPerLevel)){
+      if(length(obsPerLevel)!=nbAnimals) stop("obsPerLevel must be a list of length ",nbAnimals," where each element is a hierarchical Node")
+      for(i in 1:length(obsPerLevel)){
+        if(!inherits(obsPerLevel[[i]],"Node")) stop("obsPerLevel for individual ",i," must be a hierarchical Node")
+        if(!("obs" %in% obsPerLevel[[i]]$attributesAll)) stop("'obsPerLevel' for individual ",i," must include a 'obs' field")
+        if(!all(obsPerLevel[[i]]$Get("name",filterFun=function(x) x$level==2) %in% hierDist$Get("name",filterFun=function(x) x$level==2))) stop("'obsPerLevel' level types for individual ",i," can only include ",paste0(hierDist$Get("name",filterFun=function(x) x$level==2),collapse = ", "))
+        #if(!all(obsPerLevel[[i]]$Get("name",filterFun=function(x) x$level==2) %in% paste0("level",1:obsPerLevel[[i]]$count))) stop("'obsPerLevel' level types for individual ",i," can only include ",paste0(paste0("level",1:obsPerLevel[[i]]$count),collapse = ", "))
+        tmpObs <- data.tree::Clone(obsPerLevel[[i]])
+        for(j in obsPerLevel[[i]]$Get("name",filterFun=function(x) x$level==2)){
+          if(length(which(obsPerLevel[[i]][[j]]$obs<1))>0)
+            stop("obsPerLevel 'obs' field should have positive values.")
+          if(length(obsPerLevel[[i]][[j]]$obs)==1)
+            tmpObs[[j]]$obs <- rep(obsPerLevel[[i]][[j]]$obs,2)
+          else if(length(tmpObs[[j]]$obs)!=2)
+            stop("obsPerLevel 'obs' field should be of length 1 or 2.")
+        }
+        obsPerLevel[[i]] <- tmpObs
+      }
+    } else {
+      if(!inherits(obsPerLevel,"Node")) stop("obsPerLevel must be a hierarchical Node")
+      if(!("obs" %in% obsPerLevel$attributesAll)) stop("'obsPerLevel' must include a 'obs' field")
+      if(!all(obsPerLevel$Get("name",filterFun=function(x) x$level==2) %in% hierDist$Get("name",filterFun=function(x) x$level==2))) stop("'obsPerLevel' level types can only include ",paste0(hierDist$Get("name",filterFun=function(x) x$level==2),collapse = ", "))
+      #if(!all(obsPerLevel$Get("name",filterFun=function(x) x$level==2) %in% paste0("level",1:obsPerLevel$count))) stop("'obsPerLevel' level types can only include ",paste0(paste0("level",1:obsPerLevel[[i]]$count),collapse = ", "))
+      tmpObs <- data.tree::Clone(obsPerLevel)
+      for(j in obsPerLevel$Get("name",filterFun=function(x) x$level==2)){
+        if(length(which(obsPerLevel[[j]]$obs<1))>0)
           stop("obsPerLevel 'obs' field should have positive values.")
-        if(length(obsPerLevel[[i]][[j]]$obs)==1)
-          tmpObs[[j]]$obs <- rep(obsPerLevel[[i]][[j]]$obs,2)
+        if(length(obsPerLevel[[j]]$obs)==1)
+          tmpObs[[j]]$obs <- rep(obsPerLevel[[j]]$obs,2)
         else if(length(tmpObs[[j]]$obs)!=2)
           stop("obsPerLevel 'obs' field should be of length 1 or 2.")
       }
-      obsPerLevel[[i]] <- tmpObs
-    }
-  } else {
-    if(!inherits(obsPerLevel,"Node")) stop("obsPerLevel must be a hierarchical Node")
-    if(!("obs" %in% obsPerLevel$attributesAll)) stop("'obsPerLevel' must include a 'obs' field")
-    if(!all(obsPerLevel$Get("name",filterFun=function(x) x$level==2) %in% hierDist$Get("name",filterFun=function(x) x$level==2))) stop("'obsPerLevel' level types can only include ",paste0(hierDist$Get("name",filterFun=function(x) x$level==2),collapse = ", "))
-    #if(!all(obsPerLevel$Get("name",filterFun=function(x) x$level==2) %in% paste0("level",1:obsPerLevel$count))) stop("'obsPerLevel' level types can only include ",paste0(paste0("level",1:obsPerLevel[[i]]$count),collapse = ", "))
-    tmpObs <- data.tree::Clone(obsPerLevel)
-    for(j in obsPerLevel$Get("name",filterFun=function(x) x$level==2)){
-      if(length(which(obsPerLevel[[j]]$obs<1))>0)
-        stop("obsPerLevel 'obs' field should have positive values.")
-      if(length(obsPerLevel[[j]]$obs)==1)
-        tmpObs[[j]]$obs <- rep(obsPerLevel[[j]]$obs,2)
-      else if(length(tmpObs[[j]]$obs)!=2)
-        stop("obsPerLevel 'obs' field should be of length 1 or 2.")
-    }
-    obsPerLevel<-vector('list',nbAnimals)
-    for(i in 1:nbAnimals){
-      obsPerLevel[[i]]<-tmpObs
+      obsPerLevel<-vector('list',nbAnimals)
+      for(i in 1:nbAnimals){
+        obsPerLevel[[i]]<-tmpObs
+      }
     }
   }
   
@@ -536,27 +577,69 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   level <- lLevels <- list()
   for(zoo in 1:nbAnimals) {
     levelObs[[zoo]] <- list()
-    for(j in obsPerLevel[[zoo]]$Get("name",filterFun=function(x) x$level==2)){
-      if(obsPerLevel[[zoo]][[j]]$obs[1]!=obsPerLevel[[zoo]][[j]]$obs[2])
-        levelObs[[zoo]][[j]] <- sample(obsPerLevel[[zoo]][[j]]$obs[1]:obsPerLevel[[zoo]][[j]]$obs[2],size=1)
-      else
-        levelObs[[zoo]][[j]] <- obsPerLevel[[zoo]][[j]]$obs[1]
-    }
-    lInd <- unname(gsub("level","",sort(obsPerLevel[[zoo]]$Get("name",filterFun=function(x) x$level==2),decreasing=TRUE)[1]))
-    level[[zoo]] <- c(paste0(lInd,"i"),rep(lInd,levelObs[[zoo]][[paste0("level",lInd)]]))
-    lLevels[[zoo]] <- c(paste0(lInd,"i"),lInd)
-    for(j in sort(obsPerLevel[[zoo]]$Get("name",filterFun=function(x) x$level==2),decreasing=TRUE)[-1]){
-      level[[zoo]] <- c(gsub("level","",j),level[[zoo]])
-      lLevels[[zoo]] <- c(gsub("level","",j),lLevels[[zoo]])
-      level[[zoo]] <- rep(level[[zoo]],levelObs[[zoo]][[j]])
-      if(j!="level1") {
-        level[[zoo]] <- c(paste0(gsub("level","",j),"i"),level[[zoo]])
-        lLevels[[zoo]] <- c(paste0(gsub("level","",j),"i"),lLevels[[zoo]])
+    if(obsInd){
+      for(j in obsPerLevel[[zoo]]$Get("name",filterFun=function(x) x$level==2)){
+        if(obsPerLevel[[zoo]][[j]]$obs[1]!=obsPerLevel[[zoo]][[j]]$obs[2])
+          levelObs[[zoo]][[j]] <- sample(obsPerLevel[[zoo]][[j]]$obs[1]:obsPerLevel[[zoo]][[j]]$obs[2],size=1)
+        else
+          levelObs[[zoo]][[j]] <- obsPerLevel[[zoo]][[j]]$obs[1]
       }
+      lInd <- unname(gsub("level","",sort(obsPerLevel[[zoo]]$Get("name",filterFun=function(x) x$level==2),decreasing=TRUE)[1]))
+      level[[zoo]] <- c(paste0(lInd,"i"),rep(lInd,levelObs[[zoo]][[paste0("level",lInd)]]))
+      lLevels[[zoo]] <- c(paste0(lInd,"i"),lInd)
+      for(j in sort(obsPerLevel[[zoo]]$Get("name",filterFun=function(x) x$level==2),decreasing=TRUE)[-1]){
+        level[[zoo]] <- c(gsub("level","",j),level[[zoo]])
+        lLevels[[zoo]] <- c(gsub("level","",j),lLevels[[zoo]])
+        level[[zoo]] <- rep(level[[zoo]],levelObs[[zoo]][[j]])
+        if(j!="level1") {
+          level[[zoo]] <- c(paste0(gsub("level","",j),"i"),level[[zoo]])
+          lLevels[[zoo]] <- c(paste0(gsub("level","",j),"i"),lLevels[[zoo]])
+        }
+      }
+    } else {
+      level[[zoo]] <- model$data$level[which(model$data$ID==unique(model$data$ID)[zoo])]
+      lLevels[[zoo]] <- levels(model$data$level[which(model$data$ID==unique(model$data$ID)[zoo])])
+      if(isTRUE(list(...)$ctds)) level[[zoo]][length(level[[zoo]])+1] <- tail(level[[zoo]],1)
     }
     allNbObs[zoo] <- length(level[[zoo]]) #prod(unlist(levelObs[[zoo]]))
   }
   cumNbObs <- c(0,cumsum(allNbObs))
+  
+  obsTimes <- dt <- dtr <- vector('list',nbAnimals)
+  allObsTimes <- NULL
+  for(zoo in 1:nbAnimals){
+    if(isTRUE(list(...)$CT)){
+      if(!is.list(lambda)){
+        obsTimes[[zoo]] <- stats::rexp(allNbObs[zoo],lambda)
+        obsTimes[[zoo]][1] <- 0
+        obsTimes[[zoo]][c(which(grepl("i",level[[zoo]])),which(grepl("i",level[[zoo]]))+1)] <- 0
+        obsTimes[[zoo]] <- 1+cumsum(obsTimes[[zoo]])
+      } else obsTimes[[zoo]] <- lambda[[zoo]]
+      dt[[zoo]] <- dtr[[zoo]] <- numeric(allNbObs[zoo]-!isTRUE(list(...)$ctds))
+      for(iLevel in lLevels[[zoo]]){
+        iDat <- which(level[[zoo]]==iLevel)
+        dt[[zoo]][iDat] <- c(diff(obsTimes[[zoo]][iDat]),0)
+        if(!grepl("i",iLevel)){
+          if(iLevel=="1") {
+            dtr[[zoo]][iDat[-1]-1] <- dt[[zoo]][iDat[-length(iDat)]]
+          } else {
+            idatInd <- which(level[[zoo]][iDat[-length(iDat)]+1]!="1")
+            dtr[[zoo]][iDat[idatInd]] <- dt[[zoo]][iDat[idatInd]]
+          }
+        } else {
+          dt[[zoo]][iDat] <- 1
+          dtr[[zoo]][iDat] <- 0
+          dtr[[zoo]][iDat-1] <- 1
+        }
+      }
+      if(obsInd) allObsTimes <- append(allObsTimes,obsTimes[[zoo]])
+      else allObsTimes <- append(allObsTimes,obsTimes[[zoo]][-length(obsTimes[[zoo]])])
+    } else {
+      obsTimes[[zoo]] <- 1:allNbObs[zoo]
+      dt[[zoo]] <- diff(obsTimes[[zoo]])
+      dtr[[zoo]] <- dt[[zoo]]
+    }
+  }
   
   # extend covs if not enough covariate values
   if(!is.null(covs)) {
@@ -578,18 +661,27 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       for(i in hierDist$Get("name",filterFun=function(x) x$level==2)){
         lnbCovs <- wnbHierCovs[[i]]$nbCovs
         if(lnbCovs>0){
+          lInd <- which(unlist(level)==gsub("level","",i))
           for(j in 1:lnbCovs){
             if(is.null(allCovs)){
               allCovs <- data.frame(rep(NA,sum(allNbObs)))
-              lInd <- which(unlist(level)==gsub("level","",i))
               allCovs[lInd,] <- rnorm(length(lInd))
               colnames(allCovs) <- paste("cov",gsub("level","",i),".",j,sep="")
             } else {
               c <- data.frame(rep(NA,sum(allNbObs)))
-              lInd <- which(unlist(level)==gsub("level","",i))
               c[lInd,] <- rnorm(length(lInd))
               colnames(c) <- paste("cov",gsub("level","",i),".",j,sep="")
               allCovs <- cbind(allCovs,c)
+            }
+            for(k in hierDist$Get("name",filterFun=function(x) x$level==2)){
+              if(k!=i){
+                cInd <- (unlist(level)==gsub("level","",i))
+                hInd <- (unlist(level)==gsub("level","",k))
+                for(zoo in 1:nbAnimals){
+                  iInd <- (rep(1:nbAnimals,times=unlist(lapply(level,length)))==zoo)
+                  allCovs[which(iInd & hInd),paste("cov",gsub("level","",i),".",j,sep="")] <- allCovs[which(iInd & cInd),paste("cov",gsub("level","",i),".",j,sep="")][match(unlist(obsTimes)[which(iInd & hInd)],unlist(obsTimes)[which(iInd & cInd)])]
+                }
+              }
             }
           }
         }
@@ -597,11 +689,11 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       # account for missing values of the covariates
       for(i in 1:nbCovs) {
         if(length(which(is.na(allCovs[,i])))>0) { # if covariate i has missing values
-          if(is.na(allCovs[1,i])) { # if the first value of the covariate is missing
-            k <- 1
-            while(is.na(allCovs[k,i])) k <- k+1
-            for(j in k:2) allCovs[j-1,i] <- allCovs[j,i]
-          }
+          #if(is.na(allCovs[1,i])) { # if the first value of the covariate is missing
+          #  k <- 1
+          #  while(is.na(allCovs[k,i])) k <- k+1
+          #  for(j in k:2) allCovs[j-1,i] <- allCovs[j,i]
+          #}
           for(j in 2:nrow(allCovs))
             if(is.na(allCovs[j,i])) allCovs[j,i] <- allCovs[j-1,i]
         }
@@ -613,8 +705,23 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   if(anyDuplicated(colnames(allCovs))) stop("covariates must have unique names")
   if(anyDuplicated(spatialcovnames)) stop("spatialCovs must have unique names")
+  if(nbSpatialCovs>0 & isTRUE(list(...)$ctds)){
+    tmpSpNames <- NULL
+    for(j in spatialcovnames){
+      if(j=="crw" & ctdsCRW){
+        tmpSpNames <- c(tmpSpNames,paste0(rep(j,each=directions),".",1:directions))
+      } else if(isTRUE(attr(spatialCovs[[j]],"nograd"))){
+        #if(j %in% all.vars(DM$z$lambda)) 
+        tmpSpNames <- c(tmpSpNames,j,paste0(rep(j,each=directions),".",1:directions))
+        #else tmpSpNames <- c(tmpSpNames,j)
+      } else tmpSpNames <- c(tmpSpNames,j)
+    }
+  }
   if(!is.null(model) & nbSpatialCovs>0){
-    spInd <- which(!(colnames(allCovs) %in% spatialcovnames))
+    if(!isTRUE(list(...)$ctds)) spInd <- which(!(colnames(allCovs) %in% spatialcovnames))
+    else {
+      spInd <- which(!(colnames(allCovs) %in% tmpSpNames))
+    }
     if(length(spInd)) {
       allCovs <- allCovs[,spInd,drop=FALSE]
       nbCovs <- ncol(allCovs)
@@ -696,6 +803,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   # build the data frame to be returned
   data<-data.frame(ID=factor())
+  coordLevel <- NULL
   for(i in distnames){
     if(dist[[i]] %in% mvndists){
       data[[paste0(i,".x")]] <- numeric()
@@ -723,8 +831,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) data[[paste0(mvnCoords,".z")]]<-numeric()
     coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=data.tree::isLeaf)[[mvnCoords]]$name)
   } else {
-    if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs)) stop("spatialCovs, angleCovs, centers, and/or centroids cannot be specified without valid step length and turning angle distributions")
-    coordLevel <- NULL
+    if(!isTRUE(list(...)$ctds) & (nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs))) stop("spatialCovs, angleCovs, centers, and/or centroids cannot be specified without valid step length and turning angle distributions")
+    if(any(dist=="ctds")) coordLevel <- gsub("level","",hierDist$Get("parent",filterFun=data.tree::isLeaf)[[names(which(dist=="ctds"))]]$name)
   }
   
   if(!is.null(coordLevel)) distCoordLevel <- names(hierDist[[paste0("level",coordLevel)]]$children)
@@ -751,6 +859,22 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   if(!is.null(allCovs))
     tmpCovs <- cbind(tmpCovs,allCovs[1,,drop=FALSE])
   if(nbSpatialCovs){
+    if(isTRUE(list(...)$ctds)) {
+      rast <- list(...)$rast
+      adj <- raster::adjacent(rast,which(!is.na(raster::values(rast))), pairs = TRUE, sorted = TRUE, id = TRUE, directions = directions)
+      fromCell <- adj[seq(1,nrow(adj),directions),2]
+      toCells <- matrix(adj[,3],ncol=directions,byrow=TRUE)
+      adj.cells <- matrix(NA,raster::ncell(rast),directions)
+      adj.cells[fromCell,] <- toCells
+      for(i in 1:length(initialPosition)){
+        initCell <- raster::cellFromXY(rast,initialPosition[[i]])
+        if(is.na(initCell)) stop("initialPosition for individual ",i," is not within the spatial extent of rast")
+        if(rast[initCell]==0) stop("initialPosition for individual ",i," not consistent with zero.idx")
+        if(is.na(rast[initCell])) stop("initialPosition for individual ",i," is not within the spatial extent of rast")
+        if(all(is.na(rast[adj.cells[initCell,]]))) stop("zero.idx and/or directions does not permit a move from initialPosition for individual ",i)
+      }
+      rast[which(raster::values(rast==0))] <- NA
+    }
     for(j in 1:nbSpatialCovs){
       for(i in 1:length(initialPosition)){
         if(is.na(raster::cellFromXY(spatialCovs[[j]],initialPosition[[i]]))) stop("initialPosition for individual ",i," is not within the spatial extent of the ",spatialcovnames[j]," raster")
@@ -762,8 +886,11 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         zvalues <- raster::getZ(spatialCovs[[j]])
         spCov <- spCov[1,which(zvalues==tmpCovs[[zname]][1])]
       }
-      tmpCovs[[spatialcovnames[j]]]<-spCov
+      if(isTRUE(list(...)$ctds) && isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
+      ) tmpCovs[,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))]<- spCov
+      else tmpCovs[,spatialcovnames[j]] <- spCov
     }
+    if(ctdsCRW) tmpCovs[,paste0("crw.",1:directions)] <- 0
   }
   if(length(centerInd)){
     for(j in 1:length(centerInd)){
@@ -785,8 +912,13 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   tmpCovs <- tmpCovs[rep(1,length(lLevels[[1]])),,drop=FALSE]
   tmpCovs$level <- factor(lLevels[[1]],levels=lLevels[[1]])
   class(tmpCovs) <- append("hierarchical",class(tmpCovs))
+  if(isTRUE(list(...)$CT)) {
+    tmpCovs$dt <- 0
+    attr(tmpCovs,"CT") <- TRUE
+  }
   
-  inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,checkData=FALSE)
+  inputHierHMM <- formatHierHMM(data=tmpCovs,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,checkData=FALSE,...)
+
   nbStates <- inputHierHMM$nbStates
   dist <- inputHierHMM$dist
   formula <- inputHierHMM$formula
@@ -914,10 +1046,13 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   mix <- rep(1,nbAnimals)
   
+  if(!is.null(lambda)){
+    if("time" %in% c(names(allCovs),spatialcovnames,angleCovs,centroidNames,centerNames)) stop("When 'lambda' is specified, 'time' is reserved and cannot be used for covariate names")
+  }
   
-  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",FALSE,hierarchical=TRUE)
+  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",FALSE,hierarchical=TRUE,CT=isTRUE(list(...)$CT))
   
-  if(ncores>1 & nbAnimals>1) message("\nSimulating ",nbAnimals," individuals in parallel... ",sep="")
+  if(ncores>1 & nbAnimals>1) message("        Simulating ",nbAnimals," individuals in parallel... ",sep="")
   
   if(!nbSpatialCovs | !retrySims){
     
@@ -949,14 +1084,23 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       if(length(centerInd)) subCovs <- cbind(subCovs,centerCovs[cumNbObs[zoo]+1:nbObs,])
       if(length(centroidInd)) subCovs <- cbind(subCovs,centroidCovs[cumNbObs[zoo]+1:nbObs,])
       
-      subSpatialcovs<-as.data.frame(matrix(NA,nrow=nbObs,ncol=nbSpatialCovs))
-      colnames(subSpatialcovs)<-spatialcovnames
+      if(!isTRUE(list(...)$ctds)){
+        subSpatialcovs<-as.data.frame(matrix(NA,nrow=nbObs,ncol=nbSpatialCovs))
+        colnames(subSpatialcovs)<-spatialcovnames
+      } else {
+        subSpatialcovs<-as.data.frame(matrix(NA,nrow=nbObs,ncol=length(tmpSpNames)))
+        colnames(subSpatialcovs)<-tmpSpNames
+      }
       subAnglecovs <- as.data.frame(matrix(NA,nrow=nbObs,ncol=length(angleCovs)))
       colnames(subAnglecovs) <- angleCovs
       
       X <- matrix(NA,nrow=nbObs,ncol=2)
       if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) X <- matrix(0,nrow=nbObs,ncol=3)
-      X[1,] <- initialPosition[[zoo]] # initial position of animal
+      if(!isTRUE(list(...)$ctds)) {
+        X[1,] <- initialPosition[[zoo]] # initial position of animal
+      } else {
+        X[1,] <- raster::xyFromCell(rast,raster::cellFromXY(rast,initialPosition[[zoo]]))
+      }
       
       phi <- 0
       
@@ -979,6 +1123,10 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       gamma <- t(gamma)
       
       class(subCovs) <- append("hierarchical",class(subCovs))
+      if(isTRUE(list(...)$CT)) {
+        subCovs$dt <- dt[[zoo]]
+        attr(subCovs,"CT") <- TRUE
+      }
       
       if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd) & !length(angleCovs) & !rwInd) {
         if(!is.null(recharge)){
@@ -1014,21 +1162,29 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       } else {
         
         if(nbSpatialCovs){
+          if(isTRUE(list(...)$ctds)) {
+            getCell<-raster::cellFromXY(rast,c(X[1,1],X[1,2]))
+          }
           for(j in 1:nbSpatialCovs){
-            getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[1,1],X[1,2]))
-            if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+            if(!isTRUE(list(...)$ctds)){
+              getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[1,1],X[1,2]))
+              if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+            }
             spCov <- spatialCovs[[j]][getCell]
             if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
               zname <- names(attributes(spatialCovs[[j]])$z)
               zvalues <- raster::getZ(spatialCovs[[j]])
               spCov <- spCov[1,which(zvalues==subCovs[1,zname])]
             }
-            subSpatialcovs[1,j]<-spCov
+            if(isTRUE(list(...)$ctds) && isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
+            ) subSpatialcovs[1,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
+            else subSpatialcovs[1,spatialcovnames[j]]<-spCov
             if(spatialcovnames[j] %in% angleCovs) {
               subAnglecovs[1,spatialcovnames[j]] <- subSpatialcovs[1,j]
               subSpatialcovs[1,j] <- 0  # set to zero because can't have NA covariates
             }
           }
+          if(ctdsCRW) subSpatialcovs[1,paste0("crw.",1:directions)] <- 0
         }
         
         for(j in angleCovs[which(angleCovs %in% names(subCovs))]){
@@ -1050,8 +1206,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         if(!is.null(recharge)){
           tmpSubSpatCovs <- subCovs[1,,drop=FALSE]
           tmpSubSpatCovs[colnames(subSpatialcovs[1,,drop=FALSE])] <- subSpatialcovs[1,,drop=FALSE]
-          tmpSubSpatCovs <- tmpSubSpatCovs[rep(1,length(lLevels[[1]])),,drop=FALSE]
-          tmpSubSpatCovs$level <- factor(lLevels[[1]],levels=lLevels[[1]])
+          #tmpSubSpatCovs <- tmpSubSpatCovs[rep(1,length(lLevels[[1]])),,drop=FALSE]
+          #tmpSubSpatCovs$level <- factor(lLevels[[1]],levels=lLevels[[1]])
           for(j in rechargeNames){
             subCovs[1,j] <- formatRecharge(nbStates,formula,betaRef,data=tmpSubSpatCovs,par=list(g0=wng0,theta=wntheta))$newdata[[j]][1]
           }
@@ -1081,7 +1237,6 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         # assign individual to mixture
         if(mixtures>1) mix[zoo] <- sample.int(mixtures,1,prob=pie)
         
-        g <- stats::model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
         covsDelta <- stats::model.matrix(formDelta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
         
         delta0 <- mlogit(deltaB[(mix[zoo]-1)*(nbCovsDelta+1)+1:(nbCovsDelta+1),,drop=FALSE],covsDelta,nbCovsDelta,1,nbStates)
@@ -1094,9 +1249,18 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         #  delta0[i,] <- as.numeric(tmp/Brobdingnag::sum(tmp))
         #}
       }
-      gamma[!gamma] <- exp(g)
-      gamma <- t(gamma)
-      gamma <- gamma/apply(gamma,1,sum)
+      
+      if(!isTRUE(list(...)$CT)){
+        g <- stats::model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
+        gamma[!gamma] <- exp(g)
+        gamma <- t(gamma)
+        gamma <- gamma/apply(gamma,1,sum)
+      } else {
+        gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])), betaRef, TRUE, 0, aInd=1)[,,1],nbStates,nbStates),error=function(e) e) # diag(nbStates)
+        if(inherits(gamma,"error") || any(gamma<0)){
+          stop("initial TPM exponential could not be calculated for individual ",zoo,": ",ifelse(inherits(gamma,"error"),gamma,"negative probability"))
+        }
+      }
       
       if(nbStates>1) {
         Z <- rep(NA,nbObs)
@@ -1119,10 +1283,14 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         #kInd <- which(subCovs$level==gsub("level","",kk))
       
         if(!is.null(coordLevel)) coordNA <- which(level[[zoo]]==coordLevel)[sum(level[[zoo]]==coordLevel)]
+        levelNA <- integer()
+        for(iLevel in lLevels[[zoo]]){
+          if(is.null(coordLevel) || iLevel!=coordLevel) levelNA <- c(levelNA,tail(which(level[[zoo]]==iLevel),1))
+        }
       
-        for (k in 1:nbObs){
+        for (k in 1:(nbObs-1)){
           
-          if(ncores==1 | nbAnimals==1) progBar(k, nbObs)
+          if(ncores==1 | nbAnimals==1) progBar(k, nbObs-1)
           
           #if(level[[zoo]][k] %in% lLevels[[zoo]][seq(2,length(lLevels[[zoo]]),2)]){
           #  if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
@@ -1145,7 +1313,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
           #  Z[k] <- sample(1:nbStates,size=1,prob=gamma[Z[k-1],])  
           #}
             
-          if(!is.null(names(as.list(hierDist)[[paste0("level",level[[zoo]][k])]]))){
+          if(!(k %in% levelNA) & !is.null(names(as.list(hierDist)[[paste0("level",level[[zoo]][k])]]))){
             
             if(nbSpatialCovs |  length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
               # format parameters
@@ -1174,6 +1342,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
             } else {
               subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
             }
+            
+            if(isTRUE(list(...)$CT)) subPar <- ctPar(subPar,dist,nbStates,data.frame(subCovs[k,],dt=dt[[zoo]][k]))
             
             for(i in distnames[which(distnames %in% names(as.list(hierDist)[[paste0("level",level[[zoo]][k])]]))]){
               
@@ -1209,7 +1379,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                                                 subPar[[i]][nbStates*8+Z[k]]) #z          
                                               ,3,3)
                 } 
-              } else if(inputs$dist[[i]]=="cat"){
+              } else if(inputs$dist[[i]]=="cat" | inputs$dist[[i]]=="ctds"){
                 genArgs[[i]][[2]] <- subPar[[i]][seq(Z[k],(parSize[[i]]+1)*nbStates,nbStates)]
               } else {
                 for(j in 1:(parSize[[i]]-zeroInflation[[i]]-oneInflation[[i]]))
@@ -1254,7 +1424,16 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                 if(rU==1){
                   if(inputs$dist[[i]] %in% mvndists){
                     genData[[i]][k,] <- do.call(Fun[[i]],genArgs[[i]])
-                  } else genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
+                  } else {
+                    if(dist[[i]]=="ctds"){
+                      # forbid moves to cells outside extent of rast
+                      offRast <- which(is.na(rast[adj.cells[getCell,]]))
+                      if(length(offRast)){
+                        genArgs[[i]][[2]][offRast] <- 0
+                      }
+                    }
+                    genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
+                  }
                 } else if(rU==2) {
                   genData[[i]][k] <- 0
                 } else {
@@ -1266,18 +1445,79 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                 if(k < nbObs) X[k+1,] <- genData[[i]][k,]
                 d[[i]] <- X
               } else d[[i]] <- genData[[i]]
-              
+              if(dist[[i]]=="ctds"){
+                if(genData[[i]][k]==(directions+1)){
+                  X[k+1,] <- X[k,]
+                  subSpatialcovs[k+1,] <- subSpatialcovs[k,]
+                  for(j in 1:nbSpatialCovs){
+                    if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+                      spCov <- spatialCovs[[j]][getCell]
+                      zname <- names(attributes(spatialCovs[[j]])$z)
+                      zvalues <- raster::getZ(spatialCovs[[j]])
+                      spCov <- spCov[1,which(zvalues==subCovs[k+1,zname])]
+                      if(isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
+                      ) subSpatialcovs[k+1,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
+                      else subSpatialcovs[k+1,spatialcovnames[j]]<-spCov
+                      if(spatialcovnames[j] %in% angleCovs) {
+                        subAnglecovs[k+1,spatialcovnames[j]] <- subSpatialcovs[k+1,j]
+                        subSpatialcovs[k+1,spatialcovnames[j]] <- circAngles(subAnglecovs[k:(k+1),spatialcovnames[j]],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
+                      }
+                    }
+                  }
+                } else {
+                  oldCell <- getCell
+                  getCell <- c(adj.cells[getCell,],getCell)[genData[[i]][k]]
+                  if(level[[zoo]][k+1]==coordLevel) nextLev <- k+1
+                  else if(coordLevel!=tail(lLevels[[zoo]],1)) nextLev <- k + which(level[[zoo]][-(1:k)]==coordLevel)[1]
+                  else nextLev <- k + which(level[[zoo]][-(1:k)]=="1")[1]
+                  
+                  if(length(nextLev) && !is.na(nextLev)) {
+                    X[nextLev,] <- raster::xyFromCell(rast,getCell)
+                    for(j in 1:nbSpatialCovs){
+                      spCov <- spatialCovs[[j]][getCell]
+                      if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+                        zname <- names(attributes(spatialCovs[[j]])$z)
+                        zvalues <- raster::getZ(spatialCovs[[j]])
+                        spCov <- spCov[1,which(zvalues==subCovs[nextLev,zname])]
+                      }
+                      if(isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
+                      ) subSpatialcovs[nextLev,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
+                      else subSpatialcovs[nextLev,spatialcovnames[j]]<-spCov
+                      if(spatialcovnames[j] %in% angleCovs) {
+                        subAnglecovs[nextLev,spatialcovnames[j]] <- subSpatialcovs[nextLev,j]
+                        subSpatialcovs[nextLev,spatialcovnames[j]] <- circAngles(subAnglecovs[c(k,nextLev),spatialcovnames[j]],data.frame(x=X[c(k,nextLev),1],y=X[c(k,nextLev),2]))[2] 
+                      }
+                    }
+                    if(ctdsCRW){
+                      xy.cell = raster::xyFromCell(rast, rep(oldCell,directions))
+                      xy.adj = raster::xyFromCell(rast, adj.cells[oldCell,])
+                      v.adj = (xy.adj - xy.cell)/sqrt(apply((xy.cell - xy.adj)^2, 1, sum))
+                      v.moves = v.adj[rep(which(getCell==adj.cells[oldCell,]),directions), ]
+                      subSpatialcovs[nextLev,paste0("crw.",1:directions)] <- rowSums(v.moves * v.adj)
+                    }
+                  }
+                }
+                if(k==coordNA) genData[[i]][k] <- d[[i]][k] <- NA
+              }
             }
           }
+          # get next state
+          gamma <- matrix(0,nbStates,nbStates)
+          gamma[cbind(1:nbStates,betaRef)] <- 1
+          gamma <- t(gamma)
           
-          if(k < nbObs){
+          #if(k < nbObs){
             
             if(all(is.na(X[k+1,]))){
               X[k+1,] <- X[k,]
             }
+          
+            if(isTRUE(list(...)$ctds) & all(is.na(subSpatialcovs[k+1,]))){
+              subSpatialcovs[k+1,] <- subSpatialcovs[k,]
+            }
 
             if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
-              if(nbSpatialCovs){
+              if(nbSpatialCovs & !isTRUE(list(...)$ctds)){
                 for(j in 1:nbSpatialCovs){
                   getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[k+1,1],X[k+1,2]))
                   if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
@@ -1317,10 +1557,10 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                   tmpSubCovs <- cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])
                   if(subCovs[k+1,"level"]==gsub("level","",recLevelNames[j]) & match(subCovs[k,"level"],levels(subCovs$level))>=match(subCovs[k+1,"level"],levels(subCovs$level))){
                     tmpSubCovs$level <- subCovs[k+1,"level"]
-                    subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]] + stats::model.matrix(recharge$theta,tmpSubCovs)[,colInd[[j]],drop=FALSE] %*% wntheta[colInd[[j]]]
+                    subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]] + (stats::model.matrix(recharge$theta,tmpSubCovs)[,colInd[[j]],drop=FALSE] %*% wntheta[colInd[[j]]])*dt[[zoo]][k]
                   } else if(match(subCovs[k,"level"],levels(subCovs$level))>match(subCovs[k+1,"level"],levels(subCovs$level))){
                     #tmpSubCovs$level <- subCovs[k,"level"]
-                    subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]] + stats::model.matrix(recharge$theta,tmpSubCovs)[,colInd[[j]],drop=FALSE] %*% wntheta[colInd[[j]]]
+                    subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]] + (stats::model.matrix(recharge$theta,tmpSubCovs)[,colInd[[j]],drop=FALSE] %*% wntheta[colInd[[j]]])*dt[[zoo]][k]
                   } else {
                     subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]]
                   }
@@ -1333,19 +1573,27 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                   else if(dist[[i]] %in% c("rw_mvnorm3")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1",".z_tm1"))] <- X[k+1,]
                 }
               }
-              g <- stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
-            } else {
-              g <- gFull[k+1,,drop=FALSE]
             }
-            # get next state
-            gamma <- matrix(0,nbStates,nbStates)
-            gamma[cbind(1:nbStates,betaRef)] <- 1
-            gamma <- t(gamma)
-            gamma[!gamma] <- exp(g)
-            gamma <- t(gamma)
-            gamma <- gamma/apply(gamma,1,sum)
+            if(!isTRUE(list(...)$CT)){
+              if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd)
+                g <- stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
+              else g <- gFull[k+1,,drop=FALSE]
+              gamma[!gamma] <- exp(g)
+              gamma <- t(gamma)
+              gamma <- gamma/apply(gamma,1,sum)
+            } else {
+              if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
+                gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])), betaRef, TRUE, dtr[[zoo]][k], aInd=1)[,,1],nbStates,nbStates),error=function(e) e)
+              } else {
+                gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], DMcov[k+1,,drop=FALSE], betaRef, TRUE, dtr[[zoo]][k], aInd=1)[,,1],nbStates,nbStates),error=function(e) e)
+              }
+              if(inherits(gamma,"error") || any(gamma<0)){
+                warning("TPM exponential could not be calculated for individual ",zoo,"; terminating at observation ",k,": ",ifelse(inherits(gamma,"error"),gamma,"negative probability"))
+                break;
+              }
+            }
             Z[k+1] <- sample(1:nbStates,size=1,prob=gamma[Z[k],])  
-          }
+          #}
         }
       #}
       #allStates <- c(allStates,Z)
@@ -1379,6 +1627,9 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) d[[paste0(mvnCoords,".z")]] <- d[[mvnCoords]][,3]
         d[[mvnCoords]] <- NULL
         coordNames <- paste0(mvnCoords,c(".x",".y"))
+      } else if(isTRUE(list(...)$ctds)){
+        d$x <- X[,1]
+        d$y <- X[,2]
       } else {
         coordNames <- NULL
       }
@@ -1388,9 +1639,14 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       if(length(centroidInd)) centroidCovs <- subCovs[,centroidNames]
       #data <- rbind(data,d)
       
-      #if(ncores==1 | nbAnimals==1) message("\n")
-      
-      return(list(data=d,allCovs=allCovs[cumNbObs[zoo]+1:nbObs,,drop=FALSE],allSpatialcovs=subSpatialcovs,centerCovs=centerCovs,centroidCovs=centroidCovs,allStates=matrix(Z,ncol=1)))
+      #d$dt <- dt[[zoo]]
+      simDat <- list(data=d,allCovs=allCovs[cumNbObs[zoo]+1:nbObs,,drop=FALSE],allSpatialcovs=subSpatialcovs,centerCovs=centerCovs,centroidCovs=centroidCovs,allStates=matrix(Z,ncol=1))
+      if(isTRUE(list(...)$ctds)){
+        simDat$data$time <- obsTimes[[zoo]]
+        simDat$data$tau <- dt[[zoo]]
+        simDat <- lapply(simDat,function(x) if(!is.null(x)) x[1:k,,drop=FALSE])
+      }
+      return(simDat)
     }
     ,warning=muffleRNGwarning)
     if(!((ncores>1 & nbAnimals>1))) doParallel::stopImplicitCluster()
@@ -1400,10 +1656,25 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       simDat$data <- cbind(simDat$data,simDat$allCovs)
     
     if(nbSpatialCovs>0){
-      colnames(simDat$allSpatialcovs)<-spatialcovnames
-      for(j in spatialcovnames){
-        if(any(raster::is.factor(spatialCovs[[j]]))){
-          simDat$allSpatialcovs[[j]] <- factor(simDat$allSpatialcovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
+      if(!isTRUE(list(...)$ctds)) {
+        colnames(simDat$allSpatialcovs)<-spatialcovnames
+        for(j in spatialcovnames){
+          if(any(raster::is.factor(spatialCovs[[j]]))){
+            simDat$allSpatialcovs[[j]] <- factor(simDat$allSpatialcovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
+          }
+        }
+      } else {
+        colnames(simDat$allSpatialcovs)<-tmpSpNames
+        for(j in spatialcovnames){
+          if(any(raster::is.factor(spatialCovs[[j]]))){
+            if(isTRUE(attr(spatialCovs[[j]],"nograd"))){
+              for(i in 1:directions){
+                simDat$allSpatialcovs[[paste0(j,".",i)]] <- factor(simDat$allSpatialcovs[[paste0(j,".",i)]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
+              }
+            } else {
+              simDat$allSpatialcovs[[j]] <- factor(simDat$allSpatialcovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
+            }
+          }
         }
       }
       simDat$data <- cbind(simDat$data,simDat$allSpatialcovs)
@@ -1467,17 +1738,34 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
     
     # account for observation error (if any)
-    out<-simObsData(momentuHierHMMData(simDat$data),lambda,errorEllipse,coordLevel)
-    
+    if(!isTRUE(list(...)$CT)) out<-simObsData(momentuHierHMMData(simDat$data),lambda,errorEllipse,coordLevel)
+    else {
+      withCallingHandlers(out<-simObsData(momentuHierHMMData(simDat$data),lambda=NULL,errorEllipse,coordLevel,CT=TRUE),warning=muffleCTwarning)
+      if(!isTRUE(list(...)$ctds)) out$time <- allObsTimes
+      else {
+        obsCount <- table(out$ID)
+        termInd <- which(obsCount!=(allNbObs-1))
+        for(zoo in termInd){
+          warning("TPM exponential could not be calculated for individual ",zoo,"; terminated at observation ",obsCount[zoo])
+        }
+      }
+    }
+    message("DONE")
     return(out)
   } else {
+    
+    if(isTRUE(list(...)$CT) & !is.null(model)){
+      attributes(model)$class <- attributes(model)$class[which(!attributes(model)$class %in% "CTHMM")]
+    }
+    
     if(!((ncores>1 & nbAnimals>1))) doParallel::stopImplicitCluster()
     else future::plan(future::sequential)
+    
     simCount <- 0
-    message("Attempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simHierData'\n",sep="")
+    message("\nAttempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simData'\n",sep="")
     while(simCount < retrySims){
-      if(ncores==1) message("    Attempt ",simCount+1," of ",retrySims,"...\n",sep="")
-      else message("\r    Attempt ",simCount+1," of ",retrySims,"...",sep="")
+      if(ncores==1) cat("\r    Attempt ",simCount+1," of ",retrySims,"... ",sep="")
+      else cat("\r    Attempt ",simCount+1," of ",retrySims,"... ",sep="")
       tmp<-suppressMessages(tryCatch(simHierData(nbAnimals,hierStates,hierDist,
                                              Par,hierBeta,hierDelta,
                                              hierFormula,hierFormulaDelta,mixtures,formulaPi,
@@ -1496,17 +1784,18 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                                              retrySims=0,
                                              lambda,
                                              errorEllipse,
-                                             ncores),error=function(e) e))
+                                             ncores,
+                                             ...),error=function(e) e))
       if(inherits(tmp,"error")){
         if(grepl("Try expanding the extent of the raster",tmp)) simCount <- simCount+1
         else stop(tmp)
       } else {
         simCount <- retrySims
-        message("DONE")
+        message("DONE\n")
         return(tmp)
       }
     }
-    message("FAILED")
+    message("FAILED\n")
     stop(tmp)
   }
 }

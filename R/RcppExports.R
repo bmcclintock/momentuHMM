@@ -286,11 +286,23 @@ getDM_rcpp <- function(X, covs, DM, nr, nc, cov, nbObs) {
 #' the state is not known.
 #' @param betaRef Indices of reference elements for t.p.m. multinomial logit link.
 #' @param mixtures Number of mixtures for the state transition probabilities
+#' @param dtIndex time difference index for calculating transition probabilities of hierarchical continuous-time models
 #' @param CT logical indicating whether to fit discrete-time approximation of a continuous-time model
 #' 
 #' @return Negative log-likelihood
-nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, CT = FALSE) {
-    .Call('_momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, CT)
+nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT = FALSE) {
+    .Call('_momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT)
+}
+
+#' Stationary distribution for a continuous-time Markov chain
+#'
+#' Written in C++. 
+#'
+#' @param A transition rate matrix (of dimension nbStates x nbStates)
+#'
+#' @return row vector of stationary distribution probabilities
+stationary_rcpp <- function(A) {
+    .Call('_momentuHMM_stationary_rcpp', PACKAGE = 'momentuHMM', A)
 }
 
 #' Transition probability matrix
@@ -304,10 +316,12 @@ nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zero
 #' @param betaRef Indices of reference elements for t.p.m. multinomial logit link.
 #' @param CT logical indicating discrete-time approximation of a continuous-time model
 #' @param dt numeric vector of length \code{nrow(covs)} indicating the time difference between observations. Ignored unless \code{CT=TRUE}.
+#' @param rateMatrix logical indicating whether or not to return the transition rate matrix. Ignored unless \code{CT=TRUE}.
+#' @param aInd Vector of indices of the rows at which the data (i.e. \code{covs}) switches to another animal. Ignored unless \code{CT=TRUE}.
 #'
 #' @return Three dimensional array \code{trMat}, such that \code{trMat[,,t]} is the transition matrix at
 #' time t.
-trMatrix_rcpp <- function(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric( c())) {
-    .Call('_momentuHMM_trMatrix_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs, betaRef, CT, dt)
+trMatrix_rcpp <- function(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric( c()), rateMatrix = FALSE, aInd = as.integer( c())) {
+    .Call('_momentuHMM_trMatrix_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs, betaRef, CT, dt, rateMatrix, aInd)
 }
 

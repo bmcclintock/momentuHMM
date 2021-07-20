@@ -189,9 +189,11 @@ simCTDS <- function(nbAnimals=1,nbStates=2,dist,
     for(i in names(dist)){
       if(!dist[[i]] %in% CTHMMdists) stop("Sorry, currently simCTDS only supports the following distributions: ",paste0(CTHMMdists,sep=", "))
     }
+    if(!(directions %in% c(4,8))) stop("'directions' must be 4 or 8")
     if(!is.null(lambda)){
       if(length(lambda)>1 || lambda<=0) stop('lambda must be a scalar and >0')
     } else stop("lambda cannot be NULL")
+    Time.name = "time"
   }
   
   if(missing(rast) || !inherits(rast,"RasterLayer")) stop("'rast' must be provided as a RasterLayer")
@@ -294,7 +296,8 @@ simCTDS <- function(nbAnimals=1,nbStates=2,dist,
   attr(out,"ctdsData") <- "z"
   attr(out,"normalize.gradients") <- normalize.gradients
   attr(out,"grad.point.decreasing") <- grad.point.decreasing
-  
+  attr(out,"CT") <- TRUE
+  attr(out,"Time.name") <- Time.name
   return(out)
   
 }

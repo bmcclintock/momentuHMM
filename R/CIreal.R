@@ -148,8 +148,13 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
   mixtures <- m$conditions$mixtures
   if(mixtures>1 & is.null(parms)) pparms <- c(pparms,"pi")
   
-  if(isTRUE(m$conditions$CT)) dt <- mean(m$data$dt)
-  else dt <- 1
+  dt <- 1
+  if(isTRUE(m$conditions$CT)){
+    dt <- mean(m$data$dt)
+    if(inherits(m,"hierarchical")){
+      dt <- mean(m$data$dt[which(m$data$level==tempCovs$level)])
+    }
+  }
 
   if(nbStates>1) {
     
@@ -248,9 +253,15 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
         
         covs<-tempCovMat
         statFun<-function(beta,nbStates,covs,i,mixture=1){
-          gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,m$conditions$betaRef,isTRUE(m$conditions$CT),dt)[,,1]
-          tryCatch(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i],error = function(e) {
-            "A problem occurred in the calculation of the stationary distribution."})
+          gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,m$conditions$betaRef,isTRUE(m$conditions$CT),dt,isTRUE(m$conditions$CT))[,,1]
+          if(!isTRUE(m$conditions$CT)){
+            tryCatch(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i],error = function(e) {
+              "A problem occurred in the calculation of the stationary distribution."})
+          } else {
+            tryCatch(
+              stationary_rcpp(gamma),error = function(e) {
+                "A problem occurred in the calculation of the stationary distribution."})
+          }
         }
         est <- lower <- upper <- se <- matrix(NA,nbAnimals*mixtures,nbStates)
         wpar <- m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))]
@@ -281,12 +292,13 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
   return(Par)
 }
 
-get_gamma <- function(beta,covs,nbStates,i,j,betaRef,betaCons,workBounds=NULL,mixture=1,CT=FALSE,dt){
+get_gamma <- function(beta,covs,nbStates,i,j,betaRef,betaCons,workBounds=NULL,mixture=1,CT=FALSE,dt,indCT1=FALSE,rateMatrix=FALSE){
   dt <- ifelse(is.null(dt),1,dt)
   tmpBeta <- rep(NA,length(betaCons))
   tmpBeta[unique(c(betaCons))] <- beta
   beta <- w2wn(matrix(tmpBeta[betaCons],nrow(betaCons),ncol(betaCons)),workBounds)
-  gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,betaRef,CT,dt)[,,1]
+  if(!indCT1 | rateMatrix) gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,betaRef,CT,dt,rateMatrix,aInd=1)[,,1]
+  else gamma <- diag(nbStates)
   gamma[i,j]
 }
 
@@ -313,7 +325,7 @@ get_recharge <- function(g0theta,recovs,g0covs,recharge,hierRecharge,rechargeNam
   return(rec)
 }
 
-get_gamma_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,j,betaRef,betaCons,workBounds=NULL,mixture=1,CT=FALSE,dt=NULL){
+get_gamma_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,j,betaRef,betaCons,workBounds=NULL,mixture=1,CT=FALSE,dt=NULL,rateMatrix=FALSE){
   
   #dt <- ifelse(is.null(dt),1,mean(dt))
   
@@ -346,7 +358,7 @@ get_gamma_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,j,betaR
 
   newcovs <- stats::model.matrix(formula,covs)
   beta <- matrix(beta[1:(length(beta)-(ncol(recovs)))],ncol=nbStates*(nbStates-1))
-  gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(newcovs)+1:ncol(newcovs),,drop=FALSE],newcovs,betaRef,CT,dt)[,,1]
+  gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(newcovs)+1:ncol(newcovs),,drop=FALSE],newcovs,betaRef,CT,dt,rateMatrix,aInd=1)[,,1]
   gamma[i,j]
 }
 

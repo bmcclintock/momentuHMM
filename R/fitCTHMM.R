@@ -2,7 +2,7 @@
 #' Fit a continuous-time multivariate HMM to the data
 #'
 #' Fit an approximate continuous-time (multivariate) hidden Markov model to the data provided, using numerical optimization of the log-likelihood
-#' function. The discrete-time approximation of the continuous-time model improves as the time between observations decreases.
+#' function. The discrete-time approximation of the continuous-time model improves as the time between observations decreases. Note that only a single state transition can occur between observations and any time-varying covariates are assumed piece-wise constant between observations.
 #' 
 #' @param data A \code{\link{momentuHMMData}} (as returned by \code{\link{prepData}}, \code{\link{simData}}, \code{\link{prepCTDS}}, or \code{\link{simCTDS}}) or a \code{\link{momentuHierHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simHierData}}) object.
 #' @param ... further arguments passed to or from other methods
@@ -187,6 +187,7 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
   if(inherits(data,"ctds")){
     Time.name <- "time"
     Time.unit <- attr(data,"Time.unit")
+    if(is.null(data$tau)) stop("'tau' not found in 'data'")
     data$dt <- data$tau
     data$tau <- NULL
     if(!any(data[[attr(data,"ctdsData")]]==(attr(data,"directions")+1))) stop("cell moves cannot occur at every time step; some data$",attr(data,"ctdsData"),"'s must be equal to ",attr(data,"directions")+1)
@@ -228,11 +229,12 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
                                formula=formula,formulaDelta=formulaDelta,stationary=stationary,mixtures=mixtures,formulaPi=formulaPi,
                                nlmPar=nlmPar,fit=fit,
                                DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,
-                               mvnCoords=mvnCoords,stateNames=stateNames,knownStates=knownStates,fixPar=fixPar,retryFits=retryFits,retrySD=retrySD,optMethod=optMethod,control=control,prior=prior,modelName=modelName, CT=TRUE),warning=muffleCTwarning)
+                               mvnCoords=mvnCoords,stateNames=stateNames,knownStates=knownStates,fixPar=fixPar,retryFits=retryFits,retrySD=retrySD,optMethod=optMethod,control=control,prior=prior,modelName=modelName, CT=TRUE, Time.name=Time.name),warning=muffleCTwarning)
   
   class(mfit) <- append(class(mfit),"CTHMM")
   mfit$conditions$CT <- TRUE
   attr(mfit$data,"CT") <- TRUE
+  attr(mfit$data,"Time.name") <- Time.name
   if(inherits(data,"ctds")){
     class(mfit) <- append(class(mfit),"ctds")
     attr(mfit$data,"directions") <- attr(data,"directions")
@@ -279,8 +281,11 @@ fitCTHMM.momentuHierHMMData <- function(data,Time.name="time",Time.unit="auto",h
   
   if(!inherits(data,"momentuHierHMMData")) stop("data must be a momentuHierHMMData object (as returned by prepData or simHierData)")
   
-  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,betaCons,deltaCons,fixPar)
+  if(length(data)<1 | any(dim(data)<1))
+    stop("The data input is empty.")
   
+  inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,betaCons,deltaCons,fixPar,checkData = TRUE, CT=TRUE)
+
   chkDots(...)
   
   hfit <- fitCTHMM.momentuHMMData(momentuHMMData(data),Time.name=Time.name,Time.unit=Time.unit,inputHierHMM$nbStates,inputHierHMM$dist,Par0,inputHierHMM$beta,inputHierHMM$delta,

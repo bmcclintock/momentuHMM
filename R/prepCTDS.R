@@ -3,7 +3,15 @@
 #' 
 #' This wrapper function for \code{\link[ctmcmove]{path2ctmc}} and \code{\link[ctmcmove]{ctmc2glm}} converts a \code{data.frame} of coordinates, other data streams, and non-spatial covariates to a \code{\link{momentuHMMData}} object that can be passed directly to \code{\link{fitCTHMM}} (or as a list to \code{\link{MIfitCTHMM}}).
 #' 
-#' @param data Either a \code{data.frame} of data streams or a \code{\link{crwData}} object (as returned by \code{\link{crawlWrap}}). If a \code{data.frame}, it must include entries for the x coordinate (\code{x}), y coordinate (\code{y}), and time stamp (\code{time}). An \code{ID} entry must also be included if \code{data} includes multiple individuals.
+#' @param data Either a \code{data.frame} of data streams or a \code{\link{crwData}} (or \code{\link{crwHierData}}) object (as returned by \code{\link{crawlWrap}}). If a \code{data.frame}, it must include entries for the x coordinate (\code{x}), y coordinate (\code{y}), and time stamp (\code{time}). An \code{ID} entry must also be included if \code{data} includes multiple individuals.
+#' @param ... further arguments passed to or from other methods
+#' @export
+prepCTDS <- function(data, ...) {
+  UseMethod("prepCTDS")
+}
+
+#' @rdname prepCTDS
+#' @method prepCTDS default
 #' @param Time.unit Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{data$time} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto', but note that if there are multiple individuals, then the units are determined based on the time stamps for the first individual.
 #' @param rast A raster object or raster stack object that will define the discrete-space grid cells for the CTMC movement path.
 #' @param directions Integer. Either 4 (indicating a "Rook's neighborhood" of 4 neighboring grid cells) or 8 (indicating a "King's neighborhood" of 8 neighboring grid cells).
@@ -52,9 +60,9 @@
 #' Hanks E. M., Hooten M. B., and Alldredge M. W. 2015. Continuous-time Discrete-space Models for Animal Movement. The Annals of Applied Statistics 9:145-165
 #' 
 #' @export
-prepCTDS <- function(data, Time.unit="auto", rast, directions=4, zero.idx=integer(), print.iter=FALSE, interpMethod="ShortestPath",
+prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.idx=integer(), print.iter=FALSE, interpMethod="ShortestPath",
                      spatialCovs=NULL, spatialCovs.grad=NULL, crw = TRUE, normalize.gradients = FALSE, grad.point.decreasing = FALSE,
-                     covNames=NULL, ncores=1) {
+                     covNames=NULL, ncores=1, ...) {
   
   if (!requireNamespace("ctmcmove", quietly = TRUE)) {
     stop("Package \"ctmcmove\" needed for this function to work. Please install it.",
@@ -89,6 +97,7 @@ prepCTDS <- function(data, Time.unit="auto", rast, directions=4, zero.idx=intege
     }
   }
   
+  if(!(directions %in% c(4,8))) stop("'directions' must be 4 or 8")
   if(any(names(data) %in% c("x.current","y.current","z",paste0("z.",1:directions),"tau","cellCross"))) stop("'x.current', 'y.current', 'z', 'tau', and 'cellCross' are reserved and cannot be fields in data")
   if(!is.null(covNames)){
     if(any(covNames %in% c(c("ID","time","x","y")))) stop("covNames cannot include 'ID', 'time', 'x', or 'y'")
@@ -107,6 +116,8 @@ prepCTDS <- function(data, Time.unit="auto", rast, directions=4, zero.idx=intege
     iInd <- which(data$ID==unique(data$ID)[1])
     Time.unit <- attr(difftime(data$time[iInd[-1]],data$time[iInd[-length(iInd)]],units="auto"),"units")
   }
+  
+  chkDots(...)
   
   iDat <- id <- NULL # get rid of no visible binding for global variable warning
   if(ncores>1){
@@ -206,12 +217,216 @@ prepCTDS <- function(data, Time.unit="auto", rast, directions=4, zero.idx=intege
   return(ctdsOut)
 }
 
+#' @rdname prepCTDS
+#' @method prepCTDS hierarchical
+#' @param hierLevels Character vector indicating the levels of the hierarchy and their order, from top (coarsest scale) to bottom (finest scale), that are included in \code{data$level}. For example, for a 2-level hierarchy then 
+#' \code{hierLevels=c("1","2i","2")} indicates \code{data$level} for each observation can be one of three factor levels: "1" (coarse scale), "2i" (initial fine scale), and "2" (fine scale).  Ignored if \code{data} is a \code{\link{crwHierData}} object.
+#' @param coordLevel Character string indicating the level of the hierarchy for the location data. If specified, then \code{data} must include a 'level' field indicating the level of the hierarchy for each observation.  Ignored if \code{coordNames} is \code{NULL} or \code{data} is a \code{\link{crwHierData}} object.
+#' 
+#' @export
+#' @importFrom sp spDistsN1
+# @importFrom raster cellFromXY getValues getZ
+prepCTDS.hierarchical <- function(data, Time.unit="auto", rast, directions=4, zero.idx=integer(), print.iter=FALSE, interpMethod="ShortestPath",
+                                  spatialCovs=NULL, spatialCovs.grad=NULL, crw = TRUE, normalize.gradients = FALSE, grad.point.decreasing = FALSE,
+                                  covNames=NULL, ncores=1, hierLevels, coordLevel, ...) {
+  
+  if (!requireNamespace("ctmcmove", quietly = TRUE)) {
+    stop("Package \"ctmcmove\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+  
+  if (!requireNamespace("raster", quietly = TRUE)) {
+    stop("Package \"raster\" needed for spatial covariates. Please install it.",
+         call. = FALSE)
+  }
+  
+  if(is.crwHierData(data)){
+    predData <- data$crwPredict
+    crwFits <- data$crwFit
+    Time.name<-attr(predData,"Time.name")
+    znames <- unique(unlist(lapply(spatialCovs,function(x) names(attributes(x)$z))))
+    if(length(znames))
+      if(!all(znames %in% names(predData))) stop("z-values for spatialCovs raster stack or brick not found in ",deparse(substitute(data)),"$crwPredict")
+    omitNames <- c("ID","mu.x","mu.y","x","y","locType",Time.name,covNames,names(spatialCovs),names(spatialCovs.grad),znames)
+    distnames <- names(predData)[which(!(names(predData) %in% omitNames))]
+    #type <- 'UTM'
+    coordNames <- c("x","y")
+    hierLevels <- levels(data$crwPredict$level)
+    coordLevel <- attr(data$crwPredict,"coordLevel")
+    data <- data.frame(x=predData$mu.x,y=predData$mu.y,time=predData[[Time.name]],predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(is.na(predData$locType) | predData$locType!="o"),]
+    for(i in unique(data$ID)){
+      iInd <- (data$ID==i)
+      cInd <- (data$level==coordLevel)
+      for(h in hierLevels[which(!hierLevels %in% coordLevel)]){
+        hInd <- (data$level==h)
+        data[which(iInd & hInd),c("x","y")] <- data[which(iInd & cInd),][match(data$time[which(iInd & hInd)],data$time[which(iInd & cInd)]),c("x","y")]
+      }
+      iInd <- which(iInd)
+      for(j in iInd[-length(iInd)]){
+        if(is.na(data[j+1,"x"])) data[j+1,"x"] <- data[j,"x"]
+        if(is.na(data[j+1,"y"])) data[j+1,"y"] <- data[j,"y"]
+      }
+    }
+  }
+  
+  if(is.null(data$x) | is.null(data$y) | is.null(data$time))
+    stop("data must contain 'x', 'y', and 'time' fields")
+  
+  if(inherits(data$time,"POSIXt")){
+    if (!requireNamespace("lubridate", quietly = TRUE)) {
+      stop("Package \"lubridate\" needed for POSIXt times. Please install it.",
+           call. = FALSE)
+    }
+  }
+  
+  if(any(names(data) %in% c("x.current","y.current","z",paste0("z.",1:directions),"tau","cellCross"))) stop("'x.current', 'y.current', 'z', 'tau', and 'cellCross' are reserved and cannot be fields in data")
+  if(!is.null(covNames)){
+    if(any(covNames %in% c(c("ID","time","x","y")))) stop("covNames cannot include 'ID', 'time', 'x', or 'y'")
+  }
+  
+  data <- prepData(data,coordNames=NULL,covNames=covNames, hierLevels=hierLevels,coordLevel=coordLevel)
+  dataStreams <- names(data)[which(!names(data) %in% c("ID","time","x","y",covNames))]
+  
+  # check rasters using prepData
+  checkRast(data[which(data$level==coordLevel),],spatialCovs,spatialCovs.grad)
+  
+  if(inherits(rast,"RasterBrick")) rast <- raster::stack(rast)
+  
+  # if 'auto' time units, use that for first individual
+  if(inherits(data$time,"POSIXt") & Time.unit=="auto"){
+    iInd <- which(data$ID==unique(data$ID)[1])
+    Time.unit <- attr(difftime(data$time[iInd[-1]],data$time[iInd[-length(iInd)]],units="auto"),"units")
+  }
+  
+  chkDots(...)
+  
+  iDat <- id <- NULL # get rid of no visible binding for global variable warning
+  if(ncores>1){
+    for(pkg in c("doFuture","future")){
+      if (!requireNamespace(pkg, quietly = TRUE)) {
+        stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
+             call. = FALSE)
+      }
+    }
+    oldDoPar <- doFuture::registerDoFuture()
+    on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
+    future::plan(future::multisession, workers = ncores)
+    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
+    progBar <- progBar
+    path2ctds <- path2ctds
+    ctds2glm <- ctds2glm
+    pkgs <- c("momentuHMM")
+  } else { 
+    doParallel::registerDoParallel(cores=ncores)
+    pkgs <- c("momentuHMM")
+  }
+  #ctdsglm <- list()
+  #for(i in unique(data$ID)){
+  if(!exists("messInd")) messInd <- TRUE # message indicator exported from MIfitCTHMM foreach call
+  ids <- unique(data$ID)
+  withCallingHandlers(
+    ctdsglm <- foreach(iDat=mapply(function(x) data[which(data$ID==x),],unique(data$ID),SIMPLIFY = FALSE), id=ids, .combine = 'rbind', .export="messInd") %dorng% {
+      if(messInd){
+        if(ncores==1) message("\rIndividual ",which(ids==id),"... ",sep="")
+        else progBar(which(ids==id), length(ids))
+      }
+      ctdsCoord <- path2ctds(xy=as.matrix(iDat[which(!is.na(iDat$x) & !is.na(iDat$y) & iDat$level==coordLevel),c("x","y")]),t=iDat$time[which(!is.na(iDat$x) & !is.na(iDat$y) & iDat$level==coordLevel)],rast=rast,directions=directions,zero.idx=zero.idx,print.iter=print.iter,method=interpMethod,Time.unit=Time.unit)
+      ctds <- path2ctds(xy=as.matrix(iDat[which(!is.na(iDat$x) & !is.na(iDat$y)),c("x","y")]),t=iDat$time[which(!is.na(iDat$x) & !is.na(iDat$y))],rast=rast,directions=directions,zero.idx=zero.idx,print.iter=print.iter,method=interpMethod,Time.unit=Time.unit)
+      lInd <- which(!is.na(iDat$x) & !is.na(iDat$y) & iDat$level==coordLevel)
+      ctds$ec[lInd] <- ctdsCoord$ec
+      ctds$rt[lInd] <- ctdsCoord$rt
+      ctds$trans.times[lInd] <- ctdsCoord$trans.times
+      ctds$cellCross[lInd] <- ctdsCoord$cellCross
+      for(iLevel in hierLevels){
+        #if(iLevel!=coordLevel){
+          lInd <- which(iDat$level[which(!is.na(iDat$x) & !is.na(iDat$y))]==iLevel)
+          if(!grepl("i",iLevel)) ctds$rt[lInd] <- c(diff(iDat[which(!is.na(iDat$x) & !is.na(iDat$y)),"time"][lInd]),0)
+          else ctds$rt[lInd] <- 1
+        #}
+      }
+      class(ctds) <- append("hierarchical",class(ctds))
+      attr(ctds,"coordLevel") <- coordLevel
+      ctdsglmCoord <- ctds2glm(iDat[which(!is.na(iDat$x) & !is.na(iDat$y) & iDat$level==coordLevel),], ctdsCoord,rast = rast, directions=directions, spatialCovs = spatialCovs, spatialCovs.grad=spatialCovs.grad, crw=crw, normalize.gradients = normalize.gradients, grad.point.decreasing = grad.point.decreasing, include.cell.locations = TRUE, zero.idx=zero.idx, covNames = covNames)
+      ctdsglm <- ctds2glm(iDat[which(!is.na(iDat$x) & !is.na(iDat$y)),], ctds,rast = rast, directions=directions, spatialCovs = spatialCovs, spatialCovs.grad=spatialCovs.grad, crw=crw, normalize.gradients = normalize.gradients, grad.point.decreasing = grad.point.decreasing, include.cell.locations = TRUE, zero.idx=zero.idx, covNames = covNames)
+      ctdsglm[which(ctdsglm$level==coordLevel & ctdsglm$t %in% ctdsglmCoord$t),] <- ctdsglmCoord
+      ctdsglm[which(ctdsglm$level==coordLevel & (!ctdsglm$t %in% ctdsglmCoord$t)),"z"] <- NA
+      ctdsglm$ID <- id
+      if(length(dataStreams) | !is.null(covNames)){
+        multiCellMove <- which(ctdsglm$cellCross>0)
+        if(length(multiCellMove)){
+          warning("There were ",length(unique(ctdsglm$cellCross[multiCellMove]))," move(s) across multiple cells within a time step:\n",
+                  #"   -- any spatial covariates for ",paste0(dataStreams,collapse=", ")," pertain to the initial cell for these time step(s)\n",
+                  #"   -- during model fitting, the state(s) for ",paste0(dataStreams,collapse=", ")," are assumed to be the initial state(s) at the start of these time step(s)")
+                  ifelse(length(dataStreams),paste0("   -- '",paste0(dataStreams,collapse="', '"),"' data stream(s) were set to NA for these time step(s)\n"),""),
+                  ifelse(length(dataStreams),"   -- data stream values must be manually set based on the time spent in each cell if these are to be included in subsequent analysis\n",""),
+                  ifelse(!is.null(covNames),"   -- time-varying spatial covariates set based on the z-value for the initial cell and, if different, must be set manually based on z-value(s) at the time cell(s) were crossed\n",""),
+                  "   -- these instances are indicated wherever the 'cellCross' field is > 0")
+          #for(j in unique(ctdsglm$cellCross[multiCellMove])){
+          #crInd <- which(ctdsglm$cellCross==j)
+          #tmp <- ctdsglm[crInd,][1:directions,]
+          #tmp$tau <- sum(ctdsglm[which(ctdsglm$cellCross==j),"tau"])/directions
+          #tmp$z <- NA
+          #ctdsglm[which(ctdsglm$cellCross==j),dataStreams] <- NA
+          #ctdsglm <- rbind(ctdsglm[1:(crInd[1]-1),],tmp,ctdsglm[-(1:(crInd[1]-1)),])
+          #}
+          ctdsglm[which(ctdsglm$cellCross>0),dataStreams[which(dataStreams!="level")]] <- NA
+        }
+        #ctdsglm[(1:nrow(ctdsglm))[-seq(1,nrow(ctdsglm),directions)],dataStreams] <- NA
+      }
+      names(ctdsglm)[which(names(ctdsglm)=="t")] <- "time"
+      return(ctdsglm)
+    },
+    warning=muffleRNGwarning)
+  if(ncores==1) {
+    doParallel::stopImplicitCluster()
+    if(messInd) cat("DONE\n")
+  }
+  else future::plan(future::sequential)
+  #}
+  #ctdsglm <- do.call(rbind,ctdsglm)
+  #rownames(ctdsglm) <- NULL
+  
+  ctdsglm <- ctdsglm[,which(!colnames(ctdsglm) %in% c("x.adj","y.adj"))]
+  ctdsOut <- ctdsglm[seq(1,nrow(ctdsglm),directions),]
+  names(ctdsOut)[which(!names(ctdsOut) %in% c("ID","time","x.current","y.current","tau","cellCross",dataStreams,covNames))] <- paste0(names(ctdsOut)[which(!names(ctdsOut) %in% c("ID","time","x.current","y.current","tau","cellCross",dataStreams,covNames))],".1")
+  for(j in 2:directions){
+    tmp <- ctdsglm[seq(j,nrow(ctdsglm),directions),which(!colnames(ctdsglm) %in% c("ID","step","angle","time","x.current","y.current","tau","cellCross",dataStreams,covNames))]
+    names(tmp) <- paste0(names(tmp),".",j)
+    ctdsOut <- cbind(ctdsOut,tmp)
+  }
+  
+  # add non-gradient spatial covariates for current position (e.g. for inclusion in TPM)
+  #if(!is.null(spatialCovs)) names(spatialCovs) <- paste0(names(spatialCovs),".cur")
+  #ctdsOut <- prepData(ctdsOut,coordNames=c("x.current","y.current"),spatialCovs=spatialCovs)
+  ctdsOut <- prepData(ctdsOut,coordNames=c("x.current","y.current"),spatialCovs=spatialCovs)
+  #ctdsOut <- prepData(ctdsglm,coordNames=c("x.current","y.current"),spatialCovs=spatialCovs)
+  zMat <- as.matrix(ctdsOut[,paste0("z.",1:directions)])
+  zMat <- cbind(zMat,1-rowSums(zMat))
+  ctdsOut$z <- NA
+  ctdsOut$z[which(!is.na(ctdsOut$z.1))] <- unlist(apply(zMat,1,which.max))
+  ctdsOut[paste0("z.",1:directions)] <- NULL
+  ctdsOut <- ctdsOut[,c("ID","time","x","y","z",dataStreams,"tau","cellCross",covNames,names(ctdsOut)[which(!names(ctdsOut) %in% c("ID","time","x","y","step","angle","z",dataStreams,"tau","cellCross",covNames))])]
+  if(!any(ctdsOut$cellCross>0)) ctdsOut$cellCross <- NULL
+  
+  ctdsOut$z[which(ctdsOut$level!=coordLevel)] <- NA
+  class(ctdsOut) <- unique(append(c("momentuHierHMMData","ctds"),class(ctdsOut)))
+  attr(ctdsOut,"Time.unit") <- Time.unit
+  attr(ctdsOut,"directions") <- directions
+  attr(ctdsOut,"coords") <- c("x","y")
+  attr(ctdsOut,"ctdsData") <- "z"
+  attr(ctdsOut,"normalize.gradients") <- normalize.gradients 
+  attr(ctdsOut,"grad.point.decreasing") <- grad.point.decreasing
+  return(ctdsOut)
+}
+
 path2ctds<-function (xy, t, rast, directions = 4, zero.idx = integer(), 
           print.iter = FALSE, method = "ShortestPath", Time.unit = "auto") 
 {
   if (class(rast) == "RasterStack") {
     rast = rast[[1]]
   }
+  if(!(directions %in% c(4,8))) stop("'directions' must be 4 or 8")
+  
   raster::values(rast) <- 1
   raster::values(rast)[zero.idx] <- 0
   trans = gdistance::transition(rast, prod, directions = directions)
@@ -316,6 +531,8 @@ ctds2glm <- function (data, ctmc, rast, spatialCovs=NULL, spatialCovs.grad=NULL,
     examplerast <- spatialCovs[[1]]
   } else examplerast <- rast
   
+  if(!(directions %in% c(4,8))) stop("'directions' must be 4 or 8")
+  
   locs = ctmc$ec
   wait.times = ctmc$rt
   notzero.idx = 1:raster::ncell(examplerast)
@@ -355,7 +572,13 @@ ctds2glm <- function (data, ctmc, rast, spatialCovs=NULL, spatialCovs.grad=NULL,
   v.adj = (xy.adj - xy.cell)/sqrt(apply((xy.cell - xy.adj)^2, 
                                         1, sum))
   
-  moveData <- merge(data.frame(ID=data$ID[1],time=ctmc$trans.times),data,by=c("time","ID"),all=TRUE)
+  if(inherits(ctmc,"hierarchical")){
+    moveData <- merge(data.frame(ID=data$ID[1],time=ctmc$trans.times[which(data$level==attr(ctmc,"coordLevel"))]),data,by=c("time","ID"),all=TRUE)
+    moveData <- moveData[order(moveData$time,moveData$level),]
+  } else {
+    moveData <- merge(data.frame(ID=data$ID[1],time=ctmc$trans.times),data,by=c("time","ID"),all=TRUE)
+    moveData <- moveData[order(moveData$time),]
+  }
   moveData <- suppressWarnings(prepData(moveData,coordNames=NULL,covNames=covNames))
   moveData <- moveData[which(moveData$time %in% ctmc$trans.times),]
   #if(any(order(moveData$time)!=(1:nrow(moveData)))) moveData <- moveData[order(moveData$time),] # check for any weird time sorting by merge
@@ -421,8 +644,8 @@ ctds2glm <- function (data, ctmc, rast, spatialCovs=NULL, spatialCovs.grad=NULL,
 }
 
 checkRast <- function(data,spatialCovs,spatialCovs.grad){
-  check1 <- prepData(data[1:3,],spatialCovs=spatialCovs)
-  check2 <- prepData(data[1:3,],spatialCovs=spatialCovs.grad)
+  check1 <- prepData(data.frame(data[1:3,]),spatialCovs=spatialCovs)
+  check2 <- prepData(data.frame(data[1:3,]),spatialCovs=spatialCovs.grad)
   if(!is.null(spatialCovs)) if(any(is.na(raster::cellFromXY(spatialCovs[[1]],data[,c("x","y")])))) stop("Location data are beyond the spatial extent of the raster(s). Try expanding the extent of the raster(s).")
   else if(!is.null(spatialCovs.grad)) if(any(is.na(raster::cellFromXY(spatialCovs.grad[[1]],data[,c("x","y")])))) stop("Location data are beyond the spatial extent of the raster(s). Try expanding the extent of the raster(s).")
   if(any(names(spatialCovs) %in% names(spatialCovs.grad))) stop("'spatialCovs' and 'spatialCovs.grad' names must be unique")

@@ -2,7 +2,7 @@ printMessage <- function(nbStates,dist,p,DM,formula,formulaDelta,formulaPi,mixtu
   distnames <- names(dist)
   message("=======================================================================")
   if(!hierarchical) message(what,ifelse(CT," continuous-time","")," HMM with ",nbStates," state",ifelse(nbStates>1,"s","")," and ",length(distnames)," data stream",ifelse(length(distnames)>1,"s",""))
-  else message(what," hierarchical ",ifelse(CT,"continuous-time","")," HMM with ",nbStates," state",ifelse(nbStates>1,"s","")," and ",length(distnames)," data stream",ifelse(length(distnames)>1,"s",""))
+  else message(what," hierarchical",ifelse(CT," continuous-time","")," HMM with ",nbStates," state",ifelse(nbStates>1,"s","")," and ",length(distnames)," data stream",ifelse(length(distnames)>1,"s",""))
   message("-----------------------------------------------------------------------\n")
   for(i in distnames){
     pNames<-p$parNames[[i]]

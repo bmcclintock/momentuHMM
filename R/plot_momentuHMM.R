@@ -153,8 +153,10 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   ## States decoding with Viterbi ##
   ##################################
   if(nbStates>1) {
-    if(inherits(x,"miSum")) states <- m$Par$states
-    else {
+    if(inherits(x,"miSum")) {
+      states <- m$Par$states
+      hStates <- m$Par$hStates
+    } else {
       cat("Decoding state sequence... ")
       states <- viterbi(m)
       cat("DONE\n")
@@ -382,7 +384,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   
   if(isTRUE(m$conditions$CT)){
     par <- ctPar(par,m$conditions$dist,nbStates,covs)
-    dt <- m$data$dt
+    dt <- m$data$dt[m$conditions$dtIndex]
   } else dt <- rep(1,nrow(m$data))
   
   # set graphical parameters
@@ -929,12 +931,21 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         tmpSplineInputs<-getSplineFormula(newformula,m$data,tempCovs)
         desMat <- stats::model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
         
+        meandt <- rep(mean(dt),nrow(desMat))
+        if(inherits(m$data,"hierarchical")){
+          for(iLevel in levels(m$data$level)){
+            meandt[which(tmpSplineInputs$covs==iLevel)] <- mean(m$data$dt[which(m$data$level==iLevel)])
+          }
+        }
+        
         for(mix in 1:mixtures){
           
           if(is.null(recharge)){
-            trMat <- trMatrix_rcpp(nbStates,beta$beta[(mix-1)*(nbCovs+1)+1:(nbCovs+1),,drop=FALSE],desMat,m$conditions$betaRef,isTRUE(m$conditions$CT),rep(mean(dt),nrow(desMat)))
+            trMat <- trMatrix_rcpp(nbStates,beta$beta[(mix-1)*(nbCovs+1)+1:(nbCovs+1),,drop=FALSE],desMat,m$conditions$betaRef,isTRUE(m$conditions$CT),meandt,aInd=1)
+            if(isTRUE(m$conditions$CT)) trMat[,,1] <- trMatrix_rcpp(nbStates,beta$beta[(mix-1)*(nbCovs+1)+1:(nbCovs+1),,drop=FALSE],desMat[1,,drop=FALSE],m$conditions$betaRef,TRUE,meandt[1],aInd=1)
           } else {
-            trMat <- array(unlist(lapply(split(tmpSplineInputs$covs,1:nrow(desMat)),function(x) tryCatch(get_gamma_recharge(m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture = mix,CT=isTRUE(m$conditions$CT),dt=mean(dt)),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(desMat)))
+            tmpSplineInputs$covs$dt <- meandt
+            trMat <- array(unlist(lapply(split(tmpSplineInputs$covs,1:nrow(desMat)),function(x) tryCatch(get_gamma_recharge(m$mod$estimate[c(gamInd[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture = mix,CT=isTRUE(m$conditions$CT),dt=x$dt),error=function(e) NA))),dim=c(nbStates,nbStates,nrow(desMat)))
           }
           
           if(!inherits(m,"hierarchical")){
@@ -1005,7 +1016,12 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           }
           if(isTRUE(m$conditions$CT)){
             if(!("dt" %in% names(tmpSplineInputs$covs))){
-              tmpSplineInputs$covs$dt <- mean(dt) # set to mean(dt)
+              if(inherits(m,"hierarchical")){
+                tmpSplineInputs$covs$dt <- 0
+                for(iL in tmpcovs$level){
+                  tmpSplineInputs$covs$dt[which(tmpSplineInputs$covs$level==iL)] <- mean(m$data$dt[which(m$data$level==iL)])
+                }
+              } else tmpSplineInputs$covs$dt <- mean(dt) # set to mean(dt)
             }
           }
           statPlot(m,Sigma,nbStates,tmpSplineInputs$formula,tmpSplineInputs$covs,tempCovs,tmpcovs,cov,hierRecharge,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
@@ -1037,9 +1053,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         
         if(nbRecovs){
           #par(mfrow=c(1,1))
-          ind <- which(m$data$ID==ID[zoo])
           
           for(j in 1:length(rechargeNames)){
+            ind <- which(m$data$ID==ID[zoo] & m$data$level==gsub("recharge","",rechargeNames[j]))
             if(plotCI){
               irecovs <- stats::model.matrix(recharge$theta,m$data[ind,])
               ig0covs <- stats::model.matrix(recharge$g0,m$data[ind,])

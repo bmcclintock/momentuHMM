@@ -53,21 +53,21 @@ logBeta <- function(m)
   lbeta[1:mixtures] <- list(matrix(NA,nbObs,nbStates))
   
   
-  if(isTRUE(m$conditions$CT)) dt <- m$data$dt
+  if(isTRUE(m$conditions$CT)) dt <- m$data$dt[m$conditions$dtIndex]
   else dt <- rep(1,nrow(m$data))
+  
+  aInd <- NULL
+  aInd2 <- NULL
+  for(i in 1:nbAnimals){
+    aInd <- c(aInd,max(which(m$data$ID==unique(m$data$ID)[i])))
+    aInd2 <- c(aInd2,which(m$data$ID==unique(m$data$ID)[i])[1])
+  }
   
   for(mix in 1:mixtures){
     if(nbStates>1)
-      trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),m$conditions$betaRef,isTRUE(m$conditions$CT),dt)
+      trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),m$conditions$betaRef,isTRUE(m$conditions$CT),dt, aInd=aInd2)
     else
       trMat[[mix]] <- array(1,dim=c(1,1,nbObs))
-  }
-  
-  aInd <- NULL
-  #aInd2 <- NULL
-  for(i in 1:nbAnimals){
-    aInd <- c(aInd,max(which(m$data$ID==unique(m$data$ID)[i])))
-    #aInd2 <- c(aInd2,which(m$data$ID==unique(m$data$ID)[i])[1])
   }
   
   for(mix in 1:mixtures){

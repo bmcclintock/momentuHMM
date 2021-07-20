@@ -3,7 +3,8 @@
 #' 
 #' Fit an approximate continuous-time (multivariate) hidden Markov model to multiple imputation data. Multiple imputation is a method for accommodating 
 #' missing data, temporal-irregularity, or location measurement error in hidden Markov models, where pooled parameter estimates reflect uncertainty
-#' attributable to observation error.
+#' attributable to observation error. The discrete-time approximation of the continuous-time model improves as the time between observations decreases. 
+#' Note that only a single state transition can occur between observations and any time-varying covariates are assumed piece-wise constant between observations.
 #' 
 #' \code{miData} can either be a \code{\link{crwData}} or \code{\link{crwHierData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} or \code{\link{crwHierSim}} object (as returned by \code{MIfitCTHMM} when \code{fit=FALSE}), 
 #' or a list of \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}}). 
@@ -175,8 +176,9 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
           if(is.null(formulaDelta)) formulaDelta <- ~1
           if(length(attr(stats::terms.formula(formula),"term.labels"))>0 && is.null(hierArgs$hierFormula)) stop("hierFormula should be specified instead of formula")
           if(length(attr(stats::terms.formula(formulaDelta),"term.labels"))>0 && is.null(hierArgs$hierFormulaDelta)) stop("hierFormulaDelta should be specified instead of formulaDelta")
-          return(MIfitCTHMM.hierarchical(miData,nSims, ncores, poolEstimates, alpha,
-                                       Time.name,Time.unit,hierArgs$hierStates, hierArgs$hierDist, 
+          return(MIfitCTHMM.hierarchical(miData,nSims, ncores, poolEstimates, alpha, na.rm, 
+                                       Time.name,Time.unit,CTDS,
+                                       hierArgs$hierStates, hierArgs$hierDist, 
                                        Par0, hierArgs$hierBeta, hierArgs$hierDelta,
                                        estAngleMean, circularAngleMean,
                                        hierArgs$hierFormula, hierArgs$hierFormulaDelta, mixtures, formulaPi,
@@ -185,7 +187,9 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
                                        mvnCoords, knownStates, fixPar, retryFits, retrySD, optMethod, control, prior, modelName,
                                        covNames, spatialCovs, centers, centroids, angleCovs, altCoordNames,
                                        method, parIS, dfSim, grid.eps, crit, scaleSim, quad.ask, force.quad,
-                                       fullPost, dfPostIS, scalePostIS,thetaSamp))
+                                       fullPost, dfPostIS, scalePostIS,thetaSamp,
+                                       rast, directions, zero.idx, interpMethod,
+                                       spatialCovs.grad, crw, normalize.gradients, grad.point.decreasing))
         }
     }
   }
@@ -282,6 +286,10 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
       if(ncores==1) cat("DONE\n")
       names(crwSim) <- ids
       
+      # hack to work around missing arguments in calling function when using foreach
+      if(CTDS){
+        if(missing(rast)) stop('argument "rast" is missing, with no default')
+      } else rast <- NULL
       
       if(ncores>1) {
         message("Drawing imputations in parallel... ",sep="")
@@ -299,7 +307,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
           }
           if(!CTDS){
             df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",Time.name,tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
-            pD <- tryCatch(prepData.default(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames),error=function(e) e)
+            pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames),error=function(e) e)
           } else {
             df<-data.frame(x=locs$mu.x,y=locs$mu.y,time=predData[[Time.name]],predData[,c("ID",tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
             pD <- tryCatch(prepCTDS(df, Time.unit=Time.unit, rast=rast, directions=directions, zero.idx=zero.idx, interpMethod=interpMethod,
@@ -469,7 +477,8 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
 # @importFrom raster getZ
 # #' @importFrom data.tree Clone
 MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, na.rm = FALSE,
-                       Time.name = "time", Time.unit = "auto", hierStates, hierDist, 
+                       Time.name = "time", Time.unit = "auto", CTDS=FALSE,
+                       hierStates, hierDist, 
                        Par0, hierBeta = NULL, hierDelta = NULL,
                        estAngleMean = NULL, circularAngleMean = NULL,
                        hierFormula = NULL, hierFormulaDelta = NULL, mixtures = 1, formulaPi = NULL,
@@ -478,7 +487,9 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
                        mvnCoords = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
                        covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL,
                        method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
-                       fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, ...)
+                       fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, 
+                       rast, directions=4, zero.idx=integer(), interpMethod="ShortestPath",
+                       spatialCovs.grad=NULL, crw = TRUE, normalize.gradients = FALSE, grad.point.decreasing = FALSE, ...)
 {
   
   j <- mf <- mD <- NULL #gets rid of no visible binding for global variable NOTE in R cmd check
@@ -539,7 +550,8 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
       if(fit | !missing("hierDist")) {
         dist <- getHierDist(hierDist,data=NULL,checkData=FALSE)
         if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
-        distnames <- tmpdistnames <- names(dist)[which(!(names(dist) %in% c("step","angle",ifelse(coordNames==c("x","y"),c("x","y"),c("","")))))]
+        distnames <- tmpdistnames <- names(dist)[which(!(names(dist) %in% c("step","angle",ifelse(coordNames==c("x","y"),c("x","y"),c("","")),ifelse(CTDS,"z",""))))]
+        if(CTDS && (is.null(dist$z) || dist$z!="ctds")) stop("'dist' must include a 'ctds' data stream named 'z'")
         if(any(is.na(match(distnames,names(predData))))){
           for(i in which(is.na(match(distnames,names(predData))))){
             if(dist[[distnames[i]]] %in% mvndists){
@@ -553,8 +565,8 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
           if(any(is.na(match(tmpdistnames,names(predData))))) stop(paste0(tmpdistnames[is.na(match(tmpdistnames,names(predData)))],collapse=", ")," not found in miData")
           tmpdistnames <- tmpdistnames[which(!(tmpdistnames %in% c("mu.x","mu.y")))]
         }
-      } else {
-        distnames <- tmpdistnames <- names(predData)[which(!(names(predData) %in% c("ID",Time.name,"level","locType",c("mu.x","mu.y",ifelse(coordNames==c("x","y"),c("x","y"),c("",""))),covNames,znames)))]
+      }  else {
+        distnames <- tmpdistnames <- names(predData)[which(!(names(predData) %in% c("ID",Time.name,"level","locType",c("mu.x","mu.y",ifelse(coordNames==c("x","y"),c("x","y"),c("","")),ifelse(CTDS,"z","")),covNames,znames)))]
       }
       cat('Drawing ',nSims,' realizations from the position process using crawl... \n',sep="")
       if(ncores>1) message("Running simulator in parallel... ")
@@ -570,6 +582,10 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
       },warning=muffleRNGwarning)
       if(ncores==1) cat("DONE\n")
       names(crwHierSim) <- ids
+      
+      if(CTDS){
+        if(missing(rast)) stop('argument "rast" is missing, with no default')
+      } else rast <- NULL
       
       if(ncores>1) {
         message("Drawing imputations in parallel... ",sep="")
@@ -595,7 +611,25 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
                               df[which(df$locType=="p"),"x"] <- locs[which(locs$locType=="p"),"x"]
                               df[which(df$locType=="p"),"y"] <- locs[which(locs$locType=="p"),"y"]
                               df$locType <- NULL
-                              pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,hierLevels=levels(predData$level),coordLevel=attr(predData,"coordLevel")),error=function(e) e)
+                              if(!CTDS){
+                                pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,hierLevels=levels(predData$level),coordLevel=attr(predData,"coordLevel")),error=function(e) e)
+                              } else {
+                                # fill in NA locations for other levels
+                                coordLevel <- attr(predData,"coordLevel")
+                                for(i in 1:length(ids)){
+                                  iInd <- which(df$ID==ids[i])
+                                  NAind <- match(df$time[iInd][which(df$level[iInd]!=coordLevel)],df$time[iInd][which(df$level[iInd]==coordLevel)])
+                                  df$x[iInd][which(df$level[iInd]!=coordLevel)] <- df$x[iInd][which(df$level[iInd]==coordLevel)][NAind]
+                                  df$y[iInd][which(df$level[iInd]!=coordLevel)] <- df$y[iInd][which(df$level[iInd]==coordLevel)][NAind]
+                                  for(k in iInd[-length(iInd)]){
+                                    if(is.na(df$x[k+1])) df$x[k+1] <- df$x[k]
+                                    if(is.na(df$y[k+1])) df$y[k+1] <- df$y[k]
+                                  }
+                                }
+                                pD <- tryCatch(prepCTDS(df, Time.unit=Time.unit, rast=rast, directions=directions, zero.idx=zero.idx, interpMethod=interpMethod,
+                                                        spatialCovs=spatialCovs, spatialCovs.grad=spatialCovs.grad, crw = crw, normalize.gradients = normalize.gradients, grad.point.decreasing = grad.point.decreasing,
+                                                        covNames=covNames,hierLevels=levels(predData$level),coordLevel=coordLevel),error=function(e) e)
+                              }
                               pD
                             }
                           ,warning=muffleRNGwarning)
@@ -724,7 +758,6 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
   
   if(useInitial | ncores>1) cat("Fitting ",ifelse(useInitial,"remaining ",""),length(parallelStart:nSims)," imputation",ifelse(length(parallelStart:nSims)>1,"s",""),ifelse(ncores>1," in parallel",""),"... \n",sep="")
   
-  registerDoParallel(cores=ncores)
   withCallingHandlers(fits[parallelStart:nSims] <-
                         foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitCTHMM"), .errorhandling="pass", .packages = pkgs) %dorng% {
                           
@@ -734,7 +767,7 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
                           } else {
                             if(retryFits<1) progBar(j,nSims)
                           }
-                          tmpFit<-suppressMessages(fitCTHMM.momentuHierHMMData(mD, Time.name, Time.unit, hierStates, hierDist, Par0[[j]], hierBeta[[j]], hierDelta[[j]],
+                          tmpFit<-suppressMessages(fitCTHMM(mD, Time.name, Time.unit, hierStates, hierDist, Par0[[j]], hierBeta[[j]], hierDelta[[j]],
                                                               estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                                                               nlmPar, fit, DM, 
                                                               userBounds, workBounds, betaCons, deltaCons, mvnCoords, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))

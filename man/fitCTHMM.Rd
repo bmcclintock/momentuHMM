@@ -269,7 +269,7 @@ the estimated variance-covariance matrix at \code{estimate} (\code{Sigma}), and 
 }
 \description{
 Fit an approximate continuous-time (multivariate) hidden Markov model to the data provided, using numerical optimization of the log-likelihood
-function. The discrete-time approximation of the continuous-time model improves as the time between observations decreases.
+function. The discrete-time approximation of the continuous-time model improves as the time between observations decreases. Note that only a single state transition can occur between observations and any time-varying covariates are assumed piece-wise constant between observations.
 }
 \details{
 
