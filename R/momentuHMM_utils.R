@@ -89,11 +89,11 @@ RWdata <- function(dist,data,knownStates){
             ldata[[paste0(i,".x_tm1")]] <- ldata[[paste0(i,".x")]]
             ldata[[paste0(i,".y_tm1")]] <- ldata[[paste0(i,".y")]]
             if(dist[[i]]=="rw_mvnorm2"){
-              colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(distnames[which(!(distnames %in% i))],paste0(i,".x"),paste0(i,".y"))))]))
+              colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(paste0(i,".x"),paste0(i,".y"))))]))
             } else if(dist[[i]]=="rw_mvnorm3"){
               tmpdata[[paste0(i,".z_tm1")]] <- tmpdata[[paste0(i,".z")]]
               ldata[[paste0(i,".z_tm1")]] <- ldata[[paste0(i,".z")]]
-              colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(distnames[which(!(distnames %in% i))],paste0(i,".x"),paste0(i,".y"),paste0(i,".z"))))]))
+              colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(paste0(i,".x"),paste0(i,".y"),paste0(i,".z"))))]))
             }
           } else {
             if(inherits(data,"hierarchical")){
@@ -117,8 +117,11 @@ RWdata <- function(dist,data,knownStates){
         }
       }
       if(!inherits(data,"hierarchical")){
+        lastRow <- tmpdata[nrow(tmpdata),]
         tmpdata[,colInd] <- rbind(rep(NA,length(colInd)),tmpdata[-nrow(tmpdata),colInd])
         tmpdata <- tmpdata[-1,,drop=FALSE]
+        tmpdata <- rbind(tmpdata,lastRow)
+        tmpdata[nrow(tmpdata),colnames(tmpdata)[which(!(colnames(tmpdata) %in% colInd))]] <- NA
       }
       newdata <- rbind(newdata,tmpdata)
     }

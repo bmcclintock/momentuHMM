@@ -1,3 +1,10 @@
+momentuHMM 1.5.4 2021-07-21
+-----------------
+BUG FIXES
+
+* when using the normal random walk data stream distributions ("rw_norm", "rw_mvnorm2", or "rw_mvnorm3") in fitHMM (and MIfitHMM), any additional data streams were erroneously offset by one time step during model fitting; previous analyses using a normal random walk data stream in addition to any other data stream(s) should be re-run
+
+
 momentuHMM 1.5.3 2021-07-06
 -----------------
 NEW FEATURES
