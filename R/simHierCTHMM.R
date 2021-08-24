@@ -80,6 +80,7 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
       nbAnimals <- length(unique(model$data$ID))
       if(!missing(obsPerLevel)) warning("'obsPerLevel' is ignored when 'matchModelObs' is TRUE")
       obsPerLevel <- NULL
+      if(lambda!=1) warning("'lambda' is ignored when 'matchModelObs' is TRUE")
       lambda <- list()
       for(zoo in 1:nbAnimals){
         lambda[[zoo]] <- model$data[[model$conditions$Time.name]][which(model$data$ID==unique(model$data$ID)[zoo])]

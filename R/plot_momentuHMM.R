@@ -1055,7 +1055,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           #par(mfrow=c(1,1))
           
           for(j in 1:length(rechargeNames)){
-            ind <- which(m$data$ID==ID[zoo] & m$data$level==gsub("recharge","",rechargeNames[j]))
+            if(inherits(m,"hierarchical")) ind <- which(m$data$ID==ID[zoo] & m$data$level==gsub("recharge","",rechargeNames[j]))
+            else ind <- which(m$data$ID==ID[zoo])
             if(plotCI){
               irecovs <- stats::model.matrix(recharge$theta,m$data[ind,])
               ig0covs <- stats::model.matrix(recharge$g0,m$data[ind,])

@@ -137,12 +137,15 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
     mvnCoords <- model$conditions$mvnCoords
     if(matchModelObs){
       rwInd <- any(unlist(lapply(model$conditions$dist,function(x) x %in% rwdists)))
+      if(nbAnimals!=1) warning("'nbAnimals' is ignored when 'matchModelObs' is TRUE")
       nbAnimals <- length(unique(model$data$ID))
-      obsPerAnimal <- as.list(table(model$data$ID)+ifelse(rwInd,1,0))
+      if(!all(obsPerAnimal==c(500,1500))) warning("'obsPerAnimal' is ignored when 'matchModelObs' is TRUE")
+      obsPerAnimal <- as.list(table(model$data$ID))#+ifelse(rwInd,1,0))
+      if(lambda!=1) warning("'lambda' is ignored when 'matchModelObs' is TRUE")
       lambda <- list()
       for(zoo in 1:nbAnimals){
         lambda[[zoo]] <- model$data[[model$conditions$Time.name]][which(model$data$ID==unique(model$data$ID)[zoo])]
-        if(rwInd) lambda[[zoo]] <- c(lambda[[zoo]][1]-model$data$dt[which(model$data$ID==unique(model$data$ID)[zoo])[1]],lambda[[zoo]])
+        #if(rwInd) lambda[[zoo]] <- c(lambda[[zoo]][1]-model$data$dt[which(model$data$ID==unique(model$data$ID)[zoo])[1]],lambda[[zoo]])
         if(inherits(lambda[[zoo]] ,"POSIXt")) attr(lambda[[zoo]],"units") <- model$conditions$Time.unit
       }
     }
