@@ -6,7 +6,7 @@
 #' of non-factor covariates are used for calculating the natural parameters. For any covariate(s) of class 'factor', then the value(s) from the first observation 
 #' in the data are used.
 #'
-#' @param m A \code{momentuHMM}, \code{momentuHierHMM}, or \code{miSum} object
+#' @param m A \code{momentuHMM}, \code{momentuHierHMM}, \code{miHMM}, or \code{miSum} object
 #' @param alpha Significance level of the confidence intervals. Default: 0.95 (i.e. 95\% CIs).
 #' @param covs Data frame consisting of a single row indicating the covariate values to be used in the calculations. By default, no covariates are specified.
 #' @param parms Optional character vector indicating which groups of real parameters to calculate confidence intervals for (e.g., 'step', 'angle', 'gamma', 'delta', etc.). Default: NULL, in which case confidence intervals are calculated for all groups of parameters in the model.
@@ -47,8 +47,16 @@ CIreal <- function(m,alpha=0.95,covs=NULL,parms=NULL) {
 #' @export
 CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
 {
-  if(!is.momentuHMM(m))
-    stop("'m' must be a momentuHMM object (as output by fitHMM)")
+  if(is.miSum(m) | is.miHMM(m)){
+    if(is.miHMM(m)) m <- m$miSum
+    m <- formatmiSum(m)
+    m$mod$hessian <- NA
+    m$mod$Sigma <- matrix(0,length(m$mod$estimate),length(m$mod$estimate))
+    if(length(m$conditions$optInd)) m$mod$Sigma[-m$conditions$optInd,-m$conditions$optInd] <- m$MIcombine$variance
+    else m$mod$Sigma <- m$MIcombine$variance
+    m$CIreal <- m$Par$real
+    m <- momentuHMM(m)
+  } else if(!is.momentuHMM(m)) stop("'m' must be a momentuHMM, miSum, or miHMM object")
 
   if(!is.null(m$conditions$fit) && !m$conditions$fit)
     stop("The given model hasn't been fitted.")
@@ -466,14 +474,15 @@ w2nDMangle<-function(w,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbState
 #' @export
 CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){
   
-  if(is.miSum(m)){
-    m <- formatmiSum(m)
+  if(is.miSum(m) | is.miHMM(m)){
+    if(is.miHMM(m)) m <- m$miSum
     m$mod$hessian <- NA
     m$mod$Sigma <- matrix(0,length(m$mod$estimate),length(m$mod$estimate))
-    m$mod$Sigma[-m$conditions$optInd,-m$conditions$optInd] <- m$MIcombine$variance
+    if(length(m$conditions$optInd)) m$mod$Sigma[-m$conditions$optInd,-m$conditions$optInd] <- m$MIcombine$variance
+    else m$mod$Sigma <- m$MIcombine$variance
     m$CIreal <- m$Par$real
     m <- momentuHMM(m)
-  } else if(!inherits(m,"momentuHierHMM")) stop("m must be a momentuHierHMM or hierarchical miSum object")
+  } else if(!inherits(m,"momentuHierHMM")) stop("m must be a momentuHierHMM, hierarchical miSum, or hierarchical miHMM object")
   
   installDataTree()
   
