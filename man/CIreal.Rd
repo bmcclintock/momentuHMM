@@ -13,7 +13,7 @@ CIreal(m, alpha = 0.95, covs = NULL, parms = NULL)
 \method{CIreal}{hierarchical}(m, alpha = 0.95, covs = NULL, parms = NULL)
 }
 \arguments{
-\item{m}{A \code{momentuHMM}, \code{momentuHierHMM}, or \code{miSum} object}
+\item{m}{A \code{momentuHMM}, \code{momentuHierHMM}, \code{miHMM}, or \code{miSum} object}
 
 \item{alpha}{Significance level of the confidence intervals. Default: 0.95 (i.e. 95\% CIs).}
 

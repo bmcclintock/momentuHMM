@@ -1,8 +1,14 @@
-momentuHMM 1.5.4 2021-07-21
+momentuHMM 1.5.4 2021-08-24
 -----------------
+CHANGES
+
+* CIreal argument 'm' will now accept a 'miHMM' object
+
 BUG FIXES
 
 * when using the normal random walk data stream distributions ("rw_norm", "rw_mvnorm2", or "rw_mvnorm3") in fitHMM (and MIfitHMM), any additional data streams were erroneously offset by one time step during model fitting; previous analyses using a normal random walk data stream in addition to any other data stream(s) should be re-run
+
+* CIreal produced an error when the 'm' argument was a 'miSum' object
 
 
 momentuHMM 1.5.3 2021-07-06
