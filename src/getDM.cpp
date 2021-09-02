@@ -19,7 +19,7 @@ using namespace std;
 // [[Rcpp::export]]
 arma::cube getDM_rcpp(arma::cube X, arma::mat covs, CharacterVector DM, unsigned int nr, unsigned int nc, CharacterVector cov, unsigned int nbObs)
 {
-  unsigned int covsize = cov.size();
+  unsigned int covsize = (unsigned int) cov.size();
   for(unsigned int v=0; v<covsize; v++){
     for(unsigned int j=0; j<nr; j++){
       for(unsigned int l=0; l<nc; l++){
