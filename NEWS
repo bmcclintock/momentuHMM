@@ -1,4 +1,4 @@
-momentuHMM 2.0.0 2021-08-24
+momentuHMM 2.0.0 2021-09-02
 -----------------
 NEW FEATURES
 
@@ -13,11 +13,15 @@ BUG FIXES
 * getParDM did not properly calculate working scale parameters for categorical distribution parameters when DM included covariates or constraints
 
 
-momentuHMM 1.5.4 2021-08-24
+momentuHMM 1.5.4 2021-09-02
 -----------------
-CHANGES
+NEW FEATURES
 
 * CIreal argument 'm' will now accept a 'miHMM' object
+
+CHANGES
+
+* removed implicit conversions in C++ code that triggered compilation warnings on macOS with -Wconversion -Wno-sign-conversion in CPPFLAGS
 
 BUG FIXES
 
