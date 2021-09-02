@@ -22,7 +22,7 @@ using namespace std;
 //'
 //' @return XB matrix
 // [[Rcpp::export]]
-arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned int nr, unsigned int nc, bool circularAngleMean, bool consensus, IntegerVector rindex, arma::mat cindex, int nbStates, double refCoeff = 1.0)
+arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned int nr, unsigned int nc, bool circularAngleMean, bool consensus, IntegerVector rindex, arma::imat cindex, int nbStates, double refCoeff = 1.0)
 {
   unsigned int i;
   unsigned int j;
@@ -35,7 +35,7 @@ arma::mat XBloop_rcpp(List DM, NumericVector Xvec, unsigned int nbObs, unsigned 
   arma::mat XB2(nr,nbObs);
   XB2.zeros();
   
-  unsigned int nrindex = rindex.size();
+  unsigned int nrindex = (unsigned int) rindex.size();
   unsigned int incr = (circularAngleMean) ? 2 : 1;
   
   NumericVector DMelem2;

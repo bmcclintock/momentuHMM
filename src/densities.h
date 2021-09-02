@@ -19,11 +19,12 @@ using namespace std;
 // [[Rcpp::export]]
 arma::colvec dgamma_rcpp(NumericVector x, arma::mat mu, arma::mat sigma)
 {
-  arma::colvec res(x.size());
+  unsigned int xs = (unsigned int) x.size();
+  arma::colvec res(xs);
   double shape;
   double scale;
   
-  for(int i=0;i<x.size();i++) {
+  for(unsigned int i=0;i<xs;i++) {
     //if(!arma::is_finite(x(i)))
     //  res(i) = 1; // if missing observation
     //else {
@@ -50,9 +51,10 @@ arma::colvec dgamma_rcpp(NumericVector x, arma::mat mu, arma::mat sigma)
 // [[Rcpp::export]]
 arma::colvec dweibull_rcpp(NumericVector x, arma::mat shape, arma::mat scale)
 {
-  arma::colvec res(x.size());
+  unsigned int xs = (unsigned int) x.size();
+  arma::colvec res(xs);
   
-  for(int i=0;i<x.size();i++) {
+  for(unsigned int i=0;i<xs;i++) {
     if(!arma::is_finite(x(i)))
       res(i) = 1; // if missing observation
     else
@@ -74,9 +76,10 @@ arma::colvec dweibull_rcpp(NumericVector x, arma::mat shape, arma::mat scale)
 // [[Rcpp::export]]
 arma::colvec dnorm_rcpp(NumericVector x, arma::mat mean, arma::mat sd)
 {
-  arma::colvec res(x.size());
+  unsigned int xs = (unsigned int) x.size();
+  arma::colvec res(xs);
   
-  for(int i=0;i<x.size();i++) {
+  for(unsigned int i=0;i<xs;i++) {
     if(!arma::is_finite(x(i)))
       res(i) = 1; // if missing observation
     else
@@ -98,9 +101,10 @@ arma::colvec dnorm_rcpp(NumericVector x, arma::mat mean, arma::mat sd)
 // [[Rcpp::export]]
 arma::colvec dlnorm_rcpp(NumericVector x, arma::mat meanlog, arma::mat sdlog)
 {
-  arma::colvec res(x.size());
+  unsigned int xs = (unsigned int) x.size();
+  arma::colvec res(xs);
   
-  for(int i=0;i<x.size();i++) {
+  for(unsigned int i=0;i<xs;i++) {
     if(!arma::is_finite(x(i)))
       res(i) = 1; // if missing observation
     else
@@ -122,9 +126,10 @@ arma::colvec dlnorm_rcpp(NumericVector x, arma::mat meanlog, arma::mat sdlog)
 // [[Rcpp::export]]
 arma::colvec dexp_rcpp(NumericVector x, arma::mat rate, arma::mat foo)
 {
-  arma::colvec res(x.size());
+  unsigned int xs = (unsigned int) x.size();
+  arma::colvec res(xs);
   
-  for(int i=0;i<x.size();i++) {
+  for(unsigned int i=0;i<xs;i++) {
     if(!arma::is_finite(x(i)))
       res(i) = 1; // if missing observation
     else
@@ -147,10 +152,11 @@ arma::colvec dexp_rcpp(NumericVector x, arma::mat rate, arma::mat foo)
 // [[Rcpp::export]]
 arma::colvec dvm_rcpp(NumericVector x, arma::mat mu, arma::mat kappa)
 {
-  arma::colvec res(x.size());
+  unsigned int xs = (unsigned int) x.size();
+  arma::colvec res(xs);
   double b;
   
-  for(int i=0;i<x.size();i++) {
+  for(unsigned int i=0;i<xs;i++) {
     if(!arma::is_finite(x(i)))
       res(i) = 1; // is missing observation
     else {
@@ -174,11 +180,12 @@ arma::colvec dvm_rcpp(NumericVector x, arma::mat mu, arma::mat kappa)
 // [[Rcpp::export]]
 arma::colvec dwrpcauchy_rcpp(NumericVector x, arma::mat mu, arma::mat rho)
 {
-  arma::colvec res(x.size());
+  unsigned int xs = (unsigned int) x.size();
+  arma::colvec res(xs);
   double num;
   double den;
   
-  for(int i=0;i<x.size();i++) {
+  for(unsigned int i=0;i<xs;i++) {
     //if(!arma::is_finite(x(i)))
     //  res(i) = 1; // if missing observation
     //else {
@@ -201,9 +208,10 @@ arma::colvec dwrpcauchy_rcpp(NumericVector x, arma::mat mu, arma::mat rho)
 // [[Rcpp::export]]
 arma::colvec dbeta_rcpp(NumericVector x, arma::mat shape1, arma::mat shape2)
 {
-  arma::colvec res(x.size());
+  unsigned int xs = (unsigned int) x.size();
+  arma::colvec res(xs);
   
-  for(int i=0;i<x.size();i++) {
+  for(unsigned int i=0;i<xs;i++) {
     if(!arma::is_finite(x(i)))
       res(i) = 1; // if missing observation
     else
@@ -225,9 +233,10 @@ arma::colvec dbeta_rcpp(NumericVector x, arma::mat shape1, arma::mat shape2)
 // [[Rcpp::export]]
 arma::colvec dpois_rcpp(NumericVector x, arma::mat rate, arma::mat foo)
 {
-  arma::colvec res(x.size());
+  unsigned int xs = (unsigned int) x.size();
+  arma::colvec res(xs);
   
-  for(int i=0;i<x.size();i++) {
+  for(unsigned int i=0;i<xs;i++) {
     if(!arma::is_finite(x(i)))
       res(i) = 1; // if missing observation
     else
@@ -249,9 +258,10 @@ arma::colvec dpois_rcpp(NumericVector x, arma::mat rate, arma::mat foo)
 // [[Rcpp::export]]
 arma::colvec dbern_rcpp(NumericVector x, arma::mat prob, arma::mat foo)
 {
-  arma::colvec res(x.size());
+  unsigned int xs = (unsigned int) x.size();
+  arma::colvec res(xs);
   
-  for(int i=0;i<x.size();i++) {
+  for(unsigned int i=0;i<xs;i++) {
     if(!arma::is_finite(x(i)))
       res(i) = 1; // if missing observation
     else
@@ -445,9 +455,10 @@ arma::colvec dcat_rcpp(const NumericVector x, const arma::mat prob, const arma::
 // [[Rcpp::export]]
 arma::colvec dnbinom_rcpp(NumericVector x, arma::mat mu, arma::mat size)
 {
-  arma::colvec res(x.size());
+  unsigned int xs = (unsigned int) x.size();
+  arma::colvec res(xs);
   
-  for(int i=0;i<x.size();i++) {
+  for(unsigned int i=0;i<xs;i++) {
     if(!arma::is_finite(x(i)))
       res(i) = 1; // if missing observation
     else
@@ -469,9 +480,10 @@ arma::colvec dnbinom_rcpp(NumericVector x, arma::mat mu, arma::mat size)
 // [[Rcpp::export]]
 arma::colvec dlogis_rcpp(NumericVector x, arma::mat location, arma::mat scale)
 {
-  arma::colvec res(x.size());
+  unsigned int xs = (unsigned int) x.size();
+  arma::colvec res(xs);
   
-  for(int i=0;i<x.size();i++) {
+  for(unsigned int i=0;i<xs;i++) {
     if(!arma::is_finite(x(i)))
       res(i) = 1; // if missing observation
     else
@@ -493,9 +505,10 @@ arma::colvec dlogis_rcpp(NumericVector x, arma::mat location, arma::mat scale)
 // [[Rcpp::export]]
 arma::colvec dt_rcpp(NumericVector x, arma::mat df, arma::mat ncp)
 {
-  arma::colvec res(x.size());
+  unsigned int xs = (unsigned int) x.size();
+  arma::colvec res(xs);
   
-  for(int i=0;i<x.size();i++) {
+  for(unsigned int i=0;i<xs;i++) {
     if(!arma::is_finite(x(i)))
       res(i) = 1; // if missing observation
     else

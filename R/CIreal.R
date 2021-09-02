@@ -455,6 +455,7 @@ CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){
   
   if(is.miSum(m) | is.miHMM(m)){
     if(is.miHMM(m)) m <- m$miSum
+    m <- formatmiSum(m)
     m$mod$hessian <- NA
     m$mod$Sigma <- matrix(0,length(m$mod$estimate),length(m$mod$estimate))
     if(length(m$conditions$optInd)) m$mod$Sigma[-m$conditions$optInd,-m$conditions$optInd] <- m$MIcombine$variance

@@ -98,7 +98,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   //=======================================================//
   // 1. Computation of initial distribution(s)             //
   //=======================================================//
-  unsigned int nbAnimals = aInd.size();
+  unsigned int nbAnimals = (unsigned int) aInd.size();
   std::vector<arma::mat> delta(mixtures);
   for(int mix=0; mix<mixtures; mix++)
     delta[mix] = arma::mat(nbAnimals,nbStates);
@@ -197,12 +197,12 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   arma::uvec nbOnes;
   arma::uvec noZerosOnes;
   
-  double NAvalue = -99999999; // value designating NAs in data
+  double NAvalue = -99999999999; // value designating NAs in data
   int zeroInd = 0;
   int oneInd = 0;
   bool mvn = false;
   
-  unsigned int nDists = dist.size();
+  unsigned int nDists = (unsigned int) dist.size();
 
   for(unsigned int k=0;k<nDists;k++){
     genname = as<std::string>(dataNames[k]);
@@ -306,7 +306,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         zerom = zeromass.row(state);
 
         // compute probability of non-zero observations
-        genProb.elem(noZeros) = (1. - zerom.elem(noZeros)) % funMap[genDist](genData[genData>0],genArgs1.elem(noZeros),genArgs2.elem(noZeros));
+        genProb.elem(noZeros) = (1. - zerom.elem(noZeros)) % funMap[genDist](genData[genData>0.],genArgs1.elem(noZeros),genArgs2.elem(noZeros));
 
         // compute probability of zero observations
         genProb.elem(nbZeros) = zerom.elem(nbZeros);
@@ -316,7 +316,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         onem = onemass.row(state);
         
         // compute probability of non-one observations
-        genProb.elem(noOnes) = (1. - onem.elem(noOnes)) % funMap[genDist](genData[(genData!=NAvalue) & (genData<1)],genArgs1.elem(noOnes),genArgs2.elem(noOnes));
+        genProb.elem(noOnes) = (1. - onem.elem(noOnes)) % funMap[genDist](genData[(genData!=NAvalue) & (genData<1.)],genArgs1.elem(noOnes),genArgs2.elem(noOnes));
         
         // compute probability of one observations
         genProb.elem(nbOnes) = onem.elem(nbOnes);
@@ -348,7 +348,11 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
     // put the NAs back
     for(int l=0; l<L.size(); l++){
       tmpL = L[l];
-      tmpL[tmpL==NAvalue] = NA_REAL;
+      for(int i=0;i<nbObs;i++) {
+        if(tmpL(i)==NAvalue) {
+          tmpL(i) = NA_REAL;
+        }
+      }
       L[l] = tmpL;
     }
     genData = combine(L);
