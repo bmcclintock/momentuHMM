@@ -1,12 +1,12 @@
-momentuHMM 2.0.0 2021-09-02
+momentuHMM 2.0.0 2021-09-03
 -----------------
 NEW FEATURES
 
-* continuous-time hidden Markov models can now be fitted using fitCTHMM (and MIfitCTHMM) and simulated using simCTHMM
+* continuous-time hidden Markov models can now be fitted using 'fitCTHMM' (and 'MIfitCTHMM') and simulated using 'simCTHMM' (or 'simHierCTHMM' for hierarchical continuous-time models)
 
-* new data stream for (multistate) continuous-time discrete-space ("ctds") movement models
+* new data stream distribution "ctds" for (multistate) continuous-time discrete-space movement models, which can be prepared, fitted, and simulated using the functions 'prepCTDS', 'fitCTHMM' (or 'MIfitCTHMM'), and 'simCTDS' (or 'simHierCTDS' for hierarchical models), respectively.
 
-* special pseudo-design matrix function 'langevin' has been added for fitting (multistate) Langevin diffusion models
+* special pseudo-design matrix function 'langevin' has been added for simulating and fitting discrete-time approximations of the (multistate) Langevin diffusion model as a multivariate normal random walk (i.e. using the "rw_mvnorm2" or "rw_mvnorm3" data stream distributions)
 
 BUG FIXES
 
