@@ -71,8 +71,10 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
   distnames <- names(dist)
   DMind <- m$conditions$DMind
   
-  if(is.null(parms)) pparms <- c(distnames,"gamma","delta")
-  else pparms <- parms
+  if(is.null(parms)) {
+    pparms <- c(distnames,"gamma","delta")
+    if(isTRUE(m$conditions$CT)) pparms <- c(distnames,"Q","gamma","delta")
+  } else pparms <- parms
   
   m <- delta_bc(m)
   
@@ -206,6 +208,48 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
       Par$gamma <- list(est=est,se=se,lower=lower,upper=upper)
       dimnames(Par$gamma$est) <- dimnames(Par$gamma$se) <- dimnames(Par$gamma$lower) <- dimnames(Par$gamma$upper) <- list(rep(m$stateNames,mixtures),m$stateNames)
       if(mixtures>1) dimnames(Par$gamma$est) <- dimnames(Par$gamma$se) <- dimnames(Par$gamma$lower) <- dimnames(Par$gamma$upper) <- list(paste0(rep(m$stateNames,mixtures),"_mix",rep(1:mixtures,each=nbStates)),m$stateNames)
+    }
+    
+    if("Q" %in% pparms & isTRUE(m$conditions$CT)){
+      # identify parameters of interest
+      i2 <- tail(cumsum(unlist(parCount)),1)+1
+      i3 <- i2+nbStates*(nbStates-1)*(nbCovs+1)*mixtures-1
+      
+      quantSup <- qnorm(1-(1-alpha)/2)
+      tmpSplineInputs<-getSplineFormula(newformula,m$data,tempCovs)
+      tempCovMat <- stats::model.matrix(tmpSplineInputs$formula,data=tmpSplineInputs$covs)
+      
+      est<-lower<-upper<-se<-matrix(NA,nbStates*mixtures,nbStates)
+      for(mix in 1:mixtures){
+        
+        if(is.null(recharge)){
+          wpar <- m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))]
+          est[(mix-1)*nbStates+1:nbStates,] <- get_gamma(wpar,tempCovMat,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE)
+          tmpSig <- Sigma[(i2:i3)[unique(c(m$conditions$betaCons))],(i2:i3)[unique(c(m$conditions$betaCons))]]
+        } else {
+          wpar <- c(m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))],m$mod$estimate[length(m$mod$estimate)-reForm$nbRecovs:0])
+          est[(mix-1)*nbStates+1:nbStates,] <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,hierRecharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE)
+          tmpSig <- Sigma[c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-reForm$nbRecovs:0),c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-reForm$nbRecovs:0)]
+        }
+        
+        if(!is.null(Sigma)){
+          for(i in 1:nbStates){
+            for(j in 1:nbStates){
+              if(is.null(recharge)){
+                dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE)
+              } else {
+                dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE)
+              }  
+              se[(mix-1)*nbStates+i,j]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
+              lower[(mix-1)*nbStates+i,j]<- est[(mix-1)*nbStates+i,j]-quantSup*se[(mix-1)*nbStates+i,j]
+              upper[(mix-1)*nbStates+i,j]<- est[(mix-1)*nbStates+i,j]+quantSup*se[(mix-1)*nbStates+i,j]
+            }
+          }
+        }
+      }
+      Par$Q <- list(est=est,se=se,lower=lower,upper=upper)
+      dimnames(Par$Q$est) <- dimnames(Par$Q$se) <- dimnames(Par$Q$lower) <- dimnames(Par$Q$upper) <- list(rep(m$stateNames,mixtures),m$stateNames)
+      if(mixtures>1) dimnames(Par$Q$est) <- dimnames(Par$Q$se) <- dimnames(Par$Q$lower) <- dimnames(Par$Q$upper) <- list(paste0(rep(m$stateNames,mixtures),"_mix",rep(1:mixtures,each=nbStates)),m$stateNames)
     }
     
     # pi
@@ -492,7 +536,8 @@ CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){
     tmpcovs <- covs
     tmpcovs$level <- "1"
   } else {
-    ci <- m$CIreal
+    if(!is.null(parms)) ci <- m$CIreal[parms]
+    else ci <- m$CIreal
     tmpcovs <- data.frame(level="1")
   }
   
@@ -500,6 +545,7 @@ CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){
   
   CIgamma <- data.tree::Node$new("hierGamma")
   CIdelta <- data.tree::Node$new("hierDelta")
+  if(isTRUE(m$conditions$CT)) CIQ <- data.tree::Node$new("hierQ")
   
   hierStates <- m$conditions$hierStates
   
@@ -512,6 +558,7 @@ CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){
   
   CIgamma$AddChild("level1",gamma=lapply(m$CIreal$gamma,function(x) matrix(x[mixref,ref],length(mixref),length(ref),dimnames=list(nameref,names(ref)))))
   CIdelta$AddChild("level1",delta=lapply(m$CIreal$delta,function(x) matrix(x[,ref],nrow(x),dimnames=list(rownames(x),names(ref)))))
+  if(isTRUE(m$conditions$CT)) CIQ$AddChild("level1",Q=lapply(m$CIreal$Q,function(x) matrix(x[mixref,ref],length(mixref),length(ref),dimnames=list(nameref,names(ref)))))
   
   for(j in 2:(hierStates$height-1)){
     
@@ -524,6 +571,11 @@ CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){
     tmpDelta <- CIreal.default(m=m,alpha=alpha,covs=tmpcovs,parms=c("gamma"))$gamma
     CIgamma$AddChild(paste0("level",j),gamma=list())
     CIdelta$AddChild(paste0("level",j),delta=list())
+    if(isTRUE(m$conditions$CT)) {
+      tmpcovs$level <- j
+      tmpQ <- CIreal.default(m=m,alpha=alpha,covs=tmpcovs,parms=c("Q"))$Q
+      CIQ$AddChild(paste0("level",j),Q=list())
+    }
     
     ref <- hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j)
     
@@ -540,10 +592,14 @@ CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){
         
         CIgamma[[paste0("level",j)]]$gamma[[k]] <- lapply(tmpGamma,function(x) matrix(x[mixref,levelStates],length(mixref),length(levelStates),dimnames=list(nameref,names(levelStates))))
         CIdelta[[paste0("level",j)]]$delta[[k]] <- lapply(tmpDelta,function(x) matrix(x[mixrefk,levelStates],mixtures,dimnames=list(namerefk,names(levelStates))))
+        if(isTRUE(m$conditions$CT)) CIQ[[paste0("level",j)]]$Q[[k]] <- lapply(tmpQ,function(x) matrix(x[mixref,levelStates],length(mixref),length(levelStates),dimnames=list(nameref,names(levelStates))))
       }
     }  
   }
-  ci$hierDelta <- CIdelta
-  ci$hierGamma <- CIgamma
+  if(is.null(parms) || "delta" %in% parms) ci$hierDelta <- CIdelta
+  if(is.null(parms) || "gamma" %in% parms) ci$hierGamma <- CIgamma
+  if(is.null(parms) || "Q" %in% parms) {
+    if(isTRUE(m$conditions$CT)) ci$hierQ <- CIQ
+  }
   ci
 }

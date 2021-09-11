@@ -1045,13 +1045,23 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   # compute t.p.m. if no covariates
   if(nbCovs==0 & nbStates>1) {
     mle$gamma <- matrix(0,nbStates*mixtures,nbStates)
+    if(isTRUE(list(...)$CT)) mle$Q <- matrix(0,nbStates*mixtures,nbStates)
     for(mix in 1:mixtures){
       trMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[1,,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),mean(dt), aInd=1)
       mle$gamma[nbStates*(mix-1)+1:nbStates,] <- trMat[,,1]
+      if(isTRUE(list(...)$CT)){
+        rMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[1,,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),mean(dt), rateMatrix=TRUE,aInd=1)
+        mle$Q[nbStates*(mix-1)+1:nbStates,] <- rMat[,,1]
+      }
     }
     colnames(mle$gamma)<-stateNames
     rownames(mle$gamma)<-rep(stateNames,mixtures)
     if(mixtures>1) rownames(mle$gamma) <- paste0(rep(stateNames,mixtures),"_mix",rep(1:mixtures,each=nbStates))
+    if(isTRUE(list(...)$CT)){
+      colnames(mle$Q)<-stateNames
+      rownames(mle$Q)<-rep(stateNames,mixtures)
+      if(mixtures>1) rownames(mle$Q) <- paste0(rep(stateNames,mixtures),"_mix",rep(1:mixtures,each=nbStates))
+    }
   }
   
   if(is.null(betaCons) & nbStates>1) betaCons <- matrix(1:length(mle$beta),nrow(mle$beta),ncol(mle$beta))

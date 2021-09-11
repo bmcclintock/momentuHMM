@@ -79,16 +79,30 @@ print.momentuHMM <- function(x,...)
       } else print(m$mle[["pi"]])
     }
   
-    if(!is.null(m$mle$gamma)) {
-      cat("\n")
-      cat("Transition probability matrix:\n")
-      cat("------------------------------\n")
-      print(m$mle$gamma)
+    if(!inherits(m,"CTHMM")){
+      if(!is.null(m$mle$gamma)) {
+        cat("\n")
+        cat("Transition probability matrix:\n")
+        cat("------------------------------\n")
+        print(m$mle$gamma)
+      } else {
+        cat("\n")
+        cat("Transition probability matrix (based on mean covariate values):\n")
+        cat("---------------------------------------------------------------\n")
+        print(m$CIreal$gamma$est)    
+      }
     } else {
-      cat("\n")
-      cat("Transition probability matrix (based on mean covariate values):\n")
-      cat("---------------------------------------------------------------\n")
-      print(m$CIreal$gamma$est)    
+      if(!is.null(m$mle$Q)) {
+        cat("\n")
+        cat("Transition rate matrix:\n")
+        cat("------------------------------\n")
+        print(m$mle$Q)
+      } else {
+        cat("\n")
+        cat("Transition rate matrix (based on mean covariate values):\n")
+        cat("---------------------------------------------------------------\n")
+        print(m$CIreal$Q$est)    
+      } 
     }
       
     if(inherits(m,"randomEffects")){
@@ -237,25 +251,47 @@ print.momentuHierHMM <- function(x,...)
     }
     cat("---------------------------------------------------------------\n")
     
-    cat("\n")
-    cat("---------------------------------------------------------------\n")
-    cat("Transition probability matrix (based on mean covariate values):\n")
-    cat("---------------------------------------------------------------\n")
-    for(j in 1:(hierStates$height-1)){
-      cat("-------------------------- ",paste0("level",j)," ---------------------------\n")
-      if(j>1){
-        for(jj in hierStates$Get("name",filterFun=function(x) x$level==j & x$count>0)){
-          tmpPar <- m$CIreal$hierGamma[[paste0("level",j)]]$gamma[[jj]]$est
+    if(!inherits(m,"CTHMM")){
+      cat("\n")
+      cat("---------------------------------------------------------------\n")
+      cat("Transition probability matrix (based on mean covariate values):\n")
+      cat("---------------------------------------------------------------\n")
+      for(j in 1:(hierStates$height-1)){
+        cat("-------------------------- ",paste0("level",j)," ---------------------------\n")
+        if(j>1){
+          for(jj in hierStates$Get("name",filterFun=function(x) x$level==j & x$count>0)){
+            tmpPar <- m$CIreal$hierGamma[[paste0("level",j)]]$gamma[[jj]]$est
+            print(tmpPar)
+            cat("\n")
+          }
+        } else {
+          tmpPar <- m$CIreal$hierGamma[[paste0("level",j)]]$gamma$est
           print(tmpPar)
           cat("\n")
         }
-      } else {
-        tmpPar <- m$CIreal$hierGamma[[paste0("level",j)]]$gamma$est
-        print(tmpPar)
-        cat("\n")
-      }
-    } 
-    cat("---------------------------------------------------------------\n")
+      } 
+      cat("---------------------------------------------------------------\n")
+    } else {
+      cat("\n")
+      cat("---------------------------------------------------------------\n")
+      cat("Transition rate matrix (based on mean covariate values):\n")
+      cat("---------------------------------------------------------------\n")
+      for(j in 1:(hierStates$height-1)){
+        cat("-------------------------- ",paste0("level",j)," ---------------------------\n")
+        if(j>1){
+          for(jj in hierStates$Get("name",filterFun=function(x) x$level==j & x$count>0)){
+            tmpPar <- m$CIreal$hierQ[[paste0("level",j)]]$Q[[jj]]$est
+            print(tmpPar)
+            cat("\n")
+          }
+        } else {
+          tmpPar <- m$CIreal$hierQ[[paste0("level",j)]]$Q$est
+          print(tmpPar)
+          cat("\n")
+        }
+      } 
+      cat("---------------------------------------------------------------\n")
+    }
     
     cat("\n")
     cat("--------------------------------------------------\n")
