@@ -427,7 +427,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       
       if(nbStates>1){
         if(CT) {
-          if(k<aInd.size() && i==(unsigned)(aInd(k)-1)) {
+          if(k<nbAnimals && i==(unsigned)(aInd(k)-1)) {
             Gamma = Gamma0;
           } else {
             try {
@@ -443,7 +443,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       } else
         Gamma = 1; // no transition if only one state
       
-      if(k<aInd.size() && i==(unsigned)(aInd(k)-1)) {
+      if(k<nbAnimals && i==(unsigned)(aInd(k)-1)) {
         // if 'i' is the 'k'-th element of 'aInd', switch to the next animal
         delt = delta[mix].row(k);
         alpha.row(mix) = (delt * Gamma) % allProbs.row(i);
@@ -456,14 +456,14 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       mixlscale(mix) += log(sum(alpha.row(mix)));
       alpha.row(mix) = alpha.row(mix)/sum(alpha.row(mix));
     }
-    if((k+1<aInd.size() && i==(unsigned)(aInd(k+1)-2)) || (i==(allProbs.n_rows-1))){
+    if((k+1<nbAnimals && i==(unsigned)(aInd(k+1)-2)) || (i==(allProbs.n_rows-1))){
       maxscale = mixlscale + log(pie.row(k));
       A = maxscale.max(); // cancels out below; helps prevent numerical issues
       lscale += A + log(sum(exp(maxscale - A)));
       k++;
     }
   }
-  //mixlscale += log(pie) * aInd.size();
+  //mixlscale += log(pie) * nbAnimals;
 
 
   return -lscale;
