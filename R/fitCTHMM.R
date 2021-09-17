@@ -242,7 +242,12 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
     attr(mfit$data,"normalize.gradients") <- attr(data,"normalize.gradients")
     attr(mfit$data,"grad.point.decreasing") <- attr(data,"grad.point.decreasing")
   }
-  if(fit) mfit$CIreal <- CIreal(mfit)
+  if(fit) {
+    mfit$CIreal <- CIreal(mfit)
+    # check for numerical underflow in state-dependent observation distributions
+    probs <- tryCatch(allProbs(mfit),warning=function(w) w)
+    if(inherits(probs,"warning")) warning(probs)
+  }
   mfit$conditions$Time.name <- Time.name
   mfit$conditions$Time.unit <- Time.unit
   return(mfit)

@@ -314,6 +314,7 @@ arma::colvec dmvnorm_rcpp(NumericVector x,
     double quadform = sum(xRinv%xRinv);
     //if (!Log) {
       out(i) = exp(-0.5*quadform + logSqrtDetvarcovM + constant);
+      //if(out(i) < DBL_MIN) out(i) = DBL_MIN;
     //} else{
     //  out(i) = -0.5*quadform + logSqrtDetvarcovM + constant;
     //}

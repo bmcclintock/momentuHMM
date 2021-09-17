@@ -99,6 +99,7 @@ allProbs <- function(m)
   }
 
   probs <- matrix(1,nrow=nbObs,ncol=nbStates)
+  genProb <- list()
   
   for(i in distnames){
     
@@ -113,10 +114,10 @@ allProbs <- function(m)
   
     genInd <- which(!is.na(genData[1:nbObs]))
     sp <- par[[i]]
-  
+    genProb[[i]] <- matrix(1,nbObs,nbStates)
+    
     for(state in 1:nbStates) {
       genPar <- sp
-      genProb <- rep(1,nbObs)
       genFun <- Fun[[i]]
       
       # Constitute the lists of state-dependent parameters for the step and angle
@@ -172,22 +173,28 @@ allProbs <- function(m)
       }
       if(zeroInflation[[i]] | oneInflation[[i]]) {
         if(zeroInflation[[i]] & !oneInflation[[i]]){
-          genProb[genInd] <- ifelse(genData[genInd]==0,
+          genProb[[i]][genInd,state] <- ifelse(genData[genInd]==0,
                                       zeromass, # if gen==0
                                       (1-zeromass)*do.call(genFun,genArgs)) # if gen != 0
         } else if(oneInflation[[i]] & !zeroInflation[[i]]){
-          genProb[genInd] <- ifelse(genData[genInd]==1,
+          genProb[[i]][genInd,state] <- ifelse(genData[genInd]==1,
                                     onemass, # if gen==0
                                     (1-onemass)*do.call(genFun,genArgs)) # if gen != 1          
         } else {
-          genProb[genInd][genData[genInd]==0] <- zeromass[genData[genInd]==0]
-          genProb[genInd][genData[genInd]==1] <- onemass[genData[genInd]==1]
-          genProb[genInd][genData[genInd]>0 & genData[genInd]<1] <- (1.-zeromass[genData[genInd]>0 & genData[genInd]<1]-onemass[genData[genInd]>0 & genData[genInd]<1]) * do.call(genFun,genArgs)[genData[genInd]>0 & genData[genInd]<1] # if gen !=0 and gen!=1
+          genProb[[i]][genInd,state][genData[genInd]==0] <- zeromass[genData[genInd]==0]
+          genProb[[i]][genInd,state][genData[genInd]==1] <- onemass[genData[genInd]==1]
+          genProb[[i]][genInd,state][genData[genInd]>0 & genData[genInd]<1] <- (1.-zeromass[genData[genInd]>0 & genData[genInd]<1]-onemass[genData[genInd]>0 & genData[genInd]<1]) * do.call(genFun,genArgs)[genData[genInd]>0 & genData[genInd]<1] # if gen !=0 and gen!=1
         }
       }
-      else genProb[genInd] <- do.call(genFun,genArgs)
-  
-      probs[,state] <- probs[,state]*genProb;
+      else genProb[[i]][genInd,state] <- do.call(genFun,genArgs)
+    }
+    zeroInd <- which(apply(genProb[[i]],1,function(x) all(x < .Machine$double.xmin)))
+    if(length(zeroInd)){
+      genProb[[i]][zeroInd,] <- .Machine$double.xmin
+      warning("'",i,"' probability density is zero for observation",ifelse(length(zeroInd)==1,paste("",zeroInd),ifelse(length(zeroInd)==2,paste("s",zeroInd[1],"and",zeroInd[2]),paste("s",paste0(zeroInd[-length(zeroInd)],collapse=", "),"and",zeroInd[length(zeroInd)])))," and results in numerical underflow; ",ifelse(length(zeroInd)==1,"this probability has","these probabilities have")," been set to .Machine$double.xmin")
+    }
+    for(state in 1:nbStates){
+      probs[,state] <- probs[,state]*genProb[[i]][,state];
     }
   }
   if(!is.null(m$knownStates)) {

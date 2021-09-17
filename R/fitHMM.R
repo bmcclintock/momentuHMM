@@ -1084,7 +1084,14 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   
   if(!is.null(mvnCoords)) attr(mh$data,'coords') <- paste0(mvnCoords,c(".x",".y"))
   
-  if(fit) message(ifelse(retryFits>=1,"\n",""),"DONE")
+  if(fit) {
+    # check for numerical underflow in state-dependent observation distributions
+    if(!isTRUE(list(...)$CT)){
+      probs <- tryCatch(allProbs(momentuHMM(mh)),warning=function(w) w)
+      if(inherits(probs,"warning")) warning(probs)
+    }
+    message(ifelse(retryFits>=1,"\n",""),"DONE")
+  }
   
   return(momentuHMM(mh))
 }

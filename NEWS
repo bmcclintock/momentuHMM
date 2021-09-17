@@ -1,4 +1,4 @@
-momentuHMM 2.0.0 2021-09-03
+momentuHMM 2.0.0 2021-09-17
 -----------------
 NEW FEATURES
 
@@ -7,6 +7,10 @@ NEW FEATURES
 * new data stream distribution "ctds" for (multistate) continuous-time discrete-space movement models, which can be prepared, fitted, and simulated using the functions 'prepCTDS', 'fitCTHMM' (or 'MIfitCTHMM'), and 'simCTDS' (or 'simHierCTDS' for hierarchical models), respectively.
 
 * special pseudo-design matrix function 'langevin' has been added for simulating and fitting discrete-time approximations of the (multistate) Langevin diffusion model as a multivariate normal random walk (i.e. using the "rw_mvnorm2" or "rw_mvnorm3" data stream distributions)
+
+CHANGES
+
+* when the probability density for a data stream observation is zero for all states, a warning is triggered and .Machine$double.xmin is used to avoid division by zero within the forward algorithm
 
 BUG FIXES
 

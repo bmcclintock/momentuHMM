@@ -376,12 +376,26 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       //}
     }
     
-    // put the NAs back
+    // put the NAs back and check for underflow to zero
+    int badInd;
     for(int l=0; l<L.size(); l++){
       tmpL = L[l];
       for(int i=0;i<nbObs;i++) {
         if(tmpL(i)==NAvalue) {
           tmpL(i) = NA_REAL;
+        } else {
+          badInd = 0;
+          for(int state=0; state<nbStates; state++){
+            if(allProbs(i,state) < DBL_MIN){
+              badInd+=1;
+            }
+          }
+          if(badInd==nbStates){
+            for(int state=0; state<nbStates; state++){
+              allProbs(i,state) = DBL_MIN;
+            }
+            //Rprintf("Warning: '%s' probability density for observation %d is zero and results in numerical underflow; this probability has been set to %f\n",genDist.c_str(),i+1,DBL_MIN);
+          }
         }
       }
       L[l] = tmpL;
