@@ -243,7 +243,9 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
     attr(mfit$data,"grad.point.decreasing") <- attr(data,"grad.point.decreasing")
   }
   if(fit) {
-    mfit$CIreal <- CIreal(mfit)
+    mfit$CIreal <- tryCatch(CIreal(mfit),error=function(e) e)
+    if(inherits(mfit$CIreal,"error") & fit==TRUE) warning("Failed to compute SEs and confidence intervals on the natural scale -- ",mfit$CIreal)
+    
     # check for numerical underflow in state-dependent observation distributions
     probs <- tryCatch(allProbs(mfit),warning=function(w) w)
     if(inherits(probs,"warning")) warning(probs)
@@ -336,7 +338,8 @@ fitCTHMM.momentuHierHMMData <- function(data,Time.name="time",Time.unit="auto",h
   hfit <- momentuHierHMM(hfit)
   
   if(fit){
-    hfit$CIreal <- CIreal.hierarchical(hfit)
+    hfit$CIreal <- tryCatch(CIreal.hierarchical(hfit),error=function(e) e)
+    if(inherits(hfit$CIreal,"error") & fit==TRUE) warning("Failed to compute SEs and confidence intervals on the natural scale -- ",hfit$CIreal)
   }
-  hfit
+  return(hfit)
 }
