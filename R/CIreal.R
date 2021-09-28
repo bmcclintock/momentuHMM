@@ -311,7 +311,7 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
               "A problem occurred in the calculation of the stationary distribution."})
           } else {
             tryCatch(
-              stationary_rcpp(gamma),error = function(e) {
+              stationary_rcpp(gamma)[i],error = function(e) {
                 "A problem occurred in the calculation of the stationary distribution."})
           }
         }

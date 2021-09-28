@@ -104,11 +104,21 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   checkNames <- lapply(im,function(x) x[match("modelName",names(x))])
   if(any(!unlist(lapply(checkNames,function(x) isTRUE(all.equal(x,checkNames[[1]],use.names=FALSE)))))) stop("'modelName' must be identical for each fitted model")
   
+  if(inherits(im[[1]]$data,"ctds")){
+    inTime <- lapply(im,function(y) sort(unlist(mapply(function(z) which(y$data$ID==z & (y$data$time %in% Reduce(intersect, lapply(im,function(x) x$data$time)))),unique(y$data$ID),SIMPLIFY = FALSE))))
+  } else inTime <- lapply(im, function(y) 1:nrow(y$data))
+  if(any(unlist(lapply(inTime,length))!=nrow(im[[1]]$data))) {
+    if(inherits(im[[1]]$data,"ctds")){
+      warning("Imputed datasets have differing number of rows; only times common to all imputed datasets are used in averaging data across imputations.\n  Note the mode is used for averaging the ctds data stream '",attr(im[[1]]$data,"ctdsData"),"' at each common time step across imputed data sets")
+    } else stop("Imputed datasets have differing number of rows, so data cannot be averaged across imputations")
+  }
+  
   checksims <- lapply(im,function(x) x[match("conditions",names(x))])
   ident <- !unlist(lapply(checksims,function(x) isTRUE(all.equal(x,checksims[[1]]))))
   if(any(ident)){
     # check that only differences are in the design matrix covariate values
-    checksims2 <- lapply(checksims, function(x) x$conditions[-match(c("fullDM","hierBeta","hierDelta"),names(x$conditions),nomatch=0)])
+    if(!inherits(im[[1]]$data,"ctds")) checksims2 <- lapply(checksims, function(x) x$conditions[-match(c("fullDM","hierBeta","hierDelta"),names(x$conditions),nomatch=0)])
+    else checksims2 <- lapply(checksims, function(x) x$conditions[-match(c("fullDM","hierBeta","hierDelta","dtIndex"),names(x$conditions),nomatch=0)])
     ident2 <- !unlist(lapply(checksims2,function(x) isTRUE(all.equal(x,checksims2[[1]]))))
     if(any(ident2)) stop("Model conditions for each imputation must be identical. Imputations that do not match the first: ",paste(which(ident),collapse=", "))
   }
@@ -182,15 +192,6 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   p <- parDef(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,m$conditions$bounds)
   
   mixtures <- m$conditions$mixtures
-  
-  if(inherits(m$data,"ctds")){
-    inTime <- lapply(im,function(y) which(y$data$time %in% Reduce(intersect, lapply(im,function(x) x$data$time))))
-  } else inTime <- lapply(im, function(y) 1:nrow(y$data))
-  if(any(unlist(lapply(inTime,length))!=nrow(m$data))) {
-    if(inherits(m$data,"ctds")){
-      warning("Imputed datasets have differing number of rows; only times common to all imputed datasets are used in averaging data across imputations.\n  Note the mode is used for averaging the ctds data stream '",attr(m$data,"ctdsData"),"' at each common time step across imputed data sets")
-    } else stop("Imputed datasets have differing number of rows, so data cannot be averaged across imputations")
-  }
 
   fm <- NULL
   
@@ -477,6 +478,38 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     Par$real$gamma <- list(est=est,se=se,lower=lower,upper=upper)
     dimnames(Par$real$gamma$est) <- dimnames(Par$real$gamma$se) <- dimnames(Par$real$gamma$lower) <- dimnames(Par$real$gamma$upper) <- list(rep(m$stateNames,mixtures),m$stateNames)
     if(mixtures>1) dimnames(Par$real$gamma$est) <- dimnames(Par$real$gamma$se) <- dimnames(Par$real$gamma$lower) <- dimnames(Par$real$gamma$upper) <- list(paste0(rep(m$stateNames,mixtures),"_mix",rep(1:mixtures,each=nbStates)),m$stateNames)
+    
+    if(isTRUE(m$conditions$CT)){
+      
+      est<-lower<-upper<-se<-matrix(NA,nbStates*mixtures,nbStates)
+      
+      for(mix in 1:mixtures){
+        if(is.null(recharge)){
+          wpar <- miBeta$coefficients[gamInd]
+          est[(mix-1)*nbStates+1:nbStates,] <- get_gamma(wpar,tempCovMat,nbStates,1:nbStates,1:nbStates,m$conditions$betaRef,m$conditions$betaCons,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE)
+          tmpSig <- miBeta$variance[gamInd,gamInd]
+        } else {
+          wpar <- c(miBeta$coefficients[gamInd],miBeta$coefficients[length(miBeta$coefficients)-reForm$nbRecovs:0])
+          est[(mix-1)*nbStates+1:nbStates,] <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,hierRecharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE)
+          tmpSig <- miBeta$variance[c(gamInd,length(miBeta$coefficients)-reForm$nbRecovs:0),c(gamInd,length(miBeta$coefficients)-reForm$nbRecovs:0)]
+        }
+        for(i in 1:nbStates){
+          for(j in 1:nbStates){
+            if(is.null(recharge)){
+              dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE)
+            } else {
+              dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE)
+            }  
+            se[(mix-1)*nbStates+i,j]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
+            lower[(mix-1)*nbStates+i,j]<-est[(mix-1)*nbStates+i,j]-quantSup*se[(mix-1)*nbStates+i,j]
+            upper[(mix-1)*nbStates+i,j]<-est[(mix-1)*nbStates+i,j]+quantSup*se[(mix-1)*nbStates+i,j]
+          }
+        }
+      }
+      Par$real$Q <- list(est=est,se=se,lower=lower,upper=upper)
+      dimnames(Par$real$Q$est) <- dimnames(Par$real$Q$se) <- dimnames(Par$real$Q$lower) <- dimnames(Par$real$Q$upper) <- list(rep(m$stateNames,mixtures),m$stateNames)
+      if(mixtures>1) dimnames(Par$real$Q$est) <- dimnames(Par$real$Q$se) <- dimnames(Par$real$Q$lower) <- dimnames(Par$real$Q$upper) <- list(paste0(rep(m$stateNames,mixtures),"_mix",rep(1:mixtures,each=nbStates)),m$stateNames)
+    }
   }
   
   # pooled pi estimates

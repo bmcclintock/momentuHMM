@@ -1687,6 +1687,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         simDat$data$time <- obsTimes[[zoo]]
         simDat$data$tau <- dt[[zoo]]
         simDat <- lapply(simDat,function(x) if(!is.null(x)) x[1:k,,drop=FALSE])
+      } else if(isTRUE(list(...)$CT)){
+        simDat$data$time <- obsTimes[[zoo]]
       }
       return(simDat)
     }

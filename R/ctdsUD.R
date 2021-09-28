@@ -14,13 +14,14 @@
 #' @export
 ctdsUD <- function (ctds, spatialCovs, spatialCovs.grad, zero.idx = integer(), method="lu",maxiter, start, tol) 
 {
-  if(!inherits(ctds,"ctds")) stop("ctds must be a 'ctds' object")
-  
   if(inherits(ctds,"miHMM")) ctds <- ctds$miSum
   if(inherits(ctds,"miSum")){
     ctds <- formatmiSum(ctds)
     ctds$CIbeta <- ctds$Par$beta
   }
+  
+  if(!inherits(ctds,"ctds")) stop("ctds must be a 'ctds' object")
+  
   if(missing(spatialCovs)) spatialCovs <- NULL
   if(missing(spatialCovs.grad)) spatialCovs.grad <- NULL
   
@@ -81,10 +82,14 @@ ctdsUD <- function (ctds, spatialCovs, spatialCovs.grad, zero.idx = integer(), m
   #parInd <- apply(matrix(unlist(lapply(ctds$conditions$fullDM$z,function(x) all(x==0))),ncol=ncol(ctds$conditions$fullDM$z))[1:nbStates,,drop=FALSE],1,function(y) which(y==0))
   ##if(nbStates==1) parInd <- list(parInd)
   for(i in 1:nbStates){
-    if("crw" %in% all.vars(form[[i]])) warning("It is not possible to include 'crw' when calculating UD for state ",i,"; this term has been set to zero")
     R[[stateNames[[i]]]] = Matrix::Matrix(0, nrow = nn, ncol = nn, sparse = TRUE)
     DM <- stats::model.matrix(form[[i]],X)
     parInd <- which(!unlist(lapply(ctds$conditions$fullDM$z[i,],function(x) all(x==0))))
+    if("crw" %in% all.vars(form[[i]])) {
+      warning("It is not possible to include 'crw' when calculating UD for state ",i,"; this term has been set to zero")
+      DM <- DM[,-which(colnames(DM)=="crw"),drop=FALSE]
+      if(ncol(DM)==1) next;
+    }
     R[[stateNames[i]]][idx.mot] <- exp(DM %*% ctds$CIbeta[[attr(ctds$data,"ctdsData")]]$est[parInd])
     if (length(zero.idx) > 0) {
       R[[stateNames[i]]][zero.idx, zero.idx] = 0
