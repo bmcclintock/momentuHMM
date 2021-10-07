@@ -7,7 +7,7 @@
 #' and observed locations (x- and y- coordinates identified by \code{coord}), such as that returned by \code{\link{simData}} when temporally-irregular observed locations or
 #' measurement error are included. Alternatively, a \code{\link[sp:SpatialPoints]{SpatialPointsDataFrame}} or \code{sf} object will 
 #' also be accepted, in which case the \code{coord} values will be taken from the spatial data set and ignored in the arguments.  
-#' Note that \code{\link[crawl]{crwMLE}} requires that longitude/latitude coordinates be projected to UTM (i.e., easting/northing). For further details see \code{\link[crawl]{crwMLE}}.
+#' Note that \code{\link[crawl]{crwMLE}} requires that longitude/latitude coordinates be projected to UTM (i.e., easting/northing). If times identified by \code{Time.name} are POSIXct, a time zone must be specified. For further details see \code{\link[crawl]{crwMLE}}.
 #' @param timeStep Length of the time step at which to predict regular locations from the fitted model. Unless \code{predTime} is specified, the sequence of times
 #' is \code{seq(a_i,b_i,timeStep)} where a_i and b_i are the times of the first and last observations for individual i. \code{timeStep} can be numeric (regardless of
 #' whether \code{obsData[[Time.name]]} is numeric or POSIXct) or a character string (if \code{obsData[[Time.name]]} is of class POSIXct) containing one of "sec", "min", "hour", "day", "DSTday", "week", "month", "quarter" or "year". 
@@ -125,6 +125,10 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     if(any(!(c("ID",Time.name) %in% names(obsData)))) stop('obsData is missing ',paste(c("ID",Time.name)[!(c("ID",Time.name) %in% names(obsData))],collapse=","))
     coord <- colnames(sp::coordinates(obsData)) # c("x","y") 
   } else stop("obsData must be a data frame or a SpatialPointsDataFrame")
+  
+  if(inherits(obsData[[Time.name]],"POSIXct")){
+    if(is.null(attributes(obsData[[Time.name]])$tzone)) stop("obsData$",Time.name," is missing POSIXct 'tzone' attribute; a time zone must be specified")
+  }
     
   if(retryFits<0) stop("retryFits must be non-negative")
   if(attempts<1) stop("attempts must be >=1")
@@ -226,7 +230,6 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   
   # Check crwFits and re-try based on retryFits
   if(ncores>1 & nbAnimals>1 & retryFits & retryParallel){
-    doFuture::registerDoFuture()
     future::plan(future::multisession, workers = ncores)
     if(retryParallel) cat("Attempting to achieve convergence and valid variance estimates for each individual in parallel.\n    Press 'esc' to force exit from 'crawlWrap'... \n",sep="")
   } else {
@@ -312,13 +315,6 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     doParallel::stopImplicitCluster()
   } else future::plan(future::sequential)
   
-  if(ncores>1){
-    doFuture::registerDoFuture()
-    future::plan(future::multisession, workers = ncores)
-  } else {
-    doParallel::registerDoParallel(cores=ncores)
-  }
-  
   convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
   if(!length(convFits)) stop("crawl::crwMLE failed for all individuals.  Check crawl::crwMLE arguments and/or consult crawl documentation.\n")
   model_fits <- model_fits[convFits]
@@ -381,9 +377,6 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
       if(!is.null(coordLevel)) pD$level <- coordLevel
       pD
     },warning=muffleRNGwarning)
-  
-  if(ncores==1) doParallel::stopImplicitCluster()
-  else future::plan(future::sequential)
   
   if(hierInd){
     
