@@ -61,7 +61,8 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
                         retrySims=0,
                         lambda=1,
                         errorEllipse=NULL,
-                        ncores=1)
+                        ncores=1,
+                        export=NULL)
 {
   
   installDataTree()
@@ -120,6 +121,7 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
                                          lambda,
                                          errorEllipse,
                                          ncores,
+                                         export,
                                          CT=TRUE),warning=muffleCTwarning)
   
   coordLevel <- attr(out,"coordLevel")

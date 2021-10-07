@@ -116,6 +116,7 @@ MIfitCTHMM <- function(miData, ...) {
 #' @param thetaSamp If multiple parameter samples are available in \code{\link[crawl]{crwSimulator}} objects,
 #' setting \code{thetaSamp=n} will use the nth sample. Defaults to the last. See \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}}. 
 #' Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' @param export Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.
 #' @param rast A raster object or raster stack object that will define the discrete-space grid cells for the CTDS movement path. See \code{\link{prepCTDS}}. Ignored unless \code{miData} is a \code{crwData} object and \code{CTDS} is \code{TRUE}.
 #' @param directions Integer. See \code{\link{prepCTDS}}. Ignored unless \code{miData} is a \code{crwData} object and \code{CTDS} is \code{TRUE}.
 #' @param zero.idx Integer vector of the indices of raster cells that are not passable and should be excluded. See \code{\link{prepCTDS}}. Ignored unless \code{miData} is a \code{crwData} object and \code{CTDS} is \code{TRUE}.
@@ -161,7 +162,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
                    mvnCoords = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
                    covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL, 
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
-                   fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, 
+                   fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, export = NULL,
                    rast, directions=4, zero.idx=integer(), interpMethod="ShortestPath",
                    spatialCovs.grad=NULL, crw = TRUE, normalize.gradients = FALSE, grad.point.decreasing = FALSE, ...)
 {
@@ -187,7 +188,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
                                        mvnCoords, knownStates, fixPar, retryFits, retrySD, optMethod, control, prior, modelName,
                                        covNames, spatialCovs, centers, centroids, angleCovs, altCoordNames,
                                        method, parIS, dfSim, grid.eps, crit, scaleSim, quad.ask, force.quad,
-                                       fullPost, dfPostIS, scalePostIS,thetaSamp,
+                                       fullPost, dfPostIS, scalePostIS,thetaSamp,export,
                                        rast, directions, zero.idx, interpMethod,
                                        spatialCovs.grad, crw, normalize.gradients, grad.point.decreasing))
         }
@@ -422,7 +423,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
   if(useInitial | ncores>1) cat("Fitting ",ifelse(useInitial,"remaining ",""),length(parallelStart:nSims)," imputation",ifelse(length(parallelStart:nSims)>1,"s",""),ifelse(ncores>1," in parallel",""),"... \n",sep="")
   
   withCallingHandlers(fits[parallelStart:nSims] <-
-    foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitCTHMM"), .errorhandling="pass", .packages=pkgs) %dorng% {
+    foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitCTHMM",export), .errorhandling="pass", .packages=pkgs) %dorng% {
       
       if(nSims==1 | ncores==1 | retryFits>=1) {
         cat("     \rImputation ",j,"... ",sep="")
@@ -487,7 +488,7 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
                        mvnCoords = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
                        covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL,
                        method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
-                       fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, 
+                       fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, export = NULL,
                        rast, directions=4, zero.idx=integer(), interpMethod="ShortestPath",
                        spatialCovs.grad=NULL, crw = TRUE, normalize.gradients = FALSE, grad.point.decreasing = FALSE, ...)
 {
@@ -759,7 +760,7 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
   if(useInitial | ncores>1) cat("Fitting ",ifelse(useInitial,"remaining ",""),length(parallelStart:nSims)," imputation",ifelse(length(parallelStart:nSims)>1,"s",""),ifelse(ncores>1," in parallel",""),"... \n",sep="")
   
   withCallingHandlers(fits[parallelStart:nSims] <-
-                        foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitCTHMM"), .errorhandling="pass", .packages = pkgs) %dorng% {
+                        foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitCTHMM",export), .errorhandling="pass", .packages = pkgs) %dorng% {
                           
                           if(nSims==1 | ncores==1 | retryFits>=1) {
                             cat("     \rImputation ",j,"... ",sep="")

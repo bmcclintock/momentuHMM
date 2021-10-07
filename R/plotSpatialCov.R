@@ -59,18 +59,20 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   if(!inherits(spatialCov,"RasterLayer")) 
     stop("spatialCov should be of class 'RasterLayer'")
   
-  if(is.null(states) & inherits(data,c("momentuHMM","miHMM","miSum"))){
-    if(inherits(data,"momentuHMM")) states <- viterbi(data)
-    else if(inherits(data,"miHMM")) states <- data$miSum$Par$states
-    else states <- data$Par$states
-  }
   if(is.null(stateNames)){
     if(inherits(data,c("momentuHMM","miHMM","miSum"))){
       if(inherits(data,c("momentuHMM","miSum"))) stateNames <- data$stateNames
       else if(inherits(data,"miHMM")) stateNames <- data$miSum$stateNames
     }
+    if(length(stateNames)==1) stateNames <- NULL
   }
   
+  if(is.null(states) & inherits(data,c("momentuHMM","miHMM","miSum")) & length(stateNames)>1){
+    if(inherits(data,"momentuHMM")) states <- viterbi(data)
+    else if(inherits(data,"miHMM")) states <- data$miSum$Par$states
+    else states <- data$Par$states
+  }
+
   if(inherits(data,"momentuHMM")) data <- data$data
   else if(inherits(data,"miHMM")) data <- data$miSum$data
   else if(inherits(data,"miSum")) data <- data$data

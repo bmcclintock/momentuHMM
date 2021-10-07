@@ -67,6 +67,7 @@ MIfitCTHMM(miData, ...)
   dfPostIS = Inf,
   scalePostIS = 1,
   thetaSamp = NULL,
+  export = NULL,
   rast,
   directions = 4,
   zero.idx = integer(),
@@ -134,6 +135,7 @@ MIfitCTHMM(miData, ...)
   dfPostIS = Inf,
   scalePostIS = 1,
   thetaSamp = NULL,
+  export = NULL,
   rast,
   directions = 4,
   zero.idx = integer(),
@@ -294,6 +296,8 @@ of the quadrature method for large parameter vectors. See \code{\link[crawl]{crw
 \item{thetaSamp}{If multiple parameter samples are available in \code{\link[crawl]{crwSimulator}} objects,
 setting \code{thetaSamp=n} will use the nth sample. Defaults to the last. See \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}}. 
 Ignored unless \code{miData} is a \code{\link{crwData}} object.}
+
+\item{export}{Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.}
 
 \item{rast}{A raster object or raster stack object that will define the discrete-space grid cells for the CTDS movement path. See \code{\link{prepCTDS}}. Ignored unless \code{miData} is a \code{crwData} object and \code{CTDS} is \code{TRUE}.}
 

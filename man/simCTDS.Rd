@@ -37,7 +37,8 @@ simCTDS(
   states = FALSE,
   lambda = 1,
   errorEllipse = NULL,
-  ncores = 1
+  ncores = 1,
+  export = NULL
 )
 
 simHierCTDS(
@@ -70,7 +71,8 @@ simHierCTDS(
   states = FALSE,
   lambda = 1,
   errorEllipse = NULL,
-  ncores = 1
+  ncores = 1,
+  export = NULL
 )
 }
 \arguments{
@@ -178,6 +180,8 @@ error ellipse elements, then the corresponding component is fixed to this value 
 any other data streams are observed without error.}
 
 \item{ncores}{Number of cores to use for parallel processing. Default: 1 (no parallel processing).}
+
+\item{export}{Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.}
 
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See details.}
 

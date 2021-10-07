@@ -112,6 +112,7 @@ MIfitHMM <- function(miData, ...) {
 #' @param thetaSamp If multiple parameter samples are available in \code{\link[crawl]{crwSimulator}} objects,
 #' setting \code{thetaSamp=n} will use the nth sample. Defaults to the last. See \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}}. 
 #' Ignored unless \code{miData} is a \code{\link{crwData}} object.
+#' @param export Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.
 #' 
 #' @return  If \code{nSims>1}, \code{poolEstimates=TRUE}, and \code{fit=TRUE}, a \code{\link{miHMM}} object, i.e., a list consisting of:
 #' \item{miSum}{\code{\link{miSum}} object returned by \code{\link{MIpool}}.}
@@ -200,7 +201,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
                    mvnCoords = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
                    covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL, 
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
-                   fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, ...)
+                   fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, export=NULL, ...)
 {
   
   # for directing list of momentuHierHMMData objects to MIfitHMM.hierarchical
@@ -443,7 +444,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
   if(useInitial | ncores>1) cat("Fitting ",ifelse(useInitial,"remaining ",""),length(parallelStart:nSims)," imputation",ifelse(length(parallelStart:nSims)>1,"s",""),ifelse(ncores>1," in parallel",""),"... \n",sep="")
   
   withCallingHandlers(fits[parallelStart:nSims] <-
-    foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitHMM"), .errorhandling="pass", .packages=pkgs) %dorng% {
+    foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitHMM",export), .errorhandling="pass", .packages=pkgs) %dorng% {
       
       if(nSims==1 | ncores==1 | retryFits>=1) {
         cat("     \rImputation ",j,"... ",sep="")
@@ -502,7 +503,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                        mvnCoords = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
                        covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL,
                        method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
-                       fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, ...)
+                       fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, export = NULL, ...)
 {
   
   j <- mf <- mD <- NULL #gets rid of no visible binding for global variable NOTE in R cmd check
@@ -747,7 +748,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
   if(useInitial | ncores>1) cat("Fitting ",ifelse(useInitial,"remaining ",""),length(parallelStart:nSims)," imputation",ifelse(length(parallelStart:nSims)>1,"s",""),ifelse(ncores>1," in parallel",""),"... \n",sep="")
   
   withCallingHandlers(fits[parallelStart:nSims] <-
-                        foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitHMM"), .errorhandling="pass", .packages = pkgs) %dorng% {
+                        foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitHMM",export), .errorhandling="pass", .packages = pkgs) %dorng% {
                           
                           if(nSims==1 | ncores==1 | retryFits>=1) {
                             cat("     \rImputation ",j,"... ",sep="")

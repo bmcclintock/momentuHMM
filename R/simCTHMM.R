@@ -75,6 +75,7 @@
 #' error ellipse elements, then the corresponding component is fixed to this value for each location. Only coordinate data streams are subject to location measurement error;
 #' any other data streams are observed without error.
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
+#' @param export Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.
 #' 
 #' @return If the simulated data have no measurement error (i.e., \code{errorEllipse=NULL}), a \code{\link{momentuHMMData}} object, 
 #' i.e., a dataframe of:
@@ -124,7 +125,8 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                      #times=NULL,
                      lambda=1,
                      errorEllipse=NULL,
-                     ncores=1)
+                     ncores=1,
+                     export=NULL)
 {
   
   if(!is.null(model)){
@@ -177,6 +179,7 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                                      lambda,
                                      errorEllipse,
                                      ncores,
+                                     export=export,
                                      CT=TRUE),warning=muffleCTwarning)
   
   out<- out[,c("ID","time",colnames(out)[which(!colnames(out) %in% c("ID","time"))])]

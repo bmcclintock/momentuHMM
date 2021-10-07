@@ -128,6 +128,7 @@
 #' error ellipse elements, then the corresponding component is fixed to this value for each location. Only the 'step' and 'angle' data streams are subject to location measurement error;
 #' any other data streams are observed without error.  Ignored unless a valid distribution for the 'step' data stream is specified.
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
+#' @param export Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.
 #' @param ... further arguments passed to or from other methods
 #' 
 #' @return If the simulated data are temporally regular (i.e., \code{lambda=NULL}) with no measurement error (i.e., \code{errorEllipse=NULL}), an object \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}), 
@@ -367,6 +368,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     lambda=NULL,
                     errorEllipse=NULL,
                     ncores=1,
+                    export=NULL,
                     ...)
 {
   
@@ -1211,7 +1213,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     ###########################
     ## Loop over the animals ##
     ###########################
-    withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.export=ls(),.packages=pkgs,.combine='comb') %dorng% {
+    withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.export=c(ls(),export),.packages=pkgs,.combine='comb') %dorng% {
       
       if(ncores==1 | nbAnimals==1) message("        Simulating individual ",zoo,"... ",sep="")
       else progBar(zoo, nbAnimals)
@@ -1812,6 +1814,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                           lambda,
                           errorEllipse,
                           ncores,
+                          export=export,
                           ...),error=function(e) e))
       if(inherits(tmp,"error")){
         if(grepl("Try expanding the extent of the raster",tmp)) simCount <- simCount+1

@@ -39,6 +39,7 @@ simData(
   lambda = NULL,
   errorEllipse = NULL,
   ncores = 1,
+  export = NULL,
   ...
 )
 
@@ -74,6 +75,7 @@ simHierData(
   lambda = NULL,
   errorEllipse = NULL,
   ncores = 1,
+  export = NULL,
   ...
 )
 }
@@ -235,6 +237,8 @@ error ellipse elements, then the corresponding component is fixed to this value 
 any other data streams are observed without error.  Ignored unless a valid distribution for the 'step' data stream is specified.}
 
 \item{ncores}{Number of cores to use for parallel processing. Default: 1 (no parallel processing).}
+
+\item{export}{Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.}
 
 \item{...}{further arguments passed to or from other methods}
 

@@ -66,6 +66,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                     lambda=NULL,
                     errorEllipse=NULL,
                     ncores=1,
+                    export=NULL,
                     ...)
 {
   
@@ -1059,7 +1060,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     ###########################
     ## Loop over the animals ##
     ###########################
-    withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.export=ls(),.packages=pkgs,.combine='comb') %dorng% {
+    withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.export=c(ls(),export),.packages=pkgs,.combine='comb') %dorng% {
       
       if(ncores==1 | nbAnimals==1) message("        Simulating individual ",zoo,"... ",sep="")
       else progBar(zoo, nbAnimals)
