@@ -107,7 +107,7 @@ prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.id
   dataStreams <- names(data)[which(!names(data) %in% c("ID","time","x","y",covNames))]
   
   # check rasters using prepData
-  checkRast(data,spatialCovs,spatialCovs.grad)
+  checkRast(data,rast,spatialCovs,spatialCovs.grad)
   
   if(inherits(rast,"RasterBrick")) rast <- raster::stack(rast)
   
@@ -132,6 +132,8 @@ prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.id
     future::plan(future::multisession, workers = ncores)
     # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
     progBar <- progBar
+    path2ctds <- path2ctds
+    ctds2glm <- ctds2glm
     pkgs <- c("momentuHMM")
   } else { 
     doParallel::registerDoParallel(cores=ncores)
@@ -288,7 +290,7 @@ prepCTDS.hierarchical <- function(data, Time.unit="auto", rast, directions=4, ze
   dataStreams <- names(data)[which(!names(data) %in% c("ID","time","x","y",covNames))]
   
   # check rasters using prepData
-  checkRast(data[which(data$level==coordLevel),],spatialCovs,spatialCovs.grad)
+  checkRast(data[which(data$level==coordLevel),],rast,spatialCovs,spatialCovs.grad)
   
   if(inherits(rast,"RasterBrick")) rast <- raster::stack(rast)
   
@@ -643,9 +645,10 @@ ctds2glm <- function (data, ctmc, rast, spatialCovs=NULL, spatialCovs.grad=NULL,
   out
 }
 
-checkRast <- function(data,spatialCovs,spatialCovs.grad){
+checkRast <- function(data,rast,spatialCovs,spatialCovs.grad){
   check1 <- prepData(data.frame(data[1:3,]),spatialCovs=spatialCovs)
   check2 <- prepData(data.frame(data[1:3,]),spatialCovs=spatialCovs.grad)
+  check3 <- prepData(data.frame(data[1:3,]),spatialCovs=list(rast=rast))
   if(!is.null(spatialCovs)) if(any(is.na(raster::cellFromXY(spatialCovs[[1]],data[,c("x","y")])))) stop("Location data are beyond the spatial extent of the raster(s). Try expanding the extent of the raster(s).")
   else if(!is.null(spatialCovs.grad)) if(any(is.na(raster::cellFromXY(spatialCovs.grad[[1]],data[,c("x","y")])))) stop("Location data are beyond the spatial extent of the raster(s). Try expanding the extent of the raster(s).")
   if(any(names(spatialCovs) %in% names(spatialCovs.grad))) stop("'spatialCovs' and 'spatialCovs.grad' names must be unique")

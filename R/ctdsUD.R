@@ -10,9 +10,10 @@
 #' @param maxiter	Total number of iterations for limit method if tolerance not reached first. Defaults to 100. Ignored for method='lu'.
 #' @param start	A value for the starting distribution for the 'limit' method. Defaults to 1/num. cells. Ignored for method='lu'.
 #' @param tol	Value used to assess convergence for limit method. If max(abs(pi1-pi0))<tol, limit method has converged. Defaults to sqrt(.Machine$double.eps).
+#' @param log Logical indicating whether or not to return the log UD. Default: \code{FALSE}.
 #' @return A list of \code{\link[raster]{raster}} objects.
 #' @export
-ctdsUD <- function (ctds, spatialCovs, spatialCovs.grad, zero.idx = integer(), method="lu",maxiter, start, tol) 
+ctdsUD <- function (ctds, spatialCovs, spatialCovs.grad, zero.idx = integer(), method="lu",maxiter, start, tol, log=FALSE) 
 {
   if(inherits(ctds,"miHMM")) ctds <- ctds$miSum
   if(inherits(ctds,"miSum")){
@@ -26,7 +27,9 @@ ctdsUD <- function (ctds, spatialCovs, spatialCovs.grad, zero.idx = integer(), m
   if(missing(spatialCovs.grad)) spatialCovs.grad <- NULL
   
   if(is.null(spatialCovs) & is.null(spatialCovs.grad)) stop("No spatial covariates provided!")
-  checkRast(ctds$data[,which(!names(ctds$data) %in% c(names(spatialCovs),names(spatialCovs.grad)))],spatialCovs,spatialCovs.grad)
+  if(is.null(spatialCovs)) rast <- spatialCovs.grad[[1]]
+  else rast <- spatialCovs[[1]]
+  checkRast(ctds$data[,which(!names(ctds$data) %in% c(names(rast),names(spatialCovs),names(spatialCovs.grad)))],rast,spatialCovs,spatialCovs.grad)
   
   directions <- attr(ctds$data,"directions")
   normalize.gradients <- attr(ctds$data,"normalize.gradients")
@@ -96,7 +99,8 @@ ctdsUD <- function (ctds, spatialCovs, spatialCovs.grad, zero.idx = integer(), m
     }
     R[[stateNames[i]]] <- ctmcmove::get.UD(R[[stateNames[i]]], method=method,maxiter=maxiter, start=start, tol=tol)
     udrast[[stateNames[i]]] <- examplerast
-    raster::values(udrast[[stateNames[i]]]) <- as.numeric(R[[stateNames[i]]])
+    if(log) raster::values(udrast[[stateNames[i]]]) <- log(as.numeric(R[[stateNames[i]]]))
+    else raster::values(udrast[[stateNames[i]]]) <- as.numeric(R[[stateNames[i]]])
     names(udrast[[stateNames[i]]]) <- "UD"
     raster::plot(udrast[[stateNames[i]]],main=stateNames[i])
   }

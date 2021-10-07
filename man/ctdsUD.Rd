@@ -12,7 +12,8 @@ ctdsUD(
   method = "lu",
   maxiter,
   start,
-  tol
+  tol,
+  log = FALSE
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ ctdsUD(
 \item{start}{A value for the starting distribution for the 'limit' method. Defaults to 1/num. cells. Ignored for method='lu'.}
 
 \item{tol}{Value used to assess convergence for limit method. If max(abs(pi1-pi0))<tol, limit method has converged. Defaults to sqrt(.Machine$double.eps).}
+
+\item{log}{Logical indicating whether or not to return the log UD. Default: \code{FALSE}.}
 }
 \value{
 A list of \code{\link[raster]{raster}} objects.
