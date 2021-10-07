@@ -311,9 +311,9 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     }
     mf
   },warning=muffleRNGwarning)
-  if(!(ncores>1 & nbAnimals>1 & retryFits & retryParallel)){
-    doParallel::stopImplicitCluster()
-  } else future::plan(future::sequential)
+  if(ncores>1 & nbAnimals>1 & retryFits & retryParallel){
+    future::plan(future::sequential)
+  } else doParallel::stopImplicitCluster()
   
   convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
   if(!length(convFits)) stop("crawl::crwMLE failed for all individuals.  Check crawl::crwMLE arguments and/or consult crawl documentation.\n")
@@ -344,6 +344,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     ts <- 60
   }
   
+  doParallel::registerDoParallel(cores=1)
   withCallingHandlers(predData <- 
     foreach(mf = model_fits[convFits], i = convFits, .combine = rbind, .errorhandling="remove", .packages="crawl") %dorng% {
       #pD<-crawl::crwPredict(mf, predTime=crawlArgs$predTime[[i]],return.type = "flat")
@@ -377,6 +378,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
       if(!is.null(coordLevel)) pD$level <- coordLevel
       pD
     },warning=muffleRNGwarning)
+  doParallel::stopImplicitCluster()
   
   if(hierInd){
     
