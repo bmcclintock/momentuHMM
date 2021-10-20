@@ -367,6 +367,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   if(isTRUE(list(...)$ctds)){
     directions <- list(...)$directions
+    moveState <- list(...)$moveState
     for(i in distnames){
       if(dist[[i]]=="ctds"){
         if(is.null(DM[[i]])) stop("DM$",i," must be specified as a list with a formula for parameter 'lambda'")
@@ -389,6 +390,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
     if(!is.null(covs)){ 
       if("crw" %in% names(covs)) stop("'crw' cannot be the name of a covariate in 'covs'")
+      if(moveState & ("noMove" %in% c(names(dist),names(covs)))) stop("'","noMove","' is reserved and cannot be used for covariate or data stream names when moveState=TRUE")
     }
   }
   
@@ -1593,7 +1595,9 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                 break;
               }
             }
-            Z[k+1] <- sample(1:nbStates,size=1,prob=gamma[Z[k],])  
+          if(isTRUE(list(...)$ctds) && (moveState & all(X[k+1,]==X[k,]))){
+            Z[k+1] <- Z[k]
+          } else Z[k+1] <- sample(1:nbStates,size=1,prob=gamma[Z[k],])  
           #}
         }
       #}

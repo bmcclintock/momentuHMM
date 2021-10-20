@@ -51,6 +51,7 @@ simHierCTDS <- function(nbAnimals=1,hierStates,hierDist,
                          normalize.gradients=FALSE,
                          grad.point.decreasing=FALSE,
                          zero.idx = integer(),
+                         moveState = TRUE,
                          obsPerLevel,
                          initialPosition=c(0,0),
                          DM=NULL,userBounds=NULL,workBounds=NULL,#mvnCoords=NULL,
@@ -221,9 +222,13 @@ simHierCTDS <- function(nbAnimals=1,hierStates,hierDist,
                                      CT=TRUE,
                                      ctds=TRUE,
                                      rast=rast,
-                                     directions=directions),warning=muffleCTDSwarning)
+                                     directions=directions,
+                                     moveState=moveState),warning=muffleCTDSwarning)
   
   out<- out[,c("ID","time",colnames(out)[which(!colnames(out) %in% c("ID","time"))])]
+  if(moveState) {
+    out[["noMove"]] <- noMove(out,directions)
+  }
   class(out) <- unique(append(c("momentuHierHMMData","ctds"),class(out)))
   if(inherits(out$time,"POSIXt")) attr(out,"Time.unit") <- Time.unit
   attr(out,"directions") <- directions
@@ -231,6 +236,7 @@ simHierCTDS <- function(nbAnimals=1,hierStates,hierDist,
   attr(out,"ctdsData") <- "z"
   attr(out,"normalize.gradients") <- normalize.gradients
   attr(out,"grad.point.decreasing") <- grad.point.decreasing
+  attr(out,"moveState") <- moveState
   attr(out,"CT") <- TRUE
   attr(out,"Time.name") <- "time"
   return(out)

@@ -8,7 +8,7 @@ test_that("Parallel processing works",{
   
   ncores <- 2
   
-  set.seed(6,kind="Mersenne-Twister",normal.kind = "Inversion")
+  set.seed(8,kind="Mersenne-Twister",normal.kind = "Inversion")
   expect_error(crwOut <- crawlWrap(obsData=obsData,ncores=ncores,retryFits=10,
                       theta=c(4,0),fixPar=c(1,1,NA,NA),
                       err.model=err.model,attempts=100),NA)

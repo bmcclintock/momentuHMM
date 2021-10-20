@@ -25,6 +25,7 @@ simCTDS(
   normalize.gradients = FALSE,
   grad.point.decreasing = FALSE,
   zero.idx = integer(),
+  moveState = TRUE,
   obsPerAnimal = c(500, 1500),
   initialPosition = c(0, 0),
   DM = NULL,
@@ -61,6 +62,7 @@ simHierCTDS(
   normalize.gradients = FALSE,
   grad.point.decreasing = FALSE,
   zero.idx = integer(),
+  moveState = TRUE,
   obsPerLevel,
   initialPosition = c(0, 0),
   DM = NULL,
@@ -133,6 +135,8 @@ then z values must be set using \code{raster::setZ} and \code{data} must include
 \item{grad.point.decreasing}{Logical. If TRUE, then the gradient covariates are positive in the direction of decreasing values of the covariate. If FALSE, then the gradient covariates are positive in the direction of increasing values of the covariate (like a true gradient).}
 
 \item{zero.idx}{Integer vector of the indices of raster cells that are not passable and should be excluded. These are cells where movement should be impossible. Default is zero.idx=integer().}
+
+\item{moveState}{Logical indicating whether or not transitions out of the current state are forbidden when the animal does not move out of the current cell. Default: \code{TRUE}.}
 
 \item{obsPerAnimal}{Either the number of observations per animal (if single value) or the bounds of the number of observations per animal (if vector of two values). In the latter case, 
 the numbers of obervations generated for each animal are uniformously picked from this interval. Alternatively, \code{obsPerAnimal} can be specified as
@@ -211,21 +215,21 @@ i.e., a dataframe of:
 \item{ID}{The ID(s) of the observed animal(s)}
 \item{time}{Numeric time of each observed observation}
 \item{...}{Data streams as specified by \code{dist}}
-\item{x}{Either easting or longitude (if data streams include valid non-negative distribution for 'step')}
-\item{y}{Either norting or latitude (if data streams include valid non-negative distribution for 'step')}
-\item{...}{Covariates (if any)}
+\item{x}{Easting location cell centroid}
+\item{y}{Northing location cell centroid}
+\item{...}{Covariates (if any). If \code{moveState=TRUE}, then a covariate named \code{noMove} is included that indicates when no cell transition occurred (hence no transition out of the current state); the \code{noMove} covariate can then be used as a state transition probability covariate to forbid transitions from the current state when there is no cell movement.}
 
 If simulated location data include measurement error (i.e., \code{errorEllipse!=NULL}), a dataframe of:
 \item{ID}{The ID(s) of the observed animal(s)}
 \item{time}{Numeric time of each observed (and missing) observation}
-\item{z}{Categorial index indicating cell movement (where \code{z=(directions+1)} indicates no movement)}
-\item{x}{Either easting or longitude observed location}
-\item{y}{Either norting or latitude observed location}
+\item{z}{Categorical index indicating observed cell movement (where \code{z=(directions+1)} indicates no movement)}
+\item{x}{Easting observed location cell centroid}
+\item{y}{Norting observed location cell centroid}
 \item{tau}{Time difference between consecutive observations}
 \item{...}{Data streams that are not derived from location (if applicable)}
-\item{...}{Covariates at true (\code{mux},\code{muy}) locations (if any) and neighboring cell locations (with suffixes indicating neighbor, e.g., \code{cov.1}, \code{cov.2}, ..., \code{cov.directions})}
-\item{mux}{Either easting or longitude true location}
-\item{muy}{Either norting or latitude true location}
+\item{...}{Covariates at true (\code{mux},\code{muy}) locations (if any) and neighboring cell locations (with suffixes indicating neighbor, e.g., \code{cov.1}, \code{cov.2}, ..., \code{cov.directions}). If \code{moveState=TRUE}, then a covariate named \code{paste0("z",(directions+1))} is included that indicates when no cell transition occurred (hence no transition out of the current state).}
+\item{mux}{Easting true location cell centroid}
+\item{muy}{Northingtrue location cell centroid}
 \item{error_semimajor_axis}{error ellipse semi-major axis (if applicable)}
 \item{error_semiminor_axis}{error ellipse semi-minor axis (if applicable)}
 \item{error_ellipse_orientation}{error ellipse orientation (if applicable)}
@@ -234,7 +238,7 @@ If simulated location data include measurement error (i.e., \code{errorEllipse!=
 \item{error.corr}{correlation term of bivariate normal error (if applicable; required for error ellipse models in \code{\link{crawlWrap}})}
 }
 \description{
-Simulates data from a (multivariate) continuous-time discrete-space hidden Markov model. Note that only a single state and cell transition can occur between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
+Simulates data from a (multivariate) continuous-time discrete-space hidden Markov model. Note that only a single state and cell transition can occur between observations, and state transitions can only occur when there is a cell transition (unless \code{moveState} is set to \code{FALSE}). Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
 }
 \details{
 \itemize{

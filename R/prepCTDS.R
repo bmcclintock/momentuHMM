@@ -40,7 +40,7 @@ prepCTDS <- function(data, ...) {
 #' \item{tau}{Time difference (in \code{Time.unit}) between successive observations}
 #' \item{cellCross}{Integer indexing move(s) across multiple cells within a time step (if any)}
 #' \item{...}{Additional data streams (if any)}
-#' \item{...}{Covariates (if any). Covariates are needed for all neighboring cells and are indexed by \code{1,2,...,directions} using a suffix (e.g. \code{cov.1}, \code{cov.2}, \code{cov.3}, and \code{cov.4} for a covariate named 'cov' with \code{directions=4})}
+#' \item{...}{Covariates (if any). Covariates are needed for all neighboring cells and are indexed by \code{1,2,...,directions} using a suffix (e.g. \code{cov.1}, \code{cov.2}, \code{cov.3}, and \code{cov.4} for a covariate named 'cov' with \code{directions=4}). Additionally, a covariate named \code{noMove} is automatically included that indicates when no cell transition occurred (hence no transition out of the current state); the \code{noMove} covariate can be used as a state transition probability covariate to forbid transitions from the current state when there is no cell movement.}
 #' @details 
 #' \itemize{
 #' \item Any moves to adjacent cells (as defined by \code{directions}; see \code{\link[raster]{adjacent}}) between times t and t+1 are assumed to occur at time t+1 (where \code{tau} = t+1 - t), regardless of the length of the time step (\code{tau}) and where in the current cell or in the neighboring cell that the corresponding (continuous-space) locations reside. 
@@ -98,7 +98,7 @@ prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.id
   }
   
   if(!(directions %in% c(4,8))) stop("'directions' must be 4 or 8")
-  if(any(names(data) %in% c("x.current","y.current","z",paste0("z.",1:directions),"tau","cellCross"))) stop("'x.current', 'y.current', 'z', 'tau', and 'cellCross' are reserved and cannot be fields in data")
+  if(any(names(data) %in% c("x.current","y.current","z",paste0("z.",1:directions),"tau","cellCross","noMove"))) stop("'x.current', 'y.current', 'z', 'tau', 'cellCross', and 'noMove' are reserved and cannot be fields in data")
   if(!is.null(covNames)){
     if(any(covNames %in% c(c("ID","time","x","y")))) stop("covNames cannot include 'ID', 'time', 'x', or 'y'")
   }
@@ -207,6 +207,7 @@ prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.id
   ctdsOut$z[which(!is.na(ctdsOut$z.1))] <- unlist(apply(zMat,1,which.max))
   ctdsOut[paste0("z.",1:directions)] <- NULL
   ctdsOut <- ctdsOut[,c("ID","time","x","y","z",dataStreams,"tau","cellCross",covNames,names(ctdsOut)[which(!names(ctdsOut) %in% c("ID","time","x","y","step","angle","z",dataStreams,"tau","cellCross",covNames))])]
+  ctdsOut$noMove <- noMove(ctdsOut,directions)
   if(!any(ctdsOut$cellCross>0)) ctdsOut$cellCross <- NULL
   
   class(ctdsOut) <- unique(append(c("momentuHMMData","ctds"),class(ctdsOut)))

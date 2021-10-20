@@ -270,18 +270,18 @@ i.e., a dataframe of:
 \item{ID}{The ID(s) of the observed animal(s)}
 \item{...}{Data streams as specified by \code{dist} (or \code{hierDist})}
 \item{x}{Either easting or longitude (if data streams include valid non-negative distribution for 'step')}
-\item{y}{Either norting or latitude (if data streams include valid non-negative distribution for 'step')}
+\item{y}{Either northing or latitude (if data streams include valid non-negative distribution for 'step')}
 \item{...}{Covariates (if any)}
 
 If simulated location data are temporally irregular (i.e., \code{lambda>0}) and/or include measurement error (i.e., \code{errorEllipse!=NULL}), a dataframe of:
 \item{time}{Numeric time of each observed (and missing) observation}
 \item{ID}{The ID(s) of the observed animal(s)}
 \item{x}{Either easting or longitude observed location}
-\item{y}{Either norting or latitude observed location}
+\item{y}{Either northing or latitude observed location}
 \item{...}{Data streams that are not derived from location (if applicable)}
 \item{...}{Covariates at temporally-regular true (\code{mux},\code{muy}) locations (if any)}
 \item{mux}{Either easting or longitude true location}
-\item{muy}{Either norting or latitude true location}
+\item{muy}{Either northing or latitude true location}
 \item{error_semimajor_axis}{error ellipse semi-major axis (if applicable)}
 \item{error_semiminor_axis}{error ellipse semi-minor axis (if applicable)}
 \item{error_ellipse_orientation}{error ellipse orientation (if applicable)}

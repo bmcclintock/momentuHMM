@@ -97,7 +97,7 @@ A \code{\link{momentuHMMData}} object of class \code{ctds} that can be passed to
 \item{tau}{Time difference (in \code{Time.unit}) between successive observations}
 \item{cellCross}{Integer indexing move(s) across multiple cells within a time step (if any)}
 \item{...}{Additional data streams (if any)}
-\item{...}{Covariates (if any). Covariates are needed for all neighboring cells and are indexed by \code{1,2,...,directions} using a suffix (e.g. \code{cov.1}, \code{cov.2}, \code{cov.3}, and \code{cov.4} for a covariate named 'cov' with \code{directions=4})}
+\item{...}{Covariates (if any). Covariates are needed for all neighboring cells and are indexed by \code{1,2,...,directions} using a suffix (e.g. \code{cov.1}, \code{cov.2}, \code{cov.3}, and \code{cov.4} for a covariate named 'cov' with \code{directions=4}). Additionally, a covariate named \code{noMove} is automatically included that indicates when no cell transition occurred (hence no transition out of the current state); the \code{noMove} covariate can be used as a state transition probability covariate to forbid transitions from the current state when there is no cell movement.}
 }
 \description{
 This wrapper function for \code{\link[ctmcmove]{path2ctmc}} and \code{\link[ctmcmove]{ctmc2glm}} converts a \code{data.frame} of coordinates, other data streams, and non-spatial covariates to a \code{\link{momentuHMMData}} object that can be passed directly to \code{\link{fitCTHMM}} (or as a list to \code{\link{MIfitCTHMM}}).

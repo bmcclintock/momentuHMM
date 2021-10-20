@@ -227,7 +227,8 @@ muffleCTDSwarning <- function(w) {
   if(any(grepl(paste0("extra arguments ",q[1],"CT",q[2],", ",
                                          q[1],"ctds",q[2],", ",
                                          q[1],"rast",q[2],", ",
-                                         q[1],"directions",q[2]," will be disregarded"),w)))
+                                         q[1],"directions",q[2],", ",
+                                         q[1],"moveState",q[2]," will be disregarded"),w)))
     invokeRestart("muffleWarning")
   else w
 }
@@ -246,6 +247,17 @@ chkDotsCT <- function(...){
   if("directions" %in% names(list(...)) && !any(grepl("CTDS",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))) stop(sprintf("In %s :\n extra argument 'directions' is invalid", 
                                                                                                                                       paste(deparse(sys.call()[[1]], control = c()), 
                                                                                                                                             collapse = "\n")), call. = FALSE, domain = NA) 
+}
+
+noMove <- function(out,directions){
+  nomove <- factor(,levels=c(FALSE,TRUE))
+  for(i in unique(out$ID)){
+    iInd <- which(out$ID==i)
+    nomove[iInd[1]] <- FALSE
+    nomove[iInd[-1]] <- factor(out$z[iInd[1:(length(iInd)-1)]]==(directions+1))
+    
+  }
+  return(nomove)
 }
 
 # .combine function for multiple rbinds in foreach
