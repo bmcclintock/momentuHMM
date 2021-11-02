@@ -496,6 +496,9 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   if("CT" %in% names(list(...)) && !any(grepl("fitCTHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))) stop(sprintf("In %s :\n extra argument 'CT' is invalid", 
                                                                                                               paste(deparse(sys.call()[[1]], control = c()), 
                                                                                                                     collapse = "\n")), call. = FALSE, domain = NA)
+  
+  if(isTRUE(attr(data,"CT")) & !("CT" %in% names(list(...)))) warning("'data' appears to be in continuous time -- should 'fitCTHMM' be used instead?")
+  
   chkDots(...)
 
   # check that there is no response variable in the formula
