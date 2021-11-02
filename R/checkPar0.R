@@ -252,7 +252,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
     par <- getParDM.default(data=data,nbStates=nbStates,dist=dist,Par=nPar,zeroInflation=zeroInflation,oneInflation=oneInflation,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,DM=DM,userBounds=userBounds,workBounds=workBounds)
     
   } else par <- Par0
-  if(inherits(data,"ctds")){
+  if(inherits(data,"ctds") | isTRUE(attr(data,"CT"))){
     m<-suppressMessages(fitCTHMM(data=data,nbStates=nbStates,dist=dist,
                                Par0=par,beta0=beta0,delta0=delta0,
                                estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
@@ -291,7 +291,8 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
       beta <- list(beta=m$mle$beta)
       if(!inherits(data,"hierarchical") && !is.null(fixPar$beta)) stop("fixPar$beta cannot be specified unless beta0$beta is specified")
     } else {
-      beta <- list(beta=beta0$beta)
+      if(nbStates>1) beta <- list(beta=m$mle$beta)
+      else beta <- list(beta=beta0$beta)
     }
     if(mixtures>1){
       pie <- beta0[["pi"]]
@@ -315,12 +316,14 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
         beta$g0 <- m$mle$g0
         if(!is.null(fixPar$g0)) stop("fixPar$g0 cannot be specified unless beta0$g0 is specified")
       } else {
-        beta$g0 <- beta0$g0
+        if(nbStates>1) beta$g0 <- m$mle$g0
+        else beta$g0 <- beta0$g0
       }
       if(is.null(beta0$theta) & nbStates>1) {
         beta$theta <- m$mle$theta
         if(!is.null(fixPar$theta)) stop("fixPar$theta cannot be specified unless beta0$theta is specified")
       } else {
+        if(nbStates>1) beta$theta <- m$mle$theta
         beta$theta <- beta0$theta
       }
     }
@@ -410,7 +413,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
       else if(!is.null(m$conditions$recharge)){
         if(is.null(beta0$beta)) tmpPar <- matrix(1:length(tmpPar),nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
       }
-      if(!is.null(betaCons))
+      if(!is.null(betaCons) && (is.null(beta0) || (!is.null(m$conditions$recharge) & is.null(beta0$beta))))
         tmpPar <- matrix(tmpPar[c(betaCons)],nrow(tmpPar),ncol(tmpPar),dimnames=list(rownames(tmpPar),colnames(tmpPar)))
       print(tmpPar)
       #}
