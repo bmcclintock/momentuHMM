@@ -1072,8 +1072,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
               
               if(!all(is.na(se))) reylim <- c(min(lci,na.rm=TRUE),max(uci,na.rm=TRUE))
               else reylim <- NULL
-              do.call(plot,c(list(x=1:length(ind),y=m$data[[rechargeNames[j]]][ind],pch=16,xlab="t",ylab="g(t)",col=col[subStates],cex=cex,ylim=reylim),arg))
-              do.call(segments,c(list(y0=m$data[[rechargeNames[j]]][ind][-length(ind)],x0=1:(length(ind)-1),y1=m$data[[rechargeNames[j]]][ind][-1],x1=2:length(ind),
+              do.call(plot,c(list(x=cumsum(dt[ind]),y=m$data[[rechargeNames[j]]][ind],pch=16,xlab="t",ylab="g(t)",col=col[subStates],cex=cex,ylim=reylim),arg))
+              do.call(segments,c(list(y0=m$data[[rechargeNames[j]]][ind][-length(ind)],x0=cumsum(dt[ind[-length(ind)]]),y1=m$data[[rechargeNames[j]]][ind][-1],x1=cumsum(dt[ind[-1]]),
                                       col=col[subStates[-length(subStates)]],lwd=lwd),arg))
               if(!all(is.na(se))) {
                 ciInd <- which(!is.na(se))
@@ -1082,8 +1082,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
                                            uci[ciInd], length=0.025, angle=90, code=3, col=col[subStates], lwd=lwd),arg)),warning=muffWarn)
               }
             } else {
-              do.call(plot,c(list(x=1:length(ind),y=m$data[[rechargeNames[j]]][ind],pch=16,xlab="t",ylab="g(t)",col=col[subStates],cex=cex),arg))
-              do.call(segments,c(list(y0=m$data[[rechargeNames[j]]][ind][-length(ind)],x0=1:(length(ind)-1),y1=m$data[[rechargeNames[j]]][ind][-1],x1=2:length(ind),
+              do.call(plot,c(list(x=cumsum(dt[ind]),y=m$data[[rechargeNames[j]]][ind],pch=16,xlab="t",ylab="g(t)",col=col[subStates],cex=cex),arg))
+              do.call(segments,c(list(y0=m$data[[rechargeNames[j]]][ind][-length(ind)],x0=cumsum(dt[ind[-length(ind)]]),y1=m$data[[rechargeNames[j]]][ind][-1],x1=cumsum(dt[ind[-1]]),
                                       col=col[subStates[-length(subStates)]],lwd=lwd),arg))
             }
             do.call(mtext,c(list(paste("ID",ID[zoo],"recharge function",ifelse(rechargeNames[j]=="recharge","",paste0("for level",gsub("recharge","",rechargeNames[j])))),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
