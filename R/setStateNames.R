@@ -22,6 +22,7 @@ setStateNames.momentuHMM <- function(model, stateNames)
 {
   oldStateNames <- model$stateNames
   if(!is.character(stateNames) | (length(stateNames)!=length(oldStateNames))) stop("stateNames must be a character vector of length ",length(oldStateNames))
+  if(length(unique(stateNames))!=length(oldStateNames)) stop("stateNames must be unique")
   model$stateNames <- stateNames
   
   # rename columns and rows of MLEs
@@ -35,20 +36,29 @@ setStateNames.momentuHMM <- function(model, stateNames)
     colnames(model$mle$gamma)<-stateNames
     rownames(model$mle$gamma)<-stateNames
   }
+  if(inherits(model,"CTHMM")){
+    if(!is.null(model$mle$Q)){
+      colnames(model$mle$Q)<-stateNames
+      rownames(model$mle$Q)<-stateNames
+    }
+  }
   
   if(!is.null(model$CIbeta$delta)){
     for(k in names(model$CIbeta$delta)){
+      cnames <- colnames(model$CIbeta$delta[[k]])
       for(l in 1:length(stateNames)){
-        colnames(model$CIbeta$delta[[k]]) <- gsub(oldStateNames[l],stateNames[l],colnames(model$CIbeta$delta[[k]]))
+        if(oldStateNames[l] %in% cnames) colnames(model$CIbeta$delta[[k]])[l] <- stateNames[l]
       }
     }
   }
   
   for(j in names(model$CIreal)){
     for(k in names(model$CIreal[[j]])){
+      rnames <- rownames(model$CIreal[[j]][[k]])
+      cnames <- colnames(model$CIreal[[j]][[k]])
       for(l in 1:length(stateNames)){
-        rownames(model$CIreal[[j]][[k]]) <- gsub(oldStateNames[l],stateNames[l],rownames(model$CIreal[[j]][[k]]))
-        colnames(model$CIreal[[j]][[k]]) <- gsub(oldStateNames[l],stateNames[l],colnames(model$CIreal[[j]][[k]]))
+        if(oldStateNames[l] %in% rnames) rownames(model$CIreal[[j]][[k]])[l] <- stateNames[l]
+        if(oldStateNames[l] %in% cnames) colnames(model$CIreal[[j]][[k]])[l] <- stateNames[l]
       }
     }
   }

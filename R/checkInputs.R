@@ -69,8 +69,11 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
   circularAngleMean<-circularAngleMean[distnames]
   consensus<-consensus[distnames]
   
-  if(!is.null(stateNames) & length(stateNames)!=nbStates)
-    stop("stateNames must have length ",nbStates)
+  if(!is.null(stateNames)){
+    if(!is.character(stateNames)) stop("stateNames must be a character vector")
+    if(length(stateNames)!=nbStates) stop("stateNames must have length ",nbStates)
+    if(length(unique(stateNames))!=nbStates) stop("stateNames must be unique")
+  }
 
   p <- parDef(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds)
   parSize <- p$parSize
