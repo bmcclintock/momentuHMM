@@ -46,8 +46,8 @@ setStateNames.momentuHMM <- function(model, stateNames)
   if(!is.null(model$CIbeta$delta)){
     for(k in names(model$CIbeta$delta)){
       cnames <- colnames(model$CIbeta$delta[[k]])
-      for(l in 1:length(stateNames)){
-        if(oldStateNames[l] %in% cnames) colnames(model$CIbeta$delta[[k]])[l] <- stateNames[l]
+      for(l in match(cnames,oldStateNames)){
+        if(oldStateNames[l] %in% cnames) colnames(model$CIbeta$delta[[k]])[match(oldStateNames,cnames,nomatch = 0)] <- stateNames[l]
       }
     }
   }
