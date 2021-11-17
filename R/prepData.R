@@ -105,7 +105,7 @@ prepData <- function(data, ...) {
 #' 
 #' @export
 #' @importFrom sp spDistsN1
-# @importFrom raster cellFromXY getValues getZ is.factor levels
+#' @importFrom raster cellFromXY getValues getZ is.factor levels
 prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames=NULL, ...)
 {
   if(is.crwData(data)){
@@ -406,7 +406,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
 #'
 #' @export
 #' @importFrom sp spDistsN1
-# @importFrom raster cellFromXY getValues getZ
+#' @importFrom raster cellFromXY getValues getZ
 prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames = NULL, hierLevels, coordLevel, ...)
 {
   if(is.crwHierData(data)){

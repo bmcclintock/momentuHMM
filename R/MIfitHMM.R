@@ -189,7 +189,7 @@ MIfitHMM <- function(miData, ...) {
 #' 
 #' @export
 #' @importFrom crawl crwPostIS crwSimulator
-# @importFrom raster getZ
+#' @importFrom raster getZ
 #' @importFrom stats terms.formula
 MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, na.rm = FALSE,
                    nbStates, dist, 
@@ -491,7 +491,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
 #' 
 #' @export
 #' @importFrom crawl crwPostIS crwSimulator
-# @importFrom raster getZ
+#' @importFrom raster getZ
 # #' @importFrom data.tree Clone
 MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, na.rm = FALSE,
                        hierStates, hierDist, 

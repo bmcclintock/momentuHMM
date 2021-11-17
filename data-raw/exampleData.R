@@ -4,7 +4,7 @@
 #' Generate data used in other functions' examples and unit tests.
 #' 
 # @importFrom gstat gstat vgm
-# @importFrom raster raster
+#' @importFrom raster raster
 # @importFrom sp gridded spplot
 # @importFrom stats predict
 
