@@ -1,4 +1,4 @@
-momentuHMM 2.0.0 2021-10-20
+momentuHMM 2.0.0 2021-11-16
 -----------------
 NEW FEATURES
 
@@ -13,6 +13,8 @@ NEW FEATURES
 CHANGES
 
 * when the probability density for a data stream observation is zero for all states, a warning is triggered and .Machine$double.xmin is used to avoid division by zero within the forward algorithm
+
+* raster package moved to 'Imports'
 
 BUG FIXES
 
