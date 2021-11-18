@@ -228,7 +228,7 @@ prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.id
 #' 
 #' @export
 #' @importFrom sp spDistsN1
-#' @importFrom raster cellFromXY getValues getZ
+# @importFrom raster cellFromXY getValues getZ
 prepCTDS.hierarchical <- function(data, Time.unit="auto", rast, directions=4, zero.idx=integer(), print.iter=FALSE, interpMethod="ShortestPath",
                                   spatialCovs=NULL, spatialCovs.grad=NULL, crw = TRUE, normalize.gradients = FALSE, grad.point.decreasing = FALSE,
                                   covNames=NULL, ncores=1, hierLevels, coordLevel, ...) {

@@ -23,8 +23,7 @@ Imports:
     Brobdingnag,
     doRNG,
     rlang,
-    expm,
-    raster
+    expm
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,
@@ -32,6 +31,7 @@ Suggests:
     splines, 
     splines2 (>= 0.2.8),
     R.rsp,
+    raster,
     conicfit,
     ggplot2,
     ggmap,

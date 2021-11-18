@@ -341,7 +341,7 @@
 #'
 #' @export
 #' @importFrom stats rnorm runif rmultinom step terms.formula
-#' @importFrom raster cellFromXY getValues is.factor levels
+# @importFrom raster cellFromXY getValues is.factor levels
 # @importFrom moveHMM simData
 #' @importFrom CircStats rvm
 #' @importFrom Brobdingnag as.brob sum
