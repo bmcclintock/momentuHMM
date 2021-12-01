@@ -72,7 +72,7 @@ jobs:
         shell: Rscript {0}
         
       - name: Install Window and macOS dependencies from binaries
-        if: runner.os == 'Windows' | runner.os == 'macOS'
+        if: runner.os == 'Windows' || runner.os == 'macOS'
         run: |
           remotes::install_deps(dependencies = TRUE,type="binary")
           remotes::install_cran("devtools")
