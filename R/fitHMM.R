@@ -555,7 +555,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   }
   
   if(isTRUE(list(...)$CT)){
-    for(i in distnames){
+    for(i in tmpdistnames){
       noNAind <- which(!is.na(data[[i]]) & data$dt<=0)
       if(length(noNAind)){
         data <- data[-noNAind,]
