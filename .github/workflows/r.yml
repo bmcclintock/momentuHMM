@@ -63,11 +63,20 @@ jobs:
             eval sudo $cmd
           done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "20.04"))')
 
-      - name: Install dependencies
-        run: |
-          remotes::install_deps(dependencies = TRUE,type="binary")
-          remotes::install_cran("devtools")
-          remotes::install_cran("rcmdcheck")
+      - name: Install Linux dependencies from source
+            if: runner.os == 'Linux'
+            run: |
+              remotes::install_deps(dependencies = TRUE)
+              remotes::install_cran("devtools")
+              remotes::install_cran("rcmdcheck")
+          shell: Rscript {0}
+        
+      - name: Install Window and macOS dependencies from binaries
+          if: runner.os == 'Windows' | runner.os == 'macOS'
+          run: |
+            remotes::install_deps(dependencies = TRUE,type="binary")
+            remotes::install_cran("devtools")
+            remotes::install_cran("rcmdcheck")
         shell: Rscript {0}
         
       - name: Preinstall momentuHMM on windows
