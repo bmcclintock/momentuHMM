@@ -558,8 +558,8 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     for(i in tmpdistnames){
       noNAind <- which(!is.na(data[[i]]) & data$dt<=0)
       if(length(noNAind)){
-        data <- data[-noNAind,]
-        warning("There are observations with time difference dt=0; these data have been removed")
+        data[noNAind,i] <- NA
+        if(any(unlist(lapply(dist,function(x) x %in% rwdists))) & !all(noNAind %in% mapply(function(x) max(which(data$ID==x)),unique(data$ID)))) warning("There are data stream observations with time difference dt=0; these observations have been set to NA")
       }
     }
   }

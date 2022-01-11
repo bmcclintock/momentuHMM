@@ -1095,10 +1095,15 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         if(all(coordNames %in% names(m$data))){
           if(plotTracks){
             # plot trajectory
+            if(!is.null(m$conditions$mvnCoords) && (m$conditions$dist[[m$conditions$mvnCoords]] %in% rwdists)){
+              x[[zoo]] <- m$data[[paste0(coordNames[1],"_tm1")]][which(m$data$ID==ID[zoo])]
+              y[[zoo]] <- m$data[[paste0(coordNames[2],"_tm1")]][which(m$data$ID==ID[zoo])]
+            }
             remNA <- which(!is.na(x[[zoo]]))
             x[[zoo]] <- x[[zoo]][remNA]
             y[[zoo]] <- y[[zoo]][remNA]
             subStates <- subStates[remNA]
+            
             if(length(coordNames)==2){
               do.call(plot,c(list(x=x[[zoo]],y=y[[zoo]],pch=16,xlab=coordNames[1],ylab=coordNames[2],col=col[subStates],cex=cex,asp=asp),arg))
               
@@ -1116,7 +1121,12 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
                        call. = FALSE)
               }
               
+              if(!is.null(m$conditions$mvnCoords) && (m$conditions$dist[[m$conditions$mvnCoords]] %in% rwdists)){
+                z[[zoo]] <- m$data[[paste0(coordNames[3],"_tm1")]][which(m$data$ID==ID[zoo])]
+                
+              }
               z[[zoo]] <- z[[zoo]][remNA]
+              
               ## interactive 3d plot
               #do.call(plotly::plot_ly,list(x=x[[zoo]],y=y[[zoo]],z=z[[zoo]],type='scatter3d',mode='lines',
               #                             opacity = 1, line = list(width = 6, color = col[subStates])))  %>% plotly::layout(title=paste("ID",ID[zoo]))

@@ -73,8 +73,11 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
     else states <- data$Par$states
   }
 
-  if(inherits(data,"momentuHMM")) data <- data$data
-  else if(inherits(data,"miHMM")) data <- data$miSum$data
+  mvn <- FALSE
+  if(inherits(data,"momentuHMM")) {
+    mvn <- (!is.null(data$conditions$mvnCoords) && (data$conditions$dist[[data$conditions$mvnCoords]] %in% rwdists))
+    data <- data$data
+  } else if(inherits(data,"miHMM")) data <- data$miSum$data
   else if(inherits(data,"miSum")) data <- data$data
   else if(inherits(data,"HMMfits")) stop("data must be a data frame, momentuHMMData, momentuHMM, miHMM, or miSum object")
   
@@ -87,8 +90,13 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
   if(is.null(data[[coordNames[1]]]) | is.null(data[[coordNames[2]]]))
     stop("Data should have fields data$",coordNames[1]," and data$",coordNames[2],".")
   
-  data$x <- data[[coordNames[1]]]
-  data$y <- data[[coordNames[2]]]
+  if(mvn){
+    data$x <- data[[paste0(coordNames[1],"_tm1")]]
+    data$y <- data[[paste0(coordNames[2],"_tm1")]]
+  } else {
+    data$x <- data[[coordNames[1]]]
+    data$y <- data[[coordNames[2]]]
+  }
   
   if(length(alpha)!=1)
     stop("'alpha' should be of length 1")

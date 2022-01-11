@@ -136,13 +136,13 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
     if(!inherits(model,"CTHMM")) stop("model must be of class 'CTHMM'; use simData instead")
     if(inherits(model,"momentuHierHMM") | inherits(model,"hierarchical")) stop("model can not be a 'momentuHierHMM' or 'hierarchical' object; use simHierCTHMM instead")
     attributes(model)$class <- attributes(model)$class[which(!attributes(model)$class %in% "CTHMM")]
-    mvnCoords <- model$conditions$mvnCoords
+    if(!is.null(model$conditions$mvnCoords)) mvnCoords <- model$conditions$mvnCoords
     if(matchModelObs){
       rwInd <- any(unlist(lapply(model$conditions$dist,function(x) x %in% rwdists)))
       if(nbAnimals!=1) warning("'nbAnimals' is ignored when 'matchModelObs' is TRUE")
       nbAnimals <- length(unique(model$data$ID))
       if(!all(obsPerAnimal==c(500,1500))) warning("'obsPerAnimal' is ignored when 'matchModelObs' is TRUE")
-      obsPerAnimal <- as.list(table(model$data$ID))#+ifelse(rwInd,1,0))
+      obsPerAnimal <- as.list(table(model$data$ID,exclude=levels(model$data$ID)[which(!levels(model$data$ID) %in% unique(model$data$ID))]))#+ifelse(rwInd,1,0))
       if(lambda!=1) warning("'lambda' is ignored when 'matchModelObs' is TRUE")
       lambda <- list()
       for(zoo in 1:nbAnimals){
