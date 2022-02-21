@@ -256,7 +256,7 @@ plotSat <- function(data,zoom=NULL,location=NULL,segments=TRUE,compact=TRUE,col=
         mapMove <- mapMove + ggplot2::geom_path(ggplot2::aes(x,y,col=col,group=ID),subData,alpha=alpha)
       
       if(nbCol==1) # no legend if only one colour
-        mapMove <- mapMove + ggplot2::scale_color_manual(values=pal) + ggplot2::scale_shape_manual(values=shape) + ggplot2::guides(col=FALSE,shape=FALSE)
+        mapMove <- mapMove + ggplot2::scale_color_manual(values=pal) + ggplot2::scale_shape_manual(values=shape) + ggplot2::guides(col="none",shape="none")
       else if(!is.null(stateNames)){
         stateInd <- sort(unique(subData$states))
         mapMove <- mapMove + ggplot2::scale_color_manual(name = colname,labels = stateNames[stateInd],values = pal[stateInd]) + ggplot2::scale_shape_manual(name = colname,labels = stateNames[stateInd],values = shape[stateInd])
@@ -282,7 +282,7 @@ plotSat <- function(data,zoom=NULL,location=NULL,segments=TRUE,compact=TRUE,col=
       mapMove <- mapMove + ggplot2::geom_path(ggplot2::aes(x,y,col=col,group=ID),data,alpha=alpha)
     
     if(nbCol==1) # no legend if only one colour
-      mapMove <- mapMove + ggplot2::scale_color_manual(values=pal) + ggplot2::scale_shape_manual(values=shape) + ggplot2::guides(col=FALSE,shape=FALSE)
+      mapMove <- mapMove + ggplot2::scale_color_manual(values=pal) + ggplot2::scale_shape_manual(values=shape) + ggplot2::guides(col="none",shape="none")
       else if(!is.null(stateNames)){
         mapMove <- mapMove + ggplot2::scale_color_manual(name = colname,labels = stateNames,values = pal) + ggplot2::scale_shape_manual(name = colname,labels = stateNames,values = shape)
       } else {

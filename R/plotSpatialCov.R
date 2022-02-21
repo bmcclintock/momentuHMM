@@ -228,7 +228,7 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
         mapMove <- mapMove + ggplot2::geom_path(ggplot2::aes(x,y,col=col,group=ID),subData,alpha=alpha)
       
       if(nbCol==1) # no legend if only one color
-        mapMove <- mapMove + ggplot2::scale_color_manual(values=pal) + ggplot2::scale_shape_manual(values=shape) + ggplot2::guides(col=FALSE)
+        mapMove <- mapMove + ggplot2::scale_color_manual(values=pal) + ggplot2::scale_shape_manual(values=shape) + ggplot2::guides(col="none")
       else if(!is.null(stateNames)){
         stateInd <- sort(unique(subData$states))
         mapMove <- mapMove + ggplot2::scale_color_manual(name = colname,labels = stateNames[stateInd],values = pal[stateInd]) + ggplot2::scale_shape_manual(name = colname,labels = stateNames[stateInd],values = shape[stateInd])
@@ -252,7 +252,7 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
       mapMove <- mapMove + ggplot2::geom_path(ggplot2::aes(x,y,col=col,group=ID),data,alpha=alpha)
     
     if(nbCol==1) # no legend if only one color
-      mapMove <- mapMove + ggplot2::scale_color_manual(values=pal) + ggplot2::scale_shape_manual(values=shape) + ggplot2::guides(col=FALSE)
+      mapMove <- mapMove + ggplot2::scale_color_manual(values=pal) + ggplot2::scale_shape_manual(values=shape) + ggplot2::guides(col="none")
     else if(!is.null(stateNames)){
       mapMove <- mapMove + ggplot2::scale_color_manual(name = colname,labels = stateNames,values = pal) + ggplot2::scale_shape_manual(name = colname,labels = stateNames,values = shape)
     } else {
