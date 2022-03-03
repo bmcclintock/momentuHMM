@@ -400,6 +400,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     ctPar <- ctPar
     if (requireNamespace("extraDistr", quietly = TRUE)){
       rcat <- extraDistr::rcat
+      rbern <- extraDistr::rbern
     }
     rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- mvtnorm::rmvnorm
     rrw_norm <- stats::rnorm
@@ -560,6 +561,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       }
       covsCol<-unique(covsCol)
       covsCol <- covsCol[!(covsCol %in% "ID")]
+      covsCol <- covsCol[which(covsCol %in% names(model$data))]
       
       if(length(covsCol)) covs <- model$data[covsCol]
       

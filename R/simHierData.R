@@ -100,6 +100,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     ctPar <- ctPar
     if (requireNamespace("extraDistr", quietly = TRUE)){
       rcat <- extraDistr::rcat
+      rbern <- extraDistr::rbern
     }
     rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- mvtnorm::rmvnorm
     rrw_norm <- stats::rnorm
