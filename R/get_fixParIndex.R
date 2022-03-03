@@ -18,15 +18,6 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     fixPar$beta <- fixPar$delta <- NULL
   }
   
-  if(!is.null(betaRef)){
-    if(length(betaRef)!=nbStates) stop("betaRef must be a vector of length ",nbStates)
-    if(!is.numeric(betaRef)) stop("betaRef must be a numeric vector")
-    if(min(betaRef)<1 | max(betaRef)>nbStates) stop("betaRef elements must be between 1 and ",nbStates)
-  } else {
-    betaRef <- 1:nbStates
-  }
-  betaRef <- as.integer(betaRef)
-  
   if(!is.null(beta0$beta)) {
     if(is.null(dim(beta0$beta)))
       stop(paste(paste0("beta",ifelse(is.null(recharge),"0","0$beta"))," has wrong dimensions: it should have",(nbCovs+1)*mixtures,"rows and",

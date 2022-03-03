@@ -564,6 +564,15 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     }
   }
   
+  if(!is.null(betaRef)){
+    if(length(betaRef)!=nbStates) stop("betaRef must be a vector of length ",nbStates)
+    if(!is.numeric(betaRef)) stop("betaRef must be a numeric vector")
+    if(min(betaRef)<1 | max(betaRef)>nbStates) stop("betaRef elements must be between 1 and ",nbStates)
+  } else {
+    betaRef <- 1:nbStates
+  }
+  betaRef <- as.integer(betaRef)
+  
   newForm <- newFormulas(formula,nbStates,betaRef,hierarchical = TRUE)
   formulaStates <- newForm$formulaStates
   newformula <- newForm$newformula

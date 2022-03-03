@@ -1,4 +1,4 @@
-momentuHMM 2.0.0 2021-11-16
+momentuHMM 2.0.0 2022-03-22
 -----------------
 NEW FEATURES
 
@@ -19,6 +19,8 @@ CHANGES
 BUG FIXES
 
 * getParDM did not properly calculate working scale parameters for categorical distribution parameters when DM included covariates or constraints
+
+* since momentuHMM v1.5.1, 'toState' special formula function did not work properly unless 'betaRef' argument was specified in fitHMM (or MIfitHMM)
 
 
 momentuHMM 1.5.4 2021-09-02
