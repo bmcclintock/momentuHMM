@@ -182,12 +182,21 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                                      export=export,
                                      CT=TRUE),warning=muffleCTwarning)
   
-  out<- out[,c("ID","time",colnames(out)[which(!colnames(out) %in% c("ID","time"))])]
+  timeName <- "time"
+  if(matchModelObs) {
+    if(model$conditions$Time.name!="time"){
+      timeName <- model$conditions$Time.name
+      out[[timeName]] <- out$time
+      out$time <- NULL
+    }
+    attributes(out[[timeName]]) <- attributes(model$data[[timeName]])
+  }
+  out<- out[,c("ID",timeName,colnames(out)[which(!colnames(out) %in% c("ID",timeName))])]
   if(!is.null(mvnCoords)){
     attr(out,'coords') <- paste0(mvnCoords,c(".x",".y"))
   }
   attr(out,"CT") <- TRUE
-  attr(out,"Time.name") <- "time"
+  attr(out,"Time.name") <- timeName
   return(out)
   
 }
