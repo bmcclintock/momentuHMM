@@ -909,7 +909,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
       
       wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
       
-      if((fitCount+1)<=retryFits){
+      if(fitCount<=retryFits){
         if(!inherits(curmod,"error")){
           names(curmod)[which(names(curmod)=="par")] <- "estimate"
           names(curmod)[which(names(curmod)=="value")] <- "minimum"
@@ -917,15 +917,17 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
           if(curmod$minimum < mod$minimum) mod <- curmod
           wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
         }
-        retrySD <- ifelse(retrySD=="adapt",10^(ceiling(log10(abs(wpar)))),retrySD)
-        wpar[1:parmInd] <- wpar[1:parmInd]+rnorm(parmInd,0,as.numeric(retrySD[1:parmInd]))
-        if(nbStates>1)
-          wpar[-(1:parmInd)] <- wpar[-(1:parmInd)]+rnorm(length(wpar)-parmInd,0,as.numeric(retrySD[-(1:parmInd)]))
-        if(length(fixParIndex$wparIndex)) wpar[fixParIndex$wparIndex] <- unlist(fixParIndex$fixPar)[fixParIndex$wparIndex]
-        if(!is.null(betaCons) & nbStates>1){
-          wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)] <- wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)][betaCons]
+        if(fitCount+1<=retryFits){
+          retrySD <- ifelse(retrySD=="adapt",10^(ceiling(log10(abs(wpar)))),retrySD)
+          wpar[1:parmInd] <- wpar[1:parmInd]+rnorm(parmInd,0,as.numeric(retrySD[1:parmInd]))
+          if(nbStates>1)
+            wpar[-(1:parmInd)] <- wpar[-(1:parmInd)]+rnorm(length(wpar)-parmInd,0,as.numeric(retrySD[-(1:parmInd)]))
+          if(length(fixParIndex$wparIndex)) wpar[fixParIndex$wparIndex] <- unlist(fixParIndex$fixPar)[fixParIndex$wparIndex]
+          if(!is.null(betaCons) & nbStates>1){
+            wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)] <- wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)][betaCons]
+          }
+          cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,"         ",sep="")
         }
-        cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,"         ",sep="")
       }
       fitCount<-fitCount+1
     }
