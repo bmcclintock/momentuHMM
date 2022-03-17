@@ -516,6 +516,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       foo <- length(model$mod$estimate)-length(g0)-length(theta)-(nbCovsDelta+1)*(nbStates-1)*mixtures+1
       delta <- matrix(model$mod$estimate[foo:(length(model$mod$estimate)-length(g0)-length(theta))],nrow=(nbCovsDelta+1)*mixtures) 
     } else {
+      beta <- delta <- NULL
       formulaDelta <- NULL
     }
     if(mixtures>1) {
