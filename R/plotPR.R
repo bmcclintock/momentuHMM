@@ -100,54 +100,41 @@ plotPR <- function(m, lag.max = NULL, ncores = 1)
       }
       
       # qq-plot
-      if(m[[1]]$conditions$dist[[i]] %in% mvndists){
-        tpr <- as.matrix(pr[[1]][[paste0(i,"Res")]])
-        if(m[[1]]$conditions$dist[[i]]=="mvnorm2" || m[[1]]$conditions$dist[[i]]=="mvnorm3") ndim <- as.numeric(gsub("mvnorm","",m[[1]]$conditions$dist[[i]] ))
-        else ndim <- as.numeric(gsub("rw_mvnorm","",m[[1]]$conditions$dist[[i]] ))
-        if (!requireNamespace("car", quietly = TRUE)) {
-          stop("Package \"car\" needed for QQ plot of mutivariate normal distributions. Please install it.",
-               call. = FALSE)
-        } else {
-          q <- car::qqPlot(tpr, distribution = "chisq", df = ndim, 
-                 lwd = 1, grid = FALSE, col="red",col.lines="black", main = "Multi-normal Q-Q Plot", xlab = expression(chi^2 * " quantiles"), ylab = expression("Mahalanobis distances "^2))
-        }
+      qq <- lapply(pr,function(x) stats::qqnorm(x[[paste0(i,"Res")]],plot=FALSE))
+      limInf <- min(min(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),min(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
+      limSup <- max(max(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),max(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
+      if (!requireNamespace("car", quietly = TRUE)) {
+        q <- stats::qqnorm(pr[[1]][[paste0(i,"Res")]],main="",col="red",xlim=c(limInf,limSup),ylim=c(limInf,limSup))
+        warning("Package \"car\" not installed. If pseudo-residual QQ plots using car::qqPlot are desired, please install it.",
+             call. = FALSE)
       } else {
-        qq <- lapply(pr,function(x) stats::qqnorm(x[[paste0(i,"Res")]],plot=FALSE))
-        limInf <- min(min(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),min(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
-        limSup <- max(max(unlist(lapply(qq,function(x) x$x)),na.rm=TRUE),max(unlist(lapply(qq,function(x) x$y)),na.rm=TRUE))
-        if (!requireNamespace("car", quietly = TRUE)) {
-          q <- stats::qqnorm(pr[[1]][[paste0(i,"Res")]],main="",col="red",xlim=c(limInf,limSup),ylim=c(limInf,limSup))
-          warning("Package \"car\" not installed. If pseudo-residual QQ plots using car::qqPlot are desired, please install it.",
-               call. = FALSE)
-        } else {
-          q <- car::qqPlot(pr[[1]][[paste0(i,"Res")]],col="red",col.lines="black",main="",lwd=1,grid=FALSE,ylim=c(limInf,limSup),xlab="Theoretical Quantiles",ylab="Sample Quantiles")
+        q <- car::qqPlot(pr[[1]][[paste0(i,"Res")]],col="red",col.lines="black",main="",lwd=1,grid=FALSE,ylim=c(limInf,limSup),xlab="Theoretical Quantiles",ylab="Sample Quantiles")
+      }
+      if(nSims>1){
+        for(j in 2:nSims){
+          points(qq[[j]]$x,qq[[j]]$y,col=col[j])
         }
-        if(nSims>1){
-          for(j in 2:nSims){
-            points(qq[[j]]$x,qq[[j]]$y,col=col[j])
-          }
+      }
+      
+      # add segments for zero inflation
+      for(j in 1:nSims){
+        if(m[[j]]$conditions$zeroInflation[[i]]) {
+          ind <- which(m[[j]]$data[[i]]==0)
+          x <- qq[[j]]$x[ind]
+          y <- qq[[j]]$y[ind]
+          segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
         }
         
-        # add segments for zero inflation
-        for(j in 1:nSims){
-          if(m[[j]]$conditions$zeroInflation[[i]]) {
-            ind <- which(m[[j]]$data[[i]]==0)
-            x <- qq[[j]]$x[ind]
-            y <- qq[[j]]$y[ind]
-            segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
-          }
-          
-          # add segments for one inflation
-          if(m[[j]]$conditions$oneInflation[[i]]) {
-            ind <- which(m[[j]]$data[[i]]==1)
-            x <- qq[[j]]$x[ind]
-            y <- qq[[j]]$y[ind]
-            segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
-          }
+        # add segments for one inflation
+        if(m[[j]]$conditions$oneInflation[[i]]) {
+          ind <- which(m[[j]]$data[[i]]==1)
+          x <- qq[[j]]$x[ind]
+          y <- qq[[j]]$y[ind]
+          segments(x,rep(limInf-5,length(ind)),x,y,col=col[j])
         }
-        if (!requireNamespace("car", quietly = TRUE)) {
-          abline(0,1,lwd=2)
-        }
+      }
+      if (!requireNamespace("car", quietly = TRUE)) {
+        abline(0,1,lwd=2)
       }
       
       

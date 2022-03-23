@@ -340,9 +340,7 @@ pseudoRes <- function(m, ncores = 1)
               genRes[[paste0(j,"Res")]][i] <- genRes[[paste0(j,"Res")]][i] + t(a)%*%(gamma/sum(a))%*%pgenMat[i,] * iPi[mix]
           }
         }
-        if(dist[[j]] %in% mvndists){
-          genRes[[paste0(j,"Res")]][i] <- stats::qchisq(genRes[[paste0(j,"Res")]][i],df=ndim)
-        } else genRes[[paste0(j,"Res")]][i] <- stats::qnorm(genRes[[paste0(j,"Res")]][i])
+        genRes[[paste0(j,"Res")]][i] <- stats::qnorm(genRes[[paste0(j,"Res")]][i])
       } else genRes[[paste0(j,"Res")]][i] <- NA
     }
   }
