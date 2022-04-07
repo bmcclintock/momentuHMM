@@ -22,15 +22,19 @@ arma::mat expmatrix_rcpp(arma::mat x) {
   }
   arma::mat z(nbStates,nbStates);
   expm(x.begin(), nbStates, z.begin(), Ward_2);
+  double zrowSum = 0.0;
   for(int i=0; i<nbStates; i++){
+    zrowSum = 0.0;
     for (int j=0; j<nbStates; j++) {
       if (!R_FINITE(z(i,j))){
         /*		*err = -1; return; */
         stop("numerical overflow in calculating TPM\n");
       }
+      zrowSum += z(i,j);
       if (z(i,j) < DBL_EPSILON) z(i,j) = 0;
       if (z(i,j) > 1 - DBL_EPSILON) z(i,j) = 1;
     }
+    if(abs(1 - zrowSum) > 1.e-8) stop("numerical overflow in calculating TPM\n");
   }
   return z;
 }
