@@ -44,6 +44,7 @@
 #' @param aInd vector of indices of first observation for each animal
 #' @param CT logical indicating whether to fit discrete-time approximation of a continuous-time model
 #' @param dtIndex time difference index for calculating transition probabilities of hierarchical continuous-time models
+#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization. Ignored unless \code{CT=TRUE}.
 #'
 #' @return The negative log-likelihood of the parameters given the data.
 #'
@@ -78,7 +79,7 @@
 
 nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,
-                     stationary=FALSE,fullDM,DMind,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,deltaCons=NULL,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1,covsPi,recharge=NULL,aInd=aInd,CT=FALSE,dtIndex=NULL)
+                     stationary=FALSE,fullDM,DMind,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,deltaCons=NULL,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1,covsPi,recharge=NULL,aInd=aInd,CT=FALSE,dtIndex=NULL,maxRate=Inf)
 {
   
   # check arguments
@@ -146,7 +147,7 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
   
     nllk <- tryCatch(nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,
                           par,
-                          aInd,zeroInflation,oneInflation,stationary,knownStates,betaRef,mixtures,dtIndex-1,CT),error=function(e) e)
+                          aInd,zeroInflation,oneInflation,stationary,knownStates,betaRef,mixtures,dtIndex-1,CT,maxRate),error=function(e) e)
   
     if(inherits(nllk,"error")) nllk <- NaN
     

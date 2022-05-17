@@ -72,7 +72,7 @@ fitHMM <- function(data, ...) {
 #' @param formulaPi Regression formula for the mixture distribution probabilities. Default: \code{NULL} (no covariate effects; both \code{beta0$pi} and \code{fixPar$pi} are specified on the real scale). Standard functions in R formulas are allowed (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}). When any formula is provided, then both \code{beta0$pi} and \code{fixPar$pi} are specified on the working scale.
 #' Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilities).
 #' @param nlmPar List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
-#' \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
+#' \code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, \code{fscale}, or \code{hessian} -- see \code{nlm}'s documentation
 #' for more detail). For \code{print.level}, the default value of 0 means that no
 #' printing occurs, a value of 1 means that the first and last iterations of the optimization are
 #' detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.
@@ -562,7 +562,8 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
         if(any(unlist(lapply(dist,function(x) x %in% rwdists))) & !all(noNAind %in% mapply(function(x) max(which(data$ID==x)),unique(data$ID)))) warning("There are data stream observations with time difference dt=0; these observations have been set to NA")
       }
     }
-  }
+    maxRate <- list(...)$maxRate
+  } else maxRate <- Inf
   
   if(!is.null(betaRef)){
     if(length(betaRef)!=nbStates) stop("betaRef must be a vector of length ",nbStates)
@@ -729,10 +730,10 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   DMind <- DMinputs$DMind
 
   # check elements of nlmPar
-  lsPars <- c("print.level","gradtol","stepmax","steptol","iterlim",'hessian')
+  lsPars <- c("print.level","gradtol","stepmax","steptol","iterlim","fscale",'hessian')
   if(length(which(!(names(nlmPar) %in% lsPars)))>0)
     stop("Check the names of the elements of 'nlmPar'; they should be in
-         ('print.level','gradtol','stepmax','steptol','iterlim','hessian')")
+         ('print.level','gradtol','stepmax','steptol','iterlim','fscale','hessian')")
 
 
   ####################################
@@ -859,6 +860,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
         stepmax <- ifelse(is.null(nlmPar$stepmax),defStepmax,nlmPar$stepmax)
         steptol <- ifelse(is.null(nlmPar$steptol),1e-6,nlmPar$steptol)
         iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
+        fscale <- ifelse(is.null(nlmPar$fscale),1,nlmPar$fscale)
         
         optPar <- wpar
         optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar[["pi"]])+which(duplicated(c(deltaCons)))))
@@ -875,22 +877,22 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
           curmod$minimum <- nLogLike(optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                     inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                     stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                    nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex)
+                                    nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,maxRate)
           curmod$estimate <- numeric()
           
         } else if(optMethod=="nlm"){
           withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,
-                                               print.level=print.level,gradtol=gradtol,
+                                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,maxRate,
+                                               fscale=fscale,print.level=print.level,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
                                                iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)),error=function(e) e),warning=h)
         } else {
           withCallingHandlers(curmod <- tryCatch(optim(optPar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                      inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                      stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,
+                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,maxRate,
                                                      method=optMethod,control=control,hessian=hessian),error=function(e) e),warning=h)
         }
         endTime <- proc.time()-startTime
@@ -1035,7 +1037,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
             }
           )
         } else {
-          gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[aInd[i],,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),dt,TRUE,aInd=1)[,,1]
+          gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[aInd[i],,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),dt,TRUE,aInd=1,maxRate=maxRate)[,,1]
           # error if singular system
           tryCatch(
             mle$delta[nbAnimals*(mix-1)+i,] <- stationary_rcpp(gamma),
@@ -1061,10 +1063,10 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     mle$gamma <- matrix(0,nbStates*mixtures,nbStates)
     if(isTRUE(list(...)$CT)) mle$Q <- matrix(0,nbStates*mixtures,nbStates)
     for(mix in 1:mixtures){
-      trMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[1,,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),mean(dt), aInd=1)
+      trMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[1,,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),mean(dt), aInd=1,maxRate=maxRate)
       mle$gamma[nbStates*(mix-1)+1:nbStates,] <- trMat[,,1]
       if(isTRUE(list(...)$CT)){
-        rMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[1,,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),mean(dt), rateMatrix=TRUE,aInd=1)
+        rMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[1,,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),mean(dt), rateMatrix=TRUE,aInd=1,maxRate=maxRate)
         mle$Q[nbStates*(mix-1)+1:nbStates,] <- rMat[,,1]
       }
     }
@@ -1082,15 +1084,17 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
 
   # conditions of the fit
   conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
-                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,fixPar=fixParIndex$ofixPar,wparIndex=fixParIndex$wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recharge=recharge,mvnCoords=mvnCoords,mixtures=mixtures,formulaPi=formulaPi,fit=fit)
+                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,fixPar=fixParIndex$ofixPar,wparIndex=fixParIndex$wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recharge=recharge,mvnCoords=mvnCoords,mixtures=mixtures,formulaPi=formulaPi,fit=fit,maxRate=maxRate)
 
   if(isTRUE(list(...)$CT)) conditions$dtIndex <- dtIndex
   
   mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName,reCovs=recovsCol,g0covs=g0covsCol,covsPi=covsPi)
   
   #compute SEs and CIs on natural and working scale
-  CIreal<-tryCatch(CIreal(momentuHMM(mh)),error=function(e) e)
-  if(inherits(CIreal,"error") & fit==TRUE) warning("Failed to compute SEs and confidence intervals on the natural scale -- ",CIreal)
+  if(!isTRUE(list(...)$CT)){
+    CIreal<-tryCatch(CIreal(momentuHMM(mh)),error=function(e) e)
+    if(inherits(CIreal,"error") & fit==TRUE) warning("Failed to compute SEs and confidence intervals on the natural scale -- ",CIreal)
+  }
   CIbeta<-tryCatch(CIbeta(momentuHMM(mh)),error=function(e) e)
   if(inherits(CIbeta,"error") & fit==TRUE) warning("Failed to compute SEs confidence intervals on the working scale -- ",CIbeta)
   

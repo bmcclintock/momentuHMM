@@ -131,6 +131,7 @@ fitCTHMM <- function(data, ...) {
 #' @param control A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).
 #' @param prior A function that returns the log-density of the working scale parameter prior distribution(s). See 'Details'.
 #' @param modelName An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions. 
+#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.
 #'
 #' @return A \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object, i.e. a list of:
 #' \item{mle}{A named list of the maximum likelihood estimates of the parameters of the model (if the numerical algorithm
@@ -167,7 +168,7 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
                                   formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,
                                   nlmPar=list(),fit=TRUE,
                                   DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,betaRef=NULL,deltaCons=NULL,
-                                  mvnCoords=NULL,stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, ...)
+                                  mvnCoords=NULL,stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, maxRate=Inf, ...)
 {
   
   #####################
@@ -221,6 +222,8 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
     if(dist[[i]]=="ctds" & !inherits(data,"ctds")) stop("'ctds' models require data to be a ctds object (see ?prepCTDS")
   }
   
+  if(!is.numeric(maxRate) || length(maxRate)>1 || maxRate<0) stop('maxRate must be a non-negative numeric scalar')
+  
   chkDots(...)
   
   withCallingHandlers(mfit <- fitHMM.momentuHMMData(data=data,nbStates=nbStates,dist=dist,
@@ -229,7 +232,7 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
                                formula=formula,formulaDelta=formulaDelta,stationary=stationary,mixtures=mixtures,formulaPi=formulaPi,
                                nlmPar=nlmPar,fit=fit,
                                DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,
-                               mvnCoords=mvnCoords,stateNames=stateNames,knownStates=knownStates,fixPar=fixPar,retryFits=retryFits,retrySD=retrySD,optMethod=optMethod,control=control,prior=prior,modelName=modelName, CT=TRUE, Time.name=Time.name),warning=muffleCTwarning)
+                               mvnCoords=mvnCoords,stateNames=stateNames,knownStates=knownStates,fixPar=fixPar,retryFits=retryFits,retrySD=retrySD,optMethod=optMethod,control=control,prior=prior,modelName=modelName, CT=TRUE, Time.name=Time.name, maxRate=maxRate),warning=muffleCTwarning)
   
   class(mfit) <- append(class(mfit),"CTHMM")
   mfit$conditions$CT <- TRUE
@@ -249,6 +252,10 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
     # check for numerical underflow in state-dependent observation distributions
     probs <- tryCatch(allProbs(mfit),warning=function(w) w)
     if(inherits(probs,"warning")) warning(probs)
+    
+    # check for numerical overflow in state transition rates
+    trProbs <- tryCatch(getTrProbs(momentuHMM(mfit)),warning=function(w) w)
+    if(inherits(trProbs,"warning")) warning(trProbs)
   }
   mfit$conditions$Time.name <- Time.name
   mfit$conditions$Time.unit <- Time.unit
@@ -283,7 +290,7 @@ fitCTHMM.momentuHierHMMData <- function(data,Time.name="time",Time.unit="auto",h
                                       hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,
                                       nlmPar=list(),fit=TRUE,
                                       DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,deltaCons=NULL,
-                                      mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, ...)
+                                      mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, maxRate=Inf, ...)
 {
   
   if(!inherits(data,"momentuHierHMMData")) stop("data must be a momentuHierHMMData object (as returned by prepData or simHierData)")
@@ -300,7 +307,7 @@ fitCTHMM.momentuHierHMMData <- function(data,Time.name="time",Time.unit="auto",h
                                 formula=inputHierHMM$formula,inputHierHMM$formulaDelta,stationary=FALSE,mixtures,formulaPi,
                                 nlmPar,fit,
                                 DM,userBounds,workBounds=inputHierHMM$workBounds,inputHierHMM$betaCons,inputHierHMM$betaRef,deltaCons=inputHierHMM$deltaCons,
-                                mvnCoords,inputHierHMM$stateNames,knownStates,inputHierHMM$fixPar,retryFits,retrySD,optMethod,control,prior,modelName)
+                                mvnCoords,inputHierHMM$stateNames,knownStates,inputHierHMM$fixPar,retryFits,retrySD,optMethod,control,prior,modelName,maxRate)
   
   # replace initial values with estimates in hierBeta and hierDelta (if provided)
   if(fit){
@@ -340,6 +347,8 @@ fitCTHMM.momentuHierHMMData <- function(data,Time.name="time",Time.unit="auto",h
   if(fit){
     hfit$CIreal <- tryCatch(CIreal.hierarchical(hfit),error=function(e) e)
     if(inherits(hfit$CIreal,"error") & fit==TRUE) warning("Failed to compute SEs and confidence intervals on the natural scale -- ",hfit$CIreal)
+    trProbs <- tryCatch(getTrProbs(momentuHMM(hfit)),warning=function(w) w)
+    if(inherits(trProbs,"warning")) warning(trProbs)
   }
   return(hfit)
 }

@@ -12,7 +12,8 @@ trMatrix_rcpp(
   CT = FALSE,
   dt = as.numeric(c()),
   rateMatrix = FALSE,
-  aInd = as.integer(c())
+  aInd = as.integer(c()),
+  maxRate = Inf
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ trMatrix_rcpp(
 \item{rateMatrix}{logical indicating whether or not to return the transition rate matrix. Ignored unless \code{CT=TRUE}.}
 
 \item{aInd}{Vector of indices of the rows at which the data (i.e. \code{covs}) switches to another animal. Ignored unless \code{CT=TRUE}.}
+
+\item{maxRate}{maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.}
 }
 \value{
 Three dimensional array \code{trMat}, such that \code{trMat[,,t]} is the transition matrix at

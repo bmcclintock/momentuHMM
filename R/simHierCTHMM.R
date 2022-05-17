@@ -61,6 +61,7 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
                         retrySims=0,
                         lambda=1,
                         errorEllipse=NULL,
+                        maxRate=Inf,
                         ncores=1,
                         export=NULL)
 {
@@ -92,6 +93,7 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
       if(missing(obsPerLevel)) stop('argument "obsPerLevel" is missing, with no default')
       if(is.null(obsPerLevel)) stop("'obsPerLevel' cannot be NULL when 'matchModelObs' is FALSE")
     }
+    maxRate <- model$conditions$maxRate
   } else {
     dist <- formatHierHMM(NULL,hierStates=hierStates,hierDist=hierDist)$dist
     for(i in names(dist)){
@@ -100,6 +102,7 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
     if(!is.null(lambda)){
       if(length(lambda)>1 || lambda<=0) stop('lambda must be a scalar and >0')
     } else stop("lambda cannot be NULL")
+    if(!is.numeric(maxRate) || length(maxRate)>1 || maxRate<0) stop('maxRate must be a non-negative numeric scalar')
   }
   
   withCallingHandlers(out <- simHierData(nbAnimals,hierStates,hierDist,
@@ -122,7 +125,8 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
                                          errorEllipse,
                                          ncores,
                                          export,
-                                         CT=TRUE),warning=muffleCTwarning)
+                                         CT=TRUE,
+                                         maxRate=maxRate),warning=muffleCTwarning)
   
   coordLevel <- attr(out,"coordLevel")
   out<- out[,c("ID","time",colnames(out)[which(!colnames(out) %in% c("ID","time"))])]

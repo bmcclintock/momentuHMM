@@ -151,7 +151,7 @@ equal to the stationary distribution. Default: \code{FALSE}.}
 Note that only the covariate values from the first row for each individual ID in \code{data} are used (i.e. time-varying covariates cannot be used for the mixture probabilities).}
 
 \item{nlmPar}{List of parameters to pass to the optimization function \code{\link[stats]{nlm}} (which should be either
-\code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, or \code{hessian} -- see \code{nlm}'s documentation
+\code{print.level}, \code{gradtol}, \code{stepmax}, \code{steptol}, \code{iterlim}, \code{fscale}, or \code{hessian} -- see \code{nlm}'s documentation
 for more detail). For \code{print.level}, the default value of 0 means that no
 printing occurs, a value of 1 means that the first and last iterations of the optimization are
 detailed, and a value of 2 means that each iteration of the optimization is detailed. Ignored unless \code{optMethod="nlm"}.}

@@ -74,6 +74,7 @@
 #' \code{runif(1,min(errorEllipse$m),max(errorEllipse$m))}, and \code{runif(1,min(errorEllipse$r),max(errorEllipse$r))}. If only a single value is provided for any of the 
 #' error ellipse elements, then the corresponding component is fixed to this value for each location. Only coordinate data streams are subject to location measurement error;
 #' any other data streams are observed without error.
+#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues.
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param export Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.
 #' 
@@ -125,6 +126,7 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                      #times=NULL,
                      lambda=1,
                      errorEllipse=NULL,
+                     maxRate=Inf,
                      ncores=1,
                      export=NULL)
 {
@@ -151,6 +153,7 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
         if(inherits(lambda[[zoo]] ,"POSIXt")) attr(lambda[[zoo]],"units") <- model$conditions$Time.unit
       }
     }
+    maxRate <- model$conditions$maxRate
   } else {
     for(i in names(dist)){
       if(!dist[[i]] %in% CTHMMdists) stop("Sorry, currently simCTHMM only supports the following distributions: ",paste0(CTHMMdists,sep=", "))
@@ -158,6 +161,7 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
     if(!is.null(lambda)){
       if(length(lambda)>1 || lambda<=0) stop('lambda must be a scalar and >0')
     } else stop("lambda cannot be NULL")
+    if(!is.numeric(maxRate) || length(maxRate)>1 || maxRate<0) stop('maxRate must be a non-negative numeric scalar')
   }
   
   withCallingHandlers(out <- simData(nbAnimals,nbStates,dist,
@@ -180,7 +184,8 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                                      errorEllipse,
                                      ncores,
                                      export=export,
-                                     CT=TRUE),warning=muffleCTwarning)
+                                     CT=TRUE,
+                                     maxRate=maxRate),warning=muffleCTwarning)
   
   timeName <- "time"
   if(matchModelObs) {

@@ -151,7 +151,7 @@ stationary.momentuHMM <- function(model, covs, covIndex = NULL)
       # all transition matrices
       tmpbeta <- beta[(mix-1)*ncol(covMat)+1:ncol(covMat),,drop=FALSE]
       if(is.null(recharge)){
-        allMat <- trMatrix_rcpp(nbStates=nbStates, beta=tmpbeta, covs=covMat[covIndex,,drop=FALSE], betaRef=model$conditions$betaRef, CT=isTRUE(model$conditions$CT), dt = dt, rateMatrix = isTRUE(model$conditions$CT), aInd=aInd)
+        allMat <- trMatrix_rcpp(nbStates=nbStates, beta=tmpbeta, covs=covMat[covIndex,,drop=FALSE], betaRef=model$conditions$betaRef, CT=isTRUE(model$conditions$CT), dt = dt, rateMatrix = isTRUE(model$conditions$CT), aInd=aInd, maxRate=model$conditions$maxRate)
         #for(k in aInd[which(aInd %in% covIndex)]){
         #  allMat[,,k] <- trMatrix_rcpp(nbStates=nbStates, beta=tmpbeta, covs=covMat[k,,drop=FALSE], betaRef=model$conditions$betaRef, CT=isTRUE(model$conditions$CT), dt = dt[k])
         #}
@@ -163,7 +163,7 @@ stationary.momentuHMM <- function(model, covs, covIndex = NULL)
             tmpSplineInputs$covs[covIndex,]$dt <- dt
           } else tmpSplineInputs$covs[covIndex,]$dt <- tmpSplineInputs$covs$dt[covIndex]#[model$conditions$dtIndex[covIndex]]
         } else tmpSplineInputs$covs$dt <- 1
-        allMat <- array(unlist(lapply(split(tmpSplineInputs$covs[covIndex,,drop=FALSE],covIndex),function(x) tryCatch(get_gamma_recharge(model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta),mixture=mix,CT=isTRUE(model$conditions$CT),dt=x$dt,rateMatrix = isTRUE(model$conditions$CT)),error=function(e) NA))),dim=c(nbStates,nbStates,length(covIndex)))
+        allMat <- array(unlist(lapply(split(tmpSplineInputs$covs[covIndex,,drop=FALSE],covIndex),function(x) tryCatch(get_gamma_recharge(model$mod$estimate[c(gamInd[unique(c(model$conditions$betaCons))],length(model$mod$estimate)-nbRecovs:0)],covs=x,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,betaRef=model$conditions$betaRef,betaCons=model$conditions$betaCons,workBounds=rbind(model$conditions$workBounds$beta,model$conditions$workBounds$theta),mixture=mix,CT=isTRUE(model$conditions$CT),dt=x$dt,rateMatrix = isTRUE(model$conditions$CT),maxRate=model$conditions$maxRate),error=function(e) NA))),dim=c(nbStates,nbStates,length(covIndex)))
       }
       
       tryCatch({

@@ -41,7 +41,8 @@ nLogLike(
   recharge = NULL,
   aInd = aInd,
   CT = FALSE,
-  dtIndex = NULL
+  dtIndex = NULL,
+  maxRate = Inf
 )
 }
 \arguments{
@@ -124,6 +125,8 @@ model (if any).}
 \item{CT}{logical indicating whether to fit discrete-time approximation of a continuous-time model}
 
 \item{dtIndex}{time difference index for calculating transition probabilities of hierarchical continuous-time models}
+
+\item{maxRate}{maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization. Ignored unless \code{CT=TRUE}.}
 }
 \value{
 The negative log-likelihood of the parameters given the data.

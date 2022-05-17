@@ -3,6 +3,8 @@
 #include "expmatrix.h"
 #include "stationary.h"
 
+const double Inf = R_PosInf;
+
 //' Negative log-likelihood
 //'
 //' Computation of the negative log-likelihood (forward algorithm - written in C++)
@@ -27,13 +29,14 @@
 //' @param mixtures Number of mixtures for the state transition probabilities
 //' @param dtIndex time difference index for calculating transition probabilities of hierarchical continuous-time models
 //' @param CT logical indicating whether to fit discrete-time approximation of a continuous-time model
+//' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.
 //' 
 //' @return Negative log-likelihood
 // [[Rcpp::export]]
 double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist,
                      List Par,
                      IntegerVector aInd, List zeroInflation, List oneInflation,
-                     bool stationary, IntegerVector knownStates, IntegerVector betaRef, int mixtures, IntegerVector dtIndex, bool CT = false)
+                     bool stationary, IntegerVector knownStates, IntegerVector betaRef, int mixtures, IntegerVector dtIndex, bool CT = false, double maxRate = Inf)
 {
   int nbObs = data.nrows();
 
@@ -82,15 +85,15 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
               if(j==(betaRef(i)-1)) {
                 cpt++;
               } else {
-                if(i!=j) trMat[mix](i,j,k) = exp(g(k,i*nbStates+j-cpt));
-                else trMat[mix](i,j,k) = -exp(-g(k,i*nbStates+j-cpt));
-                //Rprintf("k %d i %d j %d i*nbStates+j-cpt %d g %f trMat[mix](i,j,k) %f dt %f \n",k,i,j,i*nbStates+j-cpt,g(k,i*nbStates+j-cpt),trMat[mix](i,j,k),dt(k-kStart));
+                if(i!=j) trMat[mix](i,j,k) = exp(g(k,i*nbStates+j-cpt));//1.e+5 * R::plogis(g(k,i*nbStates+j-cpt),0.0,1.0,true,false);
+                else trMat[mix](i,j,k) = -exp(-g(k,i*nbStates+j-cpt));//-1.e+5 * R::plogis(-g(k,i*nbStates+j-cpt),0.0,1.0,true,false);
+                //Rprintf("k %d i %d j %d i*nbStates+j-cpt %d g %f trMat[mix](i,j,k) %f \n",k,i,j,i*nbStates+j-cpt,g(k,i*nbStates+j-cpt),trMat[mix](i,j,k));
               }
             }
             for(int l=0;l<nbStates;l++){
               if((betaRef(i)-1)!=l) trMat[mix](i,(betaRef(i)-1),k) -= trMat[mix](i,l,k);
             }
-            //Rprintf("k %d i %d j %d trMat[mix](i,j,k) %f dt %f \n",k,i,i,trMat[mix](i,i,k),dt(k-kStart));
+            //Rprintf("k %d i %d j %d trMat[mix](i,j,k) %f dt %f \n",k,i,i,trMat[mix](i,i,k),dt(dtIndex(k-1)));
           }
         }        
       } else { // standard discrete-time HMM
@@ -446,8 +449,8 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
           } else {
             try {
               Gammat = trMat[mix].slice(i) * dt(dtIndex(i-1));
-              Gamma = expmatrix_rcpp(Gammat);
-              //Rprintf("i %d dtIndex %d dt %f Gamma %f %f %f %f \n",i,index,dt(dtIndex(i-1)),Gamma(0,0),Gamma(0,1),Gamma(1,0),Gamma(1,1));
+              Gamma = expmatrix_rcpp(Gammat,maxRate,false);
+              //Rprintf("i %d dtIndex %d dt %f Gamma %f %f %f %f \n",i,dtIndex(i-1),dt(dtIndex(i-1)),Gamma(2,0),Gamma(2,1),Gamma(2,2),Gamma(2,3));
             }
             catch(std::exception &ex) {	
               forward_exception_to_r(ex);

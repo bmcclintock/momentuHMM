@@ -4,10 +4,14 @@
 \alias{expmatrix_rcpp}
 \title{Matrix Exponential}
 \usage{
-expmatrix_rcpp(x)
+expmatrix_rcpp(x, maxRate = Inf, check = FALSE)
 }
 \arguments{
 \item{x}{a square matrix.}
+
+\item{maxRate}{maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.}
+
+\item{check}{logical indicating whether or not to check transition probability matrix for issues}
 }
 \value{
 The matrix exponential of x.

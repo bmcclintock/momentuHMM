@@ -54,7 +54,7 @@ viterbi <- function(m, hierarchical=FALSE)
   
   trMat <- list()
   for(mix in 1:mixtures){
-    trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),m$conditions$betaRef,isTRUE(m$conditions$CT),dt,aInd=aInd)
+    trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),m$conditions$betaRef,isTRUE(m$conditions$CT),dt,aInd=aInd, maxRate=m$conditions$maxRate)
   }
   
   allStates <- NULL

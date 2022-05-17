@@ -241,10 +241,12 @@ dt_rcpp <- function(x, df, ncp) {
 #' This function computes the exponential of a square matrix \code{A}, defined as the sum from \code{r=0} to infinity of \code{A^r/r!}, using the default method of \code{\link[expm]{expm}}.
 #'
 #' @param x a square matrix.
+#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.
+#' @param check logical indicating whether or not to check transition probability matrix for issues
 #'
 #' @return The matrix exponential of x.
-expmatrix_rcpp <- function(x) {
-    .Call('_momentuHMM_expmatrix_rcpp', PACKAGE = 'momentuHMM', x)
+expmatrix_rcpp <- function(x, maxRate = Inf, check = FALSE) {
+    .Call('_momentuHMM_expmatrix_rcpp', PACKAGE = 'momentuHMM', x, maxRate, check)
 }
 
 #' Get design matrix
@@ -288,10 +290,11 @@ getDM_rcpp <- function(X, covs, DM, nr, nc, cov, nbObs) {
 #' @param mixtures Number of mixtures for the state transition probabilities
 #' @param dtIndex time difference index for calculating transition probabilities of hierarchical continuous-time models
 #' @param CT logical indicating whether to fit discrete-time approximation of a continuous-time model
+#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.
 #' 
 #' @return Negative log-likelihood
-nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT = FALSE) {
-    .Call('_momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT)
+nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT = FALSE, maxRate = Inf) {
+    .Call('_momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT, maxRate)
 }
 
 #' Stationary distribution for a continuous-time Markov chain
@@ -318,10 +321,11 @@ stationary_rcpp <- function(A) {
 #' @param dt numeric vector of length \code{nrow(covs)} indicating the time difference between observations. Ignored unless \code{CT=TRUE}.
 #' @param rateMatrix logical indicating whether or not to return the transition rate matrix. Ignored unless \code{CT=TRUE}.
 #' @param aInd Vector of indices of the rows at which the data (i.e. \code{covs}) switches to another animal. Ignored unless \code{CT=TRUE}.
+#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.
 #'
 #' @return Three dimensional array \code{trMat}, such that \code{trMat[,,t]} is the transition matrix at
 #' time t.
-trMatrix_rcpp <- function(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric( c()), rateMatrix = FALSE, aInd = as.integer( c())) {
-    .Call('_momentuHMM_trMatrix_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs, betaRef, CT, dt, rateMatrix, aInd)
+trMatrix_rcpp <- function(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric( c()), rateMatrix = FALSE, aInd = as.integer( c()), maxRate = Inf) {
+    .Call('_momentuHMM_trMatrix_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs, betaRef, CT, dt, rateMatrix, aInd, maxRate)
 }
 

@@ -1,2 +1,2 @@
 #include <RcppArmadillo.h>
-arma::mat expmatrix_rcpp(arma::mat x);
+arma::mat expmatrix_rcpp(arma::mat x,double maxRate,bool check);

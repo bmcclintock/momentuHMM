@@ -33,6 +33,7 @@ simCTHMM(
   retrySims = 0,
   lambda = 1,
   errorEllipse = NULL,
+  maxRate = Inf,
   ncores = 1,
   export = NULL
 )
@@ -63,6 +64,7 @@ simHierCTHMM(
   retrySims = 0,
   lambda = 1,
   errorEllipse = NULL,
+  maxRate = Inf,
   ncores = 1,
   export = NULL
 )
@@ -165,6 +167,8 @@ in McClintock et al. (2015), where the components of the error ellipse for each 
 \code{runif(1,min(errorEllipse$m),max(errorEllipse$m))}, and \code{runif(1,min(errorEllipse$r),max(errorEllipse$r))}. If only a single value is provided for any of the 
 error ellipse elements, then the corresponding component is fixed to this value for each location. Only coordinate data streams are subject to location measurement error;
 any other data streams are observed without error.}
+
+\item{maxRate}{maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues.}
 
 \item{ncores}{Number of cores to use for parallel processing. Default: 1 (no parallel processing).}
 

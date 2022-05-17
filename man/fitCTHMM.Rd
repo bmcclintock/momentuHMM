@@ -42,6 +42,7 @@ fitCTHMM(data, ...)
   control = list(),
   prior = NULL,
   modelName = NULL,
+  maxRate = Inf,
   ...
 )
 
@@ -76,6 +77,7 @@ fitCTHMM(data, ...)
   control = list(),
   prior = NULL,
   modelName = NULL,
+  maxRate = Inf,
   ...
 )
 }
@@ -233,6 +235,8 @@ Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \co
 \item{prior}{A function that returns the log-density of the working scale parameter prior distribution(s). See 'Details'.}
 
 \item{modelName}{An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions.}
+
+\item{maxRate}{maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.}
 
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See details.}
 
