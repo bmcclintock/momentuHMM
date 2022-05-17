@@ -156,6 +156,9 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
       
       # if DM is not specified convert fixPar from real to working scale
       if(is.null(inputs$DM[[i]])){
+        if(inputs$dist[[i]] %in% angledists){
+          if(inputs$estAngleMean[[i]] & any(!is.na(fixPar[[i]]))) stop("fixPar$",i," cannot be specified when DM$",i,"=NULL")
+        }
         fixPar[[i]][tmp]<-n2w(Par0[i],p$bounds,NULL,NULL,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)[tmp]
       } 
       wparIndex <- c(wparIndex,parindex[[i]]+tmp)
