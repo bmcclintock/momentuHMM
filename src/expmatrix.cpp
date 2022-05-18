@@ -4,8 +4,6 @@ using namespace Rcpp;
 typedef enum {Ward_2, Ward_1, Ward_buggy_octave} precond_type;
 extern void (*expm)(double *x, int n, double *z, precond_type precond_kind);
 
-const double Inf = R_PosInf;
-
 //' Matrix Exponential
 //'
 //' This function computes the exponential of a square matrix \code{A}, defined as the sum from \code{r=0} to infinity of \code{A^r/r!}, using the default method of \code{\link[expm]{expm}}.
@@ -16,8 +14,9 @@ const double Inf = R_PosInf;
 //'
 //' @return The matrix exponential of x.
 // [[Rcpp::export]]
-arma::mat expmatrix_rcpp(arma::mat x, double maxRate = Inf, bool check=false) {
+arma::mat expmatrix_rcpp(arma::mat x, double maxRate = NA_REAL, bool check=false) {
   int nbStates = x.n_rows;
+  if(!R_FINITE(maxRate)) maxRate = R_PosInf;
   for(int i=0; i<nbStates; i++){
     if (!R_FINITE(x(i,i))){
       /*		*err = -1; return; */

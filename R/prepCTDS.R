@@ -425,7 +425,7 @@ prepCTDS.hierarchical <- function(data, Time.unit="auto", rast, directions=4, ze
 path2ctds<-function (xy, t, rast, directions = 4, zero.idx = integer(), 
           print.iter = FALSE, method = "ShortestPath", Time.unit = "auto") 
 {
-  if (class(rast) == "RasterStack") {
+  if (inherits(rast,"RasterStack")) {
     rast = rast[[1]]
   }
   if(!(directions %in% c(4,8))) stop("'directions' must be 4 or 8")

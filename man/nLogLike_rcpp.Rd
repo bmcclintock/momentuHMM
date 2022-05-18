@@ -20,7 +20,7 @@ nLogLike_rcpp(
   mixtures,
   dtIndex,
   CT = FALSE,
-  maxRate = Inf
+  maxRate = NA_real_
 )
 }
 \arguments{

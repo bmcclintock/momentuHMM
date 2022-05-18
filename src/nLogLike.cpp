@@ -3,8 +3,6 @@
 #include "expmatrix.h"
 #include "stationary.h"
 
-const double Inf = R_PosInf;
-
 //' Negative log-likelihood
 //'
 //' Computation of the negative log-likelihood (forward algorithm - written in C++)
@@ -36,10 +34,11 @@ const double Inf = R_PosInf;
 double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist,
                      List Par,
                      IntegerVector aInd, List zeroInflation, List oneInflation,
-                     bool stationary, IntegerVector knownStates, IntegerVector betaRef, int mixtures, IntegerVector dtIndex, bool CT = false, double maxRate = Inf)
+                     bool stationary, IntegerVector knownStates, IntegerVector betaRef, int mixtures, IntegerVector dtIndex, bool CT = false, double maxRate = NA_REAL)
 {
   int nbObs = data.nrows();
-
+  if(!R_FINITE(maxRate)) maxRate = R_PosInf;
+  
   //=======================================================//
   // 1. Computation of transition probability matrix trMat //
   //=======================================================//

@@ -245,7 +245,7 @@ dt_rcpp <- function(x, df, ncp) {
 #' @param check logical indicating whether or not to check transition probability matrix for issues
 #'
 #' @return The matrix exponential of x.
-expmatrix_rcpp <- function(x, maxRate = Inf, check = FALSE) {
+expmatrix_rcpp <- function(x, maxRate = NA_real_, check = FALSE) {
     .Call('_momentuHMM_expmatrix_rcpp', PACKAGE = 'momentuHMM', x, maxRate, check)
 }
 
@@ -293,7 +293,7 @@ getDM_rcpp <- function(X, covs, DM, nr, nc, cov, nbObs) {
 #' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.
 #' 
 #' @return Negative log-likelihood
-nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT = FALSE, maxRate = Inf) {
+nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT = FALSE, maxRate = NA_real_) {
     .Call('_momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT, maxRate)
 }
 
@@ -325,7 +325,7 @@ stationary_rcpp <- function(A) {
 #'
 #' @return Three dimensional array \code{trMat}, such that \code{trMat[,,t]} is the transition matrix at
 #' time t.
-trMatrix_rcpp <- function(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric( c()), rateMatrix = FALSE, aInd = as.integer( c()), maxRate = Inf) {
+trMatrix_rcpp <- function(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric( c()), rateMatrix = FALSE, aInd = as.integer( c()), maxRate = NA_real_) {
     .Call('_momentuHMM_trMatrix_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs, betaRef, CT, dt, rateMatrix, aInd, maxRate)
 }
 

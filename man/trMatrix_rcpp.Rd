@@ -13,7 +13,7 @@ trMatrix_rcpp(
   dt = as.numeric(c()),
   rateMatrix = FALSE,
   aInd = as.integer(c()),
-  maxRate = Inf
+  maxRate = NA_real_
 )
 }
 \arguments{

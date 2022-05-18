@@ -5,8 +5,6 @@
 using namespace Rcpp;
 using namespace std;
 
-const double Inf = R_PosInf;
-
 //' Transition probability matrix
 //'
 //' Computation of the transition probability matrix, as a function of the covariates and the regression
@@ -25,9 +23,10 @@ const double Inf = R_PosInf;
 //' @return Three dimensional array \code{trMat}, such that \code{trMat[,,t]} is the transition matrix at
 //' time t.
 // [[Rcpp::export]]
-arma::cube trMatrix_rcpp(int nbStates, arma::mat beta, arma::mat covs, IntegerVector betaRef, bool CT = false, NumericVector dt = NumericVector::create(), bool rateMatrix = false, IntegerVector aInd = IntegerVector::create(), double maxRate = Inf)
+arma::cube trMatrix_rcpp(int nbStates, arma::mat beta, arma::mat covs, IntegerVector betaRef, bool CT = false, NumericVector dt = NumericVector::create(), bool rateMatrix = false, IntegerVector aInd = IntegerVector::create(), double maxRate = NA_REAL)
 {
   int nbObs = covs.n_rows;
+  if(!R_FINITE(maxRate)) maxRate = R_PosInf;
   arma::cube trMat(nbStates,nbStates,nbObs);
   trMat.zeros();
   arma::mat rowSums(nbStates,nbObs);

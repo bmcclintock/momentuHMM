@@ -4,7 +4,7 @@
 \alias{expmatrix_rcpp}
 \title{Matrix Exponential}
 \usage{
-expmatrix_rcpp(x, maxRate = Inf, check = FALSE)
+expmatrix_rcpp(x, maxRate = NA_real_, check = FALSE)
 }
 \arguments{
 \item{x}{a square matrix.}
