@@ -188,7 +188,7 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                                      maxRate=maxRate),warning=muffleCTwarning)
   
   timeName <- "time"
-  if(matchModelObs) {
+  if(!is.null(model) & matchModelObs) {
     if(model$conditions$Time.name!="time"){
       timeName <- model$conditions$Time.name
       out[[timeName]] <- out$time
