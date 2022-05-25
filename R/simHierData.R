@@ -205,6 +205,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
             diag(tmpDM)[1:nbStates] <- 1
             DM[[i]] <- tmpDM
           }
+          model$conditions$DM[[i]] <- DM[[i]]
         }
       }
     }

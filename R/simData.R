@@ -502,6 +502,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             diag(tmpDM)[1:nbStates] <- 1
             DM[[i]] <- tmpDM
           }
+          model$conditions$DM[[i]] <- DM[[i]]
         }
       }
     }
