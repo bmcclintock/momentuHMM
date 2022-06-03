@@ -1,4 +1,4 @@
-momentuHMM 2.0.0 2022-05-17
+momentuHMM 2.0.0 2022-06-03
 -----------------
 NEW FEATURES
 
@@ -9,6 +9,8 @@ NEW FEATURES
 * special pseudo-design matrix function 'langevin' has been added for simulating and fitting discrete-time approximations of the (multistate) Langevin diffusion model as a multivariate normal random walk (i.e. using the "rw_mvnorm2" or "rw_mvnorm3" data stream distributions)
 
 * 'export' argument added to simulation and model fitting functions for exporting formula objects from the global environment when ncores>1
+
+* 'colors' argument added to 'plotSpatialCov' function for specifying raster colors
 
 CHANGES
 

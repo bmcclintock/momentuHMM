@@ -22,6 +22,7 @@
 #' @param return If \code{TRUE}, the function returns a ggplot object (which can be edited and
 #' plotted manually). If \code{FALSE}, the function automatically plots the map (default).
 #' @param stateNames Optional character vector of length \code{max(states)} indicating state names. Ignored unless \code{states} is provided.
+#' @param colors Colours argument for \code{\link[ggplot2]{geom_raster}}. Default: \code{c("darkblue","lightblue")}.
 #' 
 #' @examples 
 #' \dontrun{
@@ -44,7 +45,7 @@
 #' @export
 
 plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,alpha=1,size=1,shape=16,
-                           states=NULL,animals=NULL,ask=TRUE,return=FALSE,stateNames=NULL)
+                           states=NULL,animals=NULL,ask=TRUE,return=FALSE,stateNames=NULL,colors=c("darkblue","lightblue"))
 {
   #####################
   ## Check arguments ##
@@ -230,6 +231,7 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
         ggplot2::theme(panel.border = ggplot2::element_rect(colour = "black",fill=NA)) +
         ggplot2::theme(panel.grid.major = ggplot2::element_blank(), panel.grid.minor = ggplot2::element_blank()) +
         ggplot2::geom_raster(data = dfcov,ggplot2::aes(fill=.data[[names(spatialCov)]])) +
+        ggplot2::scale_fill_gradientn(colours=colors) +
         ggplot2::labs(fill = names(spatialCov)) +
         ggplot2::geom_point(ggplot2::aes(x,y,col=col,shape=col),subData,alpha=alpha,size=size,show.legend=ifelse(nbCol>1,TRUE,FALSE)) +
         ggplot2::coord_equal()
@@ -254,6 +256,7 @@ plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,a
       ggplot2::theme(panel.border = ggplot2::element_rect(colour = "black",fill=NA)) +
       ggplot2::theme(panel.grid.major = ggplot2::element_blank(), panel.grid.minor = ggplot2::element_blank()) +
       ggplot2::geom_raster(data = dfcov,ggplot2::aes(fill=.data[[names(spatialCov)]])) +
+      ggplot2::scale_fill_gradientn(colours=colors) +
       ggplot2::labs(fill = names(spatialCov)) +
       ggplot2::geom_point(ggplot2::aes(x,y,col=col,shape=col),data,alpha=alpha,size=size,show.legend=ifelse(nbCol>1,TRUE,FALSE)) +
       ggplot2::coord_equal()

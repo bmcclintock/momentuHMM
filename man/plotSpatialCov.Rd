@@ -17,7 +17,8 @@ plotSpatialCov(
   animals = NULL,
   ask = TRUE,
   return = FALSE,
-  stateNames = NULL
+  stateNames = NULL,
+  colors = c("darkblue", "lightblue")
 )
 }
 \arguments{
@@ -53,6 +54,8 @@ Default: \code{NULL}; all animals are plotted.}
 plotted manually). If \code{FALSE}, the function automatically plots the map (default).}
 
 \item{stateNames}{Optional character vector of length \code{max(states)} indicating state names. Ignored unless \code{states} is provided.}
+
+\item{colors}{Colours argument for \code{\link[ggplot2]{geom_raster}}. Default: \code{c("darkblue","lightblue")}.}
 }
 \description{
 Plot tracking data over a raster layer.
