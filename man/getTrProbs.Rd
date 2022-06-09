@@ -22,6 +22,7 @@ getTrProbs(data, ...)
   alpha = 0.95,
   Time.name = NULL,
   Time.unit = "auto",
+  rateMatrix = FALSE,
   maxRate = Inf,
   ...
 )
@@ -39,6 +40,8 @@ getTrProbs(data, ...)
   alpha = 0.95,
   Time.name = NULL,
   Time.unit = "auto",
+  rateMatrix = FALSE,
+  maxRate = Inf,
   ...
 )
 }
@@ -75,7 +78,9 @@ The first column pertains to the lower bound and the second column the upper bou
 
 \item{Time.unit}{Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{data[[Time.name]]} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto'.  Ignored if \code{data} is a \code{ctds} object returned by \code{\link{prepCTDS}}.}
 
-\item{maxRate}{maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization. Ignored unless \code{data} is a \code{data.frame}, \code{\link{momentuHMMData}} object, or \code{\link{momentuHierHMMData}} object (i.e. not a \code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{miSum}} object, or a \code{\link{miHMM}} object).}
+\item{rateMatrix}{Logical indicating whether to return the transition rate matrix. Default: \code{FALSE}. Ignored unless \code{data} is a continuous-time model or \code{Time.name} is specified.}
+
+\item{maxRate}{maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues, in which case the \code{beta} parameters are on the logit scale (instead of log scale). Ignored unless \code{data} is a \code{data.frame}, \code{\link{momentuHMMData}} object, or \code{\link{momentuHierHMMData}} object (i.e. not a \code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{miSum}} object, or a \code{\link{miHMM}} object).}
 
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See \code{\link{fitHMM}}.}
 

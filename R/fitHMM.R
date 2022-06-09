@@ -739,7 +739,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   ####################################
   ## Prepare initial values for nlm ##
   ####################################
-  fixParIndex <- get_fixParIndex(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,deltaCons,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data,newdata)
+  fixParIndex <- get_fixParIndex(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,deltaCons,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data,newdata,maxRate)
   
   parCount<- lapply(fullDM,ncol)
   for(i in distnames[!unlist(lapply(inputs$circularAngleMean,isFALSE))]){
@@ -1037,7 +1037,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
             }
           )
         } else {
-          gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[aInd[i],,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),dt,TRUE,aInd=1,maxRate=maxRate)[,,1]
+          gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[aInd[i],,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),dt,aInd=1,rateMatrix=TRUE,maxRate=maxRate)[,,1]
           # error if singular system
           tryCatch(
             mle$delta[nbAnimals*(mix-1)+i,] <- stationary_rcpp(gamma),
@@ -1066,7 +1066,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
       trMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[1,,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),mean(dt), aInd=1,maxRate=maxRate)
       mle$gamma[nbStates*(mix-1)+1:nbStates,] <- trMat[,,1]
       if(isTRUE(list(...)$CT)){
-        rMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[1,,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),mean(dt), rateMatrix=TRUE,aInd=1,maxRate=maxRate)
+        rMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[1,,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),mean(dt), aInd=1,rateMatrix=TRUE,maxRate=maxRate)
         mle$Q[nbStates*(mix-1)+1:nbStates,] <- rMat[,,1]
       }
     }

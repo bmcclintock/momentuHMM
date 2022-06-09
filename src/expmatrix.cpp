@@ -27,7 +27,7 @@ arma::mat expmatrix_rcpp(arma::mat x, double maxRate = NA_REAL, bool check=false
       if(i!=j){
         if(x(i,j)>maxRate) {
           x(i,j) = maxRate;
-          if(check) warning("maxRate exceeded, state transition rate(s) from %d -> %d has been truncated at %f",i+1,j+1,maxRate);
+          //if(check & (abs(x(i,j)-maxRate)>1.e-5)) warning("maxRate exceeded, state transition rate(s) from %d -> %d has been truncated at %f",i+1,j+1,maxRate);
         }
         x(i,i) -= x(i,j);
       }

@@ -151,7 +151,7 @@ stationary.momentuHMM <- function(model, covs, covIndex = NULL)
       # all transition matrices
       tmpbeta <- beta[(mix-1)*ncol(covMat)+1:ncol(covMat),,drop=FALSE]
       if(is.null(recharge)){
-        allMat <- trMatrix_rcpp(nbStates=nbStates, beta=tmpbeta, covs=covMat[covIndex,,drop=FALSE], betaRef=model$conditions$betaRef, CT=isTRUE(model$conditions$CT), dt = dt, rateMatrix = isTRUE(model$conditions$CT), aInd=aInd, maxRate=model$conditions$maxRate)
+        allMat <- trMatrix_rcpp(nbStates=nbStates, beta=tmpbeta, covs=covMat[covIndex,,drop=FALSE], betaRef=model$conditions$betaRef, CT=isTRUE(model$conditions$CT), dt = dt, aInd=aInd, rateMatrix = isTRUE(model$conditions$CT), maxRate=model$conditions$maxRate)
         #for(k in aInd[which(aInd %in% covIndex)]){
         #  allMat[,,k] <- trMatrix_rcpp(nbStates=nbStates, beta=tmpbeta, covs=covMat[k,,drop=FALSE], betaRef=model$conditions$betaRef, CT=isTRUE(model$conditions$CT), dt = dt[k])
         #}

@@ -131,7 +131,7 @@ fitCTHMM <- function(data, ...) {
 #' @param control A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).
 #' @param prior A function that returns the log-density of the working scale parameter prior distribution(s). See 'Details'.
 #' @param modelName An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions. 
-#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.
+#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization, in which case the \code{beta} parameters are on the logit scale (instead of log scale).
 #'
 #' @return A \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object, i.e. a list of:
 #' \item{mle}{A named list of the maximum likelihood estimates of the parameters of the model (if the numerical algorithm
@@ -254,8 +254,7 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
     if(inherits(probs,"warning")) warning(probs)
     
     # check for numerical overflow in state transition rates
-    trProbs <- tryCatch(getTrProbs(momentuHMM(mfit)),warning=function(w) w)
-    if(inherits(trProbs,"warning")) warning(trProbs)
+    trProbs <- tryCatch(getTrProbs(momentuHMM(mfit)),error=function(e) e)
   }
   mfit$conditions$Time.name <- Time.name
   mfit$conditions$Time.unit <- Time.unit
@@ -347,8 +346,7 @@ fitCTHMM.momentuHierHMMData <- function(data,Time.name="time",Time.unit="auto",h
   if(fit){
     hfit$CIreal <- tryCatch(CIreal.hierarchical(hfit),error=function(e) e)
     if(inherits(hfit$CIreal,"error") & fit==TRUE) warning("Failed to compute SEs and confidence intervals on the natural scale -- ",hfit$CIreal)
-    trProbs <- tryCatch(getTrProbs(momentuHMM(hfit)),warning=function(w) w)
-    if(inherits(trProbs,"warning")) warning(trProbs)
+    trProbs <- tryCatch(getTrProbs(momentuHMM(hfit)),error=function(e) e)
   }
   return(hfit)
 }

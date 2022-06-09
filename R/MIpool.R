@@ -465,9 +465,9 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
       for(i in 1:nbStates){
         for(j in 1:nbStates){
           if(is.null(recharge)){
-            dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,maxRate=m$conditions$maxRate)
+            dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,maxRate=m$conditions$maxRate,check=FALSE)
           } else {
-            dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,maxRate=m$conditions$maxRate)
+            dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,maxRate=m$conditions$maxRate,check=FALSE)
           }  
           se[(mix-1)*nbStates+i,j]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
           lower[(mix-1)*nbStates+i,j]<-1/(1+exp(-(log(est[(mix-1)*nbStates+i,j]/(1-est[(mix-1)*nbStates+i,j]))-quantSup*(1/(est[(mix-1)*nbStates+i,j]-est[(mix-1)*nbStates+i,j]^2))*se[(mix-1)*nbStates+i,j])))#est[(mix-1)*nbStates+i,j]-quantSup*se[(mix-1)*nbStates+i,j]
@@ -496,9 +496,9 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
         for(i in 1:nbStates){
           for(j in 1:nbStates){
             if(is.null(recharge)){
-              dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE,maxRate=m$conditions$maxRate)
+              dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE,maxRate=m$conditions$maxRate,check=FALSE)
             } else {
-              dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE,maxRate=m$conditions$maxRate)
+              dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE,maxRate=m$conditions$maxRate,check=FALSE)
             }  
             se[(mix-1)*nbStates+i,j]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
             lower[(mix-1)*nbStates+i,j]<-est[(mix-1)*nbStates+i,j]-quantSup*se[(mix-1)*nbStates+i,j]

@@ -360,8 +360,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // trMatrix_rcpp
-arma::cube trMatrix_rcpp(int nbStates, arma::mat beta, arma::mat covs, IntegerVector betaRef, bool CT, NumericVector dt, bool rateMatrix, IntegerVector aInd, double maxRate);
-RcppExport SEXP _momentuHMM_trMatrix_rcpp(SEXP nbStatesSEXP, SEXP betaSEXP, SEXP covsSEXP, SEXP betaRefSEXP, SEXP CTSEXP, SEXP dtSEXP, SEXP rateMatrixSEXP, SEXP aIndSEXP, SEXP maxRateSEXP) {
+arma::cube trMatrix_rcpp(int nbStates, arma::mat beta, arma::mat covs, IntegerVector betaRef, bool CT, NumericVector dt, IntegerVector aInd, bool rateMatrix, double maxRate, bool check);
+RcppExport SEXP _momentuHMM_trMatrix_rcpp(SEXP nbStatesSEXP, SEXP betaSEXP, SEXP covsSEXP, SEXP betaRefSEXP, SEXP CTSEXP, SEXP dtSEXP, SEXP aIndSEXP, SEXP rateMatrixSEXP, SEXP maxRateSEXP, SEXP checkSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -371,10 +371,11 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< IntegerVector >::type betaRef(betaRefSEXP);
     Rcpp::traits::input_parameter< bool >::type CT(CTSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type dt(dtSEXP);
-    Rcpp::traits::input_parameter< bool >::type rateMatrix(rateMatrixSEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type aInd(aIndSEXP);
+    Rcpp::traits::input_parameter< bool >::type rateMatrix(rateMatrixSEXP);
     Rcpp::traits::input_parameter< double >::type maxRate(maxRateSEXP);
-    rcpp_result_gen = Rcpp::wrap(trMatrix_rcpp(nbStates, beta, covs, betaRef, CT, dt, rateMatrix, aInd, maxRate));
+    Rcpp::traits::input_parameter< bool >::type check(checkSEXP);
+    rcpp_result_gen = Rcpp::wrap(trMatrix_rcpp(nbStates, beta, covs, betaRef, CT, dt, aInd, rateMatrix, maxRate, check));
     return rcpp_result_gen;
 END_RCPP
 }

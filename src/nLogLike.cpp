@@ -37,7 +37,11 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
                      bool stationary, IntegerVector knownStates, IntegerVector betaRef, int mixtures, IntegerVector dtIndex, bool CT = false, double maxRate = NA_REAL)
 {
   int nbObs = data.nrows();
-  if(!R_FINITE(maxRate)) maxRate = R_PosInf;
+  bool maxInd;
+  if(!R_FINITE(maxRate)){
+    maxRate = R_PosInf;
+    maxInd = false;
+  } else maxInd = true;
   
   //=======================================================//
   // 1. Computation of transition probability matrix trMat //
@@ -84,9 +88,13 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
               if(j==(betaRef(i)-1)) {
                 cpt++;
               } else {
-                if(i!=j) trMat[mix](i,j,k) = exp(g(k,i*nbStates+j-cpt));//1.e+5 * R::plogis(g(k,i*nbStates+j-cpt),0.0,1.0,true,false);
-                else trMat[mix](i,j,k) = -exp(-g(k,i*nbStates+j-cpt));//-1.e+5 * R::plogis(-g(k,i*nbStates+j-cpt),0.0,1.0,true,false);
-                //Rprintf("k %d i %d j %d i*nbStates+j-cpt %d g %f trMat[mix](i,j,k) %f \n",k,i,j,i*nbStates+j-cpt,g(k,i*nbStates+j-cpt),trMat[mix](i,j,k));
+                if(maxInd){
+                  if(i!=j) trMat[mix](i,j,k) = maxRate * R::plogis(g(k,i*nbStates+j-cpt),0.0,1.0,true,false);
+                  else trMat[mix](i,j,k) = -maxRate * R::plogis(g(k,i*nbStates+j-cpt),0.0,1.0,true,false);
+                } else {
+                  if(i!=j) trMat[mix](i,j,k) = exp(g(k,i*nbStates+j-cpt));//1.e+5 * R::plogis(g(k,i*nbStates+j-cpt),0.0,1.0,true,false);
+                  else trMat[mix](i,j,k) = -exp(g(k,i*nbStates+j-cpt));//-1.e+5 * R::plogis(-g(k,i*nbStates+j-cpt),0.0,1.0,true,false);
+                }
               }
             }
             for(int l=0;l<nbStates;l++){

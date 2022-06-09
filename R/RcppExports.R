@@ -319,13 +319,14 @@ stationary_rcpp <- function(A) {
 #' @param betaRef Indices of reference elements for t.p.m. multinomial logit link.
 #' @param CT logical indicating discrete-time approximation of a continuous-time model
 #' @param dt numeric vector of length \code{nrow(covs)} indicating the time difference between observations. Ignored unless \code{CT=TRUE}.
-#' @param rateMatrix logical indicating whether or not to return the transition rate matrix. Ignored unless \code{CT=TRUE}.
 #' @param aInd Vector of indices of the rows at which the data (i.e. \code{covs}) switches to another animal. Ignored unless \code{CT=TRUE}.
+#' @param rateMatrix logical indicating whether or not to return the transition rate matrix. Ignored unless \code{CT=TRUE}.
 #' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.
+#' @param check logical indicating whether or not to check transition probability matrix for issues. Ignored unless \code{CT=TRUE}.
 #'
 #' @return Three dimensional array \code{trMat}, such that \code{trMat[,,t]} is the transition matrix at
 #' time t.
-trMatrix_rcpp <- function(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric( c()), rateMatrix = FALSE, aInd = as.integer( c()), maxRate = NA_real_) {
-    .Call('_momentuHMM_trMatrix_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs, betaRef, CT, dt, rateMatrix, aInd, maxRate)
+trMatrix_rcpp <- function(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric( c()), aInd = as.integer( c()), rateMatrix = FALSE, maxRate = NA_real_, check = TRUE) {
+    .Call('_momentuHMM_trMatrix_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs, betaRef, CT, dt, aInd, rateMatrix, maxRate, check)
 }
 
