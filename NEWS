@@ -1,4 +1,4 @@
-momentuHMM 2.0.0 2022-06-09
+momentuHMM 2.0.0 2022-06-14
 -----------------
 NEW FEATURES
 
@@ -19,6 +19,8 @@ CHANGES
 * raster package moved to 'Imports'
 
 * 'fixPar' argument cannot be specified for circular distribution parameters unless 'DM' is also specified
+
+* 'initialValues' (Par0, beta0, delta0) are now returned in 'conditions' list of 'momentuHMM' objects
 
 BUG FIXES
 
