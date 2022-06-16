@@ -52,6 +52,7 @@ MIfitHMM(miData, ...)
   centroids = NULL,
   angleCovs = NULL,
   altCoordNames = NULL,
+  gradient = FALSE,
   method = "IS",
   parIS = 1000,
   dfSim = Inf,
@@ -109,6 +110,7 @@ MIfitHMM(miData, ...)
   centroids = NULL,
   angleCovs = NULL,
   altCoordNames = NULL,
+  gradient = FALSE,
   method = "IS",
   parIS = 1000,
   dfSim = Inf,
@@ -239,6 +241,8 @@ from which distance and angle covariates will be calculated based on the locatio
 See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.}
 
 \item{altCoordNames}{Character string indicating an alternative name for the returned location data. See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.}
+
+\item{gradient}{Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. See \code{\link{prepData}}.}
 
 \item{method}{Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 

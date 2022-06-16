@@ -1,5 +1,5 @@
 #' @importFrom stats formula terms.formula
-getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInflation,circularAngleMean,ParChecks=TRUE,wlag=FALSE){
+getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInflation,circularAngleMean,ParChecks=TRUE,wlag=FALSE,spatialCovs=NULL){
   
   distnames<-names(dist)
   fullDM <- vector('list',length(dist))
@@ -85,6 +85,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
       }
       for(j in DMnames){
         if(grepl("langevin\\(",j)) {
+          stop("Langevin models cannot be specified using DM formulas; they must be manually specified as a DM matrix")
           if(!(dist[[i]] %in% rwdists)) stop("langevin() special formula can only be used for normal random walk data stream distributions")
           if(!grepl("mean",j))
             stop("langevin() special formula can only be used for the means of normal random walk data stream distributions")
@@ -153,6 +154,14 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
           if(!all(grepl("mean",rownames(bounds[[i]])[which(apply(DM[[i]],1,function(x) any(grepl("langevin\\(",x))))])))
             stop("langevin() special formula can only be used for the means of normal random walk data stream distributions")
           lanInd[[i]] <- c(lanInd[[i]],cov)
+          if(!is.null(spatialCovs)){
+            negInd <- grepl("langevin(-",cov,fixed = TRUE)
+            cov <- gsub("langevin(","langevin(get_grad(mu.x_tm1,mu.y_tm1,spatialCovs$",cov,fixed=TRUE)
+            cov <- gsub("-","",cov,fixed=TRUE)
+            cov <- gsub(".x)",",1))",cov,fixed=TRUE)
+            cov <- gsub(".y)",",2))",cov,fixed=TRUE)
+            if(negInd) cov <- gsub("))",",-1))",cov,fixed=TRUE)
+          }
         }
         form<-stats::formula(paste("~",cov))
         varform<-all.vars(form)
@@ -265,7 +274,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
     rownames(simpDM[[i]]) <- rownames(bounds[[i]])
   }
   
-  return(list(fullDM=simpDM,DMind=DMind,lag=lag))
+  return(list(fullDM=simpDM,DMind=DMind,lag=lag,langInd = any(!is.null(unlist(lanInd)))))
 }
 
 get_crwlag <- function(form,clag){

@@ -417,6 +417,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       cSpline <- splines2::cSpline
       iSpline <- splines2::iSpline
     }
+    get_grad <- get_grad
+    dxdy <- dxdy
+    gridCell <- gridCell
     pkgs <- c("momentuHMM")
   } else { 
     doParallel::registerDoParallel(cores=ncores)
@@ -439,6 +442,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     
     # extract simulation parameters from model
     nbStates <- length(model$stateNames)
+    IDs <- unique(model$data$ID)
     dist<-model$conditions$dist
     distnames<-names(dist)
     
@@ -582,6 +586,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     distnames<-names(dist)
     if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
     Par <- Par[distnames]
+    IDs <- 1:nbAnimals
     
     if(is.null(formulaPi)){
       formPi <- ~1
@@ -1209,6 +1214,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     wntheta <- w2wn(beta0$theta,workBounds$theta)
   }
   
+  langInd <- any(unlist(lapply(inputs$DM,function(x) grepl("langevin(",x,fixed=TRUE))))
+  if(langInd & nbSpatialCovs) colRast <- lapply(spatialCovs,collapseRaster)
+  else colRast <- NULL
+  
   mix <- rep(1,nbAnimals)
   
   if(!is.null(lambda)){
@@ -1229,12 +1238,12 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       
       # number of observations for animal zoo
       nbObs <- allNbObs[zoo]
-      d <- data.frame(ID=factor(rep(zoo,nbObs)))
+      d <- data.frame(ID=factor(rep(IDs[zoo],nbObs)))
       
       ###############################
       ## Simulate covariate values ##
       ###############################
-      subCovs<-data.frame(ID=rep(factor(zoo,levels=1:nbAnimals),nbObs))
+      subCovs<-data.frame(ID=rep(factor(IDs[zoo],levels=IDs),nbObs))
       if(nbCovs>0) {
         # select covariate values which concern the current animal
         if(zoo<2)
@@ -1290,7 +1299,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         DMcov <- stats::model.matrix(newformula,subCovs)
         
         # format parameters
-        DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean)
+        DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,spatialCovs=colRast)
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
         wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
@@ -1375,7 +1384,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         }
         
         # get max crw lag
-        maxlag <- getDM(cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE)$lag
+        maxlag <- getDM(cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE,spatialCovs=colRast)$lag
         
         covsPi <- stats::model.matrix(formPi,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
         pie <- mlogit(wnpi,covsPi,nbCovsPi,1,mixtures)
@@ -1420,7 +1429,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         
         if(nbSpatialCovs |  length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
           # format parameters
-          DMinputs<-getDM(cbind(subCovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE],subSpatialcovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE)
+          DMinputs<-getDM(cbind(subCovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE],subSpatialcovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE,spatialCovs=colRast)
           fullDM <- DMinputs$fullDM
           DMind <- DMinputs$DMind
           wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
@@ -1735,6 +1744,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         }
       }
       simDat$data <- cbind(simDat$data,simDat$allSpatialcovs)
+      if(langInd){
+        simDat$data <- getGradients(simDat$data,spatialCovs,paste0(mvnCoords,c(".x",".y")))
+      }
     }
     
     if(length(centerInd)){

@@ -349,3 +349,100 @@ delta_bc <- function(m){
   }
   m
 }
+
+collapseRaster <- function(rast){
+  if (!requireNamespace("raster", quietly = TRUE)) {
+    stop("Package \"raster\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+  lim <- as.vector(raster::extent(rast))
+  res <- res(rast)
+  xgrid <- seq(lim[1] + res[1]/2, lim[2] - res[1]/2, by = res[1])
+  ygrid <- seq(lim[3] + res[2]/2, lim[4] - res[2]/2, by = res[2])
+  z <- t(apply(raster::as.matrix(rast), 2, rev))
+  return(list(x = xgrid, y = ygrid, z = z))
+}
+
+gridCell <- function(loc, xgrid, ygrid, covmat){
+  ix <- findInterval(loc[1], xgrid)
+  iy <- findInterval(loc[2], ygrid)
+  coords <- c(xgrid[ix], xgrid[ix + 1], ygrid[iy], ygrid[iy + 1])
+  values <- covmat[ix:(ix + 1), iy:(iy + 1)]
+  return(list(coords = coords, values = values))
+}
+
+dxdy <- function(loc,x_grid,y_grid,covmat,dir){
+  cell <- tryCatch(gridCell(loc = loc, xgrid = x_grid, ygrid = y_grid, 
+                                     covmat = covmat),error=function(e) e)
+  if(!inherits(cell,"error") && length(cell$coords)==4 && all(dim(cell$values)==2)){
+    x <- cell$coords[1:2]
+    y <- cell$coords[3:4]
+    f <- cell$values
+    if(dir==1){
+      dfdx <- ((y[2] - loc[2]) * (f[2, 1] - f[1, 1]) + (loc[2] - 
+                                                          y[1]) * (f[2, 2] - f[1, 2]))/((y[2] - y[1]) * (x[2] - x[1]))
+      return(dfdx)
+    } else {
+      dfdy <- ((x[2] - loc[1]) * (f[1, 2] - f[1, 1]) + (loc[1] - 
+                                                          x[1]) * (f[2, 2] - f[2, 1]))/((y[2] - y[1]) * (x[2] - x[1]))
+      return(dfdy)
+    }
+  } else return(0)
+}
+
+get_grad <- function(locx,locy,rast,dir=1,sign=1){
+  loc <- cbind(locx,locy)
+  apply(loc,1,function(x) sign*dxdy(x,rast$x,rast$y,rast$z,dir))
+}
+
+biGrad <- function(loc, covlist) {
+  J <- length(covlist)
+  grad_val <- sapply(1:J, function(j) {
+    x_grid <- covlist[[j]]$x
+    y_grid <- covlist[[j]]$y
+    covmat <- covlist[[j]]$z
+    cell <- gridCell(loc = loc, xgrid = x_grid, ygrid = y_grid, 
+                     covmat = covmat)
+    x <- cell$coords[1:2]
+    y <- cell$coords[3:4]
+    f <- cell$values
+    dfdx <- ((y[2] - loc[2]) * (f[2, 1] - f[1, 1]) + (loc[2] - 
+                                                        y[1]) * (f[2, 2] - f[1, 2]))/((y[2] - y[1]) * (x[2] - 
+                                                                                                         x[1]))
+    dfdy <- ((x[2] - loc[1]) * (f[1, 2] - f[1, 1]) + (loc[1] - 
+                                                        x[1]) * (f[2, 2] - f[2, 1]))/((y[2] - y[1]) * (x[2] - 
+                                                                                                         x[1]))
+    return(c(dfdx, dfdy))
+  })
+  return(grad_val)
+}
+
+biGradArray <- function(locs, covlist){
+  if (!inherits(locs, "matrix")) 
+    stop("'locs' must be a matrix")
+  grad <- unlist(lapply(1:nrow(locs), function(i) biGrad(loc = locs[i,], covlist = covlist)))
+  gradarray <- array(grad, c(2, length(covlist), nrow(locs)))
+  gradarray <- aperm(gradarray, c(3, 1, 2))
+  return(gradarray)
+}
+
+#' Calculate gradient of spatial covariates using bilinear interpolation
+#'
+#' @param data Data frame of data streams. At a minimum, it must contain fields matching \code{coordNames}
+#' @param spatialCovs List of \code{\link[raster]{raster}} layer objects for spatially referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
+#' layer(s) based on the location data for each time step.
+#' @param coordNames Names of the coordinates in \code{data}. Default: \code{c("x","y")}.
+#' @return The gradients are appended to \code{data} with ``\code{.x}'' (easting gradient) and ``\code{.y}'' (northing gradient) suffixes added to the names of \code{spatialCovs}. For example, if \code{cov1} is the name of a spatial covariate, then the returned \code{data} object will include the fields ``\code{cov1.x}'' and ``\code{cov1.y}''.
+#' @export
+getGradients <- function(data, spatialCovs, coordNames=c("x","y")){
+  covlist <- lapply(spatialCovs, collapseRaster)
+  gradarray <- biGradArray(locs = as.matrix(data[coordNames]), covlist = covlist)
+  covNames <- names(covlist)
+  gradNames <- c("x","y")
+  for(i in 1:length(covNames)){
+    for(j in 1:length(gradNames)){
+      data[[paste0(covNames[i],".",gradNames[j])]] <- gradarray[,j,i]
+    }
+  }
+  return(data)
+}

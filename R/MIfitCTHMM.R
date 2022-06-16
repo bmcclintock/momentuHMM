@@ -99,6 +99,7 @@ MIfitCTHMM <- function(miData, ...) {
 #' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{miData$crwPredict} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 #' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.
 #' @param altCoordNames Character string indicating an alternative name for the returned location data. See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.
+#' @param gradient Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. See \code{\link{prepData}}.
 #' @param method Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param parIS Size of the parameter importance sample. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param dfSim Degrees of freedom for the t approximation to the parameter posterior. See 'df' argument in \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
@@ -160,7 +161,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
                    nlmPar = NULL, fit = TRUE, useInitial = FALSE,
                    DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL, betaRef = NULL, deltaCons = NULL,
                    mvnCoords = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
-                   covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL, 
+                   covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL, gradient=FALSE,
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
                    fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, export = NULL,
                    rast, directions=4, zero.idx=integer(), interpMethod="ShortestPath",
@@ -186,7 +187,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
                                        nlmPar, fit, useInitial,
                                        DM, userBounds, workBounds, betaCons, deltaCons,
                                        mvnCoords, knownStates, fixPar, retryFits, retrySD, optMethod, control, prior, modelName,
-                                       covNames, spatialCovs, centers, centroids, angleCovs, altCoordNames,
+                                       covNames, spatialCovs, centers, centroids, angleCovs, altCoordNames, gradient,
                                        method, parIS, dfSim, grid.eps, crit, scaleSim, quad.ask, force.quad,
                                        fullPost, dfPostIS, scalePostIS,thetaSamp,export,
                                        rast, directions, zero.idx, interpMethod,
@@ -308,7 +309,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
           }
           if(!CTDS){
             df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",Time.name,tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
-            pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames),error=function(e) e)
+            pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient),error=function(e) e)
           } else {
             df<-data.frame(x=locs$mu.x,y=locs$mu.y,time=predData[[Time.name]],predData[,c("ID",tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
             pD <- tryCatch(prepCTDS(df, Time.unit=Time.unit, rast=rast, directions=directions, zero.idx=zero.idx, interpMethod=interpMethod,
@@ -486,7 +487,7 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
                        nlmPar = NULL, fit = TRUE, useInitial = FALSE,
                        DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL, deltaCons = NULL,
                        mvnCoords = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
-                       covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL,
+                       covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL, gradient=FALSE,
                        method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
                        fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, export = NULL,
                        rast, directions=4, zero.idx=integer(), interpMethod="ShortestPath",
@@ -613,7 +614,7 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
                               df[which(df$locType=="p"),"y"] <- locs[which(locs$locType=="p"),"y"]
                               df$locType <- NULL
                               if(!CTDS){
-                                pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,hierLevels=levels(predData$level),coordLevel=attr(predData,"coordLevel")),error=function(e) e)
+                                pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient,hierLevels=levels(predData$level),coordLevel=attr(predData,"coordLevel")),error=function(e) e)
                               } else {
                                 # fill in NA locations for other levels
                                 coordLevel <- attr(predData,"coordLevel")

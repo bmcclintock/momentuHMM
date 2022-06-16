@@ -119,6 +119,9 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       cSpline <- splines2::cSpline
       iSpline <- splines2::iSpline
     }
+    get_grad <- get_grad
+    dxdy <- dxdy
+    gridCell <- gridCell
   } else { 
     doParallel::registerDoParallel(cores=ncores)
     pkgs <- NULL
@@ -140,6 +143,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     
     # extract simulation parameters from model
     nbStates <- length(model$stateNames)
+    IDs <- unique(model$data$ID)
     dist<-model$conditions$dist
     distnames<-names(dist)
     
@@ -294,6 +298,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     #if(!is.null(workBounds$delta)) stop("'workBounds$delta' cannot be specified; use 'hierDelta' instead")
     
     distnames <- names(dist)
+    IDs <- 1:nbAnimals
     
     if(is.null(formulaPi)){
       formPi <- ~1
@@ -1050,6 +1055,10 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     wntheta <- w2wn(beta0$theta,wworkBounds$theta)
   }
   
+  langInd <- any(unlist(lapply(inputs$DM,function(x) grepl("langevin(",x,fixed=TRUE))))
+  if(langInd & nbSpatialCovs) colRast <- lapply(spatialCovs,collapseRaster)
+  else colRast <- NULL
+  
   mix <- rep(1,nbAnimals)
   
   if(!is.null(lambda)){
@@ -1072,12 +1081,12 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       
       # number of observations for animal zoo
       nbObs <- allNbObs[zoo]
-      d <- data.frame(ID=factor(rep(zoo,nbObs)),level=factor(level[[zoo]],levels=lLevels[[zoo]]))
+      d <- data.frame(ID=factor(rep(IDs[zoo],nbObs)),level=factor(level[[zoo]],levels=lLevels[[zoo]]))
       
       ###############################
       ## Simulate covariate values ##
       ###############################
-      subCovs<-data.frame(ID=rep(factor(zoo,levels=1:nbAnimals),nbObs),level=factor(level[[zoo]],levels=lLevels[[zoo]]))
+      subCovs<-data.frame(ID=rep(factor(IDs[zoo],levels=IDs),nbObs),level=factor(level[[zoo]],levels=lLevels[[zoo]]))
       if(nbCovs>0) {
         # select covariate values which concern the current animal
         if(zoo<2)
@@ -1143,7 +1152,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         DMcov <- stats::model.matrix(newformula,subCovs)
         
         # format parameters
-        DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean)
+        DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,spatialCovs=colRast)
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
         wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
@@ -1235,7 +1244,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         }
         
         # get max crw lag
-        maxlag <- getDM(cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE)$lag
+        maxlag <- getDM(cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE,spatialCovs=colRast)$lag
         
         covsPi <- stats::model.matrix(formPi,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
         pie <- mlogit(wnpi,covsPi,nbCovsPi,1,mixtures)
@@ -1323,7 +1332,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
             
             if(nbSpatialCovs |  length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
               # format parameters
-              DMinputs<-getDM(cbind(subCovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE],subSpatialcovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE)
+              DMinputs<-getDM(cbind(subCovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE],subSpatialcovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE,spatialCovs=colRast)
               fullDM <- DMinputs$fullDM
               DMind <- DMinputs$DMind
               wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
@@ -1686,6 +1695,9 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         }
       }
       simDat$data <- cbind(simDat$data,simDat$allSpatialcovs)
+      if(langInd){
+        simDat$data <- getGradients(simDat$data,spatialCovs,paste0(mvnCoords,c(".x",".y")))
+      }
     }
     
     if(length(centerInd)){

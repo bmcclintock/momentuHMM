@@ -18,6 +18,7 @@ prepData(data, ...)
   centroids = NULL,
   angleCovs = NULL,
   altCoordNames = NULL,
+  gradient = FALSE,
   ...
 )
 
@@ -31,6 +32,7 @@ prepData(data, ...)
   centroids = NULL,
   angleCovs = NULL,
   altCoordNames = NULL,
+  gradient = FALSE,
   hierLevels,
   coordLevel,
   ...
@@ -80,6 +82,8 @@ or \code{\link{MIfitHMM}}.}
 using \code{\link{circAngles}}.}
 
 \item{altCoordNames}{Character string indicating an alternative name for the returned location data. If provided, then \code{prepData} will return easting (or longitude) coordinate names as \code{paste0(altCoordNames,".x")} and northing (or latitude) as \code{paste0(altCoordNames,".y")} instead of \code{x} and \code{y}, respectively. This can be useful for location data that are intended to be modeled using a bivariate normal distribution (see \code{\link{fitHMM}}). Ignored unless \code{coordNames} are provided.}
+
+\item{gradient}{Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. If \code{TRUE}, the gradients are returned with ``\code{.x}'' (easting gradient) and ``\code{.y}'' (northing gradient) suffixes added to the names of \code{spatialCovs}. For example, if \code{cov1} is the name of a spatial covariate, then the returned \code{\link{momentuHMMData}} object will include the fields ``\code{cov1.x}'' and ``\code{cov1.y}''.}
 
 \item{hierLevels}{Character vector indicating the levels of the hierarchy and their order, from top (coarsest scale) to bottom (finest scale), that are included in \code{data$level}. For example, for a 2-level hierarchy then 
 \code{hierLevels=c("1","2i","2")} indicates \code{data$level} for each observation can be one of three factor levels: "1" (coarse scale), "2i" (initial fine scale), and "2" (fine scale).  Ignored if \code{data} is a \code{\link{crwHierData}} object.}

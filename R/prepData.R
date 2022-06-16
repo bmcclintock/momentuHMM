@@ -45,6 +45,7 @@ prepData <- function(data, ...) {
 #' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{data} or \code{spatialCovs} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 #' using \code{\link{circAngles}}.
 #' @param altCoordNames Character string indicating an alternative name for the returned location data. If provided, then \code{prepData} will return easting (or longitude) coordinate names as \code{paste0(altCoordNames,".x")} and northing (or latitude) as \code{paste0(altCoordNames,".y")} instead of \code{x} and \code{y}, respectively. This can be useful for location data that are intended to be modeled using a bivariate normal distribution (see \code{\link{fitHMM}}). Ignored unless \code{coordNames} are provided.
+#' @param gradient Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. If \code{TRUE}, the gradients are returned with ``\code{.x}'' (easting gradient) and ``\code{.y}'' (northing gradient) suffixes added to the names of \code{spatialCovs}. For example, if \code{cov1} is the name of a spatial covariate, then the returned \code{\link{momentuHMMData}} object will include the fields ``\code{cov1.x}'' and ``\code{cov1.y}''.
 
 #' @return An object \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}}, i.e., a dataframe of:
 #' \item{ID}{The ID(s) of the observed animal(s)}
@@ -106,7 +107,7 @@ prepData <- function(data, ...) {
 #' @export
 #' @importFrom sp spDistsN1
 # @importFrom raster cellFromXY getValues getZ is.factor levels
-prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames=NULL, ...)
+prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames=NULL, gradient=FALSE, ...)
 {
   if(is.crwData(data)){
     predData <- data$crwPredict
@@ -152,7 +153,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
   # for directing hierarchical data to prepData.hierarchical
   hierArgs <- list(...)
   if("hierLevels" %in% names(hierArgs)){
-    return(prepData.hierarchical(data, type, coordNames, covNames, spatialCovs, centers, centroids, angleCovs, altCoordNames, ...))
+    return(prepData.hierarchical(data, type, coordNames, covNames, spatialCovs, centers, centroids, angleCovs, altCoordNames, gradient, ...))
   } else if("coordLevel" %in% names(hierArgs)) stop("'coordLevel' cannot be specified unless 'hierLevels' is also specified")
   
   chkDots(...)
@@ -198,6 +199,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
       }
     }
     if(any(spatialcovnames %in% names(data))) stop("spatialCovs cannot have same names as data")
+    if(gradient & any(paste0(rep(c(spatialcovnames),each=2),c(".x",".y")) %in% names(data))) stop(paste0(rep(c(spatialcovnames),each=2),c(".x",".y"))[which(paste0(rep(c(spatialcovnames),each=2),c(".x",".y")) %in% names(data))],"cannot be in data when gradient=TRUE")
     if(anyDuplicated(spatialcovnames)) stop("spatialCovs must have unique names")
   } else nbSpatialCovs <- 0
   
@@ -304,20 +306,28 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
         fullspCovs <- spatialCovs[[j]][getCells]
         if(inherits(spatialCovs[[j]],"RasterLayer")){
           spCovs<-cbind(spCovs,fullspCovs)
+          if(gradient){
+            spCovs <- cbind(spCovs,getGradients(dataHMM,spatialCovs[spatialcovnames[j]],coordNames = coordNames)[,paste0(spatialcovnames[j],c(".x",".y"))])
+          }
         } else {
           tmpspCovs <- numeric(nrow(dataHMM))
+          if(gradient) tmpspCovs <- matrix(0,nrow(dataHMM),3)
           zname <- names(attributes(spatialCovs[[j]])$z)
           if(!(zname %in% names(data))) stop(zname," z-value for ",spatialcovnames[j], "not found in data")
           zvalues <- raster::getZ(spatialCovs[[j]])
           if(!all(unique(data[[zname]]) %in% zvalues)) stop("data$",zname," includes z-values with no matching raster layer in spatialCovs$",spatialcovnames[j])
           for(ii in 1:length(zvalues)){
-            tmpspCovs[which(data[[zname]]==zvalues[ii])] <- fullspCovs[which(data[[zname]]==zvalues[ii]),ii]
+            if(!gradient) tmpspCovs[which(data[[zname]]==zvalues[ii])] <- fullspCovs[which(data[[zname]]==zvalues[ii]),ii]
+            else {
+              tmpspCovs[which(data[[zname]]==zvalues[ii]),] <- as.matrix(cbind(fullspCovs[which(data[[zname]]==zvalues[ii]),ii],getGradients(dataHMM,lapply(spatialCovs[j],function(x) x[[which(zvalues==zvalues[ii])]]),coordNames = coordNames)[which(data[[zname]]==zvalues[ii]),paste0(spatialcovnames[j],c(".x",".y"))]))
+            }
           }
           spCovs<-cbind(spCovs,tmpspCovs)
         }
       }
       spCovs<-data.frame(spCovs)
-      names(spCovs)<-spatialcovnames
+      if(!gradient) names(spCovs)<-spatialcovnames
+      else names(spCovs) <- paste0(rep(spatialcovnames,each=3),c("",".x",".y"))
       for(j in spatialcovnames){
         if(any(raster::is.factor(spatialCovs[[j]]))){
           spCovs[[j]] <- factor(spCovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
@@ -407,7 +417,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
 #' @export
 #' @importFrom sp spDistsN1
 # @importFrom raster cellFromXY getValues getZ
-prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames = NULL, hierLevels, coordLevel, ...)
+prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames = NULL, gradient = FALSE, hierLevels, coordLevel, ...)
 {
   if(is.crwHierData(data)){
     predData <- data$crwPredict
@@ -533,6 +543,7 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
       }
     }
     if(any(spatialcovnames %in% names(data))) stop("spatialCovs cannot have same names as data")
+    if(gradient & any(paste0(rep(c(spatialcovnames),each=2),c(".x",".y")) %in% names(data))) stop(paste0(rep(c(spatialcovnames),each=2),c(".x",".y"))[which(paste0(rep(c(spatialcovnames),each=2),c(".x",".y")) %in% names(data))],"cannot be in data when gradient=TRUE")
     if(anyDuplicated(spatialcovnames)) stop("spatialCovs must have unique names")
   } else nbSpatialCovs <- 0
   
@@ -661,6 +672,9 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
         fullspCovs <- spatialCovs[[j]][getCells]
         if(inherits(spatialCovs[[j]],"RasterLayer")){
           spCovs<-cbind(spCovs,fullspCovs)
+          if(gradient){
+            spCovs <- cbind(spCovs,getGradients(dataHMM,spatialCovs[spatialcovnames[j]],coordNames = coordNames)[,paste0(spatialcovnames[j],c(".x",".y"))])
+          }
         } else {
           tmpspCovs <- numeric(nrow(dataHMM))
           zname <- names(attributes(spatialCovs[[j]])$z)
@@ -668,13 +682,17 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
           zvalues <- raster::getZ(spatialCovs[[j]])
           if(!all(unique(data[[zname]]) %in% zvalues)) stop("data$",zname," includes z-values with no matching raster layer in spatialCovs$",spatialcovnames[j])
           for(ii in 1:length(zvalues)){
-            tmpspCovs[which(data[[zname]]==zvalues[ii])] <- fullspCovs[which(data[[zname]]==zvalues[ii]),ii]
+            if(!gradient) tmpspCovs[which(data[[zname]]==zvalues[ii])] <- fullspCovs[which(data[[zname]]==zvalues[ii]),ii]
+            else {
+              tmpspCovs[which(data[[zname]]==zvalues[ii]),] <- as.matrix(cbind(fullspCovs[which(data[[zname]]==zvalues[ii]),ii],getGradients(dataHMM,lapply(spatialCovs[j],function(x) x[[which(zvalues==zvalues[ii])]]),coordNames = coordNames)[which(data[[zname]]==zvalues[ii]),paste0(spatialcovnames[j],c(".x",".y"))]))
+            }
           }
           spCovs<-cbind(spCovs,tmpspCovs)
         }
       }
       spCovs<-data.frame(spCovs)
-      names(spCovs)<-spatialcovnames
+      if(!gradient) names(spCovs)<-spatialcovnames
+      else names(spCovs) <- paste0(rep(spatialcovnames,each=3),c("",".x",".y"))
       for(j in spatialcovnames){
         if(any(raster::is.factor(spatialCovs[[j]]))){
           spCovs[[j]] <- factor(spCovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
