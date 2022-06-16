@@ -307,7 +307,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
         if(inherits(spatialCovs[[j]],"RasterLayer")){
           spCovs<-cbind(spCovs,fullspCovs)
           if(gradient){
-            spCovs <- cbind(spCovs,getGradients(dataHMM,spatialCovs[spatialcovnames[j]],coordNames = coordNames)[,paste0(spatialcovnames[j],c(".x",".y"))])
+            spCovs <- cbind(spCovs,getGradients(dataHMM,spatialCovs[spatialcovnames[j]],coordNames = outNames)[,paste0(spatialcovnames[j],c(".x",".y"))])
           }
         } else {
           tmpspCovs <- numeric(nrow(dataHMM))
@@ -319,7 +319,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
           for(ii in 1:length(zvalues)){
             if(!gradient) tmpspCovs[which(data[[zname]]==zvalues[ii])] <- fullspCovs[which(data[[zname]]==zvalues[ii]),ii]
             else {
-              tmpspCovs[which(data[[zname]]==zvalues[ii]),] <- as.matrix(cbind(fullspCovs[which(data[[zname]]==zvalues[ii]),ii],getGradients(dataHMM,lapply(spatialCovs[j],function(x) x[[which(zvalues==zvalues[ii])]]),coordNames = coordNames)[which(data[[zname]]==zvalues[ii]),paste0(spatialcovnames[j],c(".x",".y"))]))
+              tmpspCovs[which(data[[zname]]==zvalues[ii]),] <- as.matrix(cbind(fullspCovs[which(data[[zname]]==zvalues[ii]),ii],getGradients(dataHMM,lapply(spatialCovs[j],function(x) x[[which(zvalues==zvalues[ii])]]),coordNames = outNames)[which(data[[zname]]==zvalues[ii]),paste0(spatialcovnames[j],c(".x",".y"))]))
             }
           }
           spCovs<-cbind(spCovs,tmpspCovs)

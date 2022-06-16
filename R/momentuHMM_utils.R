@@ -356,9 +356,9 @@ collapseRaster <- function(rast){
          call. = FALSE)
   }
   lim <- as.vector(raster::extent(rast))
-  res <- res(rast)
-  xgrid <- seq(lim[1] + res[1]/2, lim[2] - res[1]/2, by = res[1])
-  ygrid <- seq(lim[3] + res[2]/2, lim[4] - res[2]/2, by = res[2])
+  rres <- raster::res(rast)
+  xgrid <- seq(lim[1] + rres[1]/2, lim[2] - rres[1]/2, by = rres[1])
+  ygrid <- seq(lim[3] + rres[2]/2, lim[4] - rres[2]/2, by = rres[2])
   z <- t(apply(raster::as.matrix(rast), 2, rev))
   return(list(x = xgrid, y = ygrid, z = z))
 }
