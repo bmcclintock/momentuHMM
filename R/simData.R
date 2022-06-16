@@ -442,7 +442,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     
     # extract simulation parameters from model
     nbStates <- length(model$stateNames)
-    IDs <- unique(model$data$ID)
     dist<-model$conditions$dist
     distnames<-names(dist)
     
@@ -483,14 +482,35 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
     parindex <- c(0,cumsum(unlist(parCount))[-length(model$conditions$fullDM)])
     names(parindex) <- distnames
+    idInd <- FALSE
+    # check for ID in DM and formulas; if present use IDs from model$data
+    if(any(grepl("ID",labels(terms(formula))))) idInd <- TRUE
+    if(any(grepl("ID",labels(terms(formulaDelta))))) idInd <- TRUE
+    if(any(grepl("ID",labels(terms(formulaPi))))) idInd <- TRUE
     for(i in distnames){
       if(!is.null(DM[[i]])){
         Par[[i]] <- model$mod$estimate[parindex[[i]]+1:parCount[[i]]]
         if(!isFALSE(circularAngleMean[[i]])){
           names(Par[[i]]) <- unique(gsub("cos","",gsub("sin","",colnames(model$conditions$fullDM[[i]]))))
         } else names(Par[[i]])<-colnames(model$conditions$fullDM[[i]])
+        if(is.list(DM[[i]])){
+          for(j in names(DM[[i]])){
+            if(any(grepl("ID",labels(terms(DM[[i]][[j]]))))) idInd <- TRUE
+          }
+        } else {
+          if(any(mapply(function(x) any(grepl(paste0("ID",x),DM[[i]])),unique(model$data$ID)))) idInd <- TRUE
+        }
       }
     }
+    if(idInd){
+      IDs <- unique(model$data$ID)
+      if(length(IDs)!=nbAnimals) stop("nbAnimals must be =",length(IDs)," to simulate from this model (because ID is included as a covariate)")
+      #if(length(IDs)>nbAnimals) IDs <- IDs[1:nbAnimals]
+      #else if(length(IDs)<nbAnimals) {
+      # idInd <- which(!(factor(1:nbAnimals) %in% levels(IDs)))[1:(nbAnimals-length(IDs))]
+      # IDs <- factor(c(IDs,factor((1:nbAnimals)[idInd])))
+      #}
+    } else IDs <- 1:nbAnimals
     for(i in distnames[which(dist %in% angledists)]){
       if(!estAngleMean[[i]]){
         estAngleMean[[i]]<-TRUE
