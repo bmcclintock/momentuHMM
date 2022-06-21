@@ -350,6 +350,11 @@ delta_bc <- function(m){
   m
 }
 
+#' Transform a raster into a (x,y,z) list
+#'
+#' @param rast \code{\link[raster]{raster}} layer object for spatially referenced covariates.
+#' @return List of three elements: x (grid of x values), y (grid of y values), and z (matrix of values).
+#' @export
 collapseRaster <- function(rast){
   if (!requireNamespace("raster", quietly = TRUE)) {
     stop("Package \"raster\" needed for this function to work. Please install it.",
@@ -371,48 +376,26 @@ gridCell <- function(loc, xgrid, ygrid, covmat){
   return(list(coords = coords, values = values))
 }
 
-dxdy <- function(loc,x_grid,y_grid,covmat,dir){
-  cell <- tryCatch(gridCell(loc = loc, xgrid = x_grid, ygrid = y_grid, 
-                                     covmat = covmat),error=function(e) e)
-  if(!inherits(cell,"error") && length(cell$coords)==4 && all(dim(cell$values)==2)){
-    x <- cell$coords[1:2]
-    y <- cell$coords[3:4]
-    f <- cell$values
-    if(dir==1){
-      dfdx <- ((y[2] - loc[2]) * (f[2, 1] - f[1, 1]) + (loc[2] - 
-                                                          y[1]) * (f[2, 2] - f[1, 2]))/((y[2] - y[1]) * (x[2] - x[1]))
-      return(dfdx)
-    } else {
-      dfdy <- ((x[2] - loc[1]) * (f[1, 2] - f[1, 1]) + (loc[1] - 
-                                                          x[1]) * (f[2, 2] - f[2, 1]))/((y[2] - y[1]) * (x[2] - x[1]))
-      return(dfdy)
-    }
-  } else return(0)
-}
-
-get_grad <- function(locx,locy,rast,dir=1,sign=1){
-  loc <- cbind(locx,locy)
-  apply(loc,1,function(x) sign*dxdy(x,rast$x,rast$y,rast$z,dir))
-}
-
 biGrad <- function(loc, covlist) {
   J <- length(covlist)
   grad_val <- sapply(1:J, function(j) {
     x_grid <- covlist[[j]]$x
     y_grid <- covlist[[j]]$y
     covmat <- covlist[[j]]$z
-    cell <- gridCell(loc = loc, xgrid = x_grid, ygrid = y_grid, 
-                     covmat = covmat)
-    x <- cell$coords[1:2]
-    y <- cell$coords[3:4]
-    f <- cell$values
-    dfdx <- ((y[2] - loc[2]) * (f[2, 1] - f[1, 1]) + (loc[2] - 
-                                                        y[1]) * (f[2, 2] - f[1, 2]))/((y[2] - y[1]) * (x[2] - 
-                                                                                                         x[1]))
-    dfdy <- ((x[2] - loc[1]) * (f[1, 2] - f[1, 1]) + (loc[1] - 
-                                                        x[1]) * (f[2, 2] - f[2, 1]))/((y[2] - y[1]) * (x[2] - 
-                                                                                                         x[1]))
-    return(c(dfdx, dfdy))
+    cell <- tryCatch(gridCell(loc = loc, xgrid = x_grid, ygrid = y_grid, 
+                     covmat = covmat),error=function(e) e)
+    if(!inherits(cell,"error") && length(cell$coords)==4 && all(dim(cell$values)==2)){
+      x <- cell$coords[1:2]
+      y <- cell$coords[3:4]
+      f <- cell$values
+      dfdx <- ((y[2] - loc[2]) * (f[2, 1] - f[1, 1]) + (loc[2] - 
+                                                          y[1]) * (f[2, 2] - f[1, 2]))/((y[2] - y[1]) * (x[2] - 
+                                                                                                           x[1]))
+      dfdy <- ((x[2] - loc[1]) * (f[1, 2] - f[1, 1]) + (loc[1] - 
+                                                          x[1]) * (f[2, 2] - f[2, 1]))/((y[2] - y[1]) * (x[2] - 
+                                                                                                           x[1]))
+      return(c(dfdx, dfdy))
+    } else return(c(0,0))
   })
   return(grad_val)
 }
@@ -431,11 +414,13 @@ biGradArray <- function(locs, covlist){
 #' @param data Data frame of data streams. At a minimum, it must contain fields matching \code{coordNames}
 #' @param spatialCovs List of \code{\link[raster]{raster}} layer objects for spatially referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
 #' layer(s) based on the location data for each time step.
+#' @param collapseRast List of collapsed \code{\link[raster]{raster}} layer objects (see \code{\link{collapseRaster}}). Ignored unless \code{spatialCovs} is missing.
 #' @param coordNames Names of the coordinates in \code{data}. Default: \code{c("x","y")}.
 #' @return The gradients are appended to \code{data} with ``\code{.x}'' (easting gradient) and ``\code{.y}'' (northing gradient) suffixes added to the names of \code{spatialCovs}. For example, if \code{cov1} is the name of a spatial covariate, then the returned \code{data} object will include the fields ``\code{cov1.x}'' and ``\code{cov1.y}''.
 #' @export
-getGradients <- function(data, spatialCovs, coordNames=c("x","y")){
-  covlist <- lapply(spatialCovs, collapseRaster)
+getGradients <- function(data, spatialCovs, collapseRast, coordNames=c("x","y")){
+  if(!missing(spatialCovs)) covlist <- lapply(spatialCovs, collapseRaster)
+  else covlist <- collapseRast
   gradarray <- biGradArray(locs = as.matrix(data[coordNames]), covlist = covlist)
   covNames <- names(covlist)
   gradNames <- c("x","y")

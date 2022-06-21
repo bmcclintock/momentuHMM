@@ -752,6 +752,7 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     attr(mh$data,"CT") <- TRUE
     class(mh) <- append(class(mh),"CTHMM")
   }
+  attr(mh$data,"gradient") <- isTRUE(attr(im[[1]]$data,"gradient"))
   if(inherits(im[[1]],"ctds")){
     class(mh) <- append(class(mh),"ctds")
     class(mh$data) <- class(im[[1]]$data)

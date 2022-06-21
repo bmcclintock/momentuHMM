@@ -77,6 +77,7 @@
 #' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues.
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param export Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.
+#' @param gradient Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. If \code{TRUE}, the gradients are returned with ``\code{.x}'' (easting gradient) and ``\code{.y}'' (northing gradient) suffixes added to the names of \code{spatialCovs}. For example, if \code{cov1} is the name of a spatial covariate, then the returned \code{\link{momentuHMMData}} object will include the fields ``\code{cov1.x}'' and ``\code{cov1.y}''.
 #' 
 #' @return If the simulated data have no measurement error (i.e., \code{errorEllipse=NULL}), a \code{\link{momentuHMMData}} object, 
 #' i.e., a dataframe of:
@@ -128,7 +129,8 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                      errorEllipse=NULL,
                      maxRate=Inf,
                      ncores=1,
-                     export=NULL)
+                     export=NULL,
+                     gradient=FALSE)
 {
   
   if(!is.null(model)){
@@ -184,6 +186,7 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                                      errorEllipse,
                                      ncores,
                                      export=export,
+                                     gradient=gradient,
                                      CT=TRUE,
                                      maxRate=maxRate),warning=muffleCTwarning)
   
@@ -202,6 +205,7 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
   }
   attr(out,"CT") <- TRUE
   attr(out,"Time.name") <- timeName
+  attr(out,"gradient") <- ifelse(!is.null(model),isTRUE(attr(model$data,"gradient")),gradient)
   return(out)
   
 }

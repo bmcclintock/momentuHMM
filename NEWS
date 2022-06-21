@@ -1,4 +1,4 @@
-momentuHMM 2.0.0 2022-06-15
+momentuHMM 2.0.0 2022-06-21
 -----------------
 NEW FEATURES
 
@@ -11,6 +11,8 @@ NEW FEATURES
 * 'export' argument added to simulation and model fitting functions for exporting formula objects from the global environment when ncores>1
 
 * 'colors' argument added to 'plotSpatialCov' function for specifying raster colors
+
+* 'gradient' argument added to 'prepData' and 'simData' for calculating gradients of spatial covariates using bilinear interpolation
 
 CHANGES
 

@@ -63,7 +63,8 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
                         errorEllipse=NULL,
                         maxRate=Inf,
                         ncores=1,
-                        export=NULL)
+                        export=NULL,
+                        gradient=FALSE)
 {
   
   installDataTree()
@@ -125,6 +126,7 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
                                          errorEllipse,
                                          ncores,
                                          export,
+                                         gradient,
                                          CT=TRUE,
                                          maxRate=maxRate),warning=muffleCTwarning)
   
@@ -136,5 +138,6 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
   }
   attr(out,"CT") <- TRUE
   attr(out,"Time.name") <- "time"
+  attr(out,"gradient") <- ifelse(!is.null(model),isTRUE(attr(model$data,"gradient")),gradient)
   return(out)
 }

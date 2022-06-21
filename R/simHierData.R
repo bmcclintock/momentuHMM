@@ -67,6 +67,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                     errorEllipse=NULL,
                     ncores=1,
                     export=NULL,
+                    gradient=FALSE,
                     ...)
 {
   
@@ -119,9 +120,6 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       cSpline <- splines2::cSpline
       iSpline <- splines2::iSpline
     }
-    get_grad <- get_grad
-    dxdy <- dxdy
-    gridCell <- gridCell
   } else { 
     doParallel::registerDoParallel(cores=ncores)
     pkgs <- NULL
@@ -177,6 +175,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     if(is.null(model$condition$formulaPi)){
       formulaPi <- formPi <- ~1
     } else formulaPi <- formPi <- model$condition$formulaPi
+    gradient <- isTRUE(attr(model$data,"gradient"))
     
     Par <- model$mle[distnames]
     parCount<- lapply(model$conditions$fullDM,ncol)
@@ -730,6 +729,13 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   if(anyDuplicated(colnames(allCovs))) stop("covariates must have unique names")
   if(anyDuplicated(spatialcovnames)) stop("spatialCovs must have unique names")
+  if(gradient & nbSpatialCovs>0){
+    covnames <- colnames(allCovs)
+    if(!is.null(model)){
+      nogradcovnames <- covnames[which(!(covnames %in% paste0(rep(c(spatialcovnames),each=2),c(".x",".y"))))]
+    } else nogradcovnames <- covnames
+    if(any(paste0(rep(c(spatialcovnames),each=2),c(".x",".y")) %in% c(nogradcovnames,spatialcovnames,distnames,paste0(mvnCoords,c(".x",".y"))))) stop(paste0(rep(c(spatialcovnames),each=2),c(".x",".y"))[which(paste0(rep(c(spatialcovnames),each=2),c(".x",".y")) %in% c(nogradcovnames,spatialcovnames,distnames,paste0(mvnCoords,c(".x",".y"))))],"cannot be covariate name(s) when gradient=TRUE")
+  }
   if(nbSpatialCovs>0 & isTRUE(list(...)$ctds)){
     tmpSpNames <- NULL
     for(j in spatialcovnames){
@@ -743,8 +749,10 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
   }
   if(!is.null(model) & nbSpatialCovs>0){
-    if(!isTRUE(list(...)$ctds)) spInd <- which(!(colnames(allCovs) %in% spatialcovnames))
-    else {
+    if(!isTRUE(list(...)$ctds)){
+      if(gradient) spInd <- which(!(colnames(allCovs) %in% c(spatialcovnames,paste0(rep(spatialcovnames,each=2),c(".x",".y")))))
+      else spInd <- which(!(colnames(allCovs) %in% spatialcovnames))
+    } else {
       spInd <- which(!(colnames(allCovs) %in% tmpSpNames))
     }
     if(length(spInd)) {
@@ -900,6 +908,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       }
       rast[which(raster::values(rast==0))] <- NA
     }
+    collapseRast <- tmpColRast <- list()
     for(j in 1:nbSpatialCovs){
       for(i in 1:length(initialPosition)){
         if(is.na(raster::cellFromXY(spatialCovs[[j]],initialPosition[[i]]))) stop("initialPosition for individual ",i," is not within the spatial extent of the ",spatialcovnames[j]," raster")
@@ -914,6 +923,19 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       if(isTRUE(list(...)$ctds) && isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
       ) tmpCovs[,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))]<- spCov
       else tmpCovs[,spatialcovnames[j]] <- spCov
+      if(gradient){
+        if(inherits(spatialCovs[[j]],"RasterLayer")){
+          collapseRast[[spatialcovnames[j]]] <- collapseRaster(spatialCovs[[spatialcovnames[j]]])
+          tmpCovs[,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=initialPosition[[1]][1],y=initialPosition[[1]][2]),collapseRast=collapseRast[spatialcovnames[j]])[,paste0(spatialcovnames[j],c(".x",".y"))]
+        } else if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+          collapseRast[[spatialcovnames[j]]] <- list()
+          for(ii in 1:length(zvalues)){
+            collapseRast[[spatialcovnames[j]]][[which(zvalues==zvalues[ii])]] <- collapseRaster(spatialCovs[[spatialcovnames[j]]][[which(zvalues==zvalues[ii])]])
+          }
+          tmpColRast[[spatialcovnames[j]]] <- collapseRast[[spatialcovnames[j]]][[which(zvalues==tmpCovs[[zname]])]]
+          tmpCovs[,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=initialPosition[[1]][1],y=initialPosition[[1]][2]),collapseRast=tmpColRast)[,paste0(spatialcovnames[j],c(".x",".y"))]
+        }
+      }
     }
     if(ctdsCRW) tmpCovs[,paste0("crw.",1:directions)] <- 0
   }
@@ -1070,10 +1092,6 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     wntheta <- w2wn(beta0$theta,wworkBounds$theta)
   }
   
-  langInd <- any(unlist(lapply(inputs$DM,function(x) grepl("langevin(",x,fixed=TRUE))))
-  if(langInd & nbSpatialCovs) colRast <- lapply(spatialCovs,collapseRaster)
-  else colRast <- NULL
-  
   mix <- rep(1,nbAnimals)
   
   if(!is.null(lambda)){
@@ -1117,6 +1135,11 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       if(!isTRUE(list(...)$ctds)){
         subSpatialcovs<-as.data.frame(matrix(NA,nrow=nbObs,ncol=nbSpatialCovs))
         colnames(subSpatialcovs)<-spatialcovnames
+        if(gradient){
+          for(j in 1:nbSpatialCovs){
+            subSpatialcovs[,paste0(spatialcovnames[j],c(".x",".y"))] <- NA
+          }
+        }
       } else {
         subSpatialcovs<-as.data.frame(matrix(NA,nrow=nbObs,ncol=length(tmpSpNames)))
         colnames(subSpatialcovs)<-tmpSpNames
@@ -1167,7 +1190,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         DMcov <- stats::model.matrix(newformula,subCovs)
         
         # format parameters
-        DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,spatialCovs=colRast)
+        DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean)
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
         wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
@@ -1212,6 +1235,14 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
             if(spatialcovnames[j] %in% angleCovs) {
               subAnglecovs[1,spatialcovnames[j]] <- subSpatialcovs[1,j]
               subSpatialcovs[1,j] <- 0  # set to zero because can't have NA covariates
+            }
+            if(gradient){
+              if(inherits(spatialCovs[[j]],"RasterLayer")){
+                subSpatialcovs[1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X[1,1],y=X[1,2]),collapseRast=collapseRast[spatialcovnames[j]])[,paste0(spatialcovnames[j],c(".x",".y"))]
+              } else if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+                tmpColRast[[spatialcovnames[j]]] <- collapseRast[[spatialcovnames[j]]][[which(zvalues==subCovs[1,zname])]]
+                subSpatialcovs[1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X[1,1],y=X[1,2]),collapseRast=tmpColRast)[,paste0(spatialcovnames[j],c(".x",".y"))]
+              }
             }
           }
           if(ctdsCRW) subSpatialcovs[1,paste0("crw.",1:directions)] <- 0
@@ -1259,7 +1290,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         }
         
         # get max crw lag
-        maxlag <- getDM(cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE,spatialCovs=colRast)$lag
+        maxlag <- getDM(cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE)$lag
         
         covsPi <- stats::model.matrix(formPi,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
         pie <- mlogit(wnpi,covsPi,nbCovsPi,1,mixtures)
@@ -1347,7 +1378,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
             
             if(nbSpatialCovs |  length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
               # format parameters
-              DMinputs<-getDM(cbind(subCovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE],subSpatialcovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE,spatialCovs=colRast)
+              DMinputs<-getDM(cbind(subCovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE],subSpatialcovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE)
               fullDM <- DMinputs$fullDM
               DMind <- DMinputs$DMind
               wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
@@ -1562,6 +1593,14 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                     subAnglecovs[k+1,spatialcovnames[j]] <- subSpatialcovs[k+1,j]
                     subSpatialcovs[k+1,j] <- circAngles(subAnglecovs[c(k,k+1),spatialcovnames[j]],data.frame(x=X[c(k,k+1),1],y=X[c(k,k+1),2]))[2] 
                   }
+                  if(gradient){
+                    if(inherits(spatialCovs[[j]],"RasterLayer")){
+                      subSpatialcovs[k+1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X[k+1,1],y=X[k+1,2]),collapseRast=collapseRast[spatialcovnames[j]])[,paste0(spatialcovnames[j],c(".x",".y"))]
+                    } else if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+                      tmpColRast[[spatialcovnames[j]]] <- collapseRast[[spatialcovnames[j]]][[which(zvalues==subCovs[k+1,zname])]]
+                      subSpatialcovs[k+1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X[k+1,1],y=X[k+1,2]),collapseRast=tmpColRast)[,paste0(spatialcovnames[j],c(".x",".y"))]
+                    }
+                  }
                 }
               }
               
@@ -1689,7 +1728,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     
     if(nbSpatialCovs>0){
       if(!isTRUE(list(...)$ctds)) {
-        colnames(simDat$allSpatialcovs)<-spatialcovnames
+        colnames(simDat$allSpatialcovs)[1:nbSpatialCovs]<-spatialcovnames
         for(j in spatialcovnames){
           if(any(raster::is.factor(spatialCovs[[j]]))){
             simDat$allSpatialcovs[[j]] <- factor(simDat$allSpatialcovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
@@ -1710,9 +1749,6 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         }
       }
       simDat$data <- cbind(simDat$data,simDat$allSpatialcovs)
-      if(langInd){
-        simDat$data <- getGradients(simDat$data,spatialCovs,paste0(mvnCoords,c(".x",".y")))
-      }
     }
     
     if(length(centerInd)){
@@ -1771,6 +1807,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       #data$y <- prepDat$y
       #data <- data[,c("ID","step","angle",tmpNames,"x","y")]
     }
+    attr(simDat$data,"gradient") <- gradient
     
     # account for observation error (if any)
     if(!isTRUE(list(...)$CT)) out<-simObsData(momentuHierHMMData(simDat$data),lambda,errorEllipse,coordLevel)
@@ -1820,6 +1857,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                                              lambda,
                                              errorEllipse,
                                              ncores,
+                                             export=export,
+                                             gradient=gradient,
                                              ...),error=function(e) e))
       if(inherits(tmp,"error")){
         if(grepl("Try expanding the extent of the raster",tmp)) simCount <- simCount+1

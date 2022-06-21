@@ -4,13 +4,15 @@
 \alias{getGradients}
 \title{Calculate gradient of spatial covariates using bilinear interpolation}
 \usage{
-getGradients(data, spatialCovs, coordNames = c("x", "y"))
+getGradients(data, spatialCovs, collapseRast, coordNames = c("x", "y"))
 }
 \arguments{
 \item{data}{Data frame of data streams. At a minimum, it must contain fields matching \code{coordNames}}
 
 \item{spatialCovs}{List of \code{\link[raster]{raster}} layer objects for spatially referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
 layer(s) based on the location data for each time step.}
+
+\item{collapseRast}{List of collapsed \code{\link[raster]{raster}} layer objects (see \code{\link{collapseRaster}}). Ignored unless \code{spatialCovs} is missing.}
 
 \item{coordNames}{Names of the coordinates in \code{data}. Default: \code{c("x","y")}.}
 }

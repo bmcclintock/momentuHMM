@@ -1,5 +1,5 @@
 #' @importFrom stats formula terms.formula
-getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInflation,circularAngleMean,ParChecks=TRUE,wlag=FALSE,spatialCovs=NULL){
+getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInflation,circularAngleMean,ParChecks=TRUE,wlag=FALSE){
   
   distnames<-names(dist)
   fullDM <- vector('list',length(dist))
@@ -154,14 +154,6 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
           if(!all(grepl("mean",rownames(bounds[[i]])[which(apply(DM[[i]],1,function(x) any(grepl("langevin\\(",x))))])))
             stop("langevin() special formula can only be used for the means of normal random walk data stream distributions")
           lanInd[[i]] <- c(lanInd[[i]],cov)
-          if(!is.null(spatialCovs)){
-            negInd <- grepl("langevin(-",cov,fixed = TRUE)
-            cov <- gsub("langevin(","langevin(get_grad(mu.x_tm1,mu.y_tm1,spatialCovs$",cov,fixed=TRUE)
-            cov <- gsub("-","",cov,fixed=TRUE)
-            cov <- gsub(".x)",",1))",cov,fixed=TRUE)
-            cov <- gsub(".y)",",2))",cov,fixed=TRUE)
-            if(negInd) cov <- gsub("))",",-1))",cov,fixed=TRUE)
-          }
         }
         form<-stats::formula(paste("~",cov))
         varform<-all.vars(form)
@@ -183,23 +175,23 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
           covs<-cbind(covs,tmpcovs)
         } else {
           if(wlag) lag <- get_crwlag(form,lag)
-          if(!grepl("langevin\\(",cov)){ # still need to figure out solution for objects in formula that are not in data for langevin models
-            tmpCol <- tryCatch(stats::get_all_vars(form,data),error=function(e) e)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
-            if(inherits(tmpCol,"error")){
-              if(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))){
-                stop(tmpCol$message,"\n     -- has MIfitHMM 'covNames' argument been correctly specified?")
-              } else stop(tmpCol)
-            }
-            if(!all(names(tmpCol) %in% names(data))){
-              for(j in names(tmpCol)[which(!names(tmpCol) %in% names(data))]){
-                if(exists(j)) stop("'",j,"' covariate not found in data, but a variable named '",j,"' is present in the environment (this can cause major problems!)",
-                                   ifelse(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1])))),
-                                          " \n       -- has MIfitHMM 'covNames' argument been correctly specified?",
-                                          ""))
-              }
-            }
-            rm(tmpCol)
+          #if(!grepl("langevin\\(",cov)){ # still need to figure out solution for objects in formula that are not in data for langevin models
+          tmpCol <- tryCatch(stats::get_all_vars(form,data),error=function(e) e)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+          if(inherits(tmpCol,"error")){
+            if(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))){
+              stop(tmpCol$message,"\n     -- has MIfitHMM 'covNames' argument been correctly specified?")
+            } else stop(tmpCol)
           }
+          if(!all(names(tmpCol) %in% names(data))){
+            for(j in names(tmpCol)[which(!names(tmpCol) %in% names(data))]){
+              if(exists(j)) stop("'",j,"' covariate not found in data, but a variable named '",j,"' is present in the environment (this can cause major problems!)",
+                                 ifelse(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1])))),
+                                        " \n       -- has MIfitHMM 'covNames' argument been correctly specified?",
+                                        ""))
+            }
+          }
+          rm(tmpCol)
+          #}
           tmpcovs<-stats::model.matrix(form,data)[,2]
           covs<-cbind(covs,tmpcovs)
         }
