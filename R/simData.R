@@ -1060,7 +1060,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   #  else formula <- stats::formula(~1)
   #}
   
-  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",FALSE,CT=isTRUE(list(...)$CT))
+  if(!nbSpatialCovs | !retrySims) printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",FALSE,CT=isTRUE(list(...)$CT))
   
   if(length(all.vars(formula)))
     if(!all(all.vars(formula) %in% c("ID",names(allCovs),centerNames,centroidNames,spatialcovnames)))
@@ -1263,7 +1263,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if("time" %in% c(names(allCovs),spatialcovnames,angleCovs,centroidNames,centerNames)) stop("When 'lambda' is specified, 'time' is reserved and cannot be used for covariate names")
   }
   
-  if(ncores>1 & nbAnimals>1) message("        Simulating ",nbAnimals," individuals in parallel... ",sep="")
+  if(ncores>1 & nbAnimals>1 & (!nbSpatialCovs | !retrySims)) message("        Simulating ",nbAnimals," individuals in parallel... ",sep="")
   
   if(!nbSpatialCovs | !retrySims){
     
@@ -1374,7 +1374,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           for(j in 1:nbSpatialCovs){
             if(!isTRUE(list(...)$ctds)){
               getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[1,1],X[1,2]))
-              if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+              if(is.na(getCell)){
+                if(ncores==1) message("\n    FAILED \n")
+                stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+              }
             }
             spCov <- spatialCovs[[j]][getCell]
             if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
@@ -1659,7 +1662,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           if(nbSpatialCovs & !isTRUE(list(...)$ctds)){
             for(j in 1:nbSpatialCovs){
               getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[k+1,1],X[k+1,2]))
-              if(is.na(getCell)) stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+              if(is.na(getCell)) {
+                if(ncores==1) message("\n    FAILED \n")
+                stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+              }
               spCov <- spatialCovs[[j]][getCell]
               if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
                 zname <- names(attributes(spatialCovs[[j]])$z)
@@ -1860,7 +1866,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         }
       }
     }
-    message("DONE")
+    #message("DONE")
     return(out)
   } else {
     
@@ -1874,10 +1880,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     simCount <- 0
     message("\nAttempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simData'\n",sep="")
     while(simCount < retrySims){
-      if(ncores==1) cat("\r    Attempt ",simCount+1," of ",retrySims,"... ",sep="")
-      else cat("\r    Attempt ",simCount+1," of ",retrySims,"... ",sep="")
+      if(ncores==1) cat("\r    Attempt ",simCount+1," of ",retrySims,"... \n",sep="")
+      else cat("\r    Attempt ",simCount+1," of ",retrySims,"... \n",sep="")
       
-      tmp<-suppressMessages(tryCatch(simData(nbAnimals,nbStates,dist,
+      tmp<-tryCatch(simData(nbAnimals,nbStates,dist,
                                              Par,beta,delta,
                                              formula,formulaDelta,mixtures,formulaPi,
                                              covs,nbCovs,
@@ -1898,17 +1904,19 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                                              ncores,
                                              export=export,
                                              gradient=gradient,
-                                             ...),error=function(e) e))
+                                             ...),error=function(e) e)
       if(inherits(tmp,"error")){
-        if(grepl("Try expanding the extent of the raster",tmp)) simCount <- simCount+1
-        else stop(tmp)
+        if(grepl("Try expanding the extent of the raster",tmp)) {
+          simCount <- simCount+1
+          cat("    FAILED \n\n")
+        } else stop(tmp)
       } else {
         simCount <- retrySims
-        message("DONE\n")
+        cat("    DONE\n")
         return(tmp)
       }
     }
-    message("FAILED\n")
+    cat("FAILED\n")
     stop(tmp)
   }
 }

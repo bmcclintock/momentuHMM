@@ -343,6 +343,7 @@ delta_bc <- function(m){
     if(is.null(m$conditions$mixtures)) m$conditions$mixtures <- 1
     if(is.null(m$covsPi)) m$covsPi <- matrix(1,length(unique(m$data$ID)),1)
     if(is.null(attr(m$data,"coords")) & !is.null(m$data$x) & !is.null(m$data$y)) attr(m$data,"coords") <- c("x","y")
+    if(is.null(attr(m$data,"gradient"))) attr(m$data,"gradient") <- FALSE
     if(is.null(m$conditions$maxRate)) m$conditions$maxRate <- Inf
   } else if(!is.miHMM(m) & any(unlist(lapply(m,is.momentuHMM)))){
     m <- HMMfits(m)
