@@ -276,13 +276,9 @@ Fit an approximate continuous-time (multivariate) hidden Markov model to the dat
 function. The discrete-time approximation of the continuous-time model improves as the time between observations decreases. Note that only a single state transition can occur between observations and any time-varying covariates are assumed piece-wise constant between observations.
 }
 \details{
-
-
-\itemize{
-\item \code{fitCTHMM.momentuHierHMMData} is very similar to \code{\link{fitCTHMM.momentuHMMData}} except that instead of simply specifying the number of states (\code{nbStates}), distributions (\code{dist}), and a single t.p.m. formula (\code{formula}), the \code{hierStates} argument specifies the hierarchical nature of the states,
+\code{fitCTHMM.momentuHierHMMData} is very similar to \code{\link{fitCTHMM.momentuHMMData}} except that instead of simply specifying the number of states (\code{nbStates}), distributions (\code{dist}), and a single t.p.m. formula (\code{formula}), the \code{hierStates} argument specifies the hierarchical nature of the states,
 the \code{hierDist} argument specifies the hierarchical nature of the data streams, and the \code{hierFormula} argument specifies a t.p.m. formula for each level of the hierarchy.  All are specified as 
 \code{\link[data.tree]{Node}} objects from the \code{\link[data.tree]{data.tree}} package.
-}
 }
 \seealso{
 \code{\link{simHierData}}

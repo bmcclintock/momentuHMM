@@ -151,8 +151,6 @@ fitCTHMM <- function(data, ...) {
 #' \item{stateNames}{The names of the states.}
 #' \item{knownStates}{Vector of values of the state process which are known.}
 #' \item{covsDelta}{Design matrix for initial distribution.}
-#'
-#' @details
 #' 
 #' @export
 #' @importFrom Rcpp evalCpp
@@ -274,11 +272,9 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
 #' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). 
 #' 
 #' @details
-#' \itemize{
-#' \item \code{fitCTHMM.momentuHierHMMData} is very similar to \code{\link{fitCTHMM.momentuHMMData}} except that instead of simply specifying the number of states (\code{nbStates}), distributions (\code{dist}), and a single t.p.m. formula (\code{formula}), the \code{hierStates} argument specifies the hierarchical nature of the states,
+#' \code{fitCTHMM.momentuHierHMMData} is very similar to \code{\link{fitCTHMM.momentuHMMData}} except that instead of simply specifying the number of states (\code{nbStates}), distributions (\code{dist}), and a single t.p.m. formula (\code{formula}), the \code{hierStates} argument specifies the hierarchical nature of the states,
 #' the \code{hierDist} argument specifies the hierarchical nature of the data streams, and the \code{hierFormula} argument specifies a t.p.m. formula for each level of the hierarchy.  All are specified as 
 #' \code{\link[data.tree]{Node}} objects from the \code{\link[data.tree]{data.tree}} package.
-#' }
 #' 
 #' @seealso \code{\link{simHierData}}
 #' 
