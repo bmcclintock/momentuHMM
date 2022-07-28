@@ -17,6 +17,7 @@
 \usepackage{lscape}
 \usepackage[toc,page]{appendix}
 \usepackage{colortbl}
+\usepackage{blkarray}
 \definecolor{Gray}{gray}{0.9}
 
 \newcommand{\stoptocwriting}{%
@@ -120,7 +121,7 @@ fig_path=''
 \noindent \textbf{Summary}\\
 \textbf{1.} Discrete-time hidden Markov models (HMMs) have become an immensely popular tool for inferring latent animal behaviors from telemetry data, largely because they are relatively fast and easy to implement when data streams are observed without error and at regular time intervals. While movement HMMs typically rely solely on location data, auxiliary biotelemetry and environmental data are powerful and readily-available resources for incorporating much more behavioral realism and inferring ecological relationships that would otherwise be difficult or impossible to infer from location data alone.  However, there is a paucity of generalized user-friendly software available for implementing (multivariate) HMMs of animal movement. Furthermore, location measurement error, temporal irregularity, and other forms of missing data are often pervasive in telemetry studies (particularly in marine systems).\\ %and the incorporation of uncertainty attributable to location measurement error or missing data typically requires fitting HMMs using custom and computationally-demanding model fitting techniques, such as Markov chain Monte Carlo.\\ 
 \textbf{2.} Here we provide a guide to using an open-source R package, \verb|momentuHMM| version \Sexpr{installed.packages()["momentuHMM","Version"]}%(Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models)
-, that addresses many of the deficiencies in existing software.  Features for multivariate HMMs in \verb|momentuHMM| (pronounced ``momentum'') include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states, such as those based on location (e.g., step length, turning angle) and auxiliary biotelemetry data (e.g., from pressure, conductivity, heart rate, or motion sensors); 3) biased and correlated random walk movement models, including ``activity centers'' associated with attractive or repulsive forces; 4) user-specified design matrices and constraints for covariate modelling of initial distribution, state transition probability, and probability distribution parameters using linear model formulas familiar to most R users; 5) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data; 6) seamless integration of spatio-temporal covariate raster data; 7) cosinor and spline regression formulas for cyclical (e.g., daily, seasonal) and other complicated patterns; 8) discrete individual-level random effects on state transition probabilities; 9) hierarchical hidden Markov models for data streams and/or state switching at multiple time scales; 10) ``recharge'' models for an aggregated physiological process associated with state switching in heterogeneous environments; 11) model checking and selection; and 12) data simulation capabilities for study design, power analyses and assessing model performance, including simulation of location data subject to movement constraints (e.g. land for marine animals), temporal irregularity, and/or measurement error.\\ 
+, that addresses many of the deficiencies in existing software.  Features for multivariate HMMs in \verb|momentuHMM| (pronounced ``momentum'') include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states, such as those based on location (e.g., step length, turning angle) and auxiliary biotelemetry data (e.g., from pressure, conductivity, heart rate, or motion sensors); 3) biased and correlated random walk movement models, including ``activity centers'' associated with attractive or repulsive forces; 4) user-specified design matrices and constraints for covariate modelling of initial distribution, state transition probability, and probability distribution parameters using linear model formulas familiar to most R users; 5) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data; 6) seamless integration of spatio-temporal covariate raster data; 7) cosinor and spline regression formulas for cyclical (e.g., daily, seasonal) and other complicated patterns; 8) discrete individual-level random effects on state transition probabilities; 9) hierarchical hidden Markov models for data streams and/or state switching at multiple time scales; 10) ``recharge'' models for an aggregated physiological process associated with state switching in heterogeneous environments; 11) continuous-time animal movement models such as the (multistate) habitat-driven Langevin diffusion; 12) model checking and selection; and 13) data simulation capabilities for study design, power analyses and assessing model performance, including simulation of location data subject to movement constraints (e.g. land for marine animals), temporal irregularity, and/or measurement error.\\ 
 \textbf{3.} After providing a brief introduction to (multivariate) HMMs for telemetry data, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics.\\
 \textbf{4.} While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs. Practitioners interested in additional features for \verb|momentuHMM| are encouraged to contact the authors.\\
 
@@ -446,6 +447,21 @@ Diagnostic tools include the calculation and plotting of pseudo-residuals \citep
 
 \subsection{Simulation}
 The functions \verb|simData| (and \verb|simHierData|) can be used to simulate multivariate HMM (or HHMM) data from scratch or based on the estimated parameters of existing \verb|momentuHMM| or \verb|miSum| models.  The \verb|simData| and \verb|simHierData| arguments are very similar to those used for model specification in \verb|fitHMM| (e.g., \verb|dist|, \verb|hierDist|, \verb|DM|) and data preparation in \verb|prepData| (e.g., \verb|spatialCovs|, \verb|centers|), but they include additonal arguments, \verb|lambda| and \verb|errorEllipse|, for simulating location data subject to temporal irregularity and measurement error, respectively. The \verb|spatialCovs| argument allows for rasters of spatio-temporal covariate values to be utilized in simulation models, while the \verb|centers| argument allows activity centers to be incorporated. Thus \verb|simData| and \verb|simHierData| can be used to simulate more ecologically-realistic tracks (potentially subject to observation error) that can be useful for study design, power analyses, and assessing model performance. Goodness-of-fit can also be investigated by drawing simulated data sets from a fitted model and comparing them to observed properties of the data \citep{MoralesEtAl2004}. While \verb|simData| and \verb|simHierData| can be used for simulating tracks from fitted models, we note that it assumes the location data are Cartesian coordinates; the \verb|simData| and \verb|simHierData| functions are therefore not appropriate for simulating tracks from models that were fitted to unprojected (latitude and longitude) data.
+
+\subsection{Continuous-time hidden Markov models}
+The functions \verb|fitCTHMM| and \verb|MIfitCTHMM| can be used to fit continuous-time hidden Markov models \citep[e.g.][]{BladtSorensen2005,Jackson2011,ZucchiniEtAl2016}, where, for multivariate normal random walk (Table \ref{tab:multipdfs}) or Poisson (``\verb|pois|'') data streams, the data are modeled as a function of the time interval between observations $(\Delta_t)$. All other data stream distributions assume observations do not depend on $\Delta_t$, i.e., they are ``instantaneous'' and only depend on the state active at time $t$. Continuous-time models can be useful for modelling location or count data collected irregularly in time.  Continuous-time HMMs characterize the hidden state process by its infinitesimal generator matrix:
+\begin{equation}
+ \mathbf{Q} = \begin{blockarray}{ccccc}
+    s_{t+1}=1 & s_{t+1}=2 & \hdots & s_{t+1}=N & \\
+    \begin{block}{[cccc]c}
+    -q_{1,1} & q_{1,2} & \hdots & q_{1,S} & s_t=1 \\
+    q_{2,1} & -q_{2,2} & \hdots & q_{2,S} & s_t=2 \\
+    \vdots & \vdots   & \ddots & \vdots  & \\
+    q_{S,1} & q_{S,2} & \hdots & -q_{S,S} & s_t=N \\
+    \end{block}
+    \end{blockarray},
+\end{equation}
+where $q_{i,j} \ge 0$ for $i \ne j$ and $q_{i,i}=\sum_{j \ne i} q_{i,j}$. For any time interval $\Delta_t>0$, the state transition probabilities from time $t$ to time $t+1$ can then be derived using the matrix exponential, $\boldsymbol{\Gamma}_t = \exp \left(\mathbf{Q} \Delta_t \right)$. These models can therefore still be fitted using the forward algorithm (Eq.\ \ref{eq:HMMlike}). In addition to model fitting, the \verb|simCTHMM| function can be used to simulate continuous-time HMMs, either ``from scratch'' or from a fitted model. All other utility functions in \verb|momentuHMM| (e.g. \verb|viterbi|, \verb|stateProbs|, \verb|pseudoRes|) can also be used for continuous-time models. Simulated or fitted continuous-time random walk models in \verb|momentuHMM| rely on an Euler-discretization scheme that requires $\Delta_t$ to be sufficiently small for this approximation to be accurate \citep[e.g.][]{MichelotEtAl2019}. For multistate continuous-time movement models, another important consideration is the so-called ``snapshot'' property \citep[e.g.][]{GlennieEtAl2021}. The snapshot property is violated when the observations depend on $\Delta_t$, and, therefore, the observed locations depend on the behavioral state sequence over the entire interval between times t and t + 1. \verb|momentuHMM| skirts around this issue by assuming $\Delta_t$ is reasonably small relative to the serial correlation in the state process. For this to be reasonably satisfied, an intuitive rule-of-thumb is $\Delta_t \le \frac{1}{\max_i\left(q_{i,i}\right)}$ for $i \in \{1,2,\ldots,N\}$ \citep{GlennieEtAl2021}. The continuous-time HMMs in \verb|momentuHMM| also assume any time-varying covariates are piece-wise constant \citep[e.g.][]{Jackson2011}. \verb|simCTHMM| further assumes that state transitions can only occur at the observation times. One particularly useful continuous-time movement model is the habitat-driven Langevin diffusion of \citet{MichelotEtAl2019}; we demonstrate how to fit their model using \verb|momentuHMM| in section \ref{sec:langevin}.
   
 \section{Examples}
 \label{sec:example}
@@ -3039,6 +3055,156 @@ points(simBound$mu.x,simBound$mu.y,type="l")
   \label{fig:landConstraint}
 \end{figure}
 The model specified in \verb|DM| is identical to Eq. \ref{eq:potFun}, except we have replaced the ocean surface current velocities with the gradients for shortest distance to water in the x- and y-directions (\verb|grad.x| and \verb|grad.y|, respectively). As we can see in Figure \ref{fig:landConstraint}, the track is repelled from ``land'' and tends to stay in the ``water''. This strong attraction to water owes to the large negative values for the coefficients corresponding to \verb|grad.x| and \verb|grad.y|. 
+
+\subsection{Habitat-driven Langevin diffusion}
+\label{sec:langevin}
+In this example, we demonstrate how to fit a (single-state) continuous-time movement model using \verb|fitCTHMM|, although continuous-time models with $>1$ state can of course also be fitted in \verb|momentuHMM|. We recreate the analysis of \citet{MichelotEtAl2019}, where they fit their habitat-driven Langevin diffusion to three Steller sea lion tracks collected in the Aleutian Islands of Alaska, U.S.A. The Langevin model has some very nice properties in that it is formulated in continuous time (so locations can be observed irregularly) and the local (step-by-step) individual-level movement model scales up in time and space to a (population-level) utilization distribution that is expressed as a simple parametric function of the habitat covariates. This continuous-time model can be approximated in \verb|momentuHMM| as a (bivariate) normal random walk using an Euler discretization scheme:
+\begin{equation}
+\label{eq:lang1Euler}
+    \boldsymbol{\mu}_{t+1} = \boldsymbol{\mu}_t + \frac{\sigma^2 \Delta_t}{2} \nabla \log \pi \left(\boldsymbol{\mu}_t \mid \boldsymbol{\beta} \right) + \boldsymbol{\epsilon}_{t+1},
+\end{equation}
+where $\boldsymbol{\epsilon}_{t+1} \sim \mathcal{N} \left(\mathbf{0},\sigma^2 \Delta_t \mathbf{I} \right)$, $\sigma^2$ is a speed parameter, $\Delta_t$ is the interval between observation times $t$ and $t+1$, $\nabla$ is the gradient operator, $\pi \left(\boldsymbol{\mu}_t \mid \boldsymbol{\beta} \right)$ is the stationary (utilization) distribution evaluated at location $\boldsymbol{\mu}_t$, $\boldsymbol{\beta}$ is a vector of habitat selection coefficients,
+\begin{equation}
+\label{eq:rsfms}
+    \nabla \log \pi \left(\boldsymbol{\mu}_t \mid \boldsymbol{\beta} \right) = \sum_{k=1}^K \beta_k \nabla x_k \left( \boldsymbol{\mu}_t \right),
+\end{equation}
+and $x_k \left( \boldsymbol{\mu}_t \right)$ is the value of the $k$th habitat covariate evaluated at $\boldsymbol{\mu}_t$.
+The resulting utilization distribution has the standard form of a resource selection function \citep[e.g.][]{Manly2010}:
+\begin{equation}
+\label{eq:rsf1}
+    \pi \left(\boldsymbol{\mu} \mid \boldsymbol{\beta} \right) = \frac{\exp \left(\sum_{k=1}^K x_k\left(\boldsymbol{\mu} \right) \beta_k \right)}{\int_{\mathcal{M}} \exp \left(\sum_{k=1}^K x_k\left(\mathbf{z} \right) \beta_k \right) \text{d} \mathbf{z}}.
+\end{equation}
+
+Let's begin our analysis by first loading and preparing the data:
+<<load-viridis,echo=FALSE,eval=TRUE,message=FALSE>>=
+library(viridis)
+library(raster)
+@
+<<langevin-load-tracks, echo=TRUE, eval=TRUE, cache=TRUE, message=FALSE>>=
+# Load tracks
+tracks <- read.csv("SSLpreddat.csv")
+tracks$time <- as.POSIXct(tracks$time,format="%Y-%m-%d %H:%M:%S",tz="UTC")
+tracks$time <- as.numeric(tracks$time)
+tracks$time <- (tracks$time-min(tracks$time))/3600
+
+head(tracks)
+@
+\noindent Note that a time element is now required (the default name is ``time'' but anything else could be used via the \verb|Time.name| argument in \verb|fitCTHMM|). Here time has been rescaled as hours that start at zero. Next we'll load the habitat covariates, convert them to kilometers, and crop them to the area of interest:
+<<langevin-load-covs, echo=TRUE,eval=TRUE,cache=TRUE>>=
+hbfull <- raster::brick("aleut_habitat.grd", values=TRUE)
+covlist0 <- list(bathy = hbfull$bathy,
+                 slope = hbfull$slope,
+                 d2site = hbfull$d2site)
+
+# Convert to km
+for(i in 1:length(covlist0)) {
+  extent(covlist0[[i]]) <- extent(c(xmin(covlist0[[i]]), 
+                                    xmax(covlist0[[i]]), 
+                                    ymin(covlist0[[i]]), 
+                                    ymax(covlist0[[i]]))/1000)
+  projection(covlist0[[i]]) <- gsub("units=m", "units=km", 
+                                    projection(covlist0[[i]]))
+}
+
+ncov <- length(covlist0)
+# Resample covariates to the same grid
+for(i in 2:ncov)
+  covlist0[[i]] <- resample(covlist0[[i]],covlist0[[1]])
+
+# convert to km
+tracks$x <- tracks$x/1000
+tracks$y <- tracks$y/1000
+
+# Crop covariates to area of interest
+border <- 30
+covlist0$bathy <- covlist0$bathy/1000
+covlist0$d2site <- covlist0$d2site/1000
+lim <- c(min(tracks$x)-border,max(tracks$x)+border,
+         min(tracks$y)-border,max(tracks$y)+border)
+covlist0 <- lapply(covlist0, crop, y=extent(lim))
+@
+\begin{figure}
+\center
+\includegraphics[width=1\textwidth]{plot_langevinCovs.png}
+\caption{Steller sea lion tracks (top left), bathymetry (top right), slope (bottom left), and distance to nearest haul-out or rookery site (bottom right).}
+\end{figure}
+\noindent Next we'll prepare our data for \verb|fitCTHMM| and calculate the habitat covariate gradients using bilinear interpolation (by setting \verb|gradient=TRUE|):
+<<langevin-prep,echo=TRUE,eval=TRUE>>=
+langData <- prepData(tracks,coordNames = c("x","y"),
+                      altCoordNames = "mu",
+                      spatialCovs = covlist0,
+                      gradient=TRUE)
+head(langData)
+@
+\noindent We can see that the returned \verb|momentuHMMData| object includes the gradients for the habitat covariates (\verb|bathy|, \verb|slope|, and \verb|d2site|) in both the easting (with ``\verb|.x|'' suffix) and northing (``\verb|.y|'' suffix). This will allow us to include the gradients in the Langevin model via the \verb|DM| argument in \verb|fitCTHMM|. 
+
+To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb|langevin| special function and manually impose some constraints on the bivariate normal random walk (``\verb|rw_mvnorm2|'') parameters using the pseudo-design matrix:
+<<langevin-DM,echo=TRUE,eval=TRUE>>=
+DM <- list(mu=matrix(c("mu.x_tm1","langevin(bathy.x)","langevin(slope.x)",
+                       "langevin(d2site.x)",0,0,
+                       "mu.y_tm1","langevin(bathy.y)","langevin(slope.y)",
+                       "langevin(d2site.y)",0,0,
+                                0,                  0,                  0,
+                                          0,1,0,
+                                0,                  0,                  0,
+                                          0,0,1,
+                                0,                  0,                  0,
+                                          0,1,0),
+                     nrow=5,byrow=TRUE,
+                     dimnames = list(c("mean.x","mean.y",
+                                       "sigma.x","sigma.xy","sigma.y"),
+                     c("mean:mu_tm1","bathy","slope","d2site",
+                       "sigma:(Intercept)","sigma.xy:(Intercept)"))))
+DM$mu
+@
+\noindent There are several things to unpack here. The first column of the design matrix is for the previous location (as in section \ref{sec:buffalo}) and the \verb|langevin| special function in columns 2--4 identifies the habitat selection coefficients of the model (and their corresponding habitat covariate gradients). Note that the ``\verb|.x|'' and ``\verb|.y|'' suffixes correspond to the rows for the means in the easting (``\verb|mean.x|'') and northing (``\verb|mean.y|'') directions. Lastly, the Langevin model of \citet{MichelotEtAl2019} assumes the speeds in the easting and northing directions are identical and independent (Eq.\ \ref{eq:lang1Euler}), so \verb|sigma.x| and \verb|sigma.y| are constrained to be the same in column 5. We will use \verb|fixPar| to fix the covariance (\verb|sigma.xy|) to zero when fitting the model with \verb|fitCTHMM|. Now we're ready to fit the model:
+<<langevin-fit,echo=TRUE,eval=TRUE,cache=TRUE,warning=FALSE>>=
+fitLangevin <- fitCTHMM(langData,
+                        nbStates=1,
+                        dist=list(mu="rw_mvnorm2"),
+                        DM=DM,
+                        Par0=list(mu=c(1,0,0,0,2.5,0)),
+                        fixPar=list(mu=c(1,rep(NA,3),NA,0)))
+fitLangevin
+fitLangevin$CIbeta$mu
+@
+\noindent The log likelihood, parameter estimates, and standard errors are identical to those from \citet{MichelotEtAl2019}, although note the habitat covariates \verb|bathy| and \verb|d2site| are in kilometers (instead of meters). Lastly, we can calculate the utilization distribution as a simple function of the habitat covariates (Eq.\ \ref{eq:rsf1}):
+<<langevin-UD,echo=TRUE,eval=FALSE,cache=TRUE>>=
+# calculate utilization distribution
+logUD <- fitLangevin$CIbeta$mu$est[2]*covlist0$bathy +
+         fitLangevin$CIbeta$mu$est[3]*covlist0$slope + 
+         fitLangevin$CIbeta$mu$est[4]*covlist0$d2site
+
+# normalize UD
+UD <- exp(logUD)/sum(exp(values(logUD)))
+
+UDmat <- data.frame(coordinates(UD),val=values(UD))
+ggtheme <- theme(axis.title = element_text(size=10), 
+                 axis.text = element_text(size=10),
+                 legend.title = element_text(size=12), 
+                 legend.text = element_text(size=10),
+                 title = element_text(size=10))
+
+# Plot utilization distribution
+p1 <- ggplot(UDmat,aes(x,y)) + geom_raster(aes(fill=val)) +
+  coord_equal() + scale_fill_viridis(name=expression(pi)) +
+  xlab("Easting (km)") + ylab("Northing (km)") + ggtheme +
+  geom_point(aes(x,y), data=tracks, size=0.5)
+
+# Plot log-utilization distribution
+p2 <- ggplot(UDmat,aes(x,y)) + geom_raster(aes(fill=log(val))) +
+  coord_equal() + scale_fill_viridis(name=expression(log(pi))) +
+  xlab("Easting (km)") + ylab("Northing (km)") + ggtheme +
+  geom_point(aes(x,y), data=tracks, size=0.5)
+
+p1 + p2 + plot_layout(1,2)
+@
+\begin{figure}
+\center
+\includegraphics[width=1\textwidth]{plot_langevinUD.png}
+\caption{Estimated utilization distribution for three Steller sea lion tracks on the real (left) and log (right) scale.}
+\end{figure}
+\noindent For an application of a multistate version of this model using \verb|momentuHMM|, see \citet{McClintockLander2022}.
 
 \section{Discussion}
 Here we have introduced version \Sexpr{installed.packages()["momentuHMM","Version"]} of the R package \verb|momentuHMM| and demonstrated some of its capabilities for conducting multivariate HMM analyses with animal location, auxiliary biotelemetry, and environmental data. The package allows for fitting (and simulating from) a suite of biased and correlated random walk movement process models \citep[e.g.][]{McClintockEtAl2012}, can be used for an unlimited number of data streams and latent behavior states, includes multiple imputation methods to account for measurement error, temporal irregularity, and other forms of missing data that would otherwise be prohibitive to maximum likelihood analysis, and integrates seamlessly with rasters to facilitate spatio-temporal covariate modelling. Because the package incorporates biased random walks, it can also be used to implement group dynamic models \cite[e.g.][]{LangrockEtAl2014}. The package therefore greatly expands on available software and facilitates the incorporation of more ecological and behavioral realism for hypothesis-driven analyses of animal movement that account for many of the challenges commonly associated with telemetry data. While many of the features of \verb|momentuHMM| were motivated by animal movement data, we note that the package is not limited to location data and can be used for analyzing any type of data that is amenable to (multivariate) HMMs.

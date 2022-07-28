@@ -353,7 +353,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ### harbor porpoise HHMM example
 ###################################################
 #source(paste0(getwd(),"/examples/harborPorpoiseExample.R"))
-load(paste0(example_wd,"harborPorpoiseExample.RData"))
+load(paste0(getwd(),"/vignetteResults/harborPorpoiseExample.RData"))
 hhmmPar <- getPar(hhmm)
 append.RData(hhmmPar,file=paste0(getwd(),"/vignette_inputs.RData"))
 pdf(file=paste0(getwd(),"/plot_harborPorpoiseStates%03d.pdf"),width=8,height=11,onefile=FALSE)
@@ -365,7 +365,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ### garter snake HHMM example
 ###################################################
 #source(paste0(getwd(),"/examples/garterSnakeExample.R"))
-load(paste0(example_wd,"garterSnakeExample.RData"))
+load(paste0(getwd(),"/vignetteResults/garterSnakeExample.RData"))
 hhmm2Par <- getPar(hhmm)
 append.RData(hhmm2Par,file=paste0(getwd(),"/vignette_inputs.RData"))
 pdf(file=paste0(getwd(),"/plot_garterSnakePR.pdf"),width=5,height=2.5)
@@ -377,7 +377,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ### atlantic cod HHMM example
 ###################################################
 #source(paste0(getwd(),"/examples/codExample.R"))
-load(paste0(example_wd,"codExample.RData"))
+load(paste0(getwd(),"/vignetteResults/codExample.RData"))
 hhmm3Par <- getPar(hhmm)
 append.RData(hhmm3Par,file=paste0(getwd(),"/vignette_inputs.RData"))
 pdf(file=paste0(getwd(),"/plot_codExample%03d.pdf"),width=5,height=5,onefile = FALSE)
@@ -396,7 +396,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ### horn shark HHMM example
 ###################################################
 #source(paste0(getwd(),"/examples/hornSharkExample.R"))
-load(paste0(example_wd,"hornSharkExample.RData"))
+load(paste0(getwd(),"/vignetteResults/hornSharkExample.RData"))
 hhmm4Par <- getPar(hhmm)
 append.RData(hhmm4Par,file=paste0(getwd(),"/vignette_inputs.RData"))
 trProbs12 <- getTrProbs(hhmm,covIndex=c(1,3))
@@ -451,6 +451,40 @@ points(simBound$mu.x,simBound$mu.y,type="l")
 dev.off()
 rm(list=ls()[-which(ls()=="example_wd")])
 
+###################################################
+### Langevin example
+###################################################
+load(paste0(example_wd,"langevinExample.RData"))
+library(patchwork)
+library(ggplot2)
+covnames <- c("bathy", "slope", "d2site")
+covplot <- list()
+for(i in 1:3) {
+  mycov <- covlist0[[i]]
+  covmap <- data.frame(coordinates(mycov),val=values(mycov))
+  covplot[[i]] <- ggplot(covmap,aes(x,y)) + geom_raster(aes(fill=val)) +
+    coord_equal() + scale_fill_viridis(name=covnames[i]) +
+    xlab("Easting (km)") + ylab("Northing (km)") +
+    theme(axis.title = element_text(size=10), 
+          axis.text = element_text(size=10),
+          legend.text = element_text(size=8))
+}
+land <- covlist0$bathy>=0
+covplot[[4]] <- plotSpatialCov(tracks,crop(land,lim),
+                               colors=gray.colors(10, start = 1, end = 0.4, gamma = 2.2, alpha = NULL),
+                               return=TRUE)+
+  guides(fill = "none")+
+  xlab("Easting (km)") + ylab("Northing (km)") +
+  theme(axis.title = element_text(size=10), 
+        axis.text = element_text(size=10),
+        legend.text = element_text(size=8))
+png(file=paste0(getwd(),"/plot_langevinCovs.png"),width=10,height=6,units="in",res=80)
+covplot[[4]] + covplot[[1]] + covplot[[2]] + covplot[[3]] + plot_layout(2,2)
+dev.off()
+
+png(file=paste0(getwd(),"/plot_langevinUD.png"),width=12,height=4,units="in",res=80)
+p1 + p2 + plot_layout(2,1)
+dev.off()
 
 # reduce size of png files
 system(paste("pngquant -f --ext .png --speed=1 *.png"))

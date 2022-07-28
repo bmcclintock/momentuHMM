@@ -1,4 +1,4 @@
-\documentclass[12pt]{article}\usepackage[]{graphicx}\usepackage[]{color}
+\documentclass[12pt]{article}\usepackage[]{graphicx}\usepackage[]{xcolor}
 % maxwidth is the original width if it is less than linewidth
 % otherwise use linewidth (to make sure the graphics do not exceed the margin)
 \makeatletter
@@ -67,6 +67,7 @@
 \usepackage{lscape}
 \usepackage[toc,page]{appendix}
 \usepackage{colortbl}
+\usepackage{blkarray}
 \definecolor{Gray}{gray}{0.9}
 
 \newcommand{\stoptocwriting}{%
@@ -164,7 +165,7 @@
 \noindent \textbf{Summary}\\
 \textbf{1.} Discrete-time hidden Markov models (HMMs) have become an immensely popular tool for inferring latent animal behaviors from telemetry data, largely because they are relatively fast and easy to implement when data streams are observed without error and at regular time intervals. While movement HMMs typically rely solely on location data, auxiliary biotelemetry and environmental data are powerful and readily-available resources for incorporating much more behavioral realism and inferring ecological relationships that would otherwise be difficult or impossible to infer from location data alone.  However, there is a paucity of generalized user-friendly software available for implementing (multivariate) HMMs of animal movement. Furthermore, location measurement error, temporal irregularity, and other forms of missing data are often pervasive in telemetry studies (particularly in marine systems).\\ %and the incorporation of uncertainty attributable to location measurement error or missing data typically requires fitting HMMs using custom and computationally-demanding model fitting techniques, such as Markov chain Monte Carlo.\\ 
 \textbf{2.} Here we provide a guide to using an open-source R package, \verb|momentuHMM| version 2.0.0%(Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models)
-, that addresses many of the deficiencies in existing software.  Features for multivariate HMMs in \verb|momentuHMM| (pronounced ``momentum'') include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states, such as those based on location (e.g., step length, turning angle) and auxiliary biotelemetry data (e.g., from pressure, conductivity, heart rate, or motion sensors); 3) biased and correlated random walk movement models, including ``activity centers'' associated with attractive or repulsive forces; 4) user-specified design matrices and constraints for covariate modelling of initial distribution, state transition probability, and probability distribution parameters using linear model formulas familiar to most R users; 5) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data; 6) seamless integration of spatio-temporal covariate raster data; 7) cosinor and spline regression formulas for cyclical (e.g., daily, seasonal) and other complicated patterns; 8) discrete individual-level random effects on state transition probabilities; 9) hierarchical hidden Markov models for data streams and/or state switching at multiple time scales; 10) ``recharge'' models for an aggregated physiological process associated with state switching in heterogeneous environments; 11) model checking and selection; and 12) data simulation capabilities for study design, power analyses and assessing model performance, including simulation of location data subject to movement constraints (e.g. land for marine animals), temporal irregularity, and/or measurement error.\\ 
+, that addresses many of the deficiencies in existing software.  Features for multivariate HMMs in \verb|momentuHMM| (pronounced ``momentum'') include: 1) tools for data pre-processing and visualization; 2) user-specified probability distributions for an unlimited number of data streams and latent behavior states, such as those based on location (e.g., step length, turning angle) and auxiliary biotelemetry data (e.g., from pressure, conductivity, heart rate, or motion sensors); 3) biased and correlated random walk movement models, including ``activity centers'' associated with attractive or repulsive forces; 4) user-specified design matrices and constraints for covariate modelling of initial distribution, state transition probability, and probability distribution parameters using linear model formulas familiar to most R users; 5) multiple imputation methods that account for observation error attributable to measurement error and temporally-irregular or missing data; 6) seamless integration of spatio-temporal covariate raster data; 7) cosinor and spline regression formulas for cyclical (e.g., daily, seasonal) and other complicated patterns; 8) discrete individual-level random effects on state transition probabilities; 9) hierarchical hidden Markov models for data streams and/or state switching at multiple time scales; 10) ``recharge'' models for an aggregated physiological process associated with state switching in heterogeneous environments; 11) continuous-time animal movement models such as the (multistate) habitat-driven Langevin diffusion; 12) model checking and selection; and 13) data simulation capabilities for study design, power analyses and assessing model performance, including simulation of location data subject to movement constraints (e.g. land for marine animals), temporal irregularity, and/or measurement error.\\ 
 \textbf{3.} After providing a brief introduction to (multivariate) HMMs for telemetry data, we demonstrate some of the capabilities of \verb|momentuHMM| using real-world examples. This brief tutorial includes workflows for data formatting, model specification, model fitting, and diagnostics.\\
 \textbf{4.} While many of the features of \verb|momentuHMM| were motivated by animal movement data, the package can be used for analyzing any type of data that is amenable to (multivariate) HMMs. Practitioners interested in additional features for \verb|momentuHMM| are encouraged to contact the authors.\\
 
@@ -502,6 +503,21 @@ Diagnostic tools include the calculation and plotting of pseudo-residuals \citep
 
 \subsection{Simulation}
 The functions \verb|simData| (and \verb|simHierData|) can be used to simulate multivariate HMM (or HHMM) data from scratch or based on the estimated parameters of existing \verb|momentuHMM| or \verb|miSum| models.  The \verb|simData| and \verb|simHierData| arguments are very similar to those used for model specification in \verb|fitHMM| (e.g., \verb|dist|, \verb|hierDist|, \verb|DM|) and data preparation in \verb|prepData| (e.g., \verb|spatialCovs|, \verb|centers|), but they include additonal arguments, \verb|lambda| and \verb|errorEllipse|, for simulating location data subject to temporal irregularity and measurement error, respectively. The \verb|spatialCovs| argument allows for rasters of spatio-temporal covariate values to be utilized in simulation models, while the \verb|centers| argument allows activity centers to be incorporated. Thus \verb|simData| and \verb|simHierData| can be used to simulate more ecologically-realistic tracks (potentially subject to observation error) that can be useful for study design, power analyses, and assessing model performance. Goodness-of-fit can also be investigated by drawing simulated data sets from a fitted model and comparing them to observed properties of the data \citep{MoralesEtAl2004}. While \verb|simData| and \verb|simHierData| can be used for simulating tracks from fitted models, we note that it assumes the location data are Cartesian coordinates; the \verb|simData| and \verb|simHierData| functions are therefore not appropriate for simulating tracks from models that were fitted to unprojected (latitude and longitude) data.
+
+\subsection{Continuous-time hidden Markov models}
+The functions \verb|fitCTHMM| and \verb|MIfitCTHMM| can be used to fit continuous-time hidden Markov models \citep[e.g.][]{BladtSorensen2005,Jackson2011,ZucchiniEtAl2016}, where, for multivariate normal random walk (Table \ref{tab:multipdfs}) or Poisson (``\verb|pois|'') data streams, the data are modeled as a function of the time interval between observations $(\Delta_t)$. All other data stream distributions assume observations do not depend on $\Delta_t$, i.e., they are ``instantaneous'' and only depend on the state active at time $t$. Continuous-time models can be useful for modelling location or count data collected irregularly in time.  Continuous-time HMMs characterize the hidden state process by its infinitesimal generator matrix:
+\begin{equation}
+ \mathbf{Q} = \begin{blockarray}{ccccc}
+    s_{t+1}=1 & s_{t+1}=2 & \hdots & s_{t+1}=N & \\
+    \begin{block}{[cccc]c}
+    -q_{1,1} & q_{1,2} & \hdots & q_{1,S} & s_t=1 \\
+    q_{2,1} & -q_{2,2} & \hdots & q_{2,S} & s_t=2 \\
+    \vdots & \vdots   & \ddots & \vdots  & \\
+    q_{S,1} & q_{S,2} & \hdots & -q_{S,S} & s_t=N \\
+    \end{block}
+    \end{blockarray},
+\end{equation}
+where $q_{i,j} \ge 0$ for $i \ne j$ and $q_{i,i}=\sum_{j \ne i} q_{i,j}$. For any time interval $\Delta_t>0$, the state transition probabilities from time $t$ to time $t+1$ can then be derived using the matrix exponential, $\boldsymbol{\Gamma}_t = \exp \left(\mathbf{Q} \Delta_t \right)$. These models can therefore still be fitted using the forward algorithm (Eq.\ \ref{eq:HMMlike}). In addition to model fitting, the \verb|simCTHMM| function can be used to simulate continuous-time HMMs, either ``from scratch'' or from a fitted model. All other utility functions in \verb|momentuHMM| (e.g. \verb|viterbi|, \verb|stateProbs|, \verb|pseudoRes|) can also be used for continuous-time models. Simulated or fitted continuous-time random walk models in \verb|momentuHMM| rely on an Euler-discretization scheme that requires $\Delta_t$ to be sufficiently small for this approximation to be accurate \citep[e.g.][]{MichelotEtAl2019}. For multistate continuous-time movement models, another important consideration is the so-called ``snapshot'' property \citep[e.g.][]{GlennieEtAl2021}. The snapshot property is violated when the observations depend on $\Delta_t$, and, therefore, the observed locations depend on the behavioral state sequence over the entire interval between times t and t + 1. \verb|momentuHMM| skirts around this issue by assuming $\Delta_t$ is reasonably small relative to the serial correlation in the state process. For this to be reasonably satisfied, an intuitive rule-of-thumb is $\Delta_t \le \frac{1}{\max_i\left(q_{i,i}\right)}$ for $i \in \{1,2,\ldots,N\}$ \citep{GlennieEtAl2021}. The continuous-time HMMs in \verb|momentuHMM| also assume any time-varying covariates are piece-wise constant \citep[e.g.][]{Jackson2011}. \verb|simCTHMM| further assumes that state transitions can only occur at the observation times. One particularly useful continuous-time movement model is the habitat-driven Langevin diffusion of \citet{MichelotEtAl2019}; we demonstrate how to fit their model using \verb|momentuHMM| in section \ref{sec:langevin}.
   
 \section{Examples}
 \label{sec:example}
@@ -2185,35 +2201,35 @@ Now let's fit a model with $K=3$ mixtures by setting some starting values with t
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# -----------------------------------------------------------------------}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.dur \textasciitilde{} weibull(shape=\textasciitilde{}1, scale=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ dive.dur \textasciitilde{} weibull(shape=\textasciitilde{}1, scale=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.depth \textasciitilde{} gamma(mean=\textasciitilde{}1, sd=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ dive.depth \textasciitilde{} gamma(mean=\textasciitilde{}1, sd=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ GR.speed2 \textasciitilde{} gamma(mean=\textasciitilde{}1, sd=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ GR.speed2 \textasciitilde{} gamma(mean=\textasciitilde{}1, sd=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.pitchvar2 \textasciitilde{} beta(shape1=\textasciitilde{}1, shape2=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ dive.pitchvar2 \textasciitilde{} beta(shape1=\textasciitilde{}1, shape2=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ breath.headchange \textasciitilde{} vm(concentration=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ breath.headchange \textasciitilde{} vm(concentration=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ GR.size \textasciitilde{} pois(lambda=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ GR.size \textasciitilde{} pois(lambda=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ GR.tight \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ GR.tight \textasciitilde{} bern(prob=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.CS.pres \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ dive.CS.pres \textasciitilde{} bern(prob=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.SS.pres \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ dive.SS.pres \textasciitilde{} bern(prob=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ presurf \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ presurf \textasciitilde{} bern(prob=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ postsurf \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ postsurf \textasciitilde{} bern(prob=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Transition probability matrix formula: \textasciitilde{}1}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Transition probability matrix formula: \textasciitilde{}1}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Initial distribution formula: stationary}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Initial distribution formula: stationary}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Number of mixtures: 3}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Number of mixtures: 3}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ Mixture probability formula: \textasciitilde{}1}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ Mixture probability formula: \textasciitilde{}1}}
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
 
@@ -2519,14 +2535,14 @@ Now that we have labeled each observation in our data with a \verb|level| factor
 ## 
 ## Data summaries:
 ## 
-##    date_time                   level     dive_duration maximum_depth  
-##  Min.   :2015-11-02 14:43:00   1 : 275   Min.   :  1   Min.   :  2.2  
-##  1st Qu.:2015-11-06 02:01:24   2i: 275   1st Qu.: 15   1st Qu.:  7.2  
-##  Median :2015-11-08 14:14:28   2 :7585   Median : 43   Median : 16.2  
-##  Mean   :2015-11-08 11:59:48             Mean   : 58   Mean   : 22.2  
-##  3rd Qu.:2015-11-11 04:43:07             3rd Qu.: 90   3rd Qu.: 30.2  
-##  Max.   :2015-11-14 00:58:50             Max.   :248   Max.   :169.4  
-##                                          NA's   :550   NA's   :550    
+##    date_time                      level     dive_duration maximum_depth  
+##  Min.   :2015-11-02 14:43:00.00   1 : 275   Min.   :  1   Min.   :  2.2  
+##  1st Qu.:2015-11-06 02:01:24.00   2i: 275   1st Qu.: 15   1st Qu.:  7.2  
+##  Median :2015-11-08 14:14:28.00   2 :7585   Median : 43   Median : 16.2  
+##  Mean   :2015-11-08 11:59:48.86             Mean   : 58   Mean   : 22.2  
+##  3rd Qu.:2015-11-11 04:43:07.00             3rd Qu.: 90   3rd Qu.: 30.2  
+##  Max.   :2015-11-14 00:58:50.00             Max.   :248   Max.   :169.4  
+##                                             NA's   :550   NA's   :550    
 ##  dive_wiggliness
 ##  Min.   :  0.0  
 ##  1st Qu.:  3.8  
@@ -2802,15 +2818,15 @@ Since everything looks good, we're now ready to fit our HHMM:
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# -----------------------------------------------------------------------}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive\_duration \textasciitilde{} gamma(mean: custom, sd: custom)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ dive\_duration \textasciitilde{} gamma(mean: custom, sd: custom)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ maximum\_depth \textasciitilde{} gamma(mean: custom, sd: custom)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ maximum\_depth \textasciitilde{} gamma(mean: custom, sd: custom)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive\_wiggliness \textasciitilde{} gamma(mean: custom, sd: custom, zeromass: custom)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ dive\_wiggliness \textasciitilde{} gamma(mean: custom, sd: custom, zeromass: custom)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Transition probability matrix formula: \textasciitilde{}0 + I((level == "{}1"{}) * 1) + I((level == "{}2i"{}) * 1) + I((level == "{}2"{}) * 1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Transition probability matrix formula: \textasciitilde{}0 + I((level == "{}1"{}) * 1) + I((level == "{}2i"{}) * 1) + I((level == "{}2"{}) * 1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Initial distribution formula: \textasciitilde{}1}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Initial distribution formula: \textasciitilde{}1}}
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
 
@@ -2892,44 +2908,44 @@ Let's now examine our fitted HHMM:
 ## dive_duration parameters:
 ## -------------------------
 ##           nf1      nf2       nf3       f1       f2        f3
-## mean 5.637624 32.18047 106.82948 5.637624 32.18047 106.82948
-## sd   4.372832 15.13961  38.41245 4.372832 15.13961  38.41245
+## mean 5.637626 32.18048 106.82949 5.637626 32.18048 106.82949
+## sd   4.372835 15.13962  38.41245 4.372835 15.13962  38.41245
 ## 
 ## maximum_depth parameters:
 ## -------------------------
-##           nf1       nf2      nf3       f1        f2       f3
-## mean 3.740051 13.193085 39.61714 3.740051 13.193085 39.61714
-## sd   1.426271  5.288809 18.11188 1.426271  5.288809 18.11188
+##           nf1      nf2      nf3       f1       f2       f3
+## mean 3.740050 13.19309 39.61714 3.740050 13.19309 39.61714
+## sd   1.426269  5.28881 18.11187 1.426269  5.28881 18.11187
 ## 
 ## dive_wiggliness parameters:
 ## ---------------------------
 ##                nf1          nf2          nf3        f1           f2
-## mean     1.4566105 11.297304400 4.582790e+01 1.4566105 11.297304400
-## sd       1.2051899  7.683421367 2.437341e+01 1.2051899  7.683421367
-## zeromass 0.3089819  0.007866278 2.885413e-04 0.3089819  0.007866278
+## mean     1.4566130 11.297307157 4.582791e+01 1.4566130 11.297307157
+## sd       1.2051922  7.683425497 2.437341e+01 1.2051922  7.683425497
+## zeromass 0.3089822  0.007867576 2.884684e-04 0.3089822  0.007867576
 ##                    f3
-## mean     4.582790e+01
+## mean     4.582791e+01
 ## sd       2.437341e+01
-## zeromass 2.885413e-04
+## zeromass 2.884684e-04
 ## 
 ## 
 ## ---------------------------------------------------------------
 ## Regression coeffs for the transition probabilities:
 ## ---------------------------------------------------------------
 ## --------------------------  level1  ---------------------------
-##                         1 -> 4    4 -> 1
-## I((level == "1") * 1) -1.29882 -1.285164
+##                          1 -> 4    4 -> 1
+## I((level == "1") * 1) -1.298852 -1.285221
 ## 
 ## --------------------------  level2  ---------------------------
-##                           1 -> 2    1 -> 3  2 -> 2    2 -> 3    3 -> 2
-## I((level == "2") * 1) 0.07465917 -1.014811 0.90907 -0.424281 0.6198106
+##                           1 -> 2    1 -> 3    2 -> 2     2 -> 3    3 -> 2
+## I((level == "2") * 1) 0.07466832 -1.014794 0.9090668 -0.4242804 0.6198123
 ##                          3 -> 3
-## I((level == "2") * 1) 0.7823011
+## I((level == "2") * 1) 0.7823021
 ## 
 ##                           4 -> 5    4 -> 6    5 -> 5   5 -> 6    6 -> 5
-## I((level == "2") * 1) -0.5797742 0.7135748 0.7070142 1.621093 0.4255634
+## I((level == "2") * 1) -0.5797187 0.7135953 0.7070679 1.621159 0.4255811
 ##                         6 -> 6
-## I((level == "2") * 1) 2.701054
+## I((level == "2") * 1) 2.701071
 ## 
 ## ---------------------------------------------------------------
 ## 
@@ -2938,19 +2954,19 @@ Let's now examine our fitted HHMM:
 ## ---------------------------------------------------------------
 ## --------------------------  level1  ---------------------------
 ##             nonforaging  foraging
-## nonforaging   0.7856364 0.2143636
-## foraging      0.2166725 0.7833275
+## nonforaging   0.7856417 0.2143583
+## foraging      0.2166628 0.7833372
 ## 
 ## --------------------------  level2  ---------------------------
 ##           nf1       nf2       nf3
-## nf1 0.4098381 0.4416074 0.1485545
-## nf2 0.2417647 0.6000632 0.1581721
-## nf3 0.1982132 0.3683942 0.4333926
+## nf1 0.4098354 0.4416086 0.1485559
+## nf2 0.2417651 0.6000623 0.1581725
+## nf3 0.1982129 0.3683945 0.4333926
 ## 
-##            f1         f2        f3
-## f1 0.27767750 0.15550628 0.5668162
-## f2 0.12366226 0.25077807 0.6255597
-## f3 0.05738593 0.08782643 0.8547876
+##            f1        f2        f3
+## f1 0.27767187 0.1555118 0.5668164
+## f2 0.12365547 0.2507778 0.6255668
+## f3 0.05738502 0.0878266 0.8547884
 ## 
 ## ---------------------------------------------------------------
 ## 
@@ -2959,14 +2975,14 @@ Let's now examine our fitted HHMM:
 ## --------------------------------------------------
 ## --------------------  level1  --------------------
 ##               state 4
-## (Intercept) -6.718877
+## (Intercept) -6.740456
 ## 
 ## --------------------  level2  --------------------
 ##                         state 2  state 3
-## I((level == "2i") * 1) 30.34116 29.65686
+## I((level == "2i") * 1) 30.34115 29.65663
 ## 
-##                          state 5 state 6
-## I((level == "2i") * 1) -6.010936  1.7169
+##                          state 5  state 6
+## I((level == "2i") * 1) -6.010966 1.717094
 ## 
 ## --------------------------------------------------
 ## 
@@ -2975,14 +2991,14 @@ Let's now examine our fitted HHMM:
 ## --------------------------------------------------
 ## --------------------  level1  --------------------
 ##            nonforaging    foraging
-## ID:Animal1   0.9987936 0.001206437
+## ID:Animal1   0.9988193 0.001180712
 ## 
 ## --------------------  level2  --------------------
-##                     nf1       nf2       nf3
-## nonforaging 4.42208e-14 0.6646966 0.3353034
+##                      nf1       nf2       nf3
+## nonforaging 4.422442e-14 0.6647468 0.3352532
 ## 
-##                 f1           f2        f3
-## foraging 0.1522141 0.0003731974 0.8474127
+##                f1           f2        f3
+## foraging 0.152189 0.0003731245 0.8474379
 ## 
 ## --------------------------------------------------
 \end{verbatim}
@@ -3071,7 +3087,7 @@ We can also calculate the stationary probabilities of each state for each level 
 \end{alltt}
 \begin{verbatim}
 ## nonforaging    foraging 
-##   0.5026783   0.4973217
+##   0.5026734   0.4973266
 \end{verbatim}
 \begin{alltt}
 \hlcom{# fine scale }
@@ -3080,11 +3096,11 @@ We can also calculate the stationary probabilities of each state for each level 
 \begin{verbatim}
 ## $nonforaging
 ##       nf1       nf2       nf3 
-## 0.2793776 0.5060948 0.2145275 
+## 0.2793769 0.5060947 0.2145284 
 ## 
 ## $foraging
 ##         f1         f2         f3 
-## 0.08308895 0.11164215 0.80526890
+## 0.08308649 0.11164262 0.80527089
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -4545,11 +4561,11 @@ Now we're ready to specify the recharge model. We'll first fit the model to the 
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# -----------------------------------------------------------------------}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ mu \textasciitilde{} rw\_mvnorm2(mean.x: custom, mean.y: custom, sigma.x: custom, sigma.xy: custom, sigma.y: custom)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ mu \textasciitilde{} rw\_mvnorm2(mean.x: custom, mean.y: custom, sigma.x: custom, sigma.xy: custom, sigma.y: custom)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Transition probability matrix formula: \textasciitilde{}recharge(g0 = \textasciitilde{}1, theta = \textasciitilde{}W\_intercept + W\_near\_sabie)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Transition probability matrix formula: \textasciitilde{}recharge(g0 = \textasciitilde{}1, theta = \textasciitilde{}W\_intercept + W\_near\_sabie)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Initial distribution formula: \textasciitilde{}1}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Initial distribution formula: \textasciitilde{}1}}
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
 
@@ -4682,6 +4698,288 @@ Now we're ready to simulate our bivariate normal random walk model including the
   \label{fig:landConstraint}
 \end{figure}
 The model specified in \verb|DM| is identical to Eq. \ref{eq:potFun}, except we have replaced the ocean surface current velocities with the gradients for shortest distance to water in the x- and y-directions (\verb|grad.x| and \verb|grad.y|, respectively). As we can see in Figure \ref{fig:landConstraint}, the track is repelled from ``land'' and tends to stay in the ``water''. This strong attraction to water owes to the large negative values for the coefficients corresponding to \verb|grad.x| and \verb|grad.y|. 
+
+\subsection{Habitat-driven Langevin diffusion}
+\label{sec:langevin}
+In this example, we demonstrate how to fit a (single-state) continuous-time movement model using \verb|fitCTHMM|, although continuous-time models with $>1$ state can of course also be fitted in \verb|momentuHMM|. We recreate the analysis of \citet{MichelotEtAl2019}, where they fit their habitat-driven Langevin diffusion to three Steller sea lion tracks collected in the Aleutian Islands of Alaska, U.S.A. The Langevin model has some very nice properties in that it is formulated in continuous time (so locations can be observed irregularly) and the local (step-by-step) individual-level movement model scales up in time and space to a (population-level) utilization distribution that is expressed as a simple parametric function of the habitat covariates. This continuous-time model can be approximated in \verb|momentuHMM| as a (bivariate) normal random walk using an Euler discretization scheme:
+\begin{equation}
+\label{eq:lang1Euler}
+    \boldsymbol{\mu}_{t+1} = \boldsymbol{\mu}_t + \frac{\sigma^2 \Delta_t}{2} \nabla \log \pi \left(\boldsymbol{\mu}_t \mid \boldsymbol{\beta} \right) + \boldsymbol{\epsilon}_{t+1},
+\end{equation}
+where $\boldsymbol{\epsilon}_{t+1} \sim \mathcal{N} \left(\mathbf{0},\sigma^2 \Delta_t \mathbf{I} \right)$, $\sigma^2$ is a speed parameter, $\Delta_t$ is the interval between observation times $t$ and $t+1$, $\nabla$ is the gradient operator, $\pi \left(\boldsymbol{\mu}_t \mid \boldsymbol{\beta} \right)$ is the stationary (utilization) distribution evaluated at location $\boldsymbol{\mu}_t$, $\boldsymbol{\beta}$ is a vector of habitat selection coefficients,
+\begin{equation}
+\label{eq:rsfms}
+    \nabla \log \pi \left(\boldsymbol{\mu}_t \mid \boldsymbol{\beta} \right) = \sum_{k=1}^K \beta_k \nabla x_k \left( \boldsymbol{\mu}_t \right),
+\end{equation}
+and $x_k \left( \boldsymbol{\mu}_t \right)$ is the value of the $k$th habitat covariate evaluated at $\boldsymbol{\mu}_t$.
+The resulting utilization distribution has the standard form of a resource selection function \citep[e.g.][]{Manly2010}:
+\begin{equation}
+\label{eq:rsf1}
+    \pi \left(\boldsymbol{\mu} \mid \boldsymbol{\beta} \right) = \frac{\exp \left(\sum_{k=1}^K x_k\left(\boldsymbol{\mu} \right) \beta_k \right)}{\int_{\mathcal{M}} \exp \left(\sum_{k=1}^K x_k\left(\mathbf{z} \right) \beta_k \right) \text{d} \mathbf{z}}.
+\end{equation}
+
+Let's begin our analysis by first loading and preparing the data:
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# Load tracks}
+\hlstd{tracks} \hlkwb{<-} \hlkwd{read.csv}\hlstd{(}\hlstr{"SSLpreddat.csv"}\hlstd{)}
+\hlstd{tracks}\hlopt{$}\hlstd{time} \hlkwb{<-} \hlkwd{as.POSIXct}\hlstd{(tracks}\hlopt{$}\hlstd{time,}\hlkwc{format}\hlstd{=}\hlstr{"%Y-%m-%d %H:%M:%S"}\hlstd{,}\hlkwc{tz}\hlstd{=}\hlstr{"UTC"}\hlstd{)}
+\hlstd{tracks}\hlopt{$}\hlstd{time} \hlkwb{<-} \hlkwd{as.numeric}\hlstd{(tracks}\hlopt{$}\hlstd{time)}
+\hlstd{tracks}\hlopt{$}\hlstd{time} \hlkwb{<-} \hlstd{(tracks}\hlopt{$}\hlstd{time}\hlopt{-}\hlkwd{min}\hlstd{(tracks}\hlopt{$}\hlstd{time))}\hlopt{/}\hlnum{3600}
+
+\hlkwd{head}\hlstd{(tracks)}
+\end{alltt}
+\begin{verbatim}
+##      ID     time        x        y
+## 1 14809 0.000000 -1711308 471037.0
+## 2 14809 0.350000 -1710020 471692.7
+## 3 14809 1.383333 -1707746 472336.0
+## 4 14809 2.116667 -1706217 472170.0
+## 5 14809 2.200000 -1706076 472158.2
+## 6 14809 3.133333 -1704885 473140.4
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\noindent Note that a time element is now required (the default name is ``time'' but anything else could be used via the \verb|Time.name| argument in \verb|fitCTHMM|). Here time has been rescaled as hours that start at zero. Next we'll load the habitat covariates, convert them to kilometers, and crop them to the area of interest:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{hbfull} \hlkwb{<-} \hlstd{raster}\hlopt{::}\hlkwd{brick}\hlstd{(}\hlstr{"aleut_habitat.grd"}\hlstd{,} \hlkwc{values}\hlstd{=}\hlnum{TRUE}\hlstd{)}
+\hlstd{covlist0} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{bathy} \hlstd{= hbfull}\hlopt{$}\hlstd{bathy,}
+                 \hlkwc{slope} \hlstd{= hbfull}\hlopt{$}\hlstd{slope,}
+                 \hlkwc{d2site} \hlstd{= hbfull}\hlopt{$}\hlstd{d2site)}
+
+\hlcom{# Convert to km}
+\hlkwa{for}\hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(covlist0)) \{}
+  \hlkwd{extent}\hlstd{(covlist0[[i]])} \hlkwb{<-} \hlkwd{extent}\hlstd{(}\hlkwd{c}\hlstd{(}\hlkwd{xmin}\hlstd{(covlist0[[i]]),}
+                                    \hlkwd{xmax}\hlstd{(covlist0[[i]]),}
+                                    \hlkwd{ymin}\hlstd{(covlist0[[i]]),}
+                                    \hlkwd{ymax}\hlstd{(covlist0[[i]]))}\hlopt{/}\hlnum{1000}\hlstd{)}
+  \hlkwd{projection}\hlstd{(covlist0[[i]])} \hlkwb{<-} \hlkwd{gsub}\hlstd{(}\hlstr{"units=m"}\hlstd{,} \hlstr{"units=km"}\hlstd{,}
+                                    \hlkwd{projection}\hlstd{(covlist0[[i]]))}
+\hlstd{\}}
+
+\hlstd{ncov} \hlkwb{<-} \hlkwd{length}\hlstd{(covlist0)}
+\hlcom{# Resample covariates to the same grid}
+\hlkwa{for}\hlstd{(i} \hlkwa{in} \hlnum{2}\hlopt{:}\hlstd{ncov)}
+  \hlstd{covlist0[[i]]} \hlkwb{<-} \hlkwd{resample}\hlstd{(covlist0[[i]],covlist0[[}\hlnum{1}\hlstd{]])}
+
+\hlcom{# convert to km}
+\hlstd{tracks}\hlopt{$}\hlstd{x} \hlkwb{<-} \hlstd{tracks}\hlopt{$}\hlstd{x}\hlopt{/}\hlnum{1000}
+\hlstd{tracks}\hlopt{$}\hlstd{y} \hlkwb{<-} \hlstd{tracks}\hlopt{$}\hlstd{y}\hlopt{/}\hlnum{1000}
+
+\hlcom{# Crop covariates to area of interest}
+\hlstd{border} \hlkwb{<-} \hlnum{30}
+\hlstd{covlist0}\hlopt{$}\hlstd{bathy} \hlkwb{<-} \hlstd{covlist0}\hlopt{$}\hlstd{bathy}\hlopt{/}\hlnum{1000}
+\hlstd{covlist0}\hlopt{$}\hlstd{d2site} \hlkwb{<-} \hlstd{covlist0}\hlopt{$}\hlstd{d2site}\hlopt{/}\hlnum{1000}
+\hlstd{lim} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlkwd{min}\hlstd{(tracks}\hlopt{$}\hlstd{x)}\hlopt{-}\hlstd{border,}\hlkwd{max}\hlstd{(tracks}\hlopt{$}\hlstd{x)}\hlopt{+}\hlstd{border,}
+         \hlkwd{min}\hlstd{(tracks}\hlopt{$}\hlstd{y)}\hlopt{-}\hlstd{border,}\hlkwd{max}\hlstd{(tracks}\hlopt{$}\hlstd{y)}\hlopt{+}\hlstd{border)}
+\hlstd{covlist0} \hlkwb{<-} \hlkwd{lapply}\hlstd{(covlist0, crop,} \hlkwc{y}\hlstd{=}\hlkwd{extent}\hlstd{(lim))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\begin{figure}
+\center
+\includegraphics[width=1\textwidth]{plot_langevinCovs.png}
+\caption{Steller sea lion tracks (top left), bathymetry (top right), slope (bottom left), and distance to nearest haul-out or rookery site (bottom right).}
+\end{figure}
+\noindent Next we'll prepare our data for \verb|fitCTHMM| and calculate the habitat covariate gradients using bilinear interpolation (by setting \verb|gradient=TRUE|):
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{langData} \hlkwb{<-} \hlkwd{prepData}\hlstd{(tracks,}\hlkwc{coordNames} \hlstd{=} \hlkwd{c}\hlstd{(}\hlstr{"x"}\hlstd{,}\hlstr{"y"}\hlstd{),}
+                      \hlkwc{altCoordNames} \hlstd{=} \hlstr{"mu"}\hlstd{,}
+                      \hlkwc{spatialCovs} \hlstd{= covlist0,}
+                      \hlkwc{gradient}\hlstd{=}\hlnum{TRUE}\hlstd{)}
+\hlkwd{head}\hlstd{(langData)}
+\end{alltt}
+\begin{verbatim}
+##      ID      step       angle     time      mu.x     mu.y       bathy
+## 1 14809 1.4453541          NA 0.000000 -1711.308 471.0370 -0.03940783
+## 2 14809 2.3634792 -0.19522448 0.350000 -1710.020 471.6927  0.00000000
+## 3 14809 1.5370667 -0.38379369 1.383333 -1707.746 472.3360 -0.03381421
+## 4 14809 0.1416174  0.02466312 2.116667 -1706.217 472.1700 -0.02869409
+## 5 14809 1.5439543  0.77297966 2.200000 -1706.076 472.1582 -0.02869409
+## 6 14809 2.7146347  0.98030754 3.133333 -1704.885 473.1404 -0.24891857
+##        bathy.x      bathy.y      slope       slope.x      slope.y    d2site
+## 1 -0.005050865  0.040296347 0.01372752 -4.396019e-05 -0.013719936 0.9641287
+## 2 -0.018590510  0.007531541 0.00000000  1.162089e-02 -0.004707952 0.0000000
+## 3 -0.011642304  0.023676612 0.01226024 -4.467521e-03 -0.005799564 5.4160643
+## 4 -0.009069089  0.032293649 0.01064220  4.778864e-02 -0.029608231 6.0624549
+## 5 -0.009277072  0.034778847 0.01064220  4.888458e-02 -0.042703727 6.0624549
+## 6 -0.268401465 -0.022965041 0.21429528  2.044654e-01 -0.011589018 8.2434981
+##    d2site.x   d2site.y
+## 1 0.6390380 -1.0765022
+## 2 3.1586331 -1.2796516
+## 3 0.9174547  0.3517309
+## 4 0.5058383 -6.2632717
+## 5 0.5174388 -6.4018863
+## 6 8.3912835  0.1741563
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\noindent We can see that the returned \verb|momentuHMMData| object includes the gradients for the habitat covariates (\verb|bathy|, \verb|slope|, and \verb|d2site|) in both the easting (with ``\verb|.x|'' suffix) and northing (``\verb|.y|'' suffix). This will allow us to include the gradients in the Langevin model via the \verb|DM| argument in \verb|fitCTHMM|. 
+
+To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb|langevin| special function and manually impose some constraints on the bivariate normal random walk (``\verb|rw_mvnorm2|'') parameters using the pseudo-design matrix:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{DM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"mu.x_tm1"}\hlstd{,}\hlstr{"langevin(bathy.x)"}\hlstd{,}\hlstr{"langevin(slope.x)"}\hlstd{,}
+                       \hlstr{"langevin(d2site.x)"}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
+                       \hlstr{"mu.y_tm1"}\hlstd{,}\hlstr{"langevin(bathy.y)"}\hlstd{,}\hlstr{"langevin(slope.y)"}\hlstd{,}
+                       \hlstr{"langevin(d2site.y)"}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
+                                \hlnum{0}\hlstd{,}                  \hlnum{0}\hlstd{,}                  \hlnum{0}\hlstd{,}
+                                          \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}
+                                \hlnum{0}\hlstd{,}                  \hlnum{0}\hlstd{,}                  \hlnum{0}\hlstd{,}
+                                          \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}
+                                \hlnum{0}\hlstd{,}                  \hlnum{0}\hlstd{,}                  \hlnum{0}\hlstd{,}
+                                          \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{),}
+                     \hlkwc{nrow}\hlstd{=}\hlnum{5}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
+                     \hlkwc{dimnames} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"mean.x"}\hlstd{,}\hlstr{"mean.y"}\hlstd{,}
+                                       \hlstr{"sigma.x"}\hlstd{,}\hlstr{"sigma.xy"}\hlstd{,}\hlstr{"sigma.y"}\hlstd{),}
+                     \hlkwd{c}\hlstd{(}\hlstr{"mean:mu_tm1"}\hlstd{,}\hlstr{"bathy"}\hlstd{,}\hlstr{"slope"}\hlstd{,}\hlstr{"d2site"}\hlstd{,}
+                       \hlstr{"sigma:(Intercept)"}\hlstd{,}\hlstr{"sigma.xy:(Intercept)"}\hlstd{))))}
+\hlstd{DM}\hlopt{$}\hlstd{mu}
+\end{alltt}
+\begin{verbatim}
+##          mean:mu_tm1 bathy               slope              
+## mean.x   "mu.x_tm1"  "langevin(bathy.x)" "langevin(slope.x)"
+## mean.y   "mu.y_tm1"  "langevin(bathy.y)" "langevin(slope.y)"
+## sigma.x  "0"         "0"                 "0"                
+## sigma.xy "0"         "0"                 "0"                
+## sigma.y  "0"         "0"                 "0"                
+##          d2site               sigma:(Intercept) sigma.xy:(Intercept)
+## mean.x   "langevin(d2site.x)" "0"               "0"                 
+## mean.y   "langevin(d2site.y)" "0"               "0"                 
+## sigma.x  "0"                  "1"               "0"                 
+## sigma.xy "0"                  "0"               "1"                 
+## sigma.y  "0"                  "1"               "0"
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\noindent There are several things to unpack here. The first column of the design matrix is for the previous location (as in section \ref{sec:buffalo}) and the \verb|langevin| special function in columns 2--4 identifies the habitat selection coefficients of the model (and their corresponding habitat covariate gradients). Note that the ``\verb|.x|'' and ``\verb|.y|'' suffixes correspond to the rows for the means in the easting (``\verb|mean.x|'') and northing (``\verb|mean.y|'') directions. Lastly, the Langevin model of \citet{MichelotEtAl2019} assumes the speeds in the easting and northing directions are identical and independent (Eq.\ \ref{eq:lang1Euler}), so \verb|sigma.x| and \verb|sigma.y| are constrained to be the same in column 5. We will use \verb|fixPar| to fix the covariance (\verb|sigma.xy|) to zero when fitting the model with \verb|fitCTHMM|. Now we're ready to fit the model:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{fitLangevin} \hlkwb{<-} \hlkwd{fitCTHMM}\hlstd{(langData,}
+                        \hlkwc{nbStates}\hlstd{=}\hlnum{1}\hlstd{,}
+                        \hlkwc{dist}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlstr{"rw_mvnorm2"}\hlstd{),}
+                        \hlkwc{DM}\hlstd{=DM,}
+                        \hlkwc{Par0}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{2.5}\hlstd{,}\hlnum{0}\hlstd{)),}
+                        \hlkwc{fixPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlkwd{rep}\hlstd{(}\hlnum{NA}\hlstd{,}\hlnum{3}\hlstd{),}\hlnum{NA}\hlstd{,}\hlnum{0}\hlstd{)))}
+\end{alltt}
+
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# Fitting continuous-time HMM with 1 state and 1 data stream}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# -----------------------------------------------------------------------}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ mu \textasciitilde{} rw\_mvnorm2(mean.x: custom, mean.y: custom, sigma.x: custom, sigma.xy: custom, sigma.y: custom)}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Transition probability matrix formula: \textasciitilde{}1}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Initial distribution formula: \textasciitilde{}1}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# DONE}}\begin{alltt}
+\hlstd{fitLangevin}
+\end{alltt}
+\begin{verbatim}
+## Value of the maximum log-likelihood: -15137.32 
+## 
+## 
+## Regression coeffs for mu parameters:
+## ------------------------------------
+##      mean:mu_tm1     bathy      slope     d2site sigma:(Intercept)
+## [1,]           1 0.1344957 0.07609687 -0.0206041          2.514288
+##      sigma.xy:(Intercept)
+## [1,]                    0
+## 
+## mu parameters (based on mean covariate values):
+## -----------------------------------------------
+##             state 1
+## mean.x   -1750.2349
+## mean.y     525.9662
+## sigma.x     12.3578
+## sigma.xy     0.0000
+## sigma.y     12.3578
+\end{verbatim}
+\begin{alltt}
+\hlstd{fitLangevin}\hlopt{$}\hlstd{CIbeta}\hlopt{$}\hlstd{mu}
+\end{alltt}
+\begin{verbatim}
+## $est
+##      mean:mu_tm1     bathy      slope     d2site sigma:(Intercept)
+## [1,]           1 0.1344957 0.07609687 -0.0206041          2.514288
+##      sigma.xy:(Intercept)
+## [1,]                    0
+## 
+## $se
+##      mean:mu_tm1      bathy     slope      d2site sigma:(Intercept)
+## [1,]           0 0.07045873 0.1273107 0.005160585        0.01935859
+##      sigma.xy:(Intercept)
+## [1,]                    0
+## 
+## $lower
+##      mean:mu_tm1        bathy      slope      d2site sigma:(Intercept)
+## [1,]           1 -0.003600898 -0.1734276 -0.03071866          2.476345
+##      sigma.xy:(Intercept)
+## [1,]                    0
+## 
+## $upper
+##      mean:mu_tm1     bathy     slope      d2site sigma:(Intercept)
+## [1,]           1 0.2725923 0.3256213 -0.01048954           2.55223
+##      sigma.xy:(Intercept)
+## [1,]                    0
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\noindent The log likelihood, parameter estimates, and standard errors are identical to those from \citet{MichelotEtAl2019}, although note the habitat covariates \verb|bathy| and \verb|d2site| are in kilometers (instead of meters). Lastly, we can calculate the utilization distribution as a simple function of the habitat covariates (Eq.\ \ref{eq:rsf1}):
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# calculate utilization distribution}
+\hlstd{logUD} \hlkwb{<-} \hlstd{fitLangevin}\hlopt{$}\hlstd{CIbeta}\hlopt{$}\hlstd{mu}\hlopt{$}\hlstd{est[}\hlnum{2}\hlstd{]}\hlopt{*}\hlstd{covlist0}\hlopt{$}\hlstd{bathy} \hlopt{+}
+         \hlstd{fitLangevin}\hlopt{$}\hlstd{CIbeta}\hlopt{$}\hlstd{mu}\hlopt{$}\hlstd{est[}\hlnum{3}\hlstd{]}\hlopt{*}\hlstd{covlist0}\hlopt{$}\hlstd{slope} \hlopt{+}
+         \hlstd{fitLangevin}\hlopt{$}\hlstd{CIbeta}\hlopt{$}\hlstd{mu}\hlopt{$}\hlstd{est[}\hlnum{4}\hlstd{]}\hlopt{*}\hlstd{covlist0}\hlopt{$}\hlstd{d2site}
+
+\hlcom{# normalize UD}
+\hlstd{UD} \hlkwb{<-} \hlkwd{exp}\hlstd{(logUD)}\hlopt{/}\hlkwd{sum}\hlstd{(}\hlkwd{exp}\hlstd{(}\hlkwd{values}\hlstd{(logUD)))}
+
+\hlstd{UDmat} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(}\hlkwd{coordinates}\hlstd{(UD),}\hlkwc{val}\hlstd{=}\hlkwd{values}\hlstd{(UD))}
+\hlstd{ggtheme} \hlkwb{<-} \hlkwd{theme}\hlstd{(}\hlkwc{axis.title} \hlstd{=} \hlkwd{element_text}\hlstd{(}\hlkwc{size}\hlstd{=}\hlnum{10}\hlstd{),}
+                 \hlkwc{axis.text} \hlstd{=} \hlkwd{element_text}\hlstd{(}\hlkwc{size}\hlstd{=}\hlnum{10}\hlstd{),}
+                 \hlkwc{legend.title} \hlstd{=} \hlkwd{element_text}\hlstd{(}\hlkwc{size}\hlstd{=}\hlnum{12}\hlstd{),}
+                 \hlkwc{legend.text} \hlstd{=} \hlkwd{element_text}\hlstd{(}\hlkwc{size}\hlstd{=}\hlnum{10}\hlstd{),}
+                 \hlkwc{title} \hlstd{=} \hlkwd{element_text}\hlstd{(}\hlkwc{size}\hlstd{=}\hlnum{10}\hlstd{))}
+
+\hlcom{# Plot utilization distribution}
+\hlstd{p1} \hlkwb{<-} \hlkwd{ggplot}\hlstd{(UDmat,}\hlkwd{aes}\hlstd{(x,y))} \hlopt{+} \hlkwd{geom_raster}\hlstd{(}\hlkwd{aes}\hlstd{(}\hlkwc{fill}\hlstd{=val))} \hlopt{+}
+  \hlkwd{coord_equal}\hlstd{()} \hlopt{+} \hlkwd{scale_fill_viridis}\hlstd{(}\hlkwc{name}\hlstd{=}\hlkwd{expression}\hlstd{(pi))} \hlopt{+}
+  \hlkwd{xlab}\hlstd{(}\hlstr{"Easting (km)"}\hlstd{)} \hlopt{+} \hlkwd{ylab}\hlstd{(}\hlstr{"Northing (km)"}\hlstd{)} \hlopt{+} \hlstd{ggtheme} \hlopt{+}
+  \hlkwd{geom_point}\hlstd{(}\hlkwd{aes}\hlstd{(x,y),} \hlkwc{data}\hlstd{=tracks,} \hlkwc{size}\hlstd{=}\hlnum{0.5}\hlstd{)}
+
+\hlcom{# Plot log-utilization distribution}
+\hlstd{p2} \hlkwb{<-} \hlkwd{ggplot}\hlstd{(UDmat,}\hlkwd{aes}\hlstd{(x,y))} \hlopt{+} \hlkwd{geom_raster}\hlstd{(}\hlkwd{aes}\hlstd{(}\hlkwc{fill}\hlstd{=}\hlkwd{log}\hlstd{(val)))} \hlopt{+}
+  \hlkwd{coord_equal}\hlstd{()} \hlopt{+} \hlkwd{scale_fill_viridis}\hlstd{(}\hlkwc{name}\hlstd{=}\hlkwd{expression}\hlstd{(}\hlkwd{log}\hlstd{(pi)))} \hlopt{+}
+  \hlkwd{xlab}\hlstd{(}\hlstr{"Easting (km)"}\hlstd{)} \hlopt{+} \hlkwd{ylab}\hlstd{(}\hlstr{"Northing (km)"}\hlstd{)} \hlopt{+} \hlstd{ggtheme} \hlopt{+}
+  \hlkwd{geom_point}\hlstd{(}\hlkwd{aes}\hlstd{(x,y),} \hlkwc{data}\hlstd{=tracks,} \hlkwc{size}\hlstd{=}\hlnum{0.5}\hlstd{)}
+
+\hlstd{p1} \hlopt{+} \hlstd{p2} \hlopt{+} \hlkwd{plot_layout}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{2}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\begin{figure}
+\center
+\includegraphics[width=1\textwidth]{plot_langevinUD.png}
+\caption{Estimated utilization distribution for three Steller sea lion tracks on the real (left) and log (right) scale.}
+\end{figure}
+\noindent For an application of a multistate version of this model using \verb|momentuHMM|, see \citet{McClintockLander2022}.
 
 \section{Discussion}
 Here we have introduced version 2.0.0 of the R package \verb|momentuHMM| and demonstrated some of its capabilities for conducting multivariate HMM analyses with animal location, auxiliary biotelemetry, and environmental data. The package allows for fitting (and simulating from) a suite of biased and correlated random walk movement process models \citep[e.g.][]{McClintockEtAl2012}, can be used for an unlimited number of data streams and latent behavior states, includes multiple imputation methods to account for measurement error, temporal irregularity, and other forms of missing data that would otherwise be prohibitive to maximum likelihood analysis, and integrates seamlessly with rasters to facilitate spatio-temporal covariate modelling. Because the package incorporates biased random walks, it can also be used to implement group dynamic models \cite[e.g.][]{LangrockEtAl2014}. The package therefore greatly expands on available software and facilitates the incorporation of more ecological and behavioral realism for hypothesis-driven analyses of animal movement that account for many of the challenges commonly associated with telemetry data. While many of the features of \verb|momentuHMM| were motivated by animal movement data, we note that the package is not limited to location data and can be used for analyzing any type of data that is amenable to (multivariate) HMMs.
