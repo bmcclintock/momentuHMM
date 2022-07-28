@@ -1,6 +1,6 @@
 #' Simulation tool
 #'
-#' Simulates data from a (multivariate) continuous-time hidden Markov model. Note that only a single state transition can occur between observations and time-varying covariates are assumed piece-wise constant between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
+#' Simulates data from a (multivariate) continuous-time hidden Markov model. Note that state transitions can only occur at the observation times, and time-varying covariates are assumed piece-wise constant between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
 #'
 #' @param nbAnimals Number of observed individuals to simulate.
 #' @param nbStates Number of behavioural states to simulate.

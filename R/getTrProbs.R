@@ -269,7 +269,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
   
   for(mix in 1:mixtures){
     if(nbStates>1){
-      trMat[[mix]] <- trMatrix_rcpp(nbStates,wnbeta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),betaRef,CT,fulldt,aInd=aInd,rateMatrix=rateMatrix,maxRate=maxRate,check=TRUE)[,,covIndex]
+      trMat[[mix]] <- trMatrix_rcpp(nbStates,wnbeta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),betaRef,CT,fulldt,aInd=aInd,rateMatrix=rateMatrix,maxRate=maxRate,check=TRUE)[,,covIndex,drop=FALSE]
       #if(CT) {
       #  diagOK <- aInd
       #  if(inherits(data,"hierarchical")) diagOK <- c(diagOK,which(fulldt[covIndex]==0)+1)
@@ -279,7 +279,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
       #}
     } else
       trMat[[mix]] <- array(1,dim=c(1,1,length(dt)))
-    dimnames(trMat[[mix]]) <- list(stateNames,stateNames,NULL)
+    dimnames(trMat[[mix]]) <- list(stateNames,stateNames,covIndex)
     
     if(getCI & nbStates>1){
       

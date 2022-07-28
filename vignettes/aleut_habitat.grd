@@ -1,0 +1,25 @@
+[general]
+creator=R package 'raster'
+created=2017-04-19 09:41:28
+[georeference]
+nrows=530
+ncols=1024
+xmin=-2217918.92792831
+ymin=223187.672964281
+xmax=-1193924.74619551
+ymax=753182.055869694
+projection=+proj=aea +lat_1=55 +lat_2=65 +lat_0=50 +lon_0=-154 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs
+[data]
+datatype=FLT8S
+byteorder=little
+nbands=4
+bandorder=BIL
+minvalue=-7777.55077392578:0:0:0
+maxvalue=0:0.892227121874036:492335.251590046:461303.368005966
+nodatavalue=-1.7e+308
+[legend]
+legendtype=
+values=
+color=
+[description]
+layername=bathy:slope:d2site:d2shelf
