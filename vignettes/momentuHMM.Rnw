@@ -3081,7 +3081,6 @@ library(viridis)
 library(raster)
 @
 <<langevin-load-tracks, echo=TRUE, eval=TRUE, cache=TRUE, message=FALSE>>=
-# Load tracks
 tracks <- read.csv("SSLpreddat.csv")
 tracks$time <- as.POSIXct(tracks$time,format="%Y-%m-%d %H:%M:%S",tz="UTC")
 tracks$time <- as.numeric(tracks$time)
@@ -3136,7 +3135,7 @@ langData <- prepData(tracks,coordNames = c("x","y"),
                       gradient=TRUE)
 head(langData)
 @
-\noindent We can see that the returned \verb|momentuHMMData| object includes the gradients for the habitat covariates (\verb|bathy|, \verb|slope|, and \verb|d2site|) in both the easting (with ``\verb|.x|'' suffix) and northing (``\verb|.y|'' suffix). This will allow us to include the gradients in the Langevin model via the \verb|DM| argument in \verb|fitCTHMM|. 
+\noindent We can see that the returned \verb|momentuHMMData| object includes the gradients for the habitat covariates (\verb|bathy|, \verb|slope|, and \verb|d2site|) in both the easting (with ``\verb|.x|'' suffix) and northing (``\verb|.y|'' suffix) directions. This will allow us to include the gradients in the Langevin model via the \verb|DM| argument in \verb|fitCTHMM|. 
 
 To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb|langevin| special function and manually impose some constraints on the bivariate normal random walk (``\verb|rw_mvnorm2|'') parameters using the pseudo-design matrix:
 <<langevin-DM,echo=TRUE,eval=TRUE>>=

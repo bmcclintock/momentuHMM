@@ -4723,7 +4723,6 @@ Let's begin our analysis by first loading and preparing the data:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlcom{# Load tracks}
 \hlstd{tracks} \hlkwb{<-} \hlkwd{read.csv}\hlstd{(}\hlstr{"SSLpreddat.csv"}\hlstd{)}
 \hlstd{tracks}\hlopt{$}\hlstd{time} \hlkwb{<-} \hlkwd{as.POSIXct}\hlstd{(tracks}\hlopt{$}\hlstd{time,}\hlkwc{format}\hlstd{=}\hlstr{"%Y-%m-%d %H:%M:%S"}\hlstd{,}\hlkwc{tz}\hlstd{=}\hlstr{"UTC"}\hlstd{)}
 \hlstd{tracks}\hlopt{$}\hlstd{time} \hlkwb{<-} \hlkwd{as.numeric}\hlstd{(tracks}\hlopt{$}\hlstd{time)}
@@ -4820,7 +4819,7 @@ Let's begin our analysis by first loading and preparing the data:
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
-\noindent We can see that the returned \verb|momentuHMMData| object includes the gradients for the habitat covariates (\verb|bathy|, \verb|slope|, and \verb|d2site|) in both the easting (with ``\verb|.x|'' suffix) and northing (``\verb|.y|'' suffix). This will allow us to include the gradients in the Langevin model via the \verb|DM| argument in \verb|fitCTHMM|. 
+\noindent We can see that the returned \verb|momentuHMMData| object includes the gradients for the habitat covariates (\verb|bathy|, \verb|slope|, and \verb|d2site|) in both the easting (with ``\verb|.x|'' suffix) and northing (``\verb|.y|'' suffix) directions. This will allow us to include the gradients in the Langevin model via the \verb|DM| argument in \verb|fitCTHMM|. 
 
 To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb|langevin| special function and manually impose some constraints on the bivariate normal random walk (``\verb|rw_mvnorm2|'') parameters using the pseudo-design matrix:
 \begin{knitrout}

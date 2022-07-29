@@ -2,9 +2,9 @@ library(momentuHMM)
 library(raster)
 library(viridis)
 
-# 1) Load the data
-#------------------------------------------------
-# Load tracks
+#####################
+## Load tracks ##
+#####################
 tracks <- read.csv(url("https://raw.github.com/bmcclintock/momentuHMM/develop/vignettes/SSLpreddat.csv"))
 tracks$time <- as.POSIXct(tracks$time,format="%Y-%m-%d %H:%M:%S",tz="UTC")
 tracks$time <- as.numeric(tracks$time)
@@ -18,8 +18,7 @@ download.file(url="https://raw.github.com/bmcclintock/momentuHMM/develop/vignett
 hbfull <- brick("aleut_habitat.grd", values=TRUE)
 covlist0 <- list(bathy = hbfull$bathy,
                  slope = hbfull$slope,
-                 d2site = hbfull$d2site,
-                 d2shelf = hbfull$d2shelf)
+                 d2site = hbfull$d2site)
 
 # Convert to km
 for(i in 1:length(covlist0)) {
@@ -44,12 +43,13 @@ covlist0$d2site <- covlist0$d2site/1000
 lim <- c(min(tracks$x)-border,max(tracks$x)+border,min(tracks$y)-border,max(tracks$y)+border)
 covlist0 <- lapply(covlist0, crop, y=extent(lim))
 
+# prepare data and calculate habitat gradients
 langData <- prepData(tracks,coordNames = c("x","y"),
                       altCoordNames = "mu",
                       spatialCovs = covlist0,
                       gradient=TRUE)
 
-
+# specify design matrix
 DM <- list(mu=matrix(c("mu.x_tm1","langevin(bathy.x)","langevin(slope.x)","langevin(d2site.x)",0,0,
                        "mu.y_tm1","langevin(bathy.y)","langevin(slope.y)","langevin(d2site.y)",0,0,
                                 0,                  0,                  0,                   0,1,0,
@@ -58,6 +58,7 @@ DM <- list(mu=matrix(c("mu.x_tm1","langevin(bathy.x)","langevin(slope.x)","lange
                      nrow=5,byrow=TRUE,dimnames = list(c("mean.x","mean.y","sigma.x","sigma.xy","sigma.y"),
                                                        c("mean:mu_tm1","bathy","slope","d2site","sigma:(Intercept)","sigma.xy:(Intercept)"))))
 
+# fit model
 fitLangevin <- fitCTHMM(langData,
                         nbStates=1,
                         dist=list(mu="rw_mvnorm2"),
