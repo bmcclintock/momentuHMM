@@ -918,12 +918,14 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   
   if(anyDuplicated(colnames(allCovs))) stop("covariates must have unique names")
   if(anyDuplicated(spatialcovnames)) stop("spatialCovs must have unique names")
-  if(gradient & nbSpatialCovs>0){
-    covnames <- colnames(allCovs)
-    if(!is.null(model)){
-      nogradcovnames <- covnames[which(!(covnames %in% paste0(rep(c(spatialcovnames),each=2),c(".x",".y"))))]
-    } else nogradcovnames <- covnames
-    if(any(paste0(rep(c(spatialcovnames),each=2),c(".x",".y")) %in% c(nogradcovnames,spatialcovnames,distnames,paste0(mvnCoords,c(".x",".y"))))) stop(paste0(rep(c(spatialcovnames),each=2),c(".x",".y"))[which(paste0(rep(c(spatialcovnames),each=2),c(".x",".y")) %in% c(nogradcovnames,spatialcovnames,distnames,paste0(mvnCoords,c(".x",".y"))))],"cannot be covariate name(s) when gradient=TRUE")
+  if(gradient){
+    if(nbSpatialCovs>0){
+      covnames <- colnames(allCovs)
+      if(!is.null(model)){
+        nogradcovnames <- covnames[which(!(covnames %in% paste0(rep(c(spatialcovnames),each=2),c(".x",".y"))))]
+      } else nogradcovnames <- covnames
+      if(any(paste0(rep(c(spatialcovnames),each=2),c(".x",".y")) %in% c(nogradcovnames,spatialcovnames,distnames,paste0(mvnCoords,c(".x",".y"))))) stop(paste0(rep(c(spatialcovnames),each=2),c(".x",".y"))[which(paste0(rep(c(spatialcovnames),each=2),c(".x",".y")) %in% c(nogradcovnames,spatialcovnames,distnames,paste0(mvnCoords,c(".x",".y"))))],"cannot be covariate name(s) when gradient=TRUE")
+    } else stop("spatialCovs must be provided when gradient=TRUE")
   }
   if(nbSpatialCovs>0 & isTRUE(list(...)$ctds)){
     tmpSpNames <- NULL
