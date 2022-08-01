@@ -4938,7 +4938,7 @@ To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
-\noindent The log likelihood, parameter estimates, and standard errors are identical to those from \citet{MichelotEtAl2019}, although note the habitat covariates \verb|bathy| and \verb|d2site| are in kilometers (instead of meters). Lastly, we can calculate the utilization distribution as a simple function of the habitat covariates (Eq.\ \ref{eq:rsf1}):
+\noindent The log likelihood, parameter estimates, and standard errors are identical to those from \citet{MichelotEtAl2019}, although note the habitat covariates \verb|bathy| and \verb|d2site| are in kilometers (instead of meters). We can now calculate the utilization distribution as a simple function of the habitat covariates (Eq.\ \ref{eq:rsf1}):
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -4977,6 +4977,28 @@ To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb
 \center
 \includegraphics[width=1\textwidth]{plot_langevinUD.png}
 \caption{Estimated utilization distribution for three Steller sea lion tracks on the real (left) and log (right) scale.}
+\end{figure}
+\noindent Finally, let's simulate from the fitted model using \verb|simCTHMM|:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{initPos} \hlkwb{<-} \hlkwd{split}\hlstd{(}\hlkwd{as.matrix}\hlstd{(langData[}\hlopt{!}\hlkwd{duplicated}\hlstd{(langData}\hlopt{$}\hlstd{ID),}
+                                    \hlkwd{c}\hlstd{(}\hlstr{"mu.x"}\hlstd{,}\hlstr{"mu.y"}\hlstd{)]),}
+                 \hlkwd{unique}\hlstd{(langData}\hlopt{$}\hlstd{ID))}
+
+\hlstd{simLangevin} \hlkwb{<-} \hlkwd{simCTHMM}\hlstd{(}\hlkwc{model}\hlstd{=fitLangevin,}
+                        \hlkwc{spatialCovs}\hlstd{=covlist0,}
+                        \hlkwc{initialPosition} \hlstd{= initPos)}
+
+\hlstd{p3} \hlkwb{<-} \hlkwd{plotSpatialCov}\hlstd{(simLangevin,logUD,}\hlkwc{return}\hlstd{=}\hlnum{TRUE}\hlstd{)}
+\hlstd{p3} \hlopt{+} \hlkwd{scale_fill_viridis}\hlstd{(}\hlkwc{name}\hlstd{=}\hlkwd{expression}\hlstd{(}\hlkwd{log}\hlstd{(pi)))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\begin{figure}
+\center
+\includegraphics[width=1\textwidth]{plot_simLangevin.png}
+\caption{Simulated tracks for three Steller sea lion tracks from the fitted Langevin model.}
 \end{figure}
 \noindent For an application of a multistate version of this model using \verb|momentuHMM|, see \citet{McClintockLander2022}.
 

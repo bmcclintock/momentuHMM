@@ -3167,7 +3167,7 @@ fitLangevin <- fitCTHMM(langData,
 fitLangevin
 fitLangevin$CIbeta$mu
 @
-\noindent The log likelihood, parameter estimates, and standard errors are identical to those from \citet{MichelotEtAl2019}, although note the habitat covariates \verb|bathy| and \verb|d2site| are in kilometers (instead of meters). Lastly, we can calculate the utilization distribution as a simple function of the habitat covariates (Eq.\ \ref{eq:rsf1}):
+\noindent The log likelihood, parameter estimates, and standard errors are identical to those from \citet{MichelotEtAl2019}, although note the habitat covariates \verb|bathy| and \verb|d2site| are in kilometers (instead of meters). We can now calculate the utilization distribution as a simple function of the habitat covariates (Eq.\ \ref{eq:rsf1}):
 <<langevin-UD,echo=TRUE,eval=FALSE,cache=TRUE>>=
 # calculate utilization distribution
 logUD <- fitLangevin$CIbeta$mu$est[2]*covlist0$bathy +
@@ -3202,6 +3202,24 @@ p1 + p2 + plot_layout(1,2)
 \center
 \includegraphics[width=1\textwidth]{plot_langevinUD.png}
 \caption{Estimated utilization distribution for three Steller sea lion tracks on the real (left) and log (right) scale.}
+\end{figure}
+\noindent Finally, let's simulate from the fitted model using \verb|simCTHMM|:
+<<lang-sim,echo=TRUE,eval=FALSE,cache=TRUE>>=
+initPos <- split(as.matrix(langData[!duplicated(langData$ID),
+                                    c("mu.x","mu.y")]),
+                 unique(langData$ID))
+
+simLangevin <- simCTHMM(model=fitLangevin,
+                        spatialCovs=covlist0,
+                        initialPosition = initPos)
+
+p3 <- plotSpatialCov(simLangevin,logUD,return=TRUE)
+p3 + scale_fill_viridis(name=expression(log(pi)))
+@
+\begin{figure}
+\center
+\includegraphics[width=1\textwidth]{plot_simLangevin.png}
+\caption{Simulated tracks for three Steller sea lion tracks from the fitted Langevin model.}
 \end{figure}
 \noindent For an application of a multistate version of this model using \verb|momentuHMM|, see \citet{McClintockLander2022}.
 

@@ -1,6 +1,8 @@
 library(momentuHMM)
 library(raster)
 library(viridis)
+library(ggplot2)
+library(patchwork)
 
 #####################
 ## Load tracks ##
@@ -65,6 +67,7 @@ fitLangevin <- fitCTHMM(langData,
                         DM=DM,
                         Par0=list(mu=c(1,0,0,0,2.5,0)),
                         fixPar=list(mu=c(1,rep(NA,3),NA,0)),
+                        mvnCoords = "mu",
                         nlmPar=list(print.level=2))
 
 # calculate utilization distribution
@@ -89,3 +92,14 @@ p2 <- ggplot(UDmat,aes(x,y)) + geom_raster(aes(fill=log(val))) +
   geom_point(aes(x,y), data=tracks, size=0.5)
 
 p1 + p2 + plot_layout(1,2)
+
+# simulate from the fitted model
+initPos <- split(as.matrix(langData[!duplicated(langData$ID),c("mu.x","mu.y")]),
+                 unique(langData$ID))
+set.seed(4,"Mersenne-Twister","Inversion")
+simLangevin <- simCTHMM(model=fitLangevin,
+                        spatialCovs=covlist0,
+                        initialPosition = initPos,
+                        retrySims = 5)
+p3 <- plotSpatialCov(simLangevin,logUD,return=TRUE)
+p3 + scale_fill_viridis(name=expression(log(pi)))
