@@ -3088,7 +3088,7 @@ tracks$time <- (tracks$time-min(tracks$time))/3600
 
 head(tracks)
 @
-\noindent Note that a time element is now required (the default name is ``time'' but anything else could be used via the \verb|Time.name| argument in \verb|fitCTHMM|). Here time has been rescaled as hours that start at zero. Next we'll load the habitat covariates, convert them to kilometers, and crop them to the area of interest:
+\noindent Note that a time element is now required (the default name is ``time'' but anything else could be used via the \verb|Time.name| argument in \verb|fitCTHMM|). Here time has been rescaled to hours that start at zero. Next we'll load the habitat covariates, convert them to kilometers, and crop them to the area of interest:
 <<langevin-load-covs, echo=TRUE,eval=TRUE,cache=TRUE>>=
 hbfull <- raster::brick("aleut_habitat.grd", values=TRUE)
 covlist0 <- list(bathy = hbfull$bathy,
@@ -3163,6 +3163,7 @@ fitLangevin <- fitCTHMM(langData,
                         dist=list(mu="rw_mvnorm2"),
                         DM=DM,
                         Par0=list(mu=c(1,0,0,0,2.5,0)),
+                        mvnCoords = "mu",
                         fixPar=list(mu=c(1,rep(NA,3),NA,0)))
 fitLangevin
 fitLangevin$CIbeta$mu
@@ -3219,7 +3220,7 @@ p3 + scale_fill_viridis(name=expression(log(pi)))
 \begin{figure}
 \center
 \includegraphics[width=1\textwidth]{plot_simLangevin.png}
-\caption{Simulated tracks for three Steller sea lion tracks from the fitted Langevin model.}
+\caption{Simulated Steller sea lion tracks from the fitted Langevin model.}
 \end{figure}
 \noindent For an application of a multistate version of this model using \verb|momentuHMM|, see \citet{McClintockLander2022}.
 

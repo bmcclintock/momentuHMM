@@ -486,7 +486,7 @@ png(file=paste0(getwd(),"/plot_langevinUD.png"),width=12,height=4,units="in",res
 p1 + p2 + plot_layout(2,1)
 dev.off()
 
-p3 <- plotSpatialCov(simLangevin,logUD,return=TRUE)
+p3 <- plotSpatialCov(simLangevin,log(UD),return=TRUE)
 png(file=paste0(getwd(),"/plot_simLangevin.png"),width=6,height=6,units="in",res=80)
 p3 + scale_fill_viridis(name=expression(log(pi)))
 dev.off()

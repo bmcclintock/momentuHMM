@@ -101,5 +101,5 @@ simLangevin <- simCTHMM(model=fitLangevin,
                         spatialCovs=covlist0,
                         initialPosition = initPos,
                         retrySims = 5)
-p3 <- plotSpatialCov(simLangevin,logUD,return=TRUE)
+p3 <- plotSpatialCov(simLangevin,log(UD),return=TRUE)
 p3 + scale_fill_viridis(name=expression(log(pi)))

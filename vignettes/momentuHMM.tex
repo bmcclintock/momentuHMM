@@ -4741,7 +4741,7 @@ Let's begin our analysis by first loading and preparing the data:
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
-\noindent Note that a time element is now required (the default name is ``time'' but anything else could be used via the \verb|Time.name| argument in \verb|fitCTHMM|). Here time has been rescaled as hours that start at zero. Next we'll load the habitat covariates, convert them to kilometers, and crop them to the area of interest:
+\noindent Note that a time element is now required (the default name is ``time'' but anything else could be used via the \verb|Time.name| argument in \verb|fitCTHMM|). Here time has been rescaled to hours that start at zero. Next we'll load the habitat covariates, convert them to kilometers, and crop them to the area of interest:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -4867,6 +4867,7 @@ To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb
                         \hlkwc{dist}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlstr{"rw_mvnorm2"}\hlstd{),}
                         \hlkwc{DM}\hlstd{=DM,}
                         \hlkwc{Par0}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{2.5}\hlstd{,}\hlnum{0}\hlstd{)),}
+                        \hlkwc{mvnCoords} \hlstd{=} \hlstr{"mu"}\hlstd{,}
                         \hlkwc{fixPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlkwd{rep}\hlstd{(}\hlnum{NA}\hlstd{,}\hlnum{3}\hlstd{),}\hlnum{NA}\hlstd{,}\hlnum{0}\hlstd{)))}
 \end{alltt}
 
@@ -4998,7 +4999,7 @@ To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb
 \begin{figure}
 \center
 \includegraphics[width=1\textwidth]{plot_simLangevin.png}
-\caption{Simulated tracks for three Steller sea lion tracks from the fitted Langevin model.}
+\caption{Simulated Steller sea lion tracks from the fitted Langevin model.}
 \end{figure}
 \noindent For an application of a multistate version of this model using \verb|momentuHMM|, see \citet{McClintockLander2022}.
 
