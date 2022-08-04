@@ -238,9 +238,13 @@ If simulated location data include measurement error (i.e., \code{errorEllipse!=
 \item{error.corr}{correlation term of bivariate normal error (if applicable; required for error ellipse models in \code{\link{crawlWrap}})}
 }
 \description{
-Simulates data from a (multivariate) continuous-time discrete-space hidden Markov model. Note that only a single state and cell transition can occur between observations, and state transitions can only occur when there is a cell transition (unless \code{moveState} is set to \code{FALSE}). Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
+Simulates data from an apprxomate (multivariate) continuous-time discrete-space hidden Markov model. Note that only a single cell transition can occur between observations, the state active at observation time \emph{t} determines the (state-dependent) observation distribution from observation time \emph{t} to time \emph{t+1}, state transitions can only occur when there is a cell transition (unless \code{moveState} is set to \code{FALSE}), and time-varying covariates are assumed piece-wise constant between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
 }
 \details{
+\itemize{
+\item Because \code{simCTDS} and \code{simHierCTDS} assume the state active at observation time \emph{t} determines the (state-dependent) observation distribution from observation time \emph{t} to time \emph{t+1} (i.e. state switches only occur at the times of observations), it is critical that the frequency of observations (specified by \code{lambda}) is high relative to the serial correlation in the hidden state process (specified by \code{beta}) in order for this approximation to be reasonably accurate. To investigate the consequences of coarser observation times, data should first be simulated at a high temporal resolution and then manually subsampled.
+}
+
 \itemize{
 \item If the length of covariate values passed (either through 'covs', or 'model') is not the same
 as the number of observations suggested by 'nbAnimals' and 'obsPerAnimal' (or 'obsPerLevel' for \code{simHierCTDS}), then the series of
