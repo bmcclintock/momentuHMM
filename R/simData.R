@@ -1468,10 +1468,15 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         gamma <- t(gamma)
         gamma <- gamma/apply(gamma,1,sum)
       } else {
-        gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])), betaRef, TRUE, 0, aInd=1,maxRate=maxRate)[,,1],nbStates,nbStates),error=function(e) e) # diag(nbStates)
-        if(inherits(gamma,"error") || any(gamma<0)){
-          stop("initial TPM exponential could not be calculated for individual ",zoo,": ",ifelse(inherits(gamma,"error"),gamma,"negative probability"))
+        gamma <- diag(nbStates)
+        Q <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])), betaRef, TRUE, 0, aInd=1,rateMatrix=TRUE,maxRate=maxRate)[,,1],nbStates,nbStates),error=function(e) e) # diag(nbStates)
+        if(inherits(Q,"error") || any(!is.finite(Q))){
+          stop("initial transition rate matrix could not be calculated for individual ",zoo,": ",ifelse(inherits(Q,"error"),Q,"rate(s) not finite"))
         }
+        #gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])), betaRef, TRUE, 0, aInd=1,maxRate=maxRate)[,,1],nbStates,nbStates),error=function(e) e) # diag(nbStates)
+        #if(inherits(gamma,"error") || any(gamma<0)){
+        #  stop("initial TPM exponential could not be calculated for individual ",zoo,": ",ifelse(inherits(gamma,"error"),gamma,"negative probability"))
+        #}
       }
       
       if(nbStates>1) {
@@ -1480,7 +1485,18 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       } else
         Z <- rep(1,nbObs)
       
-      for (k in 1:(nbObs-1)){
+      if(nbStates>1 & isTRUE(list(...)$CT)){
+        tswitch <- min(obsTimes[[zoo]]) + stats::rexp(1, -Q[Z[1], Z[1]])
+        allTimes <- sort(c(tswitch,obsTimes[[zoo]]))
+        dt[[zoo]] <- c(diff(allTimes),0)
+      } else {
+        tswitch <- max(obsTimes[[zoo]])
+        allTimes <- obsTimes[[zoo]]
+      }
+      k <- 1
+      time <- obsTimes[[zoo]][1]
+      
+      while(time < max(obsTimes[[zoo]])){
         
         if(ncores==1 | nbAnimals==1) progBar(k, nbObs-1)
         
@@ -1722,20 +1738,48 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           gamma[!gamma] <- exp(g)
           gamma <- t(gamma)
           gamma <- gamma/apply(gamma,1,sum)
+          Z[k+1] <- sample(1:nbStates,size=1,prob=gamma[Z[k],]) 
+          time <- obsTimes[[zoo]][k+1]
         } else {
           if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
-            gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])), betaRef, TRUE, dt[[zoo]][k], aInd=1, maxRate=maxRate)[,,1],nbStates,nbStates),error=function(e) e)
+            Q <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])), betaRef, TRUE, dt[[zoo]][k], aInd=1,rateMatrix=TRUE,maxRate=maxRate)[,,1],nbStates,nbStates),error=function(e) e)
           } else {
-            gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], DMcov[k+1,,drop=FALSE], betaRef, TRUE, dt[[zoo]][k], aInd=1,maxRate=maxRate)[,,1],nbStates,nbStates),error=function(e) e)
+            Q <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], DMcov[k+1,,drop=FALSE], betaRef, TRUE, dt[[zoo]][k], aInd=1,rateMatrix=TRUE,maxRate=maxRate)[,,1],nbStates,nbStates),error=function(e) e)
           }
-          if(inherits(gamma,"error") || any(gamma<0)){
-            warning("TPM exponential could not be calculated for individual ",zoo,"; terminating at observation ",k,": ",ifelse(inherits(gamma,"error"),gamma,"negative probability"))
+          if(inherits(Q,"error") || any(!is.finite(Q))){
+            warning("Transition rate matrix could not be calculated for individual ",zoo,"; terminating at observation ",k,": ",ifelse(inherits(Q,"error"),Q,"rate(s) not finite"))
             break;
           }
+          time <- allTimes[k+1]
+          if(nbStates>1 && time == tswitch){
+            if(isTRUE(list(...)$ctds) && (moveState & genData$z[k]==(directions+1))){
+              Z[k+1] <- Z[k]
+            } else {
+              if (nbStates > 2) {
+                probs <- Q[Z[k], -Z[k]]/sum(Q[Z[k], -Z[k]])
+                Z[k+1] <- sample((1:nbStates)[-Z[k]], size = 1, prob = probs)
+              } else {
+                Z[k+1] <- (1:2)[-Z[k]]
+              }
+              tswitch <- time + stats::rexp(1, -Q[Z[k+1], Z[k+1]])
+              if(tswitch < max(obsTimes[[zoo]])){
+                allTimes <- sort(c(tswitch,allTimes))
+                dt[[zoo]] <- c(diff(allTimes),0)
+              }
+            }
+            d <- d[c(1:(k+1),(k+1):nrow(d)),]
+            subCovs <- subCovs[c(1:k,k:nrow(subCovs)),,drop=FALSE]
+            if(!is.null(allCovs)) allCovs <- allCovs[c(0:cumNbObs[zoo],cumNbObs[zoo]+1:k,(cumNbObs[zoo]+k):nrow(allCovs)),,drop=FALSE]
+            nbObs <- nbObs + 1
+            for(i in distnames){
+              if(inputs$dist[[i]] %in% mvndists){
+                genData[[i]] <- genData[[i]][c(1:(k+1),(k+1):nrow(genData[[i]])),]
+              } else genData[[i]] <- genData[[i]][c(1:(k+1),(k+1):length(genData[[i]]))]
+            }
+            X <- X[c(1:(k+1),(k+1):nrow(X)),]
+          } else Z[k+1] <- Z[k]
         }
-        if(isTRUE(list(...)$ctds) && (moveState & genData$z[k]==(directions+1))){
-          Z[k+1] <- Z[k]
-        } else Z[k+1] <- sample(1:nbStates,size=1,prob=gamma[Z[k],])  
+        k <- k + 1
       }
       #allStates <- c(allStates,Z)
       #if(nbSpatialCovs>0) {
@@ -1772,13 +1816,15 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(length(centroidInd)) centroidCovs <- subCovs[,centroidNames]
       #data <- rbind(data,d)
       
-      simDat <- list(data=d,allCovs=allCovs[cumNbObs[zoo]+1:nbObs,,drop=FALSE],allSpatialcovs=subSpatialcovs,centerCovs=centerCovs,centroidCovs=centroidCovs,allStates=matrix(Z,ncol=1))
+      simDat <- list(data=d,allCovs=allCovs[cumNbObs[zoo]+1:nbObs,,drop=FALSE],allSpatialcovs=subSpatialcovs,centerCovs=centerCovs,centroidCovs=centroidCovs,allStates=matrix(Z,ncol=1),allTimes=matrix(allTimes,ncol=1))
       if(isTRUE(list(...)$ctds)){
-        simDat$data$time <- obsTimes[[zoo]]
+        simDat$data$time <- allTimes
         simDat$data$tau <- dt[[zoo]]
+        simDat$data$isObs <- (allTimes %in% obsTimes[[zoo]])
         simDat <- lapply(simDat,function(x) if(!is.null(x)) x[1:k,,drop=FALSE])
       } else if(isTRUE(list(...)$CT)){
-        simDat$data$time <- obsTimes[[zoo]]
+        simDat$data$isObs <- (allTimes %in% obsTimes[[zoo]])
+        simDat$data$time <- allTimes
       }
       return(simDat)
     }
@@ -1858,13 +1904,14 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     # account for observation error (if any)
     if(!isTRUE(list(...)$CT)) out<-simObsData(momentuHMMData(simDat$data),lambda,errorEllipse)
     else {
+      allObsTimes <- simDat$allTimes
       withCallingHandlers(out<-simObsData(momentuHMMData(simDat$data),lambda=NULL,errorEllipse,CT=TRUE),warning=muffleCTwarning)
       if(!isTRUE(list(...)$ctds)) out$time <- allObsTimes
       else {
-        obsCount <- table(out$ID)
+        obsCount <- table(out[out$isObs,]$ID)
         termInd <- which(obsCount!=(allNbObs-1))
         for(zoo in termInd){
-          warning("TPM exponential could not be calculated for individual ",zoo,"; terminated at observation ",obsCount[zoo])
+          warning("Transition rate matrix could not be calculated for individual ",zoo,"; terminated at observation ",obsCount[zoo])
         }
       }
     }

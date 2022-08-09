@@ -36,7 +36,8 @@ simCTHMM(
   maxRate = Inf,
   ncores = 1,
   export = NULL,
-  gradient = FALSE
+  gradient = FALSE,
+  keepSwitch = FALSE
 )
 
 simHierCTHMM(
@@ -178,6 +179,8 @@ any other data streams are observed without error.}
 
 \item{gradient}{Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. If \code{TRUE}, the gradients are returned with ``\code{.x}'' (easting gradient) and ``\code{.y}'' (northing gradient) suffixes added to the names of \code{spatialCovs}. For example, if \code{cov1} is the name of a spatial covariate, then the returned \code{\link{momentuHMMData}} object will include the fields ``\code{cov1.x}'' and ``\code{cov1.y}''.}
 
+\item{keepSwitch}{Logical indicating whether or not to return the (typically unobserved) data at the times when state switches occurred. Default: \code{FALSE}. If set to \code{TRUE}, an additional logical field named \code{isObs} is returned, where \code{TRUE} indicates observations and \code{FALSE} indicates state switches.}
+
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See details.}
 
 \item{hierDist}{A hierarchical data structure \code{\link[data.tree]{Node}} for the data streams ('dist'). Currently
@@ -227,11 +230,12 @@ If simulated location data include measurement error (i.e., \code{errorEllipse!=
 \item{error.corr}{correlation term of bivariate normal error (if applicable; required for error ellipse models in \code{\link{crawlWrap}})}
 }
 \description{
-Simulates data from an approximate (multivariate) continuous-time hidden Markov model. Note that the state active at observation time \emph{t} determines the (state-dependent) observation distribution from observation time \emph{t} to time \emph{t+1} and time-varying covariates are assumed piece-wise constant between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
+Simulates data from a continuous-time hidden Markov model. Note that any time-varying covariates are assumed piece-wise constant between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
 }
 \details{
 \itemize{
-\item Because \code{simCTHMM} and \code{simHierCTHMM} assume the state active at observation time \emph{t} determines the (state-dependent) observation distribution from observation time \emph{t} to time \emph{t+1} (i.e. state switches only occur at the times of observations), it is critical that the frequency of observations (specified by \code{lambda}) is high relative to the serial correlation in the hidden state process (specified by \code{beta}) in order for this approximation to be reasonably accurate. To investigate the consequences of coarser observation times, data should first be simulated at a high temporal resolution and then manually subsampled.
+\item \code{simCTHMM} and \code{simHierCTHMM} assume the snapshot property applies to all data stream distributions except the (multivariate) normal random walk (\code{rw_norm}, \code{rw_mvnorm2}, \code{rw_mvnorm3}), continuous-time discrete-space (\code{ctds}), and Poisson (\code{pois}) distributions. For these particular distributions, the observed data depend on the time interval between observations \eqn{(\Delta_t)} and, hence, the state sequence during the entire interval.
+If fitting with \code{\link{fitCTHMM}} (or \code{\link{MIfitCTHMM}}), it is critical that the frequency of observations (specified by \code{lambda}) is high relative to the serial correlation in the hidden state process (specified by \code{beta}) in order for the discrete-time approximation of \code{\link{fitCTHMM}} to be reasonably accurate.
 }
 
 \itemize{
