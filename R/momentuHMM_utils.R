@@ -218,6 +218,13 @@ muffleCTwarning <- function(w) {
   q <- iconv(c(intToUtf8(8216), intToUtf8(8217)),"UTF-8", "")
   if(any(grepl(paste0("extra argument ",q[1],"CT",q[2]," will be disregarded"),w)) |
      any(grepl(paste0("extra arguments ",q[1],"CT",q[2],", ",
+                      q[1],"maxRate",q[2],", ",
+                      q[1],"kappa",q[2]," will be disregarded"),w)) |
+     any(grepl(paste0("extra arguments ",q[1],"CT",q[2],", ",
+                      q[1],"Time.name",q[2],", ",
+                      q[1],"maxRate",q[2],", ",
+                      q[1],"kappa",q[2]," will be disregarded"),w)) |
+     any(grepl(paste0("extra arguments ",q[1],"CT",q[2],", ",
                       q[1],"maxRate",q[2]," will be disregarded"),w)) |
      any(grepl(paste0("extra arguments ",q[1],"CT",q[2],", ",
                                          q[1],"Time.name",q[2],", ",

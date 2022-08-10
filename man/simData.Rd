@@ -300,7 +300,7 @@ Simulates data from a (multivariate) hidden Markov model. Movement data are assu
 \itemize{
 \item \code{simHierData} is very similar to \code{\link{simData}} except that instead of simply specifying the number of states (\code{nbStates}), distributions (\code{dist}), observations (\code{obsPerAnimal}), covariates (\code{nbCovs}), and a single t.p.m. formula (\code{formula}), the \code{hierStates} argument specifies the hierarchical nature of the states,
 the \code{hierDist} argument specifies the hierarchical nature of the data streams, the \code{obsPerLevel} argument specifies the number of observations for each level of the hierarchy, the \code{nbHierCovs} argument specifies the number of covariates for each level of the hierarchy, and the \code{hierFormula} argument specifies a t.p.m. formula for each level of the hierarchy.
-All of the hierarhcial arguments in \code{simHierData} are specified as \code{\link[data.tree]{Node}} objects from the \code{\link[data.tree]{data.tree}} package.
+All of the hierarchical arguments in \code{simHierData} are specified as \code{\link[data.tree]{Node}} objects from the \code{\link[data.tree]{data.tree}} package.
 \item x- and y-coordinate location data are generated only if valid 'step' and 'angle' data streams are specified.  Vaild distributions for 'step' include 
 'gamma', 'weibull', 'exp', and 'lnorm'.  Valid distributions for 'angle' include 'vm' and 'wrpcauchy'.  If only a valid 'step' data stream is specified, then only x-coordinates
 are generated.
@@ -363,7 +363,7 @@ HMM with \code{formulaDelta=~cov1+cov2}, the matrix \code{delta} has three rows 
 and 2 columns (corresponding to states 2 and 3). The initial distribution working parameters are transformed to the real scale as \code{exp(covsDelta*Delta)/rowSums(exp(covsDelta*Delta))}, where \code{covsDelta} is the N x k design matrix, \code{Delta=cbind(rep(0,k),delta)} is a k x \code{nbStates} matrix of working parameters,
 and \code{N=length(unique(data$ID))}.
 
-\item For \code{simHierData}, \code{delta} must be specified
+\item For \code{simHierData}, 'delta' in \code{hierDelta} must be specified
 as a k x (\code{nbStates}-1) matrix of working parameters, where k is the number of regression coefficients and the columns correspond to states 2:\code{nbStates}. 
 }
 }

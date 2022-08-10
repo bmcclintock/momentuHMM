@@ -1,6 +1,6 @@
 #' Simulation tool
 #'
-#' Simulates data from a continuous-time hidden Markov model. Note that any time-varying covariates are assumed piece-wise constant between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
+#' Simulates data from a continuous-time hidden Markov model based on Blackwell et al. (2016), where specification of \code{kappa} determines the potential times of state switches when \code{formula} includes covariates (larger \code{kappa} means potential switches are more frequent). Note that any time-varying covariates are assumed piece-wise constant between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
 #'
 #' @param nbAnimals Number of observed individuals to simulate.
 #' @param nbStates Number of behavioural states to simulate.
@@ -57,8 +57,8 @@
 #' @param model A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object. This option can be used to simulate from a fitted model.  Default: NULL.
 #' Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
 #' \code{obsPerAnimal}, \code{states}, \code{initialPosition}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
-#' \code{covs}, and \code{spatialCovs}. It is not appropriate to simulate movement data from a \code{model} that was fitted to latitude/longitude data (because \code{simData} assumes Cartesian coordinates).
-#' @param matchModelObs If \code{model} is provided, logical indicating whether to match \code{nbAnimals}, \code{obsPerAnimal} (or \code{obsPerLevel} if \code{model} is a \code{momentuHierHMM} object), and observation times to the fitted model data. If \code{TRUE}, then \code{nbAnimals}, \code{obsPerAnimal}, and \code{lambda} are ignored. Default: \code{TRUE}.
+#' \code{covs}, and \code{spatialCovs}. It is not appropriate to simulate movement data from a \code{model} that was fitted to latitude/longitude data (because \code{simCTHMM} assumes Cartesian coordinates).
+#' @param matchModelObs If \code{model} is provided, logical indicating whether to match \code{nbAnimals}, \code{obsPerAnimal}, and observation times to the fitted model data. If \code{TRUE}, then \code{nbAnimals}, \code{obsPerAnimal}, and \code{lambda} are ignored. Default: \code{TRUE}.
 #' @param states \code{TRUE} if the simulated states should be returned, \code{FALSE} otherwise (default).
 #' @param retrySims Number of times to attempt to simulate data within the spatial extent of \code{spatialCovs}. If \code{retrySims=0} (the default), an
 #' error is returned if the simulated tracks(s) move beyond the extent(s) of the raster layer(s). Instead of relying on \code{retrySims}, in many cases
@@ -74,16 +74,30 @@
 #' \code{runif(1,min(errorEllipse$m),max(errorEllipse$m))}, and \code{runif(1,min(errorEllipse$r),max(errorEllipse$r))}. If only a single value is provided for any of the 
 #' error ellipse elements, then the corresponding component is fixed to this value for each location. Only coordinate data streams are subject to location measurement error;
 #' any other data streams are observed without error.
-#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues.
+#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues, but results in \code{beta} being on the logit scale (instead of log scale).
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param export Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.
 #' @param gradient Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. If \code{TRUE}, the gradients are returned with ``\code{.x}'' (easting gradient) and ``\code{.y}'' (northing gradient) suffixes added to the names of \code{spatialCovs}. For example, if \code{cov1} is the name of a spatial covariate, then the returned \code{\link{momentuHMMData}} object will include the fields ``\code{cov1.x}'' and ``\code{cov1.y}''.
-#' @param keepSwitch Logical indicating whether or not to return the (typically unobserved) data at the times when state switches occurred. Default: \code{FALSE}. If set to \code{TRUE}, an additional logical field named \code{isObs} is returned, where \code{TRUE} indicates observations and \code{FALSE} indicates state switches.
-
+#' @param keepSwitch Logical indicating whether or not to return the (typically unobserved) data at the times when potential state switches could have occurred. Default: \code{FALSE}. If set to \code{TRUE}, an additional logical field named \code{isObs} is returned, where \code{TRUE} indicates observations and \code{FALSE} indicates state switches.
+#' @param kappa List defining the method for obtaining the upper bound for the transition rate out of the current state (see Blackwell et al. 2016). The list can include up to three named objects: 1) \code{method}, a character string indicating the method for calculating the upper bound based on the covariates in the model (\code{"all"}, \code{"random"}, or \code{"quantile"}); 2) \code{nspCov}, a positive scalar for subsampling the non-spatial covariates (when \code{method="random"} or \code{method="quantile"}); and \code{spCov}, a positive scalar for subsampling the spatial covariates (when \code{method="random"} or \code{method="quantile"}).
+#' Default method is \code{"all"}, in which case \code{kappa} is calculated based on all of the observed covariate values (note this can be slow and/or memory could become an issue for large datasets and/or rasters). For \code{method="random"}, the observed covariates are subsampled with up to \code{nspCov} samples of any non-spatial covariates and up to \code{spCov} samples of any spatial covariates (defaults are \code{1000} for \code{nspCov} and \code{10000} for \code{spCov}). For \code{method="quantile"}, all combinations of 100-length sequences spanning the (\code{nspCov}/2, 1-\code{nspCov}/2) and (\code{spCov}/2, 1-\code{spCov}/2) quantiles of the covariates are used (defaults are \code{0.05} for both \code{nspCov} and \code{spCov}). Alternatively, \code{kappa} can be manually specified as a finite positive value (instead of a list).
+#' Ignored unless covariates are included in \code{formula}.
 #' @details 
 #' \itemize{
-#' \item \code{simCTHMM} and \code{simHierCTHMM} assume the snapshot property applies to all data stream distributions except the (multivariate) normal random walk (\code{rw_norm}, \code{rw_mvnorm2}, \code{rw_mvnorm3}), continuous-time discrete-space (\code{ctds}), and Poisson (\code{pois}) distributions. For these particular distributions, the observed data depend on the time interval between observations \eqn{(\Delta_t)} and, hence, the state sequence during the entire interval.
-#' If fitting with \code{\link{fitCTHMM}} (or \code{\link{MIfitCTHMM}}), it is critical that the frequency of observations (specified by \code{lambda}) is high relative to the serial correlation in the hidden state process (specified by \code{beta}) in order for the discrete-time approximation of \code{\link{fitCTHMM}} to be reasonably accurate.
+#' \item \code{simCTHMM} assumes the snapshot property applies to all data stream distributions (i.e. observations are "instantaneous") except for the (multivariate) normal random walk (\code{rw_norm}, \code{rw_mvnorm2}, \code{rw_mvnorm3}) and Poisson (\code{pois}) distributions. For these particular distributions, the observed data are not "instantaneous"; they depend on the time interval between observations \eqn{(\Delta_t)} and, hence, the state sequence during the entire interval.
+#' If fitting with \code{\link{fitCTHMM}} (or \code{\link{MIfitCTHMM}}), it is critical that the frequency of observations (specified by \code{lambda}) is high relative to the serial correlation in the hidden state process (specified by \code{beta}) in order for the discrete-time approximation of \code{\link{fitCTHMM}} to be reasonably accurate for these distributions.
+#' 
+#' \item If the length of covariate values passed (either through 'covs', or 'model') is not the same
+#' as the number of observations suggested by 'nbAnimals' and 'obsPerAnimal', then the series of
+#' covariates is either shortened (removing last values - if too long) or extended (starting
+#' over from the first values - if too short).
+#' 
+#' \item When covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=NULL}), then \code{delta} is specified as a vector of length \code{nbStates} that 
+#' sums to 1.  When covariates are included in \code{formulaDelta}, then \code{delta} must be specified
+#' as a k x (\code{nbStates}-1) matrix of working parameters, where k is the number of regression coefficients and the columns correspond to states 2:\code{nbStates}. For example, in a 3-state
+#' HMM with \code{formulaDelta=~cov1+cov2}, the matrix \code{delta} has three rows (intercept + two covariates)
+#' and 2 columns (corresponding to states 2 and 3). The initial distribution working parameters are transformed to the real scale as \code{exp(covsDelta*Delta)/rowSums(exp(covsDelta*Delta))}, where \code{covsDelta} is the N x k design matrix, \code{Delta=cbind(rep(0,k),delta)} is a k x \code{nbStates} matrix of working parameters,
+#' and \code{N=length(unique(data$ID))}.
 #' }
 #' 
 #' @return If the simulated data have no measurement error (i.e., \code{errorEllipse=NULL}), a \code{\link{momentuHMMData}} object, 
@@ -110,8 +124,13 @@
 #' \item{ln.sd.x}{log of the square root of the x-variance of bivariate normal error (if applicable; required for error ellipse models in \code{\link{crawlWrap}})}
 #' \item{ln.sd.y}{log of the square root of the y-variance of bivariate normal error (if applicable; required for error ellipse models in \code{\link{crawlWrap}})}
 #' \item{error.corr}{correlation term of bivariate normal error (if applicable; required for error ellipse models in \code{\link{crawlWrap}})}
+#' 
+#' @references
+#' 
+#' Blackwell, P.G., Niu, M., Lambert, M.S. and LaPoint, S.D., 2016. Exact Bayesian inference for animal movement in continuous time. Methods in Ecology and Evolution, 7 (2), 184-195.
+#' 
 #' @export
-#'
+#' @importFrom stats rnorm runif rmultinom step terms.formula aggregate
 
 simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                      Par,beta=NULL,delta=NULL,
@@ -138,7 +157,8 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                      ncores=1,
                      export=NULL,
                      gradient=FALSE,
-                     keepSwitch=FALSE)
+                     keepSwitch=FALSE,
+                     kappa=list(method=c("all","random","quantile"),nspCov=NA,spCov=NA))
 {
   
   if(!is.null(model)){
@@ -173,6 +193,22 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
     } else stop("lambda cannot be NULL")
     if(!is.numeric(maxRate) || length(maxRate)>1 || maxRate<0) stop('maxRate must be a non-negative numeric scalar')
   }
+  if(is.list(kappa)){
+    if(any(!names(kappa) %in% c("method","nspCov","spCov"))) stop("'kappa' names can only be 'method', 'nspCov', and 'spCov'")
+    if(is.null(kappa$method)) stop("kappa$method must be specified")
+    kappa$method <- match.arg(kappa$method,c("all","random","quantile"))
+    if(kappa$method=="random"){
+      if(is.null(kappa$nspCov) || is.na(kappa$nspCov)) kappa$nspCov <- 1000
+      else if(!is.finite(kappa$nspCov) || length(kappa$nspCov)!=1 || kappa$nspCov<=0) stop("kappa$nspCov must be a positive integer")
+      if(is.null(kappa$spCov) || is.na(kappa$spCov)) kappa$spCov <- 10000
+      else if(!is.finite(kappa$spCov) || length(kappa$spCov)!=1 || kappa$spCov<=0) stop("kappa$spCov must be a positive integer")
+    } else if(kappa$method=="quantile"){
+      if(is.null(kappa$nspCov) || is.na(kappa$nspCov)) kappa$nspCov <- 0.05
+      else if(!is.finite(kappa$nspCov) || length(kappa$nspCov)!=1 || !dunif(kappa$nspCov)) stop("kappa$nspCov must be a scalar between 0 and 1")
+      if(is.null(kappa$spCov) || is.na(kappa$spCov)) kappa$spCov <- 0.05
+      else if(!is.finite(kappa$spCov) || length(kappa$spCov)!=1 || !dunif(kappa$spCov)) stop("kappa$spCov must be a scalar between 0 and 1")
+    }
+  } else if(!is.finite(kappa) || length(kappa)!=1 || kappa<=0) stop("kappa must either be a list or a finite positive value")
   
   withCallingHandlers(out <- simData(nbAnimals,nbStates,dist,
                                      Par,beta,delta,
@@ -196,10 +232,23 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                                      export=export,
                                      gradient=gradient,
                                      CT=TRUE,
-                                     maxRate=maxRate),warning=muffleCTwarning)
+                                     maxRate=maxRate,
+                                     kappa=kappa),warning=muffleCTwarning)
   
   if(!keepSwitch){
+    newout <- list()
+    if(!is.null(model)) dist <- model$conditions$dist
+    for(i in names(dist)[which(unlist(lapply(dist,function(x) x=="pois")))]){
+      newout[[i]] <- integer()
+      for(zoo in 1:nbAnimals){
+        tmp <- out[which(out$ID==unique(out$ID)[zoo]),]
+        newout[[i]] <- c(newout[[i]],stats::aggregate(tmp[[i]],by=list(cumsum(tmp$isObs)),sum)$x)
+      }
+    }
     out <- out[out$isObs,]
+    for(i in names(dist)[which(unlist(lapply(dist,function(x) x=="pois")))]){
+      out[[i]] <- newout[[i]]
+    }
     out$isObs <- NULL
   }
   

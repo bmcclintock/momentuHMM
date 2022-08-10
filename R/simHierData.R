@@ -28,7 +28,7 @@
 #' and 2 columns (corresponding to states 2 and 3). The initial distribution working parameters are transformed to the real scale as \code{exp(covsDelta*Delta)/rowSums(exp(covsDelta*Delta))}, where \code{covsDelta} is the N x k design matrix, \code{Delta=cbind(rep(0,k),delta)} is a k x \code{nbStates} matrix of working parameters,
 #' and \code{N=length(unique(data$ID))}.
 #' 
-#' \item For \code{simHierData}, \code{delta} must be specified
+#' \item For \code{simHierData}, 'delta' in \code{hierDelta} must be specified
 #' as a k x (\code{nbStates}-1) matrix of working parameters, where k is the number of regression coefficients and the columns correspond to states 2:\code{nbStates}. 
 #' }
 #' 

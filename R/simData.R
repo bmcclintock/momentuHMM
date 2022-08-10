@@ -160,7 +160,7 @@
 #' @details \itemize{
 #' \item \code{simHierData} is very similar to \code{\link{simData}} except that instead of simply specifying the number of states (\code{nbStates}), distributions (\code{dist}), observations (\code{obsPerAnimal}), covariates (\code{nbCovs}), and a single t.p.m. formula (\code{formula}), the \code{hierStates} argument specifies the hierarchical nature of the states,
 #' the \code{hierDist} argument specifies the hierarchical nature of the data streams, the \code{obsPerLevel} argument specifies the number of observations for each level of the hierarchy, the \code{nbHierCovs} argument specifies the number of covariates for each level of the hierarchy, and the \code{hierFormula} argument specifies a t.p.m. formula for each level of the hierarchy.
-#' All of the hierarhcial arguments in \code{simHierData} are specified as \code{\link[data.tree]{Node}} objects from the \code{\link[data.tree]{data.tree}} package.
+#' All of the hierarchical arguments in \code{simHierData} are specified as \code{\link[data.tree]{Node}} objects from the \code{\link[data.tree]{data.tree}} package.
 
 #' \item x- and y-coordinate location data are generated only if valid 'step' and 'angle' data streams are specified.  Vaild distributions for 'step' include 
 #' 'gamma', 'weibull', 'exp', and 'lnorm'.  Valid distributions for 'angle' include 'vm' and 'wrpcauchy'.  If only a valid 'step' data stream is specified, then only x-coordinates
@@ -341,8 +341,8 @@
 #' Journal of the Royal Statistical Society: Series C (Applied Statistics), 65(3):445-463.
 #'
 #' @export
-#' @importFrom stats rnorm runif rmultinom step terms.formula
-# @importFrom raster cellFromXY getValues is.factor levels
+#' @importFrom stats rnorm runif rpois rmultinom step terms.formula
+# @importFrom raster cellFromXY getValues is.factor levels ncell
 # @importFrom moveHMM simData
 #' @importFrom CircStats rvm
 #' @importFrom Brobdingnag as.brob sum
@@ -1274,26 +1274,24 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     ###########################
     withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.export=c(ls(),export),.packages=pkgs,.combine='comb') %dorng% {
       
-      if(ncores==1 | nbAnimals==1) message("        Simulating individual ",zoo,"... ",sep="")
-      else progBar(zoo, nbAnimals)
-      
       # number of observations for animal zoo
       nbObs <- allNbObs[zoo]
-      d <- data.frame(ID=factor(rep(IDs[zoo],nbObs)))
       
       ###############################
       ## Simulate covariate values ##
       ###############################
       subCovs<-data.frame(ID=rep(factor(IDs[zoo],levels=IDs),nbObs))
-      if(nbCovs>0) {
-        # select covariate values which concern the current animal
-        if(zoo<2)
+      if(nbCovs>0){ # select covariate values which concern the current animal
+        if(zoo<2){
           ind1 <- 1
-        else
+        } else {
           ind1 <- sum(allNbObs[1:(zoo-1)])+1
+        }
         ind2 <- sum(allNbObs[1:zoo])
         subCovs <- cbind(subCovs,data.frame(allCovs[ind1:ind2,,drop=FALSE]))
-      }
+        iallCovs <- allCovs[ind1:ind2,,drop=FALSE]
+      } else iallCovs <- NULL
+      
       if(length(centerInd)) subCovs <- cbind(subCovs,centerCovs[cumNbObs[zoo]+1:nbObs,])
       if(length(centroidInd)) subCovs <- cbind(subCovs,centroidCovs[cumNbObs[zoo]+1:nbObs,])
       
@@ -1312,10 +1310,11 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       subAnglecovs <- as.data.frame(matrix(NA,nrow=nbObs,ncol=length(angleCovs)))
       colnames(subAnglecovs) <- angleCovs
       
-      X <- matrix(0,nrow=nbObs,ncol=2)
-      if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) X <- matrix(0,nrow=nbObs,ncol=3)
-      if(!isTRUE(list(...)$ctds)) X[1,] <- initialPosition[[zoo]] # initial position of animal
-      else X[1,] <- raster::xyFromCell(rast,raster::cellFromXY(rast,initialPosition[[zoo]]))
+      X1 <- matrix(0,nrow=1,ncol=2)
+      if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) X <- matrix(0,nrow=1,ncol=3)
+      if(!isTRUE(list(...)$ctds)){
+        X1[1,] <- initialPosition[[zoo]] # initial position of animal
+      } else X1[1,] <- raster::xyFromCell(rast,raster::cellFromXY(rast,initialPosition[[zoo]]))
       
       phi <- 0
       
@@ -1323,20 +1322,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       ## Simulate movement path ##
       ############################
       
-      genData <- genArgs <- vector('list',length(distnames))
-      names(genData) <- names(genArgs) <- distnames
-      
-      for(i in distnames){
-        if(inputs$dist[[i]] %in% mvndists){
-          genData[[i]] <- matrix(NA,nbObs,as.numeric(sub("mvnorm","",sub("rw_mvnorm","",dist[[i]]))))
-        } else genData[[i]] <- rep(NA,nbObs)
-        genArgs[[i]] <- list(1)  # first argument = 1 (one random draw)
-      }
-      
-      gamma <- matrix(0,nbStates,nbStates)
-      gamma[cbind(1:nbStates,betaRef)] <- 1
-      gamma <- t(gamma)
-      
+      # get initial covariates
       if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd) & !length(angleCovs) & !rwInd) {
         if(!is.null(recharge)){
           g0 <- stats::model.matrix(recharge$g0,subCovs[1,,drop=FALSE]) %*% wng0
@@ -1357,25 +1343,23 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         
         covsDelta <- stats::model.matrix(formDelta,subCovs[1,,drop=FALSE])
         covsPi <- stats::model.matrix(formPi,subCovs[1,,drop=FALSE])
-        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
-        
-        pie <- fullsubPar[["pi"]]
+        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,nrow(subCovs),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
         
         # assign individual to mixture
+        pie <- fullsubPar[["pi"]]
         if(mixtures>1) mix[zoo] <- sample.int(mixtures,1,prob=pie)
         
         gFull <-  DMcov %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
-        g <- gFull[1,,drop=FALSE]
         delta0 <- fullsubPar$delta[mix[zoo],]
       } else {
         
         if(nbSpatialCovs){
           if(isTRUE(list(...)$ctds)) {
-            getCell<-raster::cellFromXY(rast,c(X[1,1],X[1,2]))
+            getCell<-raster::cellFromXY(rast,c(X1[1,1],X1[1,2]))
           }
           for(j in 1:nbSpatialCovs){
             if(!isTRUE(list(...)$ctds)){
-              getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[1,1],X[1,2]))
+              getCell<-raster::cellFromXY(spatialCovs[[j]],c(X1[1,1],X1[1,2]))
               if(is.na(getCell)){
                 if(ncores==1) message("\n    FAILED \n")
                 stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
@@ -1396,10 +1380,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             }
             if(gradient){
               if(inherits(spatialCovs[[j]],"RasterLayer")){
-                subSpatialcovs[1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X[1,1],y=X[1,2]),collapseRast=collapseRast[spatialcovnames[j]])[,paste0(spatialcovnames[j],c(".x",".y"))]
+                subSpatialcovs[1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X1[1,1],y=X1[1,2]),collapseRast=collapseRast[spatialcovnames[j]])[,paste0(spatialcovnames[j],c(".x",".y"))]
               } else if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
                 tmpColRast[[spatialcovnames[j]]] <- collapseRast[[spatialcovnames[j]]][[which(zvalues==subCovs[1,zname])]]
-                subSpatialcovs[1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X[1,1],y=X[1,2]),collapseRast=tmpColRast)[,paste0(spatialcovnames[j],c(".x",".y"))]
+                subSpatialcovs[1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X1[1,1],y=X1[1,2]),collapseRast=tmpColRast)[,paste0(spatialcovnames[j],c(".x",".y"))]
               }
             }
           }
@@ -1413,13 +1397,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         
         if(length(centerInd)){
           for(j in 1:length(centerInd)){
-            subCovs[1,centerNames[(j-1)*2+1:2]]<-distAngle(X[1,],X[1,],centers[centerInd[j],])
+            subCovs[1,centerNames[(j-1)*2+1:2]]<-distAngle(X1[1,],X1[1,],centers[centerInd[j],])
           }
         }
         
         if(length(centroidInd)){
           for(j in 1:centroidInd){
-            subCovs[1,centroidNames[(j-1)*2+1:2]]<-distAngle(X[1,],X[1,],as.numeric(centroids[[j]][1,]))
+            subCovs[1,centroidNames[(j-1)*2+1:2]]<-distAngle(X1[1,],X1[1,],as.numeric(centroids[[j]][1,]))
           }
         }
         if(!is.null(recharge)){
@@ -1430,12 +1414,12 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         for(i in distnames){
           if(dist[[i]] %in% rwdists){
             if(dist[[i]] %in% c("rw_mvnorm2")){
-              subCovs[1,paste0(i,".x_tm1")] <- X[1,1]
-              subCovs[1,paste0(i,".y_tm1")] <- X[1,2]
+              subCovs[1,paste0(i,".x_tm1")] <- X1[1,1]
+              subCovs[1,paste0(i,".y_tm1")] <- X1[1,2]
             } else if(dist[[i]] %in% c("rw_mvnorm3")){
-              subCovs[1,paste0(i,".x_tm1")] <- X[1,1]
-              subCovs[1,paste0(i,".y_tm1")] <- X[1,2]
-              subCovs[1,paste0(i,".z_tm1")] <- X[1,3]
+              subCovs[1,paste0(i,".x_tm1")] <- X1[1,1]
+              subCovs[1,paste0(i,".y_tm1")] <- X1[1,2]
+              subCovs[1,paste0(i,".z_tm1")] <- X1[1,3]
             }
           }
         }
@@ -1452,53 +1436,178 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         covsDelta <- stats::model.matrix(formDelta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
         
         delta0 <- mlogit(deltaB[(mix[zoo]-1)*(nbCovsDelta+1)+1:(nbCovsDelta+1),,drop=FALSE],covsDelta,nbCovsDelta,1,nbStates)
-        #delta0 <- c(rep(0,nbCovsDelta+1),deltaB[(mix[zoo]-1)*(nbCovsDelta+1)+1:(nbCovsDelta+1),])
-        #deltaXB <- covsDelta %*% matrix(delta0,nrow=nbCovsDelta+1)
-        #expdelta <- exp(deltaXB)
-        #delta0 <- expdelta/rowSums(expdelta)
-        #for(i in which(!is.finite(rowSums(delta0)))){
-        #  tmp <- exp(Brobdingnag::as.brob(deltaXB[i,]))
-        #  delta0[i,] <- as.numeric(tmp/Brobdingnag::sum(tmp))
-        #}
       }
       
       if(!isTRUE(list(...)$CT)){
+        gamma <- matrix(0,nbStates,nbStates)
+        gamma[cbind(1:nbStates,betaRef)] <- 1
+        gamma <- t(gamma)
         g <- stats::model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
         gamma[!gamma] <- exp(g)
         gamma <- t(gamma)
         gamma <- gamma/apply(gamma,1,sum)
       } else {
         gamma <- diag(nbStates)
-        Q <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])), betaRef, TRUE, 0, aInd=1,rateMatrix=TRUE,maxRate=maxRate)[,,1],nbStates,nbStates),error=function(e) e) # diag(nbStates)
-        if(inherits(Q,"error") || any(!is.finite(Q))){
-          stop("initial transition rate matrix could not be calculated for individual ",zoo,": ",ifelse(inherits(Q,"error"),Q,"rate(s) not finite"))
+        qnames <- names(stats::get_all_vars(newformula,data=cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])))
+        qInd <- (length(qnames)>0) # indicator for covariates on state transition rates
+        if(nbStates>1){
+          kappa <- list(...)$kappa
+          if(is.list(kappa)){
+            if(is.null(recharge)){
+              if(qInd){
+                message("\n        Calculating max transition rate using '",kappa$method,"' method for individual ",zoo,"...")
+                if(kappa$method=="quantile"){
+                  covgrid <- list()
+                  for(i in names(subCovs)[names(subCovs) %in% qnames]){
+                    if(is.factor(subCovs[,i])) covgrid[[i]] <- levels(subCovs[,i])
+                    else covgrid[[i]] <- seq(stats::quantile(subCovs[,i],kappa$nspCov/2),stats::quantile(subCovs[,i],1-kappa$nspCov/2),length=100)
+                  }
+                  for(i in spatialcovnames[spatialcovnames %in% qnames]){
+                    if(is.factor(raster::getValues(spatialCovs[[i]]))) covgrid[[i]] <- levels(raster::getValues(spatialCovs[[i]]))
+                    else covgrid[[i]] <- seq(stats::quantile(raster::getValues(spatialCovs[[i]]),kappa$spCov/2),stats::quantile(raster::getValues(spatialCovs[[i]]),1-kappa$spCov/2),length=100)
+                  }
+                  mm <- stats::model.matrix(newformula,expand.grid(covgrid))
+                  rm(covgrid)
+                } else if(kappa$method=="random"){
+                  if(any(names(subCovs) %in% qnames)){
+                    fullsub <- subCovs[rep(sample.int(nrow(subCovs),min(nrow(subCovs),kappa$nspCov)), each = ifelse(nbSpatialCovs,min(raster::ncell(spatialCovs[[1]]),kappa$spCov),1)),which(names(subCovs) %in% qnames),drop=FALSE ]
+                    if(nbSpatialCovs){
+                      fullSpatialCov <- data.frame(fullsub,apply(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames])[sample.int(raster::ncell(spatialCovs[[1]]),min(raster::ncell(spatialCovs[[1]]),kappa$spCov)),,drop=FALSE],2,function(x) rep(x,min(nrow(subCovs),kappa$nspCov))))
+                      mm <- stats::model.matrix(newformula,fullSpatialCov)
+                    } else mm <- stats::model.matrix(newformula,fullsub)
+                    rm(fullsub,fullSpatialCov)
+                  } else {
+                    fullSpatialCov <- data.frame(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames])[sample.int(raster::ncell(spatialCovs[[1]]),min(raster::ncell(spatialCovs[[1]]),kappa$spCov)),,drop=FALSE])
+                    mm <- stats::model.matrix(newformula,fullSpatialCov)
+                    rm(fullSpatialCov)
+                  }
+                } else if(kappa$method=="all"){
+                  if(any(names(subCovs) %in% qnames)){
+                    fullsub <- subCovs[rep(seq_len(nrow(subCovs)), each = ifelse(nbSpatialCovs,raster::ncell(spatialCovs[[1]]),1)),which(names(subCovs) %in% qnames),drop=FALSE]
+                    if(nbSpatialCovs){
+                      fullSpatialCov <- data.frame(fullsub,apply(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames]),2,function(x) rep(x,nrow(subCovs))))
+                      mm <- stats::model.matrix(newformula,fullSpatialCov)
+                    } else mm <- stats::model.matrix(newformula,fullsub)
+                    rm(fullsub,fullSpatialCov)
+                  } else {
+                    fullSpatialCov <- data.frame(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames]))
+                    mm <- stats::model.matrix(newformula,fullSpatialCov)
+                    rm(fullSpatialCov)
+                  }
+                }
+              } else {
+                mm <- stats::model.matrix(newformula,cbind(subCovs,subSpatialcovs))
+              }
+              fullQ <- tryCatch(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], mm, betaRef, TRUE, 0, aInd=1,rateMatrix=TRUE,maxRate=maxRate),error=function(e) e) # diag(nbStates)
+              if(inherits(fullQ,"error") || any(!is.finite(fullQ))){
+                stop("Max transition rate could not be calculated for individual ",zoo,": ",ifelse(inherits(fullQ,"error"),fullQ,"rate(s) not finite"))
+              }
+              if(!qInd){
+                if(!identical(array(fullQ[,,1],dim=c(nbStates,nbStates,dim(fullQ)[3])),fullQ)) stop("transition rate matrix not constant -- please report to brett.mcclintock@noaa")
+              }
+              Qmat <- fullQ[,,1]
+              kappa <- max(abs(fullQ)) # upper bound for transitions away from current state
+              rm(fullQ,mm)
+              if(qInd) message("          => kappa = ",round(kappa,2),"\n")
+            } else {
+              stop("kappa must be specified as a positive finite value for recharge models")
+            } 
+          }
         }
-        #gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])), betaRef, TRUE, 0, aInd=1,maxRate=maxRate)[,,1],nbStates,nbStates),error=function(e) e) # diag(nbStates)
-        #if(inherits(gamma,"error") || any(gamma<0)){
-        #  stop("initial TPM exponential could not be calculated for individual ",zoo,": ",ifelse(inherits(gamma,"error"),gamma,"negative probability"))
-        #}
       }
       
       if(nbStates>1) {
         Z <- rep(NA,nbObs)
         Z[1] <- sample(1:nbStates,size=1,prob=delta0%*%gamma)
-      } else
-        Z <- rep(1,nbObs)
+      } else Z <- rep(1,nbObs)
+      
+      if(ncores==1 | nbAnimals==1){
+        message("        Simulating individual ",zoo,"... ",sep="")
+      } else progBar(zoo, nbAnimals)
       
       if(nbStates>1 & isTRUE(list(...)$CT)){
-        tswitch <- min(obsTimes[[zoo]]) + stats::rexp(1, -Q[Z[1], Z[1]])
+        if(qInd){
+          if(inherits(obsTimes[[zoo]],"POSIXt")){
+            nbSwitch <- stats::rpois(1,as.numeric(difftime(max(obsTimes[[zoo]]),min(obsTimes[[zoo]]),units=attr(lambda[[zoo]],"units")))*kappa)
+            tswitch <- min(obsTimes[[zoo]])+sort(runif(nbSwitch)*difftime(max(obsTimes[[zoo]]),min(obsTimes[[zoo]]),units=attr(lambda[[zoo]],"units")))
+          } else {
+            nbSwitch <- stats::rpois(1,diff(range(obsTimes[[zoo]]))*kappa)
+            tswitch <- sort(runif(nbSwitch,min(obsTimes[[zoo]]),max(obsTimes[[zoo]])))
+          }
+          
+        } else { # draw times of actual state switches since transitions don't depend on covariates
+          tswitch <- S <- NULL
+          st1 <- st <- Z[1]
+          time <- min(obsTimes[[zoo]]) + stats::rexp(1, -Qmat[st, st])
+          while(time < obsTimes[[zoo]][nbObs]){
+            if(nbStates > 2){
+              probs <- Qmat[st, -st]/sum(Qmat[st, -st])
+              st <- sample((1:nbStates)[-st], size = 1, prob = probs)
+            } else {
+              st <- (1:2)[-st]
+            }
+            S <- c(S, st)
+            tswitch <- c(tswitch, time)
+            time <- time + stats::rexp(1, -Qmat[st, st])
+          }
+          allTimes <- c(obsTimes[[zoo]], tswitch)
+          Z <- c(rep(NA, nbObs), S)
+          Z <- Z[order(allTimes)]
+          Z[1] <- st1
+          for (t in 1:length(allTimes)){
+            if(is.na(Z[t])) Z[t] <- Z[t - 1]
+          }
+        }
         allTimes <- sort(c(tswitch,obsTimes[[zoo]]))
-        dt[[zoo]] <- c(diff(allTimes),0)
+        if(inherits(obsTimes[[zoo]],"POSIXt")){
+          dt[[zoo]] <- c(as.numeric(difftime(allTimes[-1],allTimes[-length(allTimes)],units=attr(lambda[[zoo]],"units"))),0)
+        } else dt[[zoo]] <- c(diff(allTimes),0)
+        subCovs <- subCovs[cumsum(!allTimes %in% tswitch),,drop=FALSE]
+        if(!is.null(iallCovs)) iallCovs <- iallCovs[cumsum(!allTimes %in% tswitch),,drop=FALSE]
+        
+        if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd) & !length(angleCovs) & !rwInd) {
+          if(!is.null(recharge)){
+            subCovs[,"recharge"] <- cumsum(c(g0,(wntheta %*% t(stats::model.matrix(recharge$theta,subCovs[-nrow(subCovs),])))*dt[[zoo]][-nrow(subCovs)]))
+          }
+          DMcov <- stats::model.matrix(newformula,subCovs)
+          
+          # format parameters
+          DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean)
+          fullDM <- DMinputs$fullDM
+          DMind <- DMinputs$DMind
+          ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
+          nc <- ncmean$nc
+          meanind <- ncmean$meanind
+          fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,nrow(subCovs),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+          gFull <-  DMcov %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
+        } 
+        
       } else {
         tswitch <- max(obsTimes[[zoo]])
         allTimes <- obsTimes[[zoo]]
       }
+    
       k <- 1
       time <- obsTimes[[zoo]][1]
       
+      genData <- genArgs <- vector('list',length(distnames))
+      names(genData) <- names(genArgs) <- distnames
+      
+      for(i in distnames){
+        if(inputs$dist[[i]] %in% mvndists){
+          genData[[i]] <- matrix(NA,length(allTimes),as.numeric(sub("mvnorm","",sub("rw_mvnorm","",dist[[i]]))))
+        } else genData[[i]] <- rep(NA,length(allTimes))
+        genArgs[[i]] <- list(1)  # first argument = 1 (one random draw)
+      }
+      d <- data.frame(ID=factor(rep(IDs[zoo],length(allTimes))))
+      
+      X <- matrix(0,nrow=length(allTimes),ncol=2)
+      if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) X <- matrix(0,nrow=length(allTimes),ncol=3)
+      X[1,] <- X1
+      
       while(time < max(obsTimes[[zoo]])){
         
-        if(ncores==1 | nbAnimals==1) progBar(k, nbObs-1)
+        if(ncores==1 | nbAnimals==1) progBar(k, length(allTimes)-1)
         
         if(nbSpatialCovs |  length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
           # format parameters
@@ -1741,43 +1850,34 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           Z[k+1] <- sample(1:nbStates,size=1,prob=gamma[Z[k],]) 
           time <- obsTimes[[zoo]][k+1]
         } else {
-          if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
-            Q <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])), betaRef, TRUE, dt[[zoo]][k], aInd=1,rateMatrix=TRUE,maxRate=maxRate)[,,1],nbStates,nbStates),error=function(e) e)
-          } else {
-            Q <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], DMcov[k+1,,drop=FALSE], betaRef, TRUE, dt[[zoo]][k], aInd=1,rateMatrix=TRUE,maxRate=maxRate)[,,1],nbStates,nbStates),error=function(e) e)
-          }
-          if(inherits(Q,"error") || any(!is.finite(Q))){
-            warning("Transition rate matrix could not be calculated for individual ",zoo,"; terminating at observation ",k,": ",ifelse(inherits(Q,"error"),Q,"rate(s) not finite"))
-            break;
-          }
           time <- allTimes[k+1]
-          if(nbStates>1 && time == tswitch){
-            if(isTRUE(list(...)$ctds) && (moveState & genData$z[k]==(directions+1))){
-              Z[k+1] <- Z[k]
-            } else {
-              if (nbStates > 2) {
-                probs <- Q[Z[k], -Z[k]]/sum(Q[Z[k], -Z[k]])
-                Z[k+1] <- sample((1:nbStates)[-Z[k]], size = 1, prob = probs)
+          if(qInd){
+            if(nbStates>1 && time %in% tswitch){
+              if(isTRUE(list(...)$ctds) && (moveState & genData$z[k]==(directions+1))){
+                Z[k+1] <- Z[k]
               } else {
-                Z[k+1] <- (1:2)[-Z[k]]
+                if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
+                  Qmat <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])), betaRef, TRUE, dt[[zoo]][k], aInd=1,rateMatrix=TRUE,maxRate=maxRate)[,,1],nbStates,nbStates),error=function(e) e)
+                } else {
+                  Qmat <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], DMcov[k+1,,drop=FALSE], betaRef, TRUE, dt[[zoo]][k], aInd=1,rateMatrix=TRUE,maxRate=maxRate)[,,1],nbStates,nbStates),error=function(e) e)
+                }
+                if(inherits(Qmat,"error") || any(!is.finite(Qmat))){
+                  warning("Transition rate matrix could not be calculated for individual ",zoo,"; terminating at observation ",k,": ",ifelse(inherits(Qmat,"error"),Qmat,"rate(s) not finite"))
+                  break;
+                }
+                qsum <- sum(Qmat[Z[k], -Z[k]])
+                if(runif(1) < qsum/kappa){
+                  if (nbStates > 2) {
+                    probs <- Qmat[Z[k], -Z[k]]/qsum
+                    Z[k+1] <- sample((1:nbStates)[-Z[k]], size = 1, prob = probs)
+                  } else {
+                    Z[k+1] <- (1:2)[-Z[k]]
+                  }
+                } else Z[k+1] <- Z[k]
               }
-              tswitch <- time + stats::rexp(1, -Q[Z[k+1], Z[k+1]])
-              if(tswitch < max(obsTimes[[zoo]])){
-                allTimes <- sort(c(tswitch,allTimes))
-                dt[[zoo]] <- c(diff(allTimes),0)
-              }
-            }
-            d <- d[c(1:(k+1),(k+1):nrow(d)),]
-            subCovs <- subCovs[c(1:k,k:nrow(subCovs)),,drop=FALSE]
-            if(!is.null(allCovs)) allCovs <- allCovs[c(0:cumNbObs[zoo],cumNbObs[zoo]+1:k,(cumNbObs[zoo]+k):nrow(allCovs)),,drop=FALSE]
-            nbObs <- nbObs + 1
-            for(i in distnames){
-              if(inputs$dist[[i]] %in% mvndists){
-                genData[[i]] <- genData[[i]][c(1:(k+1),(k+1):nrow(genData[[i]])),]
-              } else genData[[i]] <- genData[[i]][c(1:(k+1),(k+1):length(genData[[i]]))]
-            }
-            X <- X[c(1:(k+1),(k+1):nrow(X)),]
-          } else Z[k+1] <- Z[k]
+              nbObs <- nbObs + 1
+            } else Z[k+1] <- Z[k]
+          }
         }
         k <- k + 1
       }
@@ -1811,12 +1911,12 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         d$y <- X[,2]
       }
       for(j in angleCovs[which(angleCovs %in% names(subCovs))])
-        allCovs[cumNbObs[zoo]+1:nbObs,j] <- subCovs[,j]
+        iallCovs[,j] <- subCovs[,j]
       if(length(centerInd)) centerCovs <- subCovs[,centerNames]
       if(length(centroidInd)) centroidCovs <- subCovs[,centroidNames]
       #data <- rbind(data,d)
       
-      simDat <- list(data=d,allCovs=allCovs[cumNbObs[zoo]+1:nbObs,,drop=FALSE],allSpatialcovs=subSpatialcovs,centerCovs=centerCovs,centroidCovs=centroidCovs,allStates=matrix(Z,ncol=1),allTimes=matrix(allTimes,ncol=1))
+      simDat <- list(data=d,allCovs=iallCovs,allSpatialcovs=subSpatialcovs,centerCovs=centerCovs,centroidCovs=centroidCovs,allStates=matrix(Z,ncol=1),allTimes=matrix(allTimes,ncol=1))
       if(isTRUE(list(...)$ctds)){
         simDat$data$time <- allTimes
         simDat$data$tau <- dt[[zoo]]

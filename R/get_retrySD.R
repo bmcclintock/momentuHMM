@@ -53,7 +53,7 @@ get_retrySD <- function(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStat
               retrySD[[j]] <- rep(10,length(beta0[[j]]))
             } else {
               if(!all(sapply(retrySD[[j]], function(x) x == suppressWarnings(as.numeric(x))) | retrySD[[j]]=="adapt")) stop("retrySD$",j," must be numeric or 'adapt'")
-              if(any(retrySD[[j]]!="adapt" && retrySD[[j]]<0)) stop("retrySD$",j," must be non-negative")
+              if(any(retrySD[[j]]!="adapt") && any(retrySD[[j]]<0)) stop("retrySD$",j," must be non-negative")
               if(length(retrySD[[j]])==1){
                 retrySD[[j]] <- rep(retrySD[[j]],length(beta0[[j]]))
               } else if(length(retrySD[[j]])!=length(beta0[[j]])){

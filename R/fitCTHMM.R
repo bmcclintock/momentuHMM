@@ -236,6 +236,7 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
   mfit$conditions$CT <- TRUE
   attr(mfit$data,"CT") <- TRUE
   attr(mfit$data,"Time.name") <- Time.name
+  attr(mfit$data,"Time.unit") <- Time.unit
   if(inherits(data,"ctds")){
     class(mfit) <- append(class(mfit),"ctds")
     attr(mfit$data,"directions") <- attr(data,"directions")
