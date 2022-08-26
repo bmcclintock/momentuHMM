@@ -628,9 +628,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
   }
   
-  if(isTRUE(list(...)$CT)) maxRate <- list(...)$maxRate
-  else maxRate <- Inf    
-  
   chkDotsCT(...)
   chkDots(...)
   
@@ -697,6 +694,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     else estAngleMean[[i]]<-FALSE
   }
   
+  maxRate <- Inf
+  if(isTRUE(list(...)$CT)){
+    kappa <- list(...)$kappa
+    if(!is.null(model)) maxRate <- model$conditions$kappa
+    else if(!is.list(kappa)) maxRate <- kappa
+  }
+  
   if(isTRUE(list(...)$ctds)){
     directions <- list(...)$directions
     moveState <- list(...)$moveState
@@ -706,7 +710,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         attr(dist[[i]],"directions") <- directions
       }
     }
-  }
+  } else moveState <- FALSE
   
   inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,stateNames,checkInflation = TRUE)
   p <- inputs$p
@@ -1267,758 +1271,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   
   if(ncores>1 & nbAnimals>1 & (!nbSpatialCovs | !retrySims)) message("        Simulating ",nbAnimals," individuals in parallel... ",sep="")
   
-  if(!nbSpatialCovs | !retrySims){
-    
-    ###########################
-    ## Loop over the animals ##
-    ###########################
-    withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.export=c(ls(),export),.packages=pkgs,.combine='comb') %dorng% {
+  if(nbSpatialCovs & retrySims){
       
-      # number of observations for animal zoo
-      nbObs <- allNbObs[zoo]
-      
-      ###############################
-      ## Simulate covariate values ##
-      ###############################
-      subCovs<-data.frame(ID=rep(factor(IDs[zoo],levels=IDs),nbObs))
-      if(nbCovs>0){ # select covariate values which concern the current animal
-        if(zoo<2){
-          ind1 <- 1
-        } else {
-          ind1 <- sum(allNbObs[1:(zoo-1)])+1
-        }
-        ind2 <- sum(allNbObs[1:zoo])
-        subCovs <- cbind(subCovs,data.frame(allCovs[ind1:ind2,,drop=FALSE]))
-        iallCovs <- allCovs[ind1:ind2,,drop=FALSE]
-      } else iallCovs <- NULL
-      
-      if(length(centerInd)) subCovs <- cbind(subCovs,centerCovs[cumNbObs[zoo]+1:nbObs,])
-      if(length(centroidInd)) subCovs <- cbind(subCovs,centroidCovs[cumNbObs[zoo]+1:nbObs,])
-      
-      if(!isTRUE(list(...)$ctds)){
-        subSpatialcovs<-as.data.frame(matrix(NA,nrow=nbObs,ncol=nbSpatialCovs))
-        colnames(subSpatialcovs)<-spatialcovnames
-        if(gradient){
-          for(j in 1:nbSpatialCovs){
-            subSpatialcovs[,paste0(spatialcovnames[j],c(".x",".y"))] <- NA
-          }
-        }
-      } else {
-        subSpatialcovs<-as.data.frame(matrix(NA,nrow=nbObs,ncol=length(tmpSpNames)))
-        colnames(subSpatialcovs)<-tmpSpNames
-      }
-      subAnglecovs <- as.data.frame(matrix(NA,nrow=nbObs,ncol=length(angleCovs)))
-      colnames(subAnglecovs) <- angleCovs
-      
-      X1 <- matrix(0,nrow=1,ncol=2)
-      if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) X <- matrix(0,nrow=1,ncol=3)
-      if(!isTRUE(list(...)$ctds)){
-        X1[1,] <- initialPosition[[zoo]] # initial position of animal
-      } else X1[1,] <- raster::xyFromCell(rast,raster::cellFromXY(rast,initialPosition[[zoo]]))
-      
-      phi <- 0
-      
-      ############################
-      ## Simulate movement path ##
-      ############################
-      
-      # get initial covariates
-      if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd) & !length(angleCovs) & !rwInd) {
-        if(!is.null(recharge)){
-          g0 <- stats::model.matrix(recharge$g0,subCovs[1,,drop=FALSE]) %*% wng0
-          subCovs[,"recharge"] <- cumsum(c(g0,(wntheta %*% t(stats::model.matrix(recharge$theta,subCovs[-nrow(subCovs),])))*dt[[zoo]][-nrow(subCovs)]))
-        }
-        DMcov <- stats::model.matrix(newformula,subCovs)
-        
-        # format parameters
-        DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean)
-        fullDM <- DMinputs$fullDM
-        DMind <- DMinputs$DMind
-        wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
-        if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
-        
-        ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
-        nc <- ncmean$nc
-        meanind <- ncmean$meanind
-        
-        covsDelta <- stats::model.matrix(formDelta,subCovs[1,,drop=FALSE])
-        covsPi <- stats::model.matrix(formPi,subCovs[1,,drop=FALSE])
-        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,nrow(subCovs),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
-        
-        # assign individual to mixture
-        pie <- fullsubPar[["pi"]]
-        if(mixtures>1) mix[zoo] <- sample.int(mixtures,1,prob=pie)
-        
-        gFull <-  DMcov %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
-        delta0 <- fullsubPar$delta[mix[zoo],]
-      } else {
-        
-        if(nbSpatialCovs){
-          if(isTRUE(list(...)$ctds)) {
-            getCell<-raster::cellFromXY(rast,c(X1[1,1],X1[1,2]))
-          }
-          for(j in 1:nbSpatialCovs){
-            if(!isTRUE(list(...)$ctds)){
-              getCell<-raster::cellFromXY(spatialCovs[[j]],c(X1[1,1],X1[1,2]))
-              if(is.na(getCell)){
-                if(ncores==1) message("\n    FAILED \n")
-                stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
-              }
-            }
-            spCov <- spatialCovs[[j]][getCell]
-            if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
-              zname <- names(attributes(spatialCovs[[j]])$z)
-              zvalues <- raster::getZ(spatialCovs[[j]])
-              spCov <- spCov[1,which(zvalues==subCovs[1,zname])]
-            }
-            if(isTRUE(list(...)$ctds) && isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
-            ) subSpatialcovs[1,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
-            else subSpatialcovs[1,spatialcovnames[j]]<-spCov
-            if(spatialcovnames[j] %in% angleCovs) {
-              subAnglecovs[1,spatialcovnames[j]] <- subSpatialcovs[1,j]
-              subSpatialcovs[1,j] <- 0  # set to zero because can't have NA covariates
-            }
-            if(gradient){
-              if(inherits(spatialCovs[[j]],"RasterLayer")){
-                subSpatialcovs[1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X1[1,1],y=X1[1,2]),collapseRast=collapseRast[spatialcovnames[j]])[,paste0(spatialcovnames[j],c(".x",".y"))]
-              } else if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
-                tmpColRast[[spatialcovnames[j]]] <- collapseRast[[spatialcovnames[j]]][[which(zvalues==subCovs[1,zname])]]
-                subSpatialcovs[1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X1[1,1],y=X1[1,2]),collapseRast=tmpColRast)[,paste0(spatialcovnames[j],c(".x",".y"))]
-              }
-            }
-          }
-          if(ctdsCRW) subSpatialcovs[1,paste0("crw.",1:directions)] <- 0
-        }
-        
-        for(j in angleCovs[which(angleCovs %in% names(subCovs))]){
-          subAnglecovs[1,j] <- subCovs[1,j]
-          subCovs[1,j] <- 0 # set to zero because can't have NA covariates
-        }
-        
-        if(length(centerInd)){
-          for(j in 1:length(centerInd)){
-            subCovs[1,centerNames[(j-1)*2+1:2]]<-distAngle(X1[1,],X1[1,],centers[centerInd[j],])
-          }
-        }
-        
-        if(length(centroidInd)){
-          for(j in 1:centroidInd){
-            subCovs[1,centroidNames[(j-1)*2+1:2]]<-distAngle(X1[1,],X1[1,],as.numeric(centroids[[j]][1,]))
-          }
-        }
-        if(!is.null(recharge)){
-          g0 <- stats::model.matrix(recharge$g0,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wng0
-          subCovs[1,"recharge"] <- g0 #+ stats::model.matrix(recharge$theta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wntheta
-        }
-        
-        for(i in distnames){
-          if(dist[[i]] %in% rwdists){
-            if(dist[[i]] %in% c("rw_mvnorm2")){
-              subCovs[1,paste0(i,".x_tm1")] <- X1[1,1]
-              subCovs[1,paste0(i,".y_tm1")] <- X1[1,2]
-            } else if(dist[[i]] %in% c("rw_mvnorm3")){
-              subCovs[1,paste0(i,".x_tm1")] <- X1[1,1]
-              subCovs[1,paste0(i,".y_tm1")] <- X1[1,2]
-              subCovs[1,paste0(i,".z_tm1")] <- X1[1,3]
-            }
-          }
-        }
-        
-        # get max crw lag
-        maxlag <- getDM(cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE)$lag
-        
-        covsPi <- stats::model.matrix(formPi,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
-        pie <- mlogit(wnpi,covsPi,nbCovsPi,1,mixtures)
-        
-        # assign individual to mixture
-        if(mixtures>1) mix[zoo] <- sample.int(mixtures,1,prob=pie)
-        
-        covsDelta <- stats::model.matrix(formDelta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
-        
-        delta0 <- mlogit(deltaB[(mix[zoo]-1)*(nbCovsDelta+1)+1:(nbCovsDelta+1),,drop=FALSE],covsDelta,nbCovsDelta,1,nbStates)
-      }
-      
-      if(!isTRUE(list(...)$CT)){
-        gamma <- matrix(0,nbStates,nbStates)
-        gamma[cbind(1:nbStates,betaRef)] <- 1
-        gamma <- t(gamma)
-        g <- stats::model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
-        gamma[!gamma] <- exp(g)
-        gamma <- t(gamma)
-        gamma <- gamma/apply(gamma,1,sum)
-      } else {
-        gamma <- diag(nbStates)
-        qnames <- names(stats::get_all_vars(newformula,data=cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])))
-        qInd <- (length(qnames)>0) # indicator for covariates on state transition rates
-        if(nbStates>1){
-          kappa <- list(...)$kappa
-          if(is.list(kappa)){
-            if(is.null(recharge)){
-              if(qInd){
-                message("\n        Calculating max transition rate using '",kappa$method,"' method for individual ",zoo,"...")
-                if(kappa$method=="quantile"){
-                  covgrid <- list()
-                  for(i in names(subCovs)[names(subCovs) %in% qnames]){
-                    if(is.factor(subCovs[,i])) covgrid[[i]] <- levels(subCovs[,i])
-                    else covgrid[[i]] <- seq(stats::quantile(subCovs[,i],kappa$nspCov/2),stats::quantile(subCovs[,i],1-kappa$nspCov/2),length=100)
-                  }
-                  for(i in spatialcovnames[spatialcovnames %in% qnames]){
-                    if(is.factor(raster::getValues(spatialCovs[[i]]))) covgrid[[i]] <- levels(raster::getValues(spatialCovs[[i]]))
-                    else covgrid[[i]] <- seq(stats::quantile(raster::getValues(spatialCovs[[i]]),kappa$spCov/2),stats::quantile(raster::getValues(spatialCovs[[i]]),1-kappa$spCov/2),length=100)
-                  }
-                  mm <- stats::model.matrix(newformula,expand.grid(covgrid))
-                  rm(covgrid)
-                } else if(kappa$method=="random"){
-                  if(any(names(subCovs) %in% qnames)){
-                    fullsub <- subCovs[rep(sample.int(nrow(subCovs),min(nrow(subCovs),kappa$nspCov)), each = ifelse(nbSpatialCovs,min(raster::ncell(spatialCovs[[1]]),kappa$spCov),1)),which(names(subCovs) %in% qnames),drop=FALSE ]
-                    if(nbSpatialCovs){
-                      fullSpatialCov <- data.frame(fullsub,apply(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames])[sample.int(raster::ncell(spatialCovs[[1]]),min(raster::ncell(spatialCovs[[1]]),kappa$spCov)),,drop=FALSE],2,function(x) rep(x,min(nrow(subCovs),kappa$nspCov))))
-                      mm <- stats::model.matrix(newformula,fullSpatialCov)
-                    } else mm <- stats::model.matrix(newformula,fullsub)
-                    rm(fullsub,fullSpatialCov)
-                  } else {
-                    fullSpatialCov <- data.frame(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames])[sample.int(raster::ncell(spatialCovs[[1]]),min(raster::ncell(spatialCovs[[1]]),kappa$spCov)),,drop=FALSE])
-                    mm <- stats::model.matrix(newformula,fullSpatialCov)
-                    rm(fullSpatialCov)
-                  }
-                } else if(kappa$method=="all"){
-                  if(any(names(subCovs) %in% qnames)){
-                    fullsub <- subCovs[rep(seq_len(nrow(subCovs)), each = ifelse(nbSpatialCovs,raster::ncell(spatialCovs[[1]]),1)),which(names(subCovs) %in% qnames),drop=FALSE]
-                    if(nbSpatialCovs){
-                      fullSpatialCov <- data.frame(fullsub,apply(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames]),2,function(x) rep(x,nrow(subCovs))))
-                      mm <- stats::model.matrix(newformula,fullSpatialCov)
-                    } else mm <- stats::model.matrix(newformula,fullsub)
-                    rm(fullsub,fullSpatialCov)
-                  } else {
-                    fullSpatialCov <- data.frame(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames]))
-                    mm <- stats::model.matrix(newformula,fullSpatialCov)
-                    rm(fullSpatialCov)
-                  }
-                }
-              } else {
-                mm <- stats::model.matrix(newformula,cbind(subCovs,subSpatialcovs))
-              }
-              fullQ <- tryCatch(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], mm, betaRef, TRUE, 0, aInd=1,rateMatrix=TRUE,maxRate=maxRate),error=function(e) e) # diag(nbStates)
-              if(inherits(fullQ,"error") || any(!is.finite(fullQ))){
-                stop("Max transition rate could not be calculated for individual ",zoo,": ",ifelse(inherits(fullQ,"error"),fullQ,"rate(s) not finite"))
-              }
-              if(!qInd){
-                if(!identical(array(fullQ[,,1],dim=c(nbStates,nbStates,dim(fullQ)[3])),fullQ)) stop("transition rate matrix not constant -- please report to brett.mcclintock@noaa")
-              }
-              Qmat <- fullQ[,,1]
-              kappa <- max(abs(fullQ)) # upper bound for transitions away from current state
-              rm(fullQ,mm)
-              if(qInd) message("          => kappa = ",round(kappa,2),"\n")
-            } else {
-              stop("kappa must be specified as a positive finite value for recharge models")
-            } 
-          }
-        }
-      }
-      
-      if(nbStates>1) {
-        Z <- rep(NA,nbObs)
-        Z[1] <- sample(1:nbStates,size=1,prob=delta0%*%gamma)
-      } else Z <- rep(1,nbObs)
-      
-      if(ncores==1 | nbAnimals==1){
-        message("        Simulating individual ",zoo,"... ",sep="")
-      } else progBar(zoo, nbAnimals)
-      
-      if(nbStates>1 & isTRUE(list(...)$CT)){
-        if(qInd){
-          if(inherits(obsTimes[[zoo]],"POSIXt")){
-            nbSwitch <- stats::rpois(1,as.numeric(difftime(max(obsTimes[[zoo]]),min(obsTimes[[zoo]]),units=attr(lambda[[zoo]],"units")))*kappa)
-            tswitch <- min(obsTimes[[zoo]])+sort(runif(nbSwitch)*difftime(max(obsTimes[[zoo]]),min(obsTimes[[zoo]]),units=attr(lambda[[zoo]],"units")))
-          } else {
-            nbSwitch <- stats::rpois(1,diff(range(obsTimes[[zoo]]))*kappa)
-            tswitch <- sort(runif(nbSwitch,min(obsTimes[[zoo]]),max(obsTimes[[zoo]])))
-          }
-          
-        } else { # draw times of actual state switches since transitions don't depend on covariates
-          tswitch <- S <- NULL
-          st1 <- st <- Z[1]
-          time <- min(obsTimes[[zoo]]) + stats::rexp(1, -Qmat[st, st])
-          while(time < obsTimes[[zoo]][nbObs]){
-            if(nbStates > 2){
-              probs <- Qmat[st, -st]/sum(Qmat[st, -st])
-              st <- sample((1:nbStates)[-st], size = 1, prob = probs)
-            } else {
-              st <- (1:2)[-st]
-            }
-            S <- c(S, st)
-            tswitch <- c(tswitch, time)
-            time <- time + stats::rexp(1, -Qmat[st, st])
-          }
-          allTimes <- c(obsTimes[[zoo]], tswitch)
-          Z <- c(rep(NA, nbObs), S)
-          Z <- Z[order(allTimes)]
-          Z[1] <- st1
-          for (t in 1:length(allTimes)){
-            if(is.na(Z[t])) Z[t] <- Z[t - 1]
-          }
-        }
-        allTimes <- sort(c(tswitch,obsTimes[[zoo]]))
-        if(inherits(obsTimes[[zoo]],"POSIXt")){
-          dt[[zoo]] <- c(as.numeric(difftime(allTimes[-1],allTimes[-length(allTimes)],units=attr(lambda[[zoo]],"units"))),0)
-        } else dt[[zoo]] <- c(diff(allTimes),0)
-        subCovs <- subCovs[cumsum(!allTimes %in% tswitch),,drop=FALSE]
-        if(!is.null(iallCovs)) iallCovs <- iallCovs[cumsum(!allTimes %in% tswitch),,drop=FALSE]
-        
-        if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd) & !length(angleCovs) & !rwInd) {
-          if(!is.null(recharge)){
-            subCovs[,"recharge"] <- cumsum(c(g0,(wntheta %*% t(stats::model.matrix(recharge$theta,subCovs[-nrow(subCovs),])))*dt[[zoo]][-nrow(subCovs)]))
-          }
-          DMcov <- stats::model.matrix(newformula,subCovs)
-          
-          # format parameters
-          DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean)
-          fullDM <- DMinputs$fullDM
-          DMind <- DMinputs$DMind
-          ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
-          nc <- ncmean$nc
-          meanind <- ncmean$meanind
-          fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,nrow(subCovs),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
-          gFull <-  DMcov %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
-        } 
-        
-      } else {
-        tswitch <- max(obsTimes[[zoo]])
-        allTimes <- obsTimes[[zoo]]
-      }
-    
-      k <- 1
-      time <- obsTimes[[zoo]][1]
-      
-      genData <- genArgs <- vector('list',length(distnames))
-      names(genData) <- names(genArgs) <- distnames
-      
-      for(i in distnames){
-        if(inputs$dist[[i]] %in% mvndists){
-          genData[[i]] <- matrix(NA,length(allTimes),as.numeric(sub("mvnorm","",sub("rw_mvnorm","",dist[[i]]))))
-        } else genData[[i]] <- rep(NA,length(allTimes))
-        genArgs[[i]] <- list(1)  # first argument = 1 (one random draw)
-      }
-      d <- data.frame(ID=factor(rep(IDs[zoo],length(allTimes))))
-      
-      X <- matrix(0,nrow=length(allTimes),ncol=2)
-      if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) X <- matrix(0,nrow=length(allTimes),ncol=3)
-      X[1,] <- X1
-      
-      while(time < max(obsTimes[[zoo]])){
-        
-        if(ncores==1 | nbAnimals==1) progBar(k, length(allTimes)-1)
-        
-        if(nbSpatialCovs |  length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
-          # format parameters
-          DMinputs<-getDM(cbind(subCovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE],subSpatialcovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE)
-          fullDM <- DMinputs$fullDM
-          DMind <- DMinputs$DMind
-          wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
-          if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
-          
-          nc <- meanind <- vector('list',length(distnames))
-          names(nc) <- names(meanind) <- distnames
-          for(i in distnames){
-            nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-            if(!isFALSE(inputs$circularAngleMean[[i]])) {
-              meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
-              # deal with angular covariates that are exactly zero
-              if(length(meanind[[i]])){
-                angInd <- which(is.na(match(gsub("cos","",gsub("sin","",colnames(nc[[i]]))),colnames(nc[[i]]),nomatch=NA)))
-                sinInd <- colnames(nc[[i]])[which(grepl("sin",colnames(nc[[i]])[angInd]))]
-                nc[[i]][meanind[[i]],sinInd]<-ifelse(nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)])
-                nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)]<-ifelse(nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],sinInd])
-              }
-            }
-          }
-          subPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,1,inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
-        } else {
-          subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
-        }
-        
-        if(isTRUE(list(...)$CT)) subPar <- ctPar(subPar,dist,nbStates,data.frame(subCovs[k,],dt=dt[[zoo]][k]))
-        
-        for(i in distnames){
-          
-          zeroMass[[i]] <- rep(0,nbStates)
-          oneMass[[i]] <- rep(0,nbStates)
-          if(zeroInflation[[i]] | oneInflation[[i]]) {
-            if(zeroInflation[[i]]) zeroMass[[i]] <- subPar[[i]][parSize[[i]]*nbStates-nbStates*oneInflation[[i]]-(nbStates-1):0]
-            if(oneInflation[[i]])  oneMass[[i]] <- subPar[[i]][parSize[[i]]*nbStates-(nbStates-1):0]
-            subPar[[i]] <- subPar[[i]][-(parSize[[i]]*nbStates-(nbStates*oneInflation[[i]]-nbStates*zeroInflation[[i]]-1):0)]
-          }
-          
-          if(inputs$dist[[i]] %in% mvndists){
-            if(inputs$dist[[i]]=="mvnorm2" || inputs$dist[[i]]=="rw_mvnorm2"){
-              genArgs[[i]][[2]] <- c(subPar[[i]][Z[k]],
-                                     subPar[[i]][nbStates+Z[k]])
-              genArgs[[i]][[3]] <- matrix(c(subPar[[i]][nbStates*2+Z[k]], #x
-                                            subPar[[i]][nbStates*3+Z[k]], #xy
-                                            subPar[[i]][nbStates*3+Z[k]], #xy
-                                            subPar[[i]][nbStates*4+Z[k]]) #y
-                                          ,2,2)
-            } else if(inputs$dist[[i]]=="mvnorm3" || inputs$dist[[i]]=="rw_mvnorm3"){
-              genArgs[[i]][[2]] <- c(subPar[[i]][Z[k]],
-                                     subPar[[i]][nbStates+Z[k]],
-                                     subPar[[i]][2*nbStates+Z[k]])
-              genArgs[[i]][[3]] <- matrix(c(subPar[[i]][nbStates*3+Z[k]], #x
-                                            subPar[[i]][nbStates*4+Z[k]], #xy
-                                            subPar[[i]][nbStates*5+Z[k]], #xz
-                                            subPar[[i]][nbStates*4+Z[k]], #xy
-                                            subPar[[i]][nbStates*6+Z[k]], #y
-                                            subPar[[i]][nbStates*7+Z[k]], #yz
-                                            subPar[[i]][nbStates*5+Z[k]], #xz
-                                            subPar[[i]][nbStates*7+Z[k]], #yz
-                                            subPar[[i]][nbStates*8+Z[k]]) #z          
-                                          ,3,3)
-            } 
-          } else if(inputs$dist[[i]]=="cat" | inputs$dist[[i]]=="ctds"){
-            genArgs[[i]][[2]] <- subPar[[i]][seq(Z[k],(parSize[[i]]+1)*nbStates,nbStates)]
-          } else {
-            for(j in 1:(parSize[[i]]-zeroInflation[[i]]-oneInflation[[i]]))
-              genArgs[[i]][[j+1]] <- subPar[[i]][(j-1)*nbStates+Z[k]]
-          }
-          
-          if(inputs$dist[[i]] %in% angledists){
-            
-            genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
-            if(genData[[i]][k] >  pi) genData[[i]][k] <- genData[[i]][k]-2*pi
-            if(genData[[i]][k] < -pi) genData[[i]][k] <- genData[[i]][k]+2*pi
-            
-            if(i=="angle" & ("step" %in% distnames)){
-              if(inputs$dist[["step"]] %in% stepdists) {
-                if(genData$step[k]>0){
-                  phi <- phi + genData[[i]][k]
-                } #else if(genData$step[k]==0) {
-                #genData[[i]][k] <- NA # angle = NA if step = 0
-                #}
-                m <- genData$step[k]*c(Re(exp(1i*phi)),Im(exp(1i*phi)))
-                X[k+1,] <- X[k,] + m
-              }
-            }
-          } else {
-            
-            if(inputs$dist[[i]]=="gamma") {
-              shape <- genArgs[[i]][[2]]^2/genArgs[[i]][[3]]^2
-              scale <- genArgs[[i]][[3]]^2/genArgs[[i]][[2]]
-              genArgs[[i]][[2]] <- shape
-              genArgs[[i]][[3]] <- 1/scale # rgamma expects rate=1/scale
-            }
-            
-            probs <- c(1.-zeroMass[[i]][Z[k]]-oneMass[[i]][Z[k]],zeroMass[[i]][Z[k]],oneMass[[i]][Z[k]])
-            rU <- which(stats::rmultinom(1,1,prob=probs)==1)
-            if(rU==1){
-              if(inputs$dist[[i]] %in% mvndists){
-                genData[[i]][k,] <- do.call(Fun[[i]],genArgs[[i]])
-              } else {
-                if(dist[[i]]=="ctds"){
-                  # forbid moves to cells outside extent of rast
-                  offRast <- which(is.na(rast[adj.cells[getCell,]]))
-                  if(length(offRast)){
-                    genArgs[[i]][[2]][offRast] <- 0
-                  }
-                }
-                genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
-              }
-            } else if(rU==2) {
-              genData[[i]][k] <- 0
-            } else {
-              genData[[i]][k] <- 1
-            }
-          }
-          
-          if(!is.null(mvnCoords) && i==mvnCoords){
-            X[k+1,] <- genData[[i]][k,]
-            d[[i]] <- X
-          } else d[[i]] <- genData[[i]]
-          if(dist[[i]]=="ctds"){
-            if(genData[[i]][k]==(directions+1)){
-              X[k+1,] <- X[k,]
-              subSpatialcovs[k+1,] <- subSpatialcovs[k,]
-              for(j in 1:nbSpatialCovs){
-                if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
-                  spCov <- spatialCovs[[j]][getCell]
-                  zname <- names(attributes(spatialCovs[[j]])$z)
-                  zvalues <- raster::getZ(spatialCovs[[j]])
-                  spCov <- spCov[1,which(zvalues==subCovs[k+1,zname])]
-                  if(isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
-                  ) subSpatialcovs[k+1,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
-                  else subSpatialcovs[k+1,spatialcovnames[j]]<-spCov
-                  if(spatialcovnames[j] %in% angleCovs) {
-                    subAnglecovs[k+1,spatialcovnames[j]] <- subSpatialcovs[k+1,j]
-                    subSpatialcovs[k+1,spatialcovnames[j]] <- circAngles(subAnglecovs[k:(k+1),spatialcovnames[j]],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
-                  }
-                }
-              }
-            } else {
-              oldCell <- getCell
-              getCell <- c(adj.cells[getCell,],getCell)[genData[[i]][k]]
-              X[k+1,] <- raster::xyFromCell(rast,getCell)
-              for(j in 1:nbSpatialCovs){
-                spCov <- spatialCovs[[j]][getCell]
-                if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
-                  zname <- names(attributes(spatialCovs[[j]])$z)
-                  zvalues <- raster::getZ(spatialCovs[[j]])
-                  spCov <- spCov[1,which(zvalues==subCovs[k+1,zname])]
-                }
-                if(isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
-                ) subSpatialcovs[k+1,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
-                else subSpatialcovs[k+1,spatialcovnames[j]]<-spCov
-                if(spatialcovnames[j] %in% angleCovs) {
-                  subAnglecovs[k+1,spatialcovnames[j]] <- subSpatialcovs[k+1,j]
-                  subSpatialcovs[k+1,spatialcovnames[j]] <- circAngles(subAnglecovs[k:(k+1),spatialcovnames[j]],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
-                }
-              }
-              if(ctdsCRW){
-                xy.cell = raster::xyFromCell(rast, rep(oldCell,directions))
-                xy.adj = raster::xyFromCell(rast, adj.cells[oldCell,])
-                v.adj = (xy.adj - xy.cell)/sqrt(apply((xy.cell - xy.adj)^2, 1, sum))
-                v.moves = v.adj[rep(which(getCell==adj.cells[oldCell,]),directions), ]
-                subSpatialcovs[k+1,paste0("crw.",1:directions)] <- rowSums(v.moves * v.adj)
-              }
-            }
-          }
-        }
-        # get next state
-        gamma <- matrix(0,nbStates,nbStates)
-        gamma[cbind(1:nbStates,betaRef)] <- 1
-        gamma <- t(gamma)
-        
-        if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
-          if(nbSpatialCovs & !isTRUE(list(...)$ctds)){
-            for(j in 1:nbSpatialCovs){
-              getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[k+1,1],X[k+1,2]))
-              if(is.na(getCell)) {
-                if(ncores==1) message("\n    FAILED \n")
-                stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
-              }
-              spCov <- spatialCovs[[j]][getCell]
-              if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
-                zname <- names(attributes(spatialCovs[[j]])$z)
-                zvalues <- raster::getZ(spatialCovs[[j]])
-                spCov <- spCov[1,which(zvalues==subCovs[k+1,zname])]
-              }
-              subSpatialcovs[k+1,j]<-spCov
-              if(spatialcovnames[j] %in% angleCovs) {
-                subAnglecovs[k+1,spatialcovnames[j]] <- subSpatialcovs[k+1,j]
-                subSpatialcovs[k+1,j] <- circAngles(subAnglecovs[k:(k+1),spatialcovnames[j]],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
-              }
-              if(gradient){
-                if(inherits(spatialCovs[[j]],"RasterLayer")){
-                  subSpatialcovs[k+1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X[k+1,1],y=X[k+1,2]),collapseRast=collapseRast[spatialcovnames[j]])[,paste0(spatialcovnames[j],c(".x",".y"))]
-                } else if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
-                  tmpColRast[[spatialcovnames[j]]] <- collapseRast[[spatialcovnames[j]]][[which(zvalues==subCovs[k+1,zname])]]
-                  subSpatialcovs[k+1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X[k+1,1],y=X[k+1,2]),collapseRast=tmpColRast)[,paste0(spatialcovnames[j],c(".x",".y"))]
-                }
-              }
-            }
-          }
-          
-          for(j in angleCovs[which(angleCovs %in% names(subCovs))]){
-            subAnglecovs[k+1,j] <- subCovs[k+1,j]
-            subCovs[k+1,j] <- circAngles(subAnglecovs[k:(k+1),j],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
-          }
-          
-          if(length(centerInd)){
-            for(j in 1:length(centerInd)){
-              subCovs[k+1,centerNames[(j-1)*2+1:2]]<-distAngle(X[k,],X[k+1,],centers[centerInd[j],])
-            }
-          }
-          if(length(centroidInd)){
-            for(j in 1:centroidInd){
-              subCovs[k+1,centroidNames[(j-1)*2+1:2]]<-distAngle(X[k,],X[k+1,],as.numeric(centroids[[j]][k+1,]))
-            }
-          }
-          if(!is.null(recharge)){
-            subCovs[k+1,"recharge"] <- subCovs[k,"recharge"] + (wntheta %*% t(stats::model.matrix(recharge$theta,cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE]))))*dt[[zoo]][k]
-          }
-          for(i in distnames){
-            if(dist[[i]] %in% rwdists){
-              if(dist[[i]] %in% c("rw_mvnorm2")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1"))] <- X[k+1,]
-              else if(dist[[i]] %in% c("rw_mvnorm3")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1",".z_tm1"))] <- X[k+1,]
-            }
-          }
-        }
-        if(!isTRUE(list(...)$CT)){
-          if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd)
-            g <- stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
-          else g <- gFull[k+1,,drop=FALSE]
-          gamma[!gamma] <- exp(g)
-          gamma <- t(gamma)
-          gamma <- gamma/apply(gamma,1,sum)
-          Z[k+1] <- sample(1:nbStates,size=1,prob=gamma[Z[k],]) 
-          time <- obsTimes[[zoo]][k+1]
-        } else {
-          time <- allTimes[k+1]
-          if(qInd){
-            if(nbStates>1 && time %in% tswitch){
-              if(isTRUE(list(...)$ctds) && (moveState & genData$z[k]==(directions+1))){
-                Z[k+1] <- Z[k]
-              } else {
-                if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
-                  Qmat <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])), betaRef, TRUE, dt[[zoo]][k], aInd=1,rateMatrix=TRUE,maxRate=maxRate)[,,1],nbStates,nbStates),error=function(e) e)
-                } else {
-                  Qmat <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], DMcov[k+1,,drop=FALSE], betaRef, TRUE, dt[[zoo]][k], aInd=1,rateMatrix=TRUE,maxRate=maxRate)[,,1],nbStates,nbStates),error=function(e) e)
-                }
-                if(inherits(Qmat,"error") || any(!is.finite(Qmat))){
-                  warning("Transition rate matrix could not be calculated for individual ",zoo,"; terminating at observation ",k,": ",ifelse(inherits(Qmat,"error"),Qmat,"rate(s) not finite"))
-                  break;
-                }
-                qsum <- sum(Qmat[Z[k], -Z[k]])
-                if(runif(1) < qsum/kappa){
-                  if (nbStates > 2) {
-                    probs <- Qmat[Z[k], -Z[k]]/qsum
-                    Z[k+1] <- sample((1:nbStates)[-Z[k]], size = 1, prob = probs)
-                  } else {
-                    Z[k+1] <- (1:2)[-Z[k]]
-                  }
-                } else Z[k+1] <- Z[k]
-              }
-              nbObs <- nbObs + 1
-            } else Z[k+1] <- Z[k]
-          }
-        }
-        k <- k + 1
-      }
-      #allStates <- c(allStates,Z)
-      #if(nbSpatialCovs>0) {
-      #allSpatialcovs <- rbind(allSpatialcovs,subSpatialcovs)
-      #}
-      
-      if("angle" %in% distnames){ 
-        if(inputs$dist[["angle"]] %in% angledists & ("step" %in% distnames))
-          if(inputs$dist[["step"]] %in% stepdists){
-            d$angle[1] <- NA # the first angle value is arbitrary
-            step0 <- which(d$step==0)
-            d$angle[c(step0,step0+1)] <- NA
-            #if(length(centerInd)) subCovs[1,centerNames[seq(2,2*length(centerInd),2)]] <- NA
-            d$x=X[,1]
-            d$y=X[,2]
-          }
-      } else if("step" %in% distnames){
-        if(inputs$dist[["step"]] %in% stepdists){
-          d$x=c(initialPosition[[zoo]][1],initialPosition[[zoo]][1]+cumsum(d$step)[-nrow(d)])
-          d$y=rep(initialPosition[[zoo]][2],nrow(d))
-        }    
-      } else if(!is.null(mvnCoords)){
-        d[[paste0(mvnCoords,".x")]] <- d[[mvnCoords]][,1]
-        d[[paste0(mvnCoords,".y")]] <- d[[mvnCoords]][,2]
-        if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) d[[paste0(mvnCoords,".z")]] <- d[[mvnCoords]][,3]
-        d[[mvnCoords]] <- NULL
-      } else if(isTRUE(list(...)$ctds)){
-        d$x <- X[,1]
-        d$y <- X[,2]
-      }
-      for(j in angleCovs[which(angleCovs %in% names(subCovs))])
-        iallCovs[,j] <- subCovs[,j]
-      if(length(centerInd)) centerCovs <- subCovs[,centerNames]
-      if(length(centroidInd)) centroidCovs <- subCovs[,centroidNames]
-      #data <- rbind(data,d)
-      
-      simDat <- list(data=d,allCovs=iallCovs,allSpatialcovs=subSpatialcovs,centerCovs=centerCovs,centroidCovs=centroidCovs,allStates=matrix(Z,ncol=1),allTimes=matrix(allTimes,ncol=1))
-      if(isTRUE(list(...)$ctds)){
-        simDat$data$time <- allTimes
-        simDat$data$tau <- dt[[zoo]]
-        simDat$data$isObs <- (allTimes %in% obsTimes[[zoo]])
-        simDat <- lapply(simDat,function(x) if(!is.null(x)) x[1:k,,drop=FALSE])
-      } else if(isTRUE(list(...)$CT)){
-        simDat$data$isObs <- (allTimes %in% obsTimes[[zoo]])
-        simDat$data$time <- allTimes
-      }
-      return(simDat)
-    }
-    ,warning=muffleRNGwarning)
-    if(!((ncores>1 & nbAnimals>1))) doParallel::stopImplicitCluster()
-    else future::plan(future::sequential)
-    
-    if(nbCovs>0)
-      simDat$data <- cbind(simDat$data,simDat$allCovs)
-    
-    if(nbSpatialCovs>0){
-      if(!isTRUE(list(...)$ctds)) {
-        colnames(simDat$allSpatialcovs)[1:nbSpatialCovs]<-spatialcovnames
-        for(j in spatialcovnames){
-          if(any(raster::is.factor(spatialCovs[[j]]))){
-            simDat$allSpatialcovs[[j]] <- factor(simDat$allSpatialcovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
-          }
-        }
-      } else {
-        colnames(simDat$allSpatialcovs)<-tmpSpNames
-        for(j in spatialcovnames){
-          if(any(raster::is.factor(spatialCovs[[j]]))){
-            if(isTRUE(attr(spatialCovs[[j]],"nograd"))){
-              for(i in 1:directions){
-                simDat$allSpatialcovs[[paste0(j,".",i)]] <- factor(simDat$allSpatialcovs[[paste0(j,".",i)]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
-              }
-            } else {
-              simDat$allSpatialcovs[[j]] <- factor(simDat$allSpatialcovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
-            }
-          }
-        }
-      }
-      simDat$data <- cbind(simDat$data,simDat$allSpatialcovs)
-    }
-    
-    if(length(centerInd)){
-      simDat$data <- cbind(simDat$data,simDat$centerCovs)
-      for(j in which(grepl(".angle",names(simDat$data)))){
-        if(names(simDat$data[j]) %in% centerNames)
-          class(simDat$data[[j]]) <- c(class(simDat$data[[j]]), "angle")
-      }
-    }
-    
-    if(length(centroidInd)){
-      simDat$data <- cbind(simDat$data,simDat$centroidCovs)
-      for(j in which(grepl(".angle",names(simDat$data)))){
-        if(names(simDat$data[j]) %in% centroidNames)
-          class(simDat$data[[j]]) <- c(class(simDat$data[[j]]), "angle")
-      }
-    }
-    
-    # include states sequence in the data
-    if(states)
-      simDat$data <- cbind(simDat$data,states=simDat$allStates)
-    
-    for(i in distnames){
-      if(inputs$dist[[i]] %in% angledists)
-        class(simDat$data[[i]]) <- c(class(simDat$data[[i]]), "angle")
-    }
-    
-    for(i in angleCovs){
-      class(simDat$data[[i]]) <- c(class(simDat$data[[i]]), "angle")
-    }
-    
-    if(!is.null(mvnCoords)){
-      attr(simDat$data,'coords') <- paste0(mvnCoords,c(".x",".y"))
-      #tmpNames <- colnames(data)[-which(colnames(data)=="ID")]
-      #prepDat <- prepData(data,coordNames = paste0(mvnCoords,c(".x",".y")))
-      #data$step <- prepDat$step
-      #data$angle <- prepDat$angle
-      #data$x <- prepDat$x
-      #data$y <- prepDat$y
-      #data <- data[,c("ID","step","angle",tmpNames,"x","y")]
-    }
-    attr(simDat$data,"gradient") <- gradient
-    
-    # account for observation error (if any)
-    if(!isTRUE(list(...)$CT)) out<-simObsData(momentuHMMData(simDat$data),lambda,errorEllipse)
-    else {
-      allObsTimes <- simDat$allTimes
-      withCallingHandlers(out<-simObsData(momentuHMMData(simDat$data),lambda=NULL,errorEllipse,CT=TRUE),warning=muffleCTwarning)
-      if(!isTRUE(list(...)$ctds)) out$time <- allObsTimes
-      else {
-        obsCount <- table(out[out$isObs,]$ID)
-        termInd <- which(obsCount!=(allNbObs-1))
-        for(zoo in termInd){
-          warning("Transition rate matrix could not be calculated for individual ",zoo,"; terminated at observation ",obsCount[zoo])
-        }
-      }
-    }
-    #message("DONE")
-    return(out)
-  } else {
-    
     if(isTRUE(list(...)$CT) & !is.null(model)){
       attributes(model)$class <- attributes(model)$class[which(!attributes(model)$class %in% "CTHMM")]
     }
@@ -2033,27 +1287,27 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       else cat("\r    Attempt ",simCount+1," of ",retrySims,"... \n",sep="")
       
       tmp<-tryCatch(simData(nbAnimals,nbStates,dist,
-                                             Par,beta,delta,
-                                             formula,formulaDelta,mixtures,formulaPi,
-                                             covs,nbCovs,
-                                             spatialCovs,
-                                             zeroInflation,
-                                             oneInflation,
-                                             circularAngleMean,
-                                             centers,
-                                             centroids,
-                                             angleCovs,
-                                             obsPerAnimal,
-                                             initialPosition,
-                                             DM,userBounds,workBounds,betaRef,mvnCoords,stateNames,
-                                             model,states,
-                                             retrySims=0,
-                                             lambda,
-                                             errorEllipse,
-                                             ncores,
-                                             export=export,
-                                             gradient=gradient,
-                                             ...),error=function(e) e)
+                            Par,beta,delta,
+                            formula,formulaDelta,mixtures,formulaPi,
+                            covs,nbCovs,
+                            spatialCovs,
+                            zeroInflation,
+                            oneInflation,
+                            circularAngleMean,
+                            centers,
+                            centroids,
+                            angleCovs,
+                            obsPerAnimal,
+                            initialPosition,
+                            DM,userBounds,workBounds,betaRef,mvnCoords,stateNames,
+                            model,states,
+                            retrySims=0,
+                            lambda,
+                            errorEllipse,
+                            ncores,
+                            export=export,
+                            gradient=gradient,
+                            ...),error=function(e) e)
       if(inherits(tmp,"error")){
         if(grepl("Try expanding the extent of the raster",tmp)) {
           simCount <- simCount+1
@@ -2068,4 +1322,757 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     cat("FAILED\n")
     stop(tmp)
   }
+    
+  ###########################
+  ## Loop over the animals ##
+  ###########################
+  withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.export=c(ls(),export),.packages=pkgs,.combine='comb') %dorng% {
+    
+    # number of observations for animal zoo
+    nbObs <- allNbObs[zoo]
+    
+    ###############################
+    ## Simulate covariate values ##
+    ###############################
+    subCovs<-data.frame(ID=rep(factor(IDs[zoo],levels=IDs),nbObs))
+    if(nbCovs>0){ # select covariate values which concern the current animal
+      if(zoo<2){
+        ind1 <- 1
+      } else {
+        ind1 <- sum(allNbObs[1:(zoo-1)])+1
+      }
+      ind2 <- sum(allNbObs[1:zoo])
+      subCovs <- cbind(subCovs,data.frame(allCovs[ind1:ind2,,drop=FALSE]))
+      iallCovs <- allCovs[ind1:ind2,,drop=FALSE]
+    } else iallCovs <- NULL
+    
+    if(length(centerInd)) subCovs <- cbind(subCovs,centerCovs[cumNbObs[zoo]+1:nbObs,])
+    if(length(centroidInd)) subCovs <- cbind(subCovs,centroidCovs[cumNbObs[zoo]+1:nbObs,])
+    
+    if(!isTRUE(list(...)$ctds)){
+      subSpatialcovs<-as.data.frame(matrix(NA,nrow=nbObs,ncol=nbSpatialCovs))
+      colnames(subSpatialcovs)<-spatialcovnames
+      if(gradient){
+        for(j in 1:nbSpatialCovs){
+          subSpatialcovs[,paste0(spatialcovnames[j],c(".x",".y"))] <- NA
+        }
+      }
+    } else {
+      subSpatialcovs<-as.data.frame(matrix(NA,nrow=nbObs,ncol=length(tmpSpNames)))
+      colnames(subSpatialcovs)<-tmpSpNames
+    }
+    subAnglecovs <- as.data.frame(matrix(NA,nrow=nbObs,ncol=length(angleCovs)))
+    colnames(subAnglecovs) <- angleCovs
+    
+    X1 <- matrix(0,nrow=1,ncol=2)
+    if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) X <- matrix(0,nrow=1,ncol=3)
+    if(!isTRUE(list(...)$ctds)){
+      X1[1,] <- initialPosition[[zoo]] # initial position of animal
+    } else X1[1,] <- raster::xyFromCell(rast,raster::cellFromXY(rast,initialPosition[[zoo]]))
+    
+    phi <- 0
+    
+    ############################
+    ## Simulate movement path ##
+    ############################
+    
+    # get initial covariates
+    if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd) & !length(angleCovs) & !rwInd) {
+      if(!is.null(recharge)){
+        g0 <- stats::model.matrix(recharge$g0,subCovs[1,,drop=FALSE]) %*% wng0
+        subCovs[,"recharge"] <- cumsum(c(g0,(wntheta %*% t(stats::model.matrix(recharge$theta,subCovs[-nrow(subCovs),])))*dt[[zoo]][-nrow(subCovs)]))
+      }
+      DMcov <- stats::model.matrix(newformula,subCovs)
+      
+      # format parameters
+      DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean)
+      fullDM <- DMinputs$fullDM
+      DMind <- DMinputs$DMind
+      wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
+      if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
+      
+      ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
+      nc <- ncmean$nc
+      meanind <- ncmean$meanind
+      
+      covsDelta <- stats::model.matrix(formDelta,subCovs[1,,drop=FALSE])
+      covsPi <- stats::model.matrix(formPi,subCovs[1,,drop=FALSE])
+      fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,nrow(subCovs),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+      
+      # assign individual to mixture
+      pie <- fullsubPar[["pi"]]
+      if(mixtures>1) mix[zoo] <- sample.int(mixtures,1,prob=pie)
+      
+      gFull <-  DMcov %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
+      delta0 <- fullsubPar$delta[mix[zoo],]
+    } else {
+      
+      if(nbSpatialCovs){
+        if(isTRUE(list(...)$ctds)) {
+          getCell<-raster::cellFromXY(rast,c(X1[1,1],X1[1,2]))
+        }
+        for(j in 1:nbSpatialCovs){
+          if(!isTRUE(list(...)$ctds)){
+            getCell<-raster::cellFromXY(spatialCovs[[j]],c(X1[1,1],X1[1,2]))
+            if(is.na(getCell)){
+              if(ncores==1) message("\n    FAILED \n")
+              stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+            }
+          }
+          spCov <- spatialCovs[[j]][getCell]
+          if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+            zname <- names(attributes(spatialCovs[[j]])$z)
+            zvalues <- raster::getZ(spatialCovs[[j]])
+            spCov <- spCov[1,which(zvalues==subCovs[1,zname])]
+          }
+          if(isTRUE(list(...)$ctds) && isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
+          ) subSpatialcovs[1,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
+          else subSpatialcovs[1,spatialcovnames[j]]<-spCov
+          if(spatialcovnames[j] %in% angleCovs) {
+            subAnglecovs[1,spatialcovnames[j]] <- subSpatialcovs[1,j]
+            subSpatialcovs[1,j] <- 0  # set to zero because can't have NA covariates
+          }
+          if(gradient){
+            if(inherits(spatialCovs[[j]],"RasterLayer")){
+              subSpatialcovs[1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X1[1,1],y=X1[1,2]),collapseRast=collapseRast[spatialcovnames[j]])[,paste0(spatialcovnames[j],c(".x",".y"))]
+            } else if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+              tmpColRast[[spatialcovnames[j]]] <- collapseRast[[spatialcovnames[j]]][[which(zvalues==subCovs[1,zname])]]
+              subSpatialcovs[1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X1[1,1],y=X1[1,2]),collapseRast=tmpColRast)[,paste0(spatialcovnames[j],c(".x",".y"))]
+            }
+          }
+        }
+        if(ctdsCRW) subSpatialcovs[1,paste0("crw.",1:directions)] <- 0
+      }
+      
+      for(j in angleCovs[which(angleCovs %in% names(subCovs))]){
+        subAnglecovs[1,j] <- subCovs[1,j]
+        subCovs[1,j] <- 0 # set to zero because can't have NA covariates
+      }
+      
+      if(length(centerInd)){
+        for(j in 1:length(centerInd)){
+          subCovs[1,centerNames[(j-1)*2+1:2]]<-distAngle(X1[1,],X1[1,],centers[centerInd[j],])
+        }
+      }
+      
+      if(length(centroidInd)){
+        for(j in 1:centroidInd){
+          subCovs[1,centroidNames[(j-1)*2+1:2]]<-distAngle(X1[1,],X1[1,],as.numeric(centroids[[j]][1,]))
+        }
+      }
+      if(!is.null(recharge)){
+        g0 <- stats::model.matrix(recharge$g0,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wng0
+        subCovs[1,"recharge"] <- g0 #+ stats::model.matrix(recharge$theta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wntheta
+      }
+      
+      for(i in distnames){
+        if(dist[[i]] %in% rwdists){
+          if(dist[[i]] %in% c("rw_mvnorm2")){
+            subCovs[1,paste0(i,".x_tm1")] <- X1[1,1]
+            subCovs[1,paste0(i,".y_tm1")] <- X1[1,2]
+          } else if(dist[[i]] %in% c("rw_mvnorm3")){
+            subCovs[1,paste0(i,".x_tm1")] <- X1[1,1]
+            subCovs[1,paste0(i,".y_tm1")] <- X1[1,2]
+            subCovs[1,paste0(i,".z_tm1")] <- X1[1,3]
+          }
+        }
+      }
+      
+      # get max crw lag
+      maxlag <- getDM(cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE)$lag
+      
+      covsPi <- stats::model.matrix(formPi,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
+      pie <- mlogit(wnpi,covsPi,nbCovsPi,1,mixtures)
+      
+      # assign individual to mixture
+      if(mixtures>1) mix[zoo] <- sample.int(mixtures,1,prob=pie)
+      
+      covsDelta <- stats::model.matrix(formDelta,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
+      
+      delta0 <- mlogit(deltaB[(mix[zoo]-1)*(nbCovsDelta+1)+1:(nbCovsDelta+1),,drop=FALSE],covsDelta,nbCovsDelta,1,nbStates)
+    }
+    
+    if(!isTRUE(list(...)$CT)){
+      gamma <- matrix(0,nbStates,nbStates)
+      gamma[cbind(1:nbStates,betaRef)] <- 1
+      gamma <- t(gamma)
+      g <- stats::model.matrix(newformula,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
+      gamma[!gamma] <- exp(g)
+      gamma <- t(gamma)
+      gamma <- gamma/apply(gamma,1,sum)
+    } else {
+      gamma <- diag(nbStates)
+      qnames <- names(stats::get_all_vars(newformula,data=cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE])))
+      qInd <- (length(qnames)>0) # indicator for covariates on state transition rates
+      if(nbStates>1){
+        mm <- stats::model.matrix(newformula,cbind(subCovs,subSpatialcovs))
+        if(is.list(kappa)){
+          if(is.null(recharge)){
+            if(qInd){
+              message("\n        Calculating max transition rate using '",kappa$method,"' method for individual ",zoo,"...")
+              if(kappa$method=="quantile"){
+                covgrid <- list()
+                for(i in names(subCovs)[names(subCovs) %in% qnames]){
+                  if(is.factor(subCovs[,i])) covgrid[[i]] <- levels(subCovs[,i])
+                  else covgrid[[i]] <- seq(stats::quantile(subCovs[,i],kappa$nspCov/2),stats::quantile(subCovs[,i],1-kappa$nspCov/2),length=100)
+                }
+                for(i in spatialcovnames[spatialcovnames %in% qnames]){
+                  if(is.factor(raster::getValues(spatialCovs[[i]]))) covgrid[[i]] <- levels(raster::getValues(spatialCovs[[i]]))
+                  else covgrid[[i]] <- seq(stats::quantile(raster::getValues(spatialCovs[[i]]),kappa$spCov/2),stats::quantile(raster::getValues(spatialCovs[[i]]),1-kappa$spCov/2),length=100)
+                }
+                mm <- stats::model.matrix(newformula,expand.grid(covgrid))
+                rm(covgrid)
+              } else if(kappa$method=="random"){
+                if(any(names(subCovs) %in% qnames)){
+                  fullsub <- subCovs[rep(sample.int(nrow(subCovs),min(nrow(subCovs),kappa$nspCov)), each = ifelse(nbSpatialCovs,min(raster::ncell(spatialCovs[[1]]),kappa$spCov),1)),which(names(subCovs) %in% qnames),drop=FALSE ]
+                  if(nbSpatialCovs){
+                    fullSpatialCov <- data.frame(fullsub,apply(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames])[sample.int(raster::ncell(spatialCovs[[1]]),min(raster::ncell(spatialCovs[[1]]),kappa$spCov)),,drop=FALSE],2,function(x) rep(x,min(nrow(subCovs),kappa$nspCov))))
+                    mm <- stats::model.matrix(newformula,fullSpatialCov)
+                  } else mm <- stats::model.matrix(newformula,fullsub)
+                  rm(fullsub,fullSpatialCov)
+                } else {
+                  fullSpatialCov <- data.frame(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames])[sample.int(raster::ncell(spatialCovs[[1]]),min(raster::ncell(spatialCovs[[1]]),kappa$spCov)),,drop=FALSE])
+                  mm <- stats::model.matrix(newformula,fullSpatialCov)
+                  rm(fullSpatialCov)
+                }
+              } else if(kappa$method=="all"){
+                if(any(names(subCovs) %in% qnames)){
+                  fullsub <- subCovs[rep(seq_len(nrow(subCovs)), each = ifelse(nbSpatialCovs,raster::ncell(spatialCovs[[1]]),1)),which(names(subCovs) %in% qnames),drop=FALSE]
+                  if(nbSpatialCovs){
+                    fullSpatialCov <- data.frame(fullsub,apply(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames]),2,function(x) rep(x,nrow(subCovs))))
+                    mm <- stats::model.matrix(newformula,fullSpatialCov)
+                  } else mm <- stats::model.matrix(newformula,fullsub)
+                  rm(fullsub,fullSpatialCov)
+                } else {
+                  fullSpatialCov <- data.frame(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames]))
+                  mm <- stats::model.matrix(newformula,fullSpatialCov)
+                  rm(fullSpatialCov)
+                }
+              }
+            } else message("\n        Calculating max transition rate based on no covariates for individual ",zoo,"...")
+          } else stop("kappa must be specified as a positive finite value for recharge models")
+          fullQ <- tryCatch(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], mm, betaRef, TRUE, 0, aInd=1,rateMatrix=TRUE,kappa=maxRate),error=function(e) e) # diag(nbStates)
+          if(inherits(fullQ,"error") || any(!is.finite(fullQ))){
+            stop("Max transition rate could not be calculated for individual ",zoo,": ",ifelse(inherits(fullQ,"error"),fullQ,"rate(s) not finite"))
+          }
+          kappa <- max(abs(fullQ)) # upper bound for transitions away from current state
+          message("          => kappa = ",round(kappa,2),"\n")
+        } else {
+          fullQ <- tryCatch(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], mm, betaRef, TRUE, 0, aInd=1,rateMatrix=TRUE,kappa=maxRate),error=function(e) e) # diag(nbStates)
+          if(inherits(fullQ,"error") || any(!is.finite(fullQ))){
+            stop("Max transition rate could not be calculated for individual ",zoo,": ",ifelse(inherits(fullQ,"error"),fullQ,"rate(s) not finite"))
+          }
+        }
+        if(!qInd && !identical(array(fullQ[,,1],dim=c(nbStates,nbStates,dim(fullQ)[3])),fullQ)) stop("transition rate matrix not constant -- please report to brett.mcclintock@noaa")
+        Qmat <- fullQ[,,1]
+        rm(fullQ,mm)
+      }
+    }
+    
+    if(nbStates>1) {
+      Z <- rep(NA,nbObs)
+      Z[1] <- sample(1:nbStates,size=1,prob=delta0%*%gamma)
+    } else Z <- rep(1,nbObs)
+    
+    if(ncores==1 | nbAnimals==1){
+      message("        Simulating individual ",zoo,"... ",sep="")
+    } else progBar(zoo, nbAnimals)
+    
+    if(nbStates>1 & isTRUE(list(...)$CT)){
+      if(qInd | moveState){
+        if(inherits(obsTimes[[zoo]],"POSIXt")){
+          nbSwitch <- stats::rpois(1,as.numeric(difftime(max(obsTimes[[zoo]]),min(obsTimes[[zoo]]),units=attr(lambda[[zoo]],"units")))*kappa)
+          tswitch <- min(obsTimes[[zoo]])+sort(runif(nbSwitch)*difftime(max(obsTimes[[zoo]]),min(obsTimes[[zoo]]),units=attr(lambda[[zoo]],"units")))
+        } else {
+          nbSwitch <- stats::rpois(1,diff(range(obsTimes[[zoo]]))*kappa)
+          tswitch <- sort(runif(nbSwitch,min(obsTimes[[zoo]]),max(obsTimes[[zoo]])))
+        }
+        
+      } else { # draw times of actual state switches since transitions don't depend on covariates
+        tswitch <- S <- NULL
+        st1 <- st <- Z[1]
+        time <- min(obsTimes[[zoo]]) + stats::rexp(1, -Qmat[st, st])
+        while(time < obsTimes[[zoo]][nbObs]){
+          if(nbStates > 2){
+            probs <- Qmat[st, -st]/sum(Qmat[st, -st])
+            st <- sample((1:nbStates)[-st], size = 1, prob = probs)
+          } else {
+            st <- (1:2)[-st]
+          }
+          S <- c(S, st)
+          tswitch <- c(tswitch, time)
+          time <- time + stats::rexp(1, -Qmat[st, st])
+        }
+        allTimes <- c(obsTimes[[zoo]], tswitch)
+        Z <- c(rep(NA, nbObs), S)
+        Z <- Z[order(allTimes)]
+        Z[1] <- st1
+        for (t in 1:length(allTimes)){
+          if(is.na(Z[t])) Z[t] <- Z[t - 1]
+        }
+      }
+      allTimes <- sort(c(tswitch,obsTimes[[zoo]]))
+      if(inherits(obsTimes[[zoo]],"POSIXt")){
+        dt[[zoo]] <- c(as.numeric(difftime(allTimes[-1],allTimes[-length(allTimes)],units=attr(lambda[[zoo]],"units"))),0)
+      } else dt[[zoo]] <- c(diff(allTimes),0)
+      subCovs <- subCovs[cumsum(!allTimes %in% tswitch),,drop=FALSE]
+      if(!is.null(iallCovs)) iallCovs <- iallCovs[cumsum(!allTimes %in% tswitch),,drop=FALSE]
+      
+      if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd) & !length(angleCovs) & !rwInd) {
+        if(!is.null(recharge)){
+          subCovs[,"recharge"] <- cumsum(c(g0,(wntheta %*% t(stats::model.matrix(recharge$theta,subCovs[-nrow(subCovs),])))*dt[[zoo]][-nrow(subCovs)]))
+        }
+        DMcov <- stats::model.matrix(newformula,subCovs)
+        
+        # format parameters
+        DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean)
+        fullDM <- DMinputs$fullDM
+        DMind <- DMinputs$DMind
+        ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
+        nc <- ncmean$nc
+        meanind <- ncmean$meanind
+        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,nrow(subCovs),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+        gFull <-  DMcov %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
+      } 
+      
+    } else {
+      tswitch <- max(obsTimes[[zoo]])
+      allTimes <- obsTimes[[zoo]]
+    }
+  
+    k <- 1
+    time <- obsTimes[[zoo]][1]
+    
+    genData <- genArgs <- vector('list',length(distnames))
+    names(genData) <- names(genArgs) <- distnames
+    
+    for(i in distnames){
+      if(inputs$dist[[i]] %in% mvndists){
+        genData[[i]] <- matrix(NA,length(allTimes),as.numeric(sub("mvnorm","",sub("rw_mvnorm","",dist[[i]]))))
+      } else genData[[i]] <- rep(NA,length(allTimes))
+      genArgs[[i]] <- list(1)  # first argument = 1 (one random draw)
+    }
+    d <- data.frame(ID=factor(rep(IDs[zoo],length(allTimes))))
+    
+    X <- matrix(0,nrow=length(allTimes),ncol=2)
+    if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) X <- matrix(0,nrow=length(allTimes),ncol=3)
+    X[1,] <- X1
+    
+    while(time < max(obsTimes[[zoo]])){
+      
+      if(ncores==1 | nbAnimals==1) progBar(k, length(allTimes)-1)
+      
+      if(nbSpatialCovs |  length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
+        # format parameters
+        DMinputs<-getDM(cbind(subCovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE],subSpatialcovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE)
+        fullDM <- DMinputs$fullDM
+        DMind <- DMinputs$DMind
+        wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
+        if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
+        
+        nc <- meanind <- vector('list',length(distnames))
+        names(nc) <- names(meanind) <- distnames
+        for(i in distnames){
+          nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
+          if(!isFALSE(inputs$circularAngleMean[[i]])) {
+            meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+            # deal with angular covariates that are exactly zero
+            if(length(meanind[[i]])){
+              angInd <- which(is.na(match(gsub("cos","",gsub("sin","",colnames(nc[[i]]))),colnames(nc[[i]]),nomatch=NA)))
+              sinInd <- colnames(nc[[i]])[which(grepl("sin",colnames(nc[[i]])[angInd]))]
+              nc[[i]][meanind[[i]],sinInd]<-ifelse(nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)])
+              nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)]<-ifelse(nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],sinInd])
+            }
+          }
+        }
+        subPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,1,inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+      } else {
+        subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
+      }
+      
+      if(isTRUE(list(...)$CT)) subPar <- ctPar(subPar,dist,nbStates,data.frame(subCovs[k,],dt=dt[[zoo]][k]))
+      
+      for(i in distnames){
+        
+        zeroMass[[i]] <- rep(0,nbStates)
+        oneMass[[i]] <- rep(0,nbStates)
+        if(zeroInflation[[i]] | oneInflation[[i]]) {
+          if(zeroInflation[[i]]) zeroMass[[i]] <- subPar[[i]][parSize[[i]]*nbStates-nbStates*oneInflation[[i]]-(nbStates-1):0]
+          if(oneInflation[[i]])  oneMass[[i]] <- subPar[[i]][parSize[[i]]*nbStates-(nbStates-1):0]
+          subPar[[i]] <- subPar[[i]][-(parSize[[i]]*nbStates-(nbStates*oneInflation[[i]]-nbStates*zeroInflation[[i]]-1):0)]
+        }
+        
+        if(inputs$dist[[i]] %in% mvndists){
+          if(inputs$dist[[i]]=="mvnorm2" || inputs$dist[[i]]=="rw_mvnorm2"){
+            genArgs[[i]][[2]] <- c(subPar[[i]][Z[k]],
+                                   subPar[[i]][nbStates+Z[k]])
+            genArgs[[i]][[3]] <- matrix(c(subPar[[i]][nbStates*2+Z[k]], #x
+                                          subPar[[i]][nbStates*3+Z[k]], #xy
+                                          subPar[[i]][nbStates*3+Z[k]], #xy
+                                          subPar[[i]][nbStates*4+Z[k]]) #y
+                                        ,2,2)
+          } else if(inputs$dist[[i]]=="mvnorm3" || inputs$dist[[i]]=="rw_mvnorm3"){
+            genArgs[[i]][[2]] <- c(subPar[[i]][Z[k]],
+                                   subPar[[i]][nbStates+Z[k]],
+                                   subPar[[i]][2*nbStates+Z[k]])
+            genArgs[[i]][[3]] <- matrix(c(subPar[[i]][nbStates*3+Z[k]], #x
+                                          subPar[[i]][nbStates*4+Z[k]], #xy
+                                          subPar[[i]][nbStates*5+Z[k]], #xz
+                                          subPar[[i]][nbStates*4+Z[k]], #xy
+                                          subPar[[i]][nbStates*6+Z[k]], #y
+                                          subPar[[i]][nbStates*7+Z[k]], #yz
+                                          subPar[[i]][nbStates*5+Z[k]], #xz
+                                          subPar[[i]][nbStates*7+Z[k]], #yz
+                                          subPar[[i]][nbStates*8+Z[k]]) #z          
+                                        ,3,3)
+          } 
+        } else if(inputs$dist[[i]]=="cat" | inputs$dist[[i]]=="ctds"){
+          genArgs[[i]][[2]] <- subPar[[i]][seq(Z[k],(parSize[[i]]+1)*nbStates,nbStates)]
+        } else {
+          for(j in 1:(parSize[[i]]-zeroInflation[[i]]-oneInflation[[i]]))
+            genArgs[[i]][[j+1]] <- subPar[[i]][(j-1)*nbStates+Z[k]]
+        }
+        
+        if(inputs$dist[[i]] %in% angledists){
+          
+          genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
+          if(genData[[i]][k] >  pi) genData[[i]][k] <- genData[[i]][k]-2*pi
+          if(genData[[i]][k] < -pi) genData[[i]][k] <- genData[[i]][k]+2*pi
+          
+          if(i=="angle" & ("step" %in% distnames)){
+            if(inputs$dist[["step"]] %in% stepdists) {
+              if(genData$step[k]>0){
+                phi <- phi + genData[[i]][k]
+              } #else if(genData$step[k]==0) {
+              #genData[[i]][k] <- NA # angle = NA if step = 0
+              #}
+              m <- genData$step[k]*c(Re(exp(1i*phi)),Im(exp(1i*phi)))
+              X[k+1,] <- X[k,] + m
+            }
+          }
+        } else {
+          
+          if(inputs$dist[[i]]=="gamma") {
+            shape <- genArgs[[i]][[2]]^2/genArgs[[i]][[3]]^2
+            scale <- genArgs[[i]][[3]]^2/genArgs[[i]][[2]]
+            genArgs[[i]][[2]] <- shape
+            genArgs[[i]][[3]] <- 1/scale # rgamma expects rate=1/scale
+          }
+          
+          probs <- c(1.-zeroMass[[i]][Z[k]]-oneMass[[i]][Z[k]],zeroMass[[i]][Z[k]],oneMass[[i]][Z[k]])
+          rU <- which(stats::rmultinom(1,1,prob=probs)==1)
+          if(rU==1){
+            if(inputs$dist[[i]] %in% mvndists){
+              genData[[i]][k,] <- do.call(Fun[[i]],genArgs[[i]])
+            } else {
+              if(dist[[i]]=="ctds"){
+                # forbid moves to cells outside extent of rast
+                offRast <- which(is.na(rast[adj.cells[getCell,]]))
+                if(length(offRast)){
+                  genArgs[[i]][[2]][offRast] <- 0
+                }
+              }
+              genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
+            }
+          } else if(rU==2) {
+            genData[[i]][k] <- 0
+          } else {
+            genData[[i]][k] <- 1
+          }
+        }
+        
+        if(!is.null(mvnCoords) && i==mvnCoords){
+          X[k+1,] <- genData[[i]][k,]
+          d[[i]] <- X
+        } else d[[i]] <- genData[[i]]
+        if(dist[[i]]=="ctds"){
+          if(genData[[i]][k]==(directions+1)){
+            X[k+1,] <- X[k,]
+            subSpatialcovs[k+1,] <- subSpatialcovs[k,]
+            for(j in 1:nbSpatialCovs){
+              if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+                spCov <- spatialCovs[[j]][getCell]
+                zname <- names(attributes(spatialCovs[[j]])$z)
+                zvalues <- raster::getZ(spatialCovs[[j]])
+                spCov <- spCov[1,which(zvalues==subCovs[k+1,zname])]
+                if(isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
+                ) subSpatialcovs[k+1,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
+                else subSpatialcovs[k+1,spatialcovnames[j]]<-spCov
+                if(spatialcovnames[j] %in% angleCovs) {
+                  subAnglecovs[k+1,spatialcovnames[j]] <- subSpatialcovs[k+1,j]
+                  subSpatialcovs[k+1,spatialcovnames[j]] <- circAngles(subAnglecovs[k:(k+1),spatialcovnames[j]],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
+                }
+              }
+            }
+          } else {
+            oldCell <- getCell
+            getCell <- c(adj.cells[getCell,],getCell)[genData[[i]][k]]
+            X[k+1,] <- raster::xyFromCell(rast,getCell)
+            for(j in 1:nbSpatialCovs){
+              spCov <- spatialCovs[[j]][getCell]
+              if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+                zname <- names(attributes(spatialCovs[[j]])$z)
+                zvalues <- raster::getZ(spatialCovs[[j]])
+                spCov <- spCov[1,which(zvalues==subCovs[k+1,zname])]
+              }
+              if(isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
+              ) subSpatialcovs[k+1,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
+              else subSpatialcovs[k+1,spatialcovnames[j]]<-spCov
+              if(spatialcovnames[j] %in% angleCovs) {
+                subAnglecovs[k+1,spatialcovnames[j]] <- subSpatialcovs[k+1,j]
+                subSpatialcovs[k+1,spatialcovnames[j]] <- circAngles(subAnglecovs[k:(k+1),spatialcovnames[j]],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
+              }
+            }
+            if(ctdsCRW){
+              xy.cell = raster::xyFromCell(rast, rep(oldCell,directions))
+              xy.adj = raster::xyFromCell(rast, adj.cells[oldCell,])
+              v.adj = (xy.adj - xy.cell)/sqrt(apply((xy.cell - xy.adj)^2, 1, sum))
+              v.moves = v.adj[rep(which(getCell==adj.cells[oldCell,]),directions), ]
+              subSpatialcovs[k+1,paste0("crw.",1:directions)] <- rowSums(v.moves * v.adj)
+            }
+          }
+        }
+      }
+      # get next state
+      gamma <- matrix(0,nbStates,nbStates)
+      gamma[cbind(1:nbStates,betaRef)] <- 1
+      gamma <- t(gamma)
+      
+      if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
+        if(nbSpatialCovs & !isTRUE(list(...)$ctds)){
+          for(j in 1:nbSpatialCovs){
+            getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[k+1,1],X[k+1,2]))
+            if(is.na(getCell)) {
+              if(ncores==1) message("\n    FAILED \n")
+              stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+            }
+            spCov <- spatialCovs[[j]][getCell]
+            if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+              zname <- names(attributes(spatialCovs[[j]])$z)
+              zvalues <- raster::getZ(spatialCovs[[j]])
+              spCov <- spCov[1,which(zvalues==subCovs[k+1,zname])]
+            }
+            subSpatialcovs[k+1,j]<-spCov
+            if(spatialcovnames[j] %in% angleCovs) {
+              subAnglecovs[k+1,spatialcovnames[j]] <- subSpatialcovs[k+1,j]
+              subSpatialcovs[k+1,j] <- circAngles(subAnglecovs[k:(k+1),spatialcovnames[j]],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
+            }
+            if(gradient){
+              if(inherits(spatialCovs[[j]],"RasterLayer")){
+                subSpatialcovs[k+1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X[k+1,1],y=X[k+1,2]),collapseRast=collapseRast[spatialcovnames[j]])[,paste0(spatialcovnames[j],c(".x",".y"))]
+              } else if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+                tmpColRast[[spatialcovnames[j]]] <- collapseRast[[spatialcovnames[j]]][[which(zvalues==subCovs[k+1,zname])]]
+                subSpatialcovs[k+1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X[k+1,1],y=X[k+1,2]),collapseRast=tmpColRast)[,paste0(spatialcovnames[j],c(".x",".y"))]
+              }
+            }
+          }
+        }
+        
+        for(j in angleCovs[which(angleCovs %in% names(subCovs))]){
+          subAnglecovs[k+1,j] <- subCovs[k+1,j]
+          subCovs[k+1,j] <- circAngles(subAnglecovs[k:(k+1),j],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
+        }
+        
+        if(length(centerInd)){
+          for(j in 1:length(centerInd)){
+            subCovs[k+1,centerNames[(j-1)*2+1:2]]<-distAngle(X[k,],X[k+1,],centers[centerInd[j],])
+          }
+        }
+        if(length(centroidInd)){
+          for(j in 1:centroidInd){
+            subCovs[k+1,centroidNames[(j-1)*2+1:2]]<-distAngle(X[k,],X[k+1,],as.numeric(centroids[[j]][k+1,]))
+          }
+        }
+        if(!is.null(recharge)){
+          subCovs[k+1,"recharge"] <- subCovs[k,"recharge"] + (wntheta %*% t(stats::model.matrix(recharge$theta,cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE]))))*dt[[zoo]][k]
+        }
+        for(i in distnames){
+          if(dist[[i]] %in% rwdists){
+            if(dist[[i]] %in% c("rw_mvnorm2")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1"))] <- X[k+1,]
+            else if(dist[[i]] %in% c("rw_mvnorm3")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1",".z_tm1"))] <- X[k+1,]
+          }
+        }
+      }
+      if(!isTRUE(list(...)$CT)){
+        if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd)
+          g <- stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
+        else g <- gFull[k+1,,drop=FALSE]
+        gamma[!gamma] <- exp(g)
+        gamma <- t(gamma)
+        gamma <- gamma/apply(gamma,1,sum)
+        Z[k+1] <- sample(1:nbStates,size=1,prob=gamma[Z[k],]) 
+        time <- obsTimes[[zoo]][k+1]
+      } else {
+        time <- allTimes[k+1]
+        if(qInd | moveState){
+          if(nbStates>1 && time %in% tswitch){
+            if(isTRUE(list(...)$ctds) && (moveState & genData$z[k]==(directions+1))){
+              Z[k+1] <- Z[k]
+            } else {
+              if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
+                Qmat <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])), betaRef, TRUE, dt[[zoo]][k], aInd=1,rateMatrix=TRUE,kappa=maxRate)[,,1],nbStates,nbStates),error=function(e) e)
+              } else {
+                Qmat <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], DMcov[k+1,,drop=FALSE], betaRef, TRUE, dt[[zoo]][k], aInd=1,rateMatrix=TRUE,kappa=maxRate)[,,1],nbStates,nbStates),error=function(e) e)
+              }
+              if(inherits(Qmat,"error") || any(!is.finite(Qmat))){
+                warning("Transition rate matrix could not be calculated for individual ",zoo,"; terminating at observation ",k,": ",ifelse(inherits(Qmat,"error"),Qmat,"rate(s) not finite"))
+                break;
+              }
+              qsum <- sum(Qmat[Z[k], -Z[k]])
+              if(qsum > kappa) {
+                warning("Transition rate matrix for individual ",zoo,"; terminating at observation ",k,"; ","transition rates exceed kappa: qsum = ",qsum," and kappa = ",kappa)
+                break;
+              }
+              if(runif(1) < qsum/kappa){
+                if (nbStates > 2) {
+                  probs <- Qmat[Z[k], -Z[k]]/qsum
+                  Z[k+1] <- sample((1:nbStates)[-Z[k]], size = 1, prob = probs)
+                } else {
+                  Z[k+1] <- (1:2)[-Z[k]]
+                }
+              } else Z[k+1] <- Z[k]
+            }
+            nbObs <- nbObs + 1
+          } else Z[k+1] <- Z[k]
+        }
+      }
+      k <- k + 1
+    }
+    #allStates <- c(allStates,Z)
+    #if(nbSpatialCovs>0) {
+    #allSpatialcovs <- rbind(allSpatialcovs,subSpatialcovs)
+    #}
+    
+    if("angle" %in% distnames){ 
+      if(inputs$dist[["angle"]] %in% angledists & ("step" %in% distnames))
+        if(inputs$dist[["step"]] %in% stepdists){
+          d$angle[1] <- NA # the first angle value is arbitrary
+          step0 <- which(d$step==0)
+          d$angle[c(step0,step0+1)] <- NA
+          #if(length(centerInd)) subCovs[1,centerNames[seq(2,2*length(centerInd),2)]] <- NA
+          d$x=X[,1]
+          d$y=X[,2]
+        }
+    } else if("step" %in% distnames){
+      if(inputs$dist[["step"]] %in% stepdists){
+        d$x=c(initialPosition[[zoo]][1],initialPosition[[zoo]][1]+cumsum(d$step)[-nrow(d)])
+        d$y=rep(initialPosition[[zoo]][2],nrow(d))
+      }    
+    } else if(!is.null(mvnCoords)){
+      d[[paste0(mvnCoords,".x")]] <- d[[mvnCoords]][,1]
+      d[[paste0(mvnCoords,".y")]] <- d[[mvnCoords]][,2]
+      if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) d[[paste0(mvnCoords,".z")]] <- d[[mvnCoords]][,3]
+      d[[mvnCoords]] <- NULL
+    } else if(isTRUE(list(...)$ctds)){
+      d$x <- X[,1]
+      d$y <- X[,2]
+    }
+    for(j in angleCovs[which(angleCovs %in% names(subCovs))])
+      iallCovs[,j] <- subCovs[,j]
+    if(length(centerInd)) centerCovs <- subCovs[,centerNames]
+    if(length(centroidInd)) centroidCovs <- subCovs[,centroidNames]
+    #data <- rbind(data,d)
+    
+    simDat <- list(data=d,allCovs=iallCovs,allSpatialcovs=subSpatialcovs,centerCovs=centerCovs,centroidCovs=centroidCovs,allStates=matrix(Z,ncol=1),allTimes=matrix(allTimes,ncol=1))
+    if(isTRUE(list(...)$ctds)){
+      simDat$data$time <- allTimes
+      simDat$data$tau <- dt[[zoo]]
+      simDat$data$isObs <- (allTimes %in% obsTimes[[zoo]])
+      #simDat <- lapply(simDat,function(x) if(!is.null(x)) x[1:k-1,,drop=FALSE])
+    } else if(isTRUE(list(...)$CT)){
+      simDat$data$isObs <- (allTimes %in% obsTimes[[zoo]])
+      simDat$data$time <- allTimes
+    }
+    return(simDat)
+  }
+  ,warning=muffleRNGwarning)
+  if(!((ncores>1 & nbAnimals>1))) doParallel::stopImplicitCluster()
+  else future::plan(future::sequential)
+  
+  if(nbCovs>0)
+    simDat$data <- cbind(simDat$data,simDat$allCovs)
+  
+  if(nbSpatialCovs>0){
+    if(!isTRUE(list(...)$ctds)) {
+      colnames(simDat$allSpatialcovs)[1:nbSpatialCovs]<-spatialcovnames
+      for(j in spatialcovnames){
+        if(any(raster::is.factor(spatialCovs[[j]]))){
+          simDat$allSpatialcovs[[j]] <- factor(simDat$allSpatialcovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
+        }
+      }
+    } else {
+      colnames(simDat$allSpatialcovs)<-tmpSpNames
+      for(j in spatialcovnames){
+        if(any(raster::is.factor(spatialCovs[[j]]))){
+          if(isTRUE(attr(spatialCovs[[j]],"nograd"))){
+            for(i in 1:directions){
+              simDat$allSpatialcovs[[paste0(j,".",i)]] <- factor(simDat$allSpatialcovs[[paste0(j,".",i)]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
+            }
+          } else {
+            simDat$allSpatialcovs[[j]] <- factor(simDat$allSpatialcovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
+          }
+        }
+      }
+    }
+    simDat$data <- cbind(simDat$data,simDat$allSpatialcovs)
+  }
+  
+  if(length(centerInd)){
+    simDat$data <- cbind(simDat$data,simDat$centerCovs)
+    for(j in which(grepl(".angle",names(simDat$data)))){
+      if(names(simDat$data[j]) %in% centerNames)
+        class(simDat$data[[j]]) <- c(class(simDat$data[[j]]), "angle")
+    }
+  }
+  
+  if(length(centroidInd)){
+    simDat$data <- cbind(simDat$data,simDat$centroidCovs)
+    for(j in which(grepl(".angle",names(simDat$data)))){
+      if(names(simDat$data[j]) %in% centroidNames)
+        class(simDat$data[[j]]) <- c(class(simDat$data[[j]]), "angle")
+    }
+  }
+  
+  # include states sequence in the data
+  if(states)
+    simDat$data <- cbind(simDat$data,states=simDat$allStates)
+  
+  for(i in distnames){
+    if(inputs$dist[[i]] %in% angledists)
+      class(simDat$data[[i]]) <- c(class(simDat$data[[i]]), "angle")
+  }
+  
+  for(i in angleCovs){
+    class(simDat$data[[i]]) <- c(class(simDat$data[[i]]), "angle")
+  }
+  
+  if(!is.null(mvnCoords)){
+    attr(simDat$data,'coords') <- paste0(mvnCoords,c(".x",".y"))
+    #tmpNames <- colnames(data)[-which(colnames(data)=="ID")]
+    #prepDat <- prepData(data,coordNames = paste0(mvnCoords,c(".x",".y")))
+    #data$step <- prepDat$step
+    #data$angle <- prepDat$angle
+    #data$x <- prepDat$x
+    #data$y <- prepDat$y
+    #data <- data[,c("ID","step","angle",tmpNames,"x","y")]
+  }
+  attr(simDat$data,"gradient") <- gradient
+  
+  # account for observation error (if any)
+  if(!isTRUE(list(...)$CT)) out<-simObsData(momentuHMMData(simDat$data),lambda,errorEllipse)
+  else {
+    allObsTimes <- simDat$allTimes
+    withCallingHandlers(out<-simObsData(momentuHMMData(simDat$data),lambda=NULL,errorEllipse,CT=TRUE),warning=muffleCTwarning)
+    if(!isTRUE(list(...)$ctds)) out$time <- allObsTimes
+    else {
+      obsCount <- table(out[out$isObs,]$ID)
+      #termInd <- which(obsCount!=(unlist(lapply(obsTimes,length))-1))
+      termInd <- which(obsCount!=(unlist(lapply(obsTimes,length))))
+      for(zoo in termInd){
+        warning("Transition rate matrix could not be calculated for individual ",zoo,"; terminated at observation ",obsCount[zoo])
+      }
+    }
+  }
+  #message("DONE")
+  return(out)
 }

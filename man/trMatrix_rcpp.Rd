@@ -13,7 +13,7 @@ trMatrix_rcpp(
   dt = as.numeric(c()),
   aInd = as.integer(c()),
   rateMatrix = FALSE,
-  maxRate = NA_real_,
+  kappa = NA_real_,
   check = TRUE
 )
 }
@@ -34,7 +34,7 @@ trMatrix_rcpp(
 
 \item{rateMatrix}{logical indicating whether or not to return the transition rate matrix. Ignored unless \code{CT=TRUE}.}
 
-\item{maxRate}{maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.}
+\item{kappa}{maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization, in which case the transition rate parameters \code{beta} are on the logit scale (instead of the log scale).}
 
 \item{check}{logical indicating whether or not to check transition probability matrix for issues. Ignored unless \code{CT=TRUE}.}
 }

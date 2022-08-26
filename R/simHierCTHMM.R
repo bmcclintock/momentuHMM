@@ -68,7 +68,6 @@
 #' \code{runif(1,min(errorEllipse$m),max(errorEllipse$m))}, and \code{runif(1,min(errorEllipse$r),max(errorEllipse$r))}. If only a single value is provided for any of the 
 #' error ellipse elements, then the corresponding component is fixed to this value for each location. Only coordinate data streams are subject to location measurement error;
 #' any other data streams are observed without error.
-#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues, but results in \code{beta} being on the logit scale (instead of log scale).
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param export Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.
 #' @param gradient Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. If \code{TRUE}, the gradients are returned with ``\code{.x}'' (easting gradient) and ``\code{.y}'' (northing gradient) suffixes added to the names of \code{spatialCovs}. For example, if \code{cov1} is the name of a spatial covariate, then the returned \code{\link{momentuHMMData}} object will include the fields ``\code{cov1.x}'' and ``\code{cov1.y}''.
@@ -120,7 +119,6 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
                         retrySims=0,
                         lambda=1,
                         errorEllipse=NULL,
-                        maxRate=Inf,
                         ncores=1,
                         export=NULL,
                         gradient=FALSE)
@@ -153,7 +151,6 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
       if(missing(obsPerLevel)) stop('argument "obsPerLevel" is missing, with no default')
       if(is.null(obsPerLevel)) stop("'obsPerLevel' cannot be NULL when 'matchModelObs' is FALSE")
     }
-    maxRate <- model$conditions$maxRate
   } else {
     dist <- formatHierHMM(NULL,hierStates=hierStates,hierDist=hierDist)$dist
     for(i in names(dist)){
@@ -162,7 +159,6 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
     if(!is.null(lambda)){
       if(length(lambda)>1 || lambda<=0) stop('lambda must be a scalar and >0')
     } else stop("lambda cannot be NULL")
-    if(!is.numeric(maxRate) || length(maxRate)>1 || maxRate<0) stop('maxRate must be a non-negative numeric scalar')
   }
   
   withCallingHandlers(out <- simHierData(nbAnimals,hierStates,hierDist,
@@ -186,8 +182,7 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
                                          ncores,
                                          export,
                                          gradient,
-                                         CT=TRUE,
-                                         maxRate=maxRate),warning=muffleCTwarning)
+                                         CT=TRUE),warning=muffleCTwarning)
   
   coordLevel <- attr(out,"coordLevel")
   out<- out[,c("ID","time",colnames(out)[which(!colnames(out) %in% c("ID","time"))])]

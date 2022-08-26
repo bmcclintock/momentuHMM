@@ -13,7 +13,7 @@ prepCTDS <- function(data, ...) {
 #' @rdname prepCTDS
 #' @method prepCTDS default
 #' @param Time.unit Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{data$time} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto', but note that if there are multiple individuals, then the units are determined based on the time stamps for the first individual.
-#' @param rast A raster object or raster stack object that will define the discrete-space grid cells for the CTMC movement path.
+#' @param rast A raster object or raster stack object that will define the discrete-space grid cells for the CTMC movement path. \code{spatialCovs} and \code{spatialCovs.grad} must have the same extent, number of rows and columns, projection, resolution, and origin as \code{rast}.
 #' @param directions Integer. Either 4 (indicating a "Rook's neighborhood" of 4 neighboring grid cells) or 8 (indicating a "King's neighborhood" of 8 neighboring grid cells).
 #' @param zero.idx Integer vector of the indices of raster cells that are not passable and should be excluded. These are cells where movement should be impossible. Default is zero.idx=integer().
 #' @param print.iter Logical. If true, then the progress stepping through each observed location in \code{data} will be output in the terminal.
@@ -144,7 +144,7 @@ prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.id
   if(!exists("messInd")) messInd <- TRUE # message indicator exported from MIfitCTHMM foreach call
   ids <- unique(data$ID)
   withCallingHandlers(
-    ctdsglm <- foreach(iDat=mapply(function(x) data[which(data$ID==x),],unique(data$ID),SIMPLIFY = FALSE), id=ids, .combine = 'rbind', .export="messInd") %dorng% {
+    ctdsglm <- suppressPackageStartupMessages(foreach(iDat=mapply(function(x) data[which(data$ID==x),],unique(data$ID),SIMPLIFY = FALSE), id=ids, .combine = 'rbind', .export="messInd") %dorng% {
       if(messInd){
         if(ncores==1) message("\rIndividual ",which(ids==id),"... ",sep="")
         else progBar(which(ids==id), length(ids))
@@ -155,7 +155,7 @@ prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.id
       if(length(dataStreams) | !is.null(covNames)){
         multiCellMove <- which(ctdsglm$cellCross>0)
         if(length(multiCellMove)){
-          warning("There were ",length(unique(ctdsglm$cellCross[multiCellMove]))," move(s) across multiple cells within a time step:\n",
+          warning("Individual ",id," had ",length(unique(ctdsglm$cellCross[multiCellMove]))," move(s) across multiple cells within a time step:\n",
           #"   -- any spatial covariates for ",paste0(dataStreams,collapse=", ")," pertain to the initial cell for these time step(s)\n",
           #"   -- during model fitting, the state(s) for ",paste0(dataStreams,collapse=", ")," are assumed to be the initial state(s) at the start of these time step(s)")
           ifelse(length(dataStreams),paste0("   -- '",paste0(dataStreams,collapse="', '"),"' data stream(s) were set to NA for these time step(s)\n"),""),
@@ -176,7 +176,7 @@ prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.id
       }
       names(ctdsglm)[which(names(ctdsglm)=="t")] <- "time"
       return(ctdsglm)
-    },
+    }),
   warning=muffleRNGwarning)
   if(ncores==1) {
     doParallel::stopImplicitCluster()
@@ -382,7 +382,7 @@ prepCTDS.hierarchical <- function(data, Time.unit="auto", rast, directions=4, ze
     warning=muffleRNGwarning)
   if(ncores==1) {
     doParallel::stopImplicitCluster()
-    if(messInd) cat("DONE\n")
+    if(messInd) message("DONE\n")
   }
   else future::plan(future::sequential)
   #}
@@ -653,6 +653,12 @@ checkRast <- function(data,rast,spatialCovs,spatialCovs.grad){
   if(!is.null(spatialCovs)) if(any(is.na(raster::cellFromXY(spatialCovs[[1]],data[,c("x","y")])))) stop("Location data are beyond the spatial extent of the raster(s). Try expanding the extent of the raster(s).")
   else if(!is.null(spatialCovs.grad)) if(any(is.na(raster::cellFromXY(spatialCovs.grad[[1]],data[,c("x","y")])))) stop("Location data are beyond the spatial extent of the raster(s). Try expanding the extent of the raster(s).")
   if(any(names(spatialCovs) %in% names(spatialCovs.grad))) stop("'spatialCovs' and 'spatialCovs.grad' names must be unique")
+  for(j in names(spatialCovs)){
+    raster::compareRaster(rast,spatialCovs[[j]])
+  }
+  for(j in names(spatialCovs.grad)){
+    raster::compareRaster(rast,spatialCovs.grad[[j]])
+  }
 }
 
 #insertRow <- function(existingDF, newrow, r) {

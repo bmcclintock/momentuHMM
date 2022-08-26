@@ -4,12 +4,12 @@
 \alias{expmatrix_rcpp}
 \title{Matrix Exponential}
 \usage{
-expmatrix_rcpp(x, maxRate = NA_real_, check = FALSE)
+expmatrix_rcpp(x, kappa = NA_real_, check = FALSE)
 }
 \arguments{
 \item{x}{a square matrix.}
 
-\item{maxRate}{maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.}
+\item{kappa}{maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.}
 
 \item{check}{logical indicating whether or not to check transition probability matrix for issues}
 }

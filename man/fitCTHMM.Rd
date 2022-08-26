@@ -30,7 +30,6 @@ fitCTHMM(data, ...)
   userBounds = NULL,
   workBounds = NULL,
   betaCons = NULL,
-  betaRef = NULL,
   deltaCons = NULL,
   mvnCoords = NULL,
   stateNames = NULL,
@@ -42,7 +41,7 @@ fitCTHMM(data, ...)
   control = list(),
   prior = NULL,
   modelName = NULL,
-  maxRate = Inf,
+  kappa = Inf,
   ...
 )
 
@@ -77,7 +76,7 @@ fitCTHMM(data, ...)
   control = list(),
   prior = NULL,
   modelName = NULL,
-  maxRate = Inf,
+  kappa = Inf,
   ...
 )
 }
@@ -197,9 +196,6 @@ For data streams, each element of \code{workBounds} should be a k x 2 matrix wit
 
 \item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See details.}
 
-\item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
-the diagonal elements of the t.p.m. are the reference. See details.}
-
 \item{deltaCons}{Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}. See details.}
 
 \item{mvnCoords}{Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, 
@@ -236,7 +232,7 @@ Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \co
 
 \item{modelName}{An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions.}
 
-\item{maxRate}{maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization, in which case the \code{beta} parameters are on the logit scale (instead of log scale).}
+\item{kappa}{maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization, in which case the transition rate parameters \code{beta} are on the logit scale (instead of the log scale).}
 
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See details.}
 

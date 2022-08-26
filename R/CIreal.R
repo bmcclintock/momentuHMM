@@ -185,11 +185,11 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
       
         if(is.null(recharge)){
           wpar <- m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))]
-          est[(mix-1)*nbStates+1:nbStates,] <- get_gamma(wpar,tempCovMat,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,maxRate=m$conditions$maxRate,check=TRUE)
+          est[(mix-1)*nbStates+1:nbStates,] <- get_gamma(wpar,tempCovMat,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,kappa=m$conditions$kappa,check=TRUE)
           tmpSig <- Sigma[(i2:i3)[unique(c(m$conditions$betaCons))],(i2:i3)[unique(c(m$conditions$betaCons))]]
         } else {
           wpar <- c(m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))],m$mod$estimate[length(m$mod$estimate)-reForm$nbRecovs:0])
-          est[(mix-1)*nbStates+1:nbStates,] <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,hierRecharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,maxRate=m$conditions$maxRate,check=TRUE)
+          est[(mix-1)*nbStates+1:nbStates,] <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,hierRecharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,kappa=m$conditions$kappa,check=TRUE)
           tmpSig <- Sigma[c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-reForm$nbRecovs:0),c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-reForm$nbRecovs:0)]
         }
     
@@ -197,9 +197,9 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
           for(i in 1:nbStates){
             for(j in 1:nbStates){
               if(is.null(recharge)){
-                dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,maxRate=m$conditions$maxRate,check=FALSE)
+                dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,kappa=m$conditions$kappa,check=FALSE)
               } else {
-                dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,maxRate=m$conditions$maxRate,check=FALSE)
+                dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,kappa=m$conditions$kappa,check=FALSE)
               }  
               se[(mix-1)*nbStates+i,j]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
               lower[(mix-1)*nbStates+i,j]<-1/(1+exp(-(log(est[(mix-1)*nbStates+i,j]/(1-est[(mix-1)*nbStates+i,j]))-quantSup*(1/(est[(mix-1)*nbStates+i,j]-est[(mix-1)*nbStates+i,j]^2))*se[(mix-1)*nbStates+i,j])))#est[i,j]-quantSup*se[i,j]
@@ -227,11 +227,11 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
         
         if(is.null(recharge)){
           wpar <- m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))]
-          est[(mix-1)*nbStates+1:nbStates,] <- get_gamma(wpar,tempCovMat,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE,maxRate=m$conditions$maxRate,check=TRUE)
+          est[(mix-1)*nbStates+1:nbStates,] <- get_gamma(wpar,tempCovMat,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE,kappa=m$conditions$kappa,check=TRUE)
           tmpSig <- Sigma[(i2:i3)[unique(c(m$conditions$betaCons))],(i2:i3)[unique(c(m$conditions$betaCons))]]
         } else {
           wpar <- c(m$mod$estimate[i2:i3][unique(c(m$conditions$betaCons))],m$mod$estimate[length(m$mod$estimate)-reForm$nbRecovs:0])
-          est[(mix-1)*nbStates+1:nbStates,] <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,hierRecharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE,maxRate=m$conditions$maxRate,check=TRUE)
+          est[(mix-1)*nbStates+1:nbStates,] <- get_gamma_recharge(wpar,tmpSplineInputs$covs,tmpSplineInputs$formula,hierRecharge,nbStates,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE,kappa=m$conditions$kappa,check=TRUE)
           tmpSig <- Sigma[c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-reForm$nbRecovs:0),c((i2:i3)[unique(c(m$conditions$betaCons))],length(m$mod$estimate)-reForm$nbRecovs:0)]
         }
         
@@ -239,9 +239,9 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
           for(i in 1:nbStates){
             for(j in 1:nbStates){
               if(is.null(recharge)){
-                dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE,maxRate=m$conditions$maxRate,check=FALSE)
+                dN<-numDeriv::grad(get_gamma,wpar,covs=tempCovMat,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=m$conditions$workBounds$beta,mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE,kappa=m$conditions$kappa,check=FALSE)
               } else {
-                dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE,maxRate=m$conditions$maxRate,check=FALSE)
+                dN<-numDeriv::grad(get_gamma_recharge,wpar,covs=tmpSplineInputs$covs,formula=tmpSplineInputs$formula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=m$conditions$betaRef,betaCons=m$conditions$betaCons,workBounds=rbind(m$conditions$workBounds$beta,m$conditions$workBounds$theta),mixture=mix,CT=isTRUE(m$conditions$CT),dt=dt,rateMatrix = TRUE,kappa=m$conditions$kappa,check=FALSE)
               }  
               se[(mix-1)*nbStates+i,j]<-suppressWarnings(sqrt(dN%*%tmpSig%*%dN))
               lower[(mix-1)*nbStates+i,j]<- est[(mix-1)*nbStates+i,j]-quantSup*se[(mix-1)*nbStates+i,j]
@@ -308,7 +308,7 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
         
         covs<-tempCovMat
         statFun<-function(beta,nbStates,covs,i,mixture=1){
-          gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,m$conditions$betaRef,isTRUE(m$conditions$CT),dt,rateMatrix=isTRUE(m$conditions$CT), maxRate=m$conditions$maxRate)[,,1]
+          gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,m$conditions$betaRef,isTRUE(m$conditions$CT),dt,rateMatrix=isTRUE(m$conditions$CT), kappa=m$conditions$kappa)[,,1]
           if(!isTRUE(m$conditions$CT)){
             tryCatch(solve(t(diag(nbStates)-gamma+1),rep(1,nbStates))[i],error = function(e) {
               "A problem occurred in the calculation of the stationary distribution."})
@@ -347,12 +347,12 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
   return(Par)
 }
 
-get_gamma <- function(beta,covs,nbStates,i,j,betaRef,betaCons,workBounds=NULL,mixture=1,CT=FALSE,dt,indCT1=FALSE,rateMatrix=FALSE,maxRate=Inf,check=TRUE){
+get_gamma <- function(beta,covs,nbStates,i,j,betaRef,betaCons,workBounds=NULL,mixture=1,CT=FALSE,dt,indCT1=FALSE,rateMatrix=FALSE,kappa=Inf,check=TRUE){
   dt <- ifelse(is.null(dt),1,dt)
   tmpBeta <- rep(NA,length(betaCons))
   tmpBeta[unique(c(betaCons))] <- beta
   beta <- w2wn(matrix(tmpBeta[betaCons],nrow(betaCons),ncol(betaCons)),workBounds)
-  if(!indCT1 | rateMatrix) gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,betaRef,CT,dt,aInd=1,rateMatrix=rateMatrix,maxRate=maxRate,check=check)[,,1]
+  if(!indCT1 | rateMatrix) gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],covs,betaRef,CT,dt,aInd=1,rateMatrix=rateMatrix,kappa=kappa,check=check)[,,1]
   else gamma <- diag(nbStates)
   gamma[i,j]
 }
@@ -380,7 +380,7 @@ get_recharge <- function(g0theta,recovs,g0covs,recharge,hierRecharge,rechargeNam
   return(rec)
 }
 
-get_gamma_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,j,betaRef,betaCons,workBounds=NULL,mixture=1,CT=FALSE,dt=NULL,rateMatrix=FALSE,maxRate=Inf,check=TRUE){
+get_gamma_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,j,betaRef,betaCons,workBounds=NULL,mixture=1,CT=FALSE,dt=NULL,rateMatrix=FALSE,kappa=Inf,check=TRUE){
   
   #dt <- ifelse(is.null(dt),1,mean(dt))
   
@@ -413,7 +413,7 @@ get_gamma_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,j,betaR
 
   newcovs <- stats::model.matrix(formula,covs)
   beta <- matrix(beta[1:(length(beta)-(ncol(recovs)))],ncol=nbStates*(nbStates-1))
-  gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(newcovs)+1:ncol(newcovs),,drop=FALSE],newcovs,betaRef,CT,dt,aInd=1,rateMatrix=rateMatrix,maxRate=maxRate,check=check)[,,1]
+  gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(newcovs)+1:ncol(newcovs),,drop=FALSE],newcovs,betaRef,CT,dt,aInd=1,rateMatrix=rateMatrix,kappa=kappa,check=check)[,,1]
   gamma[i,j]
 }
 

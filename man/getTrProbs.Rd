@@ -23,7 +23,7 @@ getTrProbs(data, ...)
   Time.name = NULL,
   Time.unit = "auto",
   rateMatrix = FALSE,
-  maxRate = Inf,
+  kappa = Inf,
   ...
 )
 
@@ -41,7 +41,7 @@ getTrProbs(data, ...)
   Time.name = NULL,
   Time.unit = "auto",
   rateMatrix = FALSE,
-  maxRate = Inf,
+  kappa = Inf,
   ...
 )
 }
@@ -80,7 +80,7 @@ The first column pertains to the lower bound and the second column the upper bou
 
 \item{rateMatrix}{Logical indicating whether to return the transition rate matrix. Default: \code{FALSE}. Ignored unless \code{data} is a continuous-time model or \code{Time.name} is specified.}
 
-\item{maxRate}{maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues, in which case the \code{beta} parameters are on the logit scale (instead of log scale). Ignored unless \code{data} is a \code{data.frame}, \code{\link{momentuHMMData}} object, or \code{\link{momentuHierHMMData}} object (i.e. not a \code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{miSum}} object, or a \code{\link{miHMM}} object).}
+\item{kappa}{maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization, in which case the transition rate parameters \code{beta} are on the logit scale (instead of the log scale). Ignored unless \code{data} is a \code{data.frame}, \code{\link{momentuHMMData}} object, or \code{\link{momentuHierHMMData}} object (i.e. not a \code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{miSum}} object, or a \code{\link{miHMM}} object).}
 
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states ('state').  See \code{\link{fitHMM}}.}
 

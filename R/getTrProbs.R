@@ -30,7 +30,7 @@ getTrProbs <- function(data, ...){
 #' @param Time.name Character string indicating name of the time column in \code{data} (for continuous-time HMMs). Default: 'NULL' (discrete time). Ignored unless \code{data} is a \code{data.frame}, \code{\link{momentuHMMData}} object, or \code{\link{momentuHierHMMData}} object (i.e. not a \code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{miSum}} object, or a \code{\link{miHMM}} object).
 #' @param Time.unit Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{data[[Time.name]]} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto'.  Ignored if \code{data} is a \code{ctds} object returned by \code{\link{prepCTDS}}.
 #' @param rateMatrix Logical indicating whether to return the transition rate matrix. Default: \code{FALSE}. Ignored unless \code{data} is a continuous-time model or \code{Time.name} is specified.
-#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues, in which case the \code{beta} parameters are on the logit scale (instead of log scale). Ignored unless \code{data} is a \code{data.frame}, \code{\link{momentuHMMData}} object, or \code{\link{momentuHierHMMData}} object (i.e. not a \code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{miSum}} object, or a \code{\link{miHMM}} object).
+#' @param kappa maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization, in which case the transition rate parameters \code{beta} are on the logit scale (instead of the log scale). Ignored unless \code{data} is a \code{data.frame}, \code{\link{momentuHMMData}} object, or \code{\link{momentuHierHMMData}} object (i.e. not a \code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{miSum}} object, or a \code{\link{miHMM}} object).
 #' 
 #' @return If \code{mixtures=1}, an array of dimension \code{nbStates} x \code{nbStates} x \code{nrow(data)} containing the t.p.m for each observation in \code{data}.
 #' If \code{mixtures>1}, a list of length \code{mixtures}, where each element is an array of dimension \code{nbStates} x \code{nbStates} x \code{nrow(data)} containing the t.p.m for each observation in \code{data}.
@@ -68,7 +68,7 @@ getTrProbs <- function(data, ...){
 #' 
 #' @importFrom expm expm
 #' @export
-getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mixtures=1,betaRef=NULL,stateNames=NULL, getCI=FALSE, covIndex=NULL, alpha = 0.95, Time.name = NULL, Time.unit = "auto", rateMatrix = FALSE, maxRate = Inf, ...)
+getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mixtures=1,betaRef=NULL,stateNames=NULL, getCI=FALSE, covIndex=NULL, alpha = 0.95, Time.name = NULL, Time.unit = "auto", rateMatrix = FALSE, kappa = Inf, ...)
 {  
   
   if(!is.momentuHMM(data) & !is.miSum(data) & !is.miHMM(data)){
@@ -126,7 +126,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
       else data$dt <- 0
       if(is.null(data[[Time.name]])) stop(paste0("'",Time.name,"' not found in data"))
       if(is.null(data$ID)) stop("'ID' not found in data")
-      if(!is.numeric(maxRate) || length(maxRate)>1 || maxRate<0) stop('maxRate must be a non-negative numeric scalar')
+      if(!is.numeric(kappa) || length(kappa)>1 || kappa<0) stop('kappa must be a non-negative numeric scalar')
       for(i in unique(data$ID)){
         if(inherits(data,"hierarchical")){
           for(iLevel in levels(data$level)){
@@ -229,7 +229,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
     attr(data$data,"CT") <- CT
     if(CT) {
       fulldt <- dt <- data$data$dt[data$conditions$dtIndex]
-      maxRate <- data$conditions$maxRate
+      kappa <- data$conditions$kappa
     } else fulldt <- dt <- rep(1,nrow(data$data))
     
     stateNames <- data$stateNames
@@ -269,7 +269,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
   
   for(mix in 1:mixtures){
     if(nbStates>1){
-      trMat[[mix]] <- trMatrix_rcpp(nbStates,wnbeta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),betaRef,CT,fulldt,aInd=aInd,rateMatrix=rateMatrix,maxRate=maxRate,check=TRUE)[,,covIndex,drop=FALSE]
+      trMat[[mix]] <- trMatrix_rcpp(nbStates,wnbeta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),betaRef,CT,fulldt,aInd=aInd,rateMatrix=rateMatrix,kappa=kappa,check=TRUE)[,,covIndex,drop=FALSE]
       #if(CT) {
       #  diagOK <- aInd
       #  if(inherits(data,"hierarchical")) diagOK <- c(diagOK,which(fulldt[covIndex]==0)+1)
@@ -311,9 +311,9 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
               if(inherits(data,"hierarchical")) class(allCovs) <- append("hierarchical",class(allCovs))
               if(isTRUE(attr(data$data,"CT"))) attr(allCovs,"CT") <- TRUE
               spl <- split(allCovs[ind,,drop=FALSE],1:nrow(desMat[ind,,drop=FALSE]))
-              dN<-t(mapply(function(x) tryCatch(numDeriv::grad(get_TrProbs_recharge,data$mod$estimate[c(gamInd[unique(c(data$conditions$betaCons))],length(data$mod$estimate)-(nbRecovs+nbG0covs+1):0)],covs=spl[[x]],formula=newformula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=data$conditions$betaRef,betaCons=data$conditions$betaCons,workBounds=rbind(data$conditions$workBounds$beta,data$conditions$workBounds$theta),mixture=mix,allCovs=allCovs[ind,,drop=FALSE][1:(x-CT),,drop=FALSE],indCT1=ifelse(CT & (covIndex[ind][x] %in% aInd),TRUE,FALSE),rateMatrix=rateMatrix,maxRate=maxRate,check=FALSE),error=function(e) NA),1:length(spl)))
+              dN<-t(mapply(function(x) tryCatch(numDeriv::grad(get_TrProbs_recharge,data$mod$estimate[c(gamInd[unique(c(data$conditions$betaCons))],length(data$mod$estimate)-(nbRecovs+nbG0covs+1):0)],covs=spl[[x]],formula=newformula,hierRecharge=hierRecharge,nbStates=nbStates,i=i,j=j,betaRef=data$conditions$betaRef,betaCons=data$conditions$betaCons,workBounds=rbind(data$conditions$workBounds$beta,data$conditions$workBounds$theta),mixture=mix,allCovs=allCovs[ind,,drop=FALSE][1:(x-CT),,drop=FALSE],indCT1=ifelse(CT & (covIndex[ind][x] %in% aInd),TRUE,FALSE),rateMatrix=rateMatrix,kappa=kappa,check=FALSE),error=function(e) NA),1:length(spl)))
             } else {
-              dN<-t(mapply(function(x) tryCatch(numDeriv::grad(get_gamma,data$mod$estimate[gamInd[unique(c(data$conditions$betaCons))]],covs=desMat[x,,drop=FALSE],nbStates=nbStates,i=i,j=j,betaRef=data$conditions$betaRef,betaCons=data$conditions$betaCons,workBounds=data$conditions$workBounds$beta,mixture=mix,CT=isTRUE(attr(data$data,"CT")),dt=fulldt[covIndex[x]-CT],indCT1=ifelse(CT & (covIndex[x] %in% aInd),TRUE,FALSE),rateMatrix=rateMatrix,maxRate=maxRate,check=FALSE),error=function(e) NA),ind))
+              dN<-t(mapply(function(x) tryCatch(numDeriv::grad(get_gamma,data$mod$estimate[gamInd[unique(c(data$conditions$betaCons))]],covs=desMat[x,,drop=FALSE],nbStates=nbStates,i=i,j=j,betaRef=data$conditions$betaRef,betaCons=data$conditions$betaCons,workBounds=data$conditions$workBounds$beta,mixture=mix,CT=isTRUE(attr(data$data,"CT")),dt=fulldt[covIndex[x]-CT],indCT1=ifelse(CT & (covIndex[x] %in% aInd),TRUE,FALSE),rateMatrix=rateMatrix,kappa=kappa,check=FALSE),error=function(e) NA),ind))
             }
             se[i,j,ind]<-t(apply(dN,1,function(x) tryCatch(suppressWarnings(sqrt(x%*%tmpSig%*%x)),error=function(e) NA)))
             if(!rateMatrix){
@@ -349,7 +349,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
 #' If a hierarchical HMM structure is provided, then a hierarchical data structure containing the state transition probabilities for each time step at each level of the hierarchy ('gamma') is returned.
 #' 
 #' @export
-getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hierFormula=NULL,mixtures=1,hierDist, getCI=FALSE, covIndex=NULL, alpha = 0.95, Time.name = NULL, Time.unit = "auto", rateMatrix = FALSE, maxRate = Inf, ...){
+getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hierFormula=NULL,mixtures=1,hierDist, getCI=FALSE, covIndex=NULL, alpha = 0.95, Time.name = NULL, Time.unit = "auto", rateMatrix = FALSE, kappa = Inf, ...){
   
   chkDots(...)
   
@@ -393,9 +393,9 @@ getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hie
     #if(is.list(inputHierHMM$beta)) beta <- inputHierHMM$beta$beta
     #else beta <- inputHierHMM$beta
     
-    if(!is.numeric(maxRate) || length(maxRate)>1 || maxRate<0) stop('maxRate must be a non-negative numeric scalar')
+    if(!is.numeric(kappa) || length(kappa)>1 || kappa<0) stop('kappa must be a non-negative numeric scalar')
     
-    trProbs <- getTrProbs.default(inputHierHMM$data,inputHierHMM$nbStates,inputHierHMM$beta,inputHierHMM$workBounds,inputHierHMM$formula,mixtures,inputHierHMM$betaRef,inputHierHMM$stateNames,covIndex=covIndex,rateMatrix=rateMatrix,maxRate=maxRate)
+    trProbs <- getTrProbs.default(inputHierHMM$data,inputHierHMM$nbStates,inputHierHMM$beta,inputHierHMM$workBounds,inputHierHMM$formula,mixtures,inputHierHMM$betaRef,inputHierHMM$stateNames,covIndex=covIndex,rateMatrix=rateMatrix,kappa=kappa)
     getCI <- FALSE
   }
   
@@ -453,7 +453,7 @@ getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hie
   return(beta)
 }
 
-get_TrProbs_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,j,betaRef,betaCons,workBounds=NULL,mixture=1,allCovs,indCT1=FALSE,rateMatrix=FALSE,maxRate=Inf,check=TRUE){
+get_TrProbs_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,j,betaRef,betaCons,workBounds=NULL,mixture=1,allCovs,indCT1=FALSE,rateMatrix=FALSE,kappa=Inf,check=TRUE){
   
   recharge <- expandRechargeFormulas(hierRecharge)
   
@@ -487,7 +487,7 @@ get_TrProbs_recharge <- function(beta,covs,formula,hierRecharge,nbStates,i,j,bet
   
   newcovs <- stats::model.matrix(formula,covs)
   beta <- matrix(beta[1:(length(beta)-(ncol(recovs)+ncol(g0covs)))],ncol=nbStates*(nbStates-1))
-  if(!indCT1) gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(newcovs)+1:ncol(newcovs),,drop=FALSE],newcovs,betaRef,isTRUE(attr(allCovs,"CT")),tail(dt,1),aInd=1,rateMatrix=rateMatrix,maxRate=maxRate,check=check)[,,1]
+  if(!indCT1) gamma <- trMatrix_rcpp(nbStates,beta[(mixture-1)*ncol(newcovs)+1:ncol(newcovs),,drop=FALSE],newcovs,betaRef,isTRUE(attr(allCovs,"CT")),tail(dt,1),aInd=1,rateMatrix=rateMatrix,kappa=kappa,check=check)[,,1]
   else gamma <- diag(nbStates)
   gamma[i,j]
 }

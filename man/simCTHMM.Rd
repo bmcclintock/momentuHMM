@@ -32,12 +32,11 @@ simCTHMM(
   retrySims = 0,
   lambda = 1,
   errorEllipse = NULL,
-  maxRate = Inf,
   ncores = 1,
   export = NULL,
   gradient = FALSE,
   keepSwitch = FALSE,
-  kappa = list(method = c("all", "random", "quantile"), nspCov = NA, spCov = NA)
+  kappa = NULL
 )
 }
 \arguments{
@@ -139,8 +138,6 @@ in McClintock et al. (2015), where the components of the error ellipse for each 
 error ellipse elements, then the corresponding component is fixed to this value for each location. Only coordinate data streams are subject to location measurement error;
 any other data streams are observed without error.}
 
-\item{maxRate}{maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues, but results in \code{beta} being on the logit scale (instead of log scale).}
-
 \item{ncores}{Number of cores to use for parallel processing. Default: 1 (no parallel processing).}
 
 \item{export}{Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.}
@@ -149,9 +146,13 @@ any other data streams are observed without error.}
 
 \item{keepSwitch}{Logical indicating whether or not to return the (typically unobserved) data at the times when potential state switches could have occurred. Default: \code{FALSE}. If set to \code{TRUE}, an additional logical field named \code{isObs} is returned, where \code{TRUE} indicates observations and \code{FALSE} indicates state switches.}
 
-\item{kappa}{List defining the method for obtaining the upper bound for the transition rate out of the current state (see Blackwell et al. 2016). The list can include up to three named objects: 1) \code{method}, a character string indicating the method for calculating the upper bound based on the covariates in the model (\code{"all"}, \code{"random"}, or \code{"quantile"}); 2) \code{nspCov}, a positive scalar for subsampling the non-spatial covariates (when \code{method="random"} or \code{method="quantile"}); and \code{spCov}, a positive scalar for subsampling the spatial covariates (when \code{method="random"} or \code{method="quantile"}).
-Default method is \code{"all"}, in which case \code{kappa} is calculated based on all of the observed covariate values (note this can be slow and/or memory could become an issue for large datasets and/or rasters). For \code{method="random"}, the observed covariates are subsampled with up to \code{nspCov} samples of any non-spatial covariates and up to \code{spCov} samples of any spatial covariates (defaults are \code{1000} for \code{nspCov} and \code{10000} for \code{spCov}). For \code{method="quantile"}, all combinations of 100-length sequences spanning the (\code{nspCov}/2, 1-\code{nspCov}/2) and (\code{spCov}/2, 1-\code{spCov}/2) quantiles of the covariates are used (defaults are \code{0.05} for both \code{nspCov} and \code{spCov}). Alternatively, \code{kappa} can be manually specified as a finite positive value (instead of a list).
-Ignored unless covariates are included in \code{formula}.}
+\item{kappa}{List of the form \code{list(method=c("all","random","quantile"),nspCov=NA,spCov=NA)} defining the method for obtaining the upper bound for the transition rate out of the current state (see Blackwell et al. 2016). The list can include up to three named objects: 1) \code{method}, a character string indicating the method for calculating the upper bound based on the covariates in the model (\code{"all"}, \code{"random"}, or \code{"quantile"}); 2) \code{nspCov}, a positive scalar for subsampling the non-spatial covariates (when \code{method="random"} or \code{method="quantile"}); and \code{spCov}, a positive scalar for subsampling the spatial covariates (when \code{method="random"} or \code{method="quantile"}).
+Default method is \code{"all"}, in which case \code{kappa} is calculated based on all of the observed covariate values (note this can be slow and/or memory could become an issue for large datasets and/or rasters). For \code{method="random"}, the observed covariates are subsampled with up to \code{nspCov} samples of any non-spatial covariates and up to \code{spCov} samples of any spatial covariates (defaults are \code{1000} for \code{nspCov} and \code{10000} for \code{spCov}). For \code{method="quantile"}, all combinations of 100-length sequences spanning the (\code{nspCov}/2, 1-\code{nspCov}/2) and (\code{spCov}/2, 1-\code{spCov}/2) quantiles of the covariates are used (defaults are \code{0.05} for both \code{nspCov} and \code{spCov}). 
+Ignored unless covariates are included in \code{formula}.
+ 
+Alternatively, \code{kappa} can be manually specified as a finite positive scalar (instead of a list) indicating the maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. In this case, the transition rate parameters (\code{beta}) are specified on the logit scale (instead of the log scale).
+
+If \code{model} is provided and \code{kappa} is \code{NULL}, then \code{kappa} is set to \code{model$conditions$kappa} (see \code{\link{fitCTHMM}}).}
 }
 \value{
 If the simulated data have no measurement error (i.e., \code{errorEllipse=NULL}), a \code{\link{momentuHMMData}} object, 
@@ -180,7 +181,7 @@ If simulated location data include measurement error (i.e., \code{errorEllipse!=
 \item{error.corr}{correlation term of bivariate normal error (if applicable; required for error ellipse models in \code{\link{crawlWrap}})}
 }
 \description{
-Simulates data from a continuous-time hidden Markov model based on Blackwell et al. (2016), where specification of \code{kappa} determines the potential times of state switches when \code{formula} includes covariates (larger \code{kappa} means potential switches are more frequent). Note that any time-varying covariates are assumed piece-wise constant between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
+Simulates data from a (multivariate) continuous-time hidden Markov model based on Blackwell et al. (2016), where specification of \code{kappa} determines the potential times of state switches when \code{formula} includes covariates (larger \code{kappa} means potential switches are more frequent). Note that any time-varying covariates are assumed piece-wise constant between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
 }
 \details{
 \itemize{

@@ -104,8 +104,6 @@ fitCTHMM <- function(data, ...) {
 #' \code{Par0}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta0)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta0)}.
 #' \code{workBounds} is ignored for any given data stream unless \code{DM} is also specified.
 #' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See details.
-#' @param betaRef Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. Default: NULL, in which case
-#' the diagonal elements of the t.p.m. are the reference. See details.
 #' @param deltaCons Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}. See details.
 #' @param mvnCoords Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, 
 #' then \code{mvnCoords="mu"} needs to be specified in order for these data to be properly treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.
@@ -131,7 +129,7 @@ fitCTHMM <- function(data, ...) {
 #' @param control A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).
 #' @param prior A function that returns the log-density of the working scale parameter prior distribution(s). See 'Details'.
 #' @param modelName An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions. 
-#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization, in which case the \code{beta} parameters are on the logit scale (instead of log scale).
+#' @param kappa maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization, in which case the transition rate parameters \code{beta} are on the logit scale (instead of the log scale).
 #'
 #' @return A \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object, i.e. a list of:
 #' \item{mle}{A named list of the maximum likelihood estimates of the parameters of the model (if the numerical algorithm
@@ -165,8 +163,8 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
                                   estAngleMean=NULL,circularAngleMean=NULL,
                                   formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,
                                   nlmPar=list(),fit=TRUE,
-                                  DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,betaRef=NULL,deltaCons=NULL,
-                                  mvnCoords=NULL,stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, maxRate=Inf, ...)
+                                  DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,deltaCons=NULL,
+                                  mvnCoords=NULL,stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, kappa=Inf, ...)
 {
   
   #####################
@@ -220,7 +218,7 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
     if(dist[[i]]=="ctds" & !inherits(data,"ctds")) stop("'ctds' models require data to be a ctds object (see ?prepCTDS")
   }
   
-  if(!is.numeric(maxRate) || length(maxRate)>1 || maxRate<0) stop('maxRate must be a non-negative numeric scalar')
+  if(!is.numeric(kappa) || length(kappa)>1 || kappa<0) stop('kappa must be a non-negative numeric scalar')
   
   chkDots(...)
   
@@ -229,8 +227,8 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
                                estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
                                formula=formula,formulaDelta=formulaDelta,stationary=stationary,mixtures=mixtures,formulaPi=formulaPi,
                                nlmPar=nlmPar,fit=fit,
-                               DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,
-                               mvnCoords=mvnCoords,stateNames=stateNames,knownStates=knownStates,fixPar=fixPar,retryFits=retryFits,retrySD=retrySD,optMethod=optMethod,control=control,prior=prior,modelName=modelName, CT=TRUE, Time.name=Time.name, maxRate=maxRate),warning=muffleCTwarning)
+                               DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=NULL,deltaCons=deltaCons,
+                               mvnCoords=mvnCoords,stateNames=stateNames,knownStates=knownStates,fixPar=fixPar,retryFits=retryFits,retrySD=retrySD,optMethod=optMethod,control=control,prior=prior,modelName=modelName, CT=TRUE, Time.name=Time.name, kappa=kappa),warning=muffleCTwarning)
   
   class(mfit) <- append(class(mfit),"CTHMM")
   mfit$conditions$CT <- TRUE
@@ -287,7 +285,7 @@ fitCTHMM.momentuHierHMMData <- function(data,Time.name="time",Time.unit="auto",h
                                       hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,
                                       nlmPar=list(),fit=TRUE,
                                       DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,deltaCons=NULL,
-                                      mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, maxRate=Inf, ...)
+                                      mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, kappa=Inf, ...)
 {
   
   if(!inherits(data,"momentuHierHMMData")) stop("data must be a momentuHierHMMData object (as returned by prepData or simHierData)")
@@ -299,12 +297,12 @@ fitCTHMM.momentuHierHMMData <- function(data,Time.name="time",Time.unit="auto",h
 
   chkDots(...)
   
-  hfit <- fitCTHMM.momentuHMMData(momentuHMMData(data),Time.name=Time.name,Time.unit=Time.unit,inputHierHMM$nbStates,inputHierHMM$dist,Par0,inputHierHMM$beta,inputHierHMM$delta,
+  withCallingHandlers(hfit <- fitCTHMM.momentuHMMData(momentuHMMData(data),Time.name=Time.name,Time.unit=Time.unit,inputHierHMM$nbStates,inputHierHMM$dist,Par0,inputHierHMM$beta,inputHierHMM$delta,
                                 estAngleMean,circularAngleMean,
                                 formula=inputHierHMM$formula,inputHierHMM$formulaDelta,stationary=FALSE,mixtures,formulaPi,
                                 nlmPar,fit,
                                 DM,userBounds,workBounds=inputHierHMM$workBounds,inputHierHMM$betaCons,inputHierHMM$betaRef,deltaCons=inputHierHMM$deltaCons,
-                                mvnCoords,inputHierHMM$stateNames,knownStates,inputHierHMM$fixPar,retryFits,retrySD,optMethod,control,prior,modelName,maxRate)
+                                mvnCoords,inputHierHMM$stateNames,knownStates,inputHierHMM$fixPar,retryFits,retrySD,optMethod,control,prior,modelName, CT=TRUE, kappa=kappa),warning=muffleCTwarning)
   
   # replace initial values with estimates in hierBeta and hierDelta (if provided)
   if(fit){

@@ -1,10 +1,10 @@
 #' Simulation tool
 #'
-#' Simulates data from an apprxomate (multivariate) continuous-time discrete-space hidden Markov model. Note that only a single cell transition can occur between observations, the state active at observation time \emph{t} determines the (state-dependent) observation distribution from observation time \emph{t} to time \emph{t+1}, state transitions can only occur when there is a cell transition (unless \code{moveState} is set to \code{FALSE}), and time-varying covariates are assumed piece-wise constant between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
+#' Simulates data from a (multivariate) continuous-time discrete-space hidden Markov model based on Blackwell et al. (2016), where specification of \code{kappa} determines the potential times of state switches when \code{formula} includes covariates (larger \code{kappa} means potential switches are more frequent). Note that state transitions can only occur when there is a cell transition (unless \code{moveState} is set to \code{FALSE}), and time-varying covariates are assumed piece-wise constant between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
 #'
 #' @param nbAnimals Number of observed individuals to simulate.
 #' @param nbStates Number of behavioural states to simulate.
-#' @param dist A named list indicating the probability distributions of the data streams.
+#' @param dist A named list indicating the probability distributions of the data streams. A data stream named \code{z} must be included, and it must be assigned the \code{"ctds"} distribution.
 #' @param Par A named list containing vectors of initial state-dependent probability distribution parameters for 
 #' each data stream specified in \code{dist}. The parameters should be in the order expected by the pdfs of \code{dist}. 
 #' 
@@ -41,7 +41,7 @@
 #' @param normalize.gradients	Logical. Default is FALSE. If TRUE, then all gradient covariates for \code{spatialCovs.grad} are normalized by dividing by the length of the gradient vector at each point.
 #' @param grad.point.decreasing	Logical. If TRUE, then the gradient covariates are positive in the direction of decreasing values of the covariate. If FALSE, then the gradient covariates are positive in the direction of increasing values of the covariate (like a true gradient).
 #' @param zero.idx Integer vector of the indices of raster cells that are not passable and should be excluded. These are cells where movement should be impossible. Default is zero.idx=integer().
-#' @param moveState Logical indicating whether or not transitions out of the current state are forbidden when the animal does not move out of the current cell. Default: \code{TRUE}.
+#' @param moveState Logical indicating whether or not transitions out of the current state are forbidden when the animal does not move out of the current cell. Default: \code{FALSE}. Note that if \code{moveState} is \code{TRUE}, then the realized state transition rates will not accurately reflect \code{beta}.
 #' @param obsPerAnimal Either the number of observations per animal (if single value) or the bounds of the number of observations per animal (if vector of two values). In the latter case, 
 #' the numbers of obervations generated for each animal are uniformously picked from this interval. Alternatively, \code{obsPerAnimal} can be specified as
 #' a list of length \code{nbAnimals} with each element providing the number of observations (if single value) or the bounds (if vector of two values) for each individual.
@@ -78,10 +78,30 @@
 #' any other data streams are observed without error.
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param export Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.
-#' 
+#' @param keepSwitch Logical indicating whether or not to return the (typically unobserved) data at the times when potential state switches could have occurred. Default: \code{FALSE}. If set to \code{TRUE}, an additional logical field named \code{isObs} is returned, where \code{TRUE} indicates observations and \code{FALSE} indicates state switches.
+#' @param kappa List of the form \code{list(method=c("all","random","quantile"),nspCov=NA,spCov=NA)} defining the method for obtaining the upper bound for the transition rate out of the current state (see Blackwell et al. 2016). The list can include up to three named objects: 1) \code{method}, a character string indicating the method for calculating the upper bound based on the covariates in the model (\code{"all"}, \code{"random"}, or \code{"quantile"}); 2) \code{nspCov}, a positive scalar for subsampling the non-spatial covariates (when \code{method="random"} or \code{method="quantile"}); and \code{spCov}, a positive scalar for subsampling the spatial covariates (when \code{method="random"} or \code{method="quantile"}).
+#' Default method is \code{"all"}, in which case \code{kappa} is calculated based on all of the observed covariate values (note this can be slow and/or memory could become an issue for large datasets and/or rasters). For \code{method="random"}, the observed covariates are subsampled with up to \code{nspCov} samples of any non-spatial covariates and up to \code{spCov} samples of any spatial covariates (defaults are \code{1000} for \code{nspCov} and \code{10000} for \code{spCov}). For \code{method="quantile"}, all combinations of 100-length sequences spanning the (\code{nspCov}/2, 1-\code{nspCov}/2) and (\code{spCov}/2, 1-\code{spCov}/2) quantiles of the covariates are used (defaults are \code{0.05} for both \code{nspCov} and \code{spCov}). 
+#' Ignored unless covariates are included in \code{formula}.
+#'  
+#' Alternatively, \code{kappa} can be manually specified as a finite positive scalar (instead of a list) indicating the maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. In this case, the transition rate parameters (\code{beta}) are specified on the logit scale (instead of the log scale).
+
+#' If \code{model} is provided and \code{kappa} is \code{NULL}, then \code{kappa} is set to \code{model$conditions$kappa} (see \code{\link{fitCTHMM}}).
 #' @details 
 #' \itemize{
-#' \item Because \code{simCTDS} and \code{simHierCTDS} assume the state active at observation time \emph{t} determines the (state-dependent) observation distribution from observation time \emph{t} to time \emph{t+1} (i.e. state switches only occur at the times of observations), it is critical that the frequency of observations (specified by \code{lambda}) is high relative to the serial correlation in the hidden state process (specified by \code{beta}) in order for this approximation to be reasonably accurate. To investigate the consequences of coarser observation times, data should first be simulated at a high temporal resolution and then manually subsampled.
+#' \item \code{simCTDS} assumes the snapshot property applies to all data stream distributions (i.e. observations are "instantaneous") except for the continuous-time discrete-space (\code{ctds}), (multivariate) normal random walk (\code{rw_norm}, \code{rw_mvnorm2}, \code{rw_mvnorm3}), and Poisson (\code{pois}) distributions. For these particular distributions, the observed data are not "instantaneous"; they depend on the time interval between observations \eqn{(\Delta_t)} and, hence, the state sequence during the entire interval.
+#' If fitting with \code{\link{fitCTHMM}} (or \code{\link{MIfitCTHMM}}), it is critical that the frequency of observations (specified by \code{lambda}) is high relative to the serial correlation in the hidden state process (specified by \code{beta}) in order for the discrete-time approximation of \code{\link{fitCTHMM}} to be reasonably accurate for these distributions.
+#' 
+#' \item If the length of covariate values passed (either through 'covs', or 'model') is not the same
+#' as the number of observations suggested by 'nbAnimals' and 'obsPerAnimal', then the series of
+#' covariates is either shortened (removing last values - if too long) or extended (starting
+#' over from the first values - if too short).
+#' 
+#' \item When covariates are not included in \code{formulaDelta} (i.e. \code{formulaDelta=NULL}), then \code{delta} is specified as a vector of length \code{nbStates} that 
+#' sums to 1.  When covariates are included in \code{formulaDelta}, then \code{delta} must be specified
+#' as a k x (\code{nbStates}-1) matrix of working parameters, where k is the number of regression coefficients and the columns correspond to states 2:\code{nbStates}. For example, in a 3-state
+#' HMM with \code{formulaDelta=~cov1+cov2}, the matrix \code{delta} has three rows (intercept + two covariates)
+#' and 2 columns (corresponding to states 2 and 3). The initial distribution working parameters are transformed to the real scale as \code{exp(covsDelta*Delta)/rowSums(exp(covsDelta*Delta))}, where \code{covsDelta} is the N x k design matrix, \code{Delta=cbind(rep(0,k),delta)} is a k x \code{nbStates} matrix of working parameters,
+#' and \code{N=length(unique(data$ID))}.
 #' }
 #' 
 #' @return If the simulated data have no measurement error (i.e., \code{errorEllipse=NULL}), a \code{\link{momentuHMMData}} object, 
@@ -124,7 +144,7 @@ simCTDS <- function(nbAnimals=1,nbStates=2,dist,
                      normalize.gradients=FALSE,
                      grad.point.decreasing=FALSE,
                      zero.idx = integer(),
-                     moveState = TRUE,
+                     moveState = FALSE,
                      #zeroInflation=NULL,
                      #oneInflation=NULL,
                      #circularAngleMean=NULL,
@@ -143,7 +163,9 @@ simCTDS <- function(nbAnimals=1,nbStates=2,dist,
                      lambda=1,
                      errorEllipse=NULL,
                      ncores=1,
-                     export=NULL)
+                     export=NULL,
+                     keepSwitch=FALSE,
+                     kappa=NULL)
 {
   
   if (!requireNamespace("ctmcmove", quietly = TRUE)) {
@@ -192,6 +214,9 @@ simCTDS <- function(nbAnimals=1,nbStates=2,dist,
         }
       }
     }
+    if(is.null(kappa)){
+      kappa <- model$conditions$kappa
+    }
   } else {
     if(!("z" %in% names(dist)) || dist$z!="ctds") stop("'ctds' data stream named 'z' must be included")
     if(sum(unlist(dist)=="ctds")>1) stop("Only one 'ctds' data stream is allowed")
@@ -203,7 +228,27 @@ simCTDS <- function(nbAnimals=1,nbStates=2,dist,
       if(length(lambda)>1 || lambda<=0) stop('lambda must be a scalar and >0')
     } else stop("lambda cannot be NULL")
     Time.name = "time"
+    Time.unit = "auto"
+    if(is.null(kappa)){
+      kappa <- list(method=c("all","random","quantile"),nspCov=NA,spCov=NA)
+    }
   }
+  if(is.list(kappa)){
+    if(any(!names(kappa) %in% c("method","nspCov","spCov"))) stop("'kappa' names can only be 'method', 'nspCov', and 'spCov'")
+    if(is.null(kappa$method)) stop("kappa$method must be specified")
+    kappa$method <- match.arg(kappa$method,c("all","random","quantile"))
+    if(kappa$method=="random"){
+      if(is.null(kappa$nspCov) || is.na(kappa$nspCov)) kappa$nspCov <- 1000
+      else if(!is.finite(kappa$nspCov) || length(kappa$nspCov)!=1 || kappa$nspCov<=0) stop("kappa$nspCov must be a positive integer")
+      if(is.null(kappa$spCov) || is.na(kappa$spCov)) kappa$spCov <- 10000
+      else if(!is.finite(kappa$spCov) || length(kappa$spCov)!=1 || kappa$spCov<=0) stop("kappa$spCov must be a positive integer")
+    } else if(kappa$method=="quantile"){
+      if(is.null(kappa$nspCov) || is.na(kappa$nspCov)) kappa$nspCov <- 0.05
+      else if(!is.finite(kappa$nspCov) || length(kappa$nspCov)!=1 || !dunif(kappa$nspCov)) stop("kappa$nspCov must be a scalar between 0 and 1")
+      if(is.null(kappa$spCov) || is.na(kappa$spCov)) kappa$spCov <- 0.05
+      else if(!is.finite(kappa$spCov) || length(kappa$spCov)!=1 || !dunif(kappa$spCov)) stop("kappa$spCov must be a scalar between 0 and 1")
+    }
+  } else if(!is.finite(kappa) || length(kappa)!=1 || kappa<=0) stop("kappa must either be a list or a finite positive value")
   
   if(missing(rast) || !inherits(rast,"RasterLayer")) stop("'rast' must be provided as a RasterLayer")
   raster::values(rast) <- 1
@@ -252,24 +297,42 @@ simCTDS <- function(nbAnimals=1,nbStates=2,dist,
     #  gradMat[which(!is.finite(gradMat))] <- 0
     #}
     if(length(zero.idx)) raster::values(rast)[zero.idx] <- 0
+    fullspatialCovs <- spatialCovs
     for(i in names(spatialCovs.grad)){
       for(j in 1:directions){
-        spatialCovs[[paste0(i,".",j)]] <- spatialCovs.grad[[i]]
-        names(spatialCovs[[paste0(i,".",j)]]) <- paste0(names(spatialCovs[[paste0(i,".",j)]]),".",j)
-        if(raster::nlayers(spatialCovs[[paste0(i,".",j)]])>1){
-          for(l in 1:raster::nlayers(spatialCovs[[paste0(i,".",j)]])){
-            raster::values(spatialCovs[[paste0(i,".",j)]][[l]]) <- gradMat[[i]][seq(j,raster::ncell(spatialCovs.grad[[i]])*directions,directions),l]
+        fullspatialCovs[[paste0(i,".",j)]] <- spatialCovs.grad[[i]]
+        names(fullspatialCovs[[paste0(i,".",j)]]) <- paste0(names(fullspatialCovs[[paste0(i,".",j)]]),".",j)
+        if(raster::nlayers(fullspatialCovs[[paste0(i,".",j)]])>1){
+          for(l in 1:raster::nlayers(fullspatialCovs[[paste0(i,".",j)]])){
+            raster::values(fullspatialCovs[[paste0(i,".",j)]][[l]]) <- gradMat[[i]][seq(j,raster::ncell(spatialCovs.grad[[i]])*directions,directions),l]
           }
-          spatialCovs[[paste0(i,".",j)]] <- raster::extend(spatialCovs[[paste0(i,".",j)]],1,value=0)
+          fullspatialCovs[[paste0(i,".",j)]] <- raster::extend(fullspatialCovs[[paste0(i,".",j)]],1,value=0)
           zname <- names(attributes(spatialCovs.grad[[i]])$z)
           zvalues <- raster::getZ(spatialCovs.grad[[i]])
-          spatialCovs[[paste0(i,".",j)]] <- raster::setZ(spatialCovs[[paste0(i,".",j)]],zvalues,zname)
+          fullspatialCovs[[paste0(i,".",j)]] <- raster::setZ(fullspatialCovs[[paste0(i,".",j)]],zvalues,zname)
         } else {
-          raster::values(spatialCovs[[paste0(i,".",j)]]) <- gradMat[[i]][seq(j,raster::ncell(spatialCovs.grad[[i]])*directions,directions)]
-          spatialCovs[[paste0(i,".",j)]] <- raster::extend(spatialCovs[[paste0(i,".",j)]],1,value=0)
+          raster::values(fullspatialCovs[[paste0(i,".",j)]]) <- gradMat[[i]][seq(j,raster::ncell(spatialCovs.grad[[i]])*directions,directions)]
+          fullspatialCovs[[paste0(i,".",j)]] <- raster::extend(fullspatialCovs[[paste0(i,".",j)]],1,value=0)
         }
-        attr(spatialCovs[[paste0(i,".",j)]],"grad") <- TRUE
+        attr(fullspatialCovs[[paste0(i,".",j)]],"grad") <- TRUE
       }
+      if(raster::nlayers(spatialCovs.grad[[i]])>1){
+        spatialCovs.grad[[i]] <- raster::extend(spatialCovs.grad[[i]],1,value=0)
+        spatialCovs.grad[[i]] <- raster::setZ(spatialCovs.grad[[i]],zvalues,zname)
+      } else {
+        spatialCovs.grad[[i]] <- raster::extend(spatialCovs.grad[[i]],1,value=0)
+      }
+    }
+  }
+  
+  if(!is.null(covs) | nbCovs){
+    if(!is.null(covs)){
+      if(any(names(covs) %in% names(spatialCovs.grad))) stop("'covs' cannot have same name as 'spatialCovs.grad'")
+      if(any(names(covs) %in% names(spatialCovs))) stop("'covs' cannot have same name as 'spatialCovs'")
+    }
+    if(nbCovs){
+      if(any(paste0("cov",1:nbCovs) %in% names(spatialCovs.grad))) stop("'spatialCovs.grad' names cannot be ",paste0("'cov",which(paste0("cov",1:nbCovs) %in% names(spatialCovs.grad)),"'",sep=", "),"because 'nbCovs' is > 0")
+      if(any(paste0("cov",1:nbCovs) %in% names(spatialCovs))) stop("'spatialCovs' names cannot be ",paste0("'cov",which(paste0("cov",1:nbCovs) %in% names(spatialCovs.grad)),"'",sep=", "),"because 'nbCovs' is > 0")
     }
   }
   
@@ -277,7 +340,7 @@ simCTDS <- function(nbAnimals=1,nbStates=2,dist,
                  Par,beta,delta,
                  formula,formulaDelta,mixtures,formulaPi,
                  covs,nbCovs,
-                 spatialCovs,
+                 fullspatialCovs,
                  zeroInflation=NULL,
                  oneInflation=NULL,
                  circularAngleMean=NULL,
@@ -293,7 +356,9 @@ simCTDS <- function(nbAnimals=1,nbStates=2,dist,
                  errorEllipse,
                  ncores,
                  export=export,
+                 gradient=FALSE,
                  CT=TRUE,
+                 kappa=kappa,
                  ctds=TRUE,
                  rast=rast,
                  directions=directions,
@@ -302,6 +367,35 @@ simCTDS <- function(nbAnimals=1,nbStates=2,dist,
   out<- out[,c("ID","time",colnames(out)[which(!colnames(out) %in% c("ID","time"))])]
   if(moveState) {
     out[["noMove"]] <- noMove(out,directions)
+  }
+  if(!keepSwitch){
+    newout <- list()
+    if(!is.null(model)) dist <- model$conditions$dist
+    for(i in names(dist)[which(unlist(lapply(dist,function(x) x=="pois")))]){
+      newout[[i]] <- integer()
+      for(zoo in 1:nbAnimals){
+        aInd <- which(out$ID==unique(out$ID)[zoo])
+        tmp <- out[aInd,]
+        pagg <- stats::aggregate(tmp[[i]],by=list(cumsum(tmp$isObs)),sum)$x
+        pagg[length(pagg)] <- 0 #deal with NA to prevent warning in prepCTDS
+        newout[[i]] <- c(newout[[i]],pagg)
+      }
+    }
+    out <- out[out$isObs,]
+    for(i in names(dist)[which(unlist(lapply(dist,function(x) x=="pois")))]){
+      out[[i]] <- newout[[i]]
+    }
+    out$isObs <- NULL
+    spNames <- paste0(rep(names(spatialCovs),each=directions),".",1:directions)
+    spGradNames <- paste0(rep(names(spatialCovs.grad),each=directions),".",1:directions)
+    covNames <- colnames(out)[which(!colnames(out) %in% c('ID',Time.name,'x','y',names(dist),'x.current', 'y.current', 'z', 'tau', 'cellCross', 'noMove',names(spatialCovs),spNames,spGradNames))]
+    if(!length(covNames)) covNames <- NULL
+    raster::values(rast) <- 1
+    
+    message("Accounting for move(s) across multiple cells between observations based on shortest path...")
+    prepout <- suppressMessages(prepCTDS(out[,c("ID",Time.name,"x","y",names(dist)[which(!names(dist) %in% "z")],covNames)],Time.unit=Time.unit,rast,directions,zero.idx,print.iter=FALSE,interpMethod="ShortestPath",spatialCovs,spatialCovs.grad,ifelse(all(paste0("crw.",1:directions) %in% colnames(out)),TRUE,FALSE),normalize.gradients,grad.point.decreasing,c(names(dist)[which(unlist(lapply(dist,function(x) x=="pois")))],covNames),ncores))
+    out <- adjustPois(out,prepout,dist)
+    if(ncores>1) message("Done\n")
   }
   class(out) <- unique(append(c("momentuHMMData","ctds"),class(out)))
   if(inherits(out$time,"POSIXt")) attr(out,"Time.unit") <- Time.unit
@@ -315,4 +409,25 @@ simCTDS <- function(nbAnimals=1,nbStates=2,dist,
   attr(out,"Time.name") <- Time.name
   return(out)
   
+}
+
+# adjust poisson data streams based on time spent in each cell crossed
+adjustPois <- function(data,ctdsData,dist){
+  if(any(ctdsData$cellCross>0)){ 
+    if(length(which(unlist(lapply(dist,function(x) x=="pois"))))){
+      tInd <- 0
+      aInd <- c(0,cumsum(table(data$ID)))
+      for(zoo in unique(ctdsData$ID)){
+        iInd <- which(ctdsData$ID==zoo)
+        tInd <- aInd[which(zoo==unique(data$ID))]+which(ctdsData[iInd,][which(!duplicated(ctdsData$cellCross[iInd],incomparables = 0)),"cellCross"]!=0)
+        for(j in 1:max(ctdsData$cellCross[iInd])){
+          cellInd <- which(ctdsData$ID==zoo & ctdsData$cellCross==j)
+          for(i in names(dist)[which(unlist(lapply(dist,function(x) x=="pois")))]){
+            ctdsData[cellInd,i] <- stats::rmultinom(1,data[tInd[j],i],ctdsData$tau[cellInd])
+          }
+        }
+      }
+    }
+  }
+  return(ctdsData)
 }
