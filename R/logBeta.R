@@ -65,7 +65,7 @@ logBeta <- function(m)
   
   for(mix in 1:mixtures){
     if(nbStates>1)
-      trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),m$conditions$betaRef,isTRUE(m$conditions$CT),dt, aInd=aInd2, maxRate=m$conditions$maxRate)
+      trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),m$conditions$betaRef,isTRUE(m$conditions$CT),dt, aInd=aInd2, kappa=m$conditions$kappa)
     else
       trMat[[mix]] <- array(1,dim=c(1,1,nbObs))
   }

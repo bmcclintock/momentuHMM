@@ -229,7 +229,7 @@ get_mixProbs <- function(optPar,mod,mixture){
     if(!mod$conditions$stationary) par$delta <- delta[mix,,drop=FALSE]
     la[mix] <- nLogLike_rcpp(nbStates,as.matrix(covs),data,names(dist),dist,
                              par,
-                             1,mod$conditions$zeroInflation,mod$conditions$oneInflation,mod$conditions$stationary,knownStates,mod$conditions$betaRef,1,mod$conditions$dtIndex-1,isTRUE(mod$conditions$CT),mod$conditions$maxRate)
+                             1,mod$conditions$zeroInflation,mod$conditions$oneInflation,mod$conditions$stationary,knownStates,mod$conditions$betaRef,1,mod$conditions$dtIndex-1,isTRUE(mod$conditions$CT),mod$conditions$kappa)
     if(!is.null(mod$prior)) la[mix] <- la[mix] - mod$prior(wpar)
     c <- max(-la[mix]+log(pie[mix]))
     lnum[mix] <- c + log(sum(exp(-la[mix]+log(pie[mix])-c)))  

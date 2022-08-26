@@ -27,19 +27,19 @@
 //' @param mixtures Number of mixtures for the state transition probabilities
 //' @param dtIndex time difference index for calculating transition probabilities of hierarchical continuous-time models
 //' @param CT logical indicating whether to fit discrete-time approximation of a continuous-time model
-//' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.
+//' @param kappa maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization, in which case the transition rate parameters \code{beta} are on the logit scale (instead of the log scale).
 //' 
 //' @return Negative log-likelihood
 // [[Rcpp::export]]
 double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist,
                      List Par,
                      IntegerVector aInd, List zeroInflation, List oneInflation,
-                     bool stationary, IntegerVector knownStates, IntegerVector betaRef, int mixtures, IntegerVector dtIndex, bool CT = false, double maxRate = NA_REAL)
+                     bool stationary, IntegerVector knownStates, IntegerVector betaRef, int mixtures, IntegerVector dtIndex, bool CT = false, double kappa = NA_REAL)
 {
   int nbObs = data.nrows();
   bool maxInd;
-  if(!R_FINITE(maxRate)){
-    maxRate = R_PosInf;
+  if(!R_FINITE(kappa)){
+    kappa = R_PosInf;
     maxInd = false;
   } else maxInd = true;
   
@@ -88,19 +88,33 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
               if(j==(betaRef(i)-1)) {
                 cpt++;
               } else {
-                if(maxInd){
-                  if(i!=j) trMat[mix](i,j,k) = maxRate * R::plogis(g(k,i*nbStates+j-cpt),0.0,1.0,true,false);
-                  else trMat[mix](i,j,k) = -maxRate * R::plogis(g(k,i*nbStates+j-cpt),0.0,1.0,true,false);
-                } else {
-                  if(i!=j) trMat[mix](i,j,k) = exp(g(k,i*nbStates+j-cpt));//1.e+5 * R::plogis(g(k,i*nbStates+j-cpt),0.0,1.0,true,false);
-                  else trMat[mix](i,j,k) = -exp(g(k,i*nbStates+j-cpt));//-1.e+5 * R::plogis(-g(k,i*nbStates+j-cpt),0.0,1.0,true,false);
-                }
+                if(i!=j){
+                  trMat[mix](i,j,k) = exp(g(k,i*nbStates+j-cpt));//1.e+5 * R::plogis(g(k,i*nbStates+j-cpt),0.0,1.0,true,false);
+                  trMat[mix](i,i,k) -= trMat[mix](i,j,k);
+                } else trMat[mix](i,j,k) -= exp(g(k,i*nbStates+j-cpt));//-1.e+5 * R::plogis(-g(k,i*nbStates+j-cpt),0.0,1.0,true,false);
+              }
+              //Rprintf("Gamma %d %d %f Gamma %d %d %f betaRef %d \n",i+1,j+1,Gamma(i,j),i+1,i+1,Gamma(i,i),betaRef(i));
+            }
+            if(i!=(betaRef(i)-1)){
+              for(int l=0;l<nbStates;l++){
+                if(l!=(betaRef(i)-1)) trMat[mix](i,(betaRef(i)-1),k) -= trMat[mix](i,l,k);
+                //Rprintf("Gamma %d %d %f Gamma %d %d %f rowSums %f \n",i+1,l+1,Gamma(i,l),i+1,betaRef(i),Gamma(i,betaRef(i)-1),rowSums(i,k));
               }
             }
             for(int l=0;l<nbStates;l++){
-              if((betaRef(i)-1)!=l) trMat[mix](i,(betaRef(i)-1),k) -= trMat[mix](i,l,k);
+              if(i!=l) rowSums(i,k) += trMat[mix](i,l,k);
+              //Rprintf("Gamma %d %d %f Gamma %d %d %f rowSums %f \n",i+1,l+1,Gamma(i,l),i+1,betaRef(i),Gamma(i,betaRef(i)-1),rowSums(i,k));
             }
-            //Rprintf("k %d i %d j %d trMat[mix](i,j,k) %f dt %f \n",k,i,i,trMat[mix](i,i,k),dt(dtIndex(k-1)));
+            if(maxInd){
+              trMat[mix](i,i,k) = 0.;
+              for(int l=0;l<nbStates;l++){
+                if(i!=l){
+                  trMat[mix](i,l,k) = kappa * trMat[mix](i,l,k) / (1.+rowSums(i,k)); // normalization
+                  trMat[mix](i,i,k) -= trMat[mix](i,l,k);
+                  //Rprintf("Gamma %d %d %f Gamma %d %d %f kappa %f rowSums %f \n",i+1,l+1,Gamma(i,l),i+1,i+1,Gamma(i,i),kappa,rowSums(i,k));
+                }
+              }
+            }
           }
         }        
       } else { // standard discrete-time HMM
@@ -456,7 +470,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
           } else {
             try {
               Gammat = trMat[mix].slice(i) * dt(dtIndex(i-1));
-              Gamma = expmatrix_rcpp(Gammat,maxRate,false);
+              Gamma = expmatrix_rcpp(Gammat,kappa,false);
               //Rprintf("i %d dtIndex %d dt %f Gamma %f %f %f %f \n",i,dtIndex(i-1),dt(dtIndex(i-1)),Gamma(2,0),Gamma(2,1),Gamma(2,2),Gamma(2,3));
             }
             catch(std::exception &ex) {	

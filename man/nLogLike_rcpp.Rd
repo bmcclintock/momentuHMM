@@ -20,7 +20,7 @@ nLogLike_rcpp(
   mixtures,
   dtIndex,
   CT = FALSE,
-  maxRate = NA_real_
+  kappa = NA_real_
 )
 }
 \arguments{
@@ -59,7 +59,7 @@ the state is not known.}
 
 \item{CT}{logical indicating whether to fit discrete-time approximation of a continuous-time model}
 
-\item{maxRate}{maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.}
+\item{kappa}{maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization, in which case the transition rate parameters \code{beta} are on the logit scale (instead of the log scale).}
 }
 \value{
 Negative log-likelihood

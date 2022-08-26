@@ -1,4 +1,4 @@
-get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,deltaCons,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data,newdata,maxRate=Inf){
+get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,deltaCons,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data,newdata,kappa=Inf){
   
   if(nbStates>1){
     if(!is.null(betaCons)){
@@ -31,11 +31,11 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     }
   } else {
     if(nbStates>1){
-      beta0$beta <- matrix(c(rep(ifelse(!is.finite(maxRate),-1.5,-log1p(maxRate)),nbStates*(nbStates-1)),rep(0,nbStates*(nbStates-1)*nbCovs)),
+      beta0$beta <- matrix(c(rep(ifelse(!is.finite(kappa),-1.5,-log1p(kappa)),nbStates*(nbStates-1)),rep(0,nbStates*(nbStates-1)*nbCovs)),
                            nrow=(nbCovs+1)*mixtures,ncol=nbStates*(nbStates-1),byrow=TRUE)
       for(i in 1:nbStates){
         if(betaRef[i]!=i){
-          beta0$beta[1,(i-1)*(nbStates-1)+i-(betaRef[i]<i)] <- ifelse(!is.finite(maxRate),1.5,log1p(maxRate))
+          beta0$beta[1,(i-1)*(nbStates-1)+i-(betaRef[i]<i)] <- ifelse(!is.finite(kappa),1.5,log1p(kappa))
         }
       }
       if(!is.null(betaCons)) beta0$beta <- matrix(beta0$beta[c(betaCons)],nrow(beta0$beta),ncol(beta0$beta))

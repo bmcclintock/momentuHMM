@@ -1,6 +1,6 @@
 #' Simulation tool
 #'
-#' Simulates data from a continuous-time hidden Markov model based on Blackwell et al. (2016), where specification of \code{kappa} determines the potential times of state switches when \code{formula} includes covariates (larger \code{kappa} means potential switches are more frequent). Note that any time-varying covariates are assumed piece-wise constant between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
+#' Simulates data from a (multivariate) continuous-time hidden Markov model based on Blackwell et al. (2016), where specification of \code{kappa} determines the potential times of state switches when \code{formula} includes covariates (larger \code{kappa} means potential switches are more frequent). Note that any time-varying covariates are assumed piece-wise constant between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.
 #'
 #' @param nbAnimals Number of observed individuals to simulate.
 #' @param nbStates Number of behavioural states to simulate.
@@ -74,14 +74,17 @@
 #' \code{runif(1,min(errorEllipse$m),max(errorEllipse$m))}, and \code{runif(1,min(errorEllipse$r),max(errorEllipse$r))}. If only a single value is provided for any of the 
 #' error ellipse elements, then the corresponding component is fixed to this value for each location. Only coordinate data streams are subject to location measurement error;
 #' any other data streams are observed without error.
-#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues, but results in \code{beta} being on the logit scale (instead of log scale).
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param export Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.
 #' @param gradient Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. If \code{TRUE}, the gradients are returned with ``\code{.x}'' (easting gradient) and ``\code{.y}'' (northing gradient) suffixes added to the names of \code{spatialCovs}. For example, if \code{cov1} is the name of a spatial covariate, then the returned \code{\link{momentuHMMData}} object will include the fields ``\code{cov1.x}'' and ``\code{cov1.y}''.
 #' @param keepSwitch Logical indicating whether or not to return the (typically unobserved) data at the times when potential state switches could have occurred. Default: \code{FALSE}. If set to \code{TRUE}, an additional logical field named \code{isObs} is returned, where \code{TRUE} indicates observations and \code{FALSE} indicates state switches.
-#' @param kappa List defining the method for obtaining the upper bound for the transition rate out of the current state (see Blackwell et al. 2016). The list can include up to three named objects: 1) \code{method}, a character string indicating the method for calculating the upper bound based on the covariates in the model (\code{"all"}, \code{"random"}, or \code{"quantile"}); 2) \code{nspCov}, a positive scalar for subsampling the non-spatial covariates (when \code{method="random"} or \code{method="quantile"}); and \code{spCov}, a positive scalar for subsampling the spatial covariates (when \code{method="random"} or \code{method="quantile"}).
-#' Default method is \code{"all"}, in which case \code{kappa} is calculated based on all of the observed covariate values (note this can be slow and/or memory could become an issue for large datasets and/or rasters). For \code{method="random"}, the observed covariates are subsampled with up to \code{nspCov} samples of any non-spatial covariates and up to \code{spCov} samples of any spatial covariates (defaults are \code{1000} for \code{nspCov} and \code{10000} for \code{spCov}). For \code{method="quantile"}, all combinations of 100-length sequences spanning the (\code{nspCov}/2, 1-\code{nspCov}/2) and (\code{spCov}/2, 1-\code{spCov}/2) quantiles of the covariates are used (defaults are \code{0.05} for both \code{nspCov} and \code{spCov}). Alternatively, \code{kappa} can be manually specified as a finite positive value (instead of a list).
+#' @param kappa List of the form \code{list(method=c("all","random","quantile"),nspCov=NA,spCov=NA)} defining the method for obtaining the upper bound for the transition rate out of the current state (see Blackwell et al. 2016). The list can include up to three named objects: 1) \code{method}, a character string indicating the method for calculating the upper bound based on the covariates in the model (\code{"all"}, \code{"random"}, or \code{"quantile"}); 2) \code{nspCov}, a positive scalar for subsampling the non-spatial covariates (when \code{method="random"} or \code{method="quantile"}); and \code{spCov}, a positive scalar for subsampling the spatial covariates (when \code{method="random"} or \code{method="quantile"}).
+#' Default method is \code{"all"}, in which case \code{kappa} is calculated based on all of the observed covariate values (note this can be slow and/or memory could become an issue for large datasets and/or rasters). For \code{method="random"}, the observed covariates are subsampled with up to \code{nspCov} samples of any non-spatial covariates and up to \code{spCov} samples of any spatial covariates (defaults are \code{1000} for \code{nspCov} and \code{10000} for \code{spCov}). For \code{method="quantile"}, all combinations of 100-length sequences spanning the (\code{nspCov}/2, 1-\code{nspCov}/2) and (\code{spCov}/2, 1-\code{spCov}/2) quantiles of the covariates are used (defaults are \code{0.05} for both \code{nspCov} and \code{spCov}). 
 #' Ignored unless covariates are included in \code{formula}.
+#'  
+#' Alternatively, \code{kappa} can be manually specified as a finite positive scalar (instead of a list) indicating the maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. In this case, the transition rate parameters (\code{beta}) are specified on the logit scale (instead of the log scale).
+#' 
+#' If \code{model} is provided and \code{kappa} is \code{NULL}, then \code{kappa} is set to \code{model$conditions$kappa} (see \code{\link{fitCTHMM}}).
 #' @details 
 #' \itemize{
 #' \item \code{simCTHMM} assumes the snapshot property applies to all data stream distributions (i.e. observations are "instantaneous") except for the (multivariate) normal random walk (\code{rw_norm}, \code{rw_mvnorm2}, \code{rw_mvnorm3}) and Poisson (\code{pois}) distributions. For these particular distributions, the observed data are not "instantaneous"; they depend on the time interval between observations \eqn{(\Delta_t)} and, hence, the state sequence during the entire interval.
@@ -153,12 +156,11 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                      #times=NULL,
                      lambda=1,
                      errorEllipse=NULL,
-                     maxRate=Inf,
                      ncores=1,
                      export=NULL,
                      gradient=FALSE,
                      keepSwitch=FALSE,
-                     kappa=list(method=c("all","random","quantile"),nspCov=NA,spCov=NA))
+                     kappa=NULL)
 {
   
   if(!is.null(model)){
@@ -183,7 +185,10 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
         if(inherits(lambda[[zoo]] ,"POSIXt")) attr(lambda[[zoo]],"units") <- model$conditions$Time.unit
       }
     }
-    maxRate <- model$conditions$maxRate
+    if(is.null(kappa)){
+      kappa <- model$conditions$kappa
+    }
+    nbStates <- length(model$stateNames)
   } else {
     for(i in names(dist)){
       if(!dist[[i]] %in% CTHMMdists) stop("Sorry, currently simCTHMM only supports the following distributions: ",paste0(CTHMMdists,sep=", "))
@@ -191,24 +196,28 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
     if(!is.null(lambda)){
       if(length(lambda)>1 || lambda<=0) stop('lambda must be a scalar and >0')
     } else stop("lambda cannot be NULL")
-    if(!is.numeric(maxRate) || length(maxRate)>1 || maxRate<0) stop('maxRate must be a non-negative numeric scalar')
-  }
-  if(is.list(kappa)){
-    if(any(!names(kappa) %in% c("method","nspCov","spCov"))) stop("'kappa' names can only be 'method', 'nspCov', and 'spCov'")
-    if(is.null(kappa$method)) stop("kappa$method must be specified")
-    kappa$method <- match.arg(kappa$method,c("all","random","quantile"))
-    if(kappa$method=="random"){
-      if(is.null(kappa$nspCov) || is.na(kappa$nspCov)) kappa$nspCov <- 1000
-      else if(!is.finite(kappa$nspCov) || length(kappa$nspCov)!=1 || kappa$nspCov<=0) stop("kappa$nspCov must be a positive integer")
-      if(is.null(kappa$spCov) || is.na(kappa$spCov)) kappa$spCov <- 10000
-      else if(!is.finite(kappa$spCov) || length(kappa$spCov)!=1 || kappa$spCov<=0) stop("kappa$spCov must be a positive integer")
-    } else if(kappa$method=="quantile"){
-      if(is.null(kappa$nspCov) || is.na(kappa$nspCov)) kappa$nspCov <- 0.05
-      else if(!is.finite(kappa$nspCov) || length(kappa$nspCov)!=1 || !dunif(kappa$nspCov)) stop("kappa$nspCov must be a scalar between 0 and 1")
-      if(is.null(kappa$spCov) || is.na(kappa$spCov)) kappa$spCov <- 0.05
-      else if(!is.finite(kappa$spCov) || length(kappa$spCov)!=1 || !dunif(kappa$spCov)) stop("kappa$spCov must be a scalar between 0 and 1")
+    if(is.null(kappa)){
+      kappa <- list(method=c("all","random","quantile"),nspCov=NA,spCov=NA)
     }
-  } else if(!is.finite(kappa) || length(kappa)!=1 || kappa<=0) stop("kappa must either be a list or a finite positive value")
+  }
+  if(nbStates>1){
+    if(is.list(kappa)){
+      if(any(!names(kappa) %in% c("method","nspCov","spCov"))) stop("'kappa' names can only be 'method', 'nspCov', and 'spCov'")
+      if(is.null(kappa$method)) stop("kappa$method must be specified")
+      kappa$method <- match.arg(kappa$method,c("all","random","quantile"))
+      if(kappa$method=="random"){
+        if(is.null(kappa$nspCov) || is.na(kappa$nspCov)) kappa$nspCov <- 1000
+        else if(!is.finite(kappa$nspCov) || length(kappa$nspCov)!=1 || kappa$nspCov<=0) stop("kappa$nspCov must be a positive integer")
+        if(is.null(kappa$spCov) || is.na(kappa$spCov)) kappa$spCov <- 10000
+        else if(!is.finite(kappa$spCov) || length(kappa$spCov)!=1 || kappa$spCov<=0) stop("kappa$spCov must be a positive integer")
+      } else if(kappa$method=="quantile"){
+        if(is.null(kappa$nspCov) || is.na(kappa$nspCov)) kappa$nspCov <- 0.05
+        else if(!is.finite(kappa$nspCov) || length(kappa$nspCov)!=1 || !dunif(kappa$nspCov)) stop("kappa$nspCov must be a scalar between 0 and 1")
+        if(is.null(kappa$spCov) || is.na(kappa$spCov)) kappa$spCov <- 0.05
+        else if(!is.finite(kappa$spCov) || length(kappa$spCov)!=1 || !dunif(kappa$spCov)) stop("kappa$spCov must be a scalar between 0 and 1")
+      }
+    } else if(!is.finite(kappa) || length(kappa)!=1 || kappa<=0) stop("kappa must either be a list or a finite positive value")
+  }
   
   withCallingHandlers(out <- simData(nbAnimals,nbStates,dist,
                                      Par,beta,delta,
@@ -232,7 +241,6 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                                      export=export,
                                      gradient=gradient,
                                      CT=TRUE,
-                                     maxRate=maxRate,
                                      kappa=kappa),warning=muffleCTwarning)
   
   if(!keepSwitch){

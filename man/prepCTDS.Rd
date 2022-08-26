@@ -53,7 +53,7 @@ prepCTDS(data, ...)
 
 \item{Time.unit}{Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{data$time} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto', but note that if there are multiple individuals, then the units are determined based on the time stamps for the first individual.}
 
-\item{rast}{A raster object or raster stack object that will define the discrete-space grid cells for the CTMC movement path.}
+\item{rast}{A raster object or raster stack object that will define the discrete-space grid cells for the CTMC movement path. \code{spatialCovs} and \code{spatialCovs.grad} must have the same extent, number of rows and columns, projection, resolution, and origin as \code{rast}.}
 
 \item{directions}{Integer. Either 4 (indicating a "Rook's neighborhood" of 4 neighboring grid cells) or 8 (indicating a "King's neighborhood" of 8 neighboring grid cells).}
 

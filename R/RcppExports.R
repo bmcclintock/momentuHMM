@@ -241,12 +241,12 @@ dt_rcpp <- function(x, df, ncp) {
 #' This function computes the exponential of a square matrix \code{A}, defined as the sum from \code{r=0} to infinity of \code{A^r/r!}, using the default method of \code{\link[expm]{expm}}.
 #'
 #' @param x a square matrix.
-#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.
+#' @param kappa maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.
 #' @param check logical indicating whether or not to check transition probability matrix for issues
 #'
 #' @return The matrix exponential of x.
-expmatrix_rcpp <- function(x, maxRate = NA_real_, check = FALSE) {
-    .Call('_momentuHMM_expmatrix_rcpp', PACKAGE = 'momentuHMM', x, maxRate, check)
+expmatrix_rcpp <- function(x, kappa = NA_real_, check = FALSE) {
+    .Call('_momentuHMM_expmatrix_rcpp', PACKAGE = 'momentuHMM', x, kappa, check)
 }
 
 #' Get design matrix
@@ -290,11 +290,11 @@ getDM_rcpp <- function(X, covs, DM, nr, nc, cov, nbObs) {
 #' @param mixtures Number of mixtures for the state transition probabilities
 #' @param dtIndex time difference index for calculating transition probabilities of hierarchical continuous-time models
 #' @param CT logical indicating whether to fit discrete-time approximation of a continuous-time model
-#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.
+#' @param kappa maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization, in which case the transition rate parameters \code{beta} are on the logit scale (instead of the log scale).
 #' 
 #' @return Negative log-likelihood
-nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT = FALSE, maxRate = NA_real_) {
-    .Call('_momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT, maxRate)
+nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT = FALSE, kappa = NA_real_) {
+    .Call('_momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT, kappa)
 }
 
 #' Stationary distribution for a continuous-time Markov chain
@@ -321,12 +321,12 @@ stationary_rcpp <- function(A) {
 #' @param dt numeric vector of length \code{nrow(covs)} indicating the time difference between observations. Ignored unless \code{CT=TRUE}.
 #' @param aInd Vector of indices of the rows at which the data (i.e. \code{covs}) switches to another animal. Ignored unless \code{CT=TRUE}.
 #' @param rateMatrix logical indicating whether or not to return the transition rate matrix. Ignored unless \code{CT=TRUE}.
-#' @param maxRate maximum allowable value for the off-diagonal state transition rate parameters. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization.
+#' @param kappa maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization, in which case the transition rate parameters \code{beta} are on the logit scale (instead of the log scale).
 #' @param check logical indicating whether or not to check transition probability matrix for issues. Ignored unless \code{CT=TRUE}.
 #'
 #' @return Three dimensional array \code{trMat}, such that \code{trMat[,,t]} is the transition matrix at
 #' time t.
-trMatrix_rcpp <- function(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric( c()), aInd = as.integer( c()), rateMatrix = FALSE, maxRate = NA_real_, check = TRUE) {
-    .Call('_momentuHMM_trMatrix_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs, betaRef, CT, dt, aInd, rateMatrix, maxRate, check)
+trMatrix_rcpp <- function(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric( c()), aInd = as.integer( c()), rateMatrix = FALSE, kappa = NA_real_, check = TRUE) {
+    .Call('_momentuHMM_trMatrix_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs, betaRef, CT, dt, aInd, rateMatrix, kappa, check)
 }
 

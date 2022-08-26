@@ -293,15 +293,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // expmatrix_rcpp
-arma::mat expmatrix_rcpp(arma::mat x, double maxRate, bool check);
-RcppExport SEXP _momentuHMM_expmatrix_rcpp(SEXP xSEXP, SEXP maxRateSEXP, SEXP checkSEXP) {
+arma::mat expmatrix_rcpp(arma::mat x, double kappa, bool check);
+RcppExport SEXP _momentuHMM_expmatrix_rcpp(SEXP xSEXP, SEXP kappaSEXP, SEXP checkSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
-    Rcpp::traits::input_parameter< double >::type maxRate(maxRateSEXP);
+    Rcpp::traits::input_parameter< double >::type kappa(kappaSEXP);
     Rcpp::traits::input_parameter< bool >::type check(checkSEXP);
-    rcpp_result_gen = Rcpp::wrap(expmatrix_rcpp(x, maxRate, check));
+    rcpp_result_gen = Rcpp::wrap(expmatrix_rcpp(x, kappa, check));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -323,8 +323,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // nLogLike_rcpp
-double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist, List Par, IntegerVector aInd, List zeroInflation, List oneInflation, bool stationary, IntegerVector knownStates, IntegerVector betaRef, int mixtures, IntegerVector dtIndex, bool CT, double maxRate);
-RcppExport SEXP _momentuHMM_nLogLike_rcpp(SEXP nbStatesSEXP, SEXP covsSEXP, SEXP dataSEXP, SEXP dataNamesSEXP, SEXP distSEXP, SEXP ParSEXP, SEXP aIndSEXP, SEXP zeroInflationSEXP, SEXP oneInflationSEXP, SEXP stationarySEXP, SEXP knownStatesSEXP, SEXP betaRefSEXP, SEXP mixturesSEXP, SEXP dtIndexSEXP, SEXP CTSEXP, SEXP maxRateSEXP) {
+double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVector dataNames, List dist, List Par, IntegerVector aInd, List zeroInflation, List oneInflation, bool stationary, IntegerVector knownStates, IntegerVector betaRef, int mixtures, IntegerVector dtIndex, bool CT, double kappa);
+RcppExport SEXP _momentuHMM_nLogLike_rcpp(SEXP nbStatesSEXP, SEXP covsSEXP, SEXP dataSEXP, SEXP dataNamesSEXP, SEXP distSEXP, SEXP ParSEXP, SEXP aIndSEXP, SEXP zeroInflationSEXP, SEXP oneInflationSEXP, SEXP stationarySEXP, SEXP knownStatesSEXP, SEXP betaRefSEXP, SEXP mixturesSEXP, SEXP dtIndexSEXP, SEXP CTSEXP, SEXP kappaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -343,8 +343,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type mixtures(mixturesSEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type dtIndex(dtIndexSEXP);
     Rcpp::traits::input_parameter< bool >::type CT(CTSEXP);
-    Rcpp::traits::input_parameter< double >::type maxRate(maxRateSEXP);
-    rcpp_result_gen = Rcpp::wrap(nLogLike_rcpp(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT, maxRate));
+    Rcpp::traits::input_parameter< double >::type kappa(kappaSEXP);
+    rcpp_result_gen = Rcpp::wrap(nLogLike_rcpp(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT, kappa));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -360,8 +360,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // trMatrix_rcpp
-arma::cube trMatrix_rcpp(int nbStates, arma::mat beta, arma::mat covs, IntegerVector betaRef, bool CT, NumericVector dt, IntegerVector aInd, bool rateMatrix, double maxRate, bool check);
-RcppExport SEXP _momentuHMM_trMatrix_rcpp(SEXP nbStatesSEXP, SEXP betaSEXP, SEXP covsSEXP, SEXP betaRefSEXP, SEXP CTSEXP, SEXP dtSEXP, SEXP aIndSEXP, SEXP rateMatrixSEXP, SEXP maxRateSEXP, SEXP checkSEXP) {
+arma::cube trMatrix_rcpp(int nbStates, arma::mat beta, arma::mat covs, IntegerVector betaRef, bool CT, NumericVector dt, IntegerVector aInd, bool rateMatrix, double kappa, bool check);
+RcppExport SEXP _momentuHMM_trMatrix_rcpp(SEXP nbStatesSEXP, SEXP betaSEXP, SEXP covsSEXP, SEXP betaRefSEXP, SEXP CTSEXP, SEXP dtSEXP, SEXP aIndSEXP, SEXP rateMatrixSEXP, SEXP kappaSEXP, SEXP checkSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -373,9 +373,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type dt(dtSEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type aInd(aIndSEXP);
     Rcpp::traits::input_parameter< bool >::type rateMatrix(rateMatrixSEXP);
-    Rcpp::traits::input_parameter< double >::type maxRate(maxRateSEXP);
+    Rcpp::traits::input_parameter< double >::type kappa(kappaSEXP);
     Rcpp::traits::input_parameter< bool >::type check(checkSEXP);
-    rcpp_result_gen = Rcpp::wrap(trMatrix_rcpp(nbStates, beta, covs, betaRef, CT, dt, aInd, rateMatrix, maxRate, check));
+    rcpp_result_gen = Rcpp::wrap(trMatrix_rcpp(nbStates, beta, covs, betaRef, CT, dt, aInd, rateMatrix, kappa, check));
     return rcpp_result_gen;
 END_RCPP
 }

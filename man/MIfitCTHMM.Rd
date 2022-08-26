@@ -49,6 +49,7 @@ MIfitCTHMM(miData, ...)
   control = list(),
   prior = NULL,
   modelName = NULL,
+  kappa = Inf,
   covNames = NULL,
   spatialCovs = NULL,
   centers = NULL,
@@ -118,6 +119,7 @@ MIfitCTHMM(miData, ...)
   control = list(),
   prior = NULL,
   modelName = NULL,
+  kappa = Inf,
   covNames = NULL,
   spatialCovs = NULL,
   centers = NULL,
@@ -252,6 +254,8 @@ initial values for likelihood optimization.  See \code{\link{fitCTHMM}}.}
 \item{prior}{A function that returns the log-density of the working scale parameter prior distribution(s).  See \code{\link{fitCTHMM}}.}
 
 \item{modelName}{An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions.}
+
+\item{kappa}{maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization, in which case the transition rate parameters \code{beta} are on the logit scale (instead of the log scale).}
 
 \item{covNames}{Names of any covariates in \code{miData$crwPredict} (if \code{miData} is a \code{\link{crwData}} object; otherwise 
 \code{covNames} is ignored). See \code{\link{prepData}}.}

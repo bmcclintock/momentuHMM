@@ -218,17 +218,17 @@ muffleCTwarning <- function(w) {
   q <- iconv(c(intToUtf8(8216), intToUtf8(8217)),"UTF-8", "")
   if(any(grepl(paste0("extra argument ",q[1],"CT",q[2]," will be disregarded"),w)) |
      any(grepl(paste0("extra arguments ",q[1],"CT",q[2],", ",
-                      q[1],"maxRate",q[2],", ",
+                      q[1],"kappa",q[2],", ",
                       q[1],"kappa",q[2]," will be disregarded"),w)) |
      any(grepl(paste0("extra arguments ",q[1],"CT",q[2],", ",
                       q[1],"Time.name",q[2],", ",
-                      q[1],"maxRate",q[2],", ",
+                      q[1],"kappa",q[2],", ",
                       q[1],"kappa",q[2]," will be disregarded"),w)) |
      any(grepl(paste0("extra arguments ",q[1],"CT",q[2],", ",
-                      q[1],"maxRate",q[2]," will be disregarded"),w)) |
+                      q[1],"kappa",q[2]," will be disregarded"),w)) |
      any(grepl(paste0("extra arguments ",q[1],"CT",q[2],", ",
                                          q[1],"Time.name",q[2],", ",
-                                         q[1],"maxRate",q[2]," will be disregarded"),w)))
+                                         q[1],"kappa",q[2]," will be disregarded"),w)))
     invokeRestart("muffleWarning")
   else w
 }
@@ -236,6 +236,7 @@ muffleCTwarning <- function(w) {
 muffleCTDSwarning <- function(w) {
   q <- iconv(c(intToUtf8(8216), intToUtf8(8217)),"UTF-8", "")
   if(any(grepl(paste0("extra arguments ",q[1],"CT",q[2],", ",
+                                         q[1],"kappa",q[2],", ",
                                          q[1],"ctds",q[2],", ",
                                          q[1],"rast",q[2],", ",
                                          q[1],"directions",q[2],", ",
@@ -351,7 +352,7 @@ delta_bc <- function(m){
     if(is.null(m$covsPi)) m$covsPi <- matrix(1,length(unique(m$data$ID)),1)
     if(is.null(attr(m$data,"coords")) & !is.null(m$data$x) & !is.null(m$data$y)) attr(m$data,"coords") <- c("x","y")
     if(is.null(attr(m$data,"gradient"))) attr(m$data,"gradient") <- FALSE
-    if(is.null(m$conditions$maxRate)) m$conditions$maxRate <- Inf
+    if(is.null(m$conditions$kappa)) m$conditions$kappa <- Inf
   } else if(!is.miHMM(m) & any(unlist(lapply(m,is.momentuHMM)))){
     m <- HMMfits(m)
   }
