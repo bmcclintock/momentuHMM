@@ -27,7 +27,7 @@ get_retrySD <- function(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStat
           retrySD$beta <- rep(10,length(beta0$beta))
         } else {
           if(!all(sapply(retrySD$beta, function(x) x == suppressWarnings(as.numeric(x))) | retrySD$beta=="adapt")) stop("retrySD$beta must be numeric or 'adapt'")
-          if(any(retrySD$beta!="adapt" && retrySD$beta<0)) stop("retrySD$beta must be non-negative")
+          if(any((retrySD$beta!="adapt") & (retrySD$beta<0))) stop("retrySD$beta must be non-negative")
           if(length(retrySD$beta)==1){
             retrySD$beta <- rep(retrySD$beta,length(beta0$beta))
           } else if(length(retrySD$beta)!=length(beta0$beta)){
@@ -39,7 +39,7 @@ get_retrySD <- function(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStat
             retrySD[["pi"]] <- rep(10,length(beta0[["pi"]]))
           } else {
             if(!all(sapply(retrySD[["pi"]], function(x) x == suppressWarnings(as.numeric(x))) | retrySD[["pi"]]=="adapt")) stop("retrySD$pi must be numeric or 'adapt'")
-            if(any(retrySD[["pi"]]!="adapt" && retrySD[["pi"]]<0)) stop("retrySD$pi must be non-negative")
+            if(any((retrySD[["pi"]]!="adapt") & (retrySD[["pi"]]<0))) stop("retrySD$pi must be non-negative")
             if(length(retrySD[["pi"]])==1){
               retrySD[["pi"]] <- rep(retrySD[["pi"]],length(beta0[["pi"]]))
             } else if(length(retrySD[["pi"]])!=length(beta0[["pi"]])){
@@ -53,7 +53,7 @@ get_retrySD <- function(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStat
               retrySD[[j]] <- rep(10,length(beta0[[j]]))
             } else {
               if(!all(sapply(retrySD[[j]], function(x) x == suppressWarnings(as.numeric(x))) | retrySD[[j]]=="adapt")) stop("retrySD$",j," must be numeric or 'adapt'")
-              if(any(retrySD[[j]]!="adapt") && any(retrySD[[j]]<0)) stop("retrySD$",j," must be non-negative")
+              if(any((retrySD[[j]]!="adapt")) & (any(retrySD[[j]]<0))) stop("retrySD$",j," must be non-negative")
               if(length(retrySD[[j]])==1){
                 retrySD[[j]] <- rep(retrySD[[j]],length(beta0[[j]]))
               } else if(length(retrySD[[j]])!=length(beta0[[j]])){
@@ -66,7 +66,7 @@ get_retrySD <- function(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStat
           retrySD$delta <- rep(10,length(delta0))
         } else {
           if(!all(sapply(retrySD$delta, function(x) x == suppressWarnings(as.numeric(x))) | retrySD$delta=="adapt")) stop("retrySD$delta must be numeric or 'adapt'")
-          if(any(retrySD$delta!="adapt" && retrySD$delta<0)) stop("retrySD$delta must be non-negative")
+          if(any((retrySD$delta!="adapt") & (retrySD$delta<0))) stop("retrySD$delta must be non-negative")
           if(length(retrySD$delta)==1){
             retrySD$delta <- rep(retrySD$delta,length(delta0))
           } else if(length(retrySD$delta)!=length(delta0)){
