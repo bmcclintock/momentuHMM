@@ -1919,10 +1919,12 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                 break;
               }
               qsum <- sum(Qmat[Z[k], -Z[k]])
+              
               if(qsum - kappa > 1.e-6) {
                 warning("Transition rate sum for individual ",zoo," exceeds kappa -- terminating at observation ",k,": qsum = ",qsum," and kappa = ",kappa," -- please report to brett.mcclintock@noaa")
                 break;
               }
+              
               if(runif(1) < qsum/kappa){
                 if (nbStates > 2) {
                   probs <- Qmat[Z[k], -Z[k]]/qsum
@@ -1973,6 +1975,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(length(centroidInd)) centroidCovs <- subCovs[,centroidNames]
     #data <- rbind(data,d)
     
+
     simDat <- list(data=d[1:k,,drop=FALSE],allCovs=iallCovs[1:k,,drop=FALSE],allSpatialcovs=subSpatialcovs[1:k,,drop=FALSE],centerCovs=centerCovs[1:k,,drop=FALSE],centroidCovs=centroidCovs[1:k,,drop=FALSE],allStates=matrix(Z[1:k],ncol=1),allTimes=matrix(allTimes[1:k],ncol=1))
     if(isTRUE(list(...)$ctds)){
       simDat$data$time <- allTimes[1:k]
