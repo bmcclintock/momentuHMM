@@ -477,8 +477,8 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     if(length(hierLevels)!=(2*maxlevel-1)) stop("hierLevels must be of length 2*M-1 where M is the number of levels in the hierarchy")
     checkHierLevels <- character(2*maxlevel-1)
     checkHierLevels[1] <- "1"
-    checkHierLevels[seq(2,2*maxlevel-1,2)] <- paste0(seq(2,2*maxlevel-1,2),"i")
-    checkHierLevels[seq(3,2*maxlevel-1,2)] <- as.character(seq(2,2*maxlevel-1,2))
+    checkHierLevels[seq(2,2*maxlevel-1,2)] <- paste0(2:maxlevel,"i")
+    checkHierLevels[seq(3,2*maxlevel-1,2)] <- as.character(2:maxlevel)
     if(!all(hierLevels==checkHierLevels)) stop("hierLevels must be ordered factors of the form:\n     '1', '2i', '2', ..., 'Mi', 'M' where M is the number of levels in the hierarchy")
   }
   if(nlevels(data$level)!=length(hierLevels) || !all(levels(data$level)==hierLevels) || any(is.na(data$level))) stop("data$level not consistent with 'hierLevels'")
