@@ -96,7 +96,7 @@ p1 + p2 + plot_layout(1,2)
 # simulate from the fitted model
 initPos <- split(as.matrix(langData[!duplicated(langData$ID),c("mu.x","mu.y")]),
                  unique(langData$ID))
-set.seed(4,"Mersenne-Twister","Inversion")
+set.seed(18,"Mersenne-Twister","Inversion")
 simLangevin <- simCTHMM(model=fitLangevin,
                         spatialCovs=covlist0,
                         initialPosition = initPos,

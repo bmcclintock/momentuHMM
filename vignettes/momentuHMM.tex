@@ -1,4 +1,4 @@
-\documentclass[12pt]{article}\usepackage[]{graphicx}\usepackage[]{xcolor}
+\documentclass[12pt]{article}\usepackage[]{graphicx}\usepackage[]{color}
 % maxwidth is the original width if it is less than linewidth
 % otherwise use linewidth (to make sure the graphics do not exceed the margin)
 \makeatletter
@@ -517,7 +517,8 @@ The functions \verb|fitCTHMM| and \verb|MIfitCTHMM| can be used to fit continuou
     \end{block}
     \end{blockarray},
 \end{equation}
-where $q_{i,j} \ge 0$ for $i \ne j$ and $q_{i,i}=\sum_{j \ne i} q_{i,j}$. For any time interval $\Delta_t>0$, the state transition probabilities from time $t$ to time $t+1$ can then be derived using the matrix exponential, $\boldsymbol{\Gamma}_t = \exp \left(\mathbf{Q} \Delta_t \right)$. These models can therefore still be fitted using the forward algorithm (Eq.\ \ref{eq:HMMlike}). In addition to model fitting, the \verb|simCTHMM| function can be used to simulate continuous-time HMMs, either ``from scratch'' or from a fitted model. All other utility functions in \verb|momentuHMM| (e.g. \verb|viterbi|, \verb|stateProbs|, \verb|pseudoRes|) can also be used for continuous-time models. Simulated or fitted continuous-time random walk models in \verb|momentuHMM| rely on an Euler-discretization scheme that requires $\Delta_t$ to be sufficiently small for this approximation to be accurate \citep[e.g.][]{MichelotEtAl2019}. For multistate continuous-time movement models, another important consideration is the so-called ``snapshot'' property \citep[e.g.][]{GlennieEtAl2021}. The snapshot property is violated when the observations depend on $\Delta_t$, and, therefore, the observed locations depend on the behavioral state sequence over the entire interval between times t and t + 1. \verb|momentuHMM| skirts around this issue by assuming $\Delta_t$ is reasonably small relative to the serial correlation in the state process. For this to be reasonably satisfied, an intuitive rule-of-thumb is $\Delta_t \le \frac{1}{\max_i\left(q_{i,i}\right)}$ for $i \in \{1,2,\ldots,N\}$ \citep{GlennieEtAl2021}. The continuous-time HMMs in \verb|momentuHMM| also assume any time-varying covariates are piece-wise constant \citep[e.g.][]{Jackson2011}. \verb|simCTHMM| further assumes that state transitions can only occur at the observation times. One particularly useful continuous-time movement model is the habitat-driven Langevin diffusion of \citet{MichelotEtAl2019}; we demonstrate how to fit their model using \verb|momentuHMM| in section \ref{sec:langevin}.
+where $q_{i,j} \ge 0$ for $i \ne j$ and $q_{i,i}=\sum_{j \ne i} q_{i,j}$. For any time interval $\Delta_t>0$, the state transition probabilities from time $t$ to time $t+1$ can then be derived using the matrix exponential, $\boldsymbol{\Gamma}_t = \exp \left(\mathbf{Q} \Delta_t \right)$. These models can therefore still be fitted using the forward algorithm (Eq.\ \ref{eq:HMMlike}). In addition to model fitting, the \verb|simCTHMM| function can be used to simulate continuous-time HMMs, either ``from scratch'' or from a fitted model. All other utility functions in \verb|momentuHMM| (e.g. \verb|viterbi|, \verb|stateProbs|, \verb|pseudoRes|) can also be used for continuous-time models. Simulated or fitted continuous-time random walk models in \verb|momentuHMM| rely on an Euler-discretization scheme that requires $\Delta_t$ to be sufficiently small for this approximation to be accurate \citep[e.g.][]{MichelotEtAl2019}. For multistate continuous-time movement models, another important consideration is the so-called ``snapshot'' property \citep[e.g.][]{GlennieEtAl2021}. The snapshot property is violated when the observations depend on $\Delta_t$, and, therefore, the observed locations depend on the behavioral state sequence over the entire interval between times t and t + 1. \verb|momentuHMM| skirts around this issue by assuming $\Delta_t$ is reasonably small relative to the serial correlation in the state process. For this to be reasonably satisfied, an intuitive rule-of-thumb is $\Delta_t \le \frac{1}{\max_i\left(q_{i,i}\right)}$ for $i \in \{1,2,\ldots,N\}$ \citep{GlennieEtAl2021}. The continuous-time HMMs in \verb|momentuHMM| also assume any time-varying covariates are piece-wise constant between observations \citep[e.g.][]{Jackson2011}. %\verb|simCTHMM| further assumes that state transitions can only occur at the observation times. 
+One particularly useful continuous-time movement model is the habitat-driven Langevin diffusion of \citet{MichelotEtAl2019}; we demonstrate how to fit their model using \verb|momentuHMM| in section \ref{sec:langevin}.
   
 \section{Examples}
 \label{sec:example}
@@ -2201,35 +2202,35 @@ Now let's fit a model with $K=3$ mixtures by setting some starting values with t
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# -----------------------------------------------------------------------}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ dive.dur \textasciitilde{} weibull(shape=\textasciitilde{}1, scale=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.dur \textasciitilde{} weibull(shape=\textasciitilde{}1, scale=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ dive.depth \textasciitilde{} gamma(mean=\textasciitilde{}1, sd=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.depth \textasciitilde{} gamma(mean=\textasciitilde{}1, sd=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ GR.speed2 \textasciitilde{} gamma(mean=\textasciitilde{}1, sd=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ GR.speed2 \textasciitilde{} gamma(mean=\textasciitilde{}1, sd=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ dive.pitchvar2 \textasciitilde{} beta(shape1=\textasciitilde{}1, shape2=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.pitchvar2 \textasciitilde{} beta(shape1=\textasciitilde{}1, shape2=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ breath.headchange \textasciitilde{} vm(concentration=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ breath.headchange \textasciitilde{} vm(concentration=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ GR.size \textasciitilde{} pois(lambda=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ GR.size \textasciitilde{} pois(lambda=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ GR.tight \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ GR.tight \textasciitilde{} bern(prob=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ dive.CS.pres \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.CS.pres \textasciitilde{} bern(prob=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ dive.SS.pres \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive.SS.pres \textasciitilde{} bern(prob=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ presurf \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ presurf \textasciitilde{} bern(prob=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ postsurf \textasciitilde{} bern(prob=\textasciitilde{}1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ postsurf \textasciitilde{} bern(prob=\textasciitilde{}1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Transition probability matrix formula: \textasciitilde{}1}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Transition probability matrix formula: \textasciitilde{}1}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Initial distribution formula: stationary}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Initial distribution formula: stationary}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Number of mixtures: 3}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Number of mixtures: 3}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ Mixture probability formula: \textasciitilde{}1}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ Mixture probability formula: \textasciitilde{}1}}
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
 
@@ -2535,14 +2536,14 @@ Now that we have labeled each observation in our data with a \verb|level| factor
 ## 
 ## Data summaries:
 ## 
-##    date_time                      level     dive_duration maximum_depth  
-##  Min.   :2015-11-02 14:43:00.00   1 : 275   Min.   :  1   Min.   :  2.2  
-##  1st Qu.:2015-11-06 02:01:24.00   2i: 275   1st Qu.: 15   1st Qu.:  7.2  
-##  Median :2015-11-08 14:14:28.00   2 :7585   Median : 43   Median : 16.2  
-##  Mean   :2015-11-08 11:59:48.86             Mean   : 58   Mean   : 22.2  
-##  3rd Qu.:2015-11-11 04:43:07.00             3rd Qu.: 90   3rd Qu.: 30.2  
-##  Max.   :2015-11-14 00:58:50.00             Max.   :248   Max.   :169.4  
-##                                             NA's   :550   NA's   :550    
+##    date_time                   level     dive_duration maximum_depth  
+##  Min.   :2015-11-02 14:43:00   1 : 275   Min.   :  1   Min.   :  2.2  
+##  1st Qu.:2015-11-06 02:01:24   2i: 275   1st Qu.: 15   1st Qu.:  7.2  
+##  Median :2015-11-08 14:14:28   2 :7585   Median : 43   Median : 16.2  
+##  Mean   :2015-11-08 11:59:48             Mean   : 58   Mean   : 22.2  
+##  3rd Qu.:2015-11-11 04:43:07             3rd Qu.: 90   3rd Qu.: 30.2  
+##  Max.   :2015-11-14 00:58:50             Max.   :248   Max.   :169.4  
+##                                          NA's   :550   NA's   :550    
 ##  dive_wiggliness
 ##  Min.   :  0.0  
 ##  1st Qu.:  3.8  
@@ -2564,7 +2565,7 @@ Now that we have labeled each observation in our data with a \verb|level| factor
 \end{alltt}
 
 
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in prepData.hierarchical(data = porpoiseData, coordNames = NULL, : hierLevels must be ordered factors of the form:\\\#\# \ \ \ \ \ '1', '2i', '2', ..., 'Mi', 'M' where M is the number of levels in the hierarchy}}\end{kframe}
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in prepData.hierarchical(data = porpoiseData, coordNames = NULL, : hierLevels must be ordered factors of the form:\\\#\#\ \ \ \ \ \ '1', '2i', '2', ..., 'Mi', 'M' where M is the number of levels in the hierarchy}}\end{kframe}
 \end{knitrout}
 \noindent Note that because there are no location data in this example, we have set \verb|coordNames| to \verb|NULL|. Also note that in this example there are no data streams observed at the coarse time scale (\verb|level=1|), but these could be easily included (if available; see sections \ref{sec:atlanticCod} and \ref{sec:hornShark}). By definition there are no data streams observed at the initial fine scale (\verb|level=2i|), but covariates (if available) could be included here for modeling the fine-scale initial distributions or state transition probabilities.
 
@@ -2818,15 +2819,15 @@ Since everything looks good, we're now ready to fit our HHMM:
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# -----------------------------------------------------------------------}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ dive\_duration \textasciitilde{} gamma(mean: custom, sd: custom)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive\_duration \textasciitilde{} gamma(mean: custom, sd: custom)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ maximum\_depth \textasciitilde{} gamma(mean: custom, sd: custom)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ maximum\_depth \textasciitilde{} gamma(mean: custom, sd: custom)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ dive\_wiggliness \textasciitilde{} gamma(mean: custom, sd: custom, zeromass: custom)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ dive\_wiggliness \textasciitilde{} gamma(mean: custom, sd: custom, zeromass: custom)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Transition probability matrix formula: \textasciitilde{}0 + I((level == "{}1"{}) * 1) + I((level == "{}2i"{}) * 1) + I((level == "{}2"{}) * 1)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Transition probability matrix formula: \textasciitilde{}0 + I((level == "{}1"{}) * 1) + I((level == "{}2i"{}) * 1) + I((level == "{}2"{}) * 1)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Initial distribution formula: \textasciitilde{}1}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Initial distribution formula: \textasciitilde{}1}}
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
 
@@ -2908,44 +2909,44 @@ Let's now examine our fitted HHMM:
 ## dive_duration parameters:
 ## -------------------------
 ##           nf1      nf2       nf3       f1       f2        f3
-## mean 5.637626 32.18048 106.82949 5.637626 32.18048 106.82949
-## sd   4.372835 15.13962  38.41245 4.372835 15.13962  38.41245
+## mean 5.637624 32.18047 106.82948 5.637624 32.18047 106.82948
+## sd   4.372832 15.13961  38.41245 4.372832 15.13961  38.41245
 ## 
 ## maximum_depth parameters:
 ## -------------------------
-##           nf1      nf2      nf3       f1       f2       f3
-## mean 3.740050 13.19309 39.61714 3.740050 13.19309 39.61714
-## sd   1.426269  5.28881 18.11187 1.426269  5.28881 18.11187
+##           nf1       nf2      nf3       f1        f2       f3
+## mean 3.740051 13.193085 39.61714 3.740051 13.193085 39.61714
+## sd   1.426271  5.288809 18.11188 1.426271  5.288809 18.11188
 ## 
 ## dive_wiggliness parameters:
 ## ---------------------------
 ##                nf1          nf2          nf3        f1           f2
-## mean     1.4566130 11.297307157 4.582791e+01 1.4566130 11.297307157
-## sd       1.2051922  7.683425497 2.437341e+01 1.2051922  7.683425497
-## zeromass 0.3089822  0.007867576 2.884684e-04 0.3089822  0.007867576
+## mean     1.4566105 11.297304400 4.582790e+01 1.4566105 11.297304400
+## sd       1.2051899  7.683421367 2.437341e+01 1.2051899  7.683421367
+## zeromass 0.3089819  0.007866278 2.885413e-04 0.3089819  0.007866278
 ##                    f3
-## mean     4.582791e+01
+## mean     4.582790e+01
 ## sd       2.437341e+01
-## zeromass 2.884684e-04
+## zeromass 2.885413e-04
 ## 
 ## 
 ## ---------------------------------------------------------------
 ## Regression coeffs for the transition probabilities:
 ## ---------------------------------------------------------------
 ## --------------------------  level1  ---------------------------
-##                          1 -> 4    4 -> 1
-## I((level == "1") * 1) -1.298852 -1.285221
+##                         1 -> 4    4 -> 1
+## I((level == "1") * 1) -1.29882 -1.285164
 ## 
 ## --------------------------  level2  ---------------------------
-##                           1 -> 2    1 -> 3    2 -> 2     2 -> 3    3 -> 2
-## I((level == "2") * 1) 0.07466832 -1.014794 0.9090668 -0.4242804 0.6198123
+##                           1 -> 2    1 -> 3  2 -> 2    2 -> 3    3 -> 2
+## I((level == "2") * 1) 0.07465917 -1.014811 0.90907 -0.424281 0.6198106
 ##                          3 -> 3
-## I((level == "2") * 1) 0.7823021
+## I((level == "2") * 1) 0.7823011
 ## 
 ##                           4 -> 5    4 -> 6    5 -> 5   5 -> 6    6 -> 5
-## I((level == "2") * 1) -0.5797187 0.7135953 0.7070679 1.621159 0.4255811
+## I((level == "2") * 1) -0.5797742 0.7135748 0.7070142 1.621093 0.4255634
 ##                         6 -> 6
-## I((level == "2") * 1) 2.701071
+## I((level == "2") * 1) 2.701054
 ## 
 ## ---------------------------------------------------------------
 ## 
@@ -2954,19 +2955,19 @@ Let's now examine our fitted HHMM:
 ## ---------------------------------------------------------------
 ## --------------------------  level1  ---------------------------
 ##             nonforaging  foraging
-## nonforaging   0.7856417 0.2143583
-## foraging      0.2166628 0.7833372
+## nonforaging   0.7856364 0.2143636
+## foraging      0.2166725 0.7833275
 ## 
 ## --------------------------  level2  ---------------------------
 ##           nf1       nf2       nf3
-## nf1 0.4098354 0.4416086 0.1485559
-## nf2 0.2417651 0.6000623 0.1581725
-## nf3 0.1982129 0.3683945 0.4333926
+## nf1 0.4098381 0.4416074 0.1485545
+## nf2 0.2417647 0.6000632 0.1581721
+## nf3 0.1982132 0.3683942 0.4333926
 ## 
-##            f1        f2        f3
-## f1 0.27767187 0.1555118 0.5668164
-## f2 0.12365547 0.2507778 0.6255668
-## f3 0.05738502 0.0878266 0.8547884
+##            f1         f2        f3
+## f1 0.27767750 0.15550628 0.5668162
+## f2 0.12366226 0.25077807 0.6255597
+## f3 0.05738593 0.08782643 0.8547876
 ## 
 ## ---------------------------------------------------------------
 ## 
@@ -2975,14 +2976,14 @@ Let's now examine our fitted HHMM:
 ## --------------------------------------------------
 ## --------------------  level1  --------------------
 ##               state 4
-## (Intercept) -6.740456
+## (Intercept) -6.718877
 ## 
 ## --------------------  level2  --------------------
 ##                         state 2  state 3
-## I((level == "2i") * 1) 30.34115 29.65663
+## I((level == "2i") * 1) 30.34116 29.65686
 ## 
-##                          state 5  state 6
-## I((level == "2i") * 1) -6.010966 1.717094
+##                          state 5 state 6
+## I((level == "2i") * 1) -6.010936  1.7169
 ## 
 ## --------------------------------------------------
 ## 
@@ -2991,14 +2992,14 @@ Let's now examine our fitted HHMM:
 ## --------------------------------------------------
 ## --------------------  level1  --------------------
 ##            nonforaging    foraging
-## ID:Animal1   0.9988193 0.001180712
+## ID:Animal1   0.9987936 0.001206437
 ## 
 ## --------------------  level2  --------------------
-##                      nf1       nf2       nf3
-## nonforaging 4.422442e-14 0.6647468 0.3352532
+##                     nf1       nf2       nf3
+## nonforaging 4.42208e-14 0.6646966 0.3353034
 ## 
-##                f1           f2        f3
-## foraging 0.152189 0.0003731245 0.8474379
+##                 f1           f2        f3
+## foraging 0.1522141 0.0003731974 0.8474127
 ## 
 ## --------------------------------------------------
 \end{verbatim}
@@ -3087,7 +3088,7 @@ We can also calculate the stationary probabilities of each state for each level 
 \end{alltt}
 \begin{verbatim}
 ## nonforaging    foraging 
-##   0.5026734   0.4973266
+##   0.5026783   0.4973217
 \end{verbatim}
 \begin{alltt}
 \hlcom{# fine scale }
@@ -3096,11 +3097,11 @@ We can also calculate the stationary probabilities of each state for each level 
 \begin{verbatim}
 ## $nonforaging
 ##       nf1       nf2       nf3 
-## 0.2793769 0.5060947 0.2145284 
+## 0.2793776 0.5060948 0.2145275 
 ## 
 ## $foraging
 ##         f1         f2         f3 
-## 0.08308649 0.11164262 0.80527089
+## 0.08308895 0.11164215 0.80526890
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -3149,10 +3150,22 @@ Next we'll quickly demonstrate how to perform the HHMM analysis for the garter s
 \hlkwd{load}\hlstd{(}\hlkwd{url}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"https://static-content.springer.com/esm/"}\hlstd{,}
                 \hlstr{"art%3A10.1007%2Fs13253-017-0282-9/MediaObjects/"}\hlstd{,}
                 \hlstr{"13253_2017_282_MOESM1_ESM.rdata"}\hlstd{)))}
+\end{alltt}
 
+
+{\ttfamily\noindent\color{warningcolor}{\#\# Warning in load(url(paste0("{}https://static-content.springer.com/esm/"{}, "{}art\%3A10.1007\%2Fs13253-017-0282-9/MediaObjects/"{}, : URL 'https://static-content.springer.com/esm/art\%3A10.1007\%2Fs13253-017-0282-9/MediaObjects/13253\_2017\_282\_MOESM1\_ESM.rdata': status was 'Peer certificate cannot be authenticated with given CA certificates'}}
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in load(url(paste0("{}https://static-content.springer.com/esm/"{}, "{}art\%3A10.1007\%2Fs13253-017-0282-9/MediaObjects/"{}, : cannot open the connection to 'https://static-content.springer.com/esm/art\%3A10.1007\%2Fs13253-017-0282-9/MediaObjects/13253\_2017\_282\_MOESM1\_ESM.rdata'}}\begin{alltt}
 \hlstd{W} \hlkwb{<-} \hlkwd{dim}\hlstd{(dataAr)[}\hlnum{3}\hlstd{]} \hlcom{# number of individuals}
-\hlstd{M} \hlkwb{<-} \hlkwd{dim}\hlstd{(dataAr)[}\hlnum{2}\hlstd{]} \hlcom{# number of time series per individual}
+\end{alltt}
 
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in eval(expr, envir, enclos): object 'dataAr' not found}}\begin{alltt}
+\hlstd{M} \hlkwb{<-} \hlkwd{dim}\hlstd{(dataAr)[}\hlnum{2}\hlstd{]} \hlcom{# number of time series per individual}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in eval(expr, envir, enclos): object 'dataAr' not found}}\begin{alltt}
 \hlcom{### add 2 extra rows for each time step where coarse scale behavior switches occur}
 \hlcom{# level=1  indicates when coarse-scale behavior switching can occur }
 \hlcom{# level=2i indicates start of each fine-scale interval}
@@ -3165,47 +3178,22 @@ Next we'll quickly demonstrate how to perform the HHMM analysis for the garter s
     \hlstd{snakeData} \hlkwb{<-} \hlkwd{rbind}\hlstd{(snakeData,tmp)}
   \hlstd{\}}
 \hlstd{\}}
+\end{alltt}
 
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in eval(expr, envir, enclos): object 'W' not found}}\begin{alltt}
 \hlcom{# prepare hierarchical data}
 \hlstd{snakeData} \hlkwb{<-} \hlkwd{prepData}\hlstd{(snakeData,}\hlkwc{coordNames}\hlstd{=}\hlkwa{NULL}\hlstd{,}\hlkwc{hierLevels}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"1"}\hlstd{,}\hlstr{"2i"}\hlstd{,}\hlstr{"2"}\hlstd{))}
+\end{alltt}
 
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in prepData.default(snakeData, coordNames = NULL, hierLevels = c("{}1"{}, : data must be a data frame}}\begin{alltt}
 \hlcom{# summarize prepared data}
 \hlkwd{summary}\hlstd{(snakeData)}
 \end{alltt}
 \begin{verbatim}
-## Hierarchical HMM data for 19 individuals:
-## 
-## 1 -- 606 observations
-## 2 -- 606 observations
-## 3 -- 606 observations
-## 4 -- 606 observations
-## 5 -- 606 observations
-## 6 -- 606 observations
-## 7 -- 606 observations
-## 8 -- 606 observations
-## 9 -- 606 observations
-## 10 -- 606 observations
-## 11 -- 606 observations
-## 12 -- 606 observations
-## 13 -- 606 observations
-## 14 -- 606 observations
-## 15 -- 606 observations
-## 16 -- 606 observations
-## 17 -- 606 observations
-## 18 -- 606 observations
-## 19 -- 606 observations
-## 
-## 
-## Data summaries:
-## 
-##       step       level     
-##  Min.   :0.011   1 :  114  
-##  1st Qu.:0.334   2i:  114  
-##  Median :0.700   2 :11286  
-##  Mean   :0.790             
-##  3rd Qu.:1.149             
-##  Max.   :3.130             
-##  NA's   :1496
+## Length  Class   Mode 
+##      0   NULL   NULL
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -4561,11 +4549,11 @@ Now we're ready to specify the recharge model. We'll first fit the model to the 
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# -----------------------------------------------------------------------}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ mu \textasciitilde{} rw\_mvnorm2(mean.x: custom, mean.y: custom, sigma.x: custom, sigma.xy: custom, sigma.y: custom)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ mu \textasciitilde{} rw\_mvnorm2(mean.x: custom, mean.y: custom, sigma.x: custom, sigma.xy: custom, sigma.y: custom)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Transition probability matrix formula: \textasciitilde{}recharge(g0 = \textasciitilde{}1, theta = \textasciitilde{}W\_intercept + W\_near\_sabie)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Transition probability matrix formula: \textasciitilde{}recharge(g0 = \textasciitilde{}1, theta = \textasciitilde{}W\_intercept + W\_near\_sabie)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Initial distribution formula: \textasciitilde{}1}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Initial distribution formula: \textasciitilde{}1}}
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
 
@@ -4719,7 +4707,12 @@ The resulting utilization distribution has the standard form of a resource selec
 \end{equation}
 
 Let's begin our analysis by first loading and preparing the data:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 
+
+{\ttfamily\noindent\color{warningcolor}{\#\# Warning: package 'raster' was built under R version 4.0.5}}\end{kframe}
+\end{knitrout}
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -4878,11 +4871,11 @@ To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# -----------------------------------------------------------------------}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ mu \textasciitilde{} rw\_mvnorm2(mean.x: custom, mean.y: custom, sigma.x: custom, sigma.xy: custom, sigma.y: custom)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\#\ \ mu \textasciitilde{} rw\_mvnorm2(mean.x: custom, mean.y: custom, sigma.x: custom, sigma.xy: custom, sigma.y: custom)}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Transition probability matrix formula: \textasciitilde{}1}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Transition probability matrix formula: \textasciitilde{}1}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Initial distribution formula: \textasciitilde{}1}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\#\ \ Initial distribution formula: \textasciitilde{}1}}
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
 
