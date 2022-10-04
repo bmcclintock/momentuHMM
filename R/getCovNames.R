@@ -43,10 +43,8 @@ getCovNames<-function(m,p,distname){
             formterms<-attr(stats::terms.formula(formulaStates[[jj]]),"term.labels")
             if(grepl("mean",p$parNames[[distname]][[j]])) formulaStates[[jj]] <- stats::as.formula(paste("~ + 0 + ",paste(c(paste0(distname,gsub("mean","",p$parNames[[distname]][[j]]),"_tm1"),formterms),collapse=" + ")))
           }
-          else {
-            tmpparnames<-all.vars(formulaStates[[jj]])
-            if(length(tmpparnames)) DMparterms[[p$parNames[[distname]][j]]][[jj]]<-tmpparnames
-          }
+          tmpparnames<-all.vars(formulaStates[[jj]])
+          if(length(tmpparnames)) DMparterms[[p$parNames[[distname]][j]]][[jj]]<-tmpparnames
         }
         #}
         DMterms <- c(DMterms,unlist(DMparterms[[p$parNames[[distname]][j]]]))
