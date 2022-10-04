@@ -1365,7 +1365,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     colnames(subAnglecovs) <- angleCovs
     
     X1 <- matrix(0,nrow=1,ncol=2)
-    if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) X <- matrix(0,nrow=1,ncol=3)
+    if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) X1 <- matrix(0,nrow=1,ncol=3)
     if(!isTRUE(list(...)$ctds)){
       X1[1,] <- initialPosition[[zoo]] # initial position of animal
     } else X1[1,] <- raster::xyFromCell(rast,raster::cellFromXY(rast,initialPosition[[zoo]]))

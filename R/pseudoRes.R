@@ -200,7 +200,7 @@ pseudoRes <- function(m, ncores = 1)
       
       # define function for calculating chi square probs based on mahalanobis distance
       d2<-function(q,mean,sigma){
-        stats::pchisq(stats::mahalanobis(q,mean,matrix(sigma,length(mean),length(mean))),df=ndim)
+        stats::pchisq(stats::mahalanobis(q,mean,matrix(sigma,length(mean),length(mean))),df=length(mean))
       }
       
     } else {

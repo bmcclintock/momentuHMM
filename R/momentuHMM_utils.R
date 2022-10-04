@@ -62,6 +62,7 @@ rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- mvtnorm::rmvnorm
 
 drw_norm <- stats::dnorm
 rrw_norm <- stats::rnorm
+prw_norm <- stats::pnorm
 
 RWdata <- function(dist,data,knownStates,...){
   distnames <- names(dist)
@@ -109,7 +110,7 @@ RWdata <- function(dist,data,knownStates,...){
             tmpdata[[paste0(i,"_tm1")]] <- tmpdata[[i]]
             ldata[[paste0(i,"_tm1")]][lInd] <- ldata[[i]]
             #if(!CT) 
-            colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% distnames))]))
+            colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% i))]))
             ##else if(inherits(data,"hierarchical")) colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(distnames,Time.name,"dt")))]))
             #else colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(distnames,Time.name)))]))
           }

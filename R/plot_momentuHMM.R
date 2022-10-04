@@ -800,7 +800,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           sig[lower.tri(sig, diag=TRUE)] <- lowertri
           genArgs[[4]] <- sig
 
-          genDensities[[state]] <- cbind(genArgs[[1]],w[[i]][state]*do.call("dtmvnorm.marginal",genArgs))
+          genDensities[[state]] <- cbind(genArgs[[1]],w[[i]][state]*do.call("dmvnorm.marginal",genArgs))
         }
 
         if(sepAnimals) {
