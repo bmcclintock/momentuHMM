@@ -1,4 +1,4 @@
-momentuHMM 2.0.0 2022-10-04
+momentuHMM 2.0.0 2022-10-13
 -----------------
 NEW FEATURES
 
@@ -23,6 +23,8 @@ CHANGES
 * 'fixPar' argument cannot be specified for circular distribution parameters unless 'DM' is also specified
 
 * 'initialValues' (Par0, beta0, delta0) are now returned in 'conditions' list of 'momentuHMM' objects
+
+* when 'prior' argument of 'fitHMM' is specified, only the (unpenalized) likelihood is used for Hessian and AIC calculations
 
 BUG FIXES
 

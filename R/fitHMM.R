@@ -458,7 +458,8 @@ fitHMM <- function(data, ...) {
 #' 
 #' @export
 #' @importFrom Rcpp evalCpp
-#' @importFrom stats model.matrix get_all_vars nlm optim terms terms.formula
+#' @importFrom stats model.matrix get_all_vars nlm optim terms terms.formula optimHess
+#' @importFrom numDeriv hessian
 #' @importFrom CircStats dwrpcauchy dvm pvm
 #' @importFrom MASS ginv
 #'
@@ -646,6 +647,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     g0covs <- g0covsCol <- NULL
     recovs <- recovsCol <- NULL
     newdata <- NULL
+    hierRecharge <- NULL
   }
   
   # build design matrix for initial distribution
@@ -883,19 +885,36 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
           curmod$estimate <- numeric()
           
         } else if(optMethod=="nlm"){
-          withCallingHandlers(curmod <- tryCatch(nlm(nLogLike,optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
-                                               inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
-                                               stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,kappa,
-                                               fscale=fscale,print.level=print.level,gradtol=gradtol,
-                                               stepmax=stepmax,steptol=steptol,
-                                               iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)),error=function(e) e),warning=h)
+          withCallingHandlers(curmod <- tryCatch(stats::nlm(nLogLike,optPar,nbStates=nbStates,formula=newformula,bounds=p$bounds,parSize=p$parSize,data=data,dist=inputs$dist,covs=covs,
+                                                            estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,consensus=inputs$consensus,zeroInflation=zeroInflation,oneInflation=oneInflation,
+                                                            stationary=stationary,fullDM=fullDM,DMind=DMind,Bndind=p$Bndind,knownStates=knownStates,fixPar=unlist(fixParIndex$fixPar),wparIndex=fixParIndex$wparIndex,
+                                                            nc=nc,meanind=meanind,covsDelta=covsDelta,workBounds=workBounds,prior=prior,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recovs=recovs,g0covs=g0covs,mixture=mixtures,covsPi=covsPi,recharge=hierRecharge,aInd=aInd,CT=isTRUE(list(...)$CT),dtIndex=dtIndex,kappa=kappa,
+                                                            fscale=fscale,print.level=print.level,gradtol=gradtol,
+                                                            stepmax=stepmax,steptol=steptol,
+                                                            iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian) & is.null(prior),TRUE,ifelse(!is.null(prior),FALSE,ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)))),error=function(e) e),warning=h)
+          if(!inherits(curmod,"error")){
+            if(!is.null(prior) & ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)){
+              curmod$hessian <- tryCatch(numDeriv::hessian(nLogLike,curmod$estimate,nbStates=nbStates,formula=newformula,bounds=p$bounds,parSize=p$parSize,data=data,dist=inputs$dist,covs=covs,
+                                                           estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,consensus=inputs$consensus,zeroInflation=zeroInflation,oneInflation=oneInflation,
+                                                           stationary=stationary,fullDM=fullDM,DMind=DMind,Bndind=p$Bndind,knownStates=knownStates,fixPar=unlist(fixParIndex$fixPar),wparIndex=fixParIndex$wparIndex,
+                                                           nc=nc,meanind=meanind,covsDelta=covsDelta,workBounds=workBounds,prior=NULL,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recovs=recovs,g0covs=g0covs,mixture=mixtures,covsPi=covsPi,recharge=hierRecharge,aInd=aInd,CT=isTRUE(list(...)$CT),dtIndex=dtIndex,kappa=kappa),error=function(e) e)
+            }
+          }
         } else {
-          withCallingHandlers(curmod <- tryCatch(optim(optPar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
+          withCallingHandlers(curmod <- tryCatch(stats::optim(optPar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                      inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                      stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
                                                      nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,kappa,
-                                                     method=optMethod,control=control,hessian=hessian),error=function(e) e),warning=h)
+                                                     method=optMethod,control=control,hessian=ifelse(is.null(prior),hessian,FALSE)),error=function(e) e),warning=h)
+          if(!inherits(curmod,"error")){
+            if(!is.null(prior) & hessian){
+              curmod$hessian <- tryCatch(stats::optimHess(optPar,curmod$estimate,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
+                                               inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
+                                               stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
+                                               nc,meanind,covsDelta,workBounds,NULL,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,kappa,
+                                               control=control),error=function(e) e)
+            }
+          }
         }
         endTime <- proc.time()-startTime
       }

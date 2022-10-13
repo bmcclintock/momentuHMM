@@ -93,7 +93,7 @@ AIC.momentuHMM <- function(object,...,k=2,n=NULL)
       else {
         if(!is.null(models[[i]]$conditions$fit) && !models[[i]]$conditions$fit) stop("The given model hasn't been fitted.")
         nbPar <- sum(unlist(models[[i]]$traceG))+length(models[[i]]$mod$wpar)
-        maxLogLike <- -models[[i]]$mod$minimum
+        maxLogLike <- -(models[[i]]$mod$minimum + ifelse(is.null(models[[i]]$prior),0,models[[i]]$prior(models[[i]]$mod$estimate)))
         aic[i] <- -2*maxLogLike+k*nbPar
         if(!is.null(n)) aic[i] <- aic[i] + k*nbPar*(nbPar+1)/(n-nbPar-1)
       }
@@ -120,7 +120,7 @@ getAIC <- function(m, k=2, n=NULL){
     #if(length(m$conditions$fixPar$delta)==length(m$stateNames) & all(!is.na(m$conditions$fixPar$delta))) nbPar <- nbPar + 1
     if(!is.null(m$conditions$fit) && !m$conditions$fit) stop("The given model hasn't been fitted.")
     else nbPar <- length(m$mod$wpar)
-    maxLogLike <- -m$mod$minimum
+    maxLogLike <- -(m$mod$minimum + ifelse(is.null(m$prior),0,m$prior(m$mod$estimate)))
     aic <- -2*maxLogLike+k*nbPar
     if(!is.null(n)) aic <- aic + k*nbPar*(nbPar+1)/(n-nbPar-1)
     aic
