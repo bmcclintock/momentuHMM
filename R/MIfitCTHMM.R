@@ -151,7 +151,7 @@ MIfitCTHMM <- function(miData, ...) {
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
-# @importFrom raster getZ
+#' @importFrom raster getZ
 #' @importFrom stats terms.formula
 MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, na.rm = FALSE,
                    Time.name="time", Time.unit="auto", CTDS=FALSE,
@@ -477,7 +477,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
 #' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
-# @importFrom raster getZ
+#' @importFrom raster getZ
 # #' @importFrom data.tree Clone
 MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha = 0.95, na.rm = FALSE,
                        Time.name = "time", Time.unit = "auto", CTDS=FALSE,

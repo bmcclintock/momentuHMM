@@ -1,4 +1,4 @@
-momentuHMM 2.0.0 2022-10-13
+momentuHMM 2.0.0 2022-10-18
 -----------------
 NEW FEATURES
 
@@ -18,8 +18,6 @@ CHANGES
 
 * when the probability density for a data stream observation is zero for all states, a warning is triggered and .Machine$double.xmin is used to avoid division by zero within the forward algorithm
 
-* raster package moved to 'Imports'
-
 * 'fixPar' argument cannot be specified for circular distribution parameters unless 'DM' is also specified
 
 * 'initialValues' (Par0, beta0, delta0) are now returned in 'conditions' list of 'momentuHMM' objects
@@ -33,6 +31,13 @@ BUG FIXES
 * getParDM did not properly calculate working scale parameters for categorical distribution parameters when DM included covariates or constraints
 
 * since momentuHMM v1.5.1, 'toState' special formula function did not work properly unless 'betaRef' argument was specified in fitHMM (or MIfitHMM)
+
+
+momentuHMM 1.5.5 2022-10-18
+-----------------
+CHANGES
+
+* raster package moved to Imports as it is no longer imported by crawl>=2.3.0
 
 
 momentuHMM 1.5.4 2021-09-02
@@ -340,7 +345,7 @@ NEW FEATURES
 
 * Harbour seal example of McClintock et al (2013) added to vignette
 
-Changes
+CHANGES
 
 * added pseudoRes continuity adjustment for discrete distributions
 
@@ -381,4 +386,4 @@ CHANGES
 
 momentuHMM 1.0.0 2017-06-16
 -----------------
-Initial CRAN posting
+* Initial CRAN posting
