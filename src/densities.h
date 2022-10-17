@@ -1,6 +1,6 @@
 #ifndef _DENSITIES_
 #define _DENSITIES_
-#define ARMA_DONT_PRINT_ERRORS
+#define ARMA_WARN_LEVEL 1
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <iostream>

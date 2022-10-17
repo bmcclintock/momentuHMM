@@ -40,7 +40,7 @@
 #'
 #' @export
 #' @importFrom stats rnorm runif rmultinom step terms.formula
-# @importFrom raster cellFromXY getValues
+#' @importFrom raster cellFromXY getValues
 #' @importFrom CircStats rvm
 #' @importFrom Brobdingnag as.brob sum
 #' @importFrom mvtnorm rmvnorm

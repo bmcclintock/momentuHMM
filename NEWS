@@ -1,3 +1,10 @@
+momentuHMM 1.5.5 2022-10-18
+-----------------
+CHANGES
+
+* raster package moved to Imports as it is no longer imported by crawl>=2.3.0
+
+
 momentuHMM 1.5.4 2021-09-02
 -----------------
 NEW FEATURES
@@ -303,7 +310,7 @@ NEW FEATURES
 
 * Harbour seal example of McClintock et al (2013) added to vignette
 
-Changes
+CHANGES
 
 * added pseudoRes continuity adjustment for discrete distributions
 
@@ -344,4 +351,4 @@ CHANGES
 
 momentuHMM 1.0.0 2017-06-16
 -----------------
-Initial CRAN posting
+* Initial CRAN posting

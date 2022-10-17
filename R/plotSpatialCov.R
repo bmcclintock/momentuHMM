@@ -40,7 +40,7 @@
 #' }
 # @importFrom ggplot2 ggplot geom_point geom_path aes geom_raster guides theme
 # @importFrom ggplot2 element_rect element_blank scale_color_manual scale_shape_manual coord_equal labs
-# @importFrom raster rasterToPoints
+#' @importFrom raster rasterToPoints
 #' @export
 
 plotSpatialCov <- function(data,spatialCov,segments=TRUE,compact=TRUE,col=NULL,alpha=1,size=1,shape=16,
