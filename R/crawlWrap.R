@@ -368,7 +368,7 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
         tmpind_data <- as.data.frame(mf$data[!dups,,drop=FALSE])
         for(j in names(pD)[names(pD) %in% names(mf$data)]){
           if(!(j %in% c(Time.name,"ID",coord))){
-            if(!isTRUE(all.equal(pD[[j]],tmpind_data[[j]]))) {
+            if(!isTRUE(all.equal(pD[[j]][!is.na(pD[[j]])],tmpind_data[[j]][!is.na(tmpind_data[[j]])]))) {
               pD[[j]][pD[[Time.name]] %in% tmpind_data[[Time.name]]] <- tmpind_data[[j]]
               pD[[j]][!(pD[[Time.name]] %in% tmpind_data[[Time.name]])] <- NA
             }
