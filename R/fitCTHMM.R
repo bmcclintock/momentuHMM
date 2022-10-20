@@ -125,6 +125,7 @@ fitCTHMM <- function(data, ...) {
 #' For initial distribution parameters, the corresponding element of \code{retrySD} must be named ``delta'' and have the same dimensions as \code{delta0} (if \code{delta0} is on the working scale) or be of length \code{nbStates-1} (if \code{delta0} is on the natural scale).
 #' Alternatively \code{retrySD} can be a scalar, in which case this value is used for all parameters. Instead of numeric scalars, \code{retrySD} can also be specified as \code{"adapt"} in which case the standard deviation is adapted as \code{10^(ceiling(log10(abs(x))))} (where \code{x} is the current value of the corresponding working parameter)
 #' Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \code{retrySD}=10 for initial distribution and state transition probabilities). Ignored unless \code{retryFits>0}.
+#' @param ncores Number of cores to use for parallel processing when \code{retryFits>0}. Default: 1 (no parallel processing). When \code{retryFits} attempts are performed in parallel, each attempt uses perturbations of the initial model fit (i.e. they are not iteratively updated as when \code{ncores=1}).
 #' @param optMethod The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).
 #' @param control A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).
 #' @param prior A function that returns the log-density of the working scale parameter prior distribution(s). See 'Details'.
@@ -164,7 +165,7 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
                                   formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,
                                   nlmPar=list(),fit=TRUE,
                                   DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,deltaCons=NULL,
-                                  mvnCoords=NULL,stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, kappa=Inf, ...)
+                                  mvnCoords=NULL,stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,ncores=1,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, kappa=Inf, ...)
 {
   
   #####################
@@ -228,7 +229,7 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
                                formula=formula,formulaDelta=formulaDelta,stationary=stationary,mixtures=mixtures,formulaPi=formulaPi,
                                nlmPar=nlmPar,fit=fit,
                                DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=NULL,deltaCons=deltaCons,
-                               mvnCoords=mvnCoords,stateNames=stateNames,knownStates=knownStates,fixPar=fixPar,retryFits=retryFits,retrySD=retrySD,optMethod=optMethod,control=control,prior=prior,modelName=modelName, CT=TRUE, Time.name=Time.name, kappa=kappa),warning=muffleCTwarning)
+                               mvnCoords=mvnCoords,stateNames=stateNames,knownStates=knownStates,fixPar=fixPar,retryFits=retryFits,retrySD=retrySD,ncores=ncores,optMethod=optMethod,control=control,prior=prior,modelName=modelName, CT=TRUE, Time.name=Time.name, kappa=kappa),warning=muffleCTwarning)
   
   class(mfit) <- append(class(mfit),"CTHMM")
   mfit$conditions$CT <- TRUE
@@ -285,7 +286,7 @@ fitCTHMM.momentuHierHMMData <- function(data,Time.name="time",Time.unit="auto",h
                                       hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,
                                       nlmPar=list(),fit=TRUE,
                                       DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,deltaCons=NULL,
-                                      mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, kappa=Inf, ...)
+                                      mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,ncores=1,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, kappa=Inf, ...)
 {
   
   if(!inherits(data,"momentuHierHMMData")) stop("data must be a momentuHierHMMData object (as returned by prepData or simHierData)")
@@ -302,7 +303,7 @@ fitCTHMM.momentuHierHMMData <- function(data,Time.name="time",Time.unit="auto",h
                                 formula=inputHierHMM$formula,inputHierHMM$formulaDelta,stationary=FALSE,mixtures,formulaPi,
                                 nlmPar,fit,
                                 DM,userBounds,workBounds=inputHierHMM$workBounds,inputHierHMM$betaCons,inputHierHMM$betaRef,deltaCons=inputHierHMM$deltaCons,
-                                mvnCoords,inputHierHMM$stateNames,knownStates,inputHierHMM$fixPar,retryFits,retrySD,optMethod,control,prior,modelName, CT=TRUE, kappa=kappa),warning=muffleCTwarning)
+                                mvnCoords,inputHierHMM$stateNames,knownStates,inputHierHMM$fixPar,retryFits,retrySD,ncores,optMethod,control,prior,modelName, CT=TRUE, kappa=kappa),warning=muffleCTwarning)
   
   # replace initial values with estimates in hierBeta and hierDelta (if provided)
   if(fit){

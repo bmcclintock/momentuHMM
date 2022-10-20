@@ -143,6 +143,7 @@ prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.id
   #for(i in unique(data$ID)){
   if(!exists("messInd")) messInd <- TRUE # message indicator exported from MIfitCTHMM foreach call
   ids <- unique(data$ID)
+  if(ncores>1) progBar(0, length(ids))
   withCallingHandlers(
     ctdsglm <- suppressPackageStartupMessages(foreach(iDat=mapply(function(x) data[which(data$ID==x),],unique(data$ID),SIMPLIFY = FALSE), id=ids, .combine = 'rbind', .export="messInd") %dorng% {
       if(messInd){
@@ -327,6 +328,7 @@ prepCTDS.hierarchical <- function(data, Time.unit="auto", rast, directions=4, ze
   #for(i in unique(data$ID)){
   if(!exists("messInd")) messInd <- TRUE # message indicator exported from MIfitCTHMM foreach call
   ids <- unique(data$ID)
+  if(ncores>1) progBar(0, length(ids))
   withCallingHandlers(
     ctdsglm <- foreach(iDat=mapply(function(x) data[which(data$ID==x),],unique(data$ID),SIMPLIFY = FALSE), id=ids, .combine = 'rbind', .export="messInd") %dorng% {
       if(messInd){

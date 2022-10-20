@@ -1269,7 +1269,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if("time" %in% c(names(allCovs),spatialcovnames,angleCovs,centroidNames,centerNames)) stop("When 'lambda' is specified, 'time' is reserved and cannot be used for covariate names")
   }
   
-  if(ncores>1 & nbAnimals>1 & (!nbSpatialCovs | !retrySims)) message("        Simulating ",nbAnimals," individuals in parallel... ",sep="")
+  if(ncores>1 & nbAnimals>1 & (!nbSpatialCovs | !retrySims)){
+    message("        Simulating ",nbAnimals," individuals in parallel... ",sep="")
+    progBar(0, nbAnimals)
+  }
   
   if(nbSpatialCovs & retrySims){
       

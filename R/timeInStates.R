@@ -83,6 +83,7 @@ timeInStates.HMMfits <- function(m, by = NULL, alpha = 0.95, ncores = 1){
   } else {
     doParallel::registerDoParallel(cores=ncores)
   }
+  progBar(0, nsims)
   withCallingHandlers(im_states <- foreach(i = m, ii=seq_along(m), .packages="momentuHMM") %dorng% {
     progBar(ii, nsims)
     viterbi(i)

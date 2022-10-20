@@ -66,6 +66,7 @@ pseudoRes <- function(m, ncores = 1)
         doParallel::registerDoParallel(cores=ncores)
       }
       mInd <- which(unlist(lapply(m,is.momentuHMM)))
+      progBar(0, length(mInd))
       withCallingHandlers(genRes <- foreach(mod=m[mInd], ii=mInd, .packages="momentuHMM") %dorng% {
         progBar(ii, length(mInd))
         pseudoRes(mod)

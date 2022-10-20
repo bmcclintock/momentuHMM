@@ -1100,7 +1100,10 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   if(!nbSpatialCovs | !retrySims) printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,"Simulating",FALSE,hierarchical=TRUE,CT=isTRUE(list(...)$CT))
   
-  if(ncores>1 & nbAnimals>1 & (!nbSpatialCovs | !retrySims)) message("        Simulating ",nbAnimals," individuals in parallel... ",sep="")
+  if(ncores>1 & nbAnimals>1 & (!nbSpatialCovs | !retrySims)){
+    message("        Simulating ",nbAnimals," individuals in parallel... ",sep="")
+    progBar(0, nbAnimals)
+  }
   
   if(!nbSpatialCovs | !retrySims){
     

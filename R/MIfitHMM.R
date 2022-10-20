@@ -307,7 +307,10 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
         distnames <- tmpdistnames <- names(predData)[which(!(names(predData) %in% c("ID",Time.name,c("mu.x","mu.y",ifelse(coordNames==c("x","y"),c("x","y"),c("",""))),covNames,znames)))]
       }
       cat('Drawing ',nSims,' realizations from the position process using crawl... \n',sep="")
-      if(ncores>1) message("Running simulator in parallel... ")
+      if(ncores>1){
+        message("Running simulator in parallel... ")
+        progBar(0, length(ids))
+      }
       nbAnimals <- length(ids)
       predTimes <- lapply(ids,function(x) predData[[Time.name]][which(predData$ID==x & predData$locType=="p")])
       names(predTimes) <- ids
@@ -322,7 +325,10 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
       names(crwSim) <- ids
       
       
-      if(ncores>1) message("Drawing imputations in parallel... ",sep="")
+      if(ncores>1){
+        message("Drawing imputations in parallel... ",sep="")
+        progBar(0, nSims)
+      }
       withCallingHandlers(miData<-
         foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass", .packages=pkgs) %dorng% {
           if(ncores==1) message("\rDrawing imputation ",j,"... ",sep="")
@@ -409,7 +415,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
   test<-fitHMM.momentuHMMData(miData[[ind[1]]],nbStates, dist, Par0[[ind[1]]], beta0[[ind[1]]], delta0[[ind[1]]],
            estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi,
            nlmPar, fit = FALSE, DM,
-           userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[ind[1]]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName)
+           userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[ind[1]]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName)
   
   # fit HMM(s)
   fits <- list()
@@ -424,7 +430,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     fits[[1]]<-suppressMessages(fitHMM.momentuHMMData(miData[[1]],nbStates, dist, Par0[[1]], beta0[[1]], delta0[[1]],
                                     estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi,
                                     nlmPar, fit, DM,
-                                    userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[1]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
+                                    userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[1]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName))
     if(retryFits>=1){
       cat("\n")
     }
@@ -444,6 +450,8 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
   
   if(useInitial | ncores>1) cat("Fitting ",ifelse(useInitial,"remaining ",""),length(parallelStart:nSims)," imputation",ifelse(length(parallelStart:nSims)>1,"s",""),ifelse(ncores>1," in parallel",""),"... \n",sep="")
   
+  if(nSims>1 & ncores>1 & retryFits<1) progBar(parallelStart-1,nSims)
+  
   withCallingHandlers(fits[parallelStart:nSims] <-
     foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitHMM",export), .errorhandling="pass", .packages=pkgs) %dorng% {
       
@@ -456,7 +464,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
       tmpFit<-suppressMessages(fitHMM(mD,nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
                                       estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi,
                                       nlmPar, fit, DM,
-                                      userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
+                                      userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[j]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName))
       if(retryFits>=1) cat("\n")
       tmpFit
     } 
@@ -583,7 +591,10 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
         distnames <- tmpdistnames <- names(predData)[which(!(names(predData) %in% c("ID",Time.name,"level","locType",c("mu.x","mu.y",ifelse(coordNames==c("x","y"),c("x","y"),c("",""))),covNames,znames)))]
       }
       cat('Drawing ',nSims,' realizations from the position process using crawl... \n',sep="")
-      if(ncores>1) message("Running simulator in parallel... ")
+      if(ncores>1) {
+        message("Running simulator in parallel... ")
+        progBar(0, length(ids))
+      }
       nbAnimals <- length(ids)
       predTimes <- lapply(ids,function(x) predData[[Time.name]][which(predData$ID==x & predData$locType=="p")])
       names(predTimes) <- ids
@@ -597,7 +608,10 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
       if(ncores==1) cat("DONE\n")
       names(crwHierSim) <- ids
       
-      if(ncores>1) message("Drawing imputations in parallel... ",sep="")
+      if(ncores>1){
+        message("Drawing imputations in parallel... ",sep="")
+        progBar(0, nSims)
+      }
       withCallingHandlers(miData<-
                             foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass", .packages=pkgs) %dorng% {
                               if(ncores==1) message("\rDrawing imputation ",j,"... ",sep="")
@@ -714,7 +728,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
   test<-fitHMM.momentuHierHMMData(miData[[ind[1]]], hierStates, hierDist, Par0[[ind[1]]], hierBeta[[ind[1]]], hierDelta[[ind[1]]],
                    estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                    nlmPar, fit = FALSE, DM,
-                   userBounds, workBounds, betaCons, deltaCons, mvnCoords, knownStates[[ind[1]]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName)
+                   userBounds, workBounds, betaCons, deltaCons, mvnCoords, knownStates[[ind[1]]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName)
   
   # fit HMM(s)
   fits <- list()
@@ -728,7 +742,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     fits[[1]]<-suppressMessages(fitHMM.momentuHierHMMData(miData[[1]], hierStates, hierDist, Par0[[1]], hierBeta[[1]], hierDelta[[1]],
                                            estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                                            nlmPar, fit, DM,
-                                           userBounds, workBounds, betaCons, deltaCons, mvnCoords, knownStates[[1]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
+                                           userBounds, workBounds, betaCons, deltaCons, mvnCoords, knownStates[[1]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName))
     if(retryFits>=1){
       cat("\n")
     }
@@ -748,6 +762,8 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
   
   if(useInitial | ncores>1) cat("Fitting ",ifelse(useInitial,"remaining ",""),length(parallelStart:nSims)," imputation",ifelse(length(parallelStart:nSims)>1,"s",""),ifelse(ncores>1," in parallel",""),"... \n",sep="")
   
+  if(nSims>1 & ncores>1 & retryFits<1) progBar(parallelStart-1,nSims)
+  
   withCallingHandlers(fits[parallelStart:nSims] <-
                         foreach(mD = miData[parallelStart:nSims], j = parallelStart:nSims, .export=c("fitHMM",export), .errorhandling="pass", .packages = pkgs) %dorng% {
                           
@@ -760,7 +776,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                           tmpFit<-suppressMessages(fitHMM(mD, hierStates, hierDist, Par0[[j]], hierBeta[[j]], hierDelta[[j]],
                                                               estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                                                               nlmPar, fit, DM, 
-                                                              userBounds, workBounds, betaCons, deltaCons, mvnCoords, knownStates[[j]], fixPar, retryFits, retrySD, optMethod, control, prior, modelName))
+                                                              userBounds, workBounds, betaCons, deltaCons, mvnCoords, knownStates[[j]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName))
                           if(retryFits>=1) cat("\n")
                           tmpFit
                         } 

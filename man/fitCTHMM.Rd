@@ -37,6 +37,7 @@ fitCTHMM(data, ...)
   fixPar = NULL,
   retryFits = 0,
   retrySD = NULL,
+  ncores = 1,
   optMethod = "nlm",
   control = list(),
   prior = NULL,
@@ -72,6 +73,7 @@ fitCTHMM(data, ...)
   fixPar = NULL,
   retryFits = 0,
   retrySD = NULL,
+  ncores = 1,
   optMethod = "nlm",
   control = list(),
   prior = NULL,
@@ -223,6 +225,8 @@ For transition probability parameters, the corresponding element of \code{retryS
 For initial distribution parameters, the corresponding element of \code{retrySD} must be named ``delta'' and have the same dimensions as \code{delta0} (if \code{delta0} is on the working scale) or be of length \code{nbStates-1} (if \code{delta0} is on the natural scale).
 Alternatively \code{retrySD} can be a scalar, in which case this value is used for all parameters. Instead of numeric scalars, \code{retrySD} can also be specified as \code{"adapt"} in which case the standard deviation is adapted as \code{10^(ceiling(log10(abs(x))))} (where \code{x} is the current value of the corresponding working parameter)
 Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \code{retrySD}=10 for initial distribution and state transition probabilities). Ignored unless \code{retryFits>0}.}
+
+\item{ncores}{Number of cores to use for parallel processing when \code{retryFits>0}. Default: 1 (no parallel processing). When \code{retryFits} attempts are performed in parallel, each attempt uses perturbations of the initial model fit (i.e. they are not iteratively updated as when \code{ncores=1}).}
 
 \item{optMethod}{The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).}
 

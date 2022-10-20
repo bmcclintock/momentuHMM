@@ -2,11 +2,26 @@
 context("doFuture")
 
 test_that("Parallel processing works",{
+  
+  ncores <- 2
+  
+  nbStates <- 2
+  stepDist <- "gamma" # step distribution
+  angleDist <- "vm" # turning angle distribution
+  nbStates <- 2
+  mu0 <- c(20,70)
+  sigma0 <- c(10,30)
+  kappa0 <- c(1,1)
+  stepPar <- c(mu0,sigma0) # no zero-inflation, so no zero-mass included
+  anglePar <- kappa0 # not estimating angle mean, so not included
+  formula <- ~cov1+cos(cov2)
+  
+  expect_error(m <- fitHMM(data=example$m$data,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+              Par0=list(step=stepPar,angle=anglePar),formula=formula,retryFits=4,ncores=ncores,nlmPar=list(hessian=FALSE)),NA)
+  
   obsData <- miExample$obsData
   
   err.model <- list(x= ~ ln.sd.x - 1, y =  ~ ln.sd.y - 1, rho =  ~ error.corr)
-  
-  ncores <- 2
   
   set.seed(8,kind="Mersenne-Twister",normal.kind = "Inversion")
   expect_error(crwOut <- crawlWrap(obsData=obsData,ncores=ncores,retryFits=10,

@@ -197,6 +197,7 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   
   if(nbStates>1) {
     cat("Decoding state sequences for each imputation... \n")
+    progBar(0,nsims)
     withCallingHandlers(im_states <- foreach(fm = im, i=seq_along(im), .combine = rbind) %dorng% {
       progBar(i,nsims)
       momentuHMM::viterbi(fm)[inTime[[i]]]
@@ -205,12 +206,14 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     else states <- im_states
     if(inherits(m,"hierarchical")) hStates <- hierViterbi(m,states)
     cat("Decoding state probabilities for each imputation... \n")
+    progBar(0,nsims)
     withCallingHandlers(im_stateProbs <- foreach(fm = im, i=seq_along(im)) %dorng% {
       progBar(i,nsims)
       momentuHMM::stateProbs(fm)[inTime[[i]],]
     },warning=muffleRNGwarning)
     if(mixtures>1){
       cat("Decoding mixture probabilities for each imputation... \n")
+      progBar(0,nsims)
       withCallingHandlers(mixProbs <- foreach(fm = im, i=seq_along(im)) %dorng% {
         progBar(i,nsims)
         momentuHMM::mixtureProbs(fm)

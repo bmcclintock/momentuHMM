@@ -125,6 +125,7 @@ fitHMM <- function(data, ...) {
 #' For initial distribution parameters, the corresponding element of \code{retrySD} must be named ``delta'' and have the same dimensions as \code{delta0} (if \code{delta0} is on the working scale) or be of length \code{nbStates-1} (if \code{delta0} is on the natural scale).
 #' Alternatively \code{retrySD} can be a scalar, in which case this value is used for all parameters. Instead of numeric scalars, \code{retrySD} can also be specified as \code{"adapt"} in which case the standard deviation is adapted as \code{10^(ceiling(log10(abs(x))))} (where \code{x} is the current value of the corresponding working parameter).
 #' Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \code{retrySD}=10 for initial distribution and state transition probabilities). Ignored unless \code{retryFits>0}.
+#' @param ncores Number of cores to use for parallel processing when \code{retryFits>0}. Default: 1 (no parallel processing). When \code{retryFits} attempts are performed in parallel, each attempt uses perturbations of the initial model fit (i.e. they are not iteratively updated as when \code{ncores=1}).
 #' @param optMethod The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).
 #' @param control A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).
 #' @param prior A function that returns the log-density of the working scale parameter prior distribution(s). See 'Details'.
@@ -471,668 +472,675 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                    formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,
                    nlmPar=list(),fit=TRUE,
                    DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,betaRef=NULL,deltaCons=NULL,
-                   mvnCoords=NULL,stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, ...)
+                   mvnCoords=NULL,stateNames=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,ncores=1,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, ...)
 {
   
   #####################
   ## Check arguments ##
   #####################
   
-  # check that the data is a momentuHMMData object
-  if(!is.momentuHMMData(data))
-    stop("'data' must be a momentuHMMData object (as output by prepData or simData)")
+  if(retryFits>=1 & ncores>1){
+    return(retryFitsParallel(data,nbStates, dist, Par0, beta0, delta0,
+                             estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi,
+                             nlmPar, fit, DM,
+                             userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates, fixPar, retryFits, retrySD, ncores, optMethod, control, prior, modelName, ...))
+  } else {
+    
+    # check that the data is a momentuHMMData object
+    if(!is.momentuHMMData(data))
+      stop("'data' must be a momentuHMMData object (as output by prepData or simData)")
+    
+    if(length(data)<1 | any(dim(data)<1))
+      stop("The data input is empty.")
   
-  if(length(data)<1 | any(dim(data)<1))
-    stop("The data input is empty.")
-
-  if(!is.formula(formula))
-    stop("Check the argument 'formula'.")
+    if(!is.formula(formula))
+      stop("Check the argument 'formula'.")
+    
+    if(!is.null(formulaDelta) && !is.formula(formulaDelta))
+      stop("Check the argument 'formulaDelta'.")
+    
+    if(nbStates<1) stop('nbStates must be >0')
+    
   
-  if(!is.null(formulaDelta) && !is.formula(formulaDelta))
-    stop("Check the argument 'formulaDelta'.")
+    if("CT" %in% names(list(...)) && !isTRUE(list(...)$dontcheck) && !any(grepl("fitCTHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))) stop(sprintf("In %s :\n extra argument 'CT' is invalid", 
+                                                                                                                paste(deparse(sys.call()[[1]], control = c()), 
+                                                                                                                      collapse = "\n")), call. = FALSE, domain = NA)
+    if(isTRUE(attr(data,"CT")) & !("CT" %in% names(list(...)))) warning("'data' appears to be in continuous time -- should 'fitCTHMM' be used instead?")
+    
+    chkDots(...)
   
-  if(nbStates<1) stop('nbStates must be >0')
-  
-
-  if("CT" %in% names(list(...)) && !any(grepl("fitCTHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))) stop(sprintf("In %s :\n extra argument 'CT' is invalid", 
-                                                                                                              paste(deparse(sys.call()[[1]], control = c()), 
-                                                                                                                    collapse = "\n")), call. = FALSE, domain = NA)
-  
-  if(isTRUE(attr(data,"CT")) & !("CT" %in% names(list(...)))) warning("'data' appears to be in continuous time -- should 'fitCTHMM' be used instead?")
-  
-  chkDots(...)
-
-  # check that there is no response variable in the formula
-  if(attr(stats::terms(formula),"response")!=0)
-    stop("The response variable should not be specified in formula.")
-  if(!is.null(formulaDelta) && attr(stats::terms(formulaDelta),"response")!=0)
-    stop("The response variable should not be specified in formulaDelta.")
-  
-  if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
-  if(!is.list(Par0) | is.null(names(Par0))) stop("'Par0' must be a named list")
-  distnames<-tmpdistnames<-names(dist)
-  if(any(is.na(match(distnames,names(data))))){
-    for(i in which(is.na(match(distnames,names(data))))){
-      if(dist[[distnames[i]]] %in% mvndists){
-        if(dist[[distnames[i]]] %in% c("mvnorm2","rw_mvnorm2")){
-          tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"))
-        } else if(dist[[distnames[i]]] %in% c("mvnorm3","rw_mvnorm3")){
-          tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"),paste0(distnames[i],".z"))          
+    # check that there is no response variable in the formula
+    if(attr(stats::terms(formula),"response")!=0)
+      stop("The response variable should not be specified in formula.")
+    if(!is.null(formulaDelta) && attr(stats::terms(formulaDelta),"response")!=0)
+      stop("The response variable should not be specified in formulaDelta.")
+    
+    if(!is.list(dist) | is.null(names(dist))) stop("'dist' must be a named list")
+    if(!is.list(Par0) | is.null(names(Par0))) stop("'Par0' must be a named list")
+    distnames<-tmpdistnames<-names(dist)
+    if(any(is.na(match(distnames,names(data))))){
+      for(i in which(is.na(match(distnames,names(data))))){
+        if(dist[[distnames[i]]] %in% mvndists){
+          if(dist[[distnames[i]]] %in% c("mvnorm2","rw_mvnorm2")){
+            tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"))
+          } else if(dist[[distnames[i]]] %in% c("mvnorm3","rw_mvnorm3")){
+            tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"),paste0(distnames[i],".z"))          
+          }
         }
       }
-    }
-    if(any(is.na(match(tmpdistnames,names(data))))) stop(paste0(tmpdistnames[is.na(match(tmpdistnames,names(data)))],collapse=", ")," not found in data")
-  } 
-  for(i in tmpdistnames){
-    if(all(is.na(data[[i]]))) warning("data$",i," consists entirely of NAs")
-  }
-  
-  if(!all(distnames %in% names(Par0))) stop(paste0(distnames[which(!(distnames %in% names(Par0)))],collapse=", ")," missing in 'Par0'")
-  Par0 <- Par0[distnames]
-  
-  initialValues <- list(Par=Par0,beta=beta0,delta=delta0)
-  
-  match.arg(optMethod,fitMethods)
-  
-  if(!is.null(mvnCoords)){
-    if(length(mvnCoords)>1 | !is.character(mvnCoords)) stop("mvnCoords must be a character string")
-    if(!(mvnCoords %in% distnames)) stop("mvnCoords not found. Permitted values are: ",paste0(distnames,collapse=", "))
-    if(!(dist[[mvnCoords]] %in% mvndists)) stop("mvnCoords must correspond to a multivariate normal data stream")
-  }
-  
-  # check knownStates
-  if(length(knownStates) > 0){
-    if(length(knownStates) != nrow(data)) 
-      stop("'knownStates' should be of same length as the data, i.e. ",nrow(data))
-    if(!all(is.na(knownStates))) {
-      if(max(knownStates, na.rm = TRUE) > nbStates | min(knownStates, na.rm = TRUE) < 1 | !isTRUE(all.equal(knownStates,as.integer(knownStates)))) 
-        stop("'knownStates' should only contain integers between 1 and ", nbStates, " (or NAs)")
-    }
-  }
-  
-  # convert RW data
-  if(any(unlist(dist) %in% rwdists)){
-    data <- RWdata(dist,data,knownStates,...)
-    knownStates <- data$knownStates
-    data$knownStates <- NULL
-  }
-  
-  if(isTRUE(list(...)$CT)){
+      if(any(is.na(match(tmpdistnames,names(data))))) stop(paste0(tmpdistnames[is.na(match(tmpdistnames,names(data)))],collapse=", ")," not found in data")
+    } 
     for(i in tmpdistnames){
-      noNAind <- which(!is.na(data[[i]]) & data$dt<=0)
-      if(length(noNAind)){
-        data[noNAind,i] <- NA
-        if(any(unlist(lapply(dist,function(x) x %in% rwdists))) & !all(noNAind %in% mapply(function(x) max(which(data$ID==x)),unique(data$ID)))) warning("There are data stream observations with time difference dt=0; these observations have been set to NA")
-      }
-    }
-    kappa <- list(...)$kappa
-  } else kappa <- Inf
-  
-  if(!is.null(betaRef)){
-    if(length(betaRef)!=nbStates) stop("betaRef must be a vector of length ",nbStates)
-    if(!is.numeric(betaRef)) stop("betaRef must be a numeric vector")
-    if(min(betaRef)<1 | max(betaRef)>nbStates) stop("betaRef elements must be between 1 and ",nbStates)
-  } else {
-    betaRef <- 1:nbStates
-  }
-  betaRef <- as.integer(betaRef)
-  
-  newForm <- newFormulas(formula,nbStates,betaRef,hierarchical = TRUE)
-  formulaStates <- newForm$formulaStates
-  newformula <- newForm$newformula
-  recharge <- newForm$recharge
-  
-  # build design matrix for t.p.m.
-  covsCol <- tryCatch(stats::get_all_vars(newformula,data=data),error=function(e) e)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
-  if(inherits(covsCol,"error")){
-    if(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))){
-      stop(covsCol$message,"\n     -- has MIfitHMM 'covNames' argument been correctly specified?")
-    } else stop(covsCol)
-  }
-  if(!all(names(covsCol) %in% names(data))){
-    for(j in names(covsCol)[which(!names(covsCol) %in% names(data))]){
-      if(exists(j)) stop("'",j,"' covariate not found in data, but a variable named '",j,"' is present in the environment (this can cause major problems!)",
-                         ifelse(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1])))),
-                                " \n       -- has MIfitHMM 'covNames' argument been correctly specified?",
-                                ""))
-    }
-    covsCol <- covsCol[,names(covsCol) %in% names(data),drop=FALSE]
-  }
-  covs <- stats::model.matrix(newformula,data)
-  if(nrow(covs)!=nrow(data)) stop("covariates cannot contain missing values")
-  nbCovs <- ncol(covs)-1 # substract intercept column
-  
-  # aInd = list of indices of first observation for each animal
-  aInd <- NULL
-  nbAnimals <- length(unique(data$ID))
-  for(i in 1:nbAnimals)
-    aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
-  
-  if(mixtures>1){
-    if(!is.null(beta0)){
-      if(!is.list(beta0)) stop("beta0 must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
-    }
-  }
-  
-  # build design matrix for recharge model
-  if(!is.null(recharge)){
-    reForm <- formatRecharge(nbStates,formula,betaRef,data=data)
-    formulaStates <- reForm$formulaStates
-    newformula <- reForm$newformula
-    recharge <- reForm$recharge
-    hierRecharge <- reForm$hierRecharge
-    newdata <- reForm$newdata
-    g0covs <- reForm$g0covs
-    nbG0covs <- ncol(g0covs)-1
-    recovs <- reForm$recovs
-    nbRecovs <- ncol(recovs)-1
-    if(!nbRecovs | (!inherits(data,"hierarchical") && !attributes(stats::terms(recharge$theta))$intercept)) stop("invalid recharge model -- theta must include an intercept and at least 1 covariate")
-    covs <- reForm$covs
-    nbCovs <- ncol(covs)-1
-    if(!is.null(beta0)){
-      if(!is.list(beta0)) stop("beta0 must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
-    }
-    recovsCol <- get_all_vars(recharge$theta,data)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
-    if(!all(names(recovsCol) %in% names(data))){
-      recovsCol <- recovsCol[,names(recovsCol) %in% names(data),drop=FALSE]
-    }
-    g0covsCol <- get_all_vars(recharge$g0,data)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
-    if(!all(names(g0covsCol) %in% names(data))){
-      g0covsCol <- g0covsCol[,names(g0covsCol) %in% names(data),drop=FALSE]
-    }
-  } else {
-    if(mixtures==1) beta0 <- list(beta=beta0)
-    nbRecovs <- 0
-    nbG0covs <- 0
-    g0covs <- g0covsCol <- NULL
-    recovs <- recovsCol <- NULL
-    newdata <- NULL
-    hierRecharge <- NULL
-  }
-  
-  # build design matrix for initial distribution
-  if(is.null(formulaDelta)){
-    formDelta <- ~1
-  } else formDelta <- formulaDelta
-  covsDelta <- stats::model.matrix(formDelta,data[aInd,,drop=FALSE])
-  if(nrow(covsDelta)!=nrow(data[aInd,,drop=FALSE])) stop("covariates cannot contain missing values")
-  nbCovsDelta <- ncol(covsDelta)-1 # substract intercept column
-  
-  # build design matrix for mixture probabilties
-  if(is.null(formulaPi)){
-    formPi <- ~1
-  } else formPi <- formulaPi
-  covsPi <- stats::model.matrix(formPi,data[aInd,,drop=FALSE])
-  if(nrow(covsPi)!=nrow(data[aInd,,drop=FALSE])) stop("covariates cannot contain missing values")
-  nbCovsPi <- ncol(covsPi)-1 # substract intercept column
-  
-  # check that stationary==FALSE if there are covariates
-  if(nbCovs>0 & stationary==TRUE)
-    if(nbAnimals!=sum(mapply(function(x) nrow(unique(covs[which(data$ID==x),,drop=FALSE])),unique(data$ID)))) stop("stationary can't be set to TRUE if there are time-varying covariates in formula.")
-  if(nbCovsDelta>0 & stationary==TRUE)
-    stop("stationary can't be set to TRUE if there are covariates in formulaDelta.")
-
-  if(length(covsCol)>0 | !is.null(recharge)) {
-    if(!is.null(recharge)){
-      covsCol <- cbind(covsCol,get_all_vars(recharge$g0,data),get_all_vars(recharge$theta,data))#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
-    }  
-    if(!all(names(covsCol) %in% names(data))){
-        covsCol <- covsCol[,names(covsCol) %in% names(data),drop=FALSE]
-    }
-    rawCovs <- covsCol[,unique(names(covsCol)),drop=FALSE]
-  } else {
-    rawCovs <- NULL
-  }
-  
-  # check that observations are within expected bounds
-  for(i in which(unlist(lapply(dist,function(x) x %in% nonnegativedists))))
-    if(length(which(data[[distnames[[i]]]]<0))>0)
-      stop(distnames[[i]]," data should be non-negative")
-  
-  for(i in which(unlist(lapply(dist,function(x) x %in% angledists))))
-    if(length(which(data[[distnames[[i]]]] < -pi | data[[distnames[[i]]]] > pi))>0)
-      stop(distnames[[i]]," data should be between -pi and pi")
-  
-  for(i in which(unlist(lapply(dist,function(x) x %in% "beta"))))
-    if(length(which(data[[distnames[[i]]]]<0 | data[[distnames[[i]]]]>1))>0)
-      stop(distnames[[i]]," data should be between 0 and 1")
-
-  for(i in which(unlist(lapply(dist,function(x) x %in% "pois"))))
-    if(!isTRUE(all.equal(data[[distnames[[i]]]],as.integer(data[[distnames[[i]]]]))))
-      stop(distnames[[i]]," data should be non-negative integers")
-  
-  for(i in which(unlist(lapply(dist,function(x) x %in% "bern"))))
-    if(any(data[[distnames[[i]]]]!=0 & data[[distnames[[i]]]]!=1,na.rm=TRUE))
-      stop(distnames[[i]]," data should be binary (0 or 1)")
-  
-  # determine whether zero-inflation or one-inflation should be included
-  inflation <- get_inflation(data,dist,DM,Par0,nbStates)
-  Par0 <- inflation$Par0
-  zeroInflation <- inflation$zeroInflation
-  oneInflation <- inflation$oneInflation
-  
-  if(isTRUE(list(...)$CT)){
-    for(i in distnames){
-      if(zeroInflation[[i]] | oneInflation[[i]]) stop("Sorry, zero and/or one inflation is not supported in fitCTHMM")
-      if(inherits(data,"ctds")){
-        if(dist[[i]]=="ctds"){
-          if(i!=attr(data,"ctdsData")) stop("'ctds' distribution can only apply to the '",attr(data,"ctdsData"),"' data stream")
-          if(is.null(DM[[i]])) stop("DM$",i," must be specified as a list with a formula for parameter 'lambda'")
-          attr(dist[[i]],"directions") <- attr(data,"directions")
-        }
-      }
-    }
-  } else if(any(unlist(dist)=="ctds")) stop("fitHMM cannot be used for ctds models; use fitCTHMM instead")
-
-  mHind <- (requireNamespace("moveHMM", quietly = TRUE) && is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(stats::terms.formula(newformula),"term.labels")) & !length(attr(stats::terms.formula(formDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior) & is.null(betaCons) & is.null(betaRef) & is.null(deltaCons) & is.null(mvnCoords) & mixtures==1) # indicator for moveHMMwrap below
-  
-  inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,stateNames,checkInflation = TRUE)
-  p <- inputs$p
-  
-  DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par0,zeroInflation,oneInflation,inputs$circularAngleMean)
-  fullDM <- DMinputs$fullDM
-  DMind <- DMinputs$DMind
-
-  # check elements of nlmPar
-  lsPars <- c("print.level","gradtol","stepmax","steptol","iterlim","fscale",'hessian')
-  if(length(which(!(names(nlmPar) %in% lsPars)))>0)
-    stop("Check the names of the elements of 'nlmPar'; they should be in
-         ('print.level','gradtol','stepmax','steptol','iterlim','fscale','hessian')")
-
-
-  ####################################
-  ## Prepare initial values for nlm ##
-  ####################################
-  fixParIndex <- get_fixParIndex(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,deltaCons,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data,newdata,kappa)
-  
-  parCount<- lapply(fullDM,ncol)
-  for(i in distnames[!unlist(lapply(inputs$circularAngleMean,isFALSE))]){
-    parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]])))))
-  }
-  parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
-  names(parindex) <- distnames
-  
-  if(is.null(workBounds)) {
-    workBounds <- vector('list',length(distnames))
-    names(workBounds) <- distnames
-  }
-  workBounds <- getWorkBounds(workBounds,distnames,fixParIndex$Par0,parindex,parCount,inputs$DM,fixParIndex$beta0,fixParIndex$delta0)
-  
-  wpar <- n2w(fixParIndex$Par0,p$bounds,fixParIndex$beta0,fixParIndex$delta0,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
-  if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
-
-  parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures-(nbCovsPi+1)*(mixtures-1)-ncol(covsDelta)*(nbStates-1)*(!stationary)*mixtures-ifelse(is.null(recharge),0,(nbRecovs+1+nbG0covs+1))
-
-  retrySD <- get_retrySD(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStates,fixParIndex$beta0,mixtures,recharge,fixParIndex$delta0)
-  
-  optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar[["pi"]])+which(duplicated(c(deltaCons)))))
-  
-  if(!is.null(prior)){
-    if(!is.function(prior)) stop("prior must be a function")
-    environment(prior) <- environment()
-    pr <- tryCatch(prior(wpar),error=function(e) e)
-    if(inherits(pr,"error")){
-      stop("Invalid prior: ",pr)
-    } else {
-      if(length(pr)>1) stop("prior function must return a scalar")
-      if(!is.finite(pr)) stop("prior is not finite")
-    }
-  }
-  
-  ##################
-  ## Optimization ##
-  ##################
-  # this function is used to muffle the warning "NA/Inf replaced by maximum positive value" in nlm and "value out of range in 'lgamma'" in nLogLike_rcpp
-  h <- function(w) {
-    if(any(grepl("NA/Inf replaced by maximum positive value",w)) | any(grepl("value out of range in 'lgamma'",w)))
-      invokeRestart("muffleWarning")
-  }
-  
-  printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,stationary=stationary,hierarchical=inherits(data,"hierarchical"),CT=isTRUE(list(...)$CT))
-  
-  ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
-  nc <- ncmean$nc
-  meanind <- ncmean$meanind
-  
-  optPar <- wpar
-  optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar[["pi"]])+which(duplicated(c(deltaCons)))))
-  if(length(optInd)){
-    optPar <- wpar[-optInd]
-  }
-  
-  # aInd = list of indices of first observation for each animal
-  aInd <- NULL
-  for(i in 1:nbAnimals){
-    idInd <- which(data$ID==unique(data$ID)[i])
-    aInd <- c(aInd,idInd[1])
-  }
-  
-  dtIndex <- 1:nrow(data)
-  if(isTRUE(list(...)$CT) & inherits(data,"hierarchical")){
-    dtr <- data$dt
-    for(i in unique(data$ID)){
-      for(iLevel in levels(data$level)){
-        iDat <- which(data$ID==i & data$level==iLevel)
-        if(!grepl("i",iLevel)){
-          if(iLevel=="1") {
-            if(iLevel=="1") dtr[iDat[-1]-1] <- data$dt[iDat[-length(iDat)]]
-          } else {
-            idatInd <- which(data$level[iDat[-length(iDat)]+1]!="1")
-            dtr[iDat[idatInd]] <- data$dt[iDat[idatInd]]
-          }
-        } else {
-          dtr[iDat] <- 0
-          dtr[iDat-1] <- 1
-        }
-      }
-    }
-    dtIndex <- match(dtr,data$dt)
-  }
-  
-  
-  if(fit) {
-    
-    hessian <- TRUE
-    if(!is.null(control$hessian)){
-      hessian <- control$hessian
-      control$hessian <- NULL
+      if(all(is.na(data[[i]]))) warning("data$",i," consists entirely of NAs")
     }
     
-    fitCount<-0
+    if(!all(distnames %in% names(Par0))) stop(paste0(distnames[which(!(distnames %in% names(Par0)))],collapse=", ")," missing in 'Par0'")
+    Par0 <- Par0[distnames]
     
-    while(fitCount<=retryFits){
-      
-      # just use moveHMM if simpler models are specified
-      if(all(distnames %in% c("step","angle")) & all(unlist(dist) %in% moveHMMdists) & mHind){
-        fullPar<-w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,fullDM,DMind,nrow(data),dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
-        Par<-lapply(fullPar[distnames],function(x) x[,1])
-        for(i in distnames){
-          if(dist[[i]] %in% angledists & !inputs$estAngleMean[[i]])
-            Par[[i]]<-Par[[i]][-(1:nbStates)]
-        }
-        startTime <- proc.time()
-        withCallingHandlers(curmod<-tryCatch(moveHMMwrap(data,nbStates,dist,Par,fullPar$beta,fullPar$delta[1,],inputs$estAngleMean,newformula,stationary,nlmPar,fit,nbAnimals,knownStates)$mod,error=function(e) e),warning=h)
-        endTime <- proc.time()-startTime
-        curmod$wpar <- curmod$estimate
-      } else {
-
-        # check additional parameters for nlm
-        print.level <- ifelse(is.null(nlmPar$print.level),0,nlmPar$print.level)
-        gradtol <- ifelse(is.null(nlmPar$gradtol),1e-6,nlmPar$gradtol)
-        typsize <- rep(1, length(wpar))
-        defStepmax <- max(1000 * sqrt(sum((wpar/typsize)^2)),1000)
-        stepmax <- ifelse(is.null(nlmPar$stepmax),defStepmax,nlmPar$stepmax)
-        steptol <- ifelse(is.null(nlmPar$steptol),1e-6,nlmPar$steptol)
-        iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
-        fscale <- ifelse(is.null(nlmPar$fscale),1,nlmPar$fscale)
-        
-        optPar <- wpar
-        optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar[["pi"]])+which(duplicated(c(deltaCons)))))
-        if(length(optInd)){
-          optPar <- wpar[-optInd]
-        }
-        
-        startTime <- proc.time()
-  
-        # call to optimizer nlm
-        if(!length(optPar)){
-          curmod <- list()
-          
-          curmod$minimum <- nLogLike(optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
-                                    inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
-                                    stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                    nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,kappa)
-          curmod$estimate <- numeric()
-          
-        } else if(optMethod=="nlm"){
-          withCallingHandlers(curmod <- tryCatch(stats::nlm(nLogLike,optPar,nbStates=nbStates,formula=newformula,bounds=p$bounds,parSize=p$parSize,data=data,dist=inputs$dist,covs=covs,
-                                                            estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,consensus=inputs$consensus,zeroInflation=zeroInflation,oneInflation=oneInflation,
-                                                            stationary=stationary,fullDM=fullDM,DMind=DMind,Bndind=p$Bndind,knownStates=knownStates,fixPar=unlist(fixParIndex$fixPar),wparIndex=fixParIndex$wparIndex,
-                                                            nc=nc,meanind=meanind,covsDelta=covsDelta,workBounds=workBounds,prior=prior,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recovs=recovs,g0covs=g0covs,mixture=mixtures,covsPi=covsPi,recharge=hierRecharge,aInd=aInd,CT=isTRUE(list(...)$CT),dtIndex=dtIndex,kappa=kappa,
-                                                            fscale=fscale,print.level=print.level,gradtol=gradtol,
-                                                            stepmax=stepmax,steptol=steptol,
-                                                            iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian) & is.null(prior),TRUE,ifelse(!is.null(prior),FALSE,ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)))),error=function(e) e),warning=h)
-          if(!inherits(curmod,"error")){
-            if(!is.null(prior) & ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)){
-              curmod$hessian <- tryCatch(numDeriv::hessian(nLogLike,curmod$estimate,nbStates=nbStates,formula=newformula,bounds=p$bounds,parSize=p$parSize,data=data,dist=inputs$dist,covs=covs,
-                                                           estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,consensus=inputs$consensus,zeroInflation=zeroInflation,oneInflation=oneInflation,
-                                                           stationary=stationary,fullDM=fullDM,DMind=DMind,Bndind=p$Bndind,knownStates=knownStates,fixPar=unlist(fixParIndex$fixPar),wparIndex=fixParIndex$wparIndex,
-                                                           nc=nc,meanind=meanind,covsDelta=covsDelta,workBounds=workBounds,prior=NULL,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recovs=recovs,g0covs=g0covs,mixture=mixtures,covsPi=covsPi,recharge=hierRecharge,aInd=aInd,CT=isTRUE(list(...)$CT),dtIndex=dtIndex,kappa=kappa),error=function(e) e)
-            }
-          }
-        } else {
-          withCallingHandlers(curmod <- tryCatch(stats::optim(optPar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
-                                                     inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
-                                                     stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                                     nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,kappa,
-                                                     method=optMethod,control=control,hessian=ifelse(is.null(prior),hessian,FALSE)),error=function(e) e),warning=h)
-          if(!inherits(curmod,"error")){
-            if(!is.null(prior) & hessian){
-              curmod$hessian <- tryCatch(stats::optimHess(optPar,curmod$estimate,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
-                                               inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
-                                               stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                                               nc,meanind,covsDelta,workBounds,NULL,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,kappa,
-                                               control=control),error=function(e) e)
-            }
-          }
-        }
-        endTime <- proc.time()-startTime
-      }
-      
-      if(fitCount==0){
-        if(inherits(curmod,"error")) stop(curmod)
-        else {
-          names(curmod)[which(names(curmod)=="par")] <- "estimate"
-          names(curmod)[which(names(curmod)=="value")] <- "minimum"
-          curmod$elapsedTime <- endTime[3]
-          mod <- curmod
-          if(retryFits>=1) cat("Attempting to improve fit using random perturbation. Press 'esc' to force exit from 'fitHMM'\n")
-        }
-      }
-      
-      wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
-      
-      if(fitCount<=retryFits){
-        if(!inherits(curmod,"error")){
-          names(curmod)[which(names(curmod)=="par")] <- "estimate"
-          names(curmod)[which(names(curmod)=="value")] <- "minimum"
-          curmod$elapsedTime <- endTime[3]
-          if(curmod$minimum < mod$minimum) mod <- curmod
-          wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
-        }
-        if(fitCount+1<=retryFits){
-          retrySD <- ifelse(retrySD=="adapt",10^(ceiling(log10(abs(wpar)))),retrySD)
-          wpar[1:parmInd] <- wpar[1:parmInd]+rnorm(parmInd,0,as.numeric(retrySD[1:parmInd]))
-          if(nbStates>1)
-            wpar[-(1:parmInd)] <- wpar[-(1:parmInd)]+rnorm(length(wpar)-parmInd,0,as.numeric(retrySD[-(1:parmInd)]))
-          if(length(fixParIndex$wparIndex)) wpar[fixParIndex$wparIndex] <- unlist(fixParIndex$fixPar)[fixParIndex$wparIndex]
-          if(!is.null(betaCons) & nbStates>1){
-            wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)] <- wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)][betaCons]
-          }
-          cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,"         ",sep="")
-        }
-      }
-      fitCount<-fitCount+1
+    initialValues <- list(Par=Par0,beta=beta0,delta=delta0)
+    
+    match.arg(optMethod,fitMethods)
+    
+    if(!is.null(mvnCoords)){
+      if(length(mvnCoords)>1 | !is.character(mvnCoords)) stop("mvnCoords must be a character string")
+      if(!(mvnCoords %in% distnames)) stop("mvnCoords not found. Permitted values are: ",paste0(distnames,collapse=", "))
+      if(!(dist[[mvnCoords]] %in% mvndists)) stop("mvnCoords must correspond to a multivariate normal data stream")
     }
     
-    # convert the parameters back to their natural scale
-    mod$wpar <- mod$estimate
-    wpar <- mod$estimate <- expandPar(mod$wpar,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
-    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,fullDM,DMind,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+    # check knownStates
+    if(length(knownStates) > 0){
+      if(length(knownStates) != nrow(data)) 
+        stop("'knownStates' should be of same length as the data, i.e. ",nrow(data))
+      if(!all(is.na(knownStates))) {
+        if(max(knownStates, na.rm = TRUE) > nbStates | min(knownStates, na.rm = TRUE) < 1 | !isTRUE(all.equal(knownStates,as.integer(knownStates)))) 
+          stop("'knownStates' should only contain integers between 1 and ", nbStates, " (or NAs)")
+      }
+    }
     
-    if(!is.null(mod$hessian)){
-      Sigma <- tryCatch(MASS::ginv(mod$hessian),error=function(e) e)
-      mod$Sigma <- Sigma
-      if(!inherits(Sigma,"error")){
-        if(length(optInd)){
-          mod$Sigma <- matrix(0,length(mod$estimate),length(mod$estimate))
-          mod$Sigma[(1:length(mod$estimate))[-optInd],(1:length(mod$estimate))[-optInd]] <- Sigma
-        }
-      } else {
-        warning("ginv of the hessian failed -- ",Sigma)
-      }
+    # convert RW data
+    if(any(unlist(dist) %in% rwdists)){
+      data <- RWdata(dist,data,knownStates,...)
+      knownStates <- data$knownStates
+      data$knownStates <- NULL
     }
-  }
-  else {
-    mod <- list()
-    mod$minimum <- nLogLike(optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
-                               inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
-                               stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
-                               nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,kappa)
-    mod$estimate <- wpar
-    mod$wpar <- optPar
-    mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,fullDM,DMind,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
-  }
-  
-
-  ####################
-  ## Prepare output ##
-  ####################
-  if(is.null(stateNames)){
-    for(i in 1:nbStates)
-      stateNames[i] <- paste("state",i)
-  }
-  
-  # name columns and rows of MLEs
-  for(i in distnames){
-    if(dist[[i]] %in% angledists)
-      if(!inputs$estAngleMean[[i]]){
-        p$parNames[[i]] <- c("mean",p$parNames[[i]])
-      }
-    if(DMind[[i]]){
-      mle[[i]]<-matrix(mle[[i]][1:(length(p$parNames[[i]])*nbStates),1],nrow=length(p$parNames[[i]]),ncol=nbStates,byrow=TRUE)
-      rownames(mle[[i]]) <- p$parNames[[i]]
-      colnames(mle[[i]]) <- stateNames
-    } else {
-      mle[[i]]<-matrix(wpar[parindex[[i]]+1:parCount[[i]]],1)
-      rownames(mle[[i]])<-"[1,]"
-      if(!isFALSE(inputs$circularAngleMean[[i]])){
-        colnames(mle[[i]]) <- unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]]))))
-      } else colnames(mle[[i]])<-colnames(fullDM[[i]])
-      #if(is.null(names(mle[[i]]))) warning("No names for the regression coeffs were provided in DM$",i)
-    }
-  }
-
-  if(!is.null(mle$beta)) {
-    rownames(mle$beta) <- rep(colnames(covs),mixtures)#c("(Intercept)",attr(stats::terms(formula),"term.labels"))
-    columns <- NULL
-    for(i in 1:nbStates)
-      for(j in 1:nbStates) {
-        if(fixParIndex$betaRef[i]<j)
-          columns[(i-1)*nbStates+j-i] <- paste(i,"->",j)
-        if(j<fixParIndex$betaRef[i])
-            columns[(i-1)*(nbStates-1)+j] <- paste(i,"->",j)
-      }
-    colnames(mle$beta) <- columns
-    if(!is.null(recharge)){
-      names(mle$g0)<-colnames(g0covs)
-      names(mle$theta)<-colnames(recovs)
-    }
-    if(mixtures>1){
-      rownames(mle$beta) <- paste0(rownames(mle$beta),"_mix",rep(1:mixtures,each=length(colnames(covs))))
-      colnames(mle[["pi"]]) <- paste0("mix",1:mixtures)
-      rownames(mle[["pi"]]) <- paste0("ID:",data$ID[aInd])
-    } else mle[["pi"]] <- NULL
-  }
-  
-  if(isTRUE(list(...)$CT)) dt <- data$dt[dtIndex]
-  else dt <- rep(1,nrow(data))
-
-  # compute stationary distribution
-  if(stationary & nbStates>1) {
-    mle$delta <- matrix(0,nbAnimals*mixtures,nbStates)
     
-    for(mix in 1:mixtures){
-      
-      for(i in 1:nbAnimals){
-        
-        if(!isTRUE(list(...)$CT)){
-          gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[aInd[i],,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),dt)[,,1]
-          # error if singular system
-          tryCatch(
-            mle$delta[nbAnimals*(mix-1)+i,] <- solve(t(diag(nbStates)-gamma+1),rep(1,nbStates)),
-            error = function(e) {
-              stop(paste("A problem occurred in the calculation of the stationary",
-                         "distribution. You may want to try different initial values",
-                         "and/or the option stationary=FALSE."))
-            }
-          )
-        } else {
-          gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[aInd[i],,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),dt,aInd=1,rateMatrix=TRUE,kappa=kappa)[,,1]
-          # error if singular system
-          tryCatch(
-            mle$delta[nbAnimals*(mix-1)+i,] <- stationary_rcpp(gamma),
-            error = function(e) {
-              stop(paste("A problem occurred in the calculation of the stationary",
-                         "distribution. You may want to try different initial values",
-                         "and/or the option stationary=FALSE."))
-            }
-          )
-        }
-      }
-    }
-  }
-
-  if(nbStates==1)
-    mle$delta <- matrix(1,nrow(covsDelta),1)
-  colnames(mle$delta) <- stateNames
-  rownames(mle$delta) <- paste0("ID:",rep(data$ID[aInd],mixtures))
-  if(mixtures>1) rownames(mle$delta) <- paste0("ID:",rep(data$ID[aInd],mixtures),"_mix",rep(1:mixtures,each=nbAnimals))
-  
-  # compute t.p.m. if no covariates
-  if(nbCovs==0 & nbStates>1) {
-    mle$gamma <- matrix(0,nbStates*mixtures,nbStates)
-    if(isTRUE(list(...)$CT)) mle$Q <- matrix(0,nbStates*mixtures,nbStates)
-    for(mix in 1:mixtures){
-      trMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[1,,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),mean(dt), aInd=1,kappa=kappa)
-      mle$gamma[nbStates*(mix-1)+1:nbStates,] <- trMat[,,1]
-      if(isTRUE(list(...)$CT)){
-        rMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[1,,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),mean(dt), aInd=1,rateMatrix=TRUE,kappa=kappa)
-        mle$Q[nbStates*(mix-1)+1:nbStates,] <- rMat[,,1]
-      }
-    }
-    colnames(mle$gamma)<-stateNames
-    rownames(mle$gamma)<-rep(stateNames,mixtures)
-    if(mixtures>1) rownames(mle$gamma) <- paste0(rep(stateNames,mixtures),"_mix",rep(1:mixtures,each=nbStates))
     if(isTRUE(list(...)$CT)){
-      colnames(mle$Q)<-stateNames
-      rownames(mle$Q)<-rep(stateNames,mixtures)
-      if(mixtures>1) rownames(mle$Q) <- paste0(rep(stateNames,mixtures),"_mix",rep(1:mixtures,each=nbStates))
+      for(i in tmpdistnames){
+        noNAind <- which(!is.na(data[[i]]) & data$dt<=0)
+        if(length(noNAind)){
+          data[noNAind,i] <- NA
+          if(any(unlist(lapply(dist,function(x) x %in% rwdists))) & !all(noNAind %in% mapply(function(x) max(which(data$ID==x)),unique(data$ID)))) warning("There are data stream observations with time difference dt=0; these observations have been set to NA")
+        }
+      }
+      kappa <- list(...)$kappa
+    } else kappa <- Inf
+    
+    if(!is.null(betaRef)){
+      if(length(betaRef)!=nbStates) stop("betaRef must be a vector of length ",nbStates)
+      if(!is.numeric(betaRef)) stop("betaRef must be a numeric vector")
+      if(min(betaRef)<1 | max(betaRef)>nbStates) stop("betaRef elements must be between 1 and ",nbStates)
+    } else {
+      betaRef <- 1:nbStates
     }
-  }
+    betaRef <- as.integer(betaRef)
+    
+    newForm <- newFormulas(formula,nbStates,betaRef,hierarchical = TRUE)
+    formulaStates <- newForm$formulaStates
+    newformula <- newForm$newformula
+    recharge <- newForm$recharge
+    
+    # build design matrix for t.p.m.
+    covsCol <- tryCatch(stats::get_all_vars(newformula,data=data),error=function(e) e)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+    if(inherits(covsCol,"error")){
+      if(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1]))))){
+        stop(covsCol$message,"\n     -- has MIfitHMM 'covNames' argument been correctly specified?")
+      } else stop(covsCol)
+    }
+    if(!all(names(covsCol) %in% names(data))){
+      for(j in names(covsCol)[which(!names(covsCol) %in% names(data))]){
+        if(exists(j)) stop("'",j,"' covariate not found in data, but a variable named '",j,"' is present in the environment (this can cause major problems!)",
+                           ifelse(any(grepl("MIfitHMM",unlist(lapply(sys.calls(),function(x) deparse(x)[1])))),
+                                  " \n       -- has MIfitHMM 'covNames' argument been correctly specified?",
+                                  ""))
+      }
+      covsCol <- covsCol[,names(covsCol) %in% names(data),drop=FALSE]
+    }
+    covs <- stats::model.matrix(newformula,data)
+    if(nrow(covs)!=nrow(data)) stop("covariates cannot contain missing values")
+    nbCovs <- ncol(covs)-1 # substract intercept column
+    
+    # aInd = list of indices of first observation for each animal
+    aInd <- NULL
+    nbAnimals <- length(unique(data$ID))
+    for(i in 1:nbAnimals)
+      aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
+    
+    if(mixtures>1){
+      if(!is.null(beta0)){
+        if(!is.list(beta0)) stop("beta0 must be a list with elements named 'beta' and/or 'pi' when mixtures>1")
+      }
+    }
+    
+    # build design matrix for recharge model
+    if(!is.null(recharge)){
+      reForm <- formatRecharge(nbStates,formula,betaRef,data=data)
+      formulaStates <- reForm$formulaStates
+      newformula <- reForm$newformula
+      recharge <- reForm$recharge
+      hierRecharge <- reForm$hierRecharge
+      newdata <- reForm$newdata
+      g0covs <- reForm$g0covs
+      nbG0covs <- ncol(g0covs)-1
+      recovs <- reForm$recovs
+      nbRecovs <- ncol(recovs)-1
+      if(!nbRecovs | (!inherits(data,"hierarchical") && !attributes(stats::terms(recharge$theta))$intercept)) stop("invalid recharge model -- theta must include an intercept and at least 1 covariate")
+      covs <- reForm$covs
+      nbCovs <- ncol(covs)-1
+      if(!is.null(beta0)){
+        if(!is.list(beta0)) stop("beta0 must be a list with elements named 'beta', 'g0', and/or 'theta' when a recharge model is specified")
+      }
+      recovsCol <- get_all_vars(recharge$theta,data)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+      if(!all(names(recovsCol) %in% names(data))){
+        recovsCol <- recovsCol[,names(recovsCol) %in% names(data),drop=FALSE]
+      }
+      g0covsCol <- get_all_vars(recharge$g0,data)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+      if(!all(names(g0covsCol) %in% names(data))){
+        g0covsCol <- g0covsCol[,names(g0covsCol) %in% names(data),drop=FALSE]
+      }
+    } else {
+      if(mixtures==1) beta0 <- list(beta=beta0)
+      nbRecovs <- 0
+      nbG0covs <- 0
+      g0covs <- g0covsCol <- NULL
+      recovs <- recovsCol <- NULL
+      newdata <- NULL
+      hierRecharge <- NULL
+    }
+    
+    # build design matrix for initial distribution
+    if(is.null(formulaDelta)){
+      formDelta <- ~1
+    } else formDelta <- formulaDelta
+    covsDelta <- stats::model.matrix(formDelta,data[aInd,,drop=FALSE])
+    if(nrow(covsDelta)!=nrow(data[aInd,,drop=FALSE])) stop("covariates cannot contain missing values")
+    nbCovsDelta <- ncol(covsDelta)-1 # substract intercept column
+    
+    # build design matrix for mixture probabilties
+    if(is.null(formulaPi)){
+      formPi <- ~1
+    } else formPi <- formulaPi
+    covsPi <- stats::model.matrix(formPi,data[aInd,,drop=FALSE])
+    if(nrow(covsPi)!=nrow(data[aInd,,drop=FALSE])) stop("covariates cannot contain missing values")
+    nbCovsPi <- ncol(covsPi)-1 # substract intercept column
+    
+    # check that stationary==FALSE if there are covariates
+    if(nbCovs>0 & stationary==TRUE)
+      if(nbAnimals!=sum(mapply(function(x) nrow(unique(covs[which(data$ID==x),,drop=FALSE])),unique(data$ID)))) stop("stationary can't be set to TRUE if there are time-varying covariates in formula.")
+    if(nbCovsDelta>0 & stationary==TRUE)
+      stop("stationary can't be set to TRUE if there are covariates in formulaDelta.")
   
-  if(is.null(betaCons) & nbStates>1) betaCons <- matrix(1:length(mle$beta),nrow(mle$beta),ncol(mle$beta))
-
-  # conditions of the fit
-  conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
-                     estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,fixPar=fixParIndex$ofixPar,wparIndex=fixParIndex$wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recharge=recharge,mvnCoords=mvnCoords,mixtures=mixtures,formulaPi=formulaPi,fit=fit,initialValues=initialValues,kappa=kappa)
-
-  if(isTRUE(list(...)$CT)) conditions$dtIndex <- dtIndex
+    if(length(covsCol)>0 | !is.null(recharge)) {
+      if(!is.null(recharge)){
+        covsCol <- cbind(covsCol,get_all_vars(recharge$g0,data),get_all_vars(recharge$theta,data))#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
+      }  
+      if(!all(names(covsCol) %in% names(data))){
+          covsCol <- covsCol[,names(covsCol) %in% names(data),drop=FALSE]
+      }
+      rawCovs <- covsCol[,unique(names(covsCol)),drop=FALSE]
+    } else {
+      rawCovs <- NULL
+    }
+    
+    # check that observations are within expected bounds
+    for(i in which(unlist(lapply(dist,function(x) x %in% nonnegativedists))))
+      if(length(which(data[[distnames[[i]]]]<0))>0)
+        stop(distnames[[i]]," data should be non-negative")
+    
+    for(i in which(unlist(lapply(dist,function(x) x %in% angledists))))
+      if(length(which(data[[distnames[[i]]]] < -pi | data[[distnames[[i]]]] > pi))>0)
+        stop(distnames[[i]]," data should be between -pi and pi")
+    
+    for(i in which(unlist(lapply(dist,function(x) x %in% "beta"))))
+      if(length(which(data[[distnames[[i]]]]<0 | data[[distnames[[i]]]]>1))>0)
+        stop(distnames[[i]]," data should be between 0 and 1")
   
-  mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName,reCovs=recovsCol,g0covs=g0covsCol,covsPi=covsPi)
+    for(i in which(unlist(lapply(dist,function(x) x %in% "pois"))))
+      if(!isTRUE(all.equal(data[[distnames[[i]]]],as.integer(data[[distnames[[i]]]]))))
+        stop(distnames[[i]]," data should be non-negative integers")
+    
+    for(i in which(unlist(lapply(dist,function(x) x %in% "bern"))))
+      if(any(data[[distnames[[i]]]]!=0 & data[[distnames[[i]]]]!=1,na.rm=TRUE))
+        stop(distnames[[i]]," data should be binary (0 or 1)")
+    
+    # determine whether zero-inflation or one-inflation should be included
+    inflation <- get_inflation(data,dist,DM,Par0,nbStates)
+    Par0 <- inflation$Par0
+    zeroInflation <- inflation$zeroInflation
+    oneInflation <- inflation$oneInflation
+    
+    if(isTRUE(list(...)$CT)){
+      for(i in distnames){
+        if(zeroInflation[[i]] | oneInflation[[i]]) stop("Sorry, zero and/or one inflation is not supported in fitCTHMM")
+        if(inherits(data,"ctds")){
+          if(dist[[i]]=="ctds"){
+            if(i!=attr(data,"ctdsData")) stop("'ctds' distribution can only apply to the '",attr(data,"ctdsData"),"' data stream")
+            if(is.null(DM[[i]])) stop("DM$",i," must be specified as a list with a formula for parameter 'lambda'")
+            attr(dist[[i]],"directions") <- attr(data,"directions")
+          }
+        }
+      }
+    } else if(any(unlist(dist)=="ctds")) stop("fitHMM cannot be used for ctds models; use fitCTHMM instead")
   
-  #compute SEs and CIs on natural and working scale
-  if(!isTRUE(list(...)$CT)){
-    CIreal<-tryCatch(CIreal(momentuHMM(mh)),error=function(e) e)
-    if(inherits(CIreal,"error") & fit==TRUE) warning("Failed to compute SEs and confidence intervals on the natural scale -- ",CIreal)
-  }
-  CIbeta<-tryCatch(CIbeta(momentuHMM(mh)),error=function(e) e)
-  if(inherits(CIbeta,"error") & fit==TRUE) warning("Failed to compute SEs confidence intervals on the working scale -- ",CIbeta)
+    mHind <- (requireNamespace("moveHMM", quietly = TRUE) && is.null(DM) & is.null(userBounds) & is.null(workBounds) & ("step" %in% distnames) & is.null(fixPar) & !length(attr(stats::terms.formula(newformula),"term.labels")) & !length(attr(stats::terms.formula(formDelta),"term.labels")) & stationary & optMethod=="nlm" & is.null(prior) & is.null(betaCons) & is.null(betaRef) & is.null(deltaCons) & is.null(mvnCoords) & mixtures==1) # indicator for moveHMMwrap below
+    
+    inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,stateNames,checkInflation = TRUE)
+    p <- inputs$p
+    
+    DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par0,zeroInflation,oneInflation,inputs$circularAngleMean)
+    fullDM <- DMinputs$fullDM
+    DMind <- DMinputs$DMind
   
-  mh <- list(data=data,mle=mle,CIreal=CIreal,CIbeta=CIbeta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName,reCovs=recovsCol,g0covs=g0covsCol,covsPi=covsPi)
+    # check elements of nlmPar
+    lsPars <- c("print.level","gradtol","stepmax","steptol","iterlim","fscale",'hessian')
+    if(length(which(!(names(nlmPar) %in% lsPars)))>0)
+      stop("Check the names of the elements of 'nlmPar'; they should be in
+           ('print.level','gradtol','stepmax','steptol','iterlim','fscale','hessian')")
   
-  if(!is.null(mvnCoords)) attr(mh$data,'coords') <- paste0(mvnCoords,c(".x",".y"))
   
-  if(fit) {
-    # check for numerical underflow in state-dependent observation distributions
+    ####################################
+    ## Prepare initial values for nlm ##
+    ####################################
+    fixParIndex <- get_fixParIndex(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,deltaCons,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data,newdata,kappa)
+    
+    parCount<- lapply(fullDM,ncol)
+    for(i in distnames[!unlist(lapply(inputs$circularAngleMean,isFALSE))]){
+      parCount[[i]] <- length(unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]])))))
+    }
+    parindex <- c(0,cumsum(unlist(parCount))[-length(fullDM)])
+    names(parindex) <- distnames
+    
+    if(is.null(workBounds)) {
+      workBounds <- vector('list',length(distnames))
+      names(workBounds) <- distnames
+    }
+    workBounds <- getWorkBounds(workBounds,distnames,fixParIndex$Par0,parindex,parCount,inputs$DM,fixParIndex$beta0,fixParIndex$delta0)
+    
+    wpar <- n2w(fixParIndex$Par0,p$bounds,fixParIndex$beta0,fixParIndex$delta0,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
+    if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
+  
+    parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures-(nbCovsPi+1)*(mixtures-1)-ncol(covsDelta)*(nbStates-1)*(!stationary)*mixtures-ifelse(is.null(recharge),0,(nbRecovs+1+nbG0covs+1))
+  
+    retrySD <- get_retrySD(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStates,fixParIndex$beta0,mixtures,recharge,fixParIndex$delta0)
+    
+    optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar[["pi"]])+which(duplicated(c(deltaCons)))))
+    
+    if(!is.null(prior)){
+      if(!is.function(prior)) stop("prior must be a function")
+      environment(prior) <- environment()
+      pr <- tryCatch(prior(wpar),error=function(e) e)
+      if(inherits(pr,"error")){
+        stop("Invalid prior: ",pr)
+      } else {
+        if(length(pr)>1) stop("prior function must return a scalar")
+        if(!is.finite(pr)) stop("prior is not finite")
+      }
+    }
+    
+    ##################
+    ## Optimization ##
+    ##################
+    # this function is used to muffle the warning "NA/Inf replaced by maximum positive value" in nlm and "value out of range in 'lgamma'" in nLogLike_rcpp
+    h <- function(w) {
+      if(any(grepl("NA/Inf replaced by maximum positive value",w)) | any(grepl("value out of range in 'lgamma'",w)))
+        invokeRestart("muffleWarning")
+    }
+    
+    printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,stationary=stationary,hierarchical=inherits(data,"hierarchical"),CT=isTRUE(list(...)$CT))
+    
+    ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
+    nc <- ncmean$nc
+    meanind <- ncmean$meanind
+    
+    optPar <- wpar
+    optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar[["pi"]])+which(duplicated(c(deltaCons)))))
+    if(length(optInd)){
+      optPar <- wpar[-optInd]
+    }
+    
+    # aInd = list of indices of first observation for each animal
+    aInd <- NULL
+    for(i in 1:nbAnimals){
+      idInd <- which(data$ID==unique(data$ID)[i])
+      aInd <- c(aInd,idInd[1])
+    }
+    
+    dtIndex <- 1:nrow(data)
+    if(isTRUE(list(...)$CT) & inherits(data,"hierarchical")){
+      dtr <- data$dt
+      for(i in unique(data$ID)){
+        for(iLevel in levels(data$level)){
+          iDat <- which(data$ID==i & data$level==iLevel)
+          if(!grepl("i",iLevel)){
+            if(iLevel=="1") {
+              if(iLevel=="1") dtr[iDat[-1]-1] <- data$dt[iDat[-length(iDat)]]
+            } else {
+              idatInd <- which(data$level[iDat[-length(iDat)]+1]!="1")
+              dtr[iDat[idatInd]] <- data$dt[iDat[idatInd]]
+            }
+          } else {
+            dtr[iDat] <- 0
+            dtr[iDat-1] <- 1
+          }
+        }
+      }
+      dtIndex <- match(dtr,data$dt)
+    }
+    
+    
+    if(fit) {
+      
+      hessian <- TRUE
+      if(!is.null(control$hessian)){
+        hessian <- control$hessian
+        control$hessian <- NULL
+      }
+      
+      fitCount<-0
+      
+      while(fitCount<=retryFits){
+        
+        # just use moveHMM if simpler models are specified
+        if(all(distnames %in% c("step","angle")) & all(unlist(dist) %in% moveHMMdists) & mHind){
+          fullPar<-w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,fullDM,DMind,nrow(data),dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+          Par<-lapply(fullPar[distnames],function(x) x[,1])
+          for(i in distnames){
+            if(dist[[i]] %in% angledists & !inputs$estAngleMean[[i]])
+              Par[[i]]<-Par[[i]][-(1:nbStates)]
+          }
+          startTime <- proc.time()
+          withCallingHandlers(curmod<-tryCatch(moveHMMwrap(data,nbStates,dist,Par,fullPar$beta,fullPar$delta[1,],inputs$estAngleMean,newformula,stationary,nlmPar,fit,nbAnimals,knownStates)$mod,error=function(e) e),warning=h)
+          endTime <- proc.time()-startTime
+          curmod$wpar <- curmod$estimate
+        } else {
+  
+          # check additional parameters for nlm
+          print.level <- ifelse(is.null(nlmPar$print.level),0,nlmPar$print.level)
+          gradtol <- ifelse(is.null(nlmPar$gradtol),1e-6,nlmPar$gradtol)
+          typsize <- rep(1, length(wpar))
+          defStepmax <- max(1000 * sqrt(sum((wpar/typsize)^2)),1000)
+          stepmax <- ifelse(is.null(nlmPar$stepmax),defStepmax,nlmPar$stepmax)
+          steptol <- ifelse(is.null(nlmPar$steptol),1e-6,nlmPar$steptol)
+          iterlim <- ifelse(is.null(nlmPar$iterlim),1000,nlmPar$iterlim)
+          fscale <- ifelse(is.null(nlmPar$fscale),1,nlmPar$fscale)
+          
+          optPar <- wpar
+          optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar[["pi"]])+which(duplicated(c(deltaCons)))))
+          if(length(optInd)){
+            optPar <- wpar[-optInd]
+          }
+          
+          startTime <- proc.time()
+    
+          # call to optimizer nlm
+          if(!length(optPar)){
+            curmod <- list()
+            
+            curmod$minimum <- nLogLike(optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
+                                      inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
+                                      stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
+                                      nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,kappa)
+            curmod$estimate <- numeric()
+            
+          } else if(optMethod=="nlm"){
+            withCallingHandlers(curmod <- tryCatch(stats::nlm(nLogLike,optPar,nbStates=nbStates,formula=newformula,bounds=p$bounds,parSize=p$parSize,data=data,dist=inputs$dist,covs=covs,
+                                                              estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,consensus=inputs$consensus,zeroInflation=zeroInflation,oneInflation=oneInflation,
+                                                              stationary=stationary,fullDM=fullDM,DMind=DMind,Bndind=p$Bndind,knownStates=knownStates,fixPar=unlist(fixParIndex$fixPar),wparIndex=fixParIndex$wparIndex,
+                                                              nc=nc,meanind=meanind,covsDelta=covsDelta,workBounds=workBounds,prior=prior,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recovs=recovs,g0covs=g0covs,mixture=mixtures,covsPi=covsPi,recharge=hierRecharge,aInd=aInd,CT=isTRUE(list(...)$CT),dtIndex=dtIndex,kappa=kappa,
+                                                              fscale=fscale,print.level=print.level,gradtol=gradtol,
+                                                              stepmax=stepmax,steptol=steptol,
+                                                              iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian) & is.null(prior),TRUE,ifelse(!is.null(prior),FALSE,ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)))),error=function(e) e),warning=h)
+            if(!inherits(curmod,"error")){
+              if(!is.null(prior) & ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)){
+                curmod$hessian <- tryCatch(numDeriv::hessian(nLogLike,curmod$estimate,nbStates=nbStates,formula=newformula,bounds=p$bounds,parSize=p$parSize,data=data,dist=inputs$dist,covs=covs,
+                                                             estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,consensus=inputs$consensus,zeroInflation=zeroInflation,oneInflation=oneInflation,
+                                                             stationary=stationary,fullDM=fullDM,DMind=DMind,Bndind=p$Bndind,knownStates=knownStates,fixPar=unlist(fixParIndex$fixPar),wparIndex=fixParIndex$wparIndex,
+                                                             nc=nc,meanind=meanind,covsDelta=covsDelta,workBounds=workBounds,prior=NULL,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recovs=recovs,g0covs=g0covs,mixture=mixtures,covsPi=covsPi,recharge=hierRecharge,aInd=aInd,CT=isTRUE(list(...)$CT),dtIndex=dtIndex,kappa=kappa),error=function(e) e)
+              }
+            }
+          } else {
+            withCallingHandlers(curmod <- tryCatch(stats::optim(optPar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
+                                                       inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
+                                                       stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
+                                                       nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,kappa,
+                                                       method=optMethod,control=control,hessian=ifelse(is.null(prior),hessian,FALSE)),error=function(e) e),warning=h)
+            if(!inherits(curmod,"error")){
+              if(!is.null(prior) & hessian){
+                curmod$hessian <- tryCatch(stats::optimHess(optPar,curmod$estimate,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
+                                                 inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
+                                                 stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
+                                                 nc,meanind,covsDelta,workBounds,NULL,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,kappa,
+                                                 control=control),error=function(e) e)
+              }
+            }
+          }
+          endTime <- proc.time()-startTime
+        }
+        
+        if(fitCount==0){
+          if(inherits(curmod,"error")) stop(curmod)
+          else {
+            names(curmod)[which(names(curmod)=="par")] <- "estimate"
+            names(curmod)[which(names(curmod)=="value")] <- "minimum"
+            curmod$elapsedTime <- endTime[3]
+            mod <- curmod
+            if(retryFits>=1 & ncores==1) cat("Attempting to improve fit using random perturbation. Press 'esc' to force exit from 'fitHMM'\n")
+          }
+        }
+        
+        wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
+        
+        if(fitCount<=retryFits){
+          if(!inherits(curmod,"error")){
+            names(curmod)[which(names(curmod)=="par")] <- "estimate"
+            names(curmod)[which(names(curmod)=="value")] <- "minimum"
+            curmod$elapsedTime <- endTime[3]
+            if(curmod$minimum < mod$minimum) mod <- curmod
+            wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
+          }
+          if(fitCount+1<=retryFits){
+            retrySD <- ifelse(retrySD=="adapt",10^(ceiling(log10(abs(wpar)))),retrySD)
+            wpar[1:parmInd] <- wpar[1:parmInd]+rnorm(parmInd,0,as.numeric(retrySD[1:parmInd]))
+            if(nbStates>1)
+              wpar[-(1:parmInd)] <- wpar[-(1:parmInd)]+rnorm(length(wpar)-parmInd,0,as.numeric(retrySD[-(1:parmInd)]))
+            if(length(fixParIndex$wparIndex)) wpar[fixParIndex$wparIndex] <- unlist(fixParIndex$fixPar)[fixParIndex$wparIndex]
+            if(!is.null(betaCons) & nbStates>1){
+              wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)] <- wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)][betaCons]
+            }
+            cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,"         ",sep="")
+          }
+        }
+        fitCount<-fitCount+1
+      }
+      
+      # convert the parameters back to their natural scale
+      mod$wpar <- mod$estimate
+      wpar <- mod$estimate <- expandPar(mod$wpar,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
+      mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,fullDM,DMind,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+      
+      if(!is.null(mod$hessian)){
+        Sigma <- tryCatch(MASS::ginv(mod$hessian),error=function(e) e)
+        mod$Sigma <- Sigma
+        if(!inherits(Sigma,"error")){
+          if(length(optInd)){
+            mod$Sigma <- matrix(0,length(mod$estimate),length(mod$estimate))
+            mod$Sigma[(1:length(mod$estimate))[-optInd],(1:length(mod$estimate))[-optInd]] <- Sigma
+          }
+        } else {
+          warning("ginv of the hessian failed -- ",Sigma)
+        }
+      }
+    }
+    else {
+      mod <- list()
+      mod$minimum <- nLogLike(optPar,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
+                                 inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
+                                 stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
+                                 nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,kappa)
+      mod$estimate <- wpar
+      mod$wpar <- optPar
+      mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,fullDM,DMind,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+    }
+    
+  
+    ####################
+    ## Prepare output ##
+    ####################
+    if(is.null(stateNames)){
+      for(i in 1:nbStates)
+        stateNames[i] <- paste("state",i)
+    }
+    
+    # name columns and rows of MLEs
+    for(i in distnames){
+      if(dist[[i]] %in% angledists)
+        if(!inputs$estAngleMean[[i]]){
+          p$parNames[[i]] <- c("mean",p$parNames[[i]])
+        }
+      if(DMind[[i]]){
+        mle[[i]]<-matrix(mle[[i]][1:(length(p$parNames[[i]])*nbStates),1],nrow=length(p$parNames[[i]]),ncol=nbStates,byrow=TRUE)
+        rownames(mle[[i]]) <- p$parNames[[i]]
+        colnames(mle[[i]]) <- stateNames
+      } else {
+        mle[[i]]<-matrix(wpar[parindex[[i]]+1:parCount[[i]]],1)
+        rownames(mle[[i]])<-"[1,]"
+        if(!isFALSE(inputs$circularAngleMean[[i]])){
+          colnames(mle[[i]]) <- unique(gsub("cos","",gsub("sin","",colnames(fullDM[[i]]))))
+        } else colnames(mle[[i]])<-colnames(fullDM[[i]])
+        #if(is.null(names(mle[[i]]))) warning("No names for the regression coeffs were provided in DM$",i)
+      }
+    }
+  
+    if(!is.null(mle$beta)) {
+      rownames(mle$beta) <- rep(colnames(covs),mixtures)#c("(Intercept)",attr(stats::terms(formula),"term.labels"))
+      columns <- NULL
+      for(i in 1:nbStates)
+        for(j in 1:nbStates) {
+          if(fixParIndex$betaRef[i]<j)
+            columns[(i-1)*nbStates+j-i] <- paste(i,"->",j)
+          if(j<fixParIndex$betaRef[i])
+              columns[(i-1)*(nbStates-1)+j] <- paste(i,"->",j)
+        }
+      colnames(mle$beta) <- columns
+      if(!is.null(recharge)){
+        names(mle$g0)<-colnames(g0covs)
+        names(mle$theta)<-colnames(recovs)
+      }
+      if(mixtures>1){
+        rownames(mle$beta) <- paste0(rownames(mle$beta),"_mix",rep(1:mixtures,each=length(colnames(covs))))
+        colnames(mle[["pi"]]) <- paste0("mix",1:mixtures)
+        rownames(mle[["pi"]]) <- paste0("ID:",data$ID[aInd])
+      } else mle[["pi"]] <- NULL
+    }
+    
+    if(isTRUE(list(...)$CT)) dt <- data$dt[dtIndex]
+    else dt <- rep(1,nrow(data))
+  
+    # compute stationary distribution
+    if(stationary & nbStates>1) {
+      mle$delta <- matrix(0,nbAnimals*mixtures,nbStates)
+      
+      for(mix in 1:mixtures){
+        
+        for(i in 1:nbAnimals){
+          
+          if(!isTRUE(list(...)$CT)){
+            gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[aInd[i],,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),dt)[,,1]
+            # error if singular system
+            tryCatch(
+              mle$delta[nbAnimals*(mix-1)+i,] <- solve(t(diag(nbStates)-gamma+1),rep(1,nbStates)),
+              error = function(e) {
+                stop(paste("A problem occurred in the calculation of the stationary",
+                           "distribution. You may want to try different initial values",
+                           "and/or the option stationary=FALSE."))
+              }
+            )
+          } else {
+            gamma <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[aInd[i],,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),dt,aInd=1,rateMatrix=TRUE,kappa=kappa)[,,1]
+            # error if singular system
+            tryCatch(
+              mle$delta[nbAnimals*(mix-1)+i,] <- stationary_rcpp(gamma),
+              error = function(e) {
+                stop(paste("A problem occurred in the calculation of the stationary",
+                           "distribution. You may want to try different initial values",
+                           "and/or the option stationary=FALSE."))
+              }
+            )
+          }
+        }
+      }
+    }
+  
+    if(nbStates==1)
+      mle$delta <- matrix(1,nrow(covsDelta),1)
+    colnames(mle$delta) <- stateNames
+    rownames(mle$delta) <- paste0("ID:",rep(data$ID[aInd],mixtures))
+    if(mixtures>1) rownames(mle$delta) <- paste0("ID:",rep(data$ID[aInd],mixtures),"_mix",rep(1:mixtures,each=nbAnimals))
+    
+    # compute t.p.m. if no covariates
+    if(nbCovs==0 & nbStates>1) {
+      mle$gamma <- matrix(0,nbStates*mixtures,nbStates)
+      if(isTRUE(list(...)$CT)) mle$Q <- matrix(0,nbStates*mixtures,nbStates)
+      for(mix in 1:mixtures){
+        trMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[1,,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),mean(dt), aInd=1,kappa=kappa)
+        mle$gamma[nbStates*(mix-1)+1:nbStates,] <- trMat[,,1]
+        if(isTRUE(list(...)$CT)){
+          rMat <- trMatrix_rcpp(nbStates,mle$beta[(nbCovs+1)*(mix-1)+1:(nbCovs+1),,drop=FALSE],covs[1,,drop=FALSE],fixParIndex$betaRef,isTRUE(list(...)$CT),mean(dt), aInd=1,rateMatrix=TRUE,kappa=kappa)
+          mle$Q[nbStates*(mix-1)+1:nbStates,] <- rMat[,,1]
+        }
+      }
+      colnames(mle$gamma)<-stateNames
+      rownames(mle$gamma)<-rep(stateNames,mixtures)
+      if(mixtures>1) rownames(mle$gamma) <- paste0(rep(stateNames,mixtures),"_mix",rep(1:mixtures,each=nbStates))
+      if(isTRUE(list(...)$CT)){
+        colnames(mle$Q)<-stateNames
+        rownames(mle$Q)<-rep(stateNames,mixtures)
+        if(mixtures>1) rownames(mle$Q) <- paste0(rep(stateNames,mixtures),"_mix",rep(1:mixtures,each=nbStates))
+      }
+    }
+    
+    if(is.null(betaCons) & nbStates>1) betaCons <- matrix(1:length(mle$beta),nrow(mle$beta),ncol(mle$beta))
+  
+    # conditions of the fit
+    conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
+                       estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,fixPar=fixParIndex$ofixPar,wparIndex=fixParIndex$wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recharge=recharge,mvnCoords=mvnCoords,mixtures=mixtures,formulaPi=formulaPi,fit=fit,initialValues=initialValues,kappa=kappa)
+  
+    if(isTRUE(list(...)$CT)) conditions$dtIndex <- dtIndex
+    
+    mh <- list(data=data,mle=mle,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName,reCovs=recovsCol,g0covs=g0covsCol,covsPi=covsPi)
+    
+    #compute SEs and CIs on natural and working scale
     if(!isTRUE(list(...)$CT)){
-      probs <- tryCatch(allProbs(momentuHMM(mh)),warning=function(w) w)
-      if(inherits(probs,"warning")) warning(probs)
+      CIreal<-tryCatch(CIreal(momentuHMM(mh)),error=function(e) e)
+      if(inherits(CIreal,"error") & fit==TRUE) warning("Failed to compute SEs and confidence intervals on the natural scale -- ",CIreal)
     }
-    message(ifelse(retryFits>=1,"\n",""),"DONE")
+    CIbeta<-tryCatch(CIbeta(momentuHMM(mh)),error=function(e) e)
+    if(inherits(CIbeta,"error") & fit==TRUE) warning("Failed to compute SEs confidence intervals on the working scale -- ",CIbeta)
+    
+    mh <- list(data=data,mle=mle,CIreal=CIreal,CIbeta=CIbeta,mod=mod,conditions=conditions,rawCovs=rawCovs,stateNames=stateNames,knownStates=knownStates,covsDelta=covsDelta,prior=prior,modelName=modelName,reCovs=recovsCol,g0covs=g0covsCol,covsPi=covsPi)
+    
+    if(!is.null(mvnCoords)) attr(mh$data,'coords') <- paste0(mvnCoords,c(".x",".y"))
+    
+    if(fit) {
+      # check for numerical underflow in state-dependent observation distributions
+      if(!isTRUE(list(...)$CT)){
+        probs <- tryCatch(allProbs(momentuHMM(mh)),warning=function(w) w)
+        if(inherits(probs,"warning")) warning(probs)
+      }
+      message(ifelse(retryFits>=1,"\n",""),"DONE")
+    }
+    
+    return(momentuHMM(mh))
   }
-  
-  return(momentuHMM(mh))
 }
 
 #' @rdname fitHMM
@@ -1161,7 +1169,7 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
                        hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,
                        nlmPar=list(),fit=TRUE,
                        DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,deltaCons=NULL,
-                       mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, ...)
+                       mvnCoords=NULL,knownStates=NULL,fixPar=NULL,retryFits=0,retrySD=NULL,ncores=1,optMethod="nlm",control=list(),prior=NULL,modelName=NULL, ...)
 {
   
   if(!inherits(data,"momentuHierHMMData")) stop("data must be a momentuHierHMMData object (as returned by prepData or simHierData)")
@@ -1180,7 +1188,7 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
                 formula=inputHierHMM$formula,inputHierHMM$formulaDelta,stationary=FALSE,mixtures,formulaPi,
                 nlmPar,fit,
                 DM,userBounds,workBounds=inputHierHMM$workBounds,inputHierHMM$betaCons,inputHierHMM$betaRef,deltaCons=inputHierHMM$deltaCons,
-                mvnCoords,inputHierHMM$stateNames,knownStates,inputHierHMM$fixPar,retryFits,retrySD,optMethod,control,prior,modelName, ...)
+                mvnCoords,inputHierHMM$stateNames,knownStates,inputHierHMM$fixPar,retryFits,retrySD,ncores,optMethod,control,prior,modelName, ...)
   
   # replace initial values with estimates in hierBeta and hierDelta (if provided)
   if(fit){
