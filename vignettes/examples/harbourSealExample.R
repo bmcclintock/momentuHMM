@@ -18,7 +18,7 @@ timeStep <- 2 # time step (hours)
 #################################################################################################################################
 
 # load McClintock et al 2013 data
-load(url("http://www.esapubs.org/archive/ecol/E094/072/data.RData"))
+load(url("https://raw.github.com/bmcclintock/momentuHMM/develop/vignettes/harbourSealData.RData"))
 
 # back-calculate observation times from j_ti and ssidx
 time <- numeric(length(j_ti))

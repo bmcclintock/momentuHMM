@@ -3,6 +3,7 @@
 # 6 states: ARS at sea (1="seaARS"), transit at sea (2="seaTr"), ARS toward boat (3="boatARS"), transit toward boat (4="boatTR"), ARS toward colony (5="colonyARS"), and transit toward colony (6="colonyTr")
 library(momentuHMM)
 library(sp)
+library(rdryad)
 
 nbStates <- 6
 stateNames <- c("seaARS","seaTr","boatARS","boatTr","colonyARS","colonyTr")
@@ -10,7 +11,7 @@ stateNames <- c("seaARS","seaTr","boatARS","boatTr","colonyARS","colonyTr")
 dist <- list(step="weibull",angle="wrpcauchy",d="lnorm") # distributions for step length ('step'), turning angle ('angle'), and distance to nearest boat ('d')
 
 # load data provided by Pirotta et al
-raw_data <- read.csv(url("https://datadryad.org/stash/downloads/file_stream/45899"),stringsAsFactors = FALSE)
+raw_data <- read.csv(rdryad::dryad_download("10.5061/dryad.0d377r6")$`10.5061/dryad.0d377r6`)
 
 raw_data$ID <- raw_data$tripID
 raw_data$Date <- as.POSIXct(raw_data$Date,tz="UTC",format="%d/%m/%Y %H:%M") # not sure these are actually UTC, but doesn't matter for this analysis
