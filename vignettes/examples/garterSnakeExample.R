@@ -156,10 +156,10 @@ for(jj in 1:hierStates$count){
 # when mixtures>1, this will only include mixture at top level (via the deltaCons field)
 level1DeltaCovNames <- colnames(model.matrix(hierFormulaDelta$level1$formulaDelta,snakeData)) # delta covariate names for level1
 level1DeltaDimNames <- list(paste0(level1DeltaCovNames,"_mix",rep(1:mixtures,each=length(level1DeltaCovNames))),paste0("state ",level1states[-1]))
-hierDelta$level1$delta <- matrix(rep(c(-2.5,-3.5),hierStates$count-1),
-                                        nrow=length(level1DeltaCovNames)*mixtures,
-                                        ncol=(hierStates$count-1),byrow=TRUE,
-                                        dimnames=level1DeltaDimNames)
+hierDelta$level1$delta <- matrix(c(-2.5,-3.5),
+                                    nrow=length(level1DeltaCovNames)*mixtures,
+                                    ncol=(hierStates$count-1),byrow=TRUE,
+                                    dimnames=level1DeltaDimNames)
 deltaCons$level1$deltaCons <- matrix(seq(1,(hierStates$count-1)*mixtures),
                                           nrow=length(level1DeltaCovNames)*mixtures,
                                           ncol=(hierStates$count-1),
