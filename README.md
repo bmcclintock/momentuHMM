@@ -1,6 +1,3 @@
----
-output: html_document
----
 # `momentuHMM`  [![R-CMD-check](https://github.com/bmcclintock/momentuHMM/workflows/R-CMD-check/badge.svg)](https://github.com/bmcclintock/momentuHMM/actions) [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![CRAN_Downloads](https://cranlogs.r-pkg.org/badges/momentuHMM)](https://cran.r-project.org/package=momentuHMM) [![CRAN_Downloads](https://cranlogs.r-pkg.org/badges/grand-total/momentuHMM)](https://cran.r-project.org/package=momentuHMM)
 
 R package for Maximum likelihood analysis Of animal MovemENT behavior Using multivariate Hidden Markov Models 
@@ -9,7 +6,7 @@ R package for Maximum likelihood analysis Of animal MovemENT behavior Using mult
 
 - Get started with the vignette: [Guide to using momentuHMM](https://cran.r-project.org/package=momentuHMM/vignettes/momentuHMM.pdf)
 
-- List of example [publications](https://github.com/bmcclintock/momentuHMM/publications/publications.md) using the package
+- List of example [publications](https://github.com/bmcclintock/momentuHMM/blob/develop/publications/publications.md) using the package
 
 - Post questions to [discussions](https://github.com/bmcclintock/momentuHMM/discussions)
 
