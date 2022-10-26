@@ -1,7 +1,7 @@
 ---
 output: github_document
 bibliography: momentuHMM.bib
-csl: ecology.csl
+csl: annual-reviews-alphabetical.csl
 nocite: |
     nocite: '@*'
 ---
