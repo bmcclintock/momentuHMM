@@ -98,4 +98,5 @@ tests/testthat/extraExamples.R
 tests/testthat/extraExamples.RData
 ^manuscript$
 ^\.github$
+^publications$
 

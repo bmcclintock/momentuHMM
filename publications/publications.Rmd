@@ -1,0 +1,13 @@
+---
+output: github_document
+bibliography: momentuHMM.bib
+csl: ecology.csl
+nocite: |
+    nocite: '@*'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Publications using `momentuHMM`
