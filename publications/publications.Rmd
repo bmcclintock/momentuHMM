@@ -1,5 +1,7 @@
 ---
 output: github_document
+title: "List of publications using momentuHMM"
+date: "`r Sys.Date()`"
 bibliography: momentuHMM.bib
 csl: annual-reviews-alphabetical.csl
 nocite: |
@@ -10,4 +12,3 @@ nocite: |
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Publications using `momentuHMM`

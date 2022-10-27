@@ -92,6 +92,7 @@ vignettes/aleut_habitat.gri
 vignettes/plot_langevinCovs.png
 vignettes/plot_langevinUD.png
 vignettes/plot_simLangevin.png
+^vignettes/examples$
 tests/testthat/Rplots.pdf
 tests/testthat/test_extraExamples.R
 tests/testthat/extraExamples.R

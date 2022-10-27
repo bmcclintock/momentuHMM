@@ -1,5 +1,6 @@
-
-# Publications using `momentuHMM`
+List of publications using momentuHMM
+================
+2022-10-26
 
 <div id="refs" class="references csl-bib-body" line-spacing="2">
 
