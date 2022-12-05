@@ -1,6 +1,6 @@
 ---
 output: github_document
-title: "List of publications using momentuHMM"
+title: "Publications using momentuHMM"
 date: "`r Sys.Date()`"
 bibliography: momentuHMM.bib
 csl: annual-reviews-alphabetical.csl

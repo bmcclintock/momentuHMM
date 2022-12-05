@@ -20,14 +20,18 @@ retryFitsParallel <- function(data,nbStates, dist, Par0, beta0, delta0,
   if(optMethod=="nlm"){
     tmpPar <- nlmPar
     tmpPar$hessian <- FALSE
+    nlmPar <- tmpPar
+    control <- NULL
   } else {
     tmpPar <- control
     tmpPar$hessian <- FALSE
+    control <- tmpPar
+    nlmPar <- NULL
   }
   curmod <- fitHMM(data,nbStates, dist, Par0, beta0, delta0,
                    estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi,
-                   tmpPar, fit, DM,
-                   userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates, fixPar, retryFits=0, retrySD, ncores=1, optMethod, tmpPar, prior, modelName, ...)
+                   nlmPar=nlmPar, fit, DM,
+                   userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates, fixPar, retryFits=0, retrySD, ncores=1, optMethod, control=control, prior, modelName, ...)
   
   cat("\nInitial log-likelihood value: ",-curmod$mod$minimum,"\n",sep="")
   
