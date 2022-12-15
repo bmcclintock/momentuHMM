@@ -31,15 +31,18 @@ getSplineDM<-function(distnames,DM,m,covs){
                        call. = FALSE)
                 }
                 splineExpr<-qdapRegex::rm_between(k, "(", ",", extract=TRUE)[[1]]
+                if(is.na(splineExpr)) splineExpr<-qdapRegex::rm_between(k, "(", ")", extract=TRUE)[[1]]
                 sp<-eval(substitute(eval(parse(text=k))),m$data,parent.frame())
                 tmpcovs<-predict(sp,eval(substitute(eval(parse(text=splineExpr))),covs,parent.frame()))
                 tmp<-colnames(stats::model.matrix(stats::as.formula(paste0("~",k)),m$data)[,-1])
+                tmp<-gsub("splines2::","",gsub("splines::","",gsub("stats::","",tmp)))
                 tmp<-gsub("[()]","",tmp)
                 tmp<-gsub(" ","_",tmp)
                 tmp<-gsub(",","_",tmp)
                 tmp<-gsub("=","_",tmp)
                 tmp<-gsub("\\*","_",tmp)
                 tmp<-gsub("\\^","_",tmp)
+                tmp<-gsub("\\+","_",tmp)
                 colnames(tmpcovs)<-tmp
                 newcovs<-cbind(newcovs,tmpcovs)
                 for(l in colnames(factors)){
@@ -52,6 +55,8 @@ getSplineDM<-function(distnames,DM,m,covs){
                     tmp<-gsub("=","_",tmp)
                     tmp<-gsub("\\*","_",tmp)
                     tmp<-gsub("\\^","_",tmp)
+                    tmp<-gsub("\\+","_",tmp)
+                    tmp<-gsub("splines2::","",gsub("splines::","",gsub("stats::","",tmp)))
                     tmpDM[[state]]<-c(tmpDM[[state]],tmp)
                   }
                 }

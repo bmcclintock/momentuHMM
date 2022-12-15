@@ -11,7 +11,7 @@ mvndists <- c('mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3')
 rwdists <- c('rw_norm','rw_mvnorm2','rw_mvnorm3')
 CTHMMdists <- c(momentuHMMdists[which(!momentuHMMdists %in% c(angledists))])
 CTHMMdepdists <- c(rwdists, "ctds","pois") # CTHMM distributions where observations and parameters depend on dt
-splineList<-c("bs","ns","bSpline","mSpline","cSpline","iSpline")
+splineList<-c("bs","ns",paste0("splines::",c("bs","ns")),"bSpline","mSpline","cSpline","iSpline",paste0("splines2::",c("bSpline","mSpline","cSpline","iSpline")),"poly","stats::poly")
 meansList<-c("matrix","numeric","integer","logical","Date","POSIXlt","POSIXct","difftime")
 meansListNoTime<-c("numeric","integer","logical")
 plotArgs <- c("cex","cex.main","cex.lab","cex.axis","cex.legend","lwd","asp","legend.pos")
