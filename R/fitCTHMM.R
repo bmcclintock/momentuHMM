@@ -17,15 +17,12 @@ fitCTHMM <- function(data, ...) {
 #' @param Time.unit Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{data[[Time.name]]} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto'.  Ignored if \code{data} is a \code{ctds} object returned by \code{\link{prepCTDS}}.
 #' @param nbStates Number of states of the HMM.
 #' @param dist A named list indicating the probability distributions of the data streams. Currently
-#' supported distributions are 'bern', 'beta', 'cat', exp', 'gamma', 'lnorm', 'logis', 'negbinom', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
-#' 'pois', 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), 'rw_mvnorm3' (trivariate normal random walk), 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
-#' \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
-#' and their respective probability distributions ('gamma', 'vm', and 'pois').  The names of the data streams 
-#' (e.g., 'step', 'angle', 'dives') must match component names in \code{data}. 
+#' supported distributions are 'bern', 'beta', 'cat', 'ctds', 'exp', 'gamma', 'lnorm', 'logis', 'negbinom', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
+#' 'pois', 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), 'rw_mvnorm3' (trivariate normal random walk), 't', and 'weibull'. See \code{\link{fitHMM}}.
 #' 
-#' For continuous-time HMMs, the multivariate normal random walk and Poisson (“pois”) distributions are modeled as a function of the time interval between observations \eqn{(\Delta_t)}. All
+#' For continuous-time HMMs, the (multivariate) normal random walk ('rw_norm', 'rw_mvnorm2', 'rw_mvnorm3') and Poisson (`pois`) distributions are modeled as a function of the time interval between observations \eqn{(\Delta_t)}. All
 #' other data stream distributions assume observations do not depend on \eqn{\Delta_t}, i.e., they
-#' are ``instantaneous'' and only depend on the state active at time $t$.
+#' are ``instantaneous'' and only depend on the state active at time \eqn{t}. See details.
 #' @param Par0 A named list containing vectors of initial state-dependent probability distribution parameters for 
 #' each data stream specified in \code{dist}. The parameters should be in the order expected by the pdfs of \code{dist}, 
 #' and any zero-mass and/or one-mass parameters should be the last (if both are present, then zero-mass parameters must preceed one-mass parameters). 
