@@ -4,7 +4,7 @@
 #' Fit an approximate continuous-time (multivariate) hidden Markov model to multiple imputation data. Multiple imputation is a method for accommodating 
 #' missing data, temporal-irregularity, or location measurement error in hidden Markov models, where pooled parameter estimates reflect uncertainty
 #' attributable to observation error. The discrete-time approximation of the continuous-time model improves as the time between observations decreases. 
-#' Note that only a single state transition can occur between observations and any time-varying covariates are assumed piece-wise constant between observations.
+#' Note that any time-varying covariates are assumed piece-wise constant between observations.
 #' 
 #' \code{miData} can either be a \code{\link{crwData}} or \code{\link{crwHierData}} object (as returned by \code{\link{crawlWrap}}), a \code{\link{crwSim}} or \code{\link{crwHierSim}} object (as returned by \code{MIfitCTHMM} when \code{fit=FALSE}), 
 #' or a list of \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} objects (e.g., each element of the list as returned by \code{\link{prepData}}). 
@@ -145,6 +145,10 @@ MIfitCTHMM <- function(miData, ...) {
 #' 
 #' McClintock B.T. 2017. Incorporating telemetry error into hidden Markov movement models using multiple imputation. Journal of Agricultural, Biological,
 #' and Environmental Statistics.
+#' 
+#' @details 
+#' \code{fitCTHMM} assumes the snapshot property applies to all data stream distributions (i.e. observations are ``instantaneous'') except for the (multivariate) normal random walk (\code{rw_norm}, \code{rw_mvnorm2}, \code{rw_mvnorm3}) and Poisson (\code{pois}) distributions. For these particular distributions, the observed data are not ``instantaneous''; they depend on the time interval between observations \eqn{(\Delta_t)} and, hence, the state sequence during the entire interval.
+#' When fitting with \code{\link{fitCTHMM}} (or \code{\link{MIfitCTHMM}}), it is critical that the frequency of observations is high relative to the serial correlation in the hidden state process in order for the discrete-time approximation of \code{\link{fitCTHMM}} to be reasonably accurate for these distributions.
 #' 
 #' @export
 #' @importFrom crawl crwPostIS crwSimulator

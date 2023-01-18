@@ -2,7 +2,7 @@
 #' Fit a continuous-time multivariate HMM to the data
 #'
 #' Fit an approximate continuous-time (multivariate) hidden Markov model to the data provided, using numerical optimization of the log-likelihood
-#' function. The discrete-time approximation of the continuous-time model improves as the time between observations decreases. Note that only a single state transition can occur between observations and any time-varying covariates are assumed piece-wise constant between observations.
+#' function. The discrete-time approximation of the continuous-time model improves as the time between observations decreases. Note that any time-varying covariates are assumed piece-wise constant between observations.
 #' 
 #' @param data A \code{\link{momentuHMMData}} (as returned by \code{\link{prepData}}, \code{\link{simData}}, \code{\link{prepCTDS}}, or \code{\link{simCTDS}}) or a \code{\link{momentuHierHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simHierData}}) object.
 #' @param ... further arguments passed to or from other methods
@@ -21,7 +21,11 @@ fitCTHMM <- function(data, ...) {
 #' 'pois', 'rw_norm' (normal random walk), 'rw_mvnorm2' (bivariate normal random walk), 'rw_mvnorm3' (trivariate normal random walk), 'vm', 'vmConsensus', 'weibull', and 'wrpcauchy'. For example,
 #' \code{dist=list(step='gamma', angle='vm', dives='pois')} indicates 3 data streams ('step', 'angle', and 'dives')
 #' and their respective probability distributions ('gamma', 'vm', and 'pois').  The names of the data streams 
-#' (e.g., 'step', 'angle', 'dives') must match component names in \code{data}.
+#' (e.g., 'step', 'angle', 'dives') must match component names in \code{data}. 
+#' 
+#' For continuous-time HMMs, the multivariate normal random walk and Poisson (“pois”) distributions are modeled as a function of the time interval between observations \eqn{(\Delta_t)}. All
+#' other data stream distributions assume observations do not depend on \eqn{\Delta_t}, i.e., they
+#' are ``instantaneous'' and only depend on the state active at time $t$.
 #' @param Par0 A named list containing vectors of initial state-dependent probability distribution parameters for 
 #' each data stream specified in \code{dist}. The parameters should be in the order expected by the pdfs of \code{dist}, 
 #' and any zero-mass and/or one-mass parameters should be the last (if both are present, then zero-mass parameters must preceed one-mass parameters). 
@@ -150,6 +154,10 @@ fitCTHMM <- function(data, ...) {
 #' \item{stateNames}{The names of the states.}
 #' \item{knownStates}{Vector of values of the state process which are known.}
 #' \item{covsDelta}{Design matrix for initial distribution.}
+#' 
+#' @details 
+#' \code{fitCTHMM} assumes the snapshot property applies to all data stream distributions (i.e. observations are ``instantaneous'') except for the (multivariate) normal random walk (\code{rw_norm}, \code{rw_mvnorm2}, \code{rw_mvnorm3}) and Poisson (\code{pois}) distributions. For these particular distributions, the observed data are not ``instantaneous''; they depend on the time interval between observations \eqn{(\Delta_t)} and, hence, the state sequence during the entire interval.
+#' When fitting with \code{\link{fitCTHMM}} (or \code{\link{MIfitCTHMM}}), it is critical that the frequency of observations is high relative to the serial correlation in the hidden state process in order for the discrete-time approximation of \code{\link{fitCTHMM}} to be reasonably accurate for these distributions.
 #' 
 #' @export
 #' @importFrom Rcpp evalCpp

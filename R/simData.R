@@ -1531,8 +1531,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                   if(nbSpatialCovs){
                     fullSpatialCov <- data.frame(fullsub,apply(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames])[sample.int(raster::ncell(spatialCovs[[1]]),min(raster::ncell(spatialCovs[[1]]),kappa$spCov)),,drop=FALSE],2,function(x) rep(x,min(nrow(subCovs),kappa$nspCov))))
                     mm <- stats::model.matrix(newformula,fullSpatialCov)
+                    rm(fullSpatialCov)
                   } else mm <- stats::model.matrix(newformula,fullsub)
-                  rm(fullsub,fullSpatialCov)
+                  rm(fullsub)
                 } else {
                   fullSpatialCov <- data.frame(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames])[sample.int(raster::ncell(spatialCovs[[1]]),min(raster::ncell(spatialCovs[[1]]),kappa$spCov)),,drop=FALSE])
                   mm <- stats::model.matrix(newformula,fullSpatialCov)
