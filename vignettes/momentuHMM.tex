@@ -583,8 +583,8 @@ To use \verb|crawlWrap|, we convert times from factors to POSIX, and project the
 \hlcom{# convert times from factors to POSIX}
 \hlstd{rawData}\hlopt{$}\hlstd{time} \hlkwb{<-} \hlkwd{as.POSIXct}\hlstd{(rawData}\hlopt{$}\hlstd{time,}\hlkwc{tz}\hlstd{=}\hlstr{"GMT"}\hlstd{)}
 
-\hlcom{# project to UTM coordinates using package rgdal}
-\hlkwd{library}\hlstd{(rgdal)}
+\hlcom{# project to UTM coordinates using package sp}
+\hlkwd{library}\hlstd{(sp)}
 \hlstd{llcoord} \hlkwb{<-} \hlkwd{SpatialPoints}\hlstd{(rawData[,}\hlnum{3}\hlopt{:}\hlnum{4}\hlstd{],}
                          \hlkwc{proj4string}\hlstd{=}\hlkwd{CRS}\hlstd{(}\hlstr{"+proj=longlat +datum=WGS84"}\hlstd{))}
 \hlstd{utmcoord} \hlkwb{<-} \hlkwd{spTransform}\hlstd{(llcoord,}\hlkwd{CRS}\hlstd{(}\hlstr{"+proj=utm +zone=30 ellps=WGS84"}\hlstd{))}
@@ -4786,6 +4786,7 @@ Let's begin our analysis by first loading and preparing the data:
 \caption{Steller sea lion tracks (top left), bathymetry (top right), slope (bottom left), and distance to nearest haul-out or rookery site (bottom right).}
 \end{figure}
 \noindent Next we'll prepare our data for \verb|fitCTHMM| and calculate the habitat covariate gradients using bilinear interpolation (by setting \verb|gradient=TRUE|):
+
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -4793,6 +4794,12 @@ Let's begin our analysis by first loading and preparing the data:
                       \hlkwc{altCoordNames} \hlstd{=} \hlstr{"mu"}\hlstd{,}
                       \hlkwc{spatialCovs} \hlstd{= covlist0,}
                       \hlkwc{gradient}\hlstd{=}\hlnum{TRUE}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
 \hlkwd{head}\hlstd{(langData)}
 \end{alltt}
 \begin{verbatim}

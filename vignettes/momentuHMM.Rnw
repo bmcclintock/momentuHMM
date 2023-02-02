@@ -513,8 +513,8 @@ To use \verb|crawlWrap|, we convert times from factors to POSIX, and project the
 # convert times from factors to POSIX
 rawData$time <- as.POSIXct(rawData$time,tz="GMT")
 
-# project to UTM coordinates using package rgdal
-library(rgdal)
+# project to UTM coordinates using package sp
+library(sp)
 llcoord <- SpatialPoints(rawData[,3:4], 
                          proj4string=CRS("+proj=longlat +datum=WGS84"))
 utmcoord <- spTransform(llcoord,CRS("+proj=utm +zone=30 ellps=WGS84"))
@@ -3129,11 +3129,19 @@ covlist0 <- lapply(covlist0, crop, y=extent(lim))
 \caption{Steller sea lion tracks (top left), bathymetry (top right), slope (bottom left), and distance to nearest haul-out or rookery site (bottom right).}
 \end{figure}
 \noindent Next we'll prepare our data for \verb|fitCTHMM| and calculate the habitat covariate gradients using bilinear interpolation (by setting \verb|gradient=TRUE|):
-<<langevin-prep,echo=TRUE,eval=TRUE>>=
+<<langevin-prep,echo=FALSE,eval=TRUE>>=
+langData <- suppressMessages(prepData(tracks,coordNames = c("x","y"),
+                      altCoordNames = "mu",
+                      spatialCovs = covlist0,
+                      gradient=TRUE))
+@
+<<langevin-prep-1,echo=TRUE,eval=FALSE>>=
 langData <- prepData(tracks,coordNames = c("x","y"),
                       altCoordNames = "mu",
                       spatialCovs = covlist0,
                       gradient=TRUE)
+@
+<<langevin-prep-2,echo=TRUE,eval=TRUE>>=
 head(langData)
 @
 \noindent We can see that the returned \verb|momentuHMMData| object includes the gradients for the habitat covariates (\verb|bathy|, \verb|slope|, and \verb|d2site|) in both the easting (with ``\verb|.x|'' suffix) and northing (``\verb|.y|'' suffix) directions. This will allow us to include the gradients in the Langevin model via the \verb|DM| argument in \verb|fitCTHMM|. 

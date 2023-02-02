@@ -16,8 +16,8 @@ rawData <- subset(rawData,ID==unique(ID)[1])
 # convert times from factors to POSIX
 rawData$time <- as.POSIXct(rawData$time,tz="GMT")
 
-# project to UTM coordinates using package rgdal
-library(rgdal)
+# project to UTM coordinates using package sp
+library(sp)
 llcoord <- SpatialPoints(rawData[,3:4], 
                          proj4string=CRS("+proj=longlat +datum=WGS84"))
 utmcoord <- spTransform(llcoord,CRS("+proj=utm +zone=30 ellps=WGS84"))
