@@ -99,7 +99,7 @@ supported distributions are 'bern', 'beta', 'cat', 'ctds', 'exp', 'gamma', 'lnor
 
 For continuous-time HMMs, the (multivariate) normal random walk ('rw_norm', 'rw_mvnorm2', 'rw_mvnorm3') and Poisson (`pois`) distributions are modeled as a function of the time interval between observations \eqn{(\Delta_t)}. All
 other data stream distributions assume observations do not depend on \eqn{\Delta_t}, i.e., they
-are ``instantaneous'' and only depend on the state active at time \eqn{t}.}
+are ``instantaneous'' and only depend on the state active at time \eqn{t}. See details.}
 
 \item{Par0}{A named list containing vectors of initial state-dependent probability distribution parameters for 
 each data stream specified in \code{dist}. The parameters should be in the order expected by the pdfs of \code{dist}, 

@@ -340,7 +340,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
               locs<-rbind(locs,tmp$alpha.sim[,c("mu.x","mu.y")])
           }
           df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",Time.name,tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
-          pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient),error=function(e) e)
+          pD <- tryCatch(suppressMessages(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient)),error=function(e) e)
           return(pD)
         }
       ,warning=muffleRNGwarning)
@@ -632,7 +632,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                               df[which(df$locType=="p"),"x"] <- locs[which(locs$locType=="p"),"x"]
                               df[which(df$locType=="p"),"y"] <- locs[which(locs$locType=="p"),"y"]
                               df$locType <- NULL
-                              pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient,hierLevels=levels(predData$level),coordLevel=attr(predData,"coordLevel")),error=function(e) e)
+                              pD <- tryCatch(suppressMessages(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient,hierLevels=levels(predData$level),coordLevel=attr(predData,"coordLevel"))),error=function(e) e)
                               return(pD)
                             }
                           ,warning=muffleRNGwarning)

@@ -234,6 +234,11 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
       if(length(ind)<3) stop('each individual must have at least 3 observations to calculate step lengths and turning angles')
   }
   
+  count <- 0
+  if(any(c("step","angle") %in% distnames) & !is.null(coordNames)) {
+    message("Calculating movement metrics...")
+    progBar(count,length(ID)*sum(distnames %in% c("step","angle")))
+  }
   for(zoo in 1:nbAnimals) {
     nbObs <- length(which(ID==unique(ID)[zoo]))
     # d = data for one individual
@@ -245,6 +250,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
       if(!(j %in% c("step","angle")) | is.null(coordNames)){
         genData <- data[[j]][i1:i2]
       } else if(!is.null(coordNames)){
+        
         for(i in (i1+1):(i2-1)) {
           if(j=="step" & !is.na(x[i-1]) & !is.na(x[i]) & !is.na(y[i-1]) & !is.na(y[i])) {
             # step length
@@ -261,6 +267,8 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
         if(j=="step" & !is.na(x[i2-1]) & !is.na(x[i2]) & !is.na(y[i2-1]) & !is.na(y[i2])) {
           genData[i2-i1] <- sp::spDistsN1(pts = matrix(c(x[i2-1],y[i2-1]),ncol=2),pt = c(x[i2],y[i2]),longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
         } 
+        count <- count + nbObs
+        progBar(count,length(ID)*sum(distnames %in% c("step","angle")))
       } 
       d[[j]] <- genData
     }
@@ -297,6 +305,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
     dataHMM[[outNames[2]]] <- y
     class(dataHMM$angle)<-c(class(dataHMM$angle), "angle")
     if(nbSpatialCovs){
+      message(paste0("Extracting spatial covariates",ifelse(gradient," and calculating gradients",""),"..."))
       spCovs<-numeric()
       xy<-as.data.frame(dataHMM[,outNames])
       sp::coordinates(xy) <- outNames
@@ -317,13 +326,17 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
           zvalues <- raster::getZ(spatialCovs[[j]])
           if(!all(unique(data[[zname]]) %in% zvalues)) stop("data$",zname," includes z-values with no matching raster layer in spatialCovs$",spatialcovnames[j])
           for(ii in 1:length(zvalues)){
-            if(!gradient) tmpspCovs[which(data[[zname]]==zvalues[ii])] <- fullspCovs[which(data[[zname]]==zvalues[ii]),ii]
-            else {
-              tmpspCovs[which(data[[zname]]==zvalues[ii]),] <- as.matrix(cbind(fullspCovs[which(data[[zname]]==zvalues[ii]),ii],getGradients(dataHMM,spatialCovs=lapply(spatialCovs[j],function(x) x[[which(zvalues==zvalues[ii])]]),coordNames = outNames)[which(data[[zname]]==zvalues[ii]),paste0(spatialcovnames[j],c(".x",".y"))]))
+            zInd <- which(data[[zname]]==zvalues[ii])
+            if(length(zInd)){
+              if(!gradient) tmpspCovs[zInd] <- fullspCovs[zInd,ii]
+              else {
+                tmpspCovs[zInd,] <- as.matrix(cbind(fullspCovs[zInd,ii],getGradients(dataHMM,spatialCovs=lapply(spatialCovs[j],function(x) x[[which(zvalues==zvalues[ii])]]),coordNames = outNames)[zInd,paste0(spatialcovnames[j],c(".x",".y"))]))
+              }
             }
           }
           spCovs<-cbind(spCovs,tmpspCovs)
         }
+        progBar(j,nbSpatialCovs)
       }
       spCovs<-data.frame(spCovs)
       if(!gradient) names(spCovs)<-spatialcovnames
@@ -579,6 +592,11 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
   }
   
   if(!is.null(coordNames)){
+    count <- 0
+    if(any(c("step","angle") %in% distnames)) {
+      message("Calculating movement metrics...")
+      progBar(count,length(levelData$ID)*sum(distnames %in% c("step","angle")))
+    }
     for(zoo in 1:nbAnimals) {
       ind <- which(levelData$ID==unique(levelData$ID)[zoo])
       nbObs <- length(ind)
@@ -590,8 +608,8 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
         genData <- rep(NA,nbObs)
         i1 <- which(levelData$ID==unique(levelData$ID)[zoo])[1]
         i2 <- i1+nbObs-1
-        
         for(i in (i1+1):(i2-1)) {
+          
           if(j=="step" & !is.na(lx[i-1]) & !is.na(lx[i]) & !is.na(ly[i-1]) & !is.na(ly[i])) {
             # step length
             genData[i-i1] <- sp::spDistsN1(pts = matrix(c(lx[i-1],ly[i-1]),ncol=2),
@@ -608,6 +626,8 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
           genData[i2-i1] <- sp::spDistsN1(pts = matrix(c(lx[i2-1],ly[i2-1]),ncol=2),pt = c(lx[i2],ly[i2]),longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
         }
         dataHMM[which(ID==unique(ID)[zoo] & dataHMM$level==coordLevel),j] <- genData
+        count <- count + nbObs
+        progBar(count,length(levelData$ID)*sum(distnames %in% c("step","angle")))
       } 
     }
   }
@@ -664,6 +684,7 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     }
     class(dataHMM$angle)<-c(class(dataHMM$angle), "angle")
     if(nbSpatialCovs){
+      message(paste0("Extracting spatial covariates",ifelse(gradient," and calculating gradients",""),"..."))
       spCovs<-numeric()
       xy<-as.data.frame(dataHMM[,outNames])
       sp::coordinates(xy) <- outNames
@@ -683,13 +704,17 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
           zvalues <- raster::getZ(spatialCovs[[j]])
           if(!all(unique(data[[zname]]) %in% zvalues)) stop("data$",zname," includes z-values with no matching raster layer in spatialCovs$",spatialcovnames[j])
           for(ii in 1:length(zvalues)){
-            if(!gradient) tmpspCovs[which(data[[zname]]==zvalues[ii])] <- fullspCovs[which(data[[zname]]==zvalues[ii]),ii]
-            else {
-              tmpspCovs[which(data[[zname]]==zvalues[ii]),] <- as.matrix(cbind(fullspCovs[which(data[[zname]]==zvalues[ii]),ii],getGradients(dataHMM,spatialCovs=lapply(spatialCovs[j],function(x) x[[which(zvalues==zvalues[ii])]]),coordNames = coordNames)[which(data[[zname]]==zvalues[ii]),paste0(spatialcovnames[j],c(".x",".y"))]))
+            zInd <- which(data[[zname]]==zvalues[ii])
+            if(length(zInd)){
+              if(!gradient) tmpspCovs[zInd] <- fullspCovs[zInd,ii]
+              else {
+                tmpspCovs[zInd,] <- as.matrix(cbind(fullspCovs[zInd,ii],getGradients(dataHMM,spatialCovs=lapply(spatialCovs[j],function(x) x[[which(zvalues==zvalues[ii])]]),coordNames = coordNames)[zInd,paste0(spatialcovnames[j],c(".x",".y"))]))
+              }
             }
           }
           spCovs<-cbind(spCovs,tmpspCovs)
         }
+        progBar(j,nbSpatialCovs)
       }
       spCovs<-data.frame(spCovs)
       if(!gradient) names(spCovs)<-spatialcovnames

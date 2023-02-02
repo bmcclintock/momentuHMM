@@ -318,7 +318,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
           }
           if(!CTDS){
             df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",Time.name,tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
-            pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient),error=function(e) e)
+            pD <- tryCatch(suppressMessages(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient)),error=function(e) e)
           } else {
             df<-data.frame(x=locs$mu.x,y=locs$mu.y,time=predData[[Time.name]],predData[,c("ID",tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
             pD <- tryCatch(prepCTDS(df, Time.unit=Time.unit, rast=rast, directions=directions, zero.idx=zero.idx, interpMethod=interpMethod,
@@ -629,7 +629,7 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
                               df[which(df$locType=="p"),"y"] <- locs[which(locs$locType=="p"),"y"]
                               df$locType <- NULL
                               if(!CTDS){
-                                pD <- tryCatch(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient,hierLevels=levels(predData$level),coordLevel=attr(predData,"coordLevel")),error=function(e) e)
+                                pD <- tryCatch(suppressMessages(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient,hierLevels=levels(predData$level),coordLevel=attr(predData,"coordLevel"))),error=function(e) e)
                               } else {
                                 # fill in NA locations for other levels
                                 coordLevel <- attr(predData,"coordLevel")

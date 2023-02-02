@@ -103,7 +103,7 @@ prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.id
     if(any(covNames %in% c(c("ID","time","x","y")))) stop("covNames cannot include 'ID', 'time', 'x', or 'y'")
   }
   
-  data <- prepData(data,coordNames=NULL,covNames=covNames)
+  data <- suppressMessages(prepData(data,coordNames=NULL,covNames=covNames))
   dataStreams <- names(data)[which(!names(data) %in% c("ID","time","x","y",covNames))]
   
   # check rasters using prepData
@@ -200,7 +200,7 @@ prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.id
   # add non-gradient spatial covariates for current position (e.g. for inclusion in TPM)
   #if(!is.null(spatialCovs)) names(spatialCovs) <- paste0(names(spatialCovs),".cur")
   #ctdsOut <- prepData(ctdsOut,coordNames=c("x.current","y.current"),spatialCovs=spatialCovs)
-  ctdsOut <- prepData(ctdsOut,coordNames=c("x.current","y.current"),spatialCovs=spatialCovs)
+  ctdsOut <- suppressMessages(prepData(ctdsOut,coordNames=c("x.current","y.current"),spatialCovs=spatialCovs))
   #ctdsOut <- prepData(ctdsglm,coordNames=c("x.current","y.current"),spatialCovs=spatialCovs)
   zMat <- as.matrix(ctdsOut[,paste0("z.",1:directions)])
   zMat <- cbind(zMat,1-rowSums(zMat))
@@ -288,7 +288,7 @@ prepCTDS.hierarchical <- function(data, Time.unit="auto", rast, directions=4, ze
     if(any(covNames %in% c(c("ID","time","x","y")))) stop("covNames cannot include 'ID', 'time', 'x', or 'y'")
   }
   
-  data <- prepData(data,coordNames=NULL,covNames=covNames, hierLevels=hierLevels,coordLevel=coordLevel)
+  data <- suppressMessages(prepData(data,coordNames=NULL,covNames=covNames, hierLevels=hierLevels,coordLevel=coordLevel))
   dataStreams <- names(data)[which(!names(data) %in% c("ID","time","x","y",covNames))]
   
   # check rasters using prepData
@@ -403,7 +403,7 @@ prepCTDS.hierarchical <- function(data, Time.unit="auto", rast, directions=4, ze
   # add non-gradient spatial covariates for current position (e.g. for inclusion in TPM)
   #if(!is.null(spatialCovs)) names(spatialCovs) <- paste0(names(spatialCovs),".cur")
   #ctdsOut <- prepData(ctdsOut,coordNames=c("x.current","y.current"),spatialCovs=spatialCovs)
-  ctdsOut <- prepData(ctdsOut,coordNames=c("x.current","y.current"),spatialCovs=spatialCovs)
+  ctdsOut <- suppressMessages(prepData(ctdsOut,coordNames=c("x.current","y.current"),spatialCovs=spatialCovs))
   #ctdsOut <- prepData(ctdsglm,coordNames=c("x.current","y.current"),spatialCovs=spatialCovs)
   zMat <- as.matrix(ctdsOut[,paste0("z.",1:directions)])
   zMat <- cbind(zMat,1-rowSums(zMat))
@@ -649,9 +649,9 @@ ctds2glm <- function (data, ctmc, rast, spatialCovs=NULL, spatialCovs.grad=NULL,
 }
 
 checkRast <- function(data,rast,spatialCovs,spatialCovs.grad){
-  check1 <- prepData(data.frame(data[1:3,]),spatialCovs=spatialCovs)
-  check2 <- prepData(data.frame(data[1:3,]),spatialCovs=spatialCovs.grad)
-  check3 <- prepData(data.frame(data[1:3,]),spatialCovs=list(rast=rast))
+  check1 <- suppressMessages(prepData(data.frame(data[1:3,]),spatialCovs=spatialCovs))
+  check2 <- suppressMessages(prepData(data.frame(data[1:3,]),spatialCovs=spatialCovs.grad))
+  check3 <- suppressMessages(prepData(data.frame(data[1:3,]),spatialCovs=list(rast=rast)))
   if(!is.null(spatialCovs)) if(any(is.na(raster::cellFromXY(spatialCovs[[1]],data[,c("x","y")])))) stop("Location data are beyond the spatial extent of the raster(s). Try expanding the extent of the raster(s).")
   else if(!is.null(spatialCovs.grad)) if(any(is.na(raster::cellFromXY(spatialCovs.grad[[1]],data[,c("x","y")])))) stop("Location data are beyond the spatial extent of the raster(s). Try expanding the extent of the raster(s).")
   if(any(names(spatialCovs) %in% names(spatialCovs.grad))) stop("'spatialCovs' and 'spatialCovs.grad' names must be unique")
