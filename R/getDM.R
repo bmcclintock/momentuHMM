@@ -45,7 +45,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
           #if(dist[[i]] %in% mvndists){
           for(k in 1:nbStates){
             formterms<-attr(stats::terms.formula(formulaStates[[j]][[k]]),"term.labels")
-            if(grepl("mean",j)) formulaStates[[j]][[k]] <- stats::as.formula(paste("~ + 0 + ",paste(c(paste0(i,gsub("mean","",j),"_tm1"),formterms),collapse=" + ")))
+            if(grepl("mean",j)) formulaStates[[j]][[k]] <- stats::as.formula(paste("~ + 0 + ",paste(c(paste0(i,gsub("mean","",j),"_tm1"),formterms),collapse=" + ")),env=environment())
           }
           #}
         }
