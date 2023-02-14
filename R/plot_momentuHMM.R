@@ -207,9 +207,12 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       ind <- which(m$data$ID==ID[zoo])
       x[[zoo]] <- m$data[[coordNames[1]]][ind]
       y[[zoo]] <- m$data[[coordNames[2]]][ind]
+      if(length(coordNames)>2){
+        z[[zoo]] <- m$data[[coordNames[3]]][ind]
+      }
       if(!is.null(m$conditions$mvnCoords)){
         if(m$conditions$dist[[m$conditions$mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) {
-          z[[zoo]] <- m$data[[coordNames[3]]][ind]
+          #z[[zoo]] <- m$data[[coordNames[3]]][ind]
           plotEllipse <- FALSE
           errorEllipse <- NULL
         } 
