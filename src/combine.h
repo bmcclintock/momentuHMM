@@ -3,7 +3,7 @@
 using namespace Rcpp;
 
 // [[Rcpp::export]]
-NumericVector combine(const List& list)
+NumericVector combine(const List& list, double NAvalue)
 {
   std::size_t n = list.size();
   
@@ -24,6 +24,12 @@ NumericVector combine(const List& list)
     
     // Update the index
     index += el.size();
+  }
+  
+  for(int i=0;i<output.size();i++) {
+    if(!arma::is_finite(output(i))) {
+      output(i) = NAvalue;
+    }
   }
   
   return output;

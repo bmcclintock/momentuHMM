@@ -290,19 +290,8 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       zeroInd = 0;
     
     // remove the NAs from step (impossible to subset a vector with NAs)
-    NumericVector tmpL;
-    for(int l=0; l<L.size(); l++){
-      tmpL = L[l];
-      for(int i=0;i<nbObs;i++) {
-        if(!arma::is_finite(tmpL(i))) {
-          //genData(i) = NAvalue;
-          tmpL(i) = NAvalue;
-        }
-      }
-      L[l] = tmpL;
-    }
-    arma::uvec noNAs = arma::find(as<arma::vec>(tmpL)!=NAvalue);
-    genData = combine(L);
+    genData = combine(L,NAvalue);
+    arma::uvec noNAs = arma::find_finite(as<arma::vec>(L[0]));
     
     // extract zero-mass and one-mass parameters if necessary
     if(genzeroInflation || genoneInflation) {
@@ -341,7 +330,12 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
           //}
         } else if(genDist=="mvnorm3" || genDist=="rw_mvnorm3"){
           genArgs1 = cbindmean3(genPar.row(state),genPar.row(nbStates+state),genPar.row(nbStates*2+state));
-          genArgs2 = cbindsigma3(genPar.row(nbStates*3+state),genPar.row(nbStates*4+state),genPar.row(nbStates*5+state),genPar.row(nbStates*6+state),genPar.row(nbStates*7+state),genPar.row(nbStates*8+state));          
+          genArgs2 = cbindsigma3(genPar.row(nbStates*3+state),genPar.row(nbStates*4+state),genPar.row(nbStates*5+state),genPar.row(nbStates*6+state),genPar.row(nbStates*7+state),genPar.row(nbStates*8+state));      
+          //for(int i=0; i<genArgs1.n_cols; i++){
+          //  for(int j=0; j<genArgs1.n_rows; j++){
+          //    Rprintf("i %d (%f,%f,%f) mean(%f,%f,%f) sigma(%f,%f,%f,%f,%f,%f,%f,%f,%f) \n",i,genData(i),genData(nbObs+i),genData(2*nbObs+i),genArgs1(0,i),genArgs1(1,i),genArgs1(2,i),genArgs2(0,i),genArgs2(1,i),genArgs2(2,i),genArgs2(3,i),genArgs2(4,i),genArgs2(5,i),genArgs2(6,i),genArgs2(7,i),genArgs2(8,i));
+          //  }
+          //}
         }
       } else if((genDist=="cat") | (genDist=="ctds")){
         int catDim = genPar.n_rows / nbStates;
@@ -400,31 +394,22 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       //}
     }
     
-    // put the NAs back and check for underflow to zero
+    // check for underflow to zero
     int badInd;
-    for(int l=0; l<L.size(); l++){
-      tmpL = L[l];
-      for(int i=0;i<nbObs;i++) {
-        if(tmpL(i)==NAvalue) {
-          tmpL(i) = NA_REAL;
-        } else {
-          badInd = 0;
-          for(int state=0; state<nbStates; state++){
-            if(allProbs(i,state) < DBL_MIN){
-              badInd+=1;
-            }
-          }
-          if(badInd==nbStates){
-            for(int state=0; state<nbStates; state++){
-              allProbs(i,state) = DBL_MIN;
-            }
-            //Rprintf("Warning: '%s' probability density for observation %d is zero and results in numerical underflow; this probability has been set to %f\n",genDist.c_str(),i+1,DBL_MIN);
-          }
+    for(int i=0;i<nbObs;i++) {
+      badInd = 0;
+      for(int state=0; state<nbStates; state++){
+        if(allProbs(i,state) < DBL_MIN){
+          badInd+=1;
         }
       }
-      L[l] = tmpL;
+      if(badInd==nbStates){
+        for(int state=0; state<nbStates; state++){
+          allProbs(i,state) = DBL_MIN;
+        }
+        //Rprintf("Warning: '%s' probability density for observation %d is zero and results in numerical underflow; this probability has been set to %f\n",genDist.c_str(),i+1,DBL_MIN);
+      }
     }
-    genData = combine(L);
   }
   
   // deal with states known a priori

@@ -22,8 +22,8 @@ XBloop_rcpp <- function(DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, r
     .Call('_momentuHMM_XBloop_rcpp', PACKAGE = 'momentuHMM', DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex, cindex, nbStates, refCoeff)
 }
 
-combine <- function(list) {
-    .Call('_momentuHMM_combine', PACKAGE = 'momentuHMM', list)
+combine <- function(list, NAvalue) {
+    .Call('_momentuHMM_combine', PACKAGE = 'momentuHMM', list, NAvalue)
 }
 
 cbindmean2 <- function(x, y) {

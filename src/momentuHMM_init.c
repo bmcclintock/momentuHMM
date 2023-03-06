@@ -14,7 +14,7 @@ extern SEXP _momentuHMM_cbindmean2(SEXP, SEXP);
 extern SEXP _momentuHMM_cbindmean3(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_cbindsigma2(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_cbindsigma3(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP _momentuHMM_combine(SEXP);
+extern SEXP _momentuHMM_combine(SEXP, SEXP);
 extern SEXP _momentuHMM_dbern_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dbeta_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dcat_rcpp(SEXP, SEXP, SEXP);
@@ -42,7 +42,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_momentuHMM_cbindmean3",      (DL_FUNC) &_momentuHMM_cbindmean3,       3},
     {"_momentuHMM_cbindsigma2",     (DL_FUNC) &_momentuHMM_cbindsigma2,      3},
     {"_momentuHMM_cbindsigma3",     (DL_FUNC) &_momentuHMM_cbindsigma3,      6},
-    {"_momentuHMM_combine",         (DL_FUNC) &_momentuHMM_combine,          1},
+    {"_momentuHMM_combine",         (DL_FUNC) &_momentuHMM_combine,          2},
     {"_momentuHMM_dbern_rcpp",      (DL_FUNC) &_momentuHMM_dbern_rcpp,       3},
     {"_momentuHMM_dbeta_rcpp",      (DL_FUNC) &_momentuHMM_dbeta_rcpp,       3},
     {"_momentuHMM_dcat_rcpp",       (DL_FUNC) &_momentuHMM_dcat_rcpp,        3},

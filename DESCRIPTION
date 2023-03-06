@@ -56,7 +56,7 @@ Suggests:
     ctmcmove,
     Matrix,
     gdistance
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.3
 Encoding: UTF-8
 NeedsCompilation: yes
 VignetteBuilder: R.rsp

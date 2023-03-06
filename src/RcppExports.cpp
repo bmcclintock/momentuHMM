@@ -33,13 +33,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // combine
-NumericVector combine(const List& list);
-RcppExport SEXP _momentuHMM_combine(SEXP listSEXP) {
+NumericVector combine(const List& list, double NAvalue);
+RcppExport SEXP _momentuHMM_combine(SEXP listSEXP, SEXP NAvalueSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const List& >::type list(listSEXP);
-    rcpp_result_gen = Rcpp::wrap(combine(list));
+    Rcpp::traits::input_parameter< double >::type NAvalue(NAvalueSEXP);
+    rcpp_result_gen = Rcpp::wrap(combine(list, NAvalue));
     return rcpp_result_gen;
 END_RCPP
 }
