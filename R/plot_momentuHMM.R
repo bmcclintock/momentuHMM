@@ -1509,9 +1509,11 @@ dmvnorm.marginal <- function (xn, n = 1, mean = rep(0, nrow(sigma)), sigma = dia
     }
   }
   C <- sigma
-  A <- solve(sigma)
+  A <- tryCatch(solve(sigma),error=function(e) e)
+  if(inherits(A,"error")) A <- MASS::ginv(sigma)
   A_1 <- A[-n, -n]
-  A_1_inv <- solve(A_1)
+  A_1_inv <- tryCatch(solve(A_1),error=function(e) e)
+  if(inherits(A_1_inv,"error")) A_1_inv <- MASS::ginv(A_1)
   C_1 <- C[-n, -n]
   c_nn <- C[n, n]
   c <- C[-n, n]
