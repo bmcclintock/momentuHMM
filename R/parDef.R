@@ -103,18 +103,18 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
            },
            "mvnorm2"={
              parSize[[i]] <- 2 + 3
-             tmpbounds <- matrix(c(rep(rep(c(-Inf,Inf),nbStates),2),rep(c(0,Inf),nbStates),rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates)),
+             tmpbounds <- matrix(c(rep(rep(c(-Inf,Inf),nbStates),2),rep(c(0,Inf),nbStates),rep(c(0,Inf),nbStates),rep(c(-1,1),nbStates)),
                                  ncol=2,byrow=TRUE)
-             parNames[[i]] <- c("mean.x","mean.y","sigma.x","sigma.xy","sigma.y")
+             parNames[[i]] <- c("mean.x","mean.y","sd.x","sd.y","corr.xy")
            },
            "mvnorm3"={
              parSize[[i]] <- 3 + 6
              tmpbounds <- matrix(c(rep(rep(c(-Inf,Inf),nbStates),3),rep(c(0,Inf),nbStates),
-                                                                    rep(rep(c(-Inf,Inf),nbStates),2),
                                                                     rep(c(0,Inf),nbStates),
-                                                                    rep(c(-Inf,Inf),nbStates),
-                                                                    rep(c(0,Inf),nbStates)),ncol=2,byrow=TRUE)
-             parNames[[i]] <- c("mean.x","mean.y","mean.z","sigma.x","sigma.xy","sigma.xz","sigma.y","sigma.yz","sigma.z")
+                                                                    rep(c(0,Inf),nbStates),
+                                                                    rep(rep(c(-1,1),nbStates),2),
+                                                                    rep(c(-1,1),nbStates)),ncol=2,byrow=TRUE)
+             parNames[[i]] <- c("mean.x","mean.y","mean.z","sd.x","sd.y","sd.z","corr.xy","corr.xz","corr.yz")
            },
            "rw_norm"={
              parSize[[i]] <- 2
@@ -124,18 +124,18 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
            },
            "rw_mvnorm2"={
              parSize[[i]] <- 2 + 3
-             tmpbounds <- matrix(c(rep(rep(c(-Inf,Inf),nbStates),2),rep(c(0,Inf),nbStates),rep(c(-Inf,Inf),nbStates),rep(c(0,Inf),nbStates)),
+             tmpbounds <- matrix(c(rep(rep(c(-Inf,Inf),nbStates),2),rep(c(0,Inf),nbStates),rep(c(0,Inf),nbStates),rep(c(-1,1),nbStates)),
                                  ncol=2,byrow=TRUE)
-             parNames[[i]] <- c("mean.x","mean.y","sigma.x","sigma.xy","sigma.y")
+             parNames[[i]] <- c("mean.x","mean.y","sd.x","sd.y","corr.xy")
            },
            "rw_mvnorm3"={
              parSize[[i]] <- 3 + 6
              tmpbounds <- matrix(c(rep(rep(c(-Inf,Inf),nbStates),3),rep(c(0,Inf),nbStates),
-                                   rep(rep(c(-Inf,Inf),nbStates),2),
                                    rep(c(0,Inf),nbStates),
-                                   rep(c(-Inf,Inf),nbStates),
-                                   rep(c(0,Inf),nbStates)),ncol=2,byrow=TRUE)
-             parNames[[i]] <- c("mean.x","mean.y","mean.z","sigma.x","sigma.xy","sigma.xz","sigma.y","sigma.yz","sigma.z")
+                                   rep(c(0,Inf),nbStates),
+                                   rep(rep(c(-1,1),nbStates),2),
+                                   rep(c(-1,1),nbStates)),ncol=2,byrow=TRUE)
+             parNames[[i]] <- c("mean.x","mean.y","mean.z","sd.x","sd.y","sd.z","corr.xy","corr.xz","corr.yz")
            },
            "pois"={
              parSize[[i]] <- 1

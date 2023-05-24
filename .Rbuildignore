@@ -100,4 +100,5 @@ tests/testthat/extraExamples.RData
 ^manuscript$
 ^\.github$
 ^publications$
+^_gsdata_$
 

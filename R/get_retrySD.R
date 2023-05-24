@@ -1,80 +1,138 @@
-get_retrySD <- function(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStates,beta0,mixtures,recharge,delta0){
+get_retrySD <- function(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStates,mixtures,recharge,Par0,beta0,delta0,optMethod){
   if(retryFits<0) stop("retryFits must be non-negative")
   if(retryFits>=1){
-    if(is.null(retrySD)){
-      retrySD <- rep(10,length(wpar))
-      retrySD[1:parmInd] <- 1
-    } else if(!is.list(retrySD)){
-      if(length(retrySD)>1) stop('retrySD must be a scalar or list')
-      if(!is.numeric(retrySD) & retrySD!="adapt") stop("retrySD must be numeric or 'adapt'")
-      retrySD <- rep(retrySD,length(wpar))
-    } else {
-      for(i in distnames){
-        if(is.null(retrySD[[i]])){
-          retrySD[[i]] <- rep(1,parCount[[i]])
-        } else {
-          if(!all(sapply(retrySD[[i]], function(x) x == suppressWarnings(as.numeric(x))) | retrySD[[i]]=="adapt")) stop("retrySD$",i," must be numeric or 'adapt'")
-          if(any((retrySD[[i]]!="adapt") & (retrySD[[i]]<0))) stop("retrySD$",i," must be non-negative")
-          if(length(retrySD[[i]])==1){
-            retrySD[[i]] <- rep(retrySD[[i]],parCount[[i]])
-          } else if(length(retrySD[[i]])!=parCount[[i]]){
-            stop("retrySD$",i," must be of length 1 or ",parCount[[i]])
-          }
-        }
-      }
-      if(nbStates>1){
-        if(is.null(retrySD$beta)){
-          retrySD$beta <- rep(10,length(beta0$beta))
-        } else {
-          if(!all(sapply(retrySD$beta, function(x) x == suppressWarnings(as.numeric(x))) | retrySD$beta=="adapt")) stop("retrySD$beta must be numeric or 'adapt'")
-          if(any((retrySD$beta!="adapt") & (retrySD$beta<0))) stop("retrySD$beta must be non-negative")
-          if(length(retrySD$beta)==1){
-            retrySD$beta <- rep(retrySD$beta,length(beta0$beta))
-          } else if(length(retrySD$beta)!=length(beta0$beta)){
-            stop("retrySD$beta must be of length 1 or ",length(beta0$beta))
-          }
-        }
-        if(mixtures>1){
-          if(is.null(retrySD[["pi"]])) {
-            retrySD[["pi"]] <- rep(10,length(beta0[["pi"]]))
+    if(optMethod!="TMB"){
+      if(is.null(retrySD)){
+        retrySD <- rep(10,length(wpar))
+        retrySD[1:parmInd] <- 1
+      } else if(!is.list(retrySD)){
+        if(length(retrySD)>1) stop('retrySD must be a scalar or list')
+        if(!is.numeric(retrySD) & retrySD!="adapt") stop("retrySD must be numeric or 'adapt'")
+        retrySD <- rep(retrySD,length(wpar))
+      } else {
+        for(i in distnames){
+          if(is.null(retrySD[[i]])){
+            retrySD[[i]] <- rep(1,parCount[[i]])
           } else {
-            if(!all(sapply(retrySD[["pi"]], function(x) x == suppressWarnings(as.numeric(x))) | retrySD[["pi"]]=="adapt")) stop("retrySD$pi must be numeric or 'adapt'")
-            if(any((retrySD[["pi"]]!="adapt") & (retrySD[["pi"]]<0))) stop("retrySD$pi must be non-negative")
-            if(length(retrySD[["pi"]])==1){
-              retrySD[["pi"]] <- rep(retrySD[["pi"]],length(beta0[["pi"]]))
-            } else if(length(retrySD[["pi"]])!=length(beta0[["pi"]])){
-              stop("retrySD$pi must be of length 1 or ",length(beta0[["pi"]]))
-            }              
-          }
-        }
-        if(!is.null(recharge)){
-          for(j in c("g0","theta")){
-            if(is.null(retrySD[[j]])) {
-              retrySD[[j]] <- rep(10,length(beta0[[j]]))
-            } else {
-              if(!all(sapply(retrySD[[j]], function(x) x == suppressWarnings(as.numeric(x))) | retrySD[[j]]=="adapt")) stop("retrySD$",j," must be numeric or 'adapt'")
-              if(any((retrySD[[j]]!="adapt")) & (any(retrySD[[j]]<0))) stop("retrySD$",j," must be non-negative")
-              if(length(retrySD[[j]])==1){
-                retrySD[[j]] <- rep(retrySD[[j]],length(beta0[[j]]))
-              } else if(length(retrySD[[j]])!=length(beta0[[j]])){
-                stop("retrySD$",j," must be of length 1 or ",length(beta0[[j]]))
-              }              
+            if(!all(sapply(retrySD[[i]], function(x) x == suppressWarnings(as.numeric(x))) | retrySD[[i]]=="adapt")) stop("retrySD$",i," must be numeric or 'adapt'")
+            if(any((retrySD[[i]]!="adapt") & (retrySD[[i]]<0))) stop("retrySD$",i," must be non-negative")
+            if(length(retrySD[[i]])==1){
+              retrySD[[i]] <- rep(retrySD[[i]],parCount[[i]])
+            } else if(length(retrySD[[i]])!=parCount[[i]]){
+              stop("retrySD$",i," must be of length 1 or ",parCount[[i]])
             }
           }
         }
-        if(is.null(retrySD$delta)){
-          retrySD$delta <- rep(10,length(delta0))
-        } else {
-          if(!all(sapply(retrySD$delta, function(x) x == suppressWarnings(as.numeric(x))) | retrySD$delta=="adapt")) stop("retrySD$delta must be numeric or 'adapt'")
-          if(any((retrySD$delta!="adapt") & (retrySD$delta<0))) stop("retrySD$delta must be non-negative")
-          if(length(retrySD$delta)==1){
-            retrySD$delta <- rep(retrySD$delta,length(delta0))
-          } else if(length(retrySD$delta)!=length(delta0)){
-            stop("retrySD$delta must be of length 1 or ",length(delta0))
+        if(nbStates>1){
+          if(is.null(retrySD$beta)){
+            retrySD$beta <- rep(10,length(beta0$beta))
+          } else {
+            if(!all(sapply(retrySD$beta, function(x) x == suppressWarnings(as.numeric(x))) | retrySD$beta=="adapt")) stop("retrySD$beta must be numeric or 'adapt'")
+            if(any((retrySD$beta!="adapt") & (retrySD$beta<0))) stop("retrySD$beta must be non-negative")
+            if(length(retrySD$beta)==1){
+              retrySD$beta <- rep(retrySD$beta,length(beta0$beta))
+            } else if(length(retrySD$beta)!=length(beta0$beta)){
+              stop("retrySD$beta must be of length 1 or ",length(beta0$beta))
+            }
+          }
+          if(mixtures>1){
+            if(is.null(retrySD[["pi"]])) {
+              retrySD[["pi"]] <- rep(10,length(beta0[["pi"]]))
+            } else {
+              if(!all(sapply(retrySD[["pi"]], function(x) x == suppressWarnings(as.numeric(x))) | retrySD[["pi"]]=="adapt")) stop("retrySD$pi must be numeric or 'adapt'")
+              if(any((retrySD[["pi"]]!="adapt") & (retrySD[["pi"]]<0))) stop("retrySD$pi must be non-negative")
+              if(length(retrySD[["pi"]])==1){
+                retrySD[["pi"]] <- rep(retrySD[["pi"]],length(beta0[["pi"]]))
+              } else if(length(retrySD[["pi"]])!=length(beta0[["pi"]])){
+                stop("retrySD$pi must be of length 1 or ",length(beta0[["pi"]]))
+              }              
+            }
+          }
+          if(!is.null(recharge)){
+            for(j in c("g0","theta")){
+              if(is.null(retrySD[[j]])) {
+                retrySD[[j]] <- rep(10,length(beta0[[j]]))
+              } else {
+                if(!all(sapply(retrySD[[j]], function(x) x == suppressWarnings(as.numeric(x))) | retrySD[[j]]=="adapt")) stop("retrySD$",j," must be numeric or 'adapt'")
+                if(any((retrySD[[j]]!="adapt")) & (any(retrySD[[j]]<0))) stop("retrySD$",j," must be non-negative")
+                if(length(retrySD[[j]])==1){
+                  retrySD[[j]] <- rep(retrySD[[j]],length(beta0[[j]]))
+                } else if(length(retrySD[[j]])!=length(beta0[[j]])){
+                  stop("retrySD$",j," must be of length 1 or ",length(beta0[[j]]))
+                }              
+              }
+            }
+          }
+          if(is.null(retrySD$delta)){
+            retrySD$delta <- rep(10,length(delta0))
+          } else {
+            if(!all(sapply(retrySD$delta, function(x) x == suppressWarnings(as.numeric(x))) | retrySD$delta=="adapt")) stop("retrySD$delta must be numeric or 'adapt'")
+            if(any((retrySD$delta!="adapt") & (retrySD$delta<0))) stop("retrySD$delta must be non-negative")
+            if(length(retrySD$delta)==1){
+              retrySD$delta <- rep(retrySD$delta,length(delta0))
+            } else if(length(retrySD$delta)!=length(delta0)){
+              stop("retrySD$delta must be of length 1 or ",length(delta0))
+            }
           }
         }
+        retrySD <- unlist(retrySD[c(distnames,"beta","pi","delta","g0","theta")])
       }
-      retrySD <- unlist(retrySD[c(distnames,"beta","pi","delta","g0","theta")])
+    } else {
+      if(is.null(retrySD)){
+        retrySD <- rep(10,length(wpar))
+        retrySD[1:parmInd] <- 1
+      } else if(!is.list(retrySD)){
+        if(length(retrySD)>1) stop('retrySD must be a scalar or list')
+        if(!is.numeric(retrySD) & retrySD!="adapt") stop("retrySD must be numeric or 'adapt'")
+        rSD <- retrySD
+        retrySD <- list()
+        for(i in names(Par0)){
+          retrySD[[i]] <- rep(rSD,length(Par0[[i]]))
+        }
+        if(nbStates>1){
+          retrySD$beta <- rep(rSD,length(beta0$beta))
+          retrySD$delta <- rep(rSD,length(delta0))
+        }
+      } else {
+        for(i in distnames){
+          if(is.null(retrySD[[i]])){
+            retrySD[[i]] <- rep(1,parCount[[i]])
+          } else {
+            if(!all(sapply(retrySD[[i]], function(x) x == suppressWarnings(as.numeric(x))) | retrySD[[i]]=="adapt")) stop("retrySD$",i," must be numeric or 'adapt'")
+            if(any((retrySD[[i]]!="adapt") & (retrySD[[i]]<0))) stop("retrySD$",i," must be non-negative")
+            if(length(retrySD[[i]])==1){
+              retrySD[[i]] <- rep(retrySD[[i]],parCount[[i]])
+            } else if(length(retrySD[[i]])!=parCount[[i]]){
+              stop("retrySD$",i," must be of length 1 or ",parCount[[i]])
+            }
+          }
+        }
+        if(nbStates>1){
+          if(is.null(retrySD$beta)){
+            retrySD$beta <- rep(10,length(beta0$beta))
+          } else {
+            if(!all(sapply(retrySD$beta, function(x) x == suppressWarnings(as.numeric(x))) | retrySD$beta=="adapt")) stop("retrySD$beta must be numeric or 'adapt'")
+            if(any((retrySD$beta!="adapt") & (retrySD$beta<0))) stop("retrySD$beta must be non-negative")
+            if(length(retrySD$beta)==1){
+              retrySD$beta <- rep(retrySD$beta,length(beta0$beta))
+            } else if(length(retrySD$beta)!=length(beta0$beta)){
+              stop("retrySD$beta must be of length 1 or ",length(beta0$beta))
+            }
+          }
+          if(is.null(retrySD$delta)){
+            retrySD$delta <- rep(10,length(delta0))
+          } else {
+            if(!all(sapply(retrySD$delta, function(x) x == suppressWarnings(as.numeric(x))) | retrySD$delta=="adapt")) stop("retrySD$delta must be numeric or 'adapt'")
+            if(any((retrySD$delta!="adapt") & (retrySD$delta<0))) stop("retrySD$delta must be non-negative")
+            if(length(retrySD$delta)==1){
+              retrySD$delta <- rep(retrySD$delta,length(delta0))
+            } else if(length(retrySD$delta)!=length(delta0)){
+              stop("retrySD$delta must be of length 1 or ",length(delta0))
+            }
+          }
+        }
+        retrySD <- retrySD[c(distnames,"beta","delta")]
+      }
     }
   }
   retrySD

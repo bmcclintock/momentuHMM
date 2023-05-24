@@ -12,8 +12,7 @@ data and n the number of data points.}
 
 \item{mean}{mean vectors matrix of dimension \code{p x n}}
 
-\item{varcovM}{list of length \code{n} of variance-covariance matrices,
-each of dimensions \code{p x p}.}
+\item{varcovM}{(nbStates * (p + (p * p - p)/2 )) x n matrix of all sds (sd.x.state1, sd.x.state2, ..., sd.y.state1, ...) and then correlations (corr.xy.state1, corr.xy.state2, ..., corr.xz.state1, corr.xz.state2, ...) from lower triangle of variance-covariance matrix.}
 }
 \value{
 matrix of densities of dimension \code{K x n}.

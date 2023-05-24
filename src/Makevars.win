@@ -23,7 +23,7 @@ tmblib:
 	--no-save --no-restore compile.R '$(TMB_FLAGS)')
 
 clean:
-	rm -rf *.so *.o TMB/*.so TMB/*.o
+	rm -rf *.dll *.o TMB/*.dll TMB/*.o
 	
 # to link to lapack and blas routines (e.g. arma::solve)
 PKG_LIBS= `$(R_HOME)/bin/Rscript -e "Rcpp:::LdFlags()"` $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)

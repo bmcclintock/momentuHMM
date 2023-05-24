@@ -324,9 +324,9 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
           genArgs1 = cbindmean2(genPar.row(state),genPar.row(nbStates+state));
           genArgs2 = cbindsigma2(genPar.row(nbStates*2+state),genPar.row(nbStates*3+state),genPar.row(nbStates*4+state));
           //for(int i=0; i<genArgs1.n_cols; i++){
-            //for(int j=0; j<genArgs1.n_rows; j++){
-              //Rprintf("i %d (%f,%f) mean(%f,%f) sigma(%f,%f,%f,%f) noNAs %d \n",i,genData(i),genData(nbObs+i),genArgs1(0,i),genArgs1(1,i),genArgs2(0,i),genArgs2(1,i),genArgs2(2,i),genArgs2(3,i));
-            //}
+          //  for(int j=0; j<genArgs1.n_rows; j++){
+          //    Rprintf("i %d (%f,%f) mean(%f,%f) sigma(%f,%f,%f) noNAs %d \n",i,genData(i),genData(nbObs+i),genArgs1(0,i),genArgs1(1,i),genArgs2(0,i),genArgs2(1,i),genArgs2(2,i));
+          //  }
           //}
         } else if(genDist=="mvnorm3" || genDist=="rw_mvnorm3"){
           genArgs1 = cbindmean3(genPar.row(state),genPar.row(nbStates+state),genPar.row(nbStates*2+state));
@@ -337,7 +337,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
           //  }
           //}
         }
-      } else if((genDist=="cat") | (genDist=="ctds")){
+      } else if((genDist=="cat") || (genDist=="ctds")){
         int catDim = genPar.n_rows / nbStates;
         arma::mat tmpPar1(catDim,nbObs);
         for(int l=0; l<catDim; l++){

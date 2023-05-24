@@ -20,6 +20,7 @@ getParDM(data, ...)
   DM = NULL,
   userBounds = NULL,
   workBounds = NULL,
+  optMethod = "nlm",
   ...
 )
 
@@ -92,6 +93,8 @@ specifies (-1,1) bounds for the concentration parameters instead of the default 
 \item{workBounds}{An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. For each matrix, the first column pertains to the lower bound and the second column the upper bound.
 For data streams, each element of \code{workBounds} should be a k x 2 matrix with the same name of the corresponding element of 
 \code{Par0}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta0)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta0)}.}
+
+\item{optMethod}{The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``TMB'' (using Template Model Builder; see \code{\link[optimx]{optimx}} for control parameters), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).}
 
 \item{hierStates}{A hierarchical model structure \code{\link[data.tree]{Node}} for the states.  See \code{\link{fitHMM}}.}
 

@@ -1,5 +1,5 @@
 #' @importFrom stats formula terms.formula
-getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInflation,circularAngleMean,ParChecks=TRUE,wlag=FALSE){
+getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInflation,circularAngleMean,ParChecks=TRUE,wlag=FALSE,TMB=FALSE){
   
   distnames<-names(dist)
   fullDM <- vector('list',length(dist))
@@ -85,7 +85,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
       }
       for(j in DMnames){
         if(grepl("langevin\\(",j)) {
-          stop("Langevin models cannot be specified using DM formulas; they must be manually specified as a DM matrix")
+          if(!TMB) stop("Langevin models cannot be specified using DM formulas; they must be manually specified as a DM matrix")
           if(!(dist[[i]] %in% rwdists)) stop("langevin() special formula can only be used for normal random walk data stream distributions")
           if(!grepl("mean",j))
             stop("langevin() special formula can only be used for the means of normal random walk data stream distributions")

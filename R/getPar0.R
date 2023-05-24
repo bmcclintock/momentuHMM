@@ -180,7 +180,7 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
     if(is.null(DM[[i]])) Par[[i]]<-c(t(model$mle[[i]][,which(colnames(model$mle[[i]]) %in% stateNames)]))
   }
   
-  DMinputs<-getDM(model$data,DM,dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,circularAngleMean,FALSE)$fullDM
+  DMinputs<-getDM(model$data,DM,dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,circularAngleMean,FALSE,TMB=isTRUE(model$conditions$optMethod=="TMB"))$fullDM
   
   parCount<- lapply(model$conditions$fullDM,ncol)
   for(i in distnames[!unlist(lapply(model$conditions$circularAngleMean,isFALSE))]){
@@ -320,14 +320,15 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
           colnames(delta) <- stateNames
           rownames(delta) <- deltaNames
         } else {
-          delta <- matrix(0,nrow=length(deltaNames),ncol=nbStates-1,dimnames = list(deltaNames,stateNames[-1]))
+          stateInd <- -1 
+          delta <- matrix(0,nrow=length(deltaNames),ncol=nbStates-1,dimnames = list(deltaNames,stateNames[stateInd]))
           if(!model$conditions$stationary){
-            if(length(which(model$stateNames[-1] %in% stateNames[-1])>1)){
-              for(i in match(model$stateNames[-1],stateNames[-1],nomatch=0)){#which(model$stateNames %in% stateNames)){
+            if(length(which(model$stateNames[stateInd] %in% stateNames[stateInd])>1)){
+              for(i in match(model$stateNames[stateInd],stateNames[stateInd],nomatch=0)){#which(model$stateNames %in% stateNames)){
                 if(is.miSum(model))
-                  delta[deltaNames %in% rownames(model$CIbeta$delta$est),i] <- nw2w(model$CIbeta$delta$est,model$conditions$workBounds$delta)[rownames(model$CIbeta$delta$est) %in% deltaNames,match(stateNames[-1][i],model$stateNames[-1])]
+                  delta[deltaNames %in% rownames(model$CIbeta$delta$est),i] <- nw2w(model$CIbeta$delta$est,model$conditions$workBounds$delta)[rownames(model$CIbeta$delta$est) %in% deltaNames,match(stateNames[stateInd][i],model$stateNames[stateInd])]
                 else
-                  delta[deltaNames %in% rownames(model$CIbeta$delta$est),i] <- matrix(model$mod$estimate[parindex[["beta"]]+length(model$mle$beta)+length(model$CIbeta[["pi"]]$est)+1:length(model$CIbeta$delta$est)],nrow(model$CIbeta$delta$est),ncol(model$CIbeta$delta$est),dimnames=dimnames(model$CIbeta$delta$est))[rownames(model$CIbeta$delta$est) %in% deltaNames,match(stateNames[-1][i],model$stateNames[-1])]
+                  delta[deltaNames %in% rownames(model$CIbeta$delta$est),i] <- matrix(model$mod$estimate[parindex[["beta"]]+length(model$mle$beta)+length(model$CIbeta[["pi"]]$est)+1:length(model$CIbeta$delta$est)],nrow(model$CIbeta$delta$est),ncol(model$CIbeta$delta$est),dimnames=dimnames(model$CIbeta$delta$est))[rownames(model$CIbeta$delta$est) %in% deltaNames,match(stateNames[stateInd][i],model$stateNames[stateInd])]
               }
             }
           }
@@ -335,7 +336,7 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
         if(mixtures==1) {
           deltaNames <- colnames(stats::model.matrix(formDelta,model$data))
           rownames(delta) <- deltaNames
-          if(!nbDeltaCovs) delta <- c(delta)
+          #if(!nbDeltaCovs) delta <- c(delta)
         }
         Par$delta <- delta
       }

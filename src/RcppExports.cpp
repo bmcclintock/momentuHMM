@@ -2,6 +2,7 @@
 // Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #include <RcppArmadillo.h>
+#include <RcppEigen.h>
 #include <Rcpp.h>
 
 using namespace Rcpp;
@@ -70,31 +71,31 @@ BEGIN_RCPP
 END_RCPP
 }
 // cbindsigma2
-arma::mat cbindsigma2(arma::mat x, arma::mat xy, arma::mat y);
-RcppExport SEXP _momentuHMM_cbindsigma2(SEXP xSEXP, SEXP xySEXP, SEXP ySEXP) {
+arma::mat cbindsigma2(arma::mat x, arma::mat y, arma::mat xy);
+RcppExport SEXP _momentuHMM_cbindsigma2(SEXP xSEXP, SEXP ySEXP, SEXP xySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type xy(xySEXP);
     Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
-    rcpp_result_gen = Rcpp::wrap(cbindsigma2(x, xy, y));
+    Rcpp::traits::input_parameter< arma::mat >::type xy(xySEXP);
+    rcpp_result_gen = Rcpp::wrap(cbindsigma2(x, y, xy));
     return rcpp_result_gen;
 END_RCPP
 }
 // cbindsigma3
-arma::mat cbindsigma3(arma::mat x, arma::mat xy, arma::mat xz, arma::mat y, arma::mat yz, arma::mat z);
-RcppExport SEXP _momentuHMM_cbindsigma3(SEXP xSEXP, SEXP xySEXP, SEXP xzSEXP, SEXP ySEXP, SEXP yzSEXP, SEXP zSEXP) {
+arma::mat cbindsigma3(arma::mat x, arma::mat y, arma::mat z, arma::mat xy, arma::mat xz, arma::mat yz);
+RcppExport SEXP _momentuHMM_cbindsigma3(SEXP xSEXP, SEXP ySEXP, SEXP zSEXP, SEXP xySEXP, SEXP xzSEXP, SEXP yzSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type z(zSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type xy(xySEXP);
     Rcpp::traits::input_parameter< arma::mat >::type xz(xzSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
     Rcpp::traits::input_parameter< arma::mat >::type yz(yzSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type z(zSEXP);
-    rcpp_result_gen = Rcpp::wrap(cbindsigma3(x, xy, xz, y, yz, z));
+    rcpp_result_gen = Rcpp::wrap(cbindsigma3(x, y, z, xy, xz, yz));
     return rcpp_result_gen;
 END_RCPP
 }

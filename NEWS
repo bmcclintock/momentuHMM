@@ -1,6 +1,8 @@
-momentuHMM 2.0.0 2023-02-22
+momentuHMM 2.0.0 2023-05-23
 -----------------
 NEW FEATURES
+
+* many (but not all) models can now be fitted using the optimization routine of TMB by setting optMethod='TMB'
 
 * continuous-time hidden Markov models can now be fitted using 'fitCTHMM' (and 'MIfitCTHMM') and simulated using 'simCTHMM' (or 'simHierCTHMM' for hierarchical continuous-time models)
 

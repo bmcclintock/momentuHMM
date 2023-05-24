@@ -59,6 +59,7 @@ getParDM <- function(data, ...) {
 #' @param workBounds An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. For each matrix, the first column pertains to the lower bound and the second column the upper bound.
 #' For data streams, each element of \code{workBounds} should be a k x 2 matrix with the same name of the corresponding element of 
 #' \code{Par0}, where k is the number of parameters. For transition probability parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``beta'', where k=\code{length(beta0)}. For initial distribution parameters, the corresponding element of \code{workBounds} must be a k x 2 matrix named ``delta'', where k=\code{length(delta0)}.
+#' @param optMethod The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``TMB'' (using Template Model Builder; see \code{\link[optimx]{optimx}} for control parameters), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).
 #'
 #' @return A list of parameter values that can be used as starting values (\code{Par0}) in \code{\link{fitHMM}} or \code{\link{MIfitHMM}}
 #' 
@@ -114,7 +115,8 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
                  oneInflation=NULL,
                  estAngleMean=NULL,
                  circularAngleMean=NULL,
-                 DM=NULL,userBounds=NULL,workBounds=NULL, ...){
+                 DM=NULL,userBounds=NULL,workBounds=NULL, 
+                 optMethod="nlm", ...){
   
   hierArgs <- list(...)
   argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist"))]
@@ -235,10 +237,10 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
   }
   inputs <- checkInputs(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,stateNames=NULL,checkInflation = TRUE)
   
-  DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)
+  DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE,TMB=isTRUE(optMethod=="TMB"))
   fullDM <- DMinputs$fullDM
   if(length(data))
-    DMind <- getDM(data,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)$DMind
+    DMind <- getDM(data,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE,TMB=isTRUE(optMethod=="TMB"))$DMind
   else DMind <- DMinputs$DMind
   
   nc <- meanind <- vector('list',length(distnames))
@@ -252,7 +254,7 @@ getParDM.default<-function(data=data.frame(),nbStates,dist,
           tmpCov <- tempCovs
           for(jj in levels(tempCovs[[j]])){
             tmpCov[[j]] <- factor(jj,levels=levels(tempCovs[[j]]))
-            tmpgDM<-getDM(tmpCov,inputs$DM[i],inputs$dist[i],nbStates,inputs$p$parNames[i],inputs$p$bounds[i],Par[i],zeroInflation[i],oneInflation[i],inputs$circularAngleMean[i],FALSE)$fullDM[[i]]
+            tmpgDM<-getDM(tmpCov,inputs$DM[i],inputs$dist[i],nbStates,inputs$p$parNames[i],inputs$p$bounds[i],Par[i],zeroInflation[i],oneInflation[i],inputs$circularAngleMean[i],FALSE,TMB=isTRUE(optMethod=="TMB"))$fullDM[[i]]
             nc[[i]] <- nc[[i]] + apply(tmpgDM,1:2,function(x) !all(unlist(x)==0))
           }
         }

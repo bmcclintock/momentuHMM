@@ -17,7 +17,11 @@ expandPar(
   nbCovs,
   nbRecovs = 0,
   mixtures = 1,
-  nbCovsPi = 0
+  nbCovsPi = 0,
+  TMB = FALSE,
+  Par0,
+  beta0,
+  delta0
 )
 }
 \arguments{
@@ -47,6 +51,14 @@ equal to the stationary distribution. Default: \code{FALSE}.}
 \item{mixtures}{Number of mixtures for the state transition probabilities}
 
 \item{nbCovsPi}{Number of mixture probability covariates}
+
+\item{TMB}{Logical indicating whether or not optMethod='TMB'. Default: \code{FALSE}.}
+
+\item{Par0}{list of initial data stream parameter values. Ignored unless \code{TMB=TRUE}.}
+
+\item{beta0}{matrix of initial state transition parameter values. Ignored unless \code{TMB=TRUE}.}
+
+\item{delta0}{initial distribution parameter values. Ignored unless \code{TMB=TRUE}.}
 }
 \value{
 A vector of all working parameters including any fixed parameters

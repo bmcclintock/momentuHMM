@@ -54,26 +54,22 @@ arma::mat cbindmean3(arma::mat x, arma::mat y, arma::mat z){
 }
 
 // [[Rcpp::export]]
-arma::mat cbindsigma2(arma::mat x, arma::mat xy, arma::mat y){
-  NumericMatrix out(4,x.size());
+arma::mat cbindsigma2(arma::mat x, arma::mat y, arma::mat xy){
+  NumericMatrix out(3,x.size());
   out(0,_) = as<NumericVector>(wrap(x));
-  out(1,_) = as<NumericVector>(wrap(xy));
+  out(1,_) = as<NumericVector>(wrap(y));
   out(2,_) = as<NumericVector>(wrap(xy));
-  out(3,_) = as<NumericVector>(wrap(y));
   return as<arma::mat>(out);
 }
 
 // [[Rcpp::export]]
-arma::mat cbindsigma3(arma::mat x, arma::mat xy, arma::mat xz, arma::mat y, arma::mat yz, arma::mat z){
-  NumericMatrix out(9,x.size());
+arma::mat cbindsigma3(arma::mat x, arma::mat y, arma::mat z, arma::mat xy, arma::mat xz, arma::mat yz){
+  NumericMatrix out(6,x.size());
   out(0,_) = as<NumericVector>(wrap(x));
-  out(1,_) = as<NumericVector>(wrap(xy));
-  out(2,_) = as<NumericVector>(wrap(xz));
+  out(1,_) = as<NumericVector>(wrap(y));
+  out(2,_) = as<NumericVector>(wrap(z));
   out(3,_) = as<NumericVector>(wrap(xy));
-  out(4,_) = as<NumericVector>(wrap(y));
+  out(4,_) = as<NumericVector>(wrap(xz));
   out(5,_) = as<NumericVector>(wrap(yz));
-  out(6,_) = as<NumericVector>(wrap(xz));
-  out(7,_) = as<NumericVector>(wrap(yz));
-  out(8,_) = as<NumericVector>(wrap(z));
   return as<arma::mat>(out);
 }

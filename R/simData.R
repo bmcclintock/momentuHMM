@@ -404,7 +404,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       rcat <- extraDistr::rcat
       rbern <- extraDistr::rbern
     }
-    rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- mvtnorm::rmvnorm
+    convertSigma <- convertSigma
+    rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 
     rrw_norm <- stats::rnorm
     mlogit <- mlogit
     distAngle <- distAngle
@@ -564,7 +565,12 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       p<-parDef(lapply(dist,function(x) gsub("Consensus","",x)),nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds)
       covNames<-character()
       for(i in distnames){
+        tmpDMind <- model$conditions$DMind[[i]]
+        if(isTRUE(model$conditions$optMethod=="TMB")){
+          model$conditions$DMind[[i]] <- FALSE
+        }
         covNames<-c(covNames,getCovNames(model,p,i)$DMterms)
+        model$conditions$DMind[[i]] <- tmpDMind
       }
       if(!is.null(model$rawCovs)){
         covNames <- c(colnames(model$rawCovs),covNames)
@@ -1388,7 +1394,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       DMcov <- stats::model.matrix(newformula,subCovs)
       
       # format parameters
-      DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean)
+      DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,TMB=isTRUE(model$conditions$optMethod=="TMB"))
       fullDM <- DMinputs$fullDM
       DMind <- DMinputs$DMind
       wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
@@ -1482,7 +1488,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       }
       
       # get max crw lag
-      maxlag <- getDM(cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE)$lag
+      maxlag <- getDM(cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE,TMB=isTRUE(model$conditions$optMethod=="TMB"))$lag
       
       covsPi <- stats::model.matrix(formPi,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
       pie <- mlogit(wnpi,covsPi,nbCovsPi,1,mixtures)
@@ -1629,7 +1635,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         DMcov <- stats::model.matrix(newformula,subCovs)
         
         # format parameters
-        DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean)
+        DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,TMB=isTRUE(model$conditions$optMethod=="TMB"))
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
         ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
@@ -1668,7 +1674,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       
       if(nbSpatialCovs |  length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
         # format parameters
-        DMinputs<-getDM(cbind(subCovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE],subSpatialcovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE)
+        DMinputs<-getDM(cbind(subCovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE],subSpatialcovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE,TMB=isTRUE(model$conditions$optMethod=="TMB"))
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
         wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
@@ -1711,23 +1717,23 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             genArgs[[i]][[2]] <- c(subPar[[i]][Z[k]],
                                    subPar[[i]][nbStates+Z[k]])
             genArgs[[i]][[3]] <- matrix(c(subPar[[i]][nbStates*2+Z[k]], #x
-                                          subPar[[i]][nbStates*3+Z[k]], #xy
-                                          subPar[[i]][nbStates*3+Z[k]], #xy
-                                          subPar[[i]][nbStates*4+Z[k]]) #y
+                                          subPar[[i]][nbStates*4+Z[k]], #xy
+                                          subPar[[i]][nbStates*4+Z[k]], #xy
+                                          subPar[[i]][nbStates*3+Z[k]]) #y
                                         ,2,2)
           } else if(inputs$dist[[i]]=="mvnorm3" || inputs$dist[[i]]=="rw_mvnorm3"){
             genArgs[[i]][[2]] <- c(subPar[[i]][Z[k]],
                                    subPar[[i]][nbStates+Z[k]],
                                    subPar[[i]][2*nbStates+Z[k]])
             genArgs[[i]][[3]] <- matrix(c(subPar[[i]][nbStates*3+Z[k]], #x
-                                          subPar[[i]][nbStates*4+Z[k]], #xy
-                                          subPar[[i]][nbStates*5+Z[k]], #xz
-                                          subPar[[i]][nbStates*4+Z[k]], #xy
-                                          subPar[[i]][nbStates*6+Z[k]], #y
-                                          subPar[[i]][nbStates*7+Z[k]], #yz
-                                          subPar[[i]][nbStates*5+Z[k]], #xz
-                                          subPar[[i]][nbStates*7+Z[k]], #yz
-                                          subPar[[i]][nbStates*8+Z[k]]) #z          
+                                          subPar[[i]][nbStates*6+Z[k]], #xy
+                                          subPar[[i]][nbStates*7+Z[k]], #xz
+                                          subPar[[i]][nbStates*6+Z[k]], #xy
+                                          subPar[[i]][nbStates*4+Z[k]], #y
+                                          subPar[[i]][nbStates*8+Z[k]], #yz
+                                          subPar[[i]][nbStates*7+Z[k]], #xz
+                                          subPar[[i]][nbStates*8+Z[k]], #yz
+                                          subPar[[i]][nbStates*5+Z[k]]) #z          
                                         ,3,3)
           } 
         } else if(inputs$dist[[i]]=="cat" | inputs$dist[[i]]=="ctds"){

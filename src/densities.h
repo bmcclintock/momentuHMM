@@ -278,8 +278,7 @@ const double log2pi2 = log(2.0 * M_PI)/2.0;
 //'@param x data matrix of dimension \code{p x n}, \code{p} being the dimension of the
 //'data and n the number of data points.
 //'@param mean mean vectors matrix of dimension \code{p x n}
-//'@param varcovM list of length \code{n} of variance-covariance matrices,
-//'each of dimensions \code{p x p}.
+//'@param varcovM (nbStates * (p + (p * p - p)/2 )) x n matrix of all sds (sd.x.state1, sd.x.state2, ..., sd.y.state1, ...) and then correlations (corr.xy.state1, corr.xy.state2, ..., corr.xz.state1, corr.xz.state2, ...) from lower triangle of variance-covariance matrix.
 //'
 //'@return matrix of densities of dimension \code{K x n}.
 // [[Rcpp::export]]
@@ -294,13 +293,16 @@ arma::colvec dmvnorm_rcpp(NumericVector x,
   arma::vec out(n);
   arma::mat sigma(p,p);
   double constant = - p*log2pi2;
+  int kk = 0;
   
   for (int i=0; i < n; i++) {
+    kk = 0;
     for(int k=0; k < p; k++){
-      sigma(k,k) = varcovM(k*p+k,i);
+      sigma(k,k) = varcovM(k,i) * varcovM(k,i);
       for(int j=0; j < k; j++){
-        sigma(k,j) = varcovM(k*p+j,i);
-        sigma(j,k) = varcovM(k*p+j,i);
+        sigma(k,j) = varcovM(k,i) * varcovM(j,i) * varcovM(p+kk,i);
+        sigma(j,k) = varcovM(j,i) * varcovM(k,i) * varcovM(p+kk,i);
+        ++kk;
       }
       xvec(k) = x(k*n+i);
     }

@@ -80,9 +80,9 @@ MIfitHMM <- function(miData, ...) {
 #' @param retryFits Non-negative integer indicating the number of times to attempt to iteratively fit the model using random perturbations of the current parameter estimates as the 
 #' initial values for likelihood optimization.  See \code{\link{fitHMM}}. 
 #' @param retrySD An optional list of scalars or vectors indicating the standard deviation to use for normal perturbations of each working scale parameter when \code{retryFits>0}. See \code{\link{fitHMM}}.
-#' @param optMethod The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).
+#' @param optMethod The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``TMB'' (using Template Model Builder; see \code{\link[optimx]{optimx}} for control parameters), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).
 #' @param control A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).
-#' @param prior A function that returns the log-density of the working scale parameter prior distribution(s).  See \code{\link{fitHMM}}.
+#' @param prior Either a function that returns the log-density of the working scale parameter prior distribution(s) (if \code{optMethod!='TMB'}) or, if \code{optMethod='TMB'}, a named list with optional entries matching the names of the data streams (i.e. \code{names(dist)}) or ``beta'' (state transition parameters), where each entry is a 2-column matrix (first column = mean, second column = sd) specifying the mean and standard deviation of the normal priors for each working parameter (any rows with NAs indicate no prior for the corresponding parameter). See \code{\link{fitHMM}}.
 #' @param modelName An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions. 
 #' @param covNames Names of any covariates in \code{miData$crwPredict} (if \code{miData} is a \code{\link{crwData}} object; otherwise 
 #' \code{covNames} is ignored). See \code{\link{prepData}}. If \code{miData} is a \code{\link{crwData}} object, any covariate in \code{miData$crwPredict} that is used in \code{formula}, \code{formulaDelta}, \code{formulaPi}, or \code{DM} must be included in \code{covNames}.
@@ -262,10 +262,10 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     future::plan(future::multisession, workers = ncores)
     # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
     progBar <- progBar
-    pkgs <- c("momentuHMM")
+    pkgs <- c("momentuHMM","TMB")
   } else { 
     doParallel::registerDoParallel(cores=ncores)
-    pkgs <- c("momentuHMM")
+    pkgs <- c("momentuHMM","TMB")
   }
   
   if(is.crwData(miData)){
@@ -545,10 +545,10 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     future::plan(future::multisession, workers = ncores)
     # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
     progBar <- progBar
-    pkgs <- c("momentuHMM","data.tree")
+    pkgs <- c("momentuHMM","data.tree","TMB")
   } else { 
     doParallel::registerDoParallel(cores=ncores)
-    pkgs <- NULL
+    pkgs <- c("momentuHMM","data.tree","TMB")
   }
   
   if(is.crwHierData(miData)){

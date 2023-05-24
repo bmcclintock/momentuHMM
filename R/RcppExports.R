@@ -19,27 +19,27 @@
 #'
 #' @return XB matrix
 XBloop_rcpp <- function(DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex, cindex, nbStates, refCoeff = 1.0) {
-    .Call('_momentuHMM_XBloop_rcpp', PACKAGE = 'momentuHMM', DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex, cindex, nbStates, refCoeff)
+    .Call(`_momentuHMM_XBloop_rcpp`, DM, Xvec, nbObs, nr, nc, circularAngleMean, consensus, rindex, cindex, nbStates, refCoeff)
 }
 
 combine <- function(list, NAvalue) {
-    .Call('_momentuHMM_combine', PACKAGE = 'momentuHMM', list, NAvalue)
+    .Call(`_momentuHMM_combine`, list, NAvalue)
 }
 
 cbindmean2 <- function(x, y) {
-    .Call('_momentuHMM_cbindmean2', PACKAGE = 'momentuHMM', x, y)
+    .Call(`_momentuHMM_cbindmean2`, x, y)
 }
 
 cbindmean3 <- function(x, y, z) {
-    .Call('_momentuHMM_cbindmean3', PACKAGE = 'momentuHMM', x, y, z)
+    .Call(`_momentuHMM_cbindmean3`, x, y, z)
 }
 
-cbindsigma2 <- function(x, xy, y) {
-    .Call('_momentuHMM_cbindsigma2', PACKAGE = 'momentuHMM', x, xy, y)
+cbindsigma2 <- function(x, y, xy) {
+    .Call(`_momentuHMM_cbindsigma2`, x, y, xy)
 }
 
-cbindsigma3 <- function(x, xy, xz, y, yz, z) {
-    .Call('_momentuHMM_cbindsigma3', PACKAGE = 'momentuHMM', x, xy, xz, y, yz, z)
+cbindsigma3 <- function(x, y, z, xy, xz, yz) {
+    .Call(`_momentuHMM_cbindsigma3`, x, y, z, xy, xz, yz)
 }
 
 #' Gamma density function
@@ -52,7 +52,7 @@ cbindsigma3 <- function(x, xy, xz, y, yz, z) {
 #'
 #' @return Vector of densities
 dgamma_rcpp <- function(x, mu, sigma) {
-    .Call('_momentuHMM_dgamma_rcpp', PACKAGE = 'momentuHMM', x, mu, sigma)
+    .Call(`_momentuHMM_dgamma_rcpp`, x, mu, sigma)
 }
 
 #' Weibull density function
@@ -65,7 +65,7 @@ dgamma_rcpp <- function(x, mu, sigma) {
 #'
 #' @return Vector of densities
 dweibull_rcpp <- function(x, shape, scale) {
-    .Call('_momentuHMM_dweibull_rcpp', PACKAGE = 'momentuHMM', x, shape, scale)
+    .Call(`_momentuHMM_dweibull_rcpp`, x, shape, scale)
 }
 
 #' Normal density function
@@ -78,7 +78,7 @@ dweibull_rcpp <- function(x, shape, scale) {
 #'
 #' @return Vector of densities
 dnorm_rcpp <- function(x, mean, sd) {
-    .Call('_momentuHMM_dnorm_rcpp', PACKAGE = 'momentuHMM', x, mean, sd)
+    .Call(`_momentuHMM_dnorm_rcpp`, x, mean, sd)
 }
 
 #' Log-normal density function
@@ -91,7 +91,7 @@ dnorm_rcpp <- function(x, mean, sd) {
 #'
 #' @return Vector of densities
 dlnorm_rcpp <- function(x, meanlog, sdlog) {
-    .Call('_momentuHMM_dlnorm_rcpp', PACKAGE = 'momentuHMM', x, meanlog, sdlog)
+    .Call(`_momentuHMM_dlnorm_rcpp`, x, meanlog, sdlog)
 }
 
 #' Exponential density function
@@ -104,7 +104,7 @@ dlnorm_rcpp <- function(x, meanlog, sdlog) {
 #'
 #' @return Vector of densities
 dexp_rcpp <- function(x, rate, foo) {
-    .Call('_momentuHMM_dexp_rcpp', PACKAGE = 'momentuHMM', x, rate, foo)
+    .Call(`_momentuHMM_dexp_rcpp`, x, rate, foo)
 }
 
 #' Von Mises density function
@@ -118,7 +118,7 @@ dexp_rcpp <- function(x, rate, foo) {
 #'
 #' @return Vector of densities
 dvm_rcpp <- function(x, mu, kappa) {
-    .Call('_momentuHMM_dvm_rcpp', PACKAGE = 'momentuHMM', x, mu, kappa)
+    .Call(`_momentuHMM_dvm_rcpp`, x, mu, kappa)
 }
 
 #' Wrapped Cauchy density function
@@ -131,7 +131,7 @@ dvm_rcpp <- function(x, mu, kappa) {
 #'
 #' @return Vector of densities
 dwrpcauchy_rcpp <- function(x, mu, rho) {
-    .Call('_momentuHMM_dwrpcauchy_rcpp', PACKAGE = 'momentuHMM', x, mu, rho)
+    .Call(`_momentuHMM_dwrpcauchy_rcpp`, x, mu, rho)
 }
 
 #' Probability density function of the beta distribution (written in C++)
@@ -142,7 +142,7 @@ dwrpcauchy_rcpp <- function(x, mu, rho) {
 #'
 #' @return Vector of densities
 dbeta_rcpp <- function(x, shape1, shape2) {
-    .Call('_momentuHMM_dbeta_rcpp', PACKAGE = 'momentuHMM', x, shape1, shape2)
+    .Call(`_momentuHMM_dbeta_rcpp`, x, shape1, shape2)
 }
 
 #' Poisson density function
@@ -155,7 +155,7 @@ dbeta_rcpp <- function(x, shape1, shape2) {
 #'
 #' @return Vector of densities
 dpois_rcpp <- function(x, rate, foo) {
-    .Call('_momentuHMM_dpois_rcpp', PACKAGE = 'momentuHMM', x, rate, foo)
+    .Call(`_momentuHMM_dpois_rcpp`, x, rate, foo)
 }
 
 #' Bernoulli density function
@@ -168,7 +168,7 @@ dpois_rcpp <- function(x, rate, foo) {
 #'
 #' @return Vector of densities
 dbern_rcpp <- function(x, prob, foo) {
-    .Call('_momentuHMM_dbern_rcpp', PACKAGE = 'momentuHMM', x, prob, foo)
+    .Call(`_momentuHMM_dbern_rcpp`, x, prob, foo)
 }
 
 #' C++ implementation of multivariate Normal probability density function for multiple inputs
@@ -176,12 +176,11 @@ dbern_rcpp <- function(x, prob, foo) {
 #'@param x data matrix of dimension \code{p x n}, \code{p} being the dimension of the
 #'data and n the number of data points.
 #'@param mean mean vectors matrix of dimension \code{p x n}
-#'@param varcovM list of length \code{n} of variance-covariance matrices,
-#'each of dimensions \code{p x p}.
+#'@param varcovM (nbStates * (p + (p * p - p)/2 )) x n matrix of all sds (sd.x.state1, sd.x.state2, ..., sd.y.state1, ...) and then correlations (corr.xy.state1, corr.xy.state2, ..., corr.xz.state1, corr.xz.state2, ...) from lower triangle of variance-covariance matrix.
 #'
 #'@return matrix of densities of dimension \code{K x n}.
 dmvnorm_rcpp <- function(x, mean, varcovM) {
-    .Call('_momentuHMM_dmvnorm_rcpp', PACKAGE = 'momentuHMM', x, mean, varcovM)
+    .Call(`_momentuHMM_dmvnorm_rcpp`, x, mean, varcovM)
 }
 
 #' Categorical density function
@@ -194,7 +193,7 @@ dmvnorm_rcpp <- function(x, mean, varcovM) {
 #'
 #' @return Vector of densities
 dcat_rcpp <- function(x, prob, foo) {
-    .Call('_momentuHMM_dcat_rcpp', PACKAGE = 'momentuHMM', x, prob, foo)
+    .Call(`_momentuHMM_dcat_rcpp`, x, prob, foo)
 }
 
 #' negative binomial density function
@@ -207,7 +206,7 @@ dcat_rcpp <- function(x, prob, foo) {
 #'
 #' @return Vector of densities
 dnbinom_rcpp <- function(x, mu, size) {
-    .Call('_momentuHMM_dnbinom_rcpp', PACKAGE = 'momentuHMM', x, mu, size)
+    .Call(`_momentuHMM_dnbinom_rcpp`, x, mu, size)
 }
 
 #' logistic density function
@@ -220,7 +219,7 @@ dnbinom_rcpp <- function(x, mu, size) {
 #'
 #' @return Vector of densities
 dlogis_rcpp <- function(x, location, scale) {
-    .Call('_momentuHMM_dlogis_rcpp', PACKAGE = 'momentuHMM', x, location, scale)
+    .Call(`_momentuHMM_dlogis_rcpp`, x, location, scale)
 }
 
 #' student t density function
@@ -233,7 +232,7 @@ dlogis_rcpp <- function(x, location, scale) {
 #'
 #' @return Vector of densities
 dt_rcpp <- function(x, df, ncp) {
-    .Call('_momentuHMM_dt_rcpp', PACKAGE = 'momentuHMM', x, df, ncp)
+    .Call(`_momentuHMM_dt_rcpp`, x, df, ncp)
 }
 
 #' Matrix Exponential
@@ -246,7 +245,7 @@ dt_rcpp <- function(x, df, ncp) {
 #'
 #' @return The matrix exponential of x.
 expmatrix_rcpp <- function(x, kappa = NA_real_, check = FALSE) {
-    .Call('_momentuHMM_expmatrix_rcpp', PACKAGE = 'momentuHMM', x, kappa, check)
+    .Call(`_momentuHMM_expmatrix_rcpp`, x, kappa, check)
 }
 
 #' Get design matrix
@@ -263,7 +262,7 @@ expmatrix_rcpp <- function(x, kappa = NA_real_, check = FALSE) {
 #'
 #' @return full design matrix (X)
 getDM_rcpp <- function(X, covs, DM, nr, nc, cov, nbObs) {
-    .Call('_momentuHMM_getDM_rcpp', PACKAGE = 'momentuHMM', X, covs, DM, nr, nc, cov, nbObs)
+    .Call(`_momentuHMM_getDM_rcpp`, X, covs, DM, nr, nc, cov, nbObs)
 }
 
 #' Negative log-likelihood
@@ -294,7 +293,7 @@ getDM_rcpp <- function(X, covs, DM, nr, nc, cov, nbObs) {
 #' 
 #' @return Negative log-likelihood
 nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT = FALSE, kappa = NA_real_) {
-    .Call('_momentuHMM_nLogLike_rcpp', PACKAGE = 'momentuHMM', nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT, kappa)
+    .Call(`_momentuHMM_nLogLike_rcpp`, nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT, kappa)
 }
 
 #' Stationary distribution for a continuous-time Markov chain
@@ -305,7 +304,7 @@ nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zero
 #'
 #' @return row vector of stationary distribution probabilities
 stationary_rcpp <- function(A) {
-    .Call('_momentuHMM_stationary_rcpp', PACKAGE = 'momentuHMM', A)
+    .Call(`_momentuHMM_stationary_rcpp`, A)
 }
 
 #' Transition probability matrix
@@ -327,6 +326,6 @@ stationary_rcpp <- function(A) {
 #' @return Three dimensional array \code{trMat}, such that \code{trMat[,,t]} is the transition matrix at
 #' time t.
 trMatrix_rcpp <- function(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric( c()), aInd = as.integer( c()), rateMatrix = FALSE, kappa = NA_real_, check = TRUE) {
-    .Call('_momentuHMM_trMatrix_rcpp', PACKAGE = 'momentuHMM', nbStates, beta, covs, betaRef, CT, dt, aInd, rateMatrix, kappa, check)
+    .Call(`_momentuHMM_trMatrix_rcpp`, nbStates, beta, covs, betaRef, CT, dt, aInd, rateMatrix, kappa, check)
 }
 

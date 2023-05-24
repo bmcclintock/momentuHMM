@@ -133,7 +133,8 @@ CIbeta <- function(m,alpha=0.95)
     
     rnames <- rep(colnames(m$covsDelta),mixtures)
     if(mixtures>1) rnames <- paste0(rep(colnames(m$covsDelta),mixtures),"_mix",rep(1:mixtures,each=length(colnames(m$covsDelta))))
-    Par$delta <- get_CIwb(wpar[foo:dInd],est,foo:dInd,Sigma,alpha,m$conditions$workBounds$delta,rnames=rnames,cnames=m$stateNames[-1])
+    deltaNames <- m$stateNames[-1]
+    Par$delta <- get_CIwb(wpar[foo:dInd],est,foo:dInd,Sigma,alpha,m$conditions$workBounds$delta,rnames=rnames,cnames=deltaNames)
     
   }
   

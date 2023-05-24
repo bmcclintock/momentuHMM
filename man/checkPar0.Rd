@@ -29,6 +29,7 @@ checkPar0(data, ...)
   betaRef = NULL,
   deltaCons = NULL,
   stateNames = NULL,
+  optMethod = "nlm",
   fixPar = NULL,
   prior = NULL,
   ...
@@ -52,6 +53,7 @@ checkPar0(data, ...)
   workBounds = NULL,
   betaCons = NULL,
   deltaCons = NULL,
+  optMethod = "nlm",
   fixPar = NULL,
   prior = NULL,
   ...
@@ -106,6 +108,8 @@ distribution parameters for each data stream.}
 \item{deltaCons}{Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}.}
 
 \item{stateNames}{Optional character vector of length nbStates indicating state names.}
+
+\item{optMethod}{The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``TMB'' (using Template Model Builder; see \code{\link[optimx]{optimx}} for control parameters), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).}
 
 \item{fixPar}{An optional list of vectors indicating parameters which are assumed known prior to fitting the model.}
 

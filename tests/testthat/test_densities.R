@@ -61,9 +61,15 @@ test_that("C++ and R density functions are identical",{
   
   #mvnorm2
   x <- matrix(c(seq(0,1000,length=1000),seq(-100,0,length=1000)),1000,2)
-  expect_equal(mvtnorm::dmvnorm(x,sigma=matrix(c(500,0,0,500),2,2)),c(dmvnorm2(x,matrix(0,2,1000),matrix(c(500,0,0,500),4,2*1000))),tolerance=1e-10)
-  expect_equal(mvtnorm::dmvnorm(x,mean=c(100,1000),sigma=matrix(c(10,0,0,10),2,2)),c(dmvnorm2(x,matrix(c(100,1000),2,1000),matrix(c(10,0,0,10),4,2*1000))),tolerance=1e-10)
-  expect_equal(mvtnorm::dmvnorm(x,mean=c(-100,100),sigma=matrix(c(100,-5,-5,100),2,2)),c(dmvnorm2(x,matrix(c(-100,100),2,1000),matrix(c(10,-5,-5,10),4,2*1000))),tolerance=1e-10)
+  expect_equal(mvtnorm::dmvnorm(x,sigma=matrix(c(500,0,0,500),2,2)),c(dmvnorm2(x,matrix(0,2,1000),matrix(sqrt(c(500,500,0)),3,2*1000))),tolerance=1e-10)
+  expect_equal(mvtnorm::dmvnorm(x,mean=c(100,1000),sigma=matrix(c(10,0,0,10),2,2)),c(dmvnorm2(x,matrix(c(100,1000),2,1000),matrix(sqrt(c(10,10,0)),3,2*1000))),tolerance=1e-10)
+  expect_equal(mvtnorm::dmvnorm(x,mean=c(-100,100),sigma=matrix(c(100,-5,-5,100),2,2)),c(dmvnorm2(x,matrix(c(-100,100),2,1000),matrix(c(10,10,-0.5),3,2*1000))),tolerance=1e-10)
+  
+  #mvnorm3
+  x <- matrix(c(seq(0,1000,length=1000),seq(-100,0,length=1000),seq(0,1000,length=1000)),1000,3)
+  expect_equal(mvtnorm::dmvnorm(x,sigma=matrix(c(500,0,0,0,500,0,0,0,500),3,3)),c(dmvnorm3(x,matrix(0,3,1000),matrix(sqrt(c(500,500,500,0,0,0)),6,3*1000))),tolerance=1e-10)
+  expect_equal(mvtnorm::dmvnorm(x,mean=c(100,1000,100),sigma=matrix(c(10,0,0,0,10,0,0,0,10),3,3)),c(dmvnorm3(x,matrix(c(100,1000,100),3,1000),matrix(sqrt(c(10,10,10,0,0,0)),6,3*1000))),tolerance=1e-10)
+  expect_equal(mvtnorm::dmvnorm(x,mean=c(-100,100,-100),sigma=matrix(c(100,-5,-5,-5,100,-5,-5,-5,100),3,3)),c(dmvnorm3(x,matrix(c(-100,100,-100),3,1000),matrix(c(10,10,10,-0.05,-0.05,-0.05),6,3*1000))),tolerance=1e-10)
   
   #mvnorm3
   x <- matrix(c(seq(0,1000,length=1000),seq(-100,0,length=1000),seq(0,1000,length=1000)),1000,3)

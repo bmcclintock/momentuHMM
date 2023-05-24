@@ -39,6 +39,7 @@ checkPar0 <- function(data, ...) {
 #' @param betaRef Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link.
 #' @param deltaCons Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}. 
 #' @param stateNames Optional character vector of length nbStates indicating state names.
+#' @param optMethod The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``TMB'' (using Template Model Builder; see \code{\link[optimx]{optimx}} for control parameters), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).
 #' @param fixPar An optional list of vectors indicating parameters which are assumed known prior to fitting the model. 
 #' @param prior A function that returns the log-density of the working scale parameter prior distribution(s). 
 #' 
@@ -85,7 +86,7 @@ checkPar0 <- function(data, ...) {
 #'           circularAngleMean=list(angle=TRUE))                
 #' }
 #' @export
-checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,betaRef=NULL,deltaCons=NULL,stateNames=NULL,fixPar=NULL,prior=NULL,...)
+checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NULL,estAngleMean=NULL,circularAngleMean=NULL,formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,betaRef=NULL,deltaCons=NULL,stateNames=NULL,optMethod="nlm",fixPar=NULL,prior=NULL,...)
 {
   
   hierArgs <- list(...)
@@ -208,13 +209,13 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
     
     # convert RW data
     if(any(unlist(dist) %in% rwdists)){
-      data <- RWdata(dist,data,knownStates=NULL)
+      tmpdata <- RWdata(dist,data,knownStates=NULL)
       knownStates <- data$knownStates
-      data$knownStates <- NULL
-    }
+      tmpdata$knownStates <- data$knownStates <- NULL
+    } else tmpdata <- data
     
-    tempCovs <- data[1,]
-    DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,nPar,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE)
+    tempCovs <- tmpdata[1,]
+    DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,inputs$p$parNames,inputs$p$bounds,nPar,zeroInflation,oneInflation,inputs$circularAngleMean,FALSE,TMB=isTRUE(optMethod=="TMB"))
     fullDM <- DMinputs$fullDM
     nc <- meanind <- vector('list',length(distnames))
     names(nc) <- names(meanind) <- distnames
@@ -227,7 +228,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
             tmpCov <- tempCovs
             for(jj in levels(tempCovs[[j]])){
               tmpCov[[j]] <- factor(jj,levels=levels(tempCovs[[j]]))
-              tmpgDM<-getDM(tmpCov,inputs$DM[i],inputs$dist[i],nbStates,inputs$p$parNames[i],inputs$p$bounds[i],nPar[i],zeroInflation[i],oneInflation[i],inputs$circularAngleMean[i],FALSE)$fullDM[[i]]
+              tmpgDM<-getDM(tmpCov,inputs$DM[i],inputs$dist[i],nbStates,inputs$p$parNames[i],inputs$p$bounds[i],nPar[i],zeroInflation[i],oneInflation[i],inputs$circularAngleMean[i],FALSE,TMB=isTRUE(optMethod=="TMB"))$fullDM[[i]]
               nc[[i]] <- nc[[i]] + apply(tmpgDM,1:2,function(x) !all(unlist(x)==0))
             }
           }
@@ -249,8 +250,13 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
       bInd <- getboundInd(nc[[i]])
       nPar[[i]] <- nPar[[i]][which(!duplicated(bInd))[bInd]]
     }
-    par <- getParDM.default(data=data,nbStates=nbStates,dist=dist,Par=nPar,zeroInflation=zeroInflation,oneInflation=oneInflation,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,DM=DM,userBounds=userBounds,workBounds=workBounds)
-    
+    par <- tryCatch(getParDM.default(data=tmpdata,nbStates=nbStates,dist=dist,Par=nPar,zeroInflation=zeroInflation,oneInflation=oneInflation,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,DM=DM,userBounds=userBounds,workBounds=workBounds,optMethod = optMethod),error=function(e) e)
+    if(inherits(par,"error")){
+      par <- nPar
+      for(i in distnames){
+        par[[i]] <- rep(0,ncol(fullDM[[i]]))
+      }
+    }
   } else par <- Par0
   if(inherits(data,"ctds") | isTRUE(attr(data,"CT"))){
     m<-suppressMessages(fitCTHMM(data=data,nbStates=nbStates,dist=dist,
@@ -258,7 +264,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
                                estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
                                formula=formula,formulaDelta=formulaDelta,stationary=stationary,mixtures=mixtures,formulaPi=formulaPi,
                                DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,fit=FALSE,
-                               stateNames=stateNames,fixPar=fixPar,prior=prior))   
+                               stateNames=stateNames,optMethod=optMethod,fixPar=fixPar,prior=prior))   
     dist <- m$conditions$dist
   } else {
     m<-suppressMessages(fitHMM(data=data,nbStates=nbStates,dist=dist,
@@ -266,16 +272,16 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
                                estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
                                formula=formula,formulaDelta=formulaDelta,stationary=stationary,mixtures=mixtures,formulaPi=formulaPi,
                                DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,fit=FALSE,
-                               stateNames=stateNames,fixPar=fixPar,prior=prior))
+                               stateNames=stateNames,optMethod=optMethod,fixPar=fixPar,prior=prior))
   }
   inputs <- checkInputs(nbStates,dist,par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,DM,m$conditions$userBounds,stateNames,checkInflation = TRUE)
   p <- inputs$p
   par <- par[names(inputs$dist)]
-  DMinputs<-getDM(m$data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,par,m$conditions$zeroInflation,m$conditions$oneInflation,inputs$circularAngleMean)
+  DMinputs<-getDM(m$data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,par,m$conditions$zeroInflation,m$conditions$oneInflation,inputs$circularAngleMean,TMB=isTRUE(optMethod=="TMB"))
   
   for(i in names(fixPar)){
     if(i %in% names(m$conditions$dist)){
-      par[[i]][!is.na(fixPar[[i]])] <- fixPar[[i]][!is.na(fixPar[[i]])]
+      if(optMethod!="TMB") par[[i]][!is.na(fixPar[[i]])] <- fixPar[[i]][!is.na(fixPar[[i]])]
     }
   }
   
@@ -474,7 +480,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
 #' @param hierFormulaDelta A hierarchical formula structure for the initial distribution covariates for each level of the hierarchy ('formulaDelta'). See \code{\link{fitHMM}}. Default: \code{NULL} (no covariate effects and \code{fixPar$delta} is specified on the working scale). 
 #' 
 #' @export
-checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=NULL,hierDelta=NULL,estAngleMean=NULL,circularAngleMean=NULL,hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,deltaCons=NULL,fixPar=NULL,prior=NULL,...)
+checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=NULL,hierDelta=NULL,estAngleMean=NULL,circularAngleMean=NULL,hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,DM=NULL,userBounds=NULL,workBounds=NULL,betaCons=NULL,deltaCons=NULL,optMethod="nlm",fixPar=NULL,prior=NULL,...)
 {
   
   ## check that the data is a momentuHierHMMData object or valid data frame
@@ -507,7 +513,7 @@ checkPar0.hierarchical <- function(data,hierStates,hierDist,Par0=NULL,hierBeta=N
   fixPar <- inputHierHMM$fixPar
   recharge <- inputHierHMM$recharge
   
-  m <- checkPar0.default(data=data,nbStates=nbStates,dist=dist,Par0=Par0,beta0=beta0,delta0=delta0,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,formula=formula,formulaDelta=formulaDelta,stationary=FALSE,mixtures=mixtures,formulaPi=formulaPi,DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,stateNames=stateNames,fixPar=fixPar,prior=prior)
+  m <- checkPar0.default(data=data,nbStates=nbStates,dist=dist,Par0=Par0,beta0=beta0,delta0=delta0,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,formula=formula,formulaDelta=formulaDelta,stationary=FALSE,mixtures=mixtures,formulaPi=formulaPi,DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,stateNames=stateNames,optMethod=optMethod,fixPar=fixPar,prior=prior)
   
   hier <- mapHier(list(beta=m$mle$beta,g0=m$mle$g0,theta=m$mle$theta),m$mle[["pi"]],m$CIbeta$delta$est,hierBeta=hierBeta,hierDelta=hierDelta,inputHierHMM$hFixPar,inputHierHMM$hBetaCons,inputHierHMM$hDeltaCons,hierStates,inputHierHMM$newformula,m$conditions$formulaDelta,inputHierHMM$data,m$conditions$mixtures,recharge,fill=TRUE)
   

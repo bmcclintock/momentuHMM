@@ -18,13 +18,13 @@ retryFitsParallel <- function(data,nbStates, dist, Par0, beta0, delta0,
   quietCrawl <- quietCrawl
   
   if(optMethod=="nlm"){
-    hess <- nlmPar$hessian
+    hess <- !isFALSE(nlmPar$hessian)
     tmpPar <- nlmPar
     tmpPar$hessian <- FALSE
     nlmPar <- tmpPar
     control <- NULL
   } else {
-    hess <- control$hessian
+    hess <- !isFALSE(control$hessian)
     tmpPar <- control
     tmpPar$hessian <- FALSE
     control <- tmpPar
@@ -65,7 +65,7 @@ retryFitsParallel <- function(data,nbStates, dist, Par0, beta0, delta0,
   if(!all(unlist(lapply(fits,function(x) inherits(x,"error"))))){
     bestInd <- which.min(unlist(lapply(fits,function(x) ifelse(!inherits(x,"error"),x$mod$minimum,Inf))))
     curmod <- fits[[bestInd]]
-    if(!isFALSE(hess)){
+    if(isTRUE(hess)){
       cat("Calculating hessian for best model fit...\n\n")
       curPar <- getPar(curmod)
       if(optMethod=="nlm"){

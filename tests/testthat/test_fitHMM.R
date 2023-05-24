@@ -136,13 +136,13 @@ test_that("equivalent momentuHMM and moveHMM models match",{
                          beta0=par0$beta0[1,,drop=FALSE],delta0=par0$delta0,DM=list(step=diag(4)),dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean)
   moveHMM_fit<-moveHMM::fitHMM(moveData(data),nbStates=nbStates,stepPar=par0$Par$step,anglePar=par0$Par$angle,stepDist=simPar$dist$step,angleDist=simPar$dist$angle,stationary=TRUE,
                                beta0=par0$beta0[1,,drop=FALSE],delta0=par0$delta0)
-  expect_equal(abs(momentuHMM_fit$mod$estimate-moveHMM_fit$mod$estimate)<1.e-6,rep(TRUE,length(momentuHMM_fit$mod$estimate)))
+  expect_equal(abs(momentuHMM_fit$mod$estimate-moveHMM_fit$mod$estimate)<1.e-6,momentuHMM_fit$mod$estimate==momentuHMM_fit$mod$estimate)
   expect_equal(abs(momentuHMM_fit$mod$minimum-moveHMM_fit$mod$minimum)<1.e-6,TRUE)
   
   #moveHMM called from within momentuHMM
   momentuHMM_fit2<-fitHMM(data=data,nbStates=nbStates,Par=list(step=par0$Par$step,angle=par0$Par$angle),stationary=TRUE,
                          beta0=par0$beta0[1,,drop=FALSE],delta0=par0$delta0,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean)
-  expect_equal(abs(momentuHMM_fit2$mod$estimate-moveHMM_fit$mod$estimate)<1.e-6,rep(TRUE,length(momentuHMM_fit2$mod$estimate)))
+  expect_equal(abs(momentuHMM_fit2$mod$estimate-moveHMM_fit$mod$estimate)<1.e-6,momentuHMM_fit2$mod$estimate==momentuHMM_fit2$mod$estimate)
   expect_equal(abs(momentuHMM_fit2$mod$minimum-moveHMM_fit$mod$minimum)<1.e-6,TRUE)
   
   #zeroInflation
@@ -177,15 +177,79 @@ test_that("equivalent momentuHMM and moveHMM models match",{
                          beta0=beta0,delta0=example$par0$delta0,DM=list(step=stepDM),dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE))
   moveHMM_fit<-moveHMM::fitHMM(moveData(data),nbStates=nbStates,stepPar=stepPar0,anglePar=anglePar0,stationary=TRUE,
                                beta0=beta0,delta0=example$par0$delta0,stepDist=stepDist,angleDist=angleDist)
-  expect_equal(abs(momentuHMM_fit$mod$estimate-moveHMM_fit$mod$estimate)<1.e-6,rep(TRUE,length(momentuHMM_fit$mod$estimate)))
+  expect_equal(abs(momentuHMM_fit$mod$estimate-moveHMM_fit$mod$estimate)<1.e-6,momentuHMM_fit$mod$estimate==momentuHMM_fit$mod$estimate)
   expect_equal(abs(momentuHMM_fit$mod$minimum-moveHMM_fit$mod$minimum)<1.e-6,TRUE)
   
   #moveHMM called from within momentuHMM
   momentuHMM_fit2<-fitHMM(data=data,nbStates=nbStates,Par0=list(step=stepPar0,angle=anglePar0),stationary=TRUE,
                          beta0=beta0,delta0=example$par0$delta0,dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE))
-  expect_equal(abs(momentuHMM_fit2$mod$estimate-moveHMM_fit$mod$estimate)<1.e-6,rep(TRUE,length(momentuHMM_fit2$mod$estimate)))
+  expect_equal(abs(momentuHMM_fit2$mod$estimate-moveHMM_fit$mod$estimate)<1.e-6,momentuHMM_fit2$mod$estimate==momentuHMM_fit2$mod$estimate)
   expect_equal(abs(momentuHMM_fit2$mod$minimum-moveHMM_fit$mod$minimum)<1.e-6,TRUE)
   
+  setRNG::setRNG(oldRNG)
+  
+})
+
+test_that("equivalent momentuHMM models with different optMethods match",{
+  
+  oldRNG<-setRNG::setRNG()
+  
+  simPar <- example$simPar
+  par0 <- example$par0
+  nbStates<-simPar$nbStates
+  
+  setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=4)
+  
+  data<-simData(nbAnimals=2,model=example$m)
+  nlm_fit<-fitHMM(data=data,nbStates=nbStates,Par=list(step=log(par0$Par$step),angle=par0$Par$angle),stationary=TRUE,
+                         beta0=par0$beta0[1,,drop=FALSE],delta0=par0$delta0,DM=list(step=diag(4)),dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean)
+  nm_fit<-fitHMM(data=data,nbStates=nbStates,Par=getPar(nlm_fit)$Par,stationary=TRUE,
+                  beta0=getPar(nlm_fit)$beta,delta0=getPar(nlm_fit)$delta,DM=list(step=diag(4)),dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,optMethod="Nelder-Mead")
+  tmb_fit<-fitHMM(data=data,nbStates=nbStates,Par=getPar(nlm_fit)$Par,stationary=TRUE,
+                 beta0=getPar(nlm_fit)$beta,delta0=getPar(nlm_fit)$delta,DM=list(step=list(mean=~1,sd=~1)),dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,optMethod="TMB",control=list(silent=TRUE))
+  expect_equal(abs(nlm_fit$mod$estimate-nm_fit$mod$estimate)<1.e-6,nlm_fit$mod$estimate==nlm_fit$mod$estimate)
+  expect_equal(abs(nlm_fit$mod$minimum-nm_fit$mod$minimum)<1.e-6,TRUE)
+  #expect_equal(abs(nlm_fit$mod$estimate-tmb_fit$mod$estimate)<1.e-6,rep(TRUE,length(nlm_fit$mod$estimate)))
+  expect_equal(abs(nlm_fit$mod$minimum-tmb_fit$mod$minimum)<1.e-6,TRUE)
+  
+  #zeroInflation
+  nbAnimals <- 2
+  nbStates <- 2
+  nbCovs <- 2
+  mu <- c(100,600)
+  sigma <- c(10,40)
+  zeromass <- c(0.1,0.05)
+  stepPar <- c(mu,sigma,zeromass)
+  anglePar <- c(0,0,0.25,0.75)
+  stepDist <- "gamma"
+  angleDist <- "wrpcauchy"
+  zeroInflation <- TRUE
+  nbAnim <- c(50,100)
+  beta0 <- matrix(-1.5,1,nbStates)
+  
+  data <- simData(nbAnimals=nbAnimals,nbStates=nbStates,dist=list(step=stepDist,angle=angleDist),
+                  Par=list(step=stepPar,angle=anglePar),nbCovs=nbCovs,zeroInflation=list(step=zeroInflation),
+                  obsPerAnimal=nbAnim)
+  
+  mu0 <- c(100,600)
+  sigma0 <- c(10,40)
+  zeromass0 <- c(0.1,0.05)
+  stepPar0 <- c(mu0,sigma0,zeromass0)
+  anglePar0 <- anglePar
+  stepDM <- diag(6)
+  Par0<-getParDM(data,nbStates,dist=list(step=stepDist,angle=angleDist),Par=list(step=stepPar0,angle=anglePar0),zeroInflation=list(step=TRUE),estAngleMean=list(angle=TRUE),
+                 DM=list(step=stepDM))
+  
+  nlm_fit<-fitHMM(data=data,nbStates=nbStates,Par0=Par0,stationary=TRUE,
+                         beta0=beta0,delta0=example$par0$delta0,DM=list(step=stepDM),dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE))
+  nm_fit<-fitHMM(data=data,nbStates=nbStates,Par0=getPar(nlm_fit)$Par,stationary=TRUE,
+                  beta0=getPar(nlm_fit)$beta,delta0=getPar(nlm_fit)$delta,DM=list(step=stepDM),dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE),optMethod="Nelder-Mead")
+  tmb_fit<-fitHMM(data=data,nbStates=nbStates,Par0=getPar(nlm_fit)$Par,stationary=TRUE,
+                 beta0=getPar(nlm_fit)$beta,delta0=getPar(nlm_fit)$delta,DM=list(step=list(mean=~1,sd=~1,zeromass=~1)),dist=list(step=stepDist,angle=angleDist),estAngleMean=list(angle=TRUE),optMethod="TMB",control=list(silent=TRUE))
+  expect_equal(abs(nlm_fit$mod$estimate-nm_fit$mod$estimate)<1.e-6,nlm_fit$mod$estimate==nlm_fit$mod$estimate)
+  expect_equal(abs(nlm_fit$mod$minimum-nm_fit$mod$minimum)<1.e-6,TRUE)
+  #expect_equal(abs(nlm_fit$mod$estimate-tmb_fit$mod$estimate)<1.e-6,rep(TRUE,length(nlm_fit$mod$estimate)))
+  expect_equal(abs(nlm_fit$mod$minimum-tmb_fit$mod$minimum)<1.e-6,TRUE)
   setRNG::setRNG(oldRNG)
   
 })

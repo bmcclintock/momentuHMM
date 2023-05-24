@@ -167,7 +167,11 @@ get_mixProbs <- function(optPar,mod,mixture){
   dist <- lapply(dist,function(x) gsub("Consensus","",x))
   dist <- lapply(dist,function(x) ifelse(grepl("cat",x),"cat",x))
   
-  wpar <- expandPar(optPar,mod$conditions$optInd,mod$mod$estimate,mod$conditions$wparIndex,mod$conditions$betaCons,mod$conditions$deltaCons,nbStates,ncol(mod$covsDelta)-1,mod$conditions$stationary,nbCovs,nbRecovs+nbG0covs,mixtures,ncol(mod$covsPi)-1)
+  Par0 <- unlist(lapply(mod$CIbeta[!names(mod$CIbeta) %in% c("beta","delta")],function(x) x$est))
+  beta0 <- mod$CIbeta$beta$est
+  delta0 <- mod$CIbeta$delta$est
+  
+  wpar <- mod$mod$estimate
   par <- w2n(wpar,mod$conditions$bounds,lapply(mod$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,mod$conditions$estAngleMean,mod$conditions$circularAngleMean,consensus,mod$conditions$stationary,mod$conditions$fullDM,mod$conditions$DMind,nrow(mod$data),dist,mod$conditions$Bndind,nc,meanind,mod$covsDelta,mod$conditions$workBounds,mod$covsPi)
   
   if(isTRUE(mod$conditions$CT)) par <- ctPar(par,dist,nbStates,data)

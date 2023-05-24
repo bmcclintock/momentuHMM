@@ -255,29 +255,31 @@ If circular-circular regression is specified for the mean of angular distributio
   \midrule
   \rowcolor{Gray} Bivariate normal (``\verb|mvnorm2|'') & ${\mathbf z_t}\in{\rm I\!R}^2$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
   \rowcolor{Gray}                                       &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.x|>0$               &  $\log$ \tabularnewline                                                
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.xy|\in{\rm I\!R}$   &  identity \tabularnewline                                              
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.y|>0$               &  $\log$ \tabularnewline  
+  \rowcolor{Gray}                                       &                                 & $\verb|sd.x|>0$               &  $\log$ \tabularnewline          
+  \rowcolor{Gray}                                       &                                 & $\verb|sd.y|>0$               &  $\log$ \tabularnewline  
+  \rowcolor{Gray}                                       &                                 & $\verb|corr.xy|\in(-1,1)$   &  logit \tabularnewline                                              
   Bivariate normal random walk (``\verb|rw_mvnorm2|'')  & ${\mathbf z_t}\in{\rm I\!R}^2$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
                                                         &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
-                                                        &                                 & $\verb|sigma.x|>0$               &  $\log$ \tabularnewline                                                                                                                      &                                 & $\verb|sigma.xy|\in{\rm I\!R}$   &  identity \tabularnewline                                                                                                                    &                                 & $\verb|sigma.y|>0$               &  $\log$ \tabularnewline
+                                                        &                                 & $\verb|sd.x|>0$               &  $\log$ \tabularnewline                                                                                                                                               &                                 & $\verb|sd.y|>0$               &  $\log$ \tabularnewline
+                                                        &                                 & $\verb|corr.xy|\in(-1,1)$   &  logit \tabularnewline    
   \rowcolor{Gray} Trivariate normal (``\verb|mvnorm3|'')& ${\mathbf z_t}\in{\rm I\!R}^3$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
   \rowcolor{Gray}                                       &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
   \rowcolor{Gray}                                       &                                 & $\verb|mean.z|\in{\rm I\!R}$     &  identity \tabularnewline  
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.x|>0$               &  $\log$ \tabularnewline                                                
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.xy|\in{\rm I\!R}$   &  identity \tabularnewline
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.xz|\in{\rm I\!R}$   &  identity \tabularnewline          
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.y|>0$               &  $\log$ \tabularnewline   
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.yz|\in{\rm I\!R}$   &  identity \tabularnewline  
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.z|>0$               &  $\log$ \tabularnewline
+  \rowcolor{Gray}                                       &                                 & $\verb|sd.x|>0$               &  $\log$ \tabularnewline                                                
+  \rowcolor{Gray}                                       &                                 & $\verb|sd.y|>0$               &  $\log$ \tabularnewline   
+  \rowcolor{Gray}                                       &                                 & $\verb|sd.z|>0$               &  $\log$ \tabularnewline
+  \rowcolor{Gray}                                       &                                 & $\verb|corr.xy|\in(-1,1)$   &  logit \tabularnewline
+  \rowcolor{Gray}                                       &                                 & $\verb|corr.xz|\in(-1,1)$   &  logit \tabularnewline   
+  \rowcolor{Gray}                                       &                                 & $\verb|corr.yz|\in(-1,1)$   &  logit \tabularnewline  
   Trivariate normal random walk (``\verb|rw_mvnorm3|'') & ${\mathbf z_t}\in{\rm I\!R}^3$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
-                                                        &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
-                                                        &                                 & $\verb|mean.z|\in{\rm I\!R}$     &  identity \tabularnewline  
-                                                        &                                 & $\verb|sigma.x|>0$               &  $\log$ \tabularnewline                                                                                                                      &                                 & $\verb|sigma.xy|\in{\rm I\!R}$   &  identity \tabularnewline    
-                                                        &                                 & $\verb|sigma.xz|\in{\rm I\!R}$   &  identity \tabularnewline 
-                                                        &                                 & $\verb|sigma.y|>0$               &  $\log$ \tabularnewline   
-                                                        &                                 & $\verb|sigma.yz|\in{\rm I\!R}$   &  identity \tabularnewline  
-                                                        &                                 & $\verb|sigma.z|>0$               &  $\log$ \tabularnewline  
+  \rowcolor{Gray}                                       &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
+  \rowcolor{Gray}                                       &                                 & $\verb|mean.z|\in{\rm I\!R}$     &  identity \tabularnewline  
+  \rowcolor{Gray}                                       &                                 & $\verb|sd.x|>0$               &  $\log$ \tabularnewline                                                
+  \rowcolor{Gray}                                       &                                 & $\verb|sd.y|>0$               &  $\log$ \tabularnewline   
+  \rowcolor{Gray}                                       &                                 & $\verb|sd.z|>0$               &  $\log$ \tabularnewline
+  \rowcolor{Gray}                                       &                                 & $\verb|corr.xy|\in(-1,1)$   &  logit \tabularnewline
+  \rowcolor{Gray}                                       &                                 & $\verb|corr.xz|\in(-1,1)$   &  logit \tabularnewline   
+  \rowcolor{Gray}                                       &                                 & $\verb|corr.yz|\in(-1,1)$   &  logit \tabularnewline  
   \bottomrule
   \end{tabular}
   \footnotesize{$^1$Link functions $(g)$ relate natural scale parameters $({\boldsymbol \theta})$ to a $T \times K$ design matrix $({\mathbf X})$ and $K-$vector of working scale parameters $(\boldsymbol{\beta}\in \mathbb{R}^K)$ such that $g({\boldsymbol \theta})={\mathbf X}\boldsymbol{\beta}$. %In circular-circular regression models for the mean of angular distributions, we have $\theta_t = {\text atan2}( \sum_{k=1}^K z_{t,k} \sin(x_{t,k} \beta_k),1+\sum_{k=1}^K z_{t,k} \cos(x_{t,k} \beta_k))$, where $Z$ is a $T \times K$ matrix of positive real covariates (e.g. wind speed) and $X$ is a $T \times K$ matrix composed of angular covariates (e.g. wind direction).
@@ -2856,7 +2858,7 @@ crwOut <- crawlWrap(buffaloData,
 @
 
 Now we're ready to specify the recharge model. We'll first fit the model to the best predicted track from \verb|crawlWrap| and then use this model fit to specify starting values for a multiple imputation analysis:
-<<recharge-3, echo=TRUE, eval=TRUE, cache=TRUE>>=
+<<recharge-3, echo=TRUE, eval=TRUE, cache=TRUE, message=FALSE>>=
 spatialCovs <- list(W_intercept = W_ortho$svd1,
                     W_near_sabie = W_ortho$svd2,
                     dist2sabie = dist2sabie,
@@ -2882,29 +2884,30 @@ DM <- list(mu=matrix(c("mu.x_tm1",         0,    0,0,0,0,
                                 0,"mu.y_tm1","D.y",0,0,0,
                                 0,         0,    0,1,0,0,
                                 0,         0,    0,0,1,0,
-                                0,         0,    0,0,0,1,
-                                0,         0,    0,0,0,1,
                                 0,         0,    0,1,0,0,
-                                0,         0,    0,0,1,0),
+                                0,         0,    0,0,1,0,
+                                0,         0,    0,0,0,1,
+                                0,         0,    0,0,0,1),
                      5*nbStates,
                      6,byrow=TRUE,
                      dimnames=list(c(paste0("mean.",
                                             rep(c("x_","y_"),
                                                 each=nbStates),
                                             1:nbStates),
-                                     paste0("sigma.",
-                                            rep(c("x_","xy_","y_"),
+                                     paste0("sd.",
+                                            rep(c("x_","y_"),
                                                 each=nbStates),
-                                            1:nbStates)),
+                                            1:nbStates),
+                                     paste0("corr.xy_",1:nbStates)),
                                    c("x:x_tm1",
                                      "y:y_tm1",
                                      "xy:D",
-                                     "sigma_1:(Intercept)",
-                                     "sigma_2:(Intercept)",
-                                     "sigma_12:(Intercept)"))))
+                                     "sd_1:(Intercept)",
+                                     "sd_2:(Intercept)",
+                                     "corr_12:(Intercept)"))))
 
 # starting values
-Par0=list(mu=c(1, 1, 0, log(85872.66), log(37753.53), 0))
+Par0=list(mu=c(1, 1, 0, log(sqrt(85872.66)), log(sqrt(37753.53)), 0))
 g0 <- 0 # recharge function at time 0
 theta <- c(0,0,0) # recharge function parameters
 
@@ -2948,7 +2951,7 @@ buffaloFit <- fitHMM(hmmData, nbStates = nbStates, dist = dist,
 # extract starting values
 bestPar <- getPar(buffaloFit)
 @
-\noindent There are several things worth noting in the code above. When specifying normal random walk models using a pseudo-design matrix, we must include terms for the previous location in \verb|mean.x| and \verb|mean.y| (in this case ``mu.x\_tm1'' and ``mu.y\_tm1'', respectively), and we'll typically fix the corresponding coeffcients to $1$ using \verb|fixPar|. As in \cite{HootenEtAl2019}, we assume that the coefficients for the negative gradient $(D)$ are equal in the x- and y-directions (i.e., $\beta^\mu_x = \beta^\mu_y$; this constraint is specified in the third column of \verb|DM| above) and that the state-dependent \verb|sigma.x| and \verb|sigma.y| are equal. Similar to random effects models (section \ref{sec:pilotWhale}), note that for recharge models \verb|beta0| must now be specified as a list (consisting of objects named \verb|beta|, \verb|g0|, and/or \verb|theta|). \cite{HootenEtAl2019} assumed state transitions were non-Markov (Eq. \ref{eq:rechargeTPM1}), and we can accomplish this by setting the reference states for the t.p.m. working scale parameters to state 1 (i.e., \verb|betaRef <- c(1,1)|) and setting the columns within each row to be equal (i.e., \verb|betaCons <- matrix(c(1,2),2,2)|). With \verb|formula <- ~ recharge(g0 = ~1, theta = ~W_intercept+W_near_sabie)|, the resulting state transition probability matrix at time $t$ is:
+\noindent There are several things worth noting in the code above. When specifying normal random walk models using a pseudo-design matrix, we must include terms for the previous location in \verb|mean.x| and \verb|mean.y| (in this case ``mu.x\_tm1'' and ``mu.y\_tm1'', respectively), and we'll typically fix the corresponding coeffcients to $1$ using \verb|fixPar|. As in \cite{HootenEtAl2019}, we assume that the coefficients for the negative gradient $(D)$ are equal in the x- and y-directions (i.e., $\beta^\mu_x = \beta^\mu_y$; this constraint is specified in the third column of \verb|DM| above) and that the state-dependent \verb|sd.x| and \verb|sd.y| are equal. Similar to random effects models (section \ref{sec:pilotWhale}), note that for recharge models \verb|beta0| must now be specified as a list (consisting of objects named \verb|beta|, \verb|g0|, and/or \verb|theta|). \cite{HootenEtAl2019} assumed state transitions were non-Markov (Eq. \ref{eq:rechargeTPM1}), and we can accomplish this by setting the reference states for the t.p.m. working scale parameters to state 1 (i.e., \verb|betaRef <- c(1,1)|) and setting the columns within each row to be equal (i.e., \verb|betaCons <- matrix(c(1,2),2,2)|). With \verb|formula <- ~ recharge(g0 = ~1, theta = ~W_intercept+W_near_sabie)|, the resulting state transition probability matrix at time $t$ is:
 \begin{equation*}
   {\mathbf \Gamma^{(t)}} = \begin{bmatrix}
     \frac{1}{(1+\exp(\beta_0+g_t\beta_1))} & \frac{\exp(\beta_0+g_t\beta_1)}{(1+\exp(\beta_0+g_t\beta_1))}  \\
@@ -3018,7 +3021,7 @@ names(boundary) <- "boundary"
 Next we'll calculate the gradients of the potential function surface in the x- and y-directions using \verb|ctmcmove::rast.grad|:
 <<landConstraint-2, echo=TRUE, eval=FALSE>>=
 # boundary needs to have a CRS for ctmcmove::rast.grad
-proj4string(boundary) <- sp::CRS("+init=epsg:4326") 
+proj4string(boundary) <- sp::CRS("+init=epsg:6328") 
 
 # compute gradients in x- and y- directions
 grad <- ctmcmove::rast.grad(boundary)
@@ -3030,15 +3033,15 @@ Now we're ready to simulate our bivariate normal random walk model including the
 dist <- list(mu="rw_mvnorm2") # bivariate normal random walk
 DM <- list(mu=list(mean.x=~mu.x_tm1+crw(mu.x_tm1,lag=1)+grad.x, 
                    mean.y=~mu.y_tm1+crw(mu.y_tm1,lag=1)+grad.y, 
-                   sigma.x=~1,
-                   sigma.xy=~1,
-                   sigma.y=~1))
+                   sd.x=~1,
+                   sd.y=~1,
+                   corr.xy=~1))
 
 # specify parameters on working parameter scale
-Par <- list(mu=c(1,0.75,-750000,1,0.75,-1500,log(100000),0,log(100000)))
+Par <- list(mu=c(1,0.75,-1500,1,0.75,-1500,log(sqrt(100000)),log(sqrt(100000)),0))
 names(Par$mu) <- c("mu.x_tm1","crw(mu.x_tm1,lag=1)","grad.x",
                    "mu.y_tm1","crw(mu.y_tm1,lag=1)","grad.y",
-                   "sigma.x","sigma.xy","sigma.y")
+                   "sd.x","sd.y","corr.xy")
 
 # simulate and plot
 simBound <- simData(nbStates=1, obsPerAnimal = 10000, dist=dist, Par=Par, 
@@ -3155,17 +3158,17 @@ DM <- list(mu=matrix(c("mu.x_tm1","langevin(bathy.x)","langevin(slope.x)",
                                 0,                  0,                  0,
                                           0,1,0,
                                 0,                  0,                  0,
-                                          0,0,1,
+                                          0,1,0,
                                 0,                  0,                  0,
-                                          0,1,0),
+                                          0,0,1),
                      nrow=5,byrow=TRUE,
                      dimnames = list(c("mean.x","mean.y",
-                                       "sigma.x","sigma.xy","sigma.y"),
+                                       "sd.x","sd.y","corr.xy"),
                      c("mean:mu_tm1","bathy","slope","d2site",
-                       "sigma:(Intercept)","sigma.xy:(Intercept)"))))
+                       "sd:(Intercept)","corr.xy:(Intercept)"))))
 DM$mu
 @
-\noindent There are several things to unpack here. The first column of the design matrix is for the previous location (as in section \ref{sec:buffalo}) and the \verb|langevin| special function in columns 2--4 identifies the habitat selection coefficients of the model (and their corresponding habitat covariate gradients). Note that the ``\verb|.x|'' and ``\verb|.y|'' suffixes correspond to the rows for the means in the easting (``\verb|mean.x|'') and northing (``\verb|mean.y|'') directions. Lastly, the Langevin model of \citet{MichelotEtAl2019} assumes the speeds in the easting and northing directions are identical and independent (Eq.\ \ref{eq:lang1Euler}), so \verb|sigma.x| and \verb|sigma.y| are constrained to be the same in column 5. We will use \verb|fixPar| to fix the covariance (\verb|sigma.xy|) to zero when fitting the model with \verb|fitCTHMM|. Now we're ready to fit the model:
+\noindent There are several things to unpack here. The first column of the design matrix is for the previous location (as in section \ref{sec:buffalo}) and the \verb|langevin| special function in columns 2--4 identifies the habitat selection coefficients of the model (and their corresponding habitat covariate gradients). Note that the ``\verb|.x|'' and ``\verb|.y|'' suffixes correspond to the rows for the means in the easting (``\verb|mean.x|'') and northing (``\verb|mean.y|'') directions. Lastly, the Langevin model of \citet{MichelotEtAl2019} assumes the speeds in the easting and northing directions are identical and independent (Eq.\ \ref{eq:lang1Euler}), so \verb|sd.x| and \verb|sd.y| are constrained to be the same in column 5. We will use \verb|fixPar| to fix the correlation (\verb|corr.xy|) to zero when fitting the model with \verb|fitCTHMM|. Now we're ready to fit the model:
 <<langevin-fit,echo=TRUE,eval=TRUE,cache=TRUE,warning=FALSE>>=
 fitLangevin <- fitCTHMM(langData,
                         nbStates=1,

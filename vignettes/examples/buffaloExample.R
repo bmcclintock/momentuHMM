@@ -72,23 +72,24 @@ DM <- list(mu=matrix(c("mu.x_tm1",         0,    0,0,0,0,
                                 0,"mu.y_tm1","D.y",0,0,0,
                                 0,         0,    0,1,0,0,
                                 0,         0,    0,0,1,0,
-                                0,         0,    0,0,0,1,
-                                0,         0,    0,0,0,1,
                                 0,         0,    0,1,0,0,
-                                0,         0,    0,0,1,0),
+                                0,         0,    0,0,1,0,
+                                0,         0,    0,0,0,1,
+                                0,         0,    0,0,0,1),
                      5*nbStates,
                      6,byrow=TRUE,
                      dimnames=list(c(paste0("mean.",rep(c("x_","y_"),each=nbStates),1:nbStates),
-                                     paste0("sigma.",rep(c("x_","xy_","y_"),each=nbStates),1:nbStates)),
+                                     paste0("sd.",rep(c("x_","y_"),each=nbStates),1:nbStates),
+                                     paste0("corr.xy_",1:nbStates)),
                                    c("x:x_tm1",
                                      "y:y_tm1",
                                      "xy:D",
-                                     "sigma_1:(Intercept)",
-                                     "sigma_2:(Intercept)",
-                                     "sigma_12:(Intercept)"))))
+                                     "sd_1:(Intercept)",
+                                     "sd_2:(Intercept)",
+                                     "corr_12:(Intercept)"))))
 
 # starting values
-Par0=list(mu=c(1, 1, 0, log(85872.66), log(37753.53), 0))
+Par0=list(mu=c(1, 1, 0, log(sqrt(85872.66)), log(sqrt(37753.53)), 0))
 g0 <- 0 # recharge function at time 0
 theta <- c(0,0,0) # recharge function parameters
 

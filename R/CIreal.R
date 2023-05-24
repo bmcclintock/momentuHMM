@@ -128,17 +128,17 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
   p<-inputs$p
   splineInputs<-getSplineDM(distnames,inputs$DM,m,tempCovs)
   covs<-splineInputs$covs
-  DMinputs<-getDM(covs,splineInputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+  DMinputs<-getDM(covs,splineInputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean,TMB=isTRUE(m$conditions$optMethod=="TMB"))
   fullDM <- DMinputs$fullDM
   #DMind <- DMinputs$DMind
-  #DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+  #DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean,TMB=isTRUE(m$conditions$optMethod=="TMB"))
   #fullDM<-DMinputs$fullDM
   
   for(i in distnames[which(distnames %in% pparms)]){
     tmpParNames <- p$parNames[[i]]
     tmpParNames[which(p$parNames[[i]]=="kappa")] <- "concentration"
     if(!m$conditions$DMind[[i]]){
-      par <- c(w2n(m$mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean[i],inputs$consensus[i],m$conditions$stationary,fullDM,m$conditions$DMind,1,inputs$dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds,m$covsPi)[[i]])
+      par <- c(w2n(m$mod$estimate,p$bounds,p$parSize,nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean[i],inputs$consensus[i],m$conditions$stationary,fullDM,m$conditions$DMind,1,inputs$dist[i],m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds,m$covsPi,isTRUE(m$conditions$optMethod=="TMB"))[[i]])
     } else {
       par <- as.vector(t(m$mle[[i]]))
     }
@@ -452,7 +452,7 @@ get_CI<-function(wpar,Par,m,ind,DM,DMind,Bounds,Sigma,circularAngleMean,consensu
   lower<-upper<-se<-rep(NA,nrow(DM))
   if(!is.null(Sigma)){
     for(k in 1:nrow(DM)){
-      dN<-tryCatch(numDeriv::grad(w2nDM,w,bounds=Bounds,DM=DM,DMind=DMind,nbObs=1,circularAngleMean=circularAngleMean,consensus=consensus,nbStates=nbStates,k=k,nc=nc,meanind=meanind,workBounds=workBounds,dist=dist),error=function(e) e)
+      dN<-tryCatch(numDeriv::grad(w2nDM,w,bounds=Bounds,DM=DM,DMind=DMind,nbObs=1,circularAngleMean=circularAngleMean,consensus=consensus,nbStates=nbStates,k=k,nc=nc,meanind=meanind,workBounds=workBounds,dist=dist,TMB=isTRUE(m$conditions$optMethod=="TMB")),error=function(e) e)
       if(inherits(dN,"error")){
         warning(dN)
         dN <- rep(NaN,length(w))
@@ -479,7 +479,7 @@ CI_angle<-function(wpar,Par,m,ind,DM,DMind,Bounds,Sigma,circularAngleMean,consen
   lower<-upper<-se<-rep(NA,nrow(DM))
   if(!is.null(Sigma)){
     for(k in 1:nrow(DM)){
-      dN<-numDeriv::grad(w2nDMangle,w,bounds=Bounds,DM=DM,DMind=DMind,nbObs=1,circularAngleMean=circularAngleMean,consensus=consensus,nbStates=nbStates,k=k,nc=nc,meanind=meanind,workBounds=workBounds,dist=dist)
+      dN<-numDeriv::grad(w2nDMangle,w,bounds=Bounds,DM=DM,DMind=DMind,nbObs=1,circularAngleMean=circularAngleMean,consensus=consensus,nbStates=nbStates,k=k,nc=nc,meanind=meanind,workBounds=workBounds,dist=dist,TMB=isTRUE(m$conditions$optMethod=="TMB"))
       se[k]<-suppressWarnings(sqrt(dN%*%Sigma[ind,ind]%*%dN))
       lower[k] <- Par[k] - qnorm(1-(1-alpha)/2) * se[k]
       upper[k] <- Par[k] + qnorm(1-(1-alpha)/2) * se[k]
@@ -496,7 +496,7 @@ CI_angle<-function(wpar,Par,m,ind,DM,DMind,Bounds,Sigma,circularAngleMean,consen
   out
 }
   
-w2nDMangle<-function(w,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbStates,k,nc,meanind,workBounds,dist){
+w2nDMangle<-function(w,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbStates,k,nc,meanind,workBounds,dist,TMB=FALSE){
   
   bounds[,1] <- -Inf
   bounds[which(bounds[,2]!=1),2] <- Inf
@@ -509,7 +509,7 @@ w2nDMangle<-function(w,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbState
   w[(foo - nbStates):(foo - 1)] <- angleMean
   w[foo:length(w)] <- kappa
   
-  w2nDM(w,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbStates,k,nc,meanind,workBounds,dist)
+  w2nDM(w,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbStates,k,nc,meanind,workBounds,dist,TMB)
 }
 
 #' @rdname CIreal

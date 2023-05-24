@@ -222,11 +222,11 @@ Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \co
 
 \item{ncores}{Number of cores to use for parallel processing when \code{retryFits>0}. Default: 1 (no parallel processing). When \code{retryFits} attempts are performed in parallel, each attempt uses perturbations of the initial model fit (i.e. they are not iteratively updated as when \code{ncores=1}).}
 
-\item{optMethod}{The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).}
+\item{optMethod}{The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``TMB'' (using Template Model Builder; see \code{\link[optimx]{optimx}} for control parameters), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).}
 
-\item{control}{A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).}
+\item{control}{A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="TMB"}, \code{optMethod="Nelder-Mead"}, or \code{optMethod="SANN"}).}
 
-\item{prior}{A function that returns the log-density of the working scale parameter prior distribution(s). See 'Details'.}
+\item{prior}{Either a function that returns the log-density of the working scale parameter prior distribution(s) (if \code{optMethod!='TMB'}) or, if \code{optMethod='TMB'}, a named list with optional entries matching the names of the data streams (i.e. \code{names(dist)}) or ``beta'' (state transition parameters), where each entry is a 2-column matrix (first column = mean, second column = sd) specifying the mean and standard deviation of the normal priors for each working parameter (any rows with NAs indicate no prior for the corresponding parameter). See 'Details'.}
 
 \item{modelName}{An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions.}
 

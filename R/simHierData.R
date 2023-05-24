@@ -103,7 +103,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       rcat <- extraDistr::rcat
       rbern <- extraDistr::rbern
     }
-    rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- mvtnorm::rmvnorm
+    convertSigma <- convertSigma
+    rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 
     rrw_norm <- stats::rnorm
     mlogit <- mlogit
     distAngle <- distAngle

@@ -113,7 +113,7 @@ pseudoRes <- function(m, ncores = 1)
     
     inputs <- checkInputs(nbStates,dist,Par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$stateNames)
     p <- inputs$p
-    DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+    DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean,TMB=isTRUE(m$conditions$optMethod=="TMB"))
     m$conditions$fullDM <- DMinputs$fullDM
     m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,pi=m$Par$beta[["pi"]]$est,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
   } else {
@@ -201,7 +201,7 @@ pseudoRes <- function(m, ncores = 1)
       
       # define function for calculating chi square probs based on mahalanobis distance
       d2<-function(q,mean,sigma){
-        stats::pchisq(stats::mahalanobis(q,mean,matrix(sigma,length(mean),length(mean))),df=length(mean))
+        stats::pchisq(stats::mahalanobis(q,mean,convertSigma(matrix(sigma,length(mean),length(mean)),length(mean))),df=length(mean))
       }
       
     } else {
@@ -234,9 +234,9 @@ pseudoRes <- function(m, ncores = 1)
                                   genPar[nbStates+state,genInd])))
             genArgs[[3]] <- as.list(as.data.frame(
                                   rbind(genPar[nbStates*2+state,genInd], #x
-                                        genPar[nbStates*3+state,genInd], #xy
-                                        genPar[nbStates*3+state,genInd], #xy
-                                        genPar[nbStates*4+state,genInd]))) #y
+                                        genPar[nbStates*4+state,genInd], #xy
+                                        genPar[nbStates*4+state,genInd], #xy
+                                        genPar[nbStates*3+state,genInd]))) #y
           } else if(dist[[j]]=="mvnorm3" || dist[[j]]=="rw_mvnorm3"){
             genArgs[[1]] <- as.list(as.data.frame(matrix(genArgs[[1]],nrow=ndim,byrow=TRUE)))
             genArgs[[2]] <- as.list(as.data.frame(rbind(genPar[state,genInd],
@@ -244,14 +244,14 @@ pseudoRes <- function(m, ncores = 1)
                                   genPar[2*nbStates+state,genInd])))
             genArgs[[3]] <- as.list(as.data.frame(
                                   rbind(genPar[nbStates*3+state,genInd], #x
-                                        genPar[nbStates*4+state,genInd], #xy
-                                        genPar[nbStates*5+state,genInd], #xz
-                                        genPar[nbStates*4+state,genInd], #xy
-                                        genPar[nbStates*6+state,genInd], #y
-                                        genPar[nbStates*7+state,genInd], #yz
-                                        genPar[nbStates*5+state,genInd], #xz
-                                        genPar[nbStates*7+state,genInd], #yz
-                                        genPar[nbStates*8+state,genInd]))) #z          
+                                        genPar[nbStates*6+state,genInd], #xy
+                                        genPar[nbStates*7+state,genInd], #xz
+                                        genPar[nbStates*6+state,genInd], #xy
+                                        genPar[nbStates*4+state,genInd], #y
+                                        genPar[nbStates*8+state,genInd], #yz
+                                        genPar[nbStates*7+state,genInd], #xz
+                                        genPar[nbStates*8+state,genInd], #yz
+                                        genPar[nbStates*5+state,genInd]))) #z          
           }
         } else if(dist[[j]]=="cat"){
           dimCat <- as.numeric(gsub("cat","",m$conditions$dist[[j]]))

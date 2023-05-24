@@ -15,7 +15,7 @@ splineList<-c("bs","ns",paste0("splines::",c("bs","ns")),"bSpline","mSpline","cS
 meansList<-c("matrix","numeric","integer","logical","Date","POSIXlt","POSIXct","difftime")
 meansListNoTime<-c("numeric","integer","logical")
 plotArgs <- c("cex","cex.main","cex.lab","cex.axis","cex.legend","lwd","asp","legend.pos")
-fitMethods<-c("nlm","Nelder-Mead","SANN")
+fitMethods<-c("nlm","TMB","Nelder-Mead","SANN")
 badNames <- c("beta", "delta", "pi", "g0", "theta")
 
 #' @importFrom stats dbinom
@@ -58,7 +58,23 @@ dmvnorm2 <- dmvnorm3 <- drw_mvnorm2 <- drw_mvnorm3 <- function(x,mean,sigma){
   dmvnorm_rcpp(x,mean,sigma)
 }
 
-rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- mvtnorm::rmvnorm
+convertSigma <- function(sigcor,k){
+  sigma <- sigcor
+  for(i in 1:k){
+    sigma[i,i] <- sigcor[i,i] * sigcor[i,i]
+    for(j in 1:k){
+      if(i!=j){
+        sigma[i,j] <- sigcor[i,i] * sigcor[j,j] * sigcor[i,j]
+        sigma[j,i] <- sigcor[i,i] * sigcor[j,j] * sigcor[i,j]
+      }
+    }
+  }
+  return(sigma)
+}
+
+rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- function(n,mean,sigcor){
+  mvtnorm::rmvnorm(n,mean,convertSigma(sigcor,length(mean)))
+}
 
 drw_norm <- stats::dnorm
 rrw_norm <- stats::rnorm
@@ -162,9 +178,9 @@ ctPar <- function(par,dist,nbStates,data){
       par[[i]][nbStates+1:nbStates,] <- t(apply(par[[i]][nbStates+1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".y_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".y_tm1")]],each=nbStates)
       if(dist[[i]]=="rw_mvnorm3"){
         par[[i]][2*nbStates+1:nbStates,] <- t(apply(par[[i]][2*nbStates+1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".z_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".z_tm1")]],each=nbStates)
-        par[[i]][3*nbStates+1:(3*nbStates),] <- t(apply(par[[i]][3*nbStates+1:(3*nbStates),,drop=FALSE],1,function(x) x*data$dt))
+        par[[i]][3*nbStates+1:(3*nbStates),] <- t(apply(par[[i]][3*nbStates+1:(3*nbStates),,drop=FALSE],1,function(x) x*sqrt(data$dt)))
       } else {
-        par[[i]][2*nbStates+1:(3*nbStates),] <- t(apply(par[[i]][2*nbStates+1:(3*nbStates),,drop=FALSE],1,function(x) x*data$dt))
+        par[[i]][2*nbStates+1:(2*nbStates),] <- t(apply(par[[i]][2*nbStates+1:(2*nbStates),,drop=FALSE],1,function(x) x*sqrt(data$dt)))
       }
     } else if(dist[[i]]=="ctds"){
       p <- matrix(0,nrow(par[[i]])+nbStates,ncol(par[[i]]))

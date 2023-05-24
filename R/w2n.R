@@ -28,6 +28,7 @@
 #' @param covsDelta data frame containing the delta model covariates
 #' @param workBounds named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters
 #' @param covsPi data frame containing the pi model covariates
+#' @param TMB logical indicating whether or not \code{optMethod='TMB'}. Default: \code{FALSE}.
 #' 
 #' @return A list of:
 #' \item{...}{Matrices containing the natural parameters for each data stream (e.g., 'step', 'angle', etc.)}
@@ -62,7 +63,7 @@
 #'
 #' @importFrom Brobdingnag as.brob sum
 
-w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,fullDM,DMind,nbObs,dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,fullDM,DMind,nbObs,dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi,TMB=FALSE)
 {
   
   # identify recharge parameters
@@ -132,7 +133,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
     
     tmpwpar<-wpar[parindex[[i]]+1:parCount[[i]]]
     
-    if(estAngleMean[[i]] & Bndind[[i]]){ 
+    if(estAngleMean[[i]] & Bndind[[i]] & !TMB){ 
       bounds[[i]][,1] <- -Inf
       bounds[[i]][which(bounds[[i]][,2]!=1),2] <- Inf
       
@@ -144,7 +145,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
       tmpwpar[(foo - nbStates):(foo - 1)] <- angleMean
       tmpwpar[foo:length(tmpwpar)] <- kappa
     }
-    parlist[[i]] <- tryCatch(w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],nbObs,circularAngleMean[[i]],consensus[[i]],nbStates,0,nc[[i]],meanind[[i]],workBounds[[i]],dist[[i]]),error=function(e) e)
+    parlist[[i]] <- tryCatch(w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],nbObs,circularAngleMean[[i]],consensus[[i]],nbStates,0,nc[[i]],meanind[[i]],workBounds[[i]],dist[[i]],TMB),error=function(e) e)
     if(inherits(parlist[[i]],"error")) stop("\nFailed to calculate '",i,"' natural scale parameters: ",parlist[[i]],"\n     check initial values, workBounds, userBounds, nlmPar or control, etc.")
     
     if((dist[[i]] %in% angledists) & !estAngleMean[[i]]){
@@ -180,7 +181,7 @@ w2wn <- function(wpar,workBounds,k=0){
 }
 
 #' @importFrom stats plogis
-w2nDM<-function(wpar,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbStates,k=0,nc,meanind,workBounds,dist){
+w2nDM<-function(wpar,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbStates,k=0,nc,meanind,workBounds,dist,TMB=FALSE){
   
   wpar <- w2wn(wpar,workBounds)
   
@@ -228,8 +229,10 @@ w2nDM<-function(wpar,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbStates,
       b[seq(j,nrow(XB)+nbStates,nbStates)[1:(nrow(XB)/nbStates)]] <- bounds[seq(j,nrow(XB),nbStates),2]
     }
   } else {
-    if(length(ind1) & isFALSE(circularAngleMean))
-      p[ind1,] <- (2*atan(XB[ind1,]))
+    if(length(ind1) & isFALSE(circularAngleMean)){
+      if(!TMB) p[ind1,] <- (2*atan(XB[ind1,]))
+      else p[ind1,] <- 2 * pi * stats::plogis(XB[ind1,]) - pi; 
+    }
     
     if(length(ind2)){
       for(j in 1:nbStates){
@@ -259,14 +262,20 @@ w2nDM<-function(wpar,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbStates,
         for(j in as.integer(gsub("langevin","",comment(DM)))){
           DMx <- DM[paste0("mean.x_",i),j][[1]]
           DMy <- DM[paste0("mean.y_",i),j][[1]]
+          varx <- p[which(rownames(bounds)==paste0("sd.x_",i)),]^2
+          vary <- p[which(rownames(bounds)==paste0("sd.y_",i)),]^2
+          varxy <- p[which(rownames(bounds)==paste0("sd.x_",i)),] * p[which(rownames(bounds)==paste0("sd.y_",i)),] * p[which(rownames(bounds)==paste0("corr.xy_",i)),]
           if(any(grepl("mean.z",rownames(DM)))){
             DMz <- DM[paste0("mean.z_",i),j][[1]]
-            DM[paste0("mean.x_",i),j][[1]] <- DMx * p[which(rownames(bounds)==paste0("sigma.x_",i)),]/2 + DMy * p[which(rownames(bounds)==paste0("sigma.xy_",i)),]/2 + DMz * p[which(rownames(bounds)==paste0("sigma.xz_",i)),]/2
-            DM[paste0("mean.y_",i),j][[1]] <- DMy * p[which(rownames(bounds)==paste0("sigma.y_",i)),]/2 + DMx * p[which(rownames(bounds)==paste0("sigma.xy_",i)),]/2 + DMz * p[which(rownames(bounds)==paste0("sigma.yz_",i)),]/2
-            DM[paste0("mean.z_",i),j][[1]] <- DMz * p[which(rownames(bounds)==paste0("sigma.z_",i)),]/2 + DMx * p[which(rownames(bounds)==paste0("sigma.xz_",i)),]/2 + DMy * p[which(rownames(bounds)==paste0("sigma.yz_",i)),]/2
+            varz <- p[which(rownames(bounds)==paste0("sd.z_",i)),]^2
+            varxz <- p[which(rownames(bounds)==paste0("sd.x_",i)),] * p[which(rownames(bounds)==paste0("sd.z_",i)),] * p[which(rownames(bounds)==paste0("corr.xz_",i)),]
+            varyz <- p[which(rownames(bounds)==paste0("sd.y_",i)),] * p[which(rownames(bounds)==paste0("sd.z_",i)),] * p[which(rownames(bounds)==paste0("corr.yz_",i)),]
+            DM[paste0("mean.x_",i),j][[1]] <- DMx * varx/2 + DMy * varxy/2 + DMz * varxz/2
+            DM[paste0("mean.y_",i),j][[1]] <- DMy * vary/2 + DMx * varxy/2 + DMz * varyz/2
+            DM[paste0("mean.z_",i),j][[1]] <- DMz * varz/2 + DMx * varxz/2 + DMy * varyz/2
           } else {
-            DM[paste0("mean.x_",i),j][[1]] <- DMx * p[which(rownames(bounds)==paste0("sigma.x_",i)),]/2 + DMy * p[which(rownames(bounds)==paste0("sigma.xy_",i)),]/2
-            DM[paste0("mean.y_",i),j][[1]] <- DMy * p[which(rownames(bounds)==paste0("sigma.y_",i)),]/2 + DMx * p[which(rownames(bounds)==paste0("sigma.xy_",i)),]/2
+            DM[paste0("mean.x_",i),j][[1]] <- DMx * varx/2 + DMy * varxy/2
+            DM[paste0("mean.y_",i),j][[1]] <- DMy * vary/2 + DMx * varxy/2
           }
         }
       }

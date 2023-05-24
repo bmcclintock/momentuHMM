@@ -126,9 +126,9 @@ fitHMM <- function(data, ...) {
 #' Alternatively \code{retrySD} can be a scalar, in which case this value is used for all parameters. Instead of numeric scalars, \code{retrySD} can also be specified as \code{"adapt"} in which case the standard deviation is adapted as \code{10^(ceiling(log10(abs(x))))} (where \code{x} is the current value of the corresponding working parameter).
 #' Default: NULL (in which case \code{retrySD}=1 for data stream parameters and \code{retrySD}=10 for initial distribution and state transition probabilities). Ignored unless \code{retryFits>0}.
 #' @param ncores Number of cores to use for parallel processing when \code{retryFits>0}. Default: 1 (no parallel processing). When \code{retryFits} attempts are performed in parallel, each attempt uses perturbations of the initial model fit (i.e. they are not iteratively updated as when \code{ncores=1}).
-#' @param optMethod The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).
-#' @param control A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).
-#' @param prior A function that returns the log-density of the working scale parameter prior distribution(s). See 'Details'.
+#' @param optMethod The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``TMB'' (using Template Model Builder; see \code{\link[optimx]{optimx}} for control parameters), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).
+#' @param control A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="TMB"}, \code{optMethod="Nelder-Mead"}, or \code{optMethod="SANN"}).
+#' @param prior Either a function that returns the log-density of the working scale parameter prior distribution(s) (if \code{optMethod!='TMB'}) or, if \code{optMethod='TMB'}, a named list with optional entries matching the names of the data streams (i.e. \code{names(dist)}) or ``beta'' (state transition parameters), where each entry is a 2-column matrix (first column = mean, second column = sd) specifying the mean and standard deviation of the normal priors for each working parameter (any rows with NAs indicate no prior for the corresponding parameter). See 'Details'.
 #' @param modelName An optional character string providing a name for the fitted model. If provided, \code{modelName} will be returned in \code{\link{print.momentuHMM}}, \code{\link{AIC.momentuHMM}}, \code{\link{AICweights}}, and other functions. 
 #'
 #' @return A \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object, i.e. a list of:
@@ -726,6 +726,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
             if(i!=attr(data,"ctdsData")) stop("'ctds' distribution can only apply to the '",attr(data,"ctdsData"),"' data stream")
             if(is.null(DM[[i]])) stop("DM$",i," must be specified as a list with a formula for parameter 'lambda'")
             attr(dist[[i]],"directions") <- attr(data,"directions")
+            if(optMethod=="TMB") stop("sorry, 'ctds' distributions cannot be fitted with optMethod='TMB'")
           }
         }
       }
@@ -736,7 +737,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     inputs <- checkInputs(nbStates,dist,Par0,estAngleMean,circularAngleMean,zeroInflation,oneInflation,DM,userBounds,stateNames,checkInflation = TRUE)
     p <- inputs$p
     
-    DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par0,zeroInflation,oneInflation,inputs$circularAngleMean)
+    DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par0,zeroInflation,oneInflation,inputs$circularAngleMean,TMB=isTRUE(optMethod=="TMB"))
     fullDM <- DMinputs$fullDM
     DMind <- DMinputs$DMind
   
@@ -750,7 +751,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     ####################################
     ## Prepare initial values for nlm ##
     ####################################
-    fixParIndex <- get_fixParIndex(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,deltaCons,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data,newdata,kappa)
+    fixParIndex <- get_fixParIndex(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,deltaCons,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data,newdata,kappa,optMethod)
     
     parCount<- lapply(fullDM,ncol)
     for(i in distnames[!unlist(lapply(inputs$circularAngleMean,isFALSE))]){
@@ -765,33 +766,35 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     }
     workBounds <- getWorkBounds(workBounds,distnames,fixParIndex$Par0,parindex,parCount,inputs$DM,fixParIndex$beta0,fixParIndex$delta0)
     
-    wpar <- n2w(fixParIndex$Par0,p$bounds,fixParIndex$beta0,fixParIndex$delta0,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
+    wpar <- n2w(fixParIndex$Par0,p$bounds,fixParIndex$beta0,fixParIndex$delta0,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist,isTRUE(optMethod=="TMB"))
     if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
   
     parmInd <- length(wpar)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures-(nbCovsPi+1)*(mixtures-1)-ncol(covsDelta)*(nbStates-1)*(!stationary)*mixtures-ifelse(is.null(recharge),0,(nbRecovs+1+nbG0covs+1))
   
-    retrySD <- get_retrySD(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStates,fixParIndex$beta0,mixtures,recharge,fixParIndex$delta0)
+    retrySD <- get_retrySD(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStates,mixtures,recharge,fixParIndex$Par0,fixParIndex$beta0,fixParIndex$delta0,optMethod)
     
     optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar[["pi"]])+which(duplicated(c(deltaCons)))))
     
     if(!is.null(prior)){
-      if(!is.function(prior)) stop("prior must be a function")
-      environment(prior) <- environment()
-      pr <- tryCatch(prior(wpar),error=function(e) e)
-      if(inherits(pr,"error")){
-        stop("Invalid prior: ",pr)
-      } else {
-        if(length(pr)>1) stop("prior function must return a scalar")
-        if(!is.finite(pr)) stop("prior is not finite")
+      if(optMethod!="TMB"){
+        if(!is.function(prior)) stop("prior must be a function")
+        environment(prior) <- environment()
+        pr <- tryCatch(prior(wpar),error=function(e) e)
+        if(inherits(pr,"error")){
+          stop("Invalid prior: ",pr)
+        } else {
+          if(length(pr)>1) stop("prior function must return a scalar")
+          if(!is.finite(pr)) stop("prior is not finite")
+        }
       }
     }
     
     ##################
     ## Optimization ##
     ##################
-    # this function is used to muffle the warning "NA/Inf replaced by maximum positive value" in nlm and "value out of range in 'lgamma'" in nLogLike_rcpp
+    # this function is used to muffle the warning "NA/Inf replaced by maximum positive value" in nlm, "value out of range in 'lgamma'" in nLogLike_rcpp, and "NA/NaN function evaluation" in optimx
     h <- function(w) {
-      if(any(grepl("NA/Inf replaced by maximum positive value",w)) | any(grepl("value out of range in 'lgamma'",w)))
+      if(any(grepl("NA/Inf replaced by maximum positive value",w)) | any(grepl("value out of range in 'lgamma'",w)) | any(grepl("NA/NaN function evaluation",w)))
         invokeRestart("muffleWarning")
     }
     
@@ -837,7 +840,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     }
     
     
-    if(fit) {
+    if(fit | optMethod=="TMB") {
       
       hessian <- TRUE
       if(!is.null(control$hessian)){
@@ -890,6 +893,20 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                                       stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
                                       nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,kappa)
             curmod$estimate <- numeric()
+          } else if(optMethod=="TMB"){
+            if(!is.null(userBounds)) stop("sorry, userBounds cannot be specified when optMethod='TMB'")
+            if(mixtures>1) stop("sorry, discrete random effect models are not currently supported when optMethod='TMB'")
+            if(any(unlist(inputs$consensus))) stop("sorry, consensus models are not currently supported when optMethod='TMB'")
+            if(any(unlist(inputs$circularAngleMean))) stop("sorry, circular-circular regression models are not currently supported when optMethod='TMB'")
+            if(!is.null(hierRecharge)) stop("sorry, recharge models are not currently supported when optMethod='TMB'")
+            withCallingHandlers(curmod <- tryCatch(fitTMB(data,wpar,inputs$dist,nbStates,p,inputs$estAngleMean,oneInflation,zeroInflation,inputs$DM,DMinputs,newformula,fixParIndex,stationary,prior,knownStates,betaCons,control,formulaDelta,covsDelta,workBounds,fit,isTRUE(list(...)$CT),dtIndex,kappa,hessian),error=function(e) e),warning=h)
+            if(!inherits(curmod,"error") & (fitCount+1)>retryFits){
+              if(!is.null(prior)) {
+                tmbPrior <- curmod$prior
+                prior <- eval(parse(text=paste0("function(par) sum(dnorm(par,c(",paste0(do.call("rbind",as.list(tmbPrior))[,1],collapse=","),"),c(",paste0(do.call("rbind",as.list(tmbPrior))[,2],collapse=","),"),log=TRUE),na.rm=TRUE)")),envir=.GlobalEnv)
+                curmod$prior <- NULL
+              }
+            }
             
           } else if(optMethod=="nlm"){
             withCallingHandlers(curmod <- tryCatch(stats::nlm(nLogLike,optPar,nbStates=nbStates,formula=newformula,bounds=p$bounds,parSize=p$parSize,data=data,dist=inputs$dist,covs=covs,
@@ -900,11 +917,13 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                                                               stepmax=stepmax,steptol=steptol,
                                                               iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian) & is.null(prior),TRUE,ifelse(!is.null(prior),FALSE,ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)))),error=function(e) e),warning=h)
             if(!inherits(curmod,"error")){
+              names(curmod$estimate) <- names(optPar)
               if(!is.null(prior) & ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)){
                 curmod$hessian <- tryCatch(numDeriv::hessian(nLogLike,curmod$estimate,nbStates=nbStates,formula=newformula,bounds=p$bounds,parSize=p$parSize,data=data,dist=inputs$dist,covs=covs,
                                                              estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,consensus=inputs$consensus,zeroInflation=zeroInflation,oneInflation=oneInflation,
                                                              stationary=stationary,fullDM=fullDM,DMind=DMind,Bndind=p$Bndind,knownStates=knownStates,fixPar=unlist(fixParIndex$fixPar),wparIndex=fixParIndex$wparIndex,
                                                              nc=nc,meanind=meanind,covsDelta=covsDelta,workBounds=workBounds,prior=NULL,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recovs=recovs,g0covs=g0covs,mixture=mixtures,covsPi=covsPi,recharge=hierRecharge,aInd=aInd,CT=isTRUE(list(...)$CT),dtIndex=dtIndex,kappa=kappa),error=function(e) e)
+                if(!inherits(curmod$hessian,"error")) dimnames(curmod$hessian) <- list(names(optPar),names(optPar))
               }
             }
           } else {
@@ -926,48 +945,70 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
           endTime <- proc.time()-startTime
         }
         
-        if(fitCount==0){
-          if(inherits(curmod,"error")) stop(curmod)
-          else {
-            names(curmod)[which(names(curmod)=="par")] <- "estimate"
-            names(curmod)[which(names(curmod)=="value")] <- "minimum"
-            curmod$elapsedTime <- endTime[3]
-            mod <- curmod
-            if(retryFits>=1 & ncores==1) cat("Attempting to improve fit using random perturbation. Press 'esc' to force exit from 'fitHMM'\n")
-          }
-        }
-        
-        wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
-        
-        if(fitCount<=retryFits){
-          if(!inherits(curmod,"error")){
-            names(curmod)[which(names(curmod)=="par")] <- "estimate"
-            names(curmod)[which(names(curmod)=="value")] <- "minimum"
-            curmod$elapsedTime <- endTime[3]
-            if(curmod$minimum < mod$minimum) mod <- curmod
-            wpar <- expandPar(mod$estimate,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
-          }
-          if(fitCount+1<=retryFits){
-            retrySD <- ifelse(retrySD=="adapt",10^(ceiling(log10(abs(wpar)))),retrySD)
-            wpar[1:parmInd] <- wpar[1:parmInd]+rnorm(parmInd,0,as.numeric(retrySD[1:parmInd]))
-            if(nbStates>1)
-              wpar[-(1:parmInd)] <- wpar[-(1:parmInd)]+rnorm(length(wpar)-parmInd,0,as.numeric(retrySD[-(1:parmInd)]))
-            if(length(fixParIndex$wparIndex)) wpar[fixParIndex$wparIndex] <- unlist(fixParIndex$fixPar)[fixParIndex$wparIndex]
-            if(!is.null(betaCons) & nbStates>1){
-              wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)] <- wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)][betaCons]
+        if(fit){
+          if(fitCount==0){
+            if(inherits(curmod,"error")) stop(curmod)
+            else {
+              names(curmod)[which(names(curmod)=="par")] <- "estimate"
+              names(curmod)[which(names(curmod)=="value")] <- "minimum"
+              curmod$elapsedTime <- endTime[3]
+              mod <- curmod
+              if(retryFits>=1 & ncores==1) cat("Attempting to improve fit using random perturbation. Press 'esc' to force exit from 'fitHMM'\n")
             }
-            cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,"         ",sep="")
           }
-        }
+          
+          wpar <- expandPar(mod$estimate,optInd,fixParIndex$fixPar,fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi,isTRUE(optMethod=="TMB"),fixParIndex$Par0,fixParIndex$beta0$beta,fixParIndex$delta0)
+          
+          if(fitCount<=retryFits){
+            if(!inherits(curmod,"error")){
+              names(curmod)[which(names(curmod)=="par")] <- "estimate"
+              names(curmod)[which(names(curmod)=="value")] <- "minimum"
+              curmod$elapsedTime <- endTime[3]
+              if(curmod$minimum < mod$minimum) mod <- curmod
+              wpar <- expandPar(mod$estimate,optInd,fixParIndex$fixPar,fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi,isTRUE(optMethod=="TMB"),fixParIndex$Par0,fixParIndex$beta0$beta,fixParIndex$delta0)
+            }
+            if(fitCount+1<=retryFits){
+              if(isFALSE(optMethod=="TMB")){
+                retrySD <- ifelse(retrySD=="adapt",10^(ceiling(log10(abs(wpar)))),retrySD)
+                wpar[1:parmInd] <- wpar[1:parmInd]+rnorm(parmInd,0,as.numeric(retrySD[1:parmInd]))
+                if(nbStates>1)
+                  wpar[-(1:parmInd)] <- wpar[-(1:parmInd)]+rnorm(length(wpar)-parmInd,0,as.numeric(retrySD[-(1:parmInd)]))
+                if(length(fixParIndex$wparIndex)) wpar[fixParIndex$wparIndex] <- unlist(fixParIndex$fixPar)[fixParIndex$wparIndex]
+                if(!is.null(betaCons) & nbStates>1){
+                  wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)] <- wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)][betaCons]
+                }
+              } else {
+                pcount <- 0
+                for(i in distnames){
+                  retrySD[[i]] <- ifelse(retrySD[[i]]=="adapt",10^(ceiling(log10(abs(wpar[pcount+1:parCount[[i]]])))),retrySD[[i]])
+                  retrySD[[i]][which(is.na(fixParIndex$fixPar[[i]]))] <- 0
+                  fixParIndex$Par0[[i]] <- wpar[pcount+1:parCount[[i]]] + rnorm(parCount[[i]],0,as.numeric(retrySD[[i]]))
+                  pcount <- pcount + parCount[[i]]
+                }
+                if(nbStates>1){
+                  retrySD$beta <- ifelse(retrySD$beta=="adapt",10^(ceiling(log10(abs(wpar[pcount+1:length(fixParIndex$beta0$beta)])))),retrySD$beta)
+                  retrySD$beta[which(is.na(fixParIndex$fixPar$beta))] <- 0
+                  fixParIndex$beta0$beta <- wpar[pcount+1:length(fixParIndex$beta0$beta)] + rnorm(length(fixParIndex$beta0$beta),0,as.numeric(retrySD$beta))
+                  pcount <- pcount + length(fixParIndex$beta0$beta)
+                  retrySD$delta <- ifelse(retrySD$delta=="adapt",10^(ceiling(log10(abs(wpar[pcount+1:length(fixParIndex$delta0)])))),retrySD$delta)
+                  retrySD$delta[which(is.na(fixParIndex$fixPar$delta))] <- 0
+                  fixParIndex$delta0 <- wpar[pcount+1:length(fixParIndex$delta0)] + rnorm(length(fixParIndex$delta0),0,as.numeric(retrySD$delta))
+                }
+              }
+              cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,"         ",sep="")
+            }
+          }
+        } else mod <- curmod
         fitCount<-fitCount+1
       }
       
       # convert the parameters back to their natural scale
+      if(inherits(mod,"error")) stop(mod)
       mod$wpar <- mod$estimate
-      wpar <- mod$estimate <- expandPar(mod$wpar,optInd,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi)
-      mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,fullDM,DMind,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+      wpar <- mod$estimate <- expandPar(mod$wpar,optInd,fixParIndex$fixPar,fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi,isTRUE(optMethod=="TMB"),fixParIndex$Par0,fixParIndex$beta0$beta,fixParIndex$delta0)
+      mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,fullDM,DMind,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi,isTRUE(optMethod=="TMB"))
       
-      if(!is.null(mod$hessian)){
+      if(fit & !is.null(mod$hessian)){
         Sigma <- tryCatch(MASS::ginv(mod$hessian),error=function(e) e)
         mod$Sigma <- Sigma
         if(!inherits(Sigma,"error")){
@@ -988,7 +1029,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                                  nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,kappa)
       mod$estimate <- wpar
       mod$wpar <- optPar
-      mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,fullDM,DMind,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi)
+      mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,fullDM,DMind,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi,isTRUE(optMethod=="TMB"))
     }
     
   
@@ -1112,7 +1153,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   
     # conditions of the fit
     conditions <- list(dist=dist,zeroInflation=zeroInflation,oneInflation=oneInflation,
-                       estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,fixPar=fixParIndex$ofixPar,wparIndex=fixParIndex$wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recharge=recharge,mvnCoords=mvnCoords,mixtures=mixtures,formulaPi=formulaPi,fit=fit,initialValues=initialValues,kappa=kappa)
+                       estAngleMean=inputs$estAngleMean,circularAngleMean=inputs$circularAngleMean,stationary=stationary,formula=formula,userBounds=userBounds,workBounds=workBounds,bounds=p$bounds,Bndind=p$Bndind,DM=DM,fullDM=fullDM,DMind=DMind,fixPar=fixParIndex$ofixPar,wparIndex=fixParIndex$wparIndex,formulaDelta=formulaDelta,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recharge=recharge,mvnCoords=mvnCoords,mixtures=mixtures,formulaPi=formulaPi,fit=fit,initialValues=initialValues,kappa=kappa,optMethod=optMethod)
   
     if(isTRUE(list(...)$CT)) conditions$dtIndex <- dtIndex
     
@@ -1183,6 +1224,36 @@ fitHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
                                                                                                                     collapse = "\n")), call. = FALSE, domain = NA)
   chkDots(...)
   
+  if(optMethod=="TMB"){
+    for(i in names(inputHierHMM$fixPar)){
+      if(is.null(fixPar[[i]])){
+        fixed <- which(!is.na(inputHierHMM$fixPar[[i]]))
+        if(i=="beta" & is.null(betaCons)){
+          inputHierHMM$fixPar[[i]] <- inputHierHMM$betaCons
+        }
+        if(i=="delta" & is.null(deltaCons)){
+          inputHierHMM$fixPar[[i]] <- inputHierHMM$deltaCons
+        }
+        inputHierHMM$fixPar[[i]][fixed] <- NA
+        tmp <- c(inputHierHMM$fixPar[[i]])
+        if(!all(is.na(tmp))){
+          if(!all(tmp[which(!duplicated(tmp) & !is.na(tmp))]==(1:length(tmp[which(!duplicated(tmp) & !is.na(tmp))])))){
+            k <- 1
+            newtmp <- tmp
+            for(j in unique(tmp)){
+              if(!is.na(j)){
+                newtmp[which(tmp==j)] <- k
+                k <- k + 1
+              }
+            }
+            inputHierHMM$fixPar[[i]] <- newtmp
+          } 
+        }
+      }
+    }
+    inputHierHMM$betaCons <- NULL
+    inputHierHMM$deltaCons <- NULL
+  }
   hfit <- fitHMM.momentuHMMData(momentuHMMData(data),inputHierHMM$nbStates,inputHierHMM$dist,Par0,inputHierHMM$beta,inputHierHMM$delta,
                 estAngleMean,circularAngleMean,
                 formula=inputHierHMM$formula,inputHierHMM$formulaDelta,stationary=FALSE,mixtures,formulaPi,

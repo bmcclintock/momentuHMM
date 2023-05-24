@@ -54,18 +54,18 @@ langData <- prepData(tracks,coordNames = c("x","y"),
 # specify design matrix
 DM <- list(mu=matrix(c("mu.x_tm1","langevin(bathy.x)","langevin(slope.x)","langevin(d2site.x)",0,0,
                        "mu.y_tm1","langevin(bathy.y)","langevin(slope.y)","langevin(d2site.y)",0,0,
-                                0,                  0,                  0,                   0,1,0,
-                                0,                  0,                  0,                   0,0,1,
-                                0,                  0,                  0,                   0,1,0),
-                     nrow=5,byrow=TRUE,dimnames = list(c("mean.x","mean.y","sigma.x","sigma.xy","sigma.y"),
-                                                       c("mean:mu_tm1","bathy","slope","d2site","sigma:(Intercept)","sigma.xy:(Intercept)"))))
+                       0,                  0,                  0,                   0,1,0,
+                       0,                  0,                  0,                   0,1,0,
+                       0,                  0,                  0,                   0,0,1),
+                     nrow=5,byrow=TRUE,dimnames = list(c("mean.x","mean.y","sd.x","sd.y","corr.xy"),
+                                                       c("mean:mu_tm1","bathy","slope","d2site","sd:(Intercept)","corr.xy:(Intercept)"))))
 
 # fit model
 fitLangevin <- fitCTHMM(langData,
                         nbStates=1,
                         dist=list(mu="rw_mvnorm2"),
                         DM=DM,
-                        Par0=list(mu=c(1,0,0,0,2.5,0)),
+                        Par0=list(mu=c(1,0,0,0 ,1.25,0)),
                         fixPar=list(mu=c(1,rep(NA,3),NA,0)),
                         mvnCoords = "mu",
                         nlmPar=list(print.level=2))

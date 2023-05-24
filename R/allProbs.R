@@ -56,7 +56,7 @@ allProbs <- function(m)
     
     inputs <- checkInputs(nbStates,dist,Par,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$stateNames)
     p <- inputs$p
-    DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+    DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean,TMB=isTRUE(m$conditions$optMethod=="TMB"))
     m$conditions$fullDM <- DMinputs$fullDM
     m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,pi=m$Par$beta[["pi"]]$est,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
   } else {
@@ -136,22 +136,18 @@ allProbs <- function(m)
           genArgs[[2]] <- rbind(genPar[state,genInd],
                                 genPar[nbStates+state,genInd])
           genArgs[[3]] <- rbind(genPar[nbStates*2+state,genInd], #x
-                                genPar[nbStates*3+state,genInd], #xy
-                                genPar[nbStates*3+state,genInd], #xy
-                                genPar[nbStates*4+state,genInd]) #y
+                                genPar[nbStates*3+state,genInd], #y
+                                genPar[nbStates*4+state,genInd]) #xy
         } else if(dist[[i]]=="mvnorm3" || dist[[i]]=="rw_mvnorm3"){
           genArgs[[2]] <- rbind(genPar[state,genInd],
                                 genPar[nbStates+state,genInd],
                                 genPar[2*nbStates+state,genInd])
           genArgs[[3]] <- rbind(genPar[nbStates*3+state,genInd], #x
-                                genPar[nbStates*4+state,genInd], #xy
-                                genPar[nbStates*5+state,genInd], #xz
-                                genPar[nbStates*4+state,genInd], #xy
-                                genPar[nbStates*6+state,genInd], #y
-                                genPar[nbStates*7+state,genInd], #yz
-                                genPar[nbStates*5+state,genInd], #xz
-                                genPar[nbStates*7+state,genInd], #yz
-                                genPar[nbStates*8+state,genInd]) #z          
+                                genPar[nbStates*4+state,genInd], #y
+                                genPar[nbStates*5+state,genInd], #z
+                                genPar[nbStates*6+state,genInd], #xy
+                                genPar[nbStates*7+state,genInd], #xz
+                                genPar[nbStates*8+state,genInd]) #yz
         }
       } else if(dist[[i]]=="cat"){
         dimCat <- as.numeric(gsub("cat","",m$conditions$dist[[i]]))

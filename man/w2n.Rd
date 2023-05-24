@@ -23,7 +23,8 @@ w2n(
   meanind,
   covsDelta,
   workBounds,
-  covsPi
+  covsPi,
+  TMB = FALSE
 )
 }
 \arguments{
@@ -69,6 +70,8 @@ specifies (-1,1) bounds for the concentration parameters instead of the default 
 \item{workBounds}{named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters}
 
 \item{covsPi}{data frame containing the pi model covariates}
+
+\item{TMB}{logical indicating whether or not \code{optMethod='TMB'}. Default: \code{FALSE}.}
 }
 \value{
 A list of:

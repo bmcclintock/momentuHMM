@@ -328,7 +328,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   
   splineInputs<-getSplineDM(distnames,tmpInputs$DM,m,covs)
   covs<-splineInputs$covs
-  DMinputs<-getDM(covs,splineInputs$DM,tmpInputs$dist,nbStates,tmpp$parNames,tmpp$bounds,tmpPar,tmpConditions$zeroInflation,tmpConditions$oneInflation,tmpConditions$circularAngleMean)
+  DMinputs<-getDM(covs,splineInputs$DM,tmpInputs$dist,nbStates,tmpp$parNames,tmpp$bounds,tmpPar,tmpConditions$zeroInflation,tmpConditions$oneInflation,tmpConditions$circularAngleMean,TMB=isTRUE(m$conditions$optMethod=="TMB"))
   fullDM <- DMinputs$fullDM
   DMind <- DMinputs$DMind
   wpar <- n2w(tmpPar,tmpp$bounds,beta,delta,nbStates,tmpInputs$estAngleMean,tmpInputs$DM,tmpp$Bndind,tmpInputs$dist)
@@ -570,12 +570,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       
       if(m$conditions$dist[[i]] %in% mvndists){
         genArgs[[2]] <- matrix(par[[i]][seq(state,nbStates*ndim,nbStates)],ndim,1)
-        sig <- matrix(0,ndim,ndim)
-        lowertri <- par[[i]][nbStates*ndim+seq(state,sum(lower.tri(matrix(0,ndim,ndim),diag=TRUE))*nbStates,nbStates)]
-        sig[lower.tri(sig, diag=TRUE)] <- lowertri
-        sig <- t(sig)
-        sig[lower.tri(sig, diag=TRUE)] <- lowertri
-        genArgs[[3]] <- sig
+        sig <- par[[i]][nbStates*ndim+seq(state,sum(lower.tri(matrix(0,ndim,ndim),diag=TRUE))*nbStates,nbStates)]
+        genArgs[[3]] <- matrix(sig,ncol=1)
       } else if(grepl("cat",m$conditions$dist[[i]]) | m$conditions$dist[[i]]=="ctds"){
         genArgs[[2]] <- t(par[[i]][seq(state,dimCat*nbStates,nbStates),])
       } else {
@@ -597,7 +593,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         genDensities[[state]] <- cbind(grid,(1-zeroMass$step[state])*w[[i]][state]*do.call(genFun,genArgs))
       } else if(inputs$dist[[i]] %in% mvndists){
         if(inputs$dist[[i]]=="mvnorm2" || inputs$dist[[i]]=="rw_mvnorm2"){
-          dens <- outer(genArgs[[1]][1:100],genArgs[[1]][101:200], function(x,y) dmvnorm2(c(x,y),matrix(rep(genArgs[[2]],10000),2),matrix(rep(genArgs[[3]],10000),2*2)))
+          dens <- outer(genArgs[[1]][1:100],genArgs[[1]][101:200], function(x,y) dmvnorm2(c(x,y),matrix(rep(genArgs[[2]],10000),2),matrix(rep(genArgs[[3]],10000),3)))
           genDensities[[state]] <- list(x=genArgs[[1]][1:100], y=genArgs[[1]][101:200], z=w[[i]][state]*dens)
         }
       } else {
@@ -643,7 +639,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
             attr(tempCovs,"ctdsData") <- attr(m$data,"ctdsData")
             attr(tempCovs,"directions") <- attr(m$data,"directions")
           }
-          DMinputs<-getDM(tempCovs,tmpSplineInputs$DM[i],inputs$dist[i],nbStates,p$parNames[i],p$bounds[i],Par[i],m$conditions$zeroInflation[i],m$conditions$oneInflation[i],m$conditions$circularAngleMean[i])
+          DMinputs<-getDM(tempCovs,tmpSplineInputs$DM[i],inputs$dist[i],nbStates,p$parNames[i],p$bounds[i],Par[i],m$conditions$zeroInflation[i],m$conditions$oneInflation[i],m$conditions$circularAngleMean[i],TMB=isTRUE(m$conditions$optMethod=="TMB"))
           
           fullDM <- DMinputs$fullDM
           DMind <- DMinputs$DMind
@@ -798,9 +794,10 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           genArgs[[3]] <- par[[i]][seq(state,nbStates*ndim,nbStates)]
           sig <- matrix(0,ndim,ndim)
           lowertri <- par[[i]][nbStates*ndim+seq(state,sum(lower.tri(matrix(0,ndim,ndim),diag=TRUE))*nbStates,nbStates)]
-          sig[lower.tri(sig, diag=TRUE)] <- lowertri
+          diag(sig) <- lowertri[1:ndim]
+          sig[lower.tri(sig, diag=FALSE)] <- lowertri[-(1:ndim)]
           sig <- t(sig)
-          sig[lower.tri(sig, diag=TRUE)] <- lowertri
+          sig[lower.tri(sig, diag=FALSE)] <- lowertri[-(1:ndim)]
           genArgs[[4]] <- sig
 
           genDensities[[state]] <- cbind(genArgs[[1]],w[[i]][state]*do.call("dmvnorm.marginal",genArgs))
@@ -1499,6 +1496,8 @@ dmvnorm.marginal <- function (xn, n = 1, mean = rep(0, nrow(sigma)), sigma = dia
       1 || !n %in% 1:length(mean)) {
     stop("n must be an integer scalar in 1..length(mean)")
   }
+  sigma <- convertSigma(sigma,length(mean))
+  
   if (k == 1) {
     density <- stats::dnorm(xn, mean = mean, sd = sqrt(sigma))
     if (log == TRUE) {

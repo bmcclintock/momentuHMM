@@ -4,7 +4,18 @@
 \alias{n2w}
 \title{Scaling function: natural to working parameters.}
 \usage{
-n2w(par, bounds, beta, delta = NULL, nbStates, estAngleMean, DM, Bndind, dist)
+n2w(
+  par,
+  bounds,
+  beta,
+  delta = NULL,
+  nbStates,
+  estAngleMean,
+  DM,
+  Bndind,
+  dist,
+  TMB = FALSE
+)
 }
 \arguments{
 \item{par}{Named list of vectors containing the initial parameter values for each data stream.}
@@ -27,6 +38,8 @@ stream. Each element of \code{DM} can either be a named list of linear regressio
 \item{Bndind}{Named list indicating whether \code{DM} is NULL with default parameter bounds for each data stream.}
 
 \item{dist}{A named list indicating the probability distributions of the data streams.}
+
+\item{TMB}{logical indicating whether or not \code{optMethod='TMB'}. Default: \code{FALSE}.}
 }
 \value{
 A vector of unconstrained parameters.

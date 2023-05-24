@@ -390,9 +390,9 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   inputs <- checkInputs(nbStates,dist,tmPar,m$conditions$estAngleMean,m$conditions$circularAngleMean,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$DM,m$conditions$userBounds,m$stateNames)
   p<-inputs$p
   splineInputs<-getSplineDM(distnames,inputs$DM,m,tempCovs)
-  DMinputs<-getDM(splineInputs$covs,splineInputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+  DMinputs<-getDM(splineInputs$covs,splineInputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean,TMB=isTRUE(m$conditions$optMethod=="TMB"))
   fullDM <- DMinputs$fullDM
-  #DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean)
+  #DMinputs<-getDM(tempCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,tmPar,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean,TMB=isTRUE(m$conditions$optMethod=="TMB"))
   #fullDM<-DMinputs$fullDM
   
   # identify covariates
@@ -683,15 +683,17 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   
   # get fixPar$delta in working scale format so expandPar works correctly in post-analysis
   if(!is.momentuHierHMM(im[[1]]) & !mh$conditions$stationary & nbStates>1) {
-    if(any(!is.na(mh$conditions$fixPar$delta))){
-      tmp <- which(!is.na(mh$conditions$fixPar$delta))
-      if(!nbCovsDelta){
-        delta0 <- mh$conditions$fixPar$delta
-        delta0 <- matrix(delta0,mixtures,nbStates)
-        delta0 <- matrix(apply(delta0,1,function(x) log(x[-1]/x[1])),(nbCovsDelta+1)*mixtures,nbStates-1)
-        mh$conditions$fixPar$delta <- as.vector(delta0)
-      }
-    } else mh$conditions$fixPar$delta <- rep(NA,length(deltInd))
+    if(isTRUE(mh$conditions$optMethod!="TMB")){
+      if(any(!is.na(mh$conditions$fixPar$delta))){
+        tmp <- which(!is.na(mh$conditions$fixPar$delta))
+        if(!nbCovsDelta){
+          delta0 <- mh$conditions$fixPar$delta
+          delta0 <- matrix(delta0,mixtures,nbStates)
+          delta0 <- matrix(apply(delta0,1,function(x) log(x[-1]/x[1])),(nbCovsDelta+1)*mixtures,nbStates-1)
+          mh$conditions$fixPar$delta <- as.vector(delta0)
+        }
+      } else mh$conditions$fixPar$delta <- rep(NA,length(deltInd))
+    }
   }
   
   coordNames <- attr(m$data,"coords")

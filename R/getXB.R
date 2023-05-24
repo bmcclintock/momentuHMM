@@ -6,6 +6,7 @@ getXB<-function(DM,nbObs,wpar,DMind,circularAngleMean,consensus,nbStates,nc,mean
       XB <- DM%*%wpar
     } else {
       XB <- XBloop_rcpp(DM, wpar, nbObs, nrw, ncl, FALSE, FALSE, 1:nrw-1, nc, nbStates)
+      rownames(XB) <- rownames(DM)
     }
   } else {
     if(length(meanind)) {

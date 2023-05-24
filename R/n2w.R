@@ -17,6 +17,7 @@
 #' stream. Each element of \code{DM} can either be a named list of linear regression formulas or a matrix.  
 #' @param Bndind Named list indicating whether \code{DM} is NULL with default parameter bounds for each data stream.
 #' @param dist A named list indicating the probability distributions of the data streams.
+#' @param TMB logical indicating whether or not \code{optMethod='TMB'}. Default: \code{FALSE}.
 #' 
 #' @return A vector of unconstrained parameters.
 #'
@@ -47,7 +48,7 @@
 #'
 #' @importFrom stats dunif
 
-n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,Bndind,dist)
+n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,Bndind,dist,TMB=FALSE)
 {
   wpar <- NULL
   for(i in names(par)){
@@ -65,7 +66,7 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,Bndind,dist)
           stop(paste0("Check the parameter bounds for ",i," (the initial parameters should be ",
                       "strictly between the bounds of their parameter space)."))
       }
-      if(estAngleMean[[i]] & Bndind[[i]]){ 
+      if(estAngleMean[[i]] & Bndind[[i]] & !TMB){ 
         bounds[[i]][,1] <- -Inf
         bounds[[i]][which(bounds[[i]][,2]!=1),2] <- Inf
         
@@ -83,16 +84,22 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,Bndind,dist)
         for(j in 1:nbStates){
           p[seq(j,dimCat*nbStates,nbStates)] <- log(par[[i]][seq(j,dimCat*nbStates,nbStates)]/(1-sum(par[[i]][seq(j,dimCat*nbStates,nbStates)])))
         }
-      } else p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],nbStates)
+      } else p<-n2wDM(bounds[[i]],diag(length(par[[i]])),par[[i]],nbStates,TMB)
     }
+    names(p) <- paste0(i,".",1:length(p))
     wpar <- c(wpar,p)
   }
 
   wbeta <- as.vector(beta$beta) # if beta is NULL, wbeta is NULL as well
+  if(!is.null(wbeta) & length(wbeta)>0) names(wbeta) <- paste0("beta.",1:length(wbeta))
   wpi <- as.vector(beta[["pi"]])
+  if(!is.null(wpi) & length(wpi)>0) names(wpi) <- paste0("pi.",1:length(wpi))
   wg0 <- as.vector(beta$g0)
+  if(!is.null(wg0) & length(wg0)>0) names(wg0) <- paste0("g0.",1:length(wg0))
   wtheta <- as.vector(beta$theta)
+  if(!is.null(wtheta) & length(wtheta)>0) names(wtheta) <- paste0("theta.",1:length(wtheta))
   wdelta <- as.vector(delta)#log(delta[,-1,drop=FALSE]/delta[,1,drop=FALSE]) # if delta is NULL, wdelta is NULL as well
+  if(!is.null(wdelta) & length(wdelta)>0) names(wdelta) <- paste0("delta.",1:length(wdelta))
   return(c(wpar,wbeta,wpi,wdelta,wg0,wtheta))
 }
 
@@ -112,7 +119,7 @@ nw2w <-function(wpar,workBounds){
 }
 
 #' @importFrom stats qlogis
-n2wDM<-function(bounds,DM,par,nbStates){
+n2wDM<-function(bounds,DM,par,nbStates,TMB=FALSE){
   
   a<-bounds[,1]
   b<-bounds[,2]
@@ -128,7 +135,10 @@ n2wDM<-function(bounds,DM,par,nbStates){
 
   p<-numeric(nrow(DM))
   
-  if(length(ind1)) p[ind1] <- tan(par[ind1]/2)
+  if(length(ind1)){
+    if(!TMB) p[ind1] <- tan(par[ind1]/2)
+    else p[ind1] <- stats::qlogis((par[ind1] + pi) / (2 * pi));
+  }
   if(length(ind2)){
     for(j in 1:nbStates){
       zoParInd <- which(grepl(paste0("zeromass_",j),rownames(bounds)) | grepl(paste0("onemass_",j),rownames(bounds)))

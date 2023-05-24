@@ -14,6 +14,11 @@
 #' @param nbRecovs Number of recharge covariates
 #' @param mixtures Number of mixtures for the state transition probabilities
 #' @param nbCovsPi Number of mixture probability covariates
+#' @param TMB Logical indicating whether or not optMethod='TMB'. Default: \code{FALSE}.
+#' @param Par0 list of initial data stream parameter values. Ignored unless \code{TMB=TRUE}.
+#' @param beta0 list of initial state transition parameter values. Ignored unless \code{TMB=TRUE}.
+#' @param beta0 matrix of initial state transition parameter values. Ignored unless \code{TMB=TRUE}.
+#' @param delta0 initial distribution parameter values. Ignored unless \code{TMB=TRUE}.
 #' 
 #' @return A vector of all working parameters including any fixed parameters
 #' 
@@ -49,20 +54,40 @@
 #'
 #' all(est==m$mod$estimate)
 #' }
-expandPar <- function(optPar,optInd,fixPar,wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs=0,mixtures=1,nbCovsPi=0){
+expandPar <- function(optPar,optInd,fixPar,wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs=0,mixtures=1,nbCovsPi=0,TMB=FALSE,Par0,beta0,delta0){
   if(length(optInd)){
-    wpar <- numeric(length(fixPar))
+    wpar <- numeric(length(unlist(fixPar)))
     wpar[-optInd] <- optPar
-    if(length(wparIndex)) wpar[wparIndex] <- fixPar[wparIndex]
-    if(nbStates>1){
-      if(!is.null(betaCons)){
-        foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)*(!stationary)*mixtures-ifelse(nbRecovs,nbRecovs+2,0)-(nbCovsPi+1)*(mixtures-1)-((nbCovs+1)*nbStates*(nbStates-1)*mixtures-1):0
-        wpar[foo] <- wpar[foo][betaCons]
+    if(!TMB){
+      fixPar <- unlist(fixPar)
+      if(length(wparIndex)) wpar[wparIndex] <- fixPar[wparIndex]
+      if(nbStates>1){
+        if(!is.null(betaCons)){
+          foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)*(!stationary)*mixtures-ifelse(nbRecovs,nbRecovs+2,0)-(nbCovsPi+1)*(mixtures-1)-((nbCovs+1)*nbStates*(nbStates-1)*mixtures-1):0
+          wpar[foo] <- wpar[foo][betaCons]
+        }
+        if(!is.null(deltaCons)){
+          foo <- length(wpar)-ifelse(nbRecovs,nbRecovs+2,0)-((nbCovsDelta+1)*(nbStates-1)*mixtures-1):0
+          wpar[foo] <- wpar[foo][deltaCons]
+        }
       }
-      if(!is.null(deltaCons)){
-        foo <- length(wpar)-ifelse(nbRecovs,nbRecovs+2,0)-((nbCovsDelta+1)*(nbStates-1)*mixtures-1):0
-        wpar[foo] <- wpar[foo][deltaCons]
+    } else {
+      if(nbStates>1){
+        if("beta" %in% names(fixPar)){
+          foo <- length(wpar)-(nbCovsDelta+1)*(nbStates-1)*(!stationary)*mixtures-ifelse(nbRecovs,nbRecovs+2,0)-(nbCovsPi+1)*(mixtures-1)-((nbCovs+1)*nbStates*(nbStates-1)*mixtures-1):0
+          wpar[foo] <- wpar[foo][!foo %in% optInd][fixPar$beta]
+          if(any(is.na(fixPar$beta))) wpar[foo][which(is.na(fixPar$beta))] <- beta0[which(is.na(fixPar$beta))]
+        }
+        if("delta" %in% names(fixPar)){
+          foo <- length(wpar)-ifelse(nbRecovs,nbRecovs+2,0)-((nbCovsDelta+1)*(nbStates-1)*mixtures-1):0
+          wpar[foo] <- wpar[foo][!foo %in% optInd][fixPar$delta]
+          if(any(is.na(fixPar$delta))) wpar[foo][which(is.na(fixPar$delta))] <- delta0[which(is.na(fixPar$delta))]
+        } 
       }
+      distnames <- names(Par0)
+      foo <- 1:(length(wpar)-(nbCovsDelta+1)*(nbStates-1)*(!stationary)*mixtures-ifelse(nbRecovs,nbRecovs+2,0)-(nbCovsPi+1)*(mixtures-1)-((nbCovs+1)*nbStates*(nbStates-1)*mixtures-1)-1)
+      wpar[foo] <- wpar[-optInd][unlist(fixPar[distnames])]
+      if(any(is.na(unlist(fixPar[distnames])))) wpar[foo][which(is.na(unlist(fixPar[distnames])))] <- unlist(Par0)[which(is.na(unlist(fixPar[distnames])))] 
     }
   } else {
     wpar <- optPar

@@ -299,29 +299,31 @@ If circular-circular regression is specified for the mean of angular distributio
   \midrule
   \rowcolor{Gray} Bivariate normal (``\verb|mvnorm2|'') & ${\mathbf z_t}\in{\rm I\!R}^2$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
   \rowcolor{Gray}                                       &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.x|>0$               &  $\log$ \tabularnewline                                                
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.xy|\in{\rm I\!R}$   &  identity \tabularnewline                                              
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.y|>0$               &  $\log$ \tabularnewline  
+  \rowcolor{Gray}                                       &                                 & $\verb|sd.x|>0$               &  $\log$ \tabularnewline          
+  \rowcolor{Gray}                                       &                                 & $\verb|sd.y|>0$               &  $\log$ \tabularnewline  
+  \rowcolor{Gray}                                       &                                 & $\verb|corr.xy|\in(-1,1)$   &  logit \tabularnewline                                              
   Bivariate normal random walk (``\verb|rw_mvnorm2|'')  & ${\mathbf z_t}\in{\rm I\!R}^2$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
                                                         &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
-                                                        &                                 & $\verb|sigma.x|>0$               &  $\log$ \tabularnewline                                                                                                                      &                                 & $\verb|sigma.xy|\in{\rm I\!R}$   &  identity \tabularnewline                                                                                                                    &                                 & $\verb|sigma.y|>0$               &  $\log$ \tabularnewline
+                                                        &                                 & $\verb|sd.x|>0$               &  $\log$ \tabularnewline                                                                                                                                               &                                 & $\verb|sd.y|>0$               &  $\log$ \tabularnewline
+                                                        &                                 & $\verb|corr.xy|\in(-1,1)$   &  logit \tabularnewline    
   \rowcolor{Gray} Trivariate normal (``\verb|mvnorm3|'')& ${\mathbf z_t}\in{\rm I\!R}^3$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
   \rowcolor{Gray}                                       &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
   \rowcolor{Gray}                                       &                                 & $\verb|mean.z|\in{\rm I\!R}$     &  identity \tabularnewline  
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.x|>0$               &  $\log$ \tabularnewline                                                
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.xy|\in{\rm I\!R}$   &  identity \tabularnewline
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.xz|\in{\rm I\!R}$   &  identity \tabularnewline          
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.y|>0$               &  $\log$ \tabularnewline   
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.yz|\in{\rm I\!R}$   &  identity \tabularnewline  
-  \rowcolor{Gray}                                       &                                 & $\verb|sigma.z|>0$               &  $\log$ \tabularnewline
+  \rowcolor{Gray}                                       &                                 & $\verb|sd.x|>0$               &  $\log$ \tabularnewline                                                
+  \rowcolor{Gray}                                       &                                 & $\verb|sd.y|>0$               &  $\log$ \tabularnewline   
+  \rowcolor{Gray}                                       &                                 & $\verb|sd.z|>0$               &  $\log$ \tabularnewline
+  \rowcolor{Gray}                                       &                                 & $\verb|corr.xy|\in(-1,1)$   &  logit \tabularnewline
+  \rowcolor{Gray}                                       &                                 & $\verb|corr.xz|\in(-1,1)$   &  logit \tabularnewline   
+  \rowcolor{Gray}                                       &                                 & $\verb|corr.yz|\in(-1,1)$   &  logit \tabularnewline  
   Trivariate normal random walk (``\verb|rw_mvnorm3|'') & ${\mathbf z_t}\in{\rm I\!R}^3$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
-                                                        &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
-                                                        &                                 & $\verb|mean.z|\in{\rm I\!R}$     &  identity \tabularnewline  
-                                                        &                                 & $\verb|sigma.x|>0$               &  $\log$ \tabularnewline                                                                                                                      &                                 & $\verb|sigma.xy|\in{\rm I\!R}$   &  identity \tabularnewline    
-                                                        &                                 & $\verb|sigma.xz|\in{\rm I\!R}$   &  identity \tabularnewline 
-                                                        &                                 & $\verb|sigma.y|>0$               &  $\log$ \tabularnewline   
-                                                        &                                 & $\verb|sigma.yz|\in{\rm I\!R}$   &  identity \tabularnewline  
-                                                        &                                 & $\verb|sigma.z|>0$               &  $\log$ \tabularnewline  
+  \rowcolor{Gray}                                       &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
+  \rowcolor{Gray}                                       &                                 & $\verb|mean.z|\in{\rm I\!R}$     &  identity \tabularnewline  
+  \rowcolor{Gray}                                       &                                 & $\verb|sd.x|>0$               &  $\log$ \tabularnewline                                                
+  \rowcolor{Gray}                                       &                                 & $\verb|sd.y|>0$               &  $\log$ \tabularnewline   
+  \rowcolor{Gray}                                       &                                 & $\verb|sd.z|>0$               &  $\log$ \tabularnewline
+  \rowcolor{Gray}                                       &                                 & $\verb|corr.xy|\in(-1,1)$   &  logit \tabularnewline
+  \rowcolor{Gray}                                       &                                 & $\verb|corr.xz|\in(-1,1)$   &  logit \tabularnewline   
+  \rowcolor{Gray}                                       &                                 & $\verb|corr.yz|\in(-1,1)$   &  logit \tabularnewline  
   \bottomrule
   \end{tabular}
   \footnotesize{$^1$Link functions $(g)$ relate natural scale parameters $({\boldsymbol \theta})$ to a $T \times K$ design matrix $({\mathbf X})$ and $K-$vector of working scale parameters $(\boldsymbol{\beta}\in \mathbb{R}^K)$ such that $g({\boldsymbol \theta})={\mathbf X}\boldsymbol{\beta}$. %In circular-circular regression models for the mean of angular distributions, we have $\theta_t = {\text atan2}( \sum_{k=1}^K z_{t,k} \sin(x_{t,k} \beta_k),1+\sum_{k=1}^K z_{t,k} \cos(x_{t,k} \beta_k))$, where $Z$ is a $T \times K$ matrix of positive real covariates (e.g. wind speed) and $X$ is a $T \times K$ matrix composed of angular covariates (e.g. wind direction).
@@ -1029,7 +1031,11 @@ From the locations, we use \verb|prepData| to derive the step lengths and turnin
 \hlstd{center} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{70}\hlstd{,}\hlopt{-}\hlnum{49}\hlstd{),}\hlkwc{nrow}\hlstd{=}\hlnum{1}\hlstd{,}\hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlstr{"colony"}\hlstd{))}
 \hlstd{data} \hlkwb{<-} \hlkwd{prepData}\hlstd{(}\hlkwc{data}\hlstd{=tracks,} \hlkwc{type}\hlstd{=}\hlstr{"LL"}\hlstd{,} \hlkwc{centers}\hlstd{=center)}
 \end{alltt}
-\end{kframe}
+
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# Calculating movement metrics...}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# [ ---------------------------------------------------------------------------------------------------- ] 0\%[ ====------------------------------------------------------------------------------------------------ ] 4\%[ =======--------------------------------------------------------------------------------------------- ] 7\%[ ===========----------------------------------------------------------------------------------------- ] 11\%[ ==============-------------------------------------------------------------------------------------- ] 14\%[ ==================---------------------------------------------------------------------------------- ] 18\%[ ======================------------------------------------------------------------------------------ ] 22\%[ ==========================-------------------------------------------------------------------------- ] 26\%[ ==============================---------------------------------------------------------------------- ] 30\%[ =================================------------------------------------------------------------------- ] 33\%[ ===================================----------------------------------------------------------------- ] 35\%[ =====================================--------------------------------------------------------------- ] 37\%[ ========================================------------------------------------------------------------ ] 40\%[ ============================================-------------------------------------------------------- ] 44\%[ ================================================---------------------------------------------------- ] 48\%[ ===================================================------------------------------------------------- ] 51\%[ ======================================================---------------------------------------------- ] 54\%[ =======================================================--------------------------------------------- ] 55\%[ =======================================================--------------------------------------------- ] 55\%[ ==========================================================------------------------------------------ ] 58\%[ =============================================================--------------------------------------- ] 61\%[ =================================================================----------------------------------- ] 65\%[ =====================================================================------------------------------- ] 69\%[ =========================================================================--------------------------- ] 73\%[ =============================================================================----------------------- ] 77\%[ ================================================================================-------------------- ] 80\%[ ====================================================================================---------------- ] 84\%[ ========================================================================================------------ ] 88\%[ ============================================================================================-------- ] 92\%[ ================================================================================================---- ] 96\%[ ==================================================================================================== ] 100\%}}\end{kframe}
 \end{knitrout}
 Note that distances are in kilometers and angles are based on initial bearings \citep[using geosphere::bearing;][]{Hijmans2016geo} when calculated from longitude and latitude coordinates.  
 
@@ -4435,8 +4441,8 @@ Now we're ready to specify the recharge model. We'll first fit the model to the 
 \begin{verbatim}
 ##   ID     time     mu.x     mu.y   W_intercept W_near_sabie dist2sabie
 ## 1  1 313344.4 384560.8 -2770752 -0.0001873081 -0.003616337   1323.424
-## 2  1 313344.7 384560.2 -2770750 -0.0001873081 -0.003616337   1323.424
-## 3  1 313344.9 384559.7 -2770749 -0.0001873081 -0.003616337   1323.424
+## 2  1 313344.7 384560.3 -2770751 -0.0001873081 -0.003616337   1323.424
+## 3  1 313344.9 384559.8 -2770749 -0.0001873081 -0.003616337   1323.424
 ## 4  1 313345.2 384559.3 -2770747 -0.0001873081 -0.003616337   1323.424
 ## 5  1 313345.4 384559.1 -2770744 -0.0001873081 -0.003616337   1323.424
 ## 6  1 313345.7 384559.1 -2770742 -0.0001873081 -0.003616337   1323.424
@@ -4460,29 +4466,30 @@ Now we're ready to specify the recharge model. We'll first fit the model to the 
                                 \hlnum{0}\hlstd{,}\hlstr{"mu.y_tm1"}\hlstd{,}\hlstr{"D.y"}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
                                 \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
                                 \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}
-                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}
-                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}
                                 \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
-                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{),}
+                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}
+                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}
+                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{),}
                      \hlnum{5}\hlopt{*}\hlstd{nbStates,}
                      \hlnum{6}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
                      \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{c}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"mean."}\hlstd{,}
                                             \hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"x_"}\hlstd{,}\hlstr{"y_"}\hlstd{),}
                                                 \hlkwc{each}\hlstd{=nbStates),}
                                             \hlnum{1}\hlopt{:}\hlstd{nbStates),}
-                                     \hlkwd{paste0}\hlstd{(}\hlstr{"sigma."}\hlstd{,}
-                                            \hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"x_"}\hlstd{,}\hlstr{"xy_"}\hlstd{,}\hlstr{"y_"}\hlstd{),}
+                                     \hlkwd{paste0}\hlstd{(}\hlstr{"sd."}\hlstd{,}
+                                            \hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"x_"}\hlstd{,}\hlstr{"y_"}\hlstd{),}
                                                 \hlkwc{each}\hlstd{=nbStates),}
-                                            \hlnum{1}\hlopt{:}\hlstd{nbStates)),}
+                                            \hlnum{1}\hlopt{:}\hlstd{nbStates),}
+                                     \hlkwd{paste0}\hlstd{(}\hlstr{"corr.xy_"}\hlstd{,}\hlnum{1}\hlopt{:}\hlstd{nbStates)),}
                                    \hlkwd{c}\hlstd{(}\hlstr{"x:x_tm1"}\hlstd{,}
                                      \hlstr{"y:y_tm1"}\hlstd{,}
                                      \hlstr{"xy:D"}\hlstd{,}
-                                     \hlstr{"sigma_1:(Intercept)"}\hlstd{,}
-                                     \hlstr{"sigma_2:(Intercept)"}\hlstd{,}
-                                     \hlstr{"sigma_12:(Intercept)"}\hlstd{))))}
+                                     \hlstr{"sd_1:(Intercept)"}\hlstd{,}
+                                     \hlstr{"sd_2:(Intercept)"}\hlstd{,}
+                                     \hlstr{"corr_12:(Intercept)"}\hlstd{))))}
 
 \hlcom{# starting values}
-\hlstd{Par0}\hlkwb{=}\hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,} \hlnum{1}\hlstd{,} \hlnum{0}\hlstd{,} \hlkwd{log}\hlstd{(}\hlnum{85872.66}\hlstd{),} \hlkwd{log}\hlstd{(}\hlnum{37753.53}\hlstd{),} \hlnum{0}\hlstd{))}
+\hlstd{Par0}\hlkwb{=}\hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,} \hlnum{1}\hlstd{,} \hlnum{0}\hlstd{,} \hlkwd{log}\hlstd{(}\hlkwd{sqrt}\hlstd{(}\hlnum{85872.66}\hlstd{)),} \hlkwd{log}\hlstd{(}\hlkwd{sqrt}\hlstd{(}\hlnum{37753.53}\hlstd{)),} \hlnum{0}\hlstd{))}
 \hlstd{g0} \hlkwb{<-} \hlnum{0} \hlcom{# recharge function at time 0}
 \hlstd{theta} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{)} \hlcom{# recharge function parameters}
 
@@ -4515,10 +4522,8 @@ Now we're ready to specify the recharge model. We'll first fit the model to the 
 ## 
 ## Regression coeffs for mu parameters:
 ## ------------------------------------
-##      x:x_tm1 y:y_tm1 xy:D sigma_1:(Intercept) sigma_2:(Intercept)
-## [1,]       1       1    0            11.36062            10.53883
-##      sigma_12:(Intercept)
-## [1,]                    0
+##      x:x_tm1 y:y_tm1 xy:D sd_1:(Intercept) sd_2:(Intercept) corr_12:(Intercept)
+## [1,]       1       1    0          5.68031         5.269417                   0
 ## 
 ## Regression coeffs for the transition probabilities (beta):
 ## ----------------------------------------------------------
@@ -4553,30 +4558,13 @@ Now we're ready to specify the recharge model. We'll first fit the model to the 
                      \hlkwc{mvnCoords} \hlstd{=} \hlstr{"mu"}\hlstd{,}
                      \hlkwc{optMethod} \hlstd{=} \hlstr{"Nelder-Mead"}\hlstd{,}
                      \hlkwc{control} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{maxit}\hlstd{=}\hlnum{1000}\hlstd{))}
-\end{alltt}
 
-
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
-
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# Fitting HMM with 2 states and 1 data stream}}
-
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# -----------------------------------------------------------------------}}
-
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ mu \textasciitilde{} rw\_mvnorm2(mean.x: custom, mean.y: custom, sigma.x: custom, sigma.xy: custom, sigma.y: custom)}}
-
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Transition probability matrix formula: \textasciitilde{}recharge(g0 = \textasciitilde{}1, theta = \textasciitilde{}W\_intercept + W\_near\_sabie)}}
-
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Initial distribution formula: \textasciitilde{}1}}
-
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
-
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# DONE}}\begin{alltt}
 \hlcom{# extract starting values}
 \hlstd{bestPar} \hlkwb{<-} \hlkwd{getPar}\hlstd{(buffaloFit)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-\noindent There are several things worth noting in the code above. When specifying normal random walk models using a pseudo-design matrix, we must include terms for the previous location in \verb|mean.x| and \verb|mean.y| (in this case ``mu.x\_tm1'' and ``mu.y\_tm1'', respectively), and we'll typically fix the corresponding coeffcients to $1$ using \verb|fixPar|. As in \cite{HootenEtAl2019}, we assume that the coefficients for the negative gradient $(D)$ are equal in the x- and y-directions (i.e., $\beta^\mu_x = \beta^\mu_y$; this constraint is specified in the third column of \verb|DM| above) and that the state-dependent \verb|sigma.x| and \verb|sigma.y| are equal. Similar to random effects models (section \ref{sec:pilotWhale}), note that for recharge models \verb|beta0| must now be specified as a list (consisting of objects named \verb|beta|, \verb|g0|, and/or \verb|theta|). \cite{HootenEtAl2019} assumed state transitions were non-Markov (Eq. \ref{eq:rechargeTPM1}), and we can accomplish this by setting the reference states for the t.p.m. working scale parameters to state 1 (i.e., \verb|betaRef <- c(1,1)|) and setting the columns within each row to be equal (i.e., \verb|betaCons <- matrix(c(1,2),2,2)|). With \verb|formula <- ~ recharge(g0 = ~1, theta = ~W_intercept+W_near_sabie)|, the resulting state transition probability matrix at time $t$ is:
+\noindent There are several things worth noting in the code above. When specifying normal random walk models using a pseudo-design matrix, we must include terms for the previous location in \verb|mean.x| and \verb|mean.y| (in this case ``mu.x\_tm1'' and ``mu.y\_tm1'', respectively), and we'll typically fix the corresponding coeffcients to $1$ using \verb|fixPar|. As in \cite{HootenEtAl2019}, we assume that the coefficients for the negative gradient $(D)$ are equal in the x- and y-directions (i.e., $\beta^\mu_x = \beta^\mu_y$; this constraint is specified in the third column of \verb|DM| above) and that the state-dependent \verb|sd.x| and \verb|sd.y| are equal. Similar to random effects models (section \ref{sec:pilotWhale}), note that for recharge models \verb|beta0| must now be specified as a list (consisting of objects named \verb|beta|, \verb|g0|, and/or \verb|theta|). \cite{HootenEtAl2019} assumed state transitions were non-Markov (Eq. \ref{eq:rechargeTPM1}), and we can accomplish this by setting the reference states for the t.p.m. working scale parameters to state 1 (i.e., \verb|betaRef <- c(1,1)|) and setting the columns within each row to be equal (i.e., \verb|betaCons <- matrix(c(1,2),2,2)|). With \verb|formula <- ~ recharge(g0 = ~1, theta = ~W_intercept+W_near_sabie)|, the resulting state transition probability matrix at time $t$ is:
 \begin{equation*}
   {\mathbf \Gamma^{(t)}} = \begin{bmatrix}
     \frac{1}{(1+\exp(\beta_0+g_t\beta_1))} & \frac{\exp(\beta_0+g_t\beta_1)}{(1+\exp(\beta_0+g_t\beta_1))}  \\
@@ -4655,7 +4643,7 @@ Next we'll calculate the gradients of the potential function surface in the x- a
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlcom{# boundary needs to have a CRS for ctmcmove::rast.grad}
-\hlkwd{proj4string}\hlstd{(boundary)} \hlkwb{<-} \hlstd{sp}\hlopt{::}\hlkwd{CRS}\hlstd{(}\hlstr{"+init=epsg:4326"}\hlstd{)}
+\hlkwd{proj4string}\hlstd{(boundary)} \hlkwb{<-} \hlstd{sp}\hlopt{::}\hlkwd{CRS}\hlstd{(}\hlstr{"+init=epsg:6328"}\hlstd{)}
 
 \hlcom{# compute gradients in x- and y- directions}
 \hlstd{grad} \hlkwb{<-} \hlstd{ctmcmove}\hlopt{::}\hlkwd{rast.grad}\hlstd{(boundary)}
@@ -4671,15 +4659,15 @@ Now we're ready to simulate our bivariate normal random walk model including the
 \hlstd{dist} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlstr{"rw_mvnorm2"}\hlstd{)} \hlcom{# bivariate normal random walk}
 \hlstd{DM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mean.x}\hlstd{=}\hlopt{~}\hlstd{mu.x_tm1}\hlopt{+}\hlkwd{crw}\hlstd{(mu.x_tm1,}\hlkwc{lag}\hlstd{=}\hlnum{1}\hlstd{)}\hlopt{+}\hlstd{grad.x,}
                    \hlkwc{mean.y}\hlstd{=}\hlopt{~}\hlstd{mu.y_tm1}\hlopt{+}\hlkwd{crw}\hlstd{(mu.y_tm1,}\hlkwc{lag}\hlstd{=}\hlnum{1}\hlstd{)}\hlopt{+}\hlstd{grad.y,}
-                   \hlkwc{sigma.x}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{,}
-                   \hlkwc{sigma.xy}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{,}
-                   \hlkwc{sigma.y}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{))}
+                   \hlkwc{sd.x}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{,}
+                   \hlkwc{sd.y}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{,}
+                   \hlkwc{corr.xy}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{))}
 
 \hlcom{# specify parameters on working parameter scale}
-\hlstd{Par} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{0.75}\hlstd{,}\hlopt{-}\hlnum{750000}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0.75}\hlstd{,}\hlopt{-}\hlnum{1500}\hlstd{,}\hlkwd{log}\hlstd{(}\hlnum{100000}\hlstd{),}\hlnum{0}\hlstd{,}\hlkwd{log}\hlstd{(}\hlnum{100000}\hlstd{)))}
+\hlstd{Par} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{0.75}\hlstd{,}\hlopt{-}\hlnum{1500}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0.75}\hlstd{,}\hlopt{-}\hlnum{1500}\hlstd{,}\hlkwd{log}\hlstd{(}\hlkwd{sqrt}\hlstd{(}\hlnum{100000}\hlstd{)),}\hlkwd{log}\hlstd{(}\hlkwd{sqrt}\hlstd{(}\hlnum{100000}\hlstd{)),}\hlnum{0}\hlstd{))}
 \hlkwd{names}\hlstd{(Par}\hlopt{$}\hlstd{mu)} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"mu.x_tm1"}\hlstd{,}\hlstr{"crw(mu.x_tm1,lag=1)"}\hlstd{,}\hlstr{"grad.x"}\hlstd{,}
                    \hlstr{"mu.y_tm1"}\hlstd{,}\hlstr{"crw(mu.y_tm1,lag=1)"}\hlstd{,}\hlstr{"grad.y"}\hlstd{,}
-                   \hlstr{"sigma.x"}\hlstd{,}\hlstr{"sigma.xy"}\hlstd{,}\hlstr{"sigma.y"}\hlstd{)}
+                   \hlstr{"sd.x"}\hlstd{,}\hlstr{"sd.y"}\hlstd{,}\hlstr{"corr.xy"}\hlstd{)}
 
 \hlcom{# simulate and plot}
 \hlstd{simBound} \hlkwb{<-} \hlkwd{simData}\hlstd{(}\hlkwc{nbStates}\hlstd{=}\hlnum{1}\hlstd{,} \hlkwc{obsPerAnimal} \hlstd{=} \hlnum{10000}\hlstd{,} \hlkwc{dist}\hlstd{=dist,} \hlkwc{Par}\hlstd{=Par,}
@@ -4840,33 +4828,33 @@ To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb
                                 \hlnum{0}\hlstd{,}                  \hlnum{0}\hlstd{,}                  \hlnum{0}\hlstd{,}
                                           \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}
                                 \hlnum{0}\hlstd{,}                  \hlnum{0}\hlstd{,}                  \hlnum{0}\hlstd{,}
-                                          \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}
+                                          \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}
                                 \hlnum{0}\hlstd{,}                  \hlnum{0}\hlstd{,}                  \hlnum{0}\hlstd{,}
-                                          \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{),}
+                                          \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{),}
                      \hlkwc{nrow}\hlstd{=}\hlnum{5}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
                      \hlkwc{dimnames} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"mean.x"}\hlstd{,}\hlstr{"mean.y"}\hlstd{,}
-                                       \hlstr{"sigma.x"}\hlstd{,}\hlstr{"sigma.xy"}\hlstd{,}\hlstr{"sigma.y"}\hlstd{),}
+                                       \hlstr{"sd.x"}\hlstd{,}\hlstr{"sd.y"}\hlstd{,}\hlstr{"corr.xy"}\hlstd{),}
                      \hlkwd{c}\hlstd{(}\hlstr{"mean:mu_tm1"}\hlstd{,}\hlstr{"bathy"}\hlstd{,}\hlstr{"slope"}\hlstd{,}\hlstr{"d2site"}\hlstd{,}
-                       \hlstr{"sigma:(Intercept)"}\hlstd{,}\hlstr{"sigma.xy:(Intercept)"}\hlstd{))))}
+                       \hlstr{"sd:(Intercept)"}\hlstd{,}\hlstr{"corr.xy:(Intercept)"}\hlstd{))))}
 \hlstd{DM}\hlopt{$}\hlstd{mu}
 \end{alltt}
 \begin{verbatim}
-##          mean:mu_tm1 bathy               slope              
-## mean.x   "mu.x_tm1"  "langevin(bathy.x)" "langevin(slope.x)"
-## mean.y   "mu.y_tm1"  "langevin(bathy.y)" "langevin(slope.y)"
-## sigma.x  "0"         "0"                 "0"                
-## sigma.xy "0"         "0"                 "0"                
-## sigma.y  "0"         "0"                 "0"                
-##          d2site               sigma:(Intercept) sigma.xy:(Intercept)
-## mean.x   "langevin(d2site.x)" "0"               "0"                 
-## mean.y   "langevin(d2site.y)" "0"               "0"                 
-## sigma.x  "0"                  "1"               "0"                 
-## sigma.xy "0"                  "0"               "1"                 
-## sigma.y  "0"                  "1"               "0"
+##         mean:mu_tm1 bathy               slope              
+## mean.x  "mu.x_tm1"  "langevin(bathy.x)" "langevin(slope.x)"
+## mean.y  "mu.y_tm1"  "langevin(bathy.y)" "langevin(slope.y)"
+## sd.x    "0"         "0"                 "0"                
+## sd.y    "0"         "0"                 "0"                
+## corr.xy "0"         "0"                 "0"                
+##         d2site               sd:(Intercept) corr.xy:(Intercept)
+## mean.x  "langevin(d2site.x)" "0"            "0"                
+## mean.y  "langevin(d2site.y)" "0"            "0"                
+## sd.x    "0"                  "1"            "0"                
+## sd.y    "0"                  "1"            "0"                
+## corr.xy "0"                  "0"            "1"
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
-\noindent There are several things to unpack here. The first column of the design matrix is for the previous location (as in section \ref{sec:buffalo}) and the \verb|langevin| special function in columns 2--4 identifies the habitat selection coefficients of the model (and their corresponding habitat covariate gradients). Note that the ``\verb|.x|'' and ``\verb|.y|'' suffixes correspond to the rows for the means in the easting (``\verb|mean.x|'') and northing (``\verb|mean.y|'') directions. Lastly, the Langevin model of \citet{MichelotEtAl2019} assumes the speeds in the easting and northing directions are identical and independent (Eq.\ \ref{eq:lang1Euler}), so \verb|sigma.x| and \verb|sigma.y| are constrained to be the same in column 5. We will use \verb|fixPar| to fix the covariance (\verb|sigma.xy|) to zero when fitting the model with \verb|fitCTHMM|. Now we're ready to fit the model:
+\noindent There are several things to unpack here. The first column of the design matrix is for the previous location (as in section \ref{sec:buffalo}) and the \verb|langevin| special function in columns 2--4 identifies the habitat selection coefficients of the model (and their corresponding habitat covariate gradients). Note that the ``\verb|.x|'' and ``\verb|.y|'' suffixes correspond to the rows for the means in the easting (``\verb|mean.x|'') and northing (``\verb|mean.y|'') directions. Lastly, the Langevin model of \citet{MichelotEtAl2019} assumes the speeds in the easting and northing directions are identical and independent (Eq.\ \ref{eq:lang1Euler}), so \verb|sd.x| and \verb|sd.y| are constrained to be the same in column 5. We will use \verb|fixPar| to fix the correlation (\verb|corr.xy|) to zero when fitting the model with \verb|fitCTHMM|. Now we're ready to fit the model:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -4886,7 +4874,7 @@ To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# -----------------------------------------------------------------------}}
 
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ mu \textasciitilde{} rw\_mvnorm2(mean.x: custom, mean.y: custom, sigma.x: custom, sigma.xy: custom, sigma.y: custom)}}
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \ mu \textasciitilde{} rw\_mvnorm2(mean.x: custom, mean.y: custom, sd.x: custom, sd.y: custom, corr.xy: custom)}}
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# \ Transition probability matrix formula: \textasciitilde{}1}}
 
@@ -4903,47 +4891,47 @@ To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb
 ## 
 ## Regression coeffs for mu parameters:
 ## ------------------------------------
-##      mean:mu_tm1     bathy      slope     d2site sigma:(Intercept)
-## [1,]           1 0.1344957 0.07609687 -0.0206041          2.514288
-##      sigma.xy:(Intercept)
-## [1,]                    0
+##      mean:mu_tm1     bathy      slope      d2site sd:(Intercept)
+## [1,]           1 0.1344924 0.07609383 -0.02060422       1.257144
+##      corr.xy:(Intercept)
+## [1,]                   0
 ## 
 ## mu parameters (based on mean covariate values):
 ## -----------------------------------------------
-##             state 1
-## mean.x   -1750.2349
-## mean.y     525.9662
-## sigma.x     12.3578
-## sigma.xy     0.0000
-## sigma.y     12.3578
+##              state 1
+## mean.x  -1750.234870
+## mean.y    525.966177
+## sd.x        3.515367
+## sd.y        3.515367
+## corr.xy     0.000000
 \end{verbatim}
 \begin{alltt}
 \hlstd{fitLangevin}\hlopt{$}\hlstd{CIbeta}\hlopt{$}\hlstd{mu}
 \end{alltt}
 \begin{verbatim}
 ## $est
-##      mean:mu_tm1     bathy      slope     d2site sigma:(Intercept)
-## [1,]           1 0.1344957 0.07609687 -0.0206041          2.514288
-##      sigma.xy:(Intercept)
-## [1,]                    0
+##      mean:mu_tm1     bathy      slope      d2site sd:(Intercept)
+## [1,]           1 0.1344924 0.07609383 -0.02060422       1.257144
+##      corr.xy:(Intercept)
+## [1,]                   0
 ## 
 ## $se
-##      mean:mu_tm1      bathy     slope      d2site sigma:(Intercept)
-## [1,]           0 0.07045873 0.1273107 0.005160585        0.01935859
-##      sigma.xy:(Intercept)
-## [1,]                    0
+##      mean:mu_tm1      bathy     slope      d2site sd:(Intercept)
+## [1,]           0 0.07046041 0.1273152 0.005160584    0.009679295
+##      corr.xy:(Intercept)
+## [1,]                   0
 ## 
 ## $lower
-##      mean:mu_tm1        bathy      slope      d2site sigma:(Intercept)
-## [1,]           1 -0.003600898 -0.1734276 -0.03071866          2.476345
-##      sigma.xy:(Intercept)
-## [1,]                    0
+##      mean:mu_tm1        bathy      slope      d2site sd:(Intercept)
+## [1,]           1 -0.003607499 -0.1734394 -0.03071878       1.238173
+##      corr.xy:(Intercept)
+## [1,]                   0
 ## 
 ## $upper
-##      mean:mu_tm1     bathy     slope      d2site sigma:(Intercept)
-## [1,]           1 0.2725923 0.3256213 -0.01048954           2.55223
-##      sigma.xy:(Intercept)
-## [1,]                    0
+##      mean:mu_tm1     bathy     slope      d2site sd:(Intercept)
+## [1,]           1 0.2725923 0.3256271 -0.01048966       1.276115
+##      corr.xy:(Intercept)
+## [1,]                   0
 \end{verbatim}
 \end{kframe}
 \end{knitrout}

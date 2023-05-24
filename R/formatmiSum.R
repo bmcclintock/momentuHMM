@@ -13,7 +13,10 @@ formatmiSum <- function(miSum){
     miSum$mle$theta <- c(miSum$Par$beta$theta$est)
     names(miSum$mle$theta) <- colnames(miSum$Par$beta$theta$est)
   } else nbRecovs <- nbG0covs <- 0
-  miSum$mod$estimate <- expandPar(miSum$MIcombine$coefficients,miSum$conditions$optInd,unlist(miSum$conditions$fixPar),miSum$conditions$wparIndex,miSum$conditions$betaCons,miSum$conditions$deltaCons,length(miSum$stateNames),ncol(miSum$covsDelta)-1,miSum$conditions$stationary,nrow(miSum$Par$beta$beta$est)/miSum$conditions$mixtures-1,nbRecovs+nbG0covs,miSum$conditions$mixtures,ncol(miSum$covsPi)-1)
+  Par0 <- lapply(miSum$Par$beta[!names(miSum$Par$beta) %in% c("beta","delta")],function(x) x$est)
+  beta0 <- miSum$Par$beta$beta$est
+  delta0 <- miSum$Par$beta$delta$est
+  miSum$mod$estimate <- expandPar(miSum$MIcombine$coefficients,miSum$conditions$optInd,miSum$conditions$fixPar,miSum$conditions$wparIndex,miSum$conditions$betaCons,miSum$conditions$deltaCons,length(miSum$stateNames),ncol(miSum$covsDelta)-1,miSum$conditions$stationary,nrow(miSum$Par$beta$beta$est)/miSum$conditions$mixtures-1,nbRecovs+nbG0covs,miSum$conditions$mixtures,ncol(miSum$covsPi)-1,isTRUE(miSum$conditions$optMethod=="TMB"),Par0,beta0,delta0)
   miSum$mod$wpar <- miSum$MIcombine$coefficients
   miSum
 }
