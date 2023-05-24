@@ -46,7 +46,7 @@ arma::cube trMatrix_rcpp(int nbStates, arma::mat beta, arma::mat covs, IntegerVe
     
     unsigned int ani=0; // animal index
     //g = exp(g);
-    for(int k=0;k<nbObs;k++) {
+    for(unsigned int k=0;k<nbObs;k++) {
       Gamma.zeros();
       int cpt=0; // counter for diagonal elements
       for(int i=0;i<nbStates;i++) {
