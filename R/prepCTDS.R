@@ -432,6 +432,11 @@ path2ctds<-function (xy, t, rast, directions = 4, zero.idx = integer(),
   }
   if(!(directions %in% c(4,8))) stop("'directions' must be 4 or 8")
   
+  if (!requireNamespace("Matrix", quietly = TRUE)) {
+    stop("Package \"Matrix\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+  
   raster::values(rast) <- 1
   raster::values(rast)[zero.idx] <- 0
   trans = gdistance::transition(rast, prod, directions = directions)

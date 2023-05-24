@@ -15,6 +15,12 @@
 #' @export
 ctdsUD <- function (ctds, spatialCovs, spatialCovs.grad, zero.idx = integer(), method="lu",maxiter, start, tol, log=FALSE) 
 {
+  
+  if (!requireNamespace("Matrix", quietly = TRUE)) {
+    stop("Package \"Matrix\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+  
   if(inherits(ctds,"miHMM")) ctds <- ctds$miSum
   if(inherits(ctds,"miSum")){
     ctds <- formatmiSum(ctds)

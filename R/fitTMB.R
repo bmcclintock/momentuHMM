@@ -1,9 +1,17 @@
 #' @rawNamespace useDynLib(momentuHMM, .registration=TRUE); useDynLib(momentuHMM_TMBExports)
-#' @importFrom methods as
+# #' @importFrom methods as
 #' @importFrom stats update
-#' @importFrom mgcv gam
-#' @importFrom optimx optimx
-fitTMB <- function(data,wpar,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,DM,DMinputs,formula,fixParIndex,stationary,prior,knownStates,betaCons,control,formulaDelta,covsDelta,workBounds,fit,CT,dtIndex,kappa,hessian) {
+# #' @importFrom mgcv gam
+# #' @importFrom optimx optimx
+fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,DM,DMinputs,formula,fixParIndex,stationary,prior,knownStates,betaCons,control,formulaDelta,covsDelta,workBounds,fit,CT,dtIndex,kappa,hessian) {
+  
+  for(pkg in c("Matrix","optimx","mgcv")){
+    if (!requireNamespace(pkg, quietly = TRUE)) {
+      stop('Package \"',pkg,'\" needed for optMethod=\"TMB\". Please install it.',
+           call. = FALSE)
+    }
+  }
+  
   if(nbStates<2){
     #stop("nbStates must be >1 when optMethod='TMB'")
     fixParIndex$beta0$beta <- matrix(0,1,1)

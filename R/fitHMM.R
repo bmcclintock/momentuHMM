@@ -899,7 +899,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
             if(any(unlist(inputs$consensus))) stop("sorry, consensus models are not currently supported when optMethod='TMB'")
             if(any(unlist(inputs$circularAngleMean))) stop("sorry, circular-circular regression models are not currently supported when optMethod='TMB'")
             if(!is.null(hierRecharge)) stop("sorry, recharge models are not currently supported when optMethod='TMB'")
-            withCallingHandlers(curmod <- tryCatch(fitTMB(data,wpar,inputs$dist,nbStates,p,inputs$estAngleMean,oneInflation,zeroInflation,inputs$DM,DMinputs,newformula,fixParIndex,stationary,prior,knownStates,betaCons,control,formulaDelta,covsDelta,workBounds,fit,isTRUE(list(...)$CT),dtIndex,kappa,hessian),error=function(e) e),warning=h)
+            withCallingHandlers(curmod <- tryCatch(fitTMB(data,inputs$dist,nbStates,p,inputs$estAngleMean,oneInflation,zeroInflation,inputs$DM,DMinputs,newformula,fixParIndex,stationary,prior,knownStates,betaCons,control,formulaDelta,covsDelta,workBounds,fit,isTRUE(list(...)$CT),dtIndex,kappa,hessian),error=function(e) e),warning=h)
             if(!inherits(curmod,"error") & (fitCount+1)>retryFits){
               if(!is.null(prior)) {
                 tmbPrior <- curmod$prior

@@ -25,9 +25,6 @@ Imports:
     rlang,
     raster,
     expm,
-    methods,
-    mgcv,
-    optimx,
     TMB (>= 1.9.2)
 LinkingTo: 
     Rcpp,
@@ -63,7 +60,10 @@ Suggests:
     qdapRegex,
     ctmcmove,
     Matrix,
-    gdistance
+    gdistance,
+    methods,
+    mgcv,
+    optimx
 RoxygenNote: 7.2.3
 Encoding: UTF-8
 NeedsCompilation: yes
