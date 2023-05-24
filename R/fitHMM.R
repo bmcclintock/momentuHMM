@@ -983,16 +983,28 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                   retrySD[[i]] <- ifelse(retrySD[[i]]=="adapt",10^(ceiling(log10(abs(wpar[pcount+1:parCount[[i]]])))),retrySD[[i]])
                   retrySD[[i]][which(is.na(fixParIndex$fixPar[[i]]))] <- 0
                   fixParIndex$Par0[[i]] <- wpar[pcount+1:parCount[[i]]] + rnorm(parCount[[i]],0,as.numeric(retrySD[[i]]))
+                  nInd <- which(!is.na(fixParIndex$fixPar[[i]]))
+                  if(length(nInd)){
+                    fixParIndex$Par0[[i]][nInd] <- fixParIndex$Par0[[i]][nInd][(fixParIndex$fixPar[[i]]-min(fixParIndex$fixPar[[i]],na.rm=TRUE)+1)[nInd]]
+                  }
                   pcount <- pcount + parCount[[i]]
                 }
                 if(nbStates>1){
                   retrySD$beta <- ifelse(retrySD$beta=="adapt",10^(ceiling(log10(abs(wpar[pcount+1:length(fixParIndex$beta0$beta)])))),retrySD$beta)
                   retrySD$beta[which(is.na(fixParIndex$fixPar$beta))] <- 0
                   fixParIndex$beta0$beta <- wpar[pcount+1:length(fixParIndex$beta0$beta)] + rnorm(length(fixParIndex$beta0$beta),0,as.numeric(retrySD$beta))
+                  nInd <- which(!is.na(fixParIndex$fixPar$beta))
+                  if(length(nInd)){
+                    fixParIndex$beta0$beta[nInd] <- fixParIndex$beta0$beta[nInd][fixParIndex$fixPar$beta[nInd]]
+                  }
                   pcount <- pcount + length(fixParIndex$beta0$beta)
                   retrySD$delta <- ifelse(retrySD$delta=="adapt",10^(ceiling(log10(abs(wpar[pcount+1:length(fixParIndex$delta0)])))),retrySD$delta)
                   retrySD$delta[which(is.na(fixParIndex$fixPar$delta))] <- 0
                   fixParIndex$delta0 <- wpar[pcount+1:length(fixParIndex$delta0)] + rnorm(length(fixParIndex$delta0),0,as.numeric(retrySD$delta))
+                  nInd <- which(!is.na(fixParIndex$fixPar$delta))
+                  if(length(nInd)){
+                    fixParIndex$beta0$delta[nInd] <- fixParIndex$beta0$delta[nInd][fixParIndex$fixPar$delta[nInd]]
+                  }
                 }
               }
               cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,"         ",sep="")
