@@ -41,4 +41,21 @@ test_that("Parallel processing works",{
   expect_error(timeInStates(HMMfits$HMMfits,ncores=ncores),NA)
   
   expect_error(simData(model=HMMfits,nbAnimals=2,obsPerAnimal=30,ncores=ncores),NA)
+  
+  # test with optMethod="TMB"
+  expect_error(HMMfits_tmb <- MIfitHMM(lapply(HMMfits$HMMfits,function(x) x$data),nSims=4,ncores=ncores,
+                                   nbStates=2,dist=list(step="gamma",angle="vm"),
+                                   Par0=bPar$Par,beta0=bPar$beta,
+                                   formula=~cov1+cos(cov2),
+                                   estAngleMean=list(angle=TRUE),optMethod="TMB",control=list(silent=TRUE),
+                                   covNames=c("cov1","cov2")),NA)
+  
+  expect_error(plotPR(HMMfits_tmb),NA)
+  
+  expect_error(timeInStates(HMMfits_tmb$HMMfits),NA)
+  
+  expect_error(simData(model=HMMfits_tmb,nbAnimals=2,obsPerAnimal=30),NA)
+  
+  expect_equal(unlist(lapply(HMMfits$HMMfits,function(x) x$mod$minimum)),unlist(lapply(HMMfits_tmb$HMMfits,function(x) x$mod$minimum)))
+
 })

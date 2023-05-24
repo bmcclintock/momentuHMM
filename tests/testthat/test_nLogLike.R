@@ -40,7 +40,7 @@ test_that("Exceptions are thrown",{
 
 })
 
-test_that("logAlpha, logBeta, and nLogLike are consistent",{
+test_that("logAlpha, logBeta, nLogLike, and TMB are consistent",{
   data <- example$m$data
   m<-example$m
   Par <- getPar(m)$Par
@@ -82,16 +82,26 @@ test_that("logAlpha, logBeta, and nLogLike are consistent",{
   nll<-nLogLike(wpar,nbStates,m$conditions$formula,m$conditions$bounds,inputs$p$parSize,data,inputs$dist,model.matrix(m$conditions$formula,data),
                        m$conditions$estAngleMean,m$conditions$circularAngleMean,inputs$consensus,m$conditions$zeroInflation,m$conditions$oneInflation,
                        m$conditions$stationary,m$conditions$fullDM,m$conditions$DMind,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds,betaRef=m$conditions$betaRef,covsPi=m$covsPi,aInd=aInd)
+  
+  mtmb <- fitHMM(example$m$data,nbStates=length(example$m$stateNames),dist=example$m$conditions$dist,Par0=getPar(example$m)$Par,beta0=getPar(example$m)$beta,delta0=getPar(example$m)$delta,formula=example$m$conditions$formula,estAngleMean = m$conditions$estAngleMean,optMethod = "TMB",control=list(silent=TRUE))
+  
   la<-logAlpha(m)
   lb<-logBeta(m)
+  latmb <- logAlpha(mtmb)
+  lbtmb <- logBeta(mtmb)
   for(t in sample.int(min(table(m$data$ID)),30)){
     ll<-0
+    lltmb <- 0
     for(i in 1:nbAnimals){
       aInd<-which(m$data$ID==i)[t]
       c <- max(la[[1]][aInd,]+lb[[1]][aInd,]) # cancels below ; prevents numerical errors
       ll <- ll + c + log(sum(exp(la[[1]][aInd,]+lb[[1]][aInd,]-c)))
+      
+      ctmb <- max(latmb[[1]][aInd,]+lbtmb[[1]][aInd,]) # cancels below ; prevents numerical errors
+      lltmb <- lltmb + ctmb + log(sum(exp(latmb[[1]][aInd,]+lbtmb[[1]][aInd,]-ctmb)))
     }
     expect_equal(nll,-ll)
+    expect_equal(nll,-lltmb)
   }
   
   # random time step from each individual
@@ -108,6 +118,9 @@ test_that("logAlpha, logBeta, and nLogLike are consistent",{
     c <- max(la[[1]][samp,]+lb[[1]][samp,]) # cancels below ; prevents numerical errors
     ll <- c + log(sum(exp(la[[1]][samp,]+lb[[1]][samp,]-c)))
     expect_equal(nll,-ll)
+    ctmb <- max(latmb[[1]][samp,]+lbtmb[[1]][samp,]) # cancels below ; prevents numerical errors
+    lltmb <- ctmb + log(sum(exp(latmb[[1]][samp,]+lbtmb[[1]][samp,]-ctmb)))
+    expect_equal(nll,-lltmb,tolerance=1.e-6)
   }
   
 })

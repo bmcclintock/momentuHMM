@@ -416,4 +416,20 @@ test_that("retryFits works",{
                  beta0=Par0$beta,delta0=Par0$delta,formula=par0$formula,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,retryFits=5,retrySD=list(step=5,beta=20,delta=20))
   expect_equal(isTRUE(all.equal(mod1$mod$estimate,mod2$mod$estimate)),FALSE)
   
+  # TMB
+  mod1tmb <- fitHMM(data=data,nbStates=simPar$nbStates,Par=par0$Par,optMethod="TMB",control=list(silent=TRUE),
+                 beta0=par0$beta0,delta0=par0$delta0,formula=par0$formula,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean)
+  
+  Par0tmb <- getPar(mod1)
+  mod2tmb <- fitHMM(data=data,nbStates=simPar$nbStates,Par=Par0tmb$Par,optMethod="TMB",control=list(silent=TRUE),
+                 beta0=Par0$beta,delta0=Par0$delta,formula=par0$formula,dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean,retryFits=5,retrySD=list(step=5,beta=20,delta=20))
+  expect_equal(isTRUE(all.equal(mod1tmb$mod$estimate,mod2tmb$mod$estimate)),FALSE)
+})
+
+test_that("mvnorm3 works",{
+  setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=3)
+  simdat <- simData(nbAnimals=2,nbStates=2,obsPerAnimal=c(100,225),dist=list(mu="rw_mvnorm3"),DM=list(mu=list(mean.x=~1,mean.y=~1,mean.z=~1,sd.x=~1,sd.y=~1,sd.z=~1,corr.xy=~1,corr.xz=~1,corr.yz=~1)),Par=list(mu=c(1,1,1,1,1,1,log(c(1,10,1,10,1,10)),0,0,0,0,0,0)),mvnCoords = "mu",states=TRUE)
+  fit <- fitHMM(simdat,nbStates=2,dist=list(mu="rw_mvnorm3"),DM=list(mu=list(mean.x=~mu.x_tm1,mean.y=~mu.y_tm1,mean.z=~mu.z_tm1,sd.x=~1,sd.y=~1,sd.z=~1,corr.xy=~1,corr.xz=~1,corr.yz=~1)),Par0=list(mu=c(1,1,1,1,1,1,log(c(1,10,1,10,1,10)),0,0,0,0,0,0)),mvnCoords = "mu",fixPar=list(mu=c(rep(1,6),rep(NA,12))))
+  fittmb <- fitHMM(simdat,nbStates=2,dist=list(mu="rw_mvnorm3"),DM=list(mu=list(mean.x=~mu.x_tm1,mean.y=~mu.y_tm1,mean.z=~mu.z_tm1,sd.x=~1,sd.y=~1,sd.z=~1,corr.xy=~1,corr.xz=~1,corr.yz=~1)),Par0=list(mu=c(1,1,1,1,1,1,log(c(1,10,1,10,1,10)),0,0,0,0,0,0)),mvnCoords = "mu",fixPar=list(mu=c(rep(NA,6),1:12)),optMethod = "TMB", control=list(silent=TRUE))
+  expect_equal(fit$mod$minimum,fittmb$mod$minimum)
 })
