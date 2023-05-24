@@ -217,7 +217,7 @@ Type momentuhmmTMB(objective_function<Type>* obj) {
           }
         }
         if (statdist == 1) {
-          if((nbID==0 & i==1) || (i > 1 && (ID(i-2) != ID(i)))) {
+          if((nbID==0 & i==1) || ((i > 1) && (ID(i-2) != ID(i)))) {
             // Case 1: the initial distribution is the stationary distribution
             matrix<Type> tpminv = -tpm; 
             tpminv = (tpminv.array() + 1).matrix(); 
