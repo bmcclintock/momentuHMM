@@ -58,7 +58,7 @@ allProbs <- function(m)
     p <- inputs$p
     DMinputs<-getDM(data,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,m$conditions$zeroInflation,m$conditions$oneInflation,m$conditions$circularAngleMean,TMB=isTRUE(m$conditions$optMethod=="TMB"))
     m$conditions$fullDM <- DMinputs$fullDM
-    m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,pi=m$Par$beta[["pi"]]$est,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist)
+    m$mod$estimate <- n2w(Par,p$bounds,list(beta=beta,pi=m$Par$beta[["pi"]]$est,g0=g0,theta=theta),m$Par$beta$delta$est,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist,TMB=isTRUE(m$conditions$optMethod=="TMB"))
   } else {
     beta <- m$mle$beta
     pie <- m$mle[["pi"]]
@@ -83,7 +83,7 @@ allProbs <- function(m)
   dist <- lapply(dist,function(x) gsub("Consensus","",x))
   dist <- lapply(dist,function(x) ifelse(grepl("cat",x),"cat",x))
 
-  par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$fullDM,m$conditions$DMind,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds,m$covsPi)
+  par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$fullDM,m$conditions$DMind,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds,m$covsPi,TMB=isTRUE(m$conditions$optMethod=="TMB"))
   
   if(isTRUE(m$conditions$CT)) par <- ctPar(par,dist,nbStates,data)
   

@@ -403,8 +403,6 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
                            control = args$control)
     best <- which.min(out$value)
     
-    #### need to convert mvnorm parameters use delta method in CIreal/CIbeta (maybe move convertPar to n2w and w2n??)
-    
     # Get estimates and precision matrix for all parameters
     best_par <- as.vector(out[best, 1:length(tmb_obj$par)])
     rownames(best_par) <- NULL

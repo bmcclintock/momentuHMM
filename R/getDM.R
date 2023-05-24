@@ -17,7 +17,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
     if(dist[[i]]=="ctds" && #i==attr(data,"ctdsData") && 
        (is.null(DM[[i]]) || !is.list(DM[[i]]))) stop("DM$",i," must be specified as a list with a formula for parameter 'lambda'")
     if(is.null(DM[[i]])){
-      if(dist[[i]] %in% rwdists) stop("DM$",i," must be specified")
+      if(dist[[i]] %in% rwdists) stop("DM$",i," must be specified for (multivariate) normal random walk models")
       tmpDM <- diag(parSize[[i]]*nbStates)
       tmpDM <- array(tmpDM,dim=c(nrow(tmpDM),ncol(tmpDM),nbObs))
       DMnames <- paste0(rep(parNames[[i]],each=nbStates),"_",1:nbStates,":(Intercept)")
