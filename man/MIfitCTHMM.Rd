@@ -247,9 +247,9 @@ initial values for likelihood optimization.  See \code{\link{fitCTHMM}}.}
 
 \item{retrySD}{An optional list of scalars or vectors indicating the standard deviation to use for normal perturbations of each working scale parameter when \code{retryFits>0}. See \code{\link{fitCTHMM}}.}
 
-\item{optMethod}{The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).}
+\item{optMethod}{The optimization method to be used.  Can be ``nlm'' (the default; see \code{\link[stats]{nlm}}), ``TMB'' (using Template Model Builder; see \code{\link[optimx]{optimx}} for control parameters), ``Nelder-Mead'' (see \code{\link[stats]{optim}}), or ``SANN'' (see \code{\link[stats]{optim}}).}
 
-\item{control}{A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="Nelder-Mead"} or \code{optMethod="SANN"}).}
+\item{control}{A list of control parameters to be passed to \code{\link[stats]{optim}} (ignored unless \code{optMethod="TMB"}, \code{optMethod="Nelder-Mead"}, or \code{optMethod="SANN"}).}
 
 \item{prior}{A function that returns the log-density of the working scale parameter prior distribution(s).  See \code{\link{fitCTHMM}}.}
 
