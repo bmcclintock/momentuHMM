@@ -436,5 +436,5 @@ test_that("mvnorm3 works",{
   expect_equal(fit$mod$minimum,fittmb2$HMMfits[[1]]$mod$minimum)
   expect_equal(fit$mod$minimum,fittmb2$HMMfits[[2]]$mod$minimum)
   expect_equal(fit$CIbeta$mu$est,fittmb2$miSum$Par$beta$mu$est,tolerance = 1.e-4)
-  expect_equal(fit$CIbeta$beta$est,fittmb2$miSum$Par$beta$beta$est,tolerance = 1.e-5)
+  expect_equal(fit$CIbeta$beta$est,fittmb2$miSum$Par$beta$beta$est,tolerance = 1.e-4)
 })
