@@ -71,6 +71,7 @@
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param export Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.
 #' @param gradient Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. If \code{TRUE}, the gradients are returned with ``\code{.x}'' (easting gradient) and ``\code{.y}'' (northing gradient) suffixes added to the names of \code{spatialCovs}. For example, if \code{cov1} is the name of a spatial covariate, then the returned \code{\link{momentuHMMData}} object will include the fields ``\code{cov1.x}'' and ``\code{cov1.y}''.
+#' @param TMB Logical indicating whether or not data should be simulated based on TMB model specifications. Default: \code{FALSE}. See \code{optMethod} argument in \code{\link{fitCTHMM}}. Ignored if \code{model} is specified. 
 #'
 #' @details \itemize{
 #' \item Importantly, \code{simHierCTHMM} assumes the state active at observation time \emph{t} determines the (state-dependent) observation distribution from observation time \emph{t} to time \emph{t+1} (i.e. state switches only occur at the times of observations). 
@@ -121,7 +122,8 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
                         errorEllipse=NULL,
                         ncores=1,
                         export=NULL,
-                        gradient=FALSE)
+                        gradient=FALSE,
+                        TMB=FALSE)
 {
   
   installDataTree()
@@ -182,6 +184,7 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
                                          ncores,
                                          export,
                                          gradient,
+                                         TMB,
                                          CT=TRUE),warning=muffleCTwarning)
   
   coordLevel <- attr(out,"coordLevel")

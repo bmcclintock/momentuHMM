@@ -79,6 +79,7 @@
 #' @param gradient Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. If \code{TRUE}, the gradients are returned with ``\code{.x}'' (easting gradient) and ``\code{.y}'' (northing gradient) suffixes added to the names of \code{spatialCovs}. For example, if \code{cov1} is the name of a spatial covariate, then the returned \code{\link{momentuHMMData}} object will include the fields ``\code{cov1.x}'' and ``\code{cov1.y}''.
 #' @param keepSwitch Logical indicating whether or not to return the (typically unobserved) data at the times when potential state switches could have occurred. Default: \code{FALSE}. If set to \code{TRUE}, an additional logical field named \code{isObs} is returned, where \code{TRUE} indicates observations and \code{FALSE} indicates state switches.
 #' @param kappa List of the form \code{list(method=c("all","random","quantile"),nspCov=NA,spCov=NA)} defining the method for obtaining the upper bound for the transition rate out of the current state (see Blackwell et al. 2016). The list can include up to three named objects: 1) \code{method}, a character string indicating the method for calculating the upper bound based on the covariates in the model (\code{"all"}, \code{"random"}, or \code{"quantile"}); 2) \code{nspCov}, a positive scalar for subsampling the non-spatial covariates (when \code{method="random"} or \code{method="quantile"}); and \code{spCov}, a positive scalar for subsampling the spatial covariates (when \code{method="random"} or \code{method="quantile"}).
+#' @param TMB Logical indicating whether or not data should be simulated based on TMB model specifications. Default: \code{FALSE}. See \code{optMethod} argument in \code{\link{fitCTHMM}}. Ignored if \code{model} is specified. 
 #' Default method is \code{"all"}, in which case \code{kappa} is calculated based on all of the observed covariate values (note this can be slow and/or memory could become an issue for large datasets and/or rasters). For \code{method="random"}, the observed covariates are subsampled with up to \code{nspCov} samples of any non-spatial covariates and up to \code{spCov} samples of any spatial covariates (defaults are \code{1000} for \code{nspCov} and \code{10000} for \code{spCov}). For \code{method="quantile"}, all combinations of 100-length sequences spanning the (\code{nspCov}/2, 1-\code{nspCov}/2) and (\code{spCov}/2, 1-\code{spCov}/2) quantiles of the covariates are used (defaults are \code{0.05} for both \code{nspCov} and \code{spCov}). 
 #' Ignored unless covariates are included in \code{formula}.
 #'  
@@ -160,7 +161,8 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                      export=NULL,
                      gradient=FALSE,
                      keepSwitch=FALSE,
-                     kappa=NULL)
+                     kappa=NULL,
+                     TMB=FALSE)
 {
   
   if(!is.null(model)){
@@ -240,6 +242,7 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                                      ncores,
                                      export=export,
                                      gradient=gradient,
+                                     TMB=TMB,
                                      CT=TRUE,
                                      kappa=kappa),warning=muffleCTwarning)
   

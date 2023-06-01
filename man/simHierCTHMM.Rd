@@ -32,7 +32,8 @@ simHierCTHMM(
   errorEllipse = NULL,
   ncores = 1,
   export = NULL,
-  gradient = FALSE
+  gradient = FALSE,
+  TMB = FALSE
 )
 }
 \arguments{
@@ -131,6 +132,8 @@ any other data streams are observed without error.}
 \item{export}{Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.}
 
 \item{gradient}{Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. If \code{TRUE}, the gradients are returned with ``\code{.x}'' (easting gradient) and ``\code{.y}'' (northing gradient) suffixes added to the names of \code{spatialCovs}. For example, if \code{cov1} is the name of a spatial covariate, then the returned \code{\link{momentuHMMData}} object will include the fields ``\code{cov1.x}'' and ``\code{cov1.y}''.}
+
+\item{TMB}{Logical indicating whether or not data should be simulated based on TMB model specifications. Default: \code{FALSE}. See \code{optMethod} argument in \code{\link{fitCTHMM}}. Ignored if \code{model} is specified.}
 }
 \description{
 Simulates data from an approximate (multivariate) hierarchical continuous-time hidden Markov model. Note that the state active at observation time \emph{t} determines the (state-dependent) observation distribution from observation time \emph{t} to time \emph{t+1} (see Details) and time-varying covariates are assumed piece-wise constant between observations. Movement data are assumed to be in Cartesian coordinates (not longitude/latitude) and can be generated with or without observation error attributable to location measurement error.

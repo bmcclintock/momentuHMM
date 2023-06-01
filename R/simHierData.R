@@ -68,6 +68,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                     ncores=1,
                     export=NULL,
                     gradient=FALSE,
+                    TMB=FALSE,
                     ...)
 {
   
@@ -256,11 +257,28 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     
     if(states) model$data$states <- NULL
     
+    TMB <- isTRUE(model$conditions$optMethod=="TMB")
+    
     if(is.null(covs)) {
       p<-parDef(lapply(dist,function(x) gsub("Consensus","",x)),nbStates,estAngleMean,zeroInflation,oneInflation,DM,userBounds)
       covNames<-character()
       for(i in distnames){
+        tmpDMind <- model$conditions$DMind[[i]]
+        tmpDM <- model$conditions$DM[[i]]
+        if(TMB){
+          for(i in distnames){
+            if(is.null(model$conditions$DM[[i]])){
+              model$conditions$DM[[i]] <- list()
+              for(j in p$parNames[[i]]){
+                model$conditions$DM[[i]][[j]] <- ~1
+              }
+            }
+          }
+          model$conditions$DMind[[i]] <- FALSE
+        }
         covNames<-c(covNames,getCovNames(model,p,i)$DMterms)
+        model$conditions$DMind[[i]] <- tmpDMind
+        model$conditions$DM[[i]] <- tmpDM
       }
       if(!is.null(model$rawCovs)){
         covNames <- c(colnames(model$rawCovs),covNames)
@@ -1194,10 +1212,10 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         DMcov <- stats::model.matrix(newformula,subCovs)
         
         # format parameters
-        DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,TMB=isTRUE(model$conditions$optMethod=="TMB"))
+        DMinputs<-getDM(subCovs,inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,TMB=TMB)
         fullDM <- DMinputs$fullDM
         DMind <- DMinputs$DMind
-        wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist,TMB=isTRUE(model$conditions$optMethod=="TMB"))
+        wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist,TMB=TMB)
         if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
         
         ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
@@ -1206,7 +1224,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         
         covsDelta <- stats::model.matrix(formDelta,subCovs[1,,drop=FALSE])
         covsPi <- stats::model.matrix(formPi,subCovs[1,,drop=FALSE])
-        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta,wworkBounds,covsPi,TMB=isTRUE(model$conditions$optMethod=="TMB"))
+        fullsubPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,nbObs,inputs$dist,p$Bndind,nc,meanind,covsDelta,wworkBounds,covsPi,TMB=TMB)
         
         pie <- fullsubPar[["pi"]]
         
@@ -1297,7 +1315,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
         }
         
         # get max crw lag
-        maxlag <- getDM(cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE,TMB=isTRUE(model$conditions$optMethod=="TMB"))$lag
+        maxlag <- getDM(cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE,TMB=TMB)$lag
         
         covsPi <- stats::model.matrix(formPi,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
         pie <- mlogit(wnpi,covsPi,nbCovsPi,1,mixtures)
@@ -1385,10 +1403,10 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
             
             if(nbSpatialCovs |  length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
               # format parameters
-              DMinputs<-getDM(cbind(subCovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE],subSpatialcovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE,TMB=isTRUE(model$conditions$optMethod=="TMB"))
+              DMinputs<-getDM(cbind(subCovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE],subSpatialcovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE,TMB=TMB)
               fullDM <- DMinputs$fullDM
               DMind <- DMinputs$DMind
-              wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist,TMB=isTRUE(model$conditions$optMethod=="TMB"))
+              wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist,TMB=TMB)
               if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
               
               nc <- meanind <- vector('list',length(distnames))
@@ -1406,7 +1424,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                   }
                 }
               }
-              subPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,1,inputs$dist,p$Bndind,nc,meanind,covsDelta,wworkBounds,covsPi,TMB=isTRUE(model$conditions$optMethod=="TMB"))
+              subPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,1,inputs$dist,p$Bndind,nc,meanind,covsDelta,wworkBounds,covsPi,TMB=TMB)
             } else {
               subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
             }
