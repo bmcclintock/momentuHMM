@@ -572,12 +572,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         tmpDMind <- model$conditions$DMind[[i]]
         tmpDM <- model$conditions$DM[[i]]
         if(TMB){
-          for(i in distnames){
-            if(is.null(model$conditions$DM[[i]])){
-              model$conditions$DM[[i]] <- list()
-              for(j in p$parNames[[i]]){
-                model$conditions$DM[[i]][[j]] <- ~1
-              }
+          if(is.null(model$conditions$DM[[i]])){
+            model$conditions$DM[[i]] <- list()
+            for(j in p$parNames[[i]]){
+              model$conditions$DM[[i]][[j]] <- ~1
             }
           }
           model$conditions$DMind[[i]] <- FALSE
