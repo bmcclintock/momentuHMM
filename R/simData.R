@@ -1545,8 +1545,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                 rm(covgrid)
               } else if(kappa$method=="random"){
                 if(any(names(subCovs) %in% qnames)){
-                  fullsub <- subCovs[rep(sample.int(nrow(subCovs),min(nrow(subCovs),kappa$nspCov)), each = ifelse(nbSpatialCovs,min(raster::ncell(spatialCovs[[1]]),kappa$spCov),1)),which(names(subCovs) %in% qnames),drop=FALSE ]
-                  if(nbSpatialCovs){
+                  fullsub <- subCovs[rep(sample.int(nrow(subCovs),min(nrow(subCovs),kappa$nspCov)), each = ifelse(any(spatialcovnames %in% qnames),min(raster::ncell(spatialCovs[[1]]),kappa$spCov),1)),which(names(subCovs) %in% qnames),drop=FALSE ]
+                  if(any(spatialcovnames %in% qnames)){
                     fullSpatialCov <- data.frame(fullsub,apply(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames])[sample.int(raster::ncell(spatialCovs[[1]]),min(raster::ncell(spatialCovs[[1]]),kappa$spCov)),,drop=FALSE],2,function(x) rep(x,min(nrow(subCovs),kappa$nspCov))))
                     mm <- stats::model.matrix(newformula,fullSpatialCov)
                     rm(fullSpatialCov)
@@ -1559,12 +1559,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                 }
               } else if(kappa$method=="all"){
                 if(any(names(subCovs) %in% qnames)){
-                  fullsub <- subCovs[rep(seq_len(nrow(subCovs)), each = ifelse(nbSpatialCovs,raster::ncell(spatialCovs[[1]]),1)),which(names(subCovs) %in% qnames),drop=FALSE]
-                  if(nbSpatialCovs){
+                  fullsub <- subCovs[rep(seq_len(nrow(subCovs)), each = ifelse(any(spatialcovnames %in% qnames),raster::ncell(spatialCovs[[1]]),1)),which(names(subCovs) %in% qnames),drop=FALSE]
+                  if(any(spatialcovnames %in% qnames)){
                     fullSpatialCov <- data.frame(fullsub,apply(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames]),2,function(x) rep(x,nrow(subCovs))))
                     mm <- stats::model.matrix(newformula,fullSpatialCov)
+                    rm(fullSpatialCov)
                   } else mm <- stats::model.matrix(newformula,fullsub)
-                  rm(fullsub,fullSpatialCov)
+                  rm(fullsub)
                 } else {
                   fullSpatialCov <- data.frame(mapply(raster::getValues,spatialCovs[spatialcovnames %in% qnames]))
                   mm <- stats::model.matrix(newformula,fullSpatialCov)
