@@ -31,6 +31,9 @@ estimates, standard errors, lower bounds, and upper bounds across all imputation
 \description{
 Calculate proportion of time steps assigned to each state (i.e. \dQuote{activity budgets})
 }
+\details{
+If \code{m} is a continuous-time HMM, then the time in states is calculated based on the actual amount of time that was spent in each state (based on \code{m$data$dt}) instead of the proportion of time steps assigned to each state.
+}
 \examples{
 # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
 m <- example$m

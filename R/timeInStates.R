@@ -9,6 +9,8 @@
 #' @return If \code{m} is a \code{\link{momentuHMM}} object, a data frame containing the estimated activity budgets for each state (grouped according to \code{by}).  If \code{m} is a \code{\link{miHMM}} or \code{\link{HMMfits}} object, a list containing the activity budget
 #' estimates, standard errors, lower bounds, and upper bounds across all imputations.
 #' 
+#' @details If \code{m} is a continuous-time HMM, then the time in states is calculated based on the actual amount of time that was spent in each state (based on \code{m$data$dt}) instead of the proportion of time steps assigned to each state.
+#' 
 #' @examples
 #' # m is a momentuHMM object (as returned by fitHMM), automatically loaded with the package
 #' m <- example$m
@@ -173,14 +175,24 @@ get_combins <- function(m,states,by){
     combins <- base::expand.grid(lapply(m$data[by],unique))
     combins <- cbind(combins,matrix(0,nrow(combins),nbStates))
     for(i in 1:nrow(combins)){
-      counts<-hist(states[apply(m$data[by]==matrix(rep(unlist(combins[i,by]),each=nrow(m$data))),1,all)],breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts
-      time <- counts/sum(counts)
+      if(!isTRUE(m$conditions$CT)){
+        counts<-hist(states[apply(m$data[by]==matrix(rep(unlist(combins[i,by]),each=nrow(m$data))),1,all)],breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts
+        time <- counts/sum(counts)
+      } else {
+        stateTimes <- mapply(function(x) sum(m$data$dt[which(apply(m$data[by]==matrix(rep(unlist(combins[i,by]),each=nrow(m$data))),1,all) & states==x)]),1:nbStates)
+        time <- stateTimes/sum(stateTimes)
+      }
       combins[i,ncol(combins)-(nbStates-1):0] <- time
     }
     colnames(combins)[ncol(combins)-(nbStates-1):0] <- m$stateNames
   } else {
-    counts<-hist(states,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts
-    combins <- counts/sum(counts)
+    if(!isTRUE(m$conditions$CT)){
+      counts<-hist(states,breaks=seq(0.5,nbStates+0.5),plot=FALSE)$counts
+      combins <- counts/sum(counts)
+    } else {
+      stateTimes <- mapply(function(x) sum(m$data$dt[which(states==x)]),1:nbStates)
+      combins <- stateTimes/sum(m$data$dt)
+    }
     combins <- as.data.frame(matrix(combins,1,dimnames=list(NULL,m$stateNames)))
   }
   combins
