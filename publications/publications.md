@@ -1,6 +1,6 @@
 Publications using momentuHMM
 ================
-2023-05-23
+2023-06-20
 
 <div id="refs" class="references csl-bib-body" line-spacing="2">
 
@@ -891,9 +891,20 @@ the National Academy of Sciences*. 118(35):e2101614118</span>
 
 </div>
 
-<div id="ref-shearer2022short" class="csl-entry">
+<div id="ref-10.1093/icesjms/fsad092" class="csl-entry">
 
 <span class="csl-left-margin">83. </span><span
+class="csl-right-inline">Sales-Henriques N, Russo T, Bentes L, Monteiro
+P, Parisi A, et al. 2023. [<span class="nocase">An approach to map and
+quantify the fishing effort of polyvalent passive gear fishing fleets
+using geospatial data</span>](https://doi.org/10.1093/icesjms/fsad092).
+*ICES Journal of Marine Science*. fsad092:</span>
+
+</div>
+
+<div id="ref-shearer2022short" class="csl-entry">
+
+<span class="csl-left-margin">84. </span><span
 class="csl-right-inline">Shearer JM, Jensen FH, Quick NJ, Friedlaender
 A, Southall B, et al. 2022. [Short-finned pilot whales exhibit
 behavioral plasticity in foraging strategies mediated by their
@@ -904,7 +915,7 @@ Progress Series*. 695:1–14</span>
 
 <div id="ref-silva2020reptiles" class="csl-entry">
 
-<span class="csl-left-margin">84. </span><span
+<span class="csl-left-margin">85. </span><span
 class="csl-right-inline">Silva I, Crane M, Marshall BM, Strine CT. 2020.
 [Reptiles on the wrong track? Moving beyond traditional estimators with
 dynamic brownian bridge movement
@@ -915,7 +926,7 @@ models](https://doi.org/10.1186/s40462-020-00229-3). *Movement ecology*.
 
 <div id="ref-TARDY2023110207" class="csl-entry">
 
-<span class="csl-left-margin">85. </span><span
+<span class="csl-left-margin">86. </span><span
 class="csl-right-inline">Tardy O, Lenglos C, Lai S, Berteaux D, Leighton
 PA. 2023. [Rabies transmission in the Arctic: An agent-based model
 reveals the effects of broad-scale movement strategies on contact risk
@@ -926,7 +937,7 @@ between Arctic foxes](https://doi.org/10.1016/j.ecolmodel.2022.110207).
 
 <div id="ref-https://doi.org/10.1111/1365-2656.13035" class="csl-entry">
 
-<span class="csl-left-margin">86. </span><span
+<span class="csl-left-margin">87. </span><span
 class="csl-right-inline">Taylor LA, Vollrath F, Lambert B, Lunn D,
 Douglas-Hamilton I, Wittemyer G. 2020. [Movement reveals reproductive
 tactics in male elephants](https://doi.org/10.1111/1365-2656.13035).
@@ -936,7 +947,7 @@ tactics in male elephants](https://doi.org/10.1111/1365-2656.13035).
 
 <div id="ref-https://doi.org/10.1111/2041-210X.13681" class="csl-entry">
 
-<span class="csl-left-margin">87. </span><span
+<span class="csl-left-margin">88. </span><span
 class="csl-right-inline">Togunov RR, Derocher AE, Lunn NJ, Auger-Méthé
 M. 2021. [Characterising menotactic behaviours in movement data using
 hidden markov models](https://doi.org/10.1111/2041-210X.13681). *Methods
@@ -946,7 +957,7 @@ in Ecology and Evolution*. 12(10):1984–98</span>
 
 <div id="ref-togunov2022drivers" class="csl-entry">
 
-<span class="csl-left-margin">88. </span><span
+<span class="csl-left-margin">89. </span><span
 class="csl-right-inline">Togunov RR, Derocher AE, Lunn NJ, Auger-Méthé
 M. 2022. [Drivers of polar bear behavior and the possible effects of
 prey availability on foraging
@@ -957,7 +968,7 @@ Ecology*. 10:50</span>
 
 <div id="ref-10.1242/jeb.243548" class="csl-entry">
 
-<span class="csl-left-margin">89. </span><span
+<span class="csl-left-margin">90. </span><span
 class="csl-right-inline">Tremblay F, Whelan S, Choy ES, Hatch SA,
 Elliott KH. 2022. [<span class="nocase">Resting costs too: the relative
 importance of active and resting energy expenditure in a sub-arctic
@@ -968,7 +979,7 @@ Experimental Biology*. 225(4):</span>
 
 <div id="ref-VANDERKNAAP20211555" class="csl-entry">
 
-<span class="csl-left-margin">90. </span><span
+<span class="csl-left-margin">91. </span><span
 class="csl-right-inline">van der Knaap I, Reubens J, Thomas L, Ainslie
 MA, Winter HV, et al. 2021. [Effects of a seismic survey on movement of
 free-ranging atlantic cod](https://doi.org/10.1016/j.cub.2021.01.050).
@@ -978,7 +989,7 @@ free-ranging atlantic cod](https://doi.org/10.1016/j.cub.2021.01.050).
 
 <div id="ref-VANDERKNAAP2022118913" class="csl-entry">
 
-<span class="csl-left-margin">91. </span><span
+<span class="csl-left-margin">92. </span><span
 class="csl-right-inline">van der Knaap I, Slabbekoorn H, Moens T, Van
 den Eynde D, Reubens J. 2022. [Effects of pile driving sound on local
 movement of free-ranging atlantic cod in the belgian north
@@ -989,7 +1000,7 @@ Pollution*. 300:118913</span>
 
 <div id="ref-van2021migration" class="csl-entry">
 
-<span class="csl-left-margin">92. </span><span
+<span class="csl-left-margin">93. </span><span
 class="csl-right-inline">van Toor ML, Kharitonov S, Švažas S, Dagys M,
 Kleyheeg E, et al. 2021. [Migration distance affects how closely
 eurasian wigeons follow spring phenology during
@@ -1000,7 +1011,7 @@ ecology*. 9(1):1–12</span>
 
 <div id="ref-ventura2022central" class="csl-entry">
 
-<span class="csl-left-margin">93. </span><span
+<span class="csl-left-margin">94. </span><span
 class="csl-right-inline">Ventura F, Catry P, Dias MP, Breed GA, Folch A,
 Granadeiro JP. 2022. [A central place foraging seabird flies at right
 angles to the wind to jointly optimize locomotor and olfactory search
@@ -1011,7 +1022,7 @@ Royal Society B*. 289(1981):20220895</span>
 
 <div id="ref-doi:10.1098/rspb.2019.1775" class="csl-entry">
 
-<span class="csl-left-margin">94. </span><span
+<span class="csl-left-margin">95. </span><span
 class="csl-right-inline">Ventura F, Granadeiro JP, Padget O, Catry P.
 2020. [Gadfly petrels use knowledge of the windscape, not memorized
 foraging patches, to optimize foraging trips on ocean-wide
@@ -1022,7 +1033,7 @@ Royal Society B: Biological Sciences*. 287(1918):20191775</span>
 
 <div id="ref-doi:10.1126/sciadv.abf5908" class="csl-entry">
 
-<span class="csl-left-margin">95. </span><span
+<span class="csl-left-margin">96. </span><span
 class="csl-right-inline">Visser F, Merten VJ, Bayer T, Oudejans MG,
 Jonge DSW de, et al. 2021. [Deep-sea predator niche segregation revealed
 by combined cetacean biologging and eDNA analysis of cephalopod
@@ -1033,7 +1044,7 @@ prey](https://doi.org/10.1126/sciadv.abf5908). *Science Advances*.
 
 <div id="ref-WHELAN2021104874" class="csl-entry">
 
-<span class="csl-left-margin">96. </span><span
+<span class="csl-left-margin">97. </span><span
 class="csl-right-inline">Whelan S, Hatch SA, Benowitz-Fredericks ZM,
 Parenteau C, Chastel O, Elliott KH. 2021. [The effects of food supply on
 reproductive hormones and timing of reproduction in an income-breeding
@@ -1044,7 +1055,7 @@ Behavior*. 127:104874</span>
 
 <div id="ref-10.3389/fmars.2022.818635" class="csl-entry">
 
-<span class="csl-left-margin">97. </span><span
+<span class="csl-left-margin">98. </span><span
 class="csl-right-inline">Wyles HME, Boehme L, Russell DJF, Carter MID.
 2022. [A novel approach to using seabed geomorphology as a predictor of
 habitat use in highly mobile marine predators: Implications for ecology
@@ -1055,7 +1066,7 @@ in Marine Science*. 9:</span>
 
 <div id="ref-https://doi.org/10.1111/eth.13106" class="csl-entry">
 
-<span class="csl-left-margin">98. </span><span
+<span class="csl-left-margin">99. </span><span
 class="csl-right-inline">Ylitalo A-K, Heikkinen J, Kojola I. 2021.
 [Analysis of central place foraging behaviour of wolves using hidden
 markov models](https://doi.org/10.1111/eth.13106). *Ethology*.
@@ -1065,7 +1076,7 @@ markov models](https://doi.org/10.1111/eth.13106). *Ethology*.
 
 <div id="ref-doi:10.1080/01584197.2018.1558997" class="csl-entry">
 
-<span class="csl-left-margin">99. </span><span
+<span class="csl-left-margin">100. </span><span
 class="csl-right-inline">Zhang J, Rayner M, Vickers S, Landers T, Sagar
 R, et al. 2019. [GPS telemetry for small seabirds: Using hidden markov
 models to infer foraging behaviour of common diving petrels
