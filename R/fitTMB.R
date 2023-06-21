@@ -53,8 +53,10 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
   }
   
   Par0 <- fixParIndex$Par0
+  DMnames <- list()
   for(i in distnames){
     if(is.null(DM[[i]])) Par0[[i]] <- n2w(fixParIndex$Par0[i],p$bounds,NULL,NULL,nbStates,estAngleMean,DM,p$Bndind,dist,TMB=TRUE)
+    DMnames[[i]] <- colnames(DMinputs$fullDM[[i]])
     if(dist[[i]] %in% angledists){
       if(!estAngleMean[[i]]) {
         Par0[[i]] <- c(rep(0,nbStates),Par0[[i]])
@@ -66,45 +68,49 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
           DM[[i]][["mean"]] <- ~1
           DM[[i]] <- DM[[i]][p$parNames[[i]]]
         }
+        DMnames[[i]] <- c(paste0("mean_",1:nbStates,":(Intercept)"),colnames(DMinputs$fullDM[[i]]))
       }
     }
     #if(is.null(DM[[i]]) || is.null(names(Par0[[i]]))) names(Par0[[i]]) <- colnames(DMinputs$fullDM[[i]])
-    DMnames <- colnames(DMinputs$fullDM[[i]])
-    names(Par0[[i]]) <- DMnames
+    names(Par0[[i]]) <- DMnames[[i]]
     parNames <- names(DM[[i]])
     if(dist[[i]] %in% rwdists){
       dimDM <- length(DM[[i]])
-      tm1Ind <- NULL
+      labs <- lapply(DM[[i]][which(grepl("mean",parNames))],function(x) attr(stats::terms(x),"term.labels"))
+      if(any(grepl("langevin",unlist(DM[[i]][which(grepl("mean",parNames))])))){
+        distcode[i] <- 26
+      } else {
+        if(length(unlist(labs))) distcode[i] <- 27
+        else distcode[i] <- 28
+      }
+      tm1Ind <- tm1AllInd <- NULL
       for(j in which(grepl("mean",parNames))){
-        langTerms <- stats::terms(DM[[i]][[parNames[j]]])
-        labs <- attr(langTerms,"term.labels")
-        if(any(labs==paste0(i,gsub("mean","",parNames[j]),"_tm1"))){
-          labs <- labs[-which(labs==paste0(i,gsub("mean","",parNames[j]),"_tm1"))]
-        }
+        m_tm1 <- paste0(i,gsub("mean","",parNames[j]),"_tm1")
+        tm1AllNames <- labs[[j]][which(grepl(m_tm1,labs[[j]]))]
+        if(!m_tm1 %in% labs[[j]]) tm1AllNames <- c(m_tm1,tm1AllNames)
+        labsj <- labs[[j]][-which(grepl(m_tm1,labs[[j]]))]
         if(any(grepl("langevin",unlist(DM[[i]])))){
-          if(!all(grepl("langevin",labs))) stop("non-Langevin terms included in DM$",i,"$",parNames[j])
-          distcode[i] <- 26
-        } else {
-          if(length(labs)) distcode[i] <- 27
-          else distcode[i] <- 28
+          if(!all(grepl("langevin",labsj))) stop("non-Langevin terms included in DM$",i,"$",parNames[j])
         }
-        tm1Names <- paste0(parNames[j],"_",1:nbStates,":",i,gsub("mean","",parNames[j]),"_tm1")
-        tm1Ind <- c(tm1Ind,unlist(lapply(tm1Names,function(x) which(grepl(x,DMnames)))))
         if(distcode[i] %in% c(26,27)){
-          DM[[i]][[paste0(parNames[j],"_tm1")]] <- stats::as.formula(paste0("~0+",paste0(i,gsub("mean","",parNames[j]),"_tm1")))
-          DM[[i]][[parNames[j]]] <- stats::as.formula(paste0("~0+",paste0(labs,collapse="+")))
+          tm1Names <- paste0(parNames[j],"_",1:nbStates,":",i,gsub("mean","",parNames[j]),"_tm1")
+          tm1Ind <- c(tm1Ind,unlist(lapply(tm1Names,function(x) which(grepl(x,DMnames[[i]])))))
+          tm1AllInd <- c(tm1AllInd,unlist(lapply(tm1AllNames,function(x) which(grepl(x,DMnames[[i]])))))
+          DM[[i]][[paste0(parNames[j],"_tm1")]] <- stats::as.formula(paste0("~0+",m_tm1,paste0(ifelse(tm1AllNames!=m_tm1,paste0("+",tm1AllNames),""),collapse="")))
+          DM[[i]][[parNames[j]]] <- stats::as.formula(paste0("~0",ifelse(length(labsj),paste0("+",paste0(labsj,collapse="+")),"")))
           # reorder Par0
           if(fit && (!all(is.na(fixParIndex$fixPar[[i]][tm1Ind])) | !all(Par0[[i]][c(tm1Ind)]==1))) stop("Parameters corresponding to ",i,".x_tm1 and ",i,".y_tm1 must be fixed to 1")
-          Par0[[i]] <- Par0[[i]][c(tm1Ind,(1:length(DMnames))[-tm1Ind])]
-          fixParIndex$fixPar[[i]] <- fixParIndex$fixPar[[i]][c(tm1Ind,(1:length(DMnames))[-tm1Ind])]
-          workBounds[[i]] <- workBounds[[i]][c(tm1Ind,(1:length(DMnames))[-tm1Ind]),]
+          Par0[[i]] <- Par0[[i]][c(tm1AllInd,(1:length(DMnames[[i]]))[-tm1AllInd])]
+          fixParIndex$fixPar[[i]] <- fixParIndex$fixPar[[i]][c(tm1AllInd,(1:length(DMnames[[i]]))[-tm1AllInd])]
+          workBounds[[i]] <- workBounds[[i]][c(tm1AllInd,(1:length(DMnames[[i]]))[-tm1AllInd]),]
           DM[[i]] <- DM[[i]][c(which(grepl("_tm1$",names(DM[[i]]))),which(!grepl("_tm1$",names(DM[[i]]))))]
           p$parNames[[i]] <- names(DM[[i]])
           p$parSize[[i]] <- length(names(DM[[i]]))
-          tm1Ind <- 1:length(tm1Ind)
+          tm1Ind <- match(tm1Ind,tm1AllInd)
+          tm1AllInd <- 1:length(tm1AllInd)
         } else {
           DM[[i]][[parNames[j]]] <- stats::as.formula(paste0("~0+",paste0(i,gsub("mean","",parNames[j]),"_tm1")))
-          if(fit && (!all(is.na(fixParIndex$fixPar[[i]][tm1Ind])) | !all(Par0[[i]][c(tm1Ind)]==1))) stop("Parameters corresponding to ",i,".x_tm1 and ",i,".y_tm1 must be fixed to 1")
+          if(fit && (!all(is.na(fixParIndex$fixPar[[i]][tm1Ind])) | !all(Par0[[i]][c(tm1Ind)]==1))) stop("Parameters corresponding to ",i,".x_tm1 and ",i,".y_tm1 (and ",i,".z_tm1 if trivariate normal) must be fixed to 1")
         }
       }
       fixParIndex$fixPar[[i]] <- reorderFix(fixParIndex$fixPar[[i]])
@@ -118,15 +124,20 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
             formTerms <- stats::terms(DM[[i]][[j]][[s]])
             if(!length(attr(formTerms,"term.labels")) && !attr(formTerms,"intercept")){
               DM[[i]][[j]][[s]] <- ~1
-              DM[[i]][[paste0(j,"_tm1")]][[s]] <- stats::as.formula(paste0("~0+",i,gsub("mean","",j),"_tm1"))
+              #DM[[i]][[paste0(j,"_tm1")]][[s]] <- stats::as.formula(paste0("~0+",i,gsub("mean","",j),"_tm1"))
               missingPar <- c(missingPar,paste0(c(i,j,s),collapse="."))
+            } else if(grepl("_tm1",j)){
+              tInd <- which(!attr(formTerms,"term.labels") %in% paste0(i,gsub("mean","",j)))
+              if(length(tInd)){
+                DM[[i]][[j]][[s]] <- stats::as.formula(paste0("~0+",paste0(i,gsub("mean","",j)),paste0("+I(",attr(formTerms,"term.labels")[tInd]," * dt)",collapse="")))
+              }
             }
           }
         }
         tmpX_fe <- colnames(make_matrices(DM[i],data)$X_fe)#self$hid()$terms()
         if(length(tmpX_fe)!=length(Par0[[i]])){
           mPar <- mapply(function(x) which(grepl(x,tmpX_fe)),missingPar)
-          names(Par0[[i]]) <- tmpX_fe[-mPar]
+          tmpX_fe[-mPar] <- names(Par0[[i]])
           tmpPar <- tmpFix <- numeric(length(tmpX_fe))
           tmpWB <- matrix(nrow=length(tmpX_fe),ncol=2)
           if(!is.null(prior[[i]])) {
@@ -426,19 +437,33 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
     }
     if(!is.null(prior)) mod$prior <- oldpriors
     
-    #mod <- convertBack(distcode,mod,colnames(X_fe_obs),map$coeff_fe_obs,p,nbStates)
-    
-    if (out$convcode[best] != 0) {
-      warning(paste("Convergence code was not zero, indicating that the",
-                    "optimizer may not have converged to the correct",
-                    "estimates. Please check by consulting the model output",
-                    "which shows what optimx returned."))
-    }
     mod$out <- out
+    
   } else {
     mod <- list()
     mod$minimum <- nllk0
     mod$estimate <- tmb_obj$par
+  }
+  # reorder rwdist parms
+  parInd <- which(names(mod$estimate)=="coeff_fe_obs")
+  convInd <- lapply(distnames,function(x) match(DMnames[[x]],names(Par0[[x]])[which(!is.na(fixParIndex$fixPar[[x]]) & !duplicated(fixParIndex$fixPar[[x]]))],nomatch=NA))
+  names(convInd) <- distnames
+  k <- 0
+  for(i in distnames){
+    if(any(is.na(convInd[[i]]))) convInd[[i]] <- convInd[[i]][-which(is.na(convInd[[i]]))]
+    convInd[[i]] <- k + convInd[[i]]
+    k <- k + ifelse(!all(is.na(fixParIndex$fixPar[[i]])),max(fixParIndex$fixPar[[i]],na.rm=TRUE),0)
+  }
+  convInd <- unlist(convInd)
+  mod$estimate[parInd] <- mod$estimate[convInd]
+  if(hessian){
+    if(max(convInd)<length(mod$estimate)){
+      mod$hessian <- mod$hessian[c(convInd,(max(convInd)+1):length(mod$estimate)),c(convInd,(max(convInd)+1):length(mod$estimate))]
+      mod$gradient <- mod$gradient[c(convInd,(max(convInd)+1):length(mod$estimate))]
+    } else {
+      mod$hessian <- mod$hessian[convInd,convInd]
+      mod$gradient <- mod$gradient[convInd]
+    }
   }
   return(mod)
 }

@@ -1018,6 +1018,12 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
       
       # convert the parameters back to their natural scale
       if(inherits(mod,"error")) stop(mod)
+      if(fit && (((optMethod=="nlm") && (mod$code != 1)) | ((optMethod %in% c("Nelder-Mead","SANN")) && (mod$convergence != 0)) | ((optMethod=="TMB") && (mod$code != 0)))) {
+        warning(paste0("Convergence code was not ",ifelse(optMethod=="nlm",1,0),", indicating that the",
+                      " optimizer may not have converged to the correct",
+                      " estimates. Please check by consulting the model output",
+                      " which shows what ",ifelse(optMethod=="nlm","nlm",ifelse(optMethod=="TMB","optimx","optim"))," returned."))
+      }
       mod$wpar <- mod$estimate
       wpar <- mod$estimate <- expandPar(mod$wpar,optInd,fixParIndex$fixPar,fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi,isTRUE(optMethod=="TMB"),fixParIndex$Par0,fixParIndex$beta0$beta,fixParIndex$delta0)
       mle <- w2n(wpar,p$bounds,p$parSize,nbStates,nbCovs,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary,fullDM,DMind,nrow(data),inputs$dist,p$Bndind,nc,meanind,covsDelta,workBounds,covsPi,isTRUE(optMethod=="TMB"))
