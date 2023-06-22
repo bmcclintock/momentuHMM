@@ -1,4 +1,4 @@
-momentuHMM 2.0.0 2023-06-20
+momentuHMM 2.0.0 2023-06-22
 -----------------
 NEW FEATURES
 
@@ -10,7 +10,7 @@ NEW FEATURES
 
 * special pseudo-design matrix function 'langevin' has been added for simulating and fitting discrete-time approximations of the (multistate) Langevin diffusion model as a multivariate normal random walk (i.e. using the "rw_mvnorm2" or "rw_mvnorm3" data stream distributions)
 
-* 'export' argument added to simulation and model fitting functions for exporting formula objects from the global environment when ncores>1
+* 'export' argument added to simulation functions for exporting formula objects from the global environment when ncores>1
 
 * 'colors' argument added to 'plotSpatialCov' function for specifying raster colors
 
@@ -19,6 +19,8 @@ NEW FEATURES
 * 'ncores' argument added to 'fitHMM' (and 'fitCTHMM') for attempting 'retryFits' in parallel
 
 CHANGES
+
+* multivariate normal data stream distributions (e.g., 'mvnorm2', 'rw_mvnorm2') are now parameterized and ordered in terms of means (e.g., 'mean.x', 'mean.y'), standard deviations (e.g., 'sd.x', 'sd.y'), and correlations (e.g. 'corr.xy')
 
 * when the probability density for a data stream observation is zero for all states, a warning is triggered and .Machine$double.xmin is used to avoid division by zero within the forward algorithm
 
