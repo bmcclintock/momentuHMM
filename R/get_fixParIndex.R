@@ -413,8 +413,11 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     }
     k <- 0
     for(i in distnames){
-      fixPar[[i]] <- k + fixPar[[i]]
-      k <- k + ifelse(!all(is.na(fixPar[[i]])),max(fixPar[[i]],na.rm=TRUE),0)
+      if(!all(is.na(fixPar[[i]]))){
+        maxf <- max(fixPar[[i]],na.rm=TRUE)
+        fixPar[[i]] <- k + fixPar[[i]]
+        k <- k + maxf
+      }
     }
     delta0 <- logdelta0
   }

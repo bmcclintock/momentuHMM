@@ -451,8 +451,11 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
   k <- 0
   for(i in distnames){
     if(any(is.na(convInd[[i]]))) convInd[[i]] <- convInd[[i]][-which(is.na(convInd[[i]]))]
-    convInd[[i]] <- k + convInd[[i]]
-    k <- k + ifelse(!all(is.na(fixParIndex$fixPar[[i]])),max(fixParIndex$fixPar[[i]],na.rm=TRUE),0)
+    if(!all(is.na(fixParIndex$fixPar[[i]]))){
+      maxf <- max(convInd[[i]],na.rm=TRUE)
+      convInd[[i]] <- k + convInd[[i]]
+      k <- k + maxf
+    }
   }
   convInd <- unlist(convInd)
   mod$estimate[parInd] <- mod$estimate[convInd]
