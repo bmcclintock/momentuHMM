@@ -727,7 +727,7 @@ make_formulas <- function(input_forms, var_names, par_names, nbStates){
                                                        " + ", covs[k])
         for (k in which_this_state) new_form <- paste0(new_form, 
                                                        " + ", covs[k])
-        state_forms[[paste0("state", s)]] <- as.formula(new_form)
+        state_forms[[paste0("state", s)]] <- stateFormulas(as.formula(new_form),nbStates=1)[[1]]
       }
       var_forms_new[[j]] <- state_forms
       names(var_forms_new)[j] <- par_names[[i]][[j]]
@@ -740,7 +740,7 @@ make_formulas <- function(input_forms, var_names, par_names, nbStates){
 
 getTPMmat <- function(formula,nbStates,betaRef,data){
   
-  formula <- matrix(deparse(formula, width.cutoff = 500), 
+  formula <- matrix(deparse1(formula), 
                     nrow = nbStates, 
                     ncol = nbStates)
   
