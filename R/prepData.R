@@ -139,7 +139,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
     data <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p" | predData$locType=="f"),]
     type <- 'UTM'
     coordNames <- c("x","y")
-  }
+  } else data <- data.frame(data)
   
   if(!is.null(coordNames)){
     if(!is.null(altCoordNames) && (!is.character(altCoordNames) | length(altCoordNames)>1)) stop("'altCoordNames' must be a character string")
@@ -464,7 +464,7 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     hierLevels <- levels(data$crwPredict$level)
     coordLevel <- attr(data$crwPredict,"coordLevel")
     data <- data.frame(x=predData$mu.x,y=predData$mu.y,predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(is.na(predData$locType) | predData$locType!="o"),]
-  }
+  } else data <- data.frame(data)
   
   if(!is.null(coordNames)){
     if(!is.null(altCoordNames) && (!is.character(altCoordNames) | length(altCoordNames)>1)) stop("'altCoordNames' must be a character string")

@@ -85,7 +85,7 @@ prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.id
     distnames <- names(predData)[which(!(names(predData) %in% omitNames))]
     data <- data.frame(x=predData$mu.x,y=predData$mu.y,time=predData[[Time.name]],predData[,c("ID",distnames,covNames,znames),drop=FALSE])[which(predData$locType=="p" | predData$locType=="f"),]
     coordNames <- c("x","y")
-  }
+  } else data <- data.frame(data)
   
   if(is.null(data$x) | is.null(data$y) | is.null(data$time))
     stop("data must contain 'x', 'y', and 'time' fields")
@@ -271,7 +271,7 @@ prepCTDS.hierarchical <- function(data, Time.unit="auto", rast, directions=4, ze
         if(is.na(data[j+1,"y"])) data[j+1,"y"] <- data[j,"y"]
       }
     }
-  }
+  } else data <- data.frame(data)
   
   if(is.null(data$x) | is.null(data$y) | is.null(data$time))
     stop("data must contain 'x', 'y', and 'time' fields")
