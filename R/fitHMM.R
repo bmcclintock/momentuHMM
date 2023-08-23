@@ -988,6 +988,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                   nInd <- which(!is.na(fixParIndex$fixPar[[i]]))
                   if(length(nInd)){
                     fixParIndex$Par0[[i]][nInd] <- fixParIndex$Par0[[i]][nInd][(fixParIndex$fixPar[[i]]-min(fixParIndex$fixPar[[i]],na.rm=TRUE)+1)[nInd]]
+                    if(is.null(DM[[i]])) fixParIndex$Par0[[i]] <- w2n(c(fixParIndex$Par0[[i]],fixParIndex$beta0$beta,fixParIndex$delta0),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary,fullDM[i],DMind[i],nrow(data),inputs$dist[i],p$Bndind[i],nc[i],meanind[i],covsDelta,workBounds[c(i,"beta","delta")],covsPi,isTRUE(optMethod=="TMB"))[[i]][,1]
                   }
                   pcount <- pcount + parCount[[i]]
                 }
