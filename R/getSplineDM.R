@@ -19,7 +19,7 @@ getSplineDM<-function(distnames,DM,m,covs){
           tmpDM<-list()
           for(state in 1:nbStates){
             tmpDM[[state]]<-character()
-            Terms<-stats::terms(formulaStates[[state]],specials=splineList)
+            Terms<-stats::terms(formulaStates[[state]],specials=splineList,keep.order=TRUE)
             factors<-attr(Terms,"factors")
             specials<-rownames(factors)[unlist(attr(Terms,"specials"))]
             for(k in rownames(factors)){
@@ -49,14 +49,11 @@ getSplineDM<-function(distnames,DM,m,covs){
                   if(factors[k,l]){
                     newcols<-stats::model.matrix(stats::as.formula(paste0("~",l)),m$data)[,-1]
                     tmp<-colnames(newcols)
-                    tmp<-gsub("[()]","",tmp)
-                    tmp<-gsub(" ","_",tmp)
-                    tmp<-gsub(",","_",tmp)
-                    tmp<-gsub("=","_",tmp)
-                    tmp<-gsub("\\*","_",tmp)
-                    tmp<-gsub("\\^","_",tmp)
-                    tmp<-gsub("\\+","_",tmp)
-                    tmp<-gsub("splines2::","",gsub("splines::","",gsub("stats::","",tmp)))
+                    for(s in 1:length(tmp)){
+                      if(grepl(k,tmp[s],fixed=TRUE)){
+                        tmp[s] <- gsub(paste0(k,s),colnames(tmpcovs)[s],tmp[s],fixed=TRUE)
+                      }
+                    }
                     tmpDM[[state]]<-c(tmpDM[[state]],tmp)
                   }
                 }
@@ -96,7 +93,7 @@ getSplineFormula<-function(formula,data,covs){
   splineInd<-FALSE
   splineCovs<-character()
   newformula<-character()
-  Terms<-stats::terms(formula,specials=splineList)
+  Terms<-stats::terms(formula,specials=splineList,keep.order=TRUE)
   factors<-attr(Terms,"factors")
   specials<-rownames(factors)[unlist(attr(Terms,"specials"))]
   for(k in rownames(factors)){

@@ -24,7 +24,7 @@ langevin<-function(x){
 
 stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL){
   
-  Terms <- stats::terms(formula, specials = c(paste0(spec,1:nbStates),"cosinor","angleFormula","recharge"))
+  Terms <- stats::terms(formula, specials = c(paste0(spec,1:nbStates),"cosinor","angleFormula","recharge"), keep.order=TRUE)
   if(any(grepl("angleStrength\\(",attr(Terms,"term.labels")))) stop("'angleStrength' is defunct in momentuHMM >=1.4.2. Please use 'angleFormula' instead")
   if(any(attr(Terms,"order")>1)){
     if(any(grepl("angleFormula\\(",attr(Terms,"term.labels")[attr(Terms,"order")>1]))) stop("interactions with angleFormula are not allowed")
@@ -79,12 +79,12 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
         else {
           if(!is.na(suppressWarnings(as.numeric((attr(stmp,"stripped.arguments")$angleFormula[[jj]]$strength))))) stop("angleFormula has invalid strength argument")
           tmpForm <- stats::as.formula(paste0("~-1+",attr(stmp,"stripped.arguments")$angleFormula[[jj]]$strength))
-          if(any(attr(stats::terms(tmpForm),"order")>1)) stop("angleFormula strength argument for ",jj," cannot include term interactions; use the 'by' argument")
+          if(any(attr(stats::terms(tmpForm, keep.order=TRUE),"order")>1)) stop("angleFormula strength argument for ",jj," cannot include term interactions; use the 'by' argument")
           strengthInd <- TRUE
         }
         group <- attr(stmp,"stripped.arguments")$angleFormula[[jj]]$by
         if(!is.null(data)){
-          DMterms <- attr(stats::terms(tmpForm),"term.labels")
+          DMterms <- attr(stats::terms(tmpForm, keep.order=TRUE),"term.labels")
           factorterms<-names(data)[unlist(lapply(data,is.factor))]
           factorcovs<-paste0(rep(factorterms,times=unlist(lapply(data[factorterms],nlevels))),unlist(lapply(data[factorterms],levels)))
           for(cov in DMterms){
@@ -124,7 +124,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
     for(j in 1:nbStates){
       tmplabs<-attr(Terms,"term.labels")[attr(Terms,"specials")[[paste0(spec,j)]]]
       if(length(tmplabs)){
-        tmp<- stats::terms(stats::as.formula(paste("~",substr(tmplabs,nchar(paste0(spec,j))+1,nchar(tmplabs)),collapse="+")),specials=c("cosinor","angleFormula","recharge"))
+        tmp<- stats::terms(stats::as.formula(paste("~",substr(tmplabs,nchar(paste0(spec,j))+1,nchar(tmplabs)),collapse="+")),specials=c("cosinor","angleFormula","recharge"), keep.order=TRUE)
         
         tmpnames<-attr(tmp,"term.labels")
         if(any(grepl("angleStrength\\(",tmpnames))) stop("'angleStrength' is defunct in momentuHMM >=1.4.2. Please use 'angleFormula' instead")
@@ -169,7 +169,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
               else {
                 if(!is.na(suppressWarnings(as.numeric((attr(stmp,"stripped.arguments")$angleFormula[[jj]]$strength))))) stop("angleFormula has invalid strength argument")
                 tmpForm <- stats::as.formula(paste0("~-1+",attr(stmp,"stripped.arguments")$angleFormula[[jj]]$strength))
-                if(any(attr(stats::terms(tmpForm),"order")>1)) stop("angleFormula strength argument cannot include term interactions; use the 'by' argument")
+                if(any(attr(stats::terms(tmpForm, keep.order=TRUE),"order")>1)) stop("angleFormula strength argument cannot include term interactions; use the 'by' argument")
                 strengthInd <- TRUE
               }
               group <- attr(stmp,"stripped.arguments")$angleFormula[[jj]]$by
@@ -207,11 +207,11 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
 
 newFormulas<-function(formula,nbStates,betaRef,hierarchical=FALSE)
 {
-  stateForms<- stats::terms(formula, specials = c(paste0(rep(c("state","toState"),each=nbStates),1:nbStates),"recharge"))
+  stateForms<- stats::terms(formula, specials = c(paste0(rep(c("state","toState"),each=nbStates),1:nbStates),"recharge"), keep.order=TRUE)
   newformula<-formula
   formulaStates <- vector('list',nbStates*(nbStates-1))
   formulaStates[1:(nbStates*(nbStates-1))] <- list(newformula)
-  formterms<-attr(stats::terms.formula(newformula),"term.labels")
+  formterms<-attr(stats::terms.formula(newformula, keep.order=TRUE),"term.labels")
   recharge <- NULL
   
   if(nbStates>1){
@@ -262,7 +262,7 @@ newFormulas<-function(formula,nbStates,betaRef,hierarchical=FALSE)
           #}
         }
         if(length(newForm)){
-          newformula<-stats::as.formula(paste("~",ifelse(attr(stats::terms(formula),"intercept"),"","0+"),paste(newForm,collapse="+")))
+          newformula<-stats::as.formula(paste("~",ifelse(attr(stats::terms(formula, keep.order=TRUE),"intercept"),"","0+"),paste(newForm,collapse="+")))
         } else {
           newformula <- ~1
         }
@@ -272,15 +272,15 @@ newFormulas<-function(formula,nbStates,betaRef,hierarchical=FALSE)
       }
     }
     formulaStates<-stateFormulas(newformula,nbStates*(nbStates-1),spec="betaCol")
-    if(length(unlist(attr(stats::terms(newformula, specials = c(paste0("betaCol",1:(nbStates*(nbStates-1))),"cosinor")),"specials")))){
-      allTerms<-unlist(lapply(formulaStates,function(x) attr(stats::terms(x),"term.labels")))
+    if(length(unlist(attr(stats::terms(newformula, specials = c(paste0("betaCol",1:(nbStates*(nbStates-1))),"cosinor"), keep.order=TRUE),"specials")))){
+      allTerms<-unique(unlist(lapply(formulaStates,function(x) attr(stats::terms(x, keep.order=TRUE),"term.labels"))))
       newformula<-stats::as.formula(paste("~",paste(allTerms,collapse="+")))
-      formterms<-attr(stats::terms.formula(newformula),"term.labels")
+      formterms<-attr(stats::terms.formula(newformula, keep.order=TRUE),"term.labels")
     } else if(is.null(recharge)) {
-      formterms<-attr(stats::terms.formula(newformula),"term.labels")
+      formterms<-attr(stats::terms.formula(newformula, keep.order=TRUE),"term.labels")
       newformula<-formula
     } else {
-      formterms<-attr(stats::terms.formula(newformula),"term.labels")
+      formterms<-attr(stats::terms.formula(newformula, keep.order=TRUE),"term.labels")
     }
     if(hierarchical){
       recharge <- expandRechargeFormulas(recharge)
@@ -290,7 +290,7 @@ newFormulas<-function(formula,nbStates,betaRef,hierarchical=FALSE)
 }
 
 splineCheck <- function(stateForm){
-  splineNames <- names(unlist(attributes(stats::terms(stateForm,specials = splineList))$specials))
+  splineNames <- names(unlist(attributes(stats::terms(stateForm,specials = splineList, keep.order=TRUE))$specials))
   if(length(splineNames)){
     if(any(splineNames %in% c("ns","bs"))){
       if (!requireNamespace("splines", quietly = TRUE)) {
