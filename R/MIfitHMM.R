@@ -262,10 +262,12 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     future::plan(future::multisession, workers = ncores)
     # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
     progBar <- progBar
-    pkgs <- c("momentuHMM","TMB")
+    pkgs <- c("momentuHMM")
+    if(isTRUE(optMethod=="TMB")) pkgs <- c(pkgs,"TMB")
   } else { 
     doParallel::registerDoParallel(cores=ncores)
-    pkgs <- c("momentuHMM","TMB")
+    pkgs <- c("momentuHMM")
+    if(isTRUE(optMethod=="TMB")) pkgs <- c(pkgs,"TMB")
   }
   
   if(is.crwData(miData)){

@@ -76,7 +76,7 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
     parNames <- names(DM[[i]])
     if(dist[[i]] %in% rwdists){
       dimDM <- length(DM[[i]])
-      labs <- lapply(DM[[i]][which(grepl("mean",parNames))],function(x) attr(stats::terms(x),"term.labels"))
+      labs <- lapply(DM[[i]][which(grepl("mean",parNames))],function(x) attr(stats::terms(x,keep.order=TRUE),"term.labels"))
       if(any(grepl("langevin",unlist(DM[[i]][which(grepl("mean",parNames))])))){
         distcode[i] <- 26
       } else {
@@ -121,7 +121,7 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
         missingPar <- NULL
         for(j in names(DM[[i]])[which(grepl("mean",names(DM[[i]])))]){
           for(s in names(DM[[i]][[j]])){
-            formTerms <- stats::terms(DM[[i]][[j]][[s]])
+            formTerms <- stats::terms(DM[[i]][[j]][[s]],keep.order=TRUE)
             if(!length(attr(formTerms,"term.labels")) && !attr(formTerms,"intercept")){
               DM[[i]][[j]][[s]] <- ~1
               #DM[[i]][[paste0(j,"_tm1")]][[s]] <- stats::as.formula(paste0("~0+",i,gsub("mean","",j),"_tm1"))
@@ -419,12 +419,14 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
     rownames(best_par) <- NULL
     names(best_par) <- names(tmb_obj$par)
     tmb_obj$par <- best_par
+    tmb_obj$method <- tmb_obj$method[best]
+    out <- out[best,]
     
     mod <- list()
   
     mod$minimum <- out$value
     mod$estimate <- unlist(best_par)#tmb_rep$par.fixed
-    mod$code <- out$convcode[best]
+    mod$code <- out$convcode
     mod$iterations <- out$fevals
     mod$tmb_obj <- tmb_obj
     if(hessian){
@@ -707,7 +709,7 @@ make_formulas <- function(input_forms, var_names, par_names, nbStates){
         form <- as.formula("~ 1")
       }
       form_terms <- terms(form, specials = paste0("state", 
-                                                  1:nbStates))
+                                                  1:nbStates),keep.order=TRUE)
       labs <- attr(form_terms, "term.labels")
       covs <- gsub(pattern = "^state[0-9]*\\((.*)\\)$", 
                    replacement = "\\1", x = labs)
