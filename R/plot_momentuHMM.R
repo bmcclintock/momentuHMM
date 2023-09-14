@@ -604,6 +604,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         
         for(jj in DMparterms[[j]][[state]]){
           
+          if(is.logical(m$data[,jj])) m$data[,jj] <- factor(m$data[,jj],levels=c(FALSE,TRUE))
+          
           if(!is.factor(m$data[,jj])){
             
             gridLength <- 101
@@ -878,6 +880,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       } else covIndex <- 1:ncol(rawCovs)
       
       for(cov in covIndex) {
+        
+        if(is.logical(rawCovs[,cov])) rawCovs[,cov] <- factor(rawCovs[,cov],levels=c(FALSE,TRUE))
         
         if(!is.factor(rawCovs[,cov])){
           

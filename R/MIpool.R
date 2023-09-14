@@ -341,10 +341,24 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
       } else mhdata[[j]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$data[[j]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,mean)
     }
   }
+  for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% modeList))) & !(names(m$data) %in% c("ID",distnames)))]){
+    if(inherits(m$data[[j]],"factor")){
+      mhdata[[j]]<-factor(levels(m$data[[j]])[apply(matrix(unlist(mapply(function(x) im[[x]]$data[[j]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,function(y) which.max(table(y)))],levels=levels(m$data[[j]]))
+    } else {
+      mhdata[[j]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$data[[j]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,function(y) c(FALSE,TRUE)[which.max(table(factor(y,levels=c("FALSE","TRUE"))))])
+    }
+  }
   mhrawCovs<-m$rawCovs
   if(length(mhrawCovs)){
     for(j in names(m$rawCovs)[which(unlist(lapply(m$rawCovs,function(x) any(class(x) %in% meansListNoTime))))]){
       mhrawCovs[[j]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$rawCovs[[j]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(im,function(x) nrow(x$rawCovs)))),byrow=TRUE),2,mean)
+    }
+    for(j in names(m$rawCovs)[which(unlist(lapply(m$rawCovs,function(x) any(class(x) %in% modeList))) & !(names(m$rawCovs) %in% c("ID",distnames)))]){
+      if(inherits(m$rawCovs[[j]],"factor")){
+        mhrawCovs[[j]]<-factor(levels(m$rawCovs[[j]])[apply(matrix(unlist(mapply(function(x) im[[x]]$rawCovs[[j]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,function(y) which.max(table(y)))],levels=levels(m$rawCovs[[j]]))
+      } else {
+        mhrawCovs[[j]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$rawCovs[[j]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,function(y) c(FALSE,TRUE)[which.max(table(factor(y,levels=c("FALSE","TRUE"))))])
+      }
     }
   }
   

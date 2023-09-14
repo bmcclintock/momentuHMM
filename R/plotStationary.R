@@ -131,6 +131,8 @@ plotStationary.momentuHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE
     # loop over covariates
     for(cov in covIndex) {
 
+        if(is.logical(rawCovs[,cov])) rawCovs[,cov] <- factor(rawCovs[,cov],levels=c(FALSE,TRUE))
+          
         if(!is.factor(rawCovs[,cov])){
 
           gridLength <- 101
