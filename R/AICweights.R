@@ -151,7 +151,7 @@ AICweights.miHMM <- function(...,k=2, n=NULL)
   
   for(i in 1:length(models)) {
     # check modelName
-    checkNames <- lapply(models[[i]],function(x) x[match("modelName",names(x))])
+    checkNames <- lapply(models[[i]][iSims],function(x) x[match("modelName",names(x))])
     if(any(!unlist(lapply(checkNames,function(x) isTRUE(all.equal(x,checkNames[[1]],use.names=FALSE)))))) stop("'modelName' must be identical for fitted models within each miHMM or HMMfits object")
     for(j in iSims){
       aic[i,j] <- AIC.momentuHMM(models[[i]][[j]],k=k,n=n)
