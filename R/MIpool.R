@@ -343,7 +343,7 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   }
   for(j in names(m$data)[which(unlist(lapply(m$data,function(x) any(class(x) %in% modeList))) & !(names(m$data) %in% c("ID",distnames)))]){
     if(inherits(m$data[[j]],"factor")){
-      mhdata[[j]]<-factor(levels(m$data[[j]])[apply(matrix(unlist(mapply(function(x) im[[x]]$data[[j]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,function(y) which.max(table(y)))],levels=levels(m$data[[j]]))
+      mhdata[[j]]<-factor(levels(m$data[[j]])[apply(matrix(unlist(mapply(function(x) im[[x]]$data[[j]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,function(y) which.max(table(factor(y,levels=levels(m$data[[j]])))))],levels=levels(m$data[[j]]))
     } else {
       mhdata[[j]]<-apply(matrix(unlist(mapply(function(x) im[[x]]$data[[j]][inTime[[x]]],1:length(im))),ncol=unique(unlist(lapply(inTime,length))),byrow=TRUE),2,function(y) c(FALSE,TRUE)[which.max(table(factor(y,levels=c("FALSE","TRUE"))))])
     }
