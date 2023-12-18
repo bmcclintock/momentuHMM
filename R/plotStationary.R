@@ -390,12 +390,12 @@ plotStationary.miSum <- function(model, covs = NULL, col=NULL, plotCI=FALSE, alp
 {
   model <- delta_bc(model)
   model <- formatmiSum(model)
-  plotStationary(momentuHMM(model),covs,col,plotCI,alpha,...)
+  plotStationary(momentuHMM(model),covs,col,plotCI,alpha,return,...)
 }
 
 #' @method plotStationary miHMM
 #' @export
 plotStationary.miHMM <- function(model, covs = NULL, col=NULL, plotCI=FALSE, alpha=0.95, return=FALSE, ...)
 {
-  plotStationary(model$miSum,covs,col,plotCI,alpha,...)
+  plotStationary(model$miSum,covs,col,plotCI,alpha,return,...)
 }
