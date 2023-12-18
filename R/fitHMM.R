@@ -949,8 +949,13 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
         
         if(fit){
           if(fitCount==0){
-            if(inherits(curmod,"error")) stop(curmod)
-            else {
+            if(inherits(curmod,"error") || ifelse(optMethod=="TMB",curmod$out$convcode==9999,FALSE)){
+              if(!retryFits) stop(curmod)
+              else {
+                cat("\n Initial fit failed:",curmod$message,"\n    Attempting to fit again using random perturbation. Press 'esc' to force exit from 'fitHMM'\n")
+                mod <- curmod
+              }
+            } else {
               names(curmod)[which(names(curmod)=="par")] <- "estimate"
               names(curmod)[which(names(curmod)=="value")] <- "minimum"
               curmod$elapsedTime <- endTime[3]
@@ -959,10 +964,10 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
             }
           }
           
-          wpar <- expandPar(mod$estimate,optInd,fixParIndex$fixPar,fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi,isTRUE(optMethod=="TMB"),fixParIndex$Par0,fixParIndex$beta0$beta,fixParIndex$delta0)
+          if(!inherits(curmod,"error") && ifelse(optMethod!="TMB",TRUE,curmod$out$convcode!=9999)) wpar <- expandPar(mod$estimate,optInd,fixParIndex$fixPar,fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi,isTRUE(optMethod=="TMB"),fixParIndex$Par0,fixParIndex$beta0$beta,fixParIndex$delta0)
           
           if(fitCount<=retryFits){
-            if(!inherits(curmod,"error")){
+            if(!inherits(curmod,"error") && ifelse(optMethod!="TMB",TRUE,curmod$out$convcode!=9999)){
               names(curmod)[which(names(curmod)=="par")] <- "estimate"
               names(curmod)[which(names(curmod)=="value")] <- "minimum"
               curmod$elapsedTime <- endTime[3]
@@ -1010,7 +1015,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                   }
                 }
               }
-              cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",-mod$minimum,"         ",sep="")
+              cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",ifelse(!inherits(curmod,"error") && ifelse(optMethod!="TMB",TRUE,curmod$out$convcode!=9999),-mod$minimum,NaN),"         ",sep="")
             }
           }
         } else mod <- curmod
