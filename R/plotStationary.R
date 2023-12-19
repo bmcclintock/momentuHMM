@@ -274,34 +274,35 @@ statPlot<-function(model,Sigma,nbStates,formula,covs,tempCovs,tmpcovs,cov,hierRe
     
     if(isTRUE(model$conditions$CT)) tempCovs$dt <- covs$dt
     out <- vector('list',mixtures)
+    names(out) <- paste0("mix",1:mixtures)
 
     for(mix in 1:mixtures){
       if(!inherits(model,"hierarchical")){
-        out[[mix]] <- plotCall(cov,tempCovs,probs[[mix]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,desMat,mix,Sigma,gamInd,alpha,1:nbStates,model$stateNames,formula)
+        out[[paste0("mix",mix)]] <- plotCall(cov,tempCovs,probs[[mix]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,desMat,mix,Sigma,gamInd,alpha,1:nbStates,model$stateNames,formula)
         if(length(covnames)>1) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities: ",paste(covnames[-cov]," = ",tmpcovs[-cov],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
         else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities"),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
       } else {
-        out[[mix]] <- vector('list',model$conditions$hierStates$height-1)
-        names(out[[mix]]) <- paste0("level",1:(model$conditions$hierStates$height-1))
+        out[[paste0("mix",mix)]] <- vector('list',model$conditions$hierStates$height-1)
+        names(out[[paste0("mix",mix)]]) <- paste0("level",1:(model$conditions$hierStates$height-1))
         for(j in 1:(model$conditions$hierStates$height-1)){
           if(j==1) {
             # only plot if there is variation in stationary state proabilities
             if(!all(apply(probs[[mix]][["level1"]],2,function(x) all( abs(x - mean(x)) < 1.e-6 )))){
               ref <- model$conditions$hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)
-              out[[mix]][[paste0("level",j)]] <- plotCall(cov,tempCovs[which(tempCovs$level==j),],probs[[mix]][["level1"]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,desMat[which(tempCovs$level==j),],mix,Sigma,gamInd,alpha,ref,names(ref),formula)
+              out[[paste0("mix",mix)]][[paste0("level",j)]] <- plotCall(cov,tempCovs[which(tempCovs$level==j),],probs[[mix]][["level1"]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,desMat[which(tempCovs$level==j),],mix,Sigma,gamInd,alpha,ref,names(ref),formula)
               if(length(covnames[-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))])) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j,": ",paste(covnames[-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))]," = ",tmpcovs[which(tmpcovs$level==j),-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
               else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
             }
           } else {
             t <- data.tree::Traverse(model$conditions$hierStates,filterFun=function(x) x$level==j)
             names(t) <- model$conditions$hierStates$Get("name",filterFun=function(x) x$level==j)
-            out[[mix]][[paste0("level",j)]] <- vector('list',length(names(t)))
-            names(out[[mix]][[paste0("level",j)]]) <- names(t)
+            out[[paste0("mix",mix)]][[paste0("level",j)]] <- vector('list',length(names(t)))
+            names(out[[paste0("mix",mix)]][[paste0("level",j)]]) <- names(t)
             for(k in names(t)){
               ref <- t[[k]]$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==j+1)#t[[k]]$Get("state",filterFun = data.tree::isLeaf)
               # only plot if jth node has children and there is variation in stationary state proabilities
               if(!is.null(ref) && !all(apply(probs[[mix]][[paste0("level",j)]][[k]],2,function(x) all( abs(x - mean(x)) < 1.e-6 )))){
-                out[[mix]][[paste0("level",j)]][[k]] <- plotCall(cov,tempCovs[which(tempCovs$level==j),],probs[[mix]][[paste0("level",j)]][[k]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,desMat[which(tempCovs$level==j),],mix,Sigma,gamInd,alpha,ref,names(ref),formula)
+                out[[paste0("mix",mix)]][[paste0("level",j)]][[k]] <- plotCall(cov,tempCovs[which(tempCovs$level==j),],probs[[mix]][[paste0("level",j)]][[k]],model,nbStates,covnames,lwd,arg,col,legend.pos,cex.legend,plotCI,gridLength,hierRecharge,desMat[which(tempCovs$level==j),],mix,Sigma,gamInd,alpha,ref,names(ref),formula)
                 if(length(covnames[-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))])) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j," ",k,": ",paste(covnames[-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))]," = ",tmpcovs[which(tmpcovs$level==j),-cov][which(covnames[-cov]!="level" & !grepl("recharge",covnames[-cov]))],collapse=", ")),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
                 else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," s"),"S"),"tationary state probabilities for level",j," ",k),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
               }
@@ -310,7 +311,7 @@ statPlot<-function(model,Sigma,nbStates,formula,covs,tempCovs,tmpcovs,cov,hierRe
         }
       }
     }
-    if(plotCI && mixtures==1) out <- out[[1]]
+    if(plotCI && mixtures==1) out <- out[[paste0("mix",mix)]]
     return(out)
 }
 
@@ -377,7 +378,7 @@ plotCall <- function(cov,tempCovs,pr,model,nbStates,covnames,lwd,arg,col,legend.
                                                 uci[ciInd,state], length=0.025, angle=90, code=3, col=col[ref[state]], lwd=lwd),arg)),warning=muffWarn)
       
       out[[stateNames[state]]] <- data.frame(est=pr[,state],se=c(se),lci=lci[,state],uci=uci[,state])
-      out[[stateNames[state]]]$cov <- tempCovs[,cov]
+      out[[stateNames[state]]][[names(tempCovs[,cov,drop=FALSE])]] <- tempCovs[,cov]
       
     }
     return(out)

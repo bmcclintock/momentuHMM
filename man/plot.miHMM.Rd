@@ -20,6 +20,7 @@
   alpha = 0.95,
   plotStationary = FALSE,
   plotEllipse = TRUE,
+  return = FALSE,
   ...
 )
 }
@@ -57,6 +58,8 @@ Default: \code{FALSE}.}
 \item{plotStationary}{Logical indicating whether to plot the stationary state probabilities as a function of any covariates (default: FALSE)}
 
 \item{plotEllipse}{Logical indicating whether to plot error ellipses around imputed location means. Default: TRUE.}
+
+\item{return}{Logical indicating whether to return a list containing estimates, SEs, CIs, and covariate values used to create the plots for each mixture and state. Ignored if \code{plotCI=FALSE}. Default: \code{FALSE}.}
 
 \item{...}{Additional arguments passed to \code{graphics::plot} and \code{graphics::hist} functions. These can currently include \code{asp}, \code{cex}, \code{cex.axis}, \code{cex.lab}, \code{cex.legend}, \code{cex.main}, \code{legend.pos}, and \code{lwd}. See \code{\link[graphics]{par}}. \code{legend.pos} can be a single keyword from the list ``bottomright'', ``bottom'', ``bottomleft'', ``left'', ``topleft'', ``top'', ``topright'', ``right'', and ``center''. Note that \code{asp} and \code{cex} only apply to plots of animal tracks.}
 }

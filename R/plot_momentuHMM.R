@@ -25,6 +25,7 @@
 #' @param plotCI Logical indicating whether to include confidence intervals in natural parameter plots (default: FALSE)
 #' @param alpha Significance level of the confidence intervals (if \code{plotCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).
 #' @param plotStationary Logical indicating whether to plot the stationary state probabilities as a function of any covariates (default: FALSE). Ignored unless covariate are included in \code{formula}.
+#' @param return Logical indicating whether to return a list containing estimates, SEs, CIs, and covariate values used to create the plots for each mixture and state. Ignored if \code{plotCI=FALSE}. Default: \code{FALSE}.
 #' @param ... Additional arguments passed to \code{graphics::plot} and \code{graphics::hist} functions. These can currently include \code{asp}, \code{cex}, \code{cex.axis}, \code{cex.lab}, \code{cex.legend}, \code{cex.main}, \code{legend.pos}, and \code{lwd}. See \code{\link[graphics]{par}}. \code{legend.pos} can be a single keyword from the list ``bottomright'', ``bottom'', ``bottomleft'', ``left'', ``topleft'', ``top'', ``topright'', ``right'', and ``center''. Note that \code{asp} and \code{cex} only apply to plots of animal tracks. 
 #'
 #' @details The state-dependent densities are weighted by the frequency of each state in the most
@@ -55,7 +56,7 @@
 #' @importFrom MASS kde2d
 
 plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
-                            sepStates=FALSE,col=NULL,cumul=TRUE,plotTracks=TRUE,plotCI=FALSE,alpha=0.95,plotStationary=FALSE,...)
+                            sepStates=FALSE,col=NULL,cumul=TRUE,plotTracks=TRUE,plotCI=FALSE,alpha=0.95,plotStationary=FALSE,return=FALSE,...)
 {
   m <- x # the name "x" is for compatibility with the generic method
   m <- delta_bc(m)
@@ -432,7 +433,11 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   marg <- arg
   marg$cex <- NULL
   
+  CIout <- list()
+  
   for(i in distnames){
+    
+    CIout[[i]] <- list()
     
     if(m$conditions$dist[[i]] %in% mvndists){
       if(m$conditions$dist[[i]]=="mvnorm2" || m$conditions$dist[[i]]=="rw_mvnorm2"){
@@ -566,6 +571,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       }
     }
     for(state in iStates[[i]]) {
+      
+      CIout[[i]][[stateNames[state]]] <- list()
+      
       genArgs <- list(grid)
       
       if(m$conditions$dist[[i]] %in% mvndists){
@@ -602,7 +610,11 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       
       for(j in p$parNames[[i]]){
         
+        if(!is.null(DMparterms[[j]][[state]])) CIout[[i]][[state]][[j]] <- list()
+        
         for(jj in DMparterms[[j]][[state]]){
+          
+          CIout[[i]][[stateNames[state]]][[j]][[jj]] <- list()
           
           if(is.logical(m$data[,jj])) m$data[,jj] <- factor(m$data[,jj],levels=c(FALSE,TRUE))
           
@@ -675,6 +687,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
                                          uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5), lwd=lwd),arg)),warning=muffWarn)
               
             }
+            CIout[[i]][[stateNames[state]]][[j]][[jj]] <- data.frame(est=est,se=c(se),lci=c(lci),uci=c(uci))
+            CIout[[i]][[stateNames[state]]][[j]][[jj]][[jj]] <- tempCovs[,jj]
+              
           } else do.call(plot,c(list(tempCovs[,jj],est,xaxt="n",xlab=jj,ylab=paste(i,ifelse(j=="kappa","concentration",j),'parameter'),main=paste0(names(iStates[[i]])[match(state,iStates[[i]])],ifelse(length(tempCovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]]),paste0(": ",paste(DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)],"=",tmpcovs[,DMparterms[[j]][[state]][-which(DMparterms[[j]][[state]]==jj)]],collapse=", ")),"")),type="l",lwd=lwd,cex.main=cex.main),arg)) 
           if(is.factor(tempCovs[,jj])) do.call(axis,c(list(1,at=tempCovs[,jj],labels=tempCovs[,jj]),arg))
           else do.call(axis,c(list(1),arg))
@@ -861,6 +876,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     gamInd<-(length(m$mod$estimate)-(nbCovs+1)*nbStates*(nbStates-1)*mixtures+1):(length(m$mod$estimate))-(ncol(m$covsPi)*(mixtures-1))-ifelse(nbRecovs,nbRecovs+1+nbG0covs+1,0)-ncol(m$covsDelta)*(nbStates-1)*(!m$conditions$stationary)*mixtures
     quantSup<-qnorm(1-(1-alpha)/2)
     
+    CIout$beta <- list()
+    if(plotStationary) CIout$stationary <- list()
+    
     if(nbCovs>0) {
       
       # values of each covariate
@@ -911,6 +929,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           tempCovs[,cov] <- as.factor(rep(levels(rawCovs[,cov]),each=hGridLength/gridLength))
         }
         
+        CIout$beta[[colnames(rawCovs[,cov,drop=FALSE])]] <- vector('list',mixtures)
+        names(CIout$beta[[colnames(rawCovs[,cov,drop=FALSE])]]) <- paste0("mix",1:mixtures)
+        
         names(tempCovs) <- names(rawCovs)
         tmpcovs<-covs[names(rawCovs)]
         for(i in which(unlist(lapply(rawCovs,is.factor)))){
@@ -954,7 +975,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           
           if(!inherits(m,"hierarchical")){
             
-            plotTPM(nbStates,cov,ref=1:nbStates,tempCovs,trMat,rawCovs,lwd,arg,plotCI,Sigma,gamInd,m,desMat,nbRecovs,tmpSplineInputs$formula,hierRecharge,mix,muffWarn,quantSup,tmpSplineInputs$covs,stateNames=1:nbStates)
+            CIout$beta[[colnames(rawCovs[,cov,drop=FALSE])]][[paste0("mix",mix)]] <- plotTPM(nbStates,cov,ref=1:nbStates,tempCovs,trMat,rawCovs,lwd,arg,plotCI,Sigma,gamInd,m,desMat,nbRecovs,tmpSplineInputs$formula,hierRecharge,mix,muffWarn,quantSup,tmpSplineInputs$covs,stateNames=1:nbStates)
             
             txt <- paste(names(rawCovs)[-cov],"=",tmpcovs[-cov],collapse=", ")
             if(nbRecovs & names(rawCovs)[cov]=="recharge"){
@@ -981,7 +1002,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
                 # only plot if there is variation in stationary state proabilities
                 if(!all(apply(trMat[ref,ref,which(tempCovs$level==j)],1:2,function(x) all( abs(x - mean(x)) < 1.e-6 )))){
                   
-                  plotTPM(nbStates,cov,ref,tempCovs[which(tempCovs$level==j),],trMat[,,which(tempCovs$level==j)],rawCovs,lwd,arg,plotCI,Sigma,gamInd,m,desMat[which(tempCovs$level==j),],nbRecovs,tmpSplineInputs$formula,hierRecharge,mix,muffWarn,quantSup,tmpSplineInputs$covs[which(tempCovs$level==j),],stateNames=names(ref))
+                  CIout$beta[[colnames(rawCovs[,cov,drop=FALSE])]][[paste0("mix",mix)]] <- plotTPM(nbStates,cov,ref,tempCovs[which(tempCovs$level==j),],trMat[,,which(tempCovs$level==j)],rawCovs,lwd,arg,plotCI,Sigma,gamInd,m,desMat[which(tempCovs$level==j),],nbRecovs,tmpSplineInputs$formula,hierRecharge,mix,muffWarn,quantSup,tmpSplineInputs$covs[which(tempCovs$level==j),],stateNames=names(ref))
      
                   if(ncol(rawCovs[-cov])>1 | nbRecovs) do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," t"),"T"),"ransition probabilities for level",j,ifelse(nbRecovs," at next time step: ",": "),txt),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
                   else do.call(mtext,c(list(paste0(ifelse(mixtures>1,paste0("Mixture ",mix," t"),"T"),"ransition probabilities for level",j),side=3,outer=TRUE,padj=2,cex=cex.main),marg))
@@ -1009,6 +1030,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           }
         }
         
+        if(mixtures==1) CIout$beta[[colnames(rawCovs[,cov,drop=FALSE])]] <- CIout$beta[[colnames(rawCovs[,cov,drop=FALSE])]][[paste0("mix",mix)]]
+        
         if(plotStationary) {
           par(mfrow=c(1,1))
           if(inherits(m,"hierarchical")){
@@ -1028,7 +1051,8 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
               } else tmpSplineInputs$covs$dt <- mean(dt) # set to mean(dt)
             }
           }
-          statPlot(m,Sigma,nbStates,tmpSplineInputs$formula,tmpSplineInputs$covs,tempCovs,tmpcovs,cov,hierRecharge,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
+          CIout$stationary[[names(rawCovs)[cov]]] <- statPlot(m,Sigma,nbStates,tmpSplineInputs$formula,tmpSplineInputs$covs,tempCovs,tmpcovs,cov,hierRecharge,alpha,gridLength,gamInd,names(rawCovs),col,plotCI,...)
+          if(!plotCI) CIout$stationary <- NULL
         }
       }
     }
@@ -1151,6 +1175,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   par(mfrow=c(1,1))
   par(mar=c(5,4,4,2)) # bottom, left, top, right
   par(ask=FALSE)
+  if(plotCI & return) return(CIout)
 }
 
 # Plot histograms
@@ -1418,6 +1443,8 @@ plotTPM <- function(nbStates,cov,ref=1:nbStates,tempCovs,trMat,rawCovs,lwd,arg,p
   if(isTRUE(m$conditions$CT)) dt <- mean(m$data$dt)
   else dt <- 1
   
+  outCI <- list()
+  
   for(i in 1:length(ref)){
     for(j in 1:length(ref)){
       do.call(plot,c(list(tempCovs[,cov],trMat[ref[i],ref[j],],type="l",ylim=c(0,1),xlab=names(rawCovs)[cov],ylab=paste(stateNames[i],"->",stateNames[j]),lwd=lwd),arg))
@@ -1439,9 +1466,12 @@ plotTPM <- function(nbStates,cov,ref=1:nbStates,tempCovs,trMat,rawCovs,lwd,arg,p
           withCallingHandlers(do.call(arrows,c(list(as.numeric(tempCovs[ciInd,cov]), lci[ciInd], as.numeric(tempCovs[ciInd,cov]), 
                                                     uci[ciInd], length=0.025, angle=90, code=3, col=gray(.5), lwd=lwd),arg)),warning=muffWarn)
         }
+        outCI[[paste(stateNames[i],"->",stateNames[j])]] <- data.frame(est=trMat[ref[i],ref[j],],se=c(se),lci=c(lci),uci=c(uci))
+        outCI[[paste(stateNames[i],"->",stateNames[j])]][[names(rawCovs)[cov]]] <- tempCovs[,cov]
       }
     }
   }
+  if(plotCI) return(outCI)
 }
 
 getCovs <-function(m,covs,ID,checkHier=TRUE){

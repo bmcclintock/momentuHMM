@@ -25,6 +25,7 @@
 #' @param alpha Significance level of the confidence intervals (if \code{plotCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).
 #' @param plotStationary Logical indicating whether to plot the stationary state probabilities as a function of any covariates (default: FALSE)
 #' @param plotEllipse Logical indicating whether to plot error ellipses around imputed location means. Default: TRUE.
+#' @param return Logical indicating whether to return a list containing estimates, SEs, CIs, and covariate values used to create the plots for each mixture and state. Ignored if \code{plotCI=FALSE}. Default: \code{FALSE}.
 #' @param ... Additional arguments passed to \code{graphics::plot} and \code{graphics::hist} functions. These can currently include \code{asp}, \code{cex}, \code{cex.axis}, \code{cex.lab}, \code{cex.legend}, \code{cex.main}, \code{legend.pos}, and \code{lwd}. See \code{\link[graphics]{par}}. \code{legend.pos} can be a single keyword from the list ``bottomright'', ``bottom'', ``bottomleft'', ``left'', ``topleft'', ``top'', ``topright'', ``right'', and ``center''. Note that \code{asp} and \code{cex} only apply to plots of animal tracks. 
 #'
 #' @details The state-dependent densities are weighted by the frequency of each state in the most
@@ -64,7 +65,7 @@
 #' @export
 
 plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.ylim=NULL,sepAnimals=FALSE,
-                        sepStates=FALSE,col=NULL,cumul=TRUE,plotTracks=TRUE,plotCI=FALSE,alpha=0.95,plotStationary=FALSE,plotEllipse=TRUE,...)
+                        sepStates=FALSE,col=NULL,cumul=TRUE,plotTracks=TRUE,plotCI=FALSE,alpha=0.95,plotStationary=FALSE,plotEllipse=TRUE,return=FALSE,...)
 {
   m <- x # the name "x" is for compatibility with the generic method
   m <- delta_bc(m)
@@ -82,5 +83,5 @@ plot.miSum <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",hist.y
   m <- momentuHMM(m)
   
   plot.momentuHMM(m,animals,covs,ask,breaks,hist.ylim,sepAnimals,
-                  sepStates,col,cumul,plotTracks,plotCI,alpha,plotStationary,...)
+                  sepStates,col,cumul,plotTracks,plotCI,alpha,plotStationary,return,...)
 }
