@@ -962,16 +962,16 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
               mod <- curmod
               if(retryFits>=1 & ncores==1) cat("Attempting to improve fit using random perturbation. Press 'esc' to force exit from 'fitHMM'\n")
             }
+            if(!inherits(curmod,"error") && ifelse(optMethod!="TMB",TRUE,curmod$out$convcode!=9999)) wpar <- expandPar(mod$estimate,optInd,fixParIndex$fixPar,fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi,isTRUE(optMethod=="TMB"),fixParIndex$Par0,fixParIndex$beta0$beta,fixParIndex$delta0)
           }
-          
-          if(!inherits(curmod,"error") && ifelse(optMethod!="TMB",TRUE,curmod$out$convcode!=9999)) wpar <- expandPar(mod$estimate,optInd,fixParIndex$fixPar,fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi,isTRUE(optMethod=="TMB"),fixParIndex$Par0,fixParIndex$beta0$beta,fixParIndex$delta0)
           
           if(fitCount<=retryFits){
             if(!inherits(curmod,"error") && ifelse(optMethod!="TMB",TRUE,curmod$out$convcode!=9999)){
               names(curmod)[which(names(curmod)=="par")] <- "estimate"
               names(curmod)[which(names(curmod)=="value")] <- "minimum"
               curmod$elapsedTime <- endTime[3]
-              if(curmod$minimum < mod$minimum) mod <- curmod
+              if(inherits(mod,"error")) mod <- curmod
+              else if(curmod$minimum < mod$minimum) mod <- curmod
               wpar <- expandPar(mod$estimate,optInd,fixParIndex$fixPar,fixParIndex$wparIndex,betaCons,deltaCons,nbStates,nbCovsDelta,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,nbCovsPi,isTRUE(optMethod=="TMB"),fixParIndex$Par0,fixParIndex$beta0$beta,fixParIndex$delta0)
             }
             if(fitCount+1<=retryFits){
@@ -992,7 +992,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                   fixParIndex$Par0[[i]] <- wpar[pcount+1:parCount[[i]]] + rnorm(parCount[[i]],0,as.numeric(retrySD[[i]]))
                   nInd <- which(!is.na(fixParIndex$fixPar[[i]]))
                   if(length(nInd)){
-                    fixParIndex$Par0[[i]][nInd] <- fixParIndex$Par0[[i]][nInd][(fixParIndex$fixPar[[i]]-min(fixParIndex$fixPar[[i]],na.rm=TRUE)+1)[nInd]]
+                    fixParIndex$Par0[[i]][nInd] <- fixParIndex$Par0[[i]][which(!is.na(fixParIndex$fixPar[[i]]) & !duplicated(fixParIndex$fixPar[[i]]))][(fixParIndex$fixPar[[i]]-min(fixParIndex$fixPar[[i]],na.rm=TRUE)+1)[nInd]]
                     if(is.null(DM[[i]])) fixParIndex$Par0[[i]] <- w2n(c(fixParIndex$Par0[[i]],fixParIndex$beta0$beta,fixParIndex$delta0),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary,fullDM[i],DMind[i],nrow(data),inputs$dist[i],p$Bndind[i],nc[i],meanind[i],covsDelta,workBounds[c(i,"beta","delta")],covsPi,isTRUE(optMethod=="TMB"))[[i]][,1]
                   }
                   pcount <- pcount + parCount[[i]]
@@ -1015,7 +1015,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                   }
                 }
               }
-              cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",ifelse(!inherits(curmod,"error") && ifelse(optMethod!="TMB",TRUE,curmod$out$convcode!=9999),-mod$minimum,NaN),"         ",sep="")
+              cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",ifelse(!inherits(mod,"error") && ifelse(optMethod!="TMB",TRUE,mod$out$convcode!=9999),-mod$minimum,NaN),"         ",sep="")
             }
           }
         } else mod <- curmod
