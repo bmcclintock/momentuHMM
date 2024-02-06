@@ -557,7 +557,8 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
       }
     }
     if(any(spatialcovnames %in% names(data))) stop("spatialCovs cannot have same names as data")
-    if(gradient & any(paste0(rep(c(spatialcovnames),each=2),c(".x",".y")) %in% names(data))) stop(paste0(rep(c(spatialcovnames),each=2),c(".x",".y"))[which(paste0(rep(c(spatialcovnames),each=2),c(".x",".y")) %in% names(data))],"cannot be in data when gradient=TRUE")
+    if(gradient & any(paste0(rep(c(spatialcovnames),each=2),c(".x",".y")) %in% names(data))) stop(paste0(paste0(rep(c(spatialcovnames),each=2),c(".x",".y"))[which(paste0(rep(c(spatialcovnames),each=2),c(".x",".y")) %in% names(data))],collapse=", ")," cannot be in data when gradient=TRUE")
+    if(gradient & any(paste0(rep(c(spatialcovnames),each=2),c(".xs",".ys")) %in% names(data))) stop(paste0(paste0(rep(c(spatialcovnames),each=2),c(".xs",".ys"))[which(paste0(rep(c(spatialcovnames),each=2),c(".xs",".ys")) %in% names(data))],collapse=", ")," cannot be in data when gradient=TRUE")
     if(anyDuplicated(spatialcovnames)) stop("spatialCovs must have unique names")
   } else nbSpatialCovs <- 0
   

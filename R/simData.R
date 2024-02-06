@@ -342,7 +342,7 @@
 #' Journal of the Royal Statistical Society: Series C (Applied Statistics), 65(3):445-463.
 #'
 #' @export
-#' @importFrom stats rnorm runif rpois rmultinom step terms.formula
+#' @importFrom stats rnorm runif rpois rmultinom step terms.formula setNames
 #' @importFrom raster cellFromXY getValues is.factor levels ncell
 # @importFrom moveHMM simData
 #' @importFrom CircStats rvm
@@ -477,6 +477,17 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       formulaPi <- formPi <- ~1
     } else formulaPi <- formPi <- model$condition$formulaPi
     gradient <- isTRUE(attr(model$data,"gradient"))
+    smoothGradient <- isTRUE(attr(model$data,"smoothGradient"))
+    
+    if(smoothGradient){
+      for(i in names(spatialCovs)){
+        formula <- formula(do.call("substitute", list(formula, stats::setNames(list(str2lang(paste0(i,".x"))), paste0(i,".xs")))) )
+        formula <- formula(do.call("substitute", list(formula, stats::setNames(list(str2lang(paste0(i,".y"))), paste0(i,".ys")))))
+        model$conditions$DM <- lapply(model$conditions$DM,function(x) lapply(x,function(y) formula(do.call("substitute", list(y, stats::setNames(list(str2lang(paste0(i,".x"))), paste0(i,".xs")))) )))
+        model$conditions$DM <- lapply(model$conditions$DM,function(x) lapply(x,function(y) formula(do.call("substitute", list(y, stats::setNames(list(str2lang(paste0(i,".y"))), paste0(i,".ys")))) )))
+        DM <- model$conditions$DM
+      }
+    }
     
     Par <- model$mle[distnames]
     parCount<- lapply(model$conditions$fullDM,ncol)
@@ -945,8 +956,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       covnames <- colnames(allCovs)
       if(!is.null(model)){
         nogradcovnames <- covnames[which(!(covnames %in% paste0(rep(c(spatialcovnames),each=2),c(".x",".y"))))]
+        #if(smoothGradient) nogradcovnames <- nogradcovnames[which(!(nogradcovnames %in% paste0(rep(c(spatialcovnames),each=2),c(".xs",".ys"))))]
       } else nogradcovnames <- covnames
       if(any(paste0(rep(c(spatialcovnames),each=2),c(".x",".y")) %in% c(nogradcovnames,spatialcovnames,distnames,paste0(mvnCoords,c(".x",".y"))))) stop(paste0(rep(c(spatialcovnames),each=2),c(".x",".y"))[which(paste0(rep(c(spatialcovnames),each=2),c(".x",".y")) %in% c(nogradcovnames,spatialcovnames,distnames,paste0(mvnCoords,c(".x",".y"))))],"cannot be covariate name(s) when gradient=TRUE")
+      #if(any(paste0(rep(c(spatialcovnames),each=2),c(".xs",".ys")) %in% c(nogradcovnames,spatialcovnames,distnames,paste0(mvnCoords,c(".xs",".ys"))))) stop(paste0(rep(c(spatialcovnames),each=2),c(".xs",".ys"))[which(paste0(rep(c(spatialcovnames),each=2),c(".xs",".ys")) %in% c(nogradcovnames,spatialcovnames,distnames,paste0(mvnCoords,c(".xs",".ys"))))],"cannot be covariate name(s) when gradient=TRUE")
     } else stop("spatialCovs must be provided when gradient=TRUE")
   }
   if(nbSpatialCovs>0 & isTRUE(list(...)$ctds)){

@@ -1,4 +1,4 @@
-momentuHMM 2.0.0 2023-08-21
+momentuHMM 2.0.0 2024-02-02
 -----------------
 NEW FEATURES
 
@@ -8,7 +8,7 @@ NEW FEATURES
 
 * new data stream distribution "ctds" for (multistate) continuous-time discrete-space movement models, which can be prepared, fitted, and simulated using the functions 'prepCTDS', 'fitCTHMM' (or 'MIfitCTHMM'), and 'simCTDS' (or 'simHierCTDS' for hierarchical models), respectively.
 
-* special pseudo-design matrix function 'langevin' has been added for simulating and fitting discrete-time approximations of the (multistate) Langevin diffusion model as a multivariate normal random walk (i.e. using the "rw_mvnorm2" or "rw_mvnorm3" data stream distributions)
+* special formula function 'langevin' has been added for simulating and fitting discrete-time approximations of the (multistate) Langevin diffusion model as a multivariate normal random walk (i.e. using the "rw_mvnorm2" or "rw_mvnorm3" data stream distributions)
 
 * 'export' argument added to simulation functions for exporting formula objects from the global environment when ncores>1
 
@@ -17,6 +17,8 @@ NEW FEATURES
 * 'gradient' argument added to 'prepData' and 'simData' for calculating gradients of spatial covariates using bilinear interpolation
 
 * 'ncores' argument added to 'fitHMM' (and 'fitCTHMM') for attempting 'retryFits' in parallel
+
+* 'addSmoothGradient' function can be used to calculate a smoothed version of the gradient of spatial covariates
 
 CHANGES
 
