@@ -79,8 +79,12 @@ get_retrySD <- function(retryFits,retrySD,wpar,parmInd,distnames,parCount,nbStat
       }
     } else {
       if(is.null(retrySD)){
-        retrySD <- rep(10,length(wpar))
-        retrySD[1:parmInd] <- 1
+        retrySD <- list()
+        for(i in distnames){
+          retrySD[[i]] <- rep(1,length(Par0[[i]]))
+        }
+        retrySD$beta <- rep(10,length(beta0$beta))
+        retrySD$delta <- rep(10,length(delta0))
       } else if(!is.list(retrySD)){
         if(length(retrySD)>1) stop('retrySD must be a scalar or list')
         if(!is.numeric(retrySD) & retrySD!="adapt") stop("retrySD must be numeric or 'adapt'")
