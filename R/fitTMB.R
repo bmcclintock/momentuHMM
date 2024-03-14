@@ -714,11 +714,10 @@ make_formulas <- function(input_forms, var_names, par_names, nbStates){
       covs <- gsub(pattern = "^state[0-9]*\\((.*)\\)$", 
                    replacement = "\\1", x = labs)
       which_all_states <- which(!seq_along(labs) %in% 
-                                  unlist(attr(form_terms, "specials")))
+                                  match(rownames(attr(form_terms,"factors"))[unlist(attr(form_terms,"specials"))],colnames(attr(form_terms,"factors"))))
       state_forms <- list()
       for (s in 1:nbStates) {
-        which_this_state <- attr(form_terms, "specials")[[paste0("state", 
-                                                                 s)]]
+        which_this_state <- match(rownames(attr(form_terms,"factors"))[attr(form_terms,"specials")[[paste0("state",s)]]],colnames(attr(form_terms,"factors")))
         if (attr(form_terms, "intercept") == 1) {
           new_form <- "~ 1"
         }

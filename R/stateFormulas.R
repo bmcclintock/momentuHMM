@@ -122,7 +122,7 @@ stateFormulas<-function(formula,nbStates,spec="state",angleMean=FALSE,data=NULL)
     }
     
     for(j in 1:nbStates){
-      tmplabs<-attr(Terms,"term.labels")[attr(Terms,"specials")[[paste0(spec,j)]]]
+      tmplabs<-attr(Terms,"term.labels")[match(rownames(attr(Terms,"factors"))[attr(Terms,"specials")[[paste0(spec,j)]]],colnames(attr(Terms,"factors")))]
       if(length(tmplabs)){
         tmp<- stats::terms(stats::as.formula(paste("~",substr(tmplabs,nchar(paste0(spec,j))+1,nchar(tmplabs)),collapse="+")),specials=c("cosinor","angleFormula","recharge"), keep.order=TRUE)
         
