@@ -547,6 +547,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
       if(length(mvnCoords)>1 | !is.character(mvnCoords)) stop("mvnCoords must be a character string")
       if(!(mvnCoords %in% distnames)) stop("mvnCoords not found. Permitted values are: ",paste0(distnames,collapse=", "))
       if(!(dist[[mvnCoords]] %in% mvndists)) stop("mvnCoords must correspond to a multivariate normal data stream")
+      if(!all(paste0(mvnCoords,c(".x",".y")) %in% colnames(data))) stop(mvnCoords,".x and/or ",mvnCoords,".y not found in data. Check data and 'mvnCoords' argument")
     }
     
     # check knownStates

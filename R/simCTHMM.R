@@ -246,6 +246,8 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                                      CT=TRUE,
                                      kappa=kappa),warning=muffleCTwarning)
   
+  
+  kappa <-   attr(out,"kappa")
   if(!keepSwitch){
     newout <- list()
     if(!is.null(model)) dist <- model$conditions$dist
@@ -280,6 +282,7 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
   attr(out,"CT") <- TRUE
   attr(out,"Time.name") <- timeName
   attr(out,"gradient") <- ifelse(!is.null(model),isTRUE(attr(model$data,"gradient")),gradient)
+  attr(out,"kappa") <- kappa
   return(out)
   
 }

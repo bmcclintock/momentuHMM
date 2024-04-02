@@ -231,6 +231,10 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
   
   if(!is.numeric(kappa) || length(kappa)>1 || kappa<0) stop('kappa must be a non-negative numeric scalar')
   
+  if(!is.null(attr(data,"kappa"))){
+    if(attr(data,"kappa")!=kappa) warning("attr(data,'kappa') does not match kappa argument -- is this intentional?")
+  }
+  
   chkDots(...)
   
   withCallingHandlers(mfit <- fitHMM.momentuHMMData(data=data,nbStates=nbStates,dist=dist,

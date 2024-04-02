@@ -1817,7 +1817,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
           }
         }
         
-        if(!is.null(mvnCoords) && i==mvnCoords){
+        if(!is.null(mvnCoords) && i==mvnCoords && (dist[[i]] %in% rwdists)){
           X[k+1,] <- genData[[i]][k,]
           d[[i]] <- X
         } else d[[i]] <- genData[[i]]
@@ -1939,7 +1939,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         Z[k+1] <- sample(1:nbStates,size=1,prob=gamma[Z[k],]) 
         time <- obsTimes[[zoo]][k+1]
       } else {
-        time <- allTimes[k+1]
+        time <- allTimes[k]
         if(qInd | moveState){
           if(nbStates>1 && time %in% tswitch){
             if(isTRUE(list(...)$ctds) && (moveState & genData$z[k]==(directions+1))){
@@ -1973,6 +1973,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             nbObs <- nbObs + 1
           } else Z[k+1] <- Z[k]
         }
+        time <- allTimes[k+1]
       }
       k <- k + 1
     }
@@ -2111,6 +2112,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         warning("Transition rate matrix could not be calculated for individual ",zoo,"; terminated at observation ",obsCount[zoo])
       }
     }
+    attr(out,"kappa") <- ifelse(is.list(kappa),Inf,kappa)
   }
   #message("DONE")
   return(out)
