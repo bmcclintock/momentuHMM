@@ -88,7 +88,7 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
         m_tm1 <- paste0(i,gsub("mean","",parNames[j]),"_tm1")
         tm1AllNames <- labs[[j]][which(grepl(m_tm1,labs[[j]]))]
         if(!m_tm1 %in% labs[[j]]) tm1AllNames <- c(m_tm1,tm1AllNames)
-        labsj <- labs[[j]][-which(grepl(m_tm1,labs[[j]]))]
+        labsj <- labs[[j]][which(!grepl(m_tm1,labs[[j]]))]
         if(any(grepl("langevin",unlist(DM[[i]])))){
           if(!all(grepl("langevin",labsj))) stop("non-Langevin terms included in DM$",i,"$",parNames[j])
         }
