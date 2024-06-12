@@ -12,9 +12,6 @@ names(dist2sabie) <- "dist2sabie"
 ## standardize dist2sabie based on slope of gradient
 dist2sabie_scaled <- dist2sabie / mean(values(raster::terrain(dist2sabie, opt = "slope")), na.rm = T)
 
-# calculate gradient
-D_scaled <- ctmcmove::rast.grad(dist2sabie_scaled)
-
 ## W (recharge function covariates)
 # near_sabie = indicator for <500m from water
 intercept <- raster(dist2sabie)
@@ -57,10 +54,10 @@ crwOut <- crawlWrap(buffaloData,theta=c(6.5,-.1),fixPar=c(1,1,NA,NA),
 spatialCovs <- list(W_intercept=W_ortho$svd1,
                     W_near_sabie=W_ortho$svd2,
                     dist2sabie=dist2sabie,
-                    D.x=D_scaled$rast.grad.x,
-                    D.y=D_scaled$rast.grad.y)
+                    D=dist2sabie_scaled)
 
-hmmData <- prepData(crwOut, spatialCovs = spatialCovs, altCoordNames = "mu")
+# prepare data and calculate gradients
+hmmData <- prepData(crwOut, spatialCovs = spatialCovs, gradient=TRUE, altCoordNames = "mu")
 
 nbStates <- 2
 stateNames <- c("charged","discharged")
@@ -125,12 +122,12 @@ buffaloFit <- fitHMM(hmmData,nbStates=nbStates,dist=dist,formula=formula,
 bestPar <- getPar(buffaloFit)
 set.seed(1,kind="Mersenne-Twister",normal.kind="Inversion")
 buffaloFits <- MIfitHMM(crwOut, nSims=28, ncores=4,
-                        spatialCovs = spatialCovs, 
+                        spatialCovs = spatialCovs, gradient=TRUE,
                         mvnCoords="mu", altCoordNames = "mu",
                         nbStates=nbStates, dist=dist, formula=formula,
                         Par0=bestPar$Par, beta0=bestPar$beta,
                         fixPar=fixPar, DM=DM, betaRef=betaRef, betaCons=betaCons, stateNames=stateNames,
-                        retryFits=3, retrySD=list(mu=c(0,0,3,0,0,0),g0=1,theta=c(0,1,1)),
+                        retryFits=10, retrySD=list(mu=c(0,0,3,0,0,0),g0=1,theta=c(0,1,1)),
                         optMethod="Nelder-Mead",control=list(maxit=100000))
 buffaloFits
 plot(buffaloFits,plotCI=TRUE,ask=FALSE)
@@ -139,7 +136,7 @@ plotSpatialCov(buffaloFits,dist2sabie)
 trProbs <- getTrProbs(buffaloFits, getCI=TRUE)
 # plot estimates and CIs for Pr(discharged) at each time step
 plot(trProbs$est[1,2,],type="l", 
-     ylim=c(0,1), ylab="Pr(discharged)", xlab="t", col=c("#E69F00", "#56B4E9")[buffaloFits$miSum$Par$states])
+     ylim=c(0,1), ylab="Pr(discharged)", xlab="time step", col=c("#E69F00", "#56B4E9")[buffaloFits$miSum$Par$states])
 arrows(1:dim(trProbs$est)[3],
        trProbs$lower[1,2,],
        1:dim(trProbs$est)[3],
@@ -154,5 +151,53 @@ buffaloFits$miSum$Par$timeInStates
 par(mfrow=c(2,1))
 hist(buffaloFits$miSum$data$dist2sabie[which(buffaloFits$miSum$Par$states==1)],main=stateNames[1],xlab="distance to water (m)")
 hist(buffaloFits$miSum$data$dist2sabie[which(buffaloFits$miSum$Par$states==2)],main=stateNames[2],xlab="distance to water (m)")
+
+## Continuous-time versions
+
+parCT <- getPar(buffaloFits)
+
+# effectively remove Markov property from state transitions
+dt <- c(diff(hmmData$time),1)
+betaIntCT <- 10
+betaReCT <- 1
+parCT$beta$beta <- matrix(c(betaIntCT,-betaReCT,betaIntCT,betaReCT),2,2)
+
+fixParCT <- fixPar
+fixParCT$beta <- parCT$beta$beta
+
+buffaloFitCT <- fitCTHMM(hmmData,
+                         mvnCoords="mu", 
+                         nbStates=nbStates, dist=dist, formula=formula,
+                         Par0=parCT$Par, beta0=parCT$beta,
+                         fixPar=fixParCT, DM=DM, stateNames=stateNames,
+                         optMethod="Nelder-Mead",control=list(maxit=100000))
+
+
+parsCT <- lapply(buffaloFits$HMMfits,getPar)
+set.seed(1,kind="Mersenne-Twister",normal.kind="Inversion")
+buffaloFitsCT <- MIfitCTHMM(crwOut, nSims=28, ncores=4,
+                            spatialCovs = spatialCovs, gradient=TRUE, 
+                            mvnCoords="mu", altCoordNames = "mu",
+                            nbStates=nbStates, dist=dist, formula=formula,
+                            Par0=lapply(parsCT,function(x) x$Par), beta0=lapply(parsCT,function(x) x$beta),
+                            fixPar=fixParCT, DM=DM, stateNames=stateNames,
+                            retryFits=10, retrySD=list(mu=c(0,0,3,0,0,0),g0=1,theta=c(0,1,1)),
+                            optMethod="Nelder-Mead",control=list(maxit=100000))
+
+buffaloFitsCT
+plot(buffaloFitsCT,plotCI=TRUE,ask=FALSE)
+plotSpatialCov(buffaloFitsCT,dist2sabie)
+
+trProbsCT <- getTrProbs(buffaloFitsCT, getCI=TRUE)
+# plot estimates and CIs for Pr(discharged) at each time step
+plot(cumsum(diff(buffaloFitsCT$miSum$data$time)),trProbsCT$est[1,2,-1],type="l", 
+     ylim=c(0,1), ylab="Pr(discharged)", xlab="t", col=c("#E69F00", "#56B4E9")[buffaloFitsCT$miSum$Par$states])
+arrows(cumsum(diff(buffaloFitsCT$miSum$data$time)),
+       trProbsCT$lower[1,2,-1],
+       cumsum(diff(buffaloFitsCT$miSum$data$time)),
+       trProbsCT$upper[1,2,-1],
+       length=0.025, angle=90, code=3, col=c("#E69F00", "#56B4E9")[buffaloFitsCT$miSum$Par$states], lwd=1.3)
+abline(h=0.5,lty=2)
+
 
 save.image("buffaloExample.RData")
