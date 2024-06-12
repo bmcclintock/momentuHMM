@@ -91,7 +91,8 @@ addSmoothGradient <- function(data,Time.name=NULL,Time.unit='auto',spatialCovs,w
   message("Extracting spatial covariates and calculating smoothed gradients...")
   
   if(is.null(scale)) {
-    scale <- sqrt(0.5*mean((rx^2+ry^2)/dt))
+    scale <- sqrt(0.5*mean((rx^2+ry^2)/dt,na.rm=TRUE))
+    if(!is.numeric(scale) || length(scale)>1 || scale<0 || !is.finite(scale)) stop("valid scale parameter could not be calculated")
     message("\n    => scale parameter = ",round(scale,6)," \n")
   }
   else {
