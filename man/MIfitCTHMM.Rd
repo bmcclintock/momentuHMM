@@ -37,7 +37,6 @@ MIfitCTHMM(miData, ...)
   userBounds = NULL,
   workBounds = NULL,
   betaCons = NULL,
-  betaRef = NULL,
   deltaCons = NULL,
   mvnCoords = NULL,
   stateNames = NULL,
@@ -57,6 +56,9 @@ MIfitCTHMM(miData, ...)
   angleCovs = NULL,
   altCoordNames = NULL,
   gradient = FALSE,
+  smoothGradient = FALSE,
+  weights = c(1/2, 1/8, 1/8, 1/8, 1/8),
+  scaleGrad = NULL,
   method = "IS",
   parIS = 1000,
   dfSim = Inf,
@@ -127,6 +129,9 @@ MIfitCTHMM(miData, ...)
   angleCovs = NULL,
   altCoordNames = NULL,
   gradient = FALSE,
+  smoothGradient = FALSE,
+  weights = c(1/2, 1/8, 1/8, 1/8, 1/8),
+  scaleGrad = NULL,
   method = "IS",
   parIS = 1000,
   dfSim = Inf,
@@ -227,8 +232,6 @@ distribution parameters for each data stream. See \code{\link{fitCTHMM}}.}
 
 \item{betaCons}{Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See \code{\link{fitCTHMM}}.}
 
-\item{betaRef}{Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. See \code{\link{fitCTHMM}}.}
-
 \item{deltaCons}{Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}. See \code{\link{fitCTHMM}}.}
 
 \item{mvnCoords}{Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, 
@@ -274,7 +277,13 @@ See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwDat
 
 \item{altCoordNames}{Character string indicating an alternative name for the returned location data. See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.}
 
-\item{gradient}{Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. See \code{\link{prepData}}.}
+\item{gradient}{Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object. See \code{\link{prepData}}. Default: \code{FALSE}.}
+
+\item{smoothGradient}{Logical indicating whether or not to calculate smoothed gradients. See \code{\link{addSmoothGradient}}. Ignored unless \code{gradient=TRUE}. Default: \code{FALSE}.}
+
+\item{weights}{Numeric vector indicating the weight for the points in a smoothed version of the gradient. See \code{\link{addSmoothGradient}}. Ignored unless \code{smoothGradient=TRUE}. Default: \code{c(1/2, 1/8, 1/8, 1/8, 1/8)}.}
+
+\item{scaleGrad}{Numeric scalar indicating the distance from the observed location to each smoothing point (before adjusting by time step). See \code{\link{addSmoothGradient}}. Ignored unless \code{smoothGradient=TRUE}.}
 
 \item{method}{Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 

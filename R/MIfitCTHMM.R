@@ -72,7 +72,6 @@ MIfitCTHMM <- function(miData, ...) {
 #' distribution parameters for each data stream. See \code{\link{fitCTHMM}}.
 #' @param workBounds An optional named list of 2-column matrices specifying bounds on the working scale of the probability distribution, transition probability, and initial distribution parameters. See \code{\link{fitCTHMM}}.
 #' @param betaCons Matrix of the same dimension as \code{beta0} composed of integers identifying any equality constraints among the t.p.m. parameters. See \code{\link{fitCTHMM}}.
-#' @param betaRef Numeric vector of length \code{nbStates} indicating the reference elements for the t.p.m. multinomial logit link. See \code{\link{fitCTHMM}}. 
 #' @param deltaCons Matrix of the same dimension as \code{delta0} composed of integers identifying any equality constraints among the initial distribution working scale parameters. Ignored unless a formula is provided in \code{formulaDelta}. See \code{\link{fitCTHMM}}.
 #' @param mvnCoords Character string indicating the name of location data that are to be modeled using a multivariate normal distribution. For example, if \code{mu="mvnorm2"} was included in \code{dist} and (mu.x, mu.y) are location data, 
 #' then \code{mvnCoords="mu"} needs to be specified in order for these data to be properly treated as locations in functions such as \code{\link{plot.momentuHMM}}, \code{\link{plot.miSum}}, \code{\link{plot.miHMM}}, \code{\link{plotSpatialCov}}, and \code{\link{MIpool}}.
@@ -100,7 +99,10 @@ MIfitCTHMM <- function(miData, ...) {
 #' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{miData$crwPredict} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 #' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.
 #' @param altCoordNames Character string indicating an alternative name for the returned location data. See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.
-#' @param gradient Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. See \code{\link{prepData}}.
+#' @param gradient Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object. See \code{\link{prepData}}. Default: \code{FALSE}. 
+#' @param smoothGradient Logical indicating whether or not to calculate smoothed gradients. See \code{\link{addSmoothGradient}}. Ignored unless \code{gradient=TRUE}. Default: \code{FALSE}.
+#' @param weights Numeric vector indicating the weight for the points in a smoothed version of the gradient. See \code{\link{addSmoothGradient}}. Ignored unless \code{smoothGradient=TRUE}. Default: \code{c(1/2, 1/8, 1/8, 1/8, 1/8)}.
+#' @param scaleGrad Numeric scalar indicating the distance from the observed location to each smoothing point (before adjusting by time step). See \code{\link{addSmoothGradient}}. Ignored unless \code{smoothGradient=TRUE}. 
 #' @param method Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param parIS Size of the parameter importance sample. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param dfSim Degrees of freedom for the t approximation to the parameter posterior. See 'df' argument in \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
@@ -164,9 +166,9 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
                    estAngleMean = NULL, circularAngleMean = NULL,
                    formula = ~1, formulaDelta = NULL, stationary = FALSE, mixtures = 1, formulaPi = NULL,
                    nlmPar = NULL, fit = TRUE, useInitial = FALSE,
-                   DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL, betaRef = NULL, deltaCons = NULL,
+                   DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL, deltaCons = NULL,
                    mvnCoords = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL, kappa = Inf,
-                   covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL, gradient=FALSE,
+                   covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL, gradient=FALSE, smoothGradient = FALSE, weights = c(1/2, 1/8, 1/8, 1/8, 1/8), scaleGrad = NULL,
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
                    fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, export = NULL,
                    rast, directions=4, zero.idx=integer(), interpMethod="ShortestPath",
@@ -301,6 +303,8 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
         if(missing(rast)) stop('argument "rast" is missing, with no default')
       } else rast <- NULL
       
+      if(smoothGradient && !gradient) stop("Smoothed gradients cannot be calculated unless gradient=TRUE")
+      
       if(ncores>1) {
         message("Drawing imputations in parallel... ",sep="")
         progBar(0, nSims)
@@ -319,6 +323,9 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
           if(!CTDS){
             df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",Time.name,tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
             pD <- tryCatch(suppressMessages(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient)),error=function(e) e)
+            if(smoothGradient && !inherits(pD,"error")){
+              pD <- tryCatch(suppressMessages(addSmoothGradient(pD,Time.name=Time.name,Time.unit=Time.unit,spatialCovs=spatialCovs,weights=weights,scale=scaleGrad)),error=function(e) e)
+            }
           } else {
             df<-data.frame(x=locs$mu.x,y=locs$mu.y,time=predData[[Time.name]],predData[,c("ID",tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
             pD <- tryCatch(prepCTDS(df, Time.unit=Time.unit, rast=rast, directions=directions, zero.idx=zero.idx, interpMethod=interpMethod,
@@ -365,7 +372,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
     Par0[1:nSims]<-list(tmpPar0)
   } else if(length(Par0)<nSims) stop("Par0 must be a list of length >=",nSims)
   
-  newForm <- newFormulas(formula,nbStates,betaRef)
+  newForm <- newFormulas(formula,nbStates,betaRef=1:nbStates)
   recharge <- newForm$recharge
   
   if(is.null(recharge) & mixtures==1){
@@ -398,7 +405,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
   test<-fitCTHMM.momentuHMMData(miData[[ind[1]]],Time.name,Time.unit,nbStates, dist, Par0[[ind[1]]], beta0[[ind[1]]], delta0[[ind[1]]],
            estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi,
            nlmPar, fit = FALSE, DM,
-           userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[ind[1]]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName)
+           userBounds, workBounds, betaCons, deltaCons, mvnCoords, stateNames, knownStates[[ind[1]]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName)
   
   # fit HMM(s)
   fits <- list()
@@ -412,7 +419,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
     fits[[1]]<-suppressMessages(fitCTHMM.momentuHMMData(miData[[1]], Time.name, Time.unit, nbStates, dist, Par0[[1]], beta0[[1]], delta0[[1]],
                                     estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi,
                                     nlmPar, fit, DM,
-                                    userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[1]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName, kappa))
+                                    userBounds, workBounds, betaCons, deltaCons, mvnCoords, stateNames, knownStates[[1]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName, kappa))
     if(retryFits>=1){
       cat("\n")
     }
@@ -446,7 +453,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
       tmpFit<-suppressMessages(fitCTHMM(mD, Time.name, Time.unit, nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
                                       estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi,
                                       nlmPar, fit, DM,
-                                      userBounds, workBounds, betaCons, betaRef, deltaCons, mvnCoords, stateNames, knownStates[[j]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName, kappa))
+                                      userBounds, workBounds, betaCons, deltaCons, mvnCoords, stateNames, knownStates[[j]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName, kappa))
       if(retryFits>=1) cat("\n")
       tmpFit
     } 
@@ -498,7 +505,7 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
                        nlmPar = NULL, fit = TRUE, useInitial = FALSE,
                        DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL, deltaCons = NULL,
                        mvnCoords = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL, kappa = Inf,
-                       covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL, gradient=FALSE,
+                       covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL, gradient=FALSE, smoothGradient = FALSE, weights = c(1/2, 1/8, 1/8, 1/8, 1/8), scaleGrad = NULL,
                        method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
                        fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, export = NULL,
                        rast, directions=4, zero.idx=integer(), interpMethod="ShortestPath",
@@ -603,6 +610,8 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
         if(missing(rast)) stop('argument "rast" is missing, with no default')
       } else rast <- NULL
       
+      if(smoothGradient && !gradient) stop("Smoothed gradients cannot be calculated unless gradient=TRUE")
+      
       if(ncores>1) {
         message("Drawing imputations in parallel... ",sep="")
         progBar(0, nSims)
@@ -630,6 +639,9 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
                               df$locType <- NULL
                               if(!CTDS){
                                 pD <- tryCatch(suppressMessages(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient,hierLevels=levels(predData$level),coordLevel=attr(predData,"coordLevel"))),error=function(e) e)
+                                if(smoothGradient && !inherits(pD,"error")){
+                                  pD <- tryCatch(suppressMessages(addSmoothGradient(pD,spatialCovs=spatialCovs,weights=weights,scale=scaleGrad)),error=function(e) e)
+                                }
                               } else {
                                 # fill in NA locations for other levels
                                 coordLevel <- attr(predData,"coordLevel")

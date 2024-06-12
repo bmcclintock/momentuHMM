@@ -53,6 +53,9 @@ MIfitHMM(miData, ...)
   angleCovs = NULL,
   altCoordNames = NULL,
   gradient = FALSE,
+  smoothGradient = FALSE,
+  weights = c(1/2, 1/8, 1/8, 1/8, 1/8),
+  scaleGrad = NULL,
   method = "IS",
   parIS = 1000,
   dfSim = Inf,
@@ -111,6 +114,9 @@ MIfitHMM(miData, ...)
   angleCovs = NULL,
   altCoordNames = NULL,
   gradient = FALSE,
+  smoothGradient = FALSE,
+  weights = c(1/2, 1/8, 1/8, 1/8, 1/8),
+  scaleGrad = NULL,
   method = "IS",
   parIS = 1000,
   dfSim = Inf,
@@ -242,7 +248,13 @@ See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwDat
 
 \item{altCoordNames}{Character string indicating an alternative name for the returned location data. See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.}
 
-\item{gradient}{Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. See \code{\link{prepData}}.}
+\item{gradient}{Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object. See \code{\link{prepData}}. Default: \code{FALSE}.}
+
+\item{smoothGradient}{Logical indicating whether or not to calculate smoothed gradients. See \code{\link{addSmoothGradient}}. Ignored unless \code{gradient=TRUE}. Default: \code{FALSE}.}
+
+\item{weights}{Numeric vector indicating the weight for the points in a smoothed version of the gradient. See \code{\link{addSmoothGradient}}. Ignored unless \code{smoothGradient=TRUE}. Default: \code{c(1/2, 1/8, 1/8, 1/8, 1/8)}.}
+
+\item{scaleGrad}{Numeric scalar indicating the distance from the observed location to each smoothing point. See \code{\link{addSmoothGradient}}. Ignored unless \code{smoothGradient=TRUE}.}
 
 \item{method}{Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.}
 

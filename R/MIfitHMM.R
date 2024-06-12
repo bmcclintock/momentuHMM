@@ -95,7 +95,10 @@ MIfitHMM <- function(miData, ...) {
 #' @param angleCovs Character vector indicating the names of any circular-circular regression angular covariates in \code{miData$crwPredict} that need conversion from standard direction (in radians relative to the x-axis) to turning angle (relative to previous movement direction) 
 #' See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.
 #' @param altCoordNames Character string indicating an alternative name for the returned location data. See \code{\link{prepData}}. Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object.
-#' @param gradient Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. See \code{\link{prepData}}.
+#' @param gradient Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Ignored unless \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object. See \code{\link{prepData}}. Default: \code{FALSE}. 
+#' @param smoothGradient Logical indicating whether or not to calculate smoothed gradients. See \code{\link{addSmoothGradient}}. Ignored unless \code{gradient=TRUE}. Default: \code{FALSE}.
+#' @param weights Numeric vector indicating the weight for the points in a smoothed version of the gradient. See \code{\link{addSmoothGradient}}. Ignored unless \code{smoothGradient=TRUE}. Default: \code{c(1/2, 1/8, 1/8, 1/8, 1/8)}.
+#' @param scaleGrad Numeric scalar indicating the distance from the observed location to each smoothing point. See \code{\link{addSmoothGradient}}. Ignored unless \code{smoothGradient=TRUE}. 
 #' @param method Method for obtaining weights for movement parameter samples. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param parIS Size of the parameter importance sample. See \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
 #' @param dfSim Degrees of freedom for the t approximation to the parameter posterior. See 'df' argument in \code{\link[crawl]{crwSimulator}}. Ignored unless \code{miData} is a \code{\link{crwData}} object.
@@ -200,7 +203,7 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
                    nlmPar = NULL, fit = TRUE, useInitial = FALSE,
                    DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL, betaRef = NULL, deltaCons = NULL,
                    mvnCoords = NULL, stateNames = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
-                   covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL, gradient = FALSE,
+                   covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL, gradient = FALSE, smoothGradient = FALSE, weights = c(1/2, 1/8, 1/8, 1/8, 1/8), scaleGrad = NULL,
                    method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
                    fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, export=NULL, ...)
 {
@@ -331,6 +334,9 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
         message("Drawing imputations in parallel... ",sep="")
         progBar(0, nSims)
       }
+      
+      if(smoothGradient && !gradient) stop("Smoothed gradients cannot be calculated unless gradient=TRUE")
+      
       withCallingHandlers(miData<-
         foreach(j = 1:nSims, .export=c("crwPostIS","prepData"), .errorhandling="pass", .packages=pkgs) %dorng% {
           if(ncores==1) message("\rDrawing imputation ",j,"... ",sep="")
@@ -343,6 +349,9 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
           }
           df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",Time.name,tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
           pD <- tryCatch(suppressMessages(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient)),error=function(e) e)
+          if(smoothGradient && !inherits(pD,"error")){
+            pD <- tryCatch(suppressMessages(addSmoothGradient(pD,spatialCovs=spatialCovs,weights=weights,scale=scaleGrad)),error=function(e) e)
+          }
           return(pD)
         }
       ,warning=muffleRNGwarning)
@@ -512,7 +521,7 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                        nlmPar = NULL, fit = TRUE, useInitial = FALSE,
                        DM = NULL, userBounds = NULL, workBounds = NULL, betaCons = NULL, deltaCons = NULL,
                        mvnCoords = NULL, knownStates = NULL, fixPar = NULL, retryFits = 0, retrySD = NULL, optMethod = "nlm", control = list(), prior = NULL, modelName = NULL,
-                       covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL, gradient = FALSE,
+                       covNames = NULL, spatialCovs = NULL, centers = NULL, centroids = NULL, angleCovs = NULL, altCoordNames = NULL, gradient = FALSE, smoothGradient = FALSE, weights = c(1/2, 1/8, 1/8, 1/8, 1/8), scaleGrad = NULL,
                        method = "IS", parIS = 1000, dfSim = Inf, grid.eps = 1, crit = 2.5, scaleSim = 1, quad.ask = FALSE, force.quad = TRUE,
                        fullPost = TRUE, dfPostIS = Inf, scalePostIS = 1,thetaSamp = NULL, export = NULL, ...)
 {
@@ -610,6 +619,8 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
       if(ncores==1) cat("DONE\n")
       names(crwHierSim) <- ids
       
+      if(smoothGradient && !gradient) stop("Smoothed gradients cannot be calculated unless gradient=TRUE")
+      
       if(ncores>1){
         message("Drawing imputations in parallel... ",sep="")
         progBar(0, nSims)
@@ -635,6 +646,9 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
                               df[which(df$locType=="p"),"y"] <- locs[which(locs$locType=="p"),"y"]
                               df$locType <- NULL
                               pD <- tryCatch(suppressMessages(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient,hierLevels=levels(predData$level),coordLevel=attr(predData,"coordLevel"))),error=function(e) e)
+                              if(smoothGradient && !inherits(pD,"error")){
+                                pD <- tryCatch(suppressMessages(addSmoothGradient(pD,spatialCovs=spatialCovs,weights=weights,scale=scaleGrad)),error=function(e) e)
+                              }
                               return(pD)
                             }
                           ,warning=muffleRNGwarning)
