@@ -4359,9 +4359,6 @@ In order to fit this model, we must first load the data and format the covariate
                                                       \hlkwc{opt} \hlstd{=} \hlstr{"slope"}\hlstd{)),}
                                        \hlkwc{na.rm} \hlstd{= T)}
 
-\hlcom{# calculate gradient}
-\hlstd{D_scaled} \hlkwb{<-} \hlstd{ctmcmove}\hlopt{::}\hlkwd{rast.grad}\hlstd{(dist2sabie_scaled)}
-
 \hlcom{## W (recharge function covariates)}
 \hlcom{# near_sabie = indicator for <500m from water}
 \hlstd{intercept} \hlkwb{<-} \hlkwd{raster}\hlstd{(dist2sabie)}
@@ -4427,32 +4424,32 @@ Now we're ready to specify the recharge model. We'll first fit the model to the 
 \hlstd{spatialCovs} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{W_intercept} \hlstd{= W_ortho}\hlopt{$}\hlstd{svd1,}
                     \hlkwc{W_near_sabie} \hlstd{= W_ortho}\hlopt{$}\hlstd{svd2,}
                     \hlkwc{dist2sabie} \hlstd{= dist2sabie,}
-                    \hlkwc{D.x} \hlstd{= D_scaled}\hlopt{$}\hlstd{rast.grad.x,}
-                    \hlkwc{D.y} \hlstd{= D_scaled}\hlopt{$}\hlstd{rast.grad.y)}
+                    \hlkwc{D} \hlstd{= dist2sabie_scaled)}
 
 \hlcom{# best predicted track data}
 \hlstd{hmmData} \hlkwb{<-} \hlkwd{prepData}\hlstd{(crwOut,}
                     \hlkwc{spatialCovs} \hlstd{= spatialCovs,}
+                    \hlkwc{gradient} \hlstd{=} \hlnum{TRUE}\hlstd{,}
                     \hlkwc{altCoordNames} \hlstd{=} \hlstr{"mu"}\hlstd{)}
 \hlkwd{head}\hlstd{(hmmData[,}\hlkwd{c}\hlstd{(}\hlstr{"ID"}\hlstd{,}\hlstr{"time"}\hlstd{,} \hlstr{"mu.x"}\hlstd{,} \hlstr{"mu.y"}\hlstd{,}
                 \hlstr{"W_intercept"}\hlstd{,}\hlstr{"W_near_sabie"}\hlstd{,}\hlstr{"dist2sabie"}\hlstd{,}
                 \hlstr{"D.x"}\hlstd{,}\hlstr{"D.y"}\hlstd{)])}
 \end{alltt}
 \begin{verbatim}
-##   ID     time     mu.x     mu.y   W_intercept W_near_sabie dist2sabie
-## 1  1 313344.4 384560.8 -2770752 -0.0001873081 -0.003616337   1323.424
-## 2  1 313344.7 384560.3 -2770751 -0.0001873081 -0.003616337   1323.424
-## 3  1 313344.9 384559.8 -2770749 -0.0001873081 -0.003616337   1323.424
-## 4  1 313345.2 384559.3 -2770747 -0.0001873081 -0.003616337   1323.424
-## 5  1 313345.4 384559.1 -2770744 -0.0001873081 -0.003616337   1323.424
-## 6  1 313345.7 384559.1 -2770742 -0.0001873081 -0.003616337   1323.424
-##          D.x       D.y
-## 1 -0.8709203 0.2576337
-## 2 -0.8709203 0.2576337
-## 3 -0.8709203 0.2576337
-## 4 -0.8709203 0.2576337
-## 5 -0.8709203 0.2576337
-## 6 -0.8709203 0.2576337
+##   ID     time     mu.x     mu.y   W_intercept W_near_sabie dist2sabie       D.x
+## 1  1 313344.4 384560.8 -2770752 -0.0001873081 -0.003616337   1323.424 -1.228246
+## 2  1 313344.7 384560.3 -2770751 -0.0001873081 -0.003616337   1323.424 -1.227881
+## 3  1 313344.9 384559.8 -2770749 -0.0001873081 -0.003616337   1323.424 -1.227418
+## 4  1 313345.2 384559.3 -2770747 -0.0001873081 -0.003616337   1323.424 -1.226851
+## 5  1 313345.4 384559.1 -2770744 -0.0001873081 -0.003616337   1323.424 -1.226157
+## 6  1 313345.7 384559.1 -2770742 -0.0001873081 -0.003616337   1323.424 -1.225450
+##         D.y
+## 1 0.3505877
+## 2 0.3779253
+## 3 0.3777812
+## 4 0.3776649
+## 5 0.3776060
+## 6 0.3775941
 \end{verbatim}
 \begin{alltt}
 \hlstd{nbStates} \hlkwb{<-} \hlnum{2}
@@ -4582,7 +4579,7 @@ Now that we have our starting values (``bestPar''), let's fit $28$ imputations o
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlstd{buffaloFits} \hlkwb{<-} \hlkwd{MIfitHMM}\hlstd{(crwOut,} \hlkwc{nSims}\hlstd{=}\hlnum{28}\hlstd{,}
-                        \hlkwc{spatialCovs} \hlstd{= spatialCovs,}
+                        \hlkwc{spatialCovs} \hlstd{= spatialCovs,} \hlkwc{gradient} \hlstd{=} \hlnum{TRUE}\hlstd{,}
                         \hlkwc{mvnCoords}\hlstd{=}\hlstr{"mu"}\hlstd{,} \hlkwc{altCoordNames} \hlstd{=} \hlstr{"mu"}\hlstd{,}
                         \hlkwc{nbStates}\hlstd{=nbStates,} \hlkwc{dist}\hlstd{=dist,} \hlkwc{formula}\hlstd{=formula,}
                         \hlkwc{Par0}\hlstd{=bestPar}\hlopt{$}\hlstd{Par,} \hlkwc{beta0}\hlstd{=bestPar}\hlopt{$}\hlstd{beta,}
@@ -4601,7 +4598,7 @@ Now that we have our starting values (``bestPar''), let's fit $28$ imputations o
 \hlcom{# plot estimates and CIs for Pr(discharged) at each time step}
 \hlstd{trProbs} \hlkwb{<-} \hlkwd{getTrProbs}\hlstd{(buffaloFits,} \hlkwc{getCI}\hlstd{=}\hlnum{TRUE}\hlstd{)}
 \hlkwd{plot}\hlstd{(trProbs}\hlopt{$}\hlstd{est[}\hlnum{1}\hlstd{,}\hlnum{2}\hlstd{,],}\hlkwc{type}\hlstd{=}\hlstr{"l"}\hlstd{,} \hlkwc{ylim}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{),}
-     \hlkwc{ylab}\hlstd{=}\hlstr{"Pr(discharged)"}\hlstd{,} \hlkwc{xlab}\hlstd{=}\hlstr{"t"}\hlstd{,}
+     \hlkwc{ylab}\hlstd{=}\hlstr{"Pr(discharged)"}\hlstd{,} \hlkwc{xlab}\hlstd{=}\hlstr{"time step"}\hlstd{,}
      \hlkwc{col}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"#E69F00"}\hlstd{,} \hlstr{"#56B4E9"}\hlstd{)[buffaloFits}\hlopt{$}\hlstd{miSum}\hlopt{$}\hlstd{Par}\hlopt{$}\hlstd{states])}
 \hlkwd{arrows}\hlstd{(}\hlnum{1}\hlopt{:}\hlkwd{dim}\hlstd{(trProbs}\hlopt{$}\hlstd{est)[}\hlnum{3}\hlstd{],}
        \hlstd{trProbs}\hlopt{$}\hlstd{lower[}\hlnum{1}\hlstd{,}\hlnum{2}\hlstd{,],}
@@ -4614,8 +4611,8 @@ Now that we have our starting values (``bestPar''), let's fit $28$ imputations o
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-\noindent As in \cite{HootenEtAl2019}, we found that the buffalo spent a majority of time steps in the discharged state ($73$\%, 95\% CI: $70-76\%$) and thus needed to recharge regularly near water resources. With estimated $g_0=-0.27$ (95\% CI: $-0.75-0.2$), $\theta_1=1.43$ (95\% CI: $-0.61-3.48$), and $\theta_2=2.52$ (95\% CI: $1.47-3.57$), the estimated recharge function and transition probabilities (Figure \ref{fig:recharge}) look very similar to those reported by \cite{HootenEtAl2019}. However, \cite{HootenEtAl2019} found some evidence that the buffalo orients
-toward surface water when in the discharged state, but our discrete-time formulation did not find evidence of such biased movement ($\beta^\mu=0.88$, 95\% CI: $-3.2-4.96$). This difference could be attributable to several factors, including our formulation being in discrete time (instead of continuous time), our use of a 2-stage multiple imputation approach based on the CTCRW (instead of a single-stage model), and the absence of prior distributions in our non-Bayesian model. Nevertheless, inferences about recharge and state-switching dynamics are essentially the same between our discrete-time formulation and the continuous-time model of \cite{HootenEtAl2019}.
+\noindent As in \cite{HootenEtAl2019}, we found that the buffalo spent a majority of time steps in the discharged state ($73$\%, 95\% CI: $70-76\%$) and thus needed to recharge regularly near water resources. With estimated $g_0=-0.27$ (95\% CI: $-0.75-0.2$), $\theta_1=1.43$ (95\% CI: $-0.62-3.47$), and $\theta_2=2.52$ (95\% CI: $1.46-3.57$), the estimated recharge function and transition probabilities (Figure \ref{fig:recharge}) look very similar to those reported by \cite{HootenEtAl2019}. However, \cite{HootenEtAl2019} found some evidence that the buffalo orients
+toward surface water when in the discharged state, but our discrete-time formulation did not find evidence of such biased movement ($\beta^\mu=0.64$, 95\% CI: $-2.16-3.44$). This difference could be attributable to several factors, including our formulation being in discrete time (instead of continuous time), our use of a 2-stage multiple imputation approach based on the CTCRW (instead of a single-stage model), and the absence of prior distributions in our non-Bayesian model. Nevertheless, inferences about recharge and state-switching dynamics are essentially the same between our discrete-time formulation and the continuous-time model of \cite{HootenEtAl2019}.
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.9\textwidth]{plot_buffaloStates.pdf}\\

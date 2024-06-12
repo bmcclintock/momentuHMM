@@ -35,9 +35,9 @@ dev.off()
 for(plt in seq(1,17)[-c(1,2,9,10,12,13,15,16,17)])
   unlink(paste0("plot_elephantResults0",ifelse(plt>9,"","0"),plt,".pdf"))
 
-png(filename="elephant_plotSat.png",width=5,height=5,units="in",res=80)
-plotSat(data.frame(x=rawData$lon,y=rawData$lat),zoom=8,location=c(median(rawData$lon),median(rawData$lat)),ask=FALSE)
-dev.off()
+#png(filename="elephant_plotSat.png",width=5,height=5,units="in",res=80)
+#plotSat(data.frame(x=rawData$lon,y=rawData$lat),zoom=8,location=c(median(rawData$lon),median(rawData$lat)),ask=FALSE)
+#dev.off()
 
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
@@ -240,15 +240,15 @@ tmpData<-spTransform(tmpData,CRS="+proj=longlat +ellps=WGS84")
 png(file=paste0(getwd(),"/plot_harbourSeal.png"),width=7.25,height=5,units="in",res=84)
 par(mfrow=c(1,2))
 for(id in c(8,1)){
-  freqs<-miSum.ind$Par$states[hsData$ID==id]
-  x<-tmpData$x[which(hsData$ID==id)]
-  y<-tmpData$y[which(hsData$ID==id)]
+  freqs<-miSum.ind$Par$states[which(hsData$ID==id)]
+  x<-coordinates(tmpData)[which(hsData$ID==id),1]
+  y<-coordinates(tmpData)[which(hsData$ID==id),2]
   errorEllipse<-miSum.ind$errorEllipse[which(hsData$ID==id)]
   errorEllipse<-lapply(errorEllipse,function(x){x<-as.data.frame(x);
-                                                coordinates(x)<-c("x","y");
-                                                proj4string(x)<-CRS("+init=epsg:27700 +units=m");
-                                                x<-spTransform(x,CRS="+proj=longlat +ellps=WGS84");
-                                                as.data.frame(x)})
+  coordinates(x)<-c("x","y");
+  proj4string(x)<-CRS("+init=epsg:27700 +units=m");
+  x<-spTransform(x,CRS="+proj=longlat +ellps=WGS84");
+  as.data.frame(x)})
   
   #png(file=paste0(getwd(),"/plot_harbourSeal",id,".png"),width=5,height=7.25,units="in",res=90)
   plot(x,y,type="o",pch=20,cex=.5,xlab="longitude",ylab="latitude",cex.lab=0.8,cex.axis=.7)
@@ -287,9 +287,9 @@ append.RData(timeIn1,file=paste0(getwd(),"/vignette_inputs.RData"))
 append.RData(timeIn2,file=paste0(getwd(),"/vignette_inputs.RData"))
 #append.RData(m2,file=paste0(getwd(),"/vignette_inputs.RData"))
 #append.RData(newProj,file=paste0(getwd(),"/vignette_inputs.RData"))
-png(file=paste0(getwd(),"/plot_northernFulmarExample.png"),width=7.25,height=5,units="in",res=80)
-plotSat(m2,zoom=7,shape=c(17,1,17,1,17,1),size=2,col=rep(c("#E69F00", "#56B4E9", "#009E73"),each=2),stateNames=c("sea ARS","sea Transit","boat ARS","boat Transit","colony ARS","colony Transit"),projargs=newProj,ask=FALSE)
-dev.off()
+#png(file=paste0(getwd(),"/plot_northernFulmarExample.png"),width=7.25,height=5,units="in",res=80)
+#plotSat(m2,zoom=7,shape=c(17,1,17,1,17,1),size=2,col=rep(c("#E69F00", "#56B4E9", "#009E73"),each=2),stateNames=c("sea ARS","sea Transit","boat ARS","boat Transit","colony ARS","colony Transit"),projargs=newProj,ask=FALSE)
+#dev.off()
 
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
@@ -326,11 +326,11 @@ fitmix1_Par <- getPar(fitmix1)
 append.RData(fitmix1_Par,file=paste0(getwd(),"/vignette_inputs.RData"))
 Par0_mix2 <- getPar0(fitmix1,mixtures=2)
 Par0_mix2$beta$beta[1,] <- c(-2.26, -3.93, -0.58, 
-                              0.03, -2.25, -0.26, 
+                             0.03, -2.25, -0.26, 
                              -3.38, -4.79, -2.82, 
                              -1.06,  -3.3, -3.43)
 Par0_mix2$beta$beta[2,] <- c(-2.51, -3.32, -2.63, 
-                              0.03, -1.26, -0.12, 
+                             0.03, -1.26, -0.12, 
                              -96.8, -3.62, -1.75, 
                              -1.76, -2.14, -1.38)
 Par0_mix2$beta$pi <- c(0.73, 0.27)
@@ -409,7 +409,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ### buffalo recharge example
 ###################################################
 #source(paste0(getwd(),"/examples/buffaloExample.R"))
-load(paste0(example_wd,"buffaloExample.RData"))
+load(paste0(example_wd,"buffaloExample_gradCT.RData"))
 bufPar <- buffaloFits$miSum$Par$beta[c("mu","g0","theta")]
 bufPar$timeInStates <- buffaloFits$miSum$Par$timeInStates
 append.RData(bufPar,file=paste0(getwd(),"/vignette_inputs.RData"))
@@ -430,7 +430,7 @@ for(plt in c(1:10,12))
 pdf(file=paste0(getwd(),"/plot_buffaloResults.pdf"),width=8,height=3)
 par(mar=c(5,4,4,2)-c(0,0,2,1)) # bottom, left, top, right
 plot(trProbs$est[1,2,],type="l", 
-     ylim=c(0,1), ylab="Pr(discharged)", xlab="t", col=c("#E69F00", "#56B4E9")[buffaloFits$miSum$Par$states])
+     ylim=c(0,1), ylab="Pr(discharged)", xlab="time step", col=c("#E69F00", "#56B4E9")[buffaloFits$miSum$Par$states])
 arrows(1:dim(trProbs$est)[3],
        trProbs$lower[1,2,],
        1:dim(trProbs$est)[3],
@@ -438,6 +438,30 @@ arrows(1:dim(trProbs$est)[3],
        length=0.025, angle=90, code=3, col=c("#E69F00", "#56B4E9")[buffaloFits$miSum$Par$states], lwd=1.3)
 abline(h=0.5,lty=2)
 dev.off()
+
+#pdf(file=paste0(getwd(),"/plot_buffaloExampleCT%03d.pdf"),width=8,height=3,onefile = FALSE)
+#plot(buffaloFitsCT,plotCI=TRUE,legend.pos="bottom",ask=FALSE)
+#dev.off()
+
+#pdf(file="plot_buffaloStatesCT.pdf",width=7.5,height=5)
+#plotSpatialCov(buffaloFitsCT,dist2sabie)
+#dev.off()
+
+#for(plt in c(1:10,12))
+#  unlink(paste0("plot_buffaloExampleCT0",ifelse(plt>9,"","0"),plt,".pdf"))
+
+#pdf(file=paste0(getwd(),"/plot_buffaloResultsCT.pdf"),width=8,height=3)
+#par(mar=c(5,4,4,2)-c(0,0,2,1)) # bottom, left, top, right
+#plot(cumsum(diff(buffaloFitsCT$miSum$data$time)),trProbsCT$est[1,2,-1],type="l", 
+#     ylim=c(0,1), ylab="Pr(discharged)", xlab="t", col=c("#E69F00", "#56B4E9")[buffaloFitsCT$miSum$Par$states])
+#arrows(cumsum(diff(buffaloFitsCT$miSum$data$time)),
+#       trProbsCT$lower[1,2,-1],
+#       cumsum(diff(buffaloFitsCT$miSum$data$time)),
+#       trProbsCT$upper[1,2,-1],
+#       length=0.025, angle=90, code=3, col=c("#E69F00", "#56B4E9")[buffaloFitsCT$miSum$Par$states], lwd=1.3)
+#abline(h=0.5,lty=2)
+#dev.off()
+
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
 ###################################################
@@ -455,8 +479,10 @@ rm(list=ls()[-which(ls()=="example_wd")])
 ### Langevin example
 ###################################################
 load(paste0(example_wd,"langevinExample.RData"))
-library(patchwork)
+library(raster)
+library(viridis)
 library(ggplot2)
+library(patchwork)
 covnames <- c("bathy", "slope", "d2site")
 covplot <- list()
 for(i in 1:3) {

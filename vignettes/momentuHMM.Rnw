@@ -2783,7 +2783,7 @@ with recharge function
 where $w_j$ is the distance to nearest water indicator covariate at location ${\boldsymbol \mu}_j$. Thus the probability of being in the ``discharged'' state decreases as the recharge function $(g_t)$ increases. Note that there are no t.p.m. working parameter coefficients in Eq. \ref{eq:rechargeTPM1} and, because $\gamma_{11}=\gamma_{21}$ and $\gamma_{12}=\gamma_{22}$, the state switching in this model is not Markov (i.e., the state at time $t$ does not depend on the state at time $t-1$). 
 
 In order to fit this model, we must first load the data and format the covariate rasters:
-<<recharge-1, echo=TRUE, eval=TRUE, cache=TRUE, message=FALSE>>=
+<<recharge-1, echo=TRUE, eval=TRUE, cache=TRUE, message=FALSE, warning=FALSE>>=
 library(raster)
 
 ## download buffalo data
@@ -2801,9 +2801,6 @@ names(dist2sabie) <- "dist2sabie"
 dist2sabie_scaled <- dist2sabie / mean(values(terrain(dist2sabie, 
                                                       opt = "slope")), 
                                        na.rm = T)
-
-# calculate gradient
-D_scaled <- ctmcmove::rast.grad(dist2sabie_scaled)
 
 ## W (recharge function covariates)
 # near_sabie = indicator for <500m from water
@@ -2858,16 +2855,16 @@ crwOut <- crawlWrap(buffaloData,
 @
 
 Now we're ready to specify the recharge model. We'll first fit the model to the best predicted track from \verb|crawlWrap| and then use this model fit to specify starting values for a multiple imputation analysis:
-<<recharge-3, echo=TRUE, eval=TRUE, cache=TRUE, message=FALSE>>=
+<<recharge-3, echo=TRUE, eval=TRUE, cache=TRUE, message=FALSE, warning=FALSE>>=
 spatialCovs <- list(W_intercept = W_ortho$svd1,
                     W_near_sabie = W_ortho$svd2,
                     dist2sabie = dist2sabie,
-                    D.x = D_scaled$rast.grad.x,
-                    D.y = D_scaled$rast.grad.y)
+                    D = dist2sabie_scaled)
 
 # best predicted track data
 hmmData <- prepData(crwOut, 
                     spatialCovs = spatialCovs, 
+                    gradient = TRUE,
                     altCoordNames = "mu")
 head(hmmData[,c("ID","time", "mu.x", "mu.y",
                 "W_intercept","W_near_sabie","dist2sabie",
@@ -2968,7 +2965,7 @@ Now that we have our starting values (``bestPar''), let's fit $28$ imputations o
 <<recharge-4, echo=-1, eval=FALSE>>=
 set.seed(1,kind="Mersenne-Twister",normal.kind="Inversion")
 buffaloFits <- MIfitHMM(crwOut, nSims=28,
-                        spatialCovs = spatialCovs, 
+                        spatialCovs = spatialCovs, gradient = TRUE,
                         mvnCoords="mu", altCoordNames = "mu",
                         nbStates=nbStates, dist=dist, formula=formula,
                         Par0=bestPar$Par, beta0=bestPar$beta,
@@ -2987,7 +2984,7 @@ plotSpatialCov(buffaloFits,dist2sabie)
 # plot estimates and CIs for Pr(discharged) at each time step
 trProbs <- getTrProbs(buffaloFits, getCI=TRUE)
 plot(trProbs$est[1,2,],type="l", ylim=c(0,1), 
-     ylab="Pr(discharged)", xlab="t", 
+     ylab="Pr(discharged)", xlab="time step", 
      col=c("#E69F00", "#56B4E9")[buffaloFits$miSum$Par$states])
 arrows(1:dim(trProbs$est)[3],
        trProbs$lower[1,2,],
