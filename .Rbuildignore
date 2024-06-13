@@ -32,6 +32,9 @@ vignettes/master.bib
 vignettes/plot_buffaloExample011.pdf
 vignettes/plot_buffaloResults.pdf
 vignettes/plot_buffaloStates.pdf
+vignettes/plot_buffaloExampleCT011.pdf
+vignettes/plot_buffaloResultsCT.pdf
+vignettes/plot_buffaloStatesCT.pdf
 vignettes/plot_codExample001.pdf
 vignettes/plot_codExample002.pdf
 vignettes/plot_codStationary001.pdf

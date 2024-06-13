@@ -53,9 +53,9 @@ is on the natural (i.e., real) scale of the parameters. However, if \code{DM} is
 \code{Par} must be on the working (i.e., beta) scale of the parameters, and the length of \code{Par} must match the number 
 of columns in the design matrix. See details below.}
 
-\item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of initial values for the regression coefficients of the transition probabilities at each level of the hierarchy ('beta'). See \code{\link{fitHMM}}.}
+\item{hierBeta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of regression coefficients for the transition rates at each level of the hierarchy ('beta'). See \code{\link{fitCTHMM}}.}
 
-\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the matrix of initial values for the regression coefficients of the initial distribution at each level of the hierarchy ('delta'). See \code{\link{fitHMM}}.}
+\item{hierDelta}{A hierarchical data structure \code{\link[data.tree]{Node}} for the initial distribution at each level of the hierarchy ('delta'). See \code{\link{fitCTHMM}}.}
 
 \item{hierFormula}{A hierarchical formula structure for the transition probability covariates for each level of the hierarchy ('formula'). Default: \code{NULL} (only hierarchical-level effects, with no covariate effects).
 Any formula terms that are not state- or parameter-specific are included on all of the transition probabilities within a given level of the hierarchy. See details.}

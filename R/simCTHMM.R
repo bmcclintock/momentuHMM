@@ -13,7 +13,7 @@
 #' \code{Par} must be on the working (i.e., beta) scale of the parameters, and the length of \code{Par} must match the number 
 #' of columns in the design matrix. See details below.
 #' @param beta Matrix of regression parameters for the transition rates.
-#' @param delta Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}. If \code{formulaDelta} includes a formula, then \code{delta} must be specified
+#' @param delta Initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}. If \code{formulaDelta} includes a formula, then \code{delta} must be specified
 #' as a k x (\code{nbStates}-1) matrix, where k is the number of covariates and the columns correspond to states 2:\code{nbStates}. 
 #' @param formula Regression formula for the transition rate covariates. Default: \code{~1} (no covariate effect). In addition to allowing standard functions in R formulas
 #' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 

@@ -448,7 +448,7 @@ The generic \verb|plot| functions for \verb|momentuHMM| models (\verb|plot.momen
 Diagnostic tools include the calculation and plotting of pseudo-residuals \citep{ZucchiniEtAl2016} using the \verb|pseudoRes| and \verb|plotPR| functions, respectively. For discrete distributions (e.g.\ Bernoulli, Poisson), a continuity adjustment is used for calculating pseudo-residuals. Akaike's Information Criterion can be calculated for one or more models using the \verb|AIC.momentuHMM| function.
 
 \subsection{Simulation}
-The functions \verb|simData| (and \verb|simHierData|) can be used to simulate multivariate HMM (or HHMM) data from scratch or based on the estimated parameters of existing \verb|momentuHMM| or \verb|miSum| models.  The \verb|simData| and \verb|simHierData| arguments are very similar to those used for model specification in \verb|fitHMM| (e.g., \verb|dist|, \verb|hierDist|, \verb|DM|) and data preparation in \verb|prepData| (e.g., \verb|spatialCovs|, \verb|centers|), but they include additonal arguments, \verb|lambda| and \verb|errorEllipse|, for simulating location data subject to temporal irregularity and measurement error, respectively. The \verb|spatialCovs| argument allows for rasters of spatio-temporal covariate values to be utilized in simulation models, while the \verb|centers| argument allows activity centers to be incorporated. Thus \verb|simData| and \verb|simHierData| can be used to simulate more ecologically-realistic tracks (potentially subject to observation error) that can be useful for study design, power analyses, and assessing model performance. Goodness-of-fit can also be investigated by drawing simulated data sets from a fitted model and comparing them to observed properties of the data \citep{MoralesEtAl2004}. While \verb|simData| and \verb|simHierData| can be used for simulating tracks from fitted models, we note that it assumes the location data are Cartesian coordinates; the \verb|simData| and \verb|simHierData| functions are therefore not appropriate for simulating tracks from models that were fitted to unprojected (latitude and longitude) data.
+The functions \verb|simData| (and \verb|simHierData|) can be used to simulate multivariate HMM (or HHMM) data from scratch or based on the estimated parameters of existing \verb|momentuHMM| or \verb|miSum| models.  The \verb|simData| and \verb|simHierData| arguments are very similar to those used for model specification in \verb|fitHMM| (e.g., \verb|dist|, \verb|hierDist|, \verb|DM|) and data preparation in \verb|prepData| (e.g., \verb|spatialCovs|, \verb|centers|), but they include additional arguments, \verb|lambda| and \verb|errorEllipse|, for simulating location data subject to temporal irregularity and measurement error, respectively. The \verb|spatialCovs| argument allows for rasters of spatio-temporal covariate values to be utilized in simulation models, while the \verb|centers| argument allows activity centers to be incorporated. Thus \verb|simData| and \verb|simHierData| can be used to simulate more ecologically-realistic tracks (potentially subject to observation error) that can be useful for study design, power analyses, and assessing model performance. Goodness-of-fit can also be investigated by drawing simulated data sets from a fitted model and comparing them to observed properties of the data \citep{MoralesEtAl2004}. While \verb|simData| and \verb|simHierData| can be used for simulating tracks from fitted models, we note that it assumes the location data are Cartesian coordinates; the \verb|simData| and \verb|simHierData| functions are therefore not appropriate for simulating tracks from models that were fitted to unprojected (latitude and longitude) data.
 
 \subsection{Continuous-time hidden Markov models}
 The functions \verb|fitCTHMM| and \verb|MIfitCTHMM| can be used to fit continuous-time hidden Markov models \citep[e.g.][]{BladtSorensen2005,Jackson2011,ZucchiniEtAl2016}, where, for multivariate normal random walk (Table \ref{tab:multipdfs}) or Poisson (``\verb|pois|'') data streams, the data are modeled as a function of the time interval between observations $(\Delta_t)$. All other data stream distributions assume observations do not depend on $\Delta_t$, i.e., they are ``instantaneous'' and only depend on the state active at time $t$. Continuous-time models can be useful for modelling location or count data collected irregularly in time.  Continuous-time HMMs characterize the hidden state process by its infinitesimal generator matrix:
@@ -463,7 +463,23 @@ The functions \verb|fitCTHMM| and \verb|MIfitCTHMM| can be used to fit continuou
     \end{block}
     \end{blockarray},
 \end{equation}
-where $q_{i,j} \ge 0$ for $i \ne j$ and $q_{i,i}=\sum_{j \ne i} q_{i,j}$. For any time interval $\Delta_t>0$, the state transition probabilities from time $t$ to time $t+1$ can then be derived using the matrix exponential, $\boldsymbol{\Gamma}_t = \exp \left(\mathbf{Q} \Delta_t \right)$. These models can therefore still be fitted using the forward algorithm (Eq.\ \ref{eq:HMMlike}). In addition to model fitting, the \verb|simCTHMM| function can be used to simulate continuous-time HMMs, either ``from scratch'' or from a fitted model. All other utility functions in \verb|momentuHMM| (e.g. \verb|viterbi|, \verb|stateProbs|, \verb|pseudoRes|) can also be used for continuous-time models. Simulated or fitted continuous-time random walk models in \verb|momentuHMM| rely on an Euler-discretization scheme that requires $\Delta_t$ to be sufficiently small for this approximation to be accurate \citep[e.g.][]{MichelotEtAl2019}. For multistate continuous-time movement models, another important consideration is the so-called ``snapshot'' property \citep[e.g.][]{GlennieEtAl2021}. The snapshot property is violated when the observations depend on $\Delta_t$, and, therefore, the observed locations depend on the behavioral state sequence over the entire interval between times t and t + 1. \verb|momentuHMM| skirts around this issue by assuming $\Delta_t$ is reasonably small relative to the serial correlation in the state process. For this to be reasonably satisfied, an intuitive rule-of-thumb is $\Delta_t \le \frac{1}{\max_i\left(q_{i,i}\right)}$ for $i \in \{1,2,\ldots,N\}$ \citep{GlennieEtAl2021}. The continuous-time HMMs in \verb|momentuHMM| also assume any time-varying covariates are piece-wise constant between observations \citep[e.g.][]{Jackson2011}. %\verb|simCTHMM| further assumes that state transitions can only occur at the observation times. 
+where $q_{i,j} \ge 0$ for $i \ne j$ and $q_{i,i}=\sum_{j \ne i} q_{i,j}$. Because of these constraints on the state transition rates, the working parameters are specified on the log scale (instead of the logit scale as in discrete-time HMMs):
+\begin{equation}
+\label{eq:q}
+ q_{i,j} = \exp(\mathbf{X}\boldsymbol{\beta}_{i,j})
+\end{equation}
+for $i \ne j$, where $\mathbf{X}$ are the covariates and $\boldsymbol{\beta}_{i,j}$ are the corresponding working-scale coefficients for transitions from state $i$ to state $j$. For any time interval $\Delta_t>0$, the state transition probabilities from time $t$ to time $t+1$ can then be derived using the matrix exponential, $\boldsymbol{\Gamma}_t = \exp \left(\mathbf{Q} \Delta_t \right) = \sum_{r=0}^\infty \frac{\left(\mathbf{Q} \Delta_t\right)^r}{r!}$. These models can therefore still be fitted using the forward algorithm (Eq.\ \ref{eq:HMMlike}). All utility functions in \verb|momentuHMM| (e.g. \verb|viterbi|, \verb|stateProbs|, \verb|pseudoRes|) can also be used for continuous-time models. 
+
+The \verb|simCTHMM| function can be used to simulate continuous-time HMMs, either ``from scratch'' or from a fitted model. Simulating data in continuous time requires specification of the sampling rate for the (temporally-irregular) observations (via the \verb|lambda| argument, where $E(\Delta_t)=1/$\verb|lambda|), and, if covariates are included in the state transition rate matrix using the \verb|formula| argument, an upper bound for the transition rate out of any state (via the \verb|kappa| argument). The latter is required in order to propose times at which a state transition {\it could} occur \citep[][]{BlackwellEtAl2016,McClintockLander2024}. The \verb|kappa| argument can either be: 1) a list specifying how to calculate this upper bound based on the values of the covariates $(\mathbf{X})$ and their corresponding transition rate coefficients $(\boldsymbol{\beta})$ using Eq.\ \ref{eq:q} (see the \verb|simCTHMM| help file for additional details); or 2) a finite positive scalar. When \verb|kappa| is specified as a finite positive scalar, the working-scale coefficients are specified on the logit scale (instead of the log scale) and the transition rates are calculated as:
+\begin{equation}
+\label{eq:kappa}
+ q_{i,j} = \kappa \frac{\exp(\mathbf{X}\boldsymbol{\beta}_{i,j})}{1+\sum_{k \ne i}\exp(\mathbf{X}\boldsymbol{\beta}_{i,k})}
+\end{equation}
+for $i \ne j$, where $\kappa=$ \verb|kappa|, $\mathbf{X}$ are the covariates, and $\boldsymbol{\beta}$ are the corresponding coefficients. This ensures that the transition rate from state $i$ to state $j$ cannot exceed $\kappa$.
+
+Although not required, \verb|kappa| can also be specified as a finite positive scalar when fitting models with \verb|fitCTHMM| or \verb|MIfitCTHMM|. This can help avoid numerical issues during model fitting and is useful when fitting data simulated under Eq.\ \ref{eq:kappa} to ensure the working-scale state transition coefficients (\verb|beta| in \verb|simCTHMM| and \verb|beta0| in \verb|fitCTHMM|) are on the same scale. When \verb|kappa| is specified as a finite positive scalar in \verb|fitCTHMM| or \verb|MIfitCTHMM|, Eq.\ \ref{eq:kappa} is used instead of Eq.\ \ref{eq:q}.
+
+Importantly, simulated or fitted continuous-time random walk models in \verb|momentuHMM| rely on an Euler-discretization scheme that requires $\Delta_t$ to be sufficiently small for this approximation to be accurate \citep[e.g.][]{MichelotEtAl2019,McClintockLander2024}. For multistate continuous-time movement models, another important consideration is the so-called ``snapshot'' property \citep[e.g.][]{GlennieEtAl2021}. The snapshot property is violated when the observations depend on $\Delta_t$, and, therefore, the observed locations depend on the behavioral state sequence over the entire interval between times t and t + 1. \verb|momentuHMM| skirts around this issue by assuming $\Delta_t$ is reasonably small (i.e. \verb|lambda| is reasonably large) relative to the serial correlation in the state process \citep[e.g.][]{McClintockLander2024}. For this to be reasonably satisfied, an intuitive rule-of-thumb is $\Delta_t \le \frac{1}{\max_i\left(q_{i,i}\right)}$ (i.e. \verb|lambda| $\ge \max_i\left(q_{i,i}\right)$) for $i \in \{1,2,\ldots,N\}$ \citep[][]{GlennieEtAl2021}. The continuous-time HMMs in \verb|momentuHMM| also assume any time-varying covariates are piece-wise constant between observations \citep[e.g.][]{Jackson2011}. %\verb|simCTHMM| further assumes that state transitions can only occur at the observation times. 
 One particularly useful continuous-time movement model is the habitat-driven Langevin diffusion of \citet{MichelotEtAl2019}; we demonstrate how to fit their model using \verb|momentuHMM| in section \ref{sec:langevin}.
   
 \section{Examples}
@@ -2767,7 +2783,7 @@ Here we demonstrate how to fit a discrete-time version of the African buffalo re
 \begin{equation*}
   {\boldsymbol \mu}_t \mid S_t=s \sim \mathcal{N}\left( {\boldsymbol \mu}_{t-1}+D({\boldsymbol \mu}_{t-1}){\boldsymbol \beta}^\mu I(s=2),\sigma_s^2 {\mathbf I} \right),
 \end{equation*}
-where $I()$ is the indicator function, $\mathbf I$ is a $2 \times 2$ identity matrix, and $D({\boldsymbol \mu}_t)$ is the negative gradient of $d$ evaluated at location ${\boldsymbol \mu}_t$. %$-\left(\frac{\partial d}{\partial x}, \frac{\partial d}{\partial y}\right)$
+where $I()$ is the indicator function, $\mathbf I$ is a $2 \times 2$ identity matrix, and $D({\boldsymbol \mu}_t)$ is the gradient of $d$ evaluated at location ${\boldsymbol \mu}_t$. %$-\left(\frac{\partial d}{\partial x}, \frac{\partial d}{\partial y}\right)$
 Thus when the animal is in the charged state (i.e. $S_t=1$), the movement model is a simple random walk. When the animal is in the discharged state (i.e. $S_t=2$), the movement model includes a potential function surface based on distance to nearest surface water \citep[for more on potential functions see][and sections \ref{sec:turtle} and \ref{sec:avoidLand}]{BrillingerEtAl2012,HootenEtAl2017,HootenEtAl2019}. In terms of $\Gamma^{(t)}$, the model for the state-switching dynamics is simply:
 \begin{equation}
   {\mathbf \Gamma^{(t)}} = \begin{bmatrix}
@@ -2866,6 +2882,7 @@ hmmData <- prepData(crwOut,
                     spatialCovs = spatialCovs, 
                     gradient = TRUE,
                     altCoordNames = "mu")
+
 head(hmmData[,c("ID","time", "mu.x", "mu.y",
                 "W_intercept","W_near_sabie","dist2sabie",
                 "D.x","D.y")])
@@ -2948,7 +2965,7 @@ buffaloFit <- fitHMM(hmmData, nbStates = nbStates, dist = dist,
 # extract starting values
 bestPar <- getPar(buffaloFit)
 @
-\noindent There are several things worth noting in the code above. When specifying normal random walk models using a pseudo-design matrix, we must include terms for the previous location in \verb|mean.x| and \verb|mean.y| (in this case ``mu.x\_tm1'' and ``mu.y\_tm1'', respectively), and we'll typically fix the corresponding coeffcients to $1$ using \verb|fixPar|. As in \cite{HootenEtAl2019}, we assume that the coefficients for the negative gradient $(D)$ are equal in the x- and y-directions (i.e., $\beta^\mu_x = \beta^\mu_y$; this constraint is specified in the third column of \verb|DM| above) and that the state-dependent \verb|sd.x| and \verb|sd.y| are equal. Similar to random effects models (section \ref{sec:pilotWhale}), note that for recharge models \verb|beta0| must now be specified as a list (consisting of objects named \verb|beta|, \verb|g0|, and/or \verb|theta|). \cite{HootenEtAl2019} assumed state transitions were non-Markov (Eq. \ref{eq:rechargeTPM1}), and we can accomplish this by setting the reference states for the t.p.m. working scale parameters to state 1 (i.e., \verb|betaRef <- c(1,1)|) and setting the columns within each row to be equal (i.e., \verb|betaCons <- matrix(c(1,2),2,2)|). With \verb|formula <- ~ recharge(g0 = ~1, theta = ~W_intercept+W_near_sabie)|, the resulting state transition probability matrix at time $t$ is:
+\noindent There are several things worth noting in the code above. Setting \verb|gradient=TRUE| in \verb|prepData| results in the gradients for all covariates in \verb|spatialCovs| to be calculated and returned in both the easting (with ``\verb|.x|'' suffix) and northing (``\verb|.y|'' suffix) directions. When specifying normal random walk models using a pseudo-design matrix, we must include terms for the previous location in \verb|mean.x| and \verb|mean.y| (in this case ``mu.x\_tm1'' and ``mu.y\_tm1'', respectively), and we'll typically fix the corresponding coeffcients to $1$ using \verb|fixPar|. As in \cite{HootenEtAl2019}, we assume that the coefficients for the gradient $(D)$ are equal in the x- and y-directions (i.e., $\beta^\mu_x = \beta^\mu_y$; this constraint is specified in the third column of \verb|DM| above) and that the state-dependent \verb|sd.x| and \verb|sd.y| are equal. Similar to random effects models (section \ref{sec:pilotWhale}), note that for recharge models \verb|beta0| must now be specified as a list (consisting of objects named \verb|beta|, \verb|g0|, and/or \verb|theta|). \cite{HootenEtAl2019} assumed state transitions were non-Markov (Eq. \ref{eq:rechargeTPM1}), and we can accomplish this by setting the reference states for the t.p.m. working scale parameters to state 1 (i.e., \verb|betaRef <- c(1,1)|) and setting the columns within each row to be equal (i.e., \verb|betaCons <- matrix(c(1,2),2,2)|). With \verb|formula <- ~ recharge(g0 = ~1, theta = ~W_intercept+W_near_sabie)|, the resulting state transition probability matrix at time $t$ is:
 \begin{equation*}
   {\mathbf \Gamma^{(t)}} = \begin{bmatrix}
     \frac{1}{(1+\exp(\beta_0+g_t\beta_1))} & \frac{\exp(\beta_0+g_t\beta_1)}{(1+\exp(\beta_0+g_t\beta_1))}  \\
@@ -3015,38 +3032,29 @@ boundary[boundary>0] <- NA
 boundary <- raster::distance(boundary)
 names(boundary) <- "boundary"
 @
-Next we'll calculate the gradients of the potential function surface in the x- and y-directions using \verb|ctmcmove::rast.grad|:
-<<landConstraint-2, echo=TRUE, eval=FALSE>>=
-# boundary needs to have a CRS for ctmcmove::rast.grad
-proj4string(boundary) <- sp::CRS("+init=epsg:6328") 
 
-# compute gradients in x- and y- directions
-grad <- ctmcmove::rast.grad(boundary)
-grad.x <- grad$rast.grad.x
-grad.y <- grad$rast.grad.y 
-@
-Now we're ready to simulate our bivariate normal random walk model including the gradients as covariates:
+Now we're ready to simulate our bivariate normal random walk model including the gradients of the potential function surface in the x- and y-directions as covariates:
 <<landConstraint-3, echo=TRUE, eval=FALSE>>=
 dist <- list(mu="rw_mvnorm2") # bivariate normal random walk
-DM <- list(mu=list(mean.x=~mu.x_tm1+crw(mu.x_tm1,lag=1)+grad.x, 
-                   mean.y=~mu.y_tm1+crw(mu.y_tm1,lag=1)+grad.y, 
+DM <- list(mu=list(mean.x=~mu.x_tm1+crw(mu.x_tm1,lag=1)+boundary.x, 
+                   mean.y=~mu.y_tm1+crw(mu.y_tm1,lag=1)+boundary.y, 
                    sd.x=~1,
                    sd.y=~1,
                    corr.xy=~1))
 
 # specify parameters on working parameter scale
 Par <- list(mu=c(1,0.75,-1500,1,0.75,-1500,log(sqrt(100000)),log(sqrt(100000)),0))
-names(Par$mu) <- c("mu.x_tm1","crw(mu.x_tm1,lag=1)","grad.x",
-                   "mu.y_tm1","crw(mu.y_tm1,lag=1)","grad.y",
+names(Par$mu) <- c("mu.x_tm1","crw(mu.x_tm1,lag=1)","boundary.x",
+                   "mu.y_tm1","crw(mu.y_tm1,lag=1)","boundary.y",
                    "sd.x","sd.y","corr.xy")
 
 # simulate and plot
 simBound <- simData(nbStates=1, obsPerAnimal = 10000, dist=dist, Par=Par, 
-                    DM=DM, spatialCovs=list(grad.x = grad.x,
-                                            grad.y = grad.y), 
+                    DM=DM, spatialCovs=list(boundary = boundary), 
+                    gradient = TRUE,
                     mvnCoords="mu", initialPosition=c(25000,75000))
 plot(simBound,dataNames=c("mu.x","mu.y"),ask=FALSE)
-plot(boundary$boundary)
+plot(boundary)
 points(simBound$mu.x,simBound$mu.y,type="l")
 @
 \begin{figure}[htbp]
@@ -3055,7 +3063,7 @@ points(simBound$mu.x,simBound$mu.y,type="l")
   \caption{Simulated track from a bivariate normal random walk model with movements repulsed from ``land'' using a potential function.}
   \label{fig:landConstraint}
 \end{figure}
-The model specified in \verb|DM| is identical to Eq. \ref{eq:potFun}, except we have replaced the ocean surface current velocities with the gradients for shortest distance to water in the x- and y-directions (\verb|grad.x| and \verb|grad.y|, respectively). As we can see in Figure \ref{fig:landConstraint}, the track is repelled from ``land'' and tends to stay in the ``water''. This strong attraction to water owes to the large negative values for the coefficients corresponding to \verb|grad.x| and \verb|grad.y|. 
+Note that by setting \verb|gradient=TRUE| in \verb|simData|, the gradients are calculated and returned for the \verb|boundary| raster covariate. The model specified in \verb|DM| is identical to Eq. \ref{eq:potFun}, except we have replaced the ocean surface current velocities with the gradients for shortest distance to water in the x- and y-directions (\verb|boundary.x| and \verb|boundary.y|, respectively). As we can see in Figure \ref{fig:landConstraint}, the track is repelled from ``land'' and tends to stay in the ``water''. This strong attraction to water owes to the large negative values for the coefficients corresponding to \verb|boundary.x| and \verb|boundary.y|. 
 
 \subsection{Habitat-driven Langevin diffusion}
 \label{sec:langevin}
@@ -3231,7 +3239,7 @@ p3 + scale_fill_viridis(name=expression(log(pi)))
 \includegraphics[width=1\textwidth]{plot_simLangevin.png}
 \caption{Simulated Steller sea lion tracks from the fitted Langevin model.}
 \end{figure}
-\noindent For an application of a multistate version of this model using \verb|momentuHMM|, see \citet{McClintockLander2022}.
+\noindent For an application of a multistate version of this model using \verb|momentuHMM|, see \citet{McClintockLander2024}.
 
 \section{Discussion}
 Here we have introduced version \Sexpr{installed.packages()["momentuHMM","Version"]} of the R package \verb|momentuHMM| and demonstrated some of its capabilities for conducting multivariate HMM analyses with animal location, auxiliary biotelemetry, and environmental data. The package allows for fitting (and simulating from) a suite of biased and correlated random walk movement process models \citep[e.g.][]{McClintockEtAl2012}, can be used for an unlimited number of data streams and latent behavior states, includes multiple imputation methods to account for measurement error, temporal irregularity, and other forms of missing data that would otherwise be prohibitive to maximum likelihood analysis, and integrates seamlessly with rasters to facilitate spatio-temporal covariate modelling. Because the package incorporates biased random walks, it can also be used to implement group dynamic models \cite[e.g.][]{LangrockEtAl2014}. The package therefore greatly expands on available software and facilitates the incorporation of more ecological and behavioral realism for hypothesis-driven analyses of animal movement that account for many of the challenges commonly associated with telemetry data. While many of the features of \verb|momentuHMM| were motivated by animal movement data, we note that the package is not limited to location data and can be used for analyzing any type of data that is amenable to (multivariate) HMMs.

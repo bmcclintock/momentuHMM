@@ -20,7 +20,7 @@
 #' of columns in the design matrix. See details below.
 #' @param beta Matrix of regression parameters for the transition probabilities (more information
 #' in "Details").
-#' @param delta Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}. If \code{formulaDelta} includes a formula, then \code{delta} must be specified
+#' @param delta Initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}. If \code{formulaDelta} includes a formula, then \code{delta} must be specified
 #' as a k x (\code{nbStates}-1) matrix, where k is the number of covariates and the columns correspond to states 2:\code{nbStates}. See details below.
 #' @param formula Regression formula for the transition probability covariates. Default: \code{~1} (no covariate effect). In addition to allowing standard functions in R formulas
 #' (e.g., \code{cos(cov)}, \code{cov1*cov2}, \code{I(cov^2)}), special functions include \code{cosinor(cov,period)} for modeling cyclical patterns, spline functions 
@@ -1585,14 +1585,14 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                   rm(fullSpatialCov)
                 }
               }
-            } else message("\n        Calculating max transition rate based on no covariates for individual ",zoo,"...")
+            } #else message("\n        Calculating max transition rate based on no covariates for individual ",zoo,"...")
           } else stop("kappa must be specified as a positive finite value for recharge models")
           fullQ <- tryCatch(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], mm, betaRef, TRUE, 0, aInd=1,rateMatrix=TRUE,kappa=maxRate),error=function(e) e) # diag(nbStates)
           if(inherits(fullQ,"error") || any(!is.finite(fullQ))){
             stop("Max transition rate could not be calculated for individual ",zoo,": ",ifelse(inherits(fullQ,"error"),fullQ,"rate(s) not finite"))
           }
           kappa <- max(abs(fullQ)) # upper bound for transitions away from current state
-          message("          => kappa = ",round(kappa,2),"\n")
+          if(qInd) message("          => max rate = ",round(kappa,2),"\n")
         } else {
           fullQ <- tryCatch(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], mm, betaRef, TRUE, 0, aInd=1,rateMatrix=TRUE,kappa=maxRate),error=function(e) e) # diag(nbStates)
           if(inherits(fullQ,"error") || any(!is.finite(fullQ))){
@@ -1960,7 +1960,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                 warning("Transition rate sum for individual ",zoo," exceeds kappa -- terminating at observation ",k,": qsum = ",qsum," and kappa = ",kappa," -- please report to brett.mcclintock@noaa")
                 break;
               }
-              
+              print(c(zoo,k,qsum,kappa,qsum/kappa,maxRate))
               if(runif(1) < qsum/kappa){
                 if (nbStates > 2) {
                   probs <- Qmat[Z[k], -Z[k]]/qsum

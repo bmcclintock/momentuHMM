@@ -57,7 +57,7 @@ of columns in the design matrix. See details below.}
 
 \item{beta}{Matrix of regression parameters for the transition rates.}
 
-\item{delta}{Initial value for the initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}. If \code{formulaDelta} includes a formula, then \code{delta} must be specified
+\item{delta}{Initial distribution of the HMM. Default: \code{rep(1/nbStates,nbStates)}. If \code{formulaDelta} includes a formula, then \code{delta} must be specified
 as a k x (\code{nbStates}-1) matrix, where k is the number of covariates and the columns correspond to states 2:\code{nbStates}.}
 
 \item{formula}{Regression formula for the transition rate covariates. Default: \code{~1} (no covariate effect). In addition to allowing standard functions in R formulas
