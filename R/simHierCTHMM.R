@@ -52,7 +52,7 @@
 #' Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
 #' \code{obsPerLevel}, \code{states}, \code{initialPosition}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
 #' \code{covs}, and \code{spatialCovs}. It is not appropriate to simulate movement data from a \code{model} that was fitted to latitude/longitude data (because \code{simHierCTHMM} assumes Cartesian coordinates).
-#' @param matchModelObs If \code{model} is provided, logical indicating whether to match \code{nbAnimals}, \code{obsPerLevel}, and observation times to the fitted model data. If \code{TRUE}, then \code{nbAnimals}, \code{obsPerLevel}, and \code{lambda} are ignored. Default: \code{TRUE}.
+#' @param matchModelObs If \code{model} is provided, logical indicating whether to match \code{nbAnimals}, \code{obsPerAnimal}, and observation times to the fitted model data. If \code{TRUE}, then \code{nbAnimals}, \code{obsPerAnimal}, and \code{lambda} are ignored. Furthermore, if \code{TRUE} and \code{initialPosition} is not compatible with any \code{spatialCovs}, then the initial position for each animal from the fitted model data is used. Default: \code{FALSE}.
 #' @param states \code{TRUE} if the simulated states should be returned, \code{FALSE} otherwise (default).
 #' @param retrySims Number of times to attempt to simulate data within the spatial extent of \code{spatialCovs}. If \code{retrySims=0} (the default), an
 #' error is returned if the simulated tracks(s) move beyond the extent(s) of the raster layer(s). Instead of relying on \code{retrySims}, in many cases
@@ -115,7 +115,7 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
                         initialPosition=c(0,0),
                         DM=NULL,userBounds=NULL,workBounds=NULL,mvnCoords=NULL,
                         model=NULL,
-                        matchModelObs = TRUE,
+                        matchModelObs = FALSE,
                         states=FALSE,
                         retrySims=0,
                         lambda=1,
@@ -137,7 +137,7 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
     attributes(model)$class <- attributes(model)$class[which(!attributes(model)$class %in% "CTHMM")]
     mvnCoords <- model$conditions$mvnCoords
     if(matchModelObs){
-      rwInd <- any(unlist(lapply(model$conditions$dist,function(x) x %in% rwdists)))
+      #rwInd <- any(unlist(lapply(model$conditions$dist,function(x) x %in% rwdists)))
       if(nbAnimals!=1) warning("'nbAnimals' is ignored when 'matchModelObs' is TRUE")
       nbAnimals <- length(unique(model$data$ID))
       if(!missing(obsPerLevel)) warning("'obsPerLevel' is ignored when 'matchModelObs' is TRUE")
@@ -146,7 +146,7 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
       lambda <- list()
       for(zoo in 1:nbAnimals){
         lambda[[zoo]] <- model$data[[model$conditions$Time.name]][which(model$data$ID==unique(model$data$ID)[zoo])]
-        if(rwInd) lambda[[zoo]] <- c(lambda[[zoo]],tail(lambda[[zoo]],1)+model$data$dt[tail(which(model$data$ID==unique(model$data$ID)[zoo]),1)])
+        #if(rwInd) lambda[[zoo]] <- c(lambda[[zoo]],tail(lambda[[zoo]],1)+model$data$dt[tail(which(model$data$ID==unique(model$data$ID)[zoo]),1)])
         if(inherits(lambda[[zoo]] ,"POSIXt")) attr(lambda[[zoo]],"units") <- model$conditions$Time.unit
       }
     } else {
@@ -161,6 +161,7 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
     if(!is.null(lambda)){
       if(length(lambda)>1 || lambda<=0) stop('lambda must be a scalar and >0')
     } else stop("lambda cannot be NULL")
+    matchModelObs <- FALSE
   }
   
   withCallingHandlers(out <- simHierData(nbAnimals,hierStates,hierDist,
@@ -177,7 +178,8 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
                                          obsPerLevel,
                                          initialPosition,
                                          DM,userBounds,workBounds,mvnCoords,
-                                         model,states,
+                                         model,matchModelObs,
+                                         states,
                                          retrySims,
                                          lambda,
                                          errorEllipse,

@@ -34,6 +34,7 @@ simData(
   mvnCoords = NULL,
   stateNames = NULL,
   model = NULL,
+  matchModelObs = FALSE,
   states = FALSE,
   retrySims = 0,
   lambda = NULL,
@@ -72,6 +73,7 @@ simHierData(
   workBounds = NULL,
   mvnCoords = NULL,
   model = NULL,
+  matchModelObs = FALSE,
   states = FALSE,
   retrySims = 0,
   lambda = NULL,
@@ -219,6 +221,8 @@ the diagonal elements of the t.p.m. are the reference. See \code{\link{fitHMM}}.
 Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
 \code{obsPerAnimal}, \code{states}, \code{initialPosition}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
 \code{covs}, \code{spatialCovs}, \code{centers}, and \code{centroids}. It is not appropriate to simulate movement data from a \code{model} that was fitted to latitude/longitude data (because \code{simData} assumes Cartesian coordinates).}
+
+\item{matchModelObs}{If \code{model} is provided, logical indicating whether to match \code{nbAnimals} and \code{obsPerAnimal} to the fitted model data. If \code{TRUE}, then \code{nbAnimals} and \code{obsPerAnimal} are ignored. Furthermore, if \code{TRUE} and \code{initialPosition} is not compatible with any \code{spatialCovs}, then the initial position for each animal from the fitted model data is used. Default: \code{FALSE}.}
 
 \item{states}{\code{TRUE} if the simulated states should be returned, \code{FALSE} otherwise (default).}
 

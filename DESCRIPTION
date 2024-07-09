@@ -64,7 +64,7 @@ Suggests:
     methods,
     mgcv,
     optimx
-RoxygenNote: 7.3.0
+RoxygenNote: 7.3.2
 Encoding: UTF-8
 NeedsCompilation: yes
 VignetteBuilder: R.rsp

@@ -131,7 +131,7 @@ test_that("equivalent momentuHMM and moveHMM models match",{
   
   setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=4)
   
-  data<-simData(nbAnimals=2,model=example$m)
+  data<-simData(nbAnimals=2,model=example$m,matchModelObs=FALSE)
   momentuHMM_fit<-fitHMM(data=data,nbStates=nbStates,Par=list(step=log(par0$Par$step),angle=par0$Par$angle),stationary=TRUE,
                          beta0=par0$beta0[1,,drop=FALSE],delta0=par0$delta0,DM=list(step=diag(4)),dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean)
   moveHMM_fit<-moveHMM::fitHMM(moveData(data),nbStates=nbStates,stepPar=par0$Par$step,anglePar=par0$Par$angle,stepDist=simPar$dist$step,angleDist=simPar$dist$angle,stationary=TRUE,
@@ -200,7 +200,7 @@ test_that("equivalent momentuHMM models with different optMethods match",{
   
   setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=4)
   
-  data<-simData(nbAnimals=2,model=example$m)
+  data<-simData(nbAnimals=2,model=example$m,matchModelObs=FALSE)
   nlm_fit<-fitHMM(data=data,nbStates=nbStates,Par=list(step=log(par0$Par$step),angle=par0$Par$angle),stationary=TRUE,
                          beta0=par0$beta0[1,,drop=FALSE],delta0=par0$delta0,DM=list(step=diag(4)),dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean)
   nm_fit<-fitHMM(data=data,nbStates=nbStates,Par=getPar(nlm_fit)$Par,stationary=TRUE,
@@ -263,7 +263,7 @@ test_that("equivalent betaRef models match",{
   
   setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=1)
   
-  data<-simData(nbAnimals=2,model=example$m)
+  data<-simData(nbAnimals=2,model=example$m,matchModelObs=FALSE)
   momentuHMM_fit1<-fitHMM(data=data,nbStates=nbStates,Par=list(step=log(par0$Par$step),angle=par0$Par$angle),stationary=TRUE,
                           DM=list(step=diag(4)),dist=example$m$conditions$dist,estAngleMean=example$m$conditions$estAngleMean)
   momentuHMM_fit2<-fitHMM(data=data,nbStates=nbStates,Par=list(step=log(par0$Par$step),angle=par0$Par$angle),stationary=TRUE,
@@ -285,7 +285,7 @@ test_that("equivalent models with and without dummy covariate match",{
   
   setRNG::setRNG(kind="Mersenne-Twister",normal.kind="Inversion",seed=1)
   
-  data<-simData(nbAnimals=2,model=example$m,obsPerAnimal = 30)
+  data<-simData(nbAnimals=2,model=example$m,obsPerAnimal = 30,matchModelObs=FALSE)
   data$cov1<-rep(1,nrow(data)) # dummy covariate
   momentuHMM_nocov<-fitHMM(data=data,nbStates=nbStates,Par=list(step=log(par0$Par$step),angle=par0$Par$angle),
                          beta0=par0$beta0[1,,drop=FALSE],delta0=par0$delta0,DM=list(step=diag(4)),dist=simPar$dist,estAngleMean=example$m$conditions$estAngleMean)

@@ -40,7 +40,7 @@ test_that("Parallel processing works",{
   
   expect_error(timeInStates(HMMfits$HMMfits,ncores=ncores),NA)
   
-  expect_error(simData(model=HMMfits,nbAnimals=2,obsPerAnimal=30,ncores=ncores),NA)
+  expect_error(simData(model=HMMfits,nbAnimals=2,obsPerAnimal=30,ncores=ncores,matchModelObs=FALSE),NA)
   
   # test with optMethod="TMB"
   expect_error(HMMfits_tmb <- MIfitHMM(lapply(HMMfits$HMMfits,function(x) x$data),nSims=4,ncores=ncores,
@@ -54,7 +54,7 @@ test_that("Parallel processing works",{
   
   expect_error(timeInStates(HMMfits_tmb$HMMfits),NA)
   
-  expect_error(simData(model=HMMfits_tmb,nbAnimals=2,obsPerAnimal=30),NA)
+  expect_error(simData(model=HMMfits_tmb,nbAnimals=2,obsPerAnimal=30,matchModelObs=FALSE),NA)
   
   expect_equal(unlist(lapply(HMMfits$HMMfits,function(x) x$mod$minimum)),unlist(lapply(HMMfits_tmb$HMMfits,function(x) x$mod$minimum)))
 

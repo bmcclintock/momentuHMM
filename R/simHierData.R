@@ -61,7 +61,9 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                     obsPerLevel,
                     initialPosition=c(0,0),
                     DM=NULL,userBounds=NULL,workBounds=NULL,mvnCoords=NULL,
-                    model=NULL,states=FALSE,
+                    model=NULL,
+                    matchModelObs=FALSE,
+                    states=FALSE,
                     retrySims=0,
                     lambda=NULL,
                     errorEllipse=NULL,
@@ -134,6 +136,18 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     
     if(!inherits(model,"momentuHierHMM") & !inherits(model,"hierarchical")) stop("model must be a 'momentuHierHMM' and/or 'hierarchical' object")
     if(inherits(model,"CTHMM")) stop("model can not be of class 'CTHMM'; use simHierCTHMM instead")
+    
+    if(!isTRUE(list(...)$CT)){
+      if(matchModelObs){
+        #if(nbAnimals!=1) warning("'nbAnimals' is ignored when 'matchModelObs' is TRUE")
+        nbAnimals <- length(unique(model$data$ID))
+        #if(!missing(obsPerLevel)) warning("'obsPerLevel' is ignored when 'matchModelObs' is TRUE")
+        obsPerLevel <- NULL
+      } else {
+        if(missing(obsPerLevel)) stop('argument "obsPerLevel" is missing, with no default')
+        if(is.null(obsPerLevel)) stop("'obsPerLevel' cannot be NULL when 'matchModelObs' is FALSE")
+      }
+    }
     
     if(is.miHMM(model)){
       model <- model$miSum
@@ -330,6 +344,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     
     distnames <- names(dist)
     IDs <- 1:nbAnimals
+    matchModelObs <- FALSE
     
     if(is.null(formulaPi)){
       formPi <- ~1
@@ -474,7 +489,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
   } else nbSpatialCovs <- 0
   
-  obsInd <- (!isTRUE(list(...)$CT) | (isTRUE(list(...)$CT) & !is.null(obsPerLevel)))
+  obsInd <- (!is.null(obsPerLevel))
   if(obsInd){
     if(is.list(obsPerLevel)){
       if(length(obsPerLevel)!=nbAnimals) stop("obsPerLevel must be a list of length ",nbAnimals," where each element is a hierarchical Node")
@@ -918,16 +933,41 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       adj.cells[fromCell,] <- toCells
       for(i in 1:length(initialPosition)){
         initCell <- raster::cellFromXY(rast,initialPosition[[i]])
-        if(is.na(initCell)) stop("initialPosition for individual ",i," is not within the spatial extent of rast")
-        if(rast[initCell]==0) stop("initialPosition for individual ",i," not consistent with zero.idx")
-        if(is.na(rast[initCell])) stop("initialPosition for individual ",i," is not within the spatial extent of rast")
-        if(all(is.na(rast[adj.cells[initCell,]]))) stop("zero.idx and/or directions does not permit a move from initialPosition for individual ",i)
+        if(!is.null(model) & matchModelObs){
+          if(is.na(initCell) || rast[initCell]==0 || is.na(rast[initCell]) || all(is.na(rast[adj.cells[initCell,]]))){
+            if(is.null(mvnCoords)) {
+              coordNames <- c("x","y")
+            } else {
+              if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) coordNames <- paste0(mvnCoords,c(".x",".y",".z"))
+              else coordNames <- paste0(mvnCoords,c(".x",".y"))
+            }
+            initialPosition[[i]] <- c(model$data[[coordNames[1]]][which(model$data$ID==unique(model$data$ID)[i])[1]],model$data[[coordNames[2]]][which(model$data$ID==unique(model$data$ID)[i])[1]])
+            if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) initialPosition[[i]] <- c(initialPosition[[i]],model$data[[coordNames[3]]][which(model$data$ID==unique(model$data$ID)[i])[1]])
+          }
+        } else {
+          if(is.na(initCell)) stop("initialPosition for individual ",i," is not within the spatial extent of rast")
+          if(rast[initCell]==0) stop("initialPosition for individual ",i," not consistent with zero.idx")
+          if(is.na(rast[initCell])) stop("initialPosition for individual ",i," is not within the spatial extent of rast")
+          if(all(is.na(rast[adj.cells[initCell,]]))) stop("zero.idx and/or directions does not permit a move from initialPosition for individual ",i)
+        }
       }
       rast[which(raster::values(rast==0))] <- NA
     }
     collapseRast <- tmpColRast <- list()
     for(j in 1:nbSpatialCovs){
       for(i in 1:length(initialPosition)){
+        if(!is.null(model) & matchModelObs){
+          if(is.na(raster::cellFromXY(spatialCovs[[j]],initialPosition[[i]]))){
+            if(is.null(mvnCoords)) {
+              coordNames <- c("x","y")
+            } else {
+              if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) coordNames <- paste0(mvnCoords,c(".x",".y",".z"))
+              else coordNames <- paste0(mvnCoords,c(".x",".y"))
+            }
+            initialPosition[[i]] <- c(model$data[[coordNames[1]]][which(model$data$ID==unique(model$data$ID)[i])[1]],model$data[[coordNames[2]]][which(model$data$ID==unique(model$data$ID)[i])[1]])
+            if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) initialPosition[[i]] <- c(initialPosition[[i]],model$data[[coordNames[3]]][which(model$data$ID==unique(model$data$ID)[i])[1]])
+          }
+        }
         if(is.na(raster::cellFromXY(spatialCovs[[j]],initialPosition[[i]]))) stop("initialPosition for individual ",i," is not within the spatial extent of the ",spatialcovnames[j]," raster")
       }
       getCell<-raster::cellFromXY(spatialCovs[[j]],initialPosition[[1]])
@@ -1817,6 +1857,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       }    
     } else if(!is.null(mvnCoords)){
       coordNames <- paste0(mvnCoords,c(".x",".y"))
+      if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) coordNames <- paste0(mvnCoords,c(".x",".y",".z"))
     } else {
       coordNames <- NULL
     }
@@ -1878,13 +1919,15 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                                              obsPerLevel,
                                              initialPosition,
                                              DM,userBounds,workBounds,mvnCoords,
-                                             model,states,
+                                             model,matchModelObs,
+                                             states,
                                              retrySims=0,
                                              lambda,
                                              errorEllipse,
                                              ncores,
                                              export=export,
                                              gradient=gradient,
+                                             TMB=TMB,
                                              ...),error=function(e) e)
       if(inherits(tmp,"error")){
         if(grepl("Try expanding the extent of the raster",tmp)) {

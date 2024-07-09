@@ -111,6 +111,7 @@
 #' Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
 #' \code{obsPerAnimal}, \code{states}, \code{initialPosition}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
 #' \code{covs}, \code{spatialCovs}, \code{centers}, and \code{centroids}. It is not appropriate to simulate movement data from a \code{model} that was fitted to latitude/longitude data (because \code{simData} assumes Cartesian coordinates).
+#' @param matchModelObs If \code{model} is provided, logical indicating whether to match \code{nbAnimals} and \code{obsPerAnimal} to the fitted model data. If \code{TRUE}, then \code{nbAnimals} and \code{obsPerAnimal} are ignored. Furthermore, if \code{TRUE} and \code{initialPosition} is not compatible with any \code{spatialCovs}, then the initial position for each animal from the fitted model data is used. Default: \code{FALSE}.
 #' @param states \code{TRUE} if the simulated states should be returned, \code{FALSE} otherwise (default).
 #' @param retrySims Number of times to attempt to simulate data within the spatial extent of \code{spatialCovs}. If \code{retrySims=0} (the default), an
 #' error is returned if the simulated tracks(s) move beyond the extent(s) of the raster layer(s). Instead of relying on \code{retrySims}, in many cases
@@ -365,7 +366,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     obsPerAnimal=c(500,1500),
                     initialPosition=c(0,0),
                     DM=NULL,userBounds=NULL,workBounds=NULL,betaRef=NULL,mvnCoords=NULL,stateNames=NULL,
-                    model=NULL,states=FALSE,
+                    model=NULL,
+                    matchModelObs=FALSE,
+                    states=FALSE,
                     retrySims=0,
                     lambda=NULL,
                     errorEllipse=NULL,
@@ -439,6 +442,13 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(inherits(model,"momentuHierHMM") | inherits(model,"hierarchical")) stop("model can not be a 'momentuHierHMM' or 'hierarchical' object; use simHierData instead")
     if(inherits(model,"CTHMM")) stop("model can not be of class 'CTHMM'; use simCTHMM instead")
     else if(isTRUE(list(...)$CT)) class(model) <- append(class(model),"CTHMM")
+    
+    if(matchModelObs & !isTRUE(list(...)$CT)){
+      #if(nbAnimals!=1) warning("'nbAnimals' is ignored when 'matchModelObs' is TRUE")
+      nbAnimals <- length(unique(model$data$ID))
+      #if(!all(obsPerAnimal==c(500,1500))) warning("'obsPerAnimal' is ignored when 'matchModelObs' is TRUE")
+      obsPerAnimal <- as.list(table(model$data$ID,exclude=levels(model$data$ID)[which(!levels(model$data$ID) %in% unique(model$data$ID))]))#+ifelse(rwInd,1,0))
+    }
     
     model <- delta_bc(model)
     
@@ -636,6 +646,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(!all(distnames %in% names(Par))) stop(distnames[which(!(distnames %in% names(Par)))]," is missing in 'Par'")
     Par <- Par[distnames]
     IDs <- 1:nbAnimals
+    matchModelObs <- FALSE
     
     if(is.null(formulaPi)){
       formPi <- ~1
@@ -1129,16 +1140,41 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       adj.cells[fromCell,] <- toCells
       for(i in 1:length(initialPosition)){
         initCell <- raster::cellFromXY(rast,initialPosition[[i]])
-        if(is.na(initCell)) stop("initialPosition for individual ",i," is not within the spatial extent of rast")
-        if(rast[initCell]==0) stop("initialPosition for individual ",i," not consistent with zero.idx")
-        if(is.na(rast[initCell])) stop("initialPosition for individual ",i," is not within the spatial extent of rast")
-        if(all(is.na(rast[adj.cells[initCell,]]))) stop("zero.idx and/or directions does not permit a move from initialPosition for individual ",i)
+        if(!is.null(model) & matchModelObs){
+          if(is.na(initCell) || rast[initCell]==0 || is.na(rast[initCell]) || all(is.na(rast[adj.cells[initCell,]]))){
+            if(is.null(mvnCoords)) {
+              coordNames <- c("x","y")
+            } else {
+              if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) coordNames <- paste0(mvnCoords,c(".x",".y",".z"))
+              else coordNames <- paste0(mvnCoords,c(".x",".y"))
+            }
+            initialPosition[[i]] <- c(model$data[[coordNames[1]]][which(model$data$ID==unique(model$data$ID)[i])[1]],model$data[[coordNames[2]]][which(model$data$ID==unique(model$data$ID)[i])[1]])
+            if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) initialPosition[[i]] <- c(initialPosition[[i]],model$data[[coordNames[3]]][which(model$data$ID==unique(model$data$ID)[i])[1]])
+          }
+        } else {
+          if(is.na(initCell)) stop("initialPosition for individual ",i," is not within the spatial extent of rast")
+          if(rast[initCell]==0) stop("initialPosition for individual ",i," not consistent with zero.idx")
+          if(is.na(rast[initCell])) stop("initialPosition for individual ",i," is not within the spatial extent of rast")
+          if(all(is.na(rast[adj.cells[initCell,]]))) stop("zero.idx and/or directions does not permit a move from initialPosition for individual ",i)
+        }
       }
       rast[which(raster::values(rast==0))] <- NA
     }
     collapseRast <- tmpColRast <- list()
     for(j in 1:nbSpatialCovs){
       for(i in 1:length(initialPosition)){
+        if(!is.null(model) & matchModelObs){
+          if(is.na(raster::cellFromXY(spatialCovs[[j]],initialPosition[[i]]))){
+            if(is.null(mvnCoords)) {
+              coordNames <- c("x","y")
+            } else {
+              if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) coordNames <- paste0(mvnCoords,c(".x",".y",".z"))
+              else coordNames <- paste0(mvnCoords,c(".x",".y"))
+            }
+            initialPosition[[i]] <- c(model$data[[coordNames[1]]][which(model$data$ID==unique(model$data$ID)[i])[1]],model$data[[coordNames[2]]][which(model$data$ID==unique(model$data$ID)[i])[1]])
+            if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) initialPosition[[i]] <- c(initialPosition[[i]],model$data[[coordNames[3]]][which(model$data$ID==unique(model$data$ID)[i])[1]])
+          }
+        }
         if(is.na(raster::cellFromXY(spatialCovs[[j]],initialPosition[[i]]))) stop("initialPosition for individual ",i," is not within the spatial extent of the ",spatialcovnames[j]," raster")
       }
       getCell<-raster::cellFromXY(spatialCovs[[j]],initialPosition[[1]])
@@ -1334,13 +1370,15 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                             obsPerAnimal,
                             initialPosition,
                             DM,userBounds,workBounds,betaRef,mvnCoords,stateNames,
-                            model,states,
+                            model,matchModelObs,
+                            states,
                             retrySims=0,
                             lambda,
                             errorEllipse,
                             ncores,
                             export=export,
                             gradient=gradient,
+                            TMB=TMB,
                             ...),error=function(e) e)
       if(inherits(tmp,"error")){
         if(grepl("Try expanding the extent of the raster",tmp)) {
@@ -1960,7 +1998,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                 warning("Transition rate sum for individual ",zoo," exceeds kappa -- terminating at observation ",k,": qsum = ",qsum," and kappa = ",kappa," -- please report to brett.mcclintock@noaa")
                 break;
               }
-              print(c(zoo,k,qsum,kappa,qsum/kappa,maxRate))
               if(runif(1) < qsum/kappa){
                 if (nbStates > 2) {
                   probs <- Qmat[Z[k], -Z[k]]/qsum
@@ -2088,6 +2125,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   
   if(!is.null(mvnCoords)){
     attr(simDat$data,'coords') <- paste0(mvnCoords,c(".x",".y"))
+    if(dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")) attr(simDat$data,'coords') <- paste0(mvnCoords,c(".x",".y",".z"))
     #tmpNames <- colnames(data)[-which(colnames(data)=="ID")]
     #prepDat <- prepData(data,coordNames = paste0(mvnCoords,c(".x",".y")))
     #data$step <- prepDat$step

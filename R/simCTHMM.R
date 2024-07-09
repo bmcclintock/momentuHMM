@@ -58,7 +58,7 @@
 #' Note that, if this argument is specified, most other arguments will be ignored -- except for \code{nbAnimals},
 #' \code{obsPerAnimal}, \code{states}, \code{initialPosition}, \code{lambda}, \code{errorEllipse}, and, if covariate values different from those in the data should be specified, 
 #' \code{covs}, and \code{spatialCovs}. It is not appropriate to simulate movement data from a \code{model} that was fitted to latitude/longitude data (because \code{simCTHMM} assumes Cartesian coordinates).
-#' @param matchModelObs If \code{model} is provided, logical indicating whether to match \code{nbAnimals}, \code{obsPerAnimal}, and observation times to the fitted model data. If \code{TRUE}, then \code{nbAnimals}, \code{obsPerAnimal}, and \code{lambda} are ignored. Default: \code{TRUE}.
+#' @param matchModelObs If \code{model} is provided, logical indicating whether to match \code{nbAnimals}, \code{obsPerAnimal}, and observation times to the fitted model data. If \code{TRUE}, then \code{nbAnimals}, \code{obsPerAnimal}, and \code{lambda} are ignored. Furthermore, if \code{TRUE} and \code{initialPosition} is not compatible with any \code{spatialCovs}, then the initial position for each animal from the fitted model data is used. Default: \code{FALSE}.
 #' @param states \code{TRUE} if the simulated states should be returned, \code{FALSE} otherwise (default).
 #' @param retrySims Number of times to attempt to simulate data within the spatial extent of \code{spatialCovs}. If \code{retrySims=0} (the default), an
 #' error is returned if the simulated tracks(s) move beyond the extent(s) of the raster layer(s). Instead of relying on \code{retrySims}, in many cases
@@ -151,7 +151,7 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                      initialPosition=c(0,0),
                      DM=NULL,userBounds=NULL,workBounds=NULL,betaRef=NULL,mvnCoords=NULL,stateNames=NULL,
                      model=NULL,
-                     matchModelObs=TRUE,
+                     matchModelObs=FALSE,
                      states=FALSE,
                      retrySims=0,
                      #times=NULL,
@@ -174,7 +174,7 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
     attributes(model)$class <- attributes(model)$class[which(!attributes(model)$class %in% "CTHMM")]
     if(!is.null(model$conditions$mvnCoords)) mvnCoords <- model$conditions$mvnCoords
     if(matchModelObs){
-      rwInd <- any(unlist(lapply(model$conditions$dist,function(x) x %in% rwdists)))
+      #rwInd <- any(unlist(lapply(model$conditions$dist,function(x) x %in% rwdists)))
       if(nbAnimals!=1) warning("'nbAnimals' is ignored when 'matchModelObs' is TRUE")
       nbAnimals <- length(unique(model$data$ID))
       if(!all(obsPerAnimal==c(500,1500))) warning("'obsPerAnimal' is ignored when 'matchModelObs' is TRUE")
@@ -201,6 +201,7 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
     if(is.null(kappa)){
       kappa <- list(method=c("all","random","quantile"),nspCov=NA,spCov=NA)
     }
+    matchModelObs <- FALSE
   }
   if(nbStates>1){
     if(is.list(kappa)){
@@ -235,7 +236,8 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                                      obsPerAnimal,
                                      initialPosition,
                                      DM,userBounds,workBounds,betaRef,mvnCoords,stateNames,
-                                     model,states,
+                                     model,matchModelObs,
+                                     states,
                                      retrySims,
                                      lambda,
                                      errorEllipse,
