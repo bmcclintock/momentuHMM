@@ -274,6 +274,14 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   
   for(parm in 1:nparms){
     
+    if(m$conditions$optMethod=="TMB"){
+      dups <- which(duplicated(m$conditions$fixPar[[parms[parm]]]))
+      if(length(dups)){
+        miBeta$variance[(parindex[parm]+1):parindex[parm+1],(parindex[parm]+1):parindex[parm+1]][dups,dups] <- 0
+        miBeta$df[(parindex[parm]+1):parindex[parm+1]][dups] <- NaN
+      }
+    }
+    
     parnames <- rownames(m$CIbeta[[parms[parm]]]$est)
     coeffs <- matrix(miBeta$coefficients[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
     vars <- matrix(diag(miBeta$variance)[(parindex[parm]+1):parindex[parm+1]],nrow=length(parnames),dimnames=list(parnames))
