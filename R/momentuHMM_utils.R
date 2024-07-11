@@ -156,14 +156,23 @@ RWdata <- function(dist,data,knownStates,...){
 }
 
 # @importFrom dplyr lag
-crw <- function(x_tm1,lag=1){
+crw <- function(x_tm1,lag=1,dt){
   for(pkg in c("dplyr")){
     if (!requireNamespace(pkg, quietly = TRUE)) {
       stop("Package \"",pkg,"\" needed for crw function to work. Please install it.",
            call. = FALSE)
     }
   }
-  dplyr::lag(x_tm1,n=lag-1,default=x_tm1[1])-dplyr::lag(x_tm1,n=lag,default=x_tm1[1])
+  if(missing(dt)) dt <- rep(1,length(x_tm1))
+  else if(length(dt)==1) dt <- rep(dt,length(x_tm1))
+  else if(length(dt)!=length(x_tm1)) stop("argument 'dt' in 'crw' function must be of length 1 or ",length(x_tm1))
+  
+  diff <- dplyr::lag(x_tm1,n=lag-1,default=x_tm1[1])-dplyr::lag(x_tm1,n=lag,default=x_tm1[1])
+  vel <- diff/dplyr::lag(dt,n=lag,default=0)
+  if(any(!is.finite(vel))){
+    vel[which(!is.finite(vel))] <- 0
+  }
+  return(vel)
 }
 
 radian <- function(degree) 

@@ -277,7 +277,8 @@ get_crwlag <- function(form,clag){
            call. = FALSE)
     }
     Terms <- stats::terms(form,specials="crw")
-    lag <- as.numeric(unlist(attr(prodlim::strip.terms(Terms[attr(Terms,"specials")$crw],specials="crw",arguments=list(crw=list("lag"=1))),"stripped.arguments")))
+    tm1 <- attr(prodlim::strip.terms(Terms[attr(Terms,"specials")$crw],specials="crw",arguments=list(crw=list("lag"=1,"dt"=1))),"term.labels")
+    lag <- as.numeric(attr(prodlim::strip.terms(Terms[attr(Terms,"specials")$crw],specials="crw",arguments=list(crw=list("lag"=1,"dt"=1))),"stripped.arguments")$crw[[tm1]]$lag)
   }
   max(c(clag,lag))
 }
