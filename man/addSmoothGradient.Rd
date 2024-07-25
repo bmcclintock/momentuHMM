@@ -35,3 +35,6 @@ A \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object, with the smoo
 \description{
 Adds smoothed gradients to \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} objects, which can help reduce bias in gradient-based habitat selection coefficients
 }
+\references{
+Blackwell, P. G. and J. Matthiopoulos. 2024. Joint inference for telemetry and spatial survey data. Ecology
+}

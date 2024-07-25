@@ -14,6 +14,10 @@
 
 #' @return A \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object, with the smooth gradients added for each spatial covariate.
 #' 
+#' @references
+#' 
+#' Blackwell, P. G. and J. Matthiopoulos. 2024. Joint inference for telemetry and spatial survey data. Ecology
+#' 
 #' @export
 #' @importFrom utils head
 addSmoothGradient <- function(data,Time.name=NULL,Time.unit='auto',spatialCovs,weights=c(1/2,1/8,1/8,1/8,1/8),scale=NULL){
