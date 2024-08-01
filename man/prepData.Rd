@@ -19,6 +19,9 @@ prepData(data, ...)
   angleCovs = NULL,
   altCoordNames = NULL,
   gradient = FALSE,
+  CT = FALSE,
+  Time.name = "time",
+  Time.unit = "auto",
   ...
 )
 
@@ -33,6 +36,9 @@ prepData(data, ...)
   angleCovs = NULL,
   altCoordNames = NULL,
   gradient = FALSE,
+  CT = FALSE,
+  Time.name = "time",
+  Time.unit = "auto",
   hierLevels,
   coordLevel,
   ...
@@ -85,6 +91,12 @@ using \code{\link{circAngles}}.}
 
 \item{gradient}{Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. If \code{TRUE}, the gradients are returned with ``\code{.x}'' (easting gradient) and ``\code{.y}'' (northing gradient) suffixes added to the names of \code{spatialCovs}. For example, if \code{cov1} is the name of a spatial covariate, then the returned \code{\link{momentuHMMData}} object will include the fields ``\code{cov1.x}'' and ``\code{cov1.y}''.}
 
+\item{CT}{Logical indicating whether or not \code{data} is for continuous-time models. Default: \code{FALSE} (discrete time).}
+
+\item{Time.name}{Character string indicating name of the time column in data (for continuous-time HMMs). Default: \code{"time"}. Ignored if \code{CT=FALSE} or, if \code{CT=TRUE}, when \code{data} is a \code{crwData} object returned by \code{\link{crawlWrap}}.}
+
+\item{Time.unit}{Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{CT=TRUE} and \code{data[[Time.name]]} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto'.}
+
 \item{hierLevels}{Character vector indicating the levels of the hierarchy and their order, from top (coarsest scale) to bottom (finest scale), that are included in \code{data$level}. For example, for a 2-level hierarchy then 
 \code{hierLevels=c("1","2i","2")} indicates \code{data$level} for each observation can be one of three factor levels: "1" (coarse scale), "2i" (initial fine scale), and "2" (fine scale).  Ignored if \code{data} is a \code{\link{crwHierData}} object.}
 
@@ -107,6 +119,8 @@ analysis using \code{\link{fitHMM}}.
 \item If \code{data} is a \code{\link{crwData}} (or \code{\link{crwHierData}}) object, the \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}) object created by \code{prepData} includes step lengths and turning angles calculated from the best predicted 
 locations (i.e., \code{crwData$crwPredict$mu.x} and \code{crwData$crwPredict$mu.y}). Prior to using \code{prepData}, additional data streams or covariates unrelated to location (including z-values associated with
 \code{spatialCovs} raster stacks or bricks) can be merged with the \code{crwData} (or \code{crwHierData}) object using \code{\link{crawlMerge}}.
+
+\item For continuous-time data (i.e. \code{CT=TRUE}), if \code{data} is not a \code{crwData} object returned by \code{\link{crawlWrap}}, then \code{data} must include a 'Time.name' field indicating the time column in \code{data}.
 
 \item For hierarchical data, \code{data} must include a 'level' field indicating the level of the hierarchy for each observation, and, for location data identified by \code{coordNames}, the \code{coordLevel} argument must indicate the level of the hierarchy at which the location data are obtained.
 }

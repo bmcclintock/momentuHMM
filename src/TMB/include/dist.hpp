@@ -1,3 +1,5 @@
+// code modified from the hmmTMB package: Michelot T, Glennie R (2023). hmmTMB: Fit Hidden Markov Models using Template Model Builder. R package version 1.0.2, <https://CRAN.R-project.org/package=hmmTMB>.
+
 #ifndef _DISTCODES_
 #define _DISTCODES_
 

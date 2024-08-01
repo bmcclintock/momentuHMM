@@ -3,8 +3,9 @@
 #' Adds smoothed gradients to \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}} objects, which can help reduce bias in gradient-based habitat selection coefficients
 #' 
 #' @param data A \code{\link{momentuHMMData}} object (as returned by \code{\link{prepData}} or \code{\link{simData}}).
-#' @param Time.name Character string indicating name of the time column in \code{data} (for continuous-time HMMs). Default: 'NULL' (discrete time).
-#' @param Time.unit Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{data[[Time.name]]} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto'. 
+# #' @param CT Logical indicating whether or not \code{data} is for continuous-time models. Default: \code{FALSE} (discrete time).
+# #' @param Time.name Character string indicating name of the time column in \code{data} (for continuous-time HMMs). Default: 'time'. Ignored if \code{CT=FALSE}.
+# #' @param Time.unit Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{data[[Time.name]]} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto'. 
 #' @param spatialCovs List of \code{\link[raster]{raster}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
 #' layer(s) based on the location data (and the z values for a raster \code{\link[raster]{stack}} 
 #' or \code{\link[raster]{brick}}) for each time step.  If an element of \code{spatialCovs} is a raster \code{\link[raster]{stack}} or \code{\link[raster]{brick}}, 
@@ -20,9 +21,16 @@
 #' 
 #' @export
 #' @importFrom utils head
-addSmoothGradient <- function(data,Time.name=NULL,Time.unit='auto',spatialCovs,weights=c(1/2,1/8,1/8,1/8,1/8),scale=NULL){
+addSmoothGradient <- function(data,#CT=FALSE,Time.name="time",Time.unit='auto',
+                              spatialCovs,weights=c(1/2,1/8,1/8,1/8,1/8),scale=NULL){
   if(!is.momentuHMMData(data)) stop("data must be a momentuHMMData object (as returned by prepData or simData) ")
   if(inherits(data,"ctds")) stop("data cannot be a 'ctds' object (as returned by prepCTDS")
+  
+  if(isTRUE(inherits(data,"CT"))){
+    CT <- TRUE
+    Time.name <- attr(data,"Time.name")
+    Time.unit <- attr(data,"Time.unit")
+  } else CT <- FALSE
   
   if(!is.null(spatialCovs)){
     if(!is.list(spatialCovs)) stop('spatialCovs must be a list')
@@ -61,15 +69,24 @@ addSmoothGradient <- function(data,Time.name=NULL,Time.unit='auto',spatialCovs,w
   iInd <- which(data$ID==unique(data$ID)[1])
   rx <- diff(data[iInd,coordNames[1]])
   ry <- diff(data[iInd,coordNames[2]])
-  if(!is.null(Time.name)) {
-    if(inherits(data[[Time.name]],"POSIXt")) {
-      tmpTime <- difftime(data[iInd[-1],Time.name],data[iInd[-length(iInd)],Time.name],units=Time.unit)
-      Time.unit <- units(tmpTime)
-      dt <- as.numeric(tmpTime)
-    } else {
-      dt <- diff(data[iInd,Time.name])
+  if(isTRUE(CT)){
+    if(!isTRUE(inherits(data,"CT"))) warning("'data' appears to be in discrete time -- should 'CT' be FALSE?")
+    if(is.null(Time.name)) stop("'Time.name' cannot be NULL when CT=TRUE")
+    else {
+      if(!Time.name %in% names(data)) stop("Time.name not found in 'data'") 
+      if("dt" %in% names(data)) stop("'dt' is reserved and cannot be used as a field name in 'data'; please choose a different name") 
+      if(inherits(data[[Time.name]],"POSIXt")) {
+        tmpTime <- difftime(data[iInd[-1],Time.name],data[iInd[-length(iInd)],Time.name],units=Time.unit)
+        Time.unit <- units(tmpTime)
+        dt <- as.numeric(tmpTime)
+      } else {
+        dt <- diff(data[iInd,Time.name])
+      }
     }
-  } else dt <- rep(1,length(rx))
+  } else {
+    if(isTRUE(inherits(data,"CT"))) warning("'data' appears to be in continuous time -- should 'CT' be TRUE?")
+    dt <- rep(1,length(rx))
+  }
   locs <- utils::head(data[iInd,coordNames],-1)
   
   # Other animals
@@ -159,8 +176,11 @@ addSmoothGradient <- function(data,Time.name=NULL,Time.unit='auto',spatialCovs,w
     progBar(i,nbSpatialCovs)
   }
   
-  attr(data,"Time.name") <- Time.name
-  attr(data,"Time.unit") <- Time.unit
+  if(isTRUE(CT)){
+    attr(data,"CT") <- TRUE
+    attr(data,"Time.name") <- Time.name
+    attr(data,"Time.unit") <- Time.unit
+  }
   attr(data,"smoothGradient") <- TRUE
   attr(data,"npoints") <- npoints
   return(data)

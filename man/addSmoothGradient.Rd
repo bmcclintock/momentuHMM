@@ -6,8 +6,6 @@
 \usage{
 addSmoothGradient(
   data,
-  Time.name = NULL,
-  Time.unit = "auto",
   spatialCovs,
   weights = c(1/2, 1/8, 1/8, 1/8, 1/8),
   scale = NULL
@@ -15,10 +13,6 @@ addSmoothGradient(
 }
 \arguments{
 \item{data}{A \code{\link{momentuHMMData}} object (as returned by \code{\link{prepData}} or \code{\link{simData}}).}
-
-\item{Time.name}{Character string indicating name of the time column in \code{data} (for continuous-time HMMs). Default: 'NULL' (discrete time).}
-
-\item{Time.unit}{Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{data[[Time.name]]} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto'.}
 
 \item{spatialCovs}{List of \code{\link[raster]{raster}} objects for spatio-temporally referenced covariates. Covariates specified by \code{spatialCovs} are extracted from the raster 
 layer(s) based on the location data (and the z values for a raster \code{\link[raster]{stack}} 

@@ -129,7 +129,7 @@ it might be better to simply expand the extent of the raster layer(s) and/or adj
 Ignored if \code{spatialCovs=NULL}.}
 
 \item{lambda}{Observation rate. \code{lambda} is the rate parameter of the exponential distribution for the waiting times between successive observations, i.e., 
-\code{1/lambda} is the expected time between successive location observations. Note that only a single state transition can occur between observations. If \code{model} is specified and \code{model$data} time column is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}, \code{lambda} has the same units as the \code{Time.unit} argument in \code{\link{fitCTHMM}}. Default: 1.}
+\code{1/lambda} is the expected time between successive location observations. If \code{model} is specified and \code{model$data} time column is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}, \code{lambda} has the same units as the \code{Time.unit} argument in \code{\link{prepData}}. Default: 1. Alternatively \code{lambda} can be specified as a list of length \code{nbAnimals} providing the exact observation times for each individual.}
 
 \item{errorEllipse}{List providing the upper bound for the semi-major axis (\code{M}; on scale of x- and y-coordinates), semi-minor axis (\code{m}; 
 on scale of x- and y-coordinates), and orientation (\code{r}; in degrees) of location error ellipses. If \code{NULL} (the default), no location 

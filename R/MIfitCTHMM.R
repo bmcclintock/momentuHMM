@@ -322,9 +322,9 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
           }
           if(!CTDS){
             df<-data.frame(x=locs$mu.x,y=locs$mu.y,predData[,c("ID",Time.name,tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
-            pD <- tryCatch(suppressMessages(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient)),error=function(e) e)
+            pD <- tryCatch(suppressMessages(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient,CT=TRUE,Time.name=Time.name,Time.unit=Time.unit)),error=function(e) e)
             if(smoothGradient && !inherits(pD,"error")){
-              pD <- tryCatch(suppressMessages(addSmoothGradient(pD,Time.name=Time.name,Time.unit=Time.unit,spatialCovs=spatialCovs,weights=weights,scale=scaleGrad)),error=function(e) e)
+              pD <- tryCatch(suppressMessages(addSmoothGradient(pD,spatialCovs=spatialCovs,weights=weights,scale=scaleGrad)),error=function(e) e)
             }
           } else {
             df<-data.frame(x=locs$mu.x,y=locs$mu.y,time=predData[[Time.name]],predData[,c("ID",tmpdistnames,covNames,znames),drop=FALSE])[which(predData$locType=="p"),]
@@ -402,7 +402,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
   } else if(length(delta0)<nSims) stop("delta0 must be a list of length >=",nSims)
   
   #check HMM inputs and print model message
-  test<-fitCTHMM.momentuHMMData(miData[[ind[1]]],Time.name,Time.unit,nbStates, dist, Par0[[ind[1]]], beta0[[ind[1]]], delta0[[ind[1]]],
+  test<-fitCTHMM.momentuHMMData(miData[[ind[1]]],nbStates, dist, Par0[[ind[1]]], beta0[[ind[1]]], delta0[[ind[1]]],
            estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi,
            nlmPar, fit = FALSE, DM,
            userBounds, workBounds, betaCons, deltaCons, mvnCoords, stateNames, knownStates[[ind[1]]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName)
@@ -416,7 +416,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
 
     cat("\rImputation ",1,"... ",sep="")
     
-    fits[[1]]<-suppressMessages(fitCTHMM.momentuHMMData(miData[[1]], Time.name, Time.unit, nbStates, dist, Par0[[1]], beta0[[1]], delta0[[1]],
+    fits[[1]]<-suppressMessages(fitCTHMM.momentuHMMData(miData[[1]], nbStates, dist, Par0[[1]], beta0[[1]], delta0[[1]],
                                     estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi,
                                     nlmPar, fit, DM,
                                     userBounds, workBounds, betaCons, deltaCons, mvnCoords, stateNames, knownStates[[1]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName, kappa))
@@ -450,7 +450,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
       } else {
         if(retryFits<1) progBar(j,nSims)
       }
-      tmpFit<-suppressMessages(fitCTHMM(mD, Time.name, Time.unit, nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
+      tmpFit<-suppressMessages(fitCTHMM(mD, nbStates, dist, Par0[[j]], beta0[[j]], delta0[[j]],
                                       estAngleMean, circularAngleMean, formula, formulaDelta, stationary, mixtures, formulaPi,
                                       nlmPar, fit, DM,
                                       userBounds, workBounds, betaCons, deltaCons, mvnCoords, stateNames, knownStates[[j]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName, kappa))
@@ -638,7 +638,7 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
                               df[which(df$locType=="p"),"y"] <- locs[which(locs$locType=="p"),"y"]
                               df$locType <- NULL
                               if(!CTDS){
-                                pD <- tryCatch(suppressMessages(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient,hierLevels=levels(predData$level),coordLevel=attr(predData,"coordLevel"))),error=function(e) e)
+                                pD <- tryCatch(suppressMessages(prepData(df,covNames=covNames,spatialCovs=spatialCovs,centers=centers,centroids=centroids,angleCovs=angleCovs,altCoordNames=altCoordNames,gradient=gradient,CT=TRUE,Time.name=Time.name,Time.unit=Time.unit,hierLevels=levels(predData$level),coordLevel=attr(predData,"coordLevel"))),error=function(e) e)
                                 if(smoothGradient && !inherits(pD,"error")){
                                   pD <- tryCatch(suppressMessages(addSmoothGradient(pD,spatialCovs=spatialCovs,weights=weights,scale=scaleGrad)),error=function(e) e)
                                 }
@@ -750,7 +750,7 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
   } else if(length(hierDelta)<nSims) stop("hierDelta must be a list of length >=",nSims)
   
   #check HMM inputs and print model message
-  test<-fitCTHMM.momentuHierHMMData(miData[[ind[1]]], Time.name, Time.unit, hierStates, hierDist, Par0[[ind[1]]], hierBeta[[ind[1]]], hierDelta[[ind[1]]],
+  test<-fitCTHMM.momentuHierHMMData(miData[[ind[1]]], hierStates, hierDist, Par0[[ind[1]]], hierBeta[[ind[1]]], hierDelta[[ind[1]]],
                    estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                    nlmPar, fit = FALSE, DM,
                    userBounds, workBounds, betaCons, deltaCons, mvnCoords, knownStates[[ind[1]]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName, kappa)
@@ -764,7 +764,7 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
 
     cat("\rImputation ",1,"... ",sep="")
 
-    fits[[1]]<-suppressMessages(fitCTHMM.momentuHierHMMData(miData[[1]], Time.name, Time.unit, hierStates, hierDist, Par0[[1]], hierBeta[[1]], hierDelta[[1]],
+    fits[[1]]<-suppressMessages(fitCTHMM.momentuHierHMMData(miData[[1]], hierStates, hierDist, Par0[[1]], hierBeta[[1]], hierDelta[[1]],
                                            estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                                            nlmPar, fit, DM,
                                            userBounds, workBounds, betaCons, deltaCons, mvnCoords, knownStates[[1]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName, kappa))
@@ -798,7 +798,7 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
                           } else {
                             if(retryFits<1) progBar(j,nSims)
                           }
-                          tmpFit<-suppressMessages(fitCTHMM(mD, Time.name, Time.unit, hierStates, hierDist, Par0[[j]], hierBeta[[j]], hierDelta[[j]],
+                          tmpFit<-suppressMessages(fitCTHMM(mD, hierStates, hierDist, Par0[[j]], hierBeta[[j]], hierDelta[[j]],
                                                               estAngleMean, circularAngleMean, hierFormula, hierFormulaDelta, mixtures, formulaPi, 
                                                               nlmPar, fit, DM, 
                                                               userBounds, workBounds, betaCons, deltaCons, mvnCoords, knownStates[[j]], fixPar, retryFits, retrySD, ncores=1, optMethod, control, prior, modelName, kappa))

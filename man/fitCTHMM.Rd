@@ -10,8 +10,6 @@ fitCTHMM(data, ...)
 
 \method{fitCTHMM}{momentuHMMData}(
   data,
-  Time.name = "time",
-  Time.unit = "auto",
   nbStates,
   dist,
   Par0,
@@ -48,8 +46,6 @@ fitCTHMM(data, ...)
 
 \method{fitCTHMM}{momentuHierHMMData}(
   data,
-  Time.name = "time",
-  Time.unit = "auto",
   hierStates,
   hierDist,
   Par0,
@@ -86,10 +82,6 @@ fitCTHMM(data, ...)
 \item{data}{A \code{\link{momentuHMMData}} (as returned by \code{\link{prepData}}, \code{\link{simData}}, \code{\link{prepCTDS}}, or \code{\link{simCTDS}}) or a \code{\link{momentuHierHMMData}} (as returned by \code{\link{prepData}} or \code{\link{simHierData}}) object.}
 
 \item{...}{further arguments passed to or from other methods}
-
-\item{Time.name}{Character string indicating name of the time column. Default: 'time'. Ignored if \code{data} is a \code{ctds} object returned by \code{\link{prepCTDS}}.}
-
-\item{Time.unit}{Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{data[[Time.name]]} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto'.  Ignored if \code{data} is a \code{ctds} object returned by \code{\link{prepCTDS}}.}
 
 \item{nbStates}{Number of states of the HMM.}
 

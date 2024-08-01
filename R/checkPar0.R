@@ -263,7 +263,7 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
                                Par0=par,beta0=beta0,delta0=delta0,
                                estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,
                                formula=formula,formulaDelta=formulaDelta,stationary=stationary,mixtures=mixtures,formulaPi=formulaPi,
-                               DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=betaRef,deltaCons=deltaCons,fit=FALSE,
+                               DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,deltaCons=deltaCons,fit=FALSE,
                                stateNames=stateNames,optMethod=optMethod,fixPar=fixPar,prior=prior))   
     dist <- m$conditions$dist
   } else {

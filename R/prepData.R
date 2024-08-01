@@ -46,6 +46,9 @@ prepData <- function(data, ...) {
 #' using \code{\link{circAngles}}.
 #' @param altCoordNames Character string indicating an alternative name for the returned location data. If provided, then \code{prepData} will return easting (or longitude) coordinate names as \code{paste0(altCoordNames,".x")} and northing (or latitude) as \code{paste0(altCoordNames,".y")} instead of \code{x} and \code{y}, respectively. This can be useful for location data that are intended to be modeled using a bivariate normal distribution (see \code{\link{fitHMM}}). Ignored unless \code{coordNames} are provided.
 #' @param gradient Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. If \code{TRUE}, the gradients are returned with ``\code{.x}'' (easting gradient) and ``\code{.y}'' (northing gradient) suffixes added to the names of \code{spatialCovs}. For example, if \code{cov1} is the name of a spatial covariate, then the returned \code{\link{momentuHMMData}} object will include the fields ``\code{cov1.x}'' and ``\code{cov1.y}''.
+#' @param CT Logical indicating whether or not \code{data} is for continuous-time models. Default: \code{FALSE} (discrete time).
+#' @param Time.name Character string indicating name of the time column in data (for continuous-time HMMs). Default: \code{"time"}. Ignored if \code{CT=FALSE} or, if \code{CT=TRUE}, when \code{data} is a \code{crwData} object returned by \code{\link{crawlWrap}}.
+#' @param Time.unit Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{CT=TRUE} and \code{data[[Time.name]]} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto'.
 
 #' @return An object \code{\link{momentuHMMData}} or \code{\link{momentuHierHMMData}}, i.e., a dataframe of:
 #' \item{ID}{The ID(s) of the observed animal(s)}
@@ -59,6 +62,8 @@ prepData <- function(data, ...) {
 #' \item If \code{data} is a \code{\link{crwData}} (or \code{\link{crwHierData}}) object, the \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}) object created by \code{prepData} includes step lengths and turning angles calculated from the best predicted 
 #' locations (i.e., \code{crwData$crwPredict$mu.x} and \code{crwData$crwPredict$mu.y}). Prior to using \code{prepData}, additional data streams or covariates unrelated to location (including z-values associated with
 #' \code{spatialCovs} raster stacks or bricks) can be merged with the \code{crwData} (or \code{crwHierData}) object using \code{\link{crawlMerge}}.
+#' 
+#' \item For continuous-time data (i.e. \code{CT=TRUE}), if \code{data} is not a \code{crwData} object returned by \code{\link{crawlWrap}}, then \code{data} must include a 'Time.name' field indicating the time column in \code{data}.
 #' 
 #' \item For hierarchical data, \code{data} must include a 'level' field indicating the level of the hierarchy for each observation, and, for location data identified by \code{coordNames}, the \code{coordLevel} argument must indicate the level of the hierarchy at which the location data are obtained.
 #' }
@@ -107,7 +112,7 @@ prepData <- function(data, ...) {
 #' @export
 #' @importFrom sp spDistsN1
 #' @importFrom raster cellFromXY getValues getZ is.factor levels
-prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames=NULL, gradient=FALSE, ...)
+prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames=NULL, gradient=FALSE, CT=FALSE, Time.name="time", Time.unit="auto", ...)
 {
   if(is.crwData(data)){
     predData <- data$crwPredict
@@ -149,6 +154,14 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
   
   if(!is.data.frame(data)) stop("data must be a data frame")
   if(any(dim(data)==0)) stop("data is empty")
+  
+  if(isTRUE(CT)){
+    if(is.null(Time.name)) stop("'Time.name' cannot be NULL when CT=TRUE")
+    else {
+      if(!Time.name %in% names(data)) stop("Time.name not found in 'data'") 
+      if("dt" %in% names(data)) stop("'dt' is reserved and cannot be used as a field name in 'data'; please choose a different name") 
+    }
+  }
   
   # for directing hierarchical data to prepData.hierarchical
   hierArgs <- list(...)
@@ -416,7 +429,11 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
   
   if(!is.null(coordNames)) attr(dataHMM,"coords") <- outNames
   attr(dataHMM,"gradient") <- gradient
-  
+  if(isTRUE(CT)){
+    attr(dataHMM,"CT") <- TRUE
+    attr(dataHMM,"Time.name") <- Time.name
+    attr(dataHMM,"Time.unit") <- Time.unit
+  }
   return(momentuHMMData(dataHMM))
 }
 
@@ -431,7 +448,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
 #' @export
 #' @importFrom sp spDistsN1
 #' @importFrom raster cellFromXY getValues getZ
-prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames = NULL, gradient = FALSE, hierLevels, coordLevel, ...)
+prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), covNames=NULL, spatialCovs=NULL, centers=NULL, centroids=NULL, angleCovs=NULL, altCoordNames = NULL, gradient = FALSE, CT = FALSE, Time.name = "time", Time.unit = "auto", hierLevels, coordLevel, ...)
 {
   if(is.crwHierData(data)){
     predData <- data$crwPredict
@@ -479,6 +496,14 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
   if(!is.data.frame(data)) stop("data must be a data frame")
   if(any(dim(data)==0)) stop("data is empty")
   distnames<-names(data)#[which(!(names(data) %in% "level"))]
+  
+  if(isTRUE(CT)){
+    if(is.null(Time.name)) stop("'Time.name' cannot be NULL when CT=TRUE")
+    else {
+      if(!Time.name %in% names(data)) stop("Time.name not found in 'data'") 
+      if("dt" %in% names(data)) stop("'dt' is reserved and cannot be used as a field name in 'data'; please choose a different name") 
+    }
+  }
   
   if(is.null(data$level)) stop("data must include a 'level' field")
   if(any(is.na(data$level))) stop("data$level cannot include missing values")
@@ -801,7 +826,11 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     attr(dataHMM,"coordLevel") <- coordLevel
   }
   attr(dataHMM,"gradient") <- gradient
-  
+  if(isTRUE(CT)){
+    attr(dataHMM,"CT") <- TRUE
+    attr(dataHMM,"Time.name") <- Time.name
+    attr(dataHMM,"Time.unit") <- Time.unit
+  }
   return(momentuHierHMMData(dataHMM))
 }
 

@@ -139,7 +139,7 @@ Note that, if this argument is specified, most other arguments will be ignored -
 \item{states}{\code{TRUE} if the simulated states should be returned, \code{FALSE} otherwise (default).}
 
 \item{lambda}{Observation rate. \code{lambda} is the rate parameter of the exponential distribution for the waiting times between successive observations, i.e., 
-\code{1/lambda} is the expected time between successive location observations. Note that only a single state transition can occur between observations. If \code{model} is specified and \code{model$data} time column is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}, \code{lambda} has the same units as the \code{Time.unit} argument in \code{\link{fitCTHMM}}. Default: 1.}
+\code{1/lambda} is the expected time between successive location observations. If \code{model} is specified and \code{model$data} time column is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}, \code{lambda} has the same units as the \code{Time.unit} argument in \code{\link{prepCTDS}}. Default: 1.}
 
 \item{errorEllipse}{List providing the upper bound for the semi-major axis (\code{M}; on scale of x- and y-coordinates), semi-minor axis (\code{m}; 
 on scale of x- and y-coordinates), and orientation (\code{r}; in degrees) of location error ellipses. If \code{NULL} (the default), no location 

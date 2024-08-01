@@ -13,8 +13,6 @@ fitCTHMM <- function(data, ...) {
 
 #' @rdname fitCTHMM
 #' @method fitCTHMM momentuHMMData
-#' @param Time.name Character string indicating name of the time column. Default: 'time'. Ignored if \code{data} is a \code{ctds} object returned by \code{\link{prepCTDS}}.
-#' @param Time.unit Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{data[[Time.name]]} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto'.  Ignored if \code{data} is a \code{ctds} object returned by \code{\link{prepCTDS}}.
 #' @param nbStates Number of states of the HMM.
 #' @param dist A named list indicating the probability distributions of the data streams. Currently
 #' supported distributions are 'bern', 'beta', 'cat', 'ctds', 'exp', 'gamma', 'lnorm', 'logis', 'negbinom', 'norm', 'mvnorm2' (bivariate normal distribution), 'mvnorm3' (trivariate normal distribution),
@@ -169,7 +167,7 @@ fitCTHMM <- function(data, ...) {
 #'
 #' @useDynLib momentuHMM
 
-fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbStates,dist,
+fitCTHMM.momentuHMMData <- function(data,nbStates,dist,
                                   Par0,beta0=NULL,delta0=NULL,
                                   estAngleMean=NULL,circularAngleMean=NULL,
                                   formula=~1,formulaDelta=NULL,stationary=FALSE,mixtures=1,formulaPi=NULL,
@@ -188,6 +186,13 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
   
   if(length(data)<1 | any(dim(data)<1))
     stop("The data input is empty.")
+  
+  if(!isTRUE(attr(data,"CT"))) {
+    stop("'data' does not appear to be in continuous time -- was 'CT' set to TRUE in prepData?")
+  } else if(!inherits(data,"ctds")){
+    Time.name <- attr(data,"Time.name")
+    Time.unit <- attr(data,"Time.unit")
+  }
   
   if("dt" %in% names(data)) stop("'dt' is reserved and cannot be used as a field name in 'data'; please choose a different name") 
   data$dt <- 0
@@ -243,7 +248,7 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
                                formula=formula,formulaDelta=formulaDelta,stationary=stationary,mixtures=mixtures,formulaPi=formulaPi,
                                nlmPar=nlmPar,fit=fit,
                                DM=DM,userBounds=userBounds,workBounds=workBounds,betaCons=betaCons,betaRef=NULL,deltaCons=deltaCons,
-                               mvnCoords=mvnCoords,stateNames=stateNames,knownStates=knownStates,fixPar=fixPar,retryFits=retryFits,retrySD=retrySD,ncores=ncores,optMethod=optMethod,control=control,prior=prior,modelName=modelName, CT=TRUE, Time.name=Time.name, kappa=kappa),warning=muffleCTwarning)
+                               mvnCoords=mvnCoords,stateNames=stateNames,knownStates=knownStates,fixPar=fixPar,retryFits=retryFits,retrySD=retrySD,ncores=ncores,optMethod=optMethod,control=control,prior=prior,modelName=modelName, CT=TRUE, kappa=kappa),warning=muffleCTwarning)
   
   class(mfit) <- append(class(mfit),"CTHMM")
   mfit$conditions$CT <- TRUE
@@ -294,7 +299,7 @@ fitCTHMM.momentuHMMData <- function(data,Time.name="time",Time.unit="auto",nbSta
 #' @seealso \code{\link{simHierData}}
 #' 
 #' @export
-fitCTHMM.momentuHierHMMData <- function(data,Time.name="time",Time.unit="auto",hierStates,hierDist,
+fitCTHMM.momentuHierHMMData <- function(data,hierStates,hierDist,
                                       Par0,hierBeta=NULL,hierDelta=NULL,
                                       estAngleMean=NULL,circularAngleMean=NULL,
                                       hierFormula=NULL,hierFormulaDelta=NULL,mixtures=1,formulaPi=NULL,
@@ -308,16 +313,20 @@ fitCTHMM.momentuHierHMMData <- function(data,Time.name="time",Time.unit="auto",h
   if(length(data)<1 | any(dim(data)<1))
     stop("The data input is empty.")
   
+  if(!isTRUE(attr(data,"CT"))) {
+    stop("'data' does not appear to be in continuous time -- was 'CT' set to TRUE in prepData?")
+  }
+  
   inputHierHMM <- formatHierHMM(data,hierStates,hierDist,hierBeta,hierDelta,hierFormula,hierFormulaDelta,mixtures,workBounds,betaCons,deltaCons,fixPar,checkData = TRUE, CT=TRUE)
 
   chkDots(...)
   
-  withCallingHandlers(hfit <- fitCTHMM.momentuHMMData(momentuHMMData(data),Time.name=Time.name,Time.unit=Time.unit,inputHierHMM$nbStates,inputHierHMM$dist,Par0,inputHierHMM$beta,inputHierHMM$delta,
+  withCallingHandlers(hfit <- fitCTHMM.momentuHMMData(momentuHMMData(data),inputHierHMM$nbStates,inputHierHMM$dist,Par0,inputHierHMM$beta,inputHierHMM$delta,
                                 estAngleMean,circularAngleMean,
                                 formula=inputHierHMM$formula,inputHierHMM$formulaDelta,stationary=FALSE,mixtures,formulaPi,
                                 nlmPar,fit,
                                 DM,userBounds,workBounds=inputHierHMM$workBounds,inputHierHMM$betaCons,inputHierHMM$betaRef,deltaCons=inputHierHMM$deltaCons,
-                                mvnCoords,inputHierHMM$stateNames,knownStates,inputHierHMM$fixPar,retryFits,retrySD,ncores,optMethod,control,prior,modelName, CT=TRUE, kappa=kappa),warning=muffleCTwarning)
+                                mvnCoords,inputHierHMM$stateNames,knownStates,inputHierHMM$fixPar,retryFits,retrySD,ncores,optMethod,control,prior,modelName, kappa=kappa),warning=muffleCTwarning)
   
   # replace initial values with estimates in hierBeta and hierDelta (if provided)
   if(fit){

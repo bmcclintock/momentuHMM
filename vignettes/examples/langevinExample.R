@@ -46,10 +46,12 @@ lim <- c(min(tracks$x)-border,max(tracks$x)+border,min(tracks$y)-border,max(trac
 covlist0 <- lapply(covlist0, crop, y=extent(lim))
 
 # prepare data and calculate habitat gradients
-langData <- prepData(tracks,coordNames = c("x","y"),
-                      altCoordNames = "mu",
-                      spatialCovs = covlist0,
-                      gradient=TRUE)
+langData <- prepData(tracks,
+                     CT=TRUE, # identifies the data as being in continuous time
+                     coordNames = c("x","y"),
+                     altCoordNames = "mu",
+                     spatialCovs = covlist0,
+                     gradient=TRUE) # calculates gradients for spatial covariates
 
 # specify design matrix
 DM <- list(mu=matrix(c("mu.x_tm1","langevin(bathy.x)","langevin(slope.x)","langevin(d2site.x)",0,0,

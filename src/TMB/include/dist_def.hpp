@@ -1,3 +1,5 @@
+// code modified from the hmmTMB package: Michelot T, Glennie R (2023). hmmTMB: Fit Hidden Markov Models using Template Model Builder. R package version 1.0.2, <https://CRAN.R-project.org/package=hmmTMB>.
+
 #ifndef _DIST_
 #define _DIST_
 
@@ -1052,6 +1054,7 @@ public:
     for (int i = 0; i < dim; ++i) {
       for (int j = i; j < dim; ++j) {
         Sigma(j, i) = sds(j) * sds(i) * delta_t;
+        //Rprintf("sds(j) %f sds(i) %f delta_t %f \n",asDouble(sds(j)),asDouble(sds(i)),asDouble(delta_t));
         if (i != j) {
           Sigma(j, i) *= corr(k);
           ++k; 
@@ -1196,6 +1199,7 @@ public:
     for (int i = 0; i < dim; ++i) {
       for (int j = i; j < dim; ++j) {
         Sigma(j, i) = sds(j) * sds(i) * delta_t;
+        //Rprintf("sds(j) %f sds(i) %f delta_t %f \n",asDouble(sds(j)),asDouble(sds(i)),asDouble(delta_t));
         if (i != j) {
           Sigma(j, i) *= corr(k);
           ++k; 

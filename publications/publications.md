@@ -1,6 +1,6 @@
 Publications using momentuHMM
 ================
-2024-06-12
+2024-07-26
 
 <div id="refs" class="references csl-bib-body" line-spacing="2">
 

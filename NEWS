@@ -1,4 +1,4 @@
-momentuHMM 2.0.0 2024-06-13
+momentuHMM 2.0.0 2024-07-25
 -----------------
 NEW FEATURES
 
@@ -14,13 +14,15 @@ NEW FEATURES
 
 * 'colors' argument added to 'plotSpatialCov' function for specifying raster colors
 
-* 'gradient' argument added to 'prepData' and 'simData' for calculating gradients of spatial covariates using bilinear interpolation
+* 'gradient' argument added to 'prepData' and 'simData' functions for calculating gradients of spatial covariates using bilinear interpolation
 
-* 'ncores' argument added to 'fitHMM' (and 'fitCTHMM') for attempting 'retryFits' in parallel
+* 'ncores' argument added to 'fitHMM' (and 'fitCTHMM') functions for attempting 'retryFits' in parallel
 
 * 'addSmoothGradient' function can be used to calculate a smoothed version of the gradient of spatial covariates
 
 * 'matchModelObs' argument added to simulation functions when simulating from a fitted model
+
+* 'CT', 'Time.name', and 'Time.unit' arguments added to 'prepData' function for preparing continuous-time HMM data
 
 CHANGES
 

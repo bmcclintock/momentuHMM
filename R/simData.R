@@ -737,8 +737,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   maxRate <- Inf
   if(isTRUE(list(...)$CT)){
     kappa <- list(...)$kappa
-    if(!is.null(model)) maxRate <- model$conditions$kappa
-    else if(!is.list(kappa)) maxRate <- kappa
+    if(!is.null(model)) {
+      maxRate <- model$conditions$kappa
+      #if(maxRate!=kappa) warning("max rate set to ",kappa,", but transition rate working parameters remain on the same scale as in 'model'")
+    } else if(!is.list(kappa)) maxRate <- kappa
   }
   
   if(isTRUE(list(...)$ctds)){
@@ -1690,6 +1692,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         dt[[zoo]] <- c(as.numeric(difftime(allTimes[-1],allTimes[-length(allTimes)],units=attr(lambda[[zoo]],"units"))),0)
       } else dt[[zoo]] <- c(diff(allTimes),0)
       subCovs <- subCovs[cumsum(!allTimes %in% tswitch),,drop=FALSE]
+      if(isTRUE(list(...)$CT)) subCovs$dt <- dt[[zoo]]
       if(!is.null(iallCovs)) iallCovs <- iallCovs[cumsum(!allTimes %in% tswitch),,drop=FALSE]
       
       if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd) & !length(angleCovs) & !rwInd) {
@@ -1994,9 +1997,14 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
               }
               qsum <- sum(Qmat[Z[k], -Z[k]])
               
-              if(qsum - kappa > 1.e-6) {
-                warning("Transition rate sum for individual ",zoo," exceeds kappa -- terminating at observation ",k,": qsum = ",qsum," and kappa = ",kappa," -- please report to brett.mcclintock@noaa")
-                break;
+              if(is.finite(maxRate) | (qsum - kappa > 1.e-6)) {
+                if(is.finite(maxRate)){
+                  warning("Max transition rate for individual ",zoo," exceeds kappa -- terminating at observation ",sum((allTimes[1:k] %in% obsTimes[[zoo]])),": qsum = ",qsum," and kappa = ",kappa," -- please report to brett.mcclintock@noaa")
+                  break;
+                } else {
+                  warning("Max transition rate for individual ",zoo," exceeds kappa -- terminating at observation ",sum((allTimes[1:k] %in% obsTimes[[zoo]])),"; kappa should be increased")
+                  break;
+                }
               }
               if(runif(1) < qsum/kappa){
                 if (nbStates > 2) {

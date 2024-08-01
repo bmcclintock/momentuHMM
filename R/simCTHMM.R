@@ -66,7 +66,7 @@
 #' Ignored if \code{spatialCovs=NULL}.
 # #' @param times time values (numeric or POSIX) over which the CTHMM will be simulated for all animals. Alternatively, \code{times} can be specified as a list of length \code{nbAnimals} with each element the time values (numeric or POSIX) for each individual.
 #' @param lambda Observation rate. \code{lambda} is the rate parameter of the exponential distribution for the waiting times between successive observations, i.e., 
-#' \code{1/lambda} is the expected time between successive location observations. Note that only a single state transition can occur between observations. If \code{model} is specified and \code{model$data} time column is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}, \code{lambda} has the same units as the \code{Time.unit} argument in \code{\link{fitCTHMM}}. Default: 1.
+#' \code{1/lambda} is the expected time between successive location observations. If \code{model} is specified and \code{model$data} time column is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}, \code{lambda} has the same units as the \code{Time.unit} argument in \code{\link{prepData}}. Default: 1. Alternatively \code{lambda} can be specified as a list of length \code{nbAnimals} providing the exact observation times for each individual.
 #' @param errorEllipse List providing the upper bound for the semi-major axis (\code{M}; on scale of x- and y-coordinates), semi-minor axis (\code{m}; 
 #' on scale of x- and y-coordinates), and orientation (\code{r}; in degrees) of location error ellipses. If \code{NULL} (the default), no location 
 #' measurement error is simulated. If \code{errorEllipse} is specified, then each observed location is subject to bivariate normal errors as described 
@@ -165,6 +165,7 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
                      TMB=FALSE)
 {
   
+  Time.unit <- NULL
   if(!is.null(model)){
     if(is.miHMM(model)){
       model <- model$miSum
@@ -179,12 +180,12 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
       nbAnimals <- length(unique(model$data$ID))
       if(!all(obsPerAnimal==c(500,1500))) warning("'obsPerAnimal' is ignored when 'matchModelObs' is TRUE")
       obsPerAnimal <- as.list(table(model$data$ID,exclude=levels(model$data$ID)[which(!levels(model$data$ID) %in% unique(model$data$ID))]))#+ifelse(rwInd,1,0))
-      if(lambda!=1) warning("'lambda' is ignored when 'matchModelObs' is TRUE")
+      if(is.list(lambda) || lambda!=1) warning("'lambda' is ignored when 'matchModelObs' is TRUE")
       lambda <- list()
       for(zoo in 1:nbAnimals){
         lambda[[zoo]] <- model$data[[model$conditions$Time.name]][which(model$data$ID==unique(model$data$ID)[zoo])]
         #if(rwInd) lambda[[zoo]] <- c(lambda[[zoo]][1]-model$data$dt[which(model$data$ID==unique(model$data$ID)[zoo])[1]],lambda[[zoo]])
-        if(inherits(lambda[[zoo]] ,"POSIXt")) attr(lambda[[zoo]],"units") <- model$conditions$Time.unit
+        if(inherits(lambda[[zoo]] ,"POSIXt")) attr(lambda[[zoo]],"units") <- Time.unit <- model$conditions$Time.unit
       }
     }
     if(is.null(kappa)){
@@ -196,7 +197,19 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
       if(!dist[[i]] %in% CTHMMdists) stop("Sorry, currently simCTHMM only supports the following distributions: ",paste0(CTHMMdists,sep=", "))
     }
     if(!is.null(lambda)){
-      if(length(lambda)>1 || lambda<=0) stop('lambda must be a scalar and >0')
+      if(is.list(lambda)){
+        if(length(lambda)!=nbAnimals) stop("'lambda' must be a list of length ",nbAnimals)
+        for(zoo in 1:nbAnimals){
+          if(inherits(lambda[[zoo]] ,"POSIXt")){
+            if(is.null(attr(lambda[[zoo]],"units"))) attr(lambda[[zoo]],"units") <- 'auto'
+            Time.unit <- attr(lambda[[zoo]],"units")
+          }
+          if(length(lambda[[zoo]])!=obsPerAnimal[[zoo]]) {
+            warning("'lambda' for individual ",zoo," is not consistent with 'obsPerAnimal'; obsPerAnimal[[",zoo,"]] has been set to ",length(lambda[[zoo]]))
+            obsPerAnimal[[zoo]] <- length(lambda[[zoo]]) 
+          }
+        }
+      } else if(length(lambda)>1 || lambda<=0) stop('lambda must be a list or positive scalar')
     } else stop("lambda cannot be NULL")
     if(is.null(kappa)){
       kappa <- list(method=c("all","random","quantile"),nspCov=NA,spCov=NA)
@@ -283,8 +296,10 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
   }
   attr(out,"CT") <- TRUE
   attr(out,"Time.name") <- timeName
+  attr(out,"Time.unit") <- Time.unit
   attr(out,"gradient") <- ifelse(!is.null(model),isTRUE(attr(model$data,"gradient")),gradient)
-  attr(out,"kappa") <- kappa
+  if(is.null(model)) attr(out,"kappa") <- kappa
+  else attr(out,"kappa") <- model$conditions$kappa
   return(out)
   
 }

@@ -1180,6 +1180,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       ## Simulate covariate values ##
       ###############################
       subCovs<-data.frame(ID=rep(factor(IDs[zoo],levels=IDs),nbObs),level=factor(level[[zoo]],levels=lLevels[[zoo]]))
+      if(isTRUE(list(...)$CT)) subCovs$dt <- dt[[zoo]]
       if(nbCovs>0) {
         # select covariate values which concern the current animal
         if(zoo<2)
