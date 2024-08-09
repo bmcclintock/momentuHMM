@@ -73,3 +73,11 @@ arma::mat cbindsigma3(arma::mat x, arma::mat y, arma::mat z, arma::mat xy, arma:
   out(5,_) = as<NumericVector>(wrap(yz));
   return as<arma::mat>(out);
 }
+
+// // [[Rcpp::export]]
+//arma::mat concat(arma::mat x, arma::mat y){
+//  NumericMatrix out(1,x.size() + y.size());
+//  std::copy(x.begin(),x.end(), out.begin());
+//  std::copy(y.begin(),y.end(), out.begin() + x.size());
+//  return as<arma::mat>(out);
+//}

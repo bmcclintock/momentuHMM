@@ -1,10 +1,10 @@
-momentuHMMdists<-sort(c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm','norm','bern','vmConsensus','mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3','rw_norm','cat','negbinom','logis','t','ctds'))
+momentuHMMdists<-sort(c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm','norm','bern','vmConsensus','mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3','rw_norm','cat','negbinom','logis','t','ctds','crwrice','crwvm'))
 moveHMMdists<-sort(c('gamma','weibull','exp','lnorm','wrpcauchy','vm'))
-angledists<-sort(c('wrpcauchy','vm','vmConsensus'))
-stepdists<-sort(c('gamma','weibull','exp','lnorm'))
+angledists<-sort(c('wrpcauchy','vm','vmConsensus','crwvm'))
+stepdists<-sort(c('gamma','weibull','exp','lnorm','crwrice'))
 singleParmdists<-sort(c('exp','pois','bern'))
-nonnegativedists<-sort(c('gamma','weibull','exp','lnorm','pois','negbinom'))
-zeroInflationdists<-sort(c('gamma','weibull','exp','lnorm','beta'))
+nonnegativedists<-sort(c('gamma','weibull','exp','lnorm','pois','negbinom','crwrice'))
+zeroInflationdists<-sort(c('gamma','weibull','exp','lnorm','beta','crwrice'))
 oneInflationdists<-sort(c('beta'))
 integerdists<-sort(c('bern','pois','cat','negbinom','ctds'))
 mvndists <- c('mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3')
@@ -17,7 +17,7 @@ meansListNoTime<-c("numeric","integer")
 modeList<- c("factor","logical")
 plotArgs <- c("cex","cex.main","cex.lab","cex.axis","cex.legend","lwd","asp","legend.pos")
 fitMethods<-c("nlm","TMB","Nelder-Mead","SANN")
-badNames <- c("beta", "delta", "pi", "g0", "theta")
+badNames <- c("beta", "delta", "pi", "g0", "theta","dt")
 
 #' @importFrom stats dbinom
 dbern <- function (x, prob, log = FALSE) 
@@ -53,6 +53,151 @@ pnegbinom <- function (q, mu, size, lower.tail = TRUE, log.p = FALSE)
 rnegbinom<- function (n, mu, size) 
 {
   return(stats::rnbinom(n, size = size, mu = mu))
+}
+
+dcrwrice <- function(x, beta, sigma, step_tm1 = 0, log = FALSE){
+
+  n <- length(x)
+  if(length(beta)==1) beta <- rep(beta,n)
+  if(length(sigma)==1) sigma <- rep(sigma,n)
+  if(n>1 & length(beta)!=n) stop("'beta' should be of length ",n)
+  if(n>1 & length(sigma)!=n) stop("'sigma' should be of length ",n)
+  
+  mu <- step_tm1*(1-exp(-beta))/beta
+  var <- sigma*sigma/(beta*beta) * (1. - 2. / beta * (1.-exp(-beta))+1. / (2.*beta)*(1-exp(-2*beta)));
+  sd <- sqrt(var)  
+  xabs <- abs(x * mu/var)
+  logdens <- log(x) - 2 * log(sd) + (-(x^2 + mu^2)/(2 * var)) + log(besselI(xabs, nu = 0, expon.scaled = TRUE)) + xabs
+  if (log) 
+    logdens
+  else exp(logdens)
+}
+
+#' @importFrom stats pchisq
+pcrwrice <- function (q, beta, sigma, step_tm1 = 0, lower.tail = TRUE, log.p = FALSE) 
+{
+  n <- length(q)
+  if(length(beta)==1) beta <- rep(beta,n)
+  if(length(sigma)==1) sigma <- rep(sigma,n)
+  if(n>1 & length(beta)!=n) stop("'beta' should be of length ",n)
+  if(n>1 & length(sigma)!=n) stop("'sigma' should be of length ",n)
+  
+  mu <- step_tm1*(1-exp(-beta))/beta
+  var <- sigma*sigma/(beta*beta) * (1. - 2. / beta * (1.-exp(-beta))+1. / (2.*beta)*(1-exp(-2*beta)));
+  sd <- sqrt(var)
+  a <- mu/sd
+  b <- q/sd
+  m <- 1
+  
+  out <- stats::pchisq(b^2, df = 2 * m, ncp = a^2, lower.tail = lower.tail, log.p = log.p)
+  return(out)
+}
+
+#' @importFrom stats rnorm
+rcrwrice <- function(n, beta, sigma, step_tm1=0)
+{
+  steps <- numeric(n+1)
+  steps[1] <- step_tm1
+  
+  sd <- sqrt(sigma*sigma/(beta*beta) * (1. - 2. / beta * (1.-exp(-beta))+1. / (2.*beta)*(1-exp(-2*beta))))
+  theta <- 1
+  
+  for(i in 2:(n+1)){
+    mu <- steps[i-1]*(1-exp(-beta))/beta
+    
+    X <- rnorm(1, mean = mu * cos(theta), sd = sd)
+    Y <- rnorm(1, mean = mu * sin(theta), sd = sd)
+    steps[i] <- sqrt(X^2 + Y^2)
+  }
+  return(steps[-1])
+}
+
+#' @importFrom stats integrate approxfun
+intdcrwrice <- function(step, beta, sigma, xmin, xmax, stepDens, log = FALSE){
+  n <- length(step)
+  out <- numeric(n)
+  for(i in 1:n){
+    out[i] <- integrate(function(step_tm1, step, beta, sigma, log = FALSE){
+      
+      mu <- step_tm1*(1-exp(-beta))/beta
+      var <- sigma*sigma/(beta*beta) * (1. - 2. / beta * (1.-exp(-beta))+1. / (2.*beta)*(1-exp(-2*beta)));
+      sd <- sqrt(var)  
+      xabs <- abs(step[i] * mu/var)
+      logdens <- log(step[i]) - 2 * log(sd) + (-(step[i]^2 + mu^2)/(2 * var)) + log(besselI(xabs, nu = 0, expon.scaled = TRUE)) + xabs
+      logdens <- logdens + log(stepDens(step_tm1))
+      if (log) 
+        logdens 
+      else exp(logdens)
+      
+    },lower=xmin,upper=xmax,step=step,beta=beta,sigma=sigma)$value
+  }
+  if(log) out <- log(out)
+  return(out)
+}
+
+dcrwvm <- function(x, beta, sigma, steps, steps_tm1, log = FALSE)
+{
+  n <- length(x)
+  
+  if(missing(steps)) stop("'steps' must be provided")
+  if(missing(steps_tm1)) stop("'steps_tm1' must be provided")
+  if(length(steps)!=n) stop("'steps' must be of length ",n)
+  if(length(steps_tm1)!=n) stop("'steps_tm1' must be of length ",n)
+  if(length(beta)==1) beta <- rep(beta,n)
+  if(length(sigma)==1) sigma <- rep(sigma,n)
+
+  var <- sigma*sigma/(beta*beta) * (1. - 2. / beta * (1.-exp(-beta))+1. / (2.*beta)*(1-exp(-2*beta)));
+  kappa <- steps_tm1*steps*exp(-beta)/var
+  b <- besselI(kappa, nu = 0, expon.scaled = TRUE)
+  logdens <- -log(2*pi*b) + kappa * (cos(x)-1)
+  if(log) logdens
+  else exp(logdens)
+}
+
+intdcrwvm <- function(angle, beta, sigma, xmin, xmax, stepDens, log = FALSE){
+  n <- length(angle)
+  out <- numeric(n)
+  for(i in 1:n){
+    out[i] <- pracma::integral2(function(step_tm1, step, angle, beta, sigma, log = FALSE){
+      
+      var <- sigma*sigma/(beta*beta) * (1. - 2. / beta * (1.-exp(-beta))+1. / (2.*beta)*(1-exp(-2*beta)));
+      kappa <- step_tm1*step*exp(-beta)/var
+      b <- besselI(kappa, nu = 0, expon.scaled = TRUE)
+      logdens <- -log(2*pi*b) + kappa * (cos(angle)-1)
+      logdens <- logdens + log(stepDens(step_tm1)) + log(stepDens(step))
+      if(log) logdens
+      else exp(logdens)
+    },xmin=xmin,xmax=xmax,ymin=xmin,ymax=xmax,angle=angle[i],beta=beta,sigma=sigma,singular = TRUE)$Q
+  }
+  return(out)
+}
+
+#' @importFrom CircStats rvm
+rcrwvm <- function(n, beta, sigma, steps)
+{
+  if(missing(steps)) steps <- rcrwrice(2,beta,sigma)
+  else if(length(steps)!=2) stop("'steps' must be of length 2")
+  
+  var <- sigma*sigma/(beta*beta) * (1. - 2. / beta * (1.-exp(-beta))+1. / (2.*beta)*(1-exp(-2*beta)));
+  kappa <- steps[-1]*steps[-length(steps)]*exp(-beta)/var
+  return(CircStats::rvm(n,0,kappa))
+}
+
+pcrwvm <- function(x, beta, sigma, step_tm1 = 0, log = FALSE)
+{
+  n <- nrow(x)
+  steps <- x[,1]
+  angles <- x[,2]
+  
+  if(length(beta)==1) beta <- rep(beta,n)
+  if(length(sigma)==1) sigma <- rep(sigma,n)
+  
+  var <- sigma*sigma/(beta*beta) * (1. - 2. / beta * (1.-exp(-beta))+1. / (2.*beta)*(1-exp(-2*beta)));
+  kappa <- c(step_tm1*steps[1]*exp(-beta[1])/var[1],steps[-1]*steps[-n]*exp(-beta[-1])/var[-1])
+  b <- besselI(kappa, nu = 0, expon.scaled = TRUE)
+  logdens <- -log(2*pi*b) + kappa * (cos(angles)-1)
+  if(log) logdens
+  else exp(logdens)
 }
 
 dmvnorm2 <- dmvnorm3 <- drw_mvnorm2 <- drw_mvnorm3 <- function(x,mean,sigma){
@@ -163,12 +308,17 @@ crw <- function(x_tm1,lag=1,dt){
            call. = FALSE)
     }
   }
-  if(missing(dt)) dt <- rep(1,length(x_tm1))
+  if(missing(dt) || is.function(dt)) dt <- rep(1,length(x_tm1))
   else if(length(dt)==1) dt <- rep(dt,length(x_tm1))
   else if(length(dt)!=length(x_tm1)) stop("argument 'dt' in 'crw' function must be of length 1 or ",length(x_tm1))
   
-  diff <- dplyr::lag(x_tm1,n=lag-1,default=x_tm1[1])-dplyr::lag(x_tm1,n=lag,default=x_tm1[1])
-  vel <- diff/dplyr::lag(dt,n=lag,default=0)
+  aInd <- c(attr(x_tm1,"aInd"),length(x_tm1)+1)
+  nbAnimals <- length(aInd) - 1
+  diff <- vel <- numeric(length(x_tm1))
+  for(i in 1:nbAnimals){
+    diff[aInd[i]:(aInd[i+1]-1)] <- dplyr::lag(x_tm1[aInd[i]:(aInd[i+1]-1)],n=lag-1,default=x_tm1[aInd[i]])-dplyr::lag(x_tm1[aInd[i]:(aInd[i+1]-1)],n=lag,default=x_tm1[aInd[i]])
+    vel[aInd[i]:(aInd[i+1]-1)] <- diff[aInd[i]:(aInd[i+1]-1)]/dplyr::lag(dt[aInd[i]:(aInd[i+1]-1)],n=lag,default=0)
+  }
   if(any(!is.finite(vel))){
     vel[which(!is.finite(vel))] <- 0
   }

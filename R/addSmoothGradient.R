@@ -26,7 +26,7 @@ addSmoothGradient <- function(data,#CT=FALSE,Time.name="time",Time.unit='auto',
   if(!is.momentuHMMData(data)) stop("data must be a momentuHMMData object (as returned by prepData or simData) ")
   if(inherits(data,"ctds")) stop("data cannot be a 'ctds' object (as returned by prepCTDS")
   
-  if(isTRUE(inherits(data,"CT"))){
+  if(isTRUE(attr(data,"CT"))){
     CT <- TRUE
     Time.name <- attr(data,"Time.name")
     Time.unit <- attr(data,"Time.unit")
@@ -70,7 +70,6 @@ addSmoothGradient <- function(data,#CT=FALSE,Time.name="time",Time.unit='auto',
   rx <- diff(data[iInd,coordNames[1]])
   ry <- diff(data[iInd,coordNames[2]])
   if(isTRUE(CT)){
-    if(!isTRUE(inherits(data,"CT"))) warning("'data' appears to be in discrete time -- should 'CT' be FALSE?")
     if(is.null(Time.name)) stop("'Time.name' cannot be NULL when CT=TRUE")
     else {
       if(!Time.name %in% names(data)) stop("Time.name not found in 'data'") 
@@ -84,7 +83,6 @@ addSmoothGradient <- function(data,#CT=FALSE,Time.name="time",Time.unit='auto',
       }
     }
   } else {
-    if(isTRUE(inherits(data,"CT"))) warning("'data' appears to be in continuous time -- should 'CT' be TRUE?")
     dt <- rep(1,length(rx))
   }
   locs <- utils::head(data[iInd,coordNames],-1)

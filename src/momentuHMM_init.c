@@ -4,7 +4,7 @@
 #include <R_ext/Rdynload.h>
 #include "expm.h"
 
-// Mostly generated with tools::package_native_routine_registration_skeleton (R 4.0)
+// Mostly generated with tools::package_native_routine_registration_skeleton(getwd(),,,FALSE) (R 4.0)
 // additionally requires: 
 // #include "expm.h" in header
 // expm = (void (*) (double*, int, double*, precond_type)) R_GetCCallable("expm", "expm"); in R_init_momentuHMM
@@ -18,6 +18,8 @@ extern SEXP _momentuHMM_combine(SEXP, SEXP);
 extern SEXP _momentuHMM_dbern_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dbeta_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dcat_rcpp(SEXP, SEXP, SEXP);
+extern SEXP _momentuHMM_dcrwrice_rcpp(SEXP, SEXP, SEXP);
+extern SEXP _momentuHMM_dcrwvm_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dexp_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dgamma_rcpp(SEXP, SEXP, SEXP);
 extern SEXP _momentuHMM_dlnorm_rcpp(SEXP, SEXP, SEXP);
@@ -46,6 +48,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_momentuHMM_dbern_rcpp",      (DL_FUNC) &_momentuHMM_dbern_rcpp,       3},
     {"_momentuHMM_dbeta_rcpp",      (DL_FUNC) &_momentuHMM_dbeta_rcpp,       3},
     {"_momentuHMM_dcat_rcpp",       (DL_FUNC) &_momentuHMM_dcat_rcpp,        3},
+    {"_momentuHMM_dcrwrice_rcpp",   (DL_FUNC) &_momentuHMM_dcrwrice_rcpp,    3},
+    {"_momentuHMM_dcrwvm_rcpp",     (DL_FUNC) &_momentuHMM_dcrwvm_rcpp,      3},
     {"_momentuHMM_dexp_rcpp",       (DL_FUNC) &_momentuHMM_dexp_rcpp,        3},
     {"_momentuHMM_dgamma_rcpp",     (DL_FUNC) &_momentuHMM_dgamma_rcpp,      3},
     {"_momentuHMM_dlnorm_rcpp",     (DL_FUNC) &_momentuHMM_dlnorm_rcpp,      3},

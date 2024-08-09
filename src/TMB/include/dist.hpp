@@ -71,6 +71,10 @@ std::unique_ptr<Dist<Type>> dist_generator(const int& code) {
     return(std::unique_ptr<Dist<Type>>(new RWcovMultivariateNormal<Type>));
   case 28:
     return(std::unique_ptr<Dist<Type>>(new RWMultivariateNormal<Type>));
+  case 29:
+    return(std::unique_ptr<Dist<Type>>(new CRWRice<Type>));
+  case 30:
+    return(std::unique_ptr<Dist<Type>>(new CRWVonMises<Type>));
   default: 
     return(std::unique_ptr<Dist<Type>>(new Normal<Type>)); 
   }

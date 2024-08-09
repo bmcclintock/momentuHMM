@@ -521,6 +521,86 @@ arma::colvec dt_rcpp(NumericVector x, arma::mat df, arma::mat ncp)
   return res;
 }
 
+//' Correlated random walk Rice distribution
+//'
+//' Probability density function of Rice distribution under the CTCRW model of Johnson et al. (2008) (written in C++)
+//'
+//' @param x numeric data vector of length \code{n + n} where the first \code{n} entries correspond to the step lengths and the next \code{n} entries to the corresponding previous step lengths (the first of which is NA and ignored).
+//' @param beta correlation parameter 
+//' @param sigma speed parameter
+//'
+//' @return Vector of densities
+// [[Rcpp::export]]
+arma::colvec dcrwrice_rcpp(NumericVector x, arma::mat beta, arma::mat sigma)
+{  
+  double mu;
+  double var;
+  double sd;
+  double xabs;
+  double step_tm1;
+  unsigned int xs = (unsigned int) beta.n_cols;
+  arma::colvec res(xs);
+  res(0) = 0.;
+  
+  for(unsigned int i=0;i<xs;i++) {
+    if(!arma::is_finite(x(i)))
+      res(i) = 0.; // is missing observation
+    else {
+      //if(i<1) step_tm1 = 0.;
+      step_tm1 = x(xs+i);
+      if(arma::is_finite(step_tm1)){
+        mu = step_tm1*(1.-exp(-beta(i)))/beta(i);
+        var = sigma(i)*sigma(i)/(beta(i)*beta(i)) * (1. - 2. / beta(i) * (1.-exp(-beta(i)))+1. / (2.*beta(i))*(1.-exp(-2.*beta(i))));
+        sd = sqrt(var);
+        xabs = abs(x(i)*mu/var);
+        res(i) = log(x(i)) - 2.0 * log(sd) +
+          (-(x(i)*x(i)+mu*mu)/(2.0*var)) +
+          log(R::bessel_i(xabs,0,2)) + xabs;
+      } else res(i) = 0.;
+    }
+    //Rprintf("xs %d length(x) %d length(beta) %d length(sigma) %d i %d step_tm1 %f step %f beta %f sigma %f res %f \n",xs,x.size(),beta.n_cols,sigma.n_cols,i,step_tm1,x(i),beta(i),sigma(i),res(i));
+  }
+  return exp(res);
+}
+
+//' Correlated random walk von Mises density function
+//'
+//' Probability density function of the Von Mises distribution under the CTCRW model of Johnson et al. (2008) (written in C++)
+//'
+//' @param x numeric data vector of length \code{n + n + n} where the first \code{n} entries correspond to angles (von Mises distribution), the next \code{n} entries to the corresponding step lengths, and the last \code{n} entries to the corresponding previous step lengths.
+//' @param beta correlation parameter 
+//' @param sigma speed parameter
+//'
+//' @return Vector of densities
+// [[Rcpp::export]]
+ arma::colvec dcrwvm_rcpp(NumericVector x, arma::mat beta, arma::mat sigma)
+{
+ unsigned int xs = (unsigned int) beta.n_cols;
+ arma::colvec res(xs);
+ res(0) = 1.;
+ 
+ double b;
+ double kappa;
+ double var;
+ double step, step_tm1;
+ for(unsigned int i=0;i<xs;i++) {
+   if(!arma::is_finite(x(i)) || !arma::is_finite(x(xs+i)) || !arma::is_finite(x(2*xs+i)))
+     res(i) = 1.; // is missing observation
+   else {
+     //if(i<1) step_tm1 = 0.;
+     step = x(xs+i);
+     step_tm1 = x(2*xs+i);
+     var = sigma(i)*sigma(i)/(beta(i)*beta(i)) * (1. - 2. / beta(i) * (1.-exp(-beta(i)))+1. / (2.*beta(i))*(1-exp(-2*beta(i))));
+     kappa = step*step_tm1*exp(-beta(i))/var;
+     b = R::bessel_i(kappa,0,2);
+     res(i) = 1/(2*M_PI*b)*pow((exp(cos(x(i))-1)),kappa);
+     //Rprintf("xs %d length(x) %d length(beta) %d length(sigma) %d i %d xs+i %d 2*xs+i %d step_tm1 %f step %f angle %f kappa %f beta %f sigma %f res %f \n",xs,x.size(),beta.n_cols,sigma.n_cols,i,xs+i,2*xs+i,step_tm1,step,x(i),kappa,beta(i),sigma(i),res(i));
+   }
+ }
+ 
+ return res;
+}
+
 // used in nLogLike_rcpp to map the functions' names to the functions
 typedef arma::colvec (*FunPtr)(NumericVector, arma::mat, arma::mat);
 

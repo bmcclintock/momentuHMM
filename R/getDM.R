@@ -13,6 +13,13 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
   lanInd <- vector('list',length(dist))
   names(lanInd) <- distnames
   
+  aInd <- NULL
+  nbAnimals <- length(unique(data$ID))
+  if(nbAnimals){
+    for(i in 1:nbAnimals)
+      aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
+  } else aInd <- 1
+  
   for(i in distnames){
     if(dist[[i]]=="ctds" && #i==attr(data,"ctdsData") && 
        (is.null(DM[[i]]) || !is.list(DM[[i]]))) stop("DM$",i," must be specified as a list with a formula for parameter 'lambda'")
@@ -56,7 +63,12 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
       for(j in names(DM[[i]])){
         tmpCov[[j]] <- vector('list',nbStates)
         for(state in 1:nbStates){
-          if(wlag) lag <- get_crwlag(formulaStates[[j]][[state]],lag)
+          lag <- get_crwlag(formulaStates[[j]][[state]],lag)
+          if(lag){
+            for(jj in all.vars(formulaStates[[j]][[state]],data)){
+              attr(data[[jj]],"aInd") <- aInd
+            }
+          }
           tmpCov[[j]][[state]]<-stats::model.matrix(formulaStates[[j]][[state]],data)
           if(!isFALSE(circularAngleMean[[i]])){
             if(j=="mean"){
@@ -169,12 +181,16 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
             tmpcovj <- gsub(factorcovs[factorvar][j],tmpcov[j],tmpcovj)
           }
           tform <- stats::formula(paste("~ 0 + ",tmpcovj))
-          if(wlag) lag <- get_crwlag(tform,lag)
+          lag <- get_crwlag(tform,lag)
+          if(lag){
+            for(jj in all.vars(tform,data)){
+              attr(data[[jj]],"aInd") <- aInd
+            }
+          }
           tmpcovs<-stats::model.matrix(tform,data)
           tmpcovs<-tmpcovs[,which(gsub(" ","",colnames(tmpcovs)) %in% gsub(" ","",cov))]
           covs<-cbind(covs,tmpcovs)
         } else {
-          if(wlag) lag <- get_crwlag(form,lag)
           #if(!grepl("langevin\\(",cov)){ # still need to figure out solution for objects in formula that are not in data for langevin models
           tmpCol <- tryCatch(stats::get_all_vars(form,data),error=function(e) e)#rownames(attr(stats::terms(formula),"factors"))#attr(stats::terms(formula),"term.labels")#seq(1,ncol(data))[-match(c("ID","x","y",distnames),names(data),nomatch=0)]
           if(inherits(tmpCol,"error")){
@@ -192,6 +208,12 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
           }
           rm(tmpCol)
           #}
+          lag <- get_crwlag(form,lag)
+          if(lag){
+            for(jj in all.vars(form,data)){
+              attr(data[[jj]],"aInd") <- aInd
+            }
+          }
           tmpcovs<-stats::model.matrix(form,data)[,2]
           covs<-cbind(covs,tmpcovs)
         }
@@ -269,7 +291,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
   return(list(fullDM=simpDM,DMind=DMind,lag=lag,langInd = any(!is.null(unlist(lanInd)))))
 }
 
-get_crwlag <- function(form,clag){
+get_crwlag <- function(form,clag=0){
   lag <- 0
   if(length(attr(stats::terms(form, specials="crw"),"specials")$crw)){
     if (!requireNamespace("prodlim", quietly = TRUE)) {
@@ -278,7 +300,8 @@ get_crwlag <- function(form,clag){
     }
     Terms <- stats::terms(form,specials="crw")
     tm1 <- attr(prodlim::strip.terms(Terms[attr(Terms,"specials")$crw],specials="crw",arguments=list(crw=list("lag"=1,"dt"=1))),"term.labels")
-    lag <- as.numeric(attr(prodlim::strip.terms(Terms[attr(Terms,"specials")$crw],specials="crw",arguments=list(crw=list("lag"=1,"dt"=1))),"stripped.arguments")$crw[[tm1]]$lag)
+    strTerm <- attr(prodlim::strip.terms(Terms[attr(Terms,"specials")$crw],specials="crw",arguments=list(crw=list("lag"=1,"dt"=1))),"stripped.arguments")$crw
+    lag <- max(as.numeric(unlist(strTerm)[which( names(unlist(strTerm)) %in% paste0(tm1,".lag"))]))
   }
   max(c(clag,lag))
 }

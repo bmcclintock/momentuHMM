@@ -133,7 +133,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
     
     tmpwpar<-wpar[parindex[[i]]+1:parCount[[i]]]
     
-    if(estAngleMean[[i]] & Bndind[[i]] & !TMB){ 
+    if(estAngleMean[[i]] & Bndind[[i]] & !TMB & dist[[i]]!="crwvm"){ 
       bounds[[i]][,1] <- -Inf
       bounds[[i]][which(bounds[[i]][,2]!=1),2] <- Inf
       
@@ -148,7 +148,7 @@ w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMe
     parlist[[i]] <- tryCatch(w2nDM(tmpwpar,bounds[[i]],fullDM[[i]],DMind[[i]],nbObs,circularAngleMean[[i]],consensus[[i]],nbStates,0,nc[[i]],meanind[[i]],workBounds[[i]],dist[[i]],TMB),error=function(e) e)
     if(inherits(parlist[[i]],"error")) stop("\nFailed to calculate '",i,"' natural scale parameters: ",parlist[[i]],"\n     check initial values, workBounds, userBounds, nlmPar or control, etc.")
     
-    if((dist[[i]] %in% angledists) & !estAngleMean[[i]]){
+    if((dist[[i]] %in% angledists) & !estAngleMean[[i]] & dist[[i]]!="crwvm"){
       tmp<-matrix(0,nrow=(parSize[[i]]+1)*nbStates,ncol=nbObs)
       tmp[nbStates+1:nbStates,]<-parlist[[i]]
       parlist[[i]] <- tmp

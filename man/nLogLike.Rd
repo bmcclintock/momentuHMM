@@ -42,7 +42,8 @@ nLogLike(
   aInd = aInd,
   CT = FALSE,
   dtIndex = NULL,
-  kappa = Inf
+  kappa = Inf,
+  crwST = FALSE
 )
 }
 \arguments{
@@ -127,6 +128,8 @@ model (if any).}
 \item{dtIndex}{time difference index for calculating transition probabilities of hierarchical continuous-time models}
 
 \item{kappa}{maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization, in which case the transition rate parameters \code{beta} are on the logit scale (instead of the log scale). Ignored unless \code{CT=TRUE}.}
+
+\item{crwST}{logical indicating whether to fit a correlated step and turn random walk model}
 }
 \value{
 The negative log-likelihood of the parameters given the data.

@@ -1426,4 +1426,82 @@ public:
   }
   
 };
+
+template<class Type> 
+class CRWRice : public Dist<Type> {
+public:
+  // Constructor
+  CRWRice() {}; 
+  // Link function 
+  vector<Type> link(const vector<Type>& par, const int& n_states) {
+    vector<Type> wpar(par.size()); 
+    // mean and sd
+    wpar = log(par); 
+    return(wpar); 
+  } 
+  // Inverse link function 
+  matrix<Type> invlink(const vector<Type>& wpar, const int& n_states) {
+    int n_par = wpar.size()/n_states;
+    matrix<Type> par(n_states, n_par);
+    // mean 
+    for (int i = 0; i < n_states; ++i) par(i, 0) = exp(wpar(i)); 
+    // sd 
+    for (int i = 0; i < n_states; ++i) par(i, 1) = exp(wpar(i + n_states)); 
+    return(par); 
+  }
+  // Probability density/mass function
+  Type pdf(const vector<Type>& x, const vector<Type>& par, const Type& delta_t, const bool& logpdf) {
+    Type beta = par(0);
+    Type sigma = par(1);
+    Type step_tm1 = x(0);
+    Type step = x(1);
+    Type mu = step_tm1*(Type(1.)-exp(-beta))/beta;
+    Type var = sigma*sigma/(beta*beta) * (Type(1.) - Type(2.) / beta * (Type(1.)-exp(-beta))+Type(1.) / (Type(2.)*beta)*(Type(1.)-exp(-Type(2.)*beta)));
+    Type sd = sqrt(var);
+    Type xabs = fabs(step*mu/var);
+    Type val = log(step) - Type(2.0) * log(sd) +
+      (-(step*step+mu*mu)/(Type(2.0)*var)) +
+      log(exp(-xabs)*besselI(xabs,Type(0))) + xabs;
+    if(!logpdf) val = exp(val);
+    return(val); 
+  }
+};
+
+template<class Type> 
+class CRWVonMises : public Dist<Type> {
+public:
+  // Constructor
+  CRWVonMises() {}; 
+  // Link function 
+  vector<Type> link(const vector<Type>& par, const int& n_states) {
+    vector<Type> wpar(par.size()); 
+    // mean and sd
+    wpar = log(par); 
+    return(wpar); 
+  } 
+  // Inverse link function 
+  matrix<Type> invlink(const vector<Type>& wpar, const int& n_states) {
+    int n_par = wpar.size()/n_states;
+    matrix<Type> par(n_states, n_par);
+    // mean 
+    for (int i = 0; i < n_states; ++i) par(i, 0) = exp(wpar(i)); 
+    // sd 
+    for (int i = 0; i < n_states; ++i) par(i, 1) = exp(wpar(i + n_states)); 
+    return(par); 
+  }
+  // Probability density/mass function
+  Type pdf(const vector<Type>& x, const vector<Type>& par, const Type& delta_t, const bool& logpdf) {
+    Type beta = par(0);
+    Type sigma = par(1);
+    Type step_tm1 = x(0);
+    Type step = x(1);
+    Type angle = x(2);
+    Type var = sigma*sigma/(beta*beta) * (Type(1.) - Type(2.) / beta * (Type(1.)-exp(-beta))+Type(1.) / (Type(2.)*beta)*(Type(1.)-exp(-Type(2.)*beta)));
+    Type kappa = step_tm1*step*exp(-beta)/var;
+    Type b = exp(-kappa) * besselI(kappa, Type(0));
+    Type val = -log(Type(2.) * M_PI * b) + kappa * (cos(angle)-Type(1.));
+    if(!logpdf) val = exp(val);
+    return(val); 
+  }
+};
 #endif

@@ -403,6 +403,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     rmvnorm3 <- rmvnorm3
     rvm <- CircStats::rvm
     rwrpcauchy <- CircStats::rwrpcauchy
+    rcrwrice <- rcrwrice
+    rcrwvm <- rcrwvm
     trMatrix_rcpp <- trMatrix_rcpp
     ctPar <- ctPar
     if (requireNamespace("extraDistr", quietly = TRUE)){
@@ -661,6 +663,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       zi <- FALSE
       if(!is.null(zeroInflation$step)) zi <- zeroInflation$step
       if(is.null(dist$angle)) dist$angle<-"none"
+      if(nbStates==1) states <- FALSE # work around bug in moveHMM
       data <- moveHMM::simData(nbAnimals, nbStates, dist$step, dist$angle, Par$step, Par$angle, beta, covs, nbCovs, zi, obsPerAnimal, model, states)
       attr(data,"class") <- "data.frame"
       data$ID <- as.factor(data$ID)
@@ -730,8 +733,10 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   estAngleMean <- vector('list',length(distnames))
   names(estAngleMean) <- distnames
   for(i in distnames){
-    if(dist[[i]] %in% angledists) estAngleMean[[i]]<-TRUE
-    else estAngleMean[[i]]<-FALSE
+    if(dist[[i]] %in% angledists) {
+      estAngleMean[[i]]<-TRUE
+      if(dist[[i]]=="crwvm") estAngleMean[[i]]<-FALSE
+    } else estAngleMean[[i]]<-FALSE
   }
   
   maxRate <- Inf
@@ -1072,7 +1077,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   allStates <- NULL
   allSpatialcovs<-NULL
   
-  #make sure 'step' preceeds 'angle'
+  #make sure 'step' precedes 'angle'
   if(all(c("step","angle") %in% distnames)){
     distnames<-c("step","angle",distnames[!(distnames %in% c("step","angle"))])
   }
@@ -1808,10 +1813,22 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         } else {
           for(j in 1:(parSize[[i]]-zeroInflation[[i]]-oneInflation[[i]]))
             genArgs[[i]][[j+1]] <- subPar[[i]][(j-1)*nbStates+Z[k]]
+          if(inputs$dist[[i]]=="crwrice"){
+            if(k>1) genArgs[[i]][[j+2]] <- genData[[i]][k-1] # previous step
+            else genArgs[[i]][[j+2]] <- 0
+          } else if(inputs$dist[[i]]=="crwvm"){
+            if(k>1) genArgs[[i]][[j+2]] <- genData[["step"]][c(k-1,k)] # previous step
+          }
         }
         
         if(inputs$dist[[i]] %in% angledists){
           
+          if(dist[[i]]=="crwvm"){
+            if(k>1 && !all(genArgs[[i]][[j+2]]>0)) {
+              genArgs[[i]][[2]] <- genArgs[[i]][[3]] <- 12 # uniform turn angle if previous steps are zero
+              genArgs[[i]][[4]] <- NULL
+            }
+          }
           genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
           if(genData[[i]][k] >  pi) genData[[i]][k] <- genData[[i]][k]-2*pi
           if(genData[[i]][k] < -pi) genData[[i]][k] <- genData[[i]][k]+2*pi

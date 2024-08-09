@@ -1,6 +1,17 @@
-get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,deltaCons,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data,newdata,kappa=Inf,optMethod){
+get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates,DMinputs,recharge,nbG0covs,nbRecovs,workBounds,mixtures,newformula,formulaStates,nbCovs,betaCons,betaRef,deltaCons,stationary,nbCovsDelta,formulaDelta,formulaPi,nbCovsPi,data,newdata,kappa=Inf,optMethod,crwST=FALSE){
  
+  if(isTRUE(crwST)){
+    if(!is.null(fixPar)){
+      if(!is.null(fixPar$angle)){
+        if(!is.null(fixPar$step)) {
+          if(!isTRUE(all.equal(fixPar$step,fixPar$angle))) stop("fixPar$step and fixPar$angle should be the same for 'crwrice' and 'crwvm' distributions") 
+        }
+      } else fixPar$angle <- fixPar$step
+    }
+  }
+  
   if(optMethod!="TMB"){ 
+    
     if(nbStates>1){
       if(!is.null(betaCons)){
         if(!is.matrix(betaCons)) stop("betaCons must be a matrix")
@@ -149,8 +160,12 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     parindex <- c(0,cumsum(unlist(lapply(Par0,length))))
     names(parindex) <- c(distnames,"beta")
     ofixPar <- fixPar
+    
     for(i in distnames){
-      if(!is.null(fixPar[[i]])){
+      if(isTRUE(crwST) & i=="angle"){
+        tmp <- 1:length(Par0[[i]])
+        wparIndex <- c(wparIndex,parindex[[i]]+tmp)
+      } else if(!is.null(fixPar[[i]])){
         if(length(fixPar[[i]])!=length(Par0[[i]])) stop("fixPar$",i," must be of length ",length(Par0[[i]]))
         tmp <- which(!is.na(fixPar[[i]]))
         Par0[[i]][tmp]<-fixPar[[i]][tmp]
@@ -357,7 +372,10 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     names(parindex) <- c(distnames,"beta")
     ofixPar <- fixPar
     for(i in distnames){
-      if(!is.null(fixPar[[i]])){
+      if(isTRUE(crwST) & i=="angle"){
+        tmp <- 1:length(Par0[[i]])
+        wparIndex <- c(wparIndex,parindex[[i]]+tmp)
+      } else if(!is.null(fixPar[[i]])){
         if(length(fixPar[[i]])!=length(Par0[[i]])) stop("fixPar$",i," must be of length ",length(Par0[[i]]))
         tmp <- sort(which(duplicated(fixPar[[i]]) | is.na(fixPar[[i]])))
         wparIndex <- c(wparIndex,parindex[[i]]+tmp)
@@ -396,19 +414,21 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     fixPar <- fixPar[parVec]
     ofixPar <- ofixPar[parVec]
     for(i in names(fixPar)){
-      tmp <- c(fixPar[[i]])
-      if(!all(is.na(tmp))){
-        if(!all(tmp[which(!duplicated(tmp) & !is.na(tmp))]==(1:length(tmp[which(!duplicated(tmp) & !is.na(tmp))])))){
-          k <- 1
-          newtmp <- tmp
-          for(j in unique(tmp)){
-            if(!is.na(j)){
-              newtmp[which(tmp==j)] <- k
-              k <- k + 1
+      if(!(isTRUE(crwST) && i=="angle")){
+        tmp <- c(fixPar[[i]])
+        if(!all(is.na(tmp))){
+          if(!all(tmp[which(!duplicated(tmp) & !is.na(tmp))]==(1:length(tmp[which(!duplicated(tmp) & !is.na(tmp))])))){
+            k <- 1
+            newtmp <- tmp
+            for(j in unique(tmp)){
+              if(!is.na(j)){
+                newtmp[which(tmp==j)] <- k
+                k <- k + 1
+              }
             }
-          }
-          stop("fixPar$",i," entries that are not fixed (i.e. NA) must be ordered sequentially starting from 1.\n     Should it be c(",paste0(newtmp,collapse=", "),")?")
-        } 
+            stop("fixPar$",i," entries that are not fixed (i.e. NA) must be ordered sequentially starting from 1.\n     Should it be c(",paste0(newtmp,collapse=", "),")?")
+          } 
+        }
       }
     }
     k <- 0
@@ -419,6 +439,7 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
         k <- k + maxf
       }
     }
+    if(isTRUE(crwST)) fixPar$angle <- fixPar$step
     delta0 <- logdelta0
   }
   

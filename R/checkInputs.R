@@ -55,6 +55,8 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
   
   ndist <- dist
   for(i in distnames){
+    if(dist[[i]]=="crwrice" & i!="step") stop("'crwrice' distribution observations must be named 'step'")
+    if(dist[[i]]=="crwvm" & i!="angle") stop("'crwvm' distribution observations must be named 'angle'")
     if(dist[[i]]=="vmConsensus"){
       consensus[[i]] <- TRUE
       estAngleMean[[i]] <- TRUE
@@ -68,6 +70,27 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
   }
   circularAngleMean<-circularAngleMean[distnames]
   consensus<-consensus[distnames]
+  
+  crwST <- FALSE
+  if("angle" %in% distnames){ 
+    if(dist[["angle"]] %in% angledists & ("step" %in% distnames)){
+      if((dist[["angle"]]=="crwvm" & dist[["step"]]!="crwrice") | (dist[["angle"]]!="crwvm" & dist[["step"]]=="crwrice")) stop("'crwvm' angle distributions must be paired with 'crwrice' step distribution")
+      if(dist[["angle"]]=="crwvm" & dist[["step"]]=="crwrice") {
+        crwST <- TRUE
+        if(!is.null(DM)){
+          if(!is.null(DM$angle)){
+            if(!isTRUE(all.equal(DM$step,DM$angle,check.attributes=FALSE))) stop("DM$step and DM$angle should be the same for 'crwrice' and 'crwvm' distributions")
+          }
+        }
+        if(isTRUE(zeroInflation$step)){
+          if(!isTRUE(all.equal(Par$step[1:length(Par$angle)],Par$angle,check.attributes=FALSE))) stop("Par0$step and Par0$angle 'beta' and 'sigma' parameters should be the same for 'crwrice' and 'crwvm' distributions")
+        } else if(!isTRUE(all.equal(Par$step,Par$angle,check.attributes=FALSE))) stop("Par0$step and Par0$angle should be the same for 'crwrice' and 'crwvm' distributions")
+        estAngleMean$angle <- TRUE
+        circularAngleMean$angle <- FALSE
+        consensus$angle <- FALSE
+      }
+    } else if(dist[["angle"]]=="crwvm") stop("'crwvm' angle distributions must be paired with 'crwrice' step distribution")
+  }
   
   if(!is.null(stateNames)){
     if(!is.character(stateNames)) stop("stateNames must be a character vector")
@@ -118,7 +141,7 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
   
   checkNames(distnames,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,zeroInflation=zeroInflation,oneInflation=oneInflation,DM=DM,userBounds=userBounds)
 
-  return(list(p=p,dist=ndist,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,consensus=consensus,DM=DM))
+  return(list(p=p,dist=ndist,estAngleMean=estAngleMean,circularAngleMean=circularAngleMean,consensus=consensus,DM=DM,crwST=crwST))
 }
 
 checkNames <- function(distnames,...){

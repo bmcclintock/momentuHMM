@@ -227,6 +227,11 @@ get_mixProbs <- function(optPar,mod,mixture){
   }
   par[["pi"]] <- matrix(1,1,1)
   
+  #if(isTRUE(mod$conditions$crwST)) {
+  #  dist$step <- "crwST"
+  #  dist$angle <- NULL
+  #}
+  
   mixProbs <- lnum <- la <- numeric(mixtures)
   for(mix in 1:mixtures){
     par$beta <- beta[(mix-1)*(nbCovs+1)+1:(nbCovs+1),,drop=FALSE]

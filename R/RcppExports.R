@@ -235,6 +235,32 @@ dt_rcpp <- function(x, df, ncp) {
     .Call(`_momentuHMM_dt_rcpp`, x, df, ncp)
 }
 
+#' Correlated random walk Rice distribution
+#'
+#' Probability density function of Rice distribution under the CTCRW model of Johnson et al. (2008) (written in C++)
+#'
+#' @param x numeric data vector of length \code{n + n} where the first \code{n} entries correspond to the step lengths and the next \code{n} entries to the corresponding previous step lengths (the first of which is NA and ignored).
+#' @param beta correlation parameter 
+#' @param sigma speed parameter
+#'
+#' @return Vector of densities
+dcrwrice_rcpp <- function(x, beta, sigma) {
+    .Call(`_momentuHMM_dcrwrice_rcpp`, x, beta, sigma)
+}
+
+#' Correlated random walk von Mises density function
+#'
+#' Probability density function of the Von Mises distribution under the CTCRW model of Johnson et al. (2008) (written in C++)
+#'
+#' @param x numeric data vector of length \code{n + n + n} where the first \code{n} entries correspond to angles (von Mises distribution), the next \code{n} entries to the corresponding step lengths, and the last \code{n} entries to the corresponding previous step lengths.
+#' @param beta correlation parameter 
+#' @param sigma speed parameter
+#'
+#' @return Vector of densities
+dcrwvm_rcpp <- function(x, beta, sigma) {
+    .Call(`_momentuHMM_dcrwvm_rcpp`, x, beta, sigma)
+}
+
 #' Matrix Exponential
 #'
 #' This function computes the exponential of a square matrix \code{A}, defined as the sum from \code{r=0} to infinity of \code{A^r/r!}, using the default method of \code{\link[expm]{expm}}.

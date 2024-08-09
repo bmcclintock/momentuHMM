@@ -63,6 +63,17 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
              tmpbounds <- matrix(rep(c(0,1),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
              parNames[[i]]<-paste0("prob",1:parSize[[i]])
            },
+           "crwrice"={
+             parSize[[i]] <- 2 + zeroInflation[[i]]
+             tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
+             parNames[[i]]<-c("beta","sigma")
+           },
+           "crwvm"={
+             estAngleMean[[i]] <- FALSE
+             parSize[[i]] <- 2 
+             tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)
+             parNames[[i]]<-c("beta","sigma")
+           },  
            "ctds"={
              parSize[[i]] <- dimCat-1
              tmpbounds <- matrix(rep(c(0,Inf),parSize[[i]] * nbStates),ncol=2,byrow=TRUE)

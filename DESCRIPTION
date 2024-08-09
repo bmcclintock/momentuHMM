@@ -63,7 +63,8 @@ Suggests:
     gdistance,
     methods,
     mgcv,
-    optimx
+    optimx,
+    pracma
 RoxygenNote: 7.3.2
 Encoding: UTF-8
 NeedsCompilation: yes

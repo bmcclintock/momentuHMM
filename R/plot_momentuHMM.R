@@ -50,7 +50,7 @@
 #' @export
 #' @importFrom graphics legend lines segments arrows layout image contour barplot plot.new
 #' @importFrom grDevices adjustcolor gray hcl colorRampPalette recordPlot
-#' @importFrom stats as.formula
+#' @importFrom stats as.formula density approxfun
 #' @importFrom CircStats circ.mean
 # @importFrom scatterplot3d scatterplot3d
 #' @importFrom MASS kde2d
@@ -354,6 +354,11 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
              call. = FALSE)
       }
       dcat <- dctds <- extraDistr::dcat
+    } else if(Fun[[i]]=="dcrwvm"){
+      if (!requireNamespace("pracma", quietly = TRUE)) {
+        stop("Package \"pracma\" needed for correlated random walk von Mises ('crwvm') distribution. Please install it.",
+             call. = FALSE)
+      }
     }
   }
   
@@ -596,8 +601,24 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
       }
       # (weighted by the proportion of each state in the Viterbi states sequence)
       if(m$conditions$zeroInflation[[i]] | m$conditions$oneInflation[[i]]){
+        if(inputs$dist[[i]]=="crwrice"){
+          genFun <- "intdcrwrice"
+          genArgs[[4]] <- min(m$data[[i]],na.rm=TRUE)
+          genArgs[[5]] <- max(m$data[[i]],na.rm=TRUE)
+          d <- density(m$data[[i]],na.rm=TRUE)
+          genArgs[[6]] <- stats::approxfun(d$x,d$y)
+          message("Integrating over step length sample distribution for 'step' state ",state,"...")
+        } 
         genDensities[[state]] <- cbind(grid,(1-zeroMass[[i]][state]-oneMass[[i]][state])*w[[i]][state]*do.call(genFun,genArgs))
       } else if(infInd) {
+        if(inputs$dist[[i]]=="crwvm"){
+          genFun <- "intdcrwvm"
+          genArgs[[4]] <- min(m$data$step,na.rm=TRUE)
+          genArgs[[5]] <- max(m$data$step,na.rm=TRUE)
+          d <- density(m$data$step,na.rm=TRUE)
+          genArgs[[6]] <- stats::approxfun(d$x,d$y)
+          message("Integrating over step length sample distribution for 'angle' state ",state,"...")
+        }
         genDensities[[state]] <- cbind(grid,(1-zeroMass$step[state])*w[[i]][state]*do.call(genFun,genArgs))
       } else if(inputs$dist[[i]] %in% mvndists){
         if(inputs$dist[[i]]=="mvnorm2" || inputs$dist[[i]]=="rw_mvnorm2"){
@@ -605,6 +626,23 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
           genDensities[[state]] <- list(x=genArgs[[1]][1:100], y=genArgs[[1]][101:200], z=w[[i]][state]*dens)
         }
       } else {
+        if(inputs$dist[[i]]=="crwrice" | inputs$dist[[i]]=="crwvm"){
+          if(inputs$dist[[i]]=="crwrice"){
+            genFun <- "intdcrwrice"
+            genArgs[[4]] <- min(m$data[[i]],na.rm=TRUE)
+            genArgs[[5]] <- max(m$data[[i]],na.rm=TRUE)
+            d <- density(m$data[[i]],na.rm=TRUE)
+            genArgs[[6]] <- stats::approxfun(d$x,d$y)
+            message("Integrating over step length sample distribution for 'step' state ",state,"...")
+          } else {
+            genFun <- "intdcrwvm"
+            genArgs[[4]] <- min(m$data$step,na.rm=TRUE)
+            genArgs[[5]] <- max(m$data$step,na.rm=TRUE)
+            d <- density(m$data$step,na.rm=TRUE)
+            genArgs[[6]] <- stats::approxfun(d$x,d$y)
+            message("Integrating over step length sample distribution for 'angle' state ",state,"...")
+          }
+        }
         genDensities[[state]] <- cbind(grid,w[[i]][state]*do.call(genFun,genArgs))
       }
       

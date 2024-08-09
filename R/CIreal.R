@@ -142,7 +142,7 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
     } else {
       par <- as.vector(t(m$mle[[i]]))
     }
-    if(!(inputs$dist[[i]] %in% angledists) | (inputs$dist[[i]] %in% angledists & m$conditions$estAngleMean[[i]] & !m$conditions$Bndind[[i]])) {
+    if(!(inputs$dist[[i]] %in% angledists) | (inputs$dist[[i]] %in% angledists & m$conditions$estAngleMean[[i]] & !m$conditions$Bndind[[i]]) | (inputs$dist[[i]]=="crwvm")) {
       Par[[i]] <- get_CI(m$mod$estimate,par,m,parindex[[i]]+1:parCount[[i]],fullDM[[i]],DMind[[i]],p$bounds[[i]],Sigma,m$conditions$circularAngleMean[[i]],inputs$consensus[[i]],nbStates,alpha,tmpParNames,m$stateNames,nc[[i]],meanind[[i]],m$conditions$workBounds[[i]],inputs$dist[[i]])
     } else {
       if(!m$conditions$estAngleMean[[i]])

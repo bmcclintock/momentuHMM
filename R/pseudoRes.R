@@ -203,11 +203,20 @@ pseudoRes <- function(m, ncores = 1)
       d2<-function(q,mean,sigma){
         stats::pchisq(stats::mahalanobis(q,mean,convertSigma(matrix(sigma,length(mean),length(mean)),length(mean))),df=length(mean))
       }
+      genInd <- which(!is.na(genData[1:nbObs]))
       
+    } else if(dist[[j]]=="crwrice" | dist[[j]]=="crwvm"){
+      genData <- data[[j]]
+      step_tm1 <- c(NA,data$step[-length(data$step)])
+      if(dist[[j]]=="crwrice"){
+        genData[c(1,1+cumsum(table(m$data$ID)[1:(length(unique(m$data$ID))-1)]))] <- NA
+        genInd <- which(!is.na(genData))
+      } else genInd <- which(!is.na(data[[j]]))
+      step_tm1[-genInd] <- NA
     } else {
       genData <- data[[j]]
+      genInd <- which(!is.na(genData[1:nbObs]))
     }
-    genInd <- which(!is.na(genData[1:nbObs]))
     zeroInflation <- m$conditions$zeroInflation[[j]]
     oneInflation <- m$conditions$oneInflation[[j]]
   
@@ -217,7 +226,8 @@ pseudoRes <- function(m, ncores = 1)
       
       if(!(dist[[j]] %in% angledists)){
         
-        genArgs <- list(genData[which(!is.na(genData))])
+        if(dist[[j]] %in% mvndists) genArgs <- list(genData[which(!is.na(genData))])
+        else genArgs <- list(genData[genInd])
         
         zeromass <- 0
         onemass <- 0
@@ -271,6 +281,10 @@ pseudoRes <- function(m, ncores = 1)
           genArgs[[3]] <- 1/scale # dgamma expects rate=1/scale
         }
         
+        if(dist[[j]]=="crwrice"){
+          genArgs[[k+2]] <- step_tm1[genInd]
+        } 
+        
         if(zeroInflation | oneInflation) {
           if(zeroInflation & !oneInflation){
             pgenMat[genInd,state] <- ifelse(genData[genInd]==0,
@@ -299,7 +313,7 @@ pseudoRes <- function(m, ncores = 1)
         
       } else {
         
-        genpiInd <- which(genData!=pi & !is.na(genData))
+        genpiInd <- union(which(genData!=pi),genInd)
         
         genArgs <- list(Fun[[j]],-pi,genData[1]) # to pass to function "integrate" below
   
@@ -307,7 +321,16 @@ pseudoRes <- function(m, ncores = 1)
           genArgs[[3]]<-genData[i]
           for(k in 1:(nrow(genPar)/nbStates))
             genArgs[[k+3]] <- genPar[(k-1)*nbStates+state,i]
-          
+          if(dist[[j]]=="crwvm"){
+            mu <- 0
+            beta <- genPar[state,i]
+            sigma <- genPar[nbStates+state,i]
+            var <- sigma*sigma/(beta*beta) * (1. - 2. / beta * (1.-exp(-beta))+1. / (2.*beta)*(1-exp(-2*beta)))
+            kappa <- step_tm1[i] * m$data$step[i] *exp(-beta)/var
+            genArgs[[4]] <- 0
+            genArgs[[5]] <- kappa
+            genArgs[[1]] <- "dvm"
+          }
           pgenMat[i,state] <- do.call(integrate,genArgs)$value
         }
       }

@@ -294,6 +294,32 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// dcrwrice_rcpp
+arma::colvec dcrwrice_rcpp(NumericVector x, arma::mat beta, arma::mat sigma);
+RcppExport SEXP _momentuHMM_dcrwrice_rcpp(SEXP xSEXP, SEXP betaSEXP, SEXP sigmaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type sigma(sigmaSEXP);
+    rcpp_result_gen = Rcpp::wrap(dcrwrice_rcpp(x, beta, sigma));
+    return rcpp_result_gen;
+END_RCPP
+}
+// dcrwvm_rcpp
+arma::colvec dcrwvm_rcpp(NumericVector x, arma::mat beta, arma::mat sigma);
+RcppExport SEXP _momentuHMM_dcrwvm_rcpp(SEXP xSEXP, SEXP betaSEXP, SEXP sigmaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type sigma(sigmaSEXP);
+    rcpp_result_gen = Rcpp::wrap(dcrwvm_rcpp(x, beta, sigma));
+    return rcpp_result_gen;
+END_RCPP
+}
 // expmatrix_rcpp
 arma::mat expmatrix_rcpp(arma::mat x, double kappa, bool check);
 RcppExport SEXP _momentuHMM_expmatrix_rcpp(SEXP xSEXP, SEXP kappaSEXP, SEXP checkSEXP) {

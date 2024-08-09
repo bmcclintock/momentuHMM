@@ -100,6 +100,8 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     rmvnorm3 <- rmvnorm3
     rvm <- CircStats::rvm
     rwrpcauchy <- CircStats::rwrpcauchy
+    rcrwrice <- rcrwrice
+    rcrwvm <- rcrwvm
     trMatrix_rcpp <- trMatrix_rcpp
     ctPar <- ctPar
     if (requireNamespace("extraDistr", quietly = TRUE)){
@@ -414,7 +416,10 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   estAngleMean <- vector('list',length(distnames))
   names(estAngleMean) <- distnames
   for(i in distnames){
-    if(dist[[i]] %in% angledists) estAngleMean[[i]]<-TRUE
+    if(dist[[i]] %in% angledists) {
+      estAngleMean[[i]]<-TRUE
+      if(dist[[i]]=="crwvm") estAngleMean[[i]]<-FALSE
+    } 
     else estAngleMean[[i]]<-FALSE
   }
   
@@ -1509,6 +1514,12 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
               } else {
                 for(j in 1:(parSize[[i]]-zeroInflation[[i]]-oneInflation[[i]]))
                   genArgs[[i]][[j+1]] <- subPar[[i]][(j-1)*nbStates+Z[k]]
+                if(inputs$dist[[i]]=="crwrice"){
+                  if(k>1) genArgs[[i]][[j+2]] <- genData[[i]][k-1] # previous step
+                  else genArgs[[i]][[j+2]] <- 0
+                } else if(inputs$dist[[i]]=="crwvm"){
+                  if(k>1) genArgs[[i]][[j+2]] <- genData[["step"]][c(k-1,k)] # previous step
+                }
               }
               
               if(inputs$dist[[i]] %in% angledists){

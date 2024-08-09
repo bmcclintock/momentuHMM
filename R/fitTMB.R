@@ -5,7 +5,7 @@
 #' @importFrom stats update
 # #' @importFrom mgcv gam
 # #' @importFrom optimx optimx
-fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,DM,DMinputs,formula,fixParIndex,stationary,prior,knownStates,betaCons,control,formulaDelta,covsDelta,workBounds,fit,CT,dtIndex,kappa,hessian) {
+fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,DM,DMinputs,formula,fixParIndex,stationary,prior,knownStates,betaCons,control,formulaDelta,covsDelta,workBounds,fit,CT,dtIndex,kappa,hessian,crwST=FALSE) {
   
   for(pkg in c("Matrix","optimx","mgcv")){
     if (!requireNamespace(pkg, quietly = TRUE)) {
@@ -27,6 +27,10 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
   distnames <- names(dist)
   distcode <- as.vector(sapply(distnames,function(x) dist_code(dist[[x]],zeroInflation[[x]],oneInflation[[x]])))#as.vector(sapply(self$obs()$dists(), function(d) d$code()))
   names(distcode) <- distnames
+  
+  aInd <- NULL
+  for(i in 1:nbAnimals)
+    aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
   
   if(CT){
     dt <- data$dt
@@ -117,6 +121,7 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
       }
       fixParIndex$fixPar[[i]] <- reorderFix(fixParIndex$fixPar[[i]])
     }
+    lag <- 0
     if(is.list(DM[[i]]) | is.null(DM[[i]])) {
       DM[i] <- make_formulas(DM[i],i,p$parNames[i],nbStates)
       if(dist[[i]] %in% rwdists){
@@ -124,6 +129,12 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
         for(j in names(DM[[i]])[which(grepl("mean",names(DM[[i]])))]){
           for(s in names(DM[[i]][[j]])){
             formTerms <- stats::terms(DM[[i]][[j]][[s]],keep.order=TRUE)
+            lag <- get_crwlag(DM[[i]][[j]][[s]],lag)
+            if(lag){
+              for(jj in all.vars(DM[[i]][[j]][[s]],data)){
+                attr(data[[jj]],"aInd") <- aInd
+              }
+            }
             if(!length(attr(formTerms,"term.labels")) && !attr(formTerms,"intercept")){
               DM[[i]][[j]][[s]] <- ~1
               #DM[[i]][[paste0(j,"_tm1")]][[s]] <- stats::as.formula(paste0("~0+",i,gsub("mean","",j),"_tm1"))
@@ -131,7 +142,8 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
             } else if(grepl("_tm1",j)){
               tInd <- which(!attr(formTerms,"term.labels") %in% paste0(i,gsub("mean","",j)))
               if(length(tInd)){
-                DM[[i]][[j]][[s]] <- stats::as.formula(paste0("~0+",paste0(i,gsub("mean","",j)),paste0("+I(",attr(formTerms,"term.labels")[tInd]," * dt)",collapse="")))
+                tmpTerms <- gsub(":","*",attr(formTerms,"term.labels")[tInd])
+                DM[[i]][[j]][[s]] <- stats::as.formula(paste0("~0+",paste0(i,gsub("mean","",j)),paste0("+I(",tmpTerms," * dt)",collapse="")))
               }
             }
           }
@@ -449,29 +461,32 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
     mod$estimate <- tmb_obj$par
   }
   # reorder rwdist parms
-  parInd <- which(names(mod$estimate)=="coeff_fe_obs")
-  convInd <- lapply(distnames,function(x) match(DMnames[[x]],names(Par0[[x]])[which(!is.na(fixParIndex$fixPar[[x]]) & !duplicated(fixParIndex$fixPar[[x]]))],nomatch=NA))
-  names(convInd) <- distnames
-  k <- 0
-  for(i in distnames){
-    if(any(is.na(convInd[[i]]))) convInd[[i]] <- convInd[[i]][-which(is.na(convInd[[i]]))]
-    if(!all(is.na(fixParIndex$fixPar[[i]]))){
-      maxf <- max(convInd[[i]],na.rm=TRUE)
-      convInd[[i]] <- k + convInd[[i]]
-      k <- k + maxf
+  if(!isTRUE(crwST)){
+    parInd <- which(names(mod$estimate)=="coeff_fe_obs")
+    convInd <- lapply(distnames,function(x) match(DMnames[[x]],names(Par0[[x]])[which(!is.na(fixParIndex$fixPar[[x]]) & !duplicated(fixParIndex$fixPar[[x]]))],nomatch=NA))
+    names(convInd) <- distnames
+    k <- 0
+    for(i in distnames){
+      if(any(is.na(convInd[[i]]))) convInd[[i]] <- convInd[[i]][-which(is.na(convInd[[i]]))]
+      if(!all(is.na(fixParIndex$fixPar[[i]]))){
+        maxf <- max(convInd[[i]],na.rm=TRUE)
+        convInd[[i]] <- k + convInd[[i]]
+        k <- k + maxf
+      }
+    }
+    convInd <- unlist(convInd)
+    mod$estimate[parInd] <- mod$estimate[convInd]
+    if(hessian){
+      if(max(convInd)<length(mod$estimate)){
+        mod$hessian <- mod$hessian[c(convInd,(max(convInd)+1):length(mod$estimate)),c(convInd,(max(convInd)+1):length(mod$estimate))]
+        mod$gradient <- mod$gradient[c(convInd,(max(convInd)+1):length(mod$estimate))]
+      } else {
+        mod$hessian <- mod$hessian[convInd,convInd]
+        mod$gradient <- mod$gradient[convInd]
+      }
     }
   }
-  convInd <- unlist(convInd)
-  mod$estimate[parInd] <- mod$estimate[convInd]
-  if(hessian){
-    if(max(convInd)<length(mod$estimate)){
-      mod$hessian <- mod$hessian[c(convInd,(max(convInd)+1):length(mod$estimate)),c(convInd,(max(convInd)+1):length(mod$estimate))]
-      mod$gradient <- mod$gradient[c(convInd,(max(convInd)+1):length(mod$estimate))]
-    } else {
-      mod$hessian <- mod$hessian[convInd,convInd]
-      mod$gradient <- mod$gradient[convInd]
-    }
-  }
+  
   return(mod)
 }
 
@@ -492,6 +507,10 @@ dist_code <- function(dist,zeroInflation,oneInflation) {
            if(zeroInflation | oneInflation) code <- NULL
            else code <- 0},
          "cat"={code <- 2},
+         "crwrice"={
+           if(zeroInflation) code <- NULL
+           else code <- 29},
+         "crwvm"={code <- 30},
          "ctds"={code <- NULL},
          "exp"={
            if(zeroInflation) code <- NULL
@@ -622,6 +641,8 @@ as_sparse <- function(x) {
 
 obs_var <- function(data,dist,expand = FALSE) {
   distnames <- names(dist)
+  if("step" %in% distnames) steps <- data$step
+  if("angle" %in% distnames) angles <- data$angle
   for(i in distnames){
     if(dist[[i]]=="mvnorm2" || dist[[i]]=="rw_mvnorm2"){
       data[[i]] <- split(as.matrix(data[,c(paste0(i,".x"),paste0(i,".y"))]),seq(nrow(data)))
@@ -629,7 +650,25 @@ obs_var <- function(data,dist,expand = FALSE) {
     } else if(dist[[i]]=="mvnorm3" || dist[[i]]=="rw_mvnorm3"){
       data[[i]] <- split(as.matrix(data[,c(paste0(i,".x"),paste0(i,".y"),paste0(i,".z"))]),seq(nrow(data)))
       data[[paste0(i,".x")]] <- data[[paste0(i,".y")]]<- data[[paste0(i,".z")]] <- NULL
-    } 
+    } else if(dist[[i]]=="crwrice" | dist[[i]]=="crwvm"){
+      if(dist[[i]]=="crwrice"){
+        genData <- steps
+        step_tm1 <- c(NA,steps[-length(steps)])
+        genData[c(1,1+cumsum(table(data$ID)[-(length(unique(data$ID)))]))] <- NA
+        genInd <- which(!is.na(genData))
+        step_tm1[-genInd] <- NA
+        data[[i]] <- split(cbind(step_tm1,genData),seq(nrow(data)))
+      } else if(dist[[i]]=="crwvm"){
+        genData <- angles
+        step_tm1 <- c(NA,steps[-length(steps)])
+        step <- steps
+        genInd <- which(!is.na(genData))
+        step_tm1[-genInd] <- NA
+        step[-genInd] <- NA
+        data[[i]] <- split(cbind(step_tm1,step,genData),seq(nrow(data)))
+      }
+
+    }
   }
   obs_names <- distnames
   obs_var <- data[, obs_names, drop = FALSE]
@@ -639,19 +678,21 @@ obs_var <- function(data,dist,expand = FALSE) {
     if (any(multivar)) {
       wh <- which(multivar)
       for (i in 1:length(wh)) {
-        v <- do.call(rbind, obs_var[[wh[i]]])
+        if(i==1) ind <- wh[i]
+        else ind <- sum(datadim[1:(wh[i]-1)])+1
+        v <- do.call(rbind, obs_var[[ind]])
         datadim[wh[i]] <- ncol(v)
         tmp <- NULL
         tmpnms <- NULL
-        if (wh > 1) {
-          tmp <- cbind(tmp, obs_var[,1:(wh[i] - 1)])
-          tmpnms <- c(tmpnms, colnames(obs_var)[1:(wh[i] - 1)])
+        if (wh[i] > 1) {
+          tmp <- obs_var[,1:(ind - 1)]
+          tmpnms <- c(tmpnms, colnames(obs_var)[1:(ind - 1)])
         }
         tmp <- cbind(tmp, v)
         tmpnms <- c(tmpnms, rep(names(wh[i]), ncol(v)))
-        if (wh < ncol(obs_var)) {
-          tmp <- cbind(tmp, obs_var[,(wh[i] + 1):ncol(obs_var)])
-          tmpnms <- c(tmpnms, colnames(obs_var)[(wh[i] + 1):ncol(obs_var)]) 
+        if (ind < ncol(obs_var)) {
+          tmp <- cbind(tmp, obs_var[,(ind + 1):ncol(obs_var),drop=FALSE])
+          tmpnms <- c(tmpnms, colnames(obs_var)[(ind + 1):ncol(obs_var)]) 
         }
         obs_var <- tmp
         colnames(obs_var) <- tmpnms

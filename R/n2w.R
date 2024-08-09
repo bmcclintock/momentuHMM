@@ -54,7 +54,7 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,Bndind,dist,
   for(i in names(par)){
     p <- par[[i]]
     if(is.null(DM[[i]])){
-      if(estAngleMean[[i]] & Bndind[[i]]){
+      if(estAngleMean[[i]] & Bndind[[i]] & dist[[i]]!="crwvm"){
         if(length(which(par[[i]][1:nbStates]<=bounds[[i]][1:nbStates,1] | par[[i]][1:nbStates]>bounds[[i]][1:nbStates,2]))>0)
           stop(paste0("Check the parameter bounds for ",i," (the initial parameters should be ",
                       "strictly between the bounds of their parameter space). The angle mean should be in (-pi,pi]."))
@@ -66,7 +66,7 @@ n2w <- function(par,bounds,beta,delta=NULL,nbStates,estAngleMean,DM,Bndind,dist,
           stop(paste0("Check the parameter bounds for ",i," (the initial parameters should be ",
                       "strictly between the bounds of their parameter space)."))
       }
-      if(estAngleMean[[i]] & Bndind[[i]] & !TMB){ 
+      if(estAngleMean[[i]] & Bndind[[i]] & !TMB & dist[[i]]!="crwvm"){ 
         bounds[[i]][,1] <- -Inf
         bounds[[i]][which(bounds[[i]][,2]!=1),2] <- Inf
         

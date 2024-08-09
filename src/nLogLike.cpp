@@ -216,6 +216,8 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   funMap["bern"] = dbern_rcpp;
   funMap["beta"] = dbeta_rcpp;
   funMap["cat"] = dcat_rcpp;
+  funMap["crwrice"] = dcrwrice_rcpp;
+  funMap["crwvm"] = dcrwvm_rcpp;
   funMap["ctds"] = dcat_rcpp;
   funMap["exp"] = dexp_rcpp;
   funMap["gamma"] = dgamma_rcpp;
@@ -259,8 +261,8 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   
   unsigned int nDists = (unsigned int) dist.size();
 
-  for(unsigned int k=0;k<nDists;k++){
-    genname = as<std::string>(dataNames[k]);
+  for(unsigned int d=0;d<nDists;d++){
+    genname = as<std::string>(dataNames[d]);
     genDist = as<std::string>(dist[genname]);
     if(genDist=="mvnorm2" || genDist=="rw_mvnorm2"){
       L = List::create(as<NumericVector>(data[genname+".x"]) ,as<NumericVector>(data[genname+".y"]));
@@ -270,6 +272,12 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       L = List::create(as<NumericVector>(data[genname+".x"]) ,as<NumericVector>(data[genname+".y"]),as<NumericVector>(data[genname+".z"]));
       //NumericVector genData = combine(L);
       mvn = true;
+    } else if(genDist=="crwrice"){
+      L = List::create(as<NumericVector>(data["step"]),as<NumericVector>(data["step"]));
+      mvn = false;
+    } else if(genDist=="crwvm"){
+      L = List::create(as<NumericVector>(data["angle"]),as<NumericVector>(data["step"]),as<NumericVector>(data["step"]));
+      mvn = false;
     } else {
       L = List::create(as<NumericVector>(data[genname]));
       mvn = false;
@@ -289,18 +297,63 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
     else 
       zeroInd = 0;
     
+    unsigned int k=0; // animal index
+    
     // remove the NAs from step (impossible to subset a vector with NAs)
     genData = combine(L,NAvalue);
     arma::uvec noNAs = arma::find_finite(as<arma::vec>(L[0]));
-    
+    arma::colvec tmp(nbObs);
+    if(genDist=="crwrice") {
+      for(int i=0; i < nbObs; i++){
+        if(k<nbAnimals && i==(unsigned)(aInd(k)-1)){
+          genData[nbObs+i] = NAvalue;
+          genData[nbObs+i+1] = genData[i];
+          genData[i] = NAvalue;
+        } else if((k+1<nbAnimals && i==(unsigned)(aInd(k+1)-2)) || i==(nbObs-1)) {
+          genData[nbObs+i] = NAvalue;
+          k++;
+        } else {
+          if(genData[i]>0.) genData[nbObs+i+1] = genData[i];
+          else if(genData[i]==0){
+            genData[nbObs+i+1] = DBL_MIN;
+            genData[nbObs+i] = NAvalue;
+          }
+        }
+      }
+      std::copy(genData.begin(),genData.begin()+nbObs,tmp.begin());
+      noNAs = arma::find(tmp>=0.);
+      L[0] = tmp;
+      //k=0;
+      //for(int i=0; i < nbObs; i++){
+      //  Rprintf("k %d i %d step %f step_tm1 %f tmp[i] %f \n",k,i,genData[i],genData[nbObs+i],tmp[i]);
+      //  if((k+1<nbAnimals && i==(unsigned)(aInd(k+1)-2))) k++;
+      //}
+    } else if(genDist=="crwvm") {
+      arma::uvec NAs = arma::find_nonfinite(as<arma::vec>(L[0]));
+      for(int i : noNAs){
+        if(i>0) {
+          genData[2*nbObs+i] = genData[nbObs+i-1];
+        }
+      }
+      for(int i : NAs){
+        genData[nbObs+i] = NAvalue;
+        genData[2*nbObs+i] = NAvalue;
+      }
+    }
+      
     // extract zero-mass and one-mass parameters if necessary
     if(genzeroInflation || genoneInflation) {
       
       if(genzeroInflation){
         zeromass = genPar.rows(genPar.n_rows-oneInd-nbStates,genPar.n_rows-oneInd-1);   //genPar(arma::span(genPar.n_rows-1),arma::span(),arma::span());
         
-        noZeros = arma::find(as<arma::vec>(genData)>0);
-        nbZeros = arma::find(as<arma::vec>(genData)==0);
+        if(genDist=="crwrice"){
+          noZeros = arma::find(as<arma::vec>(L[0])>0);
+          nbZeros = arma::find(as<arma::vec>(L[0])==0);
+        } else {
+          noZeros = arma::find(as<arma::vec>(genData)>0);
+          nbZeros = arma::find(as<arma::vec>(genData)==0);
+        }
       }
       
       if(genoneInflation){
@@ -355,7 +408,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         zerom = zeromass.row(state);
 
         // compute probability of non-zero observations
-        genProb.elem(noZeros) = (1. - zerom.elem(noZeros)) % funMap[genDist](genData[genData>0.],genArgs1.elem(noZeros),genArgs2.elem(noZeros));
+        genProb.elem(noZeros) = (1. - zerom.elem(noZeros)) % funMap[genDist](genData[genData>0.],genArgs1.cols(noZeros),genArgs2.cols(noZeros));
 
         // compute probability of zero observations
         genProb.elem(nbZeros) = zerom.elem(nbZeros);
@@ -365,7 +418,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         onem = onemass.row(state);
         
         // compute probability of non-one observations
-        genProb.elem(noOnes) = (1. - onem.elem(noOnes)) % funMap[genDist](genData[(genData!=NAvalue) & (genData<1.)],genArgs1.elem(noOnes),genArgs2.elem(noOnes));
+        genProb.elem(noOnes) = (1. - onem.elem(noOnes)) % funMap[genDist](genData[(genData!=NAvalue) & (genData<1.)],genArgs1.cols(noOnes),genArgs2.cols(noOnes));
         
         // compute probability of one observations
         genProb.elem(nbOnes) = onem.elem(nbOnes);
@@ -376,7 +429,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         onem = onemass.row(state);
         
         // compute probability of non-zero and non-one observations
-        genProb.elem(noZerosOnes) = (1. - zerom.elem(noZerosOnes) - onem.elem(noZerosOnes)) % funMap[genDist](genData[(genData>0) & (genData<1)],genArgs1.elem(noZerosOnes),genArgs2.elem(noZerosOnes));
+        genProb.elem(noZerosOnes) = (1. - zerom.elem(noZerosOnes) - onem.elem(noZerosOnes)) % funMap[genDist](genData[(genData>0) & (genData<1)],genArgs1.cols(noZerosOnes),genArgs2.cols(noZerosOnes));
         
         // compute probability of zero observations
         genProb.elem(nbZeros) = zerom.elem(nbZeros);
@@ -385,6 +438,11 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         genProb.elem(nbOnes) = onem.elem(nbOnes);
         
       } else {
+        //k=0;
+        //for(unsigned int i : noNAs){
+        //  Rprintf("k %d i %d step %f step_tm1 %f beta %f sigma %f tmp[i] %f \n",k,i,genData[i],genData[nbObs+i],genArgs1(i),genArgs2(i),tmp[i]);
+        //  if((k+1<nbAnimals && i==(unsigned)(aInd(k+1)-2))) k++;
+        //}
         genProb.elem(noNAs) = funMap[genDist](genData[genData!=NAvalue],genArgs1.cols(noNAs),genArgs2.cols(noNAs));
       }
       

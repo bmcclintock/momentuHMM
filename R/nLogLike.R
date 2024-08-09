@@ -45,6 +45,7 @@
 #' @param CT logical indicating whether to fit discrete-time approximation of a continuous-time model
 #' @param dtIndex time difference index for calculating transition probabilities of hierarchical continuous-time models
 #' @param kappa maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization, in which case the transition rate parameters \code{beta} are on the logit scale (instead of the log scale). Ignored unless \code{CT=TRUE}.
+#' @param crwST logical indicating whether to fit a correlated step and turn random walk model
 #'
 #' @return The negative log-likelihood of the parameters given the data.
 #'
@@ -79,12 +80,16 @@
 
 nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
                      estAngleMean,circularAngleMean,consensus,zeroInflation,oneInflation,
-                     stationary=FALSE,fullDM,DMind,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,deltaCons=NULL,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1,covsPi,recharge=NULL,aInd=aInd,CT=FALSE,dtIndex=NULL,kappa=Inf)
+                     stationary=FALSE,fullDM,DMind,Bndind,knownStates,fixPar,wparIndex,nc,meanind,covsDelta,workBounds,prior=NULL,betaCons=NULL,betaRef,deltaCons=NULL,optInd=NULL,recovs=NULL,g0covs=NULL,mixtures=1,covsPi,recharge=NULL,aInd=aInd,CT=FALSE,dtIndex=NULL,kappa=Inf,crwST=FALSE)
 {
   
   # check arguments
-  distnames<-names(dist)
-
+  if(crwST) {
+    odist <- dist
+    dist$step <- "crwST"
+    dist$angle <- NULL
+  }
+  
   #covs <- stats::model.matrix(formula,data)
   nbCovs <- ncol(covs)-1
   if(!is.null(recovs)) {
@@ -95,6 +100,11 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
   # convert the parameters back to their natural scale
   wpar <- expandPar(optPar,optInd,fixPar,wparIndex,betaCons,deltaCons,nbStates,ncol(covsDelta)-1,stationary,nbCovs,nbRecovs+nbG0covs,mixtures,ncol(covsPi)-1)
   par <- tryCatch(w2n(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,fullDM,DMind,nrow(data),dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi),error=function(e) e)
+  
+  if(crwST) {
+    dist <- odist
+    par$angle <- par$step[1:(2*nbStates),]
+  }
   
   if(inherits(par,"error")){
     return(NaN)
@@ -136,6 +146,8 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
       par[which(unlist(lapply(dist,is.null)))]<-matrix(NA)
     }
   
+    distnames<-names(dist)
+    
     if(stationary)
       par$delta <- c(NA)
     if(nbStates==1) {
