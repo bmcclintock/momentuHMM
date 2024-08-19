@@ -1048,14 +1048,10 @@ From the locations, we use \verb|prepData| to derive the step lengths and turnin
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{center} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{70}\hlstd{,}\hlopt{-}\hlnum{49}\hlstd{),}\hlkwc{nrow}\hlstd{=}\hlnum{1}\hlstd{,}\hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlstr{"colony"}\hlstd{))}
-\hlstd{data} \hlkwb{<-} \hlkwd{prepData}\hlstd{(}\hlkwc{data}\hlstd{=tracks,} \hlkwc{type}\hlstd{=}\hlstr{"LL"}\hlstd{,} \hlkwc{centers}\hlstd{=center)}
+\hldef{center} \hlkwb{<-} \hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlnum{70}\hldef{,}\hlopt{-}\hlnum{49}\hldef{),}\hlkwc{nrow}\hldef{=}\hlnum{1}\hldef{,}\hlkwc{dimnames}\hldef{=}\hlkwd{list}\hldef{(}\hlsng{"colony"}\hldef{))}
+\hldef{data} \hlkwb{<-} \hlkwd{prepData}\hldef{(}\hlkwc{data}\hldef{=tracks,} \hlkwc{type}\hldef{=}\hlsng{"LL"}\hldef{,} \hlkwc{centers}\hldef{=center)}
 \end{alltt}
-
-
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# Calculating movement metrics...}}
-
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# [ ---------------------------------------------------------------------------------------------------- ] 0\%[ ====------------------------------------------------------------------------------------------------ ] 4\%[ =======--------------------------------------------------------------------------------------------- ] 7\%[ ===========----------------------------------------------------------------------------------------- ] 11\%[ ==============-------------------------------------------------------------------------------------- ] 14\%[ ==================---------------------------------------------------------------------------------- ] 18\%[ ======================------------------------------------------------------------------------------ ] 22\%[ ==========================-------------------------------------------------------------------------- ] 26\%[ ==============================---------------------------------------------------------------------- ] 30\%[ =================================------------------------------------------------------------------- ] 33\%[ ===================================----------------------------------------------------------------- ] 35\%[ =====================================--------------------------------------------------------------- ] 37\%[ ========================================------------------------------------------------------------ ] 40\%[ ============================================-------------------------------------------------------- ] 44\%[ ================================================---------------------------------------------------- ] 48\%[ ===================================================------------------------------------------------- ] 51\%[ ======================================================---------------------------------------------- ] 54\%[ =======================================================--------------------------------------------- ] 55\%[ =======================================================--------------------------------------------- ] 55\%[ ==========================================================------------------------------------------ ] 58\%[ =============================================================--------------------------------------- ] 61\%[ =================================================================----------------------------------- ] 65\%[ =====================================================================------------------------------- ] 69\%[ =========================================================================--------------------------- ] 73\%[ =============================================================================----------------------- ] 77\%[ ================================================================================-------------------- ] 80\%[ ====================================================================================---------------- ] 84\%[ ========================================================================================------------ ] 88\%[ ============================================================================================-------- ] 92\%[ ================================================================================================---- ] 96\%[ ==================================================================================================== ] 100\%}}\end{kframe}
+\end{kframe}
 \end{knitrout}
 Note that distances are in kilometers and angles are based on initial bearings \citep[using geosphere::bearing;][]{Hijmans2016geo} when calculated from longitude and latitude coordinates.  
 
@@ -5003,6 +4999,64 @@ To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb
 \caption{Simulated Steller sea lion tracks from the fitted Langevin model.}
 \end{figure}
 \noindent For an application of a multistate version of this model using \verb|momentuHMM|, see \citet{McClintockLander2024}.
+
+\subsection{Custom plots}
+
+In models with covariates, the relationships between model parameters and covariates can be visualized with the function \verb|plot|. When the argument \verb|return| is set to \verb|TRUE|, the function returns data frames that can be used to create custom plots. We expect that this will be particularly helpful to users wanting to produce publication-quality graphics. Here, we illustrate this feature in a simple example using the wild haggis movement data from \cite{MichelotEtAl2016}, and create a plot with ggplot2. 
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{library}\hldef{(ggplot2)}
+\hlkwd{theme_set}\hldef{(}\hlkwd{theme_bw}\hldef{())}
+
+\hlcom{# Get haggis data from moveHMM}
+\hldef{raw} \hlkwb{<-} \hldef{moveHMM}\hlopt{::}\hldef{haggis_data}
+\hldef{data} \hlkwb{<-} \hlkwd{prepData}\hldef{(}\hlkwc{data} \hldef{= raw,} \hlkwc{type} \hldef{=} \hlsng{"UTM"}\hldef{,} \hlkwc{covNames} \hldef{=} \hlsng{"slope"}\hldef{)}
+
+\hlcom{# Fit 2-state model with quadratic effect of slope}
+\hldef{Par0} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwc{step} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{1}\hldef{,} \hlnum{5}\hldef{,} \hlnum{1}\hldef{,} \hlnum{5}\hldef{),} \hlkwc{angle} \hldef{=} \hlkwd{c}\hldef{(pi,} \hlnum{0}\hldef{,} \hlnum{1}\hldef{,} \hlnum{3}\hldef{))}
+\hldef{dists} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwc{step} \hldef{=} \hlsng{"gamma"}\hldef{,} \hlkwc{angle} \hldef{=} \hlsng{"vm"}\hldef{)}
+\hldef{mod} \hlkwb{<-} \hlkwd{fitHMM}\hldef{(}\hlkwc{data} \hldef{= data,}
+              \hlkwc{nbStates} \hldef{=} \hlnum{2}\hldef{,}
+              \hlkwc{dist} \hldef{= dists,}
+              \hlkwc{Par0} \hldef{= Par0,}
+              \hlkwc{estAngleMean} \hldef{=} \hlkwd{list}\hldef{(}\hlkwc{angle} \hldef{=} \hlnum{TRUE}\hldef{),}
+              \hlkwc{formula} \hldef{=} \hlopt{~} \hldef{slope} \hlopt{+} \hlkwd{I}\hldef{(slope} \hlopt{^} \hlnum{2}\hldef{))}
+
+\hlcom{# Get plotting data for transition probabilities}
+\hldef{plot_data} \hlkwb{<-} \hlkwd{plot}\hldef{(mod,}
+                  \hlkwc{plotCI} \hldef{=} \hlnum{TRUE}\hldef{,}
+                  \hlkwc{plotTracks} \hldef{=} \hlnum{FALSE}\hldef{,}
+                  \hlkwc{ask} \hldef{=} \hlnum{FALSE}\hldef{,}
+                  \hlkwc{return} \hldef{=} \hlnum{TRUE}\hldef{)}
+\hldef{tpm_data_list} \hlkwb{<-} \hldef{plot_data}\hlopt{$}\hldef{estimates}\hlopt{$}\hldef{beta}\hlopt{$}\hldef{slope}
+
+\hlcom{# Add transition probability name as column}
+\hldef{tpm_data_list} \hlkwb{<-} \hlkwd{lapply}\hldef{(}\hlnum{1}\hlopt{:}\hlkwd{length}\hldef{(tpm_data_list),} \hlkwa{function}\hldef{(}\hlkwc{i}\hldef{)}
+    \hlkwd{cbind}\hldef{(tpm_data_list[[i]],} \hlkwd{names}\hldef{(tpm_data_list)[i]))}
+
+\hlcom{# Combine into a single data frame for plotting}
+\hldef{tpm_data} \hlkwb{<-} \hlkwd{do.call}\hldef{(rbind, tpm_data_list)}
+\hlkwd{colnames}\hldef{(tpm_data)[}\hlnum{6}\hldef{]} \hlkwb{<-} \hlsng{"name"}
+
+\hlcom{# Create plot of all transition probabilities}
+\hlkwd{ggplot}\hldef{(tpm_data,} \hlkwd{aes}\hldef{(slope, est))} \hlopt{+}
+    \hlkwd{geom_ribbon}\hldef{(}\hlkwd{aes}\hldef{(}\hlkwc{ymin} \hldef{= lci,} \hlkwc{ymax} \hldef{= uci),} \hlkwc{alpha} \hldef{=} \hlnum{0.2}\hldef{)} \hlopt{+}
+    \hlkwd{geom_line}\hldef{()} \hlopt{+}
+    \hlkwd{facet_wrap}\hldef{(}\hlsng{"name"}\hldef{,} \hlkwc{nrow} \hldef{=} \hlnum{2}\hldef{)} \hlopt{+}
+    \hlkwd{ylim}\hldef{(}\hlkwd{c}\hldef{(}\hlnum{0}\hldef{,} \hlnum{1}\hldef{))} \hlopt{+}
+    \hlkwd{labs}\hldef{(}\hlkwc{y} \hldef{=} \hlsng{"transition probability"}\hldef{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\begin{figure}[htbp]
+\center
+\includegraphics[width=0.6\textwidth]{plot_wildHaggis.pdf}
+\caption{Custom plot for transition probabilities as functions of slope, in wild haggis example.}
+\end{figure}
+
+
 
 \section{Discussion}
 Here we have introduced version 2.0.0 of the R package \verb|momentuHMM| and demonstrated some of its capabilities for conducting multivariate HMM analyses with animal location, auxiliary biotelemetry, and environmental data. The package allows for fitting (and simulating from) a suite of biased and correlated random walk movement process models \citep[e.g.][]{McClintockEtAl2012}, can be used for an unlimited number of data streams and latent behavior states, includes multiple imputation methods to account for measurement error, temporal irregularity, and other forms of missing data that would otherwise be prohibitive to maximum likelihood analysis, and integrates seamlessly with rasters to facilitate spatio-temporal covariate modelling. Because the package incorporates biased random walks, it can also be used to implement group dynamic models \cite[e.g.][]{LangrockEtAl2014}. The package therefore greatly expands on available software and facilitates the incorporation of more ecological and behavioral realism for hypothesis-driven analyses of animal movement that account for many of the challenges commonly associated with telemetry data. While many of the features of \verb|momentuHMM| were motivated by animal movement data, we note that the package is not limited to location data and can be used for analyzing any type of data that is amenable to (multivariate) HMMs.
