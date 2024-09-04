@@ -744,10 +744,10 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     if(isTRUE(crwST)){
       stepNA <- which(is.na(data$step))
       angleNA <- which(is.na(data$angle))
-      if(length(stepNA)){
-        if(!all(stepNA %in% (aInd+table(data$ID)-1))) stop("sorry, 'crwrice' distribution observations for 'step' cannot include missing values (except for the last observation for each individual)")
-      }
+      if(!all(stepNA %in% (aInd+table(data$ID)-1))) stop("sorry, 'crwrice' distribution observations for 'step' cannot include missing values (except for the last observation for each individual)")
+      if(!all(is.na(data$step[(aInd+table(data$ID)-1)]))) stop("For each individual, the last 'crwrice' distribution observation for 'step' must be NA")
       if(!all(is.na(data$angle[aInd]))) stop("The initial turn angle for each individual must be NA")
+      if(!all(is.na(data$angle[(aInd+table(data$ID)-1)]))) stop("For each individual, the last 'crwvm' distribution observation for 'angle' must be NA")
       #if(length(angleNA)){
       #  if(!all(angleNA %in% c(1,nrow(data)))) stop("sorry, 'crwvm' distribution observations for 'angle' cannot include missing values")
       #}
@@ -998,6 +998,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                 if(!is.null(betaCons) & nbStates>1){
                   wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)] <- wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)][betaCons]
                 }
+                if(isTRUE(crwST)) wpar[cumsum(parindex[distnames])["angle"]+1:parCount$angle] <- wpar[cumsum(parindex[distnames])["step"]+1:parCount$step]
               } else {
                 pcount <- 0
                 for(i in distnames){
@@ -1028,6 +1029,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                     fixParIndex$beta0$delta[nInd] <- fixParIndex$beta0$delta[nInd][fixParIndex$fixPar$delta[nInd]]
                   }
                 }
+                if(isTRUE(crwST)) fixParIndex$Par0$angle <- fixParIndex$Par0$step
               }
               cat("\r    Attempt ",fitCount+1," of ",retryFits," -- current log-likelihood value: ",ifelse(!inherits(mod,"error") && ifelse(optMethod!="TMB",TRUE,mod$out$convcode!=9999),-mod$minimum,NaN),"         ",sep="")
             }
