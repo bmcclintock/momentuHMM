@@ -117,7 +117,7 @@ intdcrwrice <- function(step, beta, sigma, xmin, xmax, stepDens, log = FALSE){
   n <- length(step)
   out <- numeric(n)
   for(i in 1:n){
-    out[i] <- integrate(function(step_tm1, step, beta, sigma, log = FALSE){
+    wk <- integrate(function(step_tm1, step, beta, sigma, log = FALSE){
       
       mu <- step_tm1*(1-exp(-beta))/beta
       var <- sigma*sigma/(beta*beta) * (1. - 2. / beta * (1.-exp(-beta))+1. / (2.*beta)*(1-exp(-2*beta)));
@@ -129,7 +129,10 @@ intdcrwrice <- function(step, beta, sigma, xmin, xmax, stepDens, log = FALSE){
         logdens 
       else exp(logdens)
       
-    },lower=xmin,upper=xmax,step=step,beta=beta,sigma=sigma)$value
+    },lower=xmin,upper=xmax,step=step,beta=beta,sigma=sigma, subdivisions = 500, stop.on.error = FALSE)
+    if (wk$message!="OK")
+      warning((wk$message))
+    out[i] <- wk$value
   }
   if(log) out <- log(out)
   return(out)
