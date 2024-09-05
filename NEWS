@@ -1,10 +1,14 @@
-momentuHMM 2.0.0 2024-07-25
+momentuHMM 2.0.0 2024-09-09
 -----------------
 NEW FEATURES
 
 * many (but not all) models can now be fitted using the optimization routine of TMB by setting optMethod='TMB'
 
 * continuous-time hidden Markov models can now be fitted using 'fitCTHMM' (and 'MIfitCTHMM') and simulated using 'simCTHMM' (or 'simHierCTHMM' for hierarchical continuous-time models)
+
+* new data stream distributions "crwrice" and "crwvm" for correlated step lengths and turn angles, respectively
+
+* new data stream distribution "ctcrw" for a discrete-time approximation of the continuous-time correlated random walk (CTCRW) of Johnson et al. (2008)
 
 * new data stream distribution "ctds" for (multistate) continuous-time discrete-space movement models, which can be prepared, fitted, and simulated using the functions 'prepCTDS', 'fitCTHMM' (or 'MIfitCTHMM'), and 'simCTDS' (or 'simHierCTDS' for hierarchical models), respectively.
 
@@ -16,9 +20,9 @@ NEW FEATURES
 
 * 'gradient' argument added to 'prepData' and 'simData' functions for calculating gradients of spatial covariates using bilinear interpolation
 
-* 'ncores' argument added to 'fitHMM' (and 'fitCTHMM') functions for attempting 'retryFits' in parallel
-
 * 'addSmoothGradient' function can be used to calculate a smoothed version of the gradient of spatial covariates
+
+* 'ncores' argument added to 'fitHMM' (and 'fitCTHMM') functions for attempting 'retryFits' in parallel
 
 * 'matchModelObs' argument added to simulation functions when simulating from a fitted model
 

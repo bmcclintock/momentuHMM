@@ -523,7 +523,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     if(any(is.na(match(distnames,names(data))))){
       for(i in which(is.na(match(distnames,names(data))))){
         if(dist[[distnames[i]]] %in% mvndists){
-          if(dist[[distnames[i]]] %in% c("mvnorm2","rw_mvnorm2")){
+          if(dist[[distnames[i]]] %in% c("mvnorm2","rw_mvnorm2",'ctcrw')){
             tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"))
           } else if(dist[[distnames[i]]] %in% c("mvnorm3","rw_mvnorm3")){
             tmpdistnames <- c(tmpdistnames[-i],paste0(distnames[i],".x"),paste0(distnames[i],".y"),paste0(distnames[i],".z"))          
@@ -824,13 +824,6 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     optInd <- sort(c(fixParIndex$wparIndex,parmInd+which(duplicated(c(betaCons))),parmInd+length(fixParIndex$beta0$beta)+length(fixParIndex$fixPar[["pi"]])+which(duplicated(c(deltaCons)))))
     if(length(optInd)){
       optPar <- wpar[-optInd]
-    }
-    
-    # aInd = list of indices of first observation for each animal
-    aInd <- NULL
-    for(i in 1:nbAnimals){
-      idInd <- which(data$ID==unique(data$ID)[i])
-      aInd <- c(aInd,idInd[1])
     }
     
     dtIndex <- 1:nrow(data)

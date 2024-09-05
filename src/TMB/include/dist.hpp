@@ -75,6 +75,8 @@ std::unique_ptr<Dist<Type>> dist_generator(const int& code) {
     return(std::unique_ptr<Dist<Type>>(new CRWRice<Type>));
   case 30:
     return(std::unique_ptr<Dist<Type>>(new CRWVonMises<Type>));
+  case 31:
+    return(std::unique_ptr<Dist<Type>>(new CTCRW<Type>));
   default: 
     return(std::unique_ptr<Dist<Type>>(new Normal<Type>)); 
   }

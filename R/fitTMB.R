@@ -80,7 +80,7 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
     #if(is.null(DM[[i]]) || is.null(names(Par0[[i]]))) names(Par0[[i]]) <- colnames(DMinputs$fullDM[[i]])
     names(Par0[[i]]) <- DMnames[[i]]
     parNames <- names(DM[[i]])
-    if(dist[[i]] %in% rwdists){
+    if((dist[[i]] %in% rwdists) && dist[[i]]!="ctcrw"){
       dimDM <- length(DM[[i]])
       labs <- lapply(DM[[i]][which(grepl("mean",parNames))],function(x) attr(stats::terms(x,keep.order=TRUE),"term.labels"))
       if(any(grepl("langevin",unlist(DM[[i]][which(grepl("mean",parNames))])))){
@@ -124,7 +124,7 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
     lag <- 0
     if(is.list(DM[[i]]) | is.null(DM[[i]])) {
       DM[i] <- make_formulas(DM[i],i,p$parNames[i],nbStates)
-      if(dist[[i]] %in% rwdists){
+      if((dist[[i]] %in% rwdists) && (dist[[i]]!="ctcrw")){
         missingPar <- NULL
         for(j in names(DM[[i]])[which(grepl("mean",names(DM[[i]])))]){
           for(s in names(DM[[i]][[j]])){
@@ -511,6 +511,7 @@ dist_code <- function(dist,zeroInflation,oneInflation) {
            if(zeroInflation) code <- NULL
            else code <- 29},
          "crwvm"={code <- 30},
+         "ctcrw"={code <- 31},
          "ctds"={code <- NULL},
          "exp"={
            if(zeroInflation) code <- NULL
@@ -667,7 +668,20 @@ obs_var <- function(data,dist,expand = FALSE) {
         step[-genInd] <- NA
         data[[i]] <- split(cbind(step_tm1,step,genData),seq(nrow(data)))
       }
-
+    } else if(dist[[i]]=="ctcrw"){
+      tmpdat <- data[,c(paste0(i,".x"),paste0(i,".y"),paste0(i,".x_tm1"),paste0(i,".y_tm1"))]
+      tmpdat[[paste0(i,".x_tm2")]] <- 0
+      tmpdat[[paste0(i,".y_tm2")]] <- 0
+      tmpdat$dtm1 <- 1
+      for(zoo in unique(data$ID)){
+        tInd <- which(data$ID==zoo)
+        tmpdat[[paste0(i,".x_tm2")]][tInd] <- dplyr::lag(tmpdat[[paste0(i,".x_tm1")]][tInd],n=1,default = 0)
+        tmpdat[[paste0(i,".y_tm2")]][tInd] <- dplyr::lag(tmpdat[[paste0(i,".y_tm1")]][tInd],n=1,default = 0)
+        if(!is.null(data$dt)) tmpdat$dtm1[tInd] <- dplyr::lag(data$dt[tInd],n=1,default = 1)
+      }
+      data[[i]] <- split(as.matrix(tmpdat),seq(nrow(data)))
+      data[[paste0(i,".x")]] <- data[[paste0(i,".y")]] <- NULL
+      data[[paste0(i,".x_tm1")]] <- data[[paste0(i,".y_tm1")]] <- NULL
     }
   }
   obs_names <- distnames

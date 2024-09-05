@@ -113,10 +113,13 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
   
   for(i in distnames){
     if(is.null(DM[[i]])){
-      if(dist[[i]] %in% mvndists){
-        if(dist[[i]]=="mvnorm2" || dist[[i]]=="mvnorm3") ndim <- as.numeric(gsub("mvnorm","",dist[[i]]))
-        else ndim <- as.numeric(gsub("rw_mvnorm","",dist[[i]]))
-        if(length(Par[[i]])!=(ndim*nbStates+sum(lower.tri(matrix(0,ndim,ndim),diag=TRUE))*nbStates)) stop("Wrong number of initial parameters -- there should be ",ndim*nbStates + sum(lower.tri(matrix(0,ndim,ndim),diag=TRUE))*nbStates," initial ",i," parameters")
+      if(dist[[i]]=="ctcrw") {
+        ndim <- 2
+        if(length(Par[[i]])!=(parSize[[i]]*nbStates)) stop("Wrong number of initial parameters -- there should be ",parSize[[i]]*nbStates," initial ",i," parameters")
+      } else if(dist[[i]] %in% mvndists){
+          if(dist[[i]]=="mvnorm2" || dist[[i]]=="mvnorm3") ndim <- as.numeric(gsub("mvnorm","",dist[[i]]))
+          else ndim <- as.numeric(gsub("rw_mvnorm","",dist[[i]]))
+          if(length(Par[[i]])!=(ndim*nbStates+sum(lower.tri(matrix(0,ndim,ndim),diag=TRUE))*nbStates)) stop("Wrong number of initial parameters -- there should be ",ndim*nbStates + sum(lower.tri(matrix(0,ndim,ndim),diag=TRUE))*nbStates," initial ",i," parameters")
       } else if(length(Par[[i]])!=(parSize[[i]]*nbStates)){
         error<-paste0("Wrong number of initial parameters -- there should be ",parSize[[i]]*nbStates," initial ",i," parameters")
         if(zeroInflation[[i]]) error<-paste0(error," -- zero-mass parameters should be included")

@@ -85,6 +85,18 @@ allProbs <- function(m)
 
   par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$fullDM,m$conditions$DMind,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds,m$covsPi,TMB=isTRUE(m$conditions$optMethod=="TMB"))
   
+  aInd <- NULL
+  nbAnimals <- length(unique(data$ID))
+  for(i in 1:nbAnimals)
+    aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
+  
+  for(ct in distnames[which(unlist(dist)=="ctcrw")]){
+    if(is.null(data$dt)) data$dt <- 1
+    attr(data[[paste0(ct,".x_tm1")]],"aInd") <- aInd
+    attr(data[[paste0(ct,".y_tm1")]],"aInd") <- aInd
+    par[[ct]] <- convertCTCRW(ct,par[[ct]],nbStates,data)
+  }
+  
   if(isTRUE(m$conditions$CT)) par <- ctPar(par,dist,nbStates,data)
   
   Fun <- lapply(dist,function(x) paste("d",x,sep=""))
@@ -104,7 +116,7 @@ allProbs <- function(m)
   for(i in distnames){
     
     if(dist[[i]] %in% mvndists){
-      if(dist[[i]]=="mvnorm2" || dist[[i]]=="rw_mvnorm2")
+      if(dist[[i]]=="mvnorm2" || dist[[i]]=="rw_mvnorm2" || dist[[i]]=="ctcrw")
         genData <- c(data[[paste0(i,".x")]],data[[paste0(i,".y")]])
       else if(dist[[i]]=="mvnorm3" || dist[[i]]=="rw_mvnorm3")
         genData <- c(data[[paste0(i,".x")]],data[[paste0(i,".y")]],data[[paste0(i,".z")]])
@@ -146,7 +158,7 @@ allProbs <- function(m)
       }
   
       if(dist[[i]] %in% mvndists){
-        if(dist[[i]]=="mvnorm2" || dist[[i]]=="rw_mvnorm2"){
+        if(dist[[i]]=="mvnorm2" || dist[[i]]=="rw_mvnorm2" || dist[[i]]=="ctcrw"){
           genArgs[[2]] <- rbind(genPar[state,genInd],
                                 genPar[nbStates+state,genInd])
           genArgs[[3]] <- rbind(genPar[nbStates*2+state,genInd], #x

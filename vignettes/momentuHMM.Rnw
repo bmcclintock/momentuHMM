@@ -211,6 +211,11 @@ If circular-circular regression is specified for the mean of angular distributio
                                               &                               & $\verb|zero-mass|\in(0,1)$                      &  $\text{logit}$ \tabularnewline 
                                               &                               & $\verb|one-mass|\in(0,1)$                       &  $\text{logit}$ \tabularnewline 
   \rowcolor{Gray} Categorical (``\verb|cat|'')& $z_t\in\{1,\ldots,k\}$        & $\verb|prob|_1,\ldots,\verb|prob|_{k-1}\in(0,1)$&  $\text{mlogit}$ \tabularnewline    
+  Correlated Rice (``\verb|crwrice|'')        & $z_t>0$                       & $\verb|beta|>0$                                 &  $\log$ \tabularnewline  
+                                              &                               & $\verb|sigma|>0$                                &  $\log$ \tabularnewline  
+                                              &                               & $\verb|zero-mass|\in(0,1)$                      &  $\text{logit}$ \tabularnewline 
+  \rowcolor{Gray} Correlated Von Mises (``\verb|crwvm|'')     & $z_t\in(-\pi,\pi]$            & $\verb|beta|>0$                                 &  $\log$ \tabularnewline  
+  \rowcolor{Gray}                             &                               & $\verb|sigma|>0$                                &  $\log$ \tabularnewline  
   Exponential (``\verb|exp|'')                & $z_t>0$                       & $\verb|rate|>0$                                 &  $\log$ \tabularnewline  
                                               &                               & $\verb|zero-mass|\in(0,1)$                      &  $\text{logit}$ \tabularnewline 
   \rowcolor{Gray} Gamma (``\verb|gamma|'')    & $z_t>0$                       & $\verb|mean|>0$                                 &  $\log$ \tabularnewline  
@@ -257,29 +262,31 @@ If circular-circular regression is specified for the mean of angular distributio
   \rowcolor{Gray}                                       &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
   \rowcolor{Gray}                                       &                                 & $\verb|sd.x|>0$               &  $\log$ \tabularnewline          
   \rowcolor{Gray}                                       &                                 & $\verb|sd.y|>0$               &  $\log$ \tabularnewline  
-  \rowcolor{Gray}                                       &                                 & $\verb|corr.xy|\in(-1,1)$   &  logit \tabularnewline                                              
+  \rowcolor{Gray}                                       &                                 & $\verb|corr.xy|\in(-1,1)$   &  logit \tabularnewline                                            
   Bivariate normal random walk (``\verb|rw_mvnorm2|'')  & ${\mathbf z_t}\in{\rm I\!R}^2$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
                                                         &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
-                                                        &                                 & $\verb|sd.x|>0$               &  $\log$ \tabularnewline                                                                                                                                               &                                 & $\verb|sd.y|>0$               &  $\log$ \tabularnewline
+                                                        &                                 & $\verb|sd.x|>0$               &  $\log$ \tabularnewline                                                                                                 &                                 & $\verb|sd.y|>0$               &  $\log$ \tabularnewline
                                                         &                                 & $\verb|corr.xy|\in(-1,1)$   &  logit \tabularnewline    
-  \rowcolor{Gray} Trivariate normal (``\verb|mvnorm3|'')& ${\mathbf z_t}\in{\rm I\!R}^3$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
-  \rowcolor{Gray}                                       &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
-  \rowcolor{Gray}                                       &                                 & $\verb|mean.z|\in{\rm I\!R}$     &  identity \tabularnewline  
-  \rowcolor{Gray}                                       &                                 & $\verb|sd.x|>0$               &  $\log$ \tabularnewline                                                
-  \rowcolor{Gray}                                       &                                 & $\verb|sd.y|>0$               &  $\log$ \tabularnewline   
-  \rowcolor{Gray}                                       &                                 & $\verb|sd.z|>0$               &  $\log$ \tabularnewline
-  \rowcolor{Gray}                                       &                                 & $\verb|corr.xy|\in(-1,1)$   &  logit \tabularnewline
-  \rowcolor{Gray}                                       &                                 & $\verb|corr.xz|\in(-1,1)$   &  logit \tabularnewline   
-  \rowcolor{Gray}                                       &                                 & $\verb|corr.yz|\in(-1,1)$   &  logit \tabularnewline  
-  Trivariate normal random walk (``\verb|rw_mvnorm3|'') & ${\mathbf z_t}\in{\rm I\!R}^3$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
-  \rowcolor{Gray}                                       &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
-  \rowcolor{Gray}                                       &                                 & $\verb|mean.z|\in{\rm I\!R}$     &  identity \tabularnewline  
-  \rowcolor{Gray}                                       &                                 & $\verb|sd.x|>0$               &  $\log$ \tabularnewline                                                
-  \rowcolor{Gray}                                       &                                 & $\verb|sd.y|>0$               &  $\log$ \tabularnewline   
-  \rowcolor{Gray}                                       &                                 & $\verb|sd.z|>0$               &  $\log$ \tabularnewline
-  \rowcolor{Gray}                                       &                                 & $\verb|corr.xy|\in(-1,1)$   &  logit \tabularnewline
-  \rowcolor{Gray}                                       &                                 & $\verb|corr.xz|\in(-1,1)$   &  logit \tabularnewline   
-  \rowcolor{Gray}                                       &                                 & $\verb|corr.yz|\in(-1,1)$   &  logit \tabularnewline  
+  \rowcolor{Gray} Continuous-time correlated random walk (``\verb|ctcrw|'')& ${\mathbf z_t}\in{\rm I\!R}^2$  & $\verb|gamma|>0$         & $\log$ \tabularnewline
+  \rowcolor{Gray}                                                          &                                 & $\verb|sigma|>0$         & $\log$ \tabularnewline
+  Trivariate normal (``\verb|mvnorm3|'')& ${\mathbf z_t}\in{\rm I\!R}^3$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
+                                        &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
+                                        &                                 & $\verb|mean.z|\in{\rm I\!R}$     &  identity \tabularnewline  
+                                        &                                 & $\verb|sd.x|>0$               &  $\log$ \tabularnewline                                                
+                                        &                                 & $\verb|sd.y|>0$               &  $\log$ \tabularnewline   
+                                        &                                 & $\verb|sd.z|>0$               &  $\log$ \tabularnewline
+                                        &                                 & $\verb|corr.xy|\in(-1,1)$   &  logit \tabularnewline
+                                        &                                 & $\verb|corr.xz|\in(-1,1)$   &  logit \tabularnewline   
+                                        &                                 & $\verb|corr.yz|\in(-1,1)$   &  logit \tabularnewline  
+  \rowcolor{Gray} Trivariate normal random walk (``\verb|rw_mvnorm3|'') & ${\mathbf z_t}\in{\rm I\!R}^3$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
+  \rowcolor{Gray}                                                       &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
+  \rowcolor{Gray}                                                       &                                 & $\verb|mean.z|\in{\rm I\!R}$     &  identity \tabularnewline  
+  \rowcolor{Gray}                                                       &                                 & $\verb|sd.x|>0$               &  $\log$ \tabularnewline        
+  \rowcolor{Gray}                                                       &                                 & $\verb|sd.y|>0$               &  $\log$ \tabularnewline   
+  \rowcolor{Gray}                                                       &                                 & $\verb|sd.z|>0$               &  $\log$ \tabularnewline
+  \rowcolor{Gray}                                                       &                                 & $\verb|corr.xy|\in(-1,1)$   &  logit \tabularnewline
+  \rowcolor{Gray}                                                       &                                 & $\verb|corr.xz|\in(-1,1)$   &  logit \tabularnewline   
+  \rowcolor{Gray}                                                       &                                 & $\verb|corr.yz|\in(-1,1)$   &  logit \tabularnewline  
   \bottomrule
   \end{tabular}
   \footnotesize{$^1$Link functions $(g)$ relate natural scale parameters $({\boldsymbol \theta})$ to a $T \times K$ design matrix $({\mathbf X})$ and $K-$vector of working scale parameters $(\boldsymbol{\beta}\in \mathbb{R}^K)$ such that $g({\boldsymbol \theta})={\mathbf X}\boldsymbol{\beta}$. %In circular-circular regression models for the mean of angular distributions, we have $\theta_t = {\text atan2}( \sum_{k=1}^K z_{t,k} \sin(x_{t,k} \beta_k),1+\sum_{k=1}^K z_{t,k} \cos(x_{t,k} \beta_k))$, where $Z$ is a $T \times K$ matrix of positive real covariates (e.g. wind speed) and $X$ is a $T \times K$ matrix composed of angular covariates (e.g. wind direction).
