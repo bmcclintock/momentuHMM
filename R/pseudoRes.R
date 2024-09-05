@@ -173,6 +173,13 @@ pseudoRes <- function(m, ncores = 1)
   
   par <- w2n(m$mod$estimate,m$conditions$bounds,lapply(m$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,m$conditions$estAngleMean,m$conditions$circularAngleMean,consensus,m$conditions$stationary,m$conditions$fullDM,m$conditions$DMind,nbObs,dist,m$conditions$Bndind,nc,meanind,m$covsDelta,m$conditions$workBounds,m$covsPi,TMB=isTRUE(m$conditions$optMethod=="TMB"))
   
+  for(ct in distnames[which(unlist(dist)=="ctcrw")]){
+    if(is.null(m$data$dt)) m$data$dt <- 1
+    attr(m$data[[paste0(ct,".x_tm1")]],"aInd") <- aInd
+    attr(m$data[[paste0(ct,".y_tm1")]],"aInd") <- aInd
+    par[[ct]] <- convertCTCRW(ct,par[[ct]],nbStates,m$data)
+  }
+  
   if(isTRUE(m$conditions$CT)){
     par <- ctPar(par,dist,nbStates,m$data)
     dt <- m$data$dt
@@ -189,10 +196,11 @@ pseudoRes <- function(m, ncores = 1)
     sp <- par[[j]]
     
     if(dist[[j]] %in% mvndists){
-      if(dist[[j]]=="mvnorm2" || dist[[j]]=="rw_mvnorm2"){
+      if(dist[[j]]=="mvnorm2" || dist[[j]]=="rw_mvnorm2" || dist[[j]]=="ctcrw"){
         genData <- c(data[[paste0(j,".x")]],data[[paste0(j,".y")]])
         if(dist[[j]]=="mvnorm2") ndim <- as.numeric(gsub("mvnorm","",dist[[j]]))
-        else ndim <- as.numeric(gsub("rw_mvnorm","",dist[[j]]))
+        else if(dist[[j]]=="rw_mvnorm2") ndim <- as.numeric(gsub("rw_mvnorm","",dist[[j]]))
+        else ndim <- 2
       } else if(dist[[j]]=="mvnorm3" || dist[[j]]=="rw_mvnorm3"){
         genData <- c(data[[paste0(j,".x")]],data[[paste0(j,".y")]],data[[paste0(j,".z")]])
         if(dist[[j]]=="mvnorm3") ndim <- as.numeric(gsub("mvnorm","",dist[[j]]))
@@ -238,7 +246,7 @@ pseudoRes <- function(m, ncores = 1)
         }
         
         if(dist[[j]] %in% mvndists){
-          if(dist[[j]]=="mvnorm2" || dist[[j]]=="rw_mvnorm2"){
+          if(dist[[j]]=="mvnorm2" || dist[[j]]=="rw_mvnorm2" || dist[[j]]=="ctcrw"){
             genArgs[[1]] <- as.list(as.data.frame(matrix(genArgs[[1]],nrow=ndim,byrow=TRUE)))
             genArgs[[2]] <- as.list(as.data.frame(rbind(genPar[state,genInd],
                                   genPar[nbStates+state,genInd])))

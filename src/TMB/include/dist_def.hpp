@@ -1391,6 +1391,67 @@ public:
 };
 
 template<class Type> 
+class CTCRW : public Dist<Type> {
+public:
+  // Constructor
+  CTCRW() {}; 
+  // Link function 
+  vector<Type> link(const vector<Type>& par, const int& n_states) {
+    vector<Type> wpar(par.size()); 
+    // gamma
+    for (int i = 0; i < n_states; ++i) wpar(i) = log(par(i) / (1 - par(i))); 
+    // sigma
+    for (int i = n_states; i < 2 * n_states; ++i) wpar(i) = log(par(i)); 
+    return(wpar); 
+  } 
+  // Inverse link function 
+  matrix<Type> invlink(const vector<Type>& wpar, const int& n_states) {
+    int n_par = wpar.size()/n_states;
+    matrix<Type> par(n_states, n_par);
+    // mean 
+    for (int i = 0; i < n_states; ++i) par(i, 0) = 1 / (1 + exp(-wpar(i)));
+    // dispersion 
+    for (int i = 0; i < n_states; ++i) par(i, 1) = exp(wpar(i + n_states)); 
+    return(par); 
+  }
+  
+  // Multivariate Probability density function 
+  Type pdf(const vector<Type>& x, const vector<Type>& par, const Type& delta_t, const bool& logpdf) {
+    int dim = 2;
+    Type gamma = par(0);
+    Type sigma = par(1);
+    Type x_tm1 = x(2);
+    Type y_tm1 = x(3);
+    Type x_tm2 = x(4);
+    Type y_tm2 = x(5);
+    Type delta_tm1 = x(6);
+    //int dim = this->dim(par.size()); 
+    
+    vector<Type> mean(dim);
+    matrix<Type> Sigma(dim, dim); 
+    mean(0) = x_tm1 + delta_t * exp(log(gamma) * delta_tm1) * (x_tm1-x_tm2)/delta_tm1;
+    mean(1) = y_tm1 + delta_t * exp(log(gamma) * delta_tm1) * (y_tm1-y_tm2)/delta_tm1;
+    Type var = (-log(gamma)*sigma*sigma)/(Type(2.)*log(gamma)*log(gamma));
+    Type sigma2 = var - exp(log(gamma) * delta_t) * var * exp(log(gamma) * delta_t);
+    Sigma(0,0) = delta_t * sigma2;
+    Sigma(1,1) = delta_t * sigma2;
+    Sigma(1,0) = 0.;
+    Sigma(0,1) = 0.;
+    
+    vector<Type> y(dim);
+    for (int i = 0; i < dim; ++i){
+      y(i) = x(i) - mean(i);
+      //Rprintf("i %d y %f x %f xtm1 %f ytm1 %f xtm2 %f ytm2 %f Sigma(i,i) %f mean(i) %f delta_t %f delta_tm1 %f \n",i,asDouble(y(i)),asDouble(x(i)),asDouble(x_tm1),asDouble(y_tm1),asDouble(x_tm2),asDouble(y_tm2),asDouble(Sigma(i,i)),asDouble(mean(i)),asDouble(delta_t),asDouble(delta_tm1));
+    }
+    Type val = density::MVNORM(Sigma)(y); 
+    //Rprintf("dim %d dens %f \n",dim,asDouble(val));
+    val = -val; 
+    if (!logpdf) val = exp(val); 
+    return(val); 
+  }
+};
+
+template<class Type> 
 class Dirichlet : public Dist<Type> {
 public:
   // Constructor

@@ -174,6 +174,18 @@ get_mixProbs <- function(optPar,mod,mixture){
   wpar <- mod$mod$estimate
   par <- w2n(wpar,mod$conditions$bounds,lapply(mod$conditions$fullDM,function(x) nrow(x)/nbStates),nbStates,nbCovs,mod$conditions$estAngleMean,mod$conditions$circularAngleMean,consensus,mod$conditions$stationary,mod$conditions$fullDM,mod$conditions$DMind,nrow(mod$data),dist,mod$conditions$Bndind,nc,meanind,mod$covsDelta,mod$conditions$workBounds,mod$covsPi,isTRUE(mod$conditions$optMethod=="TMB"))
   
+  aInd <- NULL
+  nbAnimals <- length(unique(data$ID))
+  for(i in 1:nbAnimals)
+    aInd <- c(aInd,which(data$ID==unique(data$ID)[i])[1])
+  
+  for(ct in distnames[which(unlist(dist)=="ctcrw")]){
+    if(is.null(data$dt)) data$dt <- 1
+    attr(data[[paste0(ct,".x_tm1")]],"aInd") <- aInd
+    attr(data[[paste0(ct,".y_tm1")]],"aInd") <- aInd
+    par[[ct]] <- convertCTCRW(ct,par[[ct]],nbStates,data)
+  }
+  
   if(isTRUE(mod$conditions$CT)) par <- ctPar(par,dist,nbStates,data)
 
   if(nbRecovs){

@@ -232,7 +232,7 @@ simCTHMM <- function(nbAnimals=1,nbStates=2,dist,
         if(is.null(kappa$spCov) || is.na(kappa$spCov)) kappa$spCov <- 0.05
         else if(!is.finite(kappa$spCov) || length(kappa$spCov)!=1 || !dunif(kappa$spCov)) stop("kappa$spCov must be a scalar between 0 and 1")
       }
-    } else if(!is.finite(kappa) || length(kappa)!=1 || kappa<=0) stop("kappa must either be a list or a finite positive value")
+    } else if(length(kappa)!=1 || kappa<=0) stop("kappa must either be a list or a positive scalar")
   }
   
   withCallingHandlers(out <- simData(nbAnimals,nbStates,dist,

@@ -218,6 +218,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   funMap["cat"] = dcat_rcpp;
   funMap["crwrice"] = dcrwrice_rcpp;
   funMap["crwvm"] = dcrwvm_rcpp;
+  funMap["ctcrw"] = dmvnorm_rcpp;
   funMap["ctds"] = dcat_rcpp;
   funMap["exp"] = dexp_rcpp;
   funMap["gamma"] = dgamma_rcpp;
@@ -264,7 +265,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
   for(unsigned int d=0;d<nDists;d++){
     genname = as<std::string>(dataNames[d]);
     genDist = as<std::string>(dist[genname]);
-    if(genDist=="mvnorm2" || genDist=="rw_mvnorm2"){
+    if(genDist=="mvnorm2" || genDist=="rw_mvnorm2" || genDist=="ctcrw"){
       L = List::create(as<NumericVector>(data[genname+".x"]) ,as<NumericVector>(data[genname+".y"]));
       //NumericVector genData = combine(L);
       mvn = true;
@@ -373,7 +374,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       genProb.ones();
       
       if(mvn){
-        if(genDist=="mvnorm2" || genDist=="rw_mvnorm2"){
+        if(genDist=="mvnorm2" || genDist=="rw_mvnorm2" || genDist=="ctcrw"){
           genArgs1 = cbindmean2(genPar.row(state),genPar.row(nbStates+state));
           genArgs2 = cbindsigma2(genPar.row(nbStates*2+state),genPar.row(nbStates*3+state),genPar.row(nbStates*4+state));
           //for(int i=0; i<genArgs1.n_cols; i++){

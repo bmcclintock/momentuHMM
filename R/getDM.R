@@ -10,6 +10,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
   parSize<-lapply(parNames,length)
   #parCount <- vector('list',length(dist))
   lag <- 0
+  #if(any(unlist(dist)=="ctcrw")) lag <- 1
   lanInd <- vector('list',length(dist))
   names(lanInd) <- distnames
   
@@ -24,7 +25,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
     if(dist[[i]]=="ctds" && #i==attr(data,"ctdsData") && 
        (is.null(DM[[i]]) || !is.list(DM[[i]]))) stop("DM$",i," must be specified as a list with a formula for parameter 'lambda'")
     if(is.null(DM[[i]])){
-      if(dist[[i]] %in% rwdists) stop("DM$",i," must be specified for (multivariate) normal random walk models")
+      if((dist[[i]] %in% rwdists) && (dist[[i]]!="ctcrw")) stop("DM$",i," must be specified for (multivariate) normal random walk models")
       tmpDM <- diag(parSize[[i]]*nbStates)
       tmpDM <- array(tmpDM,dim=c(nrow(tmpDM),ncol(tmpDM),nbObs))
       DMnames <- paste0(rep(parNames[[i]],each=nbStates),"_",1:nbStates,":(Intercept)")
@@ -66,6 +67,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
           lag <- get_crwlag(formulaStates[[j]][[state]],lag)
           if(lag){
             for(jj in all.vars(formulaStates[[j]][[state]],data)){
+              if(is.null(data[[jj]])) stop(jj," not found in data")
               attr(data[[jj]],"aInd") <- aInd
             }
           }
@@ -184,6 +186,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
           lag <- get_crwlag(tform,lag)
           if(lag){
             for(jj in all.vars(tform,data)){
+              if(is.null(data[[jj]])) stop(jj," not found in data")
               attr(data[[jj]],"aInd") <- aInd
             }
           }
@@ -211,6 +214,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
           lag <- get_crwlag(form,lag)
           if(lag){
             for(jj in all.vars(form,data)){
+              if(is.null(data[[jj]])) stop(jj," not found in data")
               attr(data[[jj]],"aInd") <- aInd
             }
           }

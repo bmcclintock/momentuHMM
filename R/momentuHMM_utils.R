@@ -1,4 +1,4 @@
-momentuHMMdists<-sort(c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm','norm','bern','vmConsensus','mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3','rw_norm','cat','negbinom','logis','t','ctds','crwrice','crwvm'))
+momentuHMMdists<-sort(c('gamma','weibull','exp','lnorm','beta','pois','wrpcauchy','vm','norm','bern','vmConsensus','mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3','rw_norm','cat','negbinom','logis','t','ctds','crwrice','crwvm','ctcrw'))
 moveHMMdists<-sort(c('gamma','weibull','exp','lnorm','wrpcauchy','vm'))
 angledists<-sort(c('wrpcauchy','vm','vmConsensus','crwvm'))
 stepdists<-sort(c('gamma','weibull','exp','lnorm','crwrice'))
@@ -7,8 +7,8 @@ nonnegativedists<-sort(c('gamma','weibull','exp','lnorm','pois','negbinom','crwr
 zeroInflationdists<-sort(c('gamma','weibull','exp','lnorm','beta','crwrice'))
 oneInflationdists<-sort(c('beta'))
 integerdists<-sort(c('bern','pois','cat','negbinom','ctds'))
-mvndists <- c('mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3')
-rwdists <- c('rw_norm','rw_mvnorm2','rw_mvnorm3')
+mvndists <- c('mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3','ctcrw')
+rwdists <- c('rw_norm','rw_mvnorm2','rw_mvnorm3','ctcrw')
 CTHMMdists <- c(momentuHMMdists[which(!momentuHMMdists %in% c(angledists))])
 CTHMMdepdists <- c(rwdists, "ctds","pois") # CTHMM distributions where observations and parameters depend on dt
 splineList<-c("bs","ns",paste0("splines::",c("bs","ns")),"bSpline","mSpline","cSpline","iSpline",paste0("splines2::",c("bSpline","mSpline","cSpline","iSpline")),"poly","stats::poly")
@@ -203,7 +203,7 @@ pcrwvm <- function(x, beta, sigma, step_tm1 = 0, log = FALSE)
   else exp(logdens)
 }
 
-dmvnorm2 <- dmvnorm3 <- drw_mvnorm2 <- drw_mvnorm3 <- function(x,mean,sigma){
+dmvnorm2 <- dmvnorm3 <- drw_mvnorm2 <- drw_mvnorm3 <- dctcrw <- function(x,mean,sigma){
   dmvnorm_rcpp(x,mean,sigma)
 }
 
@@ -221,7 +221,7 @@ convertSigma <- function(sigcor,k){
   return(sigma)
 }
 
-rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- function(n,mean,sigcor){
+rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- rctcrw <- function(n,mean,sigcor){
   mvtnorm::rmvnorm(n,mean,convertSigma(sigcor,length(mean)))
 }
 
@@ -258,7 +258,7 @@ RWdata <- function(dist,data,knownStates,...){
             tmpdata[[paste0(i,".y_tm1")]] <- tmpdata[[paste0(i,".y")]]
             ldata[[paste0(i,".x_tm1")]] <- ldata[[paste0(i,".x")]]
             ldata[[paste0(i,".y_tm1")]] <- ldata[[paste0(i,".y")]]
-            if(dist[[i]]=="rw_mvnorm2"){
+            if(dist[[i]] %in% c("rw_mvnorm2","ctcrw")){
               #if(!CT) 
               colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(paste0(i,".x"),paste0(i,".y"))))]))
               ##else if(inherits(data,"hierarchical")) colInd <- unique(c(colInd,colnames(tmpdata)[which(!(colnames(tmpdata) %in% c(Time.name,"dt",paste0(i,".x"),paste0(i,".y"))))]))
@@ -332,6 +332,22 @@ radian <- function(degree)
 {
   radian <- degree * (pi/180)
   radian
+}
+
+convertCTCRW <- function(distname,par,nbStates,data){
+  mvnpar <- matrix(0,5*nbStates,nrow(data))
+  if(nrow(data)>2) {
+    dtm1 <- c(0,data$dt[-nrow(data)])
+  } else {
+    dtm1 <- data$dt[1]
+  }
+  for(i in 1:nbStates){
+    mvnpar[i,] <- data[[paste0(distname,".x_tm1")]] + par[i,]^dtm1 * crw(data[[paste0(distname,".x_tm1")]],dt=data$dt)
+    mvnpar[nbStates+i,] <- data[[paste0(distname,".y_tm1")]] + par[i,]^dtm1 * crw(data[[paste0(distname,".y_tm1")]],dt=data$dt)
+    sigma <- (-log(par[i,])*par[nbStates+i,]^2)/(2*log(par[i,])^2)
+    mvnpar[2*nbStates+i,] <- mvnpar[3*nbStates+i,] <- sqrt(sigma-par[i,]^data$dt * sigma * par[i,]^data$dt)
+  }
+  return(mvnpar)
 }
 
 ctPar <- function(par,dist,nbStates,data){

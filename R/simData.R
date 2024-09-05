@@ -401,6 +401,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     rwdists <- rwdists
     rmvnorm2 <- rmvnorm2
     rmvnorm3 <- rmvnorm3
+    rctcrw <- rctcrw
     rvm <- CircStats::rvm
     rwrpcauchy <- CircStats::rwrpcauchy
     rcrwrice <- rcrwrice
@@ -412,7 +413,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       rbern <- extraDistr::rbern
     }
     convertSigma <- convertSigma
-    rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 
+    convertCTCRW <- convertCTCRW
+    rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- rctcrw
     rrw_norm <- stats::rnorm
     mlogit <- mlogit
     distAngle <- distAngle
@@ -627,7 +629,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         }
       }
       covsCol<-unique(covsCol)
-      covsCol <- covsCol[!(covsCol %in% "ID")]
+      covsCol <- covsCol[!(covsCol %in% c("ID","dt"))]
       covsCol <- covsCol[which(covsCol %in% names(model$data))]
       
       if(length(covsCol)) covs <- model$data[covsCol]
@@ -775,6 +777,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(moveState & ("noMove" %in% c(names(dist),names(covs)))) stop("'","noMove","' is reserved and cannot be used for covariate or data stream names when moveState=TRUE")
     }
   }
+  if("dt" %in% names(covs)) stop("'dt' is reserved and cannot be the name of a covariate in 'covs'")
   
   Fun <- lapply(inputs$dist,function(x) paste("r",x,sep=""))
   for(i in names(Fun)){
@@ -845,14 +848,14 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   if(is.list(initialPosition)){
     if(length(initialPosition)!=nbAnimals) stop("initialPosition must be a list of length ",nbAnimals)
     for(i in 1:nbAnimals){
-      if(is.null(mvnCoords) || dist[[mvnCoords]] %in% c("mvnorm2","rw_mvnorm2")){
+      if(is.null(mvnCoords) || dist[[mvnCoords]] %in% c("mvnorm2","rw_mvnorm2","ctcrw")){
         if(length(initialPosition[[i]])!=2 | !is.numeric(initialPosition[[i]]) | any(!is.finite(initialPosition[[i]]))) stop("each element of initialPosition must be a finite numeric vector of length 2")
       } else if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")){
         if(length(initialPosition[[i]])!=3 | !is.numeric(initialPosition[[i]]) | any(!is.finite(initialPosition[[i]]))) stop("each element of initialPosition must be a finite numeric vector of length 3")
       }
     }
   } else {
-    if(is.null(mvnCoords) || dist[[mvnCoords]] %in% c("mvnorm2","rw_mvnorm2")){
+    if(is.null(mvnCoords) || dist[[mvnCoords]] %in% c("mvnorm2","rw_mvnorm2","ctcrw")){
       if(length(initialPosition)!=2 | !is.numeric(initialPosition) | any(!is.finite(initialPosition))) stop("initialPosition must be a finite numeric vector of length 2")
     } else if(!is.null(mvnCoords) && dist[[mvnCoords]] %in% c("mvnorm3","rw_mvnorm3")){
       if(all(initialPosition==0)) initialPosition <- c(0,0,0)
@@ -1020,7 +1023,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(length(centerInd)){
       if(is.null(rownames(centers))) centerNames<-paste0("center",rep(centerInd,each=2),".",rep(c("dist","angle"),length(centerInd)))
       else centerNames <- paste0(rep(rownames(centers),each=2),".",rep(c("dist","angle"),length(centerInd)))
-      centerCovs <- data.frame(matrix(NA,nrow=sum(allNbObs),ncol=length(centerInd)*2,dimnames=list(NULL,centerNames)))
+      centerCovs <- data.frame(matrix(0,nrow=sum(allNbObs),ncol=length(centerInd)*2,dimnames=list(NULL,centerNames)))
     }  
   } else centerNames <- centerCovs <- NULL
   
@@ -1038,7 +1041,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(is.null(names(centroids[j]))) centroidNames <- c(centroidNames,paste0("centroid",rep(j,each=2),".",c("dist","angle")))
       else centroidNames <- c(centroidNames,paste0(rep(names(centroids[j]),each=2),".",c("dist","angle")))
     }
-    centroidCovs <- data.frame(matrix(NA,nrow=sum(allNbObs),ncol=length(centroidNames),dimnames=list(NULL,centroidNames)))
+    centroidCovs <- data.frame(matrix(0,nrow=sum(allNbObs),ncol=length(centroidNames),dimnames=list(NULL,centroidNames)))
     centroidInd <- length(centroidNames)/2
     #}  
   } else centroidNames <- centroidCovs <- NULL
@@ -1414,6 +1417,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     ## Simulate covariate values ##
     ###############################
     subCovs<-data.frame(ID=rep(factor(IDs[zoo],levels=IDs),nbObs))
+    iallCovs <- NULL
     if(nbCovs>0){ # select covariate values which concern the current animal
       if(zoo<2){
         ind1 <- 1
@@ -1423,24 +1427,24 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       ind2 <- sum(allNbObs[1:zoo])
       subCovs <- cbind(subCovs,data.frame(allCovs[ind1:ind2,,drop=FALSE]))
       iallCovs <- allCovs[ind1:ind2,,drop=FALSE]
-    } else iallCovs <- NULL
+    }
     
     if(length(centerInd)) subCovs <- cbind(subCovs,centerCovs[cumNbObs[zoo]+1:nbObs,])
     if(length(centroidInd)) subCovs <- cbind(subCovs,centroidCovs[cumNbObs[zoo]+1:nbObs,])
     
     if(!isTRUE(list(...)$ctds)){
-      subSpatialcovs<-as.data.frame(matrix(NA,nrow=nbObs,ncol=nbSpatialCovs))
+      subSpatialcovs<-as.data.frame(matrix(0,nrow=nbObs,ncol=nbSpatialCovs))
       colnames(subSpatialcovs)<-spatialcovnames
       if(gradient){
         for(j in 1:nbSpatialCovs){
-          subSpatialcovs[,paste0(spatialcovnames[j],c(".x",".y"))] <- NA
+          subSpatialcovs[,paste0(spatialcovnames[j],c(".x",".y"))] <- 0
         }
       }
     } else {
-      subSpatialcovs<-as.data.frame(matrix(NA,nrow=nbObs,ncol=length(tmpSpNames)))
+      subSpatialcovs<-as.data.frame(matrix(0,nrow=nbObs,ncol=length(tmpSpNames)))
       colnames(subSpatialcovs)<-tmpSpNames
     }
-    subAnglecovs <- as.data.frame(matrix(NA,nrow=nbObs,ncol=length(angleCovs)))
+    subAnglecovs <- as.data.frame(matrix(0,nrow=nbObs,ncol=length(angleCovs)))
     colnames(subAnglecovs) <- angleCovs
     
     X1 <- matrix(0,nrow=1,ncol=2)
@@ -1546,19 +1550,16 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       
       for(i in distnames){
         if(dist[[i]] %in% rwdists){
-          if(dist[[i]] %in% c("rw_mvnorm2")){
-            subCovs[1,paste0(i,".x_tm1")] <- X1[1,1]
-            subCovs[1,paste0(i,".y_tm1")] <- X1[1,2]
+          if(dist[[i]] %in% c("rw_mvnorm2","ctcrw")){
+            subCovs[,paste0(i,".x_tm1")] <- X1[1,1]
+            subCovs[,paste0(i,".y_tm1")] <- X1[1,2]
           } else if(dist[[i]] %in% c("rw_mvnorm3")){
-            subCovs[1,paste0(i,".x_tm1")] <- X1[1,1]
-            subCovs[1,paste0(i,".y_tm1")] <- X1[1,2]
-            subCovs[1,paste0(i,".z_tm1")] <- X1[1,3]
+            subCovs[,paste0(i,".x_tm1")] <- X1[1,1]
+            subCovs[,paste0(i,".y_tm1")] <- X1[1,2]
+            subCovs[,paste0(i,".z_tm1")] <- X1[1,3]
           }
         }
       }
-      
-      # get max crw lag
-      maxlag <- getDM(cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE,TMB=TMB)$lag
       
       covsPi <- stats::model.matrix(formPi,cbind(subCovs[1,,drop=FALSE],subSpatialcovs[1,,drop=FALSE]))
       pie <- mlogit(wnpi,covsPi,nbCovsPi,1,mixtures)
@@ -1662,6 +1663,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(nbStates>1 & isTRUE(list(...)$CT)){
       if(qInd | moveState){
         if(inherits(obsTimes[[zoo]],"POSIXt")){
+          if(!is.finite(kappa)) stop("'kappa' must be finite")
           nbSwitch <- stats::rpois(1,as.numeric(difftime(max(obsTimes[[zoo]]),min(obsTimes[[zoo]]),units=attr(lambda[[zoo]],"units")))*kappa)
           tswitch <- min(obsTimes[[zoo]])+sort(runif(nbSwitch)*difftime(max(obsTimes[[zoo]]),min(obsTimes[[zoo]]),units=attr(lambda[[zoo]],"units")))
         } else {
@@ -1697,7 +1699,6 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         dt[[zoo]] <- c(as.numeric(difftime(allTimes[-1],allTimes[-length(allTimes)],units=attr(lambda[[zoo]],"units"))),0)
       } else dt[[zoo]] <- c(diff(allTimes),0)
       subCovs <- subCovs[cumsum(!allTimes %in% tswitch),,drop=FALSE]
-      if(isTRUE(list(...)$CT)) subCovs$dt <- dt[[zoo]]
       if(!is.null(iallCovs)) iallCovs <- iallCovs[cumsum(!allTimes %in% tswitch),,drop=FALSE]
       
       if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd) & !length(angleCovs) & !rwInd) {
@@ -1721,7 +1722,12 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       tswitch <- max(obsTimes[[zoo]])
       allTimes <- obsTimes[[zoo]]
     }
-  
+    
+    subCovs$dt <- dt[[zoo]]
+    
+    # get max crw lag
+    maxlag <- getDM(cbind(subCovs[match(obsTimes[[zoo]],allTimes),,drop=FALSE],subSpatialcovs[match(obsTimes[[zoo]],allTimes),,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE,TMB=TMB)$lag
+    
     k <- 1
     time <- obsTimes[[zoo]][1]
     
@@ -1730,7 +1736,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     
     for(i in distnames){
       if(inputs$dist[[i]] %in% mvndists){
-        genData[[i]] <- matrix(NA,length(allTimes),as.numeric(sub("mvnorm","",sub("rw_mvnorm","",dist[[i]]))))
+        if(inputs$dist[[i]]=="ctcrw") ndim <- 2
+        else ndim <- as.numeric(sub("mvnorm","",sub("rw_mvnorm","",dist[[i]])))
+        genData[[i]] <- matrix(NA,length(allTimes),ndim)
       } else genData[[i]] <- rep(NA,length(allTimes))
       genArgs[[i]] <- list(1)  # first argument = 1 (one random draw)
     }
@@ -1772,7 +1780,17 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
       }
       
-      if(isTRUE(list(...)$CT)) subPar <- ctPar(subPar,dist,nbStates,data.frame(subCovs[k,],dt=dt[[zoo]][k]))
+      for(ct in distnames[which(unlist(inputs$dist)=="ctcrw")]){
+        mlag <- 1
+        mvnpar <- matrix(0,5*nbStates,1)
+        ctcrwCovs <- subCovs[k-ifelse(k>=mlag,mlag,0):0,]
+        ctcrwCovs$dt <- dt[[zoo]][k-ifelse(k>=mlag,mlag,0):0]
+        attr(ctcrwCovs$mu.x_tm1,"aInd") <- 1
+        attr(ctcrwCovs$mu.y_tm1,"aInd") <- 1
+        subPar[[ct]] <- convertCTCRW(ct,subPar[[ct]],nbStates,ctcrwCovs)[,ifelse(k==1,1,2),drop=FALSE]
+      }
+      
+      if(isTRUE(list(...)$CT)) subPar <- ctPar(subPar,inputs$dist,nbStates,data.frame(subCovs[k,],dt=dt[[zoo]][k]))
       
       for(i in distnames){
         
@@ -1785,7 +1803,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         }
         
         if(inputs$dist[[i]] %in% mvndists){
-          if(inputs$dist[[i]]=="mvnorm2" || inputs$dist[[i]]=="rw_mvnorm2"){
+          if(inputs$dist[[i]]=="mvnorm2" || inputs$dist[[i]]=="rw_mvnorm2" || inputs$dist[[i]]=="ctcrw"){
             genArgs[[i]][[2]] <- c(subPar[[i]][Z[k]],
                                    subPar[[i]][nbStates+Z[k]])
             genArgs[[i]][[3]] <- matrix(c(subPar[[i]][nbStates*2+Z[k]], #x
@@ -1982,7 +2000,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         }
         for(i in distnames){
           if(dist[[i]] %in% rwdists){
-            if(dist[[i]] %in% c("rw_mvnorm2")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1"))] <- X[k+1,]
+            if(dist[[i]] %in% c("rw_mvnorm2","ctcrw")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1"))] <- X[k+1,]
             else if(dist[[i]] %in% c("rw_mvnorm3")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1",".z_tm1"))] <- X[k+1,]
           }
         }

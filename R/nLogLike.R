@@ -106,6 +106,15 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
     par$angle <- par$step[1:(2*nbStates),]
   }
   
+  distnames<-names(dist)
+  
+  for(ct in distnames[which(unlist(dist)=="ctcrw")]){
+    if(is.null(data$dt)) data$dt <- 1
+    attr(data[[paste0(ct,".x_tm1")]],"aInd") <- aInd
+    attr(data[[paste0(ct,".y_tm1")]],"aInd") <- aInd
+    par[[ct]] <- convertCTCRW(ct,par[[ct]],nbStates,data)
+  }
+  
   if(inherits(par,"error")){
     return(NaN)
   } else {
@@ -145,8 +154,6 @@ nLogLike <- function(optPar,nbStates,formula,bounds,parSize,data,dist,covs,
     if(any(unlist(lapply(dist,is.null)))){
       par[which(unlist(lapply(dist,is.null)))]<-matrix(NA)
     }
-  
-    distnames<-names(dist)
     
     if(stationary)
       par$delta <- c(NA)
