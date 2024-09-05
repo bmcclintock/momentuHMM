@@ -310,6 +310,7 @@ Type momentuhmmTMB(objective_function<Type>* obj) {
           } else {
             prob(i, s) = prob(i, s) * obsdist->pdf(data(i, var_count), subpar, delta_t(i), false);
           }
+          if(asDouble(prob(i, s)) < DBL_MIN) prob(i, s) = DBL_MIN;
         }        
       }
     }
