@@ -267,7 +267,7 @@ If circular-circular regression is specified for the mean of angular distributio
                                                         &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  
                                                         &                                 & $\verb|sd.x|>0$               &  $\log$ \tabularnewline                                                                                                 &                                 & $\verb|sd.y|>0$               &  $\log$ \tabularnewline
                                                         &                                 & $\verb|corr.xy|\in(-1,1)$   &  logit \tabularnewline    
-  \rowcolor{Gray} Continuous-time correlated random walk (``\verb|ctcrw|'')& ${\mathbf z_t}\in{\rm I\!R}^2$  & $\verb|gamma|>0$         & $\log$ \tabularnewline
+  \rowcolor{Gray} Continuous-time correlated random walk (``\verb|ctcrw|'')& ${\mathbf z_t}\in{\rm I\!R}^2$  & $\verb|beta|>0$         & $\log$ \tabularnewline
   \rowcolor{Gray}                                                          &                                 & $\verb|sigma|>0$         & $\log$ \tabularnewline
   Trivariate normal (``\verb|mvnorm3|'')& ${\mathbf z_t}\in{\rm I\!R}^3$  & $\verb|mean.x|\in{\rm I\!R}$     &  identity \tabularnewline  
                                         &                                 & $\verb|mean.y|\in{\rm I\!R}$     &  identity \tabularnewline  

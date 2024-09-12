@@ -99,7 +99,7 @@ getDM<-function(data,DM,dist,nbStates,parNames,bounds,Par,zeroInflation,oneInfla
       }
       for(j in DMnames){
         if(grepl("langevin\\(",j)) {
-          if(!TMB) stop("Langevin models cannot be specified using DM formulas; they must be manually specified as a DM matrix")
+          if(!TMB) stop('Langevin models cannot be specified using DM formulas; they must be manually specified as a DM matrix (unless TMB is used)')
           if(!(dist[[i]] %in% rwdists)) stop("langevin() special formula can only be used for normal random walk data stream distributions")
           if(!grepl("mean",j))
             stop("langevin() special formula can only be used for the means of normal random walk data stream distributions")

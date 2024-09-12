@@ -1418,7 +1418,7 @@ public:
   // Multivariate Probability density function 
   Type pdf(const vector<Type>& x, const vector<Type>& par, const Type& delta_t, const bool& logpdf) {
     int dim = 2;
-    Type gamma = par(0);
+    Type beta = par(0);
     Type sigma = par(1);
     Type x_tm1 = x(2);
     Type y_tm1 = x(3);
@@ -1429,10 +1429,10 @@ public:
     
     vector<Type> mean(dim);
     matrix<Type> Sigma(dim, dim); 
-    mean(0) = x_tm1 + delta_t * exp(log(gamma) * delta_tm1) * (x_tm1-x_tm2)/delta_tm1;
-    mean(1) = y_tm1 + delta_t * exp(log(gamma) * delta_tm1) * (y_tm1-y_tm2)/delta_tm1;
-    Type var = (-log(gamma)*sigma*sigma)/(Type(2.)*log(gamma)*log(gamma));
-    Type sigma2 = var - exp(log(gamma) * delta_t) * var * exp(log(gamma) * delta_t);
+    mean(0) = x_tm1 + delta_t * exp(log(beta) * delta_tm1) * (x_tm1-x_tm2)/delta_tm1;
+    mean(1) = y_tm1 + delta_t * exp(log(beta) * delta_tm1) * (y_tm1-y_tm2)/delta_tm1;
+    Type var = (-log(beta)*sigma*sigma)/(Type(2.)*log(beta)*log(beta));
+    Type sigma2 = var - exp(log(beta) * delta_t) * var * exp(log(beta) * delta_t);
     Sigma(0,0) = delta_t * sigma2;
     Sigma(1,1) = delta_t * sigma2;
     Sigma(1,0) = 0.;
