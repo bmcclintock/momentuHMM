@@ -1,8 +1,9 @@
 Publications using momentuHMM
 ================
-2024-07-26
+2024-11-05
 
-<div id="refs" class="references csl-bib-body" line-spacing="2">
+<div id="refs" class="references csl-bib-body" entry-spacing="0"
+line-spacing="2">
 
 <div id="ref-https://doi.org/10.1002/eap.2410" class="csl-entry">
 
@@ -536,9 +537,9 @@ National Academy of Sciences*. 120(42):e2218679120</span>
 
 <span class="csl-left-margin">49.
 </span><span class="csl-right-inline">Gillies N, Weimerskirch H, Thorley
-J, Clay TA, Martín López LM, et al. [Boldness predicts plasticity in
-flight responses to winds](https://doi.org/10.1111/1365-2656.13968).
-*Journal of Animal Ecology*</span>
+J, Clay TA, Martín López LM, et al. 2023. [Boldness predicts plasticity
+in flight responses to winds](https://doi.org/10.1111/1365-2656.13968).
+*Journal of Animal Ecology*. 92(9):1730–42</span>
 
 </div>
 

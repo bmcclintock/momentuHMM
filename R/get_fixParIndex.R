@@ -413,7 +413,7 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     if(!stationary) parVec <- c(parVec,"delta")
     fixPar <- fixPar[parVec]
     ofixPar <- ofixPar[parVec]
-    for(i in names(fixPar)){
+    for(i in parVec){
       if(!(isTRUE(crwST) && i=="angle")){
         tmp <- c(fixPar[[i]])
         if(!all(is.na(tmp))){

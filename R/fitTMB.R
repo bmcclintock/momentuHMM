@@ -677,6 +677,8 @@ obs_var <- function(data,dist,expand = FALSE) {
         tInd <- which(data$ID==zoo)
         tmpdat[[paste0(i,".x_tm2")]][tInd] <- dplyr::lag(tmpdat[[paste0(i,".x_tm1")]][tInd],n=1,default = 0)
         tmpdat[[paste0(i,".y_tm2")]][tInd] <- dplyr::lag(tmpdat[[paste0(i,".y_tm1")]][tInd],n=1,default = 0)
+        tmpdat[[paste0(i,".x_tm2")]][tInd][1] <- tmpdat[[paste0(i,".x_tm1")]][tInd[1]] # no crw term for first observation
+        tmpdat[[paste0(i,".y_tm2")]][tInd][1] <- tmpdat[[paste0(i,".y_tm1")]][tInd[1]] # no crw term for first observation
         if(!is.null(data$dt)) tmpdat$dtm1[tInd] <- dplyr::lag(data$dt[tInd],n=1,default = 1)
       }
       data[[i]] <- split(as.matrix(tmpdat),seq(nrow(data)))

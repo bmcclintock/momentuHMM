@@ -66,11 +66,11 @@ viterbi <- function(m, hierarchical=FALSE)
     xi_mix <- matrix(0,nbObs,nbStates)
     
     if(zoo!=nbAnimals) {
-      tm <- lapply(trMat,function(x) x[,,aInd[zoo]:(aInd[zoo+1]-1)])
-      p <- probs[aInd[zoo]:(aInd[zoo+1]-1),]
+      tm <- lapply(trMat,function(x) x[,,aInd[zoo]:(aInd[zoo+1]-1),drop=FALSE])
+      p <- probs[aInd[zoo]:(aInd[zoo+1]-1),,drop=FALSE]
     } else {
-      tm <- lapply(trMat,function(x) x[,,aInd[zoo]:nrow(probs)])
-      p <- probs[aInd[zoo]:nrow(probs),]
+      tm <- lapply(trMat,function(x) x[,,aInd[zoo]:nrow(probs),drop=FALSE])
+      p <- probs[aInd[zoo]:nrow(probs),,drop=FALSE]
     }
     foo <- rowSums(mapply(function(mix) mixProbs[zoo,mix]*delta[(mix-1)*nbAnimals+zoo,]%*%tm[[mix]][,,1]*p[1,],1:mixtures))
     xi_mix[1,] <- foo/sum(foo)
