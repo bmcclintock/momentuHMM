@@ -1699,6 +1699,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         dt[[zoo]] <- c(as.numeric(difftime(allTimes[-1],allTimes[-length(allTimes)],units=attr(lambda[[zoo]],"units"))),0)
       } else dt[[zoo]] <- c(diff(allTimes),0)
       subCovs <- subCovs[cumsum(!allTimes %in% tswitch),,drop=FALSE]
+      subSpatialcovs <- subSpatialcovs[cumsum(!allTimes %in% tswitch),,drop=FALSE]
       if(!is.null(iallCovs)) iallCovs <- iallCovs[cumsum(!allTimes %in% tswitch),,drop=FALSE]
       
       if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd) & !length(angleCovs) & !rwInd) {
