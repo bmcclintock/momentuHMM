@@ -353,13 +353,19 @@ convertCTCRW <- function(distname,par,nbStates,data){
 ctPar <- function(par,dist,nbStates,data){
   for(i in names(dist)){
     if(dist[[i]] %in% rwdists){
-      par[[i]][1:nbStates,] <- t(apply(par[[i]][1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".x_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".x_tm1")]],each=nbStates)
-      par[[i]][nbStates+1:nbStates,] <- t(apply(par[[i]][nbStates+1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".y_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".y_tm1")]],each=nbStates)
-      if(dist[[i]]=="rw_mvnorm3"){
-        par[[i]][2*nbStates+1:nbStates,] <- t(apply(par[[i]][2*nbStates+1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".z_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".z_tm1")]],each=nbStates)
-        par[[i]][3*nbStates+1:(3*nbStates),] <- t(apply(par[[i]][3*nbStates+1:(3*nbStates),,drop=FALSE],1,function(x) x*sqrt(data$dt)))
+      if(dist[[i]]=="rw_norm"){
+        par[[i]][1:nbStates,] <- t(apply(par[[i]][1:nbStates,,drop=FALSE] - rep(data[[paste0(i,"_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,"_tm1")]],each=nbStates)
+        par[[i]][nbStates+1:nbStates,] <- t(apply(par[[i]][nbStates+1:nbStates,,drop=FALSE],1,function(x) x*sqrt(data$dt)))
       } else {
-        par[[i]][2*nbStates+1:(2*nbStates),] <- t(apply(par[[i]][2*nbStates+1:(2*nbStates),,drop=FALSE],1,function(x) x*sqrt(data$dt)))
+        par[[i]][1:nbStates,] <- t(apply(par[[i]][1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".x_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".x_tm1")]],each=nbStates)
+        par[[i]][nbStates+1:nbStates,] <- t(apply(par[[i]][nbStates+1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".y_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".y_tm1")]],each=nbStates)
+ 
+        if(dist[[i]]=="rw_mvnorm3"){
+          par[[i]][2*nbStates+1:nbStates,] <- t(apply(par[[i]][2*nbStates+1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".z_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".z_tm1")]],each=nbStates)
+          par[[i]][3*nbStates+1:(3*nbStates),] <- t(apply(par[[i]][3*nbStates+1:(3*nbStates),,drop=FALSE],1,function(x) x*sqrt(data$dt)))
+        } else {
+          par[[i]][2*nbStates+1:(2*nbStates),] <- t(apply(par[[i]][2*nbStates+1:(2*nbStates),,drop=FALSE],1,function(x) x*sqrt(data$dt)))
+        }
       }
     } else if(dist[[i]]=="ctds"){
       p <- matrix(0,nrow(par[[i]])+nbStates,ncol(par[[i]]))

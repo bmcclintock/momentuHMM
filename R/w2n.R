@@ -260,22 +260,28 @@ w2nDM<-function(wpar,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbStates,
     if(!is.null(comment(DM))){
       for(i in 1:nbStates){
         for(j in as.integer(gsub("langevin","",comment(DM)))){
-          DMx <- DM[paste0("mean.x_",i),j][[1]]
-          DMy <- DM[paste0("mean.y_",i),j][[1]]
-          varx <- p[which(rownames(bounds)==paste0("sd.x_",i)),]^2
-          vary <- p[which(rownames(bounds)==paste0("sd.y_",i)),]^2
-          varxy <- p[which(rownames(bounds)==paste0("sd.x_",i)),] * p[which(rownames(bounds)==paste0("sd.y_",i)),] * p[which(rownames(bounds)==paste0("corr.xy_",i)),]
-          if(any(grepl("mean.z",rownames(DM)))){
-            DMz <- DM[paste0("mean.z_",i),j][[1]]
-            varz <- p[which(rownames(bounds)==paste0("sd.z_",i)),]^2
-            varxz <- p[which(rownames(bounds)==paste0("sd.x_",i)),] * p[which(rownames(bounds)==paste0("sd.z_",i)),] * p[which(rownames(bounds)==paste0("corr.xz_",i)),]
-            varyz <- p[which(rownames(bounds)==paste0("sd.y_",i)),] * p[which(rownames(bounds)==paste0("sd.z_",i)),] * p[which(rownames(bounds)==paste0("corr.yz_",i)),]
-            DM[paste0("mean.x_",i),j][[1]] <- DMx * varx/2 + DMy * varxy/2 + DMz * varxz/2
-            DM[paste0("mean.y_",i),j][[1]] <- DMy * vary/2 + DMx * varxy/2 + DMz * varyz/2
-            DM[paste0("mean.z_",i),j][[1]] <- DMz * varz/2 + DMx * varxz/2 + DMy * varyz/2
+          if(dist=="rw_norm"){
+            DMx <- DM[paste0("mean_",i),j][[1]]
+            varx <- p[which(rownames(bounds)==paste0("sd_",i)),]^2
+            DM[paste0("mean_",i),j][[1]] <- DMx * varx/2
           } else {
-            DM[paste0("mean.x_",i),j][[1]] <- DMx * varx/2 + DMy * varxy/2
-            DM[paste0("mean.y_",i),j][[1]] <- DMy * vary/2 + DMx * varxy/2
+            DMx <- DM[paste0("mean.x_",i),j][[1]]
+            DMy <- DM[paste0("mean.y_",i),j][[1]]
+            varx <- p[which(rownames(bounds)==paste0("sd.x_",i)),]^2
+            vary <- p[which(rownames(bounds)==paste0("sd.y_",i)),]^2
+            varxy <- p[which(rownames(bounds)==paste0("sd.x_",i)),] * p[which(rownames(bounds)==paste0("sd.y_",i)),] * p[which(rownames(bounds)==paste0("corr.xy_",i)),]
+            if(any(grepl("mean.z",rownames(DM)))){
+              DMz <- DM[paste0("mean.z_",i),j][[1]]
+              varz <- p[which(rownames(bounds)==paste0("sd.z_",i)),]^2
+              varxz <- p[which(rownames(bounds)==paste0("sd.x_",i)),] * p[which(rownames(bounds)==paste0("sd.z_",i)),] * p[which(rownames(bounds)==paste0("corr.xz_",i)),]
+              varyz <- p[which(rownames(bounds)==paste0("sd.y_",i)),] * p[which(rownames(bounds)==paste0("sd.z_",i)),] * p[which(rownames(bounds)==paste0("corr.yz_",i)),]
+              DM[paste0("mean.x_",i),j][[1]] <- DMx * varx/2 + DMy * varxy/2 + DMz * varxz/2
+              DM[paste0("mean.y_",i),j][[1]] <- DMy * vary/2 + DMx * varxy/2 + DMz * varyz/2
+              DM[paste0("mean.z_",i),j][[1]] <- DMz * varz/2 + DMx * varxz/2 + DMy * varyz/2
+            } else {
+              DM[paste0("mean.x_",i),j][[1]] <- DMx * varx/2 + DMy * varxy/2
+              DM[paste0("mean.y_",i),j][[1]] <- DMy * vary/2 + DMx * varxy/2
+            }
           }
         }
       }
