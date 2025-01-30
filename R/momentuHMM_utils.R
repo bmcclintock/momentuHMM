@@ -344,8 +344,7 @@ convertCTCRW <- function(distname,par,nbStates,data){
   for(i in 1:nbStates){
     mvnpar[i,] <- data[[paste0(distname,".x_tm1")]] + par[i,]^dtm1 * crw(data[[paste0(distname,".x_tm1")]],dt=data$dt)
     mvnpar[nbStates+i,] <- data[[paste0(distname,".y_tm1")]] + par[i,]^dtm1 * crw(data[[paste0(distname,".y_tm1")]],dt=data$dt)
-    var <- (-log(par[i,])*par[nbStates+i,]^2)/(2*log(par[i,])^2)
-    mvnpar[2*nbStates+i,] <- mvnpar[3*nbStates+i,] <- sqrt(var-par[i,]^data$dt * var * par[i,]^data$dt)
+    mvnpar[2*nbStates+i,] <- mvnpar[3*nbStates+i,] <- sqrt(par[nbStates+i,]^2*(par[i,]^(2*data$dt)-1)/(2*log(par[i,])))
   }
   return(mvnpar)
 }
