@@ -27,7 +27,8 @@ getTrProbs <- function(data, ...){
 #' @param getCI Logical indicating whether to calculate standard errors and logit-transformed confidence intervals based on fitted \code{\link{momentuHMM}} or \code{\link{momentuHierHMM}} object. Default: FALSE.
 #' @param covIndex Integer vector indicating specific rows of the data to be used in the calculations. This can be useful for reducing unnecessarily long computation times (paricularly when \code{getCI=TRUE}), e.g., when \code{formula} includes factor covariates (such as \code{ID}) but no temporal covariates. Ignored if \code{data} is not a \code{\link{momentuHMM}}, \code{\link{momentuHierHMM}}, \code{\link{miSum}}, or \code{\link{miHMM}} object.
 #' @param alpha Significance level of the confidence intervals (if \code{getCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).
-#' @param Time.name Character string indicating name of the time column in \code{data} (for continuous-time HMMs). Default: 'NULL' (discrete time). Ignored unless \code{data} is a \code{data.frame}, \code{\link{momentuHMMData}} object, or \code{\link{momentuHierHMMData}} object (i.e. not a \code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{miSum}} object, or a \code{\link{miHMM}} object).
+#' @param CT Logical indicating whether or not \code{data} is for continuous-time models. Default: \code{FALSE} (discrete time). Ignored unless \code{data} is a \code{data.frame} (i.e. not a \code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{miSum}} object, \code{\link{miHMM}} object, \code{\link{momentuHMMData}} object, or \code{\link{momentuHierHMMData}}).
+#' @param Time.name Character string indicating name of the time column in \code{data} (for continuous-time HMMs). Default: 'time'. Ignored unless \code{data} is a \code{data.frame}.
 #' @param Time.unit Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{data[[Time.name]]} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto'.  Ignored if \code{data} is a \code{ctds} object returned by \code{\link{prepCTDS}}.
 #' @param rateMatrix Logical indicating whether to return the transition rate matrix. Default: \code{FALSE}. Ignored unless \code{data} is a continuous-time model or \code{Time.name} is specified.
 #' @param kappa maximum allowed value for the row sums of the off-diagonal elements in the state transition rate matrix, such that the minimum value for the diagonal elements is \code{-kappa}. Default: \code{Inf}. Setting less than \code{Inf} can help avoid numerical issues during optimization, in which case the transition rate parameters \code{beta} are on the logit scale (instead of the log scale). Ignored unless \code{data} is a \code{data.frame}, \code{\link{momentuHMMData}} object, or \code{\link{momentuHierHMMData}} object (i.e. not a \code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{miSum}} object, or a \code{\link{miHMM}} object).
@@ -68,23 +69,24 @@ getTrProbs <- function(data, ...){
 #' 
 #' @importFrom expm expm
 #' @export
-getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mixtures=1,betaRef=NULL,stateNames=NULL, getCI=FALSE, covIndex=NULL, alpha = 0.95, Time.name = NULL, Time.unit = "auto", rateMatrix = FALSE, kappa = Inf, ...)
+getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mixtures=1,betaRef=NULL,stateNames=NULL, getCI=FALSE, covIndex=NULL, alpha = 0.95, CT = FALSE, Time.name = "time", Time.unit = "auto", rateMatrix = FALSE, kappa = Inf, ...)
 {  
   
   if(!is.momentuHMM(data) & !is.miSum(data) & !is.miHMM(data)){
     hierArgs <- list(...)
     argNames <- names(hierArgs)[which(names(hierArgs) %in% c("hierStates","hierDist","hierBeta","hierFormula"))]
     
-    ## check that the data is a momentuHMMData object or valid data frame
-    if(!is.momentuHMMData(data)){ 
+    ## check that the data is a valid data frame
+    if(!is.momentuHMMData(data)){
       if(missing(nbStates)){
         if(all(c("hierStates","hierDist") %in% argNames)){
           class(data) <- unique(append("hierarchical",class(data)))
-          return(getTrProbs.hierarchical(data=data,workBounds=workBounds,mixtures=mixtures,covIndex=covIndex,alpha=alpha,...))
+          return(getTrProbs.hierarchical(data=data,workBounds=workBounds,mixtures=mixtures,covIndex=covIndex,alpha=alpha,CT = CT, Time.name = Time.name, Time.unit = Time.unit, rateMatrix = rateMatrix, kappa = kappa, ...))
         }
       }
-      if(!is.data.frame(data)) stop('data must be a data.frame')
     }
+    if(!is.data.frame(data)) stop('data must be a data.frame')
+
     if(!missing(nbStates)){
       if(any(c("hierStates","hierDist","hierFormula","hierBeta") %in% argNames))
         stop("Either nbStates must be specified (for a regular HMM) or hierStates and hierDist must be specified (for a hierarchical HMM)")
@@ -120,8 +122,15 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
     #  Time.name <- attr(data,"Time.name")
     #}
     
-    if(!is.null(Time.name)) {
-      CT <- TRUE
+    if(is.momentuHMMData(data)) {
+      CT <- isTRUE(attr(data,"CT"))
+      if(CT){
+        Time.name <- attr(data,"Time.name")
+        Time.unit <- attr(data,"Time.unit")
+      }
+    }
+    
+    if(CT) {
       if(!is.null(data$dt)) warning("'dt' field in data is reserved for the time difference between observations in a continuous-time HMM")
       else data$dt <- 0
       if(is.null(data[[Time.name]])) stop(paste0("'",Time.name,"' not found in data"))
@@ -170,7 +179,6 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
         fulldt <- dt <- data$dt[dtIndex]
       } else fulldt <- dt <- data$dt
     } else {
-      CT <- FALSE
       fulldt <- dt <- rep(1,nrow(data))
     }
     
@@ -205,8 +213,12 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
     
     if(is.miHMM(data)) data <- data$miSum
     
-    CT <- isTRUE(attr(data$data,"CT"))
-    
+    CT <- isTRUE(inherits(data,"CTHMM"))
+    if(CT){
+      Time.name <- attr(data$data,"Time.name")
+      Time.unit <- attr(data$data,"Time.unit")
+    }
+
     data <- delta_bc(data)
     
     if(is.miSum(data)){
@@ -349,7 +361,7 @@ getTrProbs.default <- function(data,nbStates,beta,workBounds=NULL,formula=~1,mix
 #' If a hierarchical HMM structure is provided, then a hierarchical data structure containing the state transition probabilities for each time step at each level of the hierarchy ('gamma') is returned.
 #' 
 #' @export
-getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hierFormula=NULL,mixtures=1,hierDist, getCI=FALSE, covIndex=NULL, alpha = 0.95, Time.name = NULL, Time.unit = "auto", rateMatrix = FALSE, kappa = Inf, ...){
+getTrProbs.hierarchical <- function(data,hierStates,hierBeta,workBounds=NULL,hierFormula=NULL,mixtures=1,hierDist, getCI=FALSE, covIndex=NULL, alpha = 0.95, CT = FALSE, Time.name = "time", Time.unit = "auto", rateMatrix = FALSE, kappa = Inf, ...){
   
   chkDots(...)
   
