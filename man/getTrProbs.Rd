@@ -20,7 +20,8 @@ getTrProbs(data, ...)
   getCI = FALSE,
   covIndex = NULL,
   alpha = 0.95,
-  Time.name = NULL,
+  CT = FALSE,
+  Time.name = "time",
   Time.unit = "auto",
   rateMatrix = FALSE,
   kappa = Inf,
@@ -38,7 +39,8 @@ getTrProbs(data, ...)
   getCI = FALSE,
   covIndex = NULL,
   alpha = 0.95,
-  Time.name = NULL,
+  CT = FALSE,
+  Time.name = "time",
   Time.unit = "auto",
   rateMatrix = FALSE,
   kappa = Inf,
@@ -74,7 +76,9 @@ The first column pertains to the lower bound and the second column the upper bou
 
 \item{alpha}{Significance level of the confidence intervals (if \code{getCI=TRUE}). Default: 0.95 (i.e. 95\% CIs).}
 
-\item{Time.name}{Character string indicating name of the time column in \code{data} (for continuous-time HMMs). Default: 'NULL' (discrete time). Ignored unless \code{data} is a \code{data.frame}, \code{\link{momentuHMMData}} object, or \code{\link{momentuHierHMMData}} object (i.e. not a \code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{miSum}} object, or a \code{\link{miHMM}} object).}
+\item{CT}{Logical indicating whether or not \code{data} is for continuous-time models. Default: \code{FALSE} (discrete time). Ignored unless \code{data} is a \code{data.frame} (i.e. not a \code{\link{momentuHMM}} object, \code{\link{momentuHierHMM}} object, \code{\link{miSum}} object, \code{\link{miHMM}} object, \code{\link{momentuHMMData}} object, or \code{\link{momentuHierHMMData}}).}
+
+\item{Time.name}{Character string indicating name of the time column in \code{data} (for continuous-time HMMs). Default: 'time'. Ignored unless \code{data} is a \code{data.frame}.}
 
 \item{Time.unit}{Character string indicating units for time difference between observations (e.g. 'auto', 'secs', 'mins', 'hours', 'days', 'weeks'). Ignored unless \code{data[[Time.name]]} is of class \code{\link[base]{date-time}} or \code{\link[base]{date}}. Default: 'auto'.  Ignored if \code{data} is a \code{ctds} object returned by \code{\link{prepCTDS}}.}
 

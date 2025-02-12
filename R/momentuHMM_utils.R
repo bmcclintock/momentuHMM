@@ -183,6 +183,7 @@ rcrwvm <- function(n, beta, sigma, steps)
   
   var <- sigma*sigma/(beta*beta) * (1. - 2. / beta * (1.-exp(-beta))+1. / (2.*beta)*(1-exp(-2*beta)));
   kappa <- steps[-1]*steps[-length(steps)]*exp(-beta)/var
+  if(kappa<2.e-8) kappa <- 2.e-8
   return(CircStats::rvm(n,0,kappa))
 }
 
