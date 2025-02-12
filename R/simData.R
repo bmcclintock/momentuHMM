@@ -1847,6 +1847,8 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
               genArgs[[i]][[2]] <- genArgs[[i]][[3]] <- 12 # uniform turn angle if previous steps are zero
               genArgs[[i]][[4]] <- NULL
             }
+          } else if(dist[[i]]=="vm"){
+            if(genArgs[[i]][[3]]<2.e-8) genArgs[[i]][[3]] <- 2.e-8
           }
           genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
           if(genData[[i]][k] >  pi) genData[[i]][k] <- genData[[i]][k]-2*pi
