@@ -239,12 +239,18 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
   dataHMM <- data.frame(ID=character())
   
   # check that each animal's observations are contiguous
+  wInd <- TRUE
   for(i in 1:nbAnimals) {
     ind <- which(ID==ids[i])
     if(length(ind)!=length(ind[1]:ind[length(ind)]))
       stop("Each animal's obervations must be contiguous.")
-    if(!is.null(coordNames))
-      if(length(ind)<3) stop('each individual must have at least 3 observations to calculate step lengths and turning angles')
+    if(!is.null(coordNames)){
+      if(length(ind)<2) stop('each individual must have at least 2 observations to calculate step lengths')
+      if(length(ind)<3 & wInd) {
+        warning('each individual must have at least 3 observations to calculate turning angles')
+        wInd <- FALSE
+      }
+    }
   }
   
   count <- 0
@@ -264,13 +270,13 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
         genData <- data[[j]][i1:i2]
       } else if(!is.null(coordNames)){
         
-        for(i in (i1+1):(i2-1)) {
-          if(j=="step" & !is.na(x[i-1]) & !is.na(x[i]) & !is.na(y[i-1]) & !is.na(y[i])) {
+        for(i in min((i1+1),(i2-1)):(i2-1)) {
+          if(j=="step" & nbObs>2 & !is.na(x[i-1]) & !is.na(x[i]) & !is.na(y[i-1]) & !is.na(y[i])) {
             # step length
             genData[i-i1] <- sp::spDistsN1(pts = matrix(c(x[i-1],y[i-1]),ncol=2),
                                        pt = c(x[i],y[i]),
                                        longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
-          } else if(j=="angle" & !is.na(x[i-1]) & !is.na(x[i]) & !is.na(x[i+1]) & !is.na(y[i-1]) & !is.na(y[i]) & !is.na(y[i+1])) {
+          } else if(j=="angle" & nbObs>2 & !is.na(x[i-1]) & !is.na(x[i]) & !is.na(x[i+1]) & !is.na(y[i-1]) & !is.na(y[i]) & !is.na(y[i+1])) {
             # turning angle
             genData[i-i1+1] <- turnAngle(c(x[i-1],y[i-1]),
                                          c(x[i],y[i]),
@@ -425,7 +431,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
   }
   if(!is.null(covs)) dataHMM <- cbind(dataHMM,covs)
   
-  dataHMM$ID<-as.factor(dataHMM$ID)
+  dataHMM$ID<-factor(dataHMM$ID,levels=unique(dataHMM$ID))
   
   if(!is.null(coordNames)) attr(dataHMM,"coords") <- outNames
   attr(dataHMM,"gradient") <- gradient
@@ -816,7 +822,7 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
   }
   if(!is.null(covs)) dataHMM <- cbind(dataHMM,covs)
   
-  dataHMM$ID<-as.factor(dataHMM$ID)
+  dataHMM$ID<-factor(dataHMM$ID,levels=unique(dataHMM$ID))
   
   if(!is.null(coordNames)) {
     # return coordNames to NA if not at coordLevel

@@ -404,49 +404,53 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
         genArgs2 = genPar.row(genPar.n_rows - nbStates + state); //genPar(arma::span(genPar.n_rows-1),arma::span(state),arma::span());
       }
       
-      if(genzeroInflation && !genoneInflation) {
-        
-        zerom = zeromass.row(state);
-
-        // compute probability of non-zero observations
-        genProb.elem(noZeros) = (1. - zerom.elem(noZeros)) % funMap[genDist](genData[genData>0.],genArgs1.cols(noZeros),genArgs2.cols(noZeros));
-
-        // compute probability of zero observations
-        genProb.elem(nbZeros) = zerom.elem(nbZeros);
-        
-      } else if(genoneInflation && !genzeroInflation){
-        
-        onem = onemass.row(state);
-        
-        // compute probability of non-one observations
-        genProb.elem(noOnes) = (1. - onem.elem(noOnes)) % funMap[genDist](genData[(genData!=NAvalue) & (genData<1.)],genArgs1.cols(noOnes),genArgs2.cols(noOnes));
-        
-        // compute probability of one observations
-        genProb.elem(nbOnes) = onem.elem(nbOnes);
-        
-      } else if(genzeroInflation && genoneInflation){
-        
-        zerom = zeromass.row(state);
-        onem = onemass.row(state);
-        
-        // compute probability of non-zero and non-one observations
-        genProb.elem(noZerosOnes) = (1. - zerom.elem(noZerosOnes) - onem.elem(noZerosOnes)) % funMap[genDist](genData[(genData>0) & (genData<1)],genArgs1.cols(noZerosOnes),genArgs2.cols(noZerosOnes));
-        
-        // compute probability of zero observations
-        genProb.elem(nbZeros) = zerom.elem(nbZeros);
-        
-        // compute probability of one observations
-        genProb.elem(nbOnes) = onem.elem(nbOnes);
-        
-      } else {
-        //k=0;
-        //for(unsigned int i : noNAs){
-        //  Rprintf("k %d i %d step %f step_tm1 %f beta %f sigma %f tmp[i] %f \n",k,i,genData[i],genData[nbObs+i],genArgs1(i),genArgs2(i),tmp[i]);
-        //  if((k+1<nbAnimals && i==(unsigned)(aInd(k+1)-2))) k++;
-        //}
-        genProb.elem(noNAs) = funMap[genDist](genData[genData!=NAvalue],genArgs1.cols(noNAs),genArgs2.cols(noNAs));
-      }
+      int noNAsize = noNAs.size();
       
+      if(noNAsize){
+      
+        if(genzeroInflation && !genoneInflation) {
+          
+          zerom = zeromass.row(state);
+  
+          // compute probability of non-zero observations
+          genProb.elem(noZeros) = (1. - zerom.elem(noZeros)) % funMap[genDist](genData[genData>0.],genArgs1.cols(noZeros),genArgs2.cols(noZeros));
+  
+          // compute probability of zero observations
+          genProb.elem(nbZeros) = zerom.elem(nbZeros);
+          
+        } else if(genoneInflation && !genzeroInflation){
+          
+          onem = onemass.row(state);
+          
+          // compute probability of non-one observations
+          genProb.elem(noOnes) = (1. - onem.elem(noOnes)) % funMap[genDist](genData[(genData!=NAvalue) & (genData<1.)],genArgs1.cols(noOnes),genArgs2.cols(noOnes));
+          
+          // compute probability of one observations
+          genProb.elem(nbOnes) = onem.elem(nbOnes);
+          
+        } else if(genzeroInflation && genoneInflation){
+          
+          zerom = zeromass.row(state);
+          onem = onemass.row(state);
+          
+          // compute probability of non-zero and non-one observations
+          genProb.elem(noZerosOnes) = (1. - zerom.elem(noZerosOnes) - onem.elem(noZerosOnes)) % funMap[genDist](genData[(genData>0) & (genData<1)],genArgs1.cols(noZerosOnes),genArgs2.cols(noZerosOnes));
+          
+          // compute probability of zero observations
+          genProb.elem(nbZeros) = zerom.elem(nbZeros);
+          
+          // compute probability of one observations
+          genProb.elem(nbOnes) = onem.elem(nbOnes);
+          
+        } else {
+          //k=0;
+          //for(unsigned int i : noNAs){
+          //  Rprintf("k %d i %d step %f step_tm1 %f beta %f sigma %f tmp[i] %f \n",k,i,genData[i],genData[nbObs+i],genArgs1(i),genArgs2(i),tmp[i]);
+          //  if((k+1<nbAnimals && i==(unsigned)(aInd(k+1)-2))) k++;
+          //}
+          genProb.elem(noNAs) = funMap[genDist](genData[genData!=NAvalue],genArgs1.cols(noNAs),genArgs2.cols(noNAs));
+        }
+      }
       allProbs.col(state) = allProbs.col(state) % genProb;
       //for(int i=0; i<nbObs; i++){
       //  Rprintf("allProbs state %d i %d %f \n",state,i,allProbs(i,state));
