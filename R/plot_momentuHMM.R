@@ -636,16 +636,16 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         if(inputs$dist[[i]]=="crwrice" | inputs$dist[[i]]=="crwvm"){
           if(inputs$dist[[i]]=="crwrice"){
             genFun <- "intdcrwrice"
-            genArgs[[4]] <- min(m$data[[i]],na.rm=TRUE)
-            genArgs[[5]] <- max(m$data[[i]],na.rm=TRUE)
-            d <- density(m$data[[i]],na.rm=TRUE)
+            genArgs[[4]] <- min(m$data[[i]][which(states==state)],na.rm=TRUE)
+            genArgs[[5]] <- max(m$data[[i]][which(states==state)],na.rm=TRUE)
+            d <- density(m$data[[i]][which(states==state)],na.rm=TRUE)
             genArgs[[6]] <- stats::approxfun(d$x,d$y)
             message("Integrating over step length sample distribution for 'step' state ",state,"...")
           } else {
             genFun <- "intdcrwvm"
-            genArgs[[4]] <- min(m$data$step,na.rm=TRUE)
-            genArgs[[5]] <- max(m$data$step,na.rm=TRUE)
-            d <- density(m$data$step,na.rm=TRUE)
+            genArgs[[4]] <- min(m$data$step[which(states==state)],na.rm=TRUE)
+            genArgs[[5]] <- max(m$data$step[which(states==state)],na.rm=TRUE)
+            d <- density(m$data$step[which(states==state)],na.rm=TRUE)
             genArgs[[6]] <- stats::approxfun(d$x,d$y)
             message("Integrating over step length sample distribution for 'angle' state ",state,"...")
           }

@@ -1,4 +1,4 @@
-momentuHMM 2.0.0 2024-09-09
+momentuHMM 2.0.0 2025-02-13
 -----------------
 NEW FEATURES
 
@@ -28,6 +28,8 @@ NEW FEATURES
 
 * 'CT', 'Time.name', and 'Time.unit' arguments added to 'prepData' function for preparing continuous-time HMM data
 
+* 'BIC' and 'BICweights' functions have been added for calculating the Bayesian Information Criterion
+
 CHANGES
 
 * multivariate normal data stream distributions (e.g., 'mvnorm2', 'rw_mvnorm2') are now parameterized and ordered in terms of means (e.g., 'mean.x', 'mean.y'), standard deviations (e.g., 'sd.x', 'sd.y'), and correlations (e.g. 'corr.xy')
@@ -39,6 +41,8 @@ CHANGES
 * 'initialValues' (Par0, beta0, delta0) are now returned in 'conditions' list of 'momentuHMM' objects
 
 * when 'prior' argument of 'fitHMM' is specified, only the (unpenalized) likelihood is used for Hessian and AIC calculations
+
+* in 'prepData' function, the minimum number of observations per animal is now two (instead of three)
 
 BUG FIXES
 

@@ -744,7 +744,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     if(isTRUE(crwST)){
       stepNA <- which(is.na(data$step))
       angleNA <- which(is.na(data$angle))
-      if(!all(stepNA %in% (aInd+table(data$ID)-1))) stop("sorry, 'crwrice' distribution observations for 'step' cannot include missing values (except for the last observation for each individual)")
+      if(!all(stepNA %in% (aInd+table(factor(data$ID,levels=unique(data$ID)))-1))) stop("sorry, 'crwrice' distribution observations for 'step' cannot include missing values (except for the last observation for each individual)")
       if(!all(is.na(data$step[(aInd+table(data$ID)-1)]))) stop("For each individual, the last 'crwrice' distribution observation for 'step' must be NA")
       if(!all(is.na(data$angle[aInd]))) stop("The initial turn angle for each individual must be NA")
       if(!all(is.na(data$angle[(aInd+table(data$ID)-1)]))) stop("For each individual, the last 'crwvm' distribution observation for 'angle' must be NA")
