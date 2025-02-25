@@ -303,7 +303,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
   tmpConditions <- m$conditions
   
   for(i in distnames[which(m$conditions$dist %in% angledists)]){
-    if(!m$conditions$estAngleMean[[i]]){
+    if(!m$conditions$estAngleMean[[i]] & m$conditions$dist[[i]]!="crwvm"){
       tmpConditions$estAngleMean[[i]]<-TRUE
       tmpConditions$userBounds[[i]]<-rbind(matrix(rep(c(-pi,pi),nbStates),nbStates,2,byrow=TRUE),m$conditions$bounds[[i]])
       tmpConditions$workBounds[[i]]<-rbind(matrix(rep(c(-Inf,Inf),nbStates),nbStates,2,byrow=TRUE),m$conditions$workBounds[[i]])

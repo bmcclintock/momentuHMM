@@ -540,7 +540,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       #}
     } else IDs <- 1:nbAnimals
     for(i in distnames[which(dist %in% angledists)]){
-      if(!estAngleMean[[i]]){
+      if(!estAngleMean[[i]] & dist[[i]]!="crwvm"){
         estAngleMean[[i]]<-TRUE
         userBounds[[i]]<-rbind(matrix(rep(c(-pi,pi),nbStates),nbStates,2,byrow=TRUE),userBounds[[i]])
         workBounds[[i]]<-rbind(matrix(rep(c(-Inf,Inf),nbStates),nbStates,2,byrow=TRUE),workBounds[[i]])

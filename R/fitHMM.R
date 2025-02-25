@@ -1082,7 +1082,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     
     # name columns and rows of MLEs
     for(i in distnames){
-      if(dist[[i]] %in% angledists)
+      if((dist[[i]] %in% angledists) & dist[[i]]!="crwvm")
         if(!inputs$estAngleMean[[i]]){
           p$parNames[[i]] <- c("mean",p$parNames[[i]])
         }

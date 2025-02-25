@@ -218,7 +218,8 @@ getPar0.default <- function(model,nbStates=length(model$stateNames),estAngleMean
     #}
     if(is.null(DM[[i]])){
       for(j in model$stateNames){
-        if(dist[[i]] %in% angledists & !estAngleMean[[i]]){
+        if(dist[[i]]=="crwvm" & isTRUE(estAngleMean[[i]])) stop("estAngleMean$angle must be FALSE (or NULL) for the `crwvm' distribution")
+        if(dist[[i]] %in% angledists & !estAngleMean[[i]] & dist[[i]]!="crwvm"){
           Par[[i]][grepl(j,newparmNames)]<-model$mle[[i]][-1,j]
         } else {
           Par[[i]][grepl(j,newparmNames)]<-model$mle[[i]][,j]

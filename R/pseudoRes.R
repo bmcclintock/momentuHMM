@@ -90,7 +90,7 @@ pseudoRes <- function(m, ncores = 1)
     for(i in distnames){
       if(!is.null(m$conditions$DM[[i]]))
         Par[[i]] <- m$Par$beta[[i]]$est
-      else if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]])
+      else if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]] & dist[[i]]!="crwvm")
         Par[[i]] <- Par[[i]][-1,]
       
       m$conditions$workBounds[[i]]<-matrix(c(-Inf,Inf),nrow(m$conditions$workBounds[[i]]),2,byrow=TRUE)

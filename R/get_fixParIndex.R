@@ -4,7 +4,7 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     if(!is.null(fixPar)){
       if(!is.null(fixPar$angle)){
         if(!is.null(fixPar$step)) {
-          if(!isTRUE(all.equal(fixPar$step,fixPar$angle))) stop("fixPar$step and fixPar$angle should be the same for 'crwrice' and 'crwvm' distributions") 
+          if(!isTRUE(all.equal(fixPar$step[1:length(fixPar$angle)],fixPar$angle))) stop("fixPar$step and fixPar$angle should be the same for 'crwrice' and 'crwvm' distributions") 
         }
       } else fixPar$angle <- fixPar$step
     }
@@ -165,6 +165,7 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
       if(isTRUE(crwST) & i=="angle"){
         tmp <- 1:length(Par0[[i]])
         wparIndex <- c(wparIndex,parindex[[i]]+tmp)
+        if(is.null(fixPar[[i]])) fixPar[[i]] <- rep(NA,length(Par0[[i]]))
       } else if(!is.null(fixPar[[i]])){
         if(length(fixPar[[i]])!=length(Par0[[i]])) stop("fixPar$",i," must be of length ",length(Par0[[i]]))
         tmp <- which(!is.na(fixPar[[i]]))

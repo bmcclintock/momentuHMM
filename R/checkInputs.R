@@ -77,15 +77,16 @@ checkInputs<-function(nbStates,dist,Par,estAngleMean,circularAngleMean,zeroInfla
       if((dist[["angle"]]=="crwvm" & dist[["step"]]!="crwrice") | (dist[["angle"]]!="crwvm" & dist[["step"]]=="crwrice")) stop("'crwvm' angle distributions must be paired with 'crwrice' step distribution")
       if(dist[["angle"]]=="crwvm" & dist[["step"]]=="crwrice") {
         crwST <- TRUE
+        if(isTRUE(estAngleMean$angle)) stop("estAngleMean$angle must be FALSE (or NULL) for the `crwvm' distribution")
         if(!is.null(DM)){
           if(!is.null(DM$angle)){
-            if(!isTRUE(all.equal(DM$step,DM$angle,check.attributes=FALSE))) stop("DM$step and DM$angle should be the same for 'crwrice' and 'crwvm' distributions")
+            if(!isTRUE(all.equal(DM$step[c("beta","sigma")],DM$angle[c("beta","sigma")],check.attributes=FALSE))) stop("DM$step and DM$angle should be the same for 'crwrice' and 'crwvm' distributions")
           }
         }
         if(isTRUE(zeroInflation$step)){
-          if(!isTRUE(all.equal(Par$step[1:length(Par$angle)],Par$angle,check.attributes=FALSE))) stop("Par0$step and Par0$angle 'beta' and 'sigma' parameters should be the same for 'crwrice' and 'crwvm' distributions")
-        } else if(!isTRUE(all.equal(Par$step,Par$angle,check.attributes=FALSE))) stop("Par0$step and Par0$angle should be the same for 'crwrice' and 'crwvm' distributions")
-        estAngleMean$angle <- TRUE
+          if(!isTRUE(all.equal(Par$step[1:(length(Par$angle)-ifelse(estAngleMean$angle,nbStates,0))],Par$angle[ifelse(estAngleMean$angle,nbStates+1,1):length(Par$angle)],check.attributes=FALSE))) stop("Par0$step and Par0$angle 'beta' and 'sigma' parameters should be the same for 'crwrice' and 'crwvm' distributions")
+        } else if(!isTRUE(all.equal(Par$step,Par$angle[ifelse(estAngleMean$angle,nbStates+1,1):length(Par$angle)],check.attributes=FALSE))) stop("Par0$step and Par0$angle should be the same for 'crwrice' and 'crwvm' distributions")
+        estAngleMean$angle <- FALSE
         circularAngleMean$angle <- FALSE
         consensus$angle <- FALSE
       }

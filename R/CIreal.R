@@ -114,7 +114,7 @@ CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
       } else names(tmPar[[i]])<-colnames(m$conditions$fullDM[[i]])
     } else{
       if(dist[[i]] %in% angledists)
-        if(!m$conditions$estAngleMean[[i]])
+        if(!m$conditions$estAngleMean[[i]] & dist[[i]]!="crwvm")
           tmPar[[i]] <- tmPar[[i]][-(1:nbStates)]
     }
   }

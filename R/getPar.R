@@ -55,7 +55,7 @@ getPar<-function(m){
     for(i in distnames){
       if(!is.null(DM[[i]]))
         m$mle[[i]]<-nw2w(m$Par$beta[[i]]$est,m$conditions$workBounds[[i]])
-      else if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]])
+      else if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]] & dist[[i]]!="crwvm")
         m$mle[[i]]<-m$mle[[i]][-1,]
       Par[[i]] <- c(t(unname(m$mle[[i]])))
     }
@@ -81,7 +81,7 @@ getPar<-function(m){
     for(i in distnames){
       if(is.null(DM[[i]])){
         par <- unname(m$mle[[i]])
-        if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]]) 
+        if(dist[[i]] %in% angledists & !m$conditions$estAngleMean[[i]] & dist[[i]]!="crwvm") 
           par <- par[-1,]
         par <- c(t(par))
       } else par <- unname(m$mod$estimate[parindex[[i]]+1:parCount[[i]]])#unname(nw2w(m$CIbeta[[i]]$est,m$conditions$workBounds[[i]]))

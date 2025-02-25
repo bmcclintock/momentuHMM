@@ -64,7 +64,7 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
     if(is.null(DM[[i]])) Par0[[i]] <- n2w(fixParIndex$Par0[i],p$bounds,NULL,NULL,nbStates,estAngleMean,DM,p$Bndind,dist,TMB=TRUE)
     DMnames[[i]] <- colnames(DMinputs$fullDM[[i]])
     if(dist[[i]] %in% angledists){
-      if(!estAngleMean[[i]]) {
+      if(!estAngleMean[[i]] & dist[[i]]!="crwvm") {
         Par0[[i]] <- c(rep(0,nbStates),Par0[[i]])
         p$parSize[[i]] <- p$parSize[[i]] + 1
         p$parNames[[i]] <- c("mean",p$parNames[[i]])
