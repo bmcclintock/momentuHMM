@@ -274,10 +274,10 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
       //NumericVector genData = combine(L);
       mvn = true;
     } else if(genDist=="crwrice"){
-      L = List::create(as<NumericVector>(data["step"]),as<NumericVector>(data["step"]));
+      L = List::create(as<NumericVector>(data["step"]),as<NumericVector>(data["step"])); // step, step_tm1
       mvn = false;
     } else if(genDist=="crwvm"){
-      L = List::create(as<NumericVector>(data["angle"]),as<NumericVector>(data["step"]),as<NumericVector>(data["step"]));
+      L = List::create(as<NumericVector>(data["angle"]),as<NumericVector>(data["step"]),as<NumericVector>(data["step"])); // angle, step, step_tm1
       mvn = false;
     } else {
       L = List::create(as<NumericVector>(data[genname]));
@@ -307,9 +307,9 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
     if(genDist=="crwrice") {
       for(int i=0; i < nbObs; i++){
         if(k<nbAnimals && i==(unsigned)(aInd(k)-1)){
-          genData[nbObs+i] = NAvalue;
+          genData[nbObs+i] = DBL_MIN;
           genData[nbObs+i+1] = genData[i];
-          genData[i] = NAvalue;
+          //genData[i] = NAvalue;
         } else if((k+1<nbAnimals && i==(unsigned)(aInd(k+1)-2)) || i==(nbObs-1)) {
           genData[nbObs+i] = NAvalue;
           k++;

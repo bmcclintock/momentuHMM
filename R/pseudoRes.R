@@ -215,9 +215,10 @@ pseudoRes <- function(m, ncores = 1)
       
     } else if(dist[[j]]=="crwrice" | dist[[j]]=="crwvm"){
       genData <- data[[j]]
-      step_tm1 <- c(NA,data$step[-length(data$step)])
+      step_tm1 <- c(.Machine$double.xmin,data$step[-length(data$step)])
       if(dist[[j]]=="crwrice"){
-        genData[c(1,1+cumsum(table(m$data$ID)[1:(length(unique(m$data$ID))-1)]))] <- NA
+        #genData[c(1,1+cumsum(table(m$data$ID)[1:(length(unique(m$data$ID))-1)]))] <- NA
+        step_tm1[c(1+cumsum(table(data$ID)[1:(length(unique(data$ID))-1)]))] <- .Machine$double.xmin
         genInd <- which(!is.na(genData))
       } else genInd <- which(!is.na(data[[j]]))
       step_tm1[-genInd] <- NA

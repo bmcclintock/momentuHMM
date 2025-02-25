@@ -123,9 +123,10 @@ allProbs <- function(m)
       genInd <- which(!is.na(genData[1:nbObs]))
     } else if(dist[[i]]=="crwrice" | dist[[i]]=="crwvm"){
       genData <- cbind(data$step,data$angle)
-      step_tm1 <- c(NA,data$step[-length(data$step)])
+      step_tm1 <- c(.Machine$double.xmin,data$step[-length(data$step)])
       if(dist[[i]]=="crwrice"){
-        genData[c(1,1+cumsum(table(m$data$ID)[-(length(unique(m$data$ID)))])),1] <- NA
+        #genData[c(1,1+cumsum(table(m$data$ID)[-(length(unique(m$data$ID)))])),1] <- NA
+        step_tm1[c(1+cumsum(table(m$data$ID)[-(length(unique(m$data$ID)))]))] <- .Machine$double.xmin
         genInd <- which(!is.na(genData[,1]))
       } else genInd <- which(!is.na(data[[i]]))
       step_tm1[-genInd] <- NA

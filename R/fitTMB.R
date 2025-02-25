@@ -654,14 +654,15 @@ obs_var <- function(data,dist,expand = FALSE) {
     } else if(dist[[i]]=="crwrice" | dist[[i]]=="crwvm"){
       if(dist[[i]]=="crwrice"){
         genData <- steps
-        step_tm1 <- c(NA,steps[-length(steps)])
-        genData[c(1,1+cumsum(table(data$ID)[-(length(unique(data$ID)))]))] <- NA
+        step_tm1 <- c(0,steps[-length(steps)])
+        step_tm1[c(1,1+cumsum(table(data$ID)[-(length(unique(data$ID)))]))] <- .Machine$double.xmin
         genInd <- which(!is.na(genData))
         step_tm1[-genInd] <- NA
         data[[i]] <- split(cbind(step_tm1,genData),seq(nrow(data)))
       } else if(dist[[i]]=="crwvm"){
         genData <- angles
-        step_tm1 <- c(NA,steps[-length(steps)])
+        step_tm1 <- c(0,steps[-length(steps)])
+        step_tm1[c(1,1+cumsum(table(data$ID)[-(length(unique(data$ID)))]))] <- .Machine$double.xmin
         step <- steps
         genInd <- which(!is.na(genData))
         step_tm1[-genInd] <- NA

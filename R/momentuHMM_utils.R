@@ -9,7 +9,7 @@ oneInflationdists<-sort(c('beta'))
 integerdists<-sort(c('bern','pois','cat','negbinom','ctds'))
 mvndists <- c('mvnorm2','mvnorm3','rw_mvnorm2','rw_mvnorm3','ctcrw')
 rwdists <- c('rw_norm','rw_mvnorm2','rw_mvnorm3','ctcrw')
-CTHMMdists <- c(momentuHMMdists[which(!momentuHMMdists %in% c(angledists))])
+CTHMMdists <- c(momentuHMMdists[which(!momentuHMMdists %in% c(angledists,"crwrice"))])
 CTHMMdepdists <- c(rwdists, "ctds","pois") # CTHMM distributions where observations and parameters depend on dt
 splineList<-c("bs","ns",paste0("splines::",c("bs","ns")),"bSpline","mSpline","cSpline","iSpline",paste0("splines2::",c("bSpline","mSpline","cSpline","iSpline")),"poly","stats::poly")
 meansList<-c("matrix","numeric","integer","Date","POSIXlt","POSIXct","difftime")

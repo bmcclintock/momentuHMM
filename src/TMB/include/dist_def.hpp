@@ -1520,10 +1520,7 @@ public:
     Type var = sigma*sigma/(beta*beta) * (Type(1.) - Type(2.) / beta * (Type(1.)-exp(-beta))+Type(1.) / (Type(2.)*beta)*(Type(1.)-exp(-Type(2.)*beta)));
     Type sd = sqrt(var);
     Type xabs = fabs(step*mu/var);
-    Type b = xabs;
-    if(xabs<=Type(709)){ // maximum allowed value for besselI
-      b += log(exp(-xabs)*besselI(xabs,Type(0)));
-    }
+    Type b = xabs + log(exp(-xabs)*besselI(xabs,Type(0)));
     Type val = log(step) - Type(2.0) * log(sd) +
       (-(step*step+mu*mu)/(Type(2.0)*var)) + b;
     if(!logpdf) val = exp(val);

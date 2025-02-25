@@ -83,7 +83,7 @@ test_that("logAlpha, logBeta, nLogLike, and TMB are consistent",{
                        m$conditions$estAngleMean,m$conditions$circularAngleMean,inputs$consensus,m$conditions$zeroInflation,m$conditions$oneInflation,
                        m$conditions$stationary,m$conditions$fullDM,m$conditions$DMind,m$conditions$Bndind,m$knownStates,m$conditions$fixPar,m$conditions$wparIndex,nc,meanind,m$covsDelta,m$conditions$workBounds,betaRef=m$conditions$betaRef,covsPi=m$covsPi,aInd=aInd)
   
-  mtmb <- fitHMM(example$m$data,nbStates=length(example$m$stateNames),dist=example$m$conditions$dist,Par0=getPar(example$m)$Par,beta0=getPar(example$m)$beta,delta0=getPar(example$m)$delta,formula=example$m$conditions$formula,estAngleMean = m$conditions$estAngleMean,optMethod = "TMB",control=list(silent=TRUE))
+  mtmb <- fitHMM(data,nbStates=length(m$stateNames),dist=m$conditions$dist,Par0=getPar(m)$Par,beta0=getPar(m)$beta,delta0=getPar(m)$delta,formula=m$conditions$formula,estAngleMean = m$conditions$estAngleMean,optMethod = "TMB",control=list(silent=TRUE))
   
   la<-logAlpha(m)
   lb<-logBeta(m)
