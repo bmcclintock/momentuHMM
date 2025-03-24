@@ -1488,6 +1488,49 @@ public:
   
 };
 
+double bessel_i_expo(double x, double nu) {
+  double ans = atomic::Rmath::Rf_bessel_i(x, nu, 2.0 /* scaled */);
+  //Rprintf("x %f nu %f ans %f \n",x,nu,ans);
+  return ans;
+}
+
+TMB_ATOMIC_VECTOR_FUNCTION(
+  // ATOMIC_NAME
+  bessel_i_expo
+  ,
+  // OUTPUT_DIM
+  1
+  ,
+  // ATOMIC_DOUBLE
+  double x = tx[0]; 
+  double nu = 0.;
+  ty[0] = bessel_i_expo(x, nu);
+  //Rprintf("x %f nu %f ans %f \n",x,nu,ty[0]);
+  ,
+  // ATOMIC_REVERSE
+  Type x =  tx[0];
+  Type nu = 0.;
+  Type arg[2];
+  arg[0] = x;
+  arg[1] = nu;
+  Type B = -exp(-x) * besselI(arg[0],arg[1]);
+  arg[1] = nu + Type(1);
+  B += exp(-x) * besselI(arg[0],arg[1]);
+  //arg[1] = nu - Type(1);
+  //Type B_left  = bessel_i_expo(arg);
+  px[0] = B * py[0];//Type(0.5) * ( B_left + B_right ) * py[0];
+)
+// Scalar version
+template<class Type>
+Type bessel_i_expo(Type x){
+  CppAD::vector<Type> tx(2);
+  tx[0] = x;
+  tx[1] = 0.;
+  return bessel_i_expo(tx)[0];
+}
+// Vectorized version
+VECTORIZE1_t(bessel_i_expo)
+
 template<class Type> 
 class CRWRice : public Dist<Type> {
 public:
@@ -1520,10 +1563,11 @@ public:
     Type var = sigma*sigma/(beta*beta) * (Type(1.) - Type(2.) / beta * (Type(1.)-exp(-beta))+Type(1.) / (Type(2.)*beta)*(Type(1.)-exp(-Type(2.)*beta)));
     Type sd = sqrt(var);
     Type xabs = fabs(step*mu/var);
-    Type b = xabs + log(exp(-xabs)*besselI(xabs,Type(0)));
+    Type b = bessel_i_expo(xabs);//exp(-xabs)*besselI(xabs,Type(0));
     Type val = log(step) - Type(2.0) * log(sd) +
-      (-(step*step+mu*mu)/(Type(2.0)*var)) + b;
+        (-(step*step+mu*mu)/(Type(2.0)*var)) + xabs + log(b);
     if(!logpdf) val = exp(val);
+    //Rprintf("xabs %f b %f beta %f sigma %f mu %f var %f val %f \n",asDouble(xabs),asDouble(b),asDouble(beta),asDouble(sigma),asDouble(mu),asDouble(var),asDouble(val));
     return(val); 
   }
 };
@@ -1536,7 +1580,7 @@ public:
   // Link function 
   vector<Type> link(const vector<Type>& par, const int& n_states) {
     vector<Type> wpar(par.size()); 
-    // mean and sd
+    // autocorrelation and variance parameters
     wpar = log(par); 
     return(wpar); 
   } 
@@ -1559,9 +1603,10 @@ public:
     Type angle = x(2);
     Type var = sigma*sigma/(beta*beta) * (Type(1.) - Type(2.) / beta * (Type(1.)-exp(-beta))+Type(1.) / (Type(2.)*beta)*(Type(1.)-exp(-Type(2.)*beta)));
     Type kappa = step_tm1*step*exp(-beta)/var;
-    Type b = exp(-kappa) * besselI(kappa, Type(0));
+    Type b = bessel_i_expo(kappa);//exp(-xabs)*besselI(xabs,Type(0));
     Type val = -log(Type(2.) * M_PI * b) + kappa * (cos(angle)-Type(1.));
     if(!logpdf) val = exp(val);
+    //Rprintf("kappa %f b %f beta %f sigma %f var %f val %f \n",asDouble(kappa),asDouble(b),asDouble(beta),asDouble(sigma),asDouble(var),asDouble(val));
     return(val); 
   }
 };

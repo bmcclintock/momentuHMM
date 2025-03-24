@@ -123,7 +123,7 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
     }
     lag <- 0
     if(is.list(DM[[i]]) | is.null(DM[[i]])) {
-      DM[i] <- make_formulas(DM[i],i,p$parNames[i],nbStates)
+      DM[i] <- make_formulas(DM[i],i,p$parNames[i],nbStates,((dist[[i]] %in% rwdists) && dist[[i]]!="ctcrw"))
       if((dist[[i]] %in% rwdists) && (dist[[i]]!="ctcrw")){
         missingPar <- NULL
         for(j in names(DM[[i]])[which(grepl("mean",names(DM[[i]])))]){
@@ -448,7 +448,13 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
                                getJointPrecision = FALSE, 
                                skip.delta.method = FALSE)
       mod$gradient <- c(tmb_rep$gradient.fixed)
-      mod$hessian <- tmb_obj$he(tmb_obj$par)
+      mod$hessian <- tryCatch(tmb_obj$he(tmb_obj$par),warning=function(w) w)
+      if(inherits(mod$hessian,"warning")){
+        if(grepl("bessel_i",mod$hessian) & grepl("precision lost in result",mod$hessian)){
+          warning("precision lost in bessel_i during calculation of hessian")
+          mod$hessian <- withCallingHandlers(tmb_obj$he(tmb_obj$par), warning = function(w) { invokeRestart("muffleWarning")})
+        }
+      }
       mod$tmb_rep <- tmb_rep
     }
     if(!is.null(prior)) mod$prior <- oldpriors
@@ -748,7 +754,7 @@ bdiag_check <- function(...) {
 #  return(Matrix::bdiag(tmbDM))
 #}
 
-make_formulas <- function(input_forms, var_names, par_names, nbStates){
+make_formulas <- function(input_forms, var_names, par_names, nbStates, rwdist = FALSE){
   output_forms <- list()
   form_names <- names(input_forms)
   for (i in 1:length(var_names)) {
@@ -773,6 +779,13 @@ make_formulas <- function(input_forms, var_names, par_names, nbStates){
       labs <- attr(form_terms, "term.labels")
       covs <- gsub(pattern = "^state[0-9]*\\((.*)\\)$", 
                    replacement = "\\1", x = labs)
+      if(rwdist && any(grepl("^state[0-9]*\\((.*)\\)$",labs))){
+        for(k in which(grepl("^state[0-9]*\\((.*)\\)$",labs))){
+          sforms <- attr(terms(stateFormulas(as.formula(paste0("~",labs[k])),nbStates=1)[[1]]),"term.labels")
+          if(any(grepl(paste0(var_names,".x_tm1"),sforms)))
+            if(!all(grepl(paste0(var_names,".x_tm1"),sforms))) stop("When optMethod=`TMB', covariates including '",paste0(var_names,".x_tm1"),"' and/or '",paste0(var_names,".y_tm1")," must be contained in separate state-specific functions.\n    For example, instead of '~state1(crw(mu.x_tm1)+cov1)' it should be '~state1(crw(mu.x_tm1)) + state1(cov1)'")
+        }
+      }
       which_all_states <- which(!seq_along(labs) %in% 
                                   match(rownames(attr(form_terms,"factors"))[unlist(attr(form_terms,"specials"))],colnames(attr(form_terms,"factors"))))
       state_forms <- list()

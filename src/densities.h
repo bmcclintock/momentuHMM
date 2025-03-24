@@ -538,25 +538,32 @@ arma::colvec dcrwrice_rcpp(NumericVector x, arma::mat beta, arma::mat sigma)
   double sd;
   double xabs;
   double step_tm1;
+  double besI;
   unsigned int xs = (unsigned int) beta.n_cols;
   arma::colvec res(xs);
-  res(0) = 0.;
   
   for(unsigned int i=0;i<xs;i++) {
     if(!arma::is_finite(x(i)))
       res(i) = 0.; // is missing observation
     else {
-      //if(i<1) step_tm1 = 0.;
       step_tm1 = x(xs+i);
-      if(arma::is_finite(step_tm1)){
-        mu = step_tm1*(1.-exp(-beta(i)))/beta(i);
-        var = sigma(i)*sigma(i)/(beta(i)*beta(i)) * (1. - 2. / beta(i) * (1.-exp(-beta(i)))+1. / (2.*beta(i))*(1.-exp(-2.*beta(i))));
-        sd = sqrt(var);
-        xabs = abs(x(i)*mu/var);
+      mu = step_tm1*(1.-exp(-beta(i)))/beta(i);
+      var = sigma(i)*sigma(i)/(beta(i)*beta(i)) * (1. - 2. / beta(i) * (1.-exp(-beta(i)))+1. / (2.*beta(i))*(1.-exp(-2.*beta(i))));
+      sd = sqrt(var);
+      xabs = abs(x(i)*mu/var);
+      //if(xabs>709.){
+      //  res(i) =  R_PosInf;
+      //} else if(xabs<0.){
+      //  res(i) =  R_NaN;
+      //} else {
+        besI = R::bessel_i(xabs,0,2);
         res(i) = log(x(i)) - 2.0 * log(sd) +
           (-(x(i)*x(i)+mu*mu)/(2.0*var)) +
-          log(R::bessel_i(xabs,0,2)) + xabs;
-      } else res(i) = 0.;
+          log(besI) + xabs;
+        //if (!ISNAN(xabs) && !R_FINITE(besI)) {
+        //  Rf_warning("Potential precision loss in dcrwrice R::bessel_i(%f, nu=0)",xabs);
+        //}
+      //}
     }
     //Rprintf("xs %d length(x) %d length(beta) %d length(sigma) %d i %d step_tm1 %f step %f beta %f sigma %f res %f \n",xs,x.size(),beta.n_cols,sigma.n_cols,i,step_tm1,x(i),beta(i),sigma(i),res(i));
   }
@@ -584,17 +591,24 @@ arma::colvec dcrwrice_rcpp(NumericVector x, arma::mat beta, arma::mat sigma)
  double var;
  double step, step_tm1;
  for(unsigned int i=0;i<xs;i++) {
-   if(!arma::is_finite(x(i)) || !arma::is_finite(x(xs+i)) || !arma::is_finite(x(2*xs+i)))
+   if(!arma::is_finite(x(i)))
      res(i) = 1.; // is missing observation
    else {
-     //if(i<1) step_tm1 = 0.;
      step = x(xs+i);
      step_tm1 = x(2*xs+i);
      var = sigma(i)*sigma(i)/(beta(i)*beta(i)) * (1. - 2. / beta(i) * (1.-exp(-beta(i)))+1. / (2.*beta(i))*(1-exp(-2*beta(i))));
      kappa = step*step_tm1*exp(-beta(i))/var;
-     b = R::bessel_i(kappa,0,2);
-     res(i) = 1/(2*M_PI*b)*pow((exp(cos(x(i))-1)),kappa);
-     //Rprintf("xs %d length(x) %d length(beta) %d length(sigma) %d i %d xs+i %d 2*xs+i %d step_tm1 %f step %f angle %f kappa %f beta %f sigma %f res %f \n",xs,x.size(),beta.n_cols,sigma.n_cols,i,xs+i,2*xs+i,step_tm1,step,x(i),kappa,beta(i),sigma(i),res(i));
+     //if(kappa>709.){
+     //  res(i) =  R_PosInf;
+     //} else if(kappa<0.){
+     //  res(i) =  R_NaN;
+     //} else {
+         b = R::bessel_i(kappa,0,2);
+         res(i) = 1/(2*M_PI*b)*pow((exp(cos(x(i))-1)),kappa);
+     //    if (!ISNAN(kappa) && !R_FINITE(b)) {
+     //      Rf_warning("Potential precision loss in dcrwvm R::bessel_i(%f, nu=0)",kappa);
+     //    }
+     //  }
    }
  }
  
