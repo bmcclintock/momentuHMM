@@ -1,4 +1,4 @@
-momentuHMM 2.0.0 2025-02-13
+momentuHMM 2.0.0 2025-04-29
 -----------------
 NEW FEATURES
 
@@ -13,6 +13,8 @@ NEW FEATURES
 * new data stream distribution "ctds" for (multistate) continuous-time discrete-space movement models, which can be prepared, fitted, and simulated using the functions 'prepCTDS', 'fitCTHMM' (or 'MIfitCTHMM'), and 'simCTDS' (or 'simHierCTDS' for hierarchical models), respectively.
 
 * special formula function 'langevin' has been added for simulating and fitting discrete-time approximations of the (multistate) Langevin diffusion model as a multivariate normal random walk (i.e. using the "rw_mvnorm2" or "rw_mvnorm3" data stream distributions)
+
+* 'mask' argument added to 'simData' functions for prohibiting movements into particular raster cells (e.g. land or water)
 
 * 'export' argument added to simulation functions for exporting formula objects from the global environment when ncores>1
 
