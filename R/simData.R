@@ -128,6 +128,9 @@
 #' \code{runif(1,min(errorEllipse$m),max(errorEllipse$m))}, and \code{runif(1,min(errorEllipse$r),max(errorEllipse$r))}. If only a single value is provided for any of the 
 #' error ellipse elements, then the corresponding component is fixed to this value for each location. Only the 'step' and 'angle' data streams are subject to location measurement error;
 #' any other data streams are observed without error.  Ignored unless a valid distribution for the 'step' data stream is specified.
+#' @param mask \code{\link[raster]{raster}} object indicating forbidden cells (e.g. land or water), where forbidden cells are indicated by zeros and all permissible cells are positive. If \code{mask} is a raster \code{\link[raster]{stack}} or \code{\link[raster]{brick}}, 
+#' then z values must be set using \code{raster::setZ} and \code{covs} must include column(s) of the corresponding z value(s) for each observation (e.g., 'time'). If movement lands in a forbidden cell, then the observation distributions are re-sampled until movement lands in a permissible cell.
+#' Note that \code{simData} usually takes longer to generate simulated data when \code{mask} is specified.
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param export Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.
 #' @param gradient Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. If \code{TRUE}, the gradients are returned with ``\code{.x}'' (easting gradient) and ``\code{.y}'' (northing gradient) suffixes added to the names of \code{spatialCovs}. For example, if \code{cov1} is the name of a spatial covariate, then the returned \code{\link{momentuHMMData}} object will include the fields ``\code{cov1.x}'' and ``\code{cov1.y}''.
@@ -372,6 +375,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                     retrySims=0,
                     lambda=NULL,
                     errorEllipse=NULL,
+                    mask=NULL,
                     ncores=1,
                     export=NULL,
                     gradient=FALSE,
@@ -658,7 +662,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     if(is.null(formulaDelta)){
       formDelta <- ~1
     } else formDelta <- formulaDelta
-    mHind <- (requireNamespace("moveHMM", quietly = TRUE) && is.null(DM) & is.null(userBounds) & is.null(workBounds) & is.null(spatialCovs) & is.null(centers) & is.null(centroids) & ("step" %in% names(dist)) & all(unlist(initialPosition)==c(0,0)) & is.null(lambda) & is.null(errorEllipse) & !is.list(obsPerAnimal) & is.null(covs) & !nbCovs & !length(attr(stats::terms.formula(formula),"term.labels")) & !length(attr(stats::terms.formula(formDelta),"term.labels")) & is.null(delta) & is.null(betaRef) & is.null(mvnCoords) & mixtures==1 & ncores==1 & !isTRUE(list(...)$CT)) # indicator for moveHMM::simData
+    mHind <- (requireNamespace("moveHMM", quietly = TRUE) && is.null(DM) & is.null(userBounds) & is.null(workBounds) & is.null(spatialCovs) & is.null(centers) & is.null(centroids) & ("step" %in% names(dist)) & all(unlist(initialPosition)==c(0,0)) & is.null(lambda) & is.null(errorEllipse) & !is.list(obsPerAnimal) & is.null(covs) & !nbCovs & !length(attr(stats::terms.formula(formula),"term.labels")) & !length(attr(stats::terms.formula(formDelta),"term.labels")) & is.null(delta) & is.null(betaRef) & is.null(mvnCoords) & mixtures==1 & is.null(mask) & ncores==1 & !isTRUE(list(...)$CT)) # indicator for moveHMM::simData
     
     if(all(names(dist) %in% c("step","angle")) & all(unlist(dist) %in% moveHMMdists) & mHind){
       doParallel::stopImplicitCluster()
@@ -820,6 +824,30 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       }
     }
   } else nbSpatialCovs <- 0
+  
+  if(!is.null(mask)){
+    if(is.null(mvnCoords) & !isTRUE(list(...)$ctds)){
+      if(!("step" %in% distnames)) stop("mask can only be included when 'step' distribution is specified") 
+      else if(!(inputs$dist[["step"]] %in% stepdists)) stop("mask can only be included when valid 'step' distributions are specified") 
+    }
+    if (!requireNamespace("raster", quietly = TRUE)) {
+      stop("Package \"raster\" needed for spatial covariates. Please install it.",
+           call. = FALSE)
+    }
+    if(!inherits(mask,c("RasterLayer","RasterBrick","RasterStack"))) stop("mask must be of class 'RasterLayer', 'RasterStack', or 'RasterBrick'")
+    if(any(is.na(raster::getValues(mask)))) stop("missing values are not permitted in mask")
+    if(any(raster::getValues(mask)<0)) stop("negative values are not permitted in mask")
+    if(inherits(mask,c("RasterBrick","RasterStack"))){
+      if(is.null(raster::getZ(mask))) stop("mask is a raster stack or brick that must have set z values (see ?raster::setZ)")
+      else if(!(names(attributes(mask)$z) %in% names(covs))) {
+        if(!is.null(model)) covs[[names(attributes(mask)$z)]] <- model$data[[names(attributes(mask)$z)]]
+        else stop("mask z value '",names(attributes(mask)$z),"' not found in covs")
+      }
+      zname <- names(attributes(mask)$z)
+      zvalues <- raster::getZ(mask)
+      if(!all(unique(covs[[zname]]) %in% zvalues)) stop("data$",zname," includes z-values with no matching raster layer in mask")
+    }
+  }
   
   if(is.list(obsPerAnimal)){
     if(length(obsPerAnimal)!=nbAnimals) stop("obsPerAnimal must be a list of length ",nbAnimals)
@@ -1213,6 +1241,19 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     }
     if(ctdsCRW) tmpCovs[,paste0("crw.",1:directions)] <- 0
   }
+  if(!is.null(mask)){
+    for(i in 1:length(initialPosition)){
+      maskInd <- raster::cellFromXY(mask,initialPosition[[i]])
+      if(is.na(maskInd)) stop("initialPosition for individual ",i," is not within the spatial extent of mask")
+      maskCov <- mask[maskInd]
+      if(inherits(mask,c("RasterStack","RasterBrick"))){
+        zname <- names(attributes(mask)$z)
+        zvalues <- raster::getZ(mask)
+        maskCov <- maskCov[1,which(zvalues==tmpCovs[[zname]][1])]
+      }
+      if(maskCov==0) stop("initialPosition for individual ",i," is forbidden by mask")
+    }
+  }
   if(length(centerInd)){
     for(j in 1:length(centerInd)){
       tmpDistAngle <- distAngle(initialPosition[[1]],initialPosition[[1]],centers[centerInd[j],])
@@ -1351,7 +1392,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     progBar(0, nbAnimals)
   }
   
-  if(nbSpatialCovs & retrySims){
+  if((nbSpatialCovs | !is.null(mask)) & retrySims){
       
     if(isTRUE(list(...)$CT) & !is.null(model)){
       attributes(model)$class <- attributes(model)$class[which(!attributes(model)$class %in% "CTHMM")]
@@ -1363,8 +1404,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     simCount <- 0
     message("\nAttempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simData'\n",sep="")
     while(simCount < retrySims){
-      if(ncores==1) cat("\r    Attempt ",simCount+1," of ",retrySims,"... \n",sep="")
-      else cat("\r    Attempt ",simCount+1," of ",retrySims,"... \n",sep="")
+      cat("\r    Attempt ",simCount+1," of ",retrySims,"... \n",sep="")
       
       tmp<-tryCatch(simData(nbAnimals,nbStates,dist,
                             Par,beta,delta,
@@ -1385,6 +1425,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                             retrySims=0,
                             lambda,
                             errorEllipse,
+                            mask,
                             ncores,
                             export=export,
                             gradient=gradient,
@@ -1393,11 +1434,11 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       if(inherits(tmp,"error")){
         if(grepl("Try expanding the extent of the raster",tmp)) {
           simCount <- simCount+1
-          cat("    FAILED \n\n")
+          cat("\n")
         } else stop(tmp)
       } else {
         simCount <- retrySims
-        cat("    DONE\n")
+        cat("DONE\n")
         return(tmp)
       }
     }
@@ -1408,7 +1449,15 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
   ###########################
   ## Loop over the animals ##
   ###########################
+  log = tempfile()
+  
   withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.export=c(ls(),export),.packages=pkgs,.combine='comb') %dorng% {
+    
+    if (file.exists(log))  {
+      msg = scan(log, character(), quiet = TRUE)
+      msg = paste(msg, collapse = " ")
+      stop(msg, call. = FALSE)
+    }
     
     # number of observations for animal zoo
     nbObs <- allNbObs[zoo]
@@ -1460,7 +1509,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     ############################
     
     # get initial covariates
-    if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd) & !length(angleCovs) & !rwInd) {
+    if(!nbSpatialCovs & !length(centerInd) & !length(centroidInd) & !length(angleCovs) & !rwInd & is.null(mask)) {
       if(!is.null(recharge)){
         g0 <- stats::model.matrix(recharge$g0,subCovs[1,,drop=FALSE]) %*% wng0
         subCovs[,"recharge"] <- cumsum(c(g0,(wntheta %*% t(stats::model.matrix(recharge$theta,subCovs[-nrow(subCovs),])))*dt[[zoo]][-nrow(subCovs)]))
@@ -1499,7 +1548,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             getCell<-raster::cellFromXY(spatialCovs[[j]],c(X1[1,1],X1[1,2]))
             if(is.na(getCell)){
               if(ncores==1) message("\n    FAILED \n")
-              stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+              msg <- paste0("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+              write(toString(msg), log)
+              stop(msg)
             }
           }
           spCov <- spatialCovs[[j]][getCell]
@@ -1658,7 +1709,7 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
     
     if(ncores==1 | nbAnimals==1){
       message("        Simulating individual ",zoo,"... ",sep="")
-    } else progBar(zoo, nbAnimals)
+    } else if(!file.exists(log)) progBar(zoo, nbAnimals)
     
     if(nbStates>1 & isTRUE(list(...)$CT)){
       if(qInd | moveState){
@@ -1793,123 +1844,175 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
       
       if(isTRUE(list(...)$CT)) subPar <- ctPar(subPar,inputs$dist,nbStates,data.frame(subCovs[k,],dt=dt[[zoo]][k]))
       
-      for(i in distnames){
-        
-        zeroMass[[i]] <- rep(0,nbStates)
-        oneMass[[i]] <- rep(0,nbStates)
-        if(zeroInflation[[i]] | oneInflation[[i]]) {
-          if(zeroInflation[[i]]) zeroMass[[i]] <- subPar[[i]][parSize[[i]]*nbStates-nbStates*oneInflation[[i]]-(nbStates-1):0]
-          if(oneInflation[[i]])  oneMass[[i]] <- subPar[[i]][parSize[[i]]*nbStates-(nbStates-1):0]
-          subPar[[i]] <- subPar[[i]][-(parSize[[i]]*nbStates-(nbStates*oneInflation[[i]]-nbStates*zeroInflation[[i]]-1):0)]
-        }
-        
-        if(inputs$dist[[i]] %in% mvndists){
-          if(inputs$dist[[i]]=="mvnorm2" || inputs$dist[[i]]=="rw_mvnorm2" || inputs$dist[[i]]=="ctcrw"){
-            genArgs[[i]][[2]] <- c(subPar[[i]][Z[k]],
-                                   subPar[[i]][nbStates+Z[k]])
-            genArgs[[i]][[3]] <- matrix(c(subPar[[i]][nbStates*2+Z[k]], #x
-                                          subPar[[i]][nbStates*4+Z[k]], #xy
-                                          subPar[[i]][nbStates*4+Z[k]], #xy
-                                          subPar[[i]][nbStates*3+Z[k]]) #y
-                                        ,2,2)
-          } else if(inputs$dist[[i]]=="mvnorm3" || inputs$dist[[i]]=="rw_mvnorm3"){
-            genArgs[[i]][[2]] <- c(subPar[[i]][Z[k]],
-                                   subPar[[i]][nbStates+Z[k]],
-                                   subPar[[i]][2*nbStates+Z[k]])
-            genArgs[[i]][[3]] <- matrix(c(subPar[[i]][nbStates*3+Z[k]], #x
-                                          subPar[[i]][nbStates*6+Z[k]], #xy
-                                          subPar[[i]][nbStates*7+Z[k]], #xz
-                                          subPar[[i]][nbStates*6+Z[k]], #xy
-                                          subPar[[i]][nbStates*4+Z[k]], #y
-                                          subPar[[i]][nbStates*8+Z[k]], #yz
-                                          subPar[[i]][nbStates*7+Z[k]], #xz
-                                          subPar[[i]][nbStates*8+Z[k]], #yz
-                                          subPar[[i]][nbStates*5+Z[k]]) #z          
-                                        ,3,3)
-          } 
-        } else if(inputs$dist[[i]]=="cat" | inputs$dist[[i]]=="ctds"){
-          genArgs[[i]][[2]] <- subPar[[i]][seq(Z[k],(parSize[[i]]+1)*nbStates,nbStates)]
-        } else {
-          for(j in 1:(parSize[[i]]-zeroInflation[[i]]-oneInflation[[i]]))
-            genArgs[[i]][[j+1]] <- subPar[[i]][(j-1)*nbStates+Z[k]]
-          if(inputs$dist[[i]]=="crwrice"){
-            if(k>1) genArgs[[i]][[j+2]] <- genData[[i]][k-1] # previous step
-            else genArgs[[i]][[j+2]] <- 0
-          } else if(inputs$dist[[i]]=="crwvm"){
-            if(k>1) genArgs[[i]][[j+2]] <- genData[["step"]][c(k-1,k)] # previous step
-          }
-        }
-        
-        if(inputs$dist[[i]] %in% angledists){
+      maskCov <- 0
+      while(maskCov==0){
+        for(i in distnames){
           
-          if(dist[[i]]=="crwvm"){
-            if(k>1 && !all(genArgs[[i]][[j+2]]>0)) {
-              genArgs[[i]][[2]] <- genArgs[[i]][[3]] <- 12 # uniform turn angle if previous steps are zero
-              genArgs[[i]][[4]] <- NULL
-            }
-          } else if(dist[[i]]=="vm"){
-            if(genArgs[[i]][[3]]<2.e-8) genArgs[[i]][[3]] <- 2.e-8
+          zeroMass[[i]] <- rep(0,nbStates)
+          oneMass[[i]] <- rep(0,nbStates)
+          if(zeroInflation[[i]] | oneInflation[[i]]) {
+            if(zeroInflation[[i]]) zeroMass[[i]] <- subPar[[i]][parSize[[i]]*nbStates-nbStates*oneInflation[[i]]-(nbStates-1):0]
+            if(oneInflation[[i]])  oneMass[[i]] <- subPar[[i]][parSize[[i]]*nbStates-(nbStates-1):0]
+            subPar[[i]] <- subPar[[i]][-(parSize[[i]]*nbStates-(nbStates*oneInflation[[i]]-nbStates*zeroInflation[[i]]-1):0)]
           }
-          genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
-          if(genData[[i]][k] >  pi) genData[[i]][k] <- genData[[i]][k]-2*pi
-          if(genData[[i]][k] < -pi) genData[[i]][k] <- genData[[i]][k]+2*pi
           
-          if(i=="angle" & ("step" %in% distnames)){
-            if(inputs$dist[["step"]] %in% stepdists) {
-              if(genData$step[k]>0){
-                phi <- phi + genData[[i]][k]
-              } #else if(genData$step[k]==0) {
-              #genData[[i]][k] <- NA # angle = NA if step = 0
-              #}
-              m <- genData$step[k]*c(Re(exp(1i*phi)),Im(exp(1i*phi)))
-              X[k+1,] <- X[k,] + m
+          if(inputs$dist[[i]] %in% mvndists){
+            if(inputs$dist[[i]]=="mvnorm2" || inputs$dist[[i]]=="rw_mvnorm2" || inputs$dist[[i]]=="ctcrw"){
+              genArgs[[i]][[2]] <- c(subPar[[i]][Z[k]],
+                                     subPar[[i]][nbStates+Z[k]])
+              genArgs[[i]][[3]] <- matrix(c(subPar[[i]][nbStates*2+Z[k]], #x
+                                            subPar[[i]][nbStates*4+Z[k]], #xy
+                                            subPar[[i]][nbStates*4+Z[k]], #xy
+                                            subPar[[i]][nbStates*3+Z[k]]) #y
+                                          ,2,2)
+            } else if(inputs$dist[[i]]=="mvnorm3" || inputs$dist[[i]]=="rw_mvnorm3"){
+              genArgs[[i]][[2]] <- c(subPar[[i]][Z[k]],
+                                     subPar[[i]][nbStates+Z[k]],
+                                     subPar[[i]][2*nbStates+Z[k]])
+              genArgs[[i]][[3]] <- matrix(c(subPar[[i]][nbStates*3+Z[k]], #x
+                                            subPar[[i]][nbStates*6+Z[k]], #xy
+                                            subPar[[i]][nbStates*7+Z[k]], #xz
+                                            subPar[[i]][nbStates*6+Z[k]], #xy
+                                            subPar[[i]][nbStates*4+Z[k]], #y
+                                            subPar[[i]][nbStates*8+Z[k]], #yz
+                                            subPar[[i]][nbStates*7+Z[k]], #xz
+                                            subPar[[i]][nbStates*8+Z[k]], #yz
+                                            subPar[[i]][nbStates*5+Z[k]]) #z          
+                                          ,3,3)
+            } 
+          } else if(inputs$dist[[i]]=="cat" | inputs$dist[[i]]=="ctds"){
+            genArgs[[i]][[2]] <- subPar[[i]][seq(Z[k],(parSize[[i]]+1)*nbStates,nbStates)]
+          } else {
+            for(j in 1:(parSize[[i]]-zeroInflation[[i]]-oneInflation[[i]]))
+              genArgs[[i]][[j+1]] <- subPar[[i]][(j-1)*nbStates+Z[k]]
+            if(inputs$dist[[i]]=="crwrice"){
+              if(k>1) genArgs[[i]][[j+2]] <- genData[[i]][k-1] # previous step
+              else genArgs[[i]][[j+2]] <- 0
+            } else if(inputs$dist[[i]]=="crwvm"){
+              if(k>1) genArgs[[i]][[j+2]] <- genData[["step"]][c(k-1,k)] # previous step
             }
           }
-        } else {
           
-          if(inputs$dist[[i]]=="gamma") {
-            shape <- genArgs[[i]][[2]]^2/genArgs[[i]][[3]]^2
-            scale <- genArgs[[i]][[3]]^2/genArgs[[i]][[2]]
-            genArgs[[i]][[2]] <- shape
-            genArgs[[i]][[3]] <- 1/scale # rgamma expects rate=1/scale
-          }
-          
-          probs <- c(1.-zeroMass[[i]][Z[k]]-oneMass[[i]][Z[k]],zeroMass[[i]][Z[k]],oneMass[[i]][Z[k]])
-          rU <- which(stats::rmultinom(1,1,prob=probs)==1)
-          if(rU==1){
-            if(inputs$dist[[i]] %in% mvndists){
-              genData[[i]][k,] <- do.call(Fun[[i]],genArgs[[i]])
+          if(inputs$dist[[i]] %in% angledists){
+            
+            if(dist[[i]]=="crwvm"){
+              if(k>1 && !all(genArgs[[i]][[j+2]]>0)) {
+                genArgs[[i]][[2]] <- genArgs[[i]][[3]] <- 12 # uniform turn angle if previous steps are zero
+                genArgs[[i]][[4]] <- NULL
+              }
+            } else if(dist[[i]]=="vm"){
+              if(genArgs[[i]][[3]]<2.e-8) genArgs[[i]][[3]] <- 2.e-8
+            }
+            genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
+            if(genData[[i]][k] >  pi) genData[[i]][k] <- genData[[i]][k]-2*pi
+            if(genData[[i]][k] < -pi) genData[[i]][k] <- genData[[i]][k]+2*pi
+            
+            if(i=="angle" & ("step" %in% distnames)){
+              if(inputs$dist[["step"]] %in% stepdists) {
+                if(genData$step[k]>0){
+                  phi <- phi + genData[[i]][k]
+                } #else if(genData$step[k]==0) {
+                #genData[[i]][k] <- NA # angle = NA if step = 0
+                #}
+                m <- genData$step[k]*c(Re(exp(1i*phi)),Im(exp(1i*phi)))
+                X[k+1,] <- X[k,] + m
+                if(!is.null(mask)){
+                  maskInd <- raster::cellFromXY(mask,X[k+1,])
+                  if(is.na(maskInd)) {
+                    if(ncores==1) message("\n    FAILED \n")
+                    msg <- paste0("Movement is beyond the spatial extent of mask. Try expanding the extent of the raster.")
+                    write(toString(msg), log)
+                    stop(msg)
+                  }
+                  maskCov <- mask[maskInd]
+                  if(inherits(mask,c("RasterStack","RasterBrick"))){
+                    zname <- names(attributes(mask)$z)
+                    zvalues <- raster::getZ(mask)
+                    maskCov <- maskCov[1,which(zvalues==subCovs[k+1,zname])]
+                  }
+                } 
+              } 
+            } 
+          } else {
+            
+            if(inputs$dist[[i]]=="gamma") {
+              shape <- genArgs[[i]][[2]]^2/genArgs[[i]][[3]]^2
+              scale <- genArgs[[i]][[3]]^2/genArgs[[i]][[2]]
+              genArgs[[i]][[2]] <- shape
+              genArgs[[i]][[3]] <- 1/scale # rgamma expects rate=1/scale
+            }
+            
+            probs <- c(1.-zeroMass[[i]][Z[k]]-oneMass[[i]][Z[k]],zeroMass[[i]][Z[k]],oneMass[[i]][Z[k]])
+            rU <- which(stats::rmultinom(1,1,prob=probs)==1)
+            if(rU==1){
+              if(inputs$dist[[i]] %in% mvndists){
+                genData[[i]][k,] <- do.call(Fun[[i]],genArgs[[i]])
+              } else {
+                if(dist[[i]]=="ctds"){
+                  # forbid moves to cells outside extent of rast
+                  offRast <- which(is.na(rast[adj.cells[getCell,]]))
+                  if(length(offRast)){
+                    genArgs[[i]][[2]][offRast] <- 0
+                  }
+                }
+                genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
+              }
+            } else if(rU==2) {
+              genData[[i]][k] <- 0
             } else {
-              if(dist[[i]]=="ctds"){
-                # forbid moves to cells outside extent of rast
-                offRast <- which(is.na(rast[adj.cells[getCell,]]))
-                if(length(offRast)){
-                  genArgs[[i]][[2]][offRast] <- 0
+              genData[[i]][k] <- 1
+            }
+          }
+          
+          if(!is.null(mvnCoords) && i==mvnCoords && (dist[[i]] %in% rwdists)){
+            X[k+1,] <- genData[[i]][k,]
+            d[[i]] <- X
+            if(!is.null(mask)){
+              maskInd <- raster::cellFromXY(mask,X[k+1,])
+              if(is.na(maskInd)) {
+                if(ncores==1) message("\n    FAILED \n")
+                msg <- paste0("Movement is beyond the spatial extent of mask. Try expanding the extent of the raster.")
+                write(toString(msg), log)
+                stop(msg)
+              }
+              maskCov <- mask[maskInd]
+              if(inherits(mask,c("RasterStack","RasterBrick"))){
+                zname <- names(attributes(mask)$z)
+                zvalues <- raster::getZ(mask)
+                maskCov <- maskCov[1,which(zvalues==subCovs[k+1,zname])]
+              }
+            } 
+          } else d[[i]] <- genData[[i]]
+          if(dist[[i]]=="ctds"){
+            if(genData[[i]][k]==(directions+1)){
+              X[k+1,] <- X[k,]
+              subSpatialcovs[k+1,] <- subSpatialcovs[k,]
+              for(j in 1:nbSpatialCovs){
+                if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+                  spCov <- spatialCovs[[j]][getCell]
+                  zname <- names(attributes(spatialCovs[[j]])$z)
+                  zvalues <- raster::getZ(spatialCovs[[j]])
+                  spCov <- spCov[1,which(zvalues==subCovs[k+1,zname])]
+                  if(isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
+                  ) subSpatialcovs[k+1,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
+                  else subSpatialcovs[k+1,spatialcovnames[j]]<-spCov
+                  if(spatialcovnames[j] %in% angleCovs) {
+                    subAnglecovs[k+1,spatialcovnames[j]] <- subSpatialcovs[k+1,j]
+                    subSpatialcovs[k+1,spatialcovnames[j]] <- circAngles(subAnglecovs[k:(k+1),spatialcovnames[j]],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
+                  }
                 }
               }
-              genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
-            }
-          } else if(rU==2) {
-            genData[[i]][k] <- 0
-          } else {
-            genData[[i]][k] <- 1
-          }
-        }
-        
-        if(!is.null(mvnCoords) && i==mvnCoords && (dist[[i]] %in% rwdists)){
-          X[k+1,] <- genData[[i]][k,]
-          d[[i]] <- X
-        } else d[[i]] <- genData[[i]]
-        if(dist[[i]]=="ctds"){
-          if(genData[[i]][k]==(directions+1)){
-            X[k+1,] <- X[k,]
-            subSpatialcovs[k+1,] <- subSpatialcovs[k,]
-            for(j in 1:nbSpatialCovs){
-              if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+            } else {
+              oldCell <- getCell
+              getCell <- c(adj.cells[getCell,],getCell)[genData[[i]][k]]
+              X[k+1,] <- raster::xyFromCell(rast,getCell)
+              for(j in 1:nbSpatialCovs){
                 spCov <- spatialCovs[[j]][getCell]
-                zname <- names(attributes(spatialCovs[[j]])$z)
-                zvalues <- raster::getZ(spatialCovs[[j]])
-                spCov <- spCov[1,which(zvalues==subCovs[k+1,zname])]
+                if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+                  zname <- names(attributes(spatialCovs[[j]])$z)
+                  zvalues <- raster::getZ(spatialCovs[[j]])
+                  spCov <- spCov[1,which(zvalues==subCovs[k+1,zname])]
+                }
                 if(isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
                 ) subSpatialcovs[k+1,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
                 else subSpatialcovs[k+1,spatialcovnames[j]]<-spCov
@@ -1918,36 +2021,34 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
                   subSpatialcovs[k+1,spatialcovnames[j]] <- circAngles(subAnglecovs[k:(k+1),spatialcovnames[j]],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
                 }
               }
-            }
-          } else {
-            oldCell <- getCell
-            getCell <- c(adj.cells[getCell,],getCell)[genData[[i]][k]]
-            X[k+1,] <- raster::xyFromCell(rast,getCell)
-            for(j in 1:nbSpatialCovs){
-              spCov <- spatialCovs[[j]][getCell]
-              if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
-                zname <- names(attributes(spatialCovs[[j]])$z)
-                zvalues <- raster::getZ(spatialCovs[[j]])
-                spCov <- spCov[1,which(zvalues==subCovs[k+1,zname])]
-              }
-              if(isTRUE(attr(spatialCovs[[j]],"nograd"))# && spatialcovnames[j] %in% all.vars(DM$z$lambda)
-              ) subSpatialcovs[k+1,c(spatialcovnames[j],paste0(spatialcovnames[j],".",1:directions))] <- spCov
-              else subSpatialcovs[k+1,spatialcovnames[j]]<-spCov
-              if(spatialcovnames[j] %in% angleCovs) {
-                subAnglecovs[k+1,spatialcovnames[j]] <- subSpatialcovs[k+1,j]
-                subSpatialcovs[k+1,spatialcovnames[j]] <- circAngles(subAnglecovs[k:(k+1),spatialcovnames[j]],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
+              if(ctdsCRW){
+                xy.cell = raster::xyFromCell(rast, rep(oldCell,directions))
+                xy.adj = raster::xyFromCell(rast, adj.cells[oldCell,])
+                v.adj = (xy.adj - xy.cell)/sqrt(apply((xy.cell - xy.adj)^2, 1, sum))
+                v.moves = v.adj[rep(which(getCell==adj.cells[oldCell,]),directions), ]
+                subSpatialcovs[k+1,paste0("crw.",1:directions)] <- rowSums(v.moves * v.adj)
               }
             }
-            if(ctdsCRW){
-              xy.cell = raster::xyFromCell(rast, rep(oldCell,directions))
-              xy.adj = raster::xyFromCell(rast, adj.cells[oldCell,])
-              v.adj = (xy.adj - xy.cell)/sqrt(apply((xy.cell - xy.adj)^2, 1, sum))
-              v.moves = v.adj[rep(which(getCell==adj.cells[oldCell,]),directions), ]
-              subSpatialcovs[k+1,paste0("crw.",1:directions)] <- rowSums(v.moves * v.adj)
+            if(!is.null(mask)){
+              maskInd <- raster::cellFromXY(mask,X[k+1,])
+              if(is.na(maskInd)) {
+                if(ncores==1) message("\n    FAILED \n")
+                msg <- paste0("Movement is beyond the spatial extent of mask. Try expanding the extent of the raster.")
+                write(toString(msg), log)
+                stop(msg)
+              }
+              maskCov <- mask[maskInd]
+              if(inherits(mask,c("RasterStack","RasterBrick"))){
+                zname <- names(attributes(mask)$z)
+                zvalues <- raster::getZ(mask)
+                maskCov <- maskCov[1,which(zvalues==subCovs[k+1,zname])]
+              }
             }
           }
         }
+        if(is.null(mask)) maskCov <- 1
       }
+      
       # get next state
       gamma <- matrix(0,nbStates,nbStates)
       gamma[cbind(1:nbStates,betaRef)] <- 1
@@ -1959,7 +2060,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
             getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[k+1,1],X[k+1,2]))
             if(is.na(getCell)) {
               if(ncores==1) message("\n    FAILED \n")
-              stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+              msg <- paste0("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+              write(toString(msg), log)
+              stop(msg)
             }
             spCov <- spatialCovs[[j]][getCell]
             if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
@@ -2035,9 +2138,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
               }
               qsum <- sum(Qmat[Z[k], -Z[k]])
               
-              if(is.finite(maxRate) | (qsum - kappa > 1.e-6)) {
+              if(qsum - kappa > 1.e-6) {
                 if(is.finite(maxRate)){
-                  warning("Max transition rate for individual ",zoo," exceeds kappa -- terminating at observation ",sum((allTimes[1:k] %in% obsTimes[[zoo]])),": qsum = ",qsum," and kappa = ",kappa," -- please report to brett.mcclintock@noaa")
+                  warning("Max transition rate for individual ",zoo," exceeds kappa -- terminating at observation ",sum((allTimes[1:k] %in% obsTimes[[zoo]])),": maxRate = ",maxRate,", qsum = ",qsum,", and kappa = ",kappa," -- please report to brett.mcclintock@noaa")
                   break;
                 } else {
                   warning("Max transition rate for individual ",zoo," exceeds kappa -- terminating at observation ",sum((allTimes[1:k] %in% obsTimes[[zoo]])),"; kappa should be increased")

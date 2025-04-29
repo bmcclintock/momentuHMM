@@ -67,6 +67,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                     retrySims=0,
                     lambda=NULL,
                     errorEllipse=NULL,
+                    mask=NULL,
                     ncores=1,
                     export=NULL,
                     gradient=FALSE,
@@ -496,6 +497,30 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       }
     }
   } else nbSpatialCovs <- 0
+  
+  if(!is.null(mask)){
+    if(is.null(mvnCoords) & !isTRUE(list(...)$ctds)){
+      if(!("step" %in% distnames)) stop("mask can only be included when 'step' distribution is specified") 
+      else if(!(inputs$dist[["step"]] %in% stepdists)) stop("mask can only be included when valid 'step' distributions are specified") 
+    }
+    if (!requireNamespace("raster", quietly = TRUE)) {
+      stop("Package \"raster\" needed for spatial covariates. Please install it.",
+           call. = FALSE)
+    }
+    if(!inherits(mask,c("RasterLayer","RasterBrick","RasterStack"))) stop("mask must be of class 'RasterLayer', 'RasterStack', or 'RasterBrick'")
+    if(any(is.na(raster::getValues(mask)))) stop("missing values are not permitted in mask")
+    if(any(raster::getValues(mask)<0)) stop("negative values are not permitted in mask")
+    if(inherits(mask,c("RasterBrick","RasterStack"))){
+      if(is.null(raster::getZ(mask))) stop("mask is a raster stack or brick that must have set z values (see ?raster::setZ)")
+      else if(!(names(attributes(mask)$z) %in% names(covs))) {
+        if(!is.null(model)) covs[[names(attributes(mask)$z)]] <- model$data[[names(attributes(mask)$z)]]
+        else stop("mask z value '",names(attributes(mask)$z),"' not found in covs")
+      }
+      zname <- names(attributes(mask)$z)
+      zvalues <- raster::getZ(mask)
+      if(!all(unique(covs[[zname]]) %in% zvalues)) stop("data$",zname," includes z-values with no matching raster layer in mask")
+    }
+  }
   
   obsInd <- (!is.null(obsPerLevel))
   if(obsInd){
@@ -1004,6 +1029,19 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
     if(ctdsCRW) tmpCovs[,paste0("crw.",1:directions)] <- 0
   }
+  if(!is.null(mask)){
+    for(i in 1:length(initialPosition)){
+      maskInd <- raster::cellFromXY(mask,initialPosition[[i]])
+      if(is.na(maskInd)) stop("initialPosition for individual ",i," is not within the spatial extent of mask")
+      maskCov <- mask[maskInd]
+      if(inherits(mask,c("RasterStack","RasterBrick"))){
+        zname <- names(attributes(mask)$z)
+        zvalues <- raster::getZ(mask)
+        maskCov <- maskCov[1,which(zvalues==tmpCovs[[zname]][1])]
+      }
+      if(maskCov==0) stop("initialPosition for individual ",i," is forbidden by mask")
+    }
+  }
   if(length(centerInd)){
     for(j in 1:length(centerInd)){
       tmpDistAngle <- distAngle(initialPosition[[1]],initialPosition[[1]],centers[centerInd[j],])
@@ -1170,15 +1208,72 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     progBar(0, nbAnimals)
   }
   
-  if(!nbSpatialCovs | !retrySims){
+  if((nbSpatialCovs | !is.null(mask)) & retrySims){
     
+    if(isTRUE(list(...)$CT) & !is.null(model)){
+      attributes(model)$class <- attributes(model)$class[which(!attributes(model)$class %in% "CTHMM")]
+    }
+    
+    if(!((ncores>1 & nbAnimals>1))) doParallel::stopImplicitCluster()
+    else future::plan(future::sequential)
+    
+    simCount <- 0
+    message("\nAttempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simData'\n",sep="")
+    while(simCount < retrySims){
+      cat("\r    Attempt ",simCount+1," of ",retrySims,"... \n",sep="")
+      
+      tmp<-tryCatch(simHierData(nbAnimals,hierStates,hierDist,
+                                Par,hierBeta,hierDelta,
+                                hierFormula,hierFormulaDelta,mixtures,formulaPi,
+                                covs,nbHierCovs,
+                                spatialCovs,
+                                zeroInflation,
+                                oneInflation,
+                                circularAngleMean,
+                                centers,
+                                centroids,
+                                angleCovs,
+                                obsPerLevel,
+                                initialPosition,
+                                DM,userBounds,workBounds,mvnCoords,
+                                model,matchModelObs,
+                                states,
+                                retrySims=0,
+                                lambda,
+                                errorEllipse,
+                                mask,
+                                ncores,
+                                export=export,
+                                gradient=gradient,
+                                TMB=TMB,
+                                ...),error=function(e) e)
+      if(inherits(tmp,"error")){
+        if(grepl("Try expanding the extent of the raster",tmp)) {
+          simCount <- simCount+1
+          cat("\n")
+        } else stop(tmp)
+      } else {
+        simCount <- retrySims
+        cat("DONE\n")
+        return(tmp)
+      }
+    }
+    cat("FAILED\n")
+    stop(tmp)
+  
+  } else {
     ###########################
     ## Loop over the animals ##
     ###########################
+    log = tempfile()
+    
     withCallingHandlers(simDat <- foreach(zoo=1:nbAnimals,.export=c(ls(),export),.packages=pkgs,.combine='comb') %dorng% {
       
-      if(ncores==1 | nbAnimals==1) message("        Simulating individual ",zoo,"... ",sep="")
-      else progBar(zoo, nbAnimals)
+      if (file.exists(log))  {
+        msg = scan(log, character(), quiet = TRUE)
+        msg = paste(msg, collapse = " ")
+        stop(msg, call. = FALSE)
+      }
       
       # number of observations for animal zoo
       nbObs <- allNbObs[zoo]
@@ -1401,96 +1496,101 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       if(nbStates>1) {
         Z <- rep(NA,nbObs)
         Z[1] <- sample(1:nbStates,size=1,prob=delta0%*%gamma)
-      } else
-        Z <- rep(1,nbObs)
+      } else Z <- rep(1,nbObs)
+      
+      if(ncores==1 | nbAnimals==1){
+        message("        Simulating individual ",zoo,"... ",sep="")
+      } else if(!file.exists(log)) progBar(zoo, nbAnimals)
       
       #for(kk in sort(hierDist$Get("name",filterFun=function(x) x$level==2))){
+      
+      #kIndi <- which(subCovs$level==paste0(gsub("level","",kk),"i"))
+      
+      #if(length(kIndi)){
+      #  if(nbSpatialCovs |  length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
+      #    subCovs[kIndi,which(colnames(subCovs)!="level")] <- subCovs[kIndi-1,which(colnames(subCovs)!="level"),drop=FALSE]
+      #    subSpatialcovs[kIndi,] <- subSpatialcovs[kIndi-1,,drop=FALSE]
+      #  }
+      #  X[kIndi,] <- X[kIndi-1,]
+      #}
+      
+      #kInd <- which(subCovs$level==gsub("level","",kk))
+      
+      if(!is.null(coordLevel)) coordNA <- which(level[[zoo]]==coordLevel)[sum(level[[zoo]]==coordLevel)]
+      levelNA <- integer()
+      for(iLevel in lLevels[[zoo]]){
+        if(is.null(coordLevel) || iLevel!=coordLevel) levelNA <- c(levelNA,tail(which(level[[zoo]]==iLevel),1))
+      }
+      
+      for (k in 1:(nbObs-1)){
         
-        #kIndi <- which(subCovs$level==paste0(gsub("level","",kk),"i"))
+        if(ncores==1 | nbAnimals==1) progBar(k, nbObs-1)
         
-        #if(length(kIndi)){
-        #  if(nbSpatialCovs |  length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
-        #    subCovs[kIndi,which(colnames(subCovs)!="level")] <- subCovs[kIndi-1,which(colnames(subCovs)!="level"),drop=FALSE]
-        #    subSpatialcovs[kIndi,] <- subSpatialcovs[kIndi-1,,drop=FALSE]
+        #if(level[[zoo]][k] %in% lLevels[[zoo]][seq(2,length(lLevels[[zoo]]),2)]){
+        #  if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
+        #    subCovs[k,which(colnames(subCovs)!="level")] <- subCovs[k-1,which(colnames(subCovs)!="level"),drop=FALSE]
+        #    subSpatialcovs[k,] <- subSpatialcovs[k-1,,drop=FALSE]
+        #    g <- stats::model.matrix(newformula,cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
+        #  } else {
+        #    g <- gFull[k,,drop=FALSE]
         #  }
-        #  X[kIndi,] <- X[kIndi-1,]
+        
+        #  X[k,] <- X[k-1,]
+        
+        #  # get initial state
+        #  gamma <- matrix(0,nbStates,nbStates)
+        #  gamma[cbind(1:nbStates,betaRef)] <- 1
+        #  gamma <- t(gamma)
+        #  gamma[!gamma] <- exp(g)
+        #  gamma <- t(gamma)
+        #  gamma <- gamma/apply(gamma,1,sum)
+        #  Z[k] <- sample(1:nbStates,size=1,prob=gamma[Z[k-1],])  
         #}
         
-        #kInd <- which(subCovs$level==gsub("level","",kk))
-      
-        if(!is.null(coordLevel)) coordNA <- which(level[[zoo]]==coordLevel)[sum(level[[zoo]]==coordLevel)]
-        levelNA <- integer()
-        for(iLevel in lLevels[[zoo]]){
-          if(is.null(coordLevel) || iLevel!=coordLevel) levelNA <- c(levelNA,tail(which(level[[zoo]]==iLevel),1))
-        }
-      
-        for (k in 1:(nbObs-1)){
+        if(!(k %in% levelNA) & !is.null(names(as.list(hierDist)[[paste0("level",level[[zoo]][k])]]))){
           
-          if(ncores==1 | nbAnimals==1) progBar(k, nbObs-1)
-          
-          #if(level[[zoo]][k] %in% lLevels[[zoo]][seq(2,length(lLevels[[zoo]]),2)]){
-          #  if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
-          #    subCovs[k,which(colnames(subCovs)!="level")] <- subCovs[k-1,which(colnames(subCovs)!="level"),drop=FALSE]
-          #    subSpatialcovs[k,] <- subSpatialcovs[k-1,,drop=FALSE]
-          #    g <- stats::model.matrix(newformula,cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
-          #  } else {
-          #    g <- gFull[k,,drop=FALSE]
-          #  }
+          if(nbSpatialCovs |  length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
+            # format parameters
+            DMinputs<-getDM(cbind(subCovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE],subSpatialcovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE,TMB=TMB)
+            fullDM <- DMinputs$fullDM
+            DMind <- DMinputs$DMind
+            wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist,TMB=TMB)
+            if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
             
-          #  X[k,] <- X[k-1,]
-            
-          #  # get initial state
-          #  gamma <- matrix(0,nbStates,nbStates)
-          #  gamma[cbind(1:nbStates,betaRef)] <- 1
-          #  gamma <- t(gamma)
-          #  gamma[!gamma] <- exp(g)
-          #  gamma <- t(gamma)
-          #  gamma <- gamma/apply(gamma,1,sum)
-          #  Z[k] <- sample(1:nbStates,size=1,prob=gamma[Z[k-1],])  
-          #}
-            
-          if(!(k %in% levelNA) & !is.null(names(as.list(hierDist)[[paste0("level",level[[zoo]][k])]]))){
-            
-            if(nbSpatialCovs |  length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
-              # format parameters
-              DMinputs<-getDM(cbind(subCovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE],subSpatialcovs[k-ifelse(k>=maxlag,maxlag,0):0,,drop=FALSE]),inputs$DM,inputs$dist,nbStates,p$parNames,p$bounds,Par,zeroInflation,oneInflation,inputs$circularAngleMean,wlag=TRUE,TMB=TMB)
-              fullDM <- DMinputs$fullDM
-              DMind <- DMinputs$DMind
-              wpar <- n2w(Par,bounds,beta0,deltaB,nbStates,inputs$estAngleMean,inputs$DM,p$Bndind,inputs$dist,TMB=TMB)
-              if(any(!is.finite(wpar))) stop("Scaling error. Check initial parameter values and bounds.")
-              
-              nc <- meanind <- vector('list',length(distnames))
-              names(nc) <- names(meanind) <- distnames
-              for(i in distnames){
-                nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
-                if(!isFALSE(inputs$circularAngleMean[[i]])) {
-                  meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
-                  # deal with angular covariates that are exactly zero
-                  if(length(meanind[[i]])){
-                    angInd <- which(is.na(match(gsub("cos","",gsub("sin","",colnames(nc[[i]]))),colnames(nc[[i]]),nomatch=NA)))
-                    sinInd <- colnames(nc[[i]])[which(grepl("sin",colnames(nc[[i]])[angInd]))]
-                    nc[[i]][meanind[[i]],sinInd]<-ifelse(nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)])
-                    nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)]<-ifelse(nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],sinInd])
-                  }
+            nc <- meanind <- vector('list',length(distnames))
+            names(nc) <- names(meanind) <- distnames
+            for(i in distnames){
+              nc[[i]] <- apply(fullDM[[i]],1:2,function(x) !all(unlist(x)==0))
+              if(!isFALSE(inputs$circularAngleMean[[i]])) {
+                meanind[[i]] <- which((apply(fullDM[[i]][1:nbStates,,drop=FALSE],1,function(x) !all(unlist(x)==0))))
+                # deal with angular covariates that are exactly zero
+                if(length(meanind[[i]])){
+                  angInd <- which(is.na(match(gsub("cos","",gsub("sin","",colnames(nc[[i]]))),colnames(nc[[i]]),nomatch=NA)))
+                  sinInd <- colnames(nc[[i]])[which(grepl("sin",colnames(nc[[i]])[angInd]))]
+                  nc[[i]][meanind[[i]],sinInd]<-ifelse(nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],sinInd],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)])
+                  nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)]<-ifelse(nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],gsub("sin","cos",sinInd)],nc[[i]][meanind[[i]],sinInd])
                 }
               }
-              subPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,1,inputs$dist,p$Bndind,nc,meanind,covsDelta,wworkBounds,covsPi,TMB=TMB)
-            } else {
-              subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
             }
-            
-            for(ct in distnames[which(unlist(inputs$dist)=="ctcrw")]){
-              mlag <- 1
-              mvnpar <- matrix(0,5*nbStates,1)
-              ctcrwCovs <- subCovs[k-ifelse(k>=mlag,mlag,0):0,]
-              ctcrwCovs$dt <- dt[[zoo]][k-ifelse(k>=mlag,mlag,0):0]
-              attr(ctcrwCovs$mu.x_tm1,"aInd") <- 1
-              attr(ctcrwCovs$mu.y_tm1,"aInd") <- 1
-              subPar[[ct]] <- convertCTCRW(ct,subPar[[ct]],nbStates,ctcrwCovs)[,ifelse(k==1,1,2),drop=FALSE]
-            }
-            
-            if(isTRUE(list(...)$CT)) subPar <- ctPar(subPar,inputs$dist,nbStates,data.frame(subCovs[k,],dt=dt[[zoo]][k]))
-            
+            subPar <- w2n(wpar,bounds,parSize,nbStates,nbBetaCovs-1,inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,stationary=FALSE,fullDM,DMind,1,inputs$dist,p$Bndind,nc,meanind,covsDelta,wworkBounds,covsPi,TMB=TMB)
+          } else {
+            subPar <- lapply(fullsubPar[distnames],function(x) x[,k,drop=FALSE])#fullsubPar[,k,drop=FALSE]
+          }
+          
+          for(ct in distnames[which(unlist(inputs$dist)=="ctcrw")]){
+            mlag <- 1
+            mvnpar <- matrix(0,5*nbStates,1)
+            ctcrwCovs <- subCovs[k-ifelse(k>=mlag,mlag,0):0,]
+            ctcrwCovs$dt <- dt[[zoo]][k-ifelse(k>=mlag,mlag,0):0]
+            attr(ctcrwCovs$mu.x_tm1,"aInd") <- 1
+            attr(ctcrwCovs$mu.y_tm1,"aInd") <- 1
+            subPar[[ct]] <- convertCTCRW(ct,subPar[[ct]],nbStates,ctcrwCovs)[,ifelse(k==1,1,2),drop=FALSE]
+          }
+          
+          if(isTRUE(list(...)$CT)) subPar <- ctPar(subPar,inputs$dist,nbStates,data.frame(subCovs[k,],dt=dt[[zoo]][k]))
+          
+          maskCov <- 0
+          while(maskCov==0){
             for(i in distnames[which(distnames %in% names(as.list(hierDist)[[paste0("level",level[[zoo]][k])]]))]){
               
               zeroMass[[i]] <- rep(0,nbStates)
@@ -1540,6 +1640,15 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
               
               if(inputs$dist[[i]] %in% angledists){
                 
+                if(dist[[i]]=="crwvm"){
+                  if(k>1 && !all(genArgs[[i]][[j+2]]>0)) {
+                    genArgs[[i]][[2]] <- genArgs[[i]][[3]] <- 12 # uniform turn angle if previous steps are zero
+                    genArgs[[i]][[4]] <- NULL
+                  }
+                } else if(dist[[i]]=="vm"){
+                  if(genArgs[[i]][[3]]<2.e-8) genArgs[[i]][[3]] <- 2.e-8
+                }
+                
                 genData[[i]][k] <- do.call(Fun[[i]],genArgs[[i]])
                 if(genData[[i]][k] >  pi) genData[[i]][k] <- genData[[i]][k]-2*pi
                 if(genData[[i]][k] < -pi) genData[[i]][k] <- genData[[i]][k]+2*pi
@@ -1554,6 +1663,21 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                       #}
                       m <- genData$step[k]*c(Re(exp(1i*phi)),Im(exp(1i*phi)))
                       X[k+1,] <- X[k,] + m
+                      if(!is.null(mask)){
+                        maskInd <- raster::cellFromXY(mask,X[k+1,])
+                        if(is.na(maskInd)) {
+                          if(ncores==1) message("\n    FAILED \n")
+                          msg <- paste0("Movement is beyond the spatial extent of mask. Try expanding the extent of the raster.")
+                          write(toString(msg), log)
+                          stop(msg)
+                        }
+                        maskCov <- mask[maskInd]
+                        if(inherits(mask,c("RasterStack","RasterBrick"))){
+                          zname <- names(attributes(mask)$z)
+                          zvalues <- raster::getZ(mask)
+                          maskCov <- maskCov[1,which(zvalues==subCovs[k+1,zname])]
+                        }
+                      } 
                     } else {
                       for(ii in distCoordLevel){
                         d[[ii]][k] <- genData[[ii]][k] <- NA
@@ -1596,6 +1720,21 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
               if(!is.null(mvnCoords) && i==mvnCoords){
                 if(k < nbObs) X[k+1,] <- genData[[i]][k,]
                 d[[i]] <- X
+                if(!is.null(mask)){
+                  maskInd <- raster::cellFromXY(mask,X[k+1,])
+                  if(is.na(maskInd)) {
+                    if(ncores==1) message("\n    FAILED \n")
+                    msg <- paste0("Movement is beyond the spatial extent of mask. Try expanding the extent of the raster.")
+                    write(toString(msg), log)
+                    stop(msg)
+                  }
+                  maskCov <- mask[maskInd]
+                  if(inherits(mask,c("RasterStack","RasterBrick"))){
+                    zname <- names(attributes(mask)$z)
+                    zvalues <- raster::getZ(mask)
+                    maskCov <- maskCov[1,which(zvalues==subCovs[k+1,zname])]
+                  }
+                } 
               } else d[[i]] <- genData[[i]]
               if(dist[[i]]=="ctds"){
                 if(genData[[i]][k]==(directions+1)){
@@ -1614,6 +1753,21 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                         subAnglecovs[k+1,spatialcovnames[j]] <- subSpatialcovs[k+1,j]
                         subSpatialcovs[k+1,spatialcovnames[j]] <- circAngles(subAnglecovs[k:(k+1),spatialcovnames[j]],data.frame(x=X[k:(k+1),1],y=X[k:(k+1),2]))[2] 
                       }
+                    }
+                  }
+                  if(!is.null(mask)){
+                    maskInd <- raster::cellFromXY(mask,X[k+1,])
+                    if(is.na(maskInd)) {
+                      if(ncores==1) message("\n    FAILED \n")
+                      msg <- paste0("Movement is beyond the spatial extent of mask. Try expanding the extent of the raster.")
+                      write(toString(msg), log)
+                      stop(msg)
+                    }
+                    maskCov <- mask[maskInd]
+                    if(inherits(mask,c("RasterStack","RasterBrick"))){
+                      zname <- names(attributes(mask)$z)
+                      zvalues <- raster::getZ(mask)
+                      maskCov <- maskCov[1,which(zvalues==subCovs[k+1,zname])]
                     }
                   }
                 } else {
@@ -1647,119 +1801,139 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
                       v.moves = v.adj[rep(which(getCell==adj.cells[oldCell,]),directions), ]
                       subSpatialcovs[nextLev,paste0("crw.",1:directions)] <- rowSums(v.moves * v.adj)
                     }
+                    if(!is.null(mask)){
+                      maskInd <- raster::cellFromXY(mask,X[nextLev,])
+                      if(is.na(maskInd)) {
+                        if(ncores==1) message("\n    FAILED \n")
+                        msg <- paste0("Movement is beyond the spatial extent of mask. Try expanding the extent of the raster.")
+                        write(toString(msg), log)
+                        stop(msg)
+                      }
+                      maskCov <- mask[maskInd]
+                      if(inherits(mask,c("RasterStack","RasterBrick"))){
+                        zname <- names(attributes(mask)$z)
+                        zvalues <- raster::getZ(mask)
+                        maskCov <- maskCov[1,which(zvalues==subCovs[nextLev,zname])]
+                      }
+                    }
                   }
                 }
                 if(k==coordNA) genData[[i]][k] <- d[[i]][k] <- NA
               }
             }
+            if(is.null(mask)) maskCov <- 1
           }
-          # get next state
-          gamma <- matrix(0,nbStates,nbStates)
-          gamma[cbind(1:nbStates,betaRef)] <- 1
-          gamma <- t(gamma)
-          
-          #if(k < nbObs){
-            
-            if(all(is.na(X[k+1,]))){
-              X[k+1,] <- X[k,]
-            }
-          
-            if(isTRUE(list(...)$ctds) & all(is.na(subSpatialcovs[k+1,]))){
-              subSpatialcovs[k+1,] <- subSpatialcovs[k,]
-            }
-
-            if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
-              if(nbSpatialCovs & !isTRUE(list(...)$ctds)){
-                for(j in 1:nbSpatialCovs){
-                  getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[k+1,1],X[k+1,2]))
-                  if(is.na(getCell)) {
-                    if(ncores==1) message("\n    FAILED \n")
-                    stop("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
-                  }
-                  spCov <- spatialCovs[[j]][getCell]
-                  if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
-                    zname <- names(attributes(spatialCovs[[j]])$z)
-                    zvalues <- raster::getZ(spatialCovs[[j]])
-                    spCov <- spCov[1,which(zvalues==subCovs[k+1,zname])]
-                  }
-                  subSpatialcovs[k+1,j]<-spCov
-                  if(spatialcovnames[j] %in% angleCovs) {
-                    subAnglecovs[k+1,spatialcovnames[j]] <- subSpatialcovs[k+1,j]
-                    subSpatialcovs[k+1,j] <- circAngles(subAnglecovs[c(k,k+1),spatialcovnames[j]],data.frame(x=X[c(k,k+1),1],y=X[c(k,k+1),2]))[2] 
-                  }
-                  if(gradient){
-                    if(inherits(spatialCovs[[j]],"RasterLayer")){
-                      subSpatialcovs[k+1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X[k+1,1],y=X[k+1,2]),collapseRast=collapseRast[spatialcovnames[j]])[,paste0(spatialcovnames[j],c(".x",".y"))]
-                    } else if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
-                      tmpColRast[[spatialcovnames[j]]] <- collapseRast[[spatialcovnames[j]]][[which(zvalues==subCovs[k+1,zname])]]
-                      subSpatialcovs[k+1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X[k+1,1],y=X[k+1,2]),collapseRast=tmpColRast)[,paste0(spatialcovnames[j],c(".x",".y"))]
-                    }
-                  }
-                }
-              }
-              
-              for(j in angleCovs[which(angleCovs %in% names(subCovs))]){
-                subAnglecovs[k+1,j] <- subCovs[k+1,j]
-                subCovs[k+1,j] <- circAngles(subAnglecovs[c(k,k+1),j],data.frame(x=X[c(k,k+1),1],y=X[c(k,k+1),2]))[2] 
-              }
-              
-              if(length(centerInd)){
-                for(j in 1:length(centerInd)){
-                  subCovs[k+1,centerNames[(j-1)*2+1:2]]<-distAngle(X[k,],X[k+1,],centers[centerInd[j],])
-                }
-              }
-              if(length(centroidInd)){
-                for(j in 1:centroidInd){
-                  subCovs[k+1,centroidNames[(j-1)*2+1:2]]<-distAngle(X[k,],X[k+1,],as.numeric(centroids[[j]][k+1,]))
-                }
-              }
-              if(!is.null(recharge)){
-                colInd <- lapply(recLevelNames,function(x) which(grepl(paste0("I((level == \"",gsub("level","",x),"\")"),colnames(recovs),fixed=TRUE)))
-                
-                for(j in 1:length(rechargeNames)){
-                  tmpSubCovs <- cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])
-                  if(subCovs[k+1,"level"]==gsub("level","",recLevelNames[j]) & match(subCovs[k,"level"],levels(subCovs$level))>=match(subCovs[k+1,"level"],levels(subCovs$level))){
-                    tmpSubCovs$level <- subCovs[k+1,"level"]
-                    subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]] + (stats::model.matrix(recharge$theta,tmpSubCovs)[,colInd[[j]],drop=FALSE] %*% wntheta[colInd[[j]]])*dt[[zoo]][k]
-                  } else if(match(subCovs[k,"level"],levels(subCovs$level))>match(subCovs[k+1,"level"],levels(subCovs$level))){
-                    #tmpSubCovs$level <- subCovs[k,"level"]
-                    subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]] + (stats::model.matrix(recharge$theta,tmpSubCovs)[,colInd[[j]],drop=FALSE] %*% wntheta[colInd[[j]]])*dt[[zoo]][k]
-                  } else {
-                    subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]]
-                  }
-                }
-                #subCovs[k+1,"recharge"] <- subCovs[k,"recharge"] + stats::model.matrix(recharge$theta,cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])) %*% wntheta
-              }
-              for(i in distnames){
-                if(dist[[i]] %in% rwdists){
-                  if(dist[[i]] %in% c("rw_mvnorm2","ctcrw")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1"))] <- X[k+1,]
-                  else if(dist[[i]] %in% c("rw_mvnorm3")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1",".z_tm1"))] <- X[k+1,]
-                }
-              }
-            }
-            if(!isTRUE(list(...)$CT)){
-              if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd)
-                g <- stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
-              else g <- gFull[k+1,,drop=FALSE]
-              gamma[!gamma] <- exp(g)
-              gamma <- t(gamma)
-              gamma <- gamma/apply(gamma,1,sum)
-            } else {
-              if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
-                gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])), betaRef, TRUE, dtr[[zoo]][k], aInd=1, kappa=kappa)[,,1],nbStates,nbStates),error=function(e) e)
-              } else {
-                gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], DMcov[k+1,,drop=FALSE], betaRef, TRUE, dtr[[zoo]][k], aInd=1, kappa=kappa)[,,1],nbStates,nbStates),error=function(e) e)
-              }
-              if(inherits(gamma,"error") || any(gamma<0)){
-                warning("TPM exponential could not be calculated for individual ",zoo,"; terminating at observation ",k,": ",ifelse(inherits(gamma,"error"),gamma,"negative probability"))
-                break;
-              }
-            }
-          if(isTRUE(list(...)$ctds) && (moveState & all(X[k+1,]==X[k,]))){
-            Z[k+1] <- Z[k]
-          } else Z[k+1] <- sample(1:nbStates,size=1,prob=gamma[Z[k],])  
-          #}
         }
+
+        # get next state
+        gamma <- matrix(0,nbStates,nbStates)
+        gamma[cbind(1:nbStates,betaRef)] <- 1
+        gamma <- t(gamma)
+        
+        #if(k < nbObs){
+        
+        if(all(is.na(X[k+1,]))){
+          X[k+1,] <- X[k,]
+        }
+        
+        if(isTRUE(list(...)$ctds) & all(is.na(subSpatialcovs[k+1,]))){
+          subSpatialcovs[k+1,] <- subSpatialcovs[k,]
+        }
+        
+        if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
+          if(nbSpatialCovs & !isTRUE(list(...)$ctds)){
+            for(j in 1:nbSpatialCovs){
+              getCell<-raster::cellFromXY(spatialCovs[[j]],c(X[k+1,1],X[k+1,2]))
+              if(is.na(getCell)) {
+                if(ncores==1) message("\n    FAILED \n")
+                msg <- paste0("Movement is beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
+                write(toString(msg), log)
+                stop(msg)
+              }
+              spCov <- spatialCovs[[j]][getCell]
+              if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+                zname <- names(attributes(spatialCovs[[j]])$z)
+                zvalues <- raster::getZ(spatialCovs[[j]])
+                spCov <- spCov[1,which(zvalues==subCovs[k+1,zname])]
+              }
+              subSpatialcovs[k+1,j]<-spCov
+              if(spatialcovnames[j] %in% angleCovs) {
+                subAnglecovs[k+1,spatialcovnames[j]] <- subSpatialcovs[k+1,j]
+                subSpatialcovs[k+1,j] <- circAngles(subAnglecovs[c(k,k+1),spatialcovnames[j]],data.frame(x=X[c(k,k+1),1],y=X[c(k,k+1),2]))[2] 
+              }
+              if(gradient){
+                if(inherits(spatialCovs[[j]],"RasterLayer")){
+                  subSpatialcovs[k+1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X[k+1,1],y=X[k+1,2]),collapseRast=collapseRast[spatialcovnames[j]])[,paste0(spatialcovnames[j],c(".x",".y"))]
+                } else if(inherits(spatialCovs[[j]],c("RasterStack","RasterBrick"))){
+                  tmpColRast[[spatialcovnames[j]]] <- collapseRast[[spatialcovnames[j]]][[which(zvalues==subCovs[k+1,zname])]]
+                  subSpatialcovs[k+1,paste0(spatialcovnames[j],c(".x",".y"))] <- getGradients(data.frame(x=X[k+1,1],y=X[k+1,2]),collapseRast=tmpColRast)[,paste0(spatialcovnames[j],c(".x",".y"))]
+                }
+              }
+            }
+          }
+          
+          for(j in angleCovs[which(angleCovs %in% names(subCovs))]){
+            subAnglecovs[k+1,j] <- subCovs[k+1,j]
+            subCovs[k+1,j] <- circAngles(subAnglecovs[c(k,k+1),j],data.frame(x=X[c(k,k+1),1],y=X[c(k,k+1),2]))[2] 
+          }
+          
+          if(length(centerInd)){
+            for(j in 1:length(centerInd)){
+              subCovs[k+1,centerNames[(j-1)*2+1:2]]<-distAngle(X[k,],X[k+1,],centers[centerInd[j],])
+            }
+          }
+          if(length(centroidInd)){
+            for(j in 1:centroidInd){
+              subCovs[k+1,centroidNames[(j-1)*2+1:2]]<-distAngle(X[k,],X[k+1,],as.numeric(centroids[[j]][k+1,]))
+            }
+          }
+          if(!is.null(recharge)){
+            colInd <- lapply(recLevelNames,function(x) which(grepl(paste0("I((level == \"",gsub("level","",x),"\")"),colnames(recovs),fixed=TRUE)))
+            
+            for(j in 1:length(rechargeNames)){
+              tmpSubCovs <- cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])
+              if(subCovs[k+1,"level"]==gsub("level","",recLevelNames[j]) & match(subCovs[k,"level"],levels(subCovs$level))>=match(subCovs[k+1,"level"],levels(subCovs$level))){
+                tmpSubCovs$level <- subCovs[k+1,"level"]
+                subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]] + (stats::model.matrix(recharge$theta,tmpSubCovs)[,colInd[[j]],drop=FALSE] %*% wntheta[colInd[[j]]])*dt[[zoo]][k]
+              } else if(match(subCovs[k,"level"],levels(subCovs$level))>match(subCovs[k+1,"level"],levels(subCovs$level))){
+                #tmpSubCovs$level <- subCovs[k,"level"]
+                subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]] + (stats::model.matrix(recharge$theta,tmpSubCovs)[,colInd[[j]],drop=FALSE] %*% wntheta[colInd[[j]]])*dt[[zoo]][k]
+              } else {
+                subCovs[k+1,rechargeNames[j]] <- subCovs[k,rechargeNames[j]]
+              }
+            }
+            #subCovs[k+1,"recharge"] <- subCovs[k,"recharge"] + stats::model.matrix(recharge$theta,cbind(subCovs[k,,drop=FALSE],subSpatialcovs[k,,drop=FALSE])) %*% wntheta
+          }
+          for(i in distnames){
+            if(dist[[i]] %in% rwdists){
+              if(dist[[i]] %in% c("rw_mvnorm2","ctcrw")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1"))] <- X[k+1,]
+              else if(dist[[i]] %in% c("rw_mvnorm3")) subCovs[k+1,paste0(i,c(".x_tm1",".y_tm1",".z_tm1"))] <- X[k+1,]
+            }
+          }
+        }
+        if(!isTRUE(list(...)$CT)){
+          if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd)
+            g <- stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])) %*% wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,]
+          else g <- gFull[k+1,,drop=FALSE]
+          gamma[!gamma] <- exp(g)
+          gamma <- t(gamma)
+          gamma <- gamma/apply(gamma,1,sum)
+        } else {
+          if(nbSpatialCovs | length(centerInd) | length(centroidInd) | length(angleCovs) | rwInd){
+            gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], stats::model.matrix(newformula,cbind(subCovs[k+1,,drop=FALSE],subSpatialcovs[k+1,,drop=FALSE])), betaRef, TRUE, dtr[[zoo]][k], aInd=1, kappa=kappa)[,,1],nbStates,nbStates),error=function(e) e)
+          } else {
+            gamma <- tryCatch(matrix(trMatrix_rcpp(nbStates, wnbeta[(mix[zoo]-1)*nbBetaCovs+1:nbBetaCovs,,drop=FALSE], DMcov[k+1,,drop=FALSE], betaRef, TRUE, dtr[[zoo]][k], aInd=1, kappa=kappa)[,,1],nbStates,nbStates),error=function(e) e)
+          }
+          if(inherits(gamma,"error") || any(gamma<0)){
+            warning("TPM exponential could not be calculated for individual ",zoo,"; terminating at observation ",k,": ",ifelse(inherits(gamma,"error"),gamma,"negative probability"))
+            break;
+          }
+        }
+        if(isTRUE(list(...)$ctds) && (moveState & all(X[k+1,]==X[k,]))){
+          Z[k+1] <- Z[k]
+        } else Z[k+1] <- sample(1:nbStates,size=1,prob=gamma[Z[k],])  
+        #}
+      }
       #}
       #allStates <- c(allStates,Z)
       #if(nbSpatialCovs>0) {
@@ -1919,56 +2093,5 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
     #message("DONE")
     return(out)
-  } else {
-    
-    if(isTRUE(list(...)$CT) & !is.null(model)){
-      attributes(model)$class <- attributes(model)$class[which(!attributes(model)$class %in% "CTHMM")]
-    }
-    
-    if(!((ncores>1 & nbAnimals>1))) doParallel::stopImplicitCluster()
-    else future::plan(future::sequential)
-    
-    simCount <- 0
-    message("\nAttempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simData'\n",sep="")
-    while(simCount < retrySims){
-      if(ncores==1) cat("\r    Attempt ",simCount+1," of ",retrySims,"... \n",sep="")
-      else cat("\r    Attempt ",simCount+1," of ",retrySims,"... \n",sep="")
-      tmp<-tryCatch(simHierData(nbAnimals,hierStates,hierDist,
-                                             Par,hierBeta,hierDelta,
-                                             hierFormula,hierFormulaDelta,mixtures,formulaPi,
-                                             covs,nbHierCovs,
-                                             spatialCovs,
-                                             zeroInflation,
-                                             oneInflation,
-                                             circularAngleMean,
-                                             centers,
-                                             centroids,
-                                             angleCovs,
-                                             obsPerLevel,
-                                             initialPosition,
-                                             DM,userBounds,workBounds,mvnCoords,
-                                             model,matchModelObs,
-                                             states,
-                                             retrySims=0,
-                                             lambda,
-                                             errorEllipse,
-                                             ncores,
-                                             export=export,
-                                             gradient=gradient,
-                                             TMB=TMB,
-                                             ...),error=function(e) e)
-      if(inherits(tmp,"error")){
-        if(grepl("Try expanding the extent of the raster",tmp)) {
-          simCount <- simCount+1
-          cat("    FAILED \n\n")
-        } else stop(tmp)
-      } else {
-        simCount <- retrySims
-        cat("    DONE\n")
-        return(tmp)
-      }
-    }
-    cat("FAILED\n")
-    stop(tmp)
   }
 }
