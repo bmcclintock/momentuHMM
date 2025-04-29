@@ -85,7 +85,8 @@ table(states)/nrow(elephantData)
 plot(m3, plotCI = TRUE, covs = data.frame(hour=12))
 
 # plot satellite image for model m3
-plotSat(m3,zoom=8,col=c("firebrick3","seagreen4"),projargs = proj4string(utmcoord),ask=FALSE)
+# commented out because Google now requires an API key for Google Maps
+# plotSat(m3,zoom=8,col=c("firebrick3","seagreen4"),projargs = proj4string(utmcoord),ask=FALSE)
 
 # compute pseudo-residuals for the steps and the angles
 pr <- pseudoRes(m3)

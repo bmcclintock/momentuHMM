@@ -92,7 +92,9 @@ plotSat <- function(data,zoom=NULL,location=NULL,segments=TRUE,compact=TRUE,col=
     if(!inherits(projargs,"CRS")) projargs <- sp::CRS(projargs)
     sp::coordinates(data) <- c("x","y")
     sp::proj4string(data) <- projargs
-    data <- as.data.frame(sp::spTransform(data,CRS("+proj=longlat +datum=WGS84")))
+    tmp <- sp::spTransform(data,CRS("+proj=longlat +datum=WGS84"))
+    sp::coordnames(tmp) <- coordNames
+    data <- as.data.frame(tmp)
     if(!is.null(location)){
       if(length(location)!=2)
         stop("'location' should be a vector of two values.")
