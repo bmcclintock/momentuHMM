@@ -132,6 +132,8 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     
     if(is.null(fixPar$beta)) {
       fixPar$beta <- rep(NA,length(beta0$beta))
+    } else {
+      if((length(fixPar$beta)!=length(beta0$beta)) | ((!is.null(dim(fixPar$beta)) & !is.null(dim(beta0$beta))) && (any(dim(fixPar$beta)!=dim(beta0$beta))))) stop("fixPar$beta must be a ",nrow(beta0$beta),"x",ncol(beta0$beta)," matrix (or a vector of length ",length(beta0$beta),")")
     }
     if(!is.null(recharge)){
       if(is.null(fixPar$g0)) {
@@ -147,7 +149,7 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     if(nbStates>1){
       if(!is.null(newdata)) data <- cbind(data,newdata)
       for(state in 1:(nbStates*(nbStates-1))){
-        noBeta<-which(match(colnames(stats::model.matrix(stats::terms(newformula,keep.order=TRUE),data)),colnames(stats::model.matrix(stats::terms(formulaStates[[state]],keep.order=TRUE),data)),nomatch=0)==0)
+        noBeta<-which(match(colnames(stats::model.matrix(newformula,data)),colnames(stats::model.matrix(formulaStates[[state]],data)),nomatch=0)==0)
         if(length(noBeta)) {
           for(mix in 1:mixtures){
             beta0$beta[noBeta+(nbCovs+1)*(mix-1),state] <- NA
@@ -337,13 +339,15 @@ get_fixParIndex <- function(Par0,beta0,delta0,fixPar,distnames,inputs,p,nbStates
     nullFix <- is.null(fixPar$beta)
     if(nbStates>1 & nullFix) {
       fixPar$beta <- 1:length(beta0$beta)
+    } else {
+      if(nbStates>1 && (length(fixPar$beta)!=length(beta0$beta)) | ((!is.null(dim(fixPar$beta)) & !is.null(dim(beta0$beta))) && (any(dim(fixPar$beta)!=dim(beta0$beta))))) stop("fixPar$beta must be a ",nrow(beta0$beta),"x",ncol(beta0$beta)," matrix (or a vector of length ",length(beta0$beta),")")
     }
     fixPar$g0 <- fixPar$theta <- NULL
     
     if(nbStates>1){
       if(!is.null(newdata)) data <- cbind(data,newdata)
       for(state in 1:(nbStates*(nbStates-1))){
-        noBeta<-which(match(colnames(stats::model.matrix(stats::terms(newformula,keep.order=TRUE),data)),colnames(stats::model.matrix(stats::terms(formulaStates[[state]],keep.order=TRUE),data)),nomatch=0)==0)
+        noBeta<-which(match(colnames(stats::model.matrix(newformula,data)),colnames(stats::model.matrix(formulaStates[[state]],data)),nomatch=0)==0)
         if(length(noBeta)) {
           for(mix in 1:mixtures){
             beta0$beta[noBeta+(nbCovs+1)*(mix-1),state] <- 0

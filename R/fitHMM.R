@@ -745,9 +745,9 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
       stepNA <- which(is.na(data$step))
       angleNA <- which(is.na(data$angle))
       if(!all(stepNA %in% (aInd+table(factor(data$ID,levels=unique(data$ID)))-1))) stop("sorry, 'crwrice' distribution observations for 'step' cannot include missing values (except for the last observation for each individual)")
-      if(!all(is.na(data$step[(aInd+table(data$ID)-1)]))) stop("For each individual, the last 'crwrice' distribution observation for 'step' must be NA")
+      if(!all(is.na(data$step[(aInd+table(factor(data$ID,levels=unique(data$ID)))-1)]))) stop("For each individual, the last 'crwrice' distribution observation for 'step' must be NA")
       if(!all(is.na(data$angle[aInd]))) stop("The initial turn angle for each individual must be NA")
-      if(!all(is.na(data$angle[(aInd+table(data$ID)-1)]))) stop("For each individual, the last 'crwvm' distribution observation for 'angle' must be NA")
+      if(!all(is.na(data$angle[(aInd+table(factor(data$ID,levels=unique(data$ID)))-1)]))) stop("For each individual, the last 'crwvm' distribution observation for 'angle' must be NA")
       #if(length(angleNA)){
       #  if(!all(angleNA %in% c(1,nrow(data)))) stop("sorry, 'crwvm' distribution observations for 'angle' cannot include missing values")
       #}
@@ -991,7 +991,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                 if(!is.null(betaCons) & nbStates>1){
                   wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)] <- wpar[parmInd+1:((nbCovs+1)*nbStates*(nbStates-1)*mixtures)][betaCons]
                 }
-                if(isTRUE(crwST)) wpar[cumsum(parindex[distnames])["angle"]+1:parCount$angle] <- wpar[cumsum(parindex[distnames])["step"]+1:parCount$step]
+                if(isTRUE(crwST)) wpar[cumsum(parindex[distnames])["angle"]+1:parCount$angle] <- wpar[cumsum(parindex[distnames])["step"]+1:parCount$angle]
               } else {
                 pcount <- 0
                 for(i in distnames){
@@ -1001,7 +1001,11 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                   nInd <- which(!is.na(fixParIndex$fixPar[[i]]))
                   if(length(nInd)){
                     fixParIndex$Par0[[i]][nInd] <- fixParIndex$Par0[[i]][which(!is.na(fixParIndex$fixPar[[i]]) & !duplicated(fixParIndex$fixPar[[i]]))][(fixParIndex$fixPar[[i]]-min(fixParIndex$fixPar[[i]],na.rm=TRUE)+1)[nInd]]
-                    if(is.null(DM[[i]])) fixParIndex$Par0[[i]] <- w2n(c(fixParIndex$Par0[[i]],fixParIndex$beta0$beta,fixParIndex$delta0),p$bounds[i],p$parSize[i],nbStates,nbCovs,inputs$estAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary,fullDM[i],DMind[i],nrow(data),inputs$dist[i],p$Bndind[i],nc[i],meanind[i],covsDelta,workBounds[c(i,"beta","delta")],covsPi,isTRUE(optMethod=="TMB"))[[i]][,1]
+                    if(is.null(DM[[i]])) {
+                      tmpAngleMean <- inputs$estAngleMean
+                      tmpAngleMean[[i]] <- TRUE
+                      fixParIndex$Par0[[i]] <- w2n(c(fixParIndex$Par0[[i]],fixParIndex$beta0$beta,fixParIndex$delta0),p$bounds[i],p$parSize[i],nbStates,nbCovs,tmpAngleMean[i],inputs$circularAngleMean[i],inputs$consensus[i],stationary,fullDM[i],DMind[i],nrow(data),inputs$dist[i],p$Bndind[i],nc[i],meanind[i],covsDelta,workBounds[c(i,"beta","delta")],covsPi,isTRUE(optMethod=="TMB"))[[i]][,1]
+                    }
                   }
                   pcount <- pcount + parCount[[i]]
                 }
