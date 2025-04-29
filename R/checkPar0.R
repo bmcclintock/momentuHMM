@@ -344,9 +344,9 @@ checkPar0.default <- function(data,nbStates,dist,Par0=NULL,beta0=NULL,delta0=NUL
       if(!inherits(data,"hierarchical") && !is.null(fixPar$delta)) stop("fixPar$delta cannot be specified unless delta0 is specified")
       delta <- matrix(1/nbStates,(nbCovsDelta+1)*mixtures,nbStates)
     } else {
-      delta <- matrix(delta,(nbCovsDelta+1)*mixtures,nbStates)
+      if(is.null(formulaDelta)) delta <- matrix(delta,(nbCovsDelta+1)*mixtures,nbStates)
     }
-    delta <- apply(delta,1,function(x) log(x[-1]/x[1]))
+    if(is.null(formulaDelta)) delta <- apply(delta,1,function(x) log(x[-1]/x[1]))
   } else if(is.null(delta0)){
     if(!inherits(data,"hierarchical") && !is.null(fixPar$delta)) stop("fixPar$delta cannot be specified unless delta0 is specified")
     delta <- matrix(0,nrow=(nbCovsDelta+1)*mixtures,ncol=nbStates-1)

@@ -112,7 +112,7 @@ plot.momentuHMMData <- function(x,dataNames=c("step","angle"),animals=NULL,compa
         ID <- unique(data$ID)[zoo]
         x <- data[[coordNames[1]]][which(data$ID==ID)]
         y <- data[[coordNames[2]]][which(data$ID==ID)]
-        points(x,y,type="o",pch=20,lwd=1.3,col=colors[zoo],cex=0.5)
+        points(x,y,type="o",pch=20,lwd=1.3,col=colors[which(zoo==animalsInd)],cex=0.5)
       }
     }
   
