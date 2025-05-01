@@ -137,7 +137,7 @@ n2wDM<-function(bounds,DM,par,nbStates,TMB=FALSE){
   
   if(length(ind1)){
     if(!TMB) p[ind1] <- tan(par[ind1]/2)
-    else p[ind1] <- stats::qlogis((par[ind1] + pi) / (2 * pi));
+    else p[ind1] <- stats::qlogis((par[ind1]-sign(par[ind1])*1.e-10 + pi) / (2 * pi));
   }
   if(length(ind2)){
     for(j in 1:nbStates){
