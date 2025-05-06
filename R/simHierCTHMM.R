@@ -68,6 +68,9 @@
 #' \code{runif(1,min(errorEllipse$m),max(errorEllipse$m))}, and \code{runif(1,min(errorEllipse$r),max(errorEllipse$r))}. If only a single value is provided for any of the 
 #' error ellipse elements, then the corresponding component is fixed to this value for each location. Only coordinate data streams are subject to location measurement error;
 #' any other data streams are observed without error.
+#' @param mask \code{\link[raster]{raster}} object indicating forbidden cells (e.g. land or water), where forbidden cells are indicated by zeros and all permissible cells are positive. If \code{mask} is a raster \code{\link[raster]{stack}} or \code{\link[raster]{brick}}, 
+#' then z values must be set using \code{raster::setZ} and \code{covs} must include column(s) of the corresponding z value(s) for each observation (e.g., 'time'). If movement lands in a forbidden cell, then the observation distributions are re-sampled until movement lands in a permissible cell.
+#' Note that \code{simData} usually takes longer to generate simulated data when \code{mask} is specified.
 #' @param ncores Number of cores to use for parallel processing. Default: 1 (no parallel processing).
 #' @param export Character vector of the names of any additional objects or functions in the global environment that are used in \code{DM}, \code{formula}, \code{formulaDelta}, and/or \code{formulaPi}. Only necessary if \code{ncores>1} so that the needed items will be exported to the workers.
 #' @param gradient Logical indicating whether or not to calculate gradients of \code{spatialCovs} using bilinear interpolation (e.g. for inclusion in potential functions). Default: \code{FALSE}. If \code{TRUE}, the gradients are returned with ``\code{.x}'' (easting gradient) and ``\code{.y}'' (northing gradient) suffixes added to the names of \code{spatialCovs}. For example, if \code{cov1} is the name of a spatial covariate, then the returned \code{\link{momentuHMMData}} object will include the fields ``\code{cov1.x}'' and ``\code{cov1.y}''.
@@ -120,6 +123,7 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
                         retrySims=0,
                         lambda=1,
                         errorEllipse=NULL,
+                        mask=NULL,
                         ncores=1,
                         export=NULL,
                         gradient=FALSE,
@@ -184,6 +188,7 @@ simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
                                          retrySims,
                                          lambda,
                                          errorEllipse,
+                                         mask,
                                          ncores,
                                          export,
                                          gradient,
