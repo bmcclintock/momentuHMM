@@ -15,8 +15,8 @@ tracks$time <- (tracks$time-min(tracks$time))/3600
 #####################
 ## Load covariates ##
 #####################
-download.file(url="https://raw.github.com/bmcclintock/momentuHMM/develop/vignettes/aleut_habitat.gri?raw=true",destfile = "aleut_habitat.gri")
-download.file(url="https://raw.github.com/bmcclintock/momentuHMM/develop/vignettes/aleut_habitat.grd?raw=true",destfile = "aleut_habitat.grd")
+download.file("https://raw.github.com/bmcclintock/momentuHMM/develop/vignettes/aleut_habitat.gri?raw=true",destfile = "aleut_habitat.gri",mode="wb")
+download.file("https://raw.github.com/bmcclintock/momentuHMM/develop/vignettes/aleut_habitat.grd?raw=true",destfile = "aleut_habitat.grd",mode="wb")
 hbfull <- brick("aleut_habitat.grd", values=TRUE)
 covlist0 <- list(bathy = hbfull$bathy,
                  slope = hbfull$slope,
