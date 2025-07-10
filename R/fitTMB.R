@@ -119,7 +119,7 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
           if(fit && (!all(is.na(fixParIndex$fixPar[[i]][tm1Ind])) | !all(Par0[[i]][c(tm1Ind)]==1))) stop("Parameters corresponding to ",i,".x_tm1 and ",i,".y_tm1 (and ",i,".z_tm1 if trivariate normal) must be fixed to 1")
         }
       }
-      fixParIndex$fixPar[[i]] <- reorderFix(fixParIndex$fixPar[[i]])
+      fixParIndex$fixPar[[i]] <- min(fixParIndex$fixPar[[i]]-1,na.rm=TRUE) + reorderFix(fixParIndex$fixPar[[i]])
     }
     lag <- 0
     if(is.list(DM[[i]]) | is.null(DM[[i]])) {
