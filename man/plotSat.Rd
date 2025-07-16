@@ -59,7 +59,7 @@ plotted manually). If \code{FALSE}, the function automatically plots the map (de
 
 \item{stateNames}{Optional character vector of length \code{max(states)} indicating state names. Ignored unless \code{states} is provided.}
 
-\item{projargs}{A character string of PROJ.4 projection arguments indicating the coordinate reference system for \code{data} and \code{location} coordinates (if not longitude and latitude). A \code{\link[=CRS-class]{CRS}} object is also permitted. If \code{projargs} is provided, the coordinates will be internally transformed to longitude and latitude for plotting.}
+\item{projargs}{A character string of PROJ.4 projection arguments indicating the coordinate reference system for \code{data} and \code{location} coordinates (if not longitude and latitude). A \code{\link[sp]{CRS-class}} object is also permitted. If \code{projargs} is provided, the coordinates will be internally transformed to longitude and latitude for plotting.}
 }
 \description{
 Plot tracking data on a satellite map. This function plots coordinates in longitude

@@ -7,7 +7,7 @@
 BICweights(..., n = NULL)
 }
 \arguments{
-\item{...}{\code{\link{momentuHMM}}, \code{\link{HMMfits}}, or \code{\link{miHMM}} objects, to compare BIC weights of the different models. The first object must be a \code{\link{momentuHMM}}, \code{\link{HMMfits}}, or \code{\link{miHMM}} object, but additional model objects can be passed as a list using the \code{!!!} operator (see \code{\link[=quasiquotation]{rlang}}).}
+\item{...}{\code{\link{momentuHMM}}, \code{\link{HMMfits}}, or \code{\link{miHMM}} objects, to compare BIC weights of the different models. The first object must be a \code{\link{momentuHMM}}, \code{\link{HMMfits}}, or \code{\link{miHMM}} object, but additional model objects can be passed as a list using the \code{!!!} operator (see \code{\link[rlang]{splice-operator}}).}
 
 \item{n}{Optional sample size. If not specified, the number of rows in the data of the \code{momentuHMM} object is used.}
 }

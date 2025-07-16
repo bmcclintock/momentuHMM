@@ -6,7 +6,7 @@
 #' @method BIC momentuHMM
 #'
 #' @param object A \code{momentuHMM} object.
-#' @param ... Optional additional \code{momentuHMM} objects, to compare BICs of the different models. These can be passed as a list using the \code{!!!} operator (see \code{\link[=quasiquotation]{rlang}} and example in \code{\link{BICweights}}).
+#' @param ... Optional additional \code{momentuHMM} objects, to compare BICs of the different models. These can be passed as a list using the \code{!!!} operator (see \code{\link[rlang]{splice-operator}} and example in \code{\link{BICweights}}).
 #' @param n Optional sample size. If not specified, the number of rows in the data of the \code{momentuHMM} object is used.
 #'
 #' @return The BIC of the model(s) provided. If several models are provided, the BICs are output

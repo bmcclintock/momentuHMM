@@ -129,7 +129,11 @@ prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.id
     }
     oldDoPar <- doFuture::registerDoFuture()
     on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
-    future::plan(future::multisession, workers = ncores)
+    if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
+      future::plan(future::sequential)
+    } else {
+      future::plan(future::multisession, workers = ncores)
+    }
     # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
     progBar <- progBar
     path2ctds <- path2ctds
@@ -314,7 +318,11 @@ prepCTDS.hierarchical <- function(data, Time.unit="auto", rast, directions=4, ze
     }
     oldDoPar <- doFuture::registerDoFuture()
     on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
-    future::plan(future::multisession, workers = ncores)
+    if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
+      future::plan(future::sequential)
+    } else {
+      future::plan(future::multisession, workers = ncores)
+    }
     # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
     progBar <- progBar
     path2ctds <- path2ctds

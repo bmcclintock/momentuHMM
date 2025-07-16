@@ -1,7 +1,7 @@
 
 #' Calculate Akaike information criterion model weights 
 #'
-#' @param ... \code{\link{momentuHMM}}, \code{\link{HMMfits}}, or \code{\link{miHMM}} objects, to compare AIC weights of the different models. The first object must be a \code{\link{momentuHMM}}, \code{\link{HMMfits}}, or \code{\link{miHMM}} object, but additional model objects can be passed as a list using the \code{!!!} operator (see \code{\link[=quasiquotation]{rlang}}).
+#' @param ... \code{\link{momentuHMM}}, \code{\link{HMMfits}}, or \code{\link{miHMM}} objects, to compare AIC weights of the different models. The first object must be a \code{\link{momentuHMM}}, \code{\link{HMMfits}}, or \code{\link{miHMM}} object, but additional model objects can be passed as a list using the \code{!!!} operator (see \code{\link[rlang]{splice-operator}}).
 #' @param k Penalty per parameter. Default: 2 ; for classical AIC.
 #' @param n Optional sample size. If specified, the small sample correction AIC is used (i.e., \code{AICc = AIC + kp(p+1)/(n-p-1)} where p is the number of parameters).
 #'

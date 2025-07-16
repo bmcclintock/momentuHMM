@@ -9,7 +9,7 @@
 \arguments{
 \item{object}{A \code{momentuHMM} object.}
 
-\item{...}{Optional additional \code{momentuHMM} objects, to compare BICs of the different models. These can be passed as a list using the \code{!!!} operator (see \code{\link[=quasiquotation]{rlang}} and example in \code{\link{BICweights}}).}
+\item{...}{Optional additional \code{momentuHMM} objects, to compare BICs of the different models. These can be passed as a list using the \code{!!!} operator (see \code{\link[rlang]{splice-operator}} and example in \code{\link{BICweights}}).}
 
 \item{n}{Optional sample size. If not specified, the number of rows in the data of the \code{momentuHMM} object is used.}
 }
