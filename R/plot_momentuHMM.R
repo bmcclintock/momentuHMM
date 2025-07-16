@@ -165,6 +165,18 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
         cat("Decoding hierarchical state sequence... ")
         hStates <- viterbi(m,hierarchical = TRUE)
         cat("DONE\n")
+        leaf_names <- m$conditions$hierDist$Get(
+          function(node) {
+            path_components <- node$path
+            # Check if the node is the root itself (though filterFun=isLeaf prevents this)
+            # and remove the root's name if it's not a root-only tree
+            if (length(path_components) > 1 && path_components[1] == m$conditions$hierDist$name) {
+              path_components <- path_components[-1] # Remove the root name
+            }
+            paste(path_components, collapse = ".")
+          },
+          filterFun = data.tree::isLeaf
+        )
       }
     }
   } else
@@ -186,7 +198,7 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     } else {
       installDataTree()
       w[[i]] <- rep(0,nbStates)
-      iLev <- gsub(paste0(".",i),"",names(m$conditions$hierDist$leaves)[grepl(i,names(m$conditions$hierDist$leaves))])
+      iLev <- gsub(paste0(".",i),"",leaf_names[grepl(i,leaf_names)])
       iStates[[i]] <- m$conditions$hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==(as.numeric(gsub("level","",iLev))+1))
       if(sepStates) {
         w[[i]][iStates[[i]]] <- 1
