@@ -6,7 +6,7 @@
 #' @method AIC momentuHMM
 #'
 #' @param object A \code{momentuHMM} object.
-#' @param ... Optional additional \code{momentuHMM} objects, to compare AICs of the different models. These can be passed as a list using the \code{!!!} operator (see \code{\link[=quasiquotation]{rlang}} and example in \code{\link{AICweights}}).
+#' @param ... Optional additional \code{momentuHMM} objects, to compare AICs of the different models. These can be passed as a list using the \code{!!!} operator (see \code{\link[rlang]{splice-operator}} and example in \code{\link{AICweights}}).
 #' @param k Penalty per parameter. Default: 2 ; for classical AIC.
 #' @param n Optional sample size. If specified, the small sample correction AIC is used (i.e., \code{AICc = AIC + kp(p+1)/(n-p-1)} where p is the number of parameters).
 #'

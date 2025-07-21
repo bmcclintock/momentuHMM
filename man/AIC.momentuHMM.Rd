@@ -9,7 +9,7 @@
 \arguments{
 \item{object}{A \code{momentuHMM} object.}
 
-\item{...}{Optional additional \code{momentuHMM} objects, to compare AICs of the different models. These can be passed as a list using the \code{!!!} operator (see \code{\link[=quasiquotation]{rlang}} and example in \code{\link{AICweights}}).}
+\item{...}{Optional additional \code{momentuHMM} objects, to compare AICs of the different models. These can be passed as a list using the \code{!!!} operator (see \code{\link[rlang]{splice-operator}} and example in \code{\link{AICweights}}).}
 
 \item{k}{Penalty per parameter. Default: 2 ; for classical AIC.}
 

@@ -79,7 +79,11 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     }
     oldDoPar <- doFuture::registerDoFuture()
     on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
-    future::plan(future::multisession, workers = ncores)
+    if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
+      future::plan(future::sequential)
+    } else {
+      future::plan(future::multisession, workers = ncores)
+    }
     # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
     progBar <- progBar
     pkgs <- c("momentuHMM")
@@ -645,7 +649,11 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
              call. = FALSE)
       } else {
         if(ncores>1){
-          future::plan(future::multisession, workers = ncores)
+          if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
+            future::plan(future::sequential)
+          } else {
+            future::plan(future::multisession, workers = ncores)
+          }
         } else { 
           doParallel::registerDoParallel(cores=ncores)
         }

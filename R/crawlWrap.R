@@ -169,7 +169,11 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
       }
     }
     oldDoPar <- doFuture::registerDoFuture()
-    future::plan(future::multisession, workers = ncores)
+    if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
+      future::plan(future::sequential)
+    } else {
+      future::plan(future::multisession, workers = ncores)
+    }
     on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
   } else {
     doParallel::registerDoParallel(cores=ncores)
@@ -227,7 +231,11 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   # Check crwFits and re-try based on retryFits
   if(ncores>1 & nbAnimals>1 & retryFits & retryParallel){
     doFuture::registerDoFuture()
-    future::plan(future::multisession, workers = ncores)
+    if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
+      future::plan(future::sequential)
+    } else {
+      future::plan(future::multisession, workers = ncores)
+    }
     if(retryParallel) cat("Attempting to achieve convergence and valid variance estimates for each individual in parallel.\n    Press 'esc' to force exit from 'crawlWrap'... \n",sep="")
   } else {
     doParallel::registerDoParallel(cores=1)
@@ -314,7 +322,11 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   
   if(ncores>1){
     doFuture::registerDoFuture()
-    future::plan(future::multisession, workers = ncores)
+    if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
+      future::plan(future::sequential)
+    } else {
+      future::plan(future::multisession, workers = ncores)
+    }
   } else {
     doParallel::registerDoParallel(cores=ncores)
   }

@@ -1,9 +1,12 @@
 citHeader("To cite momentuHMM in a publication use:")
 
-citEntry(
-	entry="Article",
+bibentry(
+	bibtype="Article",
 	title="momentu{HMM}: {R} package for generalized hidden {M}arkov models of animal movement",
-	author=personList(as.person("Brett T. McClintock"), as.person("Th{\'e}o Michelot")),
+	author=c(person(given = "Brett T.",
+                    family = "McClintock"),
+             person(given = "Th{\'e}o",
+                    family = "Michelot")),
 	journal="Methods in Ecology and Evolution",
 	year=2018,
 	volume=9,

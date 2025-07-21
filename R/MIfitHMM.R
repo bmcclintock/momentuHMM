@@ -13,7 +13,7 @@
 #' and fit the specified HMM to each imputation of the data. The vast majority of \code{MIfitHMM} arguments are identical to the corresponding arguments from these functions.
 #' 
 #' If \code{miData} is a \code{\link{crwData}} or \code{\link{crwHierData}} object, \code{nSims} determines both the number of realizations of the position process to draw 
-#' (using \code{\link[crawl]{crwSimulator}} and \code{\link{crwPostIS}}) as well as the number of HMM fits.
+#' (using \code{\link[crawl]{crwSimulator}} and \code{\link[crawl]{crwPostIS}}) as well as the number of HMM fits.
 #' 
 #' If \code{miData} is a \code{\link{crwSim}} (or \code{\link{crwHierSim}}) object or a list of \code{\link{momentuHMMData}} (or \code{\link{momentuHierHMMData}}) object(s), the specified HMM will simply be fitted to each of the \code{momentuHMMData} (or \code{momentuHierHMMData}) objects
 #' and all arguments related to \code{\link[crawl]{crwSimulator}}, \code{\link[crawl]{crwPostIS}}, or \code{\link{prepData}} are ignored.
@@ -257,7 +257,11 @@ MIfitHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alpha
     }
     oldDoPar <- doFuture::registerDoFuture()
     on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
-    future::plan(future::multisession, workers = ncores)
+    if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
+      future::plan(future::sequential)
+    } else {
+      future::plan(future::multisession, workers = ncores)
+    }
     # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
     progBar <- progBar
     pkgs <- c("momentuHMM")
@@ -532,7 +536,11 @@ MIfitHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, 
     }
     oldDoPar <- doFuture::registerDoFuture()
     on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
-    future::plan(future::multisession, workers = ncores)
+    if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
+      future::plan(future::sequential)
+    } else {
+      future::plan(future::multisession, workers = ncores)
+    }
     # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
     progBar <- progBar
     pkgs <- c("momentuHMM","data.tree")
