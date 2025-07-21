@@ -16,7 +16,18 @@ formatmiSum <- function(miSum){
   Par0 <- lapply(miSum$Par$beta[!names(miSum$Par$beta) %in% c("beta","delta")],function(x) x$est)
   beta0 <- miSum$Par$beta$beta$est
   delta0 <- miSum$Par$beta$delta$est
-  miSum$mod$estimate <- expandPar(miSum$MIcombine$coefficients,miSum$conditions$optInd,miSum$conditions$fixPar,miSum$conditions$wparIndex,miSum$conditions$betaCons,miSum$conditions$deltaCons,length(miSum$stateNames),ncol(miSum$covsDelta)-1,miSum$conditions$stationary,nrow(miSum$Par$beta$beta$est)/miSum$conditions$mixtures-1,nbRecovs+nbG0covs,miSum$conditions$mixtures,ncol(miSum$covsPi)-1,isTRUE(miSum$conditions$optMethod=="TMB"),Par0,beta0,delta0)
+  fixPar <- miSum$conditions$fixPar
+  if(isTRUE(miSum$conditions$optMethod=="TMB")){
+    k <- 0
+    for(i in names(Par0)){
+      if(!all(is.na(fixPar[[i]]))){
+        maxf <- max(fixPar[[i]],na.rm=TRUE)
+        fixPar[[i]] <- k + fixPar[[i]]
+        k <- k + maxf
+      }
+    }
+  }
+  miSum$mod$estimate <- expandPar(miSum$MIcombine$coefficients,miSum$conditions$optInd,fixPar,miSum$conditions$wparIndex,miSum$conditions$betaCons,miSum$conditions$deltaCons,length(miSum$stateNames),ncol(miSum$covsDelta)-1,miSum$conditions$stationary,nrow(miSum$Par$beta$beta$est)/miSum$conditions$mixtures-1,nbRecovs+nbG0covs,miSum$conditions$mixtures,ncol(miSum$covsPi)-1,isTRUE(miSum$conditions$optMethod=="TMB"),Par0,beta0,delta0)
   miSum$mod$wpar <- miSum$MIcombine$coefficients
   miSum
 }
