@@ -76,7 +76,7 @@ parDef <- function(dist,nbStates,estAngleMean,zeroInflation,oneInflation,DM,user
            },  
            "ctcrw"={
              parSize[[i]] <- 2 
-             tmpbounds <- matrix(c(rep(c(0,1),nbStates),rep(c(0,Inf),nbStates)),
+             tmpbounds <- matrix(c(rep(c(0,Inf),nbStates),rep(c(0,Inf),nbStates)),
                                  ncol=2,byrow=TRUE)
              parNames[[i]]<-c("beta","sigma")
            },  
