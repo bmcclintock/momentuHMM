@@ -343,7 +343,7 @@ convertCTCRW <- function(distname,par,nbStates,data){
     dtm1 <- data$dt[1]
   }
   for(i in 1:nbStates){
-    beta <- -log(par[i,])
+    beta <- par[i,]
     gamma <- exp(-beta*dtm1)
     mvnpar[i,] <- data[[paste0(distname,".x_tm1")]] + data$dt * gamma * crw(data[[paste0(distname,".x_tm1")]],dt=data$dt)
     mvnpar[nbStates+i,] <- data[[paste0(distname,".y_tm1")]] + data$dt * gamma * crw(data[[paste0(distname,".y_tm1")]],dt=data$dt)

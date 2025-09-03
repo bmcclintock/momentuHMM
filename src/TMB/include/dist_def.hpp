@@ -1399,7 +1399,7 @@ public:
   vector<Type> link(const vector<Type>& par, const int& n_states) {
     vector<Type> wpar(par.size()); 
     // gamma
-    for (int i = 0; i < n_states; ++i) wpar(i) = log(par(i) / (1 - par(i))); 
+    for (int i = 0; i < n_states; ++i) wpar(i) = log(par(i)); 
     // sigma
     for (int i = n_states; i < 2 * n_states; ++i) wpar(i) = log(par(i)); 
     return(wpar); 
@@ -1409,7 +1409,7 @@ public:
     int n_par = wpar.size()/n_states;
     matrix<Type> par(n_states, n_par);
     // mean 
-    for (int i = 0; i < n_states; ++i) par(i, 0) = 1 / (1 + exp(-wpar(i)));
+    for (int i = 0; i < n_states; ++i) par(i, 0) = exp(wpar(i));
     // dispersion 
     for (int i = 0; i < n_states; ++i) par(i, 1) = exp(wpar(i + n_states)); 
     return(par); 
@@ -1429,10 +1429,10 @@ public:
     
     vector<Type> mean(dim);
     matrix<Type> Sigma(dim, dim); 
-    mean(0) = x_tm1 + delta_t * exp(log(beta) * delta_tm1) * (x_tm1-x_tm2)/delta_tm1;
-    mean(1) = y_tm1 + delta_t * exp(log(beta) * delta_tm1) * (y_tm1-y_tm2)/delta_tm1;
-    Type var = (-log(beta)*sigma*sigma)/(Type(2.)*log(beta)*log(beta));
-    Type sigma2 = var - exp(log(beta) * delta_t) * var * exp(log(beta) * delta_t);
+    Type gamma = exp(-beta * delta_tm1);
+    mean(0) = x_tm1 + delta_t * gamma * (x_tm1-x_tm2)/delta_tm1;
+    mean(1) = y_tm1 + delta_t * gamma * (y_tm1-y_tm2)/delta_tm1;
+    Type sigma2 = sigma * sigma * (Type(1.)-exp(-Type(2.) * beta * delta_t)) / (Type(2.) * beta);
     Sigma(0,0) = delta_t * sigma2;
     Sigma(1,1) = delta_t * sigma2;
     Sigma(1,0) = 0.;
