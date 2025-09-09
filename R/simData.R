@@ -1843,7 +1843,9 @@ simData <- function(nbAnimals=1,nbStates=2,dist,
         ctcrwCovs$dt <- dt[[zoo]][k-ifelse(k>=mlag,mlag,0):0]
         attr(ctcrwCovs$mu.x_tm1,"aInd") <- 1
         attr(ctcrwCovs$mu.y_tm1,"aInd") <- 1
-        subPar[[ct]] <- convertCTCRW(ct,subPar[[ct]],nbStates,ctcrwCovs)[,ifelse(k==1,1,2),drop=FALSE]
+        fullpar <- subPar[[ct]]
+        if(ncol(fullpar)==1) fullpar <- matrix(subPar[[ct]],2,nrow(ctcrwCovs))
+        subPar[[ct]] <- convertCTCRW(ct,fullpar,nbStates,ctcrwCovs)[,ifelse(k==1,1,2),drop=FALSE]
       }
       
       if(isTRUE(list(...)$CT)) subPar <- ctPar(subPar,inputs$dist,nbStates,data.frame(subCovs[k,],dt=dt[[zoo]][k]))

@@ -406,7 +406,9 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
     if(is.null(m$data$dt)) m$data$dt <- 1
     attr(m$data[[paste0(ct,".x_tm1")]],"aInd") <- aInd
     attr(m$data[[paste0(ct,".y_tm1")]],"aInd") <- aInd
-    par[[ct]] <- convertCTCRW(ct,par[[ct]],nbStates,m$data)
+    fullpar <- par[[ct]]
+    if(ncol(fullpar)==1) fullpar <- matrix(par[[ct]],2,nrow(m$data))
+    par[[ct]] <- convertCTCRW(ct,fullpar,nbStates,m$data)
   }
   
   if(isTRUE(m$conditions$CT)){

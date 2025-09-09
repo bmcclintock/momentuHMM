@@ -337,36 +337,43 @@ radian <- function(degree)
 
 convertCTCRW <- function(distname,par,nbStates,data){
   mvnpar <- matrix(0,5*nbStates,nrow(data))
+  aInd <- attr(data[[paste0(distname,".x_tm1")]],"aInd")
   if(nrow(data)>2) {
-    dtm1 <- c(0,data$dt[-nrow(data)])
+    dtm1 <- c(1,data$dt[-nrow(data)])
+    dtm1[aInd] <- Inf
   } else {
     dtm1 <- data$dt[1]
   }
   for(i in 1:nbStates){
     beta <- par[i,]
+    sigma <- par[nbStates+i,]
     gamma <- exp(-beta*dtm1)
     mvnpar[i,] <- data[[paste0(distname,".x_tm1")]] + data$dt * gamma * crw(data[[paste0(distname,".x_tm1")]],dt=data$dt)
     mvnpar[nbStates+i,] <- data[[paste0(distname,".y_tm1")]] + data$dt * gamma * crw(data[[paste0(distname,".y_tm1")]],dt=data$dt)
-    mvnpar[2*nbStates+i,] <- mvnpar[3*nbStates+i,] <- sqrt(par[nbStates+i,]^2 * (1 - exp(-2 * beta * data$dt)) / (2 * beta))
+    mvnpar[2*nbStates+i,aInd] <- mvnpar[3*nbStates+i,aInd] <- sqrt(sigma[aInd]^2 / (2 * beta[aInd]) * (1 - gamma[aInd]^2) )
+    mvnpar[2*nbStates+i,-aInd] <- mvnpar[3*nbStates+i,-aInd] <- sqrt(data$dt[-aInd]^2 * sigma[-aInd]^2 / (2 * beta[-aInd]) * (1 - gamma[-aInd]^2) )
   }
+  #mvnpar[2*nbStates+i,aInd] <- mvnpar[3*nbStates+i,aInd] <- sqrt(sigma[aInd]^2 / (2 * beta[aInd]) )
   return(mvnpar)
 }
 
 ctPar <- function(par,dist,nbStates,data){
   for(i in names(dist)){
     if(dist[[i]] %in% rwdists){
-      if(dist[[i]]=="rw_norm"){
-        par[[i]][1:nbStates,] <- t(apply(par[[i]][1:nbStates,,drop=FALSE] - rep(data[[paste0(i,"_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,"_tm1")]],each=nbStates)
-        par[[i]][nbStates+1:nbStates,] <- t(apply(par[[i]][nbStates+1:nbStates,,drop=FALSE],1,function(x) x*sqrt(data$dt)))
-      } else {
-        par[[i]][1:nbStates,] <- t(apply(par[[i]][1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".x_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".x_tm1")]],each=nbStates)
-        par[[i]][nbStates+1:nbStates,] <- t(apply(par[[i]][nbStates+1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".y_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".y_tm1")]],each=nbStates)
- 
-        if(dist[[i]]=="rw_mvnorm3"){
-          par[[i]][2*nbStates+1:nbStates,] <- t(apply(par[[i]][2*nbStates+1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".z_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".z_tm1")]],each=nbStates)
-          par[[i]][3*nbStates+1:(3*nbStates),] <- t(apply(par[[i]][3*nbStates+1:(3*nbStates),,drop=FALSE],1,function(x) x*sqrt(data$dt)))
+      if(dist[[i]]!="ctcrw"){
+        if(dist[[i]]=="rw_norm"){
+          par[[i]][1:nbStates,] <- t(apply(par[[i]][1:nbStates,,drop=FALSE] - rep(data[[paste0(i,"_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,"_tm1")]],each=nbStates)
+          par[[i]][nbStates+1:nbStates,] <- t(apply(par[[i]][nbStates+1:nbStates,,drop=FALSE],1,function(x) x*sqrt(data$dt)))
         } else {
-          par[[i]][2*nbStates+1:(2*nbStates),] <- t(apply(par[[i]][2*nbStates+1:(2*nbStates),,drop=FALSE],1,function(x) x*sqrt(data$dt)))
+          par[[i]][1:nbStates,] <- t(apply(par[[i]][1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".x_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".x_tm1")]],each=nbStates)
+          par[[i]][nbStates+1:nbStates,] <- t(apply(par[[i]][nbStates+1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".y_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".y_tm1")]],each=nbStates)
+   
+          if(dist[[i]]=="rw_mvnorm3"){
+            par[[i]][2*nbStates+1:nbStates,] <- t(apply(par[[i]][2*nbStates+1:nbStates,,drop=FALSE] - rep(data[[paste0(i,".z_tm1")]],each=nbStates),1,function(x) x*data$dt)) + rep(data[[paste0(i,".z_tm1")]],each=nbStates)
+            par[[i]][3*nbStates+1:(3*nbStates),] <- t(apply(par[[i]][3*nbStates+1:(3*nbStates),,drop=FALSE],1,function(x) x*sqrt(data$dt)))
+          } else {
+            par[[i]][2*nbStates+1:(2*nbStates),] <- t(apply(par[[i]][2*nbStates+1:(2*nbStates),,drop=FALSE],1,function(x) x*sqrt(data$dt)))
+          }
         }
       }
     } else if(dist[[i]]=="ctds"){

@@ -1429,19 +1429,26 @@ public:
     
     vector<Type> mean(dim);
     matrix<Type> Sigma(dim, dim); 
-    Type gamma = exp(-beta * delta_tm1);
-    mean(0) = x_tm1 + delta_t * gamma * (x_tm1-x_tm2)/delta_tm1;
-    mean(1) = y_tm1 + delta_t * gamma * (y_tm1-y_tm2)/delta_tm1;
-    Type sigma2 = sigma * sigma * (Type(1.)-exp(-Type(2.) * beta * delta_t)) / (Type(2.) * beta);
-    Sigma(0,0) = delta_t * sigma2;
-    Sigma(1,1) = delta_t * sigma2;
+    Type gamma = 0.;
+    mean(0) = x_tm1;
+    mean(1) = y_tm1;
+    Type sigma2 = sigma * sigma / (Type(2.)*beta) * (Type(1.)-gamma * gamma);
+    Sigma(0,0) = sigma2;
+    Sigma(1,1) = sigma2;
+    if(delta_tm1 > Type(0.)){
+      gamma = exp(-beta * delta_tm1);
+      mean(0) += delta_t * gamma * (x_tm1-x_tm2)/delta_tm1;
+      mean(1) += delta_t * gamma * (y_tm1-y_tm2)/delta_tm1;
+      Sigma(0,0) *= (delta_t * delta_t) * (Type(1.)-gamma * gamma);
+      Sigma(1,1) *= (delta_t * delta_t) * (Type(1.)-gamma * gamma);
+    }
     Sigma(1,0) = 0.;
     Sigma(0,1) = 0.;
     
     vector<Type> y(dim);
     for (int i = 0; i < dim; ++i){
       y(i) = x(i) - mean(i);
-      //Rprintf("i %d y %f x %f xtm1 %f ytm1 %f xtm2 %f ytm2 %f Sigma(i,i) %f mean(i) %f delta_t %f delta_tm1 %f \n",i,asDouble(y(i)),asDouble(x(i)),asDouble(x_tm1),asDouble(y_tm1),asDouble(x_tm2),asDouble(y_tm2),asDouble(Sigma(i,i)),asDouble(mean(i)),asDouble(delta_t),asDouble(delta_tm1));
+      //Rprintf("i %d y %f x %f xtm1 %f ytm1 %f xtm2 %f ytm2 %f Sigma(i,i) %f mean(i) %f delta_t %f delta_tm1 %f gamma %f beta %f sigma %f \n",i,asDouble(y(i)),asDouble(x(i)),asDouble(x_tm1),asDouble(y_tm1),asDouble(x_tm2),asDouble(y_tm2),asDouble(Sigma(i,i)),asDouble(mean(i)),asDouble(delta_t),asDouble(delta_tm1),asDouble(gamma),asDouble(beta),asDouble(sigma));
     }
     Type val = density::MVNORM(Sigma)(y); 
     //Rprintf("dim %d dens %f \n",dim,asDouble(val));
