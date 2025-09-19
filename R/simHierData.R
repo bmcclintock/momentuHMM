@@ -732,6 +732,7 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       dt[[zoo]] <- diff(obsTimes[[zoo]])
       dtr[[zoo]] <- dt[[zoo]]
     }
+    dt[[zoo]] <- c(dt[[zoo]],0)
   }
   
   # extend covs if not enough covariate values

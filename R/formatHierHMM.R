@@ -351,11 +351,29 @@ formatHierHMM <- function(data,hierStates,hierDist,
       }
       if(is.list(hierBeta)) hierBeta <- hierBeta$beta
       whierBeta <- data.tree::Clone(hierBeta)
-    } else whierBeta <- NULL
+    } else {
+      whierBeta <- data.tree::Node$new("hierBeta")
+      whierBeta$AddChild(paste0("level1"))
+      for(j in 2:(hierStates$height-1)){
+        whierBeta$AddChild(paste0("level",j))
+        for(jj in hierStates$Get("name",filterFun=function(x) x$level==j & x$count>0)){
+          whierBeta[[paste0("level",j)]]$AddChild(jj)
+        }
+      }
+    }
     
     if(!is.null(hierDelta)){
       whierDelta <- data.tree::Clone(hierDelta)
-    } else whierDelta <- NULL
+    } else {
+      whierDelta <- data.tree::Node$new("hierDelta")
+      whierDelta$AddChild(paste0("level1"))
+      for(j in 2:(hierStates$height-1)){
+        whierDelta$AddChild(paste0("level",j))
+        for(jj in hierStates$Get("name",filterFun=function(x) x$level==j & x$count>0)){
+          whierDelta[[paste0("level",j)]]$AddChild(jj)
+        }
+      }   
+    }
     
     for(j in 1:(hierStates$height-1)){
       if(j>1){
@@ -389,6 +407,21 @@ formatHierHMM <- function(data,hierStates,hierDist,
     } else {
       fixPar$beta <- fix$beta
       fixPar$delta <- fix$delta
+    }
+    
+    for(j in names(whierFormula$children)){
+      for(tp in 1:(nbStates*(nbStates-1))){
+        tmp <- data.tree::Node$new("tmp")
+        for(k in names(whierFormula$children)){
+          tmp$AddChild(k, formula=newForm$formulaStates[[k]][[tp]])
+        }
+        noBeta<-which(match(colnames(stats::model.matrix(newformula,data)),colnames(stats::model.matrix(formatHierFormula(data,tmp,hierStates)$formula,data)),nomatch=0)==0)
+        if(length(noBeta)) {
+          for(mix in 1:mixtures){
+            fixPar$beta[noBeta+(nbCovs+1)*(mix-1),tp] <- 0
+          }
+        }
+      }
     }
     
     beta0 <- par$beta

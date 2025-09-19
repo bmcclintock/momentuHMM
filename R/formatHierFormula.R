@@ -5,13 +5,14 @@ formatHierFormula <- function(data,hierFormula,hierStates){
   installDataTree()
   
   lLevels <- sort(hierFormula$Get("name",filterFun=function(x) x$level==2))[c(1,1+rep(2:1,hierStates$height-2)+rep(seq(0,(hierStates$height-3)*2,2),each=2))]
-  formulaTerms <- formTerms <- recTerms <- list()
+  formulaTerms <- formTerms <- recTerms <- formulaStates <- list()
   recharge <- NULL
   betaRef <- rep(hierStates$Get(function(x) data.tree::Aggregate(x,"state",min),filterFun=function(x) x$level==2),times=hierStates$Get("leafCount",filterFun=function(x) x$level==2))
   if(!is.null(data)) factorTerms <- names(data)[which(unlist(lapply(data,function(x) inherits(x,"factor"))))]
   for(j in lLevels){
     newForm <- newFormulas(hierFormula[[j]]$formula, length(hierStates$Get("state",filterFun=data.tree::isLeaf)), betaRef, hierarchical=TRUE)
     formulaTerms[[j]] <- newForm$formterms
+    formulaStates[[j]] <- newForm$formulaStates
     if(any(grepl("level",formulaTerms[[j]]))) stop("hierFormula$",j,"$formula cannot include 'level'")
     if(is.null(data)) {
       formTerms[[j]] <- paste0("I((level=='",gsub("level","",j),"')*1)")
@@ -40,7 +41,7 @@ formatHierFormula <- function(data,hierFormula,hierStates){
   }
   form <- paste0("~ 0 + ",paste0(unlist(formTerms),collapse = " + "))
   form <- stats::as.formula(form)
-  return(list(formula=form,data=data,recharge=recharge))
+  return(list(formula=form,data=data,recharge=recharge,formulaStates=formulaStates))
 }
 
 getFactorTerms <- function(formulaTerms,factorTerms,formula,data,level){
