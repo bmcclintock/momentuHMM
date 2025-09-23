@@ -27,7 +27,7 @@ NumericVector combine(const List& list, double NAvalue)
   }
   
   for(int i=0;i<output.size();i++) {
-    if(!arma::is_finite(output(i))) {
+    if(!std::isfinite(output(i))) {
       output(i) = NAvalue;
     }
   }
