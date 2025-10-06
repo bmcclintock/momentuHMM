@@ -25,7 +25,7 @@ arma::colvec dgamma_rcpp(NumericVector x, arma::mat mu, arma::mat sigma)
   double scale;
   
   for(unsigned int i=0;i<xs;i++) {
-    //if(!arma::is_finite(x(i)))
+    //if(!std::isfinite(x(i)))
     //  res(i) = 1; // if missing observation
     //else {
       // convert mean and sd to shape and scale
@@ -55,7 +55,7 @@ arma::colvec dweibull_rcpp(NumericVector x, arma::mat shape, arma::mat scale)
   arma::colvec res(xs);
   
   for(unsigned int i=0;i<xs;i++) {
-    if(!arma::is_finite(x(i)))
+    if(!std::isfinite(x(i)))
       res(i) = 1; // if missing observation
     else
       res(i) = R::dweibull(x(i),shape(i),scale(i),0);
@@ -80,7 +80,7 @@ arma::colvec dnorm_rcpp(NumericVector x, arma::mat mean, arma::mat sd)
   arma::colvec res(xs);
   
   for(unsigned int i=0;i<xs;i++) {
-    if(!arma::is_finite(x(i)))
+    if(!std::isfinite(x(i)))
       res(i) = 1; // if missing observation
     else
       res(i) = R::dnorm(x(i),mean(i),sd(i),0);
@@ -105,7 +105,7 @@ arma::colvec dlnorm_rcpp(NumericVector x, arma::mat meanlog, arma::mat sdlog)
   arma::colvec res(xs);
   
   for(unsigned int i=0;i<xs;i++) {
-    if(!arma::is_finite(x(i)))
+    if(!std::isfinite(x(i)))
       res(i) = 1; // if missing observation
     else
       res(i) = R::dlnorm(x(i),meanlog(i),sdlog(i),0);
@@ -130,7 +130,7 @@ arma::colvec dexp_rcpp(NumericVector x, arma::mat rate, arma::mat foo)
   arma::colvec res(xs);
   
   for(unsigned int i=0;i<xs;i++) {
-    if(!arma::is_finite(x(i)))
+    if(!std::isfinite(x(i)))
       res(i) = 1; // if missing observation
     else
       res(i) = R::dexp(x(i),1./rate(i),0); // R::dexp expects scale=1/rate
@@ -157,7 +157,7 @@ arma::colvec dvm_rcpp(NumericVector x, arma::mat mu, arma::mat kappa)
   double b;
   
   for(unsigned int i=0;i<xs;i++) {
-    if(!arma::is_finite(x(i)))
+    if(!std::isfinite(x(i)))
       res(i) = 1; // is missing observation
     else {
       b = R::bessel_i(kappa(i),0,2);
@@ -186,7 +186,7 @@ arma::colvec dwrpcauchy_rcpp(NumericVector x, arma::mat mu, arma::mat rho)
   double den;
   
   for(unsigned int i=0;i<xs;i++) {
-    //if(!arma::is_finite(x(i)))
+    //if(!std::isfinite(x(i)))
     //  res(i) = 1; // if missing observation
     //else {
       num = 1-rho(i)*rho(i);
@@ -212,7 +212,7 @@ arma::colvec dbeta_rcpp(NumericVector x, arma::mat shape1, arma::mat shape2)
   arma::colvec res(xs);
   
   for(unsigned int i=0;i<xs;i++) {
-    if(!arma::is_finite(x(i)))
+    if(!std::isfinite(x(i)))
       res(i) = 1; // if missing observation
     else
       res(i) = R::dbeta(x(i),shape1(i),shape2(i),0);
@@ -237,7 +237,7 @@ arma::colvec dpois_rcpp(NumericVector x, arma::mat rate, arma::mat foo)
   arma::colvec res(xs);
   
   for(unsigned int i=0;i<xs;i++) {
-    if(!arma::is_finite(x(i)))
+    if(!std::isfinite(x(i)))
       res(i) = 1; // if missing observation
     else
       res(i) = R::dpois(x(i),rate(i),0);
@@ -262,7 +262,7 @@ arma::colvec dbern_rcpp(NumericVector x, arma::mat prob, arma::mat foo)
   arma::colvec res(xs);
   
   for(unsigned int i=0;i<xs;i++) {
-    if(!arma::is_finite(x(i)))
+    if(!std::isfinite(x(i)))
       res(i) = 1; // if missing observation
     else
       res(i) = R::dbinom(x(i),1,prob(i),0);
@@ -459,7 +459,7 @@ arma::colvec dnbinom_rcpp(NumericVector x, arma::mat mu, arma::mat size)
   arma::colvec res(xs);
   
   for(unsigned int i=0;i<xs;i++) {
-    if(!arma::is_finite(x(i)))
+    if(!std::isfinite(x(i)))
       res(i) = 1; // if missing observation
     else
       res(i) = R::dnbinom_mu(x(i),size(i),mu(i),0);
@@ -484,7 +484,7 @@ arma::colvec dlogis_rcpp(NumericVector x, arma::mat location, arma::mat scale)
   arma::colvec res(xs);
   
   for(unsigned int i=0;i<xs;i++) {
-    if(!arma::is_finite(x(i)))
+    if(!std::isfinite(x(i)))
       res(i) = 1; // if missing observation
     else
       res(i) = R::dlogis(x(i),location(i),scale(i),0);
@@ -509,7 +509,7 @@ arma::colvec dt_rcpp(NumericVector x, arma::mat df, arma::mat ncp)
   arma::colvec res(xs);
   
   for(unsigned int i=0;i<xs;i++) {
-    if(!arma::is_finite(x(i)))
+    if(!std::isfinite(x(i)))
       res(i) = 1; // if missing observation
     else
       res(i) = R::dnt(x(i),df(i),ncp(i),0);

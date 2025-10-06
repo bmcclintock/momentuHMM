@@ -239,7 +239,7 @@ double nLogLike_rcpp(int nbStates, arma::mat covs, DataFrame data, CharacterVect
     for(int l=0; l<L.size(); l++){
       tmpL = L[l];
       for(int i=0;i<nbObs;i++) {
-        if(!arma::is_finite(tmpL(i))) {
+        if(!std::isfinite(tmpL(i))) {
           //genData(i) = NAvalue;
           tmpL(i) = NAvalue;
         }
