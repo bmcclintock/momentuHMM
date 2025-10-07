@@ -29,12 +29,12 @@ test_that("Parallel processing works",{
                       err.model=err.model,attempts=100),NA)
   
   bPar <- miExample$bPar
-  expect_error(HMMfits <- MIfitHMM(crwOut,nSims=4,ncores=ncores,
+  expect_error(HMMfits <- suppressWarnings(MIfitHMM(crwOut,nSims=4,ncores=ncores,
                       nbStates=2,dist=list(step="gamma",angle="vm"),
                       Par0=bPar$Par,beta0=bPar$beta,
                       formula=~cov1+cos(cov2),
                       estAngleMean=list(angle=TRUE),
-                      covNames=c("cov1","cov2")),NA)
+                      covNames=c("cov1","cov2"))),NA)
   
   expect_error(plotPR(HMMfits,ncores=ncores),NA)
   

@@ -808,12 +808,6 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
     ##################
     ## Optimization ##
     ##################
-    # this function is used to muffle the warning "NA/Inf replaced by maximum positive value" in nlm, "value out of range in 'lgamma'" in nLogLike_rcpp, and "NA/NaN function evaluation" in optimx
-    h <- function(w) {
-      if(any(grepl("NA/Inf replaced by maximum positive value",w)) | any(grepl("value out of range in 'lgamma'",w)) | any(grepl("NA/NaN function evaluation",w)))
-        invokeRestart("muffleWarning")
-    }
-    
     printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,stationary=stationary,hierarchical=inherits(data,"hierarchical"),CT=isTRUE(list(...)$CT))
     
     ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
@@ -870,7 +864,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
               Par[[i]]<-Par[[i]][-(1:nbStates)]
           }
           startTime <- proc.time()
-          withCallingHandlers(curmod<-tryCatch(moveHMMwrap(data,nbStates,dist,Par,fullPar$beta,fullPar$delta[1,],inputs$estAngleMean,newformula,stationary,nlmPar,fit,nbAnimals,knownStates)$mod,error=function(e) e),warning=h)
+          withCallingHandlers(curmod<-tryCatch(moveHMMwrap(data,nbStates,dist,Par,fullPar$beta,fullPar$delta[1,],inputs$estAngleMean,newformula,stationary,nlmPar,fit,nbAnimals,knownStates)$mod,error=function(e) e),warning=muffleOPTwarning)
           endTime <- proc.time()-startTime
           curmod$wpar <- curmod$estimate
         } else {
@@ -908,7 +902,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
             if(any(unlist(inputs$consensus))) stop("sorry, consensus models are not currently supported when optMethod='TMB'")
             if(any(unlist(inputs$circularAngleMean))) stop("sorry, circular-circular regression models are not currently supported when optMethod='TMB'")
             if(!is.null(hierRecharge)) stop("sorry, recharge models are not currently supported when optMethod='TMB'")
-            withCallingHandlers(curmod <- tryCatch(fitTMB(data,inputs$dist,nbStates,p,inputs$estAngleMean,oneInflation,zeroInflation,inputs$DM,DMinputs,newformula,fixParIndex,stationary,prior,knownStates,betaCons,control,formulaDelta,covsDelta,workBounds,fit,isTRUE(list(...)$CT),dtIndex,kappa,hessian,crwST),error=function(e) e),warning=h)
+            withCallingHandlers(curmod <- tryCatch(fitTMB(data,inputs$dist,nbStates,p,inputs$estAngleMean,oneInflation,zeroInflation,inputs$DM,DMinputs,newformula,fixParIndex,stationary,prior,knownStates,betaCons,control,formulaDelta,covsDelta,workBounds,fit,isTRUE(list(...)$CT),dtIndex,kappa,hessian,crwST),error=function(e) e),warning=muffleOPTwarning)
             if(!inherits(curmod,"error") & (fitCount+1)>retryFits){
               if(!is.null(prior)) {
                 tmbPrior <- curmod$prior
@@ -924,7 +918,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                                                               nc=nc,meanind=meanind,covsDelta=covsDelta,workBounds=workBounds,prior=prior,betaCons=betaCons,betaRef=fixParIndex$betaRef,deltaCons=deltaCons,optInd=optInd,recovs=recovs,g0covs=g0covs,mixture=mixtures,covsPi=covsPi,recharge=hierRecharge,aInd=aInd,CT=isTRUE(list(...)$CT),dtIndex=dtIndex,kappa=kappa,crwST=crwST,
                                                               fscale=fscale,print.level=print.level,gradtol=gradtol,
                                                               stepmax=stepmax,steptol=steptol,
-                                                              iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian) & is.null(prior),TRUE,ifelse(!is.null(prior),FALSE,ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)))),error=function(e) e),warning=h)
+                                                              iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian) & is.null(prior),TRUE,ifelse(!is.null(prior),FALSE,ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)))),error=function(e) e),warning=muffleOPTwarning)
             if(!inherits(curmod,"error")){
               names(curmod$estimate) <- names(optPar)
               if(!is.null(prior) & ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)){
@@ -940,7 +934,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                                                        inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                        stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
                                                        nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,isTRUE(list(...)$CT),dtIndex,kappa,crwST,
-                                                       method=optMethod,control=control,hessian=ifelse(is.null(prior),hessian,FALSE)),error=function(e) e),warning=h)
+                                                       method=optMethod,control=control,hessian=ifelse(is.null(prior),hessian,FALSE)),error=function(e) e),warning=muffleOPTwarning)
             if(!inherits(curmod,"error")){
               if(!is.null(prior) & hessian){
                 curmod$hessian <- tryCatch(stats::optimHess(optPar,curmod$estimate,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,

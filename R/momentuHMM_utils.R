@@ -571,6 +571,12 @@ delta_bc <- function(m){
   m
 }
 
+# this function is used to muffle the warning "NA/Inf replaced by maximum positive value" in nlm, "value out of range in 'lgamma'" in nLogLike_rcpp, and "NA/NaN function evaluation" in optimx
+muffleOPTwarning <- function(w) {
+  if(any(grepl("replaced by maximum positive value",w)) | any(grepl("value out of range in 'lgamma'",w)) | any(grepl("NA/NaN function evaluation",w)))
+    invokeRestart("muffleWarning")
+}
+
 #' Transform a raster into a (x,y,z) list
 #'
 #' @param rast \code{\link[raster]{raster}} layer object for spatially referenced covariates.
