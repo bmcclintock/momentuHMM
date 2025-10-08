@@ -738,12 +738,6 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
   ##################
   ## Optimization ##
   ##################
-  # this function is used to muffle the warning "NA/Inf replaced by maximum positive value" in nlm and "value out of range in 'lgamma'" in nLogLike_rcpp
-  h <- function(w) {
-    if(any(grepl("NA/Inf replaced by maximum positive value",w)) | any(grepl("value out of range in 'lgamma'",w)))
-      invokeRestart("muffleWarning")
-  }
-  
   printMessage(nbStates,dist,p,DM,formula,formDelta,formPi,mixtures,stationary=stationary,hierarchical=inherits(data,"hierarchical"))
   
   ncmean <- get_ncmean(distnames,fullDM,inputs$circularAngleMean,nbStates)
@@ -784,7 +778,7 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
             Par[[i]]<-Par[[i]][-(1:nbStates)]
         }
         startTime <- proc.time()
-        withCallingHandlers(curmod<-tryCatch(moveHMMwrap(data,nbStates,dist,Par,fullPar$beta,fullPar$delta[1,],inputs$estAngleMean,newformula,stationary,nlmPar,fit,nbAnimals,knownStates)$mod,error=function(e) e),warning=h)
+        withCallingHandlers(curmod<-tryCatch(moveHMMwrap(data,nbStates,dist,Par,fullPar$beta,fullPar$delta[1,],inputs$estAngleMean,newformula,stationary,nlmPar,fit,nbAnimals,knownStates)$mod,error=function(e) e),warning=muffleOPTwarning)
         endTime <- proc.time()-startTime
         curmod$wpar <- curmod$estimate
       } else {
@@ -823,13 +817,13 @@ fitHMM.momentuHMMData <- function(data,nbStates,dist,
                                                nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,
                                                print.level=print.level,gradtol=gradtol,
                                                stepmax=stepmax,steptol=steptol,
-                                               iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)),error=function(e) e),warning=h)
+                                               iterlim=iterlim,hessian=ifelse(is.null(nlmPar$hessian),TRUE,nlmPar$hessian)),error=function(e) e),warning=muffleOPTwarning)
         } else {
           withCallingHandlers(curmod <- tryCatch(optim(optPar,nLogLike,gr=NULL,nbStates,newformula,p$bounds,p$parSize,data,inputs$dist,covs,
                                                      inputs$estAngleMean,inputs$circularAngleMean,inputs$consensus,zeroInflation,oneInflation,
                                                      stationary,fullDM,DMind,p$Bndind,knownStates,unlist(fixParIndex$fixPar),fixParIndex$wparIndex,
                                                      nc,meanind,covsDelta,workBounds,prior,betaCons,fixParIndex$betaRef,deltaCons,optInd,recovs,g0covs,mixtures,covsPi,hierRecharge,aInd,
-                                                     method=optMethod,control=control,hessian=hessian),error=function(e) e),warning=h)
+                                                     method=optMethod,control=control,hessian=hessian),error=function(e) e),warning=muffleOPTwarning)
         }
         endTime <- proc.time()-startTime
       }

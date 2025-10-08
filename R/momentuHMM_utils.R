@@ -254,3 +254,10 @@ delta_bc <- function(m){
   }
   m
 }
+
+# this function is used to muffle the warning "NA/Inf replaced by maximum positive value" in nlm and "value out of range in 'lgamma'" in nLogLike_rcpp
+muffleOPTwarning <- function(w) {
+  if(any(grepl("replaced by maximum positive value",w)) | any(grepl("value out of range in 'lgamma'",w)))
+    invokeRestart("muffleWarning")
+}
+
