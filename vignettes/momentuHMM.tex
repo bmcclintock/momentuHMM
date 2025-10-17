@@ -48,8 +48,6 @@
 \definecolor{errorcolor}{rgb}{1, 0, 0}
 \newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
 
-\let\hlstd\hldef
-\let\hlstr\hlsng
 \usepackage{alltt}
 \usepackage[latin9]{inputenc}
 \usepackage{geometry}
@@ -562,13 +560,12 @@ We can load the data from the URL (this requires an Internet connection):
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{URL} \hlkwb{<-} \hlkwd{paste0}\hlstd{(}\hlstr{"https://www.datarepository.movebank.org/bitstream/handle/"}\hlstd{,}
-              \hlstr{"10255/move.373/Elliptical%20Time-Density%20Model%20%28Wall%"}\hlstd{,}
-              \hlstr{"20et%20al.%202014%29%20African%20Elephant%20Dataset%20%"}\hlstd{,}
-              \hlstr{"28Source-Save%20the%20Elephants%29.csv"}\hlstd{)}
-\hlstd{rawData} \hlkwb{<-} \hlkwd{read.csv}\hlstd{(}\hlkwd{url}\hlstd{(URL))}
+\hldef{URL} \hlkwb{<-} \hlsng{"https://datarepository.movebank.org/server/api/core/bitstreams/77e38af2-b5fc-4c10-9e6d-f36b2adf9ea9/content"}
+\hldef{rawData} \hlkwb{<-} \hldef{readr}\hlopt{::}\hlkwd{read_csv}\hldef{(}\hlkwd{url}\hldef{(URL))}
 \end{alltt}
-\end{kframe}
+
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# Rows: 23494 Columns: 17\\\#\# -- Column specification --------------------------------------------------------\\\#\# Delimiter: "{},"{}\\\#\# chr \ (6): sensor-type, individual-taxon-canonical-name, individual-local-ide...\\\#\# dbl \ (8): event-id, location-long, location-lat, external-temperature, heigh...\\\#\# lgl \ (1): visible\\\#\# dttm (2): timestamp, study-local-timestamp\\\#\# \\\#\# i Use `spec()` to retrieve the full column specification for this data.\\\#\# i Specify the column types or set `show\_col\_types = FALSE` to quiet this message.}}\end{kframe}
 \end{knitrout}
 
 The data set contains two tracks; for this analysis, we only consider the first one. In addition to hourly locations, the tag also collected external temperature data. We subset the data frame to keep only the relevant rows and columns:
@@ -592,13 +589,15 @@ The data now has the following columns:
 \hlkwd{head}\hldef{(rawData)}
 \end{alltt}
 \begin{verbatim}
-##            ID                    time       lon      lat temp
-## 1 Salif Keita 2008-03-22 17:00:00.000 -2.160167 15.65350   38
-## 2 Salif Keita 2008-03-22 18:00:00.000 -2.160075 15.65452   35
-## 3 Salif Keita 2008-03-22 19:00:00.000 -2.159902 15.65451   32
-## 4 Salif Keita 2008-03-22 20:00:00.000 -2.159435 15.65489   30
-## 5 Salif Keita 2008-03-22 21:00:00.000 -2.158113 15.65512   29
-## 6 Salif Keita 2008-03-22 22:00:00.000 -2.157848 15.65461   28
+## # A tibble: 6 x 5
+##   ID          time                  lon   lat  temp
+##   <chr>       <dttm>              <dbl> <dbl> <dbl>
+## 1 Salif Keita 2008-03-22 17:00:00 -2.16  15.7    38
+## 2 Salif Keita 2008-03-22 18:00:00 -2.16  15.7    35
+## 3 Salif Keita 2008-03-22 19:00:00 -2.16  15.7    32
+## 4 Salif Keita 2008-03-22 20:00:00 -2.16  15.7    30
+## 5 Salif Keita 2008-03-22 21:00:00 -2.16  15.7    29
+## 6 Salif Keita 2008-03-22 22:00:00 -2.16  15.7    28
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -1533,27 +1532,27 @@ The data are provided in a Dryad repository, but these will require some additio
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlkwd{library}\hlstd{(sp)}
+\hlkwd{library}\hldef{(sp)}
 
 \hlcom{# load data provided by Pirotta et al}
-\hlstd{fulmarURL} \hlkwb{<-} \hlstr{"https://datadryad.org/stash/downloads/file_stream/45899"}
-\hlstd{raw_data} \hlkwb{<-} \hlkwd{read.csv}\hlstd{(}\hlkwd{url}\hlstd{(fulmarURL),}
-                     \hlkwc{stringsAsFactors} \hlstd{=} \hlnum{FALSE}\hlstd{)}
+\hldef{fulmarURL} \hlkwb{<-} \hlsng{"https://datadryad.org/stash/downloads/file_stream/45899"}
+\hldef{raw_data} \hlkwb{<-} \hlkwd{read.csv}\hldef{(}\hlkwd{url}\hldef{(fulmarURL),}
+                     \hlkwc{stringsAsFactors} \hldef{=} \hlnum{FALSE}\hldef{)}
 
-\hlstd{raw_data}\hlopt{$}\hlstd{ID} \hlkwb{<-} \hlstd{raw_data}\hlopt{$}\hlstd{tripID}
-\hlstd{raw_data}\hlopt{$}\hlstd{Date} \hlkwb{<-} \hlkwd{as.POSIXct}\hlstd{(raw_data}\hlopt{$}\hlstd{Date,}\hlkwc{tz}\hlstd{=}\hlstr{"UTC"}\hlstd{,}
-                            \hlkwc{format}\hlstd{=}\hlstr{"%d/%m/%Y %H:%M"}\hlstd{)}
+\hldef{raw_data}\hlopt{$}\hldef{ID} \hlkwb{<-} \hldef{raw_data}\hlopt{$}\hldef{tripID}
+\hldef{raw_data}\hlopt{$}\hldef{Date} \hlkwb{<-} \hlkwd{as.POSIXct}\hldef{(raw_data}\hlopt{$}\hldef{Date,}\hlkwc{tz}\hldef{=}\hlsng{"UTC"}\hldef{,}
+                            \hlkwc{format}\hldef{=}\hlsng{"%d/%m/%Y %H:%M"}\hldef{)}
 
 \hlcom{# project data}
-\hlstd{oldProj} \hlkwb{<-} \hlkwd{CRS}\hlstd{(}\hlstr{"+proj=longlat +datum=WGS84"}\hlstd{)}
-\hlstd{newProj} \hlkwb{<-} \hlkwd{CRS}\hlstd{(}\hlstr{"+init=epsg:27700"}\hlstd{)}
-\hlkwd{coordinates}\hlstd{(raw_data)} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"Longitude"}\hlstd{,}\hlstr{"Latitude"}\hlstd{)}
-\hlkwd{proj4string}\hlstd{(raw_data)} \hlkwb{<-} \hlstd{oldProj}
-\hlstd{raw_data} \hlkwb{<-} \hlkwd{as.data.frame}\hlstd{(}\hlkwd{spTransform}\hlstd{(raw_data, newProj))}
+\hldef{oldProj} \hlkwb{<-} \hlkwd{CRS}\hldef{(}\hlsng{"+proj=longlat +datum=WGS84"}\hldef{)}
+\hldef{newProj} \hlkwb{<-} \hlkwd{CRS}\hldef{(}\hlsng{"+init=epsg:27700"}\hldef{)}
+\hlkwd{coordinates}\hldef{(raw_data)} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlsng{"Longitude"}\hldef{,}\hlsng{"Latitude"}\hldef{)}
+\hlkwd{proj4string}\hldef{(raw_data)} \hlkwb{<-} \hldef{oldProj}
+\hldef{raw_data} \hlkwb{<-} \hlkwd{as.data.frame}\hldef{(}\hlkwd{spTransform}\hldef{(raw_data, newProj))}
 
-\hlkwd{coordinates}\hlstd{(raw_data)} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"Boat_Longitude"}\hlstd{,}\hlstr{"Boat_Latitude"}\hlstd{)}
-\hlkwd{proj4string}\hlstd{(raw_data)} \hlkwb{<-} \hlstd{oldProj}
-\hlstd{raw_data} \hlkwb{<-} \hlkwd{as.data.frame}\hlstd{(}\hlkwd{spTransform}\hlstd{(raw_data, newProj))}
+\hlkwd{coordinates}\hldef{(raw_data)} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlsng{"Boat_Longitude"}\hldef{,}\hlsng{"Boat_Latitude"}\hldef{)}
+\hlkwd{proj4string}\hldef{(raw_data)} \hlkwb{<-} \hldef{oldProj}
+\hldef{raw_data} \hlkwb{<-} \hlkwd{as.data.frame}\hldef{(}\hlkwd{spTransform}\hldef{(raw_data, newProj))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -1903,14 +1902,14 @@ Here we demonstrate how to include individual heterogeneity in state-switching d
 ##  3rd Qu.: 1.41   3rd Qu.: 11.73   3rd Qu.:1.732   3rd Qu.:0.121  
 ##  Max.   :13.75   Max.   :617.37   Max.   :8.824   Max.   :0.673  
 ##                                   NA's   :892     NA's   :142    
-##  breath.headchange     GR.size       GR.tight     dive.CS.pres  dive.SS.pres 
-##  Min.   :-3.12587   Min.   : 0    Min.   :0.00   Min.   :0.0   Min.   :0.00  
-##  1st Qu.:-0.19089   1st Qu.: 6    1st Qu.:1.00   1st Qu.:0.0   1st Qu.:0.00  
-##  Median : 0.00066   Median : 9    Median :1.00   Median :1.0   Median :1.00  
-##  Mean   :-0.00407   Mean   :11    Mean   :0.82   Mean   :0.6   Mean   :0.56  
-##  3rd Qu.: 0.18903   3rd Qu.:13    3rd Qu.:1.00   3rd Qu.:1.0   3rd Qu.:1.00  
-##  Max.   : 3.05424   Max.   :79    Max.   :1.00   Max.   :1.0   Max.   :1.00  
-##  NA's   :261        NA's   :665   NA's   :1128   NA's   :905   NA's   :905   
+##  breath.headchange    GR.size       GR.tight     dive.CS.pres  dive.SS.pres 
+##  Min.   :-3.1259   Min.   : 0    Min.   :0.00   Min.   :0.0   Min.   :0.00  
+##  1st Qu.:-0.1909   1st Qu.: 6    1st Qu.:1.00   1st Qu.:0.0   1st Qu.:0.00  
+##  Median : 0.0007   Median : 9    Median :1.00   Median :1.0   Median :1.00  
+##  Mean   :-0.0041   Mean   :11    Mean   :0.82   Mean   :0.6   Mean   :0.56  
+##  3rd Qu.: 0.1890   3rd Qu.:13    3rd Qu.:1.00   3rd Qu.:1.0   3rd Qu.:1.00  
+##  Max.   : 3.0542   Max.   :79    Max.   :1.00   Max.   :1.0   Max.   :1.00  
+##  NA's   :261       NA's   :665   NA's   :1128   NA's   :905   NA's   :905   
 ##     presurf        postsurf   
 ##  Min.   :0.00   Min.   :0.00  
 ##  1st Qu.:0.00   1st Qu.:0.00  
@@ -1971,11 +1970,11 @@ After specifying the data stream probability distributions and starting values f
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlcom{## fit model with single mixture on TPM}
-\hlstd{fitmix1} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(pilotData,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=dist,}
-                  \hlkwc{Par0}\hlstd{=Par0,} \hlkwc{beta0}\hlstd{=beta0,}
-                  \hlkwc{stationary}\hlstd{=}\hlnum{TRUE}\hlstd{,}
-                  \hlkwc{stateNames}\hlstd{=stateNames,}
-                  \hlkwc{nlmPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{hessian}\hlstd{=}\hlnum{FALSE}\hlstd{))}
+\hldef{fitmix1} \hlkwb{<-} \hlkwd{fitHMM}\hldef{(pilotData,} \hlkwc{nbStates}\hldef{=}\hlnum{4}\hldef{,} \hlkwc{dist}\hldef{=dist,}
+                  \hlkwc{Par0}\hldef{=Par0,} \hlkwc{beta0}\hldef{=beta0,}
+                  \hlkwc{stationary}\hldef{=}\hlnum{TRUE}\hldef{,}
+                  \hlkwc{stateNames}\hldef{=stateNames,}
+                  \hlkwc{nlmPar}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{hessian}\hldef{=}\hlnum{FALSE}\hldef{))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -2094,11 +2093,11 @@ Now we'll fit a model with $K=2$ mixtures of discrete-valued individual-level ra
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlcom{# check model specification}
-\hlkwd{checkPar0}\hlstd{(pilotData,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=dist,}
-          \hlkwc{Par0}\hlstd{=Par0_mix2}\hlopt{$}\hlstd{Par,} \hlkwc{beta0}\hlstd{=Par0_mix2}\hlopt{$}\hlstd{beta,}
-          \hlkwc{stationary}\hlstd{=}\hlnum{TRUE}\hlstd{,}
-          \hlkwc{mixtures}\hlstd{=}\hlnum{2}\hlstd{,}
-          \hlkwc{stateNames}\hlstd{=stateNames)}
+\hlkwd{checkPar0}\hldef{(pilotData,} \hlkwc{nbStates}\hldef{=}\hlnum{4}\hldef{,} \hlkwc{dist}\hldef{=dist,}
+          \hlkwc{Par0}\hldef{=Par0_mix2}\hlopt{$}\hldef{Par,} \hlkwc{beta0}\hldef{=Par0_mix2}\hlopt{$}\hldef{beta,}
+          \hlkwc{stationary}\hldef{=}\hlnum{TRUE}\hldef{,}
+          \hlkwc{mixtures}\hldef{=}\hlnum{2}\hldef{,}
+          \hlkwc{stateNames}\hldef{=stateNames)}
 \end{alltt}
 \begin{verbatim}
 ## 
@@ -2181,12 +2180,12 @@ We can see above that by setting \verb|mixtures=2| we now have $K=2$ sets of sta
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{fitmix2} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(pilotData,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=dist,}
-                  \hlkwc{Par0}\hlstd{=Par0_mix2}\hlopt{$}\hlstd{Par,} \hlkwc{beta0}\hlstd{=Par0_mix2}\hlopt{$}\hlstd{beta,}
-                  \hlkwc{stationary}\hlstd{=}\hlnum{TRUE}\hlstd{,}
-                  \hlkwc{mixtures}\hlstd{=}\hlnum{2}\hlstd{,}
-                  \hlkwc{stateNames}\hlstd{=stateNames,}
-                  \hlkwc{nlmPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{hessian}\hlstd{=}\hlnum{FALSE}\hlstd{))}
+\hldef{fitmix2} \hlkwb{<-} \hlkwd{fitHMM}\hldef{(pilotData,} \hlkwc{nbStates}\hldef{=}\hlnum{4}\hldef{,} \hlkwc{dist}\hldef{=dist,}
+                  \hlkwc{Par0}\hldef{=Par0_mix2}\hlopt{$}\hldef{Par,} \hlkwc{beta0}\hldef{=Par0_mix2}\hlopt{$}\hldef{beta,}
+                  \hlkwc{stationary}\hldef{=}\hlnum{TRUE}\hldef{,}
+                  \hlkwc{mixtures}\hldef{=}\hlnum{2}\hldef{,}
+                  \hlkwc{stateNames}\hldef{=stateNames,}
+                  \hlkwc{nlmPar}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{hessian}\hldef{=}\hlnum{FALSE}\hldef{))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -2216,12 +2215,12 @@ Now let's fit a model with $K=3$ mixtures by setting some starting values with t
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{fitmix3} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(pilotData,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=dist,}
-                  \hlkwc{Par0}\hlstd{=Par0_mix3}\hlopt{$}\hlstd{Par,} \hlkwc{beta0}\hlstd{=Par0_mix3}\hlopt{$}\hlstd{beta,}
-                  \hlkwc{stationary}\hlstd{=}\hlnum{TRUE}\hlstd{,}
-                  \hlkwc{mixtures}\hlstd{=}\hlnum{3}\hlstd{,}
-                  \hlkwc{stateNames}\hlstd{=stateNames,}
-                  \hlkwc{nlmPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{hessian}\hlstd{=}\hlnum{FALSE}\hlstd{))}
+\hldef{fitmix3} \hlkwb{<-} \hlkwd{fitHMM}\hldef{(pilotData,} \hlkwc{nbStates}\hldef{=}\hlnum{4}\hldef{,} \hlkwc{dist}\hldef{=dist,}
+                  \hlkwc{Par0}\hldef{=Par0_mix3}\hlopt{$}\hldef{Par,} \hlkwc{beta0}\hldef{=Par0_mix3}\hlopt{$}\hldef{beta,}
+                  \hlkwc{stationary}\hldef{=}\hlnum{TRUE}\hldef{,}
+                  \hlkwc{mixtures}\hldef{=}\hlnum{3}\hldef{,}
+                  \hlkwc{stateNames}\hldef{=stateNames,}
+                  \hlkwc{nlmPar}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{hessian}\hldef{=}\hlnum{FALSE}\hldef{))}
 \end{alltt}
 
 
@@ -2264,7 +2263,7 @@ Now let's fit a model with $K=3$ mixtures by setting some starting values with t
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# DONE}}\begin{alltt}
-\hlstd{fitmix3}
+\hldef{fitmix3}
 \end{alltt}
 \begin{verbatim}
 ## Value of the maximum log-likelihood: -18445.14 
@@ -2379,7 +2378,7 @@ Now let's fit a model with $K=3$ mixtures by setting some starting values with t
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlkwd{round}\hlstd{(}\hlkwd{mixtureProbs}\hlstd{(fitmix3),}\hlnum{4}\hlstd{)}
+\hlkwd{round}\hldef{(}\hlkwd{mixtureProbs}\hldef{(fitmix3),}\hlnum{4}\hldef{)}
 \end{alltt}
 \begin{verbatim}
 ##                mix1   mix2  mix3
@@ -2401,10 +2400,10 @@ Now let's fit a model with $K=3$ mixtures by setting some starting values with t
 \end{verbatim}
 \begin{alltt}
 \hlcom{## calculate state transition probabilities for each mixture}
-\hlstd{trProbs3} \hlkwb{<-} \hlkwd{getTrProbs}\hlstd{(fitmix3,} \hlkwc{covIndex}\hlstd{=}\hlnum{1}\hlstd{)}
+\hldef{trProbs3} \hlkwb{<-} \hlkwd{getTrProbs}\hldef{(fitmix3,} \hlkwc{covIndex}\hldef{=}\hlnum{1}\hldef{)}
 
 \hlcom{# mixture 1}
-\hlkwd{round}\hlstd{(trProbs3[[}\hlnum{1}\hlstd{]][,,}\hlnum{1}\hlstd{],}\hlnum{2}\hlstd{)}
+\hlkwd{round}\hldef{(trProbs3[[}\hlnum{1}\hldef{]][,,}\hlnum{1}\hldef{],}\hlnum{2}\hldef{)}
 \end{alltt}
 \begin{verbatim}
 ##             exploratory foraging crowded directed
@@ -2415,7 +2414,7 @@ Now let's fit a model with $K=3$ mixtures by setting some starting values with t
 \end{verbatim}
 \begin{alltt}
 \hlcom{# mixture 2}
-\hlkwd{round}\hlstd{(trProbs3[[}\hlnum{2}\hlstd{]][,,}\hlnum{1}\hlstd{],}\hlnum{2}\hlstd{)}
+\hlkwd{round}\hldef{(trProbs3[[}\hlnum{2}\hldef{]][,,}\hlnum{1}\hldef{],}\hlnum{2}\hldef{)}
 \end{alltt}
 \begin{verbatim}
 ##             exploratory foraging crowded directed
@@ -2426,7 +2425,7 @@ Now let's fit a model with $K=3$ mixtures by setting some starting values with t
 \end{verbatim}
 \begin{alltt}
 \hlcom{# mixture 3}
-\hlkwd{round}\hlstd{(trProbs3[[}\hlnum{3}\hlstd{]][,,}\hlnum{1}\hlstd{],}\hlnum{2}\hlstd{)}
+\hlkwd{round}\hldef{(trProbs3[[}\hlnum{3}\hldef{]][,,}\hlnum{1}\hldef{],}\hlnum{2}\hldef{)}
 \end{alltt}
 \begin{verbatim}
 ##             exploratory foraging crowded directed
@@ -2441,12 +2440,12 @@ Now let's fit a model with $K=3$ mixtures by setting some starting values with t
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{fitmix4} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(pilotData,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=dist,}
-                  \hlkwc{Par0}\hlstd{=Par0_mix4}\hlopt{$}\hlstd{Par,} \hlkwc{beta0}\hlstd{=Par0_mix4}\hlopt{$}\hlstd{beta,}
-                  \hlkwc{stationary}\hlstd{=}\hlnum{TRUE}\hlstd{,}
-                  \hlkwc{mixtures}\hlstd{=}\hlnum{4}\hlstd{,}
-                  \hlkwc{stateNames}\hlstd{=stateNames,}
-                  \hlkwc{nlmPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{hessian}\hlstd{=}\hlnum{FALSE}\hlstd{))}
+\hldef{fitmix4} \hlkwb{<-} \hlkwd{fitHMM}\hldef{(pilotData,} \hlkwc{nbStates}\hldef{=}\hlnum{4}\hldef{,} \hlkwc{dist}\hldef{=dist,}
+                  \hlkwc{Par0}\hldef{=Par0_mix4}\hlopt{$}\hldef{Par,} \hlkwc{beta0}\hldef{=Par0_mix4}\hlopt{$}\hldef{beta,}
+                  \hlkwc{stationary}\hldef{=}\hlnum{TRUE}\hldef{,}
+                  \hlkwc{mixtures}\hldef{=}\hlnum{4}\hldef{,}
+                  \hlkwc{stateNames}\hldef{=stateNames,}
+                  \hlkwc{nlmPar}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{hessian}\hldef{=}\hlnum{FALSE}\hldef{))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -2455,13 +2454,13 @@ For comparison to the null and random effects models, let's also fit a model inc
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{Par0_fix} \hlkwb{<-} \hlkwd{getPar0}\hlstd{(fitmix4,}\hlkwc{formula}\hlstd{=}\hlopt{~}\hlnum{0}\hlopt{+}\hlstd{ID,}\hlkwc{mixtures}\hlstd{=}\hlnum{1}\hlstd{)}
+\hldef{Par0_fix} \hlkwb{<-} \hlkwd{getPar0}\hldef{(fitmix4,}\hlkwc{formula}\hldef{=}\hlopt{~}\hlnum{0}\hlopt{+}\hldef{ID,}\hlkwc{mixtures}\hldef{=}\hlnum{1}\hldef{)}
 
-\hlstd{fitfix} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(pilotData,} \hlkwc{nbStates}\hlstd{=}\hlnum{4}\hlstd{,} \hlkwc{dist}\hlstd{=dist,}
-                  \hlkwc{formula} \hlstd{=} \hlopt{~}\hlnum{0}\hlopt{+}\hlstd{ID,} \hlkwc{stationary}\hlstd{=}\hlnum{TRUE}\hlstd{,}
-                  \hlkwc{Par0}\hlstd{=Par0_fix}\hlopt{$}\hlstd{Par,} \hlkwc{beta0}\hlstd{=Par0_fix}\hlopt{$}\hlstd{beta,}
-                  \hlkwc{stateNames}\hlstd{=stateNames,}
-                  \hlkwc{nlmPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{hessian}\hlstd{=}\hlnum{FALSE}\hlstd{))}
+\hldef{fitfix} \hlkwb{<-} \hlkwd{fitHMM}\hldef{(pilotData,} \hlkwc{nbStates}\hldef{=}\hlnum{4}\hldef{,} \hlkwc{dist}\hldef{=dist,}
+                  \hlkwc{formula} \hldef{=} \hlopt{~}\hlnum{0}\hlopt{+}\hldef{ID,} \hlkwc{stationary}\hldef{=}\hlnum{TRUE}\hldef{,}
+                  \hlkwc{Par0}\hldef{=Par0_fix}\hlopt{$}\hldef{Par,} \hlkwc{beta0}\hldef{=Par0_fix}\hlopt{$}\hldef{beta,}
+                  \hlkwc{stateNames}\hldef{=stateNames,}
+                  \hlkwc{nlmPar}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{hessian}\hldef{=}\hlnum{FALSE}\hldef{))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -2509,28 +2508,28 @@ In the harbor porpoise example from \cite{Leos-BarajasEtAl2017}, there are only 
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlcom{# load harbor porpoise data from Leos-Barajas et al}
-\hlkwd{load}\hlstd{(}\hlkwd{url}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"https://static-content.springer.com/esm/"}\hlstd{,}
-                \hlstr{"art%3A10.1007%2Fs13253-017-0282-9/MediaObjects/"}\hlstd{,}
-                \hlstr{"13253_2017_282_MOESM2_ESM.rdata"}\hlstd{)))}
+\hlkwd{load}\hldef{(}\hlkwd{url}\hldef{(}\hlkwd{paste0}\hldef{(}\hlsng{"https://static-content.springer.com/esm/"}\hldef{,}
+                \hlsng{"art%3A10.1007%2Fs13253-017-0282-9/MediaObjects/"}\hldef{,}
+                \hlsng{"13253_2017_282_MOESM2_ESM.rdata"}\hldef{)))}
 
 \hlcom{# convert date_time to POSIX}
-\hlstd{data} \hlkwb{<-} \hlkwd{lapply}\hlstd{(data,}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{)}
-                \hlstd{\{x}\hlopt{$}\hlstd{date_time} \hlkwb{<-} \hlkwd{as.POSIXct}\hlstd{(x}\hlopt{$}\hlstd{date_time,}\hlkwc{tz}\hlstd{=}\hlstr{"UTC"}\hlstd{); x\})}
+\hldef{data} \hlkwb{<-} \hlkwd{lapply}\hldef{(data,}\hlkwa{function}\hldef{(}\hlkwc{x}\hldef{)}
+                \hldef{\{x}\hlopt{$}\hldef{date_time} \hlkwb{<-} \hlkwd{as.POSIXct}\hldef{(x}\hlopt{$}\hldef{date_time,}\hlkwc{tz}\hldef{=}\hlsng{"UTC"}\hldef{); x\})}
 
-\hlstd{porpoiseData} \hlkwb{<-} \hlkwa{NULL}
-\hlkwa{for}\hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(data))\{}
-  \hlstd{coarseInd} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(}\hlkwc{date_time}\hlstd{=}\hlkwd{as.POSIXct}\hlstd{(}\hlkwd{format}\hlstd{(data[[i]]}\hlopt{$}\hlstd{date_time[}\hlnum{1}\hlstd{],}
-                                                      \hlkwc{format}\hlstd{=}\hlstr{"%Y-%m-%d %H:%M"}\hlstd{),}
-                                               \hlkwc{tz}\hlstd{=}\hlstr{"UTC"}\hlstd{),}
-                          \hlkwc{level}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"1"}\hlstd{,}\hlstr{"2i"}\hlstd{),}
-                          \hlkwc{dive_duration}\hlstd{=}\hlnum{NA}\hlstd{,}
-                          \hlkwc{maximum_depth}\hlstd{=}\hlnum{NA}\hlstd{,}
-                          \hlkwc{dive_wiggliness}\hlstd{=}\hlnum{NA}\hlstd{)}
-  \hlstd{tmp} \hlkwb{<-} \hlkwd{rbind}\hlstd{(coarseInd,}\hlkwd{data.frame}\hlstd{(data[[i]],}\hlkwc{level}\hlstd{=}\hlstr{"2"}\hlstd{))}
-  \hlstd{porpoiseData} \hlkwb{<-} \hlkwd{rbind}\hlstd{(porpoiseData,tmp)}
-\hlstd{\}}
+\hldef{porpoiseData} \hlkwb{<-} \hlkwa{NULL}
+\hlkwa{for}\hldef{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{length}\hldef{(data))\{}
+  \hldef{coarseInd} \hlkwb{<-} \hlkwd{data.frame}\hldef{(}\hlkwc{date_time}\hldef{=}\hlkwd{as.POSIXct}\hldef{(}\hlkwd{format}\hldef{(data[[i]]}\hlopt{$}\hldef{date_time[}\hlnum{1}\hldef{],}
+                                                      \hlkwc{format}\hldef{=}\hlsng{"%Y-%m-%d %H:%M"}\hldef{),}
+                                               \hlkwc{tz}\hldef{=}\hlsng{"UTC"}\hldef{),}
+                          \hlkwc{level}\hldef{=}\hlkwd{c}\hldef{(}\hlsng{"1"}\hldef{,}\hlsng{"2i"}\hldef{),}
+                          \hlkwc{dive_duration}\hldef{=}\hlnum{NA}\hldef{,}
+                          \hlkwc{maximum_depth}\hldef{=}\hlnum{NA}\hldef{,}
+                          \hlkwc{dive_wiggliness}\hldef{=}\hlnum{NA}\hldef{)}
+  \hldef{tmp} \hlkwb{<-} \hlkwd{rbind}\hldef{(coarseInd,}\hlkwd{data.frame}\hldef{(data[[i]],}\hlkwc{level}\hldef{=}\hlsng{"2"}\hldef{))}
+  \hldef{porpoiseData} \hlkwb{<-} \hlkwd{rbind}\hldef{(porpoiseData,tmp)}
+\hldef{\}}
 
-\hlkwd{head}\hlstd{(porpoiseData)}
+\hlkwd{head}\hldef{(porpoiseData)}
 \end{alltt}
 \begin{verbatim}
 ##             date_time level dive_duration maximum_depth dive_wiggliness
@@ -2565,14 +2564,14 @@ Now that we have labeled each observation in our data with a \verb|level| factor
 ## 
 ## Data summaries:
 ## 
-##    date_time                      level     dive_duration maximum_depth  
-##  Min.   :2015-11-02 14:43:00.00   1 : 275   Min.   :  1   Min.   :  2.2  
-##  1st Qu.:2015-11-06 02:01:24.00   2i: 275   1st Qu.: 15   1st Qu.:  7.2  
-##  Median :2015-11-08 14:14:28.00   2 :7585   Median : 43   Median : 16.2  
-##  Mean   :2015-11-08 11:59:48.86             Mean   : 58   Mean   : 22.2  
-##  3rd Qu.:2015-11-11 04:43:07.00             3rd Qu.: 90   3rd Qu.: 30.2  
-##  Max.   :2015-11-14 00:58:50.00             Max.   :248   Max.   :169.4  
-##                                             NA's   :550   NA's   :550    
+##    date_time                   level     dive_duration maximum_depth  
+##  Min.   :2015-11-02 14:43:00   1 : 275   Min.   :  1   Min.   :  2.2  
+##  1st Qu.:2015-11-06 02:01:24   2i: 275   1st Qu.: 15   1st Qu.:  7.2  
+##  Median :2015-11-08 14:14:28   2 :7585   Median : 43   Median : 16.2  
+##  Mean   :2015-11-08 11:59:48             Mean   : 58   Mean   : 22.2  
+##  3rd Qu.:2015-11-11 04:43:07             3rd Qu.: 90   3rd Qu.: 30.2  
+##  Max.   :2015-11-14 00:58:50             Max.   :248   Max.   :169.4  
+##                                          NA's   :550   NA's   :550    
 ##  dive_wiggliness
 ##  Min.   :  0.0  
 ##  1st Qu.:  3.8  
@@ -2604,22 +2603,22 @@ Now that our hierarchical data are prepared, we are ready to specify the HHMM.  
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlkwd{library}\hlstd{(data.tree)}
+\hlkwd{library}\hldef{(data.tree)}
 
 \hlcom{### define hierarchical HMM }
 \hlcom{### states 1-3 = coarse state 1 (nonforaging)}
 \hlcom{### states 4-6 = coarse state 2 (foraging)}
-\hlstd{hierStates} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"harbor porpoise HHMM states"}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"nonforaging"}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{nonforaging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"nf1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{1}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{nonforaging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"nf2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{2}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{nonforaging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"nf3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{3}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"foraging"}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{foraging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"f1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{4}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{foraging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"f2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{5}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{foraging}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"f3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{6}\hlstd{)}
+\hldef{hierStates} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hldef{Node}\hlopt{$}\hlkwd{new}\hldef{(}\hlsng{"harbor porpoise HHMM states"}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"nonforaging"}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{nonforaging}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"nf1"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{1}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{nonforaging}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"nf2"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{2}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{nonforaging}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"nf3"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{3}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"foraging"}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{foraging}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"f1"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{4}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{foraging}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"f2"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{5}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{foraging}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"f3"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{6}\hldef{)}
 
-\hlkwd{plot}\hlstd{(hierStates)}
+\hlkwd{plot}\hldef{(hierStates)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -2652,14 +2651,14 @@ Next we will specify the hierarchical nature of the data streams for the \verb|h
 \hlcom{# data stream distributions}
 \hlcom{# level 1 = coarse scale (no data streams)}
 \hlcom{# level 2 = fine scale (dive_duration, maximum_depth, dive_wiggliness)}
-\hlstd{hierDist} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"harbor porpoise HHMM dist"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level1"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level2"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"dive_duration"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"maximum_depth"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"dive_wiggliness"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
+\hldef{hierDist} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hldef{Node}\hlopt{$}\hlkwd{new}\hldef{(}\hlsng{"harbor porpoise HHMM dist"}\hldef{)}
+\hldef{hierDist}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"level1"}\hldef{)}
+\hldef{hierDist}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"level2"}\hldef{)}
+\hldef{hierDist}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"dive_duration"}\hldef{,} \hlkwc{dist}\hldef{=}\hlsng{"gamma"}\hldef{)}
+\hldef{hierDist}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"maximum_depth"}\hldef{,} \hlkwc{dist}\hldef{=}\hlsng{"gamma"}\hldef{)}
+\hldef{hierDist}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"dive_wiggliness"}\hldef{,} \hlkwc{dist}\hldef{=}\hlsng{"gamma"}\hldef{)}
 
-\hlkwd{plot}\hlstd{(hierDist)}
+\hlkwd{plot}\hldef{(hierDist)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -2835,10 +2834,10 @@ Since everything looks good, we're now ready to fit our HHMM:
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlcom{# fit hierarchical HMM}
-\hlstd{hhmm} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(}\hlkwc{data}\hlstd{=porpoiseData,}\hlkwc{hierStates}\hlstd{=hierStates,}\hlkwc{hierDist}\hlstd{=hierDist,}
-               \hlkwc{hierFormula}\hlstd{=hierFormula,}\hlkwc{hierFormulaDelta}\hlstd{=hierFormulaDelta,}
-               \hlkwc{Par0}\hlstd{=Par,}\hlkwc{hierBeta}\hlstd{=hierBeta,}\hlkwc{hierDelta}\hlstd{=hierDelta,}
-               \hlkwc{DM}\hlstd{=DM,}\hlkwc{nlmPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{hessian}\hlstd{=}\hlnum{FALSE}\hlstd{))}
+\hldef{hhmm} \hlkwb{<-} \hlkwd{fitHMM}\hldef{(}\hlkwc{data}\hldef{=porpoiseData,}\hlkwc{hierStates}\hldef{=hierStates,}\hlkwc{hierDist}\hldef{=hierDist,}
+               \hlkwc{hierFormula}\hldef{=hierFormula,}\hlkwc{hierFormulaDelta}\hldef{=hierFormulaDelta,}
+               \hlkwc{Par0}\hldef{=Par,}\hlkwc{hierBeta}\hldef{=hierBeta,}\hlkwc{hierDelta}\hldef{=hierDelta,}
+               \hlkwc{DM}\hldef{=DM,}\hlkwc{nlmPar}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{hessian}\hldef{=}\hlnum{FALSE}\hldef{))}
 \end{alltt}
 
 
@@ -2938,25 +2937,21 @@ Let's now examine our fitted HHMM:
 ## dive_duration parameters:
 ## -------------------------
 ##           nf1      nf2       nf3       f1       f2        f3
-## mean 5.637626 32.18048 106.82949 5.637626 32.18048 106.82949
-## sd   4.372835 15.13962  38.41245 4.372835 15.13962  38.41245
+## mean 5.637657 32.18055 106.82953 5.637657 32.18055 106.82953
+## sd   4.372862 15.13963  38.41243 4.372862 15.13963  38.41243
 ## 
 ## maximum_depth parameters:
 ## -------------------------
-##           nf1      nf2      nf3       f1       f2       f3
-## mean 3.740050 13.19309 39.61714 3.740050 13.19309 39.61714
-## sd   1.426269  5.28881 18.11187 1.426269  5.28881 18.11187
+##           nf1       nf2      nf3       f1        f2       f3
+## mean 3.740062 13.193110 39.61716 3.740062 13.193110 39.61716
+## sd   1.426280  5.288814 18.11188 1.426280  5.288814 18.11188
 ## 
 ## dive_wiggliness parameters:
 ## ---------------------------
-##                nf1          nf2          nf3        f1           f2
-## mean     1.4566130 11.297307157 4.582791e+01 1.4566130 11.297307157
-## sd       1.2051922  7.683425497 2.437341e+01 1.2051922  7.683425497
-## zeromass 0.3089822  0.007867576 2.884684e-04 0.3089822  0.007867576
-##                    f3
-## mean     4.582791e+01
-## sd       2.437341e+01
-## zeromass 2.884684e-04
+##               nf1          nf2          nf3       f1           f2           f3
+## mean     1.456622 11.297335129 4.582793e+01 1.456622 11.297335129 4.582793e+01
+## sd       1.205201  7.683430511 2.437341e+01 1.205201  7.683430511 2.437341e+01
+## zeromass 0.308981  0.007867713 2.882418e-04 0.308981  0.007867713 2.882418e-04
 ## 
 ## 
 ## ---------------------------------------------------------------
@@ -2964,18 +2959,16 @@ Let's now examine our fitted HHMM:
 ## ---------------------------------------------------------------
 ## --------------------------  level1  ---------------------------
 ##                          1 -> 4    4 -> 1
-## I((level == "1") * 1) -1.298852 -1.285221
+## I((level == "1") * 1) -1.298904 -1.285288
 ## 
 ## --------------------------  level2  ---------------------------
-##                           1 -> 2    1 -> 3    2 -> 2     2 -> 3    3 -> 2
-## I((level == "2") * 1) 0.07466832 -1.014794 0.9090668 -0.4242804 0.6198123
+##                          1 -> 2   1 -> 3    2 -> 2     2 -> 3    3 -> 2
+## I((level == "2") * 1) 0.0746781 -1.01479 0.9090458 -0.4243101 0.6198212
 ##                          3 -> 3
-## I((level == "2") * 1) 0.7823021
+## I((level == "2") * 1) 0.7822922
 ## 
-##                           4 -> 5    4 -> 6    5 -> 5   5 -> 6    6 -> 5
-## I((level == "2") * 1) -0.5797187 0.7135953 0.7070679 1.621159 0.4255811
-##                         6 -> 6
-## I((level == "2") * 1) 2.701071
+##                           4 -> 5    4 -> 6    5 -> 5   5 -> 6   6 -> 5   6 -> 6
+## I((level == "2") * 1) -0.5796838 0.7135957 0.7069382 1.621067 0.425573 2.701078
 ## 
 ## ---------------------------------------------------------------
 ## 
@@ -2984,19 +2977,19 @@ Let's now examine our fitted HHMM:
 ## ---------------------------------------------------------------
 ## --------------------------  level1  ---------------------------
 ##             nonforaging  foraging
-## nonforaging   0.7856417 0.2143583
-## foraging      0.2166628 0.7833372
+## nonforaging   0.7856504 0.2143496
+## foraging      0.2166514 0.7833486
 ## 
 ## --------------------------  level2  ---------------------------
 ##           nf1       nf2       nf3
-## nf1 0.4098354 0.4416086 0.1485559
-## nf2 0.2417651 0.6000623 0.1581725
-## nf3 0.1982129 0.3683945 0.4333926
+## nf1 0.4098334 0.4416108 0.1485558
+## nf2 0.2417693 0.6000601 0.1581706
+## nf3 0.1982131 0.3683981 0.4333888
 ## 
-##            f1        f2        f3
-## f1 0.27767187 0.1555118 0.5668164
-## f2 0.12365547 0.2507778 0.6255668
-## f3 0.05738502 0.0878266 0.8547884
+##            f1         f2        f3
+## f1 0.27767031 0.15551631 0.5668134
+## f2 0.12366660 0.25076781 0.6255656
+## f3 0.05738472 0.08782542 0.8547899
 ## 
 ## ---------------------------------------------------------------
 ## 
@@ -3005,14 +2998,14 @@ Let's now examine our fitted HHMM:
 ## --------------------------------------------------
 ## --------------------  level1  --------------------
 ##               state 4
-## (Intercept) -6.740456
+## (Intercept) -6.686899
 ## 
 ## --------------------  level2  --------------------
 ##                         state 2  state 3
-## I((level == "2i") * 1) 30.34115 29.65663
+## I((level == "2i") * 1) 30.34133 29.65662
 ## 
 ##                          state 5  state 6
-## I((level == "2i") * 1) -6.010966 1.717094
+## I((level == "2i") * 1) -6.011428 1.716169
 ## 
 ## --------------------------------------------------
 ## 
@@ -3021,14 +3014,14 @@ Let's now examine our fitted HHMM:
 ## --------------------------------------------------
 ## --------------------  level1  --------------------
 ##            nonforaging    foraging
-## ID:Animal1   0.9988193 0.001180712
+## ID:Animal1   0.9987544 0.001245591
 ## 
 ## --------------------  level2  --------------------
-##                      nf1       nf2       nf3
-## nonforaging 4.422442e-14 0.6647468 0.3352532
+##                     nf1       nf2       nf3
+## nonforaging 4.42191e-14 0.6647896 0.3352104
 ## 
-##                f1           f2        f3
-## foraging 0.152189 0.0003731245 0.8474379
+##                 f1           f2        f3
+## foraging 0.1523085 0.0003732449 0.8473183
 ## 
 ## --------------------------------------------------
 \end{verbatim}
@@ -3110,27 +3103,27 @@ We can also calculate the stationary probabilities of each state for each level 
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlcom{# stationary distributions}
-\hlstd{stats} \hlkwb{<-} \hlkwd{stationary}\hlstd{(hhmm)}
+\hldef{stats} \hlkwb{<-} \hlkwd{stationary}\hldef{(hhmm)}
 
 \hlcom{# coarse scale }
-\hlstd{stats[[}\hlnum{1}\hlstd{]]}\hlopt{$}\hlstd{level1[}\hlnum{1}\hlstd{,]}
+\hldef{stats[[}\hlnum{1}\hldef{]]}\hlopt{$}\hldef{level1[}\hlnum{1}\hldef{,]}
 \end{alltt}
 \begin{verbatim}
 ## nonforaging    foraging 
-##   0.5026734   0.4973266
+##   0.5026703   0.4973297
 \end{verbatim}
 \begin{alltt}
 \hlcom{# fine scale }
-\hlkwd{lapply}\hlstd{(stats[[}\hlnum{1}\hlstd{]]}\hlopt{$}\hlstd{level2,}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{) x[}\hlnum{1}\hlstd{,])}
+\hlkwd{lapply}\hldef{(stats[[}\hlnum{1}\hldef{]]}\hlopt{$}\hldef{level2,}\hlkwa{function}\hldef{(}\hlkwc{x}\hldef{) x[}\hlnum{1}\hldef{,])}
 \end{alltt}
 \begin{verbatim}
 ## $nonforaging
 ##       nf1       nf2       nf3 
-## 0.2793769 0.5060947 0.2145284 
+## 0.2793790 0.5060952 0.2145258 
 ## 
 ## $foraging
 ##         f1         f2         f3 
-## 0.08308649 0.11164262 0.80527089
+## 0.08308744 0.11164068 0.80527188
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -3139,16 +3132,16 @@ Finally, we can simulate from our fitted HHMM using the \verb|simHierData| funct
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{obsPerLevel} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"simHierData"}\hlstd{)}
+\hldef{obsPerLevel} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hldef{Node}\hlopt{$}\hlkwd{new}\hldef{(}\hlsng{"simHierData"}\hldef{)}
 
 \hlcom{# number of level 1 observations}
-\hlstd{obsPerLevel}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{,}\hlkwc{obs}\hlstd{=}\hlnum{100}\hlstd{)}
+\hldef{obsPerLevel}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level1"}\hldef{,}\hlkwc{obs}\hldef{=}\hlnum{100}\hldef{)}
 
 \hlcom{# number of level 2 observations that follow each level 1 observation}
-\hlstd{obsPerLevel}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{,}\hlkwc{obs}\hlstd{=}\hlnum{25}\hlstd{)}
+\hldef{obsPerLevel}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level2"}\hldef{,}\hlkwc{obs}\hldef{=}\hlnum{25}\hldef{)}
 
-\hlstd{simHHMM} \hlkwb{<-} \hlkwd{simHierData}\hlstd{(}\hlkwc{model}\hlstd{=hhmm,}
-                       \hlkwc{obsPerLevel} \hlstd{= obsPerLevel,} \hlkwc{states} \hlstd{=} \hlnum{TRUE}\hlstd{)}
+\hldef{simHHMM} \hlkwb{<-} \hlkwd{simHierData}\hldef{(}\hlkwc{model}\hldef{=hhmm,}
+                       \hlkwc{obsPerLevel} \hldef{= obsPerLevel,} \hlkwc{states} \hldef{=} \hlnum{TRUE}\hldef{)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -3161,10 +3154,10 @@ Finally, we can simulate from our fitted HHMM using the \verb|simHierData| funct
 ##   ID level dive_duration maximum_depth dive_wiggliness states
 ## 1  1     1            NA            NA              NA      1
 ## 2  1    2i            NA            NA              NA      2
-## 3  1     2      41.33292     16.671065       11.677436      2
-## 4  1     2      42.61752      8.838353       16.055691      2
-## 5  1     2      13.22006     10.052027        5.805089      2
-## 6  1     2      58.10525     13.430368        3.182826      2
+## 3  1     2      51.09772     11.460236        6.228333      2
+## 4  1     2      42.80339      6.212072       25.306055      2
+## 5  1     2     129.20750     31.672331        3.489497      3
+## 6  1     2     112.85110     42.356573       89.357614      3
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -3230,7 +3223,7 @@ Next we'll quickly demonstrate how to perform the HHMM analysis for the garter s
 ## 
 ##       step       level     
 ##  Min.   :0.011   1 :  114  
-##  1st Qu.:0.334   2i:  114  
+##  1st Qu.:0.333   2i:  114  
 ##  Median :0.700   2 :11286  
 ##  Mean   :0.790             
 ##  3rd Qu.:1.149             
@@ -3247,12 +3240,12 @@ Next we'll quickly demonstrate how to perform the HHMM analysis for the garter s
 \hlcom{### data stream distributions: }
 \hlcom{### level 1 = coarse level (no data streams)}
 \hlcom{### level 2 = fine level (step="gamma")}
-\hlstd{hierDist} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"garter snake HHMM dist"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level1"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level2"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"step"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
+\hldef{hierDist} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hldef{Node}\hlopt{$}\hlkwd{new}\hldef{(}\hlsng{"garter snake HHMM dist"}\hldef{)}
+\hldef{hierDist}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"level1"}\hldef{)}
+\hldef{hierDist}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"level2"}\hldef{)}
+\hldef{hierDist}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"step"}\hldef{,} \hlkwc{dist}\hldef{=}\hlsng{"gamma"}\hldef{)}
 
-\hlkwd{plot}\hlstd{(hierDist)}
+\hlkwd{plot}\hldef{(hierDist)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -3290,17 +3283,17 @@ Next we define our HHMM structure via the \verb|hierStates| data tree Node (Figu
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{hierStates} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlkwd{as.Node}\hlstd{(}\hlkwd{list}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"garter snake HHMM states"}\hlstd{,}
-                                      \hlkwc{internalState1}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mo1}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{state}\hlstd{=}\hlnum{1}\hlstd{),}
-                                                          \hlkwc{ex1}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{state}\hlstd{=}\hlnum{2}\hlstd{),}
-                                                          \hlkwc{es1}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{state}\hlstd{=}\hlnum{3}\hlstd{)),}
-                                      \hlkwc{internalState2}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mo2}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{state}\hlstd{=}\hlnum{4}\hlstd{),}
-                                                          \hlkwc{ex2}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{state}\hlstd{=}\hlnum{5}\hlstd{),}
-                                                          \hlkwc{es2}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{state}\hlstd{=}\hlnum{6}\hlstd{)),}
-                                      \hlkwc{internalState3}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mo3}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{state}\hlstd{=}\hlnum{7}\hlstd{),}
-                                                          \hlkwc{ex3}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{state}\hlstd{=}\hlnum{8}\hlstd{),}
-                                                          \hlkwc{es3}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{state}\hlstd{=}\hlnum{9}\hlstd{))))}
-\hlkwd{plot}\hlstd{(hierStates)}
+\hldef{hierStates} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hlkwd{as.Node}\hldef{(}\hlkwd{list}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"garter snake HHMM states"}\hldef{,}
+                                      \hlkwc{internalState1}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{mo1}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{state}\hldef{=}\hlnum{1}\hldef{),}
+                                                          \hlkwc{ex1}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{state}\hldef{=}\hlnum{2}\hldef{),}
+                                                          \hlkwc{es1}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{state}\hldef{=}\hlnum{3}\hldef{)),}
+                                      \hlkwc{internalState2}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{mo2}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{state}\hldef{=}\hlnum{4}\hldef{),}
+                                                          \hlkwc{ex2}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{state}\hldef{=}\hlnum{5}\hldef{),}
+                                                          \hlkwc{es2}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{state}\hldef{=}\hlnum{6}\hldef{)),}
+                                      \hlkwc{internalState3}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{mo3}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{state}\hldef{=}\hlnum{7}\hldef{),}
+                                                          \hlkwc{ex3}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{state}\hldef{=}\hlnum{8}\hldef{),}
+                                                          \hlkwc{es3}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{state}\hldef{=}\hlnum{9}\hldef{))))}
+\hlkwd{plot}\hldef{(hierStates)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -3316,28 +3309,28 @@ As in the harbor porpoise example (section \ref{sec:harborPorpoise}), we follow 
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlcom{# defining start values for step data stream}
-\hlstd{mu0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.121}\hlstd{,}\hlnum{0.678}\hlstd{,}\hlnum{1.375}\hlstd{)}
-\hlstd{sd0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.06}\hlstd{,}\hlnum{0.321}\hlstd{,}\hlnum{0.4875}\hlstd{)}
-\hlstd{Par0} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=}\hlkwd{c}\hlstd{(}\hlkwd{rep}\hlstd{(mu0,hierStates}\hlopt{$}\hlstd{count),}\hlkwd{rep}\hlstd{(sd0,hierStates}\hlopt{$}\hlstd{count)))}
+\hldef{mu0} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{0.121}\hldef{,}\hlnum{0.678}\hldef{,}\hlnum{1.375}\hldef{)}
+\hldef{sd0} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{0.06}\hldef{,}\hlnum{0.321}\hldef{,}\hlnum{0.4875}\hldef{)}
+\hldef{Par0} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwc{step}\hldef{=}\hlkwd{c}\hldef{(}\hlkwd{rep}\hldef{(mu0,hierStates}\hlopt{$}\hldef{count),}\hlkwd{rep}\hldef{(sd0,hierStates}\hlopt{$}\hldef{count)))}
 
-\hlstd{nbStates} \hlkwb{<-} \hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlkwd{Get}\hlstd{(}\hlstr{"state"}\hlstd{,}\hlkwc{filterFun}\hlstd{=data.tree}\hlopt{::}\hlstd{isLeaf))}
+\hldef{nbStates} \hlkwb{<-} \hlkwd{length}\hldef{(hierStates}\hlopt{$}\hlkwd{Get}\hldef{(}\hlsng{"state"}\hldef{,}\hlkwc{filterFun}\hldef{=data.tree}\hlopt{::}\hldef{isLeaf))}
 
 \hlcom{# constrain data stream distributions to be same for coarse-scale states}
-\hlstd{DM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{cbind}\hlstd{(}\hlkwd{kronecker}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{),}\hlkwd{diag}\hlstd{(}\hlnum{3}\hlstd{)),}
-                             \hlkwd{kronecker}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{),}\hlkwd{diag}\hlstd{(}\hlnum{3}\hlstd{))),}
-                       \hlkwc{nrow}\hlstd{=nbStates}\hlopt{*}\hlnum{2}\hlstd{,}
-                       \hlkwc{ncol}\hlstd{=}\hlnum{6}\hlstd{,}
-                       \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{c}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"mean_"}\hlstd{,}\hlnum{1}\hlopt{:}\hlstd{nbStates),}
-                                       \hlkwd{paste0}\hlstd{(}\hlstr{"sd_"}\hlstd{,}\hlnum{1}\hlopt{:}\hlstd{nbStates)),}
-                                     \hlkwd{paste0}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"mean"}\hlstd{,}\hlstr{"sd"}\hlstd{),}\hlkwc{each}\hlstd{=}\hlnum{3}\hlstd{),}
-                                            \hlkwd{c}\hlstd{(}\hlstr{"_147:(Intercept)"}\hlstd{,}
-                                              \hlstr{"_258:(Intercept)"}\hlstd{,}
-                                              \hlstr{"_369:(Intercept)"}\hlstd{)))))}
+\hldef{DM} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwc{step}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{cbind}\hldef{(}\hlkwd{kronecker}\hldef{(}\hlkwd{c}\hldef{(}\hlnum{1}\hldef{,}\hlnum{1}\hldef{,}\hlnum{1}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{),}\hlkwd{diag}\hldef{(}\hlnum{3}\hldef{)),}
+                             \hlkwd{kronecker}\hldef{(}\hlkwd{c}\hldef{(}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{1}\hldef{,}\hlnum{1}\hldef{,}\hlnum{1}\hldef{),}\hlkwd{diag}\hldef{(}\hlnum{3}\hldef{))),}
+                       \hlkwc{nrow}\hldef{=nbStates}\hlopt{*}\hlnum{2}\hldef{,}
+                       \hlkwc{ncol}\hldef{=}\hlnum{6}\hldef{,}
+                       \hlkwc{dimnames}\hldef{=}\hlkwd{list}\hldef{(}\hlkwd{c}\hldef{(}\hlkwd{paste0}\hldef{(}\hlsng{"mean_"}\hldef{,}\hlnum{1}\hlopt{:}\hldef{nbStates),}
+                                       \hlkwd{paste0}\hldef{(}\hlsng{"sd_"}\hldef{,}\hlnum{1}\hlopt{:}\hldef{nbStates)),}
+                                     \hlkwd{paste0}\hldef{(}\hlkwd{rep}\hldef{(}\hlkwd{c}\hldef{(}\hlsng{"mean"}\hldef{,}\hlsng{"sd"}\hldef{),}\hlkwc{each}\hldef{=}\hlnum{3}\hldef{),}
+                                            \hlkwd{c}\hldef{(}\hlsng{"_147:(Intercept)"}\hldef{,}
+                                              \hlsng{"_258:(Intercept)"}\hldef{,}
+                                              \hlsng{"_369:(Intercept)"}\hldef{)))))}
 
 \hlcom{# initial parameter values for data stream probability distributions}
-\hlstd{Par} \hlkwb{<-} \hlkwd{getParDM}\hlstd{(snakeData,}
-                \hlkwc{hierStates}\hlstd{=hierStates,}\hlkwc{hierDist}\hlstd{=hierDist,}
-                \hlkwc{Par}\hlstd{=Par0,}\hlkwc{DM}\hlstd{=DM)}
+\hldef{Par} \hlkwb{<-} \hlkwd{getParDM}\hldef{(snakeData,}
+                \hlkwc{hierStates}\hldef{=hierStates,}\hlkwc{hierDist}\hldef{=hierDist,}
+                \hlkwc{Par}\hldef{=Par0,}\hlkwc{DM}\hldef{=DM)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -3346,77 +3339,77 @@ We do not include any covariates in \verb|hierFormula| or \verb|hierFormulaDelta
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{hierBeta} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"garter snake beta"}\hlstd{)}
-\hlstd{hierBeta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level1"}\hlstd{)}
-\hlstd{hierBeta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"level2"}\hlstd{)}
-\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"internalState1"}\hlstd{)}
-\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"internalState2"}\hlstd{)}
-\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlkwc{name}\hlstd{=}\hlstr{"internalState3"}\hlstd{)}
+\hldef{hierBeta} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hldef{Node}\hlopt{$}\hlkwd{new}\hldef{(}\hlsng{"garter snake beta"}\hldef{)}
+\hldef{hierBeta}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"level1"}\hldef{)}
+\hldef{hierBeta}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"level2"}\hldef{)}
+\hldef{hierBeta}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"internalState1"}\hldef{)}
+\hldef{hierBeta}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"internalState2"}\hldef{)}
+\hldef{hierBeta}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlkwc{name}\hldef{=}\hlsng{"internalState3"}\hldef{)}
 
-\hlstd{hierDelta} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlkwd{Clone}\hlstd{(hierBeta)}
-\hlstd{hierDelta}\hlopt{$}\hlstd{name} \hlkwb{<-} \hlstr{"garter snake delta"}
+\hldef{hierDelta} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hlkwd{Clone}\hldef{(hierBeta)}
+\hldef{hierDelta}\hlopt{$}\hldef{name} \hlkwb{<-} \hlsng{"garter snake delta"}
 
 \hlcom{# reference states for level1}
-\hlstd{level1states} \hlkwb{<-} \hlstd{hierStates}\hlopt{$}\hlkwd{Get}\hlstd{(}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{) data.tree}\hlopt{::}\hlkwd{Aggregate}\hlstd{(x,}\hlstr{"state"}\hlstd{,min),}
-                               \hlkwc{filterFun}\hlstd{=}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{) x}\hlopt{$}\hlstd{level}\hlopt{==}\hlnum{2}\hlstd{)}
+\hldef{level1states} \hlkwb{<-} \hldef{hierStates}\hlopt{$}\hlkwd{Get}\hldef{(}\hlkwa{function}\hldef{(}\hlkwc{x}\hldef{) data.tree}\hlopt{::}\hlkwd{Aggregate}\hldef{(x,}\hlsng{"state"}\hldef{,min),}
+                               \hlkwc{filterFun}\hldef{=}\hlkwa{function}\hldef{(}\hlkwc{x}\hldef{) x}\hlopt{$}\hldef{level}\hlopt{==}\hlnum{2}\hldef{)}
 
-\hlstd{hierBeta}\hlopt{$}\hlstd{level1}\hlopt{$}\hlstd{beta} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{1.24}\hlstd{,} \hlnum{0.44}\hlstd{,} \hlnum{1.1}\hlstd{,} \hlopt{-}\hlnum{0.87}\hlstd{,} \hlopt{-}\hlnum{1.40}\hlstd{,} \hlopt{-}\hlnum{1.11}\hlstd{),}
-                               \hlkwc{nrow}\hlstd{=}\hlnum{1}\hlstd{,}
-                               \hlkwc{ncol}\hlstd{=hierStates}\hlopt{$}\hlstd{count}\hlopt{*}\hlstd{(hierStates}\hlopt{$}\hlstd{count}\hlopt{-}\hlnum{1}\hlstd{),}
-                               \hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
-                               \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlstr{"(Intercept)"}\hlstd{,}
-                                        \hlkwd{c}\hlstd{(}\hlkwd{sapply}\hlstd{(level1states,}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{)}
-                                          \hlkwd{paste}\hlstd{(}
-                                           \hlkwd{rep}\hlstd{(x,}\hlkwc{each}\hlstd{=hierStates}\hlopt{$}\hlstd{count}\hlopt{-}\hlnum{1}\hlstd{),}
-                                           \hlstr{"->"}\hlstd{,}
-                                           \hlstd{level1states[}\hlopt{-}\hlkwd{which}\hlstd{(level1states}\hlopt{==}\hlstd{x)])))))}
+\hldef{hierBeta}\hlopt{$}\hldef{level1}\hlopt{$}\hldef{beta} \hlkwb{<-} \hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlnum{1.24}\hldef{,} \hlnum{0.44}\hldef{,} \hlnum{1.1}\hldef{,} \hlopt{-}\hlnum{0.87}\hldef{,} \hlopt{-}\hlnum{1.40}\hldef{,} \hlopt{-}\hlnum{1.11}\hldef{),}
+                               \hlkwc{nrow}\hldef{=}\hlnum{1}\hldef{,}
+                               \hlkwc{ncol}\hldef{=hierStates}\hlopt{$}\hldef{count}\hlopt{*}\hldef{(hierStates}\hlopt{$}\hldef{count}\hlopt{-}\hlnum{1}\hldef{),}
+                               \hlkwc{byrow}\hldef{=}\hlnum{TRUE}\hldef{,}
+                               \hlkwc{dimnames}\hldef{=}\hlkwd{list}\hldef{(}\hlsng{"(Intercept)"}\hldef{,}
+                                        \hlkwd{c}\hldef{(}\hlkwd{sapply}\hldef{(level1states,}\hlkwa{function}\hldef{(}\hlkwc{x}\hldef{)}
+                                          \hlkwd{paste}\hldef{(}
+                                           \hlkwd{rep}\hldef{(x,}\hlkwc{each}\hldef{=hierStates}\hlopt{$}\hldef{count}\hlopt{-}\hlnum{1}\hldef{),}
+                                           \hlsng{"->"}\hldef{,}
+                                           \hldef{level1states[}\hlopt{-}\hlkwd{which}\hldef{(level1states}\hlopt{==}\hldef{x)])))))}
 
-\hlstd{hierDelta}\hlopt{$}\hlstd{level1}\hlopt{$}\hlstd{delta} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.5}\hlstd{,}\hlopt{-}\hlnum{3.5}\hlstd{),hierStates}\hlopt{$}\hlstd{count}\hlopt{-}\hlnum{1}\hlstd{),}
-                                 \hlkwc{nrow}\hlstd{=}\hlnum{1}\hlstd{,}
-                                 \hlkwc{ncol}\hlstd{=(hierStates}\hlopt{$}\hlstd{count}\hlopt{-}\hlnum{1}\hlstd{),}
-                                 \hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
-                                 \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlstr{"(Intercept)"}\hlstd{,}
-                                               \hlkwd{paste}\hlstd{(}\hlstr{"state"}\hlstd{,level1states[}\hlopt{-}\hlnum{1}\hlstd{])))}
+\hldef{hierDelta}\hlopt{$}\hldef{level1}\hlopt{$}\hldef{delta} \hlkwb{<-} \hlkwd{matrix}\hldef{(}\hlkwd{rep}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{2.5}\hldef{,}\hlopt{-}\hlnum{3.5}\hldef{),hierStates}\hlopt{$}\hldef{count}\hlopt{-}\hlnum{1}\hldef{),}
+                                 \hlkwc{nrow}\hldef{=}\hlnum{1}\hldef{,}
+                                 \hlkwc{ncol}\hldef{=(hierStates}\hlopt{$}\hldef{count}\hlopt{-}\hlnum{1}\hldef{),}
+                                 \hlkwc{byrow}\hldef{=}\hlnum{TRUE}\hldef{,}
+                                 \hlkwc{dimnames}\hldef{=}\hlkwd{list}\hldef{(}\hlsng{"(Intercept)"}\hldef{,}
+                                               \hlkwd{paste}\hldef{(}\hlsng{"state"}\hldef{,level1states[}\hlopt{-}\hlnum{1}\hldef{])))}
 
-\hlstd{beta0_level2} \hlkwb{<-} \hlstd{delta0_level2} \hlkwb{<-} \hlkwd{list}\hlstd{()}
-\hlstd{beta0_level2}\hlopt{$}\hlstd{internalState1} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.99}\hlstd{,} \hlopt{-}\hlnum{5.06}\hlstd{,} \hlnum{3.93}\hlstd{,} \hlnum{1.25}\hlstd{,} \hlnum{34.84}\hlstd{,} \hlnum{35.97}\hlstd{)}
-\hlstd{beta0_level2}\hlopt{$}\hlstd{internalState2} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{1.72}\hlstd{,} \hlopt{-}\hlnum{2.78}\hlstd{,} \hlnum{3.54}\hlstd{,} \hlnum{2.83}\hlstd{,} \hlnum{34.72}\hlstd{,} \hlnum{36.21}\hlstd{)}
-\hlstd{beta0_level2}\hlopt{$}\hlstd{internalState3} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{5.10}\hlstd{,} \hlopt{-}\hlnum{17.69}\hlstd{,} \hlnum{5.76}\hlstd{,} \hlopt{-}\hlnum{11.34}\hlstd{,} \hlnum{33.39}\hlstd{,} \hlnum{37.37}\hlstd{)}
+\hldef{beta0_level2} \hlkwb{<-} \hldef{delta0_level2} \hlkwb{<-} \hlkwd{list}\hldef{()}
+\hldef{beta0_level2}\hlopt{$}\hldef{internalState1} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlopt{-}\hlnum{2.99}\hldef{,} \hlopt{-}\hlnum{5.06}\hldef{,} \hlnum{3.93}\hldef{,} \hlnum{1.25}\hldef{,} \hlnum{34.84}\hldef{,} \hlnum{35.97}\hldef{)}
+\hldef{beta0_level2}\hlopt{$}\hldef{internalState2} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlopt{-}\hlnum{1.72}\hldef{,} \hlopt{-}\hlnum{2.78}\hldef{,} \hlnum{3.54}\hldef{,} \hlnum{2.83}\hldef{,} \hlnum{34.72}\hldef{,} \hlnum{36.21}\hldef{)}
+\hldef{beta0_level2}\hlopt{$}\hldef{internalState3} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlopt{-}\hlnum{5.10}\hldef{,} \hlopt{-}\hlnum{17.69}\hldef{,} \hlnum{5.76}\hldef{,} \hlopt{-}\hlnum{11.34}\hldef{,} \hlnum{33.39}\hldef{,} \hlnum{37.37}\hldef{)}
 
-\hlstd{delta0_level2}\hlopt{$}\hlstd{internalState1} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{1.39}\hlstd{,} \hlnum{0.16}\hlstd{)}
-\hlstd{delta0_level2}\hlopt{$}\hlstd{internalState2} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{1.27}\hlstd{,} \hlnum{2.33}\hlstd{)}
-\hlstd{delta0_level2}\hlopt{$}\hlstd{internalState3} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.34}\hlstd{,} \hlopt{-}\hlnum{0.26}\hlstd{)}
+\hldef{delta0_level2}\hlopt{$}\hldef{internalState1} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlopt{-}\hlnum{1.39}\hldef{,} \hlnum{0.16}\hldef{)}
+\hldef{delta0_level2}\hlopt{$}\hldef{internalState2} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlopt{-}\hlnum{1.27}\hldef{,} \hlnum{2.33}\hldef{)}
+\hldef{delta0_level2}\hlopt{$}\hldef{internalState3} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{0.34}\hldef{,} \hlopt{-}\hlnum{0.26}\hldef{)}
 
-\hlkwa{for}\hlstd{(jj} \hlkwa{in} \hlnum{1}\hlopt{:}\hlstd{hierStates}\hlopt{$}\hlstd{count)\{}
-  \hlstd{j} \hlkwb{<-}  \hlkwd{names}\hlstd{(hierStates}\hlopt{$}\hlstd{children)[jj]}
+\hlkwa{for}\hldef{(jj} \hlkwa{in} \hlnum{1}\hlopt{:}\hldef{hierStates}\hlopt{$}\hldef{count)\{}
+  \hldef{j} \hlkwb{<-}  \hlkwd{names}\hldef{(hierStates}\hlopt{$}\hldef{children)[jj]}
 
   \hlcom{# reference states for internalState j}
-  \hlstd{ref} \hlkwb{<-} \hlstd{hierStates[[j]]}\hlopt{$}\hlkwd{Get}\hlstd{(}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{)}
-                              \hlstd{data.tree}\hlopt{::}\hlkwd{Aggregate}\hlstd{(x,}\hlstr{"state"}\hlstd{,min),}
-                             \hlkwc{filterFun}\hlstd{=}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{) x}\hlopt{$}\hlstd{level}\hlopt{==}\hlnum{2}\hlstd{)}
+  \hldef{ref} \hlkwb{<-} \hldef{hierStates[[j]]}\hlopt{$}\hlkwd{Get}\hldef{(}\hlkwa{function}\hldef{(}\hlkwc{x}\hldef{)}
+                              \hldef{data.tree}\hlopt{::}\hlkwd{Aggregate}\hldef{(x,}\hlsng{"state"}\hldef{,min),}
+                             \hlkwc{filterFun}\hldef{=}\hlkwa{function}\hldef{(}\hlkwc{x}\hldef{) x}\hlopt{$}\hldef{level}\hlopt{==}\hlnum{2}\hldef{)}
 
   \hlcom{# states for internalState j}
-  \hlstd{states} \hlkwb{<-} \hlstd{hierStates[[j]]}\hlopt{$}\hlkwd{Get}\hlstd{(}\hlstr{"state"}\hlstd{,}\hlkwc{filterFun} \hlstd{= isLeaf)}
+  \hldef{states} \hlkwb{<-} \hldef{hierStates[[j]]}\hlopt{$}\hlkwd{Get}\hldef{(}\hlsng{"state"}\hldef{,}\hlkwc{filterFun} \hldef{= isLeaf)}
 
-  \hlstd{dimNames} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlstr{"(Intercept)"}\hlstd{,}
-                   \hlkwd{paste0}\hlstd{(}\hlkwd{rep}\hlstd{(states,}\hlkwc{each}\hlstd{=hierStates[[j]]}\hlopt{$}\hlstd{count}\hlopt{-}\hlnum{1}\hlstd{),}
-                          \hlstr{" -> "}\hlstd{,}
-                          \hlstd{states[}\hlopt{-}\hlkwd{which}\hlstd{(states}\hlopt{==}\hlstd{ref)]))}
+  \hldef{dimNames} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlsng{"(Intercept)"}\hldef{,}
+                   \hlkwd{paste0}\hldef{(}\hlkwd{rep}\hldef{(states,}\hlkwc{each}\hldef{=hierStates[[j]]}\hlopt{$}\hldef{count}\hlopt{-}\hlnum{1}\hldef{),}
+                          \hlsng{" -> "}\hldef{,}
+                          \hldef{states[}\hlopt{-}\hlkwd{which}\hldef{(states}\hlopt{==}\hldef{ref)]))}
 
-  \hlstd{hierBeta}\hlopt{$}\hlstd{level2[[j]]}\hlopt{$}\hlstd{beta} \hlkwb{<-} \hlkwd{matrix}\hlstd{(beta0_level2[[j]],}
-                                      \hlkwc{nrow}\hlstd{=}\hlnum{1}\hlstd{,}
-                                      \hlkwc{ncol}\hlstd{=hierStates[[j]]}\hlopt{$}\hlstd{count}\hlopt{*}
-                                           \hlstd{(hierStates[[j]]}\hlopt{$}\hlstd{count}\hlopt{-}\hlnum{1}\hlstd{),}
-                                      \hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
-                                      \hlkwc{dimnames}\hlstd{=dimNames)}
+  \hldef{hierBeta}\hlopt{$}\hldef{level2[[j]]}\hlopt{$}\hldef{beta} \hlkwb{<-} \hlkwd{matrix}\hldef{(beta0_level2[[j]],}
+                                      \hlkwc{nrow}\hldef{=}\hlnum{1}\hldef{,}
+                                      \hlkwc{ncol}\hldef{=hierStates[[j]]}\hlopt{$}\hldef{count}\hlopt{*}
+                                           \hldef{(hierStates[[j]]}\hlopt{$}\hldef{count}\hlopt{-}\hlnum{1}\hldef{),}
+                                      \hlkwc{byrow}\hldef{=}\hlnum{TRUE}\hldef{,}
+                                      \hlkwc{dimnames}\hldef{=dimNames)}
 
-  \hlstd{hierDelta}\hlopt{$}\hlstd{level2[[j]]}\hlopt{$}\hlstd{delta} \hlkwb{<-} \hlkwd{matrix}\hlstd{(delta0_level2[[j]],}
-                                        \hlkwc{nrow}\hlstd{=}\hlnum{1}\hlstd{,}
-                                        \hlkwc{ncol}\hlstd{=(hierStates[[j]]}\hlopt{$}\hlstd{count}\hlopt{-}\hlnum{1}\hlstd{),}
-                                        \hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
-                                        \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlstr{"(Intercept)"}\hlstd{,}
-                                                      \hlkwd{names}\hlstd{(states)[}\hlopt{-}\hlnum{1}\hlstd{]))}
-\hlstd{\}}
+  \hldef{hierDelta}\hlopt{$}\hldef{level2[[j]]}\hlopt{$}\hldef{delta} \hlkwb{<-} \hlkwd{matrix}\hldef{(delta0_level2[[j]],}
+                                        \hlkwc{nrow}\hldef{=}\hlnum{1}\hldef{,}
+                                        \hlkwc{ncol}\hldef{=(hierStates[[j]]}\hlopt{$}\hldef{count}\hlopt{-}\hlnum{1}\hldef{),}
+                                        \hlkwc{byrow}\hldef{=}\hlnum{TRUE}\hldef{,}
+                                        \hlkwc{dimnames}\hldef{=}\hlkwd{list}\hldef{(}\hlsng{"(Intercept)"}\hldef{,}
+                                                      \hlkwd{names}\hldef{(states)[}\hlopt{-}\hlnum{1}\hldef{]))}
+\hldef{\}}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -3425,9 +3418,9 @@ Let's check our model specification:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlkwd{checkPar0}\hlstd{(snakeData,}\hlkwc{hierStates}\hlstd{=hierStates,}\hlkwc{hierDist}\hlstd{=hierDist,}
-          \hlkwc{Par0}\hlstd{=Par,}\hlkwc{DM}\hlstd{=DM,}
-          \hlkwc{hierBeta}\hlstd{=hierBeta,}\hlkwc{hierDelta}\hlstd{=hierDelta)}
+\hlkwd{checkPar0}\hldef{(snakeData,}\hlkwc{hierStates}\hldef{=hierStates,}\hlkwc{hierDist}\hldef{=hierDist,}
+          \hlkwc{Par0}\hldef{=Par,}\hlkwc{DM}\hldef{=DM,}
+          \hlkwc{hierBeta}\hldef{=hierBeta,}\hlkwc{hierDelta}\hldef{=hierDelta)}
 \end{alltt}
 \begin{verbatim}
 ## 
@@ -3482,11 +3475,11 @@ Let's check our model specification:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{iTrProbs} \hlkwb{<-} \hlkwd{getTrProbs}\hlstd{(snakeData,}\hlkwc{hierStates}\hlstd{=hierStates,}
-                       \hlkwc{hierBeta}\hlstd{=hierBeta,}\hlkwc{hierDist}\hlstd{=hierDist)}
+\hldef{iTrProbs} \hlkwb{<-} \hlkwd{getTrProbs}\hldef{(snakeData,}\hlkwc{hierStates}\hldef{=hierStates,}
+                       \hlkwc{hierBeta}\hldef{=hierBeta,}\hlkwc{hierDist}\hldef{=hierDist)}
 
 \hlcom{# t.p.m. at first time step for level1}
-\hlstd{iTrProbs}\hlopt{$}\hlstd{level1}\hlopt{$}\hlstd{gamma[,,}\hlnum{1}\hlstd{]}
+\hldef{iTrProbs}\hlopt{$}\hldef{level1}\hlopt{$}\hldef{gamma[,,}\hlnum{1}\hldef{]}
 \end{alltt}
 \begin{verbatim}
 ##                internalState1 internalState2 internalState3
@@ -3496,7 +3489,7 @@ Let's check our model specification:
 \end{verbatim}
 \begin{alltt}
 \hlcom{# t.p.m. at first time step for level2}
-\hlkwd{lapply}\hlstd{(iTrProbs}\hlopt{$}\hlstd{level2,}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{) x}\hlopt{$}\hlstd{gamma[,,}\hlnum{1}\hlstd{])}
+\hlkwd{lapply}\hldef{(iTrProbs}\hlopt{$}\hldef{level2,}\hlkwa{function}\hldef{(}\hlkwc{x}\hldef{) x}\hlopt{$}\hldef{gamma[,,}\hlnum{1}\hldef{])}
 \end{alltt}
 \begin{verbatim}
 ## $internalState1
@@ -3525,9 +3518,9 @@ Now let's fit our garter snake HHMM:
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlcom{# fit hierarchical HMM}
-\hlstd{hhmm} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(snakeData,}\hlkwc{hierStates}\hlstd{=hierStates,}\hlkwc{hierDist}\hlstd{=hierDist,}
-               \hlkwc{Par0}\hlstd{=Par,}\hlkwc{DM}\hlstd{=DM,}\hlkwc{hierBeta}\hlstd{=hierBeta,}\hlkwc{hierDelta}\hlstd{=hierDelta,}
-               \hlkwc{nlmPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{hessian}\hlstd{=}\hlnum{FALSE}\hlstd{))}
+\hldef{hhmm} \hlkwb{<-} \hlkwd{fitHMM}\hldef{(snakeData,}\hlkwc{hierStates}\hldef{=hierStates,}\hlkwc{hierDist}\hldef{=hierDist,}
+               \hlkwc{Par0}\hldef{=Par,}\hlkwc{DM}\hldef{=DM,}\hlkwc{hierBeta}\hldef{=hierBeta,}\hlkwc{hierDelta}\hldef{=hierDelta,}
+               \hlkwc{nlmPar}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{hessian}\hldef{=}\hlnum{FALSE}\hldef{))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -3554,20 +3547,18 @@ Now let's fit our garter snake HHMM:
 ## Regression coeffs for the transition probabilities:
 ## ---------------------------------------------------------------
 ## --------------------------  level1  ---------------------------
-##                         1 -> 4    1 -> 7   4 -> 1     4 -> 7    7 -> 1
-## I((level == "1") * 1) 1.245627 0.4309195 1.102371 -0.8702136 -1.397626
-##                          7 -> 4
-## I((level == "1") * 1) -1.114395
+##                         1 -> 4  1 -> 7   4 -> 1     4 -> 7    7 -> 1    7 -> 4
+## I((level == "1") * 1) 1.245628 0.43092 1.102371 -0.8702138 -1.397626 -1.114395
 ## 
 ## --------------------------  level2  ---------------------------
 ##                          1 -> 2    1 -> 3   2 -> 2   2 -> 3   3 -> 2   3 -> 3
-## I((level == "2") * 1) -2.993163 -5.064874 3.927789 1.246248 34.83412 35.96589
+## I((level == "2") * 1) -2.993163 -5.064873 3.927789 1.246249 34.83411 35.96588
 ## 
-##                          4 -> 5    4 -> 6   5 -> 5   5 -> 6   6 -> 5   6 -> 6
-## I((level == "2") * 1) -1.721179 -2.775671 3.540743 2.834411 34.70869 36.19201
+##                         4 -> 5    4 -> 6   5 -> 5   5 -> 6   6 -> 5   6 -> 6
+## I((level == "2") * 1) -1.72118 -2.775671 3.540743 2.834411 34.70867 36.19199
 ## 
-##                          7 -> 8    7 -> 9   8 -> 8  8 -> 9   9 -> 8   9 -> 9
-## I((level == "2") * 1) -5.098038 -17.69051 5.761082 -11.341 33.38975 37.36931
+##                          7 -> 8    7 -> 9   8 -> 8  8 -> 9   9 -> 8  9 -> 9
+## I((level == "2") * 1) -5.098038 -17.69051 5.761082 -11.341 33.38975 37.3693
 ## 
 ## ---------------------------------------------------------------
 ## 
@@ -3576,25 +3567,25 @@ Now let's fit our garter snake HHMM:
 ## ---------------------------------------------------------------
 ## --------------------------  level1  ---------------------------
 ##                internalState1 internalState2 internalState3
-## internalState1      0.1662846      0.5778580     0.25585742
-## internalState2      0.6797265      0.2257256     0.09454788
-## internalState3      0.1569121      0.2082868     0.63480106
+## internalState1      0.1662845      0.5778580     0.25585744
+## internalState2      0.6797266      0.2257256     0.09454786
+## internalState3      0.1569121      0.2082869     0.63480109
 ## 
 ## --------------------------  level2  ---------------------------
 ##              mo1        ex1         es1
-## mo1 9.465723e-01 0.04745038 0.005977329
-## ex1 1.809240e-02 0.91899540 0.062912203
-## es1 1.814806e-16 0.24383499 0.756165009
+## mo1 9.465723e-01 0.04745038 0.005977331
+## ex1 1.809239e-02 0.91899540 0.062912207
+## es1 1.814821e-16 0.24383499 0.756165005
 ## 
 ##              mo2       ex2        es2
-## mo2 8.056961e-01 0.1441028 0.05020101
+## mo2 8.056962e-01 0.1441028 0.05020102
 ## ex2 1.904293e-02 0.6568393 0.32411779
-## es2 1.560291e-16 0.1849268 0.81507322
+## es2 1.560327e-16 0.1849268 0.81507322
 ## 
-##              mo3         ex3          es3
-## mo3 9.939284e-01 0.006071628 2.062842e-08
-## ex3 3.137826e-03 0.996862137 3.726456e-08
-## es3 5.789928e-17 0.018350938 9.816491e-01
+##              mo3        ex3          es3
+## mo3 9.939283e-01 0.00607163 2.062842e-08
+## ex3 3.137827e-03 0.99686214 3.726460e-08
+## es3 5.789933e-17 0.01835094 9.816491e-01
 ## 
 ## ---------------------------------------------------------------
 ## 
@@ -3603,17 +3594,17 @@ Now let's fit our garter snake HHMM:
 ## --------------------------------------------------
 ## --------------------  level1  --------------------
 ##               state 4   state 7
-## (Intercept) -2.536671 -3.509152
+## (Intercept) -2.536666 -3.509149
 ## 
 ## --------------------  level2  --------------------
-##                         state 2   state 3
-## I((level == "2i") * 1) -1.38723 0.1583617
+##                          state 2   state 3
+## I((level == "2i") * 1) -1.387229 0.1583614
 ## 
 ##                          state 5  state 6
-## I((level == "2i") * 1) -1.274268 2.327495
+## I((level == "2i") * 1) -1.274263 2.327495
 ## 
 ##                          state 8    state 9
-## I((level == "2i") * 1) 0.3388004 -0.2605839
+## I((level == "2i") * 1) 0.3388003 -0.2605837
 ## 
 ## --------------------------------------------------
 ## 
@@ -3622,35 +3613,35 @@ Now let's fit our garter snake HHMM:
 ## --------------------------------------------------
 ## --------------------  level1  --------------------
 ##       internalState1 internalState2 internalState3
-## ID:1       0.9016712     0.07134871     0.02698007
-## ID:2       0.9016712     0.07134871     0.02698007
-## ID:3       0.9016712     0.07134871     0.02698007
-## ID:4       0.9016712     0.07134871     0.02698007
-## ID:5       0.9016712     0.07134871     0.02698007
-## ID:6       0.9016712     0.07134871     0.02698007
-## ID:7       0.9016712     0.07134871     0.02698007
-## ID:8       0.9016712     0.07134871     0.02698007
-## ID:9       0.9016712     0.07134871     0.02698007
-## ID:10      0.9016712     0.07134871     0.02698007
-## ID:11      0.9016712     0.07134871     0.02698007
-## ID:12      0.9016712     0.07134871     0.02698007
-## ID:13      0.9016712     0.07134871     0.02698007
-## ID:14      0.9016712     0.07134871     0.02698007
-## ID:15      0.9016712     0.07134871     0.02698007
-## ID:16      0.9016712     0.07134871     0.02698007
-## ID:17      0.9016712     0.07134871     0.02698007
-## ID:18      0.9016712     0.07134871     0.02698007
-## ID:19      0.9016712     0.07134871     0.02698007
+## ID:1       0.9016709     0.07134901     0.02698013
+## ID:2       0.9016709     0.07134901     0.02698013
+## ID:3       0.9016709     0.07134901     0.02698013
+## ID:4       0.9016709     0.07134901     0.02698013
+## ID:5       0.9016709     0.07134901     0.02698013
+## ID:6       0.9016709     0.07134901     0.02698013
+## ID:7       0.9016709     0.07134901     0.02698013
+## ID:8       0.9016709     0.07134901     0.02698013
+## ID:9       0.9016709     0.07134901     0.02698013
+## ID:10      0.9016709     0.07134901     0.02698013
+## ID:11      0.9016709     0.07134901     0.02698013
+## ID:12      0.9016709     0.07134901     0.02698013
+## ID:13      0.9016709     0.07134901     0.02698013
+## ID:14      0.9016709     0.07134901     0.02698013
+## ID:15      0.9016709     0.07134901     0.02698013
+## ID:16      0.9016709     0.07134901     0.02698013
+## ID:17      0.9016709     0.07134901     0.02698013
+## ID:18      0.9016709     0.07134901     0.02698013
+## ID:19      0.9016709     0.07134901     0.02698013
 ## 
 ## --------------------  level2  --------------------
 ##                      mo1       ex1       es1
-## internalState1 0.4129917 0.1031514 0.4838569
+## internalState1 0.4129917 0.1031515 0.4838568
 ## 
 ##                       mo2        ex2       es2
-## internalState2 0.08671624 0.02424895 0.8890348
+## internalState2 0.08671622 0.02424906 0.8890347
 ## 
-##                      mo3       ex3       es3
-## internalState3 0.3150733 0.4421308 0.2427959
+##                      mo3       ex3      es3
+## internalState3 0.3150733 0.4421307 0.242796
 ## 
 ## --------------------------------------------------
 \end{verbatim}
@@ -3662,7 +3653,7 @@ As usual, we can check pseudo-residuals using \verb|plotPR| (Figure \ref{fig:sna
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlkwd{plotPR}\hlstd{(hhmm)}
+\hlkwd{plotPR}\hldef{(hhmm)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -3676,17 +3667,17 @@ As usual, we can check pseudo-residuals using \verb|plotPR| (Figure \ref{fig:sna
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{obsPerLevel} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"simHierData"}\hlstd{)}
+\hldef{obsPerLevel} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hldef{Node}\hlopt{$}\hlkwd{new}\hldef{(}\hlsng{"simHierData"}\hldef{)}
 
 \hlcom{# number of level 1 observations}
-\hlstd{obsPerLevel}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{,}\hlkwc{obs}\hlstd{=M)}
+\hldef{obsPerLevel}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level1"}\hldef{,}\hlkwc{obs}\hldef{=M)}
 
 \hlcom{# number of level 2 observations that follow each level 1 observation}
-\hlstd{obsPerLevel}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{,}\hlkwc{obs}\hlstd{=}\hlkwd{dim}\hlstd{(dataAr)[}\hlnum{1}\hlstd{])}
+\hldef{obsPerLevel}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level2"}\hldef{,}\hlkwc{obs}\hldef{=}\hlkwd{dim}\hldef{(dataAr)[}\hlnum{1}\hldef{])}
 
-\hlstd{simHHMM} \hlkwb{<-} \hlkwd{simHierData}\hlstd{(}\hlkwc{nbAnimals}\hlstd{=W,}
-                       \hlkwc{model}\hlstd{=hhmm,}
-                       \hlkwc{obsPerLevel} \hlstd{= obsPerLevel,} \hlkwc{states} \hlstd{=} \hlnum{TRUE}\hlstd{)}
+\hldef{simHHMM} \hlkwb{<-} \hlkwd{simHierData}\hldef{(}\hlkwc{nbAnimals}\hldef{=W,}
+                       \hlkwc{model}\hldef{=hhmm,}
+                       \hlkwc{obsPerLevel} \hldef{= obsPerLevel,} \hlkwc{states} \hldef{=} \hlnum{TRUE}\hldef{)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -3696,13 +3687,13 @@ As usual, we can check pseudo-residuals using \verb|plotPR| (Figure \ref{fig:sna
 \hlkwd{head}\hldef{(simHHMM)}
 \end{alltt}
 \begin{verbatim}
-##   ID level      step        x  y states
-## 1  1     1        NA       NA NA      4
-## 2  1    2i        NA       NA NA      6
-## 3  1     2 0.9056870 0.000000  0      6
-## 4  1     2 1.9412553 0.905687  0      6
-## 5  1     2 0.8871563 2.846942  0      6
-## 6  1     2 0.6157444 3.734099  0      5
+##   ID level       step          x  y states
+## 1  1     1         NA         NA NA      7
+## 2  1    2i         NA         NA NA      7
+## 3  1     2 0.08420142 0.00000000  0      7
+## 4  1     2 0.17292406 0.08420142  0      7
+## 5  1     2 0.08644914 0.25712548  0      7
+## 6  1     2 0.31875088 0.34357462  0      7
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -3756,10 +3747,10 @@ Now we will demonstrate how HHMMs with data streams observed at multiple time sc
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlkwd{head}\hlstd{(codData)}
+\hlkwd{head}\hldef{(codData)}
 
 \hlcom{# data summary}
-\hlkwd{summary}\hlstd{(codData,}\hlkwc{dataNames}\hlstd{=}\hlkwd{names}\hlstd{(codData)[}\hlopt{-}\hlnum{1}\hlstd{])}
+\hlkwd{summary}\hldef{(codData,}\hlkwc{dataNames}\hldef{=}\hlkwd{names}\hldef{(codData)[}\hlopt{-}\hlnum{1}\hldef{])}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -3772,21 +3763,21 @@ From sections \ref{sec:harborPorpoise} and \ref{sec:garterSnake}, we should now 
 \hlcom{# states 1-3 = coarse state 1 (resident/foraging)}
 \hlcom{# states 4-6 = coarse state 2 (mobile/foraging)}
 \hlcom{# states 7-9 = coarse state 3 (travelling/migrating)}
-\hlstd{hierStates} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"cod HHMM states"}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"resForage"}\hlstd{)}   \hlcom{# resident/foraging}
-\hlstd{hierStates}\hlopt{$}\hlstd{resForage}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"rF1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{1}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{resForage}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"rF2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{2}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{resForage}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"rF3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{3}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"mobForage"}\hlstd{)}  \hlcom{# mobile/foraging}
-\hlstd{hierStates}\hlopt{$}\hlstd{mobForage}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"mF1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{4}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{mobForage}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"mF2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{5}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{mobForage}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"mF3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{6}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"transit"}\hlstd{)}    \hlcom{# travelling/migrating}
-\hlstd{hierStates}\hlopt{$}\hlstd{transit}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"t1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{7}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{transit}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"t2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{8}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{transit}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"t3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{9}\hlstd{)}
+\hldef{hierStates} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hldef{Node}\hlopt{$}\hlkwd{new}\hldef{(}\hlsng{"cod HHMM states"}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"resForage"}\hldef{)}   \hlcom{# resident/foraging}
+\hldef{hierStates}\hlopt{$}\hldef{resForage}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"rF1"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{1}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{resForage}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"rF2"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{2}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{resForage}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"rF3"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{3}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"mobForage"}\hldef{)}  \hlcom{# mobile/foraging}
+\hldef{hierStates}\hlopt{$}\hldef{mobForage}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"mF1"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{4}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{mobForage}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"mF2"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{5}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{mobForage}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"mF3"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{6}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"transit"}\hldef{)}    \hlcom{# travelling/migrating}
+\hldef{hierStates}\hlopt{$}\hldef{transit}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"t1"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{7}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{transit}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"t2"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{8}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{transit}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"t3"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{9}\hldef{)}
 
-\hlkwd{plot}\hlstd{(hierStates)}
+\hlkwd{plot}\hldef{(hierStates)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -3804,14 +3795,14 @@ Next we specify the hierarchical nature of the data streams as a \verb|data.tree
 \hlcom{# data stream distributions}
 \hlcom{# level 1 = coarse level (step="gamma", angle="vm")}
 \hlcom{# level 2 = fine level (vertical="gamma")}
-\hlstd{hierDist} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"cod HHMM dist"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlstd{level1}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"step"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlstd{level1}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"angle"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"vm"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"vertical"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
+\hldef{hierDist} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hldef{Node}\hlopt{$}\hlkwd{new}\hldef{(}\hlsng{"cod HHMM dist"}\hldef{)}
+\hldef{hierDist}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level1"}\hldef{)}
+\hldef{hierDist}\hlopt{$}\hldef{level1}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"step"}\hldef{,} \hlkwc{dist}\hldef{=}\hlsng{"gamma"}\hldef{)}
+\hldef{hierDist}\hlopt{$}\hldef{level1}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"angle"}\hldef{,} \hlkwc{dist}\hldef{=}\hlsng{"vm"}\hldef{)}
+\hldef{hierDist}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level2"}\hldef{)}
+\hldef{hierDist}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"vertical"}\hldef{,} \hlkwc{dist}\hldef{=}\hlsng{"gamma"}\hldef{)}
 
-\hlkwd{plot}\hlstd{(hierDist)}
+\hlkwd{plot}\hldef{(hierDist)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -3826,23 +3817,23 @@ We then constrain the fine-scale states within each coarse-scale state to have t
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{nbStates} \hlkwb{<-} \hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlkwd{Get}\hlstd{(}\hlstr{"state"}\hlstd{,}\hlkwc{filterFun}\hlstd{=data.tree}\hlopt{::}\hlstd{isLeaf))}
+\hldef{nbStates} \hlkwb{<-} \hlkwd{length}\hldef{(hierStates}\hlopt{$}\hlkwd{Get}\hldef{(}\hlsng{"state"}\hldef{,}\hlkwc{filterFun}\hldef{=data.tree}\hlopt{::}\hldef{isLeaf))}
 
 \hlcom{# constrain coarse-scale parameters for fine-scale states}
-\hlstd{DM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{kronecker}\hlstd{(}\hlkwd{diag}\hlstd{(}\hlnum{6}\hlstd{),}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{)),}
-                       \hlkwc{nrow}\hlstd{=}\hlnum{2}\hlopt{*}\hlstd{nbStates,}
-                       \hlkwc{ncol}\hlstd{=}\hlnum{6}\hlstd{,}
-                       \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"mean_"}\hlstd{,}\hlstr{"sd_"}\hlstd{),}\hlkwc{each}\hlstd{=nbStates)}
-                                            \hlstd{,}\hlnum{1}\hlopt{:}\hlstd{nbStates),}
-                                     \hlkwd{c}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"mean_"}\hlstd{,}\hlstr{"sd_"}\hlstd{),}\hlkwc{each}\hlstd{=}\hlnum{3}\hlstd{),}
-                                              \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{children),}
-                                              \hlstr{":(Intercept)"}\hlstd{)))))}
-\hlstd{DM}\hlopt{$}\hlstd{angle} \hlkwb{<-} \hlstd{DM}\hlopt{$}\hlstd{step}
-\hlkwd{dimnames}\hlstd{(DM}\hlopt{$}\hlstd{angle)} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"mean_"}\hlstd{,}\hlstr{"concentration_"}\hlstd{),}\hlkwc{each}\hlstd{=nbStates)}
-                                  \hlstd{,}\hlnum{1}\hlopt{:}\hlstd{nbStates),}
-                           \hlkwd{c}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"mean_"}\hlstd{,}\hlstr{"concentration_"}\hlstd{),}\hlkwc{each}\hlstd{=}\hlnum{3}\hlstd{),}
-                                    \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{children),}
-                                    \hlstr{":(Intercept)"}\hlstd{)))}
+\hldef{DM} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwc{step}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{kronecker}\hldef{(}\hlkwd{diag}\hldef{(}\hlnum{6}\hldef{),}\hlkwd{c}\hldef{(}\hlnum{1}\hldef{,}\hlnum{1}\hldef{,}\hlnum{1}\hldef{)),}
+                       \hlkwc{nrow}\hldef{=}\hlnum{2}\hlopt{*}\hldef{nbStates,}
+                       \hlkwc{ncol}\hldef{=}\hlnum{6}\hldef{,}
+                       \hlkwc{dimnames}\hldef{=}\hlkwd{list}\hldef{(}\hlkwd{paste0}\hldef{(}\hlkwd{rep}\hldef{(}\hlkwd{c}\hldef{(}\hlsng{"mean_"}\hldef{,}\hlsng{"sd_"}\hldef{),}\hlkwc{each}\hldef{=nbStates)}
+                                            \hldef{,}\hlnum{1}\hlopt{:}\hldef{nbStates),}
+                                     \hlkwd{c}\hldef{(}\hlkwd{paste0}\hldef{(}\hlkwd{rep}\hldef{(}\hlkwd{c}\hldef{(}\hlsng{"mean_"}\hldef{,}\hlsng{"sd_"}\hldef{),}\hlkwc{each}\hldef{=}\hlnum{3}\hldef{),}
+                                              \hlnum{1}\hlopt{:}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{children),}
+                                              \hlsng{":(Intercept)"}\hldef{)))))}
+\hldef{DM}\hlopt{$}\hldef{angle} \hlkwb{<-} \hldef{DM}\hlopt{$}\hldef{step}
+\hlkwd{dimnames}\hldef{(DM}\hlopt{$}\hldef{angle)} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwd{paste0}\hldef{(}\hlkwd{rep}\hldef{(}\hlkwd{c}\hldef{(}\hlsng{"mean_"}\hldef{,}\hlsng{"concentration_"}\hldef{),}\hlkwc{each}\hldef{=nbStates)}
+                                  \hldef{,}\hlnum{1}\hlopt{:}\hldef{nbStates),}
+                           \hlkwd{c}\hldef{(}\hlkwd{paste0}\hldef{(}\hlkwd{rep}\hldef{(}\hlkwd{c}\hldef{(}\hlsng{"mean_"}\hldef{,}\hlsng{"concentration_"}\hldef{),}\hlkwc{each}\hldef{=}\hlnum{3}\hldef{),}
+                                    \hlnum{1}\hlopt{:}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{children),}
+                                    \hlsng{":(Intercept)"}\hldef{)))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -3851,36 +3842,36 @@ We then constrain the fine-scale states within each coarse-scale state to have t
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlcom{### defining start values based on those reported by Adam et al}
-\hlstd{hm.mu0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{5.482}\hlstd{,} \hlnum{6.786}\hlstd{,} \hlnum{14.914}\hlstd{)}
-\hlstd{hm.sigma0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{4.27}\hlstd{,} \hlnum{4.714}\hlstd{,} \hlnum{11.242}\hlstd{)}
+\hldef{hm.mu0} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{5.482}\hldef{,} \hlnum{6.786}\hldef{,} \hlnum{14.914}\hldef{)}
+\hldef{hm.sigma0} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{4.27}\hldef{,} \hlnum{4.714}\hldef{,} \hlnum{11.242}\hldef{)}
 
-\hlstd{ha.mu0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.011}\hlstd{,} \hlopt{-}\hlnum{0.299}\hlstd{,} \hlnum{0.044}\hlstd{)}
-\hlstd{ha.kappa0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{1.571}\hlstd{,} \hlnum{1.426}\hlstd{,} \hlnum{2.15}\hlstd{)}
+\hldef{ha.mu0} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{0.011}\hldef{,} \hlopt{-}\hlnum{0.299}\hldef{,} \hlnum{0.044}\hldef{)}
+\hldef{ha.kappa0} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{1.571}\hldef{,} \hlnum{1.426}\hldef{,} \hlnum{2.15}\hldef{)}
 
-\hlstd{vm.mu0} \hlkwb{<-} \hlstd{vm.sigma0} \hlkwb{<-} \hlstd{vm.pi0} \hlkwb{<-} \hlkwd{list}\hlstd{()}
-\hlstd{vm.mu0[[}\hlnum{1}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.116}\hlstd{,} \hlnum{0.303}\hlstd{,} \hlnum{0.691}\hlstd{)}
-\hlstd{vm.mu0[[}\hlnum{2}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.109}\hlstd{,} \hlnum{0.056}\hlstd{,} \hlnum{0.351}\hlstd{)}
-\hlstd{vm.mu0[[}\hlnum{3}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.125}\hlstd{,} \hlnum{0.514}\hlstd{,} \hlnum{1.987}\hlstd{)}
+\hldef{vm.mu0} \hlkwb{<-} \hldef{vm.sigma0} \hlkwb{<-} \hldef{vm.pi0} \hlkwb{<-} \hlkwd{list}\hldef{()}
+\hldef{vm.mu0[[}\hlnum{1}\hldef{]]} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{0.116}\hldef{,} \hlnum{0.303}\hldef{,} \hlnum{0.691}\hldef{)}
+\hldef{vm.mu0[[}\hlnum{2}\hldef{]]} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{0.109}\hldef{,} \hlnum{0.056}\hldef{,} \hlnum{0.351}\hldef{)}
+\hldef{vm.mu0[[}\hlnum{3}\hldef{]]} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{0.125}\hldef{,} \hlnum{0.514}\hldef{,} \hlnum{1.987}\hldef{)}
 
-\hlstd{vm.sigma0[[}\hlnum{1}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.096}\hlstd{,} \hlnum{0.261}\hlstd{,} \hlnum{0.636}\hlstd{)}
-\hlstd{vm.sigma0[[}\hlnum{2}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.043}\hlstd{,} \hlnum{0.047}\hlstd{,} \hlnum{0.342}\hlstd{)}
-\hlstd{vm.sigma0[[}\hlnum{3}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.109}\hlstd{,} \hlnum{0.462}\hlstd{,} \hlnum{1.878}\hlstd{)}
+\hldef{vm.sigma0[[}\hlnum{1}\hldef{]]} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{0.096}\hldef{,} \hlnum{0.261}\hldef{,} \hlnum{0.636}\hldef{)}
+\hldef{vm.sigma0[[}\hlnum{2}\hldef{]]} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{0.043}\hldef{,} \hlnum{0.047}\hldef{,} \hlnum{0.342}\hldef{)}
+\hldef{vm.sigma0[[}\hlnum{3}\hldef{]]} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{0.109}\hldef{,} \hlnum{0.462}\hldef{,} \hlnum{1.878}\hldef{)}
 
-\hlstd{vm.pi0[[}\hlnum{1}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.014}\hlstd{,} \hlnum{0.003}\hlstd{,} \hlnum{1.050e-06}\hlstd{)}
-\hlstd{vm.pi0[[}\hlnum{2}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{1.791e-08}\hlstd{,} \hlnum{0.035}\hlstd{,} \hlnum{0.002}\hlstd{)}
-\hlstd{vm.pi0[[}\hlnum{3}\hlstd{]]} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.012}\hlstd{,} \hlnum{2.933e-04}\hlstd{,} \hlnum{3.462e-09}\hlstd{)}
+\hldef{vm.pi0[[}\hlnum{1}\hldef{]]} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{0.014}\hldef{,} \hlnum{0.003}\hldef{,} \hlnum{1.050e-06}\hldef{)}
+\hldef{vm.pi0[[}\hlnum{2}\hldef{]]} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{1.791e-08}\hldef{,} \hlnum{0.035}\hldef{,} \hlnum{0.002}\hldef{)}
+\hldef{vm.pi0[[}\hlnum{3}\hldef{]]} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{0.012}\hldef{,} \hlnum{2.933e-04}\hldef{,} \hlnum{3.462e-09}\hldef{)}
 
-\hlstd{Par0} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{step}\hlstd{=}\hlkwd{c}\hlstd{(}\hlkwd{rep}\hlstd{(hm.mu0,}\hlkwc{each}\hlstd{=}\hlnum{3}\hlstd{),}\hlkwd{rep}\hlstd{(hm.sigma0,}\hlkwc{each}\hlstd{=}\hlnum{3}\hlstd{)),}
-             \hlkwc{angle}\hlstd{=}\hlkwd{c}\hlstd{(}\hlkwd{rep}\hlstd{(ha.mu0,}\hlkwc{each}\hlstd{=}\hlnum{3}\hlstd{),}\hlkwd{rep}\hlstd{(ha.kappa0,}\hlkwc{each}\hlstd{=}\hlnum{3}\hlstd{)),}
-             \hlkwc{vertical}\hlstd{=}\hlkwd{c}\hlstd{(}\hlkwd{unlist}\hlstd{(vm.mu0),}\hlkwd{unlist}\hlstd{(vm.sigma0),}\hlkwd{unlist}\hlstd{(vm.pi0)))}
+\hldef{Par0} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwc{step}\hldef{=}\hlkwd{c}\hldef{(}\hlkwd{rep}\hldef{(hm.mu0,}\hlkwc{each}\hldef{=}\hlnum{3}\hldef{),}\hlkwd{rep}\hldef{(hm.sigma0,}\hlkwc{each}\hldef{=}\hlnum{3}\hldef{)),}
+             \hlkwc{angle}\hldef{=}\hlkwd{c}\hldef{(}\hlkwd{rep}\hldef{(ha.mu0,}\hlkwc{each}\hldef{=}\hlnum{3}\hldef{),}\hlkwd{rep}\hldef{(ha.kappa0,}\hlkwc{each}\hldef{=}\hlnum{3}\hldef{)),}
+             \hlkwc{vertical}\hldef{=}\hlkwd{c}\hldef{(}\hlkwd{unlist}\hldef{(vm.mu0),}\hlkwd{unlist}\hldef{(vm.sigma0),}\hlkwd{unlist}\hldef{(vm.pi0)))}
 
 \hlcom{# starting values for data stream parameters on the working scale}
-\hlstd{Par} \hlkwb{<-} \hlkwd{getParDM}\hlstd{(codData,}
-                \hlkwc{hierStates}\hlstd{=hierStates,}
-                \hlkwc{hierDist}\hlstd{=hierDist,}
-                \hlkwc{Par}\hlstd{=Par0,}
-                \hlkwc{DM}\hlstd{=DM,}
-                \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{))}
+\hldef{Par} \hlkwb{<-} \hlkwd{getParDM}\hldef{(codData,}
+                \hlkwc{hierStates}\hldef{=hierStates,}
+                \hlkwc{hierDist}\hldef{=hierDist,}
+                \hlkwc{Par}\hldef{=Par0,}
+                \hlkwc{DM}\hldef{=DM,}
+                \hlkwc{estAngleMean} \hldef{=} \hlkwd{list}\hldef{(}\hlkwc{angle}\hldef{=}\hlnum{TRUE}\hldef{))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -3890,9 +3881,9 @@ We then constrain the fine-scale states within each coarse-scale state to have t
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlcom{# define hierarchical t.p.m. formula(s)}
-\hlstd{hierFormula} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"cod HHMM formula"}\hlstd{)}
-\hlstd{hierFormula}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{,} \hlkwc{formula}\hlstd{=}\hlopt{~}\hlnum{1}\hlstd{)}
-\hlstd{hierFormula}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{,} \hlkwc{formula}\hlstd{=}\hlopt{~}\hlkwd{cosinor}\hlstd{(time,} \hlkwc{period}\hlstd{=}\hlnum{24}\hlstd{))}
+\hldef{hierFormula} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hldef{Node}\hlopt{$}\hlkwd{new}\hldef{(}\hlsng{"cod HHMM formula"}\hldef{)}
+\hldef{hierFormula}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level1"}\hldef{,} \hlkwc{formula}\hldef{=}\hlopt{~}\hlnum{1}\hldef{)}
+\hldef{hierFormula}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level2"}\hldef{,} \hlkwc{formula}\hldef{=}\hlopt{~}\hlkwd{cosinor}\hldef{(time,} \hlkwc{period}\hldef{=}\hlnum{24}\hldef{))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -3901,53 +3892,53 @@ All that remains is (optionally) specifying starting values for the initial dist
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{hierBeta} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"cod beta"}\hlstd{)}
-\hlstd{hierBeta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{,}
-          \hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{18.585}\hlstd{,} \hlopt{-}\hlnum{2.86}\hlstd{,} \hlopt{-}\hlnum{2.551}\hlstd{,} \hlopt{-}\hlnum{1.641}\hlstd{,} \hlopt{-}\hlnum{2.169}\hlstd{,} \hlopt{-}\hlnum{2.415}\hlstd{),}
-                      \hlkwc{nrow}\hlstd{=}\hlnum{1}\hlstd{,}
-                      \hlkwc{ncol}\hlstd{=}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{children)}
-                       \hlopt{*}\hlstd{(}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{children)}\hlopt{-}\hlnum{1}\hlstd{)))}
-\hlstd{hierBeta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{)}
-\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"resForage"}\hlstd{,}
-          \hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.562}\hlstd{,} \hlopt{-}\hlnum{3.403}\hlstd{,}  \hlnum{2.765}\hlstd{,} \hlopt{-}\hlnum{1.607}\hlstd{,}  \hlnum{2.273}\hlstd{,}  \hlnum{4.842}\hlstd{,}
-                        \hlopt{-}\hlnum{0.665}\hlstd{,}  \hlopt{-}\hlnum{0.26}\hlstd{,} \hlopt{-}\hlnum{0.681}\hlstd{,} \hlopt{-}\hlnum{0.149}\hlstd{,} \hlopt{-}\hlnum{2.728}\hlstd{,} \hlopt{-}\hlnum{2.798}\hlstd{,}
-                        \hlopt{-}\hlnum{0.027}\hlstd{,}   \hlnum{0.26}\hlstd{,}  \hlnum{0.191}\hlstd{,}  \hlnum{0.667}\hlstd{,}  \hlnum{0.123}\hlstd{,} \hlopt{-}\hlnum{0.262}\hlstd{),}
-                      \hlkwc{nrow}\hlstd{=}\hlnum{3}\hlstd{,}
-                      \hlkwc{ncol}\hlstd{=}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{resForage}\hlopt{$}\hlstd{children)}
-                       \hlopt{*}\hlstd{(}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{resForage}\hlopt{$}\hlstd{children)}\hlopt{-}\hlnum{1}\hlstd{),}
-                      \hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{))}
-\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"mobForage"}\hlstd{,}
-          \hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.156}\hlstd{,} \hlopt{-}\hlnum{3.662}\hlstd{,}   \hlnum{3.01}\hlstd{,}  \hlnum{0.597}\hlstd{,} \hlopt{-}\hlnum{0.313}\hlstd{,}  \hlnum{2.897}\hlstd{,}
-                         \hlnum{0.067}\hlstd{,}  \hlopt{-}\hlnum{1.22}\hlstd{,} \hlopt{-}\hlnum{0.799}\hlstd{,} \hlopt{-}\hlnum{0.797}\hlstd{,}   \hlnum{0.15}\hlstd{,}  \hlnum{0.379}\hlstd{,}
-                        \hlopt{-}\hlnum{0.112}\hlstd{,} \hlopt{-}\hlnum{0.195}\hlstd{,} \hlopt{-}\hlnum{0.269}\hlstd{,} \hlopt{-}\hlnum{0.215}\hlstd{,}  \hlnum{1.539}\hlstd{,}  \hlnum{0.728}\hlstd{),}
-                      \hlkwc{nrow}\hlstd{=}\hlnum{3}\hlstd{,}
-                      \hlkwc{ncol}\hlstd{=}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{mobForage}\hlopt{$}\hlstd{children)}
-                       \hlopt{*}\hlstd{(}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{mobForage}\hlopt{$}\hlstd{children)}\hlopt{-}\hlnum{1}\hlstd{),}
-                      \hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{))}
-\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"transit"}\hlstd{,}
-          \hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.53}\hlstd{,} \hlopt{-}\hlnum{4.279}\hlstd{,}  \hlnum{2.507}\hlstd{,} \hlopt{-}\hlnum{0.228}\hlstd{,} \hlnum{10.803}\hlstd{,} \hlnum{12.873}\hlstd{,}
-                        \hlopt{-}\hlnum{0.04}\hlstd{,}  \hlnum{1.221}\hlstd{,} \hlopt{-}\hlnum{0.301}\hlstd{,}  \hlnum{0.284}\hlstd{,} \hlopt{-}\hlnum{0.106}\hlstd{,} \hlopt{-}\hlnum{0.077}\hlstd{,}
-                        \hlnum{0.629}\hlstd{,} \hlopt{-}\hlnum{0.226}\hlstd{,} \hlopt{-}\hlnum{0.253}\hlstd{,} \hlopt{-}\hlnum{0.303}\hlstd{,}  \hlnum{0.011}\hlstd{,}  \hlnum{0.036}\hlstd{),}
-                      \hlkwc{nrow}\hlstd{=}\hlnum{3}\hlstd{,}
-                      \hlkwc{ncol}\hlstd{=}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{transit}\hlopt{$}\hlstd{children)}
-                       \hlopt{*}\hlstd{(}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{transit}\hlopt{$}\hlstd{children)}\hlopt{-}\hlnum{1}\hlstd{),}
-                      \hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{))}
+\hldef{hierBeta} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hldef{Node}\hlopt{$}\hlkwd{new}\hldef{(}\hlsng{"cod beta"}\hldef{)}
+\hldef{hierBeta}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level1"}\hldef{,}
+          \hlkwc{beta}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{18.585}\hldef{,} \hlopt{-}\hlnum{2.86}\hldef{,} \hlopt{-}\hlnum{2.551}\hldef{,} \hlopt{-}\hlnum{1.641}\hldef{,} \hlopt{-}\hlnum{2.169}\hldef{,} \hlopt{-}\hlnum{2.415}\hldef{),}
+                      \hlkwc{nrow}\hldef{=}\hlnum{1}\hldef{,}
+                      \hlkwc{ncol}\hldef{=}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{children)}
+                       \hlopt{*}\hldef{(}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{children)}\hlopt{-}\hlnum{1}\hldef{)))}
+\hldef{hierBeta}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level2"}\hldef{)}
+\hldef{hierBeta}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"resForage"}\hldef{,}
+          \hlkwc{beta}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{2.562}\hldef{,} \hlopt{-}\hlnum{3.403}\hldef{,}  \hlnum{2.765}\hldef{,} \hlopt{-}\hlnum{1.607}\hldef{,}  \hlnum{2.273}\hldef{,}  \hlnum{4.842}\hldef{,}
+                        \hlopt{-}\hlnum{0.665}\hldef{,}  \hlopt{-}\hlnum{0.26}\hldef{,} \hlopt{-}\hlnum{0.681}\hldef{,} \hlopt{-}\hlnum{0.149}\hldef{,} \hlopt{-}\hlnum{2.728}\hldef{,} \hlopt{-}\hlnum{2.798}\hldef{,}
+                        \hlopt{-}\hlnum{0.027}\hldef{,}   \hlnum{0.26}\hldef{,}  \hlnum{0.191}\hldef{,}  \hlnum{0.667}\hldef{,}  \hlnum{0.123}\hldef{,} \hlopt{-}\hlnum{0.262}\hldef{),}
+                      \hlkwc{nrow}\hldef{=}\hlnum{3}\hldef{,}
+                      \hlkwc{ncol}\hldef{=}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{resForage}\hlopt{$}\hldef{children)}
+                       \hlopt{*}\hldef{(}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{resForage}\hlopt{$}\hldef{children)}\hlopt{-}\hlnum{1}\hldef{),}
+                      \hlkwc{byrow}\hldef{=}\hlnum{TRUE}\hldef{))}
+\hldef{hierBeta}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"mobForage"}\hldef{,}
+          \hlkwc{beta}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{2.156}\hldef{,} \hlopt{-}\hlnum{3.662}\hldef{,}   \hlnum{3.01}\hldef{,}  \hlnum{0.597}\hldef{,} \hlopt{-}\hlnum{0.313}\hldef{,}  \hlnum{2.897}\hldef{,}
+                         \hlnum{0.067}\hldef{,}  \hlopt{-}\hlnum{1.22}\hldef{,} \hlopt{-}\hlnum{0.799}\hldef{,} \hlopt{-}\hlnum{0.797}\hldef{,}   \hlnum{0.15}\hldef{,}  \hlnum{0.379}\hldef{,}
+                        \hlopt{-}\hlnum{0.112}\hldef{,} \hlopt{-}\hlnum{0.195}\hldef{,} \hlopt{-}\hlnum{0.269}\hldef{,} \hlopt{-}\hlnum{0.215}\hldef{,}  \hlnum{1.539}\hldef{,}  \hlnum{0.728}\hldef{),}
+                      \hlkwc{nrow}\hldef{=}\hlnum{3}\hldef{,}
+                      \hlkwc{ncol}\hldef{=}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{mobForage}\hlopt{$}\hldef{children)}
+                       \hlopt{*}\hldef{(}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{mobForage}\hlopt{$}\hldef{children)}\hlopt{-}\hlnum{1}\hldef{),}
+                      \hlkwc{byrow}\hldef{=}\hlnum{TRUE}\hldef{))}
+\hldef{hierBeta}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"transit"}\hldef{,}
+          \hlkwc{beta}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{2.53}\hldef{,} \hlopt{-}\hlnum{4.279}\hldef{,}  \hlnum{2.507}\hldef{,} \hlopt{-}\hlnum{0.228}\hldef{,} \hlnum{10.803}\hldef{,} \hlnum{12.873}\hldef{,}
+                        \hlopt{-}\hlnum{0.04}\hldef{,}  \hlnum{1.221}\hldef{,} \hlopt{-}\hlnum{0.301}\hldef{,}  \hlnum{0.284}\hldef{,} \hlopt{-}\hlnum{0.106}\hldef{,} \hlopt{-}\hlnum{0.077}\hldef{,}
+                        \hlnum{0.629}\hldef{,} \hlopt{-}\hlnum{0.226}\hldef{,} \hlopt{-}\hlnum{0.253}\hldef{,} \hlopt{-}\hlnum{0.303}\hldef{,}  \hlnum{0.011}\hldef{,}  \hlnum{0.036}\hldef{),}
+                      \hlkwc{nrow}\hldef{=}\hlnum{3}\hldef{,}
+                      \hlkwc{ncol}\hldef{=}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{transit}\hlopt{$}\hldef{children)}
+                       \hlopt{*}\hldef{(}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{transit}\hlopt{$}\hldef{children)}\hlopt{-}\hlnum{1}\hldef{),}
+                      \hlkwc{byrow}\hldef{=}\hlnum{TRUE}\hldef{))}
 
-\hlstd{hierDelta} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"cod delta"}\hlstd{)}
-\hlstd{hierDelta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{,}\hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{15.776}\hlstd{,} \hlnum{4.78}\hlstd{),}\hlnum{1}\hlstd{))}
-\hlstd{hierDelta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{)}
-\hlstd{hierDelta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"resForage"}\hlstd{,}\hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{0.643}\hlstd{,} \hlopt{-}\hlnum{2.416}\hlstd{),}\hlnum{1}\hlstd{))}
-\hlstd{hierDelta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"mobForage"}\hlstd{,}\hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{1.181}\hlstd{,} \hlnum{0.46}\hlstd{),}\hlnum{1}\hlstd{))}
-\hlstd{hierDelta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"transit"}\hlstd{,}\hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{0.357}\hlstd{,} \hlopt{-}\hlnum{0.624}\hlstd{),}\hlnum{1}\hlstd{))}
+\hldef{hierDelta} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hldef{Node}\hlopt{$}\hlkwd{new}\hldef{(}\hlsng{"cod delta"}\hldef{)}
+\hldef{hierDelta}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level1"}\hldef{,}\hlkwc{delta}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlnum{15.776}\hldef{,} \hlnum{4.78}\hldef{),}\hlnum{1}\hldef{))}
+\hldef{hierDelta}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level2"}\hldef{)}
+\hldef{hierDelta}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"resForage"}\hldef{,}\hlkwc{delta}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{0.643}\hldef{,} \hlopt{-}\hlnum{2.416}\hldef{),}\hlnum{1}\hldef{))}
+\hldef{hierDelta}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"mobForage"}\hldef{,}\hlkwc{delta}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlnum{1.181}\hldef{,} \hlnum{0.46}\hldef{),}\hlnum{1}\hldef{))}
+\hldef{hierDelta}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"transit"}\hldef{,}\hlkwc{delta}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{0.357}\hldef{,} \hlopt{-}\hlnum{0.624}\hldef{),}\hlnum{1}\hldef{))}
 
 \hlcom{# check hierarchical model specification and parameters}
-\hlkwd{checkPar0}\hlstd{(codData,}
-          \hlkwc{hierStates} \hlstd{= hierStates,}
-          \hlkwc{hierDist} \hlstd{= hierDist,}
-          \hlkwc{hierFormula} \hlstd{= hierFormula,}
-          \hlkwc{Par0} \hlstd{= Par,} \hlkwc{hierBeta} \hlstd{= hierBeta,} \hlkwc{hierDelta} \hlstd{= hierDelta,}
-          \hlkwc{DM} \hlstd{= DM,}
-          \hlkwc{estAngleMean} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{angle}\hlstd{=}\hlnum{TRUE}\hlstd{))}
+\hlkwd{checkPar0}\hldef{(codData,}
+          \hlkwc{hierStates} \hldef{= hierStates,}
+          \hlkwc{hierDist} \hldef{= hierDist,}
+          \hlkwc{hierFormula} \hldef{= hierFormula,}
+          \hlkwc{Par0} \hldef{= Par,} \hlkwc{hierBeta} \hldef{= hierBeta,} \hlkwc{hierDelta} \hldef{= hierDelta,}
+          \hlkwc{DM} \hldef{= DM,}
+          \hlkwc{estAngleMean} \hldef{=} \hlkwd{list}\hldef{(}\hlkwc{angle}\hldef{=}\hlnum{TRUE}\hldef{))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -4079,35 +4070,35 @@ Next we define the hierarchical nature of the states and data streams (Figures \
 \hlcom{# states 1-3 = coarse state 1 (high activity)}
 \hlcom{# states 4-6 = coarse state 2 (resting)}
 \hlcom{# states 7-9 = coarse state 3 (travelling)}
-\hlstd{hierStates} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"shark HHMM states"}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"activity"}\hlstd{)} \hlcom{# zero distance travelled, high activity}
-\hlstd{hierStates}\hlopt{$}\hlstd{activity}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"a1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{1}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{activity}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"a2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{2}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{activity}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"a3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{3}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"resting"}\hlstd{)}  \hlcom{# zero distance travelled, low activity}
-\hlstd{hierStates}\hlopt{$}\hlstd{resting}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"r1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{4}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{resting}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"r2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{5}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{resting}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"r3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{6}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"transit"}\hlstd{)}  \hlcom{# travelling}
-\hlstd{hierStates}\hlopt{$}\hlstd{transit}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"t1"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{7}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{transit}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"t2"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{8}\hlstd{)}
-\hlstd{hierStates}\hlopt{$}\hlstd{transit}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"t3"}\hlstd{,} \hlkwc{state}\hlstd{=}\hlnum{9}\hlstd{)}
+\hldef{hierStates} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hldef{Node}\hlopt{$}\hlkwd{new}\hldef{(}\hlsng{"shark HHMM states"}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"activity"}\hldef{)} \hlcom{# zero distance travelled, high activity}
+\hldef{hierStates}\hlopt{$}\hldef{activity}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"a1"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{1}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{activity}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"a2"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{2}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{activity}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"a3"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{3}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"resting"}\hldef{)}  \hlcom{# zero distance travelled, low activity}
+\hldef{hierStates}\hlopt{$}\hldef{resting}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"r1"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{4}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{resting}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"r2"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{5}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{resting}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"r3"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{6}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"transit"}\hldef{)}  \hlcom{# travelling}
+\hldef{hierStates}\hlopt{$}\hldef{transit}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"t1"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{7}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{transit}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"t2"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{8}\hldef{)}
+\hldef{hierStates}\hlopt{$}\hldef{transit}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"t3"}\hldef{,} \hlkwc{state}\hldef{=}\hlnum{9}\hldef{)}
 
-\hlkwd{plot}\hlstd{(hierStates)}
+\hlkwd{plot}\hldef{(hierStates)}
 
-\hlstd{nbStates} \hlkwb{<-} \hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlkwd{Get}\hlstd{(}\hlstr{"state"}\hlstd{,}\hlkwc{filterFun}\hlstd{=data.tree}\hlopt{::}\hlstd{isLeaf))}
-\hlstd{nCat} \hlkwb{<-} \hlnum{8} \hlcom{# number of stepCat categories}
+\hldef{nbStates} \hlkwb{<-} \hlkwd{length}\hldef{(hierStates}\hlopt{$}\hlkwd{Get}\hldef{(}\hlsng{"state"}\hldef{,}\hlkwc{filterFun}\hldef{=data.tree}\hlopt{::}\hldef{isLeaf))}
+\hldef{nCat} \hlkwb{<-} \hlnum{8} \hlcom{# number of stepCat categories}
 
 \hlcom{# data stream distributions }
 \hlcom{# level 1 = coarse level (stepCat="cat8")}
 \hlcom{# level 2 = fine level (odbas="gamma")}
-\hlstd{hierDist} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"shark HHMM dist"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlstd{level1}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"stepCat"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlkwd{paste0}\hlstd{(}\hlstr{"cat"}\hlstd{,nCat))}
-\hlstd{hierDist}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{)}
-\hlstd{hierDist}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"odbas"}\hlstd{,} \hlkwc{dist}\hlstd{=}\hlstr{"gamma"}\hlstd{)}
+\hldef{hierDist} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hldef{Node}\hlopt{$}\hlkwd{new}\hldef{(}\hlsng{"shark HHMM dist"}\hldef{)}
+\hldef{hierDist}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level1"}\hldef{)}
+\hldef{hierDist}\hlopt{$}\hldef{level1}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"stepCat"}\hldef{,} \hlkwc{dist}\hldef{=}\hlkwd{paste0}\hldef{(}\hlsng{"cat"}\hldef{,nCat))}
+\hldef{hierDist}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level2"}\hldef{)}
+\hldef{hierDist}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"odbas"}\hldef{,} \hlkwc{dist}\hldef{=}\hlsng{"gamma"}\hldef{)}
 
-\hlkwd{plot}\hlstd{(hierDist)}
+\hlkwd{plot}\hldef{(hierDist)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -4130,28 +4121,28 @@ Both the ``activity'' and ``resting'' coarse-scale states were assumed to have z
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlcom{### starting values based on Adam et al}
-\hlstd{mu0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.191}\hlstd{,} \hlnum{0.323}\hlstd{,} \hlnum{0.721}\hlstd{,} \hlnum{0.084}\hlstd{,} \hlnum{0.15}\hlstd{,} \hlnum{0.228}\hlstd{,} \hlnum{0.094}\hlstd{,} \hlnum{0.191}\hlstd{,} \hlnum{0.39}\hlstd{)}
-\hlstd{sd0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0.047}\hlstd{,} \hlnum{0.051}\hlstd{,} \hlnum{0.248}\hlstd{,} \hlnum{0.021}\hlstd{,} \hlnum{0.025}\hlstd{,} \hlnum{0.033}\hlstd{,} \hlnum{0.026}\hlstd{,} \hlnum{0.039}\hlstd{,} \hlnum{0.159}\hlstd{)}
-\hlstd{probs0} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{1e+10}\hlstd{,} \hlopt{-}\hlnum{1e+10}\hlstd{,} \hlnum{0.958}\hlstd{,} \hlnum{5.064}\hlstd{,} \hlnum{3.261}\hlstd{,} \hlnum{4.021}\hlstd{,} \hlnum{0.473}\hlstd{,} \hlnum{2.568}\hlstd{)}
+\hldef{mu0} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{0.191}\hldef{,} \hlnum{0.323}\hldef{,} \hlnum{0.721}\hldef{,} \hlnum{0.084}\hldef{,} \hlnum{0.15}\hldef{,} \hlnum{0.228}\hldef{,} \hlnum{0.094}\hldef{,} \hlnum{0.191}\hldef{,} \hlnum{0.39}\hldef{)}
+\hldef{sd0} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{0.047}\hldef{,} \hlnum{0.051}\hldef{,} \hlnum{0.248}\hldef{,} \hlnum{0.021}\hldef{,} \hlnum{0.025}\hldef{,} \hlnum{0.033}\hldef{,} \hlnum{0.026}\hldef{,} \hlnum{0.039}\hldef{,} \hlnum{0.159}\hldef{)}
+\hldef{probs0} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{1e+10}\hldef{,} \hlopt{-}\hlnum{1e+10}\hldef{,} \hlnum{0.958}\hldef{,} \hlnum{5.064}\hldef{,} \hlnum{3.261}\hldef{,} \hlnum{4.021}\hldef{,} \hlnum{0.473}\hldef{,} \hlnum{2.568}\hldef{)}
 
 \hlcom{# constrain coarse-scale parameters for fine-scale states}
-\hlstd{DM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{stepCat}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{cbind}\hlstd{(}\hlkwd{c}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{),}\hlnum{2}\hlstd{),}
-                                  \hlkwd{rep}\hlstd{(}\hlnum{0}\hlstd{,(nCat}\hlopt{-}\hlnum{1}\hlstd{)}\hlopt{*}\hlstd{nbStates}\hlopt{-}\hlnum{6}\hlstd{)),}
-                                \hlkwd{kronecker}\hlstd{(}\hlkwd{diag}\hlstd{(nCat}\hlopt{-}\hlnum{1}\hlstd{),}
-                                          \hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{))),}
-                       \hlkwc{nrow}\hlstd{=(nCat}\hlopt{-}\hlnum{1}\hlstd{)}\hlopt{*}\hlstd{nbStates,}
-                       \hlkwc{ncol}\hlstd{=}\hlnum{8}\hlstd{,}
-                       \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"prob"}\hlstd{,}
-                                                       \hlnum{1}\hlopt{:}\hlstd{(nCat}\hlopt{-}\hlnum{1}\hlstd{),}
-                                                       \hlstr{"_"}\hlstd{),}
-                                                \hlkwc{each}\hlstd{=nbStates),}
-                                            \hlnum{1}\hlopt{:}\hlstd{nbStates),}
-                                     \hlkwd{c}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"prob1_12"}\hlstd{,}
-                                                \hlkwd{paste0}\hlstd{(}\hlstr{"prob"}\hlstd{,}
-                                                       \hlnum{1}\hlopt{:}\hlstd{(nCat}\hlopt{-}\hlnum{1}\hlstd{),}
-                                                       \hlstr{"_3"}\hlstd{)),}
-                                              \hlstr{":(Intercept)"}\hlstd{)))))}
-\hlkwd{head}\hlstd{(DM}\hlopt{$}\hlstd{stepCat,nbStates)}
+\hldef{DM} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwc{stepCat}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{cbind}\hldef{(}\hlkwd{c}\hldef{(}\hlkwd{rep}\hldef{(}\hlkwd{c}\hldef{(}\hlnum{1}\hldef{,}\hlnum{1}\hldef{,}\hlnum{1}\hldef{),}\hlnum{2}\hldef{),}
+                                  \hlkwd{rep}\hldef{(}\hlnum{0}\hldef{,(nCat}\hlopt{-}\hlnum{1}\hldef{)}\hlopt{*}\hldef{nbStates}\hlopt{-}\hlnum{6}\hldef{)),}
+                                \hlkwd{kronecker}\hldef{(}\hlkwd{diag}\hldef{(nCat}\hlopt{-}\hlnum{1}\hldef{),}
+                                          \hlkwd{c}\hldef{(}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{1}\hldef{,}\hlnum{1}\hldef{,}\hlnum{1}\hldef{))),}
+                       \hlkwc{nrow}\hldef{=(nCat}\hlopt{-}\hlnum{1}\hldef{)}\hlopt{*}\hldef{nbStates,}
+                       \hlkwc{ncol}\hldef{=}\hlnum{8}\hldef{,}
+                       \hlkwc{dimnames}\hldef{=}\hlkwd{list}\hldef{(}\hlkwd{paste0}\hldef{(}\hlkwd{rep}\hldef{(}\hlkwd{paste0}\hldef{(}\hlsng{"prob"}\hldef{,}
+                                                       \hlnum{1}\hlopt{:}\hldef{(nCat}\hlopt{-}\hlnum{1}\hldef{),}
+                                                       \hlsng{"_"}\hldef{),}
+                                                \hlkwc{each}\hldef{=nbStates),}
+                                            \hlnum{1}\hlopt{:}\hldef{nbStates),}
+                                     \hlkwd{c}\hldef{(}\hlkwd{paste0}\hldef{(}\hlkwd{c}\hldef{(}\hlsng{"prob1_12"}\hldef{,}
+                                                \hlkwd{paste0}\hldef{(}\hlsng{"prob"}\hldef{,}
+                                                       \hlnum{1}\hlopt{:}\hldef{(nCat}\hlopt{-}\hlnum{1}\hldef{),}
+                                                       \hlsng{"_3"}\hldef{)),}
+                                              \hlsng{":(Intercept)"}\hldef{)))))}
+\hlkwd{head}\hldef{(DM}\hlopt{$}\hldef{stepCat,nbStates)}
 \end{alltt}
 \begin{verbatim}
 ##         prob1_12:(Intercept) prob1_3:(Intercept) prob2_3:(Intercept)
@@ -4186,10 +4177,10 @@ Both the ``activity'' and ``resting'' coarse-scale states were assumed to have z
 ## prob1_9                   0                   0
 \end{verbatim}
 \begin{alltt}
-\hlstd{Par0} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{stepCat} \hlstd{= probs0,}
-             \hlkwc{odbas} \hlstd{=} \hlkwd{c}\hlstd{(mu0,sd0))}
+\hldef{Par0} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwc{stepCat} \hldef{= probs0,}
+             \hlkwc{odbas} \hldef{=} \hlkwd{c}\hldef{(mu0,sd0))}
 
-\hlstd{fixPar} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{stepCat}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{1.e+10}\hlstd{,}\hlopt{-}\hlnum{1.e+10}\hlstd{,}\hlkwd{rep}\hlstd{(}\hlnum{NA}\hlstd{,}\hlnum{6}\hlstd{)))}
+\hldef{fixPar} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwc{stepCat}\hldef{=}\hlkwd{c}\hldef{(}\hlnum{1.e+10}\hldef{,}\hlopt{-}\hlnum{1.e+10}\hldef{,}\hlkwd{rep}\hldef{(}\hlnum{NA}\hldef{,}\hlnum{6}\hldef{)))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -4200,50 +4191,50 @@ All that remains is (optionally) specifying starting values for the initial dist
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlcom{### t.p.m. starting values based on Adam et al}
-\hlstd{hierBeta} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"shark beta"}\hlstd{)}
-\hlstd{hierBeta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{,}
-   \hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{0.651}\hlstd{,} \hlopt{-}\hlnum{0.169}\hlstd{,} \hlopt{-}\hlnum{1.884}\hlstd{,} \hlopt{-}\hlnum{0.369}\hlstd{,} \hlopt{-}\hlnum{1.596}\hlstd{,} \hlopt{-}\hlnum{0.737}\hlstd{),}
-               \hlkwc{ncol}\hlstd{=}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{children)}
-                    \hlopt{*}\hlstd{(}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{children)}\hlopt{-}\hlnum{1}\hlstd{)))}
-\hlstd{hierBeta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{)}
-\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"activity"}\hlstd{,}
-   \hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{2.902}\hlstd{,} \hlopt{-}\hlnum{14.032}\hlstd{,} \hlnum{3.059}\hlstd{,} \hlopt{-}\hlnum{1.37}\hlstd{,} \hlnum{8.098}\hlstd{,} \hlnum{11.66}\hlstd{),}
-               \hlkwc{ncol}\hlstd{=}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{activity}\hlopt{$}\hlstd{children)}
-                    \hlopt{*}\hlstd{(}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{activity}\hlopt{$}\hlstd{children)}\hlopt{-}\hlnum{1}\hlstd{)))}
-\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"resting"}\hlstd{,}
-   \hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{3.264}\hlstd{,} \hlopt{-}\hlnum{14.279}\hlstd{,} \hlnum{3.107}\hlstd{,} \hlnum{0.252}\hlstd{,} \hlnum{13.861}\hlstd{,} \hlnum{16.468}\hlstd{),}
-               \hlkwc{ncol}\hlstd{=}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{resting}\hlopt{$}\hlstd{children)}
-                    \hlopt{*}\hlstd{(}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{resting}\hlopt{$}\hlstd{children)}\hlopt{-}\hlnum{1}\hlstd{)))}
-\hlstd{hierBeta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"transit"}\hlstd{,}
-   \hlkwc{beta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{3.21}\hlstd{,} \hlopt{-}\hlnum{21.32}\hlstd{,} \hlnum{3.463}\hlstd{,} \hlopt{-}\hlnum{0.598}\hlstd{,} \hlnum{14.636}\hlstd{,} \hlnum{17.811}\hlstd{),}
-               \hlkwc{ncol}\hlstd{=}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{transit}\hlopt{$}\hlstd{children)}
-                    \hlopt{*}\hlstd{(}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{transit}\hlopt{$}\hlstd{children)}\hlopt{-}\hlnum{1}\hlstd{)))}
+\hldef{hierBeta} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hldef{Node}\hlopt{$}\hlkwd{new}\hldef{(}\hlsng{"shark beta"}\hldef{)}
+\hldef{hierBeta}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level1"}\hldef{,}
+   \hlkwc{beta}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{0.651}\hldef{,} \hlopt{-}\hlnum{0.169}\hldef{,} \hlopt{-}\hlnum{1.884}\hldef{,} \hlopt{-}\hlnum{0.369}\hldef{,} \hlopt{-}\hlnum{1.596}\hldef{,} \hlopt{-}\hlnum{0.737}\hldef{),}
+               \hlkwc{ncol}\hldef{=}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{children)}
+                    \hlopt{*}\hldef{(}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{children)}\hlopt{-}\hlnum{1}\hldef{)))}
+\hldef{hierBeta}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level2"}\hldef{)}
+\hldef{hierBeta}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"activity"}\hldef{,}
+   \hlkwc{beta}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{2.902}\hldef{,} \hlopt{-}\hlnum{14.032}\hldef{,} \hlnum{3.059}\hldef{,} \hlopt{-}\hlnum{1.37}\hldef{,} \hlnum{8.098}\hldef{,} \hlnum{11.66}\hldef{),}
+               \hlkwc{ncol}\hldef{=}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{activity}\hlopt{$}\hldef{children)}
+                    \hlopt{*}\hldef{(}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{activity}\hlopt{$}\hldef{children)}\hlopt{-}\hlnum{1}\hldef{)))}
+\hldef{hierBeta}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"resting"}\hldef{,}
+   \hlkwc{beta}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{3.264}\hldef{,} \hlopt{-}\hlnum{14.279}\hldef{,} \hlnum{3.107}\hldef{,} \hlnum{0.252}\hldef{,} \hlnum{13.861}\hldef{,} \hlnum{16.468}\hldef{),}
+               \hlkwc{ncol}\hldef{=}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{resting}\hlopt{$}\hldef{children)}
+                    \hlopt{*}\hldef{(}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{resting}\hlopt{$}\hldef{children)}\hlopt{-}\hlnum{1}\hldef{)))}
+\hldef{hierBeta}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"transit"}\hldef{,}
+   \hlkwc{beta}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{3.21}\hldef{,} \hlopt{-}\hlnum{21.32}\hldef{,} \hlnum{3.463}\hldef{,} \hlopt{-}\hlnum{0.598}\hldef{,} \hlnum{14.636}\hldef{,} \hlnum{17.811}\hldef{),}
+               \hlkwc{ncol}\hldef{=}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{transit}\hlopt{$}\hldef{children)}
+                    \hlopt{*}\hldef{(}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{transit}\hlopt{$}\hldef{children)}\hlopt{-}\hlnum{1}\hldef{)))}
 
 \hlcom{### initial distribution starting values based on Adam et al}
-\hlstd{hierDelta} \hlkwb{<-} \hlstd{data.tree}\hlopt{::}\hlstd{Node}\hlopt{$}\hlkwd{new}\hlstd{(}\hlstr{"shark delta"}\hlstd{)}
-\hlstd{hierDelta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level1"}\hlstd{,}
-   \hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{0.582}\hlstd{,} \hlnum{2.894}\hlstd{),}
-                \hlkwc{ncol}\hlstd{=}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{children)}\hlopt{-}\hlnum{1}\hlstd{))}
-\hlstd{hierDelta}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"level2"}\hlstd{)}
-\hlstd{hierDelta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"activity"}\hlstd{,}
-   \hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{0.001}\hlstd{,} \hlopt{-}\hlnum{1.1}\hlstd{),}
-                \hlkwc{ncol}\hlstd{=}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{activity}\hlopt{$}\hlstd{children)}\hlopt{-}\hlnum{1}\hlstd{))}
-\hlstd{hierDelta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"resting"}\hlstd{,}
-   \hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{0.103}\hlstd{,} \hlopt{-}\hlnum{0.105}\hlstd{),}
-                \hlkwc{ncol}\hlstd{=}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{resting}\hlopt{$}\hlstd{children)}\hlopt{-}\hlnum{1}\hlstd{))}
-\hlstd{hierDelta}\hlopt{$}\hlstd{level2}\hlopt{$}\hlkwd{AddChild}\hlstd{(}\hlstr{"transit"}\hlstd{,}
-   \hlkwc{delta}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{0.24}\hlstd{,} \hlopt{-}\hlnum{0.777}\hlstd{),}
-                \hlkwc{ncol}\hlstd{=}\hlkwd{length}\hlstd{(hierStates}\hlopt{$}\hlstd{transit}\hlopt{$}\hlstd{children)}\hlopt{-}\hlnum{1}\hlstd{))}
+\hldef{hierDelta} \hlkwb{<-} \hldef{data.tree}\hlopt{::}\hldef{Node}\hlopt{$}\hlkwd{new}\hldef{(}\hlsng{"shark delta"}\hldef{)}
+\hldef{hierDelta}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level1"}\hldef{,}
+   \hlkwc{delta}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlnum{0.582}\hldef{,} \hlnum{2.894}\hldef{),}
+                \hlkwc{ncol}\hldef{=}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{children)}\hlopt{-}\hlnum{1}\hldef{))}
+\hldef{hierDelta}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"level2"}\hldef{)}
+\hldef{hierDelta}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"activity"}\hldef{,}
+   \hlkwc{delta}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{0.001}\hldef{,} \hlopt{-}\hlnum{1.1}\hldef{),}
+                \hlkwc{ncol}\hldef{=}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{activity}\hlopt{$}\hldef{children)}\hlopt{-}\hlnum{1}\hldef{))}
+\hldef{hierDelta}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"resting"}\hldef{,}
+   \hlkwc{delta}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{0.103}\hldef{,} \hlopt{-}\hlnum{0.105}\hldef{),}
+                \hlkwc{ncol}\hldef{=}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{resting}\hlopt{$}\hldef{children)}\hlopt{-}\hlnum{1}\hldef{))}
+\hldef{hierDelta}\hlopt{$}\hldef{level2}\hlopt{$}\hlkwd{AddChild}\hldef{(}\hlsng{"transit"}\hldef{,}
+   \hlkwc{delta}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlnum{0.24}\hldef{,} \hlopt{-}\hlnum{0.777}\hldef{),}
+                \hlkwc{ncol}\hldef{=}\hlkwd{length}\hldef{(hierStates}\hlopt{$}\hldef{transit}\hlopt{$}\hldef{children)}\hlopt{-}\hlnum{1}\hldef{))}
 
 \hlcom{# check hierarchical model specification and parameters}
-\hlkwd{checkPar0}\hlstd{(sharkData,}
-          \hlkwc{hierStates}\hlstd{=hierStates,}
-          \hlkwc{hierDist}\hlstd{=hierDist,}
-          \hlkwc{Par0}\hlstd{=Par0,}
-          \hlkwc{DM}\hlstd{=DM,}
-          \hlkwc{hierBeta}\hlstd{=hierBeta,}
-          \hlkwc{hierDelta}\hlstd{=hierDelta,}
-          \hlkwc{fixPar}\hlstd{=fixPar)}
+\hlkwd{checkPar0}\hldef{(sharkData,}
+          \hlkwc{hierStates}\hldef{=hierStates,}
+          \hlkwc{hierDist}\hldef{=hierDist,}
+          \hlkwc{Par0}\hldef{=Par0,}
+          \hlkwc{DM}\hldef{=DM,}
+          \hlkwc{hierBeta}\hldef{=hierBeta,}
+          \hlkwc{hierDelta}\hldef{=hierDelta,}
+          \hlkwc{fixPar}\hldef{=fixPar)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -4364,45 +4355,58 @@ In order to fit this model, we must first load the data and format the covariate
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlkwd{library}\hlstd{(raster)}
+\hlkwd{library}\hldef{(raster)}
 
 \hlcom{## download buffalo data}
-\hlkwd{load}\hlstd{(}\hlkwd{url}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"https://github.com/henryrscharf/"}\hlstd{,}
-         \hlstr{"Hooten_et_al_EL_2018/raw/master/"}\hlstd{,}
-         \hlstr{"data/buffalo/buffalo_Cilla.RData"}\hlstd{)))}
+\hlkwd{load}\hldef{(}\hlkwd{url}\hldef{(}\hlkwd{paste0}\hldef{(}\hlsng{"https://github.com/henryrscharf/"}\hldef{,}
+         \hlsng{"Hooten_et_al_EL_2018/raw/master/"}\hldef{,}
+         \hlsng{"data/buffalo/buffalo_Cilla.RData"}\hldef{)))}
 
 \hlcom{## download distance to water covariate raster}
-\hlkwd{load}\hlstd{(}\hlkwd{url}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"https://github.com/henryrscharf/"}\hlstd{,}
-                \hlstr{"Hooten_et_al_EL_2018/raw/master/"}\hlstd{,}
-                \hlstr{"data/buffalo/dist2sabie.RData"}\hlstd{)))}
-\hlkwd{names}\hlstd{(dist2sabie)} \hlkwb{<-} \hlstr{"dist2sabie"}
+\hlkwd{load}\hldef{(}\hlkwd{url}\hldef{(}\hlkwd{paste0}\hldef{(}\hlsng{"https://github.com/henryrscharf/"}\hldef{,}
+                \hlsng{"Hooten_et_al_EL_2018/raw/master/"}\hldef{,}
+                \hlsng{"data/buffalo/dist2sabie.RData"}\hldef{)))}
+
+\hlcom{# Store the original data}
+\hldef{original_values} \hlkwb{<-} \hlkwd{values}\hldef{(dist2sabie)}
+\hldef{original_extent} \hlkwb{<-} \hlkwd{extent}\hldef{(dist2sabie)}
+\hldef{original_res} \hlkwb{<-} \hlkwd{res}\hldef{(dist2sabie)}
+
+\hlcom{# Create new raster with proper CRS using the correct syntax}
+\hldef{dist2sabie} \hlkwb{<-} \hlkwd{raster}\hldef{(original_extent,}
+                     \hlkwc{resolution} \hldef{= original_res,}
+                     \hlkwc{crs} \hldef{=} \hlkwd{CRS}\hldef{(}\hlsng{"+proj=utm +zone=36 +south +datum=WGS84 +units=m +no_defs"}\hldef{))}
+
+\hlcom{# Set values and name}
+\hlkwd{values}\hldef{(dist2sabie)} \hlkwb{<-} \hldef{original_values}
+\hlkwd{names}\hldef{(dist2sabie)} \hlkwb{<-} \hlsng{"dist2sabie"}
 
 \hlcom{## standardize dist2sabie based on slope of gradient}
-\hlstd{dist2sabie_scaled} \hlkwb{<-} \hlstd{dist2sabie} \hlopt{/} \hlkwd{mean}\hlstd{(}\hlkwd{values}\hlstd{(}\hlkwd{terrain}\hlstd{(dist2sabie,}
-                                                      \hlkwc{opt} \hlstd{=} \hlstr{"slope"}\hlstd{)),}
-                                       \hlkwc{na.rm} \hlstd{= T)}
+\hldef{dist2sabie_scaled} \hlkwb{<-} \hldef{dist2sabie} \hlopt{/} \hlkwd{mean}\hldef{(}\hlkwd{values}\hldef{(}\hlkwd{terrain}\hldef{(dist2sabie,}
+                                                      \hlkwc{opt} \hldef{=} \hlsng{"slope"}\hldef{)),}
+                                       \hlkwc{na.rm} \hldef{= T)}
 
 \hlcom{## W (recharge function covariates)}
 \hlcom{# near_sabie = indicator for <500m from water}
-\hlstd{intercept} \hlkwb{<-} \hlkwd{raster}\hlstd{(dist2sabie)}
-\hlkwd{values}\hlstd{(intercept)} \hlkwb{<-} \hlnum{1}
-\hlstd{W} \hlkwb{<-} \hlkwd{stack}\hlstd{(}\hlkwd{list}\hlstd{(}\hlstr{"intercept"} \hlstd{= intercept,}
-                \hlstr{"near_sabie"} \hlstd{= dist2sabie} \hlopt{<} \hlnum{0.5e3}\hlstd{))}
-\hlstd{W_names} \hlkwb{<-} \hlkwd{names}\hlstd{(W)}
+\hldef{intercept} \hlkwb{<-} \hlkwd{raster}\hldef{(dist2sabie)}
+\hlkwd{values}\hldef{(intercept)} \hlkwb{<-} \hlnum{1}
+\hldef{W} \hlkwb{<-} \hlkwd{stack}\hldef{(}\hlkwd{list}\hldef{(}\hlsng{"intercept"} \hldef{= intercept,}
+                \hlsng{"near_sabie"} \hldef{= dist2sabie} \hlopt{<} \hlnum{0.5e3}\hldef{))}
+\hldef{W_names} \hlkwb{<-} \hlkwd{names}\hldef{(W)}
 
 \hlcom{## orthogonalize W based on locations ----}
-\hlstd{W_ortho} \hlkwb{<-} \hlstd{W}
-\hlstd{W_path} \hlkwb{<-} \hlkwd{extract}\hlstd{(}\hlkwc{x} \hlstd{= W,} \hlkwc{y} \hlstd{=} \hlkwd{matrix}\hlstd{(buffalo_proj}\hlopt{@}\hlkwc{coords}\hlstd{,} \hlkwc{ncol} \hlstd{=} \hlnum{2}\hlstd{))}
-\hlstd{obstimes} \hlkwb{<-} \hlkwd{as.numeric}\hlstd{(buffalo_proj}\hlopt{$}\hlstd{POSIX)} \hlopt{/} \hlnum{3600} \hlcom{# numeric hours}
-\hlstd{W_tilde} \hlkwb{<-} \hlkwd{apply}\hlstd{(W_path} \hlopt{*} \hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,} \hlkwd{diff}\hlstd{(obstimes)),} \hlnum{2}\hlstd{, cumsum)}
-\hlstd{W_tilde_svd} \hlkwb{<-} \hlkwd{svd}\hlstd{(W_tilde)}
-\hlstd{W_tilde_proj_mat} \hlkwb{<-} \hlstd{W_tilde_svd}\hlopt{$}\hlstd{v} \hlopt{%*%} \hlkwd{diag}\hlstd{(W_tilde_svd}\hlopt{$}\hlstd{d}\hlopt{^}\hlstd{(}\hlopt{-}\hlnum{1}\hlstd{))}
-\hlstd{W_mat} \hlkwb{<-} \hlkwd{as.matrix}\hlstd{(W)}
-\hlstd{W_mat_proj} \hlkwb{<-} \hlstd{W_mat} \hlopt{%*%} \hlstd{W_tilde_proj_mat}
-\hlkwa{for}\hlstd{(layer} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{ncol}\hlstd{(W_mat))\{}
-  \hlkwd{values}\hlstd{(W_ortho[[layer]])} \hlkwb{<-} \hlstd{W_mat_proj[, layer]}
-  \hlkwd{names}\hlstd{(W_ortho[[layer]])} \hlkwb{<-} \hlkwd{paste0}\hlstd{(}\hlstr{"svd"}\hlstd{, layer)}
-\hlstd{\}}
+\hldef{W_ortho} \hlkwb{<-} \hldef{W}
+\hldef{W_path} \hlkwb{<-} \hlkwd{extract}\hldef{(}\hlkwc{x} \hldef{= W,} \hlkwc{y} \hldef{=} \hlkwd{matrix}\hldef{(buffalo_proj}\hlopt{@}\hlkwc{coords}\hldef{,} \hlkwc{ncol} \hldef{=} \hlnum{2}\hldef{))}
+\hldef{obstimes} \hlkwb{<-} \hlkwd{as.numeric}\hldef{(buffalo_proj}\hlopt{$}\hldef{POSIX)} \hlopt{/} \hlnum{3600} \hlcom{# numeric hours}
+\hldef{W_tilde} \hlkwb{<-} \hlkwd{apply}\hldef{(W_path} \hlopt{*} \hlkwd{c}\hldef{(}\hlnum{0}\hldef{,} \hlkwd{diff}\hldef{(obstimes)),} \hlnum{2}\hldef{, cumsum)}
+\hldef{W_tilde_svd} \hlkwb{<-} \hlkwd{svd}\hldef{(W_tilde)}
+\hldef{W_tilde_proj_mat} \hlkwb{<-} \hldef{W_tilde_svd}\hlopt{$}\hldef{v} \hlopt{%*%} \hlkwd{diag}\hldef{(W_tilde_svd}\hlopt{$}\hldef{d}\hlopt{^}\hldef{(}\hlopt{-}\hlnum{1}\hldef{))}
+\hldef{W_mat} \hlkwb{<-} \hlkwd{as.matrix}\hldef{(W)}
+\hldef{W_mat_proj} \hlkwb{<-} \hldef{W_mat} \hlopt{%*%} \hldef{W_tilde_proj_mat}
+\hlkwa{for}\hldef{(layer} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{ncol}\hldef{(W_mat))\{}
+  \hlkwd{values}\hldef{(W_ortho[[layer]])} \hlkwb{<-} \hldef{W_mat_proj[, layer]}
+  \hlkwd{names}\hldef{(W_ortho[[layer]])} \hlkwb{<-} \hlkwd{paste0}\hldef{(}\hlsng{"svd"}\hldef{, layer)}
+\hldef{\}}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -4419,23 +4423,23 @@ We will therefore use \verb|crawlWrap| to predict the track at regular 15 min in
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{lnError} \hlkwb{<-} \hlstd{crawl}\hlopt{::}\hlkwd{argosDiag2Cov}\hlstd{(}\hlnum{50}\hlstd{,}\hlnum{50}\hlstd{,}\hlnum{0}\hlstd{)} \hlcom{# 50m isotropic error ellipse}
-\hlstd{buffaloData} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(}\hlkwc{ID} \hlstd{=} \hlnum{1}\hlstd{,}
-                          \hlkwc{time} \hlstd{= obstimes,}
-                          \hlkwc{x} \hlstd{= buffalo_proj}\hlopt{@}\hlkwc{coords}\hlstd{[,} \hlnum{1}\hlstd{],}
-                          \hlkwc{y} \hlstd{= buffalo_proj}\hlopt{@}\hlkwc{coords}\hlstd{[,} \hlnum{2}\hlstd{],}
-                          \hlkwc{ln.sd.x} \hlstd{= lnError}\hlopt{$}\hlstd{ln.sd.x,}
-                          \hlkwc{ln.sd.y} \hlstd{= lnError}\hlopt{$}\hlstd{ln.sd.y,}
-                          \hlkwc{error.corr} \hlstd{= lnError}\hlopt{$}\hlstd{error.corr)}
+\hldef{lnError} \hlkwb{<-} \hldef{crawl}\hlopt{::}\hlkwd{argosDiag2Cov}\hldef{(}\hlnum{50}\hldef{,}\hlnum{50}\hldef{,}\hlnum{0}\hldef{)} \hlcom{# 50m isotropic error ellipse}
+\hldef{buffaloData} \hlkwb{<-} \hlkwd{data.frame}\hldef{(}\hlkwc{ID} \hldef{=} \hlnum{1}\hldef{,}
+                          \hlkwc{time} \hldef{= obstimes,}
+                          \hlkwc{x} \hldef{= buffalo_proj}\hlopt{@}\hlkwc{coords}\hldef{[,} \hlnum{1}\hldef{],}
+                          \hlkwc{y} \hldef{= buffalo_proj}\hlopt{@}\hlkwc{coords}\hldef{[,} \hlnum{2}\hldef{],}
+                          \hlkwc{ln.sd.x} \hldef{= lnError}\hlopt{$}\hldef{ln.sd.x,}
+                          \hlkwc{ln.sd.y} \hldef{= lnError}\hlopt{$}\hldef{ln.sd.y,}
+                          \hlkwc{error.corr} \hldef{= lnError}\hlopt{$}\hldef{error.corr)}
 
-\hlstd{crwOut} \hlkwb{<-} \hlkwd{crawlWrap}\hlstd{(buffaloData,}
-                    \hlkwc{theta} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{6.5}\hlstd{,}\hlopt{-}\hlnum{.1}\hlstd{),}
-                    \hlkwc{fixPar} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{),}
-                    \hlkwc{err.model} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{x} \hlstd{=} \hlopt{~}\hlstd{ln.sd.x}\hlopt{-}\hlnum{1}\hlstd{,}
-                                     \hlkwc{y} \hlstd{=} \hlopt{~}\hlstd{ln.sd.y}\hlopt{-}\hlnum{1}\hlstd{,}
-                                     \hlkwc{rho} \hlstd{=} \hlopt{~}\hlstd{error.corr),}
-                    \hlkwc{timeStep} \hlstd{=} \hlnum{0.25}\hlstd{,} \hlcom{# predict at 15 min time steps}
-                    \hlkwc{attempts} \hlstd{=} \hlnum{10}\hlstd{)}
+\hldef{crwOut} \hlkwb{<-} \hlkwd{crawlWrap}\hldef{(buffaloData,}
+                    \hlkwc{theta} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{6.5}\hldef{,}\hlopt{-}\hlnum{.1}\hldef{),}
+                    \hlkwc{fixPar} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{1}\hldef{,}\hlnum{1}\hldef{,}\hlnum{NA}\hldef{,}\hlnum{NA}\hldef{),}
+                    \hlkwc{err.model} \hldef{=} \hlkwd{list}\hldef{(}\hlkwc{x} \hldef{=} \hlopt{~}\hldef{ln.sd.x}\hlopt{-}\hlnum{1}\hldef{,}
+                                     \hlkwc{y} \hldef{=} \hlopt{~}\hldef{ln.sd.y}\hlopt{-}\hlnum{1}\hldef{,}
+                                     \hlkwc{rho} \hldef{=} \hlopt{~}\hldef{error.corr),}
+                    \hlkwc{timeStep} \hldef{=} \hlnum{0.25}\hldef{,} \hlcom{# predict at 15 min time steps}
+                    \hlkwc{attempts} \hldef{=} \hlnum{10}\hldef{)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -4444,20 +4448,20 @@ Now we're ready to specify the recharge model. We'll first fit the model to the 
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{spatialCovs} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{W_intercept} \hlstd{= W_ortho}\hlopt{$}\hlstd{svd1,}
-                    \hlkwc{W_near_sabie} \hlstd{= W_ortho}\hlopt{$}\hlstd{svd2,}
-                    \hlkwc{dist2sabie} \hlstd{= dist2sabie,}
-                    \hlkwc{D} \hlstd{= dist2sabie_scaled)}
+\hldef{spatialCovs} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwc{W_intercept} \hldef{= W_ortho}\hlopt{$}\hldef{svd1,}
+                    \hlkwc{W_near_sabie} \hldef{= W_ortho}\hlopt{$}\hldef{svd2,}
+                    \hlkwc{dist2sabie} \hldef{= dist2sabie,}
+                    \hlkwc{D} \hldef{= dist2sabie_scaled)}
 
 \hlcom{# best predicted track data}
-\hlstd{hmmData} \hlkwb{<-} \hlkwd{prepData}\hlstd{(crwOut,}
-                    \hlkwc{spatialCovs} \hlstd{= spatialCovs,}
-                    \hlkwc{gradient} \hlstd{=} \hlnum{TRUE}\hlstd{,}
-                    \hlkwc{altCoordNames} \hlstd{=} \hlstr{"mu"}\hlstd{)}
+\hldef{hmmData} \hlkwb{<-} \hlkwd{prepData}\hldef{(crwOut,}
+                    \hlkwc{spatialCovs} \hldef{= spatialCovs,}
+                    \hlkwc{gradient} \hldef{=} \hlnum{TRUE}\hldef{,}
+                    \hlkwc{altCoordNames} \hldef{=} \hlsng{"mu"}\hldef{)}
 
-\hlkwd{head}\hlstd{(hmmData[,}\hlkwd{c}\hlstd{(}\hlstr{"ID"}\hlstd{,}\hlstr{"time"}\hlstd{,} \hlstr{"mu.x"}\hlstd{,} \hlstr{"mu.y"}\hlstd{,}
-                \hlstr{"W_intercept"}\hlstd{,}\hlstr{"W_near_sabie"}\hlstd{,}\hlstr{"dist2sabie"}\hlstd{,}
-                \hlstr{"D.x"}\hlstd{,}\hlstr{"D.y"}\hlstd{)])}
+\hlkwd{head}\hldef{(hmmData[,}\hlkwd{c}\hldef{(}\hlsng{"ID"}\hldef{,}\hlsng{"time"}\hldef{,} \hlsng{"mu.x"}\hldef{,} \hlsng{"mu.y"}\hldef{,}
+                \hlsng{"W_intercept"}\hldef{,}\hlsng{"W_near_sabie"}\hldef{,}\hlsng{"dist2sabie"}\hldef{,}
+                \hlsng{"D.x"}\hldef{,}\hlsng{"D.y"}\hldef{)])}
 \end{alltt}
 \begin{verbatim}
 ##   ID     time     mu.x     mu.y   W_intercept W_near_sabie dist2sabie       D.x
@@ -4476,68 +4480,68 @@ Now we're ready to specify the recharge model. We'll first fit the model to the 
 ## 6 0.3775941
 \end{verbatim}
 \begin{alltt}
-\hlstd{nbStates} \hlkwb{<-} \hlnum{2}
-\hlstd{stateNames} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"charged"}\hlstd{,} \hlstr{"discharged"}\hlstd{)}
-\hlstd{dist} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mu} \hlstd{=} \hlstr{"rw_mvnorm2"}\hlstd{)} \hlcom{# bivariate normal random walk}
+\hldef{nbStates} \hlkwb{<-} \hlnum{2}
+\hldef{stateNames} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlsng{"charged"}\hldef{,} \hlsng{"discharged"}\hldef{)}
+\hldef{dist} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwc{mu} \hldef{=} \hlsng{"rw_mvnorm2"}\hldef{)} \hlcom{# bivariate normal random walk}
 
 \hlcom{# pseudo-design matrix for mu}
-\hlstd{DM} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"mu.x_tm1"}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
-                       \hlstr{"mu.x_tm1"}\hlstd{,}         \hlnum{0}\hlstd{,}\hlstr{"D.x"}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
-                                \hlnum{0}\hlstd{,}\hlstr{"mu.y_tm1"}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
-                                \hlnum{0}\hlstd{,}\hlstr{"mu.y_tm1"}\hlstd{,}\hlstr{"D.y"}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
-                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
-                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}
-                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}
-                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}
-                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{,}
-                                \hlnum{0}\hlstd{,}         \hlnum{0}\hlstd{,}    \hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{1}\hlstd{),}
-                     \hlnum{5}\hlopt{*}\hlstd{nbStates,}
-                     \hlnum{6}\hlstd{,}\hlkwc{byrow}\hlstd{=}\hlnum{TRUE}\hlstd{,}
-                     \hlkwc{dimnames}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwd{c}\hlstd{(}\hlkwd{paste0}\hlstd{(}\hlstr{"mean."}\hlstd{,}
-                                            \hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"x_"}\hlstd{,}\hlstr{"y_"}\hlstd{),}
-                                                \hlkwc{each}\hlstd{=nbStates),}
-                                            \hlnum{1}\hlopt{:}\hlstd{nbStates),}
-                                     \hlkwd{paste0}\hlstd{(}\hlstr{"sd."}\hlstd{,}
-                                            \hlkwd{rep}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"x_"}\hlstd{,}\hlstr{"y_"}\hlstd{),}
-                                                \hlkwc{each}\hlstd{=nbStates),}
-                                            \hlnum{1}\hlopt{:}\hlstd{nbStates),}
-                                     \hlkwd{paste0}\hlstd{(}\hlstr{"corr.xy_"}\hlstd{,}\hlnum{1}\hlopt{:}\hlstd{nbStates)),}
-                                   \hlkwd{c}\hlstd{(}\hlstr{"x:x_tm1"}\hlstd{,}
-                                     \hlstr{"y:y_tm1"}\hlstd{,}
-                                     \hlstr{"xy:D"}\hlstd{,}
-                                     \hlstr{"sd_1:(Intercept)"}\hlstd{,}
-                                     \hlstr{"sd_2:(Intercept)"}\hlstd{,}
-                                     \hlstr{"corr_12:(Intercept)"}\hlstd{))))}
+\hldef{DM} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwc{mu}\hldef{=}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlsng{"mu.x_tm1"}\hldef{,}         \hlnum{0}\hldef{,}    \hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}
+                       \hlsng{"mu.x_tm1"}\hldef{,}         \hlnum{0}\hldef{,}\hlsng{"D.x"}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}
+                                \hlnum{0}\hldef{,}\hlsng{"mu.y_tm1"}\hldef{,}    \hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}
+                                \hlnum{0}\hldef{,}\hlsng{"mu.y_tm1"}\hldef{,}\hlsng{"D.y"}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}
+                                \hlnum{0}\hldef{,}         \hlnum{0}\hldef{,}    \hlnum{0}\hldef{,}\hlnum{1}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}
+                                \hlnum{0}\hldef{,}         \hlnum{0}\hldef{,}    \hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{1}\hldef{,}\hlnum{0}\hldef{,}
+                                \hlnum{0}\hldef{,}         \hlnum{0}\hldef{,}    \hlnum{0}\hldef{,}\hlnum{1}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}
+                                \hlnum{0}\hldef{,}         \hlnum{0}\hldef{,}    \hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{1}\hldef{,}\hlnum{0}\hldef{,}
+                                \hlnum{0}\hldef{,}         \hlnum{0}\hldef{,}    \hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{1}\hldef{,}
+                                \hlnum{0}\hldef{,}         \hlnum{0}\hldef{,}    \hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{1}\hldef{),}
+                     \hlnum{5}\hlopt{*}\hldef{nbStates,}
+                     \hlnum{6}\hldef{,}\hlkwc{byrow}\hldef{=}\hlnum{TRUE}\hldef{,}
+                     \hlkwc{dimnames}\hldef{=}\hlkwd{list}\hldef{(}\hlkwd{c}\hldef{(}\hlkwd{paste0}\hldef{(}\hlsng{"mean."}\hldef{,}
+                                            \hlkwd{rep}\hldef{(}\hlkwd{c}\hldef{(}\hlsng{"x_"}\hldef{,}\hlsng{"y_"}\hldef{),}
+                                                \hlkwc{each}\hldef{=nbStates),}
+                                            \hlnum{1}\hlopt{:}\hldef{nbStates),}
+                                     \hlkwd{paste0}\hldef{(}\hlsng{"sd."}\hldef{,}
+                                            \hlkwd{rep}\hldef{(}\hlkwd{c}\hldef{(}\hlsng{"x_"}\hldef{,}\hlsng{"y_"}\hldef{),}
+                                                \hlkwc{each}\hldef{=nbStates),}
+                                            \hlnum{1}\hlopt{:}\hldef{nbStates),}
+                                     \hlkwd{paste0}\hldef{(}\hlsng{"corr.xy_"}\hldef{,}\hlnum{1}\hlopt{:}\hldef{nbStates)),}
+                                   \hlkwd{c}\hldef{(}\hlsng{"x:x_tm1"}\hldef{,}
+                                     \hlsng{"y:y_tm1"}\hldef{,}
+                                     \hlsng{"xy:D"}\hldef{,}
+                                     \hlsng{"sd_1:(Intercept)"}\hldef{,}
+                                     \hlsng{"sd_2:(Intercept)"}\hldef{,}
+                                     \hlsng{"corr_12:(Intercept)"}\hldef{))))}
 
 \hlcom{# starting values}
-\hlstd{Par0}\hlkwb{=}\hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,} \hlnum{1}\hlstd{,} \hlnum{0}\hlstd{,} \hlkwd{log}\hlstd{(}\hlkwd{sqrt}\hlstd{(}\hlnum{85872.66}\hlstd{)),} \hlkwd{log}\hlstd{(}\hlkwd{sqrt}\hlstd{(}\hlnum{37753.53}\hlstd{)),} \hlnum{0}\hlstd{))}
-\hlstd{g0} \hlkwb{<-} \hlnum{0} \hlcom{# recharge function at time 0}
-\hlstd{theta} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{)} \hlcom{# recharge function parameters}
+\hldef{Par0}\hlkwb{=}\hlkwd{list}\hldef{(}\hlkwc{mu}\hldef{=}\hlkwd{c}\hldef{(}\hlnum{1}\hldef{,} \hlnum{1}\hldef{,} \hlnum{0}\hldef{,} \hlkwd{log}\hldef{(}\hlkwd{sqrt}\hldef{(}\hlnum{85872.66}\hldef{)),} \hlkwd{log}\hldef{(}\hlkwd{sqrt}\hldef{(}\hlnum{37753.53}\hldef{)),} \hlnum{0}\hldef{))}
+\hldef{g0} \hlkwb{<-} \hlnum{0} \hlcom{# recharge function at time 0}
+\hldef{theta} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{)} \hlcom{# recharge function parameters}
 
 \hlcom{## specify recharge formula}
 \hlcom{# note that theta formula requires an 'intercept' term}
-\hlstd{formula} \hlkwb{<-} \hlopt{~} \hlkwd{recharge}\hlstd{(}\hlkwc{g0} \hlstd{=} \hlopt{~}\hlnum{1}\hlstd{,}
-                      \hlkwc{theta} \hlstd{=} \hlopt{~}\hlstd{W_intercept}\hlopt{+}\hlstd{W_near_sabie)}
+\hldef{formula} \hlkwb{<-} \hlopt{~} \hlkwd{recharge}\hldef{(}\hlkwc{g0} \hldef{=} \hlopt{~}\hlnum{1}\hldef{,}
+                      \hlkwc{theta} \hldef{=} \hlopt{~}\hldef{W_intercept}\hlopt{+}\hldef{W_near_sabie)}
 
 \hlcom{## remove Markov property}
-\hlstd{betaRef} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{1}\hlstd{)} \hlcom{# make state 1 the reference state}
-\hlstd{betaCons} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{2}\hlstd{),}\hlnum{2}\hlstd{,}\hlnum{2}\hlstd{)} \hlcom{# 1 -> 1 = 2 -> 1 and 1 -> 2 = 2 -> 2}
+\hldef{betaRef} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlnum{1}\hldef{,}\hlnum{1}\hldef{)} \hlcom{# make state 1 the reference state}
+\hldef{betaCons} \hlkwb{<-} \hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlnum{1}\hldef{,}\hlnum{2}\hldef{),}\hlnum{2}\hldef{,}\hlnum{2}\hldef{)} \hlcom{# 1 -> 1 = 2 -> 1 and 1 -> 2 = 2 -> 2}
 
 \hlcom{## set fixed parameters}
-\hlstd{fixPar} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{mu} \hlstd{=} \hlkwd{c}\hlstd{(Par0}\hlopt{$}\hlstd{mu[}\hlnum{1}\hlopt{:}\hlnum{2}\hlstd{],}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{,Par0}\hlopt{$}\hlstd{mu[}\hlnum{6}\hlstd{]),}
-               \hlkwc{beta} \hlstd{=} \hlkwd{matrix}\hlstd{(}\hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlopt{-}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlopt{-}\hlnum{1}\hlstd{),}\hlnum{2}\hlstd{,}\hlnum{2}\hlstd{),}
-               \hlkwc{delta} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{0.5}\hlstd{,}\hlnum{0.5}\hlstd{),}
-               \hlkwc{theta} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{0}\hlstd{,}\hlnum{NA}\hlstd{,}\hlnum{NA}\hlstd{))} \hlcom{# fix extra 'intercept' term to zero}
+\hldef{fixPar} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwc{mu} \hldef{=} \hlkwd{c}\hldef{(Par0}\hlopt{$}\hldef{mu[}\hlnum{1}\hlopt{:}\hlnum{2}\hldef{],}\hlnum{NA}\hldef{,}\hlnum{NA}\hldef{,}\hlnum{NA}\hldef{,Par0}\hlopt{$}\hldef{mu[}\hlnum{6}\hldef{]),}
+               \hlkwc{beta} \hldef{=} \hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(}\hlnum{0}\hldef{,}\hlopt{-}\hlnum{1}\hldef{,}\hlnum{0}\hldef{,}\hlopt{-}\hlnum{1}\hldef{),}\hlnum{2}\hldef{,}\hlnum{2}\hldef{),}
+               \hlkwc{delta} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{0.5}\hldef{,}\hlnum{0.5}\hldef{),}
+               \hlkwc{theta} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{0}\hldef{,}\hlnum{NA}\hldef{,}\hlnum{NA}\hldef{))} \hlcom{# fix extra 'intercept' term to zero}
 
 \hlcom{# check recharge model specification}
-\hlkwd{checkPar0}\hlstd{(hmmData,} \hlkwc{nbStates} \hlstd{= nbStates,} \hlkwc{dist} \hlstd{= dist,}
-          \hlkwc{formula} \hlstd{= formula,} \hlkwc{Par0} \hlstd{= Par0,}
-          \hlkwc{beta0} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{beta} \hlstd{= fixPar}\hlopt{$}\hlstd{beta,}
-                       \hlkwc{g0} \hlstd{= g0,}
-                       \hlkwc{theta} \hlstd{= theta),}
-          \hlkwc{delta0} \hlstd{= fixPar}\hlopt{$}\hlstd{delta,} \hlkwc{fixPar} \hlstd{= fixPar,}
-          \hlkwc{DM} \hlstd{= DM,} \hlkwc{betaRef} \hlstd{= betaRef,} \hlkwc{betaCons} \hlstd{= betaCons,}
-          \hlkwc{stateNames} \hlstd{= stateNames)}
+\hlkwd{checkPar0}\hldef{(hmmData,} \hlkwc{nbStates} \hldef{= nbStates,} \hlkwc{dist} \hldef{= dist,}
+          \hlkwc{formula} \hldef{= formula,} \hlkwc{Par0} \hldef{= Par0,}
+          \hlkwc{beta0} \hldef{=} \hlkwd{list}\hldef{(}\hlkwc{beta} \hldef{= fixPar}\hlopt{$}\hldef{beta,}
+                       \hlkwc{g0} \hldef{= g0,}
+                       \hlkwc{theta} \hldef{= theta),}
+          \hlkwc{delta0} \hldef{= fixPar}\hlopt{$}\hldef{delta,} \hlkwc{fixPar} \hldef{= fixPar,}
+          \hlkwc{DM} \hldef{= DM,} \hlkwc{betaRef} \hldef{= betaRef,} \hlkwc{betaCons} \hldef{= betaCons,}
+          \hlkwc{stateNames} \hldef{= stateNames)}
 \end{alltt}
 \begin{verbatim}
 ## 
@@ -4569,19 +4573,19 @@ Now we're ready to specify the recharge model. We'll first fit the model to the 
 \end{verbatim}
 \begin{alltt}
 \hlcom{# fit to best predicted path }
-\hlstd{buffaloFit} \hlkwb{<-} \hlkwd{fitHMM}\hlstd{(hmmData,} \hlkwc{nbStates} \hlstd{= nbStates,} \hlkwc{dist} \hlstd{= dist,}
-                     \hlkwc{formula} \hlstd{= formula,} \hlkwc{Par0} \hlstd{= Par0,}
-                     \hlkwc{beta0} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{g0}\hlstd{=g0,}
-                                  \hlkwc{theta}\hlstd{=theta),}
-                     \hlkwc{fixPar} \hlstd{= fixPar,}
-                     \hlkwc{DM} \hlstd{= DM,} \hlkwc{betaRef} \hlstd{= betaRef,} \hlkwc{betaCons} \hlstd{= betaCons,}
-                     \hlkwc{stateNames} \hlstd{= stateNames,}
-                     \hlkwc{mvnCoords} \hlstd{=} \hlstr{"mu"}\hlstd{,}
-                     \hlkwc{optMethod} \hlstd{=} \hlstr{"Nelder-Mead"}\hlstd{,}
-                     \hlkwc{control} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{maxit}\hlstd{=}\hlnum{1000}\hlstd{))}
+\hldef{buffaloFit} \hlkwb{<-} \hlkwd{fitHMM}\hldef{(hmmData,} \hlkwc{nbStates} \hldef{= nbStates,} \hlkwc{dist} \hldef{= dist,}
+                     \hlkwc{formula} \hldef{= formula,} \hlkwc{Par0} \hldef{= Par0,}
+                     \hlkwc{beta0} \hldef{=} \hlkwd{list}\hldef{(}\hlkwc{g0}\hldef{=g0,}
+                                  \hlkwc{theta}\hldef{=theta),}
+                     \hlkwc{fixPar} \hldef{= fixPar,}
+                     \hlkwc{DM} \hldef{= DM,} \hlkwc{betaRef} \hldef{= betaRef,} \hlkwc{betaCons} \hldef{= betaCons,}
+                     \hlkwc{stateNames} \hldef{= stateNames,}
+                     \hlkwc{mvnCoords} \hldef{=} \hlsng{"mu"}\hldef{,}
+                     \hlkwc{optMethod} \hldef{=} \hlsng{"Nelder-Mead"}\hldef{,}
+                     \hlkwc{control} \hldef{=} \hlkwd{list}\hldef{(}\hlkwc{maxit}\hldef{=}\hlnum{1000}\hldef{))}
 
 \hlcom{# extract starting values}
-\hlstd{bestPar} \hlkwb{<-} \hlkwd{getPar}\hlstd{(buffaloFit)}
+\hldef{bestPar} \hlkwb{<-} \hlkwd{getPar}\hldef{(buffaloFit)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -4720,12 +4724,12 @@ Let's begin our analysis by first loading and preparing the data:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{tracks} \hlkwb{<-} \hlkwd{read.csv}\hlstd{(}\hlstr{"SSLpreddat.csv"}\hlstd{)}
-\hlstd{tracks}\hlopt{$}\hlstd{time} \hlkwb{<-} \hlkwd{as.POSIXct}\hlstd{(tracks}\hlopt{$}\hlstd{time,}\hlkwc{format}\hlstd{=}\hlstr{"%Y-%m-%d %H:%M:%S"}\hlstd{,}\hlkwc{tz}\hlstd{=}\hlstr{"UTC"}\hlstd{)}
-\hlstd{tracks}\hlopt{$}\hlstd{time} \hlkwb{<-} \hlkwd{as.numeric}\hlstd{(tracks}\hlopt{$}\hlstd{time)}
-\hlstd{tracks}\hlopt{$}\hlstd{time} \hlkwb{<-} \hlstd{(tracks}\hlopt{$}\hlstd{time}\hlopt{-}\hlkwd{min}\hlstd{(tracks}\hlopt{$}\hlstd{time))}\hlopt{/}\hlnum{3600}
+\hldef{tracks} \hlkwb{<-} \hlkwd{read.csv}\hldef{(}\hlsng{"SSLpreddat.csv"}\hldef{)}
+\hldef{tracks}\hlopt{$}\hldef{time} \hlkwb{<-} \hlkwd{as.POSIXct}\hldef{(tracks}\hlopt{$}\hldef{time,}\hlkwc{format}\hldef{=}\hlsng{"%Y-%m-%d %H:%M:%S"}\hldef{,}\hlkwc{tz}\hldef{=}\hlsng{"UTC"}\hldef{)}
+\hldef{tracks}\hlopt{$}\hldef{time} \hlkwb{<-} \hlkwd{as.numeric}\hldef{(tracks}\hlopt{$}\hldef{time)}
+\hldef{tracks}\hlopt{$}\hldef{time} \hlkwb{<-} \hldef{(tracks}\hlopt{$}\hldef{time}\hlopt{-}\hlkwd{min}\hldef{(tracks}\hlopt{$}\hldef{time))}\hlopt{/}\hlnum{3600}
 
-\hlkwd{head}\hlstd{(tracks)}
+\hlkwd{head}\hldef{(tracks)}
 \end{alltt}
 \begin{verbatim}
 ##      ID     time        x        y
@@ -4742,37 +4746,37 @@ Let's begin our analysis by first loading and preparing the data:
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{hbfull} \hlkwb{<-} \hlstd{raster}\hlopt{::}\hlkwd{brick}\hlstd{(}\hlstr{"aleut_habitat.grd"}\hlstd{,} \hlkwc{values}\hlstd{=}\hlnum{TRUE}\hlstd{)}
-\hlstd{covlist0} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{bathy} \hlstd{= hbfull}\hlopt{$}\hlstd{bathy,}
-                 \hlkwc{slope} \hlstd{= hbfull}\hlopt{$}\hlstd{slope,}
-                 \hlkwc{d2site} \hlstd{= hbfull}\hlopt{$}\hlstd{d2site)}
+\hldef{hbfull} \hlkwb{<-} \hldef{raster}\hlopt{::}\hlkwd{brick}\hldef{(}\hlsng{"aleut_habitat.grd"}\hldef{,} \hlkwc{values}\hldef{=}\hlnum{TRUE}\hldef{)}
+\hldef{covlist0} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwc{bathy} \hldef{= hbfull}\hlopt{$}\hldef{bathy,}
+                 \hlkwc{slope} \hldef{= hbfull}\hlopt{$}\hldef{slope,}
+                 \hlkwc{d2site} \hldef{= hbfull}\hlopt{$}\hldef{d2site)}
 
 \hlcom{# Convert to km}
-\hlkwa{for}\hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(covlist0)) \{}
-  \hlkwd{extent}\hlstd{(covlist0[[i]])} \hlkwb{<-} \hlkwd{extent}\hlstd{(}\hlkwd{c}\hlstd{(}\hlkwd{xmin}\hlstd{(covlist0[[i]]),}
-                                    \hlkwd{xmax}\hlstd{(covlist0[[i]]),}
-                                    \hlkwd{ymin}\hlstd{(covlist0[[i]]),}
-                                    \hlkwd{ymax}\hlstd{(covlist0[[i]]))}\hlopt{/}\hlnum{1000}\hlstd{)}
-  \hlkwd{projection}\hlstd{(covlist0[[i]])} \hlkwb{<-} \hlkwd{gsub}\hlstd{(}\hlstr{"units=m"}\hlstd{,} \hlstr{"units=km"}\hlstd{,}
-                                    \hlkwd{projection}\hlstd{(covlist0[[i]]))}
-\hlstd{\}}
+\hlkwa{for}\hldef{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{length}\hldef{(covlist0)) \{}
+  \hlkwd{extent}\hldef{(covlist0[[i]])} \hlkwb{<-} \hlkwd{extent}\hldef{(}\hlkwd{c}\hldef{(}\hlkwd{xmin}\hldef{(covlist0[[i]]),}
+                                    \hlkwd{xmax}\hldef{(covlist0[[i]]),}
+                                    \hlkwd{ymin}\hldef{(covlist0[[i]]),}
+                                    \hlkwd{ymax}\hldef{(covlist0[[i]]))}\hlopt{/}\hlnum{1000}\hldef{)}
+  \hlkwd{projection}\hldef{(covlist0[[i]])} \hlkwb{<-} \hlkwd{gsub}\hldef{(}\hlsng{"units=m"}\hldef{,} \hlsng{"units=km"}\hldef{,}
+                                    \hlkwd{projection}\hldef{(covlist0[[i]]))}
+\hldef{\}}
 
-\hlstd{ncov} \hlkwb{<-} \hlkwd{length}\hlstd{(covlist0)}
+\hldef{ncov} \hlkwb{<-} \hlkwd{length}\hldef{(covlist0)}
 \hlcom{# Resample covariates to the same grid}
-\hlkwa{for}\hlstd{(i} \hlkwa{in} \hlnum{2}\hlopt{:}\hlstd{ncov)}
-  \hlstd{covlist0[[i]]} \hlkwb{<-} \hlkwd{resample}\hlstd{(covlist0[[i]],covlist0[[}\hlnum{1}\hlstd{]])}
+\hlkwa{for}\hldef{(i} \hlkwa{in} \hlnum{2}\hlopt{:}\hldef{ncov)}
+  \hldef{covlist0[[i]]} \hlkwb{<-} \hlkwd{resample}\hldef{(covlist0[[i]],covlist0[[}\hlnum{1}\hldef{]])}
 
 \hlcom{# convert to km}
-\hlstd{tracks}\hlopt{$}\hlstd{x} \hlkwb{<-} \hlstd{tracks}\hlopt{$}\hlstd{x}\hlopt{/}\hlnum{1000}
-\hlstd{tracks}\hlopt{$}\hlstd{y} \hlkwb{<-} \hlstd{tracks}\hlopt{$}\hlstd{y}\hlopt{/}\hlnum{1000}
+\hldef{tracks}\hlopt{$}\hldef{x} \hlkwb{<-} \hldef{tracks}\hlopt{$}\hldef{x}\hlopt{/}\hlnum{1000}
+\hldef{tracks}\hlopt{$}\hldef{y} \hlkwb{<-} \hldef{tracks}\hlopt{$}\hldef{y}\hlopt{/}\hlnum{1000}
 
 \hlcom{# Crop covariates to area of interest}
-\hlstd{border} \hlkwb{<-} \hlnum{30}
-\hlstd{covlist0}\hlopt{$}\hlstd{bathy} \hlkwb{<-} \hlstd{covlist0}\hlopt{$}\hlstd{bathy}\hlopt{/}\hlnum{1000}
-\hlstd{covlist0}\hlopt{$}\hlstd{d2site} \hlkwb{<-} \hlstd{covlist0}\hlopt{$}\hlstd{d2site}\hlopt{/}\hlnum{1000}
-\hlstd{lim} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlkwd{min}\hlstd{(tracks}\hlopt{$}\hlstd{x)}\hlopt{-}\hlstd{border,}\hlkwd{max}\hlstd{(tracks}\hlopt{$}\hlstd{x)}\hlopt{+}\hlstd{border,}
-         \hlkwd{min}\hlstd{(tracks}\hlopt{$}\hlstd{y)}\hlopt{-}\hlstd{border,}\hlkwd{max}\hlstd{(tracks}\hlopt{$}\hlstd{y)}\hlopt{+}\hlstd{border)}
-\hlstd{covlist0} \hlkwb{<-} \hlkwd{lapply}\hlstd{(covlist0, crop,} \hlkwc{y}\hlstd{=}\hlkwd{extent}\hlstd{(lim))}
+\hldef{border} \hlkwb{<-} \hlnum{30}
+\hldef{covlist0}\hlopt{$}\hldef{bathy} \hlkwb{<-} \hldef{covlist0}\hlopt{$}\hldef{bathy}\hlopt{/}\hlnum{1000}
+\hldef{covlist0}\hlopt{$}\hldef{d2site} \hlkwb{<-} \hldef{covlist0}\hlopt{$}\hldef{d2site}\hlopt{/}\hlnum{1000}
+\hldef{lim} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlkwd{min}\hldef{(tracks}\hlopt{$}\hldef{x)}\hlopt{-}\hldef{border,}\hlkwd{max}\hldef{(tracks}\hlopt{$}\hldef{x)}\hlopt{+}\hldef{border,}
+         \hlkwd{min}\hldef{(tracks}\hlopt{$}\hldef{y)}\hlopt{-}\hldef{border,}\hlkwd{max}\hldef{(tracks}\hlopt{$}\hldef{y)}\hlopt{+}\hldef{border)}
+\hldef{covlist0} \hlkwb{<-} \hlkwd{lapply}\hldef{(covlist0, crop,} \hlkwc{y}\hldef{=}\hlkwd{extent}\hldef{(lim))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -4781,15 +4785,17 @@ Let's begin our analysis by first loading and preparing the data:
 \includegraphics[width=1\textwidth]{plot_langevinCovs.png}
 \caption{Steller sea lion tracks (top left), bathymetry (top right), slope (bottom left), and distance to nearest haul-out or rookery site (bottom right).}
 \end{figure}
-\noindent Next we'll prepare our data for \verb|fitCTHMM| and calculate the habitat covariate gradients using bilinear interpolation (by setting \verb|gradient=TRUE|):
+\noindent Next we'll prepare our continuous-time data (indicated by setting \verb|CT=TRUE|) for \verb|fitCTHMM| and calculate the habitat covariate gradients using bilinear interpolation (by setting \verb|gradient=TRUE|):
 
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hldef{langData} \hlkwb{<-} \hlkwd{prepData}\hldef{(tracks,}\hlkwc{coordNames} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"x"}\hldef{,}\hlsng{"y"}\hldef{),}
-                      \hlkwc{altCoordNames} \hldef{=} \hlsng{"mu"}\hldef{,}
-                      \hlkwc{spatialCovs} \hldef{= covlist0,}
-                      \hlkwc{gradient}\hldef{=}\hlnum{TRUE}\hldef{)}
+\hldef{langData} \hlkwb{<-} \hlkwd{prepData}\hldef{(tracks,}
+                     \hlkwc{CT}\hldef{=}\hlnum{TRUE}\hldef{,}
+                     \hlkwc{coordNames} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"x"}\hldef{,}\hlsng{"y"}\hldef{),}
+                     \hlkwc{altCoordNames} \hldef{=} \hlsng{"mu"}\hldef{,}
+                     \hlkwc{spatialCovs} \hldef{= covlist0,}
+                     \hlkwc{gradient}\hldef{=}\hlnum{TRUE}\hldef{)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -4866,13 +4872,13 @@ To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{fitLangevin} \hlkwb{<-} \hlkwd{fitCTHMM}\hlstd{(langData,}
-                        \hlkwc{nbStates}\hlstd{=}\hlnum{1}\hlstd{,}
-                        \hlkwc{dist}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlstr{"rw_mvnorm2"}\hlstd{),}
-                        \hlkwc{DM}\hlstd{=DM,}
-                        \hlkwc{Par0}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{0}\hlstd{,}\hlnum{2.5}\hlstd{,}\hlnum{0}\hlstd{)),}
-                        \hlkwc{mvnCoords} \hlstd{=} \hlstr{"mu"}\hlstd{,}
-                        \hlkwc{fixPar}\hlstd{=}\hlkwd{list}\hlstd{(}\hlkwc{mu}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{1}\hlstd{,}\hlkwd{rep}\hlstd{(}\hlnum{NA}\hlstd{,}\hlnum{3}\hlstd{),}\hlnum{NA}\hlstd{,}\hlnum{0}\hlstd{)))}
+\hldef{fitLangevin} \hlkwb{<-} \hlkwd{fitCTHMM}\hldef{(langData,}
+                        \hlkwc{nbStates}\hldef{=}\hlnum{1}\hldef{,}
+                        \hlkwc{dist}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{mu}\hldef{=}\hlsng{"rw_mvnorm2"}\hldef{),}
+                        \hlkwc{DM}\hldef{=DM,}
+                        \hlkwc{Par0}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{mu}\hldef{=}\hlkwd{c}\hldef{(}\hlnum{1}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{0}\hldef{,}\hlnum{2.5}\hldef{,}\hlnum{0}\hldef{)),}
+                        \hlkwc{mvnCoords} \hldef{=} \hlsng{"mu"}\hldef{,}
+                        \hlkwc{fixPar}\hldef{=}\hlkwd{list}\hldef{(}\hlkwc{mu}\hldef{=}\hlkwd{c}\hldef{(}\hlnum{1}\hldef{,}\hlkwd{rep}\hldef{(}\hlnum{NA}\hldef{,}\hlnum{3}\hldef{),}\hlnum{NA}\hldef{,}\hlnum{0}\hldef{)))}
 \end{alltt}
 
 
@@ -4891,7 +4897,7 @@ To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# =======================================================================}}
 
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# DONE}}\begin{alltt}
-\hlstd{fitLangevin}
+\hldef{fitLangevin}
 \end{alltt}
 \begin{verbatim}
 ## Value of the maximum log-likelihood: -15137.32 
@@ -4900,7 +4906,7 @@ To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb
 ## Regression coeffs for mu parameters:
 ## ------------------------------------
 ##      mean:mu_tm1     bathy      slope      d2site sd:(Intercept)
-## [1,]           1 0.1344924 0.07609383 -0.02060422       1.257144
+## [1,]           1 0.1344926 0.07609432 -0.02060422       1.257144
 ##      corr.xy:(Intercept)
 ## [1,]                   0
 ## 
@@ -4914,30 +4920,30 @@ To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb
 ## corr.xy     0.000000
 \end{verbatim}
 \begin{alltt}
-\hlstd{fitLangevin}\hlopt{$}\hlstd{CIbeta}\hlopt{$}\hlstd{mu}
+\hldef{fitLangevin}\hlopt{$}\hldef{CIbeta}\hlopt{$}\hldef{mu}
 \end{alltt}
 \begin{verbatim}
 ## $est
 ##      mean:mu_tm1     bathy      slope      d2site sd:(Intercept)
-## [1,]           1 0.1344924 0.07609383 -0.02060422       1.257144
+## [1,]           1 0.1344926 0.07609432 -0.02060422       1.257144
 ##      corr.xy:(Intercept)
 ## [1,]                   0
 ## 
 ## $se
 ##      mean:mu_tm1      bathy     slope      d2site sd:(Intercept)
-## [1,]           0 0.07046041 0.1273152 0.005160584    0.009679295
+## [1,]           0 0.07046058 0.1273137 0.005160588    0.009679296
 ##      corr.xy:(Intercept)
 ## [1,]                   0
 ## 
 ## $lower
-##      mean:mu_tm1        bathy      slope      d2site sd:(Intercept)
-## [1,]           1 -0.003607499 -0.1734394 -0.03071878       1.238173
+##      mean:mu_tm1        bathy     slope      d2site sd:(Intercept)
+## [1,]           1 -0.003607617 -0.173436 -0.03071879       1.238173
 ##      corr.xy:(Intercept)
 ## [1,]                   0
 ## 
 ## $upper
 ##      mean:mu_tm1     bathy     slope      d2site sd:(Intercept)
-## [1,]           1 0.2725923 0.3256271 -0.01048966       1.276115
+## [1,]           1 0.2725928 0.3256246 -0.01048965       1.276115
 ##      corr.xy:(Intercept)
 ## [1,]                   0
 \end{verbatim}
@@ -4948,33 +4954,33 @@ To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlcom{# calculate utilization distribution}
-\hlstd{logUD} \hlkwb{<-} \hlstd{fitLangevin}\hlopt{$}\hlstd{CIbeta}\hlopt{$}\hlstd{mu}\hlopt{$}\hlstd{est[}\hlnum{2}\hlstd{]}\hlopt{*}\hlstd{covlist0}\hlopt{$}\hlstd{bathy} \hlopt{+}
-         \hlstd{fitLangevin}\hlopt{$}\hlstd{CIbeta}\hlopt{$}\hlstd{mu}\hlopt{$}\hlstd{est[}\hlnum{3}\hlstd{]}\hlopt{*}\hlstd{covlist0}\hlopt{$}\hlstd{slope} \hlopt{+}
-         \hlstd{fitLangevin}\hlopt{$}\hlstd{CIbeta}\hlopt{$}\hlstd{mu}\hlopt{$}\hlstd{est[}\hlnum{4}\hlstd{]}\hlopt{*}\hlstd{covlist0}\hlopt{$}\hlstd{d2site}
+\hldef{logUD} \hlkwb{<-} \hldef{fitLangevin}\hlopt{$}\hldef{CIbeta}\hlopt{$}\hldef{mu}\hlopt{$}\hldef{est[}\hlnum{2}\hldef{]}\hlopt{*}\hldef{covlist0}\hlopt{$}\hldef{bathy} \hlopt{+}
+         \hldef{fitLangevin}\hlopt{$}\hldef{CIbeta}\hlopt{$}\hldef{mu}\hlopt{$}\hldef{est[}\hlnum{3}\hldef{]}\hlopt{*}\hldef{covlist0}\hlopt{$}\hldef{slope} \hlopt{+}
+         \hldef{fitLangevin}\hlopt{$}\hldef{CIbeta}\hlopt{$}\hldef{mu}\hlopt{$}\hldef{est[}\hlnum{4}\hldef{]}\hlopt{*}\hldef{covlist0}\hlopt{$}\hldef{d2site}
 
 \hlcom{# normalize UD}
-\hlstd{UD} \hlkwb{<-} \hlkwd{exp}\hlstd{(logUD)}\hlopt{/}\hlkwd{sum}\hlstd{(}\hlkwd{exp}\hlstd{(}\hlkwd{values}\hlstd{(logUD)))}
+\hldef{UD} \hlkwb{<-} \hlkwd{exp}\hldef{(logUD)}\hlopt{/}\hlkwd{sum}\hldef{(}\hlkwd{exp}\hldef{(}\hlkwd{values}\hldef{(logUD)))}
 
-\hlstd{UDmat} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(}\hlkwd{coordinates}\hlstd{(UD),}\hlkwc{val}\hlstd{=}\hlkwd{values}\hlstd{(UD))}
-\hlstd{ggtheme} \hlkwb{<-} \hlkwd{theme}\hlstd{(}\hlkwc{axis.title} \hlstd{=} \hlkwd{element_text}\hlstd{(}\hlkwc{size}\hlstd{=}\hlnum{10}\hlstd{),}
-                 \hlkwc{axis.text} \hlstd{=} \hlkwd{element_text}\hlstd{(}\hlkwc{size}\hlstd{=}\hlnum{10}\hlstd{),}
-                 \hlkwc{legend.title} \hlstd{=} \hlkwd{element_text}\hlstd{(}\hlkwc{size}\hlstd{=}\hlnum{12}\hlstd{),}
-                 \hlkwc{legend.text} \hlstd{=} \hlkwd{element_text}\hlstd{(}\hlkwc{size}\hlstd{=}\hlnum{10}\hlstd{),}
-                 \hlkwc{title} \hlstd{=} \hlkwd{element_text}\hlstd{(}\hlkwc{size}\hlstd{=}\hlnum{10}\hlstd{))}
+\hldef{UDmat} \hlkwb{<-} \hlkwd{data.frame}\hldef{(}\hlkwd{coordinates}\hldef{(UD),}\hlkwc{val}\hldef{=}\hlkwd{values}\hldef{(UD))}
+\hldef{ggtheme} \hlkwb{<-} \hlkwd{theme}\hldef{(}\hlkwc{axis.title} \hldef{=} \hlkwd{element_text}\hldef{(}\hlkwc{size}\hldef{=}\hlnum{10}\hldef{),}
+                 \hlkwc{axis.text} \hldef{=} \hlkwd{element_text}\hldef{(}\hlkwc{size}\hldef{=}\hlnum{10}\hldef{),}
+                 \hlkwc{legend.title} \hldef{=} \hlkwd{element_text}\hldef{(}\hlkwc{size}\hldef{=}\hlnum{12}\hldef{),}
+                 \hlkwc{legend.text} \hldef{=} \hlkwd{element_text}\hldef{(}\hlkwc{size}\hldef{=}\hlnum{10}\hldef{),}
+                 \hlkwc{title} \hldef{=} \hlkwd{element_text}\hldef{(}\hlkwc{size}\hldef{=}\hlnum{10}\hldef{))}
 
 \hlcom{# Plot utilization distribution}
-\hlstd{p1} \hlkwb{<-} \hlkwd{ggplot}\hlstd{(UDmat,}\hlkwd{aes}\hlstd{(x,y))} \hlopt{+} \hlkwd{geom_raster}\hlstd{(}\hlkwd{aes}\hlstd{(}\hlkwc{fill}\hlstd{=val))} \hlopt{+}
-  \hlkwd{coord_equal}\hlstd{()} \hlopt{+} \hlkwd{scale_fill_viridis}\hlstd{(}\hlkwc{name}\hlstd{=}\hlkwd{expression}\hlstd{(pi))} \hlopt{+}
-  \hlkwd{xlab}\hlstd{(}\hlstr{"Easting (km)"}\hlstd{)} \hlopt{+} \hlkwd{ylab}\hlstd{(}\hlstr{"Northing (km)"}\hlstd{)} \hlopt{+} \hlstd{ggtheme} \hlopt{+}
-  \hlkwd{geom_point}\hlstd{(}\hlkwd{aes}\hlstd{(x,y),} \hlkwc{data}\hlstd{=tracks,} \hlkwc{size}\hlstd{=}\hlnum{0.5}\hlstd{)}
+\hldef{p1} \hlkwb{<-} \hlkwd{ggplot}\hldef{(UDmat,}\hlkwd{aes}\hldef{(x,y))} \hlopt{+} \hlkwd{geom_raster}\hldef{(}\hlkwd{aes}\hldef{(}\hlkwc{fill}\hldef{=val))} \hlopt{+}
+  \hlkwd{coord_equal}\hldef{()} \hlopt{+} \hlkwd{scale_fill_viridis}\hldef{(}\hlkwc{name}\hldef{=}\hlkwd{expression}\hldef{(pi))} \hlopt{+}
+  \hlkwd{xlab}\hldef{(}\hlsng{"Easting (km)"}\hldef{)} \hlopt{+} \hlkwd{ylab}\hldef{(}\hlsng{"Northing (km)"}\hldef{)} \hlopt{+} \hldef{ggtheme} \hlopt{+}
+  \hlkwd{geom_point}\hldef{(}\hlkwd{aes}\hldef{(x,y),} \hlkwc{data}\hldef{=tracks,} \hlkwc{size}\hldef{=}\hlnum{0.5}\hldef{)}
 
 \hlcom{# Plot log-utilization distribution}
-\hlstd{p2} \hlkwb{<-} \hlkwd{ggplot}\hlstd{(UDmat,}\hlkwd{aes}\hlstd{(x,y))} \hlopt{+} \hlkwd{geom_raster}\hlstd{(}\hlkwd{aes}\hlstd{(}\hlkwc{fill}\hlstd{=}\hlkwd{log}\hlstd{(val)))} \hlopt{+}
-  \hlkwd{coord_equal}\hlstd{()} \hlopt{+} \hlkwd{scale_fill_viridis}\hlstd{(}\hlkwc{name}\hlstd{=}\hlkwd{expression}\hlstd{(}\hlkwd{log}\hlstd{(pi)))} \hlopt{+}
-  \hlkwd{xlab}\hlstd{(}\hlstr{"Easting (km)"}\hlstd{)} \hlopt{+} \hlkwd{ylab}\hlstd{(}\hlstr{"Northing (km)"}\hlstd{)} \hlopt{+} \hlstd{ggtheme} \hlopt{+}
-  \hlkwd{geom_point}\hlstd{(}\hlkwd{aes}\hlstd{(x,y),} \hlkwc{data}\hlstd{=tracks,} \hlkwc{size}\hlstd{=}\hlnum{0.5}\hlstd{)}
+\hldef{p2} \hlkwb{<-} \hlkwd{ggplot}\hldef{(UDmat,}\hlkwd{aes}\hldef{(x,y))} \hlopt{+} \hlkwd{geom_raster}\hldef{(}\hlkwd{aes}\hldef{(}\hlkwc{fill}\hldef{=}\hlkwd{log}\hldef{(val)))} \hlopt{+}
+  \hlkwd{coord_equal}\hldef{()} \hlopt{+} \hlkwd{scale_fill_viridis}\hldef{(}\hlkwc{name}\hldef{=}\hlkwd{expression}\hldef{(}\hlkwd{log}\hldef{(pi)))} \hlopt{+}
+  \hlkwd{xlab}\hldef{(}\hlsng{"Easting (km)"}\hldef{)} \hlopt{+} \hlkwd{ylab}\hldef{(}\hlsng{"Northing (km)"}\hldef{)} \hlopt{+} \hldef{ggtheme} \hlopt{+}
+  \hlkwd{geom_point}\hldef{(}\hlkwd{aes}\hldef{(x,y),} \hlkwc{data}\hldef{=tracks,} \hlkwc{size}\hldef{=}\hlnum{0.5}\hldef{)}
 
-\hlstd{p1} \hlopt{+} \hlstd{p2} \hlopt{+} \hlkwd{plot_layout}\hlstd{(}\hlnum{1}\hlstd{,}\hlnum{2}\hlstd{)}
+\hldef{p1} \hlopt{+} \hldef{p2} \hlopt{+} \hlkwd{plot_layout}\hldef{(}\hlnum{1}\hldef{,}\hlnum{2}\hldef{)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -4987,16 +4993,16 @@ To specify the Langevin model of \citet{MichelotEtAl2019}, we must use the \verb
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{initPos} \hlkwb{<-} \hlkwd{split}\hlstd{(}\hlkwd{as.matrix}\hlstd{(langData[}\hlopt{!}\hlkwd{duplicated}\hlstd{(langData}\hlopt{$}\hlstd{ID),}
-                                    \hlkwd{c}\hlstd{(}\hlstr{"mu.x"}\hlstd{,}\hlstr{"mu.y"}\hlstd{)]),}
-                 \hlkwd{unique}\hlstd{(langData}\hlopt{$}\hlstd{ID))}
+\hldef{initPos} \hlkwb{<-} \hlkwd{split}\hldef{(}\hlkwd{as.matrix}\hldef{(langData[}\hlopt{!}\hlkwd{duplicated}\hldef{(langData}\hlopt{$}\hldef{ID),}
+                                    \hlkwd{c}\hldef{(}\hlsng{"mu.x"}\hldef{,}\hlsng{"mu.y"}\hldef{)]),}
+                 \hlkwd{unique}\hldef{(langData}\hlopt{$}\hldef{ID))}
 
-\hlstd{simLangevin} \hlkwb{<-} \hlkwd{simCTHMM}\hlstd{(}\hlkwc{model}\hlstd{=fitLangevin,}
-                        \hlkwc{spatialCovs}\hlstd{=covlist0,}
-                        \hlkwc{initialPosition} \hlstd{= initPos)}
+\hldef{simLangevin} \hlkwb{<-} \hlkwd{simCTHMM}\hldef{(}\hlkwc{model}\hldef{=fitLangevin,}
+                        \hlkwc{spatialCovs}\hldef{=covlist0,}
+                        \hlkwc{initialPosition} \hldef{= initPos)}
 
-\hlstd{p3} \hlkwb{<-} \hlkwd{plotSpatialCov}\hlstd{(simLangevin,logUD,}\hlkwc{return}\hlstd{=}\hlnum{TRUE}\hlstd{)}
-\hlstd{p3} \hlopt{+} \hlkwd{scale_fill_viridis}\hlstd{(}\hlkwc{name}\hlstd{=}\hlkwd{expression}\hlstd{(}\hlkwd{log}\hlstd{(pi)))}
+\hldef{p3} \hlkwb{<-} \hlkwd{plotSpatialCov}\hldef{(simLangevin,logUD,}\hlkwc{return}\hldef{=}\hlnum{TRUE}\hldef{)}
+\hldef{p3} \hlopt{+} \hlkwd{scale_fill_viridis}\hldef{(}\hlkwc{name}\hldef{=}\hlkwd{expression}\hldef{(}\hlkwd{log}\hldef{(pi)))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}

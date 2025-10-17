@@ -1,11 +1,26 @@
 library(momentuHMM)
 library(raster)
+library(ctmcmove)
+library(sp)
 
 ## download buffalo data
 load(url("https://github.com/henryrscharf/Hooten_et_al_EL_2018/raw/master/data/buffalo/buffalo_Cilla.RData"))
 
 ## download distance to water covariate raster
 load(url("https://github.com/henryrscharf/Hooten_et_al_EL_2018/raw/master/data/buffalo/dist2sabie.RData"))
+
+# Store the original data
+original_values <- values(dist2sabie)
+original_extent <- extent(dist2sabie)
+original_res <- res(dist2sabie)
+
+# Create new raster with proper CRS using the correct syntax
+dist2sabie <- raster(original_extent, 
+                     resolution = original_res,
+                     crs = CRS("+proj=utm +zone=36 +south +datum=WGS84 +units=m +no_defs"))
+
+# Set values and name
+values(dist2sabie) <- original_values
 names(dist2sabie) <- "dist2sabie"
 
 ## standardize dist2sabie based on slope of gradient
@@ -153,10 +168,11 @@ hist(buffaloFits$miSum$data$dist2sabie[which(buffaloFits$miSum$Par$states==2)],m
 
 ## Continuous-time versions
 
+hmmDataCT <- prepData(crwOut, CT=TRUE, spatialCovs = spatialCovs, gradient=TRUE, altCoordNames = "mu")
+
 parCT <- getPar(buffaloFits)
 
 # effectively remove Markov property from state transitions
-dt <- c(diff(hmmData$time),1)
 betaIntCT <- 10
 betaReCT <- 1
 parCT$beta$beta <- matrix(c(betaIntCT,-betaReCT,betaIntCT,betaReCT),2,2)
@@ -164,7 +180,7 @@ parCT$beta$beta <- matrix(c(betaIntCT,-betaReCT,betaIntCT,betaReCT),2,2)
 fixParCT <- fixPar
 fixParCT$beta <- parCT$beta$beta
 
-buffaloFitCT <- fitCTHMM(hmmData,
+buffaloFitCT <- fitCTHMM(hmmDataCT,
                          mvnCoords="mu", 
                          nbStates=nbStates, dist=dist, formula=formula,
                          Par0=parCT$Par, beta0=parCT$beta,
@@ -174,7 +190,7 @@ buffaloFitCT <- fitCTHMM(hmmData,
 
 parsCT <- lapply(buffaloFits$HMMfits,getPar)
 set.seed(1,kind="Mersenne-Twister",normal.kind="Inversion")
-buffaloFitsCT <- MIfitCTHMM(crwOut, nSims=28, ncores=4,
+buffaloFitsCT <- MIfitCTHMM(crwOut, nSims=28, ncores=4, 
                             spatialCovs = spatialCovs, gradient=TRUE, 
                             mvnCoords="mu", altCoordNames = "mu",
                             nbStates=nbStates, dist=dist, formula=formula,

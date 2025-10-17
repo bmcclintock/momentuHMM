@@ -1,8 +1,8 @@
 library(sp)
 library(doParallel)
 
-setwd("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/momentuHMM/vignettes")
-example_wd <- ("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/vignette examples/")
+setwd(paste0(getwd(),"/vignettes"))
+example_wd <- ("../../vignette examples/")
 
 append.RData <- function(x, file) {
   old.objects <- load(file)
@@ -240,9 +240,9 @@ tmpData<-spTransform(tmpData,CRS="+proj=longlat +ellps=WGS84")
 png(file=paste0(getwd(),"/plot_harbourSeal.png"),width=7.25,height=5,units="in",res=84)
 par(mfrow=c(1,2))
 for(id in c(8,1)){
-  freqs<-miSum.ind$Par$states[which(hsData$ID==id)]
-  x<-coordinates(tmpData)[which(hsData$ID==id),1]
-  y<-coordinates(tmpData)[which(hsData$ID==id),2]
+  freqs<-miSum.ind$Par$states[hsData$ID==id]
+  x<-tmpData@coords[which(hsData$ID==id),1]
+  y<-tmpData@coords[which(hsData$ID==id),2]
   errorEllipse<-miSum.ind$errorEllipse[which(hsData$ID==id)]
   errorEllipse<-lapply(errorEllipse,function(x){x<-as.data.frame(x);
   coordinates(x)<-c("x","y");
@@ -287,9 +287,16 @@ append.RData(timeIn1,file=paste0(getwd(),"/vignette_inputs.RData"))
 append.RData(timeIn2,file=paste0(getwd(),"/vignette_inputs.RData"))
 #append.RData(m2,file=paste0(getwd(),"/vignette_inputs.RData"))
 #append.RData(newProj,file=paste0(getwd(),"/vignette_inputs.RData"))
-#png(file=paste0(getwd(),"/plot_northernFulmarExample.png"),width=7.25,height=5,units="in",res=80)
-#plotSat(m2,zoom=7,shape=c(17,1,17,1,17,1),size=2,col=rep(c("#E69F00", "#56B4E9", "#009E73"),each=2),stateNames=c("sea ARS","sea Transit","boat ARS","boat Transit","colony ARS","colony Transit"),projargs=newProj,ask=FALSE)
-#dev.off()
+
+tmpDat <- data.frame(m2$data)
+coordinates(tmpDat) <- c("x","y")
+proj4string(tmpDat) <- newProj
+tmpDat <- as.data.frame(spTransform(tmpDat, CRS("+proj=longlat +datum=WGS84")))
+m2$data$x <- tmpDat$coords.x1
+m2$data$y <- tmpDat$coords.x2
+png(file=paste0(getwd(),"/plot_northernFulmarExample.png"),width=7.25,height=5,units="in",res=80)
+plotSat(m2,zoom=7,shape=c(17,1,17,1,17,1),size=2,col=rep(c("#E69F00", "#56B4E9", "#009E73"),each=2),stateNames=c("sea ARS","sea Transit","boat ARS","boat Transit","colony ARS","colony Transit"),ask=FALSE)
+dev.off()
 
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 
@@ -321,7 +328,7 @@ for(plt in seq(1,nbAnimals+3)[-c(7,8)])
 ### pilot whale example
 ###################################################
 #source(paste0(getwd(),"/examples/pilotWhaleExample.R"))
-load(paste0(example_wd,"pilotWhaleExample.RData"))
+load(paste0(getwd(),"/vignetteResults/pilotWhaleExample.RData"))
 fitmix1_Par <- getPar(fitmix1)
 append.RData(fitmix1_Par,file=paste0(getwd(),"/vignette_inputs.RData"))
 Par0_mix2 <- getPar0(fitmix1,mixtures=2)

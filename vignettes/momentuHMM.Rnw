@@ -511,11 +511,8 @@ As our first example, we use an African elephant ({\it Loxodonta africana}) bull
 
 We can load the data from the URL (this requires an Internet connection):
 <<load-data, echo=TRUE, eval=TRUE, cache=TRUE>>=
-URL <- paste0("https://www.datarepository.movebank.org/bitstream/handle/",
-              "10255/move.373/Elliptical%20Time-Density%20Model%20%28Wall%",
-              "20et%20al.%202014%29%20African%20Elephant%20Dataset%20%",
-              "28Source-Save%20the%20Elephants%29.csv")
-rawData <- read.csv(url(URL))
+URL <- "https://datarepository.movebank.org/server/api/core/bitstreams/77e38af2-b5fc-4c10-9e6d-f36b2adf9ea9/content"
+rawData <- readr::read_csv(url(URL))
 @ 
 
 The data set contains two tracks; for this analysis, we only consider the first one. In addition to hourly locations, the tag also collected external temperature data. We subset the data frame to keep only the relevant rows and columns:
@@ -2820,6 +2817,19 @@ load(url(paste0("https://github.com/henryrscharf/",
 load(url(paste0("https://github.com/henryrscharf/",
                 "Hooten_et_al_EL_2018/raw/master/",
                 "data/buffalo/dist2sabie.RData")))
+
+# Store the original data
+original_values <- values(dist2sabie)
+original_extent <- extent(dist2sabie)
+original_res <- res(dist2sabie)
+
+# Create new raster with proper CRS using the correct syntax
+dist2sabie <- raster(original_extent, 
+                     resolution = original_res,
+                     crs = CRS("+proj=utm +zone=36 +south +datum=WGS84 +units=m +no_defs"))
+
+# Set values and name
+values(dist2sabie) <- original_values
 names(dist2sabie) <- "dist2sabie"
 
 ## standardize dist2sabie based on slope of gradient
@@ -3145,18 +3155,20 @@ covlist0 <- lapply(covlist0, crop, y=extent(lim))
 \includegraphics[width=1\textwidth]{plot_langevinCovs.png}
 \caption{Steller sea lion tracks (top left), bathymetry (top right), slope (bottom left), and distance to nearest haul-out or rookery site (bottom right).}
 \end{figure}
-\noindent Next we'll prepare our data for \verb|fitCTHMM| and calculate the habitat covariate gradients using bilinear interpolation (by setting \verb|gradient=TRUE|):
+\noindent Next we'll prepare our continuous-time data (indicated by setting \verb|CT=TRUE|) for \verb|fitCTHMM| and calculate the habitat covariate gradients using bilinear interpolation (by setting \verb|gradient=TRUE|):
 <<langevin-prep,echo=FALSE,eval=TRUE>>=
-langData <- suppressMessages(prepData(tracks,coordNames = c("x","y"),
+langData <- suppressMessages(prepData(tracks,CT=TRUE,coordNames = c("x","y"),
                       altCoordNames = "mu",
                       spatialCovs = covlist0,
                       gradient=TRUE))
 @
 <<langevin-prep-1,echo=TRUE,eval=FALSE>>=
-langData <- prepData(tracks,coordNames = c("x","y"),
-                      altCoordNames = "mu",
-                      spatialCovs = covlist0,
-                      gradient=TRUE)
+langData <- prepData(tracks,
+                     CT=TRUE,
+                     coordNames = c("x","y"),
+                     altCoordNames = "mu",
+                     spatialCovs = covlist0,
+                     gradient=TRUE)
 @
 <<langevin-prep-2,echo=TRUE,eval=TRUE>>=
 head(langData)
