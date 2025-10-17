@@ -1,10 +1,8 @@
 library(momentuHMM)
+library(readr)
 
-URL <- paste0("https://www.datarepository.movebank.org/bitstream/handle/",
-              "10255/move.373/Elliptical%20Time-Density%20Model%20%28Wall%",
-              "20et%20al.%202014%29%20African%20Elephant%20Dataset%20%",
-              "28Source-Save%20the%20Elephants%29.csv")
-rawData <- read.csv(url(URL))
+URL <- "https://datarepository.movebank.org/server/api/core/bitstreams/77e38af2-b5fc-4c10-9e6d-f36b2adf9ea9/content"
+rawData <- readr::read_csv(url(URL))
 
 # select and rename relevant columns
 rawData <- rawData[,c(11,3,4,5,6)]

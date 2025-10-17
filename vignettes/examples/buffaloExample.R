@@ -1,12 +1,26 @@
 library(momentuHMM)
 library(raster)
 library(ctmcmove)
+library(sp)
 
 ## download buffalo data
 load(url("https://github.com/henryrscharf/Hooten_et_al_EL_2018/raw/master/data/buffalo/buffalo_Cilla.RData"))
 
 ## download distance to water covariate raster
 load(url("https://github.com/henryrscharf/Hooten_et_al_EL_2018/raw/master/data/buffalo/dist2sabie.RData"))
+
+# Store the original data
+original_values <- values(dist2sabie)
+original_extent <- extent(dist2sabie)
+original_res <- res(dist2sabie)
+
+# Create new raster with proper CRS using the correct syntax
+dist2sabie <- raster(original_extent, 
+                     resolution = original_res,
+                     crs = CRS("+proj=utm +zone=36 +south +datum=WGS84 +units=m +no_defs"))
+
+# Set values and name
+values(dist2sabie) <- original_values
 names(dist2sabie) <- "dist2sabie"
 
 ## standardize dist2sabie based on slope of gradient

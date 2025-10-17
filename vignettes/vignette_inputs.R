@@ -1,8 +1,8 @@
 library(sp)
 library(doParallel)
 
-setwd("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/momentuHMM/vignettes")
-example_wd <- ("~/Documents/Dropbox/current projects/moveHMM extension/momentuHMM/vignette examples/")
+setwd(paste0(getwd(),"/vignettes"))
+example_wd <- ("../../vignette examples/")
 
 append.RData <- function(x, file) {
   old.objects <- load(file)
@@ -241,8 +241,8 @@ png(file=paste0(getwd(),"/plot_harbourSeal.png"),width=7.25,height=5,units="in",
 par(mfrow=c(1,2))
 for(id in c(8,1)){
   freqs<-miSum.ind$Par$states[hsData$ID==id]
-  x<-tmpData$x[which(hsData$ID==id)]
-  y<-tmpData$y[which(hsData$ID==id)]
+  x<-tmpData@coords[which(hsData$ID==id),1]
+  y<-tmpData@coords[which(hsData$ID==id),2]
   errorEllipse<-miSum.ind$errorEllipse[which(hsData$ID==id)]
   errorEllipse<-lapply(errorEllipse,function(x){x<-as.data.frame(x);
                                                 coordinates(x)<-c("x","y");
@@ -287,8 +287,14 @@ append.RData(timeIn1,file=paste0(getwd(),"/vignette_inputs.RData"))
 append.RData(timeIn2,file=paste0(getwd(),"/vignette_inputs.RData"))
 #append.RData(m2,file=paste0(getwd(),"/vignette_inputs.RData"))
 #append.RData(newProj,file=paste0(getwd(),"/vignette_inputs.RData"))
+tmpDat <- data.frame(m2$data)
+coordinates(tmpDat) <- c("x","y")
+proj4string(tmpDat) <- newProj
+tmpDat <- as.data.frame(spTransform(tmpDat, CRS("+proj=longlat +datum=WGS84")))
+m2$data$x <- tmpDat$coords.x1
+m2$data$y <- tmpDat$coords.x2
 png(file=paste0(getwd(),"/plot_northernFulmarExample.png"),width=7.25,height=5,units="in",res=80)
-plotSat(m2,zoom=7,shape=c(17,1,17,1,17,1),size=2,col=rep(c("#E69F00", "#56B4E9", "#009E73"),each=2),stateNames=c("sea ARS","sea Transit","boat ARS","boat Transit","colony ARS","colony Transit"),projargs=newProj,ask=FALSE)
+plotSat(m2,zoom=7,shape=c(17,1,17,1,17,1),size=2,col=rep(c("#E69F00", "#56B4E9", "#009E73"),each=2),stateNames=c("sea ARS","sea Transit","boat ARS","boat Transit","colony ARS","colony Transit"),ask=FALSE)
 dev.off()
 
 rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
@@ -321,7 +327,7 @@ for(plt in seq(1,nbAnimals+3)[-c(7,8)])
 ### pilot whale example
 ###################################################
 #source(paste0(getwd(),"/examples/pilotWhaleExample.R"))
-load(paste0(example_wd,"pilotWhaleExample.RData"))
+load(paste0(getwd(),"/vignetteResults/pilotWhaleExample.RData"))
 fitmix1_Par <- getPar(fitmix1)
 append.RData(fitmix1_Par,file=paste0(getwd(),"/vignette_inputs.RData"))
 Par0_mix2 <- getPar0(fitmix1,mixtures=2)
@@ -353,7 +359,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ### harbor porpoise HHMM example
 ###################################################
 #source(paste0(getwd(),"/examples/harborPorpoiseExample.R"))
-load(paste0(example_wd,"harborPorpoiseExample.RData"))
+load(paste0(getwd(),"/vignetteResults/harborPorpoiseExample.RData"))
 hhmmPar <- getPar(hhmm)
 append.RData(hhmmPar,file=paste0(getwd(),"/vignette_inputs.RData"))
 pdf(file=paste0(getwd(),"/plot_harborPorpoiseStates%03d.pdf"),width=8,height=11,onefile=FALSE)
@@ -365,7 +371,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ### garter snake HHMM example
 ###################################################
 #source(paste0(getwd(),"/examples/garterSnakeExample.R"))
-load(paste0(example_wd,"garterSnakeExample.RData"))
+load(paste0(getwd(),"/vignetteResults/garterSnakeExample.RData"))
 hhmm2Par <- getPar(hhmm)
 append.RData(hhmm2Par,file=paste0(getwd(),"/vignette_inputs.RData"))
 pdf(file=paste0(getwd(),"/plot_garterSnakePR.pdf"),width=5,height=2.5)
@@ -377,7 +383,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ### atlantic cod HHMM example
 ###################################################
 #source(paste0(getwd(),"/examples/codExample.R"))
-load(paste0(example_wd,"codExample.RData"))
+load(paste0(getwd(),"/vignetteResults/codExample.RData"))
 hhmm3Par <- getPar(hhmm)
 append.RData(hhmm3Par,file=paste0(getwd(),"/vignette_inputs.RData"))
 pdf(file=paste0(getwd(),"/plot_codExample%03d.pdf"),width=5,height=5,onefile = FALSE)
@@ -396,7 +402,7 @@ rm(list=ls()[-which(ls()=="example_wd" | ls()=="append.RData")])
 ### horn shark HHMM example
 ###################################################
 #source(paste0(getwd(),"/examples/hornSharkExample.R"))
-load(paste0(example_wd,"hornSharkExample.RData"))
+load(paste0(getwd(),"/vignetteResults/hornSharkExample.RData"))
 hhmm4Par <- getPar(hhmm)
 append.RData(hhmm4Par,file=paste0(getwd(),"/vignette_inputs.RData"))
 trProbs12 <- getTrProbs(hhmm,covIndex=c(1,3))
