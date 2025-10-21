@@ -356,6 +356,7 @@ as a k x (\code{nbStates}-1) matrix of working parameters, where k is the number
 }
 }
 \examples{
+\dontrun{
 # 1. Pass a fitted model to simulate from
 # (m is a momentuHMM object - as returned by fitHMM - automatically loaded with the package)
 # We keep the default nbAnimals=1.
@@ -363,7 +364,6 @@ m <- example$m
 obsPerAnimal=c(50,100)
 data <- simData(model=m,obsPerAnimal=obsPerAnimal)
 
-\dontrun{
 # 2. Pass the parameters of the model to simulate from
 stepPar <- c(1,10,1,5,0.2,0.3) # mean_1, mean_2, sd_1, sd_2, zeromass_1, zeromass_2
 anglePar <- c(pi,0,0.5,2) # mean_1, mean_2, concentration_1, concentration_2

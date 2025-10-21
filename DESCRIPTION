@@ -58,7 +58,7 @@ Suggests:
     prodlim,
     nleqslv,
     qdapRegex
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Encoding: UTF-8
 NeedsCompilation: yes
 VignetteBuilder: R.rsp
