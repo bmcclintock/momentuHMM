@@ -21,7 +21,7 @@
 #' Hidden Markov Models for Time Series: An Introduction Using R.
 #' Chapman & Hall (London).
 #'
-#' @importFrom Brobdingnag sum brob
+#' @importFrom Brobdingnag brob
 #' @export
 
 stateProbs <- function(m, hierarchical=FALSE)
