@@ -60,7 +60,7 @@
 #' }
 #'
 #'
-#' @importFrom Brobdingnag as.brob sum
+#' @importFrom Brobdingnag as.brob
 
 w2n <- function(wpar,bounds,parSize,nbStates,nbCovs,estAngleMean,circularAngleMean,consensus,stationary,fullDM,DMind,nbObs,dist,Bndind,nc,meanind,covsDelta,workBounds,covsPi)
 {

@@ -42,7 +42,7 @@ CIreal <- function(m,alpha=0.95,covs=NULL,parms=NULL) {
 #' @method CIreal default
 #' @importFrom numDeriv grad
 #' @importFrom utils tail
-#' @importFrom Brobdingnag as.brob sum
+#' @importFrom Brobdingnag as.brob
 #' @importFrom CircStats circ.mean
 #' @export
 CIreal.default <- function(m,alpha=0.95,covs=NULL,parms=NULL)
@@ -448,7 +448,7 @@ w2nDMangle<-function(w,bounds,DM,DMind,nbObs,circularAngleMean,consensus,nbState
 #' @method CIreal hierarchical
 #' @importFrom numDeriv grad
 #' @importFrom utils tail
-#' @importFrom Brobdingnag as.brob sum
+#' @importFrom Brobdingnag as.brob
 #' @importFrom CircStats circ.mean
 #' @export
 CIreal.hierarchical <- function(m,alpha=0.95,covs=NULL,parms=NULL){

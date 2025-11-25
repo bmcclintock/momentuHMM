@@ -342,7 +342,7 @@
 #' @importFrom raster cellFromXY getValues is.factor levels
 # @importFrom moveHMM simData
 #' @importFrom CircStats rvm
-#' @importFrom Brobdingnag as.brob sum
+#' @importFrom Brobdingnag as.brob
 #' @importFrom mvtnorm rmvnorm
 # #' @importFrom extraDistr rcat
 #' @importFrom doParallel registerDoParallel stopImplicitCluster

@@ -1,3 +1,10 @@
+momentuHMM 1.5.8 2025-11-24
+-----------------
+CHANGES
+
+* No longer import 'sum' from Brobdingnag package as it is no longer exported
+
+
 momentuHMM 1.5.7 2025-10-21
 -----------------
 CHANGES
