@@ -45,5 +45,8 @@ jobs:
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
+        if: runner.os == 'macOS'
+        env:
+          R_PARALLELLY_AVAILABLECORES_SYSTEM: 1
         with:
           upload-snapshots: true

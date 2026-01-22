@@ -50,33 +50,29 @@ pseudoRes <- function(m, ncores = 1)
     else {
       mod <- ii <- NULL # get rid of no visible binding for global variable 
       if(is.miHMM(m)) m <- m$HMMfits
-      if (ncores>1) {
-        for(pkg in c("doFuture","future")){
+      if(ncores>1){
+        for(pkg in c("doFuture","future","parallelly")){
           if (!requireNamespace(pkg, quietly = TRUE)) {
             stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
                  call. = FALSE)
           }
         }
         oldDoPar <- doFuture::registerDoFuture()
-        if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
-          future::plan(future::sequential)
-        } else {
-          future::plan(future::multisession, workers = ncores)
-        }
         on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
-        # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
-        progBar <- progBar
+        with(local = TRUE,
+             future::plan(future::multisession, workers = parallelly::availableCores(max = ncores)))
       } else {
-        doParallel::registerDoParallel(cores=ncores)
+        foreach::registerDoSEQ()
       }
+      
+      progBar <- progBar
+      
       mInd <- which(unlist(lapply(m,is.momentuHMM)))
       progBar(0, length(mInd))
       withCallingHandlers(genRes <- foreach(mod=m[mInd], ii=mInd, .packages="momentuHMM") %dorng% {
         progBar(ii, length(mInd))
         pseudoRes(mod)
       },warning=muffleRNGwarning)
-      if(ncores==1) doParallel::stopImplicitCluster()
-      else future::plan(future::sequential)
       return(genRes)
     }
   }

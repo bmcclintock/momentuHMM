@@ -71,7 +71,7 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
   if(nsims<1) stop("'HMMfits' must be a list comprised of momentuHMM objects")
   
   if(ncores>1){
-    for(pkg in c("doFuture","future")){
+    for(pkg in c("doFuture","future","parallelly")){
       if (!requireNamespace(pkg, quietly = TRUE)) {
         stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
              call. = FALSE)
@@ -79,18 +79,14 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     }
     oldDoPar <- doFuture::registerDoFuture()
     on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
-    if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
-      future::plan(future::sequential)
-    } else {
-      future::plan(future::multisession, workers = ncores)
-    }
-    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
-    progBar <- progBar
-    pkgs <- c("momentuHMM")
-  } else { 
-    doParallel::registerDoParallel(cores=ncores)
-    pkgs <- NULL
+    with(local = TRUE,
+         future::plan(future::multisession, workers = parallelly::availableCores(max = ncores)))
+  } else {
+    foreach::registerDoSEQ()
   }
+  # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
+  progBar <- progBar
+  pkgs <- c("momentuHMM")
   
   if (!requireNamespace("mitools", quietly = TRUE)) {
     stop("Package \"mitools\" needed for this function to work. Please install it.",
@@ -225,8 +221,6 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     }
     #cat("DONE\n")
   } else states <- rep(1,nrow(data))
-  if(ncores==1) doParallel::stopImplicitCluster()
-  else future::plan(future::sequential)
   
   # pool estimates on working scale
   parms <- names(m$CIbeta)
@@ -742,13 +736,18 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
              call. = FALSE)
       } else {
         if(ncores>1){
-          if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
-            future::plan(future::sequential)
-          } else {
-            future::plan(future::multisession, workers = ncores)
+          for(pkg in c("doFuture","future","parallelly")){
+            if (!requireNamespace(pkg, quietly = TRUE)) {
+              stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
+                   call. = FALSE)
+            }
           }
-        } else { 
-          doParallel::registerDoParallel(cores=ncores)
+          oldDoPar <- doFuture::registerDoFuture()
+          on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
+          with(local = TRUE,
+               future::plan(future::multisession, workers = parallelly::availableCores(max = ncores)))
+        } else {
+          foreach::registerDoSEQ()
         }
         cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
         tmpx<-matrix(unlist(mapply(function(x) im[[x]]$data[[coordNames[1]]][inTime[[x]]],1:length(im))),nrow(mh$data))
@@ -759,8 +758,6 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
             ellip <- suppressWarnings(car::dataEllipse(tmp,levels=alpha,draw=FALSE,segments=100))
           else ellip <- matrix(tmp[1,],101,2,byrow=TRUE)
         },warning=muffleRNGwarning)
-        if(ncores==1) doParallel::stopImplicitCluster()
-        else future::plan(future::sequential)
         cat("DONE\n")
       }
     }

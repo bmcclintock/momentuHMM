@@ -1,4 +1,4 @@
-momentuHMM 2.0.0 2025-09-23
+momentuHMM 2.0.0 2026-01-21
 -----------------
 NEW FEATURES
 
@@ -45,6 +45,8 @@ CHANGES
 * when 'prior' argument of 'fitHMM' is specified, only the (unpenalized) likelihood is used for Hessian and AIC calculations
 
 * in 'prepData' function, the minimum number of observations per animal is now two (instead of three)
+
+* the future plan is no longer reset to sequential at the end of functions with parallel processing
 
 BUG FIXES
 

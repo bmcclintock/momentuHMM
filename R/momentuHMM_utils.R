@@ -495,7 +495,7 @@ comb <- function(x, ...) {
 # #' @importFrom future multisession plan
 # #' @importFrom iterators icount
 progBar <- function(kk, N, per = 1) {
-  if (kk %in% seq(0, N, per)) {
+  if (kk %in% seq(0, N, per) || kk == N) {
     x <- round(kk * 100 / N)
     message("[ ", 
             paste(rep("=", x), collapse = ""),

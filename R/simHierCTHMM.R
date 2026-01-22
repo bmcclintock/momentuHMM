@@ -107,7 +107,6 @@
 #' @importFrom Brobdingnag as.brob
 #' @importFrom mvtnorm rmvnorm
 # #' @importFrom data.tree Node Get Aggregate isLeaf Clone
-#' @importFrom doParallel registerDoParallel stopImplicitCluster
 
 simHierCTHMM <- function(nbAnimals=1,hierStates,hierDist,
                         Par,hierBeta=NULL,hierDelta=NULL,

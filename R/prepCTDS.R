@@ -121,7 +121,7 @@ prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.id
   
   iDat <- id <- NULL # get rid of no visible binding for global variable warning
   if(ncores>1){
-    for(pkg in c("doFuture","future")){
+    for(pkg in c("doFuture","future","parallelly")){
       if (!requireNamespace(pkg, quietly = TRUE)) {
         stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
              call. = FALSE)
@@ -129,20 +129,18 @@ prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.id
     }
     oldDoPar <- doFuture::registerDoFuture()
     on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
-    if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
-      future::plan(future::sequential)
-    } else {
-      future::plan(future::multisession, workers = ncores)
-    }
-    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
-    progBar <- progBar
-    path2ctds <- path2ctds
-    ctds2glm <- ctds2glm
-    pkgs <- c("momentuHMM")
-  } else { 
-    doParallel::registerDoParallel(cores=ncores)
-    pkgs <- c("momentuHMM")
+    with(local = TRUE,
+         future::plan(future::multisession, workers = parallelly::availableCores(max = ncores)))
+  } else {
+    foreach::registerDoSEQ()
   }
+  
+  # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
+  progBar <- progBar
+  path2ctds <- path2ctds
+  ctds2glm <- ctds2glm
+  pkgs <- c("momentuHMM")
+
   #ctdsglm <- list()
   #for(i in unique(data$ID)){
   if(!exists("messInd")) messInd <- TRUE # message indicator exported from MIfitCTHMM foreach call
@@ -184,10 +182,8 @@ prepCTDS.default <- function(data, Time.unit="auto", rast, directions=4, zero.id
     }),
   warning=muffleRNGwarning)
   if(ncores==1) {
-    doParallel::stopImplicitCluster()
     if(messInd) cat("DONE\n")
   }
-  else future::plan(future::sequential)
   #}
   #ctdsglm <- do.call(rbind,ctdsglm)
   #rownames(ctdsglm) <- NULL
@@ -310,7 +306,7 @@ prepCTDS.hierarchical <- function(data, Time.unit="auto", rast, directions=4, ze
   
   iDat <- id <- NULL # get rid of no visible binding for global variable warning
   if(ncores>1){
-    for(pkg in c("doFuture","future")){
+    for(pkg in c("doFuture","future","parallelly")){
       if (!requireNamespace(pkg, quietly = TRUE)) {
         stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
              call. = FALSE)
@@ -318,20 +314,17 @@ prepCTDS.hierarchical <- function(data, Time.unit="auto", rast, directions=4, ze
     }
     oldDoPar <- doFuture::registerDoFuture()
     on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
-    if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
-      future::plan(future::sequential)
-    } else {
-      future::plan(future::multisession, workers = ncores)
-    }
-    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
-    progBar <- progBar
-    path2ctds <- path2ctds
-    ctds2glm <- ctds2glm
-    pkgs <- c("momentuHMM")
-  } else { 
-    doParallel::registerDoParallel(cores=ncores)
-    pkgs <- c("momentuHMM")
+    with(local = TRUE,
+         future::plan(future::multisession, workers = parallelly::availableCores(max = ncores)))
+  } else {
+    foreach::registerDoSEQ()
   }
+  # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
+  progBar <- progBar
+  path2ctds <- path2ctds
+  ctds2glm <- ctds2glm
+  pkgs <- c("momentuHMM")
+
   #ctdsglm <- list()
   #for(i in unique(data$ID)){
   if(!exists("messInd")) messInd <- TRUE # message indicator exported from MIfitCTHMM foreach call
@@ -391,10 +384,8 @@ prepCTDS.hierarchical <- function(data, Time.unit="auto", rast, directions=4, ze
     },
     warning=muffleRNGwarning)
   if(ncores==1) {
-    doParallel::stopImplicitCluster()
     if(messInd) message("DONE\n")
   }
-  else future::plan(future::sequential)
   #}
   #ctdsglm <- do.call(rbind,ctdsglm)
   #rownames(ctdsglm) <- NULL

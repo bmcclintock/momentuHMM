@@ -154,7 +154,6 @@ MIfitCTHMM <- function(miData, ...) {
 #' 
 #' @export
 #' @importFrom crawl crwPostIS crwSimulator
-#' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
 #' @importFrom raster getZ
@@ -224,7 +223,7 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
   }
   
   if(ncores>1){
-    for(pkg in c("doFuture","future")){
+    for(pkg in c("doFuture","future","parallelly")){
       if (!requireNamespace(pkg, quietly = TRUE)) {
         stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
              call. = FALSE)
@@ -232,18 +231,16 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
     }
     oldDoPar <- doFuture::registerDoFuture()
     on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
-    if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
-      future::plan(future::sequential)
-    } else {
-      future::plan(future::multisession, workers = ncores)
-    }
-    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
-    progBar <- progBar
-    pkgs <- c("momentuHMM")
-  } else { 
-    doParallel::registerDoParallel(cores=ncores)
-    pkgs <- c("momentuHMM")
+    with(local = TRUE,
+         future::plan(future::multisession, workers = parallelly::availableCores(max = ncores)))
+  } else {
+    foreach::registerDoSEQ()
   }
+  
+  # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
+  progBar <- progBar
+  pkgs <- c("momentuHMM")
+
   
   if(is.crwData(miData)){
     
@@ -346,8 +343,6 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
       ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHMMData"))))
       if(fit) cat('Fitting',length(ind),'realizations of the position process using fitCTHMM... \n')
       else {
-        if(ncores==1) doParallel::stopImplicitCluster()
-        else future::plan(future::sequential)
         return(crwSim(list(miData=miData,crwSimulator=crwSim)))
       }
     } else stop("nSims must be >0")
@@ -464,9 +459,6 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
   ,warning=muffleRNGwarning)
   if((nSims>1 & ncores==1) | retryFits>=1) cat("DONE\n")
   
-  if(ncores==1) doParallel::stopImplicitCluster()
-  else future::plan(future::sequential)
-  
   for(i in which(!unlist(lapply(fits,function(x) inherits(x,"momentuHMM"))))){
     warning('Fit #',i,' failed; ',fits[[i]])
   }
@@ -495,7 +487,6 @@ MIfitCTHMM.default<-function(miData,nSims, ncores = 1, poolEstimates = TRUE, alp
 #' 
 #' @export
 #' @importFrom crawl crwPostIS crwSimulator
-#' @importFrom doParallel registerDoParallel stopImplicitCluster
 #' @importFrom foreach foreach %dopar%
 #' @importFrom doRNG %dorng%
 #' @importFrom raster getZ
@@ -535,7 +526,7 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
   installDataTree()
   
   if(ncores>1){
-    for(pkg in c("doFuture","future")){
+    for(pkg in c("doFuture","future","parallelly")){
       if (!requireNamespace(pkg, quietly = TRUE)) {
         stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
              call. = FALSE)
@@ -543,18 +534,15 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
     }
     oldDoPar <- doFuture::registerDoFuture()
     on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
-    if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
-      future::plan(future::sequential)
-    } else {
-      future::plan(future::multisession, workers = ncores)
-    }
-    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
-    progBar <- progBar
-    pkgs <- c("momentuHMM","data.tree")
-  } else { 
-    doParallel::registerDoParallel(cores=ncores)
-    pkgs <- NULL
+    with(local = TRUE,
+         future::plan(future::multisession, workers = parallelly::availableCores(max = ncores)))
+  } else {
+    foreach::registerDoSEQ()
   }
+  
+  # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (forbidden by CRAN)
+  progBar <- progBar
+  pkgs <- c("momentuHMM","data.tree")
   
   if(is.crwHierData(miData)){
     
@@ -677,8 +665,6 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
       ind <- which(unlist(lapply(miData,function(x) inherits(x,"momentuHierHMMData"))))
       if(fit) cat('Fitting',length(ind),'realizations of the position process using fitCTHMM... \n')
       else {
-        if(ncores==1) doParallel::stopImplicitCluster()
-        else future::plan(future::sequential)
         return(crwHierSim(list(miData=miData,crwSimulator=crwHierSim)))
       }
     } else stop("nSims must be >0")
@@ -815,9 +801,6 @@ MIfitCTHMM.hierarchical<-function(miData,nSims, ncores = 1, poolEstimates = TRUE
                         } 
                       ,warning=muffleRNGwarning)
   if((nSims>1 & ncores==1) | retryFits>=1) cat("DONE\n")
-  
-  if(ncores==1) doParallel::stopImplicitCluster()
-  else future::plan(future::sequential)
   
   for(i in which(!unlist(lapply(fits,function(x) inherits(x,"momentuHierHMM"))))){
     warning('Fit #',i,' failed; ',fits[[i]])

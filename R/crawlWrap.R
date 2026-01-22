@@ -166,26 +166,24 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   
   cat('Fitting',nbAnimals,'track(s) using crawl::crwMLE...\n')
   if(ncores>1){
-    for(pkg in c("doFuture","future")){
+    for(pkg in c("doFuture","future","parallelly")){
       if (!requireNamespace(pkg, quietly = TRUE)) {
         stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
              call. = FALSE)
       }
     }
     oldDoPar <- doFuture::registerDoFuture()
-    if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
-      future::plan(future::sequential)
-    } else {
-      future::plan(future::multisession, workers = ncores)
-    }
     on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
+    with(local = TRUE,
+         future::plan(future::multisession, workers = parallelly::availableCores(max = ncores)))
   } else {
-    doParallel::registerDoParallel(cores=ncores)
+    foreach::registerDoSEQ()
   }
   
   # hack to work around Windows not allowing missing arguments in calling function when using foreach
   if(missing(theta)) theta <- NULL
   if(missing(fixPar)) fixPar <- NULL
+  quietCrawl <- quietCrawl
   
   withCallingHandlers(model_fits <- 
     foreach(id = ind_data, i=ids, .errorhandling="pass", .packages="crawl", .final = function(x) stats::setNames(x, ids)) %dorng% {
@@ -214,9 +212,6 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
       )
     },warning=muffleRNGwarning)
   
-  if(ncores==1) doParallel::stopImplicitCluster()
-  else future::plan(future::sequential)
-  
   rm(ind_data)
   
   convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
@@ -234,15 +229,9 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
   
   # Check crwFits and re-try based on retryFits
   if(ncores>1 & nbAnimals>1 & retryFits & retryParallel){
-    if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
-      future::plan(future::sequential)
-    } else {
-      future::plan(future::multisession, workers = ncores)
-    }
     if(retryParallel) cat("Attempting to achieve convergence and valid variance estimates for each individual in parallel.\n    Press 'esc' to force exit from 'crawlWrap'... \n",sep="")
-  } else {
-    doParallel::registerDoParallel(cores=1)
-  }
+  } else with(local=TRUE,
+              future::plan(future::sequential))
     
   withCallingHandlers(model_fits <- foreach(mf = model_fits, i = ids, .export=c("quietCrawl"), .errorhandling="pass", .packages="crawl", .final = function(x) stats::setNames(x, ids)) %dorng% {
     if(inherits(mf,"crwFit")){
@@ -319,9 +308,6 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     }
     mf
   },warning=muffleRNGwarning)
-  if(ncores>1 & nbAnimals>1 & retryFits & retryParallel){
-    future::plan(future::sequential)
-  } else doParallel::stopImplicitCluster()
   
   convFits <- ids[which(unlist(lapply(model_fits,function(x) inherits(x,"crwFit"))))]
   if(!length(convFits)) stop("crawl::crwMLE failed for all individuals.  Check crawl::crwMLE arguments and/or consult crawl documentation.\n")
@@ -352,7 +338,8 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
     ts <- 60
   }
   
-  doParallel::registerDoParallel(cores=1)
+  with(local=TRUE,
+       future::plan(future::sequential))
   withCallingHandlers(predData <- 
     foreach(mf = model_fits[convFits], i = convFits, .combine = rbind, .errorhandling="remove", .packages="crawl") %dorng% {
       #pD<-crawl::crwPredict(mf, predTime=crawlArgs$predTime[[i]],return.type = "flat")
@@ -386,7 +373,6 @@ crawlWrap<-function(obsData, timeStep=1, ncores = 1, retryFits = 0, retrySD = 1,
       if(!is.null(coordLevel)) pD$level <- coordLevel
       pD
     },warning=muffleRNGwarning)
-  doParallel::stopImplicitCluster()
   
   if(hierInd){
     

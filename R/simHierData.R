@@ -45,7 +45,6 @@
 #' @importFrom Brobdingnag as.brob
 #' @importFrom mvtnorm rmvnorm
 # #' @importFrom data.tree Node Get Aggregate isLeaf Clone
-#' @importFrom doParallel registerDoParallel stopImplicitCluster
 
 simHierData <- function(nbAnimals=1,hierStates,hierDist,
                     Par,hierBeta=NULL,hierDelta=NULL,
@@ -77,8 +76,10 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
   
   installDataTree()
   
-  if(ncores>1 & nbAnimals>1){
-    for(pkg in c("doFuture","future")){
+  if(nbAnimals==1) ncores <- 1
+  
+  if(ncores>1){
+    for(pkg in c("doFuture","future","parallelly")){
       if (!requireNamespace(pkg, quietly = TRUE)) {
         stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
              call. = FALSE)
@@ -86,56 +87,53 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
     }
     oldDoPar <- doFuture::registerDoFuture()
     on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
-    if (Sys.getenv("CI") == "true" && grepl("macOS", Sys.getenv("RUNNER_OS"))) {
-      future::plan(future::sequential)
-    } else {
-      future::plan(future::multisession, workers = ncores)
-    }
-    # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (frowned upon by CRAN)
-    progBar <- progBar
-    mvndists <- mvndists
-    getDM <- getDM
-    n2w <- n2w
-    get_ncmean <- get_ncmean
-    w2n <- w2n
-    angledists <- angledists
-    stepdists <- stepdists
-    rwdists <- rwdists
-    rmvnorm2 <- rmvnorm2
-    rmvnorm3 <- rmvnorm3
-    rctcrw <- rctcrw
-    rvm <- CircStats::rvm
-    rwrpcauchy <- CircStats::rwrpcauchy
-    rcrwrice <- rcrwrice
-    rcrwvm <- rcrwvm
-    trMatrix_rcpp <- trMatrix_rcpp
-    ctPar <- ctPar
-    if (requireNamespace("extraDistr", quietly = TRUE)){
-      rcat <- extraDistr::rcat
-      rbern <- extraDistr::rbern
-    }
-    convertSigma <- convertSigma
-    convertCTCRW <- convertCTCRW
-    rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- rctcrw
-    rrw_norm <- stats::rnorm
-    mlogit <- mlogit
-    distAngle <- distAngle
-    circAngles <- circAngles
-    formatRecharge <- formatRecharge
-    pkgs <- c("momentuHMM")
-    if (requireNamespace("splines", quietly = TRUE)){
-      ns <- splines::ns
-      bs <- splines::bs
-    }
-    if (requireNamespace("splines2", quietly = TRUE)){
-      bSpline <- splines2::bSpline
-      mSpline <- splines2::mSpline
-      cSpline <- splines2::cSpline
-      iSpline <- splines2::iSpline
-    }
-  } else { 
-    doParallel::registerDoParallel(cores=ncores)
-    pkgs <- NULL
+    with(local = TRUE,
+         future::plan(future::multisession, workers = parallelly::availableCores(max = ncores)))
+  } else {
+    foreach::registerDoSEQ()
+  }
+  
+  # hack so that foreach %dorng% can find internal momentuHMM variables without using ::: (frowned upon by CRAN)
+  progBar <- progBar
+  mvndists <- mvndists
+  getDM <- getDM
+  n2w <- n2w
+  get_ncmean <- get_ncmean
+  w2n <- w2n
+  angledists <- angledists
+  stepdists <- stepdists
+  rwdists <- rwdists
+  rmvnorm2 <- rmvnorm2
+  rmvnorm3 <- rmvnorm3
+  rctcrw <- rctcrw
+  rvm <- CircStats::rvm
+  rwrpcauchy <- CircStats::rwrpcauchy
+  rcrwrice <- rcrwrice
+  rcrwvm <- rcrwvm
+  trMatrix_rcpp <- trMatrix_rcpp
+  ctPar <- ctPar
+  if (requireNamespace("extraDistr", quietly = TRUE)){
+    rcat <- extraDistr::rcat
+    rbern <- extraDistr::rbern
+  }
+  convertSigma <- convertSigma
+  convertCTCRW <- convertCTCRW
+  rmvnorm2 <- rmvnorm3 <- rrw_mvnorm2 <- rrw_mvnorm3 <- rctcrw
+  rrw_norm <- stats::rnorm
+  mlogit <- mlogit
+  distAngle <- distAngle
+  circAngles <- circAngles
+  formatRecharge <- formatRecharge
+  pkgs <- c("momentuHMM")
+  if (requireNamespace("splines", quietly = TRUE)){
+    ns <- splines::ns
+    bs <- splines::bs
+  }
+  if (requireNamespace("splines2", quietly = TRUE)){
+    bSpline <- splines2::bSpline
+    mSpline <- splines2::mSpline
+    cSpline <- splines2::cSpline
+    iSpline <- splines2::iSpline
   }
   
   ##############################
@@ -1219,9 +1217,6 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       attributes(model)$class <- attributes(model)$class[which(!attributes(model)$class %in% "CTHMM")]
     }
     
-    if(!((ncores>1 & nbAnimals>1))) doParallel::stopImplicitCluster()
-    else future::plan(future::sequential)
-    
     simCount <- 0
     message("\nAttempting to simulate tracks within spatial extent(s) of raster layers(s). Press 'esc' to force exit from 'simData'\n",sep="")
     while(simCount < retrySims){
@@ -1993,8 +1988,6 @@ simHierData <- function(nbAnimals=1,hierStates,hierDist,
       return(simDat)
     }
     ,warning=muffleRNGwarning)
-    if(!((ncores>1 & nbAnimals>1))) doParallel::stopImplicitCluster()
-    else future::plan(future::sequential)
     
     if(nbCovs>0)
       simDat$data <- cbind(simDat$data,simDat$allCovs)
