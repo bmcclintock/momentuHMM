@@ -45,8 +45,9 @@ jobs:
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
-        if: runner.os == 'macOS'
         env:
-          R_PARALLELLY_AVAILABLECORES_SYSTEM: 1
+          # If macOS, set cores to 1. Otherwise, leave it empty/default 
+          # so R uses the available cores (usually 2 on GH Actions).
+          R_PARALLELLY_AVAILABLECORES_SYSTEM: ${{ runner.os == 'macOS' && '1' || '' }}
         with:
           upload-snapshots: true
