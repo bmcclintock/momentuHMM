@@ -1,4 +1,3 @@
-
 #' Preprocessing of the data streams and covariates
 #' 
 #' Preprocessing of the data streams, including calculation of step length, turning angle, and covariates from location data to be suitable for
@@ -12,9 +11,161 @@
 #' With the exception of \code{ID}, \code{coordNames}, and, for hierarchical data, \code{level}, all variables in \code{data} are treated as data streams unless identified
 #' as covariates in \code{covNames} and/or \code{angleCovs}.
 #' @param ... further arguments passed to or from other methods
+#' 
 #' @export
 prepData <- function(data, ...) {
   UseMethod("prepData")
+}
+
+# Helper to carry forward last-observation-carried-forward (LOCF) for missing covariates
+.fillMissingCovs <- function(data, covsCol) {
+  covs <- data[, covsCol, drop = FALSE]
+  colnames(covs) <- names(data)[covsCol]
+  
+  if (length(which(is.na(covs))) > 0) {
+    warning(paste("There are", length(which(is.na(covs))),
+                  "missing covariate values.",
+                  "Each will be replaced by the closest available value."))
+  }
+  for (i in seq_along(covsCol)) {
+    if (length(which(is.na(covs[, i]))) > 0) {
+      if (is.na(covs[1, i])) {
+        k <- 1
+        while (is.na(covs[k, i])) k <- k + 1
+        for (j in k:2) covs[j - 1, i] <- covs[j, i]
+      }
+      for (j in 2:nrow(data)) {
+        if (is.na(covs[j, i])) covs[j, i] <- covs[j - 1, i]
+      }
+    }
+  }
+  return(covs)
+}
+
+# Helper to extract spatial covariates and gradients
+.extractSpatialCovs <- function(dataHMM, data, outNames, spatialCovs, spatialcovnames, gradient, gradCoordNames) {
+  message(paste0("Extracting spatial covariates", ifelse(gradient, " and calculating gradients", ""), "..."))
+  nbSpatialCovs <- length(spatialcovnames)
+  spCovs <- numeric()
+  xy <- as.data.frame(dataHMM[, outNames])
+  sp::coordinates(xy) <- outNames
+  
+  for (j in 1:nbSpatialCovs) {
+    getCells <- raster::cellFromXY(spatialCovs[[j]], xy)
+    if (any(is.na(getCells))) stop("Location data are beyond the spatial extent of the ", spatialcovnames[j], " raster. Try expanding the extent of the raster.")
+    fullspCovs <- spatialCovs[[j]][getCells]
+    
+    if (inherits(spatialCovs[[j]], "RasterLayer")) {
+      spCovs <- cbind(spCovs, fullspCovs)
+      if (gradient) {
+        spCovs <- cbind(spCovs, getGradients(dataHMM, spatialCovs = spatialCovs[spatialcovnames[j]], coordNames = gradCoordNames)[, paste0(spatialcovnames[j], c(".x", ".y"))])
+      }
+    } else {
+      tmpspCovs <- numeric(nrow(dataHMM))
+      if (gradient) tmpspCovs <- matrix(0, nrow(dataHMM), 3)
+      zname <- names(attributes(spatialCovs[[j]])$z)
+      if (!(zname %in% names(data))) stop(zname, " z-value for ", spatialcovnames[j], " not found in data")
+      zvalues <- raster::getZ(spatialCovs[[j]])
+      if (!all(unique(data[[zname]]) %in% zvalues)) stop("data$", zname, " includes z-values with no matching raster layer in spatialCovs$", spatialcovnames[j])
+      
+      for (ii in seq_along(zvalues)) {
+        zInd <- which(data[[zname]] == zvalues[ii])
+        if (length(zInd)) {
+          if (!gradient) tmpspCovs[zInd] <- fullspCovs[zInd, ii]
+          else {
+            tmpspCovs[zInd, ] <- as.matrix(cbind(fullspCovs[zInd, ii], getGradients(dataHMM, spatialCovs = lapply(spatialCovs[j], function(x) x[[which(zvalues == zvalues[ii])]]), coordNames = gradCoordNames)[zInd, paste0(spatialcovnames[j], c(".x", ".y"))]))
+          }
+        }
+      }
+      spCovs <- cbind(spCovs, tmpspCovs)
+    }
+    progBar(j, nbSpatialCovs)
+  }
+  
+  spCovs <- data.frame(spCovs)
+  if (!gradient) names(spCovs) <- spatialcovnames
+  else names(spCovs) <- paste0(rep(spatialcovnames, each = 3), c("", ".x", ".y"))
+  
+  for (j in spatialcovnames) {
+    if (any(raster::is.factor(spatialCovs[[j]]))) {
+      spCovs[[j]] <- factor(spCovs[[j]], levels = unique(unlist(raster::levels(spatialCovs[[j]]))))
+    }
+  }
+  return(spCovs)
+}
+
+# Helper to calculate distances and angles to centers and centroids
+.calcCentersCentroids <- function(dataHMM, data, ID, x, y, centers, centroids, type) {
+  
+  # Pre-compute previous coordinates
+  x_prev <- c(x[1], x[-length(x)])
+  y_prev <- c(y[1], y[-length(y)])
+  id_firsts <- match(unique(ID), ID)
+  x_prev[id_firsts] <- x[id_firsts]
+  y_prev[id_firsts] <- y[id_firsts]
+  
+  pt1_mat <- cbind(x_prev, y_prev)
+  pt2_mat <- cbind(x, y)
+  
+  # Process Centers
+  if (!is.null(centers)) {
+    if (!is.matrix(centers)) stop("centers must be a matrix")
+    if (dim(centers)[2] != 2) stop("centers must be a matrix consisting of 2 columns (i.e., x- and y-coordinates)")
+    centerInd <- which(!apply(centers, 1, function(row) any(is.na(row))))
+    
+    if (length(centerInd)) {
+      if (is.null(rownames(centers))) centerNames <- paste0("center", rep(centerInd, each = 2), ".", rep(c("dist", "angle"), length(centerInd)))
+      else centerNames <- paste0(rep(rownames(centers), each = 2), ".", rep(c("dist", "angle"), length(centerInd)))
+      if (any(centerNames %in% names(data))) stop("centers cannot have same names as data")
+      
+      centerCovs <- matrix(NA_real_, nrow = nrow(data), ncol = length(centerInd) * 2)
+      colnames(centerCovs) <- centerNames
+      
+      for (j in seq_along(centerInd)) {
+        pt3_mat <- centers[centerInd[j], , drop = FALSE]
+        res <- distAngle(x = pt1_mat, y = pt2_mat, z = pt3_mat, type = type)
+        centerCovs[, (j - 1) * 2 + 1] <- res[, 1]
+        centerCovs[, (j - 1) * 2 + 2] <- res[, 2]
+      }
+      dataHMM <- cbind(dataHMM, as.data.frame(centerCovs))
+    }
+  }
+  
+  # Process Centroids
+  if (!is.null(centroids)) {
+    if (!is.list(centroids)) stop("centroids must be a named list")
+    centroidNames <- character()
+    
+    for (j in seq_along(centroids)) {
+      if (!is.data.frame(centroids[[j]])) stop("each element of centroids must be a data frame")
+      if (dim(centroids[[j]])[2] != 3) stop("each element of centroids must be a data frame consisting of 3 columns (i.e., x-coordinate, y-coordinate, and time)")
+      if (!all(c("x", "y") %in% colnames(centroids[[j]]))) stop("centroids must include 'x' (x-coordinate) and 'y' (y-coordinate) columns")
+      if (any(is.na(centroids[[j]]))) stop("centroids cannot contain missing values")
+      
+      timeName <- colnames(centroids[[j]])[which(!(colnames(centroids[[j]]) %in% c("x", "y")))]
+      if (!(timeName %in% names(data))) stop("data must include '", timeName, "' column")
+      if (!all(data[[timeName]] %in% centroids[[j]][[timeName]])) stop("centroids ", timeName, " does not span data; each observation time must have a corresponding entry in centroids")
+      
+      if (is.null(names(centroids[j]))) centroidNames <- c(centroidNames, paste0("centroid", rep(j, each = 2), ".", c("dist", "angle")))
+      else centroidNames <- c(centroidNames, paste0(rep(names(centroids[j]), each = 2), ".", c("dist", "angle")))
+    }
+    if (any(centroidNames %in% names(data))) stop("centroids cannot have same names as data")
+    
+    centroidCovs <- matrix(NA_real_, nrow = nrow(data), ncol = length(centroidNames))
+    colnames(centroidCovs) <- centroidNames
+    
+    for (j in seq_along(centroids)) {
+      timeName <- colnames(centroids[[j]])[which(!(colnames(centroids[[j]]) %in% c("x", "y")))]
+      match_idx <- match(data[[timeName]], centroids[[j]][[timeName]])
+      pt3_mat <- as.matrix(centroids[[j]][match_idx, c("x", "y")])
+      res <- distAngle(x = pt1_mat, y = pt2_mat, z = pt3_mat, type = type)
+      centroidCovs[, (j - 1) * 2 + 1] <- res[, 1]
+      centroidCovs[, (j - 1) * 2 + 2] <- res[, 2]
+    }
+    dataHMM <- cbind(dataHMM, as.data.frame(centroidCovs))
+  }
+  
+  return(dataHMM)
 }
 
 #' @rdname prepData
@@ -163,7 +314,6 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
     }
   }
   
-  # for directing hierarchical data to prepData.hierarchical
   hierArgs <- list(...)
   if("hierLevels" %in% names(hierArgs)){
     return(prepData.hierarchical(data, type, coordNames, covNames, spatialCovs, centers, centroids, angleCovs, altCoordNames, gradient, ...))
@@ -185,14 +335,13 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
     }
   }
   if(!is.null(data$ID)){
-    ID <- as.character(data$ID) # homogenization of numeric and string IDs
+    ID <- as.character(data$ID) 
     distnames <- distnames[-which(distnames %in% "ID")]
-  } 
-  else
-    ID <- rep("Animal1",nrow(data)) # default ID if none provided
+  } else {
+    ID <- rep("Animal1",nrow(data))
+  }
   
-  if(length(which(is.na(ID)))>0)
-    stop("Missing IDs")
+  if(length(which(is.na(ID)))>0) stop("Missing IDs")
   
   if(!is.null(spatialCovs)){
     if(!is.list(spatialCovs)) stop('spatialCovs must be a list')
@@ -200,8 +349,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
     if(is.null(spatialcovnames)) stop('spatialCovs must be a named list')
     nbSpatialCovs<-length(spatialcovnames)
     if (!requireNamespace("raster", quietly = TRUE)) {
-      stop("Package \"raster\" needed for spatial covariates. Please install it.",
-           call. = FALSE)
+      stop("Package \"raster\" needed for spatial covariates. Please install it.", call. = FALSE)
     }
     for(j in 1:nbSpatialCovs){
       if(!inherits(spatialCovs[[j]],c("RasterLayer","RasterBrick","RasterStack"))) stop("spatialCovs$",spatialcovnames[j]," must be of class 'RasterLayer', 'RasterStack', or 'RasterBrick'")
@@ -219,17 +367,14 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
   ids <- unique(ID)
   nbAnimals <- length(ids)
   
-  # check arguments
   type <- match.arg(type)
   if(type=="LL"){
     if (!requireNamespace("geosphere", quietly = TRUE)) {
-      stop("Package \"geosphere\" needed for this function to work. Please install it.",
-           call. = FALSE)
+      stop("Package \"geosphere\" needed for this function to work. Please install it.", call. = FALSE)
     }
   }
   if(!is.null(coordNames)){
-    if(length(which(coordNames %in% names(data)))<2)
-      stop("coordNames not found in data")
+    if(length(which(coordNames %in% names(data)))<2) stop("coordNames not found in data")
     if(any(names(data)[which(!(names(data) %in% coordNames))] %in% c("x","y"))) stop("non-coordinate data objects cannot be named 'x' or 'y'")
     x <- data[,coordNames[1]]
     y <- data[,coordNames[2]]
@@ -238,12 +383,10 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
   
   dataHMM <- data.frame(ID=character())
   
-  # check that each animal's observations are contiguous
   wInd <- TRUE
   for(i in 1:nbAnimals) {
     ind <- which(ID==ids[i])
-    if(length(ind)!=length(ind[1]:ind[length(ind)]))
-      stop("Each animal's obervations must be contiguous.")
+    if(length(ind)!=length(ind[1]:ind[length(ind)])) stop("Each animal's obervations must be contiguous.")
     if(!is.null(coordNames)){
       if(length(ind)<2) stop('each individual must have at least 2 observations to calculate step lengths')
       if(length(ind)<3 & wInd) {
@@ -260,7 +403,6 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
   }
   for(zoo in 1:nbAnimals) {
     nbObs <- length(which(ID==unique(ID)[zoo]))
-    # d = data for one individual
     d <- data.frame(ID=rep(unique(ID)[zoo],nbObs))
     for(j in distnames){
       genData <- rep(NA,nbObs)
@@ -272,19 +414,13 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
         
         for(i in min((i1+1),(i2-1)):(i2-1)) {
           if(j=="step" & nbObs>2 & !is.na(x[i-1]) & !is.na(x[i]) & !is.na(y[i-1]) & !is.na(y[i])) {
-            # step length
-            genData[i-i1] <- sp::spDistsN1(pts = matrix(c(x[i-1],y[i-1]),ncol=2),
-                                       pt = c(x[i],y[i]),
-                                       longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
+            genData[i-i1] <- sp::spDistsN1(pts = matrix(c(x[i-1],y[i-1]),ncol=2), pt = c(x[i],y[i]), longlat = (type=='LL'))
           } else if(j=="angle" & nbObs>2 & !is.na(x[i-1]) & !is.na(x[i]) & !is.na(x[i+1]) & !is.na(y[i-1]) & !is.na(y[i]) & !is.na(y[i+1])) {
-            # turning angle
-            genData[i-i1+1] <- turnAngle(c(x[i-1],y[i-1]),
-                                         c(x[i],y[i]),
-                                         c(x[i+1],y[i+1]),type)
+            genData[i-i1+1] <- turnAngle(c(x[i-1],y[i-1]), c(x[i],y[i]), c(x[i+1],y[i+1]),type)
           }
         }
         if(j=="step" & !is.na(x[i2-1]) & !is.na(x[i2]) & !is.na(y[i2-1]) & !is.na(y[i2])) {
-          genData[i2-i1] <- sp::spDistsN1(pts = matrix(c(x[i2-1],y[i2-1]),ncol=2),pt = c(x[i2],y[i2]),longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
+          genData[i2-i1] <- sp::spDistsN1(pts = matrix(c(x[i2-1],y[i2-1]),ncol=2),pt = c(x[i2],y[i2]),longlat = (type=='LL')) 
         } 
         count <- count + nbObs
         progBar(count,length(ID)*sum(distnames %in% c("step","angle")))
@@ -294,160 +430,25 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
     dataHMM <- rbind(dataHMM,d)
   }
   
-  # identify covariate columns
+  # Delegate to helper for missing covs
   if(length(covNames)){
-    if(length(covsCol)>0) {
-      covs <- data[,covsCol,drop=FALSE]
-      colnames(covs) <- names(data)[covsCol]
-      
-      # account for missing values of the covariates
-      if(length(which(is.na(covs)))>0)
-        warning(paste("There are",length(which(is.na(covs))),
-                      "missing covariate values.",
-                      "Each will be replaced by the closest available value."))
-      for(i in 1:length(covsCol)) {
-        if(length(which(is.na(covs[,i])))>0) { # if covariate i has missing values
-          if(is.na(covs[1,i])) { # if the first value of the covariate is missing
-            k <- 1
-            while(is.na(covs[k,i])) k <- k+1
-            for(j in k:2) covs[j-1,i] <- covs[j,i]
-          }
-          for(j in 2:nrow(data))
-            if(is.na(covs[j,i])) covs[j,i] <- covs[j-1,i]
-        }
-      }
-    }
-  } else covs<-NULL
+    if(length(covsCol)>0) covs <- .fillMissingCovs(data, covsCol)
+  } else covs <- NULL
   
   if(!is.null(coordNames)) {
     dataHMM[[outNames[1]]] <- x
     dataHMM[[outNames[2]]] <- y
-    class(dataHMM$angle)<-c(class(dataHMM$angle), "angle")
+    class(dataHMM$angle) <- c(class(dataHMM$angle), "angle")
     
+    # Delegate to helper for spatial covariates
     if(nbSpatialCovs){
-      message(paste0("Extracting spatial covariates",ifelse(gradient," and calculating gradients",""),"..."))
-      spCovs<-numeric()
-      xy<-as.data.frame(dataHMM[,outNames])
-      sp::coordinates(xy) <- outNames
-      for(j in 1:nbSpatialCovs){
-        getCells<-raster::cellFromXY(spatialCovs[[j]],xy)
-        if(any(is.na(getCells))) stop("Location data are beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
-        fullspCovs <- spatialCovs[[j]][getCells]
-        if(inherits(spatialCovs[[j]],"RasterLayer")){
-          spCovs<-cbind(spCovs,fullspCovs)
-          if(gradient){
-            spCovs <- cbind(spCovs,getGradients(dataHMM,spatialCovs=spatialCovs[spatialcovnames[j]],coordNames = outNames)[,paste0(spatialcovnames[j],c(".x",".y"))])
-          }
-        } else {
-          tmpspCovs <- numeric(nrow(dataHMM))
-          if(gradient) tmpspCovs <- matrix(0,nrow(dataHMM),3)
-          zname <- names(attributes(spatialCovs[[j]])$z)
-          if(!(zname %in% names(data))) stop(zname," z-value for ",spatialcovnames[j], "not found in data")
-          zvalues <- raster::getZ(spatialCovs[[j]])
-          if(!all(unique(data[[zname]]) %in% zvalues)) stop("data$",zname," includes z-values with no matching raster layer in spatialCovs$",spatialcovnames[j])
-          for(ii in 1:length(zvalues)){
-            zInd <- which(data[[zname]]==zvalues[ii])
-            if(length(zInd)){
-              if(!gradient) tmpspCovs[zInd] <- fullspCovs[zInd,ii]
-              else {
-                tmpspCovs[zInd,] <- as.matrix(cbind(fullspCovs[zInd,ii],getGradients(dataHMM,spatialCovs=lapply(spatialCovs[j],function(x) x[[which(zvalues==zvalues[ii])]]),coordNames = outNames)[zInd,paste0(spatialcovnames[j],c(".x",".y"))]))
-              }
-            }
-          }
-          spCovs<-cbind(spCovs,tmpspCovs)
-        }
-        progBar(j,nbSpatialCovs)
-      }
-      spCovs<-data.frame(spCovs)
-      if(!gradient) names(spCovs)<-spatialcovnames
-      else names(spCovs) <- paste0(rep(spatialcovnames,each=3),c("",".x",".y"))
-      for(j in spatialcovnames){
-        if(any(raster::is.factor(spatialCovs[[j]]))){
-          spCovs[[j]] <- factor(spCovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
-        }
-      }
-      if(is.null(covs)) covs <- spCovs
-      else covs<-cbind(covs,spCovs)
+      spCovs <- .extractSpatialCovs(dataHMM, data, outNames, spatialCovs, spatialcovnames, gradient, gradCoordNames = outNames)
+      if(is.null(covs)) covs <- spCovs else covs <- cbind(covs, spCovs)
     }
     
+    # Delegate to helper for centers and centroids 
     if(!is.null(centers) || !is.null(centroids)) {
-
-      x_prev <- c(x[1], x[-length(x)])
-      y_prev <- c(y[1], y[-length(y)])
-      
-      id_firsts <- match(unique(ID), ID)
-      x_prev[id_firsts] <- x[id_firsts]
-      y_prev[id_firsts] <- y[id_firsts]
-      
-      pt1_mat <- cbind(x_prev, y_prev)
-      pt2_mat <- cbind(x, y)
-    }
-    
-    if(!is.null(centers)){
-      if(!is.matrix(centers)) stop("centers must be a matrix")
-      if(dim(centers)[2]!=2) stop("centers must be a matrix consisting of 2 columns (i.e., x- and y-coordinates)")
-      centerInd <- which(!apply(centers,1,function(x) any(is.na(x))))
-      
-      if(length(centerInd)){
-        if(is.null(rownames(centers))) centerNames<-paste0("center",rep(centerInd,each=2),".",rep(c("dist","angle"),length(centerInd)))
-        else centerNames <- paste0(rep(rownames(centers),each=2),".",rep(c("dist","angle"),length(centerInd)))
-        if(any(centerNames %in% names(data))) stop("centers cannot have same names as data")
-        
-        # Use matrix for fast allocation instead of data.frame
-        centerCovs <- matrix(NA_real_, nrow=nrow(data), ncol=length(centerInd)*2)
-        colnames(centerCovs) <- centerNames
-        
-        for(j in 1:length(centerInd)){
-          # DistAngle can now process the entire matrix at once
-          pt3_mat <- centers[centerInd[j], , drop = FALSE]
-          res <- distAngle(x = pt1_mat, y = pt2_mat, z = pt3_mat, type = type)
-          
-          centerCovs[, (j-1)*2+1] <- res[, 1] # distance
-          centerCovs[, (j-1)*2+2] <- res[, 2] # angle
-        }
-        dataHMM <- cbind(dataHMM, as.data.frame(centerCovs))
-      }  
-    }
-    
-    if(!is.null(centroids)){
-      if(!is.list(centroids)) stop("centroids must be a named list")
-      centroidNames <- character()
-      
-      for(j in 1:length(centroids)){
-        if(!is.data.frame(centroids[[j]])) stop("each element of centroids must be a data frame")
-        if(dim(centroids[[j]])[2]!=3) stop("each element of centroids must be a data frame consisting of 3 columns (i.e., x-coordinate, y-coordinate, and time)")
-        if(!all(c("x","y") %in% colnames(centroids[[j]]))) stop("centroids must include 'x' (x-coordinate) and 'y' (y-coordinate) columns")
-        if(any(is.na(centroids[[j]]))) stop("centroids cannot contain missing values")
-        
-        timeName <- colnames(centroids[[j]])[which(!(colnames(centroids[[j]]) %in% c("x","y")))]
-        if(!(timeName %in% names(data))) stop("data must include '",timeName,"' column")
-        if(!all(data[[timeName]] %in% centroids[[j]][[timeName]])) stop("centroids ",timeName," does not span data; each observation time must have a corresponding entry in centroids")
-        
-        if(is.null(names(centroids[j]))) centroidNames <- c(centroidNames,paste0("centroid",rep(j,each=2),".",c("dist","angle")))
-        else centroidNames <- c(centroidNames,paste0(rep(names(centroids[j]),each=2),".",c("dist","angle")))
-      }
-      if(any(centroidNames %in% names(data))) stop("centroids cannot have same names as data")
-      
-      # Allocate matrix
-      centroidCovs <- matrix(NA_real_, nrow=nrow(data), ncol=length(centroidNames))
-      colnames(centroidCovs) <- centroidNames
-      
-      for(j in 1:length(centroids)){
-        timeName <- colnames(centroids[[j]])[which(!(colnames(centroids[[j]]) %in% c("x","y")))]
-        
-        # Instant lookup: find the row index in the centroid df for every time in the data
-        match_idx <- match(data[[timeName]], centroids[[j]][[timeName]])
-        
-        # Extract the moving target coordinates for the entire dataset
-        pt3_mat <- as.matrix(centroids[[j]][match_idx, c("x", "y")])
-        
-        # Vectorized distAngle handles the moving z seamlessly
-        res <- distAngle(x = pt1_mat, y = pt2_mat, z = pt3_mat, type = type)
-        
-        centroidCovs[, (j-1)*2+1] <- res[, 1] # dist
-        centroidCovs[, (j-1)*2+2] <- res[, 2] # angle
-      }
-      dataHMM <- cbind(dataHMM, as.data.frame(centroidCovs))
+      dataHMM <- .calcCentersCentroids(dataHMM, data, ID, x, y, centers, centroids, type)
     }
     
     if(!is.null(angleCovs)){
@@ -459,7 +460,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
   }
   if(!is.null(covs)) dataHMM <- cbind(dataHMM,covs)
   
-  dataHMM$ID<-factor(dataHMM$ID,levels=unique(dataHMM$ID))
+  dataHMM$ID <- factor(dataHMM$ID,levels=unique(dataHMM$ID))
   
   if(!is.null(coordNames)) attr(dataHMM,"coords") <- outNames
   attr(dataHMM,"gradient") <- gradient
@@ -524,12 +525,11 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
   }
   
   chkDots(...)
-  
   installDataTree()
   
   if(!is.data.frame(data)) stop("data must be a data frame")
   if(any(dim(data)==0)) stop("data is empty")
-  distnames<-names(data)#[which(!(names(data) %in% "level"))]
+  distnames<-names(data)
   
   if(isTRUE(CT)){
     if(is.null(Time.name)) stop("'Time.name' cannot be NULL when CT=TRUE")
@@ -566,7 +566,6 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     if(!(coordLevel %in% hierLevels)) stop("'coordLevel' must be one of '",paste(hierLevels,collapse="', '"),"'")
   }
   
-  
   if(!is.null(covNames) | !is.null(angleCovs)){
     covNames <- unique(c(covNames,angleCovs[!(angleCovs %in% names(spatialCovs))]))
     if(length(covNames)){
@@ -576,24 +575,20 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     }
   }
   if(!is.null(data$ID)){
-    ID <- as.character(data$ID) # homogenization of numeric and string IDs
+    ID <- as.character(data$ID) 
     distnames <- distnames[-which(distnames %in% "ID")]
-  } 
-  else {
-    ID <- rep("Animal1",nrow(data)) # default ID if none provided
+  } else {
+    ID <- rep("Animal1",nrow(data)) 
     data$ID <- ID
   }
   
-  # check order of data$level for each individual
   for(i in unique(data$ID)){
     if(data[which(data$ID==i)[1],"level"]!=hierLevels[1] | data[tail(which(data$ID==i),1),"level"]!=tail(hierLevels,1)) stop("data$level invalid for individual ",i,": level for first observation must be '",hierLevels[1],"'"," and level for last observation must be '",tail(hierLevels,1),"'")
     if(!all(rle(as.character(data[which(data$ID==i),"level"]))$values==hierLevels)) stop("data$level invalid for individual ",i,": pattern not consistent with 'hierLevels'")
   }
   
   if(!is.null(coordNames)) levelData <- data[which(data$level==coordLevel),]
-  
-  if(length(which(is.na(ID)))>0)
-    stop("Missing IDs")
+  if(length(which(is.na(ID)))>0) stop("Missing IDs")
   
   ids <- unique(ID)
   nbAnimals <- length(ids)
@@ -604,8 +599,7 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     if(is.null(spatialcovnames)) stop('spatialCovs must be a named list')
     nbSpatialCovs<-length(spatialcovnames)
     if (!requireNamespace("raster", quietly = TRUE)) {
-      stop("Package \"raster\" needed for spatial covariates. Please install it.",
-           call. = FALSE)
+      stop("Package \"raster\" needed for spatial covariates. Please install it.", call. = FALSE)
     }
     for(j in 1:nbSpatialCovs){
       if(!inherits(spatialCovs[[j]],c("RasterLayer","RasterBrick","RasterStack"))) stop("spatialCovs$",spatialcovnames[j]," must be of class 'RasterLayer', 'RasterStack', or 'RasterBrick'")
@@ -621,17 +615,14 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     if(anyDuplicated(spatialcovnames)) stop("spatialCovs must have unique names")
   } else nbSpatialCovs <- 0
   
-  # check arguments
   type <- match.arg(type)
   if(type=="LL"){
     if (!requireNamespace("geosphere", quietly = TRUE)) {
-      stop("Package \"geosphere\" needed for this function to work. Please install it.",
-           call. = FALSE)
+      stop("Package \"geosphere\" needed for this function to work. Please install it.", call. = FALSE)
     }
   }
   if(!is.null(coordNames)){
-    if(length(which(coordNames %in% names(data)))<2)
-      stop("coordNames not found in data")
+    if(length(which(coordNames %in% names(data)))<2) stop("coordNames not found in data")
     if(any(names(data)[which(!(names(data) %in% coordNames))] %in% coordNames)) stop("non-coordinate data objects cannot be named ",coordNames[1]," or ",coordNames[2])
     x <- data[,coordNames[1]]
     y <- data[,coordNames[2]]
@@ -644,11 +635,9 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     dataHMM <- data[,c("ID",distnames)]
   }
   
-  # check that each animal's observations are contiguous
   for(i in 1:nbAnimals) {
     ind <- which(data$ID==unique(data$ID)[i])
-    if(length(ind)!=length(ind[1]:ind[length(ind)]))
-      stop("Each animal's obervations must be contiguous.")
+    if(length(ind)!=length(ind[1]:ind[length(ind)])) stop("Each animal's obervations must be contiguous.")
   }
   
   if(!is.null(coordNames)){
@@ -662,28 +651,20 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
       nbObs <- length(ind)
       if(nbObs<3) stop('each individual must have at least 3 observations to calculate step lengths and turning angles')
       
-      # d = data for one individual
       d <- data.frame(ID=rep(unique(levelData$ID)[zoo],nbObs))
       for(j in c("step","angle")){
         genData <- rep(NA,nbObs)
         i1 <- which(levelData$ID==unique(levelData$ID)[zoo])[1]
         i2 <- i1+nbObs-1
         for(i in (i1+1):(i2-1)) {
-          
           if(j=="step" & !is.na(lx[i-1]) & !is.na(lx[i]) & !is.na(ly[i-1]) & !is.na(ly[i])) {
-            # step length
-            genData[i-i1] <- sp::spDistsN1(pts = matrix(c(lx[i-1],ly[i-1]),ncol=2),
-                                       pt = c(lx[i],ly[i]),
-                                       longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
+            genData[i-i1] <- sp::spDistsN1(pts = matrix(c(lx[i-1],ly[i-1]),ncol=2), pt = c(lx[i],ly[i]), longlat = (type=='LL'))
           } else if(j=="angle" & !is.na(lx[i-1]) & !is.na(lx[i]) & !is.na(lx[i+1]) & !is.na(ly[i-1]) & !is.na(ly[i]) & !is.na(ly[i+1])) {
-            # turning angle
-            genData[i-i1+1] <- turnAngle(c(lx[i-1],ly[i-1]),
-                                         c(lx[i],ly[i]),
-                                         c(lx[i+1],ly[i+1]),type)
+            genData[i-i1+1] <- turnAngle(c(lx[i-1],ly[i-1]), c(lx[i],ly[i]), c(lx[i+1],ly[i+1]),type)
           }
         }
         if(j=="step" & !is.na(lx[i2-1]) & !is.na(lx[i2]) & !is.na(ly[i2-1]) & !is.na(ly[i2])) {
-          genData[i2-i1] <- sp::spDistsN1(pts = matrix(c(lx[i2-1],ly[i2-1]),ncol=2),pt = c(lx[i2],ly[i2]),longlat = (type=='LL')) # TRUE if 'LL', FALSE otherwise
+          genData[i2-i1] <- sp::spDistsN1(pts = matrix(c(lx[i2-1],ly[i2-1]),ncol=2),pt = c(lx[i2],ly[i2]),longlat = (type=='LL'))
         }
         dataHMM[which(ID==unique(ID)[zoo] & dataHMM$level==coordLevel),j] <- genData
         count <- count + nbObs
@@ -692,36 +673,16 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
     }
   }
   
-  # identify covariate columns
   if(length(covNames)){
-    if(length(covsCol)>0) {
-      covs <- data[,covsCol,drop=FALSE]
-      colnames(covs) <- names(data)[covsCol]
-      
-      # account for missing values of the covariates
-      if(length(which(is.na(covs)))>0)
-        warning(paste("There are",length(which(is.na(covs))),
-                      "missing covariate values.",
-                      "Each will be replaced by the closest available value."))
-      for(i in 1:length(covsCol)) {
-        if(length(which(is.na(covs[,i])))>0) { # if covariate i has missing values
-          if(is.na(covs[1,i])) { # if the first value of the covariate is missing
-            k <- 1
-            while(is.na(covs[k,i])) k <- k+1
-            for(j in k:2) covs[j-1,i] <- covs[j,i]
-          }
-          for(j in 2:nrow(data))
-            if(is.na(covs[j,i])) covs[j,i] <- covs[j-1,i]
-        }
-      }
-    }
-  } else covs<-NULL
+    if(length(covsCol)>0) covs <- .fillMissingCovs(data, covsCol)
+  } else covs <- NULL
   
   if(!is.null(coordNames)) {
     dataHMM[[outNames[1]]] <- x
     dataHMM[[outNames[2]]] <- y
+    
+    # Hierarchical-specific location carrying before spatial covariates
     if(nbSpatialCovs | !is.null(centers) | !is.null(centroids) | !is.null(angleCovs)){
-      # temporarily fill in location data for other levels of the hierarchy to get spatial covariates
       for(zoo in 1:nbAnimals){
         iInd <- which(ID==unique(ID)[zoo])
         X <- dataHMM[[outNames[1]]][iInd]
@@ -729,12 +690,8 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
         Y <- dataHMM[[outNames[2]]][iInd]
         Y[1] <- Y[which.max(!is.na(Y))]
         for(k in 1:(length(iInd)-1)){
-          if(is.na(X[k+1])){
-            X[k+1] <- X[k]
-          }
-          if(is.na(Y[k+1])){
-            Y[k+1] <- Y[k]
-          }
+          if(is.na(X[k+1])) X[k+1] <- X[k]
+          if(is.na(Y[k+1])) Y[k+1] <- Y[k]
         }
         dataHMM[[outNames[1]]][iInd] <- X
         dataHMM[[outNames[2]]][iInd] <- Y
@@ -742,130 +699,17 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
       x <- dataHMM[[outNames[1]]]
       y <- dataHMM[[outNames[2]]]
     }
-    class(dataHMM$angle)<-c(class(dataHMM$angle), "angle")
+    class(dataHMM$angle) <- c(class(dataHMM$angle), "angle")
+    
+    # Delegate to helper for spatial covariates
     if(nbSpatialCovs){
-      message(paste0("Extracting spatial covariates",ifelse(gradient," and calculating gradients",""),"..."))
-      spCovs<-numeric()
-      xy<-as.data.frame(dataHMM[,outNames])
-      sp::coordinates(xy) <- outNames
-      for(j in 1:nbSpatialCovs){
-        getCells<-raster::cellFromXY(spatialCovs[[j]],xy)
-        if(any(is.na(getCells))) stop("Location data are beyond the spatial extent of the ",spatialcovnames[j]," raster. Try expanding the extent of the raster.")
-        fullspCovs <- spatialCovs[[j]][getCells]
-        if(inherits(spatialCovs[[j]],"RasterLayer")){
-          spCovs<-cbind(spCovs,fullspCovs)
-          if(gradient){
-            spCovs <- cbind(spCovs,getGradients(dataHMM,spatialCovs=spatialCovs[spatialcovnames[j]],coordNames = coordNames)[,paste0(spatialcovnames[j],c(".x",".y"))])
-          }
-        } else {
-          tmpspCovs <- numeric(nrow(dataHMM))
-          zname <- names(attributes(spatialCovs[[j]])$z)
-          if(!(zname %in% names(data))) stop(zname," z-value for ",spatialcovnames[j], "not found in data")
-          zvalues <- raster::getZ(spatialCovs[[j]])
-          if(!all(unique(data[[zname]]) %in% zvalues)) stop("data$",zname," includes z-values with no matching raster layer in spatialCovs$",spatialcovnames[j])
-          for(ii in 1:length(zvalues)){
-            zInd <- which(data[[zname]]==zvalues[ii])
-            if(length(zInd)){
-              if(!gradient) tmpspCovs[zInd] <- fullspCovs[zInd,ii]
-              else {
-                tmpspCovs[zInd,] <- as.matrix(cbind(fullspCovs[zInd,ii],getGradients(dataHMM,spatialCovs=lapply(spatialCovs[j],function(x) x[[which(zvalues==zvalues[ii])]]),coordNames = coordNames)[zInd,paste0(spatialcovnames[j],c(".x",".y"))]))
-              }
-            }
-          }
-          spCovs<-cbind(spCovs,tmpspCovs)
-        }
-        progBar(j,nbSpatialCovs)
-      }
-      spCovs<-data.frame(spCovs)
-      if(!gradient) names(spCovs)<-spatialcovnames
-      else names(spCovs) <- paste0(rep(spatialcovnames,each=3),c("",".x",".y"))
-      for(j in spatialcovnames){
-        if(any(raster::is.factor(spatialCovs[[j]]))){
-          spCovs[[j]] <- factor(spCovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
-        }
-      }
-      #data<-cbind(data,spCovs)
-      if(is.null(covs)) covs <- spCovs
-      else covs<-cbind(covs,spCovs)
+      spCovs <- .extractSpatialCovs(dataHMM, data, outNames, spatialCovs, spatialcovnames, gradient, gradCoordNames = coordNames)
+      if(is.null(covs)) covs <- spCovs else covs <- cbind(covs, spCovs)
     }
+    
+    # Delegate to helper for centers and centroids 
     if(!is.null(centers) || !is.null(centroids)) {
-      
-      x_prev <- c(x[1], x[-length(x)])
-      y_prev <- c(y[1], y[-length(y)])
-      
-      id_firsts <- match(unique(ID), ID)
-      x_prev[id_firsts] <- x[id_firsts]
-      y_prev[id_firsts] <- y[id_firsts]
-      
-      pt1_mat <- cbind(x_prev, y_prev)
-      pt2_mat <- cbind(x, y)
-    }
-    
-    if(!is.null(centers)){
-      if(!is.matrix(centers)) stop("centers must be a matrix")
-      if(dim(centers)[2]!=2) stop("centers must be a matrix consisting of 2 columns (i.e., x- and y-coordinates)")
-      centerInd <- which(!apply(centers,1,function(x) any(is.na(x))))
-      
-      if(length(centerInd)){
-        if(is.null(rownames(centers))) centerNames<-paste0("center",rep(centerInd,each=2),".",rep(c("dist","angle"),length(centerInd)))
-        else centerNames <- paste0(rep(rownames(centers),each=2),".",rep(c("dist","angle"),length(centerInd)))
-        if(any(centerNames %in% names(data))) stop("centers cannot have same names as data")
-        
-        # Use matrix for fast allocation instead of data.frame
-        centerCovs <- matrix(NA_real_, nrow=nrow(data), ncol=length(centerInd)*2)
-        colnames(centerCovs) <- centerNames
-        
-        for(j in 1:length(centerInd)){
-          # DistAngle can now process the entire matrix at once
-          pt3_mat <- centers[centerInd[j], , drop = FALSE]
-          res <- distAngle(x = pt1_mat, y = pt2_mat, z = pt3_mat, type = type)
-          
-          centerCovs[, (j-1)*2+1] <- res[, 1] # distance
-          centerCovs[, (j-1)*2+2] <- res[, 2] # angle
-        }
-        dataHMM <- cbind(dataHMM, as.data.frame(centerCovs))
-      }  
-    }
-    
-    if(!is.null(centroids)){
-      if(!is.list(centroids)) stop("centroids must be a named list")
-      centroidNames <- character()
-      
-      for(j in 1:length(centroids)){
-        if(!is.data.frame(centroids[[j]])) stop("each element of centroids must be a data frame")
-        if(dim(centroids[[j]])[2]!=3) stop("each element of centroids must be a data frame consisting of 3 columns (i.e., x-coordinate, y-coordinate, and time)")
-        if(!all(c("x","y") %in% colnames(centroids[[j]]))) stop("centroids must include 'x' (x-coordinate) and 'y' (y-coordinate) columns")
-        if(any(is.na(centroids[[j]]))) stop("centroids cannot contain missing values")
-        
-        timeName <- colnames(centroids[[j]])[which(!(colnames(centroids[[j]]) %in% c("x","y")))]
-        if(!(timeName %in% names(data))) stop("data must include '",timeName,"' column")
-        if(!all(data[[timeName]] %in% centroids[[j]][[timeName]])) stop("centroids ",timeName," does not span data; each observation time must have a corresponding entry in centroids")
-        
-        if(is.null(names(centroids[j]))) centroidNames <- c(centroidNames,paste0("centroid",rep(j,each=2),".",c("dist","angle")))
-        else centroidNames <- c(centroidNames,paste0(rep(names(centroids[j]),each=2),".",c("dist","angle")))
-      }
-      if(any(centroidNames %in% names(data))) stop("centroids cannot have same names as data")
-      
-      # Allocate matrix
-      centroidCovs <- matrix(NA_real_, nrow=nrow(data), ncol=length(centroidNames))
-      colnames(centroidCovs) <- centroidNames
-      
-      for(j in 1:length(centroids)){
-        timeName <- colnames(centroids[[j]])[which(!(colnames(centroids[[j]]) %in% c("x","y")))]
-        
-        # Instant lookup: find the row index in the centroid df for every time in the data
-        match_idx <- match(data[[timeName]], centroids[[j]][[timeName]])
-        
-        # Extract the moving target coordinates for the entire dataset
-        pt3_mat <- as.matrix(centroids[[j]][match_idx, c("x", "y")])
-        
-        # Vectorized distAngle handles the moving z seamlessly
-        res <- distAngle(x = pt1_mat, y = pt2_mat, z = pt3_mat, type = type)
-        
-        centroidCovs[, (j-1)*2+1] <- res[, 1] # dist
-        centroidCovs[, (j-1)*2+2] <- res[, 2] # angle
-      }
-      dataHMM <- cbind(dataHMM, as.data.frame(centroidCovs))
+      dataHMM <- .calcCentersCentroids(dataHMM, data, ID, x, y, centers, centroids, type)
     }
     
     if(!is.null(angleCovs)){
@@ -880,9 +724,7 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
   dataHMM$ID<-factor(dataHMM$ID,levels=unique(dataHMM$ID))
   
   if(!is.null(coordNames)) {
-    # return coordNames to NA if not at coordLevel
     dataHMM[which(dataHMM$level!=coordLevel),outNames] <- NA
-    
     attr(dataHMM,"coords") <- outNames
     attr(dataHMM,"coordLevel") <- coordLevel
   }
@@ -894,4 +736,3 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
   }
   return(momentuHierHMMData(dataHMM))
 }
-
