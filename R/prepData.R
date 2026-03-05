@@ -323,6 +323,7 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
     dataHMM[[outNames[1]]] <- x
     dataHMM[[outNames[2]]] <- y
     class(dataHMM$angle)<-c(class(dataHMM$angle), "angle")
+    
     if(nbSpatialCovs){
       message(paste0("Extracting spatial covariates",ifelse(gradient," and calculating gradients",""),"..."))
       spCovs<-numeric()
@@ -365,67 +366,94 @@ prepData.default <- function(data, type=c('UTM','LL'), coordNames=c("x","y"), co
           spCovs[[j]] <- factor(spCovs[[j]],levels=unique(unlist(raster::levels(spatialCovs[[j]]))))
         }
       }
-      #data<-cbind(data,spCovs)
       if(is.null(covs)) covs <- spCovs
       else covs<-cbind(covs,spCovs)
     }
+    
+    if(!is.null(centers) || !is.null(centroids)) {
+
+      x_prev <- c(x[1], x[-length(x)])
+      y_prev <- c(y[1], y[-length(y)])
+      
+      id_firsts <- match(unique(ID), ID)
+      x_prev[id_firsts] <- x[id_firsts]
+      y_prev[id_firsts] <- y[id_firsts]
+      
+      pt1_mat <- cbind(x_prev, y_prev)
+      pt2_mat <- cbind(x, y)
+    }
+    
     if(!is.null(centers)){
       if(!is.matrix(centers)) stop("centers must be a matrix")
       if(dim(centers)[2]!=2) stop("centers must be a matrix consisting of 2 columns (i.e., x- and y-coordinates)")
       centerInd <- which(!apply(centers,1,function(x) any(is.na(x))))
+      
       if(length(centerInd)){
         if(is.null(rownames(centers))) centerNames<-paste0("center",rep(centerInd,each=2),".",rep(c("dist","angle"),length(centerInd)))
         else centerNames <- paste0(rep(rownames(centers),each=2),".",rep(c("dist","angle"),length(centerInd)))
         if(any(centerNames %in% names(data))) stop("centers cannot have same names as data")
-        centerCovs <- data.frame(matrix(NA,nrow=nrow(data),ncol=length(centerInd)*2,dimnames=list(NULL,centerNames)))
-        for(zoo in 1:nbAnimals) {
-          nbObs <- length(which(ID==unique(ID)[zoo]))
-          i1 <- which(ID==unique(ID)[zoo])[1]
-          i2 <- i1+nbObs-1
-          for(j in 1:length(centerInd)){
-            centerCovs[i1,centerNames[(j-1)*2+1:2]]<-distAngle(c(x[i1],y[i1]),c(x[i1],y[i1]),centers[centerInd[j],],type)
-            for(i in (i1+1):i2) {
-              centerCovs[i,centerNames[(j-1)*2+1:2]]<-distAngle(c(x[i-1],y[i-1]),c(x[i],y[i]),centers[centerInd[j],],type)
-            }
-          }
+        
+        # Use matrix for fast allocation instead of data.frame
+        centerCovs <- matrix(NA_real_, nrow=nrow(data), ncol=length(centerInd)*2)
+        colnames(centerCovs) <- centerNames
+        
+        for(j in 1:length(centerInd)){
+          # DistAngle can now process the entire matrix at once
+          pt3_mat <- centers[centerInd[j], , drop = FALSE]
+          res <- distAngle(x = pt1_mat, y = pt2_mat, z = pt3_mat, type = type)
+          
+          centerCovs[, (j-1)*2+1] <- res[, 1] # distance
+          centerCovs[, (j-1)*2+2] <- res[, 2] # angle
         }
-        dataHMM<-cbind(dataHMM,centerCovs)
+        dataHMM <- cbind(dataHMM, as.data.frame(centerCovs))
       }  
     }
+    
     if(!is.null(centroids)){
       if(!is.list(centroids)) stop("centroids must be a named list")
       centroidNames <- character()
+      
       for(j in 1:length(centroids)){
         if(!is.data.frame(centroids[[j]])) stop("each element of centroids must be a data frame")
         if(dim(centroids[[j]])[2]!=3) stop("each element of centroids must be a data frame consisting of 3 columns (i.e., x-coordinate, y-coordinate, and time)")
         if(!all(c("x","y") %in% colnames(centroids[[j]]))) stop("centroids must include 'x' (x-coordinate) and 'y' (y-coordinate) columns")
         if(any(is.na(centroids[[j]]))) stop("centroids cannot contain missing values")
+        
         timeName <- colnames(centroids[[j]])[which(!(colnames(centroids[[j]]) %in% c("x","y")))]
         if(!(timeName %in% names(data))) stop("data must include '",timeName,"' column")
-        if(!all(data[,timeName] %in% centroids[[j]][,timeName])) stop("centroids ",timeName," does not span data; each observation time must have a corresponding entry in centroids")
+        if(!all(data[[timeName]] %in% centroids[[j]][[timeName]])) stop("centroids ",timeName," does not span data; each observation time must have a corresponding entry in centroids")
+        
         if(is.null(names(centroids[j]))) centroidNames <- c(centroidNames,paste0("centroid",rep(j,each=2),".",c("dist","angle")))
         else centroidNames <- c(centroidNames,paste0(rep(names(centroids[j]),each=2),".",c("dist","angle")))
-        if(any(centroidNames %in% names(data))) stop("centroids cannot have same names as data")
       }
-      centroidCovs <- data.frame(matrix(NA,nrow=nrow(data),ncol=length(centroidNames),dimnames=list(NULL,centroidNames)))
-      centroidInd <- length(centroidNames)/2
-      for(zoo in 1:nbAnimals) {
-        nbObs <- length(which(ID==unique(ID)[zoo]))
-        i1 <- which(ID==unique(ID)[zoo])[1]
-        i2 <- i1+nbObs-1
-        for(j in 1:centroidInd){
-          centroidCovs[i1,centroidNames[(j-1)*2+1:2]]<-distAngle(c(x[i1],y[i1]),c(x[i1],y[i1]),as.numeric(centroids[[j]][match(data[i1,timeName],centroids[[j]][,timeName]),c("x","y")]),type)
-          for(i in (i1+1):i2) {
-            centroidCovs[i,centroidNames[(j-1)*2+1:2]]<-distAngle(c(x[i-1],y[i-1]),c(x[i],y[i]),as.numeric(centroids[[j]][match(data[i,timeName],centroids[[j]][,timeName]),c("x","y")]),type)
-          }
-        }
+      if(any(centroidNames %in% names(data))) stop("centroids cannot have same names as data")
+      
+      # Allocate matrix
+      centroidCovs <- matrix(NA_real_, nrow=nrow(data), ncol=length(centroidNames))
+      colnames(centroidCovs) <- centroidNames
+      
+      for(j in 1:length(centroids)){
+        timeName <- colnames(centroids[[j]])[which(!(colnames(centroids[[j]]) %in% c("x","y")))]
+        
+        # Instant lookup: find the row index in the centroid df for every time in the data
+        match_idx <- match(data[[timeName]], centroids[[j]][[timeName]])
+        
+        # Extract the moving target coordinates for the entire dataset
+        pt3_mat <- as.matrix(centroids[[j]][match_idx, c("x", "y")])
+        
+        # Vectorized distAngle handles the moving z seamlessly
+        res <- distAngle(x = pt1_mat, y = pt2_mat, z = pt3_mat, type = type)
+        
+        centroidCovs[, (j-1)*2+1] <- res[, 1] # dist
+        centroidCovs[, (j-1)*2+2] <- res[, 2] # angle
       }
-      dataHMM<-cbind(dataHMM,centroidCovs)
+      dataHMM <- cbind(dataHMM, as.data.frame(centroidCovs))
     }
+    
     if(!is.null(angleCovs)){
       if(!all(angleCovs %in% colnames(covs))) stop('angleCovs not found in data or spatialCovs')
       for(i in angleCovs){
-        covs[[i]]<-circAngles(covs[[i]],dataHMM,coordNames=outNames)
+        covs[[i]] <- circAngles(refAngle = covs[[i]], data = dataHMM, coordNames = outNames)
       }
     }
   }
@@ -760,63 +788,90 @@ prepData.hierarchical <- function(data, type=c('UTM','LL'), coordNames=c("x","y"
       if(is.null(covs)) covs <- spCovs
       else covs<-cbind(covs,spCovs)
     }
+    if(!is.null(centers) || !is.null(centroids)) {
+      
+      x_prev <- c(x[1], x[-length(x)])
+      y_prev <- c(y[1], y[-length(y)])
+      
+      id_firsts <- match(unique(ID), ID)
+      x_prev[id_firsts] <- x[id_firsts]
+      y_prev[id_firsts] <- y[id_firsts]
+      
+      pt1_mat <- cbind(x_prev, y_prev)
+      pt2_mat <- cbind(x, y)
+    }
+    
     if(!is.null(centers)){
       if(!is.matrix(centers)) stop("centers must be a matrix")
       if(dim(centers)[2]!=2) stop("centers must be a matrix consisting of 2 columns (i.e., x- and y-coordinates)")
       centerInd <- which(!apply(centers,1,function(x) any(is.na(x))))
+      
       if(length(centerInd)){
         if(is.null(rownames(centers))) centerNames<-paste0("center",rep(centerInd,each=2),".",rep(c("dist","angle"),length(centerInd)))
         else centerNames <- paste0(rep(rownames(centers),each=2),".",rep(c("dist","angle"),length(centerInd)))
         if(any(centerNames %in% names(data))) stop("centers cannot have same names as data")
-        centerCovs <- data.frame(matrix(NA,nrow=nrow(data),ncol=length(centerInd)*2,dimnames=list(NULL,centerNames)))
-        for(zoo in 1:nbAnimals) {
-          nbObs <- length(which(ID==unique(ID)[zoo]))
-          i1 <- which(ID==unique(ID)[zoo])[1]
-          i2 <- i1+nbObs-1
-          for(j in 1:length(centerInd)){
-            centerCovs[i1,centerNames[(j-1)*2+1:2]]<-distAngle(c(x[i1],y[i1]),c(x[i1],y[i1]),centers[centerInd[j],],type)
-            for(i in (i1+1):i2) {
-              centerCovs[i,centerNames[(j-1)*2+1:2]]<-distAngle(c(x[i-1],y[i-1]),c(x[i],y[i]),centers[centerInd[j],],type)
-            }
-          }
+        
+        # Use matrix for fast allocation instead of data.frame
+        centerCovs <- matrix(NA_real_, nrow=nrow(data), ncol=length(centerInd)*2)
+        colnames(centerCovs) <- centerNames
+        
+        for(j in 1:length(centerInd)){
+          # DistAngle can now process the entire matrix at once
+          pt3_mat <- centers[centerInd[j], , drop = FALSE]
+          res <- distAngle(x = pt1_mat, y = pt2_mat, z = pt3_mat, type = type)
+          
+          centerCovs[, (j-1)*2+1] <- res[, 1] # distance
+          centerCovs[, (j-1)*2+2] <- res[, 2] # angle
         }
-        dataHMM<-cbind(dataHMM,centerCovs)
+        dataHMM <- cbind(dataHMM, as.data.frame(centerCovs))
       }  
     }
+    
     if(!is.null(centroids)){
       if(!is.list(centroids)) stop("centroids must be a named list")
       centroidNames <- character()
+      
       for(j in 1:length(centroids)){
         if(!is.data.frame(centroids[[j]])) stop("each element of centroids must be a data frame")
         if(dim(centroids[[j]])[2]!=3) stop("each element of centroids must be a data frame consisting of 3 columns (i.e., x-coordinate, y-coordinate, and time)")
         if(!all(c("x","y") %in% colnames(centroids[[j]]))) stop("centroids must include 'x' (x-coordinate) and 'y' (y-coordinate) columns")
         if(any(is.na(centroids[[j]]))) stop("centroids cannot contain missing values")
+        
         timeName <- colnames(centroids[[j]])[which(!(colnames(centroids[[j]]) %in% c("x","y")))]
         if(!(timeName %in% names(data))) stop("data must include '",timeName,"' column")
-        if(!all(data[,timeName] %in% centroids[[j]][,timeName])) stop("centroids ",timeName," does not span data; each observation time must have a corresponding entry in centroids")
+        if(!all(data[[timeName]] %in% centroids[[j]][[timeName]])) stop("centroids ",timeName," does not span data; each observation time must have a corresponding entry in centroids")
+        
         if(is.null(names(centroids[j]))) centroidNames <- c(centroidNames,paste0("centroid",rep(j,each=2),".",c("dist","angle")))
         else centroidNames <- c(centroidNames,paste0(rep(names(centroids[j]),each=2),".",c("dist","angle")))
-        if(any(centroidNames %in% names(data))) stop("centroids cannot have same names as data")
       }
-      centroidCovs <- data.frame(matrix(NA,nrow=nrow(data),ncol=length(centroidNames),dimnames=list(NULL,centroidNames)))
-      centroidInd <- length(centroidNames)/2
-      for(zoo in 1:nbAnimals) {
-        nbObs <- length(which(ID==unique(ID)[zoo]))
-        i1 <- which(ID==unique(ID)[zoo])[1]
-        i2 <- i1+nbObs-1
-        for(j in 1:centroidInd){
-          centroidCovs[i1,centroidNames[(j-1)*2+1:2]]<-distAngle(c(x[i1],y[i1]),c(x[i1],y[i1]),as.numeric(centroids[[j]][match(data[i1,timeName],centroids[[j]][,timeName]),c("x","y")]),type)
-          for(i in (i1+1):i2) {
-            centroidCovs[i,centroidNames[(j-1)*2+1:2]]<-distAngle(c(x[i-1],y[i-1]),c(x[i],y[i]),as.numeric(centroids[[j]][match(data[i,timeName],centroids[[j]][,timeName]),c("x","y")]),type)
-          }
-        }
+      if(any(centroidNames %in% names(data))) stop("centroids cannot have same names as data")
+      
+      # Allocate matrix
+      centroidCovs <- matrix(NA_real_, nrow=nrow(data), ncol=length(centroidNames))
+      colnames(centroidCovs) <- centroidNames
+      
+      for(j in 1:length(centroids)){
+        timeName <- colnames(centroids[[j]])[which(!(colnames(centroids[[j]]) %in% c("x","y")))]
+        
+        # Instant lookup: find the row index in the centroid df for every time in the data
+        match_idx <- match(data[[timeName]], centroids[[j]][[timeName]])
+        
+        # Extract the moving target coordinates for the entire dataset
+        pt3_mat <- as.matrix(centroids[[j]][match_idx, c("x", "y")])
+        
+        # Vectorized distAngle handles the moving z seamlessly
+        res <- distAngle(x = pt1_mat, y = pt2_mat, z = pt3_mat, type = type)
+        
+        centroidCovs[, (j-1)*2+1] <- res[, 1] # dist
+        centroidCovs[, (j-1)*2+2] <- res[, 2] # angle
       }
-      dataHMM<-cbind(dataHMM,centroidCovs)
+      dataHMM <- cbind(dataHMM, as.data.frame(centroidCovs))
     }
+    
     if(!is.null(angleCovs)){
       if(!all(angleCovs %in% colnames(covs))) stop('angleCovs not found in data or spatialCovs')
       for(i in angleCovs){
-        covs[[i]]<-circAngles(covs[[i]],dataHMM,coordNames=outNames)
+        covs[[i]] <- circAngles(refAngle = covs[[i]], data = dataHMM, coordNames = outNames)
       }
     }
   }

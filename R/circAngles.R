@@ -24,37 +24,44 @@
 #' 
 #' @export
 
-circAngles<-function(refAngle,data,coordNames=c("x","y")){
-  
-  if(!is.data.frame(data)) stop("data must be a data frame")
-  if(any(dim(data)==0)) stop("data is empty")
-  if(length(coordNames)!=2) stop('coordNames must be of length 2')
-  
-  if(!is.null(data$ID)) ID <- as.character(data$ID) # homogenization of numeric and string IDs
-  else ID <- rep(1,nrow(data)) # default ID if none provided
-  
-  if(nrow(data)!=length(refAngle)) stop('refAngle must be of length ',nrow(data))
-  
-  if(min(refAngle)<= -pi | max(refAngle)> pi) stop('refAngle must be in (-pi,pi]')
+circAngles <- function(refAngle, data, coordNames = c("x", "y")) {
   
   x <- data[[coordNames[1]]]
   y <- data[[coordNames[2]]]
+  n <- length(x)
   
-  ind<-as.numeric(table(ID))
-  cumind<-c(0,cumsum(ind))
-  angle <- rep(0,length(x))
-  for(s in 1:length(ind)){
-    for(i in cumind[s]+2:ind[s]){
-      w <- c(x[i]-x[i-1],y[i]-y[i-1])
-      #b <- -(atan2(w[2],w[1])-pi/2) # bearing; 0 is north, pi/2 east
-      #b <- atan2(sin(b),cos(b)) # bearing on [-pi,pi)
-      b <- atan2(w[2],w[1]) # 0 is east, pi/2 north, -pi/2 south, pi west
-      angle[i] <- refAngle[i] - b
-      while(angle[i]<=(-pi)) angle[i] <- angle[i] + 2*pi
-      while(angle[i]>pi) angle[i] <- angle[i] -2*pi
-    }
-  }
-  class(angle) <- c(class(angle), "angle")
+  ID <- data$ID
+  if (is.null(ID)) ID <- rep("Animal1", n)
+  id_firsts <- match(unique(ID), ID)
+  
+  x_prev <- c(x[1], x[-n])
+  y_prev <- c(y[1], y[-n])
+  
+  x_prev[id_firsts] <- x[id_firsts]
+  y_prev[id_firsts] <- y[id_firsts]
+  
+  #if (type == "LL") {
+  #  rad <- pi / 180
+  #  lon1 <- x_prev * rad
+  #  lat1 <- y_prev * rad
+  #  lon2 <- x * rad
+  #  lat2 <- y * rad
+  #  
+  #  dLon <- lon2 - lon1
+  #  by <- sin(dLon) * cos(lat2)
+  #  bx <- cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
+  #  heading <- atan2(by, bx)
+  #  
+  #} else if (type == "UTM") {
+    dx <- x - x_prev
+    dy <- y - y_prev
+    heading <- atan2(dy, dx)
+  #} else {
+  #  stop("type must be 'LL' or 'UTM'")
+  #}
+  
+  angle <- ((heading - refAngle + pi) %% (2 * pi)) - pi
+  
   return(angle)
 }
 
