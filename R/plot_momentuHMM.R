@@ -269,10 +269,6 @@ plot.momentuHMM <- function(x,animals=NULL,covs=NULL,ask=TRUE,breaks="Sturges",h
 
   Par <- m$mle[distnames]
   
-  ncmean <- get_ncmean(distnames,m$conditions$fullDM,m$conditions$circularAngleMean,nbStates)
-  nc <- ncmean$nc
-  meanind <- ncmean$meanind
-  
   tmPar <- lapply(Par,function(x) c(t(x)))
   parCount<- lapply(m$conditions$fullDM,ncol)
   for(i in distnames[!unlist(lapply(m$conditions$circularAngleMean,isFALSE))]){

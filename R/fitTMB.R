@@ -370,6 +370,9 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
                              map = map, silent = ifelse(is.null(control$silent),FALSE,control$silent))
   nllk0 <- tmb_obj$fn(tmb_obj$par)
   
+  returnTMB <- control$returnTMB
+  control$returnTMB <- NULL
+  
   if(fit){
     
     if (is.nan(nllk0) | is.infinite(nllk0)) {
@@ -442,7 +445,6 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
     mod$estimate <- unlist(best_par)#tmb_rep$par.fixed
     mod$code <- out$convcode
     mod$iterations <- out$fevals
-    mod$tmb_obj <- tmb_obj
     if(hessian){
       tmb_rep <- TMB::sdreport(tmb_obj,
                                getJointPrecision = FALSE, 
@@ -466,6 +468,8 @@ fitTMB <- function(data,dist,nbStates,p,estAngleMean,oneInflation,zeroInflation,
     mod$minimum <- nllk0
     mod$estimate <- tmb_obj$par
   }
+  if(isTRUE(returnTMB)) mod$tmb_obj <- tmb_obj
+  
   # reorder rwdist parms
   if(!isTRUE(crwST)){
     parInd <- which(names(mod$estimate)=="coeff_fe_obs")
