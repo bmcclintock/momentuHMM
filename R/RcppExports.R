@@ -322,6 +322,10 @@ nLogLike_rcpp <- function(nbStates, covs, data, dataNames, dist, Par, aInd, zero
     .Call(`_momentuHMM_nLogLike_rcpp`, nbStates, covs, data, dataNames, dist, Par, aInd, zeroInflation, oneInflation, stationary, knownStates, betaRef, mixtures, dtIndex, CT, kappa)
 }
 
+stateProbs_cpp <- function(nbObs, nbStates, mixtures, aInd, eta, laList, lbList) {
+    .Call(`_momentuHMM_stateProbs_cpp`, nbObs, nbStates, mixtures, aInd, eta, laList, lbList)
+}
+
 #' Stationary distribution for a continuous-time Markov chain
 #'
 #' Written in C++. 
@@ -353,5 +357,9 @@ stationary_rcpp <- function(A) {
 #' time t.
 trMatrix_rcpp <- function(nbStates, beta, covs, betaRef, CT = FALSE, dt = as.numeric( c()), aInd = as.integer( c()), rateMatrix = FALSE, kappa = NA_real_, check = TRUE) {
     .Call(`_momentuHMM_trMatrix_rcpp`, nbStates, beta, covs, betaRef, CT, dt, aInd, rateMatrix, kappa, check)
+}
+
+viterbi_cpp <- function(nbStates, nbAnimals, mixtures, aInd, mixProbs, delta, probs, trMatList) {
+    .Call(`_momentuHMM_viterbi_cpp`, nbStates, nbAnimals, mixtures, aInd, mixProbs, delta, probs, trMatList)
 }
 

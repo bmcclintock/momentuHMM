@@ -4,7 +4,8 @@
 #' Used in \code{\link{stateProbs}} and \code{\link{pseudoRes}}.
 #'
 #' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.
-#'
+#' @param ... further arguments passed to or from other methods
+#' 
 #' @return A list of length \code{model$conditions$mixtures} where each element is a matrix of forward log-probabilities for each mixture.
 #'
 #' @examples
@@ -15,7 +16,7 @@
 #' la <- momentuHMM:::logAlpha(m)
 #' }
 
-logAlpha <- function(m)
+logAlpha <- function(m, ...)
 {
   if(!is.momentuHMM(m) & !is.miHMM(m) & !is.miSum(m))
     stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
@@ -45,7 +46,8 @@ logAlpha <- function(m)
   covs <- reForm$covs
   aInd <- reForm$aInd
   
-  probs <- allProbs(m)
+  if(!("probs" %in% names(list(...)))) probs <- allProbs(m)
+  else probs <- list(...)$probs
   
   mixtures <- m$conditions$mixtures
   

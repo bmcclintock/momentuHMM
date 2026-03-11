@@ -4,10 +4,12 @@
 \alias{logAlpha}
 \title{Forward log-probabilities}
 \usage{
-logAlpha(m)
+logAlpha(m, ...)
 }
 \arguments{
 \item{m}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.}
+
+\item{...}{further arguments passed to or from other methods}
 }
 \value{
 A list of length \code{model$conditions$mixtures} where each element is a matrix of forward log-probabilities for each mixture.

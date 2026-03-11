@@ -376,6 +376,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// stateProbs_cpp
+arma::mat stateProbs_cpp(int nbObs, int nbStates, int mixtures, arma::vec aInd, arma::mat eta, Rcpp::List laList, Rcpp::List lbList);
+RcppExport SEXP _momentuHMM_stateProbs_cpp(SEXP nbObsSEXP, SEXP nbStatesSEXP, SEXP mixturesSEXP, SEXP aIndSEXP, SEXP etaSEXP, SEXP laListSEXP, SEXP lbListSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type nbObs(nbObsSEXP);
+    Rcpp::traits::input_parameter< int >::type nbStates(nbStatesSEXP);
+    Rcpp::traits::input_parameter< int >::type mixtures(mixturesSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type aInd(aIndSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type eta(etaSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type laList(laListSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type lbList(lbListSEXP);
+    rcpp_result_gen = Rcpp::wrap(stateProbs_cpp(nbObs, nbStates, mixtures, aInd, eta, laList, lbList));
+    return rcpp_result_gen;
+END_RCPP
+}
 // stationary_rcpp
 arma::rowvec stationary_rcpp(arma::mat A);
 RcppExport SEXP _momentuHMM_stationary_rcpp(SEXP ASEXP) {
@@ -404,6 +421,24 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type kappa(kappaSEXP);
     Rcpp::traits::input_parameter< bool >::type check(checkSEXP);
     rcpp_result_gen = Rcpp::wrap(trMatrix_rcpp(nbStates, beta, covs, betaRef, CT, dt, aInd, rateMatrix, kappa, check));
+    return rcpp_result_gen;
+END_RCPP
+}
+// viterbi_cpp
+arma::uvec viterbi_cpp(int nbStates, int nbAnimals, int mixtures, arma::vec aInd, arma::mat mixProbs, arma::mat delta, arma::mat probs, Rcpp::List trMatList);
+RcppExport SEXP _momentuHMM_viterbi_cpp(SEXP nbStatesSEXP, SEXP nbAnimalsSEXP, SEXP mixturesSEXP, SEXP aIndSEXP, SEXP mixProbsSEXP, SEXP deltaSEXP, SEXP probsSEXP, SEXP trMatListSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type nbStates(nbStatesSEXP);
+    Rcpp::traits::input_parameter< int >::type nbAnimals(nbAnimalsSEXP);
+    Rcpp::traits::input_parameter< int >::type mixtures(mixturesSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type aInd(aIndSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type mixProbs(mixProbsSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type delta(deltaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type probs(probsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type trMatList(trMatListSEXP);
+    rcpp_result_gen = Rcpp::wrap(viterbi_cpp(nbStates, nbAnimals, mixtures, aInd, mixProbs, delta, probs, trMatList));
     return rcpp_result_gen;
 END_RCPP
 }

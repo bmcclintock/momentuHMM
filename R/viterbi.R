@@ -57,41 +57,18 @@ viterbi <- function(m, hierarchical=FALSE)
     trMat[[mix]] <- trMatrix_rcpp(nbStates,beta[(mix-1)*ncol(covs)+1:ncol(covs),,drop=FALSE],as.matrix(covs),m$conditions$betaRef,isTRUE(m$conditions$CT),dt,aInd=aInd, kappa=m$conditions$kappa)
   }
   
-  allStates <- NULL
+  allStates <- viterbi_cpp(
+    nbStates = nbStates,
+    nbAnimals = nbAnimals,
+    mixtures = mixtures,
+    aInd = aInd,
+    mixProbs = mixProbs,
+    delta = delta,
+    probs = probs,
+    trMatList = trMat
+  )
   
-  for(zoo in 1:nbAnimals) {
-    
-    nbObs <- length(which(data$ID==unique(data$ID)[zoo])) # nb of observations for animal zoo
-    tmxi <- matrix(0,nbObs,nbStates)
-    xi_mix <- matrix(0,nbObs,nbStates)
-    
-    if(zoo!=nbAnimals) {
-      tm <- lapply(trMat,function(x) x[,,aInd[zoo]:(aInd[zoo+1]-1),drop=FALSE])
-      p <- probs[aInd[zoo]:(aInd[zoo+1]-1),,drop=FALSE]
-    } else {
-      tm <- lapply(trMat,function(x) x[,,aInd[zoo]:nrow(probs),drop=FALSE])
-      p <- probs[aInd[zoo]:nrow(probs),,drop=FALSE]
-    }
-    foo <- rowSums(mapply(function(mix) mixProbs[zoo,mix]*delta[(mix-1)*nbAnimals+zoo,]%*%tm[[mix]][,,1]*p[1,],1:mixtures))
-    xi_mix[1,] <- foo/sum(foo)
-    
-    for(i in 2:nbObs) {
-      foo <- Reduce("+",mapply(function(mix) mixProbs[zoo,mix]*xi_mix[i-1,]*tm[[mix]][,,i],1:mixtures,SIMPLIFY = FALSE))
-      foo <- apply(foo,2,max)*p[i,]
-      xi_mix[i,] <- foo/sum(foo)
-    }
-    
-    stSeq <- rep(NA,nbObs)
-    tmxi[nbObs,] <- xi_mix[nbObs,]
-    stSeq[nbObs] <- which.max(tmxi[nbObs,])
-    for(i in (nbObs-1):1){
-      for(mix in 1:mixtures){
-        tmxi[i,] <- tmxi[i,] + xi_mix[i,]*mixProbs[zoo,mix]*tm[[mix]][,stSeq[i+1],i+1]
-      }
-      stSeq[i] <- which.max(tmxi[i,])
-    }
-    allStates <- c(allStates,stSeq)
-  }
+  allStates <- as.vector(allStates)
   
   if(inherits(m,"momentuHierHMM") && hierarchical){
     installDataTree()

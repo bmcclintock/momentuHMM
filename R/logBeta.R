@@ -4,7 +4,8 @@
 #' Used in \code{\link{stateProbs}}.
 #'
 #' @param m A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.
-#'
+#' @param ... further arguments passed to or from other methods
+#' 
 #' @return A list of length \code{model$conditions$mixtures} where each element is a matrix of backward log-probabilities for each mixture.
 #'
 #' @examples
@@ -15,7 +16,7 @@
 #' lb <- momentuHMM:::logBeta(m)
 #' }
 
-logBeta <- function(m)
+logBeta <- function(m, ...)
 {
   if(!is.momentuHMM(m) & !is.miHMM(m) & !is.miSum(m))
     stop("'m' must be a momentuHMM, miHMM, or miSum object (as output by fitHMM, MIfitHMM, or MIpool)")
@@ -45,7 +46,8 @@ logBeta <- function(m)
   reForm <- formatRecharge(nbStates,m$conditions$formula,m$conditions$betaRef,m$data,par=m$mle)
   covs <- reForm$covs
   
-  probs <- allProbs(m)
+  if(!("probs" %in% names(list(...)))) probs <- allProbs(m)
+  else probs <- list(...)$probs
   
   mixtures <- m$conditions$mixtures
   

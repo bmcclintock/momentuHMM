@@ -4,10 +4,12 @@
 \alias{logBeta}
 \title{Backward log-probabilities}
 \usage{
-logBeta(m)
+logBeta(m, ...)
 }
 \arguments{
 \item{m}{A \code{\link{momentuHMM}}, \code{\link{miHMM}}, or \code{\link{miSum}} object.}
+
+\item{...}{further arguments passed to or from other methods}
 }
 \value{
 A list of length \code{model$conditions$mixtures} where each element is a matrix of backward log-probabilities for each mixture.

@@ -735,20 +735,6 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
         warning("Package \"car\" needed for calculating error ellipses. Please install it.",
              call. = FALSE)
       } else {
-        if(ncores>1){
-          for(pkg in c("doFuture","future","parallelly")){
-            if (!requireNamespace(pkg, quietly = TRUE)) {
-              stop("Package \"",pkg,"\" needed for parallel processing to work. Please install it.",
-                   call. = FALSE)
-            }
-          }
-          oldDoPar <- doFuture::registerDoFuture()
-          on.exit(with(oldDoPar, foreach::setDoPar(fun=fun, data=data, info=info)), add = TRUE)
-          with(local = TRUE,
-               future::plan(future::multisession, workers = parallelly::availableCores(max = ncores)))
-        } else {
-          foreach::registerDoSEQ()
-        }
         cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
         tmpx<-matrix(unlist(mapply(function(x) im[[x]]$data[[coordNames[1]]][inTime[[x]]],1:length(im))),nrow(mh$data))
         tmpy<-matrix(unlist(mapply(function(x) im[[x]]$data[[coordNames[2]]][inTime[[x]]],1:length(im))),nrow(mh$data))

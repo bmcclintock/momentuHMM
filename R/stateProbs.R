@@ -39,9 +39,12 @@ stateProbs <- function(m, hierarchical=FALSE)
     stop("No states to decode (nbStates=1)")
 
   nbObs <- nrow(data)
-  la <- logAlpha(m) # forward log-probabilities
-  lb <- logBeta(m) # backward log-probabilities
-  stateProbs <- matrix(0,nbObs,nbStates)
+  probs <- allProbs(m)
+  la <- logAlpha(m, probs=probs) # forward log-probabilities
+  lb <- logBeta(m, probs=probs) # backward log-probabilities
+
+  if (!is.list(la)) la <- list(la)
+  if (!is.list(lb)) lb <- list(lb)
 
   aInd <- NULL
   for(i in 1:nbAnimals)
@@ -53,30 +56,20 @@ stateProbs <- function(m, hierarchical=FALSE)
     
   eta <- mixtureProbs(m)
   
-  k <- 1
-  stateProb <- list()
-  for(i in nbObs:1){
-    for(mix in 1:mixtures){
-      if(any(i==aInd)){
-        c <- max(la[[mix]][i,]) # cancels out below ; prevents numerical errors
-        llk <- c + log(sum(exp(la[[mix]][i,]-c)))
-        ieta <- eta[k,]
-        if(mix==mixtures) k <- k + 1
-      }
-      stateProb[[mix]] <- exp(la[[mix]][i,]+lb[[mix]][i,]-llk)
-      if(any(!is.finite(stateProb[[mix]])) || !sum(stateProb[[mix]])) {
-        stateProb[[mix]] <- Brobdingnag::brob(la[[mix]][i,]+lb[[mix]][i,]-llk)
-        stateProbs[i,] <- stateProbs[i,] + as.numeric(stateProb[[mix]]/Brobdingnag::sum(stateProb[[mix]]) * ieta[mix])
-      } else {
-        stateProbs[i,] <- stateProbs[i,] + stateProb[[mix]] / sum(stateProb[[mix]]) * ieta[mix]
-      }
-    }
-  }
-  colnames(stateProbs) <- m$stateNames
+  stateProbs_mat <- stateProbs_cpp(
+    nbObs = nbObs,
+    nbStates = nbStates,
+    mixtures = mixtures,
+    aInd = aInd,
+    eta = eta,
+    laList = la,
+    lbList = lb
+  )
+  colnames(stateProbs_mat) <- m$stateNames
   
   if(inherits(m,"momentuHierHMM") && hierarchical){
-    return(hierStateProbs(m, stateProbs))
-  } else return(stateProbs)
+    return(hierStateProbs(m, stateProbs_mat))
+  } else return(stateProbs_mat)
 }
 
 hierStateProbs <- function(m, stateProbs){
