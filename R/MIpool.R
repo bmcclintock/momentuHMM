@@ -730,22 +730,44 @@ MIpool<-function(im, alpha=0.95, ncores=1, covs=NULL, na.rm=FALSE){
     checkerrs <- lapply(im,function(x) x$data[match(coordNames,names(x$data))])
     ident <- !unlist(lapply(checkerrs,function(x) isTRUE(all.equal(x,checkerrs[[1]]))))
     if(any(ident)){
-      # calculate location alpha% error ellipses
-      if (!requireNamespace("car", quietly = TRUE)) {
-        warning("Package \"car\" needed for calculating error ellipses. Please install it.",
-             call. = FALSE)
-      } else {
-        cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
-        tmpx<-matrix(unlist(mapply(function(x) im[[x]]$data[[coordNames[1]]][inTime[[x]]],1:length(im))),nrow(mh$data))
-        tmpy<-matrix(unlist(mapply(function(x) im[[x]]$data[[coordNames[2]]][inTime[[x]]],1:length(im))),nrow(mh$data))
-        withCallingHandlers(errorEllipse<-foreach(i = 1:nrow(mh$data)) %dorng% {
-          tmp <- cbind(tmpx[i,],tmpy[i,])
-          if(length(unique(tmp[,1]))>1 | length(unique(tmp[,2]))>1)
-            ellip <- suppressWarnings(car::dataEllipse(tmp,levels=alpha,draw=FALSE,segments=100))
-          else ellip <- matrix(tmp[1,],101,2,byrow=TRUE)
-        },warning=muffleRNGwarning)
-        cat("DONE\n")
-      }
+      cat("Calculating location",paste0(alpha*100,"%"),"error ellipses... ")
+      
+      tmpx <- matrix(unlist(mapply(function(x) im[[x]]$data[[coordNames[1]]][inTime[[x]]], 1:length(im))), nrow(mh$data))
+      tmpy <- matrix(unlist(mapply(function(x) im[[x]]$data[[coordNames[2]]][inTime[[x]]], 1:length(im))), nrow(mh$data))
+      
+      M <- length(im)
+      
+      radius <- sqrt(2 * stats::qf(alpha, 2, M - 1))
+      
+      angles <- (0:100) * 2 * pi / 100
+      uc <- cbind(cos(angles), sin(angles))
+      
+      mu_x <- rowMeans(tmpx)
+      mu_y <- rowMeans(tmpy)
+      diff_x <- tmpx - mu_x
+      diff_y <- tmpy - mu_y
+      
+      var_x <- rowSums(diff_x^2) / (M - 1)
+      var_y <- rowSums(diff_y^2) / (M - 1)
+      cov_xy <- rowSums(diff_x * diff_y) / (M - 1)
+      
+      errorEllipse <- lapply(1:nrow(mh$data), function(i) {
+        if (var_x[i] > 0 || var_y[i] > 0) {
+
+          S <- matrix(c(var_x[i], cov_xy[i], cov_xy[i], var_y[i]), 2, 2)
+          
+          Q <- suppressWarnings(chol(S, pivot = TRUE))
+          pivot_order <- order(attr(Q, "pivot"))
+          
+          ell <- sweep(radius * uc %*% Q[, pivot_order], 2, c(mu_x[i], mu_y[i]), "+")
+          return(ell)
+          
+        } else {
+          return(matrix(c(tmpx[i,1], tmpy[i,1]), 101, 2, byrow = TRUE))
+        }
+      })
+      
+      cat("DONE\n")
     }
   }
   
