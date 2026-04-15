@@ -19,4 +19,4 @@ compile_tmb:
 
 clean:
 	rm -f $(SHLIB) $(OBJECTS)
-	rm -f TMB/*.o TMB/*.so TMB/*.dll
+  rm -rf *.dll *.o TMB/*.dll TMB/*.o
