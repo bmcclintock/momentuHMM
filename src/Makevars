@@ -16,4 +16,4 @@ compile_tmb:
 
 clean:
 	rm -f $(SHLIB) $(OBJECTS)
-  rm -rf *.so *.o TMB/*.so TMB/*.o
+	rm -f *.so *.o TMB/*.so TMB/*.o
